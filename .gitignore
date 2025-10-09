@@ -28,3 +28,8 @@ temp/
 pnpm-lock.yaml
 pnpm-debug.log*
 .env.keys
+mysql/josema22_bioalergia.create
+mysql/josema22_bioalergia.sql
+mysql/josema22_wp560.create
+mysql/josema22_wp560.sql
+mysql/openfileslimit
