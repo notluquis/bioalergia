@@ -155,7 +155,8 @@ function parseDate(value: string): string | null {
   const trimmed = value.trim();
   if (!trimmed) return null;
 
-  const parts = trimmed.split(/[\/-]/).map((part) => part.trim());
+  // Split on '/' or '-' (no need to escape '/' inside character class)
+  const parts = trimmed.split(/[/-]/).map((part) => part.trim());
   if (parts.length !== 3) return null;
 
   let [day, month, year] = parts;
