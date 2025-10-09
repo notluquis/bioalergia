@@ -20,11 +20,7 @@ export default function CollapsibleNavSection({ title, children }: CollapsibleNa
         <span className="font-semibold">{title}</span>
         <ChevronDown size={16} className={`transform transition-transform ${isOpen ? "" : "-rotate-90"}`} />
       </button>
-      {isOpen && (
-        <div className="flex flex-col gap-1.5 pl-2">
-          {children}
-        </div>
-      )}
+      {isOpen && <div className="flex flex-col gap-1.5 pl-2">{children}</div>}
     </div>
   );
 }

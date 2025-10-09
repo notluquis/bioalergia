@@ -6,18 +6,18 @@ import { useForm } from "../../../hooks";
 import Button from "../../../components/Button";
 import Input from "../../../components/Input";
 import Alert from "../../../components/Alert";
-import type {
-  Counterpart,
-  CounterpartPersonType,
-  CounterpartCategory,
-} from "../types";
+import type { Counterpart, CounterpartPersonType, CounterpartCategory } from "../types";
 import { CATEGORY_OPTIONS, EMPTY_FORM } from "../constants";
 
 const counterpartFormSchema = z.object({
-  rut: z.string().trim().optional().refine((value) => {
-    if (!value) return true;
-    return normalizeRut(value) !== null;
-  }, "RUT inválido"),
+  rut: z
+    .string()
+    .trim()
+    .optional()
+    .refine((value) => {
+      if (!value) return true;
+      return normalizeRut(value) !== null;
+    }, "RUT inválido"),
   name: z.string().trim().min(1, "El nombre es requerido"),
   personType: z.enum(["PERSON", "COMPANY", "OTHER"]),
   category: z.enum(["SUPPLIER", "PATIENT", "EMPLOYEE", "PARTNER", "RELATED", "OTHER"]),
@@ -34,12 +34,7 @@ interface CounterpartFormProps {
   saving: boolean;
 }
 
-export default function CounterpartForm({
-  counterpart,
-  onSave,
-  error,
-  saving,
-}: CounterpartFormProps) {
+export default function CounterpartForm({ counterpart, onSave, error, saving }: CounterpartFormProps) {
   const form = useForm({
     initialValues: EMPTY_FORM,
     validationSchema: counterpartFormSchema,
@@ -90,28 +85,14 @@ export default function CounterpartForm({
             placeholder="12.345.678-9"
             helper={form.values.rut ? formatRut(form.values.rut) : undefined}
           />
-          {form.getFieldError("rut") && (
-            <p className="mt-1 text-xs text-red-600">{form.getFieldError("rut")}</p>
-          )}
+          {form.getFieldError("rut") && <p className="mt-1 text-xs text-red-600">{form.getFieldError("rut")}</p>}
         </div>
         <div>
-          <Input
-            label="Nombre"
-            type="text"
-            {...form.getFieldProps("name")}
-            placeholder="Allos Chile Spa"
-            required
-          />
-          {form.getFieldError("name") && (
-            <p className="mt-1 text-xs text-red-600">{form.getFieldError("name")}</p>
-          )}
+          <Input label="Nombre" type="text" {...form.getFieldProps("name")} placeholder="Allos Chile Spa" required />
+          {form.getFieldError("name") && <p className="mt-1 text-xs text-red-600">{form.getFieldError("name")}</p>}
         </div>
         <div>
-          <Input
-            label="Tipo de persona"
-            type="select"
-            {...form.getFieldProps("personType")}
-          >
+          <Input label="Tipo de persona" type="select" {...form.getFieldProps("personType")}>
             <option value="PERSON">Persona natural</option>
             <option value="COMPANY">Empresa</option>
             <option value="OTHER">Otra</option>
@@ -121,11 +102,7 @@ export default function CounterpartForm({
           )}
         </div>
         <div>
-          <Input
-            label="Clasificación"
-            type="select"
-            {...form.getFieldProps("category")}
-          >
+          <Input label="Clasificación" type="select" {...form.getFieldProps("category")}>
             {CATEGORY_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
@@ -148,9 +125,7 @@ export default function CounterpartForm({
             {...form.getFieldProps("email")}
             placeholder="contacto@empresa.cl"
           />
-          {form.getFieldError("email") && (
-            <p className="mt-1 text-xs text-red-600">{form.getFieldError("email")}</p>
-          )}
+          {form.getFieldError("email") && <p className="mt-1 text-xs text-red-600">{form.getFieldError("email")}</p>}
         </div>
         <div className="md:col-span-2">
           <Input
@@ -160,9 +135,7 @@ export default function CounterpartForm({
             {...form.getFieldProps("notes")}
             placeholder="Información adicional, persona de contacto, etc."
           />
-          {form.getFieldError("notes") && (
-            <p className="mt-1 text-xs text-red-600">{form.getFieldError("notes")}</p>
-          )}
+          {form.getFieldError("notes") && <p className="mt-1 text-xs text-red-600">{form.getFieldError("notes")}</p>}
         </div>
         {counterpart?.employeeId && (
           <p className="md:col-span-2 text-xs text-slate-500/80">

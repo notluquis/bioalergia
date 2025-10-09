@@ -13,9 +13,12 @@ export async function fetchParticipantInsight(participantId: string, params?: { 
   if (params?.from) search.set("from", params.from);
   if (params?.to) search.set("to", params.to);
   const query = search.toString();
-  const res = await fetch(`/api/transactions/participants/${encodeURIComponent(participantId)}${query ? `?${query}` : ""}`, {
-    credentials: "include",
-  });
+  const res = await fetch(
+    `/api/transactions/participants/${encodeURIComponent(participantId)}${query ? `?${query}` : ""}`,
+    {
+      credentials: "include",
+    }
+  );
   return handleResponse<ParticipantInsightResponse>(res);
 }
 

@@ -41,7 +41,9 @@ export default function AccessSettingsPage() {
       {
         label: "Abrir consola DB",
         href: normalizeExternalUrl(settings.dbConsoleUrl),
-        description: settings.dbConsoleUrl ? settings.dbConsoleUrl : "Configura el acceso a la consola de la base de datos.",
+        description: settings.dbConsoleUrl
+          ? settings.dbConsoleUrl
+          : "Configura el acceso a la consola de la base de datos.",
       },
     ],
     [settings.cpanelUrl, settings.dbConsoleUrl]

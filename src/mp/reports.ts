@@ -66,10 +66,7 @@ export type Movement = {
   raw: MPReportRow;
 };
 
-export function deriveMovements(
-  rows: MPReportRow[],
-  options?: { accountName?: string }
-): Movement[] {
+export function deriveMovements(rows: MPReportRow[], options?: { accountName?: string }): Movement[] {
   const accountName = options?.accountName ?? "Bioalergia";
 
   return rows.map((r) => {
@@ -95,32 +92,15 @@ export function deriveMovements(
     ]);
 
     const counterparty =
-      r.SOURCE_ID ||
-      r.SUB_UNIT ||
-      r.BUSINESS_UNIT ||
-      r.PAYMENT_METHOD_TYPE ||
-      r.TRANSACTION_TYPE ||
-      undefined;
+      r.SOURCE_ID || r.SUB_UNIT || r.BUSINESS_UNIT || r.PAYMENT_METHOD_TYPE || r.TRANSACTION_TYPE || undefined;
 
-    const timestamp =
-      r.TRANSACTION_DATE || r.MONEY_RELEASE_DATE || r.SETTLEMENT_DATE || r.DATE || "";
+    const timestamp = r.TRANSACTION_DATE || r.MONEY_RELEASE_DATE || r.SETTLEMENT_DATE || r.DATE || "";
 
     const description =
-      r.DESCRIPTION ||
-      r.TRANSACTION_TYPE ||
-      r.PAYMENT_METHOD_TYPE ||
-      r.SUB_UNIT ||
-      r.BUSINESS_UNIT ||
-      undefined;
+      r.DESCRIPTION || r.TRANSACTION_TYPE || r.PAYMENT_METHOD_TYPE || r.SUB_UNIT || r.BUSINESS_UNIT || undefined;
 
-    const origin =
-      direction === "OUT"
-        ? accountName
-        : counterparty || r.BUSINESS_UNIT || r.SUB_UNIT || "Externo";
-    const destination =
-      direction === "IN"
-        ? accountName
-        : counterparty || r.BUSINESS_UNIT || r.SUB_UNIT || "Externo";
+    const origin = direction === "OUT" ? accountName : counterparty || r.BUSINESS_UNIT || r.SUB_UNIT || "Externo";
+    const destination = direction === "IN" ? accountName : counterparty || r.BUSINESS_UNIT || r.SUB_UNIT || "Externo";
 
     return {
       timestamp,
@@ -147,16 +127,16 @@ function toNumber(value?: string): number | undefined {
   if (value == null) return undefined;
   const trimmed = value.trim();
   if (!trimmed) return undefined;
-  
+
   // Limpia el valor de todo lo que no sea un dígito, coma, punto o signo negativo.
   const cleaned = trimmed
     .replace(/CLP/gi, "")
     .replace(/\$/g, "")
     .replace(/\s+/g, "")
     .replace(/[^0-9,.-]/g, "");
-  
+
   if (!cleaned || cleaned === "-" || cleaned === "." || cleaned === ",") return undefined;
-  
+
   let normalized = cleaned;
   // Heurística para normalizar números con separadores de miles y decimales.
   // Si hay ambos, asumimos que el punto es separador de miles.
@@ -201,24 +181,8 @@ function inferDirection(row: MPReportRow, amount?: number): Movement["direction"
   return "NEUTRO";
 }
 
-const creditHints = [
-  "credit",
-  "payment",
-  "charge",
-  "collection",
-  "release",
-  "deposit",
-  "incoming",
-];
-const debitHints = [
-  "debit",
-  "withdraw",
-  "withdrawal",
-  "payout",
-  "transfer",
-  "outgoing",
-  "retention",
-];
+const creditHints = ["credit", "payment", "charge", "collection", "release", "deposit", "incoming"];
+const debitHints = ["debit", "withdraw", "withdrawal", "payout", "transfer", "outgoing", "retention"];
 
 function isCreditHint(value: string) {
   return creditHints.some((hint) => value.includes(hint));

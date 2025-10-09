@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 
 export interface PaginationState {
   page: number;
@@ -22,7 +22,7 @@ export function usePagination({
   });
 
   const setPage = (page: number) => {
-    setPagination(prev => ({ ...prev, page }));
+    setPagination((prev) => ({ ...prev, page }));
   };
 
   const setPageSize = (pageSize: number) => {
@@ -30,11 +30,11 @@ export function usePagination({
   };
 
   const nextPage = () => {
-    setPagination(prev => ({ ...prev, page: prev.page + 1 }));
+    setPagination((prev) => ({ ...prev, page: prev.page + 1 }));
   };
 
   const prevPage = () => {
-    setPagination(prev => ({ ...prev, page: Math.max(1, prev.page - 1) }));
+    setPagination((prev) => ({ ...prev, page: Math.max(1, prev.page - 1) }));
   };
 
   const canGoNext = (total: number) => {
@@ -49,7 +49,7 @@ export function usePagination({
     const start = (pagination.page - 1) * pagination.pageSize + 1;
     const end = Math.min(pagination.page * pagination.pageSize, total);
     const totalPages = Math.ceil(total / pagination.pageSize);
-    
+
     return { start, end, totalPages, total };
   };
 

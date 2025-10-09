@@ -85,12 +85,17 @@ export function LoanDetail({
           </p>
           <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
             <span>Inicio {dayjs(loan.start_date).format("DD MMM YYYY")}</span>
-            <span>{loan.total_installments} cuotas · {loan.frequency === "WEEKLY" ? "semanal" : loan.frequency === "BIWEEKLY" ? "quincenal" : "mensual"}</span>
+            <span>
+              {loan.total_installments} cuotas ·{" "}
+              {loan.frequency === "WEEKLY" ? "semanal" : loan.frequency === "BIWEEKLY" ? "quincenal" : "mensual"}
+            </span>
             <span>Tasa {loan.interest_rate.toLocaleString("es-CL")}%</span>
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${statusBadge.className}`}>
+          <span
+            className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${statusBadge.className}`}
+          >
             {statusBadge.label}
           </span>
           {canManage && (
@@ -108,15 +113,21 @@ export function LoanDetail({
         </div>
         <div>
           <p className="text-xs uppercase tracking-wide text-slate-400">Total esperado</p>
-          <p className="text-lg font-semibold text-slate-800">${(summary?.total_expected ?? 0).toLocaleString("es-CL")}</p>
+          <p className="text-lg font-semibold text-slate-800">
+            ${(summary?.total_expected ?? 0).toLocaleString("es-CL")}
+          </p>
         </div>
         <div>
           <p className="text-xs uppercase tracking-wide text-slate-400">Pagado</p>
-          <p className="text-lg font-semibold text-emerald-600">${(summary?.total_paid ?? 0).toLocaleString("es-CL")}</p>
+          <p className="text-lg font-semibold text-emerald-600">
+            ${(summary?.total_paid ?? 0).toLocaleString("es-CL")}
+          </p>
         </div>
         <div>
           <p className="text-xs uppercase tracking-wide text-slate-400">Saldo</p>
-          <p className="text-lg font-semibold text-rose-600">${(summary?.remaining_amount ?? 0).toLocaleString("es-CL")}</p>
+          <p className="text-lg font-semibold text-rose-600">
+            ${(summary?.remaining_amount ?? 0).toLocaleString("es-CL")}
+          </p>
         </div>
       </section>
 
@@ -150,17 +161,13 @@ export function LoanDetail({
             label="Nueva fecha de inicio"
             type="date"
             value={regenerateForm.startDate ?? loan.start_date}
-            onChange={(event) =>
-              setRegenerateForm((prev) => ({ ...prev, startDate: event.target.value }))
-            }
+            onChange={(event) => setRegenerateForm((prev) => ({ ...prev, startDate: event.target.value }))}
           />
           <Input
             label="Tasa de interés (%)"
             type="number"
             value={regenerateForm.interestRate ?? loan.interest_rate}
-            onChange={(event) =>
-              setRegenerateForm((prev) => ({ ...prev, interestRate: Number(event.target.value) }))
-            }
+            onChange={(event) => setRegenerateForm((prev) => ({ ...prev, interestRate: Number(event.target.value) }))}
             min={0}
             step="0.01"
           />

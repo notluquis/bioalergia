@@ -37,10 +37,12 @@ export default function ParticipantInsightsPage() {
   return (
     <section className="space-y-6">
       <div className="glass-card glass-underlay-gradient space-y-2 p-6">
-        <h1 className="text-2xl font-bold text-[var(--brand-primary)] drop-shadow-sm">Participantes en transacciones</h1>
+        <h1 className="text-2xl font-bold text-[var(--brand-primary)] drop-shadow-sm">
+          Participantes en transacciones
+        </h1>
         <p className="max-w-2xl text-sm text-slate-600/90">
-          Revisa la actividad de un identificador en los campos <strong>Desde</strong> y <strong>Hacia</strong>,
-          con un resumen mensual y las contrapartes más frecuentes.
+          Revisa la actividad de un identificador en los campos <strong>Desde</strong> y <strong>Hacia</strong>, con un
+          resumen mensual y las contrapartes más frecuentes.
         </p>
       </div>
 
@@ -117,9 +119,7 @@ export default function ParticipantInsightsPage() {
               label="Agrupar por"
               type="select"
               value={leaderboardGrouping}
-              onChange={(event) =>
-                setLeaderboardGrouping(event.target.value as "account" | "rut")
-              }
+              onChange={(event) => setLeaderboardGrouping(event.target.value as "account" | "rut")}
               className="normal-case"
             >
               <option value="account">Cuenta bancaria</option>
@@ -128,9 +128,7 @@ export default function ParticipantInsightsPage() {
           </div>
         </div>
 
-        {leaderboardError && (
-          <Alert variant="error">{leaderboardError}</Alert>
-        )}
+        {leaderboardError && <Alert variant="error">{leaderboardError}</Alert>}
 
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm text-slate-600">
@@ -177,9 +175,7 @@ export default function ParticipantInsightsPage() {
                           }}
                           disabled={detailLoading || !participantKey}
                         >
-                          {detailLoading && isActive
-                            ? "Cargando..."
-                            : "Ver detalle"}
+                          {detailLoading && isActive ? "Cargando..." : "Ver detalle"}
                         </Button>
                       </td>
                     </tr>
@@ -214,13 +210,20 @@ export default function ParticipantInsightsPage() {
                 <thead className="bg-white/60 text-[var(--brand-primary)]">
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide">Mes</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide">Egresos (count)</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide">Egresos (monto)</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide">
+                      Egresos (count)
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide">
+                      Egresos (monto)
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {monthly.map((row) => (
-                    <tr key={row.month} className="border-b border-white/45 bg-white/45 last:border-none even:bg-white/35">
+                    <tr
+                      key={row.month}
+                      className="border-b border-white/45 bg-white/45 last:border-none even:bg-white/35"
+                    >
                       <td className="px-4 py-3 font-medium text-slate-700">{dayjs(row.month).format("MMMM YYYY")}</td>
                       <td className="px-4 py-3 text-slate-600">{row.outgoingCount}</td>
                       <td className="px-4 py-3 text-slate-600">{fmtCLP(row.outgoingAmount)}</td>
@@ -247,8 +250,12 @@ export default function ParticipantInsightsPage() {
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide">Titular</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide">RUT</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide">Cuenta</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide">Egresos (count)</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide">Egresos (monto)</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide">
+                      Egresos (count)
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide">
+                      Egresos (monto)
+                    </th>
                   </tr>
                 </thead>
                 <tbody>

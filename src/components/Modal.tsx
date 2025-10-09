@@ -1,4 +1,4 @@
-import { X } from 'lucide-react';
+import { X } from "lucide-react";
 
 interface ModalProps {
   isOpen: boolean;
@@ -19,9 +19,7 @@ export default function Modal({ isOpen, onClose, title, children }: ModalProps) 
             <X size={24} />
           </button>
         </div>
-        <div className="mt-6">
-          {children}
-        </div>
+        <div className="mt-6">{children}</div>
       </div>
     </div>
   );

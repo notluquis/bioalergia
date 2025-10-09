@@ -15,15 +15,7 @@ type Props = {
   error: string | null;
 };
 
-export function DailyBalancesPanel({
-  report,
-  drafts,
-  onDraftChange,
-  onSave,
-  saving,
-  loading,
-  error,
-}: Props) {
+export function DailyBalancesPanel({ report, drafts, onDraftChange, onSave, saving, loading, error }: Props) {
   return (
     <section className="glass-card glass-underlay-gradient space-y-4 p-6">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
@@ -54,9 +46,7 @@ export function DailyBalancesPanel({
           Selecciona un rango con movimientos para conciliar los saldos diarios.
         </p>
       ) : report.days.length === 0 ? (
-        <p className="px-4 py-3 text-sm text-slate-600">
-          No hay días registrados en el rango actual.
-        </p>
+        <p className="px-4 py-3 text-sm text-slate-600">No hay días registrados en el rango actual.</p>
       ) : (
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm text-slate-700">
@@ -101,7 +91,9 @@ export function DailyBalancesPanel({
                     </td>
                     <td className="px-4 py-3 text-emerald-600">{fmtCLP(Math.abs(day.totalIn))}</td>
                     <td className="px-4 py-3 text-rose-600">-{fmtCLP(Math.abs(day.totalOut))}</td>
-                    <td className={`px-4 py-3 font-semibold ${day.netChange >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                    <td
+                      className={`px-4 py-3 font-semibold ${day.netChange >= 0 ? "text-emerald-600" : "text-rose-600"}`}
+                    >
                       {day.netChange >= 0 ? fmtCLP(day.netChange) : `-${fmtCLP(Math.abs(day.netChange))}`}
                     </td>
                     <td className="px-4 py-3 text-slate-600">
@@ -116,11 +108,7 @@ export function DailyBalancesPanel({
                         placeholder="0"
                       />
                     </td>
-                    <td
-                      className={`px-4 py-3 font-semibold ${
-                        mismatch ? "text-rose-600" : "text-slate-600"
-                      }`}
-                    >
+                    <td className={`px-4 py-3 font-semibold ${mismatch ? "text-rose-600" : "text-slate-600"}`}>
                       {day.difference != null
                         ? day.difference >= 0
                           ? fmtCLP(day.difference)
@@ -137,12 +125,7 @@ export function DailyBalancesPanel({
                       />
                     </td>
                     <td className="px-4 py-3">
-                      <Button
-                        type="button"
-                        size="xs"
-                        onClick={() => onSave(day.date)}
-                        disabled={!canSave}
-                      >
+                      <Button type="button" size="xs" onClick={() => onSave(day.date)} disabled={!canSave}>
                         {isSaving ? "Guardando..." : "Guardar"}
                       </Button>
                     </td>

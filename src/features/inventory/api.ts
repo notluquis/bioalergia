@@ -25,7 +25,10 @@ export async function createInventoryItem(item: Omit<InventoryItem, "id">): Prom
   return res.data;
 }
 
-export async function updateInventoryItem(id: number, item: Partial<Omit<InventoryItem, "id">>): Promise<InventoryItem> {
+export async function updateInventoryItem(
+  id: number,
+  item: Partial<Omit<InventoryItem, "id">>
+): Promise<InventoryItem> {
   const res = await apiClient.put<ApiResponse<InventoryItem>>(`/inventory/items/${id}`, item);
   return res.data;
 }

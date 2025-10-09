@@ -28,7 +28,7 @@ export function useSupplyManagement(): UseSupplyManagementResult {
       if (!acc[supply.name]) {
         acc[supply.name] = {};
       }
-      const brand = supply.brand || 'N/A';
+      const brand = supply.brand || "N/A";
       if (!acc[supply.name][brand]) {
         acc[supply.name][brand] = [];
       }
@@ -56,19 +56,22 @@ export function useSupplyManagement(): UseSupplyManagementResult {
     }
   }, []);
 
-  const handleStatusChange = useCallback(async (requestId: number, newStatus: SupplyRequest["status"]) => {
-    setError(null);
-    setSuccessMessage(null);
-    try {
-      await apiClient.put(`/api/supplies/requests/${requestId}/status`, {
-        status: newStatus,
-      });
-      setSuccessMessage("¡Estado de la solicitud actualizado con éxito!");
-      fetchData(); // Refresh requests
-    } catch (err: any) {
-      setError(err.message || "Error al actualizar el estado");
-    }
-  }, [fetchData]);
+  const handleStatusChange = useCallback(
+    async (requestId: number, newStatus: SupplyRequest["status"]) => {
+      setError(null);
+      setSuccessMessage(null);
+      try {
+        await apiClient.put(`/api/supplies/requests/${requestId}/status`, {
+          status: newStatus,
+        });
+        setSuccessMessage("¡Estado de la solicitud actualizado con éxito!");
+        fetchData(); // Refresh requests
+      } catch (err: any) {
+        setError(err.message || "Error al actualizar el estado");
+      }
+    },
+    [fetchData]
+  );
 
   useEffect(() => {
     fetchData();

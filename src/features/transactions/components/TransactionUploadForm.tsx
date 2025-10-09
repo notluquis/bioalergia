@@ -6,14 +6,7 @@ import Alert from "../../../components/Alert";
 import UploadResults from "../../../components/UploadResults";
 
 export default function TransactionUploadForm() {
-  const {
-    files,
-    loading,
-    error,
-    results,
-    handleUpload,
-    handleFileChange,
-  } = useFileUpload({
+  const { files, loading, error, results, handleUpload, handleFileChange } = useFileUpload({
     endpoint: "/api/transactions/upload",
     logContext: "[upload]",
     validator: analyzeTransactionHeaders,
@@ -29,10 +22,7 @@ export default function TransactionUploadForm() {
         onChange={handleFileChange}
         multiple
       />
-      <Button
-        onClick={handleUpload}
-        disabled={loading}
-      >
+      <Button onClick={handleUpload} disabled={loading}>
         {loading ? "Subiendo..." : "Subir a la base de datos"}
       </Button>
       <ul className="list-disc space-y-1 pl-5 text-xs text-slate-500">
@@ -40,9 +30,7 @@ export default function TransactionUploadForm() {
         <li>Los movimientos duplicados se ignoran automáticamente.</li>
       </ul>
       {files.length > 0 && !loading && !error && (
-        <p className="text-xs text-slate-500">
-          Archivos seleccionados: {files.map((f) => f.name).join(", ")}
-        </p>
+        <p className="text-xs text-slate-500">Archivos seleccionados: {files.map((f) => f.name).join(", ")}</p>
       )}
       {error && <Alert variant="error">{error}</Alert>}
       <UploadResults results={results} />

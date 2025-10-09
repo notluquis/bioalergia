@@ -178,7 +178,9 @@ export function ServiceDetail({
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${statusBadge.className}`}>
+          <span
+            className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${statusBadge.className}`}
+          >
             {statusBadge.label}
           </span>
           {canManage && (
@@ -239,10 +241,10 @@ export function ServiceDetail({
             {service.emission_mode === "FIXED_DAY" && service.emission_day
               ? `Día ${service.emission_day}`
               : service.emission_mode === "DATE_RANGE" && service.emission_start_day && service.emission_end_day
-              ? `Entre día ${service.emission_start_day} y ${service.emission_end_day}`
-              : service.emission_mode === "SPECIFIC_DATE" && service.emission_exact_date
-              ? `Fecha ${dayjs(service.emission_exact_date).format("DD MMM YYYY")}`
-              : "Sin especificar"}
+                ? `Entre día ${service.emission_start_day} y ${service.emission_end_day}`
+                : service.emission_mode === "SPECIFIC_DATE" && service.emission_exact_date
+                  ? `Fecha ${dayjs(service.emission_exact_date).format("DD MMM YYYY")}`
+                  : "Sin especificar"}
           </p>
         </div>
         <div>

@@ -47,8 +47,9 @@ export default [
       },
     },
     rules: {
-      '@typescript-eslint/no-unused-vars': 'warn',
-      '@typescript-eslint/no-explicit-any': 'warn',
+  '@typescript-eslint/no-unused-vars': 'warn',
+  // Re-enabled (gradual enforcement) - switch to 'error' once remaining anys addressed
+  '@typescript-eslint/no-explicit-any': 'warn',
       // Disable core rules that conflict with TS awareness
       'no-unused-vars': 'off',
       'no-undef': 'off',
@@ -63,11 +64,13 @@ export default [
   {
     plugins: { 'react-hooks': reactHooks, 'react-refresh': reactRefresh },
     rules: {
-      'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
+  // Re-enabled for safer component export patterns (warn for now)
+  'react-refresh/only-export-components': 'warn',
       'react/prop-types': 'off',
       'react/react-in-jsx-scope': 'off',
       'react-hooks/rules-of-hooks': 'error',
-      'react-hooks/exhaustive-deps': 'warn',
+  // Re-enabled to surface missing dependencies (warn initially)
+  'react-hooks/exhaustive-deps': 'warn',
     },
     settings: { react: { version: 'detect' } },
   },

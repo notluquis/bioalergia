@@ -21,9 +21,7 @@ export default function MetricCard({
   return (
     <article className={`glass-card glass-underlay-gradient p-6 text-slate-700 ${colorClass}`}>
       <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-700/90">{title}</h2>
-      <p className="mt-3 text-2xl font-bold tracking-tight">
-        {loading ? "—" : fmtCLP(value)}
-      </p>
+      <p className="mt-3 text-2xl font-bold tracking-tight">{loading ? "—" : fmtCLP(value)}</p>
     </article>
   );
 }

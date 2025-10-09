@@ -58,9 +58,9 @@ export type TimesheetSummaryResponse = {
 
 export const EMPTY_BULK_ROW = {
   date: "",
-  entrada: "",     // Hora de entrada (ej: "09:00")
-  salida: "",      // Hora de salida (ej: "18:00")  
-  overtime: "",    // Horas extra (ej: "02:00")
+  entrada: "", // Hora de entrada (ej: "09:00")
+  salida: "", // Hora de salida (ej: "18:00")
+  overtime: "", // Horas extra (ej: "02:00")
   comment: "",
   entryId: null as number | null,
 };

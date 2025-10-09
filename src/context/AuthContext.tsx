@@ -1,11 +1,4 @@
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-  type ReactNode,
-} from "react";
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { logger } from "../lib/logger";
 
 export type UserRole = "GOD" | "ADMIN" | "ANALYST" | "VIEWER";
@@ -33,7 +26,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
-    if (typeof window === "undefined" || !('AbortController' in window)) {
+    if (typeof window === "undefined" || !("AbortController" in window)) {
       logger.warn("[auth] bootstrap: AbortController no disponible en este entorno");
       fetch("/api/auth/me", { credentials: "include" })
         .then(async (res) => {
@@ -148,10 +141,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return roles.includes(user.role);
   };
 
-  const value = useMemo<AuthContextType>(
-    () => ({ user, initializing, login, logout, hasRole }),
-    [user, initializing]
-  );
+  const value = useMemo<AuthContextType>(() => ({ user, initializing, login, logout, hasRole }), [user, initializing]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

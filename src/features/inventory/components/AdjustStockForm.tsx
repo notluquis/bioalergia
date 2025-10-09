@@ -9,8 +9,8 @@ interface AdjustStockFormProps {
 }
 
 export default function AdjustStockForm({ item, onSave, onCancel, saving }: AdjustStockFormProps) {
-  const [quantityChange, setQuantityChange] = useState('');
-  const [reason, setReason] = useState('');
+  const [quantityChange, setQuantityChange] = useState("");
+  const [reason, setReason] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

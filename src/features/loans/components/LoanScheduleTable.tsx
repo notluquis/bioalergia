@@ -25,92 +25,113 @@ function statusBadge(status: LoanSchedule["status"], dueDate: string) {
   }
 }
 
-export function LoanScheduleTable({ schedules, onRegisterPayment, onUnlinkPayment, canManage }: LoanScheduleTableProps) {
+export function LoanScheduleTable({
+  schedules,
+  onRegisterPayment,
+  onUnlinkPayment,
+  canManage,
+}: LoanScheduleTableProps) {
   return (
     <div className="glass-card glass-underlay-gradient overflow-hidden">
       <div className="overflow-x-auto muted-scrollbar">
         <table className="min-w-full text-sm text-slate-600">
           <thead className="bg-white/60 text-[var(--brand-primary)]">
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide whitespace-nowrap">Cuota</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide whitespace-nowrap">Vencimiento</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide whitespace-nowrap">Monto</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide whitespace-nowrap">Estado</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide whitespace-nowrap">Pago</th>
-            <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide">Transacción</th>
-            {canManage && <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide">Acciones</th>}
-          </tr>
-        </thead>
-        <tbody>
-          {schedules.map((schedule) => {
-            const badgeClass = statusBadge(schedule.status, schedule.due_date);
-            const paidInfo = schedule.paid_amount != null ? `$${schedule.paid_amount.toLocaleString("es-CL")}` : "—";
-            const paidDate = schedule.paid_date ? dayjs(schedule.paid_date).format("DD MMM YYYY") : "—";
-            return (
-              <tr key={schedule.id} className="border-b border-white/45 bg-white/45 last:border-none even:bg-white/35">
-                <td className="px-4 py-3 font-semibold text-slate-700">#{schedule.installment_number}</td>
-                <td className="px-4 py-3 text-slate-600">{dayjs(schedule.due_date).format("DD MMM YYYY")}</td>
-                <td className="px-4 py-3 text-slate-600">${schedule.expected_amount.toLocaleString("es-CL")}</td>
-                <td className="px-4 py-3">
-                  <span className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wide ${badgeClass}`}>
-                    {schedule.status === "PENDING" ? "Pendiente" : schedule.status === "PAID" ? "Pagado" : schedule.status === "PARTIAL" ? "Parcial" : "Vencido"}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-slate-600">
-                  <div className="space-y-1">
-                    <div>{paidInfo}</div>
-                    <div className="text-[11px] text-slate-400">{paidDate}</div>
-                  </div>
-                </td>
-                <td className="px-4 py-3 text-slate-600">
-                  {schedule.transaction ? (
-                    <div className="space-y-1">
-                      <div className="font-medium">ID #{schedule.transaction.id}</div>
-                      <div className="text-[11px] text-slate-400">
-                        {schedule.transaction.description ?? "(sin descripción)"}
-                      </div>
-                    </div>
-                  ) : (
-                    <span className="text-slate-400">Sin vincular</span>
-                  )}
-                </td>
-                {canManage && (
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide whitespace-nowrap">
+                Cuota
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide whitespace-nowrap">
+                Vencimiento
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide whitespace-nowrap">
+                Monto
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide whitespace-nowrap">
+                Estado
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide whitespace-nowrap">
+                Pago
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide">Transacción</th>
+              {canManage && (
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide">Acciones</th>
+              )}
+            </tr>
+          </thead>
+          <tbody>
+            {schedules.map((schedule) => {
+              const badgeClass = statusBadge(schedule.status, schedule.due_date);
+              const paidInfo = schedule.paid_amount != null ? `$${schedule.paid_amount.toLocaleString("es-CL")}` : "—";
+              const paidDate = schedule.paid_date ? dayjs(schedule.paid_date).format("DD MMM YYYY") : "—";
+              return (
+                <tr
+                  key={schedule.id}
+                  className="border-b border-white/45 bg-white/45 last:border-none even:bg-white/35"
+                >
+                  <td className="px-4 py-3 font-semibold text-slate-700">#{schedule.installment_number}</td>
+                  <td className="px-4 py-3 text-slate-600">{dayjs(schedule.due_date).format("DD MMM YYYY")}</td>
+                  <td className="px-4 py-3 text-slate-600">${schedule.expected_amount.toLocaleString("es-CL")}</td>
+                  <td className="px-4 py-3">
+                    <span
+                      className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wide ${badgeClass}`}
+                    >
+                      {schedule.status === "PENDING"
+                        ? "Pendiente"
+                        : schedule.status === "PAID"
+                          ? "Pagado"
+                          : schedule.status === "PARTIAL"
+                            ? "Parcial"
+                            : "Vencido"}
+                    </span>
+                  </td>
                   <td className="px-4 py-3 text-slate-600">
-                    <div className="flex flex-wrap gap-2">
-                      {(schedule.status === "PENDING" || schedule.status === "PARTIAL" || schedule.status === "OVERDUE") && (
-                        <Button
-                          type="button"
-                          size="xs"
-                          onClick={() => onRegisterPayment(schedule)}
-                        >
-                          Registrar pago
-                        </Button>
-                      )}
-                      {schedule.transaction && (
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          size="xs"
-                          onClick={() => onUnlinkPayment(schedule)}
-                        >
-                          Desvincular
-                        </Button>
-                      )}
+                    <div className="space-y-1">
+                      <div>{paidInfo}</div>
+                      <div className="text-[11px] text-slate-400">{paidDate}</div>
                     </div>
                   </td>
-                )}
+                  <td className="px-4 py-3 text-slate-600">
+                    {schedule.transaction ? (
+                      <div className="space-y-1">
+                        <div className="font-medium">ID #{schedule.transaction.id}</div>
+                        <div className="text-[11px] text-slate-400">
+                          {schedule.transaction.description ?? "(sin descripción)"}
+                        </div>
+                      </div>
+                    ) : (
+                      <span className="text-slate-400">Sin vincular</span>
+                    )}
+                  </td>
+                  {canManage && (
+                    <td className="px-4 py-3 text-slate-600">
+                      <div className="flex flex-wrap gap-2">
+                        {(schedule.status === "PENDING" ||
+                          schedule.status === "PARTIAL" ||
+                          schedule.status === "OVERDUE") && (
+                          <Button type="button" size="xs" onClick={() => onRegisterPayment(schedule)}>
+                            Registrar pago
+                          </Button>
+                        )}
+                        {schedule.transaction && (
+                          <Button type="button" variant="secondary" size="xs" onClick={() => onUnlinkPayment(schedule)}>
+                            Desvincular
+                          </Button>
+                        )}
+                      </div>
+                    </td>
+                  )}
+                </tr>
+              );
+            })}
+            {!schedules.length && (
+              <tr>
+                <td colSpan={canManage ? 7 : 6} className="px-4 py-6 text-center text-slate-500">
+                  Este préstamo aún no tiene cronograma generado.
+                </td>
               </tr>
-            );
-          })}
-          {!schedules.length && (
-            <tr>
-              <td colSpan={canManage ? 7 : 6} className="px-4 py-6 text-center text-slate-500">
-                Este préstamo aún no tiene cronograma generado.
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );

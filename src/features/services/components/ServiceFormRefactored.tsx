@@ -5,7 +5,16 @@ import { useForm } from "../../../hooks/useForm";
 import { useAsyncData } from "../../../hooks/useAsyncData";
 import Input from "../../../components/Input";
 import Button from "../../../components/Button";
-import type { CreateServicePayload, ServiceEmissionMode, ServiceFrequency, ServiceLateFeeMode, ServiceOwnership, ServiceObligationType, ServiceRecurrenceType, ServiceType } from "../types";
+import type {
+  CreateServicePayload,
+  ServiceEmissionMode,
+  ServiceFrequency,
+  ServiceLateFeeMode,
+  ServiceOwnership,
+  ServiceObligationType,
+  ServiceRecurrenceType,
+  ServiceType,
+} from "../types";
 import { fetchCounterparts, fetchCounterpart } from "../../counterparts/api";
 import type { Counterpart, CounterpartAccount } from "../../counterparts/types";
 
@@ -165,7 +174,8 @@ export function ServiceFormRefactored({ onSubmit, onCancel }: ServiceFormProps) 
         emissionExactDate: formData.emissionMode === "SPECIFIC_DATE" ? formData.emissionExactDate : null,
         dueDay: formData.dueDay,
         startDate: formData.startDate,
-        monthsToGenerate: formData.recurrenceType === "ONE_OFF" || formData.frequency === "ONCE" ? 1 : formData.monthsToGenerate,
+        monthsToGenerate:
+          formData.recurrenceType === "ONE_OFF" || formData.frequency === "ONCE" ? 1 : formData.monthsToGenerate,
         lateFeeMode: formData.lateFeeMode,
         lateFeeValue: formData.lateFeeMode === "NONE" ? null : formData.lateFeeValue,
         lateFeeGraceDays: formData.lateFeeMode === "NONE" ? null : formData.lateFeeGraceDays,
@@ -224,7 +234,7 @@ export function ServiceFormRefactored({ onSubmit, onCancel }: ServiceFormProps) 
     const id = value ? Number(value) : null;
     setValue("counterpartId", id);
     setValue("counterpartAccountId", null);
-    
+
     if (id) {
       accountsState.loadData(async () => {
         const detail = await fetchCounterpart(id);
@@ -243,16 +253,8 @@ export function ServiceFormRefactored({ onSubmit, onCancel }: ServiceFormProps) 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <section className="grid gap-4 md:grid-cols-2">
-        <Input
-          label="Nombre"
-          {...getFieldProps("name")}
-          required
-        />
-        <Input
-          label="Categoría"
-          {...getFieldProps("category")}
-          helper="Ej: Servicios básicos, Marketing, Arriendo"
-        />
+        <Input label="Nombre" {...getFieldProps("name")} required />
+        <Input label="Categoría" {...getFieldProps("category")} helper="Ej: Servicios básicos, Marketing, Arriendo" />
         <Input
           label="Detalle"
           type="textarea"
@@ -260,53 +262,32 @@ export function ServiceFormRefactored({ onSubmit, onCancel }: ServiceFormProps) 
           {...getFieldProps("detail")}
           helper="Describe qué cubre el servicio o condiciones especiales"
         />
-        <Input
-          label="Notas"
-          type="textarea"
-          rows={3}
-          {...getFieldProps("notes")}
-        />
+        <Input label="Notas" type="textarea" rows={3} {...getFieldProps("notes")} />
       </section>
 
       <section className="grid gap-4 md:grid-cols-2">
-        <Input
-          label="Tipo"
-          type="select"
-          {...getFieldProps("serviceType")}
-        >
+        <Input label="Tipo" type="select" {...getFieldProps("serviceType")}>
           {SERVICE_TYPE_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
             </option>
           ))}
         </Input>
-        <Input
-          label="Propiedad"
-          type="select"
-          {...getFieldProps("ownership")}
-        >
+        <Input label="Propiedad" type="select" {...getFieldProps("ownership")}>
           {OWNERSHIP_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
             </option>
           ))}
         </Input>
-        <Input
-          label="Naturaleza"
-          type="select"
-          {...getFieldProps("obligationType")}
-        >
+        <Input label="Naturaleza" type="select" {...getFieldProps("obligationType")}>
           {OBLIGATION_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
             </option>
           ))}
         </Input>
-        <Input
-          label="Recurrencia"
-          type="select"
-          {...getFieldProps("recurrenceType")}
-        >
+        <Input label="Recurrencia" type="select" {...getFieldProps("recurrenceType")}>
           {RECURRENCE_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
@@ -335,17 +316,15 @@ export function ServiceFormRefactored({ onSubmit, onCancel }: ServiceFormProps) 
           label="Cuenta asociada"
           type="select"
           value={data.counterpartAccountId ? String(data.counterpartAccountId) : ""}
-          onChange={(event) =>
-            setValue("counterpartAccountId", event.target.value ? Number(event.target.value) : null)
-          }
+          onChange={(event) => setValue("counterpartAccountId", event.target.value ? Number(event.target.value) : null)}
           disabled={!data.counterpartId || accountsState.loading}
           helper={
             accountsState.error ||
             (accountsState.loading
               ? "Cargando opciones..."
               : data.counterpartId && !accountsState.data.length
-              ? "Esta contraparte aún no tiene cuentas agregadas"
-              : undefined)
+                ? "Esta contraparte aún no tiene cuentas agregadas"
+                : undefined)
           }
         >
           <option value="">Sin cuenta específica</option>
@@ -364,23 +343,14 @@ export function ServiceFormRefactored({ onSubmit, onCancel }: ServiceFormProps) 
       </section>
 
       <section className="grid gap-4 md:grid-cols-2">
-        <Input
-          label="Frecuencia"
-          type="select"
-          {...getFieldProps("frequency")}
-        >
+        <Input label="Frecuencia" type="select" {...getFieldProps("frequency")}>
           {FREQUENCY_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
             </option>
           ))}
         </Input>
-        <Input
-          label="Fecha de inicio"
-          type="date"
-          {...getFieldProps("startDate")}
-          required
-        />
+        <Input label="Fecha de inicio" type="date" {...getFieldProps("startDate")} required />
         <Input
           label="Meses a generar"
           type="number"
@@ -395,21 +365,11 @@ export function ServiceFormRefactored({ onSubmit, onCancel }: ServiceFormProps) 
               : undefined
           }
         />
-        <Input
-          label="Día de vencimiento"
-          type="number"
-          {...getFieldProps("dueDay")}
-          min={1}
-          max={31}
-        />
+        <Input label="Día de vencimiento" type="number" {...getFieldProps("dueDay")} min={1} max={31} />
       </section>
 
       <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <Input
-          label="Modo de emisión"
-          type="select"
-          {...getFieldProps("emissionMode")}
-        >
+        <Input label="Modo de emisión" type="select" {...getFieldProps("emissionMode")}>
           {EMISSION_MODE_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
@@ -417,66 +377,29 @@ export function ServiceFormRefactored({ onSubmit, onCancel }: ServiceFormProps) 
           ))}
         </Input>
         {data.emissionMode === "FIXED_DAY" && (
-          <Input
-            label="Día emisión"
-            type="number"
-            {...getFieldProps("emissionDay")}
-            min={1}
-            max={31}
-          />
+          <Input label="Día emisión" type="number" {...getFieldProps("emissionDay")} min={1} max={31} />
         )}
         {data.emissionMode === "DATE_RANGE" && (
           <>
-            <Input
-              label="Día inicio emisión"
-              type="number"
-              {...getFieldProps("emissionStartDay")}
-              min={1}
-              max={31}
-            />
-            <Input
-              label="Día término emisión"
-              type="number"
-              {...getFieldProps("emissionEndDay")}
-              min={1}
-              max={31}
-            />
+            <Input label="Día inicio emisión" type="number" {...getFieldProps("emissionStartDay")} min={1} max={31} />
+            <Input label="Día término emisión" type="number" {...getFieldProps("emissionEndDay")} min={1} max={31} />
           </>
         )}
         {data.emissionMode === "SPECIFIC_DATE" && (
-          <Input
-            label="Fecha emisión"
-            type="date"
-            {...getFieldProps("emissionExactDate")}
-          />
+          <Input label="Fecha emisión" type="date" {...getFieldProps("emissionExactDate")} />
         )}
       </section>
 
       <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <Input
-          label="Monto base"
-          type="number"
-          {...getFieldProps("defaultAmount")}
-          min={0}
-          step="0.01"
-          required
-        />
-        <Input
-          label="Modo de monto"
-          type="select"
-          {...getFieldProps("amountIndexation")}
-        >
+        <Input label="Monto base" type="number" {...getFieldProps("defaultAmount")} min={0} step="0.01" required />
+        <Input label="Modo de monto" type="select" {...getFieldProps("amountIndexation")}>
           {INDEXATION_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
             </option>
           ))}
         </Input>
-        <Input
-          label="Recargo por atraso"
-          type="select"
-          {...getFieldProps("lateFeeMode")}
-        >
+        <Input label="Recargo por atraso" type="select" {...getFieldProps("lateFeeMode")}>
           {LATE_FEE_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
@@ -492,13 +415,7 @@ export function ServiceFormRefactored({ onSubmit, onCancel }: ServiceFormProps) 
               min={0}
               step="0.01"
             />
-            <Input
-              label="Días de gracia"
-              type="number"
-              {...getFieldProps("lateFeeGraceDays")}
-              min={0}
-              max={31}
-            />
+            <Input label="Días de gracia" type="number" {...getFieldProps("lateFeeGraceDays")} min={0} max={31} />
           </>
         )}
       </section>

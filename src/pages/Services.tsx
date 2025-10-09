@@ -74,23 +74,20 @@ export default function ServicesPage() {
     }
   }, [canView, selectedId]);
 
-  const loadDetail = useCallback(
-    async (publicId: string) => {
-      setLoadingDetail(true);
-      setGlobalError(null);
-      try {
-        const response = await fetchServiceDetail(publicId);
-        setDetail(response);
-      } catch (error) {
-        const message = error instanceof Error ? error.message : "No se pudo obtener el detalle";
-        setGlobalError(message);
-        logger.error("[services] detail:error", message);
-      } finally {
-        setLoadingDetail(false);
-      }
-    },
-    []
-  );
+  const loadDetail = useCallback(async (publicId: string) => {
+    setLoadingDetail(true);
+    setGlobalError(null);
+    try {
+      const response = await fetchServiceDetail(publicId);
+      setDetail(response);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "No se pudo obtener el detalle";
+      setGlobalError(message);
+      logger.error("[services] detail:error", message);
+    } finally {
+      setLoadingDetail(false);
+    }
+  }, []);
 
   useEffect(() => {
     loadServices().catch((error) => logger.error("[services] list:effect", error));
@@ -136,9 +133,7 @@ export default function ServicesPage() {
     setPaymentSchedule(schedule);
     setPaymentForm({
       transactionId: schedule.transaction_id ? String(schedule.transaction_id) : "",
-      paidAmount: schedule.paid_amount != null
-        ? String(schedule.paid_amount)
-        : String(schedule.effective_amount),
+      paidAmount: schedule.paid_amount != null ? String(schedule.paid_amount) : String(schedule.effective_amount),
       paidDate: schedule.paid_date ?? dayjs().format("YYYY-MM-DD"),
       note: schedule.note ?? "",
     });
@@ -264,7 +259,11 @@ export default function ServicesPage() {
       <Modal
         isOpen={Boolean(paymentSchedule)}
         onClose={() => setPaymentSchedule(null)}
-        title={paymentSchedule ? `Registrar pago ${dayjs(paymentSchedule.period_start).format("MMM YYYY")}` : "Registrar pago"}
+        title={
+          paymentSchedule
+            ? `Registrar pago ${dayjs(paymentSchedule.period_start).format("MMM YYYY")}`
+            : "Registrar pago"
+        }
       >
         {paymentSchedule && (
           <form onSubmit={handlePaymentSubmit} className="space-y-4">
@@ -298,11 +297,14 @@ export default function ServicesPage() {
               value={paymentForm.note}
               onChange={(event) => setPaymentForm((prev) => ({ ...prev, note: event.target.value }))}
             />
-            {paymentError && (
-              <p className="rounded-lg bg-rose-100 px-4 py-2 text-sm text-rose-700">{paymentError}</p>
-            )}
+            {paymentError && <p className="rounded-lg bg-rose-100 px-4 py-2 text-sm text-rose-700">{paymentError}</p>}
             <div className="flex justify-end gap-3">
-              <Button type="button" variant="secondary" onClick={() => setPaymentSchedule(null)} disabled={processingPayment}>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setPaymentSchedule(null)}
+                disabled={processingPayment}
+              >
                 Cancelar
               </Button>
               <Button type="submit" disabled={processingPayment}>

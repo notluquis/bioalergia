@@ -49,19 +49,19 @@ export function parseDuration(value: string): number | null {
 
 export function calculateWorkedMinutes(startTime: string, endTime: string): number {
   if (!startTime || !endTime || startTime === "00:00" || endTime === "00:00") return 0;
-  
+
   const start = timeToMinutes(startTime);
   const end = timeToMinutes(endTime);
-  
+
   if (start === null || end === null) return 0;
-  
+
   let totalMinutes = end - start;
-  
+
   // Si end < start, asumimos que cruza medianoche (ej: 22:00 a 06:00)
   if (totalMinutes < 0) {
-    totalMinutes = (24 * 60) + totalMinutes;
+    totalMinutes = 24 * 60 + totalMinutes;
   }
-  
+
   return totalMinutes;
 }
 
@@ -84,13 +84,13 @@ export function computeExtraAmount(extraMinutes: number, hourlyRate: number): nu
 export function formatExtraHours(row: TimesheetSummaryRow): string {
   // Si no hay extraAmount, retornar 00:00
   if (!row.extraAmount) return "00:00";
-  
+
   // Si hay overtimeRate definido, calcular horas basado en extraAmount / overtimeRate
   if (row.overtimeRate > 0) {
     const minutes = Math.round((row.extraAmount / row.overtimeRate) * 60);
     return minutesToDuration(minutes);
   }
-  
+
   // Si overtimeRate es 0 pero hay extraAmount, mostrar las horas extra reales del timesheet
   // En este caso, las horas extra no se pagan pero sí se registran
   return minutesToDuration(row.overtimeMinutes || 0);
@@ -101,7 +101,7 @@ export function formatTotalExtraHours(rows: TimesheetSummaryRow[]): string {
   for (const row of rows) {
     // Si no hay extraAmount, continuar
     if (!row.extraAmount) continue;
-    
+
     // Si hay overtimeRate definido, calcular horas basado en extraAmount / overtimeRate
     if (row.overtimeRate > 0) {
       totalMinutes += Math.round((row.extraAmount / row.overtimeRate) * 60);

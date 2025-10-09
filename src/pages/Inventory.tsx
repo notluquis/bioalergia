@@ -101,9 +101,7 @@ export default function InventoryPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-2">
           <h1 className="text-2xl font-bold text-[var(--brand-primary)]">Inventario</h1>
-          <p className="max-w-2xl text-sm text-slate-600">
-            Gestiona los insumos, materiales y stock de la clínica.
-          </p>
+          <p className="max-w-2xl text-sm text-slate-600">Gestiona los insumos, materiales y stock de la clínica.</p>
         </div>
         <Button onClick={openCreateModal}>
           <PlusCircle size={16} />
@@ -121,22 +119,12 @@ export default function InventoryPage() {
       />
 
       <Modal isOpen={isItemModalOpen} onClose={closeModal} title={editingItem ? "Editar Item" : "Agregar Nuevo Item"}>
-        <InventoryItemForm
-          item={editingItem}
-          onSave={handleSaveItem}
-          onCancel={closeModal}
-          saving={saving}
-        />
+        <InventoryItemForm item={editingItem} onSave={handleSaveItem} onCancel={closeModal} saving={saving} />
       </Modal>
 
       {itemForStockAdjust && (
         <Modal isOpen={isAdjustStockModalOpen} onClose={closeModal} title="Ajustar Stock">
-          <AdjustStockForm
-            item={itemForStockAdjust}
-            onSave={handleAdjustStock}
-            onCancel={closeModal}
-            saving={saving}
-          />
+          <AdjustStockForm item={itemForStockAdjust} onSave={handleAdjustStock} onCancel={closeModal} saving={saving} />
         </Modal>
       )}
     </section>

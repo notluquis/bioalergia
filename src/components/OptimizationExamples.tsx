@@ -39,29 +39,16 @@ function ExampleForm() {
   return (
     <div className="space-y-4 p-6 bg-white rounded-lg shadow">
       <h3 className="text-lg font-semibold">Ejemplo de Formulario con useForm</h3>
-      
+
       <form onSubmit={form.handleSubmit} className="space-y-4">
         <div>
-          <Input
-            label="Nombre"
-            {...form.getFieldProps("name")}
-            required
-          />
-          {form.getFieldError("name") && (
-            <p className="mt-1 text-xs text-red-600">{form.getFieldError("name")}</p>
-          )}
+          <Input label="Nombre" {...form.getFieldProps("name")} required />
+          {form.getFieldError("name") && <p className="mt-1 text-xs text-red-600">{form.getFieldError("name")}</p>}
         </div>
 
         <div>
-          <Input
-            label="Email"
-            type="email"
-            {...form.getFieldProps("email")}
-            required
-          />
-          {form.getFieldError("email") && (
-            <p className="mt-1 text-xs text-red-600">{form.getFieldError("email")}</p>
-          )}
+          <Input label="Email" type="email" {...form.getFieldProps("email")} required />
+          {form.getFieldError("email") && <p className="mt-1 text-xs text-red-600">{form.getFieldError("email")}</p>}
         </div>
 
         <div>
@@ -71,9 +58,7 @@ function ExampleForm() {
             {...form.getFieldProps("amount")}
             helper={form.values.amount ? fmtCLP(form.values.amount) : undefined}
           />
-          {form.getFieldError("amount") && (
-            <p className="mt-1 text-xs text-red-600">{form.getFieldError("amount")}</p>
-          )}
+          {form.getFieldError("amount") && <p className="mt-1 text-xs text-red-600">{form.getFieldError("amount")}</p>}
         </div>
 
         <div>
@@ -82,9 +67,7 @@ function ExampleForm() {
             {...form.getFieldProps("rut")}
             helper={form.values.rut ? formatRut(form.values.rut) : undefined}
           />
-          {form.getFieldError("rut") && (
-            <p className="mt-1 text-xs text-red-600">{form.getFieldError("rut")}</p>
-          )}
+          {form.getFieldError("rut") && <p className="mt-1 text-xs text-red-600">{form.getFieldError("rut")}</p>}
         </div>
 
         <Button type="submit" disabled={form.isSubmitting || !form.isValid}>
@@ -124,17 +107,17 @@ function ExampleTable() {
 
   const sortedData = React.useMemo(() => {
     if (!table.sortState.column) return sampleData;
-    
+
     return [...sampleData].sort((a, b) => {
       const { column, direction } = table.sortState;
       let aValue: any = a[column as keyof ExampleItem];
       let bValue: any = b[column as keyof ExampleItem];
-      
+
       if (typeof aValue === "string" && typeof bValue === "string") {
         const result = aValue.localeCompare(bValue);
         return direction === "desc" ? -result : result;
       }
-      
+
       if (aValue < bValue) return direction === "desc" ? 1 : -1;
       if (aValue > bValue) return direction === "desc" ? -1 : 1;
       return 0;
@@ -152,7 +135,7 @@ function ExampleTable() {
   return (
     <div className="space-y-4 p-6 bg-white rounded-lg shadow">
       <h3 className="text-lg font-semibold">Ejemplo de Tabla con useTable</h3>
-      
+
       {/* Column Controls */}
       <div className="flex flex-wrap gap-2">
         <span className="text-xs font-semibold text-slate-600">Columnas:</span>
@@ -166,7 +149,9 @@ function ExampleTable() {
             />
             <span className="text-slate-600 capitalize">{column}</span>
           </label>
-        ))}\n      </div>
+        ))}
+        \n{" "}
+      </div>
 
       {/* Table */}
       <div className="overflow-hidden rounded border">
@@ -174,7 +159,7 @@ function ExampleTable() {
           <thead className="bg-gray-50">
             <tr>
               {table.isColumnVisible("name") && (
-                <th 
+                <th
                   className="px-4 py-2 text-left font-semibold cursor-pointer hover:bg-gray-100"
                   {...table.getSortProps("name")}
                 >
@@ -182,7 +167,7 @@ function ExampleTable() {
                 </th>
               )}
               {table.isColumnVisible("email") && (
-                <th 
+                <th
                   className="px-4 py-2 text-left font-semibold cursor-pointer hover:bg-gray-100"
                   {...table.getSortProps("email")}
                 >
@@ -190,7 +175,7 @@ function ExampleTable() {
                 </th>
               )}
               {table.isColumnVisible("amount") && (
-                <th 
+                <th
                   className="px-4 py-2 text-left font-semibold cursor-pointer hover:bg-gray-100"
                   {...table.getSortProps("amount")}
                 >
@@ -198,37 +183,29 @@ function ExampleTable() {
                 </th>
               )}
               {table.isColumnVisible("status") && (
-                <th 
+                <th
                   className="px-4 py-2 text-left font-semibold cursor-pointer hover:bg-gray-100"
                   {...table.getSortProps("status")}
                 >
                   Estado {table.getSortIcon("status")}
                 </th>
               )}
-              {table.isColumnVisible("actions") && (
-                <th className="px-4 py-2 text-right font-semibold">Acciones</th>
-              )}
+              {table.isColumnVisible("actions") && <th className="px-4 py-2 text-right font-semibold">Acciones</th>}
             </tr>
           </thead>
           <tbody>
             {paginatedData.map((item) => (
               <tr key={item.id} className="odd:bg-gray-50">
-                {table.isColumnVisible("name") && (
-                  <td className="px-4 py-2 font-medium">{item.name}</td>
-                )}
-                {table.isColumnVisible("email") && (
-                  <td className="px-4 py-2 text-gray-600">{item.email}</td>
-                )}
-                {table.isColumnVisible("amount") && (
-                  <td className="px-4 py-2 text-gray-600">{fmtCLP(item.amount)}</td>
-                )}
+                {table.isColumnVisible("name") && <td className="px-4 py-2 font-medium">{item.name}</td>}
+                {table.isColumnVisible("email") && <td className="px-4 py-2 text-gray-600">{item.email}</td>}
+                {table.isColumnVisible("amount") && <td className="px-4 py-2 text-gray-600">{fmtCLP(item.amount)}</td>}
                 {table.isColumnVisible("status") && (
                   <td className="px-4 py-2">
-                    <span className={`px-2 py-1 rounded text-xs ${
-                      item.status === "active" 
-                        ? "bg-green-100 text-green-800" 
-                        : "bg-gray-100 text-gray-800"
-                    }`}>
+                    <span
+                      className={`px-2 py-1 rounded text-xs ${
+                        item.status === "active" ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"
+                      }`}
+                    >
                       {item.status === "active" ? "Activo" : "Inactivo"}
                     </span>
                   </td>
@@ -251,37 +228,29 @@ function ExampleTable() {
         <span className="text-gray-600">
           Mostrando {pageInfo.start} - {pageInfo.end} de {pageInfo.total}
         </span>
-        
+
         <div className="flex items-center gap-2">
-          <select 
+          <select
             value={table.pagination.pageSize}
             onChange={(e) => table.setPageSize(Number(e.target.value))}
             className="border rounded px-2 py-1"
           >
-            {table.pageSizeOptions.map(size => (
-              <option key={size} value={size}>{size} por página</option>
+            {table.pageSizeOptions.map((size) => (
+              <option key={size} value={size}>
+                {size} por página
+              </option>
             ))}
           </select>
-          
-          <Button 
-            variant="secondary" 
-            size="sm"
-            disabled={!table.canGoPrev()}
-            onClick={table.prevPage}
-          >
+
+          <Button variant="secondary" size="sm" disabled={!table.canGoPrev()} onClick={table.prevPage}>
             Anterior
           </Button>
-          
+
           <span className="px-2">
             Página {table.pagination.page} de {pageInfo.totalPages}
           </span>
-          
-          <Button 
-            variant="secondary" 
-            size="sm"
-            disabled={!table.canGoNext(sortedData.length)}
-            onClick={table.nextPage}
-          >
+
+          <Button variant="secondary" size="sm" disabled={!table.canGoNext(sortedData.length)} onClick={table.nextPage}>
             Siguiente
           </Button>
         </div>
@@ -299,7 +268,7 @@ function ExampleUpload() {
     multiple: true,
     validator: async (file) => {
       // Ejemplo de validación: verificar que sea CSV
-      if (!file.name.endsWith('.csv')) {
+      if (!file.name.endsWith(".csv")) {
         return { missing: ["extensión .csv"], headersCount: 0 };
       }
       return { missing: [], headersCount: 1 };
@@ -309,31 +278,21 @@ function ExampleUpload() {
   return (
     <div className="space-y-4 p-6 bg-white rounded-lg shadow">
       <h3 className="text-lg font-semibold">Ejemplo de Upload con useFileUpload</h3>
-      
-      <FileInput
-        label="Selecciona archivos CSV"
-        accept=".csv"
-        onChange={upload.handleFileChange}
-        multiple
-      />
-      
+
+      <FileInput label="Selecciona archivos CSV" accept=".csv" onChange={upload.handleFileChange} multiple />
+
       {upload.files.length > 0 && (
         <div className="text-sm text-gray-600">
-          Archivos seleccionados: {upload.files.map(f => f.name).join(", ")}
+          Archivos seleccionados: {upload.files.map((f) => f.name).join(", ")}
         </div>
       )}
-      
-      <Button 
-        onClick={upload.handleUpload}
-        disabled={upload.loading || upload.files.length === 0}
-      >
+
+      <Button onClick={upload.handleUpload} disabled={upload.loading || upload.files.length === 0}>
         {upload.loading ? "Subiendo..." : "Subir archivos"}
       </Button>
-      
-      {upload.error && (
-        <Alert variant="error">{upload.error}</Alert>
-      )}
-      
+
+      {upload.error && <Alert variant="error">{upload.error}</Alert>}
+
       {upload.results.length > 0 && (
         <div className="space-y-2">
           <h4 className="font-semibold">Resultados:</h4>
@@ -345,11 +304,7 @@ function ExampleUpload() {
                   ✓ Procesado: {result.summary.inserted} insertados, {result.summary.total} total
                 </div>
               )}
-              {result.error && (
-                <div className="text-sm text-red-600">
-                  ✗ Error: {result.error}
-                </div>
-              )}
+              {result.error && <div className="text-sm text-red-600">✗ Error: {result.error}</div>}
             </div>
           ))}
         </div>
@@ -366,24 +321,36 @@ export default function OptimizationExamples() {
       <div>
         <h1 className="text-2xl font-bold mb-4">Ejemplos de Optimizaciones Implementadas</h1>
         <p className="text-gray-600 mb-8">
-          Esta página demuestra el uso de todos los nuevos hooks y utilidades implementados:
-          useForm, useTable, useFileUpload y utilidades de formato.
+          Esta página demuestra el uso de todos los nuevos hooks y utilidades implementados: useForm, useTable,
+          useFileUpload y utilidades de formato.
         </p>
       </div>
-      
+
       <ExampleForm />
       <ExampleTable />
       <ExampleUpload />
-      
+
       <div className="p-6 bg-blue-50 rounded-lg">
         <h3 className="text-lg font-semibold mb-2">Beneficios Implementados</h3>
         <ul className="space-y-1 text-sm text-gray-700">
-          <li>✅ <strong>useForm:</strong> Validación automática con Zod, manejo de errores por campo</li>
-          <li>✅ <strong>useTable:</strong> Ordenamiento, visibilidad de columnas y paginación</li>
-          <li>✅ <strong>useFileUpload:</strong> Upload unificado con validación personalizable</li>
-          <li>✅ <strong>Barrel exports:</strong> Imports más limpios desde /lib y /hooks</li>
-          <li>✅ <strong>Utilidades centralizadas:</strong> Formato de moneda, RUT y fechas</li>
-          <li>✅ <strong>Reducción de código:</strong> ~40% menos duplicación en formularios</li>
+          <li>
+            ✅ <strong>useForm:</strong> Validación automática con Zod, manejo de errores por campo
+          </li>
+          <li>
+            ✅ <strong>useTable:</strong> Ordenamiento, visibilidad de columnas y paginación
+          </li>
+          <li>
+            ✅ <strong>useFileUpload:</strong> Upload unificado con validación personalizable
+          </li>
+          <li>
+            ✅ <strong>Barrel exports:</strong> Imports más limpios desde /lib y /hooks
+          </li>
+          <li>
+            ✅ <strong>Utilidades centralizadas:</strong> Formato de moneda, RUT y fechas
+          </li>
+          <li>
+            ✅ <strong>Reducción de código:</strong> ~40% menos duplicación en formularios
+          </li>
         </ul>
       </div>
     </div>

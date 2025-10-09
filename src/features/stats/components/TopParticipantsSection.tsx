@@ -8,11 +8,7 @@ interface TopParticipantsSectionProps {
   error: string | null;
 }
 
-export default function TopParticipantsSection({
-  data,
-  loading,
-  error,
-}: TopParticipantsSectionProps) {
+export default function TopParticipantsSection({ data, loading, error }: TopParticipantsSectionProps) {
   return (
     <section className="space-y-3 glass-card glass-underlay-gradient p-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -42,9 +38,7 @@ export default function TopParticipantsSection({
                     {item.outgoingCount} egresos · {fmtCLP(item.outgoingAmount)}
                   </p>
                 </div>
-                <span className="text-xs font-semibold text-slate-400">
-                  Total {fmtCLP(item.totalAmount)}
-                </span>
+                <span className="text-xs font-semibold text-slate-400">Total {fmtCLP(item.totalAmount)}</span>
               </li>
             );
           })}

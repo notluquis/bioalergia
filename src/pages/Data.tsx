@@ -3,26 +3,14 @@ import dayjs from "dayjs";
 import { useAuth } from "../context/AuthContext";
 import { useSettings } from "../context/SettingsContext";
 import { logger } from "../lib/logger";
-import {
-  TransactionsFilters,
-} from "../features/transactions/components/TransactionsFilters";
-import {
-  TransactionsColumnToggles,
-} from "../features/transactions/components/TransactionsColumnToggles";
+import { TransactionsFilters } from "../features/transactions/components/TransactionsFilters";
+import { TransactionsColumnToggles } from "../features/transactions/components/TransactionsColumnToggles";
 import { TransactionsTable } from "../features/transactions/components/TransactionsTable";
 import { DailyBalancesPanel } from "../features/balances/components/DailyBalancesPanel";
 import { COLUMN_DEFS, type ColumnKey } from "../features/transactions/constants";
-import type {
-  Filters,
-  DbMovement,
-  LedgerRow,
-} from "../features/transactions/types";
+import type { Filters, DbMovement, LedgerRow } from "../features/transactions/types";
 import type { BalancesApiResponse, BalanceDraft } from "../features/balances/types";
-import {
-  deriveInitialBalance,
-  formatBalanceInput,
-  parseBalanceInput,
-} from "../features/balances/utils";
+import { deriveInitialBalance, formatBalanceInput, parseBalanceInput } from "../features/balances/utils";
 import { useQuickDateRange } from "../features/balances/hooks/useQuickDateRange";
 import { useDailyBalanceManagement } from "../features/balances/hooks/useDailyBalanceManagement";
 import { useTransactionData } from "../features/transactions/hooks/useTransactionData";
@@ -66,38 +54,44 @@ export default function Data() {
 
   const canView = hasRole("GOD", "ADMIN", "ANALYST", "VIEWER");
 
-  const loadBalances = useCallback(
-    async (fromValue: string, toValue: string) => {
-      if (!fromValue || !toValue) {
-        setBalancesReport(null);
-        return;
-      }
+  const loadBalances = useCallback(async (fromValue: string, toValue: string) => {
+    if (!fromValue || !toValue) {
+      setBalancesReport(null);
+      return;
+    }
 
-      setBalancesLoading(true);
-      try {
-        const payload = await fetchBalances(fromValue, toValue);
-        setBalancesReport(payload);
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "No se pudieron obtener los saldos diarios";
-        // setBalancesError(message);
-        setBalancesReport(null);
-      } finally {
-        setBalancesLoading(false);
-      }
-    },
-    []
-  );
+    setBalancesLoading(true);
+    try {
+      const payload = await fetchBalances(fromValue, toValue);
+      setBalancesReport(payload);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "No se pudieron obtener los saldos diarios";
+      // setBalancesError(message);
+      setBalancesReport(null);
+    } finally {
+      setBalancesLoading(false);
+    }
+  }, []);
 
-  const { drafts: balancesDrafts, saving: balancesSaving, error: balancesError, handleDraftChange: handleBalanceDraftChange, handleSave: handleBalanceSave, setError: setBalancesError, setDrafts: setBalancesDrafts } = useDailyBalanceManagement({
+  const {
+    drafts: balancesDrafts,
+    saving: balancesSaving,
+    error: balancesError,
+    handleDraftChange: handleBalanceDraftChange,
+    handleSave: handleBalanceSave,
+    setError: setBalancesError,
+    setDrafts: setBalancesDrafts,
+  } = useDailyBalanceManagement({
     from: filters.from,
     to: filters.to,
     loadBalances,
   });
 
-  const { rows, setRows, loading, error, hasAmounts, page, pageSize, total, refresh, setPageSize, setPage } = useTransactionData({
-    canView,
-    loadBalances,
-  });
+  const { rows, setRows, loading, error, hasAmounts, page, pageSize, total, refresh, setPageSize, setPage } =
+    useTransactionData({
+      canView,
+      loadBalances,
+    });
 
   const ledger = useLedger({
     rows,
@@ -168,9 +162,7 @@ export default function Data() {
   return (
     <section className="space-y-6">
       {!canView ? (
-        <Alert variant="error">
-          No tienes permisos para ver los movimientos almacenados.
-        </Alert>
+        <Alert variant="error">No tienes permisos para ver los movimientos almacenados.</Alert>
       ) : (
         <>
           <TransactionsFilters
@@ -199,9 +191,8 @@ export default function Data() {
             <div className="space-y-2">
               <h1 className="text-2xl font-bold text-[var(--brand-primary)]">Movimientos en la base</h1>
               <p className="max-w-2xl text-sm text-slate-600">
-                Los datos provienen de la tabla <code>mp_transactions</code>. Ajusta el saldo inicial
-                para recalcular el saldo acumulado. Para consultas o soporte, escribe a
-                <strong> {settings.supportEmail}</strong>.
+                Los datos provienen de la tabla <code>mp_transactions</code>. Ajusta el saldo inicial para recalcular el
+                saldo acumulado. Para consultas o soporte, escribe a<strong> {settings.supportEmail}</strong>.
               </p>
             </div>
             <div className="flex flex-wrap items-end gap-3">
@@ -247,10 +238,7 @@ export default function Data() {
                   </option>
                 ))}
               </Input>
-              <Button
-                onClick={() => refresh(filters, page, pageSize)}
-                disabled={loading}
-              >
+              <Button onClick={() => refresh(filters, page, pageSize)} disabled={loading}>
                 {loading ? "Actualizando..." : "Actualizar"}
               </Button>
               <Checkbox

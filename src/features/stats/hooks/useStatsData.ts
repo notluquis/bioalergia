@@ -37,9 +37,7 @@ interface UseStatsDataResult {
 
 export function useStatsData(): UseStatsDataResult {
   const { hasRole } = useAuth();
-  const [from, setFrom] = useState(
-    dayjs().subtract(3, "month").startOf("month").format("YYYY-MM-DD")
-  );
+  const [from, setFrom] = useState(dayjs().subtract(3, "month").startOf("month").format("YYYY-MM-DD"));
   const [to, setTo] = useState(dayjs().format("YYYY-MM-DD"));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -60,28 +58,25 @@ export function useStatsData(): UseStatsDataResult {
     return match ? match.value : "custom";
   }, [quickMonths, from, to]);
 
-  const loadBalances = useCallback(
-    async (fromValue: string, toValue: string) => {
-      if (!fromValue || !toValue) {
-        setBalancesReport(null);
-        return;
-      }
+  const loadBalances = useCallback(async (fromValue: string, toValue: string) => {
+    if (!fromValue || !toValue) {
+      setBalancesReport(null);
+      return;
+    }
 
-      setBalancesLoading(true);
-      setBalancesError(null);
-      try {
-        const payload = await fetchBalances(fromValue, toValue);
-        setBalancesReport(payload);
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "No se pudieron obtener los saldos diarios";
-        setBalancesError(message);
-        setBalancesReport(null);
-      } finally {
-        setBalancesLoading(false);
-      }
-    },
-    []
-  );
+    setBalancesLoading(true);
+    setBalancesError(null);
+    try {
+      const payload = await fetchBalances(fromValue, toValue);
+      setBalancesReport(payload);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "No se pudieron obtener los saldos diarios";
+      setBalancesError(message);
+      setBalancesReport(null);
+    } finally {
+      setBalancesLoading(false);
+    }
+  }, []);
 
   const loadLeaderboard = useCallback(async (fromValue: string, toValue: string) => {
     setParticipantsLoading(true);
@@ -104,25 +99,28 @@ export function useStatsData(): UseStatsDataResult {
     }
   }, []);
 
-  const fetchStatsWithRange = useCallback(async (fromValue: string, toValue: string) => {
-    if (!canView) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const params = new URLSearchParams();
-      if (fromValue) params.set("from", fromValue);
-      if (toValue) params.set("to", toValue);
-      const payload = await apiClient.get<StatsResponse>(`/api/transactions/stats?${params.toString()}`);
-      setData(payload);
-      await Promise.all([loadBalances(fromValue, toValue), loadLeaderboard(fromValue, toValue)]);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Error inesperado";
-      setError(message);
-      setData(null);
-    } finally {
-      setLoading(false);
-    }
-  }, [canView, loadBalances, loadLeaderboard]);
+  const fetchStatsWithRange = useCallback(
+    async (fromValue: string, toValue: string) => {
+      if (!canView) return;
+      setLoading(true);
+      setError(null);
+      try {
+        const params = new URLSearchParams();
+        if (fromValue) params.set("from", fromValue);
+        if (toValue) params.set("to", toValue);
+        const payload = await apiClient.get<StatsResponse>(`/api/transactions/stats?${params.toString()}`);
+        setData(payload);
+        await Promise.all([loadBalances(fromValue, toValue), loadLeaderboard(fromValue, toValue)]);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Error inesperado";
+        setError(message);
+        setData(null);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [canView, loadBalances, loadLeaderboard]
+  );
 
   const fetchStats = useCallback(async () => {
     await fetchStatsWithRange(from, to);

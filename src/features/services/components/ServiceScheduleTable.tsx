@@ -18,7 +18,12 @@ function statusBadge(status: ServiceSchedule["status"], dueDate: string) {
   return due.isBefore(today) ? "bg-rose-100 text-rose-700" : "bg-slate-100 text-slate-600";
 }
 
-export function ServiceScheduleTable({ schedules, canManage, onRegisterPayment, onUnlinkPayment }: ServiceScheduleTableProps) {
+export function ServiceScheduleTable({
+  schedules,
+  canManage,
+  onRegisterPayment,
+  onUnlinkPayment,
+}: ServiceScheduleTableProps) {
   return (
     <div className="glass-card glass-underlay-gradient overflow-hidden">
       <table className="min-w-full text-sm text-slate-600">
@@ -54,19 +59,21 @@ export function ServiceScheduleTable({ schedules, canManage, onRegisterPayment, 
                     </div>
                   )}
                   {schedule.late_fee_amount === 0 && schedule.expected_amount !== schedule.effective_amount && (
-                    <div className="text-[11px] text-slate-400">
-                      Monto ajustado
-                    </div>
+                    <div className="text-[11px] text-slate-400">Monto ajustado</div>
                   )}
                   {schedule.overdue_days > 0 && schedule.status === "PENDING" && (
                     <div className="text-[11px] text-rose-400">{schedule.overdue_days} días de atraso</div>
                   )}
                   {schedule.late_fee_amount > 0 && (
-                    <div className="text-[11px] text-slate-400">Base ${schedule.expected_amount.toLocaleString("es-CL")}</div>
+                    <div className="text-[11px] text-slate-400">
+                      Base ${schedule.expected_amount.toLocaleString("es-CL")}
+                    </div>
                   )}
                 </td>
                 <td className="px-4 py-3">
-                  <span className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wide ${badgeClass}`}>
+                  <span
+                    className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wide ${badgeClass}`}
+                  >
                     {schedule.status === "PAID"
                       ? "Pagado"
                       : schedule.status === "PARTIAL"
@@ -78,9 +85,7 @@ export function ServiceScheduleTable({ schedules, canManage, onRegisterPayment, 
                 </td>
                 <td className="px-4 py-3 text-slate-600">
                   <div className="space-y-1">
-                    <div>
-                      {schedule.paid_amount != null ? `$${schedule.paid_amount.toLocaleString("es-CL")}` : "—"}
-                    </div>
+                    <div>{schedule.paid_amount != null ? `$${schedule.paid_amount.toLocaleString("es-CL")}` : "—"}</div>
                     <div className="text-[11px] text-slate-400">
                       {schedule.paid_date ? dayjs(schedule.paid_date).format("DD MMM YYYY") : "—"}
                     </div>
@@ -102,21 +107,12 @@ export function ServiceScheduleTable({ schedules, canManage, onRegisterPayment, 
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap gap-2">
                       {(schedule.status === "PENDING" || schedule.status === "PARTIAL") && (
-                        <Button
-                          type="button"
-                          size="xs"
-                          onClick={() => onRegisterPayment(schedule)}
-                        >
+                        <Button type="button" size="xs" onClick={() => onRegisterPayment(schedule)}>
                           Registrar pago
                         </Button>
                       )}
                       {schedule.transaction && (
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          size="xs"
-                          onClick={() => onUnlinkPayment(schedule)}
-                        >
+                        <Button type="button" variant="secondary" size="xs" onClick={() => onUnlinkPayment(schedule)}>
                           Desvincular
                         </Button>
                       )}

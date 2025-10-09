@@ -57,7 +57,7 @@ export default function TimesheetDetailTable({
   // Función para autocompletar hora (ej: "10" -> "10:00", "930" -> "09:30")
   const formatTimeInput = (value: string) => {
     if (!value.trim()) return "";
-    
+
     // Si ya está en formato HH:MM, validar y devolver
     if (/^[0-9]{1,2}:[0-9]{2}$/.test(value)) {
       const [hours, minutes] = value.split(":").map(Number);
@@ -66,11 +66,11 @@ export default function TimesheetDetailTable({
       }
       return value;
     }
-    
+
     // Autocompletar números (ej: "10" -> "10:00", "930" -> "09:30")
     const cleaned = value.replace(/[^0-9]/g, "");
     if (cleaned.length === 0) return "";
-    
+
     if (cleaned.length === 1 || cleaned.length === 2) {
       const hours = parseInt(cleaned, 10);
       if (hours >= 0 && hours <= 23) {
@@ -83,31 +83,31 @@ export default function TimesheetDetailTable({
         return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
       }
     }
-    
+
     return value;
   };
 
   // Función para calcular horas trabajadas entre entrada y salida
   const calculateWorkedHours = (startTime: string, endTime: string) => {
     if (!startTime || !endTime || startTime === "00:00" || endTime === "00:00") return "00:00";
-    
+
     const start = timeToMinutes(startTime);
     const end = timeToMinutes(endTime);
-    
+
     if (start === null || end === null) return "00:00";
-    
+
     let totalMinutes = end - start;
-    
+
     // Si end < start, asumimos que cruza medianoche (ej: 22:00 a 06:00)
     if (totalMinutes < 0) {
-      totalMinutes = (24 * 60) + totalMinutes;
+      totalMinutes = 24 * 60 + totalMinutes;
     }
-    
+
     const hours = Math.floor(totalMinutes / 60);
     const minutes = totalMinutes % 60;
     return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
   };
-  
+
   // Función para convertir HH:MM a minutos
   const timeToMinutes = (time: string): number | null => {
     if (!/^[0-9]{1,2}:[0-9]{2}$/.test(time)) return null;
@@ -115,15 +115,15 @@ export default function TimesheetDetailTable({
     if (hours < 0 || hours > 23 || minutes < 0 || minutes >= 60) return null;
     return hours * 60 + minutes;
   };
-  
+
   // Función para calcular horas trabajadas totales (normal + extra)
   const calculateTotalHours = (worked: string, overtime: string) => {
     const workedMinutes = parseDuration(worked) || 0;
     const overtimeMinutes = parseDuration(overtime) || 0;
     const totalMinutes = workedMinutes + overtimeMinutes;
-    
+
     if (totalMinutes === 0) return "00:00";
-    
+
     const hours = Math.floor(totalMinutes / 60);
     const minutes = totalMinutes % 60;
     return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
@@ -133,15 +133,15 @@ export default function TimesheetDetailTable({
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Element;
-      if (!target.closest('.dropdown-menu') && !target.closest('.dropdown-trigger')) {
-        document.querySelectorAll('.dropdown-menu').forEach(menu => {
-          menu.classList.add('hidden');
+      if (!target.closest(".dropdown-menu") && !target.closest(".dropdown-trigger")) {
+        document.querySelectorAll(".dropdown-menu").forEach((menu) => {
+          menu.classList.add("hidden");
         });
       }
     };
 
-    document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
   }, []);
 
   return (
@@ -149,9 +149,7 @@ export default function TimesheetDetailTable({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="text-sm text-slate-600">
           <span className="font-semibold">{monthLabel}</span>
-          {selectedEmployee && (
-            <span className="ml-2 text-slate-500">· {selectedEmployee.full_name}</span>
-          )}
+          {selectedEmployee && <span className="ml-2 text-slate-500">· {selectedEmployee.full_name}</span>}
         </div>
         {canEdit && (
           <div className="flex items-center gap-2">
@@ -171,9 +169,7 @@ export default function TimesheetDetailTable({
       </div>
 
       {canEdit && selectedEmployee?.id && (
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          {/* ...existing code... */}
-        </div>
+        <div className="flex flex-wrap items-center justify-between gap-3">{/* ...existing code... */}</div>
       )}
 
       <div className="overflow-x-auto muted-scrollbar transform-gpu">
@@ -292,18 +288,20 @@ export default function TimesheetDetailTable({
                     <td className="px-3 py-2 text-slate-700 tabular-nums">{worked}</td>
                     {/* Extras */}
                     <td className="px-3 py-2">
-                      {(!row.overtime?.trim() && !openOvertimeEditors.has(row.date)) ? (
+                      {!row.overtime?.trim() && !openOvertimeEditors.has(row.date) ? (
                         canEditRow ? (
                           <button
                             type="button"
                             className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/60 bg-white/70 text-[var(--brand-primary)] shadow hover:bg-white/90"
                             aria-label="Agregar horas extra"
                             title="Agregar horas extra"
-                            onClick={() => setOpenOvertimeEditors(prev => {
-                              const next = new Set(prev);
-                              next.add(row.date);
-                              return next;
-                            })}
+                            onClick={() =>
+                              setOpenOvertimeEditors((prev) => {
+                                const next = new Set(prev);
+                                next.add(row.date);
+                                return next;
+                              })
+                            }
                           >
                             +
                           </button>
@@ -321,7 +319,7 @@ export default function TimesheetDetailTable({
                           onBlur={() => {
                             const value = (row.overtime || "").trim();
                             if (!value) {
-                              setOpenOvertimeEditors(prev => {
+                              setOpenOvertimeEditors((prev) => {
                                 const next = new Set(prev);
                                 next.delete(row.date);
                                 return next;
@@ -359,16 +357,16 @@ export default function TimesheetDetailTable({
                             className="dropdown-menu hidden absolute right-0 z-20 mt-2 w-44 origin-top-right rounded-xl bg-white p-1 shadow-xl ring-1 ring-black/5"
                             role="menu"
                           >
-                              <button
-                                className="w-full rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
-                                role="menuitem"
-                                onClick={() => {
-                                  toggleMenu(`menu-${row.date}`);
-                                  setCommentPreview({ date: row.date, text: row.comment || "(Sin comentario)" });
-                                }}
-                              >
-                                Ver comentario
-                              </button>
+                            <button
+                              className="w-full rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+                              role="menuitem"
+                              onClick={() => {
+                                toggleMenu(`menu-${row.date}`);
+                                setCommentPreview({ date: row.date, text: row.comment || "(Sin comentario)" });
+                              }}
+                            >
+                              Ver comentario
+                            </button>
                             {dirty && (
                               <button
                                 className="w-full rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
@@ -381,20 +379,21 @@ export default function TimesheetDetailTable({
                                 Deshacer cambios
                               </button>
                             )}
-                              <button
-                                className="w-full rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
-                                role="menuitem"
-                                onClick={() => {
-                                  toggleMenu(`menu-${row.date}`);
-                                  setNotWorkedDays(prev => {
-                                    const next = new Set(prev);
-                                    if (next.has(row.date)) next.delete(row.date); else next.add(row.date);
-                                    return next;
-                                  });
-                                }}
-                              >
-                                {isMarkedNotWorked ? "Marcar como trabajado" : "Día no trabajado"}
-                              </button>
+                            <button
+                              className="w-full rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+                              role="menuitem"
+                              onClick={() => {
+                                toggleMenu(`menu-${row.date}`);
+                                setNotWorkedDays((prev) => {
+                                  const next = new Set(prev);
+                                  if (next.has(row.date)) next.delete(row.date);
+                                  else next.add(row.date);
+                                  return next;
+                                });
+                              }}
+                            >
+                              {isMarkedNotWorked ? "Marcar como trabajado" : "Día no trabajado"}
+                            </button>
                             {row.entryId && (
                               <button
                                 className="w-full rounded-lg px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50"

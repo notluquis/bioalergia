@@ -56,16 +56,17 @@ export function useFileUpload({
 
     // Validación opcional de archivos
     if (validator) {
-      const analyses = await Promise.all(
-        selected.map(async (file) => ({ file, ...(await validator(file)) }))
-      );
+      const analyses = await Promise.all(selected.map(async (file) => ({ file, ...(await validator(file)) })));
 
       const problematic = analyses.filter((item) => item.missing.length);
-      logger.info(`${logContext} archivos seleccionados`, analyses.map(({ file, headersCount, missing }) => ({
-        file: file.name,
-        headersCount,
-        missing,
-      })));
+      logger.info(
+        `${logContext} archivos seleccionados`,
+        analyses.map(({ file, headersCount, missing }) => ({
+          file: file.name,
+          headersCount,
+          missing,
+        }))
+      );
 
       if (problematic.length && confirmOnValidationWarning) {
         const message = problematic

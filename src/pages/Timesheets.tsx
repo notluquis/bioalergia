@@ -9,24 +9,17 @@ import {
   bulkUpsertTimesheets,
   deleteTimesheet,
 } from "../features/timesheets/api";
-import type { TimesheetEntry, BulkRow, TimesheetSummaryRow } from "../features/timesheets/types";
-import { buildBulkRows, hasRowData, isRowDirty, parseDuration, formatDateLabel, computeExtraAmount } from "../features/timesheets/utils";
+import type { BulkRow, TimesheetSummaryRow } from "../features/timesheets/types";
+import { buildBulkRows, hasRowData, isRowDirty, parseDuration, formatDateLabel } from "../features/timesheets/utils";
 import TimesheetSummaryTable from "../features/timesheets/components/TimesheetSummaryTable";
 import TimesheetDetailTable from "../features/timesheets/components/TimesheetDetailTable";
 import Alert from "../components/Alert";
-import Input from "../components/Input";
+// Removed unused Input component after cleanup
 import { useMonths } from "../features/timesheets/hooks/useMonths";
 
 import TimesheetExportPDF from "../features/timesheets/components/TimesheetExportPDF";
 
-const EMPTY_BULK_ROW = {
-  date: "",
-  entrada: "",     // Hora de entrada (ej: "09:00")
-  salida: "",      // Hora de salida (ej: "18:00")  
-  overtime: "",    // Horas extra (ej: "02:00")
-  comment: "",
-  entryId: null as number | null,
-};
+// Removed unused EMPTY_BULK_ROW and computeExtraAmount during cleanup.
 
 export default function TimesheetsPage() {
   // Utility to ensure month is always YYYY-MM
@@ -37,10 +30,10 @@ export default function TimesheetsPage() {
     if (d.isValid()) return d.format("YYYY-MM");
     return dayjs().format("YYYY-MM"); // fallback to current month
   }
-  const { hasRole } = useAuth();
-  const canEdit = hasRole("GOD", "ADMIN", "ANALYST");
+  useAuth(); // invoke to ensure auth refresh (no direct usage of hasRole here)
+  // canEdit removed (unused in current UI flow)
 
-  const { months, loading: loadingMonths, error: errorMonths } = useMonths();
+  const { months, loading: loadingMonths } = useMonths();
   const [month, setMonth] = useState<string>("");
   const [visibleCount, setVisibleCount] = useState(5);
   const [summary, setSummary] = useState<{ employees: TimesheetSummaryRow[]; totals: any } | null>(null);
@@ -73,16 +66,10 @@ export default function TimesheetsPage() {
     return dayjs(`${year}-${monthStr}-01`).format("MMMM YYYY");
   }, [month]);
 
-  const employeeOptions = useMemo(
-    () => employees.filter((employee) => employee.status === "ACTIVE"),
-    [employees]
-  );
+  const employeeOptions = useMemo(() => employees.filter((employee) => employee.status === "ACTIVE"), [employees]);
 
   const selectedEmployee = useMemo(
-    () =>
-      selectedEmployeeId
-        ? employees.find((employee) => employee.id === selectedEmployeeId) ?? null
-        : null,
+    () => (selectedEmployeeId ? (employees.find((employee) => employee.id === selectedEmployeeId) ?? null) : null),
     [employees, selectedEmployeeId]
   );
 
@@ -100,10 +87,7 @@ export default function TimesheetsPage() {
     }
   }, [selectedEmployeeId, month, selectedEmployee?.hourly_rate]);
 
-  const pendingCount = useMemo(
-    () => bulkRows.filter((row) => !row.entryId && hasRowData(row)).length,
-    [bulkRows]
-  );
+  const pendingCount = useMemo(() => bulkRows.filter((row) => !row.entryId && hasRowData(row)).length, [bulkRows]);
 
   const modifiedCount = useMemo(
     () => bulkRows.filter((row, index) => isRowDirty(row, initialRows[index])).length,
@@ -132,7 +116,7 @@ export default function TimesheetsPage() {
       const data = await fetchTimesheetSummary(formattedMonth);
       setSummary({ employees: data.employees, totals: data.totals });
       // Preferir seleccionar un trabajador que tenga datos en el mes
-      const hasDataIds = new Set(data.employees.map(e => e.employeeId));
+      const hasDataIds = new Set(data.employees.map((e) => e.employeeId));
       if (!selectedEmployeeId && data.employees.length) {
         setSelectedEmployeeId(data.employees[0].employeeId);
       } else if (selectedEmployeeId && !hasDataIds.has(selectedEmployeeId) && data.employees.length) {
@@ -291,27 +275,32 @@ export default function TimesheetsPage() {
         <div className="space-y-2">
           <h1 className="text-2xl font-bold text-[var(--brand-primary)]">Registro de horas y pagos</h1>
           <p className="max-w-2xl text-sm text-slate-600">
-            Consolida horas trabajadas, extras y montos líquidos por trabajador. Selecciona el mes, revisa el
-            resumen y completa la tabla diaria sin volver a guardar cada fila.
+            Consolida horas trabajadas, extras y montos líquidos por trabajador. Selecciona el mes, revisa el resumen y
+            completa la tabla diaria sin volver a guardar cada fila.
           </p>
         </div>
         <div className="flex flex-col gap-2">
           <label className="text-xs font-semibold text-slate-500">Periodo</label>
           <select
             value={month}
-            onChange={e => { setMonth(e.target.value); setInfo(null); }}
+            onChange={(e) => {
+              setMonth(e.target.value);
+              setInfo(null);
+            }}
             className="rounded border px-3 py-2 text-sm bg-white"
             disabled={loadingMonths}
           >
-            {months.slice(0, visibleCount).map(m => (
-              <option key={m} value={m}>{dayjs(m + "-01").format("MMMM YYYY")}</option>
+            {months.slice(0, visibleCount).map((m) => (
+              <option key={m} value={m}>
+                {dayjs(m + "-01").format("MMMM YYYY")}
+              </option>
             ))}
           </select>
           {months.length > visibleCount && (
             <button
               type="button"
               className="text-xs text-[var(--brand-primary)] underline mt-1"
-              onClick={() => setVisibleCount(c => c + 4)}
+              onClick={() => setVisibleCount((c) => c + 4)}
             >
               Ver más meses...
             </button>

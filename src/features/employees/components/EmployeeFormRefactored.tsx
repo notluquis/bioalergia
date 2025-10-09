@@ -67,12 +67,12 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
         bank_name: values.bank_name || null,
         bank_account_type: values.bank_account_type || null,
         bank_account_number: values.bank_account_number || null,
-    salary_type: values.salary_type === "fixed" ? "fixed" : "hourly" as "hourly" | "fixed",
-    hourly_rate: values.salary_type === "hourly" ? values.hourly_rate : undefined,
-    fixed_salary: values.salary_type === "fixed" ? values.fixed_salary : undefined,
-    overtime_rate: values.overtime_rate || null,
-    retention_rate: values.retention_rate,
-    metadata: { ...(employee?.metadata ?? {}), no_fixed_schedule: values.no_fixed_schedule ?? false },
+        salary_type: values.salary_type === "fixed" ? "fixed" : ("hourly" as "hourly" | "fixed"),
+        hourly_rate: values.salary_type === "hourly" ? values.hourly_rate : undefined,
+        fixed_salary: values.salary_type === "fixed" ? values.fixed_salary : undefined,
+        overtime_rate: values.overtime_rate || null,
+        retention_rate: values.retention_rate,
+        metadata: { ...(employee?.metadata ?? {}), no_fixed_schedule: values.no_fixed_schedule ?? false },
       };
 
       if (employee?.id) {
@@ -119,10 +119,12 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
               type="checkbox"
               id="no-fixed-schedule"
               checked={form.values.no_fixed_schedule ?? false}
-              onChange={e => form.setValue("no_fixed_schedule", e.target.checked)}
+              onChange={(e) => form.setValue("no_fixed_schedule", e.target.checked)}
               className="mr-2"
             />
-            <label htmlFor="no-fixed-schedule" className="text-xs font-semibold">No tiene horario fijo</label>
+            <label htmlFor="no-fixed-schedule" className="text-xs font-semibold">
+              No tiene horario fijo
+            </label>
           </div>
         )}
         <div>
@@ -146,9 +148,7 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
             value={typeof form.values.role === "boolean" ? "" : form.values.role}
             required
           />
-          {form.getFieldError("role") && (
-            <p className="mt-1 text-xs text-red-600">{form.getFieldError("role")}</p>
-          )}
+          {form.getFieldError("role") && <p className="mt-1 text-xs text-red-600">{form.getFieldError("role")}</p>}
         </div>
 
         <div>
@@ -158,9 +158,7 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
             {...form.getFieldProps("email")}
             value={typeof form.values.email === "boolean" ? "" : form.values.email}
           />
-          {form.getFieldError("email") && (
-            <p className="mt-1 text-xs text-red-600">{form.getFieldError("email")}</p>
-          )}
+          {form.getFieldError("email") && <p className="mt-1 text-xs text-red-600">{form.getFieldError("email")}</p>}
         </div>
 
         <div>
@@ -188,7 +186,9 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
             label="Tipo de cuenta"
             type="select"
             value={form.values.bank_account_type || ""}
-            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => form.setValue("bank_account_type", e.target.value || "")}
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+              form.setValue("bank_account_type", e.target.value || "")
+            }
           >
             <option value="">Selecciona…</option>
             <option value="RUT">RUT</option>
@@ -211,7 +211,7 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
           <select
             className="w-full border rounded px-2 py-1 text-sm"
             value={form.values.salary_type}
-            onChange={e => form.setValue("salary_type", e.target.value === "fixed" ? "fixed" : "hourly")}
+            onChange={(e) => form.setValue("salary_type", e.target.value === "fixed" ? "fixed" : "hourly")}
           >
             <option value="hourly">Por hora</option>
             <option value="fixed">Sueldo fijo mensual</option>
@@ -236,8 +236,8 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
             <Input
               label="Sueldo fijo mensual (CLP)"
               type="number"
-              value={typeof form.values.fixed_salary === "boolean" ? "" : form.values.fixed_salary ?? ""}
-              onChange={e => form.setValue("fixed_salary", e.target.value)}
+              value={typeof form.values.fixed_salary === "boolean" ? "" : (form.values.fixed_salary ?? "")}
+              onChange={(e) => form.setValue("fixed_salary", e.target.value)}
               required
             />
           )}
@@ -275,9 +275,7 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
       </div>
 
       {!form.isValid && Object.keys(form.errors).length > 0 && (
-        <Alert variant="error">
-          Por favor corrige los errores en el formulario antes de continuar.
-        </Alert>
+        <Alert variant="error">Por favor corrige los errores en el formulario antes de continuar.</Alert>
       )}
 
       <div className="flex justify-end gap-2">

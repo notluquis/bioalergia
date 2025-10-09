@@ -1,4 +1,4 @@
-import express, { Response as ExpressResponse } from "express";
+import express from "express";
 import multer from "multer";
 import Papa from "papaparse";
 import type { ParseError } from "papaparse";
@@ -8,7 +8,6 @@ import {
   authenticate,
   requireRole,
 } from "../lib/index.js";
-import { SQLBuilder } from "../lib/database.js";
 import { logEvent, logWarn, requestContext } from "../lib/logger.js";
 import {
   DEFAULT_SETTINGS,

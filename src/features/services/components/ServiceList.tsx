@@ -31,7 +31,11 @@ export function ServiceList({ services, selectedId, onSelect, onCreateRequest, c
         {services.map((service) => {
           const isActive = service.public_id === selectedId;
           const overdue = service.overdue_count > 0;
-          const indicatorColor = overdue ? "bg-rose-400" : service.pending_count === 0 ? "bg-emerald-400" : "bg-amber-400";
+          const indicatorColor = overdue
+            ? "bg-rose-400"
+            : service.pending_count === 0
+              ? "bg-emerald-400"
+              : "bg-amber-400";
 
           const frequencyLabels: Record<ServiceFrequency, string> = {
             WEEKLY: "Semanal",

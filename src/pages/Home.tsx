@@ -92,7 +92,12 @@ export default function Home() {
       <section className="grid gap-4 md:grid-cols-3">
         <MetricCard title="Ingresos" value={totals.in} accent="emerald" loading={statsLoading} />
         <MetricCard title="Egresos" value={totals.out} accent="rose" loading={statsLoading} />
-        <MetricCard title="Neto" value={totals.net} accent={totals.net >= 0 ? "emerald" : "rose"} loading={statsLoading} />
+        <MetricCard
+          title="Neto"
+          value={totals.net}
+          accent={totals.net >= 0 ? "emerald" : "rose"}
+          loading={statsLoading}
+        />
       </section>
 
       {statsError && <Alert variant="error">{statsError}</Alert>}

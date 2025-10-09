@@ -37,20 +37,13 @@ export default function Input(props: InputProps) {
     );
   } else if (type === "select") {
     control = (
-      <select
-        {...(rest as React.SelectHTMLAttributes<HTMLSelectElement>)}
-        className={`${sharedClasses} pr-8`}
-      >
+      <select {...(rest as React.SelectHTMLAttributes<HTMLSelectElement>)} className={`${sharedClasses} pr-8`}>
         {children}
       </select>
     );
   } else {
     control = (
-      <input
-        type={type}
-        {...(rest as React.InputHTMLAttributes<HTMLInputElement>)}
-        className={sharedClasses}
-      />
+      <input type={type} {...(rest as React.InputHTMLAttributes<HTMLInputElement>)} className={sharedClasses} />
     );
   }
 

@@ -97,8 +97,8 @@ export default function App() {
   };
 
   const displayName = user?.name || (user?.email?.split("@")[0] ?? "");
-  const capitalizedName = displayName.split(" ")[0].charAt(0).toUpperCase() + displayName.split(" ")[0].slice(1).toLowerCase();
-
+  const capitalizedName =
+    displayName.split(" ")[0].charAt(0).toUpperCase() + displayName.split(" ")[0].slice(1).toLowerCase();
 
   // Sidebar state: visible/hidden
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
@@ -123,7 +123,6 @@ export default function App() {
 
   return (
     <div className="layout-container relative mx-auto flex min-h-screen max-w-[1440px] gap-6 px-4 py-6 text-slate-900 sm:px-6 lg:px-10">
-
       {/* Hamburger button: always visible */}
       <button
         className="fixed left-4 top-6 z-40 flex h-10 w-10 items-center justify-center rounded-full bg-white/80 shadow-lg"
@@ -148,7 +147,6 @@ export default function App() {
           onClick={() => setSidebarOpen(false)}
         />
       )}
-
 
       {/* Sidebar: animated, overlay on mobile, collapsible on desktop */}
       <aside
@@ -189,7 +187,8 @@ export default function App() {
       </aside>
 
       {/* Main content */}
-      <div className="layout-container flex flex-1 flex-col gap-6 min-w-0">{/* min-w-0 permite que se encoja */}
+      <div className="layout-container flex flex-1 flex-col gap-6 min-w-0">
+        {/* min-w-0 permite que se encoja */}
         <header className="glass-panel glass-panel--tinted flex items-center justify-between rounded-3xl px-6 py-4">
           <h1 className="text-xl font-semibold text-slate-800 drop-shadow-sm">{title}</h1>
           <div className="flex items-center gap-4">

@@ -2,7 +2,16 @@ import { useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
 import Input from "../../../components/Input";
 import Button from "../../../components/Button";
-import type { CreateServicePayload, ServiceEmissionMode, ServiceFrequency, ServiceLateFeeMode, ServiceOwnership, ServiceObligationType, ServiceRecurrenceType, ServiceType } from "../types";
+import type {
+  CreateServicePayload,
+  ServiceEmissionMode,
+  ServiceFrequency,
+  ServiceLateFeeMode,
+  ServiceOwnership,
+  ServiceObligationType,
+  ServiceRecurrenceType,
+  ServiceType,
+} from "../types";
 import { fetchCounterparts, fetchCounterpart } from "../../counterparts/api";
 import type { Counterpart, CounterpartAccount } from "../../counterparts/types";
 
@@ -248,10 +257,10 @@ export function ServiceForm({ onSubmit, onCancel }: ServiceFormProps) {
         counterpartAccountId: form.counterpartAccountId ?? null,
         accountReference: form.accountReference?.trim() ? form.accountReference.trim() : undefined,
         emissionMode,
-        emissionDay: emissionMode === "FIXED_DAY" ? form.emissionDay ?? null : null,
-        emissionStartDay: emissionMode === "DATE_RANGE" ? form.emissionStartDay ?? null : null,
-        emissionEndDay: emissionMode === "DATE_RANGE" ? form.emissionEndDay ?? null : null,
-        emissionExactDate: emissionMode === "SPECIFIC_DATE" ? form.emissionExactDate ?? undefined : null,
+        emissionDay: emissionMode === "FIXED_DAY" ? (form.emissionDay ?? null) : null,
+        emissionStartDay: emissionMode === "DATE_RANGE" ? (form.emissionStartDay ?? null) : null,
+        emissionEndDay: emissionMode === "DATE_RANGE" ? (form.emissionEndDay ?? null) : null,
+        emissionExactDate: emissionMode === "SPECIFIC_DATE" ? (form.emissionExactDate ?? undefined) : null,
         dueDay: form.dueDay ?? null,
         startDate: form.startDate,
         monthsToGenerate: form.recurrenceType === "ONE_OFF" || form.frequency === "ONCE" ? 1 : form.monthsToGenerate,
@@ -260,9 +269,9 @@ export function ServiceForm({ onSubmit, onCancel }: ServiceFormProps) {
           lateFeeMode === "NONE"
             ? null
             : form.lateFeeValue === null || form.lateFeeValue === undefined
-            ? null
-            : Number(form.lateFeeValue),
-        lateFeeGraceDays: lateFeeMode === "NONE" ? null : form.lateFeeGraceDays ?? null,
+              ? null
+              : Number(form.lateFeeValue),
+        lateFeeGraceDays: lateFeeMode === "NONE" ? null : (form.lateFeeGraceDays ?? null),
         notes: form.notes?.trim() ? form.notes.trim() : undefined,
       };
 
@@ -362,7 +371,7 @@ export function ServiceForm({ onSubmit, onCancel }: ServiceFormProps) {
       </section>
 
       <section className="grid gap-4 md:grid-cols-2">
-       <Input
+        <Input
           label="Empresa / contraparte"
           type="select"
           value={form.counterpartId ? String(form.counterpartId) : ""}
@@ -382,20 +391,17 @@ export function ServiceForm({ onSubmit, onCancel }: ServiceFormProps) {
           type="select"
           value={form.counterpartAccountId ? String(form.counterpartAccountId) : ""}
           onChange={(event) =>
-            handleChange(
-              "counterpartAccountId",
-              event.target.value ? Number(event.target.value) : null
-            )
+            handleChange("counterpartAccountId", event.target.value ? Number(event.target.value) : null)
           }
           disabled={!form.counterpartId || accountsLoading}
           helper={
             counterpartsError
               ? "No se pudo cargar las cuentas"
               : counterpartsLoading
-              ? "Cargando opciones..."
-              : form.counterpartId && !accounts.length
-              ? "Esta contraparte aún no tiene cuentas agregadas"
-              : undefined
+                ? "Cargando opciones..."
+                : form.counterpartId && !accounts.length
+                  ? "Esta contraparte aún no tiene cuentas agregadas"
+                  : undefined
           }
         >
           <option value="">Sin cuenta específica</option>
@@ -476,9 +482,7 @@ export function ServiceForm({ onSubmit, onCancel }: ServiceFormProps) {
             label="Día emisión"
             type="number"
             value={form.emissionDay ?? ""}
-            onChange={(event) =>
-              handleChange("emissionDay", event.target.value ? Number(event.target.value) : null)
-            }
+            onChange={(event) => handleChange("emissionDay", event.target.value ? Number(event.target.value) : null)}
             min={1}
             max={31}
           />
@@ -531,7 +535,9 @@ export function ServiceForm({ onSubmit, onCancel }: ServiceFormProps) {
           label="Modo de monto"
           type="select"
           value={form.amountIndexation ?? "NONE"}
-          onChange={(event) => handleChange("amountIndexation", event.target.value as ServiceFormState["amountIndexation"])}
+          onChange={(event) =>
+            handleChange("amountIndexation", event.target.value as ServiceFormState["amountIndexation"])
+          }
         >
           {INDEXATION_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>
@@ -565,7 +571,9 @@ export function ServiceForm({ onSubmit, onCancel }: ServiceFormProps) {
               label="Días de gracia"
               type="number"
               value={form.lateFeeGraceDays ?? ""}
-              onChange={(event) => handleChange("lateFeeGraceDays", event.target.value ? Number(event.target.value) : null)}
+              onChange={(event) =>
+                handleChange("lateFeeGraceDays", event.target.value ? Number(event.target.value) : null)
+              }
               min={0}
               max={31}
             />

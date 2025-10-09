@@ -31,11 +31,12 @@ export function LoanList({ loans, selectedId, onSelect, onCreateRequest, canMana
         {loans.map((loan) => {
           const isActive = loan.public_id === selectedId;
           const paidRatio = loan.total_expected > 0 ? loan.total_paid / loan.total_expected : 0;
-          const indicatorColor = loan.status === "COMPLETED"
-            ? "bg-emerald-400"
-            : loan.status === "DEFAULTED"
-              ? "bg-rose-400"
-              : "bg-amber-400";
+          const indicatorColor =
+            loan.status === "COMPLETED"
+              ? "bg-emerald-400"
+              : loan.status === "DEFAULTED"
+                ? "bg-rose-400"
+                : "bg-amber-400";
 
           return (
             <button
@@ -58,15 +59,11 @@ export function LoanList({ loans, selectedId, onSelect, onCreateRequest, canMana
                 <span className={`h-2.5 w-2.5 rounded-full ${indicatorColor} shadow-inner`} aria-hidden="true" />
               </div>
               <div className="mt-2 flex flex-wrap items-center gap-4 text-xs">
-                <span className="font-semibold text-slate-700">
-                  ${loan.remaining_amount.toLocaleString("es-CL")}
-                </span>
+                <span className="font-semibold text-slate-700">${loan.remaining_amount.toLocaleString("es-CL")}</span>
                 <span className="text-slate-500">
                   {loan.paid_installments}/{loan.total_installments} cuotas
                 </span>
-                <span className="text-slate-500">
-                  Inicio {dayjs(loan.start_date).format("DD MMM YYYY")}
-                </span>
+                <span className="text-slate-500">Inicio {dayjs(loan.start_date).format("DD MMM YYYY")}</span>
               </div>
               <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-white/60">
                 <div

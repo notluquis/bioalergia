@@ -1,4 +1,3 @@
-import { useState } from "react";
 import dayjs from "dayjs";
 import { z } from "zod";
 import { useForm } from "../../../hooks";
@@ -12,7 +11,10 @@ const loanFormSchema = z.object({
   borrowerName: z.string().trim().min(1, "El beneficiario es requerido"),
   borrowerType: z.enum(["PERSON", "COMPANY"]),
   principalAmount: z.coerce.number().positive("El monto principal debe ser mayor a 0"),
-  interestRate: z.coerce.number().min(0, "La tasa de interés debe ser mayor o igual a 0").max(100, "La tasa no puede ser mayor a 100%"),
+  interestRate: z.coerce
+    .number()
+    .min(0, "La tasa de interés debe ser mayor o igual a 0")
+    .max(100, "La tasa no puede ser mayor a 100%"),
   interestType: z.enum(["SIMPLE", "COMPOUND"]),
   frequency: z.enum(["WEEKLY", "BIWEEKLY", "MONTHLY"]),
   totalInstallments: z.coerce.number().int().min(1, "Debe tener al menos 1 cuota"),
@@ -28,8 +30,6 @@ interface LoanFormProps {
   onCancel: () => void;
 }
 
-const DEFAULT_FREQUENCY: CreateLoanPayload["frequency"] = "WEEKLY";
-const DEFAULT_INTEREST_TYPE: CreateLoanPayload["interestType"] = "SIMPLE";
 
 export function LoanForm({ onSubmit, onCancel }: LoanFormProps) {
   const form = useForm<LoanFormData>({
@@ -65,9 +65,7 @@ export function LoanForm({ onSubmit, onCancel }: LoanFormProps) {
             onBlur={form.handleBlur("title")}
             required
           />
-          {form.getFieldError("title") && (
-            <p className="mt-1 text-xs text-red-600">{form.getFieldError("title")}</p>
-          )}
+          {form.getFieldError("title") && <p className="mt-1 text-xs text-red-600">{form.getFieldError("title")}</p>}
         </div>
         <div>
           <Input
@@ -83,7 +81,7 @@ export function LoanForm({ onSubmit, onCancel }: LoanFormProps) {
           )}
         </div>
         <div>
-                    <Input
+          <Input
             label="Tipo"
             type="select"
             name="borrowerType"
@@ -147,7 +145,7 @@ export function LoanForm({ onSubmit, onCancel }: LoanFormProps) {
           )}
         </div>
         <div>
-                    <Input
+          <Input
             label="Frecuencia de Pago"
             type="select"
             name="frequency"
@@ -164,7 +162,7 @@ export function LoanForm({ onSubmit, onCancel }: LoanFormProps) {
           )}
         </div>
         <div>
-                    <Input
+          <Input
             label="Número de Términos"
             type="number"
             name="totalInstallments"
@@ -195,7 +193,7 @@ export function LoanForm({ onSubmit, onCancel }: LoanFormProps) {
         </div>
         <div>
           <label className="flex items-center gap-2 text-xs text-slate-600">
-                        <input
+            <input
               type="checkbox"
               checked={form.values.generateSchedule}
               onChange={(e) => form.setValue("generateSchedule", e.target.checked)}
@@ -209,7 +207,7 @@ export function LoanForm({ onSubmit, onCancel }: LoanFormProps) {
         </div>
       </div>
       <div>
-                <Input
+        <Input
           label="Descripción"
           type="textarea"
           name="notes"
@@ -218,17 +216,13 @@ export function LoanForm({ onSubmit, onCancel }: LoanFormProps) {
           onBlur={form.handleBlur("notes")}
           rows={3}
         />
-        {form.getFieldError("notes") && (
-          <p className="mt-1 text-xs text-red-600">{form.getFieldError("notes")}</p>
-        )}
+        {form.getFieldError("notes") && <p className="mt-1 text-xs text-red-600">{form.getFieldError("notes")}</p>}
       </div>
-      
+
       {Object.keys(form.errors).length > 0 && (
-        <Alert variant="error">
-          Por favor corrige los errores en el formulario antes de continuar.
-        </Alert>
+        <Alert variant="error">Por favor corrige los errores en el formulario antes de continuar.</Alert>
       )}
-      
+
       <div className="flex justify-end gap-3">
         <Button type="button" variant="secondary" onClick={onCancel} disabled={form.isSubmitting}>
           Cancelar

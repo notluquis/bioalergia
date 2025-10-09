@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 type UploadSummary = {
   status: string;
@@ -16,15 +16,18 @@ type UploadResult = {
 
 interface UploadResultsProps {
   results: UploadResult[];
-  variant?: 'primary' | 'secondary';
+  variant?: "primary" | "secondary";
 }
 
-export default function UploadResults({ results, variant = 'primary' }: UploadResultsProps) {
+export default function UploadResults({ results, variant = "primary" }: UploadResultsProps) {
   if (results.length === 0) {
     return null;
   }
 
-  const colorClass = variant === 'primary' ? 'bg-[var(--brand-primary)]/10 text-[var(--brand-primary)]' : 'bg-[var(--brand-secondary)]/10 text-[var(--brand-secondary)]';
+  const colorClass =
+    variant === "primary"
+      ? "bg-[var(--brand-primary)]/10 text-[var(--brand-primary)]"
+      : "bg-[var(--brand-secondary)]/10 text-[var(--brand-secondary)]";
 
   return (
     <div className={`space-y-2 rounded-lg p-4 text-xs ${colorClass}`}>
@@ -36,11 +39,11 @@ export default function UploadResults({ results, variant = 'primary' }: UploadRe
             {result.summary ? (
               <span>
                 Insertadas: {result.summary.inserted}
-                {typeof result.summary.updated === 'number'
+                {typeof result.summary.updated === "number"
                   ? ` · Actualizadas: ${result.summary.updated}`
-                  : typeof result.summary.skipped === 'number'
+                  : typeof result.summary.skipped === "number"
                     ? ` · Omitidas: ${result.summary.skipped}`
-                    : ''}
+                    : ""}
                 · Total: {result.summary.total}
               </span>
             ) : (

@@ -11,10 +11,7 @@ export default function Report() {
   const [initialBalance, setInitialBalance] = useState<string>("0");
   const { movs, fileName, error: uploadError, onFile } = useReportUpload();
 
-  const initialBalanceNumber = useMemo(
-    () => coerceAmount(initialBalance),
-    [initialBalance]
-  );
+  const initialBalanceNumber = useMemo(() => coerceAmount(initialBalance), [initialBalance]);
 
   const { settings } = useSettings();
 
@@ -32,14 +29,14 @@ export default function Report() {
       <div className="glass-card glass-underlay-gradient space-y-2 p-6">
         <h1 className="text-2xl font-bold text-[var(--brand-primary)] drop-shadow-sm">Reporte financiero</h1>
         <p className="text-sm text-slate-600/90">
-          Visualiza y valida un CSV antes de cargarlo en la base. Ajusta el saldo inicial para
-          obtener la evolución al instante.
+          Visualiza y valida un CSV antes de cargarlo en la base. Ajusta el saldo inicial para obtener la evolución al
+          instante.
         </p>
       </div>
       <div className="glass-card glass-underlay-gradient space-y-3 p-6 text-sm">
         <p>
-          Genera el <strong>Account balance report</strong> desde el panel de Mercado Pago y
-          súbelo para ver los movimientos IN/OUT.
+          Genera el <strong>Account balance report</strong> desde el panel de Mercado Pago y súbelo para ver los
+          movimientos IN/OUT.
         </p>
         <ul className="list-disc space-y-1 pl-5 text-xs text-slate-500/90">
           <li>Dashboard &rarr; Reports &rarr; Finanzas &rarr; Account balance report.</li>
@@ -53,15 +50,9 @@ export default function Report() {
             onChange={(event) => setInitialBalance(event.target.value)}
             placeholder="0"
           />
-          <FileInput
-            label="Archivo CSV"
-            accept=".csv,.txt"
-            onChange={onFile}
-          />
+          <FileInput label="Archivo CSV" accept=".csv,.txt" onChange={onFile} />
         </div>
-        {fileName && !uploadError && (
-          <p className="text-xs text-slate-500/90">Archivo cargado: {fileName}</p>
-        )}
+        {fileName && !uploadError && <p className="text-xs text-slate-500/90">Archivo cargado: {fileName}</p>}
         {uploadError && <Alert variant="error">{uploadError}</Alert>}
       </div>
       <ReportTable ledger={ledger} />

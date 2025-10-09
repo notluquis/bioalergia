@@ -9,15 +9,8 @@ export default function Supplies() {
   const { user } = useAuth();
   const isAdmin = user?.role === "ADMIN" || user?.role === "GOD";
 
-  const {
-    requests,
-    commonSupplies,
-    loading,
-    error,
-    successMessage,
-    fetchData,
-    handleStatusChange,
-  } = useSupplyManagement();
+  const { requests, commonSupplies, loading, error, successMessage, fetchData, handleStatusChange } =
+    useSupplyManagement();
 
   if (loading) return <div className="p-4">Cargando...</div>;
 
@@ -33,4 +26,4 @@ export default function Supplies() {
       <SupplyRequestsTable requests={requests} onStatusChange={handleStatusChange} />
     </div>
   );
-};
+}

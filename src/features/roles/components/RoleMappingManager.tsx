@@ -20,10 +20,7 @@ export default function RoleMappingManager() {
       setLoading(true);
       setError(null);
       try {
-        const [employees, dbMappings] = await Promise.all([
-          fetchEmployees(true),
-          getRoleMappings(),
-        ]);
+        const [employees, dbMappings] = await Promise.all([fetchEmployees(true), getRoleMappings()]);
 
         const dbMappingsMap = new Map(dbMappings.map((m: RoleMapping) => [m.employee_role, m]));
         const uniqueRoles = [...new Set(employees.map((e: Employee) => e.role))].sort();
@@ -50,11 +47,7 @@ export default function RoleMappingManager() {
 
   const handleRoleChange = (employeeRole: string, newAppRole: UserRole) => {
     setMappings(
-      mappings.map((m) =>
-        m.employee_role === employeeRole
-          ? { ...m, app_role: newAppRole, isModified: !m.isNew }
-          : m
-      )
+      mappings.map((m) => (m.employee_role === employeeRole ? { ...m, app_role: newAppRole, isModified: !m.isNew } : m))
     );
   };
 
@@ -65,8 +58,10 @@ export default function RoleMappingManager() {
     setIsSaving(true);
     setError(null);
     try {
-      await Promise.all(changedMappings.map(m => saveRoleMapping({ employee_role: m.employee_role, app_role: m.app_role })));
-      
+      await Promise.all(
+        changedMappings.map((m) => saveRoleMapping({ employee_role: m.employee_role, app_role: m.app_role }))
+      );
+
       const freshMappings = await getRoleMappings();
       const dbMappingsMap = new Map(freshMappings.map((m: RoleMapping) => [m.employee_role, m]));
       const allRoles = jobTitles.map((role: string) => {

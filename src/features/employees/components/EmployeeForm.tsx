@@ -70,12 +70,13 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
       bank_name: form.bank_name.trim() || null,
       bank_account_type: form.bank_account_type.trim() || null,
       bank_account_number: form.bank_account_number.trim() || null,
-      salary_type: form.salary_type === "fixed" ? "fixed" : "hourly" as "hourly" | "fixed",
+      salary_type: form.salary_type === "fixed" ? "fixed" : ("hourly" as "hourly" | "fixed"),
       hourly_rate: form.salary_type === "hourly" ? Number(form.hourly_rate || 0) : undefined,
       fixed_salary: form.salary_type === "fixed" ? Number(form.fixed_salary || 0) : undefined,
       overtime_rate: form.overtime_rate ? Number(form.overtime_rate) : null,
       retention_rate: Number(form.retention_rate || 0),
-    };    setSaving(true);
+    };
+    setSaving(true);
     setError(null);
     try {
       if (employee?.id) {
@@ -99,43 +100,51 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
       className="space-y-4 rounded-2xl border border-[var(--brand-primary)]/15 bg-white p-6 text-sm shadow-sm"
     >
       <div className="grid gap-4 md:grid-cols-3">
-      <div className="col-span-3">
-        <label className="block text-xs font-semibold mb-1">Tipo de salario</label>
-        <select
-          className="w-full border rounded px-2 py-1 text-sm"
-          value={form.salary_type}
-          onChange={e => setForm(prev => ({ ...prev, salary_type: e.target.value }))}
-        >
-          <option value="hourly">Por hora</option>
-          <option value="fixed">Sueldo fijo mensual</option>
-        </select>
-      </div>
+        <div className="col-span-3">
+          <label className="block text-xs font-semibold mb-1">Tipo de salario</label>
+          <select
+            className="w-full border rounded px-2 py-1 text-sm"
+            value={form.salary_type}
+            onChange={(e) => setForm((prev) => ({ ...prev, salary_type: e.target.value }))}
+          >
+            <option value="hourly">Por hora</option>
+            <option value="fixed">Sueldo fijo mensual</option>
+          </select>
+        </div>
         <Input
           label="Nombre completo"
           type="text"
           value={form.full_name}
-          onChange={(event: React.ChangeEvent<HTMLInputElement>) => setForm((prev) => ({ ...prev, full_name: event.target.value }))}
+          onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+            setForm((prev) => ({ ...prev, full_name: event.target.value }))
+          }
           required
         />
         <Input
           label="Cargo"
           type="text"
           value={form.role}
-          onChange={(event: React.ChangeEvent<HTMLInputElement>) => setForm((prev) => ({ ...prev, role: event.target.value }))}
+          onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+            setForm((prev) => ({ ...prev, role: event.target.value }))
+          }
           required
         />
         <Input
           label="Correo"
           type="email"
           value={form.email}
-          onChange={(event: React.ChangeEvent<HTMLInputElement>) => setForm((prev) => ({ ...prev, email: event.target.value }))}
+          onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+            setForm((prev) => ({ ...prev, email: event.target.value }))
+          }
           placeholder="correo@bioalergia.cl"
         />
         <Input
           label="RUT"
           type="text"
           value={form.rut}
-          onChange={(event: React.ChangeEvent<HTMLInputElement>) => setForm((prev) => ({ ...prev, rut: event.target.value }))}
+          onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+            setForm((prev) => ({ ...prev, rut: event.target.value }))
+          }
           onBlur={() => setForm((prev) => ({ ...prev, rut: formatRut(normalizeRut(prev.rut) ?? prev.rut) }))}
           placeholder="12.345.678-9"
         />
@@ -146,7 +155,9 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
           label="Banco"
           type="text"
           value={form.bank_name}
-          onChange={(event: React.ChangeEvent<HTMLInputElement>) => setForm((prev) => ({ ...prev, bank_name: event.target.value }))}
+          onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+            setForm((prev) => ({ ...prev, bank_name: event.target.value }))
+          }
           placeholder="BancoEstado"
         />
         {/* Account type with datalist to avoid UI toggling */}
@@ -155,7 +166,9 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
           type="text"
           value={form.bank_account_type}
           list="bank-account-type-options"
-          onChange={(event: React.ChangeEvent<HTMLInputElement>) => setForm((prev) => ({ ...prev, bank_account_type: event.target.value }))}
+          onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+            setForm((prev) => ({ ...prev, bank_account_type: event.target.value }))
+          }
           placeholder="RUT / VISTA / CORRIENTE / AHORRO"
         />
         <datalist id="bank-account-type-options">
@@ -168,7 +181,9 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
           label="N° de cuenta"
           type="text"
           value={form.bank_account_number}
-          onChange={(event: React.ChangeEvent<HTMLInputElement>) => setForm((prev) => ({ ...prev, bank_account_number: event.target.value }))}
+          onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+            setForm((prev) => ({ ...prev, bank_account_number: event.target.value }))
+          }
           placeholder="12345678"
         />
         <Input
@@ -176,7 +191,9 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
           type="number"
           min="0"
           value={form.hourly_rate}
-          onChange={(event: React.ChangeEvent<HTMLInputElement>) => setForm((prev) => ({ ...prev, hourly_rate: event.target.value }))}
+          onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+            setForm((prev) => ({ ...prev, hourly_rate: event.target.value }))
+          }
           required={form.salary_type === "hourly"}
           disabled={form.salary_type !== "hourly"}
         />
@@ -186,7 +203,9 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
             type="number"
             min="0"
             value={form.fixed_salary}
-            onChange={(event: React.ChangeEvent<HTMLInputElement>) => setForm((prev) => ({ ...prev, fixed_salary: event.target.value }))}
+            onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+              setForm((prev) => ({ ...prev, fixed_salary: event.target.value }))
+            }
             required
           />
         )}
@@ -195,7 +214,9 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
           type="number"
           min="0"
           value={form.overtime_rate}
-          onChange={(event: React.ChangeEvent<HTMLInputElement>) => setForm((prev) => ({ ...prev, overtime_rate: event.target.value }))}
+          onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+            setForm((prev) => ({ ...prev, overtime_rate: event.target.value }))
+          }
           placeholder="Opcional - dejar vacío si no aplica"
         />
         <Input
@@ -205,7 +226,9 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
           max="1"
           step="0.001"
           value={form.retention_rate}
-          onChange={(event: React.ChangeEvent<HTMLInputElement>) => setForm((prev) => ({ ...prev, retention_rate: event.target.value }))}
+          onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+            setForm((prev) => ({ ...prev, retention_rate: event.target.value }))
+          }
           required
           helper="Ej: 0.145 para 14.5%"
         />

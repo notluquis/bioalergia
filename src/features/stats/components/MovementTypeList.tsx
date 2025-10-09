@@ -5,9 +5,7 @@ interface MovementTypeListProps {
   data: StatsResponse["byType"];
 }
 
-export default function MovementTypeList({
-  data,
-}: MovementTypeListProps) {
+export default function MovementTypeList({ data }: MovementTypeListProps) {
   if (!data.length) {
     return <p className="text-xs text-slate-500">Sin movimientos en el rango.</p>;
   }
@@ -20,11 +18,7 @@ export default function MovementTypeList({
       {sorted.map((row, index) => {
         const width = max ? Math.min((Math.abs(row.total) / max) * 100, 100) : 0;
         const colorClass =
-          row.direction === "IN"
-            ? "bg-emerald-500/70"
-            : row.direction === "OUT"
-              ? "bg-rose-500/70"
-              : "bg-slate-400";
+          row.direction === "IN" ? "bg-emerald-500/70" : row.direction === "OUT" ? "bg-rose-500/70" : "bg-slate-400";
         return (
           <div key={`${row.description ?? "(sin descripción)"}-${index}`} className="space-y-1">
             <div className="flex items-center justify-between text-xs text-slate-500">

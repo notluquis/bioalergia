@@ -86,11 +86,7 @@ export default function EmployeesPage() {
       {error && <Alert variant="error">{error}</Alert>}
 
       {canEdit && (
-        <EmployeeForm
-          employee={editingEmployee}
-          onSave={loadEmployees}
-          onCancel={() => setEditingEmployee(null)}
-        />
+        <EmployeeForm employee={editingEmployee} onSave={loadEmployees} onCancel={() => setEditingEmployee(null)} />
       )}
 
       <EmployeeTable

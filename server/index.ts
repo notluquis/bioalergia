@@ -98,7 +98,7 @@ app.get(/^(?!\/api).*$/, (_req, res) => {
 });
 // --- End Production Frontend Serving ---
 
-app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+app.use((err: any, _req: express.Request, res: express.Response) => {
   console.error(err);
   const status = typeof err.statusCode === "number" ? err.statusCode : 500;
   res.status(status).json({

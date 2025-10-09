@@ -6,7 +6,6 @@ import dayjs from "dayjs";
 import "dayjs/locale/es";
 import { useSettings } from "../../../context/SettingsContext";
 import Modal from "../../../components/Modal";
-import { formatExtraHours } from "../utils";
 
 interface TimesheetExportPDFProps {
   logoUrl: string;
@@ -18,7 +17,15 @@ interface TimesheetExportPDFProps {
   monthRaw?: string; // YYYY-MM
 }
 
-export default function TimesheetExportPDF({ logoUrl, employee, summary, bulkRows, columns, monthLabel, monthRaw }: TimesheetExportPDFProps) {
+export default function TimesheetExportPDF({
+  logoUrl,
+  employee,
+  summary,
+  bulkRows,
+  columns,
+  monthLabel,
+  monthRaw,
+}: TimesheetExportPDFProps) {
   const { settings } = useSettings();
   const defaultCols = ["date", "entrada", "salida", "worked", "overtime"] as const;
   const [selectedCols, setSelectedCols] = React.useState<string[]>(columns?.length ? columns : Array.from(defaultCols));
@@ -30,7 +37,8 @@ export default function TimesheetExportPDF({ logoUrl, employee, summary, bulkRow
       const doc = new jsPDF();
       const iw: any = (doc as any).internal;
       const pageSize: any = iw.pageSize || iw.getPageSize?.();
-      const pageWidth: number = typeof pageSize?.getWidth === "function" ? pageSize.getWidth() : (pageSize?.width ?? 210);
+      const pageWidth: number =
+        typeof pageSize?.getWidth === "function" ? pageSize.getWidth() : (pageSize?.width ?? 210);
       const margin = 10;
 
       // Helper: Cargar logo y normalizarlo a PNG (evitar "wrong PNG signature")
@@ -117,10 +125,10 @@ export default function TimesheetExportPDF({ logoUrl, employee, summary, bulkRow
       const orgName = settings.orgName || "Bioalergia";
       const orgAddress = settings.orgAddress || "";
       const orgPhone = settings.orgPhone || "";
-  doc.setFontSize(11);
-  doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "bold");
       doc.text("Honorarios por servicios prestados", pageWidth - margin, headerTopY + 2, { align: "right" });
-  doc.setFont("helvetica", "normal");
+      doc.setFont("helvetica", "normal");
       doc.setFontSize(9);
       const rightLines = [orgName, orgAddress, orgPhone ? `Tel: ${orgPhone}` : null].filter(Boolean) as string[];
       let rightY = headerTopY + 8;
@@ -141,24 +149,19 @@ export default function TimesheetExportPDF({ logoUrl, employee, summary, bulkRow
       doc.text(`RUT: ${employee?.rut || "-"}`, margin, infoStartY + 6);
       doc.text(`Periodo: ${periodEs}`, pageWidth - margin, infoStartY, { align: "right" });
       if (localPayDate) {
-        doc.text(`Fecha de pago: ${dayjs(localPayDate).format("DD-MM-YYYY")}`, pageWidth - margin, infoStartY + 6, { align: "right" });
+        doc.text(`Fecha de pago: ${dayjs(localPayDate).format("DD-MM-YYYY")}`, pageWidth - margin, infoStartY + 6, {
+          align: "right",
+        });
       }
       const net = typeof summary?.net === "number" ? summary.net : 0;
-  doc.setFont("helvetica", "bold");
+      doc.setFont("helvetica", "bold");
       doc.text(`Total líquido: ${fmtCLP(net)}`, margin, infoStartY + 14);
-  doc.setFont("helvetica", "normal");
+      doc.setFont("helvetica", "normal");
 
       // Tabla de RESUMEN (sin fecha de pago, sin fila TOTAL)
-      const summaryHead = [[
-        "Función",
-        "Horas trabajadas",
-        "Extras",
-        "Tarifa",
-        "Monto extras",
-        "Subtotal",
-        "Retención",
-        "Líquido",
-      ]];
+      const summaryHead = [
+        ["Función", "Horas trabajadas", "Extras", "Tarifa", "Monto extras", "Subtotal", "Retención", "Líquido"],
+      ];
       const summaryBody: any[] = [];
       if (summary) {
         summaryBody.push([
@@ -177,24 +180,24 @@ export default function TimesheetExportPDF({ logoUrl, employee, summary, bulkRow
         body: summaryBody,
         startY: infoStartY + 20,
         theme: "grid",
-        styles: { fontSize: 9, cellPadding: 2, overflow: 'linebreak' },
+        styles: { fontSize: 9, cellPadding: 2, overflow: "linebreak" },
         headStyles: { fillColor: [14, 100, 183], textColor: [255, 255, 255], fontStyle: "bold" },
-        tableWidth: pageWidth - (margin * 2),
+        tableWidth: pageWidth - margin * 2,
         margin: { left: margin, right: margin },
         columnStyles: {
-          0: { halign: 'left' },   // Cargo
-          1: { halign: 'center' }, // Horas trabajadas
-          2: { halign: 'center' }, // Horas extra
-          3: { halign: 'right' },  // Tarifa
-          4: { halign: 'right' },  // Extras
-          5: { halign: 'right' },  // Subtotal
-          6: { halign: 'right' },  // Retención
-          7: { halign: 'right' },  // Líquido
+          0: { halign: "left" }, // Cargo
+          1: { halign: "center" }, // Horas trabajadas
+          2: { halign: "center" }, // Horas extra
+          3: { halign: "right" }, // Tarifa
+          4: { halign: "right" }, // Extras
+          5: { halign: "right" }, // Subtotal
+          6: { halign: "right" }, // Retención
+          7: { halign: "right" }, // Líquido
         },
       });
 
       // Definición de columnas y etiquetas para DETALLE
-      const colKeys = (selectedCols && selectedCols.length) ? selectedCols : Array.from(defaultCols);
+      const colKeys = selectedCols && selectedCols.length ? selectedCols : Array.from(defaultCols);
       const labels: Record<string, string> = {
         date: "Fecha",
         entrada: "Entrada",
@@ -240,7 +243,7 @@ export default function TimesheetExportPDF({ logoUrl, employee, summary, bulkRow
       );
 
       // Tabla de DETALLE en la misma página, después del resumen
-      const nextY = (doc as any).lastAutoTable ? (doc as any).lastAutoTable.finalY + 8 : (infoStartY + 30);
+      const nextY = (doc as any).lastAutoTable ? (doc as any).lastAutoTable.finalY + 8 : infoStartY + 30;
       if (!body.length) {
         doc.setFontSize(11);
         doc.text("Sin registros para este periodo.", margin, nextY);
@@ -250,16 +253,16 @@ export default function TimesheetExportPDF({ logoUrl, employee, summary, bulkRow
           body,
           startY: nextY,
           theme: "grid",
-          tableWidth: pageWidth - (margin * 2),
+          tableWidth: pageWidth - margin * 2,
           margin: { left: margin, right: margin },
-          styles: { fontSize: 8, cellPadding: 1, overflow: 'linebreak' },
-          headStyles: { fontSize: 9, fillColor: [241, 167, 34], textColor: [255, 255, 255], fontStyle: 'bold' },
+          styles: { fontSize: 8, cellPadding: 1, overflow: "linebreak" },
+          headStyles: { fontSize: 9, fillColor: [241, 167, 34], textColor: [255, 255, 255], fontStyle: "bold" },
           columnStyles: {
-            0: { halign: 'center' }, // Fecha
-            1: { halign: 'center' }, // Entrada
-            2: { halign: 'center' }, // Salida
-            3: { halign: 'center' }, // Trabajadas
-            4: { halign: 'center' }, // Extras
+            0: { halign: "center" }, // Fecha
+            1: { halign: "center" }, // Entrada
+            2: { halign: "center" }, // Salida
+            3: { halign: "center" }, // Trabajadas
+            4: { halign: "center" }, // Extras
           },
           willDrawCell: (data) => {
             if (data.section === "body") {
@@ -317,25 +320,53 @@ export default function TimesheetExportPDF({ logoUrl, employee, summary, bulkRow
                   onChange={(e) => {
                     setSelectedCols((prev) => {
                       const set = new Set(prev);
-                      if (e.target.checked) set.add(key); else set.delete(key);
+                      if (e.target.checked) set.add(key);
+                      else set.delete(key);
                       return Array.from(set);
                     });
                   }}
                 />
-                {key === 'date' ? 'Fecha' : key === 'entrada' ? 'Entrada' : key === 'salida' ? 'Salida' : key === 'worked' ? 'Trabajadas' : 'Extras'}
+                {key === "date"
+                  ? "Fecha"
+                  : key === "entrada"
+                    ? "Entrada"
+                    : key === "salida"
+                      ? "Salida"
+                      : key === "worked"
+                        ? "Trabajadas"
+                        : "Extras"}
               </label>
             ))}
             <div className="mt-3 flex justify-end gap-2">
-              <button className="text-xs text-slate-500 hover:text-slate-700" onClick={() => setShowOptions(false)}>Cerrar</button>
-              <button className="text-xs text-[var(--brand-primary)] hover:underline" onClick={() => handleExport(true)}>Vista previa</button>
-              <button className="text-xs text-[var(--brand-primary)] hover:underline" onClick={() => handleExport(false)}>Descargar</button>
+              <button className="text-xs text-slate-500 hover:text-slate-700" onClick={() => setShowOptions(false)}>
+                Cerrar
+              </button>
+              <button
+                className="text-xs text-[var(--brand-primary)] hover:underline"
+                onClick={() => handleExport(true)}
+              >
+                Vista previa
+              </button>
+              <button
+                className="text-xs text-[var(--brand-primary)] hover:underline"
+                onClick={() => handleExport(false)}
+              >
+                Descargar
+              </button>
             </div>
           </div>
         )}
       </div>
 
       {/* Modal de vista previa */}
-      <Modal isOpen={Boolean(previewUrl)} onClose={() => { if (previewUrl) URL.revokeObjectURL(previewUrl); setPreviewUrl(null); }} title="Vista previa PDF">
+      <Modal
+        isOpen={Boolean(previewUrl)}
+        onClose={() => {
+          if (previewUrl) URL.revokeObjectURL(previewUrl);
+          setPreviewUrl(null);
+        }}
+        title="Vista previa PDF"
+      >
         {previewUrl ? (
           <div className="h-[70vh]">
             <iframe src={previewUrl} className="h-full w-full rounded-lg border" />
@@ -358,9 +389,9 @@ export default function TimesheetExportPDF({ logoUrl, employee, summary, bulkRow
 // Cálculo local del día de pago según regla: ENFER* => 5to día hábil del mes siguiente; otros => día 5 del mes siguiente
 function computeLocalPayDate(role: string, monthRaw?: string | null) {
   try {
-    const m = (monthRaw && /^[0-9]{4}-[0-9]{2}$/.test(monthRaw)) ? monthRaw : null;
+    const m = monthRaw && /^[0-9]{4}-[0-9]{2}$/.test(monthRaw) ? monthRaw : null;
     const base = m ? dayjs(`${m}-01`) : null;
-    const nextFirst = (base && base.isValid()) ? base.add(1, 'month').startOf('month') : null;
+    const nextFirst = base && base.isValid() ? base.add(1, "month").startOf("month") : null;
     if (!nextFirst) return null;
     if ((role || "").toUpperCase().includes("ENFER")) {
       // 5to día hábil
@@ -372,12 +403,12 @@ function computeLocalPayDate(role: string, monthRaw?: string | null) {
           count += 1;
           if (count === 5) break;
         }
-        d = d.add(1, 'day');
+        d = d.add(1, "day");
       }
-      return d.format('YYYY-MM-DD');
+      return d.format("YYYY-MM-DD");
     }
     // Otros: día 5 calendario del próximo mes
-    return nextFirst.date(5).format('YYYY-MM-DD');
+    return nextFirst.date(5).format("YYYY-MM-DD");
   } catch {
     return null;
   }

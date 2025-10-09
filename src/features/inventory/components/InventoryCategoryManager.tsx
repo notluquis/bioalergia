@@ -30,7 +30,7 @@ export default function InventoryCategoryManager() {
   async function handleAddCategory(e: React.FormEvent) {
     e.preventDefault();
     if (!newCategoryName.trim()) return;
-    
+
     setSaving(true);
     setError(null);
     try {
@@ -48,9 +48,7 @@ export default function InventoryCategoryManager() {
     <section className="glass-card glass-underlay-gradient space-y-5 p-6">
       <div className="space-y-1">
         <h2 className="text-lg font-semibold text-[var(--brand-secondary)] drop-shadow-sm">Categorías de Inventario</h2>
-        <p className="text-sm text-slate-600/90">
-          Administra las categorías para organizar los items del inventario.
-        </p>
+        <p className="text-sm text-slate-600/90">Administra las categorías para organizar los items del inventario.</p>
       </div>
 
       <form onSubmit={handleAddCategory} className="flex flex-col gap-3 sm:flex-row sm:items-end">

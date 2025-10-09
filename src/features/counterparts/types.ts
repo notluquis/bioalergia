@@ -1,13 +1,7 @@
 import type { DbMovement } from "@/features/transactions/types";
 
 export type CounterpartPersonType = "PERSON" | "COMPANY" | "OTHER";
-export type CounterpartCategory =
-  | "SUPPLIER"
-  | "PATIENT"
-  | "EMPLOYEE"
-  | "PARTNER"
-  | "RELATED"
-  | "OTHER";
+export type CounterpartCategory = "SUPPLIER" | "PATIENT" | "EMPLOYEE" | "PARTNER" | "RELATED" | "OTHER";
 
 export type Counterpart = {
   id: number;

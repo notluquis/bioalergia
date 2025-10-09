@@ -5,9 +5,7 @@ interface MonthlyFlowChartProps {
   data: Array<{ month: string; in: number; out: number; net: number }>;
 }
 
-export default function MonthlyFlowChart({
-  data,
-}: MonthlyFlowChartProps) {
+export default function MonthlyFlowChart({ data }: MonthlyFlowChartProps) {
   if (!data.length) return null;
   const maxValue = Math.max(...data.map((row) => Math.max(row.in, row.out)));
   return (
@@ -34,12 +32,8 @@ export default function MonthlyFlowChart({
                   style={{ height: `${outHeight}px` }}
                 />
               </div>
-              <div className="text-center text-xs font-medium text-slate-600">
-                {dayjs(row.month).format("MMM YY")}
-              </div>
-              <div
-                className={`text-xs font-semibold ${row.net >= 0 ? "text-emerald-600" : "text-rose-600"}`}
-              >
+              <div className="text-center text-xs font-medium text-slate-600">{dayjs(row.month).format("MMM YY")}</div>
+              <div className={`text-xs font-semibold ${row.net >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
                 {row.net >= 0 ? fmtCLP(row.net) : `-${fmtCLP(Math.abs(row.net))}`}
               </div>
             </div>

@@ -1,10 +1,10 @@
-import type { Pool, RowDataPacket, ResultSetHeader } from "mysql2/promise";
+import type { Pool, PoolConnection, RowDataPacket, ResultSetHeader } from "mysql2/promise";
 
 // === QUERY BUILDERS ===
 
 export interface WhereClause {
   condition: string;
-  params: any[];
+  params: unknown[];
 }
 
 export interface QueryBuilder {
@@ -65,9 +65,9 @@ export class SQLBuilder {
     return this;
   }
 
-  build(): { sql: string; params: any[] } {
+  build(): { sql: string; params: unknown[] } {
     const parts: string[] = [];
-    const allParams: any[] = [];
+    const allParams: unknown[] = [];
 
     // SELECT
     parts.push(`SELECT ${this.query.select.join(", ")}`);
@@ -111,88 +111,113 @@ export class SQLBuilder {
 
 // === COMMON QUERY HELPERS ===
 
-export async function selectOne<T extends RowDataPacket>(
-  pool: Pool,
+/**
+ * Low-level generic query helper returning an array of typed rows.
+ * Wraps pool.query while preserving strong typing and reducing repeated RowDataPacket annotations.
+ */
+export async function query<T extends RowDataPacket>(
+  pool: Pool | PoolConnection,
   sql: string,
-  params: any[] = []
-): Promise<T | null> {
-  const [rows] = await pool.query<T[]>(sql, params);
-  return rows[0] || null;
-}
-
-export async function selectMany<T extends RowDataPacket>(
-  pool: Pool,
-  sql: string,
-  params: any[] = []
+  params: readonly unknown[] = []
 ): Promise<T[]> {
-  const [rows] = await pool.query<T[]>(sql, params);
+  const [rows] = await pool.query<T[]>(sql, params as any[]);
   return rows;
 }
 
-export async function selectFirst<T extends RowDataPacket>(
-  pool: Pool,
+/**
+ * Returns the first row of a query or null.
+ */
+export async function queryOne<T extends RowDataPacket>(
+  pool: Pool | PoolConnection,
   sql: string,
-  params: any[] = []
+  params: readonly unknown[] = []
 ): Promise<T | null> {
-  const [rows] = await pool.query<T[]>(`${sql} LIMIT 1`, params);
+  const [rows] = await pool.query<T[]>(sql, params as any[]);
+  return rows[0] || null;
+}
+
+// Backwards compatibility wrappers (can be migrated gradually to query/queryOne names)
+export async function selectOne<T extends RowDataPacket>(
+  pool: Pool | PoolConnection,
+  sql: string,
+  params: readonly unknown[] = []
+): Promise<T | null> {
+  return queryOne<T>(pool, sql, params);
+}
+
+export async function selectMany<T extends RowDataPacket>(
+  pool: Pool | PoolConnection,
+  sql: string,
+  params: readonly unknown[] = []
+): Promise<T[]> {
+  return query<T>(pool, sql, params);
+}
+
+export async function selectFirst<T extends RowDataPacket>(
+  pool: Pool | PoolConnection,
+  sql: string,
+  params: readonly unknown[] = []
+): Promise<T | null> {
+  const [rows] = await pool.query<T[]>(`${sql} LIMIT 1`, params as any[]);
   return rows[0] || null;
 }
 
 export async function insertOne(
-  pool: Pool,
+  pool: Pool | PoolConnection,
   sql: string,
-  params: any[] = []
+  params: readonly unknown[] = []
 ): Promise<number> {
-  const [result] = await pool.query<ResultSetHeader>(sql, params);
+  const [result] = await pool.query<ResultSetHeader>(sql, params as any[]);
   return result.insertId;
 }
 
 export async function updateRows(
-  pool: Pool,
+  pool: Pool | PoolConnection,
   sql: string,
-  params: any[] = []
+  params: readonly unknown[] = []
 ): Promise<number> {
-  const [result] = await pool.query<ResultSetHeader>(sql, params);
+  const [result] = await pool.query<ResultSetHeader>(sql, params as any[]);
   return result.affectedRows;
 }
 
 export async function deleteRows(
-  pool: Pool,
+  pool: Pool | PoolConnection,
   sql: string,
-  params: any[] = []
+  params: readonly unknown[] = []
 ): Promise<number> {
-  const [result] = await pool.query<ResultSetHeader>(sql, params);
+  const [result] = await pool.query<ResultSetHeader>(sql, params as any[]);
   return result.affectedRows;
 }
 
 export async function exists(
-  pool: Pool,
+  pool: Pool | PoolConnection,
   table: string,
   condition: string,
-  params: any[] = []
+  params: readonly unknown[] = []
 ): Promise<boolean> {
   const sql = `SELECT 1 FROM ${table} WHERE ${condition} LIMIT 1`;
   const row = await selectFirst(pool, sql, params);
   return row !== null;
 }
 
+interface CountRow extends RowDataPacket { count: number }
 export async function count(
-  pool: Pool,
+  pool: Pool | PoolConnection,
   table: string,
   condition?: string,
-  params: any[] = []
+  params: readonly unknown[] = []
 ): Promise<number> {
   const whereClause = condition ? ` WHERE ${condition}` : "";
   const sql = `SELECT COUNT(*) as count FROM ${table}${whereClause}`;
-  const row = await selectFirst(pool, sql, params);
-  return (row as any)?.count || 0;
+  const row = await selectFirst<CountRow>(pool, sql, params);
+  return row?.count ?? 0;
 }
 
 // === TRANSACTION HELPERS ===
 
 export async function withTransaction<T>(
   pool: Pool,
-  callback: (connection: any) => Promise<T>
+  callback: (connection: PoolConnection) => Promise<T>
 ): Promise<T> {
   const connection = await pool.getConnection();
   try {
@@ -224,9 +249,9 @@ export interface PaginatedResult<T> {
 }
 
 export async function paginate<T extends RowDataPacket>(
-  pool: Pool,
+  pool: Pool | PoolConnection,
   baseQuery: string,
-  params: any[],
+  params: readonly unknown[],
   options: PaginationOptions
 ): Promise<PaginatedResult<T>> {
   const { page, pageSize } = options;
@@ -234,8 +259,9 @@ export async function paginate<T extends RowDataPacket>(
 
   // Count query
   const countQuery = `SELECT COUNT(*) as total FROM (${baseQuery}) as count_query`;
-  const totalRow = await selectFirst(pool, countQuery, params);
-  const total = (totalRow as any)?.total || 0;
+  interface TotalRow extends RowDataPacket { total: number }
+  const totalRow = await selectFirst<TotalRow>(pool, countQuery, params);
+  const total = totalRow?.total ?? 0;
 
   // Data query with pagination
   const dataQuery = `${baseQuery} LIMIT ${pageSize} OFFSET ${offset}`;

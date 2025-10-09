@@ -8,8 +8,8 @@ export function useMonths() {
   useEffect(() => {
     setLoading(true);
     fetch("/api/timesheets/months", { credentials: "include" })
-      .then(res => res.json())
-      .then(data => {
+      .then((res) => res.json())
+      .then((data) => {
         if (data.status === "ok" && Array.isArray(data.months) && data.months.length > 0) {
           setMonths(data.months);
         } else {

@@ -5,19 +5,11 @@ import { useAuth } from "../context/AuthContext";
 import { useSettings } from "../context/SettingsContext";
 import { logger } from "../lib/logger";
 import { isCashbackCandidate } from "../../shared/cashback";
-import {
-  TransactionsFilters,
-} from "../features/transactions/components/TransactionsFilters";
-import {
-  TransactionsColumnToggles,
-} from "../features/transactions/components/TransactionsColumnToggles";
+import { TransactionsFilters } from "../features/transactions/components/TransactionsFilters";
+import { TransactionsColumnToggles } from "../features/transactions/components/TransactionsColumnToggles";
 import { TransactionsTable } from "../features/transactions/components/TransactionsTable";
 import { COLUMN_DEFS, type ColumnKey } from "../features/transactions/constants";
-import type {
-  DbMovement,
-  Filters,
-  LedgerRow,
-} from "../features/transactions/types";
+import type { DbMovement, Filters, LedgerRow } from "../features/transactions/types";
 
 const DEFAULT_PAGE_SIZE = 50;
 
@@ -76,10 +68,7 @@ export default function TransactionsMovements() {
 
   const canView = hasRole("GOD", "ADMIN", "ANALYST", "VIEWER");
 
-  const initialBalanceNumber = useMemo(
-    () => coerceAmount(initialBalance),
-    [initialBalance]
-  );
+  const initialBalanceNumber = useMemo(() => coerceAmount(initialBalance), [initialBalance]);
 
   useEffect(() => {
     if (canView) {
@@ -87,7 +76,6 @@ export default function TransactionsMovements() {
     } else {
       setRows([]);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canView]);
 
   const ledger = useMemo<LedgerRow[]>(() => {
@@ -214,9 +202,8 @@ export default function TransactionsMovements() {
             <div className="space-y-2">
               <h1 className="text-2xl font-bold text-[var(--brand-primary)]">Movimientos en base</h1>
               <p className="max-w-2xl text-sm text-slate-600">
-                Los datos provienen de la tabla <code>mp_transactions</code>. Ajusta el saldo inicial
-                para recalcular el saldo acumulado. Para consultas o soporte escribe a
-                <strong> {settings.supportEmail}</strong>.
+                Los datos provienen de la tabla <code>mp_transactions</code>. Ajusta el saldo inicial para recalcular el
+                saldo acumulado. Para consultas o soporte escribe a<strong> {settings.supportEmail}</strong>.
               </p>
             </div>
             <div className="flex flex-wrap items-end gap-3">

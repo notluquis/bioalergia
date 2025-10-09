@@ -10,7 +10,7 @@ export default function GeneralSettingsPage() {
         <div
           className="absolute inset-0 opacity-90"
           style={{
-            background: `linear-gradient(135deg, ${settings.primaryColor}22, ${settings.secondaryColor}35)`
+            background: `linear-gradient(135deg, ${settings.primaryColor}22, ${settings.secondaryColor}35)`,
           }}
         />
         <div className="relative flex flex-col gap-6 md:flex-row md:items-center">
@@ -21,9 +21,7 @@ export default function GeneralSettingsPage() {
             <div>
               <p className="text-xs uppercase tracking-[0.35em] text-slate-500/80">Organización</p>
               <h2 className="text-2xl font-bold text-slate-800 drop-shadow-sm">{settings.orgName}</h2>
-              {settings.tagline && (
-                <p className="text-sm text-slate-600/90">{settings.tagline}</p>
-              )}
+              {settings.tagline && <p className="text-sm text-slate-600/90">{settings.tagline}</p>}
             </div>
             <dl className="grid gap-4 text-xs text-slate-600 sm:grid-cols-2">
               <div>
@@ -49,8 +47,14 @@ export default function GeneralSettingsPage() {
               <img src={settings.logoUrl} alt="Logo actual" className="h-full w-full object-contain" />
             </div>
             <div className="flex items-center gap-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
-              <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/60 bg-white/80 shadow" style={{ backgroundColor: settings.primaryColor }} />
-              <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/60 bg-white/80 shadow" style={{ backgroundColor: settings.secondaryColor }} />
+              <span
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/60 bg-white/80 shadow"
+                style={{ backgroundColor: settings.primaryColor }}
+              />
+              <span
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/60 bg-white/80 shadow"
+                style={{ backgroundColor: settings.secondaryColor }}
+              />
             </div>
             <p className="text-[11px] text-slate-500">Visualiza cómo se combinan los colores y el logo.</p>
           </div>

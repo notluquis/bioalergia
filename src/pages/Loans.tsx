@@ -73,23 +73,20 @@ export default function LoansPage() {
     }
   }, [canView, selectedId]);
 
-  const loadDetail = useCallback(
-    async (publicId: string) => {
-      setLoadingDetail(true);
-      setGlobalError(null);
-      try {
-        const response = await fetchLoanDetail(publicId);
-        setDetail(response);
-      } catch (error) {
-        const message = error instanceof Error ? error.message : "No se pudo obtener el detalle";
-        setGlobalError(message);
-        logger.error("[loans] detail:error", message);
-      } finally {
-        setLoadingDetail(false);
-      }
-    },
-    []
-  );
+  const loadDetail = useCallback(async (publicId: string) => {
+    setLoadingDetail(true);
+    setGlobalError(null);
+    try {
+      const response = await fetchLoanDetail(publicId);
+      setDetail(response);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "No se pudo obtener el detalle";
+      setGlobalError(message);
+      logger.error("[loans] detail:error", message);
+    } finally {
+      setLoadingDetail(false);
+    }
+  }, []);
 
   useEffect(() => {
     loadLoans().catch((error) => logger.error("[loans] list:effect", error));
@@ -211,7 +208,6 @@ export default function LoansPage() {
 
   return (
     <section className="flex h-full flex-col gap-4">
-
       <header className="flex flex-col gap-2">
         <h1 className="text-2xl font-bold text-[var(--brand-primary)]">Préstamos y créditos</h1>
         <p className="text-sm text-slate-600/90">
@@ -221,9 +217,7 @@ export default function LoansPage() {
 
       {globalError && <Alert variant="error">{globalError}</Alert>}
 
-      {loadingList && (
-        <p className="text-xs text-slate-400">Actualizando listado de préstamos...</p>
-      )}
+      {loadingList && <p className="text-xs text-slate-400">Actualizando listado de préstamos...</p>}
 
       <div className="grid gap-4 lg:grid-cols-[300px,1fr]">
         <div className="min-h-[70vh]">
@@ -292,11 +286,14 @@ export default function LoansPage() {
               onChange={(event) => setPaymentForm((prev) => ({ ...prev, paidDate: event.target.value }))}
               required
             />
-            {paymentError && (
-              <p className="rounded-lg bg-rose-100 px-4 py-2 text-sm text-rose-700">{paymentError}</p>
-            )}
+            {paymentError && <p className="rounded-lg bg-rose-100 px-4 py-2 text-sm text-rose-700">{paymentError}</p>}
             <div className="flex justify-end gap-3">
-              <Button type="button" variant="secondary" onClick={() => setPaymentSchedule(null)} disabled={processingPayment}>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setPaymentSchedule(null)}
+                disabled={processingPayment}
+              >
                 Cancelar
               </Button>
               <Button type="submit" disabled={processingPayment}>

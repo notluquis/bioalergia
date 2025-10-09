@@ -11,11 +11,7 @@ interface UseDailyBalanceManagementProps {
   loadBalances: (from: string, to: string) => Promise<void>;
 }
 
-export function useDailyBalanceManagement({
-  from,
-  to,
-  loadBalances,
-}: UseDailyBalanceManagementProps) {
+export function useDailyBalanceManagement({ from, to, loadBalances }: UseDailyBalanceManagementProps) {
   const { hasRole } = useAuth();
   const canEdit = hasRole("GOD", "ADMIN", "ANALYST");
 

@@ -5,19 +5,9 @@ import { formatRut } from "../../../lib/rut";
 import Button from "../../../components/Button";
 import Input from "../../../components/Input";
 import Alert from "../../../components/Alert";
-import type {
-  Counterpart,
-  CounterpartAccount,
-  CounterpartAccountSuggestion,
-  CounterpartSummary,
-} from "../types";
+import type { Counterpart, CounterpartAccount, CounterpartAccountSuggestion, CounterpartSummary } from "../types";
 import type { DbMovement } from "../../transactions/types";
-import {
-  addCounterpartAccount,
-  attachCounterpartRut,
-  fetchAccountSuggestions,
-  updateCounterpartAccount,
-} from "../api";
+import { addCounterpartAccount, attachCounterpartRut, fetchAccountSuggestions, updateCounterpartAccount } from "../api";
 
 interface AssociatedAccountsProps {
   selectedId: number | null;
@@ -93,9 +83,12 @@ export default function AssociatedAccounts({
     const controller = new AbortController();
     const id = window.setTimeout(() => {
       setSuggestionsLoading(true);
-      fetchAccountSuggestions(suggestionQuery).then(setAccountSuggestions).catch(() => undefined).finally(() => {
-        if (!controller.signal.aborted) setSuggestionsLoading(false);
-      });
+      fetchAccountSuggestions(suggestionQuery)
+        .then(setAccountSuggestions)
+        .catch(() => undefined)
+        .finally(() => {
+          if (!controller.signal.aborted) setSuggestionsLoading(false);
+        });
     }, 200);
     return () => {
       controller.abort();
@@ -331,12 +324,12 @@ export default function AssociatedAccounts({
   async function toggleAccountDetails(group: AccountGroup) {
     const identifier = group.key;
     const current = accountDetails[identifier];
-    const nextExpanded = !(current?.expanded);
+    const nextExpanded = !current?.expanded;
     setAccountDetails((prev) => ({
       ...prev,
       [identifier]: {
         expanded: nextExpanded,
-        loading: nextExpanded && !(current?.rows?.length),
+        loading: nextExpanded && !current?.rows?.length,
         error: null,
         rows: current?.rows ?? [],
       },
@@ -399,7 +392,9 @@ export default function AssociatedAccounts({
                     <td className="px-3 py-3 text-slate-600">
                       <div className="font-mono text-xs text-slate-600">{group.label}</div>
                       {group.accounts.length > 1 && (
-                        <div className="text-[10px] text-slate-400/90">{group.accounts.length} identificadores vinculados</div>
+                        <div className="text-[10px] text-slate-400/90">
+                          {group.accounts.length} identificadores vinculados
+                        </div>
                       )}
                     </td>
                     <td className="px-3 py-3 text-slate-600">{group.bankName ?? "-"}</td>
@@ -415,22 +410,20 @@ export default function AssociatedAccounts({
                     </td>
                     <td className="px-3 py-3 text-slate-600">
                       <div className="flex flex-col gap-2 text-xs">
-                        <Button
-                          variant="secondary"
-                          onClick={() => toggleAccountDetails(group)}
-                          className="self-start"
-                        >
+                        <Button variant="secondary" onClick={() => toggleAccountDetails(group)} className="self-start">
                           {state?.expanded ? "Ocultar movimientos" : "Ver movimientos"}
                         </Button>
                         <div className="text-[11px] text-slate-500">
                           {state?.loading
                             ? "Cargando movimientos..."
                             : summaryInfo
-                            ? `${summaryInfo.count} mov. · ${fmtCLP(summaryInfo.total)}`
-                            : "Sin movimientos en el rango"}
+                              ? `${summaryInfo.count} mov. · ${fmtCLP(summaryInfo.total)}`
+                              : "Sin movimientos en el rango"}
                         </div>
                         {state?.error && (
-                          <Alert variant="error" className="text-[11px]">{state.error}</Alert>
+                          <Alert variant="error" className="text-[11px]">
+                            {state.error}
+                          </Alert>
                         )}
                       </div>
                     </td>
@@ -441,17 +434,29 @@ export default function AssociatedAccounts({
                         {state.loading ? (
                           <p className="text-xs text-slate-500">Cargando movimientos...</p>
                         ) : state.error ? (
-                          <Alert variant="error" className="text-xs">{state.error}</Alert>
+                          <Alert variant="error" className="text-xs">
+                            {state.error}
+                          </Alert>
                         ) : state.rows.length ? (
                           <div className="overflow-x-auto">
                             <table className="min-w-full text-xs text-slate-600">
                               <thead className="bg-white/60 text-[var(--brand-primary)]">
                                 <tr>
-                                  <th className="px-2 py-2 text-left text-[10px] font-semibold uppercase tracking-wide">Fecha</th>
-                                  <th className="px-2 py-2 text-left text-[10px] font-semibold uppercase tracking-wide">Descripción</th>
-                                  <th className="px-2 py-2 text-left text-[10px] font-semibold uppercase tracking-wide">Origen</th>
-                                  <th className="px-2 py-2 text-left text-[10px] font-semibold uppercase tracking-wide">Destino</th>
-                                  <th className="px-2 py-2 text-right text-[10px] font-semibold uppercase tracking-wide">Monto</th>
+                                  <th className="px-2 py-2 text-left text-[10px] font-semibold uppercase tracking-wide">
+                                    Fecha
+                                  </th>
+                                  <th className="px-2 py-2 text-left text-[10px] font-semibold uppercase tracking-wide">
+                                    Descripción
+                                  </th>
+                                  <th className="px-2 py-2 text-left text-[10px] font-semibold uppercase tracking-wide">
+                                    Origen
+                                  </th>
+                                  <th className="px-2 py-2 text-left text-[10px] font-semibold uppercase tracking-wide">
+                                    Destino
+                                  </th>
+                                  <th className="px-2 py-2 text-right text-[10px] font-semibold uppercase tracking-wide">
+                                    Monto
+                                  </th>
                                 </tr>
                               </thead>
                               <tbody>
@@ -474,7 +479,9 @@ export default function AssociatedAccounts({
                             </table>
                           </div>
                         ) : (
-                          <p className="text-xs text-slate-500">No se encontraron movimientos para esta cuenta en el rango seleccionado.</p>
+                          <p className="text-xs text-slate-500">
+                            No se encontraron movimientos para esta cuenta en el rango seleccionado.
+                          </p>
                         )}
                       </td>
                     </tr>
@@ -518,9 +525,7 @@ export default function AssociatedAccounts({
                   <span className="font-semibold text-slate-600">{suggestion.accountIdentifier}</span>
                   <span className="text-slate-500/90">{suggestion.holder ?? "(sin titular)"}</span>
                   {suggestion.bankAccountNumber && (
-                    <span className="text-[10px] text-slate-400/90">
-                      Cuenta {suggestion.bankAccountNumber}
-                    </span>
+                    <span className="text-[10px] text-slate-400/90">Cuenta {suggestion.bankAccountNumber}</span>
                   )}
                   {suggestion.rut && (
                     <span className="text-[10px] text-slate-400/90">RUT {formatRut(suggestion.rut)}</span>
@@ -529,11 +534,7 @@ export default function AssociatedAccounts({
                     {suggestion.movements} mov. · {fmtCLP(suggestion.totalAmount)}
                   </span>
                   <div className="flex flex-wrap gap-2 pt-1">
-                    <Button
-                      variant="secondary"
-                      size="xs"
-                      onClick={() => handleSuggestionClick(suggestion)}
-                    >
+                    <Button variant="secondary" size="xs" onClick={() => handleSuggestionClick(suggestion)}>
                       Usar
                     </Button>
                     {selectedId && suggestion.rut && (
@@ -547,10 +548,7 @@ export default function AssociatedAccounts({
                       </Button>
                     )}
                     {!selectedId && (
-                      <Button
-                        size="xs"
-                        onClick={() => handleSuggestionCreate(suggestion)}
-                      >
+                      <Button size="xs" onClick={() => handleSuggestionCreate(suggestion)}>
                         Crear contraparte
                       </Button>
                     )}
@@ -570,9 +568,7 @@ export default function AssociatedAccounts({
             label="Número de cuenta"
             type="text"
             value={accountForm.bankAccountNumber}
-            onChange={(event) =>
-              setAccountForm((prev) => ({ ...prev, bankAccountNumber: event.target.value }))
-            }
+            onChange={(event) => setAccountForm((prev) => ({ ...prev, bankAccountNumber: event.target.value }))}
             placeholder="Ej. 00123456789"
           />
           <Input
@@ -603,11 +599,7 @@ export default function AssociatedAccounts({
           </label>
         </div>
         <div className="mt-3 flex justify-end">
-          <Button
-            onClick={handleAddAccount}
-            disabled={accountStatus === "saving"}
-            variant="secondary"
-          >
+          <Button onClick={handleAddAccount} disabled={accountStatus === "saving"} variant="secondary">
             {accountStatus === "saving" ? "Guardando..." : "Agregar"}
           </Button>
         </div>

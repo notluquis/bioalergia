@@ -109,14 +109,15 @@ export function ConnectionIndicator() {
       } catch (error) {
         if (cancelled) return;
         const fetchedAt = new Date();
-        setState(prevState => {
+        setState((prevState) => {
           const newRetryCount = prevState.retryCount + 1;
           const isStarting = !hasConnectedOnce && newRetryCount < 4;
-          const detailMessage = error instanceof Error
-            ? error.message === "The user aborted a request."
-              ? "Conexión agotada (timeout)"
-              : error.message
-            : "Error desconocido";
+          const detailMessage =
+            error instanceof Error
+              ? error.message === "The user aborted a request."
+                ? "Conexión agotada (timeout)"
+                : error.message
+              : "Error desconocido";
           return {
             level: isStarting ? "starting" : "offline",
             fetchedAt,
@@ -175,9 +176,7 @@ export function ConnectionIndicator() {
         aria-pressed={open}
         aria-label={`Estado de la conexión: ${statusCopy.label}`}
       >
-        <span
-          className={`h-2.5 w-2.5 rounded-full shadow-inner transition ${INDICATOR_COLORS[state.level]}`}
-        />
+        <span className={`h-2.5 w-2.5 rounded-full shadow-inner transition ${INDICATOR_COLORS[state.level]}`} />
         <span className="hidden sm:inline">{statusCopy.label}</span>
       </button>
       {open && (

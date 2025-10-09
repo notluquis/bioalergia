@@ -31,15 +31,9 @@ export async function registerLoanPayment(
   scheduleId: number,
   payload: LoanPaymentPayload
 ): Promise<{ status: "ok"; schedule: LoanSchedule }> {
-  return apiClient.post<{ status: "ok"; schedule: LoanSchedule }>(
-    `/api/loan-schedules/${scheduleId}/pay`,
-    payload
-  );
+  return apiClient.post<{ status: "ok"; schedule: LoanSchedule }>(`/api/loan-schedules/${scheduleId}/pay`, payload);
 }
 
 export async function unlinkLoanPayment(scheduleId: number): Promise<{ status: "ok"; schedule: LoanSchedule }> {
-  return apiClient.post<{ status: "ok"; schedule: LoanSchedule }>(
-    `/api/loan-schedules/${scheduleId}/unlink`,
-    {}
-  );
+  return apiClient.post<{ status: "ok"; schedule: LoanSchedule }>(`/api/loan-schedules/${scheduleId}/unlink`, {});
 }

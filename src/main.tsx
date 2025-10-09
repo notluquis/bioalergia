@@ -60,102 +60,102 @@ const router = createBrowserRouter([
       </RequireAuth>
     ),
     children: [
-      { 
-        path: "/", 
+      {
+        path: "/",
         element: (
           <Suspense fallback={<PageLoader />}>
             <Home />
           </Suspense>
-        )
+        ),
       },
-      { 
-        path: "/employees", 
+      {
+        path: "/employees",
         element: (
           <Suspense fallback={<PageLoader />}>
             <EmployeesPage />
           </Suspense>
-        )
+        ),
       },
-      { 
-        path: "/upload", 
+      {
+        path: "/upload",
         element: (
           <Suspense fallback={<PageLoader />}>
             <Upload />
           </Suspense>
-        )
+        ),
       },
-      { 
-        path: "/transactions/movements", 
+      {
+        path: "/transactions/movements",
         element: (
           <Suspense fallback={<PageLoader />}>
             <TransactionsMovements />
           </Suspense>
-        )
+        ),
       },
-      { 
-        path: "/transactions/balances", 
+      {
+        path: "/transactions/balances",
         element: (
           <Suspense fallback={<PageLoader />}>
             <DailyBalances />
           </Suspense>
-        )
+        ),
       },
-      { 
-        path: "/transactions/participants", 
+      {
+        path: "/transactions/participants",
         element: (
           <Suspense fallback={<PageLoader />}>
             <ParticipantInsightsPage />
           </Suspense>
-        )
+        ),
       },
-      { 
-        path: "/counterparts", 
+      {
+        path: "/counterparts",
         element: (
           <Suspense fallback={<PageLoader />}>
             <CounterpartsPage />
           </Suspense>
-        )
+        ),
       },
-      { 
-        path: "/loans", 
+      {
+        path: "/loans",
         element: (
           <Suspense fallback={<PageLoader />}>
             <LoansPage />
           </Suspense>
-        )
+        ),
       },
-      { 
-        path: "/services", 
+      {
+        path: "/services",
         element: (
           <Suspense fallback={<PageLoader />}>
             <ServicesPage />
           </Suspense>
-        )
+        ),
       },
-      { 
-        path: "/timesheets", 
+      {
+        path: "/timesheets",
         element: (
           <Suspense fallback={<PageLoader />}>
             <TimesheetsPage />
           </Suspense>
-        )
+        ),
       },
-      { 
-        path: "/supplies", 
+      {
+        path: "/supplies",
         element: (
           <Suspense fallback={<PageLoader />}>
             <SuppliesPage />
           </Suspense>
-        )
+        ),
       },
       { path: "/data", element: <Navigate to="/transactions/movements" replace /> },
-      { 
-        path: "/stats", 
+      {
+        path: "/stats",
         element: (
           <Suspense fallback={<PageLoader />}>
             <Stats />
           </Suspense>
-        )
+        ),
       },
       {
         path: "/settings",
@@ -166,47 +166,47 @@ const router = createBrowserRouter([
         ),
         children: [
           { index: true, element: <Navigate to="general" replace /> },
-          { 
-            path: "general", 
+          {
+            path: "general",
             element: (
               <Suspense fallback={<PageLoader />}>
                 <GeneralSettingsPage />
               </Suspense>
-            )
+            ),
           },
-          { 
-            path: "accesos", 
+          {
+            path: "accesos",
             element: (
               <Suspense fallback={<PageLoader />}>
                 <AccessSettingsPage />
               </Suspense>
-            )
+            ),
           },
-          { 
-            path: "inventario", 
+          {
+            path: "inventario",
             element: (
               <Suspense fallback={<PageLoader />}>
                 <InventorySettingsPage />
               </Suspense>
-            )
+            ),
           },
-          { 
-            path: "roles", 
+          {
+            path: "roles",
             element: (
               <Suspense fallback={<PageLoader />}>
                 <RolesSettingsPage />
               </Suspense>
-            )
+            ),
           },
         ],
       },
-      { 
-        path: "/inventory", 
+      {
+        path: "/inventory",
         element: (
           <Suspense fallback={<PageLoader />}>
             <InventoryPage />
           </Suspense>
-        )
+        ),
       },
     ],
   },

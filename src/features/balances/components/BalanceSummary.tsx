@@ -46,31 +46,25 @@ export function BalanceSummary({ report, loading, error }: BalanceSummaryProps) 
       {loading ? (
         <p className="text-sm text-[var(--brand-primary)]">Cargando conciliación...</p>
       ) : !report ? (
-        <p className="text-sm text-slate-600">
-          Selecciona un rango para revisar los saldos de cierre registrados.
-        </p>
+        <p className="text-sm text-slate-600">Selecciona un rango para revisar los saldos de cierre registrados.</p>
       ) : !hasRecordedBalances ? (
         <p className="text-sm text-slate-600">
-          Aún no registras saldos de cierre para este rango. Actualiza la sección de Saldos diarios
-          en la página de movimientos para comenzar la conciliación.
+          Aún no registras saldos de cierre para este rango. Actualiza la sección de Saldos diarios en la página de
+          movimientos para comenzar la conciliación.
         </p>
       ) : (
         <div className="space-y-3 text-xs text-slate-600">
           {report.previous && (
             <div className="rounded-2xl border border-white/55 bg-white/60 px-4 py-3 text-slate-600">
               Saldo cierre previo ({dayjs(report.previous.date).format("DD-MM-YYYY")} 23:59)
-              <span className="ml-2 font-semibold text-slate-800">
-                {fmtCLP(report.previous.balance)}
-              </span>
+              <span className="ml-2 font-semibold text-slate-800">{fmtCLP(report.previous.balance)}</span>
             </div>
           )}
 
           {lastRecorded && (
             <div className="rounded-2xl border border-emerald-200/80 bg-emerald-50/80 px-4 py-3 text-emerald-700">
               Último saldo registrado ({dayjs(lastRecorded.date).format("DD-MM-YYYY")} 23:59)
-              <span className="ml-2 font-semibold text-emerald-800">
-                {fmtCLP(lastRecorded.recordedBalance!)}
-              </span>
+              <span className="ml-2 font-semibold text-emerald-800">{fmtCLP(lastRecorded.recordedBalance!)}</span>
               {lastRecorded.difference != null && Math.abs(lastRecorded.difference) > 1 && (
                 <span className="ml-2 font-semibold text-rose-600">
                   Dif: {formatSignedCLP(lastRecorded.difference)}
@@ -82,9 +76,7 @@ export function BalanceSummary({ report, loading, error }: BalanceSummaryProps) 
           {!lastRecorded && lastExpected && (
             <div className="rounded-2xl border border-white/55 bg-white/60 px-4 py-3 text-slate-600">
               Saldo esperado del último día ({dayjs(lastExpected.date).format("DD-MM-YYYY")}):
-              <span className="ml-2 font-semibold text-slate-800">
-                {fmtCLP(lastExpected.expectedBalance!)}
-              </span>
+              <span className="ml-2 font-semibold text-slate-800">{fmtCLP(lastExpected.expectedBalance!)}</span>
             </div>
           )}
 

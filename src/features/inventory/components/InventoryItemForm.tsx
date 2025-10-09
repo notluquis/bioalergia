@@ -4,13 +4,17 @@ import { getInventoryCategories } from "../api";
 
 interface InventoryItemFormProps {
   item?: InventoryItem | null;
-  onSave: (item: Omit<InventoryItem, 'id'>) => void;
+  onSave: (item: Omit<InventoryItem, "id">) => void;
   onCancel: () => void;
   saving: boolean;
 }
 
 export default function InventoryItemForm({ item, onSave, onCancel, saving }: InventoryItemFormProps) {
-  const [form, setForm] = useState({ ...item, category_id: item?.category_id ?? null, description: item?.description ?? '' });
+  const [form, setForm] = useState({
+    ...item,
+    category_id: item?.category_id ?? null,
+    description: item?.description ?? "",
+  });
   const [categories, setCategories] = useState<InventoryCategory[]>([]);
 
   useEffect(() => {
@@ -19,7 +23,7 @@ export default function InventoryItemForm({ item, onSave, onCancel, saving }: In
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(form as Omit<InventoryItem, 'id'>);
+    onSave(form as Omit<InventoryItem, "id">);
   };
 
   return (
@@ -29,7 +33,7 @@ export default function InventoryItemForm({ item, onSave, onCancel, saving }: In
           Nombre del Item
           <input
             type="text"
-            value={form.name ?? ''}
+            value={form.name ?? ""}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
             required
             className="rounded border px-3 py-2"
@@ -38,13 +42,15 @@ export default function InventoryItemForm({ item, onSave, onCancel, saving }: In
         <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
           Categoría
           <select
-            value={form.category_id ?? ''}
+            value={form.category_id ?? ""}
             onChange={(e) => setForm({ ...form, category_id: e.target.value ? Number(e.target.value) : null })}
             className="rounded border px-3 py-2"
           >
             <option value="">Sin categoría</option>
-            {categories.map(cat => (
-              <option key={cat.id} value={cat.id}>{cat.name}</option>
+            {categories.map((cat) => (
+              <option key={cat.id} value={cat.id}>
+                {cat.name}
+              </option>
             ))}
           </select>
         </label>
@@ -52,7 +58,7 @@ export default function InventoryItemForm({ item, onSave, onCancel, saving }: In
       <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
         Descripción
         <textarea
-          value={form.description ?? ''}
+          value={form.description ?? ""}
           onChange={(e) => setForm({ ...form, description: e.target.value })}
           className="rounded border px-3 py-2"
           rows={3}

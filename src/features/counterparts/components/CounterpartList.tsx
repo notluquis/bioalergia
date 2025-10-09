@@ -1,4 +1,3 @@
-import { Link } from "react-router-dom";
 import type { Counterpart, CounterpartCategory } from "../types";
 import Button from "../../../components/Button";
 import { formatRut } from "../../../lib/rut";
@@ -23,17 +22,11 @@ const CATEGORY_LABELS = CATEGORY_OPTIONS.reduce<Record<string, string>>((acc, it
   return acc;
 }, {});
 
-export default function CounterpartList({
-  counterparts,
-  selectedId,
-  onSelectCounterpart,
-}: CounterpartListProps) {
+export default function CounterpartList({ counterparts, selectedId, onSelectCounterpart }: CounterpartListProps) {
   return (
     <aside className="glass-card glass-underlay-gradient flex h-full flex-col gap-4 p-5 text-sm text-slate-600">
       <header className="flex items-center justify-between gap-3">
-        <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500/90">
-          Contrapartes
-        </h2>
+        <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500/90">Contrapartes</h2>
         <Button size="xs" onClick={() => onSelectCounterpart(null)}>
           Nueva
         </Button>
@@ -54,18 +47,16 @@ export default function CounterpartList({
               >
                 <span className="flex items-center justify-between gap-2">
                   <span className="block font-medium tracking-tight">{item.name}</span>
-                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
-                    isActive
-                      ? "bg-white/70 text-[var(--brand-primary)]"
-                      : "bg-white/55 text-slate-500"
-                  }`}>
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                      isActive ? "bg-white/70 text-[var(--brand-primary)]" : "bg-white/55 text-slate-500"
+                    }`}
+                  >
                     {CATEGORY_LABELS[item.category] ?? item.category}
                   </span>
                 </span>
                 {item.rut && (
-                  <span className="mt-1 block text-[11px] text-slate-500/90">
-                    RUT {formatRut(item.rut)}
-                  </span>
+                  <span className="mt-1 block text-[11px] text-slate-500/90">RUT {formatRut(item.rut)}</span>
                 )}
               </button>
             </li>

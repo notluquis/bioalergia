@@ -30,7 +30,11 @@ export default function RecentMovementsWidget({ rows }: { rows: DbMovement[] }) 
               </div>
               <span
                 className={`text-xs font-semibold ${
-                  row.direction === "IN" ? "text-emerald-600" : row.direction === "OUT" ? "text-rose-600" : "text-slate-500"
+                  row.direction === "IN"
+                    ? "text-emerald-600"
+                    : row.direction === "OUT"
+                      ? "text-rose-600"
+                      : "text-slate-500"
                 }`}
               >
                 {row.direction === "OUT" ? `-${fmtCLP(row.amount ?? 0)}` : fmtCLP(row.amount ?? 0)}

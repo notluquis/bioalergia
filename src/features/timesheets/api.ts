@@ -1,8 +1,4 @@
-import type {
-  TimesheetEntry,
-  TimesheetPayload,
-  TimesheetSummaryResponse,
-} from "./types";
+import type { TimesheetEntry, TimesheetPayload, TimesheetSummaryResponse } from "./types";
 
 async function handleResponse<T>(res: Response) {
   const data = await res.json();

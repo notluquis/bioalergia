@@ -15,8 +15,7 @@ export default defineConfig({
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
           'ui-vendor': ['lucide-react'],
           'data-vendor': ['dayjs', 'zod', 'papaparse'],
-          'pdf-vendor': ['jspdf', 'html2canvas'],
-          'excel-vendor': ['exceljs']
+          'pdf-vendor': ['jspdf', 'html2canvas']
         }
       }
     }

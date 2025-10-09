@@ -28,7 +28,7 @@ export default function Login() {
       const timeoutSeconds = Number(import.meta.env?.VITE_AUTH_TIMEOUT ?? 8);
       console.debug("[steps][login] Step 1: preparando envío de credenciales", email);
       logger.info("[login-page] envío credenciales", { email });
-      console.debug("[steps][login] Step 2: llamando login()" , email);
+      console.debug("[steps][login] Step 2: llamando login()", email);
       console.debug("[steps][login] Timeout configurado", { timeoutSeconds });
       await login(email, password);
       logger.info("[login-page] login OK", { email });
@@ -54,11 +54,7 @@ export default function Login() {
           <ConnectionIndicator />
         </div>
         <div className="flex flex-col items-center gap-3 text-center">
-          <img
-            src={settings.logoUrl}
-            alt={settings.orgName}
-            className="max-h-20 object-contain"
-          />
+          <img src={settings.logoUrl} alt={settings.orgName} className="max-h-20 object-contain" />
           <h1 className="text-xl font-semibold text-[var(--brand-primary)] drop-shadow-sm">
             Inicia sesión en {settings.orgName}
           </h1>
@@ -85,11 +81,7 @@ export default function Login() {
             required
           />
           {error && <Alert variant="error">{error}</Alert>}
-          <Button
-            type="submit"
-            disabled={loading}
-            className="w-full"
-          >
+          <Button type="submit" disabled={loading} className="w-full">
             {loading ? "Ingresando..." : "Ingresar"}
           </Button>
         </form>

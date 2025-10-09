@@ -6,11 +6,7 @@ interface StatCardProps {
   accent: "emerald" | "rose" | "slate" | string;
 }
 
-export default function StatCard({
-  title,
-  value,
-  accent,
-}: StatCardProps) {
+export default function StatCard({ title, value, accent }: StatCardProps) {
   const colorClass =
     accent === "emerald"
       ? "bg-emerald-100 text-emerald-700"

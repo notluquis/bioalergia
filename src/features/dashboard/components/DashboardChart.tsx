@@ -10,11 +10,7 @@ export default function DashboardChart({
   loading: boolean;
 }) {
   if (loading) {
-    return (
-      <div className="glass-card glass-underlay-gradient p-6 text-sm text-slate-600">
-        Cargando actividad...
-      </div>
-    );
+    return <div className="glass-card glass-underlay-gradient p-6 text-sm text-slate-600">Cargando actividad...</div>;
   }
 
   if (!data.length) {
@@ -44,8 +40,14 @@ export default function DashboardChart({
           return (
             <div key={row.month} className="flex min-w-[80px] flex-col items-center gap-2">
               <div className="flex h-40 w-full items-end gap-2 rounded-xl border border-white/50 bg-white/50 p-2">
-                <div className="flex-1 rounded-full bg-emerald-500/80 shadow-[0_12px_24px_-15px_rgba(16,37,66,0.35)]" style={{ height: `${inHeight}px` }} />
-                <div className="flex-1 rounded-full bg-rose-500/80 shadow-[0_12px_24px_-15px_rgba(16,37,66,0.35)]" style={{ height: `${outHeight}px` }} />
+                <div
+                  className="flex-1 rounded-full bg-emerald-500/80 shadow-[0_12px_24px_-15px_rgba(16,37,66,0.35)]"
+                  style={{ height: `${inHeight}px` }}
+                />
+                <div
+                  className="flex-1 rounded-full bg-rose-500/80 shadow-[0_12px_24px_-15px_rgba(16,37,66,0.35)]"
+                  style={{ height: `${outHeight}px` }}
+                />
               </div>
               <span className="text-xs font-medium text-slate-600">{dayjs(row.month).format("MMM YY")}</span>
             </div>

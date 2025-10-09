@@ -63,14 +63,8 @@ export function useParticipantInsightsData() {
 
   const accountRows = useMemo<LeaderboardDisplayRow[]>(() => {
     return leaderboard.map((row) => {
-      const selectKey =
-        row.participant ||
-        row.bankAccountNumber ||
-        row.withdrawId ||
-        row.identificationNumber ||
-        "";
-      const displayName =
-        row.bankAccountHolder || row.displayName || row.participant || "(sin información)";
+      const selectKey = row.participant || row.bankAccountNumber || row.withdrawId || row.identificationNumber || "";
+      const displayName = row.bankAccountHolder || row.displayName || row.participant || "(sin información)";
       const rut = row.identificationNumber ? formatRut(row.identificationNumber) || "-" : "-";
       const account = row.bankAccountNumber || row.withdrawId || row.participant || "-";
       return {
@@ -127,9 +121,7 @@ export function useParticipantInsightsData() {
         key,
         displayName: entry.displayName,
         rut: entry.rut,
-        account: entry.accounts.size
-          ? Array.from(entry.accounts).slice(0, 4).join(", ")
-          : "-",
+        account: entry.accounts.size ? Array.from(entry.accounts).slice(0, 4).join(", ") : "-",
         outgoingCount: entry.outgoingCount,
         outgoingAmount: entry.outgoingAmount,
         selectKey: entry.selectKey,
@@ -180,24 +172,27 @@ export function useParticipantInsightsData() {
     }
   }, []);
 
-  const handleSubmit = useCallback(async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const handleSubmit = useCallback(
+    async (event: React.FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
 
-    const rangeParams = resolveRange(quickMonth, from, to);
-    setSelectedRange(rangeParams);
+      const rangeParams = resolveRange(quickMonth, from, to);
+      setSelectedRange(rangeParams);
 
-    const trimmedId = activeParticipantId;
+      const trimmedId = activeParticipantId;
 
-    if (!trimmedId) {
-      setDetailError(null);
-      setMonthly([]);
-      setCounterparts([]);
-      setVisible(false);
-      return;
-    }
+      if (!trimmedId) {
+        setDetailError(null);
+        setMonthly([]);
+        setCounterparts([]);
+        setVisible(false);
+        return;
+      }
 
-    await loadParticipant(trimmedId, rangeParams);
-  }, [activeParticipantId, from, loadParticipant, quickMonth, to]);
+      await loadParticipant(trimmedId, rangeParams);
+    },
+    [activeParticipantId, from, loadParticipant, quickMonth, to]
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -218,10 +213,7 @@ export function useParticipantInsightsData() {
         }
       } catch (err) {
         if (!cancelled) {
-          const message =
-            err instanceof Error
-              ? err.message
-              : "No se pudo obtener el ranking de participantes";
+          const message = err instanceof Error ? err.message : "No se pudo obtener el ranking de participantes";
           setLeaderboardError(message);
           setLeaderboard([]);
         }
@@ -239,10 +231,13 @@ export function useParticipantInsightsData() {
     };
   }, [selectedRange, leaderboardLimit]);
 
-  const handleSelectParticipant = useCallback(async (participant: string) => {
-    setParticipantId(participant);
-    await loadParticipant(participant, selectedRange);
-  }, [loadParticipant, selectedRange]);
+  const handleSelectParticipant = useCallback(
+    async (participant: string) => {
+      setParticipantId(participant);
+      await loadParticipant(participant, selectedRange);
+    },
+    [loadParticipant, selectedRange]
+  );
 
   return {
     participantId,

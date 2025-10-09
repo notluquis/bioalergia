@@ -29,4 +29,3 @@ export async function fileHasWithdrawHeader(file: File) {
   const normalized = stripBom(firstLine).toLowerCase();
   return normalized.includes(WITHDRAW_IDENTIFIER_TOKEN);
 }
-

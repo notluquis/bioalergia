@@ -13,12 +13,7 @@ export const fmtCLP = (n: number | string) => {
 export const coerceAmount = (v: any): number => {
   if (v == null) return 0;
   if (typeof v === "number") return v;
-  const s = String(v)
-    .replace(/\$/g, "")
-    .replace(/\./g, "")
-    .replace(/\s/g, "")
-    .replace(/CLP/gi, "")
-    .replace(/,/g, ".");
+  const s = String(v).replace(/\$/g, "").replace(/\./g, "").replace(/\s/g, "").replace(/CLP/gi, "").replace(/,/g, ".");
   const n = Number(s);
   return Number.isFinite(n) ? n : 0;
 };
@@ -48,7 +43,7 @@ export function formatRut(value: string | null | undefined): string {
 export function formatDate(date: string | Date, options?: Intl.DateTimeFormatOptions): string {
   const d = typeof date === "string" ? new Date(date) : date;
   if (!d || isNaN(d.getTime())) return "-";
-  
+
   return new Intl.DateTimeFormat("es-CL", {
     year: "numeric",
     month: "2-digit",
@@ -60,7 +55,7 @@ export function formatDate(date: string | Date, options?: Intl.DateTimeFormatOpt
 export function formatDateTime(date: string | Date): string {
   return formatDate(date, {
     year: "numeric",
-    month: "2-digit", 
+    month: "2-digit",
     day: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
@@ -70,11 +65,11 @@ export function formatDateTime(date: string | Date): string {
 export function formatRelativeDate(date: string | Date): string {
   const d = typeof date === "string" ? new Date(date) : date;
   if (!d || isNaN(d.getTime())) return "-";
-  
+
   const now = new Date();
   const diffMs = now.getTime() - d.getTime();
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-  
+
   if (diffDays === 0) return "Hoy";
   if (diffDays === 1) return "Ayer";
   if (diffDays < 7) return `Hace ${diffDays} días`;
@@ -137,15 +132,15 @@ export function formatPercentage(value: number, decimals = 1): string {
 
 export function formatFileSize(bytes: number): string {
   if (!Number.isFinite(bytes) || bytes < 0) return "0 B";
-  
+
   const units = ["B", "KB", "MB", "GB", "TB"];
   let size = bytes;
   let unitIndex = 0;
-  
+
   while (size >= 1024 && unitIndex < units.length - 1) {
     size /= 1024;
     unitIndex++;
   }
-  
+
   return `${size.toFixed(unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
 }

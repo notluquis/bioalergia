@@ -25,11 +25,11 @@ interface SupplyRequestFormProps {
 export default function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyRequestFormProps) {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  
+
   const form = useForm({
     initialValues: {
       selectedSupply: "",
-      selectedBrand: "", 
+      selectedBrand: "",
       selectedModel: "",
       quantity: 1,
       notes: "",
@@ -42,8 +42,8 @@ export default function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyR
         await apiClient.post("/api/supplies/requests", {
           supplyName: values.selectedSupply,
           quantity: values.quantity,
-          brand: values.selectedBrand === 'N/A' || !values.selectedBrand ? undefined : values.selectedBrand,
-          model: values.selectedModel === 'N/A' || !values.selectedModel ? undefined : values.selectedModel,
+          brand: values.selectedBrand === "N/A" || !values.selectedBrand ? undefined : values.selectedBrand,
+          model: values.selectedModel === "N/A" || !values.selectedModel ? undefined : values.selectedModel,
           notes: values.notes || undefined,
         });
         setSuccessMessage("¡Solicitud de insumo enviada con éxito!");
@@ -63,7 +63,7 @@ export default function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyR
       if (!acc[supply.name]) {
         acc[supply.name] = {};
       }
-      const brand = supply.brand || 'N/A';
+      const brand = supply.brand || "N/A";
       if (!acc[supply.name][brand]) {
         acc[supply.name][brand] = [];
       }
@@ -76,7 +76,10 @@ export default function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyR
 
   const supplyNames = Object.keys(structuredSupplies);
   const availableBrands = form.values.selectedSupply ? Object.keys(structuredSupplies[form.values.selectedSupply]) : [];
-  const availableModels = form.values.selectedSupply && form.values.selectedBrand ? structuredSupplies[form.values.selectedSupply][form.values.selectedBrand] : [];
+  const availableModels =
+    form.values.selectedSupply && form.values.selectedBrand
+      ? structuredSupplies[form.values.selectedSupply][form.values.selectedBrand]
+      : [];
 
   return (
     <div className="mb-8 p-6 bg-white shadow-md rounded-lg">
@@ -98,7 +101,9 @@ export default function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyR
           >
             <option value="">Seleccione un insumo</option>
             {supplyNames.map((name) => (
-              <option key={name} value={name}>{name}</option>
+              <option key={name} value={name}>
+                {name}
+              </option>
             ))}
           </Input>
           {form.getFieldError("selectedSupply") && (
@@ -106,13 +111,7 @@ export default function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyR
           )}
         </div>
         <div>
-          <Input
-            label="Cantidad"
-            type="number"
-            {...form.getFieldProps("quantity")}
-            min="1"
-            required
-          />
+          <Input label="Cantidad" type="number" {...form.getFieldProps("quantity")} min="1" required />
           {form.getFieldError("quantity") && (
             <p className="mt-1 text-xs text-red-600">{form.getFieldError("quantity")}</p>
           )}
@@ -130,7 +129,9 @@ export default function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyR
           >
             <option value="">Seleccione una marca</option>
             {availableBrands.map((brand) => (
-              <option key={brand} value={brand}>{brand}</option>
+              <option key={brand} value={brand}>
+                {brand}
+              </option>
             ))}
           </Input>
           {form.getFieldError("selectedBrand") && (
@@ -146,7 +147,9 @@ export default function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyR
           >
             <option value="">Seleccione un modelo</option>
             {availableModels.map((model) => (
-              <option key={model} value={model}>{model}</option>
+              <option key={model} value={model}>
+                {model}
+              </option>
             ))}
           </Input>
           {form.getFieldError("selectedModel") && (
@@ -154,15 +157,8 @@ export default function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyR
           )}
         </div>
         <div className="md:col-span-2">
-          <Input
-            label="Notas (Opcional)"
-            type="textarea"
-            rows={3}
-            {...form.getFieldProps("notes")}
-          />
-          {form.getFieldError("notes") && (
-            <p className="mt-1 text-xs text-red-600">{form.getFieldError("notes")}</p>
-          )}
+          <Input label="Notas (Opcional)" type="textarea" rows={3} {...form.getFieldProps("notes")} />
+          {form.getFieldError("notes") && <p className="mt-1 text-xs text-red-600">{form.getFieldError("notes")}</p>}
         </div>
         <div className="md:col-span-2">
           <Button type="submit" disabled={form.isSubmitting}>

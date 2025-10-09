@@ -13,11 +13,11 @@ export interface UseTableOptions<T extends string> {
   initialPage?: number;
   initialPageSize?: number;
   pageSizeOptions?: number[];
-  
+
   // Sorting options
   initialSortColumn?: T | null;
   initialSortDirection?: "asc" | "desc";
-  
+
   // Column visibility options
   columns?: T[];
   defaultColumnVisible?: boolean;
@@ -32,18 +32,17 @@ export function useTable<T extends string>({
   columns = [],
   defaultColumnVisible = true,
 }: UseTableOptions<T> = {}) {
-  
   const pagination = usePagination({
     initialPage,
     initialPageSize,
     pageSizeOptions,
   });
-  
+
   const sorting = useSorting({
     initialColumn: initialSortColumn,
     initialDirection: initialSortDirection,
   });
-  
+
   const columnVisibility = useColumnVisibility({
     initialColumns: columns,
     defaultVisible: defaultColumnVisible,
@@ -58,13 +57,13 @@ export function useTable<T extends string>({
   return {
     // Combined state
     state,
-    
+
     // Pagination
     ...pagination,
-    
+
     // Sorting
     ...sorting,
-    
+
     // Column visibility
     ...columnVisibility,
   };

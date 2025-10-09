@@ -52,32 +52,29 @@ const HEADER_VARIANTS = {
   minimal: "bg-gray-50 text-gray-700",
 };
 
-function TableHeader<T extends string>({ 
-  columns, 
-  sortState, 
-  onSort, 
-  visibleColumns 
-}: TableHeaderProps<T>) {
+function TableHeader<T extends string>({ columns, sortState, onSort, visibleColumns }: TableHeaderProps<T>) {
   const getSortIcon = (column: T) => {
     if (!sortState || sortState.column !== column) return null;
-    return sortState.direction === "asc" ? 
-      <ChevronUp className="ml-1 h-3 w-3 inline" /> : 
-      <ChevronDown className="ml-1 h-3 w-3 inline" />;
+    return sortState.direction === "asc" ? (
+      <ChevronUp className="ml-1 h-3 w-3 inline" />
+    ) : (
+      <ChevronDown className="ml-1 h-3 w-3 inline" />
+    );
   };
 
   return (
     <thead className="bg-inherit">
       <tr>
         {columns
-          .filter(col => !visibleColumns || visibleColumns.has(col.key))
+          .filter((col) => !visibleColumns || visibleColumns.has(col.key))
           .map((column) => (
             <th
               key={column.key}
               className={`
                 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide whitespace-nowrap
-                ${column.sortable && onSort ? 'cursor-pointer hover:bg-black/5' : ''}
-                ${column.align === 'center' ? 'text-center' : ''}
-                ${column.align === 'right' ? 'text-right' : ''}
+                ${column.sortable && onSort ? "cursor-pointer hover:bg-black/5" : ""}
+                ${column.align === "center" ? "text-center" : ""}
+                ${column.align === "right" ? "text-right" : ""}
               `}
               style={column.width ? { width: column.width } : undefined}
               onClick={column.sortable && onSort ? () => onSort(column.key) : undefined}
@@ -91,12 +88,12 @@ function TableHeader<T extends string>({
   );
 }
 
-function TableBody({ 
-  children, 
-  loading, 
-  loadingMessage = "Cargando...", 
+function TableBody({
+  children,
+  loading,
+  loadingMessage = "Cargando...",
   emptyMessage = "No hay datos para mostrar",
-  columnsCount 
+  columnsCount,
 }: TableBodyProps) {
   return (
     <tbody>
@@ -119,19 +116,19 @@ function TableBody({
   );
 }
 
-export function Table<T extends string>({ 
-  columns, 
-  children, 
+export function Table<T extends string>({
+  columns,
+  children,
   className = "",
   responsive = true,
   variant = "default",
   sortState,
   onSort,
-  ...props 
+  ...props
 }: TableProps<T>) {
   const containerClasses = `${TABLE_VARIANTS[variant]} ${className}`;
   const headerClasses = HEADER_VARIANTS[variant];
-  
+
   const tableContent = (
     <table className="min-w-full text-sm text-slate-600" {...props}>
       <div className={headerClasses}>
@@ -144,18 +141,12 @@ export function Table<T extends string>({
   if (responsive) {
     return (
       <div className={containerClasses}>
-        <div className="overflow-x-auto muted-scrollbar">
-          {tableContent}
-        </div>
+        <div className="overflow-x-auto muted-scrollbar">{tableContent}</div>
       </div>
     );
   }
 
-  return (
-    <div className={containerClasses}>
-      {tableContent}
-    </div>
-  );
+  return <div className={containerClasses}>{tableContent}</div>;
 }
 
 // Sub-componentes para usar con el Table

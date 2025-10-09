@@ -1,12 +1,4 @@
-export type ServiceType =
-  | "BUSINESS"
-  | "PERSONAL"
-  | "SUPPLIER"
-  | "TAX"
-  | "UTILITY"
-  | "LEASE"
-  | "SOFTWARE"
-  | "OTHER";
+export type ServiceType = "BUSINESS" | "PERSONAL" | "SUPPLIER" | "TAX" | "UTILITY" | "LEASE" | "SOFTWARE" | "OTHER";
 
 export type ServiceFrequency =
   | "WEEKLY"

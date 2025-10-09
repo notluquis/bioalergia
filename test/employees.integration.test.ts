@@ -29,7 +29,9 @@ function request(method: string, path: string, body?: any, headers: Record<strin
         res.on('end', () => {
           const text = Buffer.concat(chunks).toString('utf-8');
           let json: any = null;
-          try { json = text ? JSON.parse(text) : null; } catch {}
+          try { json = text ? JSON.parse(text) : null; } catch {
+            // ignore JSON parse error; leave json as null
+          }
           resolve({ status: res.statusCode || 0, json, headers: res.headers });
         });
       }

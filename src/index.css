@@ -25,11 +25,18 @@
 body {
   margin: 0;
   min-height: 100vh;
-  background: radial-gradient(circle at top right, rgba(var(--brand-primary-rgb) / 0.32), transparent 55%),
+  background:
+    radial-gradient(circle at top right, rgba(var(--brand-primary-rgb) / 0.32), transparent 55%),
     radial-gradient(circle at bottom left, rgba(var(--brand-secondary-rgb) / 0.32), transparent 55%),
     linear-gradient(135deg, #f8fbff 0%, var(--surface-ambient) 48%, #ffffff 100%);
   color: #102542;
-  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family:
+    "Inter",
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
   position: relative;
 }
 
@@ -74,7 +81,10 @@ body::before {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.55));
   padding: 0.55rem 0.9rem;
   color: #102542;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
   backdrop-filter: blur(calc(var(--glass-blur) / 2));
   -webkit-backdrop-filter: blur(calc(var(--glass-blur) / 2));
@@ -110,7 +120,8 @@ body::before {
   inset: 0;
   z-index: -1;
   border-radius: inherit;
-  background: radial-gradient(circle at top, rgba(var(--brand-primary-rgb) / 0.25), transparent 60%),
+  background:
+    radial-gradient(circle at top, rgba(var(--brand-primary-rgb) / 0.25), transparent 60%),
     radial-gradient(circle at bottom, rgba(var(--brand-secondary-rgb) / 0.2), transparent 55%);
   opacity: 0.65;
 }

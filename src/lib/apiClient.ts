@@ -57,7 +57,7 @@ export async function uploadFiles(files: File[], endpoint: string, logContext: s
 
 // --- New apiClient implementation ---
 
-interface RequestOptions extends Omit<RequestInit, 'body'> {
+interface RequestOptions extends Omit<RequestInit, "body"> {
   body?: object; // Allow object for JSON body
 }
 

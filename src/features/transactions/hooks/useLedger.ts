@@ -9,15 +9,8 @@ interface UseLedgerProps {
   hasAmounts: boolean;
 }
 
-export function useLedger({
-  rows,
-  initialBalance,
-  hasAmounts,
-}: UseLedgerProps): LedgerRow[] {
-  const initialBalanceNumber = useMemo(
-    () => coerceAmount(initialBalance),
-    [initialBalance]
-  );
+export function useLedger({ rows, initialBalance, hasAmounts }: UseLedgerProps): LedgerRow[] {
+  const initialBalanceNumber = useMemo(() => coerceAmount(initialBalance), [initialBalance]);
 
   const ledger = useMemo<LedgerRow[]>(() => {
     let balance = initialBalanceNumber;

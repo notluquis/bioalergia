@@ -1,6 +1,5 @@
-import express, { Response as ExpressResponse } from "express";
+import express from "express";
 import { asyncHandler, authenticate, requireRole } from "../lib/index.js";
-import { SQLBuilder } from "../lib/database.js";
 import { requestContext, logEvent } from "../lib/logger.js";
 import {
   listCounterparts,
@@ -12,7 +11,6 @@ import {
   listAccountSuggestions,
   counterpartSummary,
   assignAccountsToCounterpartByRut,
-  getPool,
 } from "../db.js";
 import {
   counterpartPayloadSchema,

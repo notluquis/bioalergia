@@ -50,9 +50,7 @@ export default function Stats() {
     return (
       <section className="space-y-4">
         <h1 className="text-2xl font-bold text-[var(--brand-primary)]">Estadísticas</h1>
-        <Alert variant="error">
-          No tienes permisos para ver las estadísticas.
-        </Alert>
+        <Alert variant="error">No tienes permisos para ver las estadísticas.</Alert>
       </section>
     );
   }
@@ -62,8 +60,8 @@ export default function Stats() {
       <div className="space-y-2">
         <h1 className="text-2xl font-bold text-[var(--brand-primary)]">Estadísticas financieras</h1>
         <p className="text-sm text-slate-600">
-          Resumen contable por mes, tipo de movimiento y direcciones. Ajusta el rango de fechas para
-          analizar tendencias.
+          Resumen contable por mes, tipo de movimiento y direcciones. Ajusta el rango de fechas para analizar
+          tendencias.
         </p>
       </div>
 
@@ -74,18 +72,8 @@ export default function Stats() {
         }}
         className="grid gap-4 rounded-2xl border border-[var(--brand-primary)]/10 bg-white p-6 text-xs text-slate-600 shadow-sm sm:grid-cols-5"
       >
-        <Input
-          label="Desde"
-          type="date"
-          value={from}
-          onChange={(event) => setFrom(event.target.value)}
-        />
-        <Input
-          label="Hasta"
-          type="date"
-          value={to}
-          onChange={(event) => setTo(event.target.value)}
-        />
+        <Input label="Desde" type="date" value={from} onChange={(event) => setFrom(event.target.value)} />
+        <Input label="Hasta" type="date" value={to} onChange={(event) => setTo(event.target.value)} />
         <Input
           label="Intervalo rápido"
           type="select"
@@ -108,10 +96,7 @@ export default function Stats() {
           ))}
         </Input>
         <div className="flex items-end gap-2">
-          <Button
-            type="submit"
-            disabled={loading}
-          >
+          <Button type="submit" disabled={loading}>
             {loading ? "Calculando..." : "Actualizar"}
           </Button>
         </div>
@@ -129,29 +114,19 @@ export default function Stats() {
 
           <MonthlyFlowChart data={data.monthly} />
 
-          <BalanceSummary
-            report={balancesReport}
-            loading={balancesLoading}
-            error={balancesError}
-          />
+          <BalanceSummary report={balancesReport} loading={balancesLoading} error={balancesError} />
 
           <section className="space-y-3 glass-card glass-underlay-gradient p-6">
             <h2 className="text-lg font-semibold text-[var(--brand-secondary)]">Por tipo de movimiento</h2>
             <MovementTypeList data={data.byType} />
           </section>
 
-          <TopParticipantsSection
-            data={topParticipants}
-            loading={participantsLoading}
-            error={participantsError}
-          />
+          <TopParticipantsSection data={topParticipants} loading={participantsLoading} error={participantsError} />
         </div>
       )}
 
       {!loading && !error && data && !data.monthly.length && (
-        <Alert variant="warning">
-          No se encontraron movimientos en el rango seleccionado.
-        </Alert>
+        <Alert variant="warning">No se encontraron movimientos en el rango seleccionado.</Alert>
       )}
     </section>
   );

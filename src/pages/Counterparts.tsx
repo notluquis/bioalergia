@@ -1,53 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
-import {
-  addCounterpartAccount,
-  attachCounterpartRut,
-  createCounterpart,
-  fetchAccountSuggestions,
-  fetchCounterpart,
-  fetchCounterpartSummary,
-  fetchCounterparts,
-  updateCounterpart,
-  updateCounterpartAccount,
-} from "../features/counterparts/api";
-import type {
-  Counterpart,
-  CounterpartAccount,
-  CounterpartAccountSuggestion,
-  CounterpartPersonType,
-  CounterpartCategory,
-  CounterpartSummary,
-  AccountTransactionsState,
-  TransactionsApiResponse,
-  AccountGroup,
-} from "../features/counterparts/types";
-import type { DbMovement } from "../features/transactions/types";
-import { fmtCLP } from "../lib/format";
-import { formatRut } from "../lib/rut";
+import { createCounterpart, fetchCounterpart, fetchCounterpartSummary, fetchCounterparts, updateCounterpart } from "../features/counterparts/api";
+import type { Counterpart, CounterpartAccount, CounterpartSummary } from "../features/counterparts/types";
 import CounterpartList from "../features/counterparts/components/CounterpartList";
 import CounterpartForm from "../features/counterparts/components/CounterpartForm";
 import AssociatedAccounts from "../features/counterparts/components/AssociatedAccounts";
 import MonthlySummaryChart from "../features/counterparts/components/MonthlySummaryChart";
 import ConceptList from "../features/counterparts/components/ConceptList";
-import Alert from "../components/Alert";
 import Input from "../components/Input";
 import Button from "../components/Button";
-import {
-  EMPTY_FORM,
-  ACCOUNT_FORM_DEFAULT,
-  CATEGORY_OPTIONS,
-  CATEGORY_LABELS,
-  SUMMARY_RANGE_MONTHS,
-} from "../features/counterparts/constants";
+import { SUMMARY_RANGE_MONTHS } from "../features/counterparts/constants";
 
-function normalizeExternalUrl(value?: string | null) {
-  if (!value) return "";
-  const trimmed = value.trim();
-  if (!trimmed) return "";
-  if (/^https?:\/\//i.test(trimmed)) return trimmed;
-  return `https://${trimmed}`;
-}
+// Removed unused helper normalizeExternalUrl and various unused constants/imports during cleanup.
 
 export default function CounterpartsPage() {
   const [counterparts, setCounterparts] = useState<Counterpart[]>([]);
@@ -111,9 +75,7 @@ export default function CounterpartsPage() {
         setDetail(data);
         id = data.counterpart.id;
         setCounterparts((prev) =>
-          prev
-            .map((item) => (item.id === id ? data.counterpart : item))
-            .sort((a, b) => a.name.localeCompare(b.name))
+          prev.map((item) => (item.id === id ? data.counterpart : item)).sort((a, b) => a.name.localeCompare(b.name))
         );
       } else {
         const data = await createCounterpart(payload);
@@ -156,11 +118,7 @@ export default function CounterpartsPage() {
   return (
     <section className="flex flex-col gap-6 xl:flex-row xl:items-start">
       <div className="xl:w-72 xl:flex-shrink-0">
-        <CounterpartList
-          counterparts={counterparts}
-          selectedId={selectedId}
-          onSelectCounterpart={selectCounterpart}
-        />
+        <CounterpartList counterparts={counterparts} selectedId={selectedId} onSelectCounterpart={selectCounterpart} />
       </div>
 
       <div className="flex-1 space-y-6">
@@ -185,12 +143,8 @@ export default function CounterpartsPage() {
           <section className="glass-card glass-underlay-gradient space-y-5 p-6">
             <header className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
               <div className="space-y-1">
-                <h2 className="text-lg font-semibold text-[var(--brand-primary)] drop-shadow-sm">
-                  Resumen mensual
-                </h2>
-                <p className="text-xs text-slate-600/90">
-                  Transferencias de egreso asociadas a esta contraparte.
-                </p>
+                <h2 className="text-lg font-semibold text-[var(--brand-primary)] drop-shadow-sm">Resumen mensual</h2>
+                <p className="text-xs text-slate-600/90">Transferencias de egreso asociadas a esta contraparte.</p>
               </div>
               <div className="flex flex-wrap items-end gap-3 text-xs">
                 <Input
