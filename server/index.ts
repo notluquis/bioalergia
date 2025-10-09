@@ -87,7 +87,19 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Carpeta con el build del cliente (Vite)
-const clientDir = path.resolve(__dirname, "../dist/client");
+// Nota: en runtime __dirname === dist/server, por lo tanto el cliente está en ../client
+const clientDir = path.resolve(__dirname, "../client");
+
+if (!process.env.VITE_SKIP_CLIENT_CHECK) {
+  try {
+    // Lightweight existence check
+    if (!require('fs').existsSync(clientDir)) {
+      console.warn(`[startup] Advertencia: carpeta de cliente no encontrada en ${clientDir}. ¿Olvidaste ejecutar 'npm run build:prod'?`);
+    }
+  } catch {
+    // ignore
+  }
+}
 
 // Archivos estáticos de la SPA en la raíz
 app.use(express.static(clientDir, { index: false }));
@@ -98,13 +110,21 @@ app.get(/^(?!\/api).*$/, (_req, res) => {
 });
 // --- End Production Frontend Serving ---
 
-app.use((err: any, _req: express.Request, res: express.Response) => {
+interface GenericErrorLike { statusCode?: number; message?: unknown }
+function isGenericErrorLike(value: unknown): value is GenericErrorLike {
+  return typeof value === 'object' && value !== null;
+}
+app.use((err: unknown, _req: express.Request, res: express.Response) => {
   console.error(err);
-  const status = typeof err.statusCode === "number" ? err.statusCode : 500;
-  res.status(status).json({
-    status: "error",
-    message: err.message || "Error inesperado en el servidor",
-  });
+  let status = 500;
+  let message = 'Error inesperado en el servidor';
+  if (err instanceof Error) {
+    message = err.message;
+  } else if (isGenericErrorLike(err)) {
+    if (typeof err.message === 'string') message = err.message;
+    if (typeof err.statusCode === 'number') status = err.statusCode;
+  }
+  res.status(status).json({ status: 'error', message });
 });
 
 ensureSchema()

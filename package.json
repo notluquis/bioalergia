@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+  "build": "npm run build:prod",
     "build:client": "vite build",
     "build:server": "tsc -p tsconfig.server.json && npm run copy:sql",
     "copy:sql": "cp -r server/sql dist/server/",
