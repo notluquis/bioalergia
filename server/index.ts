@@ -5,7 +5,10 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 import { ensureSchema, getPool } from "./db.js";
-import { PORT } from "./config.js";
+import {
+  PORT,
+  isProduction,
+} from "./config.js";
 import { registerAuthRoutes } from "./routes/auth.js";
 import { registerSettingsRoutes } from "./routes/settings.js";
 import { registerTransactionRoutes } from "./routes/transactions.js";
@@ -22,6 +25,10 @@ import { registerAssetRoutes } from "./routes/assets.js";
 
 const app = express();
 
+const logInDevelopment = (...args: Parameters<typeof console.log>) => {
+  if (!isProduction) console.log(...args);
+};
+
 app.use(
   cors({
     origin: true,
@@ -30,10 +37,12 @@ app.use(
 );
 app.use(express.json());
 app.use(cookieParser());
-app.use((req, _res, next) => {
-  console.log(`[req] ${req.method} ${req.originalUrl}`);
-  next();
-});
+if (!isProduction) {
+  app.use((req, _res, next) => {
+    console.log(`[req] ${req.method} ${req.originalUrl}`);
+    next();
+  });
+}
 
 // API Routes
 registerAuthRoutes(app);
@@ -51,7 +60,7 @@ app.use("/api/supplies", suppliesRouter);
 registerAssetRoutes(app);
 
 app.get("/api/health", async (_req, res) => {
-  console.info("[steps][health] Step 0: /api/health recibido");
+  logInDevelopment("[steps][health] Step 0: /api/health recibido");
   const checks: {
     db: { status: "ok" | "error"; latency: number | null; message?: string };
   } = {
@@ -63,10 +72,10 @@ app.get("/api/health", async (_req, res) => {
   const start = Date.now();
   try {
     const pool = getPool();
-    console.info("[steps][health] Step 1: ejecutando SELECT 1");
+    logInDevelopment("[steps][health] Step 1: ejecutando SELECT 1");
     await pool.execute("SELECT 1");
     checks.db.latency = Date.now() - start;
-    console.info("[steps][health] Step 2: SELECT 1 OK", checks.db.latency);
+    logInDevelopment("[steps][health] Step 2: SELECT 1 OK", checks.db.latency);
   } catch (error) {
     checks.db.status = "error";
     checks.db.message = error instanceof Error ? error.message : "Error desconocido";
@@ -79,7 +88,7 @@ app.get("/api/health", async (_req, res) => {
     timestamp: new Date().toISOString(),
     checks,
   });
-  console.info("[steps][health] Step final: respuesta enviada", status);
+  logInDevelopment("[steps][health] Step final: respuesta enviada", status);
 });
 
 // --- Production Frontend Serving ---
@@ -114,8 +123,25 @@ interface GenericErrorLike { statusCode?: number; message?: unknown }
 function isGenericErrorLike(value: unknown): value is GenericErrorLike {
   return typeof value === 'object' && value !== null;
 }
-app.use((err: unknown, _req: express.Request, res: express.Response) => {
-  console.error(err);
+
+/**
+ * Express error handler middleware.
+ * All four parameters must remain in the signature so Express registers it correctly.
+ */
+app.use(function errorHandler(
+  err: unknown,
+  req: express.Request,
+  res: express.Response,
+  next: express.NextFunction
+) {
+  if (!isProduction) {
+    logInDevelopment("[errorHandler]", err);
+  } else {
+    console.error(err);
+  }
+  if (res.headersSent) {
+    return next(err);
+  }
   let status = 500;
   let message = 'Error inesperado en el servidor';
   if (err instanceof Error) {

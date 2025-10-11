@@ -1,7 +1,7 @@
 import React from "react";
 
 export class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean; error: unknown }> {
-  constructor(props: any) {
+  constructor(props: { children: React.ReactNode }) {
     super(props);
     this.state = { hasError: false, error: null };
   }
@@ -12,7 +12,7 @@ export class ErrorBoundary extends React.Component<{ children: React.ReactNode }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   componentDidCatch(_error: unknown, _errorInfo: unknown) {
-    // Hook para logging externo si se requiere.
+    // Hook opcional para reportar a un sistema de errores.
   }
 
   render() {

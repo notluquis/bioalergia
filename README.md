@@ -12,7 +12,7 @@ npm run server        # Solo backend (Express)
 
 # Producción
 npm run prod          # Build completo + start
-npm run deploy        # Solo build
+npm run deploy        # Build y prune de dependencias (producción)
 npm start             # Solo start (requiere build previo)
 
 # Seguridad
@@ -23,18 +23,19 @@ npm run prod:secure      # Producción con encriptación
 
 ## 🔐 Seguridad y Variables de Entorno
 
-⚠️ **Importante**: Este proyecto implementa las mejores prácticas de seguridad con **dotenvx**.
+⚠️ **Importante**: Los secretos se gestionan desde Railway → Variables. Usa scopes por entorno (Production/Staging/Preview) y variable groups para compartir claves entre servicios.
 
-### Configuración Inicial
-1. Copia `.env.example` a `.env`
-2. Completa con tus valores reales
-3. **Nunca** subas `.env` al repositorio
+### Configuración local
+1. Copia `.env.example` a `.env` **solo para desarrollo** y rellena con valores dummy si es necesario.
+2. Carga los valores reales en Railway; evita sincronizar `.env` reales con el repo.
+3. Para producción, usa `npx @dotenvx/dotenvx encrypt` si necesitas vault local, pero prioriza los secretos de Railway.
 
 ### Medidas de Seguridad
-- ✅ Hook de pre-commit previene subida accidental de secrets
+- ✅ Hook de pre-commit que previene subir secrets
 - ✅ Variables encriptadas para producción con dotenvx
 - ✅ Auditoría automática de dependencias
-- ✅ Documentación completa en `docs/SECURITY.md`
+- ✅ Guía de despliegue en Railway en `docs/railway-deployment.md`
+- ✅ Documentación de seguridad detallada en `docs/SECURITY.md`
 
 ## 🏗️ Arquitectura
 - Tailwind v4 se integra con `@tailwindcss/vite`. No se requiere `tailwind.config` ni `postcss.config` para el caso base.

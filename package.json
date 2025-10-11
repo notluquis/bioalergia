@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-  "build": "npm run build:prod",
+    "build": "npm run build:prod",
     "build:client": "vite build",
     "build:server": "tsc -p tsconfig.server.json && npm run copy:sql",
     "copy:sql": "cp -r server/sql dist/server/",
@@ -15,7 +15,7 @@
     "dev:full": "concurrently \"npm:dev\" \"npm:server\"",
     "start": "node dist/server/index.js",
     "build:prod": "rm -rf dist && npm run build:server && npm run build:client",
-    "deploy": "npm run build:prod",
+    "deploy": "npm run build:prod && npm prune --omit=dev",
     "prod": "npm run build:prod && npm start",
     "env:encrypt": "npx @dotenvx/dotenvx encrypt",
     "env:decrypt": "npx @dotenvx/dotenvx decrypt",
@@ -23,12 +23,13 @@
     "security:check": "npm audit && npx @dotenvx/dotenvx run --quiet -- echo '✅ Variables de entorno cargadas de forma segura'",
     "test:employees": "node test/employees.integration.test.ts",
     "migrate:timesheets": "npx @dotenvx/dotenvx run -- node scripts/migrate-timesheets.mjs",
-  "lint": "eslint . --ext ts,tsx --report-unused-disable-directives",
-  "lint:strict": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives",
+    "lint:strict": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "lint:fix": "eslint . --ext ts,tsx --fix",
     "format": "prettier --write \"src/**/*.{js,jsx,ts,tsx,css,md,json}\"",
     "format:check": "prettier --check \"src/**/*.{js,jsx,ts,tsx,css,md,json}\"",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "ci:check": "npm run lint:strict && npm run type-check"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",
