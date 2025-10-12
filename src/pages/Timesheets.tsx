@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
 import { useAuth } from "../context/auth-context";
 import { fetchEmployees } from "../features/employees/api";
@@ -17,7 +17,7 @@ import Alert from "../components/Alert";
 // Removed unused Input component after cleanup
 import { useMonths } from "../features/timesheets/hooks/useMonths";
 
-import TimesheetExportPDF from "../features/timesheets/components/TimesheetExportPDF";
+const TimesheetExportPDF = lazy(() => import("../features/timesheets/components/TimesheetExportPDF"));
 
 // Removed unused EMPTY_BULK_ROW and computeExtraAmount during cleanup.
 
@@ -315,15 +315,29 @@ export default function TimesheetsPage() {
       {/* Botón de exportar PDF */}
       {selectedEmployee && (
         <div className="flex justify-end">
-          <TimesheetExportPDF
-            logoUrl={"/logo.png"}
-            employee={selectedEmployee}
-            summary={employeeSummaryRow || null}
-            bulkRows={bulkRows}
-            columns={["date", "entrada", "salida", "worked", "overtime"]}
-            monthLabel={monthLabel}
-            monthRaw={month}
-          />
+          <Suspense
+            fallback={
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled
+                  className="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-[var(--brand-primary)]/70 cursor-wait"
+                >
+                  Cargando exportador...
+                </button>
+              </div>
+            }
+          >
+            <TimesheetExportPDF
+              logoUrl={"/logo.png"}
+              employee={selectedEmployee}
+              summary={employeeSummaryRow || null}
+              bulkRows={bulkRows}
+              columns={["date", "entrada", "salida", "worked", "overtime"]}
+              monthLabel={monthLabel}
+              monthRaw={month}
+            />
+          </Suspense>
         </div>
       )}
 

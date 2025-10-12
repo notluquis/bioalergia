@@ -1,11 +1,8 @@
 import React from "react";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
 import { fmtCLP } from "../../../lib/format";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
 import { useSettings } from "../../../context/settings-context";
-import Modal from "../../../components/Modal";
 import type { Employee } from "../../employees/types";
 import type { BulkRow, TimesheetSummaryRow } from "../types";
 import type { CellHookData } from "jspdf-autotable";
@@ -26,6 +23,9 @@ interface TimesheetExportPDFProps {
   monthRaw?: string; // YYYY-MM
 }
 
+type JsPdfFactory = typeof import("jspdf");
+type AutoTableFactory = typeof import("jspdf-autotable");
+
 export default function TimesheetExportPDF({
   logoUrl,
   employee,
@@ -41,7 +41,18 @@ export default function TimesheetExportPDF({
     columns.length ? columns : Array.from(defaultCols)
   );
   const [showOptions, setShowOptions] = React.useState(false);
-  const [previewUrl, setPreviewUrl] = React.useState<string | null>(null);
+  const pdfLibsRef = React.useRef<{ jsPDF: JsPdfFactory["default"]; autoTable: AutoTableFactory["default"] } | null>(
+    null
+  );
+
+  async function loadPdfLibs() {
+    if (!pdfLibsRef.current) {
+      const [{ default: jsPDF }, autoTableModule] = await Promise.all([import("jspdf"), import("jspdf-autotable")]);
+      const autoTable = (autoTableModule.default ?? autoTableModule) as AutoTableFactory["default"];
+      pdfLibsRef.current = { jsPDF, autoTable };
+    }
+    return pdfLibsRef.current;
+  }
 
   type JsPdfPageSize = {
     getWidth?: () => number;
@@ -55,6 +66,8 @@ export default function TimesheetExportPDF({
 
   async function handleExport(preview = true) {
     try {
+      const libs = await loadPdfLibs();
+      const { jsPDF, autoTable } = libs;
       const doc = new jsPDF();
       const internal = (doc as unknown as { internal?: JsPdfInternal }).internal ?? {};
       const pageSize = internal.pageSize ?? internal.getPageSize?.();
@@ -304,8 +317,14 @@ export default function TimesheetExportPDF({
       const safeName = (employee.full_name || "Trabajador").replace(/[^a-zA-Z0-9_\- ]/g, "");
       if (preview) {
         const blob = doc.output("blob");
-        const url = URL.createObjectURL(blob);
-        setPreviewUrl(url);
+        const blobUrl = URL.createObjectURL(blob);
+        const previewWindow = window.open(blobUrl, "_blank", "noopener,noreferrer");
+        if (!previewWindow) {
+          alert("No se pudo abrir la vista previa. Revisa si el navegador bloqueó las ventanas emergentes.");
+        } else {
+          previewWindow.opener = null;
+          setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+        }
       } else {
         doc.save(`Honorarios_${safeName}_${monthLabel}.pdf`);
       }
@@ -381,30 +400,6 @@ export default function TimesheetExportPDF({
         )}
       </div>
 
-      {/* Modal de vista previa */}
-      <Modal
-        isOpen={Boolean(previewUrl)}
-        onClose={() => {
-          if (previewUrl) URL.revokeObjectURL(previewUrl);
-          setPreviewUrl(null);
-        }}
-        title="Vista previa PDF"
-      >
-        {previewUrl ? (
-          <div className="h-[70vh]">
-            <iframe src={previewUrl} className="h-full w-full rounded-lg border" />
-            <div className="mt-3 flex justify-end gap-2">
-              <a
-                href={previewUrl}
-                download="export.pdf"
-                className="rounded-lg bg-[var(--brand-primary)] px-3 py-1.5 text-sm font-semibold text-white hover:bg-[var(--brand-primary)]/85"
-              >
-                Descargar
-              </a>
-            </div>
-          </div>
-        ) : null}
-      </Modal>
     </div>
   );
 }
