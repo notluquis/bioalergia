@@ -213,14 +213,24 @@ const router = createBrowserRouter([
   { path: "*", element: <Navigate to="/" replace /> },
 ]);
 
-ReactDOM.createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
-    <AuthProvider>
-      <SettingsProvider>
-        <ErrorBoundary>
-          <RouterProvider router={router} />
-        </ErrorBoundary>
-      </SettingsProvider>
-    </AuthProvider>
-  </React.StrictMode>
-);
+
+export function RootApp() {
+  return (
+    <React.StrictMode>
+      <AuthProvider>
+        <SettingsProvider>
+          <ErrorBoundary>
+            <RouterProvider router={router} />
+          </ErrorBoundary>
+        </SettingsProvider>
+      </AuthProvider>
+    </React.StrictMode>
+  );
+}
+
+const rootElement = document.getElementById("root");
+if (!rootElement) {
+  throw new Error("No se encontró el elemento root para montar la aplicación");
+}
+
+ReactDOM.createRoot(rootElement).render(<RootApp />);

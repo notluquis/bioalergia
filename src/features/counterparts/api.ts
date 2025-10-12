@@ -8,6 +8,16 @@ import type {
   CounterpartCategory,
 } from "./types";
 
+export type CounterpartUpsertPayload = {
+  rut?: string | null;
+  name: string;
+  personType: CounterpartPersonType;
+  category: CounterpartCategory;
+  email?: string | null;
+  employeeEmail?: string | null;
+  notes?: string | null;
+};
+
 export async function fetchCounterparts() {
   const data = await apiClient.get<{ counterparts: Counterpart[] }>("/api/counterparts");
   return data.counterparts;
@@ -17,15 +27,7 @@ export async function fetchCounterpart(id: number) {
   return await apiClient.get<{ counterpart: Counterpart; accounts: CounterpartAccount[] }>(`/api/counterparts/${id}`);
 }
 
-export async function createCounterpart(payload: {
-  rut?: string | null;
-  name: string;
-  personType: CounterpartPersonType;
-  category: CounterpartCategory;
-  email?: string | null;
-  employeeEmail?: string | null;
-  notes?: string | null;
-}) {
+export async function createCounterpart(payload: CounterpartUpsertPayload) {
   return await apiClient.post<{ counterpart: Counterpart; accounts: CounterpartAccount[] }>(
     "/api/counterparts",
     payload
@@ -34,15 +36,7 @@ export async function createCounterpart(payload: {
 
 export async function updateCounterpart(
   id: number,
-  payload: Partial<{
-    rut: string | null;
-    name: string;
-    personType: CounterpartPersonType;
-    category: CounterpartCategory;
-    email: string | null;
-    employeeEmail: string | null;
-    notes: string | null;
-  }>
+  payload: Partial<CounterpartUpsertPayload>
 ) {
   return await apiClient.put<{ counterpart: Counterpart; accounts: CounterpartAccount[] }>(
     `/api/counterparts/${id}`,

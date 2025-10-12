@@ -1,14 +1,10 @@
 import React from "react";
-import { useAuth } from "../context/AuthContext";
 import SupplyRequestForm from "../features/supplies/components/SupplyRequestForm";
 import SupplyRequestsTable from "../features/supplies/components/SupplyRequestsTable";
 import { useSupplyManagement } from "../features/supplies/hooks/useSupplyManagement";
 import Alert from "../components/Alert";
 
 export default function Supplies() {
-  const { user } = useAuth();
-  const isAdmin = user?.role === "ADMIN" || user?.role === "GOD";
-
   const { requests, commonSupplies, loading, error, successMessage, fetchData, handleStatusChange } =
     useSupplyManagement();
 

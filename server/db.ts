@@ -267,6 +267,10 @@ const REQUIRED_ENV = ["DB_HOST", "DB_USER", "DB_PASSWORD", "DB_NAME"] as const;
 
 let pool: Pool | null = null;
 
+function isDuplicateColumnError(error: unknown): boolean {
+  return error instanceof Error && /Duplicate column name/i.test(error.message);
+}
+
 async function addColumnIfMissing(pool: Pool, table: string, columnDefinition: string) {
   try {
     await pool.query(`ALTER TABLE ${table} ADD COLUMN ${columnDefinition}` as string);
@@ -649,7 +653,7 @@ export async function ensureSchema() {
       }
     } catch (error) {
       // Ignorar errores de columnas que ya existen
-      if (!(error as any)?.message?.includes('Duplicate column name')) {
+      if (!isDuplicateColumnError(error)) {
         throw error;
       }
     }
@@ -2425,7 +2429,7 @@ function mapCounterpartAccount(row: RowDataPacket): CounterpartAccountRecord {
     try {
       const parsed = JSON.parse(String(row.metadata));
       metadata = parsed && typeof parsed === "object" ? parsed : null;
-    } catch (_err) {
+    } catch {
       metadata = null;
     }
   }
@@ -2743,7 +2747,7 @@ export async function updateCounterpartAccount(
     accountType?: string | null;
     holder?: string | null;
     concept?: string | null;
-    metadata?: any;
+    metadata?: CounterpartAccountMetadata | null;
   }
 ) {
   const fields: string[] = [];

@@ -106,7 +106,7 @@ export function registerTimesheetRoutes(app: express.Express) {
         return res.status(400).json({ status: "error", message: "Datos inválidos", issues: parsed.error.issues });
       }
       const id = Number(req.params.id);
-      const updatePayload: Record<string, unknown> = {};
+      const updatePayload: Parameters<typeof updateTimesheetEntry>[1] = {};
 
       if (parsed.data.start_time !== undefined) {
         updatePayload.start_time = parsed.data.start_time;
@@ -138,7 +138,7 @@ export function registerTimesheetRoutes(app: express.Express) {
         updatePayload.comment = parsed.data.comment;
       }
 
-      const entry = await updateTimesheetEntry(id, updatePayload as any);
+      const entry = await updateTimesheetEntry(id, updatePayload);
       logEvent("timesheets:update", requestContext(req, { id }));
       res.json({ status: "ok", entry });
     })

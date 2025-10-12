@@ -17,7 +17,7 @@ export interface UseFormOptions<T> {
   validateOnBlur?: boolean;
 }
 
-export function useForm<T extends Record<string, any>>({
+export function useForm<T extends Record<string, unknown>>({
   initialValues,
   validationSchema,
   onSubmit,
@@ -33,7 +33,7 @@ export function useForm<T extends Record<string, any>>({
   });
 
   const validateField = useCallback(
-    (name: keyof T, value: any) => {
+    (name: keyof T, value: unknown) => {
       if (!validationSchema) return null;
 
       try {
@@ -69,7 +69,7 @@ export function useForm<T extends Record<string, any>>({
   }, [validationSchema, state.values]);
 
   const setValue = useCallback(
-    (name: keyof T, value: any) => {
+    <K extends keyof T>(name: K, value: T[K]) => {
       setState((prev) => {
         const newValues = { ...prev.values, [name]: value };
         const errors = { ...prev.errors };
@@ -104,7 +104,8 @@ export function useForm<T extends Record<string, any>>({
   const handleChange = useCallback(
     (name: keyof T) => (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
       const { value, type } = event.target;
-      const finalValue = type === "checkbox" ? (event.target as HTMLInputElement).checked : value;
+      const finalValue =
+        type === "checkbox" ? ((event.target as HTMLInputElement).checked as T[keyof T]) : (value as T[keyof T]);
       setValue(name, finalValue);
     },
     [setValue]

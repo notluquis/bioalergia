@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import { coerceAmount } from "../lib/format";
-import { useSettings } from "../context/SettingsContext";
 import { useReportUpload } from "../features/reports/hooks/useReportUpload";
 import ReportTable from "../features/reports/components/ReportTable";
 import Input from "../components/Input";
@@ -12,8 +11,6 @@ export default function Report() {
   const { movs, fileName, error: uploadError, onFile } = useReportUpload();
 
   const initialBalanceNumber = useMemo(() => coerceAmount(initialBalance), [initialBalance]);
-
-  const { settings } = useSettings();
 
   const ledger = useMemo(() => {
     let balance = initialBalanceNumber;

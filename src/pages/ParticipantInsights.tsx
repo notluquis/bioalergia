@@ -1,7 +1,5 @@
-import { useEffect, useMemo } from "react";
 import dayjs from "dayjs";
 import { fmtCLP } from "../lib/format";
-import { formatRut } from "../lib/rut";
 import { useParticipantInsightsData } from "../features/participants/hooks/useParticipantInsightsData";
 import Alert from "../components/Alert";
 import Input from "../components/Input";

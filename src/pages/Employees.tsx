@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { useAuth } from "../context/AuthContext";
+import { useCallback, useEffect, useState } from "react";
+import { useAuth } from "../context/auth-context";
 import { fetchEmployees, deactivateEmployee, updateEmployee } from "../features/employees/api";
 import type { Employee } from "../features/employees/types";
 import EmployeeForm from "../features/employees/components/EmployeeForm";
@@ -17,11 +17,7 @@ export default function EmployeesPage() {
   const [includeInactive, setIncludeInactive] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
 
-  useEffect(() => {
-    loadEmployees();
-  }, [includeInactive]);
-
-  async function loadEmployees() {
+  const loadEmployees = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -33,7 +29,11 @@ export default function EmployeesPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [includeInactive]);
+
+  useEffect(() => {
+    loadEmployees();
+  }, [loadEmployees]);
 
   async function handleDeactivate(id: number) {
     if (!canEdit) return;

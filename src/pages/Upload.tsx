@@ -1,4 +1,4 @@
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/auth-context";
 import TransactionUploadForm from "../features/transactions/components/TransactionUploadForm";
 import PayoutUploadForm from "../features/transactions/components/PayoutUploadForm";
 import Alert from "../components/Alert";

@@ -49,8 +49,9 @@ export function useSupplyManagement(): UseSupplyManagementResult {
       ]);
       setRequests(requests);
       setCommonSupplies(commonSupplies);
-    } catch (err: any) {
-      setError(err.message || "Error al cargar los datos");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Error al cargar los datos";
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -66,8 +67,9 @@ export function useSupplyManagement(): UseSupplyManagementResult {
         });
         setSuccessMessage("¡Estado de la solicitud actualizado con éxito!");
         fetchData(); // Refresh requests
-      } catch (err: any) {
-        setError(err.message || "Error al actualizar el estado");
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : "Error al actualizar el estado";
+        setError(message);
       }
     },
     [fetchData]

@@ -96,7 +96,11 @@ const sampleData: ExampleItem[] = [
   { id: 5, name: "Pedro Martínez", email: "pedro@example.com", amount: 95000, status: "inactive" },
 ];
 
-type ExampleColumn = "name" | "email" | "amount" | "status" | "actions";
+type ExampleDataColumn = "name" | "email" | "amount" | "status";
+type ExampleColumn = ExampleDataColumn | "actions";
+
+const isDataColumn = (column: ExampleColumn | null | undefined): column is ExampleDataColumn =>
+  column !== null && column !== undefined && column !== "actions";
 
 function ExampleTable() {
   const table = useTable<ExampleColumn>({
@@ -106,20 +110,25 @@ function ExampleTable() {
   });
 
   const sortedData = React.useMemo(() => {
-    if (!table.sortState.column) return sampleData;
+    const { column, direction } = table.sortState;
+    if (!isDataColumn(column)) return sampleData;
 
+    const key: ExampleDataColumn = column;
     return [...sampleData].sort((a, b) => {
-      const { column, direction } = table.sortState;
-      let aValue: any = a[column as keyof ExampleItem];
-      let bValue: any = b[column as keyof ExampleItem];
+      const aValue = a[key];
+      const bValue = b[key];
 
       if (typeof aValue === "string" && typeof bValue === "string") {
         const result = aValue.localeCompare(bValue);
         return direction === "desc" ? -result : result;
       }
 
-      if (aValue < bValue) return direction === "desc" ? 1 : -1;
-      if (aValue > bValue) return direction === "desc" ? -1 : 1;
+      if (typeof aValue === "number" && typeof bValue === "number") {
+        if (aValue < bValue) return direction === "desc" ? 1 : -1;
+        if (aValue > bValue) return direction === "desc" ? -1 : 1;
+        return 0;
+      }
+
       return 0;
     });
   }, [table.sortState]);

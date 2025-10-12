@@ -4,7 +4,7 @@ import { execSync } from "node:child_process";
 function run(command) {
   try {
     execSync(command, { stdio: "ignore" });
-  } catch (error) {
+  } catch {
     // Ignoramos procesos inexistentes.
   }
 }
@@ -21,7 +21,7 @@ function killByPort(port) {
     for (const pid of pids) {
       run(`kill -9 ${pid}`);
     }
-  } catch (error) {
+  } catch {
     // No processes on that port.
   }
 }

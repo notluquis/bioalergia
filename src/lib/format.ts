@@ -2,15 +2,15 @@
 
 export const fmtCLP = (n: number | string) => {
   const num = typeof n === "string" ? Number(n) : n;
-  if (!Number.isFinite(num as number)) return "-";
+  if (!Number.isFinite(num)) return "-";
   return new Intl.NumberFormat("es-CL", {
     style: "currency",
     currency: "CLP",
     maximumFractionDigits: 0,
-  }).format(num as number);
+  }).format(num);
 };
 
-export const coerceAmount = (v: any): number => {
+export const coerceAmount = (v: unknown): number => {
   if (v == null) return 0;
   if (typeof v === "number") return v;
   const s = String(v).replace(/\$/g, "").replace(/\./g, "").replace(/\s/g, "").replace(/CLP/gi, "").replace(/,/g, ".");

@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { useAuth } from "../../../context/AuthContext";
+import { useAuth } from "../../../context/auth-context";
 import { logger } from "../../../lib/logger";
 import { parseBalanceInput } from "../utils";
 import { saveBalance } from "../api";

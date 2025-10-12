@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { fmtCLP } from "../../../lib/format";
-import { useAuth } from "../../../context/AuthContext";
+import { useAuth } from "../../../context/auth-context";
 import { useTable } from "../../../hooks";
 import type { Employee } from "../types";
 import Button from "../../../components/Button";
@@ -56,8 +56,8 @@ export default function EmployeeTable({ employees, loading, onEdit, onDeactivate
 
     return [...employees].sort((a, b) => {
       const { column, direction } = table.sortState;
-      let aValue: any;
-      let bValue: any;
+      let aValue: string | number;
+      let bValue: string | number;
 
       switch (column) {
         case "name":

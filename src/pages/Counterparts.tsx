@@ -1,6 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
-import { createCounterpart, fetchCounterpart, fetchCounterpartSummary, fetchCounterparts, updateCounterpart } from "../features/counterparts/api";
+import {
+  createCounterpart,
+  fetchCounterpart,
+  fetchCounterpartSummary,
+  fetchCounterparts,
+  updateCounterpart,
+  type CounterpartUpsertPayload,
+} from "../features/counterparts/api";
 import type { Counterpart, CounterpartAccount, CounterpartSummary } from "../features/counterparts/types";
 import CounterpartList from "../features/counterparts/components/CounterpartList";
 import CounterpartForm from "../features/counterparts/components/CounterpartForm";
@@ -62,7 +69,7 @@ export default function CounterpartsPage() {
     }
   }
 
-  async function handleSaveCounterpart(payload: any) {
+  async function handleSaveCounterpart(payload: CounterpartUpsertPayload) {
     setFormStatus("saving");
     setError(null);
     try {
@@ -135,7 +142,6 @@ export default function CounterpartsPage() {
             detail={detail}
             summary={summary}
             summaryRange={summaryRange}
-            onSaveCounterpart={handleSaveCounterpart}
             onLoadSummary={loadSummary}
           />
         )}

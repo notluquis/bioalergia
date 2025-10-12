@@ -1,8 +1,7 @@
 import React from "react";
-import { useAuth } from "../../../context/AuthContext";
+import { useAuth } from "../../../context/auth-context";
 import type { SupplyRequest } from "../types";
 import { translateStatus } from "../utils";
-import Button from "../../../components/Button";
 import Input from "../../../components/Input";
 
 interface SupplyRequestsTableProps {

@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
 import { coerceAmount } from "../lib/format";
-import { useAuth } from "../context/AuthContext";
-import { useSettings } from "../context/SettingsContext";
+import { useAuth } from "../context/auth-context";
+import { useSettings } from "../context/settings-context";
 import { logger } from "../lib/logger";
 import { isCashbackCandidate } from "../../shared/cashback";
 import { TransactionsFilters } from "../features/transactions/components/TransactionsFilters";
@@ -70,14 +70,6 @@ export default function TransactionsMovements() {
 
   const initialBalanceNumber = useMemo(() => coerceAmount(initialBalance), [initialBalance]);
 
-  useEffect(() => {
-    if (canView) {
-      refresh(filters, 1, pageSize);
-    } else {
-      setRows([]);
-    }
-  }, [canView]);
-
   const ledger = useMemo<LedgerRow[]>(() => {
     let balance = initialBalanceNumber;
     const chronological = rows
@@ -106,7 +98,7 @@ export default function TransactionsMovements() {
   }, [rows, initialBalanceNumber, hasAmounts]);
 
   const refresh = useCallback(
-    async (next: Filters, nextPage = page, nextPageSize = pageSize) => {
+    async (next: Filters, nextPage: number, nextPageSize: number) => {
       if (!canView) {
         setRows([]);
         return;
@@ -141,15 +133,17 @@ export default function TransactionsMovements() {
         }
         setRows(payload.data);
         setHasAmounts(Boolean(payload.hasAmounts));
+        const resolvedPage = payload.page ?? nextPage;
+        const resolvedPageSize = payload.pageSize ?? nextPageSize;
         setTotal(payload.total ?? payload.data.length);
-        setPage(payload.page ?? nextPage);
-        setPageSize(payload.pageSize ?? nextPageSize);
+        setPage(resolvedPage);
+        setPageSize(resolvedPageSize);
         logger.info("[movements] fetch:success", {
           rows: payload.data.length,
           hasAmounts: Boolean(payload.hasAmounts),
           total: payload.total,
-          page: payload.page,
-          pageSize: payload.pageSize,
+          page: resolvedPage,
+          pageSize: resolvedPageSize,
         });
       } catch (err) {
         const message = err instanceof Error ? err.message : "Error inesperado al cargar";
@@ -161,8 +155,16 @@ export default function TransactionsMovements() {
         setLoading(false);
       }
     },
-    [canView, page, pageSize]
+    [canView]
   );
+
+  useEffect(() => {
+    if (canView) {
+      refresh(filters, 1, pageSize);
+    } else {
+      setRows([]);
+    }
+  }, [canView, filters, pageSize, refresh, setRows]);
 
   const handleFilterChange = (update: Partial<Filters>) => {
     setFilters((prev) => ({ ...prev, ...update }));
@@ -273,6 +275,8 @@ export default function TransactionsMovements() {
             loading={loading}
             hasAmounts={hasAmounts}
             total={total}
+            page={page}
+            pageSize={pageSize}
             onPageChange={(nextPage: number) => {
               setPage(nextPage);
               refresh(filters, nextPage, pageSize);

@@ -1,16 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
-import { useAuth } from "../context/AuthContext";
-import { useSettings } from "../context/SettingsContext";
+import { useAuth } from "../context/auth-context";
+import { useSettings } from "../context/settings-context";
 import { logger } from "../lib/logger";
 import { TransactionsFilters } from "../features/transactions/components/TransactionsFilters";
 import { TransactionsColumnToggles } from "../features/transactions/components/TransactionsColumnToggles";
 import { TransactionsTable } from "../features/transactions/components/TransactionsTable";
 import { DailyBalancesPanel } from "../features/balances/components/DailyBalancesPanel";
 import { COLUMN_DEFS, type ColumnKey } from "../features/transactions/constants";
-import type { Filters, DbMovement, LedgerRow } from "../features/transactions/types";
+import type { Filters } from "../features/transactions/types";
 import type { BalancesApiResponse, BalanceDraft } from "../features/balances/types";
-import { deriveInitialBalance, formatBalanceInput, parseBalanceInput } from "../features/balances/utils";
+import { deriveInitialBalance, formatBalanceInput } from "../features/balances/utils";
 import { useQuickDateRange } from "../features/balances/hooks/useQuickDateRange";
 import { useDailyBalanceManagement } from "../features/balances/hooks/useDailyBalanceManagement";
 import { useTransactionData } from "../features/transactions/hooks/useTransactionData";
@@ -20,8 +20,6 @@ import Input from "../components/Input";
 import Button from "../components/Button";
 import Checkbox from "../components/Checkbox";
 import { fetchBalances } from "../features/balances/api";
-
-const DEFAULT_PAGE_SIZE = 50;
 
 export default function Data() {
   const [initialBalance, setInitialBalance] = useState<string>("0");
@@ -66,7 +64,7 @@ export default function Data() {
       setBalancesReport(payload);
     } catch (err) {
       const message = err instanceof Error ? err.message : "No se pudieron obtener los saldos diarios";
-      // setBalancesError(message);
+      logger.warn("balances:load:error", message);
       setBalancesReport(null);
     } finally {
       setBalancesLoading(false);
@@ -79,7 +77,6 @@ export default function Data() {
     error: balancesError,
     handleDraftChange: handleBalanceDraftChange,
     handleSave: handleBalanceSave,
-    setError: setBalancesError,
     setDrafts: setBalancesDrafts,
   } = useDailyBalanceManagement({
     from: filters.from,
@@ -105,7 +102,7 @@ export default function Data() {
     } else {
       setRows([]);
     }
-  }, [canView, filters, pageSize, refresh]);
+  }, [canView, filters, pageSize, refresh, setRows]);
 
   useEffect(() => {
     if (!balancesReport) {
@@ -271,6 +268,8 @@ export default function Data() {
             loading={loading}
             hasAmounts={hasAmounts}
             total={total}
+            page={page}
+            pageSize={pageSize}
             onPageChange={(nextPage: number) => {
               setPage(nextPage);
               refresh(filters, nextPage, pageSize);

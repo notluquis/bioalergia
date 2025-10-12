@@ -1,4 +1,5 @@
 import express from "express";
+import multer from "multer";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import path from "path";
@@ -22,8 +23,11 @@ import { registerRoleRoutes } from "./routes/roles.js";
 import { registerLoanRoutes } from "./routes/loans.js";
 import { registerServiceRoutes } from "./routes/services.js";
 import { registerAssetRoutes } from "./routes/assets.js";
+import { ensureUploadStructure, getUploadsRootDir } from "./lib/uploads.js";
 
 const app = express();
+
+ensureUploadStructure();
 
 const logInDevelopment = (...args: Parameters<typeof console.log>) => {
   if (!isProduction) console.log(...args);
@@ -43,6 +47,8 @@ if (!isProduction) {
     next();
   });
 }
+
+app.use("/uploads", express.static(getUploadsRootDir()));
 
 // API Routes
 registerAuthRoutes(app);
@@ -144,6 +150,18 @@ app.use(function errorHandler(
   }
   let status = 500;
   let message = 'Error inesperado en el servidor';
+  if (err instanceof multer.MulterError) {
+    if (err.code === "LIMIT_FILE_SIZE") {
+      status = 413;
+      message = "El archivo supera el tamaño máximo permitido (12 MB)";
+    } else if (err.code === "LIMIT_UNEXPECTED_FILE") {
+      status = 400;
+      message = "Formato de archivo no soportado. Usa PNG, JPG, WEBP o SVG";
+    } else {
+      status = 400;
+      message = "No se pudo procesar el archivo adjunto";
+    }
+  }
   if (err instanceof Error) {
     message = err.message;
   } else if (isGenericErrorLike(err)) {

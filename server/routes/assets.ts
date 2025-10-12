@@ -30,8 +30,9 @@ export function registerAssetRoutes(app: express.Express) {
         res.setHeader("Content-Type", contentType);
         res.setHeader("Cache-Control", "public, max-age=300"); // 5 minutos
         res.send(buf);
-      } catch (err: any) {
-        res.status(500).json({ status: "error", message: err?.message || "Fallo proxy de imagen" });
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : "Fallo proxy de imagen";
+        res.status(500).json({ status: "error", message });
       }
     })
   );

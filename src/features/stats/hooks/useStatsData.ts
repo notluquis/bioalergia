@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
-import { useAuth } from "../../../context/AuthContext";
+import { useAuth } from "../../../context/auth-context";
 import { fetchParticipantLeaderboard } from "../../participants/api";
 import type { ParticipantSummaryRow } from "../../participants/types";
 import type { BalancesApiResponse } from "../../balances/types";

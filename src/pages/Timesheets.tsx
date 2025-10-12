@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/auth-context";
 import { fetchEmployees } from "../features/employees/api";
 import type { Employee } from "../features/employees/types";
 import {
@@ -9,7 +9,7 @@ import {
   bulkUpsertTimesheets,
   deleteTimesheet,
 } from "../features/timesheets/api";
-import type { BulkRow, TimesheetSummaryRow } from "../features/timesheets/types";
+import type { BulkRow, TimesheetSummaryRow, TimesheetSummaryResponse } from "../features/timesheets/types";
 import { buildBulkRows, hasRowData, isRowDirty, parseDuration, formatDateLabel } from "../features/timesheets/utils";
 import TimesheetSummaryTable from "../features/timesheets/components/TimesheetSummaryTable";
 import TimesheetDetailTable from "../features/timesheets/components/TimesheetDetailTable";
@@ -36,7 +36,9 @@ export default function TimesheetsPage() {
   const { months, loading: loadingMonths } = useMonths();
   const [month, setMonth] = useState<string>("");
   const [visibleCount, setVisibleCount] = useState(5);
-  const [summary, setSummary] = useState<{ employees: TimesheetSummaryRow[]; totals: any } | null>(null);
+  const [summary, setSummary] = useState<
+    { employees: TimesheetSummaryRow[]; totals: TimesheetSummaryResponse["totals"] } | null
+  >(null);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<number | null>(null);
   const [bulkRows, setBulkRows] = useState<BulkRow[]>([]);
@@ -47,19 +49,55 @@ export default function TimesheetsPage() {
   const [info, setInfo] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
+  const loadEmployees = useCallback(async () => {
+    try {
+      const data = await fetchEmployees(false);
+      setEmployees(data);
+      if (!selectedEmployeeId && data.length) {
+        setSelectedEmployeeId(data[0].id);
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "No se pudieron cargar los trabajadores";
+      setError(message);
+    }
+  }, [selectedEmployeeId]);
+
   useEffect(() => {
     loadEmployees();
-  }, []);
+  }, [loadEmployees]);
 
   useEffect(() => {
     if (months.length && !month) {
       setMonth(months[0]);
     }
-  }, [months]);
+  }, [months, month]);
+
+  const loadSummary = useCallback(async () => {
+    setLoadingSummary(true);
+    setError(null);
+    setInfo(null);
+    try {
+      const formattedMonth = formatMonthString(month);
+      const data = await fetchTimesheetSummary(formattedMonth);
+      setSummary({ employees: data.employees, totals: data.totals });
+      const hasDataIds = new Set(data.employees.map((e) => e.employeeId));
+      if (!selectedEmployeeId && data.employees.length) {
+        setSelectedEmployeeId(data.employees[0].employeeId);
+      } else if (selectedEmployeeId && !hasDataIds.has(selectedEmployeeId) && data.employees.length) {
+        setSelectedEmployeeId(data.employees[0].employeeId);
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "No se pudo obtener el resumen";
+      setError(message);
+      setSummary(null);
+    } finally {
+      setLoadingSummary(false);
+    }
+  }, [month, selectedEmployeeId]);
 
   useEffect(() => {
     if (month) loadSummary();
-  }, [month]);
+  }, [month, loadSummary]);
 
   const monthLabel = useMemo(() => {
     const [year, monthStr] = month.split("-");
@@ -78,6 +116,28 @@ export default function TimesheetsPage() {
     return summary.employees.find((e) => e.employeeId === selectedEmployee.id) ?? null;
   }, [summary, selectedEmployee]);
 
+  const loadDetail = useCallback(
+    async (employeeId: number) => {
+      setLoadingDetail(true);
+      setError(null);
+      try {
+        const formattedMonth = formatMonthString(month);
+        const data = await fetchTimesheetDetail(employeeId, formattedMonth);
+        const rows = buildBulkRows(formattedMonth, data.entries);
+        setBulkRows(rows);
+        setInitialRows(rows);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "No se pudo obtener el detalle";
+        setError(message);
+        setBulkRows([]);
+        setInitialRows([]);
+      } finally {
+        setLoadingDetail(false);
+      }
+    },
+    [month]
+  );
+
   useEffect(() => {
     if (selectedEmployeeId) {
       loadDetail(selectedEmployeeId);
@@ -85,7 +145,7 @@ export default function TimesheetsPage() {
       setBulkRows([]);
       setInitialRows([]);
     }
-  }, [selectedEmployeeId, month, selectedEmployee?.hourly_rate]);
+  }, [selectedEmployeeId, loadDetail]);
 
   const pendingCount = useMemo(() => bulkRows.filter((row) => !row.entryId && hasRowData(row)).length, [bulkRows]);
 
@@ -93,62 +153,6 @@ export default function TimesheetsPage() {
     () => bulkRows.filter((row, index) => isRowDirty(row, initialRows[index])).length,
     [bulkRows, initialRows]
   );
-
-  async function loadEmployees() {
-    try {
-      const data = await fetchEmployees(false);
-      setEmployees(data);
-      if (!selectedEmployeeId && data.length) {
-        setSelectedEmployeeId(data[0].id);
-      }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "No se pudieron cargar los trabajadores";
-      setError(message);
-    }
-  }
-
-  async function loadSummary() {
-    setLoadingSummary(true);
-    setError(null);
-    setInfo(null);
-    try {
-      const formattedMonth = formatMonthString(month);
-      const data = await fetchTimesheetSummary(formattedMonth);
-      setSummary({ employees: data.employees, totals: data.totals });
-      // Preferir seleccionar un trabajador que tenga datos en el mes
-      const hasDataIds = new Set(data.employees.map((e) => e.employeeId));
-      if (!selectedEmployeeId && data.employees.length) {
-        setSelectedEmployeeId(data.employees[0].employeeId);
-      } else if (selectedEmployeeId && !hasDataIds.has(selectedEmployeeId) && data.employees.length) {
-        setSelectedEmployeeId(data.employees[0].employeeId);
-      }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "No se pudo obtener el resumen";
-      setError(message);
-      setSummary(null);
-    } finally {
-      setLoadingSummary(false);
-    }
-  }
-
-  async function loadDetail(employeeId: number) {
-    setLoadingDetail(true);
-    setError(null);
-    try {
-      const formattedMonth = formatMonthString(month);
-      const data = await fetchTimesheetDetail(employeeId, formattedMonth);
-      const rows = buildBulkRows(formattedMonth, data.entries, selectedEmployee?.hourly_rate ?? 0);
-      setBulkRows(rows);
-      setInitialRows(rows);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "No se pudo obtener el detalle";
-      setError(message);
-      setBulkRows([]);
-      setInitialRows([]);
-    } finally {
-      setLoadingDetail(false);
-    }
-  }
 
   function handleRowChange(index: number, field: keyof Omit<BulkRow, "date" | "entryId">, value: string) {
     setBulkRows((prev) => {
@@ -347,7 +351,6 @@ export default function TimesheetsPage() {
         modifiedCount={modifiedCount}
         monthLabel={monthLabel}
         employeeOptions={employeeOptions}
-        setSelectedEmployeeId={setSelectedEmployeeId}
       />
     </section>
   );

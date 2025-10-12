@@ -1,7 +1,7 @@
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import React from "react";
-import { useAuth } from "./context/AuthContext";
-import { useSettings } from "./context/SettingsContext";
+import { useAuth } from "./context/auth-context";
+import { useSettings } from "./context/settings-context";
 import CollapsibleNavSection from "./components/CollapsibleNavSection";
 import Clock from "./components/Clock";
 import ConnectionIndicator from "./components/ConnectionIndicator";
@@ -101,7 +101,7 @@ export default function App() {
     displayName.split(" ")[0].charAt(0).toUpperCase() + displayName.split(" ")[0].slice(1).toLowerCase();
 
   // Sidebar state: visible/hidden
-  const [sidebarOpen, setSidebarOpen] = React.useState(false);
+  const [sidebarOpen, setSidebarOpen] = React.useState(true);
 
   // Detect if mobile/tablet (md breakpoint)
   const [isMobile, setIsMobile] = React.useState(false);
@@ -113,10 +113,14 @@ export default function App() {
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  // Close sidebar on route change (if overlay)
+  // Close sidebar on mobile/tablet or route change
   React.useEffect(() => {
-    if (isMobile) setSidebarOpen(false);
-  }, [location.pathname]);
+    if (isMobile) {
+      setSidebarOpen(false);
+    } else {
+      setSidebarOpen(true);
+    }
+  }, [isMobile, location.pathname]);
 
   // Toggle sidebar (hamburguesa)
   const toggleSidebar = () => setSidebarOpen((open) => !open);

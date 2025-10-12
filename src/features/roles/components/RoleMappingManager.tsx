@@ -72,7 +72,7 @@ export default function RoleMappingManager() {
         return { employee_role: role, app_role: "VIEWER" as UserRole, isNew: true, isModified: false };
       });
       setMappings(allRoles);
-    } catch (err) {
+    } catch {
       setError("No se pudo guardar el cambio. Intente de nuevo.");
     } finally {
       setIsSaving(false);

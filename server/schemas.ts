@@ -12,6 +12,15 @@ const httpsUrlSchema = z
 
 const optionalHttpsUrl = z.union([z.literal(""), httpsUrlSchema]);
 
+const logoUrlSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .refine(
+    (value) => value.startsWith("https://") || value.startsWith("/uploads/"),
+    { message: "Debe comenzar con https:// o /uploads/" }
+  );
+
 const serviceFrequencyEnum = z.enum([
   "WEEKLY",
   "BIWEEKLY",
@@ -35,7 +44,7 @@ export const settingsSchema = z.object({
   tagline: z.string().max(200).optional().default(""),
   primaryColor: z.string().regex(colorRegex, "Debe ser un color HEX"),
   secondaryColor: z.string().regex(colorRegex, "Debe ser un color HEX"),
-  logoUrl: z.string().url(),
+  logoUrl: logoUrlSchema,
   dbDisplayHost: z.string().min(1).max(191),
   dbDisplayName: z.string().min(1).max(191),
   dbConsoleUrl: optionalHttpsUrl.default(""),

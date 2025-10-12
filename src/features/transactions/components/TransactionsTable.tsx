@@ -11,59 +11,100 @@ type Props = {
   loading: boolean;
   hasAmounts: boolean;
   total: number;
+  page: number;
+  pageSize: number;
   onPageChange?: (page: number) => void;
   onPageSizeChange?: (size: number) => void;
 };
 
-export function TransactionsTable({ rows, loading, hasAmounts, total, onPageChange, onPageSizeChange }: Props) {
+export function TransactionsTable({
+  rows,
+  loading,
+  hasAmounts,
+  total,
+  page,
+  pageSize,
+  onPageChange,
+  onPageSizeChange,
+}: Props) {
   const allColumns = COLUMN_DEFS.map((def) => def.key);
 
   const table = useTable<ColumnKey>({
     columns: allColumns,
-    initialPageSize: 25,
+    initialPageSize: pageSize,
     initialSortColumn: "date",
     initialSortDirection: "desc",
   });
 
+  const { sortState, pageSizeOptions: tablePageSizeOptions, toggleColumn, getSortProps, getSortIcon, isColumnVisible } =
+    table;
+
   const visibleColumns = useMemo(() => {
-    return COLUMN_DEFS.filter((column) => table.isColumnVisible(column.key));
-  }, [table.visibleColumns]);
+    return COLUMN_DEFS.filter((column) => isColumnVisible(column.key));
+  }, [isColumnVisible]);
 
   const sortedRows = useMemo(() => {
-    if (!table.sortState.column) return rows;
+    if (!sortState.column) return rows;
+
+    const { column, direction } = sortState;
+
+    const compare = (first: unknown, second: unknown) => {
+      if (typeof first === "number" && typeof second === "number") {
+        if (first === second) return 0;
+        return first < second ? -1 : 1;
+      }
+      const firstString = String(first ?? "");
+      const secondString = String(second ?? "");
+      return firstString.localeCompare(secondString);
+    };
 
     return [...rows].sort((a, b) => {
-      const { column, direction } = table.sortState;
-      let aValue: any = a[column as keyof LedgerRow];
-      let bValue: any = b[column as keyof LedgerRow];
+      let firstValue: unknown = a[column as keyof LedgerRow];
+      let secondValue: unknown = b[column as keyof LedgerRow];
 
-      // Handle specific sorting logic
       if (column === "date") {
-        aValue = new Date(a.timestamp).getTime();
-        bValue = new Date(b.timestamp).getTime();
+        firstValue = new Date(a.timestamp).getTime();
+        secondValue = new Date(b.timestamp).getTime();
       } else if (column === "amount") {
-        aValue = Number(a.amount) || 0;
-        bValue = Number(b.amount) || 0;
+        firstValue = Number(a.amount ?? 0);
+        secondValue = Number(b.amount ?? 0);
       }
 
-      if (typeof aValue === "string" && typeof bValue === "string") {
-        const result = aValue.localeCompare(bValue);
-        return direction === "desc" ? -result : result;
-      }
-
-      if (aValue < bValue) return direction === "desc" ? 1 : -1;
-      if (aValue > bValue) return direction === "desc" ? -1 : 1;
-      return 0;
+      const baseComparison = compare(firstValue, secondValue);
+      return direction === "desc" ? -baseComparison : baseComparison;
     });
-  }, [rows, table.sortState]);
+  }, [rows, sortState]);
 
-  const paginatedRows = useMemo(() => {
-    const start = (table.pagination.page - 1) * table.pagination.pageSize;
-    const end = start + table.pagination.pageSize;
-    return sortedRows.slice(start, end);
-  }, [sortedRows, table.pagination]);
+  const pageInfo = useMemo(() => {
+    if (total === 0) {
+      return { start: 0, end: 0, totalPages: 0, total: 0 };
+    }
+    const totalPages = Math.max(1, Math.ceil(total / pageSize));
+    const currentPage = Math.min(Math.max(page, 1), totalPages);
+    const start = (currentPage - 1) * pageSize + 1;
+    const end = Math.min(currentPage * pageSize, total);
+    return { start, end, totalPages, total };
+  }, [total, page, pageSize]);
 
-  const pageInfo = table.getPageInfo(total);
+  const handlePrevClick = () => {
+    if (page <= 1 || !onPageChange) return;
+    onPageChange(page - 1);
+  };
+
+  const handleNextClick = () => {
+    const totalPages = Math.max(1, Math.ceil(total / pageSize));
+    if (page >= totalPages || !onPageChange) return;
+    onPageChange(page + 1);
+  };
+
+  const handlePageSizeChange = (newSize: number) => {
+    onPageSizeChange?.(newSize);
+  };
+
+  const canGoPrev = page > 1;
+  const canGoNext = page * pageSize < total;
+
+  const displayedRows = sortedRows;
 
   return (
     <div className="space-y-4">
@@ -74,8 +115,8 @@ export function TransactionsTable({ rows, loading, hasAmounts, total, onPageChan
           <label key={column.key} className="flex items-center gap-1 text-xs">
             <input
               type="checkbox"
-              checked={table.isColumnVisible(column.key)}
-              onChange={() => table.toggleColumn(column.key)}
+              checked={isColumnVisible(column.key)}
+              onChange={() => toggleColumn(column.key)}
               className="rounded"
             />
             <span className="text-slate-600">{column.label}</span>
@@ -92,15 +133,15 @@ export function TransactionsTable({ rows, loading, hasAmounts, total, onPageChan
                   <th
                     key={column.key}
                     className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide cursor-pointer hover:bg-white/70 whitespace-nowrap"
-                    {...table.getSortProps(column.key)}
+                    {...getSortProps(column.key)}
                   >
-                    {column.label} {table.getSortIcon(column.key)}
+                    {column.label} {getSortIcon(column.key)}
                   </th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {paginatedRows.map((row) => (
+              {displayedRows.map((row) => (
                 <tr
                   key={row.id}
                   className="border-b border-white/40 bg-white/40 text-slate-700 transition-colors last:border-none even:bg-white/25 hover:bg-[var(--brand-primary)]/10"
@@ -139,15 +180,14 @@ export function TransactionsTable({ rows, loading, hasAmounts, total, onPageChan
             <label className="flex items-center gap-2">
               <span>Tamaño de página</span>
               <select
-                value={table.pagination.pageSize}
+                value={pageSize}
                 onChange={(event) => {
                   const newSize = Number(event.target.value);
-                  table.setPageSize(newSize);
-                  onPageSizeChange?.(newSize);
+                  handlePageSizeChange(newSize);
                 }}
                 className="glass-input py-1 text-xs"
               >
-                {table.pageSizeOptions.map((size) => (
+                {tablePageSizeOptions.map((size) => (
                   <option key={size} value={size}>
                     {size}
                   </option>
@@ -159,11 +199,8 @@ export function TransactionsTable({ rows, loading, hasAmounts, total, onPageChan
                 type="button"
                 variant="secondary"
                 size="xs"
-                onClick={() => {
-                  table.prevPage();
-                  onPageChange?.(table.pagination.page - 1);
-                }}
-                disabled={!table.canGoPrev() || loading}
+                onClick={handlePrevClick}
+                disabled={!canGoPrev || loading}
               >
                 Anterior
               </Button>
@@ -171,11 +208,8 @@ export function TransactionsTable({ rows, loading, hasAmounts, total, onPageChan
                 type="button"
                 variant="secondary"
                 size="xs"
-                onClick={() => {
-                  table.nextPage();
-                  onPageChange?.(table.pagination.page + 1);
-                }}
-                disabled={!table.canGoNext(total) || loading}
+                onClick={handleNextClick}
+                disabled={!canGoNext || loading}
               >
                 Siguiente
               </Button>

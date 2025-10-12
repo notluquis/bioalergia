@@ -1,6 +1,5 @@
-import { useEffect, useMemo } from "react";
-import dayjs from "dayjs";
-import { useAuth } from "../context/AuthContext";
+import { useMemo } from "react";
+import { useAuth } from "../context/auth-context";
 import { BalanceSummary } from "../features/balances/components/BalanceSummary";
 import { useStatsData } from "../features/stats/hooks/useStatsData";
 import StatCard from "../features/stats/components/StatCard";

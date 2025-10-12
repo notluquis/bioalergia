@@ -15,8 +15,6 @@ const supplyRequestSchema = z.object({
   notes: z.string().optional(),
 });
 
-type SupplyRequestFormData = z.infer<typeof supplyRequestSchema>;
-
 interface SupplyRequestFormProps {
   commonSupplies: CommonSupply[];
   onSuccess: () => void;
@@ -49,8 +47,9 @@ export default function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyR
         setSuccessMessage("¡Solicitud de insumo enviada con éxito!");
         form.reset();
         onSuccess();
-      } catch (err: any) {
-        setErrorMessage(err.message || "Error al enviar la solicitud");
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : "Error al enviar la solicitud";
+        setErrorMessage(message);
       }
     },
     validateOnChange: false,

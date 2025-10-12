@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { z } from "zod";
-import { useAuth } from "../../../context/AuthContext";
+import { useAuth } from "../../../context/auth-context";
 import { createEmployee, updateEmployee } from "../api";
 import { useForm } from "../../../hooks/useForm";
 import type { Employee } from "../types";
@@ -105,7 +105,7 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
     } else {
       form.reset();
     }
-  }, [employee]);
+  }, [employee, form]);
 
   return (
     <form

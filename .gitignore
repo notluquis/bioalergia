@@ -1,5 +1,7 @@
 node_modules
 dist
+server/uploads
+dist/server/uploads
 .vite
 .DS_Store
 
@@ -33,3 +35,5 @@ mysql/josema22_bioalergia.sql
 mysql/josema22_wp560.create
 mysql/josema22_wp560.sql
 mysql/openfileslimit
+docs/lint-summary.md
+lint-report.json

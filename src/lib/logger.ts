@@ -1,7 +1,9 @@
 const shouldLog = typeof import.meta !== "undefined" && Boolean(import.meta.env?.DEV);
 
-function createLogger(fn: (...args: any[]) => void) {
-  return (...args: any[]) => {
+type LogMethod = (...args: unknown[]) => void;
+
+function createLogger(fn: LogMethod): LogMethod {
+  return (...args: unknown[]) => {
     if (shouldLog) {
       fn(...args);
     }
@@ -9,7 +11,7 @@ function createLogger(fn: (...args: any[]) => void) {
 }
 
 export const logger = {
-  info: createLogger(console.info.bind(console)),
-  warn: createLogger(console.warn.bind(console)),
-  error: createLogger(console.error.bind(console)),
+  info: createLogger((...args) => console.info(...args)),
+  warn: createLogger((...args) => console.warn(...args)),
+  error: createLogger((...args) => console.error(...args)),
 };

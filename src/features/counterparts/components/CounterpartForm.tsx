@@ -6,8 +6,9 @@ import { useForm } from "../../../hooks";
 import Button from "../../../components/Button";
 import Input from "../../../components/Input";
 import Alert from "../../../components/Alert";
-import type { Counterpart, CounterpartPersonType, CounterpartCategory } from "../types";
+import type { Counterpart } from "../types";
 import { CATEGORY_OPTIONS, EMPTY_FORM } from "../constants";
+import type { CounterpartUpsertPayload } from "../api";
 
 const counterpartFormSchema = z.object({
   rut: z
@@ -25,11 +26,9 @@ const counterpartFormSchema = z.object({
   notes: z.string().trim().optional(),
 });
 
-type CounterpartFormData = z.infer<typeof counterpartFormSchema>;
-
 interface CounterpartFormProps {
   counterpart?: Counterpart | null;
-  onSave: (payload: any) => Promise<void>;
+  onSave: (payload: CounterpartUpsertPayload) => Promise<void>;
   error: string | null;
   saving: boolean;
 }
@@ -64,7 +63,7 @@ export default function CounterpartForm({ counterpart, onSave, error, saving }: 
     } else {
       form.reset();
     }
-  }, [counterpart]);
+  }, [counterpart, form]);
 
   return (
     <section className="glass-card glass-underlay-gradient space-y-5 p-6">

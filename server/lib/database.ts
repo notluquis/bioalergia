@@ -7,6 +7,11 @@ export interface WhereClause {
   params: unknown[];
 }
 
+type QueryValues = ReadonlyArray<unknown> | Record<string, unknown>;
+
+const normalizeParams = (params: QueryValues): unknown[] | Record<string, unknown> =>
+  Array.isArray(params) ? [...params] : (params as Record<string, unknown>);
+
 export interface QueryBuilder {
   select: string[];
   from: string;
@@ -45,7 +50,7 @@ export class SQLBuilder {
     return this;
   }
 
-  where(condition: string, ...params: any[]): this {
+  where(condition: string, ...params: unknown[]): this {
     this.query.where.push({ condition, params });
     return this;
   }
@@ -118,9 +123,9 @@ export class SQLBuilder {
 export async function query<T extends RowDataPacket>(
   pool: Pool | PoolConnection,
   sql: string,
-  params: readonly unknown[] = []
+  params: QueryValues = []
 ): Promise<T[]> {
-  const [rows] = await pool.query<T[]>(sql, params as any[]);
+  const [rows] = await pool.query<T[]>(sql, normalizeParams(params));
   return rows;
 }
 
@@ -130,9 +135,9 @@ export async function query<T extends RowDataPacket>(
 export async function queryOne<T extends RowDataPacket>(
   pool: Pool | PoolConnection,
   sql: string,
-  params: readonly unknown[] = []
+  params: QueryValues = []
 ): Promise<T | null> {
-  const [rows] = await pool.query<T[]>(sql, params as any[]);
+  const [rows] = await pool.query<T[]>(sql, normalizeParams(params));
   return rows[0] || null;
 }
 
@@ -140,7 +145,7 @@ export async function queryOne<T extends RowDataPacket>(
 export async function selectOne<T extends RowDataPacket>(
   pool: Pool | PoolConnection,
   sql: string,
-  params: readonly unknown[] = []
+  params: QueryValues = []
 ): Promise<T | null> {
   return queryOne<T>(pool, sql, params);
 }
@@ -148,7 +153,7 @@ export async function selectOne<T extends RowDataPacket>(
 export async function selectMany<T extends RowDataPacket>(
   pool: Pool | PoolConnection,
   sql: string,
-  params: readonly unknown[] = []
+  params: QueryValues = []
 ): Promise<T[]> {
   return query<T>(pool, sql, params);
 }
@@ -156,36 +161,36 @@ export async function selectMany<T extends RowDataPacket>(
 export async function selectFirst<T extends RowDataPacket>(
   pool: Pool | PoolConnection,
   sql: string,
-  params: readonly unknown[] = []
+  params: QueryValues = []
 ): Promise<T | null> {
-  const [rows] = await pool.query<T[]>(`${sql} LIMIT 1`, params as any[]);
+  const [rows] = await pool.query<T[]>(`${sql} LIMIT 1`, normalizeParams(params));
   return rows[0] || null;
 }
 
 export async function insertOne(
   pool: Pool | PoolConnection,
   sql: string,
-  params: readonly unknown[] = []
+  params: QueryValues = []
 ): Promise<number> {
-  const [result] = await pool.query<ResultSetHeader>(sql, params as any[]);
+  const [result] = await pool.query<ResultSetHeader>(sql, normalizeParams(params));
   return result.insertId;
 }
 
 export async function updateRows(
   pool: Pool | PoolConnection,
   sql: string,
-  params: readonly unknown[] = []
+  params: QueryValues = []
 ): Promise<number> {
-  const [result] = await pool.query<ResultSetHeader>(sql, params as any[]);
+  const [result] = await pool.query<ResultSetHeader>(sql, normalizeParams(params));
   return result.affectedRows;
 }
 
 export async function deleteRows(
   pool: Pool | PoolConnection,
   sql: string,
-  params: readonly unknown[] = []
+  params: QueryValues = []
 ): Promise<number> {
-  const [result] = await pool.query<ResultSetHeader>(sql, params as any[]);
+  const [result] = await pool.query<ResultSetHeader>(sql, normalizeParams(params));
   return result.affectedRows;
 }
 
@@ -193,7 +198,7 @@ export async function exists(
   pool: Pool | PoolConnection,
   table: string,
   condition: string,
-  params: readonly unknown[] = []
+  params: QueryValues = []
 ): Promise<boolean> {
   const sql = `SELECT 1 FROM ${table} WHERE ${condition} LIMIT 1`;
   const row = await selectFirst(pool, sql, params);

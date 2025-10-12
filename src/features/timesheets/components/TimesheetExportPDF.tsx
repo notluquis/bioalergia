@@ -4,15 +4,24 @@ import autoTable from "jspdf-autotable";
 import { fmtCLP } from "../../../lib/format";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
-import { useSettings } from "../../../context/SettingsContext";
+import { useSettings } from "../../../context/settings-context";
 import Modal from "../../../components/Modal";
+import type { Employee } from "../../employees/types";
+import type { BulkRow, TimesheetSummaryRow } from "../types";
+import type { CellHookData } from "jspdf-autotable";
+
+type TimesheetColumnKey = "date" | "entrada" | "salida" | "worked" | "overtime";
+
+const assertUnreachable = (value: never): never => {
+  throw new Error(`Unhandled column key: ${String(value)}`);
+};
 
 interface TimesheetExportPDFProps {
   logoUrl: string;
-  employee: any;
-  summary: any;
-  bulkRows: any[];
-  columns: string[];
+  employee: Employee;
+  summary: TimesheetSummaryRow | null;
+  bulkRows: BulkRow[];
+  columns: TimesheetColumnKey[];
   monthLabel: string;
   monthRaw?: string; // YYYY-MM
 }
@@ -27,16 +36,28 @@ export default function TimesheetExportPDF({
   monthRaw,
 }: TimesheetExportPDFProps) {
   const { settings } = useSettings();
-  const defaultCols = ["date", "entrada", "salida", "worked", "overtime"] as const;
-  const [selectedCols, setSelectedCols] = React.useState<string[]>(columns?.length ? columns : Array.from(defaultCols));
+  const defaultCols: readonly TimesheetColumnKey[] = ["date", "entrada", "salida", "worked", "overtime"];
+  const [selectedCols, setSelectedCols] = React.useState<TimesheetColumnKey[]>(
+    columns.length ? columns : Array.from(defaultCols)
+  );
   const [showOptions, setShowOptions] = React.useState(false);
   const [previewUrl, setPreviewUrl] = React.useState<string | null>(null);
+
+  type JsPdfPageSize = {
+    getWidth?: () => number;
+    width?: number;
+  };
+
+  type JsPdfInternal = {
+    pageSize?: JsPdfPageSize;
+    getPageSize?: () => JsPdfPageSize;
+  };
 
   async function handleExport(preview = true) {
     try {
       const doc = new jsPDF();
-      const iw: any = (doc as any).internal;
-      const pageSize: any = iw.pageSize || iw.getPageSize?.();
+      const internal = (doc as unknown as { internal?: JsPdfInternal }).internal ?? {};
+      const pageSize = internal.pageSize ?? internal.getPageSize?.();
       const pageWidth: number =
         typeof pageSize?.getWidth === "function" ? pageSize.getWidth() : (pageSize?.width ?? 210);
       const margin = 10;
@@ -162,7 +183,7 @@ export default function TimesheetExportPDF({
       const summaryHead = [
         ["Función", "Horas trabajadas", "Extras", "Tarifa", "Monto extras", "Subtotal", "Retención", "Líquido"],
       ];
-      const summaryBody: any[] = [];
+      const summaryBody: string[][] = [];
       if (summary) {
         summaryBody.push([
           summary.role || "",
@@ -197,8 +218,8 @@ export default function TimesheetExportPDF({
       });
 
       // Definición de columnas y etiquetas para DETALLE
-      const colKeys = selectedCols && selectedCols.length ? selectedCols : Array.from(defaultCols);
-      const labels: Record<string, string> = {
+      const colKeys: TimesheetColumnKey[] = selectedCols.length ? selectedCols : Array.from(defaultCols);
+      const labels: Record<TimesheetColumnKey, string> = {
         date: "Fecha",
         entrada: "Entrada",
         salida: "Salida",
@@ -224,7 +245,7 @@ export default function TimesheetExportPDF({
       }
 
       const body = bulkRows.map((row) =>
-        colKeys.map((key) => {
+        colKeys.map((key): string => {
           switch (key) {
             case "date":
               return dayjs(row.date).isValid() ? dayjs(row.date).format("DD-MM-YYYY") : row.date;
@@ -237,13 +258,15 @@ export default function TimesheetExportPDF({
             case "overtime":
               return row.overtime || "";
             default:
-              return row[key] ?? "";
+              return assertUnreachable(key);
           }
         })
       );
 
       // Tabla de DETALLE en la misma página, después del resumen
-      const nextY = (doc as any).lastAutoTable ? (doc as any).lastAutoTable.finalY + 8 : infoStartY + 30;
+      const lastTableReference = doc as unknown as { lastAutoTable?: { finalY: number } };
+      const lastAutoTable = lastTableReference.lastAutoTable;
+      const nextY = lastAutoTable ? lastAutoTable.finalY + 8 : infoStartY + 30;
       if (!body.length) {
         doc.setFontSize(11);
         doc.text("Sin registros para este periodo.", margin, nextY);
@@ -264,7 +287,7 @@ export default function TimesheetExportPDF({
             3: { halign: "center" }, // Trabajadas
             4: { halign: "center" }, // Extras
           },
-          willDrawCell: (data) => {
+          willDrawCell: (data: CellHookData) => {
             if (data.section === "body") {
               const rowIndex = data.row.index;
               const rawDate = bulkRows[rowIndex]?.date;
@@ -286,7 +309,7 @@ export default function TimesheetExportPDF({
       } else {
         doc.save(`Honorarios_${safeName}_${monthLabel}.pdf`);
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.error("Export PDF error:", err);
       alert("No se pudo generar el PDF. Revisa la consola para más detalles.");
     }
@@ -319,7 +342,7 @@ export default function TimesheetExportPDF({
                   checked={selectedCols.includes(key)}
                   onChange={(e) => {
                     setSelectedCols((prev) => {
-                      const set = new Set(prev);
+                      const set = new Set<TimesheetColumnKey>(prev);
                       if (e.target.checked) set.add(key);
                       else set.delete(key);
                       return Array.from(set);

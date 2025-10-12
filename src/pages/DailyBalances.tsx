@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dayjs from "dayjs";
-import { useAuth } from "../context/AuthContext";
-import { useSettings } from "../context/SettingsContext";
+import { useAuth } from "../context/auth-context";
+import { useSettings } from "../context/settings-context";
 import { logger } from "../lib/logger";
 import { DailyBalancesPanel } from "../features/balances/components/DailyBalancesPanel";
 import { BalanceSummary } from "../features/balances/components/BalanceSummary";
@@ -33,6 +33,14 @@ export default function DailyBalances() {
     return match ? match.value : "custom";
   }, [quickMonths, from, to]);
 
+  const loadBalancesRef = useRef<(fromValue: string, toValue: string) => Promise<void>>(async () => {});
+
+  const { drafts, saving, error, handleDraftChange, handleSave, setDrafts } = useDailyBalanceManagement({
+    from,
+    to,
+    loadBalances: (fromValue: string, toValue: string) => loadBalancesRef.current(fromValue, toValue),
+  });
+
   const loadBalances = useCallback(async (fromValue: string, toValue: string) => {
     setLoading(true);
     setSummaryLoading(true);
@@ -60,13 +68,11 @@ export default function DailyBalances() {
       setLoading(false);
       setSummaryLoading(false);
     }
-  }, []);
+  }, [setDrafts]);
 
-  const { drafts, saving, error, handleDraftChange, handleSave, setDrafts } = useDailyBalanceManagement({
-    from,
-    to,
-    loadBalances,
-  });
+  useEffect(() => {
+    loadBalancesRef.current = loadBalances;
+  }, [loadBalances]);
 
   useEffect(() => {
     loadBalances(from, to);

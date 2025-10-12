@@ -7,15 +7,10 @@ type InputBaseProps = {
   rows?: number;
 };
 
-type CommonHandlers = {
-  onChange?: (e: any) => void;
-  onBlur?: (e: any) => void;
-};
-
 type InputProps =
-  | (InputBaseProps & React.InputHTMLAttributes<HTMLInputElement> & CommonHandlers)
-  | (InputBaseProps & React.TextareaHTMLAttributes<HTMLTextAreaElement> & CommonHandlers)
-  | (InputBaseProps & React.SelectHTMLAttributes<HTMLSelectElement> & CommonHandlers);
+  | (InputBaseProps & React.InputHTMLAttributes<HTMLInputElement>)
+  | (InputBaseProps & React.TextareaHTMLAttributes<HTMLTextAreaElement>)
+  | (InputBaseProps & React.SelectHTMLAttributes<HTMLSelectElement>);
 
 export default function Input(props: InputProps) {
   const { label, helper, type = "text", rows = 3, className = "", children, ...rest } = props;

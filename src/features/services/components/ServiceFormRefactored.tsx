@@ -143,7 +143,6 @@ const INITIAL_DATA: ServiceFormData = {
 export function ServiceFormRefactored({ onSubmit, onCancel }: ServiceFormProps) {
   const {
     values: data,
-    errors,
     setValue,
     getFieldProps,
     handleSubmit,
@@ -189,15 +188,16 @@ export function ServiceFormRefactored({ onSubmit, onCancel }: ServiceFormProps) 
 
   // Estados para contrapartes usando useAsyncData
   const counterpartsState = useAsyncData<Counterpart>();
+  const { loadData: loadCounterparts } = counterpartsState;
   const accountsState = useAsyncData<CounterpartAccount>();
 
   // Cargar contrapartes al montar
   useEffect(() => {
-    counterpartsState.loadData(async () => {
+    loadCounterparts(async () => {
       const list = await fetchCounterparts();
       return { data: list, total: list.length };
     });
-  }, [counterpartsState.loadData]);
+  }, [loadCounterparts]);
 
   // Limpiar campos de emisión según modo
   useEffect(() => {
@@ -227,7 +227,7 @@ export function ServiceFormRefactored({ onSubmit, onCancel }: ServiceFormProps) 
         setValue("emissionEndDay", null);
         break;
     }
-  }, [data.emissionMode, setValue]);
+  }, [data.emissionMode, data.emissionDay, data.emissionStartDay, data.emissionEndDay, setValue]);
 
   // Cargar cuentas cuando cambia contraparte
   const handleCounterpartSelect = (value: string) => {

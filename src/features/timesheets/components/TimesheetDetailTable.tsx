@@ -1,11 +1,11 @@
 import dayjs from "dayjs";
-import { useAuth } from "../../../context/AuthContext";
+import { useAuth } from "../../../context/auth-context";
 import { useEffect, useState } from "react";
 import Modal from "../../../components/Modal";
 import Button from "../../../components/Button";
 import Input from "../../../components/Input";
-import { computeStatus, hasRowData, isRowDirty, parseDuration, computeExtraAmount, formatDateLabel } from "../utils";
-import type { BulkRow, TimesheetEntry } from "../types";
+import { computeStatus, isRowDirty, formatDateLabel } from "../utils";
+import type { BulkRow } from "../types";
 import type { Employee } from "../../employees/types";
 
 interface TimesheetDetailTableProps {
@@ -22,7 +22,6 @@ interface TimesheetDetailTableProps {
   modifiedCount: number;
   monthLabel: string;
   employeeOptions: Employee[];
-  setSelectedEmployeeId: (id: number) => void;
 }
 
 export default function TimesheetDetailTable({
@@ -39,7 +38,6 @@ export default function TimesheetDetailTable({
   modifiedCount,
   monthLabel,
   employeeOptions,
-  setSelectedEmployeeId,
 }: TimesheetDetailTableProps) {
   const { hasRole } = useAuth();
   const canEdit = hasRole("GOD", "ADMIN", "ANALYST");
@@ -117,18 +115,6 @@ export default function TimesheetDetailTable({
   };
 
   // Función para calcular horas trabajadas totales (normal + extra)
-  const calculateTotalHours = (worked: string, overtime: string) => {
-    const workedMinutes = parseDuration(worked) || 0;
-    const overtimeMinutes = parseDuration(overtime) || 0;
-    const totalMinutes = workedMinutes + overtimeMinutes;
-
-    if (totalMinutes === 0) return "00:00";
-
-    const hours = Math.floor(totalMinutes / 60);
-    const minutes = totalMinutes % 60;
-    return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
-  };
-
   // Cerrar menús dropdown al hacer clic fuera
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {

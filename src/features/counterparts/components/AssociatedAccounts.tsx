@@ -14,7 +14,6 @@ interface AssociatedAccountsProps {
   detail: { counterpart: Counterpart; accounts: CounterpartAccount[] } | null;
   summary: CounterpartSummary | null;
   summaryRange: { from: string; to: string };
-  onSaveCounterpart: (payload: any) => Promise<void>;
   onLoadSummary: (counterpartId: number, from: string, to: string) => Promise<void>;
 }
 
@@ -63,7 +62,6 @@ export default function AssociatedAccounts({
   detail,
   summary,
   summaryRange,
-  onSaveCounterpart,
   onLoadSummary,
 }: AssociatedAccountsProps) {
   const [accountForm, setAccountForm] = useState<AccountForm>(ACCOUNT_FORM_DEFAULT);
@@ -112,7 +110,7 @@ export default function AssociatedAccounts({
     setAccountStatus("saving");
     setError(null);
     try {
-      const accounts = await addCounterpartAccount(selectedId, {
+      await addCounterpartAccount(selectedId, {
         accountIdentifier: accountForm.accountIdentifier.trim(),
         bankName: accountForm.bankName.trim() || null,
         accountType: accountForm.accountType.trim() || null,

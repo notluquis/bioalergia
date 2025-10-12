@@ -1,7 +1,7 @@
 import dayjs from "dayjs";
 import type { BulkRow, TimesheetEntry, TimesheetSummaryRow } from "./types";
 
-export function buildBulkRows(month: string, entries: TimesheetEntry[], hourlyRate: number): BulkRow[] {
+export function buildBulkRows(month: string, entries: TimesheetEntry[]): BulkRow[] {
   const base = dayjs(`${month}-01`);
   const days = base.daysInMonth();
   const entryMap = new Map(entries.map((entry) => [entry.work_date, entry]));
@@ -26,9 +26,16 @@ export function hasRowData(row: BulkRow): boolean {
   return Boolean(row.entrada.trim() || row.salida.trim() || row.overtime.trim() || row.comment.trim());
 }
 
+const editableFields: Array<keyof Pick<BulkRow, "entrada" | "salida" | "overtime" | "comment">> = [
+  "entrada",
+  "salida",
+  "overtime",
+  "comment",
+];
+
 export function isRowDirty(row: BulkRow, initial?: BulkRow): boolean {
   if (!initial) return hasRowData(row);
-  return ["entrada", "salida", "overtime", "comment"].some((field) => (row as any)[field] !== (initial as any)[field]);
+  return editableFields.some((field) => row[field] !== initial[field]);
 }
 
 export function computeStatus(row: BulkRow, dirty: boolean): string {

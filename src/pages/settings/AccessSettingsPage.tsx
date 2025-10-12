@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import Button from "../../components/Button";
-import { useSettings, type AppSettings } from "../../context/SettingsContext";
+import { useSettings, type AppSettings } from "../../context/settings-context";
 
 function normalizeExternalUrl(value: string) {
   const trimmed = value.trim();

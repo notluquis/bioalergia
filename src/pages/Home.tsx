@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
 import { fetchParticipantLeaderboard } from "../features/participants/api";
 import type { ParticipantSummaryRow } from "../features/participants/types";
@@ -25,15 +25,7 @@ export default function Home() {
   const from = useMemo(() => dayjs().subtract(RANGE_DAYS, "day").format("YYYY-MM-DD"), []);
   const to = useMemo(() => dayjs().format("YYYY-MM-DD"), []);
 
-  useEffect(() => {
-    loadDashboard();
-  }, []);
-
-  async function loadDashboard() {
-    await Promise.all([loadStats(), loadParticipants(), loadMovements()]);
-  }
-
-  async function loadStats() {
+  const loadStats = useCallback(async () => {
     setStatsLoading(true);
     setStatsError(null);
     try {
@@ -46,9 +38,9 @@ export default function Home() {
     } finally {
       setStatsLoading(false);
     }
-  }
+  }, [from, to]);
 
-  async function loadParticipants() {
+  const loadParticipants = useCallback(async () => {
     setParticipantsError(null);
     try {
       const response = await fetchParticipantLeaderboard({ from, to, limit: 5, mode: "outgoing" });
@@ -58,16 +50,24 @@ export default function Home() {
       setParticipantsError(message);
       setTopParticipants([]);
     }
-  }
+  }, [from, to]);
 
-  async function loadMovements() {
+  const loadMovements = useCallback(async () => {
     try {
       const data = await fetchRecentMovements();
       setRecentMovements(data);
-    } catch (err) {
+    } catch {
       setRecentMovements([]);
     }
-  }
+  }, []);
+
+  const loadDashboard = useCallback(async () => {
+    await Promise.all([loadStats(), loadParticipants(), loadMovements()]);
+  }, [loadStats, loadParticipants, loadMovements]);
+
+  useEffect(() => {
+    loadDashboard();
+  }, [loadDashboard]);
 
   const totals = useMemo(() => {
     if (!stats) return { in: 0, out: 0, net: 0 };

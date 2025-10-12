@@ -1,5 +1,5 @@
 import SettingsForm from "../../components/SettingsForm";
-import { useSettings } from "../../context/SettingsContext";
+import { useSettings } from "../../context/settings-context";
 
 export default function GeneralSettingsPage() {
   const { settings } = useSettings();

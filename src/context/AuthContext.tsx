@@ -1,24 +1,11 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { logger } from "../lib/logger";
-
-export type UserRole = "GOD" | "ADMIN" | "ANALYST" | "VIEWER";
-
-export type AuthUser = {
-  id: number;
-  email: string;
-  role: UserRole;
-  name: string | null;
-};
-
-export type AuthContextType = {
-  user: AuthUser | null;
-  initializing: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  logout: () => Promise<void>;
-  hasRole: (...roles: UserRole[]) => boolean;
-};
-
-export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+import {
+  AuthContext,
+  type AuthContextType,
+  type AuthUser,
+  type UserRole,
+} from "./auth-context";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -105,7 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = useCallback(async (email: string, password: string) => {
     logger.info("[auth] login:start", { email });
     const res = await fetch("/api/auth/login", {
       method: "POST",
@@ -122,9 +109,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     setUser(payload.user);
     logger.info("[auth] login:success", payload.user);
-  };
+  }, []);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     logger.info("[auth] logout:start");
     await fetch("/api/auth/logout", {
       method: "POST",
@@ -132,24 +119,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     setUser(null);
     logger.info("[auth] logout:done");
-  };
+  }, []);
 
-  const hasRole = (...roles: UserRole[]) => {
+  const hasRole = useCallback((...roles: UserRole[]) => {
     if (!user) return false;
     if (user.role === "GOD") return true;
     if (!roles.length) return true;
     return roles.includes(user.role);
-  };
+  }, [user]);
 
-  const value = useMemo<AuthContextType>(() => ({ user, initializing, login, logout, hasRole }), [user, initializing]);
+  const value = useMemo<AuthContextType>(
+    () => ({ user, initializing, login, logout, hasRole }),
+    [user, initializing, login, logout, hasRole]
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
-
-export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) {
-    throw new Error("useAuth debe usarse dentro de un AuthProvider.");
-  }
-  return ctx;
 }

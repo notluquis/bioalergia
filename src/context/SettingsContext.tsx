@@ -1,48 +1,12 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { useAuth, type UserRole } from "./AuthContext";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useAuth } from "./auth-context";
 import { logger } from "../lib/logger";
-
-export type AppSettings = {
-  orgName: string;
-  tagline: string;
-  primaryColor: string;
-  secondaryColor: string;
-  logoUrl: string;
-  dbDisplayHost: string;
-  dbDisplayName: string;
-  dbConsoleUrl: string;
-  cpanelUrl: string;
-  orgAddress: string;
-  orgPhone: string;
-  primaryCurrency: string;
-  supportEmail: string;
-};
-
-export const DEFAULT_SETTINGS: AppSettings = {
-  orgName: "Bioalergia",
-  tagline: "Gestión integral de finanzas",
-  primaryColor: "#0e64b7",
-  secondaryColor: "#f1a722",
-  logoUrl:
-    "https://bioalergia.cl/wp-content/uploads/2025/04/Logo-Bioalergia-con-eslogan-y-marca-registrada-1-scaled.png",
-  dbDisplayHost: "localhost",
-  dbDisplayName: "finanzas",
-  dbConsoleUrl: "",
-  cpanelUrl: "",
-  orgAddress: "",
-  orgPhone: "",
-  primaryCurrency: "CLP",
-  supportEmail: "soporte@bioalergia.cl",
-};
-
-export type SettingsContextType = {
-  settings: AppSettings;
-  loading: boolean;
-  updateSettings: (next: AppSettings) => Promise<void>;
-  canEdit: (...roles: UserRole[]) => boolean;
-};
-
-export const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
+import {
+  DEFAULT_SETTINGS,
+  SettingsContext,
+  type AppSettings,
+  type SettingsContextType,
+} from "./settings-context";
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
   const { user, hasRole } = useAuth();
@@ -90,7 +54,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       cancelled = true;
       controller.abort();
     };
-  }, [user?.id]);
+  }, [user]);
 
   const updateSettings = async (next: AppSettings) => {
     logger.info("[settings] update:start", next);
@@ -111,9 +75,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    // Aplica branding por defecto al cargar el proveedor
     applyBranding(settings);
-  }, []);
+  }, [settings]);
 
   const value = useMemo<SettingsContextType>(
     () => ({ settings, loading, updateSettings, canEdit: hasRole }),
@@ -121,14 +84,6 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   );
 
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;
-}
-
-export function useSettings() {
-  const ctx = useContext(SettingsContext);
-  if (!ctx) {
-    throw new Error("useSettings debe usarse dentro de un SettingsProvider.");
-  }
-  return ctx;
 }
 
 function applyBranding(next: AppSettings) {
