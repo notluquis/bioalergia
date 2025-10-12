@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from "react";
+import type { ChangeEvent } from "react";
 import { z } from "zod";
 import dayjs from "dayjs";
 import { useForm } from "../../../hooks/useForm";
@@ -301,7 +302,7 @@ export function ServiceFormRefactored({ onSubmit, onCancel }: ServiceFormProps) 
           label="Empresa / contraparte"
           type="select"
           value={data.counterpartId ? String(data.counterpartId) : ""}
-          onChange={(event) => handleCounterpartSelect(event.target.value)}
+          onChange={(event: ChangeEvent<HTMLSelectElement>) => handleCounterpartSelect(event.target.value)}
           disabled={counterpartsState.loading}
           helper={counterpartsState.error || (counterpartsState.loading ? "Cargando contrapartes..." : undefined)}
         >
@@ -316,7 +317,9 @@ export function ServiceFormRefactored({ onSubmit, onCancel }: ServiceFormProps) 
           label="Cuenta asociada"
           type="select"
           value={data.counterpartAccountId ? String(data.counterpartAccountId) : ""}
-          onChange={(event) => setValue("counterpartAccountId", event.target.value ? Number(event.target.value) : null)}
+          onChange={(event: ChangeEvent<HTMLSelectElement>) =>
+            setValue("counterpartAccountId", event.target.value ? Number(event.target.value) : null)
+          }
           disabled={!data.counterpartId || accountsState.loading}
           helper={
             accountsState.error ||
@@ -355,7 +358,7 @@ export function ServiceFormRefactored({ onSubmit, onCancel }: ServiceFormProps) 
           label="Meses a generar"
           type="number"
           value={effectiveMonths}
-          onChange={(event) => setValue("monthsToGenerate", Number(event.target.value))}
+          onChange={(event: ChangeEvent<HTMLInputElement>) => setValue("monthsToGenerate", Number(event.target.value))}
           min={1}
           max={60}
           disabled={data.recurrenceType === "ONE_OFF" || data.frequency === "ONCE"}

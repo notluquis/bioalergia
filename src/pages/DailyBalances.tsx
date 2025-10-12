@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { ChangeEvent } from "react";
 import dayjs from "dayjs";
 import { useAuth } from "../context/auth-context";
 import { useSettings } from "../context/settings-context";
@@ -104,21 +105,21 @@ export default function DailyBalances() {
                 label="Fecha desde"
                 type="date"
                 value={from}
-                onChange={(event) => setFrom(event.target.value)}
+                onChange={(event: ChangeEvent<HTMLInputElement>) => setFrom(event.target.value)}
                 className="w-fit"
               />
               <Input
                 label="Fecha hasta"
                 type="date"
                 value={to}
-                onChange={(event) => setTo(event.target.value)}
+                onChange={(event: ChangeEvent<HTMLInputElement>) => setTo(event.target.value)}
                 className="w-fit"
               />
               <Input
                 label="Mes rápido"
                 type="select"
                 value={quickRange}
-                onChange={(event) => {
+                onChange={(event: ChangeEvent<HTMLSelectElement>) => {
                   const value = event.target.value;
                   if (value === "custom") return;
                   const match = quickMonths.find((month) => month.value === value);

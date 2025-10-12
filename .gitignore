@@ -37,3 +37,5 @@ mysql/josema22_wp560.sql
 mysql/openfileslimit
 docs/lint-summary.md
 lint-report.json
+typecheck-report.txt
+docs/typecheck-summary.md

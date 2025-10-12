@@ -1,4 +1,5 @@
 import { Fragment, useState, useMemo, useEffect } from "react";
+import type { ChangeEvent, FocusEvent } from "react";
 import dayjs from "dayjs";
 import { fmtCLP } from "../../../lib/format";
 import { formatRut } from "../../../lib/rut";
@@ -288,6 +289,17 @@ export default function AssociatedAccounts({
     return account.metadata?.withdrawId?.trim() || account.account_identifier;
   }
 
+  const updateAccountForm = <K extends keyof AccountForm>(key: K) => (event: ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value;
+    setAccountForm(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handleAccountIdentifierChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value;
+    setAccountForm(prev => ({ ...prev, accountIdentifier: value }));
+    setSuggestionQuery(value);
+  };
+
   async function fetchTransactionsBySourceId(sourceId: string) {
     const params = new URLSearchParams();
     params.set("sourceId", sourceId);
@@ -401,7 +413,9 @@ export default function AssociatedAccounts({
                       <Input
                         type="text"
                         defaultValue={group.concept}
-                        onBlur={(event) => handleGroupConceptChange(group, event.target.value)}
+                        onBlur={(event: FocusEvent<HTMLInputElement>) =>
+                          handleGroupConceptChange(group, event.target.value)
+                        }
                         className="w-full"
                         placeholder="Concepto (ej. Compra de vacunas)"
                       />
@@ -505,10 +519,7 @@ export default function AssociatedAccounts({
             label="Identificador / Cuenta"
             type="text"
             value={accountForm.accountIdentifier}
-            onChange={(event) => {
-              setAccountForm((prev) => ({ ...prev, accountIdentifier: event.target.value }));
-              setSuggestionQuery(event.target.value);
-            }}
+            onChange={handleAccountIdentifierChange}
             placeholder="Ej. 124282432930"
           />
           {suggestionsLoading ? (
@@ -559,21 +570,21 @@ export default function AssociatedAccounts({
             label="Banco"
             type="text"
             value={accountForm.bankName}
-            onChange={(event) => setAccountForm((prev) => ({ ...prev, bankName: event.target.value }))}
+            onChange={updateAccountForm("bankName")}
             placeholder="Banco"
           />
           <Input
             label="Número de cuenta"
             type="text"
             value={accountForm.bankAccountNumber}
-            onChange={(event) => setAccountForm((prev) => ({ ...prev, bankAccountNumber: event.target.value }))}
+            onChange={updateAccountForm("bankAccountNumber")}
             placeholder="Ej. 00123456789"
           />
           <Input
             label="Titular"
             type="text"
             value={accountForm.holder}
-            onChange={(event) => setAccountForm((prev) => ({ ...prev, holder: event.target.value }))}
+            onChange={updateAccountForm("holder")}
             placeholder="Titular de la cuenta"
           />
           <label className="flex flex-col gap-1 text-sm text-slate-600">
@@ -582,14 +593,14 @@ export default function AssociatedAccounts({
               <Input
                 type="text"
                 value={accountForm.accountType}
-                onChange={(event) => setAccountForm((prev) => ({ ...prev, accountType: event.target.value }))}
+                onChange={updateAccountForm("accountType")}
                 className="w-1/2"
                 placeholder="Cuenta corriente"
               />
               <Input
                 type="text"
                 value={accountForm.concept}
-                onChange={(event) => setAccountForm((prev) => ({ ...prev, concept: event.target.value }))}
+                onChange={updateAccountForm("concept")}
                 className="w-1/2"
                 placeholder="Concepto"
               />

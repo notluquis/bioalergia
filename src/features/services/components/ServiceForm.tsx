@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import type { ChangeEvent } from "react";
 import dayjs from "dayjs";
 import Input from "../../../components/Input";
 import Button from "../../../components/Button";
@@ -293,13 +294,13 @@ export function ServiceForm({ onSubmit, onCancel }: ServiceFormProps) {
         <Input
           label="Nombre"
           value={form.name}
-          onChange={(event) => handleChange("name", event.target.value)}
+          onChange={(event: ChangeEvent<HTMLInputElement>) => handleChange("name", event.target.value)}
           required
         />
         <Input
           label="Categoría"
           value={form.category ?? ""}
-          onChange={(event) => handleChange("category", event.target.value)}
+          onChange={(event: ChangeEvent<HTMLInputElement>) => handleChange("category", event.target.value)}
           helper="Ej: Servicios básicos, Marketing, Arriendo"
         />
         <Input
@@ -307,7 +308,7 @@ export function ServiceForm({ onSubmit, onCancel }: ServiceFormProps) {
           type="textarea"
           rows={3}
           value={form.detail ?? ""}
-          onChange={(event) => handleChange("detail", event.target.value)}
+          onChange={(event: ChangeEvent<HTMLTextAreaElement>) => handleChange("detail", event.target.value)}
           helper="Describe qué cubre el servicio o condiciones especiales"
         />
         <Input
@@ -315,7 +316,7 @@ export function ServiceForm({ onSubmit, onCancel }: ServiceFormProps) {
           type="textarea"
           rows={3}
           value={form.notes ?? ""}
-          onChange={(event) => handleChange("notes", event.target.value)}
+          onChange={(event: ChangeEvent<HTMLTextAreaElement>) => handleChange("notes", event.target.value)}
         />
       </section>
 
@@ -324,7 +325,9 @@ export function ServiceForm({ onSubmit, onCancel }: ServiceFormProps) {
           label="Tipo"
           type="select"
           value={form.serviceType}
-          onChange={(event) => handleChange("serviceType", event.target.value as ServiceType)}
+          onChange={(event: ChangeEvent<HTMLSelectElement>) =>
+            handleChange("serviceType", event.target.value as ServiceType)
+          }
         >
           {SERVICE_TYPE_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>
@@ -336,7 +339,9 @@ export function ServiceForm({ onSubmit, onCancel }: ServiceFormProps) {
           label="Propiedad"
           type="select"
           value={form.ownership}
-          onChange={(event) => handleChange("ownership", event.target.value as ServiceOwnership)}
+          onChange={(event: ChangeEvent<HTMLSelectElement>) =>
+            handleChange("ownership", event.target.value as ServiceOwnership)
+          }
         >
           {OWNERSHIP_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>
@@ -348,7 +353,9 @@ export function ServiceForm({ onSubmit, onCancel }: ServiceFormProps) {
           label="Naturaleza"
           type="select"
           value={form.obligationType}
-          onChange={(event) => handleChange("obligationType", event.target.value as ServiceObligationType)}
+          onChange={(event: ChangeEvent<HTMLSelectElement>) =>
+            handleChange("obligationType", event.target.value as ServiceObligationType)
+          }
         >
           {OBLIGATION_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>
@@ -360,7 +367,9 @@ export function ServiceForm({ onSubmit, onCancel }: ServiceFormProps) {
           label="Recurrencia"
           type="select"
           value={form.recurrenceType}
-          onChange={(event) => handleChange("recurrenceType", event.target.value as ServiceRecurrenceType)}
+          onChange={(event: ChangeEvent<HTMLSelectElement>) =>
+            handleChange("recurrenceType", event.target.value as ServiceRecurrenceType)
+          }
         >
           {RECURRENCE_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>
@@ -375,7 +384,7 @@ export function ServiceForm({ onSubmit, onCancel }: ServiceFormProps) {
           label="Empresa / contraparte"
           type="select"
           value={form.counterpartId ? String(form.counterpartId) : ""}
-          onChange={(event) => handleCounterpartSelect(event.target.value)}
+          onChange={(event: ChangeEvent<HTMLSelectElement>) => handleCounterpartSelect(event.target.value)}
           disabled={counterpartsLoading}
           helper={counterpartsError ?? (counterpartsLoading ? "Cargando contrapartes..." : undefined)}
         >
@@ -390,7 +399,7 @@ export function ServiceForm({ onSubmit, onCancel }: ServiceFormProps) {
           label="Cuenta asociada"
           type="select"
           value={form.counterpartAccountId ? String(form.counterpartAccountId) : ""}
-          onChange={(event) =>
+          onChange={(event: ChangeEvent<HTMLSelectElement>) =>
             handleChange("counterpartAccountId", event.target.value ? Number(event.target.value) : null)
           }
           disabled={!form.counterpartId || accountsLoading}
@@ -415,7 +424,7 @@ export function ServiceForm({ onSubmit, onCancel }: ServiceFormProps) {
         <Input
           label="Referencia de cuenta"
           value={form.accountReference ?? ""}
-          onChange={(event) => handleChange("accountReference", event.target.value)}
+          onChange={(event: ChangeEvent<HTMLInputElement>) => handleChange("accountReference", event.target.value)}
           helper="Usa este campo si necesitas un alias o número distinto a las cuentas registradas"
         />
       </section>
@@ -425,7 +434,9 @@ export function ServiceForm({ onSubmit, onCancel }: ServiceFormProps) {
           label="Frecuencia"
           type="select"
           value={form.frequency}
-          onChange={(event) => handleChange("frequency", event.target.value as ServiceFrequency)}
+          onChange={(event: ChangeEvent<HTMLSelectElement>) =>
+            handleChange("frequency", event.target.value as ServiceFrequency)
+          }
         >
           {FREQUENCY_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>
@@ -437,14 +448,16 @@ export function ServiceForm({ onSubmit, onCancel }: ServiceFormProps) {
           label="Fecha de inicio"
           type="date"
           value={form.startDate}
-          onChange={(event) => handleChange("startDate", event.target.value)}
+          onChange={(event: ChangeEvent<HTMLInputElement>) => handleChange("startDate", event.target.value)}
           required
         />
         <Input
           label="Meses a generar"
           type="number"
           value={effectiveMonths}
-          onChange={(event) => handleChange("monthsToGenerate", Number(event.target.value))}
+          onChange={(event: ChangeEvent<HTMLInputElement>) =>
+            handleChange("monthsToGenerate", Number(event.target.value))
+          }
           min={1}
           max={60}
           disabled={form.recurrenceType === "ONE_OFF" || form.frequency === "ONCE"}
@@ -458,7 +471,9 @@ export function ServiceForm({ onSubmit, onCancel }: ServiceFormProps) {
           label="Día de vencimiento"
           type="number"
           value={form.dueDay ?? ""}
-          onChange={(event) => handleChange("dueDay", event.target.value ? Number(event.target.value) : null)}
+          onChange={(event: ChangeEvent<HTMLInputElement>) =>
+            handleChange("dueDay", event.target.value ? Number(event.target.value) : null)
+          }
           min={1}
           max={31}
         />
@@ -469,7 +484,9 @@ export function ServiceForm({ onSubmit, onCancel }: ServiceFormProps) {
           label="Modo de emisión"
           type="select"
           value={emissionMode}
-          onChange={(event) => handleChange("emissionMode", event.target.value as ServiceEmissionMode)}
+          onChange={(event: ChangeEvent<HTMLSelectElement>) =>
+            handleChange("emissionMode", event.target.value as ServiceEmissionMode)
+          }
         >
           {EMISSION_MODE_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>
@@ -482,7 +499,9 @@ export function ServiceForm({ onSubmit, onCancel }: ServiceFormProps) {
             label="Día emisión"
             type="number"
             value={form.emissionDay ?? ""}
-            onChange={(event) => handleChange("emissionDay", event.target.value ? Number(event.target.value) : null)}
+            onChange={(event: ChangeEvent<HTMLInputElement>) =>
+              handleChange("emissionDay", event.target.value ? Number(event.target.value) : null)
+            }
             min={1}
             max={31}
           />
@@ -493,7 +512,7 @@ export function ServiceForm({ onSubmit, onCancel }: ServiceFormProps) {
               label="Día inicio emisión"
               type="number"
               value={form.emissionStartDay ?? ""}
-              onChange={(event) =>
+              onChange={(event: ChangeEvent<HTMLInputElement>) =>
                 handleChange("emissionStartDay", event.target.value ? Number(event.target.value) : null)
               }
               min={1}
@@ -503,7 +522,7 @@ export function ServiceForm({ onSubmit, onCancel }: ServiceFormProps) {
               label="Día término emisión"
               type="number"
               value={form.emissionEndDay ?? ""}
-              onChange={(event) =>
+              onChange={(event: ChangeEvent<HTMLInputElement>) =>
                 handleChange("emissionEndDay", event.target.value ? Number(event.target.value) : null)
               }
               min={1}
@@ -516,7 +535,9 @@ export function ServiceForm({ onSubmit, onCancel }: ServiceFormProps) {
             label="Fecha emisión"
             type="date"
             value={form.emissionExactDate ?? ""}
-            onChange={(event) => handleChange("emissionExactDate", event.target.value || null)}
+            onChange={(event: ChangeEvent<HTMLInputElement>) =>
+              handleChange("emissionExactDate", event.target.value || null)
+            }
           />
         )}
       </section>
@@ -526,7 +547,9 @@ export function ServiceForm({ onSubmit, onCancel }: ServiceFormProps) {
           label="Monto base"
           type="number"
           value={form.defaultAmount}
-          onChange={(event) => handleChange("defaultAmount", Number(event.target.value))}
+          onChange={(event: ChangeEvent<HTMLInputElement>) =>
+            handleChange("defaultAmount", Number(event.target.value))
+          }
           min={0}
           step="0.01"
           required
@@ -535,7 +558,7 @@ export function ServiceForm({ onSubmit, onCancel }: ServiceFormProps) {
           label="Modo de monto"
           type="select"
           value={form.amountIndexation ?? "NONE"}
-          onChange={(event) =>
+          onChange={(event: ChangeEvent<HTMLSelectElement>) =>
             handleChange("amountIndexation", event.target.value as ServiceFormState["amountIndexation"])
           }
         >
@@ -549,7 +572,9 @@ export function ServiceForm({ onSubmit, onCancel }: ServiceFormProps) {
           label="Recargo por atraso"
           type="select"
           value={lateFeeMode}
-          onChange={(event) => handleChange("lateFeeMode", event.target.value as ServiceLateFeeMode)}
+          onChange={(event: ChangeEvent<HTMLSelectElement>) =>
+            handleChange("lateFeeMode", event.target.value as ServiceLateFeeMode)
+          }
         >
           {LATE_FEE_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>
@@ -563,7 +588,9 @@ export function ServiceForm({ onSubmit, onCancel }: ServiceFormProps) {
               label={lateFeeMode === "PERCENTAGE" ? "% recargo" : "Monto recargo"}
               type="number"
               value={form.lateFeeValue ?? ""}
-              onChange={(event) => handleChange("lateFeeValue", Number(event.target.value))}
+              onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                handleChange("lateFeeValue", Number(event.target.value))
+              }
               min={0}
               step="0.01"
             />
@@ -571,7 +598,7 @@ export function ServiceForm({ onSubmit, onCancel }: ServiceFormProps) {
               label="Días de gracia"
               type="number"
               value={form.lateFeeGraceDays ?? ""}
-              onChange={(event) =>
+              onChange={(event: ChangeEvent<HTMLInputElement>) =>
                 handleChange("lateFeeGraceDays", event.target.value ? Number(event.target.value) : null)
               }
               min={0}

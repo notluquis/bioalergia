@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import type { ChangeEvent } from "react";
 import dayjs from "dayjs";
 import { useAuth } from "../context/auth-context";
 import { logger } from "../lib/logger";
@@ -271,14 +272,18 @@ export default function ServicesPage() {
               label="ID transacción"
               type="number"
               value={paymentForm.transactionId}
-              onChange={(event) => setPaymentForm((prev) => ({ ...prev, transactionId: event.target.value }))}
+              onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                setPaymentForm((prev) => ({ ...prev, transactionId: event.target.value }))
+              }
               required
             />
             <Input
               label="Monto pagado"
               type="number"
               value={paymentForm.paidAmount}
-              onChange={(event) => setPaymentForm((prev) => ({ ...prev, paidAmount: event.target.value }))}
+              onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                setPaymentForm((prev) => ({ ...prev, paidAmount: event.target.value }))
+              }
               min={0}
               step="0.01"
               required
@@ -287,7 +292,9 @@ export default function ServicesPage() {
               label="Fecha de pago"
               type="date"
               value={paymentForm.paidDate}
-              onChange={(event) => setPaymentForm((prev) => ({ ...prev, paidDate: event.target.value }))}
+              onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                setPaymentForm((prev) => ({ ...prev, paidDate: event.target.value }))
+              }
               required
             />
             <Input
@@ -295,7 +302,9 @@ export default function ServicesPage() {
               type="textarea"
               rows={2}
               value={paymentForm.note}
-              onChange={(event) => setPaymentForm((prev) => ({ ...prev, note: event.target.value }))}
+              onChange={(event: ChangeEvent<HTMLTextAreaElement>) =>
+                setPaymentForm((prev) => ({ ...prev, note: event.target.value }))
+              }
             />
             {paymentError && <p className="rounded-lg bg-rose-100 px-4 py-2 text-sm text-rose-700">{paymentError}</p>}
             <div className="flex justify-end gap-3">

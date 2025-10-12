@@ -1,4 +1,5 @@
 import dayjs from "dayjs";
+import type { ChangeEvent } from "react";
 import { fmtCLP } from "../lib/format";
 import { useParticipantInsightsData } from "../features/participants/hooks/useParticipantInsightsData";
 import Alert from "../components/Alert";
@@ -52,14 +53,14 @@ export default function ParticipantInsightsPage() {
           label="ID participante"
           type="text"
           value={participantId}
-          onChange={(event) => setParticipantId(event.target.value)}
+          onChange={(event: ChangeEvent<HTMLInputElement>) => setParticipantId(event.target.value)}
           placeholder="123861706983"
         />
         <Input
           label="Rango rápido"
           type="select"
           value={quickMonth}
-          onChange={(event) => setQuickMonth(event.target.value)}
+          onChange={(event: ChangeEvent<HTMLSelectElement>) => setQuickMonth(event.target.value)}
         >
           {quickMonthOptions.map((option) => (
             <option key={option.value} value={option.value}>
@@ -71,14 +72,14 @@ export default function ParticipantInsightsPage() {
           label="Desde"
           type="date"
           value={from}
-          onChange={(event) => setFrom(event.target.value)}
+          onChange={(event: ChangeEvent<HTMLInputElement>) => setFrom(event.target.value)}
           disabled={quickMonth !== "custom"}
         />
         <Input
           label="Hasta"
           type="date"
           value={to}
-          onChange={(event) => setTo(event.target.value)}
+          onChange={(event: ChangeEvent<HTMLInputElement>) => setTo(event.target.value)}
           disabled={quickMonth !== "custom"}
         />
         <div className="flex items-end">
@@ -101,7 +102,7 @@ export default function ParticipantInsightsPage() {
               label="Mostrar top"
               type="select"
               value={leaderboardLimit}
-              onChange={(event) => {
+              onChange={(event: ChangeEvent<HTMLSelectElement>) => {
                 const value = Number(event.target.value);
                 setLeaderboardLimit(Number.isFinite(value) ? value : 10);
               }}
@@ -117,7 +118,9 @@ export default function ParticipantInsightsPage() {
               label="Agrupar por"
               type="select"
               value={leaderboardGrouping}
-              onChange={(event) => setLeaderboardGrouping(event.target.value as "account" | "rut")}
+              onChange={(event: ChangeEvent<HTMLSelectElement>) =>
+                setLeaderboardGrouping(event.target.value as "account" | "rut")
+              }
               className="normal-case"
             >
               <option value="account">Cuenta bancaria</option>

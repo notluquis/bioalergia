@@ -1,4 +1,5 @@
 import { useState } from "react";
+import type { ChangeEvent } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/auth-context";
 import { useSettings } from "../context/settings-context";
@@ -66,7 +67,7 @@ export default function Login() {
             label="Correo electrónico"
             type="email"
             value={email}
-            onChange={(event) => setEmail(event.target.value)}
+            onChange={(event: ChangeEvent<HTMLInputElement>) => setEmail(event.target.value)}
             placeholder="usuario@bioalergia.cl"
             autoComplete="email"
             required
@@ -75,7 +76,7 @@ export default function Login() {
             label="Contraseña"
             type="password"
             value={password}
-            onChange={(event) => setPassword(event.target.value)}
+            onChange={(event: ChangeEvent<HTMLInputElement>) => setPassword(event.target.value)}
             placeholder="••••••••"
             autoComplete="current-password"
             required

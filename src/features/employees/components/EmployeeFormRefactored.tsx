@@ -100,8 +100,8 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
       form.setValue("salary_type", employee.salary_type ?? "hourly");
       form.setValue("hourly_rate", employee.hourly_rate ?? 0);
       form.setValue("fixed_salary", employee.fixed_salary ?? undefined);
-      form.setValue("overtime_rate", employee.overtime_rate);
-      form.setValue("retention_rate", employee.retention_rate);
+      form.setValue("overtime_rate", employee.overtime_rate ?? undefined);
+      form.setValue("retention_rate", employee.retention_rate ?? 0);
     } else {
       form.reset();
     }
@@ -237,7 +237,12 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
               label="Sueldo fijo mensual (CLP)"
               type="number"
               value={typeof form.values.fixed_salary === "boolean" ? "" : (form.values.fixed_salary ?? "")}
-              onChange={(e) => form.setValue("fixed_salary", e.target.value)}
+              onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+                form.setValue(
+                  "fixed_salary",
+                  event.target.value ? Number(event.target.value) : undefined
+                )
+              }
               required
             />
           )}

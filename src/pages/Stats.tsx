@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import type { ChangeEvent } from "react";
 import { useAuth } from "../context/auth-context";
 import { BalanceSummary } from "../features/balances/components/BalanceSummary";
 import { useStatsData } from "../features/stats/hooks/useStatsData";
@@ -71,13 +72,23 @@ export default function Stats() {
         }}
         className="grid gap-4 rounded-2xl border border-[var(--brand-primary)]/10 bg-white p-6 text-xs text-slate-600 shadow-sm sm:grid-cols-5"
       >
-        <Input label="Desde" type="date" value={from} onChange={(event) => setFrom(event.target.value)} />
-        <Input label="Hasta" type="date" value={to} onChange={(event) => setTo(event.target.value)} />
+        <Input
+          label="Desde"
+          type="date"
+          value={from}
+          onChange={(event: ChangeEvent<HTMLInputElement>) => setFrom(event.target.value)}
+        />
+        <Input
+          label="Hasta"
+          type="date"
+          value={to}
+          onChange={(event: ChangeEvent<HTMLInputElement>) => setTo(event.target.value)}
+        />
         <Input
           label="Intervalo rápido"
           type="select"
           value={quickRange}
-          onChange={(event) => {
+          onChange={(event: ChangeEvent<HTMLSelectElement>) => {
             const value = event.target.value;
             if (value === "custom") return;
             const match = quickMonths.find((month) => month.value === value);

@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import type { ChangeEvent } from "react";
 import { z } from "zod";
 import { useForm } from "../../../hooks";
 import Button from "../../../components/Button";
@@ -91,8 +92,8 @@ export default function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyR
             label="Nombre del Insumo"
             type="select"
             {...form.getFieldProps("selectedSupply")}
-            onChange={(e) => {
-              form.setValue("selectedSupply", e.target.value);
+            onChange={(event: ChangeEvent<HTMLSelectElement>) => {
+              form.setValue("selectedSupply", event.target.value);
               form.setValue("selectedBrand", "");
               form.setValue("selectedModel", "");
             }}
@@ -120,8 +121,8 @@ export default function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyR
             label="Marca"
             type="select"
             {...form.getFieldProps("selectedBrand")}
-            onChange={(e) => {
-              form.setValue("selectedBrand", e.target.value);
+            onChange={(event: ChangeEvent<HTMLSelectElement>) => {
+              form.setValue("selectedBrand", event.target.value);
               form.setValue("selectedModel", "");
             }}
             disabled={!form.values.selectedSupply}

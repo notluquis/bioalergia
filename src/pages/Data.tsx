@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import type { ChangeEvent } from "react";
 import dayjs from "dayjs";
 import { useAuth } from "../context/auth-context";
 import { useSettings } from "../context/settings-context";
@@ -197,7 +198,7 @@ export default function Data() {
                 label="Saldo inicial (CLP)"
                 type="text"
                 value={initialBalance}
-                onChange={(event) => {
+                onChange={(event: ChangeEvent<HTMLInputElement>) => {
                   setInitialBalanceEdited(true);
                   setInitialBalance(event.target.value);
                 }}
@@ -215,7 +216,7 @@ export default function Data() {
                 label="Mes rápido"
                 type="select"
                 value={quickRange}
-                onChange={(event) => {
+                onChange={(event: ChangeEvent<HTMLSelectElement>) => {
                   const value = event.target.value;
                   if (value === "custom") return;
                   const match = quickMonths.find((month) => month.value === value);
@@ -241,7 +242,7 @@ export default function Data() {
               <Checkbox
                 label="Mostrar montos"
                 checked={filters.includeAmounts}
-                onChange={(event) => {
+                onChange={(event: ChangeEvent<HTMLInputElement>) => {
                   const nextFilters = { ...filters, includeAmounts: event.target.checked };
                   setFilters(nextFilters);
                   logger.info("[data] toggle includeAmounts", nextFilters.includeAmounts);

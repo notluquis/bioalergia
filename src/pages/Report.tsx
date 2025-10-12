@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import type { ChangeEvent } from "react";
 import { coerceAmount } from "../lib/format";
 import { useReportUpload } from "../features/reports/hooks/useReportUpload";
 import ReportTable from "../features/reports/components/ReportTable";
@@ -44,7 +45,7 @@ export default function Report() {
             label="Saldo inicial (CLP)"
             type="text"
             value={initialBalance}
-            onChange={(event) => setInitialBalance(event.target.value)}
+            onChange={(event: ChangeEvent<HTMLInputElement>) => setInitialBalance(event.target.value)}
             placeholder="0"
           />
           <FileInput label="Archivo CSV" accept=".csv,.txt" onChange={onFile} />

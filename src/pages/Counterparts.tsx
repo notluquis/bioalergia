@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import type { ChangeEvent } from "react";
 import dayjs from "dayjs";
 import {
   createCounterpart,
@@ -157,14 +158,18 @@ export default function CounterpartsPage() {
                   label="Desde"
                   type="date"
                   value={summaryRange.from}
-                  onChange={(event) => setSummaryRange((prev) => ({ ...prev, from: event.target.value }))}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                    setSummaryRange((prev) => ({ ...prev, from: event.target.value }))
+                  }
                   className="w-40"
                 />
                 <Input
                   label="Hasta"
                   type="date"
                   value={summaryRange.to}
-                  onChange={(event) => setSummaryRange((prev) => ({ ...prev, to: event.target.value }))}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                    setSummaryRange((prev) => ({ ...prev, to: event.target.value }))
+                  }
                   className="w-40"
                 />
                 <Button

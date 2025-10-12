@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import type { ChangeEvent } from "react";
 import dayjs from "dayjs";
 import Button from "../../../components/Button";
 import Modal from "../../../components/Modal";
@@ -274,7 +275,9 @@ export function ServiceDetail({
             label="Meses a generar"
             type="number"
             value={regenerateForm.months ?? service.next_generation_months}
-            onChange={(event) => setRegenerateForm((prev) => ({ ...prev, months: Number(event.target.value) }))}
+            onChange={(event: ChangeEvent<HTMLInputElement>) =>
+              setRegenerateForm((prev) => ({ ...prev, months: Number(event.target.value) }))
+            }
             min={1}
             max={60}
           />
@@ -282,13 +285,17 @@ export function ServiceDetail({
             label="Nueva fecha de inicio"
             type="date"
             value={regenerateForm.startDate ?? service.start_date}
-            onChange={(event) => setRegenerateForm((prev) => ({ ...prev, startDate: event.target.value }))}
+            onChange={(event: ChangeEvent<HTMLInputElement>) =>
+              setRegenerateForm((prev) => ({ ...prev, startDate: event.target.value }))
+            }
           />
           <Input
             label="Monto base"
             type="number"
             value={regenerateForm.defaultAmount ?? service.default_amount}
-            onChange={(event) => setRegenerateForm((prev) => ({ ...prev, defaultAmount: Number(event.target.value) }))}
+            onChange={(event: ChangeEvent<HTMLInputElement>) =>
+              setRegenerateForm((prev) => ({ ...prev, defaultAmount: Number(event.target.value) }))
+            }
             min={0}
             step="0.01"
           />
@@ -296,8 +303,11 @@ export function ServiceDetail({
             label="Día de vencimiento"
             type="number"
             value={regenerateForm.dueDay ?? service.due_day ?? ""}
-            onChange={(event) =>
-              setRegenerateForm((prev) => ({ ...prev, dueDay: event.target.value ? Number(event.target.value) : null }))
+            onChange={(event: ChangeEvent<HTMLInputElement>) =>
+              setRegenerateForm((prev) => ({
+                ...prev,
+                dueDay: event.target.value ? Number(event.target.value) : null,
+              }))
             }
             min={1}
             max={31}
@@ -306,7 +316,7 @@ export function ServiceDetail({
             label="Frecuencia"
             type="select"
             value={regenerateForm.frequency ?? service.frequency}
-            onChange={(event) =>
+            onChange={(event: ChangeEvent<HTMLSelectElement>) =>
               setRegenerateForm((prev) => ({
                 ...prev,
                 frequency: event.target.value as RegenerateServicePayload["frequency"],
@@ -327,7 +337,7 @@ export function ServiceDetail({
               label="Día de emisión"
               type="number"
               value={regenerateForm.emissionDay ?? service.emission_day ?? ""}
-              onChange={(event) =>
+              onChange={(event: ChangeEvent<HTMLInputElement>) =>
                 setRegenerateForm((prev) => ({
                   ...prev,
                   emissionDay: event.target.value ? Number(event.target.value) : null,

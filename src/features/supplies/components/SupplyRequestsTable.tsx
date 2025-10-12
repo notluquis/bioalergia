@@ -1,4 +1,5 @@
 import React from "react";
+import type { ChangeEvent } from "react";
 import { useAuth } from "../../../context/auth-context";
 import type { SupplyRequest } from "../types";
 import { translateStatus } from "../utils";
@@ -120,7 +121,9 @@ export default function SupplyRequestsTable({ requests, onStatusChange }: Supply
                       <Input
                         type="select"
                         value={request.status}
-                        onChange={(e) => onStatusChange(request.id, e.target.value as SupplyRequest["status"])}
+                        onChange={(event: ChangeEvent<HTMLSelectElement>) =>
+                          onStatusChange(request.id, event.target.value as SupplyRequest["status"])
+                        }
                         className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
                       >
                         <option value="pending">Pendiente</option>

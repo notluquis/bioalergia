@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 import { useAuth } from "../../../context/auth-context";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ChangeEvent } from "react";
 import Modal from "../../../components/Modal";
 import Button from "../../../components/Button";
 import Input from "../../../components/Input";
@@ -253,7 +253,9 @@ export default function TimesheetDetailTable({
                       <Input
                         type="text"
                         value={row.entrada}
-                        onChange={(e) => onRowChange(index, "entrada", formatTimeInput(e.target.value))}
+                        onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                          onRowChange(index, "entrada", formatTimeInput(event.target.value))
+                        }
                         placeholder="HH:MM"
                         className="w-28"
                         disabled={!canEditRow}
@@ -264,7 +266,9 @@ export default function TimesheetDetailTable({
                       <Input
                         type="text"
                         value={row.salida}
-                        onChange={(e) => onRowChange(index, "salida", formatTimeInput(e.target.value))}
+                        onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                          onRowChange(index, "salida", formatTimeInput(event.target.value))
+                        }
                         placeholder="HH:MM"
                         className="w-28"
                         disabled={!canEditRow}
@@ -298,7 +302,9 @@ export default function TimesheetDetailTable({
                         <Input
                           type="text"
                           value={row.overtime}
-                          onChange={(e) => onRowChange(index, "overtime", e.target.value)}
+                          onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                            onRowChange(index, "overtime", event.target.value)
+                          }
                           placeholder="HH:MM"
                           className="w-28"
                           disabled={!canEditRow}

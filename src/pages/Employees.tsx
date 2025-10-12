@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import type { ChangeEvent } from "react";
 import { useAuth } from "../context/auth-context";
 import { fetchEmployees, deactivateEmployee, updateEmployee } from "../features/employees/api";
 import type { Employee } from "../features/employees/types";
@@ -77,7 +78,7 @@ export default function EmployeesPage() {
         <Input
           type="checkbox"
           checked={includeInactive}
-          onChange={(event) => setIncludeInactive(event.target.checked)}
+          onChange={(event: ChangeEvent<HTMLInputElement>) => setIncludeInactive(event.target.checked)}
           label="Ver inactivos"
           className="w-fit"
         />

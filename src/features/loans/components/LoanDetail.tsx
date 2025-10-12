@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import type { ChangeEvent } from "react";
 import dayjs from "dayjs";
 import Button from "../../../components/Button";
 import Modal from "../../../components/Modal";
@@ -151,7 +152,7 @@ export function LoanDetail({
             label="Nuevo total de cuotas"
             type="number"
             value={regenerateForm.totalInstallments ?? loan.total_installments}
-            onChange={(event) =>
+            onChange={(event: ChangeEvent<HTMLInputElement>) =>
               setRegenerateForm((prev) => ({ ...prev, totalInstallments: Number(event.target.value) }))
             }
             min={1}
@@ -161,13 +162,17 @@ export function LoanDetail({
             label="Nueva fecha de inicio"
             type="date"
             value={regenerateForm.startDate ?? loan.start_date}
-            onChange={(event) => setRegenerateForm((prev) => ({ ...prev, startDate: event.target.value }))}
+            onChange={(event: ChangeEvent<HTMLInputElement>) =>
+              setRegenerateForm((prev) => ({ ...prev, startDate: event.target.value }))
+            }
           />
           <Input
             label="Tasa de interés (%)"
             type="number"
             value={regenerateForm.interestRate ?? loan.interest_rate}
-            onChange={(event) => setRegenerateForm((prev) => ({ ...prev, interestRate: Number(event.target.value) }))}
+            onChange={(event: ChangeEvent<HTMLInputElement>) =>
+              setRegenerateForm((prev) => ({ ...prev, interestRate: Number(event.target.value) }))
+            }
             min={0}
             step="0.01"
           />
@@ -175,7 +180,7 @@ export function LoanDetail({
             label="Frecuencia"
             type="select"
             value={regenerateForm.frequency ?? loan.frequency}
-            onChange={(event) =>
+            onChange={(event: ChangeEvent<HTMLSelectElement>) =>
               setRegenerateForm((prev) => ({
                 ...prev,
                 frequency: event.target.value as RegenerateSchedulePayload["frequency"],
