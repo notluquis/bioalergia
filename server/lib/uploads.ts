@@ -52,7 +52,7 @@ function slugifyName(original: string) {
 }
 
 function generateFilename(original: string, forcedExt?: string) {
-  const ext = forcedExt ?? path.extname(original).toLowerCase() || ".png";
+  const ext = forcedExt ?? (path.extname(original).toLowerCase() || ".png");
   const slug = slugifyName(original);
   const suffix = randomBytes(4).toString("hex");
   return `${slug}-${Date.now()}-${suffix}${ext}`;
