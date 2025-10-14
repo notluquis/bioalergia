@@ -7,9 +7,10 @@ import sharp from "sharp";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+const defaultUploadsRoot = path.resolve(process.cwd(), "storage/uploads");
 const uploadsRoot = process.env.UPLOADS_ROOT_DIR
   ? path.resolve(process.env.UPLOADS_ROOT_DIR)
-  : path.resolve(__dirname, "../uploads");
+  : defaultUploadsRoot;
 const brandingUploadsDir = path.join(uploadsRoot, "branding");
 
 export const BRANDING_LOGO_MAX_WIDTH = 1600;
