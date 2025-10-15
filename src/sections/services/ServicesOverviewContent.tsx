@@ -1,52 +1,57 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { ChangeEvent } from "react";
 import dayjs from "dayjs";
-import { useAuth } from "../context/auth-context";
-import { logger } from "../lib/logger";
-import Alert from "../components/Alert";
-import Modal from "../components/Modal";
-import Input from "../components/Input";
-import Button from "../components/Button";
-import ServiceList from "../features/services/components/ServiceList";
-import ServiceDetail from "../features/services/components/ServiceDetail";
-import ServiceForm from "../features/services/components/ServiceForm";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+} from "react";
+import Alert from "../../components/Alert";
+import Button from "../../components/Button";
+import CollapsibleSection from "../../components/CollapsibleSection";
+import Input from "../../components/Input";
+import Modal from "../../components/Modal";
+import { useAuth } from "../../context/auth-context";
+import { logger } from "../../lib/logger";
+import ServiceDetail from "../../features/services/components/ServiceDetail";
+import ServiceForm from "../../features/services/components/ServiceForm";
+import ServiceList from "../../features/services/components/ServiceList";
 import ServicesFilterPanel, {
   type ServicesFilterState,
-} from "../features/services/components/ServicesFilterPanel";
+} from "../../features/services/components/ServicesFilterPanel";
 import ServiceTemplateGallery, {
   type ServiceTemplate,
-} from "../features/services/components/ServiceTemplateGallery";
-import ServicesUnifiedAgenda from "../features/services/components/ServicesUnifiedAgenda";
+} from "../../features/services/components/ServiceTemplateGallery";
+import ServicesUnifiedAgenda from "../../features/services/components/ServicesUnifiedAgenda";
+import type {
+  CreateServicePayload,
+  RegenerateServicePayload,
+  ServiceDetailResponse,
+  ServiceSchedule,
+  ServiceSummary,
+} from "../../features/services/types";
 import {
   createService,
   fetchServiceDetail,
   fetchServices,
-  registerServicePayment,
   regenerateServiceSchedules,
+  registerServicePayment,
   unlinkServicePayment,
-} from "../features/services/api";
-import type {
-  CreateServicePayload,
-  ServiceDetailResponse,
-  ServiceSchedule,
-  ServiceSummary,
-  RegenerateServicePayload,
-} from "../features/services/types";
+} from "../../features/services/api";
 
-export default function ServicesPage() {
+const formatCurrency = new Intl.NumberFormat("es-CL", {
+  style: "currency",
+  currency: "CLP",
+  maximumFractionDigits: 0,
+});
+
+const formatNumber = new Intl.NumberFormat("es-CL");
+
+export default function ServicesOverviewContent() {
   const { hasRole } = useAuth();
   const canManage = useMemo(() => hasRole("GOD", "ADMIN"), [hasRole]);
   const canView = useMemo(() => hasRole("GOD", "ADMIN", "ANALYST", "VIEWER"), [hasRole]);
-  const formatCurrency = useMemo(
-    () =>
-      new Intl.NumberFormat("es-CL", {
-        style: "currency",
-        currency: "CLP",
-        maximumFractionDigits: 0,
-      }),
-    []
-  );
-  const formatNumber = useMemo(() => new Intl.NumberFormat("es-CL"), []);
 
   const [services, setServices] = useState<ServiceSummary[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -57,6 +62,7 @@ export default function ServicesPage() {
 
   const [createOpen, setCreateOpen] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<ServiceTemplate | null>(null);
 
   const [paymentSchedule, setPaymentSchedule] = useState<ServiceSchedule | null>(null);
   const [paymentForm, setPaymentForm] = useState({
@@ -73,15 +79,11 @@ export default function ServicesPage() {
     statuses: new Set(),
     types: new Set(),
   });
+
   const [allDetails, setAllDetails] = useState<Record<string, ServiceDetailResponse>>({});
   const [aggregatedLoading, setAggregatedLoading] = useState(false);
   const [aggregatedError, setAggregatedError] = useState<string | null>(null);
-  const [selectedTemplate, setSelectedTemplate] = useState<ServiceTemplate | null>(null);
-  const selectedIdRef = useRef<string | null>(selectedId);
-
-  useEffect(() => {
-    selectedIdRef.current = selectedId;
-  }, [selectedId]);
+  const selectedIdRef = useRef<string | null>(null);
 
   const loadServices = useCallback(async () => {
     if (!canView) return;
@@ -116,6 +118,10 @@ export default function ServicesPage() {
   }, []);
 
   useEffect(() => {
+    selectedIdRef.current = selectedId;
+  }, [selectedId]);
+
+  useEffect(() => {
     loadServices().catch((error) => logger.error("[services] list:effect", error));
   }, [loadServices]);
 
@@ -130,7 +136,7 @@ export default function ServicesPage() {
     Promise.all(
       services.map((service) =>
         fetchServiceDetail(service.public_id)
-          .then((detail) => ({ id: service.public_id, detail }))
+          .then((detailResponse) => ({ id: service.public_id, detail: detailResponse }))
           .catch((error) => {
             logger.error("[services] aggregated:error", error);
             throw error;
@@ -140,11 +146,12 @@ export default function ServicesPage() {
       .then((results) => {
         if (cancelled) return;
         const next: Record<string, ServiceDetailResponse> = {};
-        results.forEach(({ id, detail }) => {
-          next[id] = detail;
+        results.forEach(({ id, detail: detailResponse }) => {
+          next[id] = detailResponse;
         });
         setAllDetails(next);
         if (!selectedIdRef.current && results.length) {
+          selectedIdRef.current = results[0].id;
           setSelectedId(results[0].id);
           setDetail(results[0].detail);
         }
@@ -173,16 +180,16 @@ export default function ServicesPage() {
     } else {
       loadDetail(selectedId).catch((error) => logger.error("[services] detail:effect", error));
     }
-  }, [selectedId, loadDetail, allDetails]);
+  }, [selectedId, allDetails, loadDetail]);
 
   const handleCreateService = async (payload: CreateServicePayload) => {
     setCreateError(null);
     try {
       const response = await createService(payload);
       await loadServices();
+      setAllDetails((prev) => ({ ...prev, [response.service.public_id]: response }));
       setSelectedId(response.service.public_id);
       setDetail(response);
-      setAllDetails((prev) => ({ ...prev, [response.service.public_id]: response }));
       setCreateOpen(false);
       setSelectedTemplate(null);
     } catch (error) {
@@ -376,121 +383,96 @@ export default function ServicesPage() {
   };
 
   if (!canView) {
-    return (
-      <section className="space-y-4">
-        <h1 className="text-2xl font-bold text-[var(--brand-primary)]">Servicios recurrentes</h1>
-        <Alert variant="error">No tienes permisos para ver los servicios registrados.</Alert>
-      </section>
-    );
+    return <Alert variant="error">No tienes permisos para ver los servicios registrados.</Alert>;
   }
 
   const selectedService = detail?.service ?? null;
   const schedules = detail?.schedules ?? [];
 
   return (
-    <section className="flex h-full flex-col gap-6">
-      <header className="glass-card glass-underlay-gradient border border-white/40 bg-white/80 px-6 py-5 shadow-sm">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="space-y-1">
-            <h1 className="text-2xl font-bold text-[var(--brand-primary)] drop-shadow-sm">Servicios recurrentes</h1>
-            <p className="text-sm text-slate-600/90">
-              Controla contratos, suspensiones y pagos mensuales desde una vista centralizada.
-            </p>
-          </div>
-          {canManage && (
-            <Button
-              variant="primary"
-              onClick={() => {
+    <section className="flex flex-col gap-6">
+      {globalError && <Alert variant="error">{globalError}</Alert>}
+
+      <CollapsibleSection title="Resumen general" defaultOpen={false}>
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <MetricCard
+            title="Servicios activos"
+            value={`${formatNumber.format(summaryTotals.activeCount)} / ${formatNumber.format(filteredServices.length)}`}
+            helper={`Vista filtrada: ${filteredServices.length} de ${services.length}`}
+          />
+          <MetricCard
+            title="Monto esperado"
+            value={formatCurrency.format(summaryTotals.totalExpected)}
+            helper="Periodo actual"
+          />
+          <MetricCard
+            title="Pagos conciliados"
+            value={formatCurrency.format(summaryTotals.totalPaid)}
+            helper={`Cobertura ${collectionRate ? `${Math.round(collectionRate * 100)}%` : "0%"}`}
+          />
+          <MetricCard
+            title="Pendientes / vencidos"
+            value={`${formatNumber.format(summaryTotals.pendingCount)} / ${formatNumber.format(summaryTotals.overdueCount)}`}
+            helper="Cuotas con seguimiento"
+          />
+        </div>
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Filtros" defaultOpen={false}>
+        <ServicesFilterPanel services={services} filters={filters} onChange={handleFilterChange} />
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Plantillas" defaultOpen={false}>
+        <ServiceTemplateGallery onApply={handleApplyTemplate} />
+      </CollapsibleSection>
+
+      <CollapsibleSection
+        title="Servicios registrados"
+        defaultOpen={false}
+        description="Selecciona un servicio para ver su cronograma y acciones disponibles"
+      >
+        {loadingList && <p className="text-xs text-slate-400">Actualizando listado de servicios...</p>}
+        <div className="grid gap-6 xl:grid-cols-[320px,minmax(0,1fr)]">
+          <div className="h-full">
+            <ServiceList
+              services={filteredServices}
+              selectedId={selectedId}
+              onSelect={setSelectedId}
+              onCreateRequest={() => {
                 setCreateOpen(true);
                 setCreateError(null);
               }}
-            >
-              Nuevo servicio
-            </Button>
-          )}
+              canManage={canManage}
+            />
+          </div>
+          <div className="h-full">
+            <ServiceDetail
+              service={selectedService}
+              schedules={schedules}
+              loading={loadingDetail}
+              canManage={canManage}
+              onRegenerate={handleRegenerate}
+              onRegisterPayment={openPaymentModal}
+              onUnlinkPayment={handleUnlink}
+            />
+          </div>
         </div>
-      </header>
+      </CollapsibleSection>
 
-      {globalError && <Alert variant="error">{globalError}</Alert>}
-      {loadingList && <p className="text-xs text-slate-400">Actualizando listado de servicios...</p>}
-
-      <ServicesFilterPanel services={services} filters={filters} onChange={handleFilterChange} />
-
-      <ServiceTemplateGallery onApply={handleApplyTemplate} />
-
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <article className="glass-card glass-underlay-gradient border border-white/40 p-4 text-sm text-slate-600">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Servicios activos</p>
-          <p className="mt-2 text-2xl font-semibold text-slate-800">
-            {formatNumber.format(summaryTotals.activeCount)} / {formatNumber.format(filteredServices.length)}
-          </p>
-          <p className="mt-1 text-xs text-slate-400">
-            Vista filtrada: {filteredServices.length} de {services.length} servicios
-          </p>
-        </article>
-        <article className="glass-card glass-underlay-gradient border border-white/40 p-4 text-sm text-slate-600">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Matriz mensual</p>
-          <p className="mt-2 text-2xl font-semibold text-slate-800">
-            {formatCurrency.format(summaryTotals.totalExpected)}
-          </p>
-          <p className="mt-1 text-xs text-slate-400">Monto esperado para el periodo generado</p>
-        </article>
-        <article className="glass-card glass-underlay-gradient border border-white/40 p-4 text-sm text-slate-600">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Pagos conciliados</p>
-          <p className="mt-2 text-2xl font-semibold text-emerald-700">
-            {formatCurrency.format(summaryTotals.totalPaid)}
-          </p>
-          <p className="mt-1 text-xs text-slate-400">
-            Cobertura {collectionRate ? `${Math.round(collectionRate * 100)}%` : "0%"}
-          </p>
-        </article>
-        <article className="glass-card glass-underlay-gradient border border-white/40 p-4 text-sm text-slate-600">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Pendientes / vencidos</p>
-          <p className="mt-2 text-2xl font-semibold text-amber-700">
-            {formatNumber.format(summaryTotals.pendingCount)}
-          </p>
-          <p className="mt-1 text-xs text-rose-500">
-            {summaryTotals.overdueCount > 0
-              ? `${formatNumber.format(summaryTotals.overdueCount)} vencidos`
-              : "Sin vencidos"}
-          </p>
-        </article>
-      </div>
-
-      <div className="grid gap-6 xl:grid-cols-[320px,minmax(0,1fr)]">
-        <div className="h-full">
-          <ServiceList
-            services={filteredServices}
-            selectedId={selectedId}
-            onSelect={setSelectedId}
-            onCreateRequest={() => {
-              setCreateOpen(true);
-              setCreateError(null);
-            }}
-            canManage={canManage}
-          />
-        </div>
-        <div className="h-full">
-          <ServiceDetail
-            service={selectedService}
-            schedules={schedules}
-            loading={loadingDetail}
-            canManage={canManage}
-            onRegenerate={handleRegenerate}
-            onRegisterPayment={openPaymentModal}
-            onUnlinkPayment={handleUnlink}
-          />
-        </div>
-      </div>
-
-      <ServicesUnifiedAgenda
-        items={unifiedAgendaItems}
-        loading={aggregatedLoading}
-        error={aggregatedError}
-        canManage={canManage}
-        onRegisterPayment={handleAgendaRegisterPayment}
-        onUnlinkPayment={handleAgendaUnlinkPayment}
-      />
+      <CollapsibleSection
+        title="Agenda unificada"
+        defaultOpen={false}
+        description="Pagos programados consolidados por día"
+      >
+        <ServicesUnifiedAgenda
+          items={unifiedAgendaItems}
+          loading={aggregatedLoading}
+          error={aggregatedError}
+          canManage={canManage}
+          onRegisterPayment={handleAgendaRegisterPayment}
+          onUnlinkPayment={handleAgendaUnlinkPayment}
+        />
+      </CollapsibleSection>
 
       <Modal isOpen={createOpen} onClose={() => setCreateOpen(false)} title="Nuevo servicio">
         <ServiceForm
@@ -558,21 +540,32 @@ export default function ServicesPage() {
             />
             {paymentError && <p className="rounded-lg bg-rose-100 px-4 py-2 text-sm text-rose-700">{paymentError}</p>}
             <div className="flex justify-end gap-3">
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => setPaymentSchedule(null)}
-                disabled={processingPayment}
-              >
+              <Button type="button" variant="secondary" onClick={() => setPaymentSchedule(null)} disabled={processingPayment}>
                 Cancelar
               </Button>
               <Button type="submit" disabled={processingPayment}>
-                {processingPayment ? "Guardando..." : "Guardar pago"}
+                {processingPayment ? "Registrando..." : "Registrar pago"}
               </Button>
             </div>
           </form>
         )}
       </Modal>
     </section>
+  );
+}
+
+type MetricCardProps = {
+  title: string;
+  value: string;
+  helper?: string;
+};
+
+function MetricCard({ title, value, helper }: MetricCardProps) {
+  return (
+    <article className="rounded-2xl border border-white/45 bg-white/70 p-4 shadow-sm">
+      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{title}</p>
+      <p className="mt-2 text-2xl font-semibold text-slate-800">{value}</p>
+      {helper && <p className="mt-1 text-xs text-slate-400">{helper}</p>}
+    </article>
   );
 }

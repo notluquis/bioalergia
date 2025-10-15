@@ -26,7 +26,8 @@ const TimesheetsPage = lazy(() => import("./pages/Timesheets"));
 
 const CounterpartsPage = lazy(() => import("./pages/Counterparts"));
 const LoansPage = lazy(() => import("./pages/Loans"));
-const ServicesPage = lazy(() => import("./pages/Services"));
+const ServicesLayout = lazy(() => import("./features/services/layout/ServicesLayout"));
+const ServicesOverviewPage = lazy(() => import("./pages/ServicesOverviewPage"));
 const ServiceEditPage = lazy(() => import("./pages/ServiceEditPage"));
 
 const SuppliesPage = lazy(() => import("./pages/Supplies"));
@@ -129,17 +130,27 @@ const router = createBrowserRouter([
         path: "/services",
         element: (
           <Suspense fallback={<PageLoader />}>
-            <ServicesPage />
+            <ServicesLayout />
           </Suspense>
         ),
-      },
-      {
-        path: "/services/:id/edit",
-        element: (
-          <Suspense fallback={<PageLoader />}>
-            <ServiceEditPage />
-          </Suspense>
-        ),
+        children: [
+          {
+            index: true,
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <ServicesOverviewPage />
+              </Suspense>
+            ),
+          },
+          {
+            path: ":id/edit",
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <ServiceEditPage />
+              </Suspense>
+            ),
+          },
+        ],
       },
       {
         path: "/timesheets",
