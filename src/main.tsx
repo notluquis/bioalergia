@@ -28,6 +28,8 @@ const CounterpartsPage = lazy(() => import("./pages/Counterparts"));
 const LoansPage = lazy(() => import("./pages/Loans"));
 const ServicesLayout = lazy(() => import("./features/services/layout/ServicesLayout"));
 const ServicesOverviewPage = lazy(() => import("./pages/ServicesOverviewPage"));
+const ServicesAgendaPage = lazy(() => import("./pages/ServicesAgendaPage"));
+const ServicesTemplatesPage = lazy(() => import("./pages/ServicesTemplatesPage"));
 const ServiceEditPage = lazy(() => import("./pages/ServiceEditPage"));
 
 const SuppliesPage = lazy(() => import("./pages/Supplies"));
@@ -139,6 +141,22 @@ const router = createBrowserRouter([
             element: (
               <Suspense fallback={<PageLoader />}>
                 <ServicesOverviewPage />
+              </Suspense>
+            ),
+          },
+          {
+            path: "agenda",
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <ServicesAgendaPage />
+              </Suspense>
+            ),
+          },
+          {
+            path: "plantillas",
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <ServicesTemplatesPage />
               </Suspense>
             ),
           },

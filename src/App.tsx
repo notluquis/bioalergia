@@ -33,7 +33,14 @@ const NAV_SECTIONS: NavSection[] = [
       { to: "/counterparts", label: "Contrapartes", roles: ["GOD", "ADMIN", "ANALYST", "VIEWER"] },
       { to: "/transactions/participants", label: "Participantes", roles: ["GOD", "ADMIN", "ANALYST", "VIEWER"] },
       { to: "/loans", label: "Préstamos", roles: ["GOD", "ADMIN", "ANALYST"] },
-      { to: "/services", label: "Servicios", roles: ["GOD", "ADMIN", "ANALYST"] },
+    ],
+  },
+  {
+    title: "Servicios",
+    items: [
+      { to: "/services", label: "Panel", roles: ["GOD", "ADMIN", "ANALYST", "VIEWER"] },
+      { to: "/services/agenda", label: "Agenda", roles: ["GOD", "ADMIN", "ANALYST"] },
+      { to: "/services/plantillas", label: "Plantillas", roles: ["GOD", "ADMIN"] },
     ],
   },
   {
@@ -69,6 +76,8 @@ const TITLES: Record<string, string> = {
   "/supplies": "Solicitud de Insumos",
   "/loans": "Préstamos y créditos",
   "/services": "Servicios recurrentes",
+  "/services/agenda": "Agenda de servicios",
+  "/services/plantillas": "Plantillas de servicios",
   "/data": "Movimientos registrados",
   "/stats": "Estadísticas",
   "/settings": "Configuración",

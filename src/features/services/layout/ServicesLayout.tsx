@@ -4,7 +4,7 @@ import { fetchServices } from "../../services/api";
 import type { ServiceSummary } from "../../services/types";
 
 const NAV_ITEMS = [
-  { to: "/services", label: "Overview" },
+  { to: "/services", label: "Resumen" },
   { to: "/services/agenda", label: "Agenda" },
   { to: "/services/plantillas", label: "Plantillas" },
 ];
