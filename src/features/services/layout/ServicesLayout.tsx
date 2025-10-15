@@ -6,7 +6,7 @@ import type { ServiceSummary } from "../../services/types";
 const NAV_ITEMS = [
   { to: "/services", label: "Resumen" },
   { to: "/services/agenda", label: "Agenda" },
-  { to: "/services/plantillas", label: "Plantillas" },
+  { to: "/services/create", label: "Crear" },
 ];
 
 export default function ServicesLayout() {
@@ -66,9 +66,9 @@ export default function ServicesLayout() {
           <button
             type="button"
             className="rounded-full border border-white/60 bg-white/70 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-[var(--brand-primary)] shadow hover:border-[var(--brand-primary)]/45"
-            onClick={() => navigate("/services")}
+            onClick={() => navigate("/services/create")}
           >
-            Ver resumen actual
+            Nuevo servicio
           </button>
         </div>
       </header>

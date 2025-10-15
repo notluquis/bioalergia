@@ -29,7 +29,7 @@ const LoansPage = lazy(() => import("./pages/Loans"));
 const ServicesLayout = lazy(() => import("./features/services/layout/ServicesLayout"));
 const ServicesOverviewPage = lazy(() => import("./pages/ServicesOverviewPage"));
 const ServicesAgendaPage = lazy(() => import("./pages/ServicesAgendaPage"));
-const ServicesTemplatesPage = lazy(() => import("./pages/ServicesTemplatesPage"));
+const ServicesCreatePage = lazy(() => import("./pages/ServicesCreatePage"));
 const ServiceEditPage = lazy(() => import("./pages/ServiceEditPage"));
 
 const SuppliesPage = lazy(() => import("./pages/Supplies"));
@@ -153,10 +153,10 @@ const router = createBrowserRouter([
             ),
           },
           {
-            path: "plantillas",
+            path: "create",
             element: (
               <Suspense fallback={<PageLoader />}>
-                <ServicesTemplatesPage />
+                <ServicesCreatePage />
               </Suspense>
             ),
           },

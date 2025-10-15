@@ -416,7 +416,6 @@ export function useServicesOverview() {
     },
     [handlePaymentFormChange]
   );
-
   return {
     canManage,
     services,
