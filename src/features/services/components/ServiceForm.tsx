@@ -19,6 +19,8 @@ import type { Counterpart, CounterpartAccount } from "../../counterparts/types";
 interface ServiceFormProps {
   onSubmit: (payload: CreateServicePayload) => Promise<void>;
   onCancel: () => void;
+  initialValues?: Partial<CreateServicePayload>;
+  submitLabel?: string;
 }
 
 type ServiceFormState = CreateServicePayload & {
@@ -111,16 +113,36 @@ const INITIAL_STATE: ServiceFormState = {
   notes: "",
 };
 
-export function ServiceForm({ onSubmit, onCancel }: ServiceFormProps) {
-  const [form, setForm] = useState<ServiceFormState>(INITIAL_STATE);
+export function ServiceForm({ onSubmit, onCancel, initialValues, submitLabel }: ServiceFormProps) {
+  const [form, setForm] = useState<ServiceFormState>({
+    ...INITIAL_STATE,
+    ...initialValues,
+  });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const effectiveSubmitLabel = submitLabel ?? "Crear servicio";
+  const submittingLabel = submitLabel ? "Guardando..." : "Creando...";
 
   const [counterparts, setCounterparts] = useState<Counterpart[]>([]);
   const [counterpartsLoading, setCounterpartsLoading] = useState(false);
   const [counterpartsError, setCounterpartsError] = useState<string | null>(null);
   const [accounts, setAccounts] = useState<CounterpartAccount[]>([]);
   const [accountsLoading, setAccountsLoading] = useState(false);
+
+  useEffect(() => {
+    if (initialValues) {
+      setForm({
+        ...INITIAL_STATE,
+        ...initialValues,
+        monthsToGenerate:
+          initialValues.monthsToGenerate ?? INITIAL_STATE.monthsToGenerate,
+        startDate: initialValues.startDate ?? INITIAL_STATE.startDate,
+      });
+    } else {
+      setForm(INITIAL_STATE);
+    }
+  }, [initialValues]);
 
   useEffect(() => {
     setForm((prev) => {
@@ -277,8 +299,10 @@ export function ServiceForm({ onSubmit, onCancel }: ServiceFormProps) {
       };
 
       await onSubmit(payload);
-      setForm(INITIAL_STATE);
-      setAccounts([]);
+      if (!initialValues) {
+        setForm(INITIAL_STATE);
+        setAccounts([]);
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : "No se pudo crear el servicio";
       setError(message);
@@ -614,7 +638,7 @@ export function ServiceForm({ onSubmit, onCancel }: ServiceFormProps) {
           Cancelar
         </Button>
         <Button type="submit" disabled={submitting}>
-          {submitting ? "Creando..." : "Crear servicio"}
+          {submitting ? submittingLabel : effectiveSubmitLabel}
         </Button>
       </div>
     </form>

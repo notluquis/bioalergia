@@ -20,6 +20,13 @@ export async function fetchServiceDetail(publicId: string): Promise<ServiceDetai
   return apiClient.get<ServiceDetailResponse>(`/api/services/${publicId}`);
 }
 
+export async function updateService(
+  publicId: string,
+  payload: CreateServicePayload
+): Promise<ServiceDetailResponse> {
+  return apiClient.put<ServiceDetailResponse>(`/api/services/${publicId}`, payload);
+}
+
 export async function regenerateServiceSchedules(
   publicId: string,
   payload: RegenerateServicePayload

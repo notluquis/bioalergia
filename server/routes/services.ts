@@ -12,6 +12,7 @@ import {
   markServicePayment,
   regenerateServiceSchedule,
   unlinkServicePayment,
+  updateService,
 } from "../db.js";
 import type { AuthenticatedRequest } from "../types.js";
 import {
@@ -78,6 +79,23 @@ export function registerServiceRoutes(app: express.Express) {
 
       const detail = await getServiceDetail(service.public_id);
       res.json({ status: "ok", ...(detail ?? { service, schedules: [] }) });
+    })
+  );
+
+  router.put(
+    "/:id",
+    authenticate,
+    requireRole("GOD", "ADMIN"),
+    asyncHandler(async (req: AuthenticatedRequest, res) => {
+      const { id } = req.params;
+      const parsed = serviceCreateSchema.parse(req.body);
+      logEvent("services:update", requestContext(req, { id, body: parsed }));
+      const service = await updateService(id, parsed);
+      const detail = await getServiceDetail(id);
+      if (!detail) {
+        return res.json({ status: "ok", service, schedules: [] });
+      }
+      res.json({ status: "ok", ...detail });
     })
   );
 

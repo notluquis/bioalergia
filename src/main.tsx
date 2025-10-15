@@ -27,6 +27,7 @@ const TimesheetsPage = lazy(() => import("./pages/Timesheets"));
 const CounterpartsPage = lazy(() => import("./pages/Counterparts"));
 const LoansPage = lazy(() => import("./pages/Loans"));
 const ServicesPage = lazy(() => import("./pages/Services"));
+const ServiceEditPage = lazy(() => import("./pages/ServiceEditPage"));
 
 const SuppliesPage = lazy(() => import("./pages/Supplies"));
 const InventoryPage = lazy(() => import("./pages/Inventory"));
@@ -129,6 +130,14 @@ const router = createBrowserRouter([
         element: (
           <Suspense fallback={<PageLoader />}>
             <ServicesPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: "/services/:id/edit",
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <ServiceEditPage />
           </Suspense>
         ),
       },

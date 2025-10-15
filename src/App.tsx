@@ -82,7 +82,12 @@ const TITLES: Record<string, string> = {
 export default function App() {
   const location = useLocation();
   const navigate = useNavigate();
-  const title = TITLES[location.pathname] ?? "Bioalergia Finanzas";
+  const title = React.useMemo(() => {
+    if (/^\/services\/.+\/edit$/.test(location.pathname)) {
+      return "Editar servicio";
+    }
+    return TITLES[location.pathname] ?? "Bioalergia Finanzas";
+  }, [location.pathname]);
   const { user, logout, hasRole } = useAuth();
   const { settings } = useSettings();
 

@@ -1423,6 +1423,90 @@ export async function createService(payload: CreateServicePayload): Promise<Serv
   return mapServiceRow(rows[0]);
 }
 
+export async function updateService(publicId: string, payload: CreateServicePayload): Promise<ServiceRecord> {
+  const pool = getPool();
+  const [rows] = await pool.query<RowDataPacket[]>(
+    `SELECT * FROM services WHERE public_id = ? LIMIT 1`,
+    [publicId]
+  );
+  if (!rows.length) {
+    throw new Error("Servicio no encontrado");
+  }
+  const current = mapServiceRow(rows[0]);
+
+  const nextGenerationMonths =
+    payload.monthsToGenerate ?? current.next_generation_months;
+
+  await pool.query(
+    `UPDATE services SET
+      name = ?,
+      detail = ?,
+      category = ?,
+      service_type = ?,
+      ownership = ?,
+      obligation_type = ?,
+      recurrence_type = ?,
+      frequency = ?,
+      default_amount = ?,
+      amount_indexation = ?,
+      counterpart_id = ?,
+      counterpart_account_id = ?,
+      account_reference = ?,
+      emission_day = ?,
+      emission_mode = ?,
+      emission_start_day = ?,
+      emission_end_day = ?,
+      emission_exact_date = ?,
+      due_day = ?,
+      start_date = ?,
+      next_generation_months = ?,
+      late_fee_mode = ?,
+      late_fee_value = ?,
+      late_fee_grace_days = ?,
+      notes = ?,
+      updated_at = NOW()
+     WHERE public_id = ?
+     LIMIT 1` as string,
+    [
+      payload.name,
+      payload.detail ?? null,
+      payload.category ?? null,
+      payload.serviceType,
+      payload.ownership ?? current.ownership,
+      payload.obligationType ?? current.obligation_type,
+      payload.recurrenceType ?? current.recurrence_type,
+      payload.frequency,
+      payload.defaultAmount,
+      payload.amountIndexation ?? current.amount_indexation,
+      payload.counterpartId ?? null,
+      payload.counterpartAccountId ?? null,
+      payload.accountReference ?? null,
+      payload.emissionMode === "FIXED_DAY" ? payload.emissionDay ?? null : null,
+      payload.emissionMode ?? current.emission_mode,
+      payload.emissionMode === "DATE_RANGE" ? payload.emissionStartDay ?? null : null,
+      payload.emissionMode === "DATE_RANGE" ? payload.emissionEndDay ?? null : null,
+      payload.emissionMode === "SPECIFIC_DATE" ? payload.emissionExactDate ?? null : null,
+      payload.dueDay ?? null,
+      payload.startDate,
+      nextGenerationMonths,
+      payload.lateFeeMode ?? current.late_fee_mode,
+      payload.lateFeeMode === "NONE" ? null : payload.lateFeeValue ?? null,
+      payload.lateFeeMode === "NONE" ? null : payload.lateFeeGraceDays ?? null,
+      payload.notes ?? null,
+      publicId,
+    ]
+  );
+
+  const [updatedRows] = await pool.query<RowDataPacket[]>(
+    `SELECT * FROM services WHERE public_id = ? LIMIT 1`,
+    [publicId]
+  );
+  if (!updatedRows.length) {
+    throw new Error("Servicio no encontrado");
+  }
+  return mapServiceRow(updatedRows[0]);
+}
+
 export async function listServicesWithSummary(): Promise<ServiceWithSummary[]> {
   const pool = getPool();
   

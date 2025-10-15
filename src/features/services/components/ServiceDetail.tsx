@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import type { ChangeEvent } from "react";
 import dayjs from "dayjs";
 import Button from "../../../components/Button";
@@ -16,6 +17,7 @@ import type {
   ServiceRecurrenceType,
 } from "../types";
 import ServiceScheduleTable from "./ServiceScheduleTable";
+import ServiceScheduleAccordion from "./ServiceScheduleAccordion";
 
 interface ServiceDetailProps {
   service: ServiceSummary | null;
@@ -189,6 +191,14 @@ export function ServiceDetail({
               Regenerar cronograma
             </Button>
           )}
+          {canManage && (
+            <Link
+              to={`/services/${service.public_id}/edit`}
+              className="rounded-full border border-white/60 bg-white/65 px-3 py-1 text-xs font-semibold text-slate-600 transition hover:border-[var(--brand-primary)]/40 hover:text-[var(--brand-primary)]"
+            >
+              Editar servicio
+            </Link>
+          )}
         </div>
       </header>
 
@@ -256,6 +266,14 @@ export function ServiceDetail({
           <p className="text-xs text-slate-500">{recurrenceLabel}</p>
         </div>
       </section>
+
+      <ServiceScheduleAccordion
+        service={service}
+        schedules={schedules}
+        canManage={canManage}
+        onRegisterPayment={onRegisterPayment}
+        onUnlinkPayment={onUnlinkPayment}
+      />
 
       <ServiceScheduleTable
         schedules={schedules}
