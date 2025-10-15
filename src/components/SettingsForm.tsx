@@ -3,12 +3,19 @@ import { useSettings, type AppSettings } from "../context/settings-context";
 import Button from "./Button";
 
 const FALLBACK_LOGO_PATH = "/logo192.png";
-const determineLogoMode = (logoUrl: string): "url" | "upload" =>
-  logoUrl.startsWith("http") || logoUrl.startsWith("/uploads/") ? "url" : "upload";
+const FALLBACK_FAVICON_PATH = "/favicon.ico";
+const determineAssetMode = (value: string): "url" | "upload" => {
+  const trimmed = value.trim();
+  if (!trimmed) return "upload";
+  return trimmed.startsWith("http") || trimmed.startsWith("/") ? "url" : "upload";
+};
+const determineLogoMode = determineAssetMode;
+const determineFaviconMode = determineAssetMode;
 
 const fields: Array<{ key: keyof AppSettings; label: string; type?: string; helper?: string }> = [
   { key: "orgName", label: "Nombre de la organización" },
   { key: "tagline", label: "Eslogan", helper: "Texto corto que se muestra en el panel" },
+  { key: "pageTitle", label: "Título de la página", helper: "Texto que se mostrará en la pestaña del navegador" },
   { key: "primaryColor", label: "Color primario", type: "color" },
   { key: "secondaryColor", label: "Color secundario", type: "color" },
   { key: "supportEmail", label: "Correo de soporte" },
@@ -42,6 +49,10 @@ export default function SettingsForm() {
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const logoPreviewRef = useRef<string | null>(null);
+  const [faviconMode, setFaviconMode] = useState<"url" | "upload">(determineFaviconMode(settings.faviconUrl));
+  const [faviconFile, setFaviconFile] = useState<File | null>(null);
+  const [faviconPreview, setFaviconPreview] = useState<string | null>(null);
+  const faviconPreviewRef = useRef<string | null>(null);
 
   const resetLogoSelection = useCallback(() => {
     if (logoPreviewRef.current) {
@@ -52,17 +63,32 @@ export default function SettingsForm() {
     setLogoFile(null);
   }, []);
 
+  const resetFaviconSelection = useCallback(() => {
+    if (faviconPreviewRef.current) {
+      URL.revokeObjectURL(faviconPreviewRef.current);
+      faviconPreviewRef.current = null;
+    }
+    setFaviconPreview(null);
+    setFaviconFile(null);
+  }, []);
+
   useEffect(() => {
     setForm(settings);
     setLogoMode(determineLogoMode(settings.logoUrl));
+    setFaviconMode(determineFaviconMode(settings.faviconUrl));
     resetLogoSelection();
-  }, [settings, resetLogoSelection]);
+    resetFaviconSelection();
+  }, [settings, resetLogoSelection, resetFaviconSelection]);
 
   useEffect(() => {
     return () => {
       if (logoPreviewRef.current) {
         URL.revokeObjectURL(logoPreviewRef.current);
         logoPreviewRef.current = null;
+      }
+      if (faviconPreviewRef.current) {
+        URL.revokeObjectURL(faviconPreviewRef.current);
+        faviconPreviewRef.current = null;
       }
     };
   }, []);
@@ -96,58 +122,116 @@ export default function SettingsForm() {
   };
 
   const displayedLogo = logoPreview ?? (form.logoUrl || FALLBACK_LOGO_PATH);
+  const displayedFavicon = faviconPreview ?? (form.faviconUrl || FALLBACK_FAVICON_PATH);
+
+  const handleFaviconModeChange = (mode: "url" | "upload") => {
+    setFaviconMode(mode);
+    setStatus("idle");
+    setError(null);
+    if (mode === "url") {
+      resetFaviconSelection();
+    }
+  };
+
+  const handleFaviconFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    resetFaviconSelection();
+    if (!file) {
+      return;
+    }
+    const objectUrl = URL.createObjectURL(file);
+    setFaviconFile(file);
+    faviconPreviewRef.current = objectUrl;
+    setFaviconPreview(objectUrl);
+    setError(null);
+  };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-  event.preventDefault();
-  setStatus("saving");
-  setError(null);
+    event.preventDefault();
+    setStatus("saving");
+    setError(null);
 
-  try {
-    let payload = form;
+    try {
+      let payload = form;
 
-    if (logoMode === "upload") {
-      if (!logoFile) {
-        setStatus("error");
-        setError("Selecciona un archivo de logo antes de guardar");
-        return;
+      if (logoMode === "upload") {
+        if (!logoFile) {
+          setStatus("error");
+          setError("Selecciona un archivo de logo antes de guardar");
+          return;
+        }
+
+        const formData = new FormData();
+        formData.append("logo", logoFile);
+
+        const response = await fetch("/api/settings/logo/upload", {
+          method: "POST",
+          credentials: "include",
+          body: formData,
+        });
+
+        const uploadPayload: unknown = await response.json();
+
+        if (!response.ok) {
+          throw new Error("Error de red al subir el logo");
+        }
+        if (!isUploadResponse(uploadPayload)) {
+          throw new Error("Respuesta inválida del servidor");
+        }
+        if (uploadPayload.status !== "ok" || !uploadPayload.url) {
+          throw new Error(uploadPayload.message ?? "No se pudo subir el logo");
+        }
+
+        payload = { ...form, logoUrl: uploadPayload.url };
+        setForm(payload);
       }
 
-      const formData = new FormData();
-      formData.append("logo", logoFile);
+      if (faviconMode === "upload") {
+        if (!faviconFile) {
+          setStatus("error");
+          setError("Selecciona un archivo de favicon antes de guardar");
+          return;
+        }
 
-      const response = await fetch("/api/settings/logo/upload", {
-        method: "POST",
-        credentials: "include",
-        body: formData,
-      });
+        const formData = new FormData();
+        formData.append("favicon", faviconFile);
 
-      const uploadPayload: unknown = await response.json();
+        const response = await fetch("/api/settings/favicon/upload", {
+          method: "POST",
+          credentials: "include",
+          body: formData,
+        });
 
-      if (!response.ok) {
-        throw new Error("Error de red al subir el logo");
+        const uploadPayload: unknown = await response.json();
+
+        if (!response.ok) {
+          throw new Error("Error de red al subir el favicon");
+        }
+        if (!isUploadResponse(uploadPayload)) {
+          throw new Error("Respuesta inválida del servidor");
+        }
+        if (uploadPayload.status !== "ok" || !uploadPayload.url) {
+          throw new Error(uploadPayload.message ?? "No se pudo subir el favicon");
+        }
+
+        payload = { ...payload, faviconUrl: uploadPayload.url };
+        setForm(payload);
       }
-      if (!isUploadResponse(uploadPayload)) {
-        throw new Error("Respuesta inválida del servidor");
-      }
-      if (uploadPayload.status !== "ok" || !uploadPayload.url) {
-        throw new Error(uploadPayload.message ?? "No se pudo subir el logo");
-      }
 
-      payload = { ...form, logoUrl: uploadPayload.url };
-      setForm(payload);
+      await updateSettings(payload);
+      if (logoMode === "upload") {
+        resetLogoSelection();
+      }
+      if (faviconMode === "upload") {
+        resetFaviconSelection();
+      }
+      setStatus("success");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Error inesperado";
+      setError(message);
+      setStatus("error");
     }
-
-    await updateSettings(payload);
-    if (logoMode === "upload") {
-      resetLogoSelection();
-    }
-    setStatus("success");
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "Error inesperado";
-    setError(message);
-    setStatus("error");
-  }
-};
+  };
 
   return (
     <form onSubmit={handleSubmit} className="glass-card glass-underlay-gradient space-y-6 p-6">
@@ -239,6 +323,71 @@ export default function SettingsForm() {
               </div>
               <span className="text-xs text-slate-400">
                 Tamaño máximo 12&nbsp;MB. Los archivos subidos se guardan en <code className="font-mono">/uploads/branding</code>.
+              </span>
+            </div>
+          )}
+        </div>
+        <div className="col-span-full space-y-3 rounded-2xl border border-white/40 bg-white/70 p-4">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Favicon del sitio</span>
+            <div className="inline-flex overflow-hidden rounded-full border border-slate-200 bg-white text-xs font-semibold uppercase tracking-wide">
+              <button
+                type="button"
+                className={`px-3 py-1 ${faviconMode === "url" ? "bg-[var(--brand-primary)] text-white" : "text-slate-600"}`}
+                onClick={() => handleFaviconModeChange("url")}
+              >
+                Usar URL
+              </button>
+              <button
+                type="button"
+                className={`px-3 py-1 ${faviconMode === "upload" ? "bg-[var(--brand-primary)] text-white" : "text-slate-600"}`}
+                onClick={() => handleFaviconModeChange("upload")}
+              >
+                Subir archivo
+              </button>
+            </div>
+          </div>
+          {faviconMode === "url" ? (
+            <label className="flex flex-col gap-2 text-sm text-slate-600">
+              <span className="sr-only">URL del favicon</span>
+              <input
+                type="text"
+                value={form.faviconUrl}
+                onChange={(event) => handleChange("faviconUrl", event.target.value)}
+                className="glass-input"
+                placeholder="https://..."
+              />
+              <span className="text-xs text-slate-400">
+                Puedes usar una URL pública (https://) o una ruta interna generada tras subir un archivo
+                (ej: /uploads/branding/favicon.png).
+              </span>
+            </label>
+          ) : (
+            <div className="space-y-3 text-sm text-slate-600">
+              <label className="glass-button inline-flex cursor-pointer items-center gap-2 px-4 py-2 text-xs font-semibold uppercase tracking-wide">
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/svg+xml,image/gif,image/x-icon,image/vnd.microsoft.icon"
+                  className="hidden"
+                  onChange={handleFaviconFileChange}
+                />
+                Seleccionar archivo
+              </label>
+              <div className="flex flex-wrap items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl border border-white/60 bg-white/80 p-2">
+                  <img
+                    src={displayedFavicon}
+                    alt="Vista previa del favicon"
+                    className="h-full w-full object-contain"
+                  />
+                </div>
+                <div className="text-xs text-slate-500">
+                  <p>{faviconPreview ? "Vista previa sin guardar" : "Favicon actual"}</p>
+                  <p className="mt-1 break-all text-slate-400">{form.faviconUrl}</p>
+                </div>
+              </div>
+              <span className="text-xs text-slate-400">
+                Usa imágenes cuadradas (ideal 512&nbsp;px) con fondo transparente cuando sea posible. Tamaño máximo 12&nbsp;MB.
               </span>
             </div>
           )}

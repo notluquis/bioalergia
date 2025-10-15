@@ -220,6 +220,7 @@ export type AppSettings = {
   primaryColor: string;
   secondaryColor: string;
   logoUrl: string;
+  faviconUrl: string;
   dbDisplayHost: string;
   dbDisplayName: string;
   dbConsoleUrl: string;
@@ -228,6 +229,7 @@ export type AppSettings = {
   orgPhone: string;
   primaryCurrency: string;
   supportEmail: string;
+  pageTitle: string;
 };
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -237,6 +239,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   secondaryColor: "#f1a722",
   logoUrl:
     "https://bioalergia.cl/wp-content/uploads/2025/04/Logo-Bioalergia-con-eslogan-y-marca-registrada-1-scaled.png",
+  faviconUrl: "/favicon.ico",
   dbDisplayHost: "localhost",
   dbDisplayName: "finanzas",
   dbConsoleUrl: "",
@@ -245,6 +248,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   orgPhone: "",
   primaryCurrency: "CLP",
   supportEmail: "soporte@bioalergia.cl",
+  pageTitle: "Bioalergia · Finanzas",
 };
 
 const SETTINGS_KEY_MAP: Record<keyof AppSettings, string> = {
@@ -253,6 +257,7 @@ const SETTINGS_KEY_MAP: Record<keyof AppSettings, string> = {
   primaryColor: "brand.primaryColor",
   secondaryColor: "brand.secondaryColor",
   logoUrl: "brand.logoUrl",
+  faviconUrl: "brand.faviconUrl",
   dbDisplayHost: "db.displayHost",
   dbDisplayName: "db.displayName",
   dbConsoleUrl: "db.consoleUrl",
@@ -261,6 +266,7 @@ const SETTINGS_KEY_MAP: Record<keyof AppSettings, string> = {
   orgPhone: "org.phone",
   primaryCurrency: "org.primaryCurrency",
   supportEmail: "contact.supportEmail",
+  pageTitle: "brand.pageTitle",
 };
 
 const REQUIRED_ENV = ["DB_HOST", "DB_USER", "DB_PASSWORD", "DB_NAME"] as const;
@@ -688,6 +694,20 @@ export async function ensureSchema() {
       CONSTRAINT fk_service_schedule_transaction FOREIGN KEY (transaction_id) REFERENCES mp_transactions(id) ON DELETE SET NULL
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
   `);
+
+  const [serviceScheduleIndex] = await pool.query<RowDataPacket[]>(
+    `SELECT 1
+       FROM INFORMATION_SCHEMA.STATISTICS
+      WHERE TABLE_SCHEMA = DATABASE()
+        AND TABLE_NAME = 'service_schedules'
+        AND INDEX_NAME = 'uniq_service_period'
+      LIMIT 1`
+  );
+  if (!serviceScheduleIndex.length) {
+    await pool.execute(
+      `ALTER TABLE service_schedules ADD UNIQUE KEY uniq_service_period (service_id, period_start)`
+    );
+  }
 
   await seedDefaultSettings(pool);
   await seedDefaultAdmin(pool);
@@ -1442,7 +1462,7 @@ export async function listServicesWithSummary(): Promise<ServiceWithSummary[]> {
 }
 
 export async function getServiceDetail(publicId: string): Promise<{
-  service: ServiceRecord;
+  service: ServiceWithSummary;
   schedules: ServiceScheduleWithTransaction[];
 } | null> {
   const pool = getPool();
@@ -1490,7 +1510,37 @@ export async function getServiceDetail(publicId: string): Promise<{
     return applyDerivedScheduleAmounts(service, { ...base, transaction });
   });
 
-  return { service, schedules };
+  const aggregates = schedules.reduce(
+    (acc, schedule) => {
+      acc.totalExpected += schedule.expected_amount;
+      if (["PAID", "PARTIAL"].includes(schedule.status)) {
+        acc.totalPaid += schedule.paid_amount != null ? schedule.paid_amount : schedule.expected_amount;
+      }
+      if (["PENDING", "PARTIAL"].includes(schedule.status)) {
+        acc.pendingCount += 1;
+        if (schedule.status === "PENDING" && dayjs(schedule.due_date).isBefore(dayjs().startOf("day"))) {
+          acc.overdueCount += 1;
+        }
+      }
+      return acc;
+    },
+    {
+      totalExpected: 0,
+      totalPaid: 0,
+      pendingCount: 0,
+      overdueCount: 0,
+    }
+  );
+
+  const serviceWithSummary: ServiceWithSummary = {
+    ...service,
+    total_expected: roundCurrency(aggregates.totalExpected),
+    total_paid: roundCurrency(aggregates.totalPaid),
+    pending_count: aggregates.pendingCount,
+    overdue_count: aggregates.overdueCount,
+  };
+
+  return { service: serviceWithSummary, schedules };
 }
 
 export async function regenerateServiceSchedule(

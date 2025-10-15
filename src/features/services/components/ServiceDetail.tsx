@@ -207,7 +207,9 @@ export function ServiceDetail({
         </div>
         <div>
           <p className="text-xs uppercase tracking-wide text-slate-400">Total pagado</p>
-          <p className="text-lg font-semibold text-emerald-600">${service.total_paid.toLocaleString("es-CL")}</p>
+          <p className="text-lg font-semibold text-emerald-600">
+            ${Number(service.total_paid ?? 0).toLocaleString("es-CL")}
+          </p>
         </div>
         <div>
           <p className="text-xs uppercase tracking-wide text-slate-400">Modo de cálculo</p>

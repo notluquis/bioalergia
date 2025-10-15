@@ -92,6 +92,13 @@ function applyBranding(next: AppSettings) {
   root.style.setProperty("--brand-primary-rgb", hexToRgb(next.primaryColor));
   root.style.setProperty("--brand-secondary", next.secondaryColor);
   root.style.setProperty("--brand-secondary-rgb", hexToRgb(next.secondaryColor));
+
+  const title = next.pageTitle?.trim() || next.orgName || DEFAULT_SETTINGS.pageTitle;
+  if (title) {
+    document.title = title;
+  }
+  const favicon = next.faviconUrl?.trim() || DEFAULT_SETTINGS.faviconUrl;
+  updateFaviconLink(favicon);
 }
 
 function hexToRgb(color: string) {
@@ -101,4 +108,23 @@ function hexToRgb(color: string) {
   const g = (bigint >> 8) & 255;
   const b = bigint & 255;
   return `${r} ${g} ${b}`;
+}
+
+function updateFaviconLink(href: string) {
+  if (typeof document === "undefined") return;
+  const head = document.head || document.getElementsByTagName("head")[0];
+  if (!head) return;
+
+  const relSelectors = ["icon", "shortcut icon"];
+  relSelectors.forEach((rel) => {
+    let link = head.querySelector<HTMLLinkElement>(`link[rel='${rel}']`);
+    if (!link) {
+      link = document.createElement("link");
+      link.rel = rel;
+      head.appendChild(link);
+    }
+    if (link) {
+      link.href = href;
+    }
+  });
 }

@@ -12,7 +12,7 @@ const httpsUrlSchema = z
 
 const optionalHttpsUrl = z.union([z.literal(""), httpsUrlSchema]);
 
-const logoUrlSchema = z
+const brandAssetUrlSchema = z
   .string()
   .trim()
   .min(1)
@@ -44,7 +44,9 @@ export const settingsSchema = z.object({
   tagline: z.string().max(200).optional().default(""),
   primaryColor: z.string().regex(colorRegex, "Debe ser un color HEX"),
   secondaryColor: z.string().regex(colorRegex, "Debe ser un color HEX"),
-  logoUrl: logoUrlSchema,
+  logoUrl: brandAssetUrlSchema,
+  faviconUrl: brandAssetUrlSchema,
+  pageTitle: z.string().trim().min(1).max(160),
   dbDisplayHost: z.string().min(1).max(191),
   dbDisplayName: z.string().min(1).max(191),
   dbConsoleUrl: optionalHttpsUrl.default(""),

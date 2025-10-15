@@ -16,14 +16,17 @@ const brandingUploadsDir = path.join(uploadsRoot, "branding");
 export const BRANDING_LOGO_MAX_WIDTH = 1600;
 export const BRANDING_LOGO_MAX_HEIGHT = 1600;
 export const BRANDING_LOGO_MAX_FILE_SIZE = 12 * 1024 * 1024; // 12MB
+export const BRANDING_FAVICON_SIZE = 512;
 
-const allowedExtensions = new Set([".png", ".jpg", ".jpeg", ".webp", ".svg", ".gif"]);
+const allowedExtensions = new Set([".png", ".jpg", ".jpeg", ".webp", ".svg", ".gif", ".ico"]);
 const allowedMimeTypes = new Set([
   "image/png",
   "image/jpeg",
   "image/webp",
   "image/svg+xml",
   "image/gif",
+  "image/x-icon",
+  "image/vnd.microsoft.icon",
 ]);
 
 export function ensureUploadStructure() {
@@ -77,6 +80,34 @@ export async function saveBrandingLogoFile(buffer: Buffer, originalname: string)
         .toBuffer();
 
   const targetExt = isVector ? ext || ".svg" : ".webp";
+  const filename = generateFilename(originalname, targetExt);
+  const targetPath = path.join(brandingUploadsDir, filename);
+  fs.writeFileSync(targetPath, processedBuffer);
+  return {
+    filename,
+    relativeUrl: `/uploads/branding/${filename}`,
+    absolutePath: targetPath,
+  };
+}
+
+export async function saveBrandingFaviconFile(buffer: Buffer, originalname: string) {
+  ensureUploadStructure();
+  const ext = path.extname(originalname).toLowerCase();
+  const isVector = ext === ".svg";
+
+  const processedBuffer = isVector
+    ? buffer
+    : await sharp(buffer)
+        .resize({
+          width: BRANDING_FAVICON_SIZE,
+          height: BRANDING_FAVICON_SIZE,
+          fit: "contain",
+          background: { r: 0, g: 0, b: 0, alpha: 0 },
+        })
+        .png({ compressionLevel: 9 })
+        .toBuffer();
+
+  const targetExt = isVector ? ext || ".svg" : ".png";
   const filename = generateFilename(originalname, targetExt);
   const targetPath = path.join(brandingUploadsDir, filename);
   fs.writeFileSync(targetPath, processedBuffer);

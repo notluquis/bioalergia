@@ -15,6 +15,8 @@ export type AppSettings = {
   orgPhone: string;
   primaryCurrency: string;
   supportEmail: string;
+  pageTitle: string;
+  faviconUrl: string;
 };
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -32,6 +34,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   orgPhone: "",
   primaryCurrency: "CLP",
   supportEmail: "soporte@bioalergia.cl",
+  pageTitle: "Bioalergia · Finanzas",
+  faviconUrl: "/favicon.ico",
 };
 
 export type SettingsContextType = {
