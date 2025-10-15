@@ -1,11 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { randomBytes } from "node:crypto";
-import { fileURLToPath } from "url";
 import sharp from "sharp";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const defaultUploadsRoot = path.resolve(process.cwd(), "storage/uploads");
 const uploadsRoot = process.env.UPLOADS_ROOT_DIR

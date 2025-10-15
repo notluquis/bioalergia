@@ -13,12 +13,12 @@
   --brand-secondary-rgb: 241 167 34;
   --fetch-timeout-seconds: 8s;
   --surface-ambient: #ecf4fc;
-  --glass-surface: rgba(255, 255, 255, 0.68);
-  --glass-elevated: rgba(255, 255, 255, 0.82);
-  --glass-border: rgba(255, 255, 255, 0.55);
-  --glass-shadow: 0 24px 72px -32px rgba(16, 37, 66, 0.45);
-  --glass-shadow-soft: 0 12px 40px -20px rgba(16, 37, 66, 0.35);
-  --glass-blur: 22px;
+  --glass-surface: rgba(255, 255, 255, 0.78);
+  --glass-elevated: rgba(255, 255, 255, 0.88);
+  --glass-border: rgba(255, 255, 255, 0.45);
+  --glass-shadow: 0 16px 48px -28px rgba(16, 37, 66, 0.38);
+  --glass-shadow-soft: 0 10px 32px -24px rgba(16, 37, 66, 0.3);
+  --glass-blur: 12px;
   color-scheme: light;
 }
 
@@ -47,7 +47,7 @@ body::before {
   pointer-events: none;
   background: linear-gradient(135deg, rgba(var(--brand-primary-rgb) / 0.08), rgba(var(--brand-secondary-rgb) / 0.08));
   mix-blend-mode: screen;
-  opacity: 0.6;
+  opacity: 0.35;
   z-index: -1;
 }
 
@@ -60,7 +60,7 @@ body::before {
 .glass-card {
   border: 1px solid var(--glass-border);
   border-radius: 1.5rem;
-  background: linear-gradient(135deg, var(--glass-elevated), rgba(255, 255, 255, 0.55));
+  background: linear-gradient(135deg, var(--glass-elevated), rgba(255, 255, 255, 0.65));
   box-shadow: var(--glass-shadow);
   backdrop-filter: blur(var(--glass-blur));
   -webkit-backdrop-filter: blur(var(--glass-blur));
@@ -77,17 +77,17 @@ body::before {
 
 .glass-input {
   border-radius: 0.9rem;
-  border: 1px solid rgba(255, 255, 255, 0.45);
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.55));
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.6));
   padding: 0.55rem 0.9rem;
   color: #102542;
   transition:
     border-color 0.2s ease,
     box-shadow 0.2s ease,
     background 0.2s ease;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(calc(var(--glass-blur) / 2));
-  -webkit-backdrop-filter: blur(calc(var(--glass-blur) / 2));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(calc(var(--glass-blur) / 2.5));
+  -webkit-backdrop-filter: blur(calc(var(--glass-blur) / 2.5));
 }
 
 .glass-input:focus {
@@ -121,9 +121,9 @@ body::before {
   z-index: -1;
   border-radius: inherit;
   background:
-    radial-gradient(circle at top, rgba(var(--brand-primary-rgb) / 0.25), transparent 60%),
-    radial-gradient(circle at bottom, rgba(var(--brand-secondary-rgb) / 0.2), transparent 55%);
-  opacity: 0.65;
+    radial-gradient(circle at top, rgba(var(--brand-primary-rgb) / 0.18), transparent 60%),
+    radial-gradient(circle at bottom, rgba(var(--brand-secondary-rgb) / 0.18), transparent 55%);
+  opacity: 0.55;
 }
 
 /* === LAYOUT UTILITIES === */

@@ -237,9 +237,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   tagline: "Gestión integral de finanzas",
   primaryColor: "#0e64b7",
   secondaryColor: "#f1a722",
-  logoUrl:
-    "https://bioalergia.cl/wp-content/uploads/2025/04/Logo-Bioalergia-con-eslogan-y-marca-registrada-1-scaled.png",
-  faviconUrl: "/favicon.ico",
+  logoUrl: "",
+  faviconUrl: "/logo_bimi.svg",
   dbDisplayHost: "localhost",
   dbDisplayName: "finanzas",
   dbConsoleUrl: "",

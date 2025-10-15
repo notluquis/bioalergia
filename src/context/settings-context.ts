@@ -7,6 +7,7 @@ export type AppSettings = {
   primaryColor: string;
   secondaryColor: string;
   logoUrl: string;
+  faviconUrl: string;
   dbDisplayHost: string;
   dbDisplayName: string;
   dbConsoleUrl: string;
@@ -16,7 +17,6 @@ export type AppSettings = {
   primaryCurrency: string;
   supportEmail: string;
   pageTitle: string;
-  faviconUrl: string;
 };
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -24,8 +24,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   tagline: "Gestión integral de finanzas",
   primaryColor: "#0e64b7",
   secondaryColor: "#f1a722",
-  logoUrl:
-    "https://bioalergia.cl/wp-content/uploads/2025/04/Logo-Bioalergia-con-eslogan-y-marca-registrada-1-scaled.png",
+  logoUrl: "",
+  faviconUrl: "/logo_bimi.svg",
   dbDisplayHost: "localhost",
   dbDisplayName: "finanzas",
   dbConsoleUrl: "",
@@ -35,7 +35,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
   primaryCurrency: "CLP",
   supportEmail: "soporte@bioalergia.cl",
   pageTitle: "Bioalergia · Finanzas",
-  faviconUrl: "/favicon.ico",
 };
 
 export type SettingsContextType = {

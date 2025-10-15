@@ -3,7 +3,7 @@ import { useSettings, type AppSettings } from "../context/settings-context";
 import Button from "./Button";
 
 const FALLBACK_LOGO_PATH = "/logo192.png";
-const FALLBACK_FAVICON_PATH = "/favicon.ico";
+const FALLBACK_FAVICON_PATH = "/logo_bimi.svg";
 const determineAssetMode = (value: string): "url" | "upload" => {
   const trimmed = value.trim();
   if (!trimmed) return "upload";
