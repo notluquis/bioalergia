@@ -10,40 +10,45 @@ import {
 } from "../lib/google-calendar-queries.js";
 import { formatDateOnly, parseDateOnly } from "../lib/time.js";
 
-function ensureArray(value: undefined | string | string[]): string[] | undefined {
-  if (typeof value === "undefined") return undefined;
-  if (Array.isArray(value)) {
-    return value
-      .flatMap((item) => item.split(","))
-      .map((item) => item.trim())
-      .filter(Boolean);
+type QueryValue = string | ParsedQs | (string | ParsedQs)[] | undefined;
+
+function toStringValues(value: QueryValue): string[] {
+  if (typeof value === "string") {
+    return [value];
   }
-  return value
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
+  if (Array.isArray(value)) {
+    return value.filter((item): item is string => typeof item === "string");
+  }
+  return [];
 }
 
-function normalizeDate(value: undefined | string | string[]): string | undefined {
-  if (typeof value === "undefined") return undefined;
-  const raw = Array.isArray(value) ? value[0] : value;
+function ensureArray(value: QueryValue): string[] | undefined {
+  const values = toStringValues(value);
+  if (!values.length) return undefined;
+  const result = values
+    .flatMap((item) => item.split(","))
+    .map((item) => item.trim())
+    .filter(Boolean);
+  return result.length ? result : undefined;
+}
+
+function normalizeDate(value: QueryValue): string | undefined {
+  const [raw] = toStringValues(value);
   if (!raw) return undefined;
   const parsed = parseDateOnly(raw);
   return parsed ? formatDateOnly(parsed) : undefined;
 }
 
-function normalizeSearch(value: undefined | string | string[]): string | undefined {
-  if (typeof value === "undefined") return undefined;
-  const raw = Array.isArray(value) ? value[0] : value;
+function normalizeSearch(value: QueryValue): string | undefined {
+  const [raw] = toStringValues(value);
   if (!raw) return undefined;
   const trimmed = raw.trim();
   if (!trimmed) return undefined;
   return trimmed.slice(0, 200);
 }
 
-function coerceMaxDays(value: undefined | string | string[]): number | undefined {
-  if (typeof value === "undefined") return undefined;
-  const raw = Array.isArray(value) ? value[0] : value;
+function coerceMaxDays(value: QueryValue): number | undefined {
+  const [raw] = toStringValues(value);
   if (!raw) return undefined;
   const parsed = Number.parseInt(raw, 10);
   if (Number.isNaN(parsed) || parsed <= 0) return undefined;
