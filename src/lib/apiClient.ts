@@ -59,10 +59,33 @@ export async function uploadFiles(files: File[], endpoint: string, logContext: s
 
 interface RequestOptions extends Omit<RequestInit, "body"> {
   body?: object; // Allow object for JSON body
+  query?: Record<string, unknown>;
+}
+
+function buildUrlWithQuery(url: string, query?: Record<string, unknown>) {
+  if (!query) return url;
+
+  const params = new URLSearchParams();
+  for (const [key, rawValue] of Object.entries(query)) {
+    if (rawValue === undefined || rawValue === null) continue;
+    if (Array.isArray(rawValue)) {
+      for (const value of rawValue) {
+        if (value === undefined || value === null) continue;
+        params.append(key, String(value));
+      }
+      continue;
+    }
+    params.append(key, String(rawValue));
+  }
+
+  const queryString = params.toString();
+  if (!queryString) return url;
+
+  return url.includes("?") ? `${url}&${queryString}` : `${url}?${queryString}`;
 }
 
 async function request<T>(method: string, url: string, options?: RequestOptions): Promise<T> {
-  const { body, ...restOptions } = options || {};
+  const { body, query, ...restOptions } = options || {};
   const headers = {
     "Content-Type": "application/json",
     ...restOptions?.headers,
@@ -79,7 +102,8 @@ async function request<T>(method: string, url: string, options?: RequestOptions)
     config.body = JSON.stringify(body);
   }
 
-  const response = await fetch(url, config);
+  const finalUrl = buildUrlWithQuery(url, query);
+  const response = await fetch(finalUrl, config);
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({ message: response.statusText }));

@@ -196,6 +196,53 @@ export type ServiceScheduleWithTransaction = ServiceScheduleRecord & {
   } | null;
 };
 
+export type MonthlyExpenseSource = "MANUAL" | "TRANSACTION" | "SERVICE";
+
+export type MonthlyExpenseRecord = {
+  id: number;
+  public_id: string;
+  name: string;
+  category: string | null;
+  amount_expected: number;
+  expense_date: string;
+  notes: string | null;
+  source: MonthlyExpenseSource;
+  service_id: number | null;
+  tags: string[];
+  status: "OPEN" | "CLOSED";
+  created_at: string;
+  updated_at: string;
+  amount_applied: number;
+  transaction_count: number;
+};
+
+export type MonthlyExpenseDetail = MonthlyExpenseRecord & {
+  transactions: Array<{
+    transaction_id: number;
+    amount: number;
+    timestamp: string;
+    description: string | null;
+    direction: string;
+  }>;
+};
+
+export type CreateMonthlyExpensePayload = {
+  name: string;
+  category?: string | null;
+  amountExpected: number;
+  expenseDate: string;
+  notes?: string | null;
+  source?: MonthlyExpenseSource;
+  serviceId?: number | null;
+  tags?: string[];
+  status?: 'OPEN' | 'CLOSED';
+};
+
+export type LinkMonthlyExpenseTransactionPayload = {
+  transactionId: number;
+  amount?: number;
+};
+
 export type CounterpartAccountRecord = {
   id: number;
   counterpart_id: number;
@@ -438,6 +485,40 @@ export async function ensureSchema() {
       PRIMARY KEY (balance_date)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
   `);
+
+  await pool.execute(`
+    CREATE TABLE IF NOT EXISTS google_calendar_events (
+      calendar_id VARCHAR(191) NOT NULL,
+      event_id VARCHAR(191) NOT NULL,
+      event_status VARCHAR(32) NULL,
+      event_type VARCHAR(64) NULL,
+      summary VARCHAR(512) NULL,
+      description TEXT NULL,
+      start_date DATE NULL,
+      start_date_time DATETIME NULL,
+      start_time_zone VARCHAR(64) NULL,
+      end_date DATE NULL,
+      end_date_time DATETIME NULL,
+      end_time_zone VARCHAR(64) NULL,
+      event_created_at DATETIME NULL,
+      event_updated_at DATETIME NULL,
+      color_id VARCHAR(32) NULL,
+      location VARCHAR(512) NULL,
+      transparency VARCHAR(32) NULL,
+      visibility VARCHAR(32) NULL,
+      hangout_link VARCHAR(512) NULL,
+      raw_event JSON NULL,
+      last_synced_at DATETIME NOT NULL,
+      PRIMARY KEY (calendar_id, event_id),
+      INDEX idx_google_calendar_events_updated (event_updated_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  `);
+
+  await addColumnIfMissing(
+    pool,
+    "google_calendar_events",
+    "`event_type` VARCHAR(64) NULL AFTER `event_status`"
+  );
 
   await pool.execute(`
     CREATE TABLE IF NOT EXISTS users (
@@ -707,6 +788,44 @@ export async function ensureSchema() {
       `ALTER TABLE service_schedules ADD UNIQUE KEY uniq_service_period (service_id, period_start)`
     );
   }
+
+  await pool.execute(`
+    CREATE TABLE IF NOT EXISTS monthly_expenses (
+      id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+      public_id CHAR(36) NOT NULL,
+      name VARCHAR(191) NOT NULL,
+      category VARCHAR(120) NULL,
+      amount_expected DECIMAL(15,2) NOT NULL DEFAULT 0,
+      expense_date DATE NOT NULL,
+      notes TEXT NULL,
+      source ENUM('MANUAL','TRANSACTION','SERVICE') NOT NULL DEFAULT 'MANUAL',
+      service_id INT UNSIGNED NULL,
+      tags JSON NULL,
+      status ENUM('OPEN','CLOSED') NOT NULL DEFAULT 'OPEN',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      PRIMARY KEY (id),
+      UNIQUE KEY uniq_monthly_expenses_public (public_id),
+      KEY idx_monthly_expenses_date (expense_date),
+      KEY idx_monthly_expenses_service (service_id),
+      CONSTRAINT fk_monthly_expenses_service FOREIGN KEY (service_id) REFERENCES services(id) ON DELETE SET NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  `);
+
+  await pool.execute(`
+    CREATE TABLE IF NOT EXISTS monthly_expense_transactions (
+      id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+      monthly_expense_id INT UNSIGNED NOT NULL,
+      transaction_id INT UNSIGNED NOT NULL,
+      amount DECIMAL(15,2) NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (id),
+      UNIQUE KEY uniq_expense_transaction (monthly_expense_id, transaction_id),
+      KEY idx_expense_transaction_tx (transaction_id),
+      CONSTRAINT fk_expense_transaction_expense FOREIGN KEY (monthly_expense_id) REFERENCES monthly_expenses(id) ON DELETE CASCADE,
+      CONSTRAINT fk_expense_transaction_tx FOREIGN KEY (transaction_id) REFERENCES mp_transactions(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  `);
 
   await seedDefaultSettings(pool);
   await seedDefaultAdmin(pool);
@@ -1768,6 +1887,261 @@ export async function unlinkServicePayment(scheduleId: number): Promise<ServiceS
   }
 }
 
+export async function listMonthlyExpenses(filters?: {
+  from?: string;
+  to?: string;
+  status?: ("OPEN" | "CLOSED")[];
+  serviceId?: number | null;
+}): Promise<MonthlyExpenseRecord[]> {
+  const pool = getPool();
+  const conditions: string[] = [];
+  const params: Array<string | number> = [];
+  if (filters?.from) {
+    conditions.push("me.expense_date >= ?");
+    params.push(filters.from);
+  }
+  if (filters?.to) {
+    conditions.push("me.expense_date <= ?");
+    params.push(filters.to);
+  }
+  if (filters?.status && filters.status.length) {
+    conditions.push(`me.status IN (${filters.status.map(() => "?").join(", ")})`);
+    params.push(...filters.status);
+  }
+  if (typeof filters?.serviceId === "number") {
+    conditions.push("me.service_id = ?");
+    params.push(filters.serviceId);
+  } else if (filters?.serviceId === null) {
+    conditions.push("me.service_id IS NULL");
+  }
+  const whereClause = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
+  const [rows] = await pool.query<RowDataPacket[]>(
+    `SELECT me.*, COALESCE(SUM(met.amount), 0) AS amount_applied, COUNT(met.transaction_id) AS transaction_count
+       FROM monthly_expenses me
+       LEFT JOIN monthly_expense_transactions met ON met.monthly_expense_id = me.id
+       ${whereClause}
+       GROUP BY me.id
+       ORDER BY me.expense_date DESC, me.id DESC`,
+    params
+  );
+  return rows.map(mapMonthlyExpenseRow);
+}
+
+export async function getMonthlyExpenseDetail(publicId: string): Promise<MonthlyExpenseDetail | null> {
+  const pool = getPool();
+  const [rows] = await pool.query<RowDataPacket[]>(
+    `SELECT me.*, COALESCE(SUM(met.amount), 0) AS amount_applied, COUNT(met.transaction_id) AS transaction_count
+       FROM monthly_expenses me
+       LEFT JOIN monthly_expense_transactions met ON met.monthly_expense_id = me.id
+      WHERE me.public_id = ?
+      GROUP BY me.id
+      LIMIT 1`,
+    [publicId]
+  );
+  if (!rows.length) return null;
+  const expense = mapMonthlyExpenseRow(rows[0]);
+  const [transactions] = await pool.query<RowDataPacket[]>(
+    `SELECT met.transaction_id, met.amount, t.timestamp, t.description, t.direction
+       FROM monthly_expense_transactions met
+       LEFT JOIN mp_transactions t ON t.id = met.transaction_id
+      WHERE met.monthly_expense_id = ?
+      ORDER BY t.timestamp DESC`,
+    [expense.id]
+  );
+  return {
+    ...expense,
+    transactions: transactions.map((row) => ({
+      transaction_id: Number(row.transaction_id),
+      amount: Number(row.amount ?? 0),
+      timestamp: row.timestamp instanceof Date ? row.timestamp.toISOString() : row.timestamp ? String(row.timestamp) : "",
+      description: row.description != null ? String(row.description) : null,
+      direction: row.direction != null ? String(row.direction) : "",
+    })),
+  } satisfies MonthlyExpenseDetail;
+}
+
+export async function createMonthlyExpense(payload: CreateMonthlyExpensePayload): Promise<MonthlyExpenseRecord> {
+  const pool = getPool();
+  const publicId = randomUUID();
+  const tags = payload.tags ? JSON.stringify(payload.tags) : null;
+  const source = payload.source ?? "MANUAL";
+  const status = payload.status ?? "OPEN";
+  await pool.query(
+    `INSERT INTO monthly_expenses (public_id, name, category, amount_expected, expense_date, notes, source, service_id, tags, status)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      publicId,
+      payload.name,
+      payload.category ?? null,
+      payload.amountExpected,
+      payload.expenseDate,
+      payload.notes ?? null,
+      source,
+      payload.serviceId ?? null,
+      tags,
+      status,
+    ]
+  );
+  const detail = await getMonthlyExpenseDetail(publicId);
+  if (!detail) {
+    throw new Error("No se pudo crear el gasto mensual");
+  }
+  return detail;
+}
+
+export async function updateMonthlyExpense(publicId: string, payload: CreateMonthlyExpensePayload): Promise<MonthlyExpenseRecord> {
+  const pool = getPool();
+  const tags = payload.tags ? JSON.stringify(payload.tags) : null;
+  const source = payload.source ?? "MANUAL";
+  const status = payload.status ?? "OPEN";
+  await pool.query(
+    `UPDATE monthly_expenses
+        SET name = ?,
+            category = ?,
+            amount_expected = ?,
+            expense_date = ?,
+            notes = ?,
+            source = ?,
+            service_id = ?,
+            tags = ?,
+            status = ?,
+            updated_at = NOW()
+      WHERE public_id = ?
+      LIMIT 1`,
+    [
+      payload.name,
+      payload.category ?? null,
+      payload.amountExpected,
+      payload.expenseDate,
+      payload.notes ?? null,
+      source,
+      payload.serviceId ?? null,
+      tags,
+      status,
+      publicId,
+    ]
+  );
+  const detail = await getMonthlyExpenseDetail(publicId);
+  if (!detail) {
+    throw new Error("Gasto mensual no encontrado");
+  }
+  return detail;
+}
+
+export async function linkMonthlyExpenseTransaction(
+  publicId: string,
+  payload: LinkMonthlyExpenseTransactionPayload
+): Promise<MonthlyExpenseDetail> {
+  const pool = getPool();
+  const [rows] = await pool.query<RowDataPacket[]>(
+    `SELECT id FROM monthly_expenses WHERE public_id = ? LIMIT 1`,
+    [publicId]
+  );
+  if (!rows.length) throw new Error("Gasto mensual no encontrado");
+  const expenseId = Number(rows[0].id);
+
+  const [txRows] = await pool.query<RowDataPacket[]>(
+    `SELECT amount FROM mp_transactions WHERE id = ? LIMIT 1`,
+    [payload.transactionId]
+  );
+  if (!txRows.length) throw new Error("Transacción no encontrada");
+  const txAmount = Number(txRows[0].amount ?? 0);
+  const amount = payload.amount != null ? payload.amount : Math.abs(txAmount);
+
+  await pool.query(
+    `INSERT INTO monthly_expense_transactions (monthly_expense_id, transaction_id, amount)
+     VALUES (?, ?, ?)
+     ON DUPLICATE KEY UPDATE amount = VALUES(amount)` as string,
+    [expenseId, payload.transactionId, amount]
+  );
+
+  const detail = await getMonthlyExpenseDetail(publicId);
+  if (!detail) throw new Error("Gasto mensual no encontrado");
+  return detail;
+}
+
+export async function unlinkMonthlyExpenseTransaction(
+  publicId: string,
+  transactionId: number
+): Promise<MonthlyExpenseDetail> {
+  const pool = getPool();
+  const [rows] = await pool.query<RowDataPacket[]>(
+    `SELECT id FROM monthly_expenses WHERE public_id = ? LIMIT 1`,
+    [publicId]
+  );
+  if (!rows.length) throw new Error("Gasto mensual no encontrado");
+  const expenseId = Number(rows[0].id);
+
+  await pool.query(
+    `DELETE FROM monthly_expense_transactions WHERE monthly_expense_id = ? AND transaction_id = ? LIMIT 1` as string,
+    [expenseId, transactionId]
+  );
+
+  const detail = await getMonthlyExpenseDetail(publicId);
+  if (!detail) throw new Error("Gasto mensual no encontrado");
+  return detail;
+}
+
+export async function getMonthlyExpenseStats(options: {
+  from?: string;
+  to?: string;
+  groupBy?: "day" | "week" | "month" | "quarter" | "year";
+  category?: string | null;
+}): Promise<
+  Array<{
+    period: string;
+    total_expected: number;
+    total_applied: number;
+    expense_count: number;
+  }>
+> {
+  const pool = getPool();
+  const groupBy = options.groupBy ?? "month";
+  let expr = "DATE_FORMAT(me.expense_date, '%Y-%m-01')";
+  if (groupBy === "day") expr = "DATE_FORMAT(me.expense_date, '%Y-%m-%d')";
+  if (groupBy === "week") expr = "STR_TO_DATE(CONCAT(YEAR(me.expense_date), '-', LPAD(WEEK(me.expense_date, 1), 2, '0'), '-1'), '%X-%V-%w')";
+  if (groupBy === "quarter") expr = "CONCAT(YEAR(me.expense_date), '-Q', QUARTER(me.expense_date))";
+  if (groupBy === "year") expr = "DATE_FORMAT(me.expense_date, '%Y-01-01')";
+
+  const conditions: string[] = [];
+  const params: Array<string | number> = [];
+  if (options.from) {
+    conditions.push("me.expense_date >= ?");
+    params.push(options.from);
+  }
+  if (options.to) {
+    conditions.push("me.expense_date <= ?");
+    params.push(options.to);
+  }
+  if (typeof options.category === "string") {
+    if (options.category.length) {
+      conditions.push("me.category = ?");
+      params.push(options.category);
+    } else {
+      conditions.push("me.category IS NULL");
+    }
+  }
+  const whereClause = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
+  const [rows] = await pool.query<RowDataPacket[]>(
+    `SELECT ${expr} AS period_key,
+            SUM(me.amount_expected) AS total_expected,
+            COALESCE(SUM(met.amount), 0) AS total_applied,
+            COUNT(DISTINCT me.id) AS expense_count
+       FROM monthly_expenses me
+       LEFT JOIN monthly_expense_transactions met ON met.monthly_expense_id = me.id
+      ${whereClause}
+      GROUP BY period_key
+      ORDER BY period_key DESC`,
+    params
+  );
+  return rows.map((row) => ({
+    period: row.period_key != null ? String(row.period_key) : "",
+    total_expected: Number(row.total_expected ?? 0),
+    total_applied: Number(row.total_applied ?? 0),
+    expense_count: Number(row.expense_count ?? 0),
+  }));
+}
+
 export type DailyBalance = {
   date: string;
   balance: number;
@@ -1822,6 +2196,38 @@ async function fetchServiceRecordById(connection: mysql.PoolConnection | Pool, i
     throw new Error("Servicio no encontrado");
   }
   return mapServiceRow(rows[0]);
+}
+
+function parseTags(value: unknown): string[] {
+  if (!value) return [];
+  if (Array.isArray(value)) return value.map(String);
+  try {
+    const parsed = typeof value === 'string' ? JSON.parse(value) : value;
+    if (Array.isArray(parsed)) return parsed.map((item) => String(item));
+  } catch {
+    // ignore
+  }
+  return [];
+}
+
+function mapMonthlyExpenseRow(row: RowDataPacket): MonthlyExpenseRecord {
+  return {
+    id: Number(row.id),
+    public_id: String(row.public_id),
+    name: String(row.name),
+    category: row.category != null ? String(row.category) : null,
+    amount_expected: Number(row.amount_expected ?? 0),
+    expense_date: row.expense_date instanceof Date ? row.expense_date.toISOString().slice(0, 10) : String(row.expense_date),
+    notes: row.notes != null ? String(row.notes) : null,
+    source: (row.source as MonthlyExpenseSource) ?? 'MANUAL',
+    service_id: row.service_id != null ? Number(row.service_id) : null,
+    tags: parseTags(row.tags),
+    status: (row.status as 'OPEN' | 'CLOSED') ?? 'OPEN',
+    created_at: row.created_at instanceof Date ? row.created_at.toISOString() : String(row.created_at),
+    updated_at: row.updated_at instanceof Date ? row.updated_at.toISOString() : String(row.updated_at),
+    amount_applied: Number(row.amount_applied ?? 0),
+    transaction_count: Number(row.transaction_count ?? 0),
+  } satisfies MonthlyExpenseRecord;
 }
 
 function mapServiceScheduleRow(row: RowDataPacket): ServiceScheduleRecord {

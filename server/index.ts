@@ -23,11 +23,15 @@ import { registerRoleRoutes } from "./routes/roles.js";
 import { registerLoanRoutes } from "./routes/loans.js";
 import { registerServiceRoutes } from "./routes/services.js";
 import { registerAssetRoutes } from "./routes/assets.js";
+import { registerMonthlyExpenseRoutes } from "./routes/monthly-expenses.js";
 import { ensureUploadStructure, getUploadsRootDir } from "./lib/uploads.js";
+import { startGoogleCalendarScheduler } from "./lib/google-calendar-scheduler.js";
+import { registerCalendarEventRoutes } from "./routes/calendar-events.js";
 
 const app = express();
 
 ensureUploadStructure();
+startGoogleCalendarScheduler();
 
 const logInDevelopment = (...args: Parameters<typeof console.log>) => {
   if (!isProduction) console.log(...args);
@@ -64,6 +68,8 @@ registerLoanRoutes(app);
 registerServiceRoutes(app);
 app.use("/api/supplies", suppliesRouter);
 registerAssetRoutes(app);
+registerMonthlyExpenseRoutes(app);
+registerCalendarEventRoutes(app);
 
 app.get("/api/health", async (_req, res) => {
   logInDevelopment("[steps][health] Step 0: /api/health recibido");

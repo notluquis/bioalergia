@@ -322,3 +322,27 @@ export const servicePaymentSchema = z.object({
   paidDate: z.string().regex(dateRegex),
   note: z.string().max(255).optional().nullable(),
 });
+
+export const monthlyExpenseSchema = z.object({
+  name: z.string().min(1).max(191),
+  category: z.string().max(120).optional().nullable(),
+  amountExpected: z.coerce.number().min(0),
+  expenseDate: z.string().regex(dateRegex, 'Fecha inválida'),
+  notes: z.string().max(500).optional().nullable(),
+  source: monthlyExpenseSourceEnum.optional(),
+  serviceId: z.coerce.number().int().positive().optional().nullable(),
+  tags: z.array(z.string().min(1).max(60)).optional(),
+  status: monthlyExpenseStatusEnum.optional(),
+});
+
+export const monthlyExpenseLinkSchema = z.object({
+  transactionId: z.coerce.number().int().positive(),
+  amount: z.coerce.number().min(0).optional(),
+});
+
+export const monthlyExpenseStatsSchema = z.object({
+  from: z.string().regex(dateRegex).optional(),
+  to: z.string().regex(dateRegex).optional(),
+  groupBy: z.enum(['day', 'week', 'month', 'quarter', 'year']).optional(),
+  category: z.string().optional().nullable(),
+});

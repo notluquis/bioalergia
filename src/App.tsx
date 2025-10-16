@@ -45,6 +45,10 @@ const NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
+    title: "Calendario",
+    items: [{ to: "/calendar", label: "Eventos", roles: ["GOD", "ADMIN", "ANALYST", "VIEWER"] }],
+  },
+  {
     title: "Gestión",
     items: [
       { to: "/inventory", label: "Inventario", roles: ["GOD", "ADMIN", "ANALYST"] },
@@ -79,6 +83,7 @@ const TITLES: Record<string, string> = {
   "/services": "Servicios recurrentes",
   "/services/agenda": "Agenda de servicios",
   "/services/create": "Crear servicio",
+  "/calendar": "Eventos de calendario",
   "/data": "Movimientos registrados",
   "/stats": "Estadísticas",
   "/settings": "Configuración",
