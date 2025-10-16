@@ -5,6 +5,7 @@ import { useSettings } from "./context/settings-context";
 import CollapsibleNavSection from "./components/CollapsibleNavSection";
 import Clock from "./components/Clock";
 import ConnectionIndicator from "./components/ConnectionIndicator";
+import { APP_VERSION, BUILD_TIMESTAMP } from "./version";
 
 type NavItem = {
   to: string;
@@ -133,6 +134,15 @@ export default function App() {
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
+  const buildLabel = React.useMemo(() => {
+    if (!BUILD_TIMESTAMP) return "Desconocido";
+    const parsed = new Date(BUILD_TIMESTAMP);
+    if (Number.isNaN(parsed.getTime())) {
+      return BUILD_TIMESTAMP;
+    }
+    return parsed.toLocaleString("es-CL", { dateStyle: "short", timeStyle: "short" });
+  }, []);
+
   // Close sidebar on mobile/tablet or route change
   React.useEffect(() => {
     if (isMobile) {
@@ -208,6 +218,11 @@ export default function App() {
             </CollapsibleNavSection>
           ))}
         </nav>
+        <div className="mt-6 space-y-1 rounded-2xl border border-white/40 bg-white/70 p-3 text-[11px] text-slate-500 shadow-inner">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">Versión</p>
+          <p className="font-semibold text-slate-700">{APP_VERSION}</p>
+          <p className="text-[10px] text-slate-400">Build: {buildLabel}</p>
+        </div>
       </aside>
 
       {/* Main content */}

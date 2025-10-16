@@ -26,7 +26,7 @@ export function issueToken(session: AuthSession) {
     },
     JWT_SECRET,
     {
-      expiresIn: "7d",
+      expiresIn: "2d",
     }
   );
 }
