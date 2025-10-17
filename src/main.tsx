@@ -36,12 +36,14 @@ const SuppliesPage = lazy(() => import("./pages/Supplies"));
 const InventoryPage = lazy(() => import("./pages/Inventory"));
 const CalendarSummaryPage = lazy(() => import("./pages/CalendarSummaryPage"));
 const CalendarDailyPage = lazy(() => import("./pages/CalendarDailyPage"));
+const CalendarSyncHistoryPage = lazy(() => import("./pages/CalendarSyncHistoryPage"));
 
 // Settings pages
 const GeneralSettingsPage = lazy(() => import("./pages/settings/GeneralSettingsPage"));
 const AccessSettingsPage = lazy(() => import("./pages/settings/AccessSettingsPage"));
 const InventorySettingsPage = lazy(() => import("./pages/settings/InventorySettingsPage"));
 const RolesSettingsPage = lazy(() => import("./pages/settings/RolesSettingsPage"));
+const CalendarSettingsPage = lazy(() => import("./pages/settings/CalendarSettingsPage"));
 
 // Componente de loading
 const PageLoader = () => (
@@ -198,6 +200,14 @@ const router = createBrowserRouter([
         ),
       },
       {
+        path: "/calendar/history",
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <CalendarSyncHistoryPage />
+          </Suspense>
+        ),
+      },
+      {
         path: "/supplies",
         element: (
           <Suspense fallback={<PageLoader />}>
@@ -236,6 +246,14 @@ const router = createBrowserRouter([
             element: (
               <Suspense fallback={<PageLoader />}>
                 <AccessSettingsPage />
+              </Suspense>
+            ),
+          },
+          {
+            path: "calendar",
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <CalendarSettingsPage />
               </Suspense>
             ),
           },

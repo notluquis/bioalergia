@@ -1,18 +1,22 @@
 import { useMemo } from "react";
 import type { ChangeEvent } from "react";
 import dayjs from "dayjs";
+import isoWeek from "dayjs/plugin/isoWeek";
 import "dayjs/locale/es";
 
 import Input from "../components/Input";
 import Button from "../components/Button";
 import Alert from "../components/Alert";
+import { MultiSelectFilter, type MultiSelectOption } from "../features/calendar/components/MultiSelectFilter";
 import { useCalendarEvents } from "../features/calendar/hooks/useCalendarEvents";
 import type { CalendarAggregateByDate } from "../features/calendar/types";
+import { Link } from "react-router-dom";
 
 dayjs.locale("es");
+dayjs.extend(isoWeek);
 
 const numberFormatter = new Intl.NumberFormat("es-CL");
-const weekdayLabels = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
+const weekdayLabels = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 const NULL_EVENT_TYPE_VALUE = "__NULL__";
 
 type AggregationRow = {
@@ -57,9 +61,6 @@ function formatMonthLabel(entry: { year: number; month: number }) {
     hint: monthName.charAt(0).toUpperCase() + monthName.slice(1),
   };
 }
-
-const formatWeekLabel = (entry: { isoYear: number; isoWeek: number }) =>
-  `Semana ${entry.isoWeek.toString().padStart(2, "0")} · ${entry.isoYear}`;
 
 const formatWeekdayLabel = (weekday: number) => weekdayLabels[weekday] ?? `Día ${weekday}`;
 
@@ -125,26 +126,77 @@ function CalendarSummaryPage() {
       };
     }
 
-    return {
-      byYear: summary.aggregates.byYear.map((entry) => ({
-        label: entry.year.toString(),
-        value: entry.total,
-      })),
-      byMonth: summary.aggregates.byMonth.map((entry) => {
+    const currentYear = dayjs().year();
+
+    const byMonth = summary.aggregates.byMonth
+      .filter((entry) => entry.year === currentYear)
+      .map((entry) => {
         const { label, hint } = formatMonthLabel(entry);
         return { label, value: entry.total, hint };
-      }),
-      byWeek: summary.aggregates.byWeek.map((entry) => ({
-        label: formatWeekLabel(entry),
-        value: entry.total,
-      })),
-      byWeekday: summary.aggregates.byWeekday.map((entry) => ({
+      });
+
+    const byDateCurrentYear = summary.aggregates.byDate.filter((entry) => dayjs(entry.date).year() === currentYear);
+
+    const weekBuckets = new Map<number, Map<number, number>>();
+    byDateCurrentYear.forEach((entry) => {
+      const date = dayjs(entry.date);
+      const month = date.month() + 1;
+      const week = date.isoWeek();
+      if (!weekBuckets.has(month)) weekBuckets.set(month, new Map());
+      const monthMap = weekBuckets.get(month)!;
+      monthMap.set(week, (monthMap.get(week) ?? 0) + entry.total);
+    });
+
+    const byWeek: AggregationRow[] = Array.from(weekBuckets.entries())
+      .sort(([monthA], [monthB]) => monthA - monthB)
+      .flatMap(([month, weeks]) => {
+        const monthName = dayjs().month(month - 1).format("MMMM");
+        return Array.from(weeks.entries())
+          .sort(([weekA], [weekB]) => weekA - weekB)
+          .map(([week, total]) => ({
+            label: `${monthName.charAt(0).toUpperCase()}${monthName.slice(1)} · Semana ${week
+              .toString()
+              .padStart(2, "0")}`,
+            value: total,
+          }));
+      });
+
+    const byWeekday = summary.aggregates.byWeekday
+      .filter((entry) => entry.weekday <= 5)
+      .map((entry) => ({
         label: formatWeekdayLabel(entry.weekday),
         value: entry.total,
-      })),
-      topDates: topDates(summary.aggregates.byDate),
+      }));
+
+    return {
+      byYear: summary.aggregates.byYear
+        .filter((entry) => entry.year === currentYear)
+        .map((entry) => ({ label: entry.year.toString(), value: entry.total })),
+      byMonth,
+      byWeek,
+      byWeekday,
+      topDates: topDates(byDateCurrentYear.length ? byDateCurrentYear : summary.aggregates.byDate),
     };
   }, [summary]);
+
+  const calendarOptions: MultiSelectOption[] = useMemo(
+    () =>
+      availableCalendars.map((entry) => ({
+        value: entry.calendarId,
+        label: `${entry.calendarId} · ${numberFormatter.format(entry.total)}`,
+      })),
+    [availableCalendars]
+  );
+
+  const eventTypeOptions: MultiSelectOption[] = useMemo(
+    () =>
+      availableEventTypes.map((entry) => {
+        const value = entry.eventType ?? NULL_EVENT_TYPE_VALUE;
+        const label = entry.eventType ?? "Sin tipo";
+        return { value, label: `${label} · ${numberFormatter.format(entry.total)}` };
+      }),
+    [availableEventTypes]
+  );
 
   return (
     <section className="space-y-6">
@@ -179,44 +231,20 @@ function CalendarSummaryPage() {
           value={filters.to}
           onChange={(event: ChangeEvent<HTMLInputElement>) => updateFilters("to", event.target.value)}
         />
-        <div className="space-y-2 text-xs text-slate-600">
-          <span className="font-semibold uppercase tracking-wide text-slate-500">Calendarios</span>
-          <div className="muted-scrollbar max-h-36 space-y-2 overflow-y-auto rounded-xl border border-white/60 bg-white/70 p-3">
-            {availableCalendars.length === 0 && <p className="text-[11px] text-slate-400">Sin datos disponibles</p>}
-            {availableCalendars.map((entry) => (
-              <label key={entry.calendarId} className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4"
-                  checked={filters.calendarIds.includes(entry.calendarId)}
-                  onChange={() => toggleCalendar(entry.calendarId)}
-                />
-                <span>{`${entry.calendarId} · ${numberFormatter.format(entry.total)}`}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-        <div className="space-y-2 text-xs text-slate-600">
-          <span className="font-semibold uppercase tracking-wide text-slate-500">Tipos de evento</span>
-          <div className="muted-scrollbar max-h-36 space-y-2 overflow-y-auto rounded-xl border border-white/60 bg-white/70 p-3">
-            {availableEventTypes.length === 0 && <p className="text-[11px] text-slate-400">Sin datos disponibles</p>}
-            {availableEventTypes.map((entry) => {
-              const value = entry.eventType ?? NULL_EVENT_TYPE_VALUE;
-              const label = entry.eventType ?? "Sin tipo";
-              return (
-                <label key={value} className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    className="h-4 w-4"
-                    checked={filters.eventTypes.includes(value)}
-                    onChange={() => toggleEventType(value)}
-                  />
-                  <span>{`${label} · ${numberFormatter.format(entry.total)}`}</span>
-                </label>
-              );
-            })}
-          </div>
-        </div>
+        <MultiSelectFilter
+          label="Calendarios"
+          options={calendarOptions}
+          selected={filters.calendarIds}
+          onToggle={toggleCalendar}
+          placeholder="Todos"
+        />
+        <MultiSelectFilter
+          label="Tipos de evento"
+          options={eventTypeOptions}
+          selected={filters.eventTypes}
+          onToggle={toggleEventType}
+          placeholder="Todos"
+        />
         <Input
           label="Buscar"
           placeholder="Título o descripción"
@@ -240,6 +268,7 @@ function CalendarSummaryPage() {
         </div>
       </form>
 
+      {syncing && <Alert variant="info">Sincronizando calendario…</Alert>}
       {error && <Alert variant="error">{error}</Alert>}
       {syncError && <Alert variant="error">{syncError}</Alert>}
       {lastSyncInfo && !syncError && (
@@ -249,6 +278,14 @@ function CalendarSummaryPage() {
           <br />
           <span className="text-xs text-slate-500">
             Ejecutado: {dayjs(lastSyncInfo.fetchedAt).format("DD MMM YYYY HH:mm")}
+            {lastSyncInfo.logId ? (
+              <>
+                {" • "}
+                <Link to="/calendar/history" className="underline">
+                  Ver historial
+                </Link>
+              </>
+            ) : null}
           </span>
         </Alert>
       )}

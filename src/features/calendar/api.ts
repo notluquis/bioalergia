@@ -1,5 +1,5 @@
 import { apiClient } from "../../lib/apiClient";
-import type { CalendarFilters, CalendarSummary, CalendarDaily } from "./types";
+import type { CalendarFilters, CalendarSummary, CalendarDaily, CalendarSyncLog } from "./types";
 
 type CalendarSummaryResponse = CalendarSummary & { status: "ok" };
 
@@ -12,6 +12,7 @@ type CalendarSyncResponse = {
   updated: number;
   skipped: number;
   excluded: number;
+  logId: number;
 };
 
 function buildQuery(filters: CalendarFilters, options?: { includeMaxDays?: boolean }) {
@@ -78,4 +79,14 @@ export async function syncCalendarEvents(): Promise<CalendarSyncResponse> {
     throw new Error("No se pudo sincronizar el calendario");
   }
   return response;
+}
+
+export async function fetchCalendarSyncLogs(limit = 50): Promise<CalendarSyncLog[]> {
+  const response = await apiClient.get<{ status: "ok"; logs: CalendarSyncLog[] }>(
+    `/api/calendar/events/sync/logs?limit=${limit}`
+  );
+  if (response.status !== "ok") {
+    throw new Error("No se pudo obtener el historial de sincronizaciones");
+  }
+  return response.logs;
 }

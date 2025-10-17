@@ -3,6 +3,7 @@ import cron from "node-cron";
 import { googleCalendarConfig } from "../config.js";
 import { logEvent, logWarn } from "./logger.js";
 import { syncGoogleCalendarOnce } from "./google-calendar.js";
+import { createCalendarSyncLogEntry, finalizeCalendarSyncLogEntry } from "../db.js";
 
 const CRON_JOBS = [
   { expression: "0 9 * * *", label: "morning" },
@@ -27,8 +28,20 @@ export function startGoogleCalendarScheduler() {
           label: job.label,
           expression: job.expression,
         });
+        const logId = await createCalendarSyncLogEntry({
+          triggerSource: `cron:${job.label}`,
+          triggerLabel: job.expression,
+        });
         try {
           const result = await syncGoogleCalendarOnce();
+          await finalizeCalendarSyncLogEntry(logId, {
+            status: "SUCCESS",
+            fetchedAt: result.payload.fetchedAt,
+            inserted: result.upsertResult.inserted,
+            updated: result.upsertResult.updated,
+            skipped: result.upsertResult.skipped,
+            excluded: result.payload.excludedEvents.length,
+          });
           logEvent("googleCalendar.sync.success", {
             label: job.label,
             expression: job.expression,
@@ -36,9 +49,14 @@ export function startGoogleCalendarScheduler() {
             inserted: result.upsertResult.inserted,
             updated: result.upsertResult.updated,
             skipped: result.upsertResult.skipped,
+            excluded: result.payload.excludedEvents.length,
             snapshotPath: result.snapshotPath,
           });
         } catch (error) {
+          await finalizeCalendarSyncLogEntry(logId, {
+            status: "ERROR",
+            errorMessage: error instanceof Error ? error.message : String(error),
+          });
           logWarn("googleCalendar.sync.error", {
             label: job.label,
             expression: job.expression,

@@ -72,6 +72,7 @@ export function useCalendarEvents() {
     updated: number;
     skipped: number;
     excluded: number;
+    logId?: number;
   } | null>(null);
 
   const fetchData = useCallback(async (nextFilters: CalendarFilters) => {
@@ -134,13 +135,14 @@ export function useCalendarEvents() {
     setSyncError(null);
     try {
       const result = await syncCalendarEvents();
-      setLastSyncInfo({
-        fetchedAt: result.fetchedAt,
-        inserted: result.inserted,
-        updated: result.updated,
-        skipped: result.skipped,
-        excluded: result.excluded,
-      });
+        setLastSyncInfo({
+          fetchedAt: result.fetchedAt,
+          inserted: result.inserted,
+          updated: result.updated,
+          skipped: result.skipped,
+          excluded: result.excluded,
+          logId: result.logId,
+        });
       await fetchData(filters).catch(() => {
         /* handled */
       });

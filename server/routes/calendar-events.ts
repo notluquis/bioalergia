@@ -3,15 +3,11 @@ import type { ParsedQs } from "qs";
 import dayjs from "dayjs";
 
 import { asyncHandler, authenticate, requireRole } from "../lib/index.js";
-import {
-  defaultDateRange,
-  getCalendarAggregates,
-  getCalendarEventsByDate,
-  type CalendarEventFilters,
-} from "../lib/google-calendar-queries.js";
+import { getCalendarAggregates, getCalendarEventsByDate, type CalendarEventFilters } from "../lib/google-calendar-queries.js";
 import { syncGoogleCalendarOnce } from "../lib/google-calendar.js";
 import { formatDateOnly, parseDateOnly } from "../lib/time.js";
-import { loadSettings } from "../db.js";
+import { loadSettings, createCalendarSyncLogEntry, finalizeCalendarSyncLogEntry, listCalendarSyncLogs } from "../db.js";
+import { googleCalendarConfig } from "../config.js";
 
 type QueryValue = string | ParsedQs | (string | ParsedQs)[] | undefined;
 
@@ -60,9 +56,9 @@ function coerceMaxDays(value: QueryValue): number | undefined {
 
 async function buildFilters(query: ParsedQs) {
   const settings = await loadSettings();
-  const defaults = defaultDateRange();
+  const configStart = settings.calendarSyncStart?.trim() || googleCalendarConfig?.syncStartDate || "2000-01-01";
 
-  const baseStart = settings.calendarSyncStart?.trim() || defaults.from;
+  const baseStart = configStart;
   const lookaheadRaw = Number(settings.calendarSyncLookaheadDays ?? "365");
   const lookaheadDays = Number.isFinite(lookaheadRaw) && lookaheadRaw > 0 ? Math.min(Math.floor(lookaheadRaw), 1095) : 365;
   const defaultEnd = dayjs().add(lookaheadDays, "day").format("YYYY-MM-DD");
@@ -144,16 +140,67 @@ export function registerCalendarEventRoutes(app: express.Express) {
     "/api/calendar/events/sync",
     authenticate,
     requireRole("ADMIN", "GOD"),
+    asyncHandler(async (req, res) => {
+      const logId = await createCalendarSyncLogEntry({
+        triggerSource: "manual",
+        triggerUserId: req.auth?.userId ?? null,
+        triggerLabel: req.auth?.email ?? null,
+      });
+
+      try {
+        const result = await syncGoogleCalendarOnce();
+        await finalizeCalendarSyncLogEntry(logId, {
+          status: "SUCCESS",
+          fetchedAt: result.payload.fetchedAt,
+          inserted: result.upsertResult.inserted,
+          updated: result.upsertResult.updated,
+          skipped: result.upsertResult.skipped,
+          excluded: result.payload.excludedEvents.length,
+        });
+
+        res.json({
+          status: "ok",
+          fetchedAt: result.payload.fetchedAt,
+          events: result.payload.events.length,
+          inserted: result.upsertResult.inserted,
+          updated: result.upsertResult.updated,
+          skipped: result.upsertResult.skipped,
+          excluded: result.payload.excludedEvents.length,
+          logId,
+        });
+      } catch (error) {
+        await finalizeCalendarSyncLogEntry(logId, {
+          status: "ERROR",
+          errorMessage: error instanceof Error ? error.message : String(error),
+        });
+        throw error;
+      }
+    })
+  );
+
+  app.get(
+    "/api/calendar/events/sync/logs",
+    authenticate,
+    requireRole("VIEWER", "ANALYST", "ADMIN", "GOD"),
     asyncHandler(async (_req, res) => {
-      const result = await syncGoogleCalendarOnce();
+      const logs = await listCalendarSyncLogs(50);
       res.json({
         status: "ok",
-        fetchedAt: result.payload.fetchedAt,
-        events: result.payload.events.length,
-        inserted: result.upsertResult.inserted,
-        updated: result.upsertResult.updated,
-        skipped: result.upsertResult.skipped,
-        excluded: result.payload.excludedEvents.length,
+        logs: logs.map((log) => ({
+          id: Number(log.id),
+          triggerSource: String(log.trigger_source),
+          triggerUserId: log.trigger_user_id != null ? Number(log.trigger_user_id) : null,
+          triggerLabel: log.trigger_label ? String(log.trigger_label) : null,
+          status: log.status,
+          startedAt: log.started_at,
+          finishedAt: log.finished_at,
+          fetchedAt: log.fetched_at,
+          inserted: Number(log.inserted ?? 0),
+          updated: Number(log.updated ?? 0),
+          skipped: Number(log.skipped ?? 0),
+          excluded: Number(log.excluded ?? 0),
+          errorMessage: log.error_message ? String(log.error_message) : null,
+        })),
       });
     })
   );

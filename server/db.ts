@@ -529,6 +529,26 @@ export async function ensureSchema() {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
   `);
 
+  await pool.execute(`
+    CREATE TABLE IF NOT EXISTS google_calendar_sync_log (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      trigger_source VARCHAR(50) NOT NULL,
+      trigger_user_id INT UNSIGNED NULL,
+      trigger_label VARCHAR(191) NULL,
+      status ENUM('SUCCESS','ERROR') NOT NULL DEFAULT 'SUCCESS',
+      started_at DATETIME NOT NULL,
+      finished_at DATETIME NULL,
+      fetched_at DATETIME NULL,
+      inserted INT UNSIGNED DEFAULT 0,
+      updated INT UNSIGNED DEFAULT 0,
+      skipped INT UNSIGNED DEFAULT 0,
+      excluded INT UNSIGNED DEFAULT 0,
+      error_message TEXT NULL,
+      PRIMARY KEY (id),
+      INDEX idx_google_calendar_sync_log_started (started_at DESC)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  `);
+
   await addColumnIfMissing(
     pool,
     "google_calendar_events",
@@ -2888,6 +2908,86 @@ export async function saveSettings(update: Partial<AppSettings>) {
      ON DUPLICATE KEY UPDATE config_value = VALUES(config_value)` as string,
     [values]
   );
+}
+
+export type CalendarSyncLogRecord = {
+  id: number;
+  trigger_source: string;
+  trigger_user_id: number | null;
+  trigger_label: string | null;
+  status: "SUCCESS" | "ERROR";
+  started_at: string;
+  finished_at: string | null;
+  fetched_at: string | null;
+  inserted: number | null;
+  updated: number | null;
+  skipped: number | null;
+  excluded: number | null;
+  error_message: string | null;
+};
+
+export async function createCalendarSyncLogEntry(params: {
+  triggerSource: string;
+  triggerUserId?: number | null;
+  triggerLabel?: string | null;
+}): Promise<number> {
+  const pool = getPool();
+  const [result] = await pool.query<ResultSetHeader>(
+    `INSERT INTO google_calendar_sync_log (trigger_source, trigger_user_id, trigger_label, status, started_at)
+     VALUES (?, ?, ?, 'SUCCESS', NOW())`,
+    [params.triggerSource, params.triggerUserId ?? null, params.triggerLabel ?? null]
+  );
+  return result.insertId;
+}
+
+export async function finalizeCalendarSyncLogEntry(
+  id: number,
+  data: {
+    status: "SUCCESS" | "ERROR";
+    fetchedAt?: string | null;
+    inserted?: number;
+    updated?: number;
+    skipped?: number;
+    excluded?: number;
+    errorMessage?: string | null;
+  }
+) {
+  const pool = getPool();
+  await pool.query(
+    `UPDATE google_calendar_sync_log
+       SET status = ?,
+           finished_at = NOW(),
+           fetched_at = COALESCE(?, fetched_at),
+           inserted = COALESCE(?, inserted),
+           updated = COALESCE(?, updated),
+           skipped = COALESCE(?, skipped),
+           excluded = COALESCE(?, excluded),
+           error_message = COALESCE(?, error_message)
+     WHERE id = ?`,
+    [
+      data.status,
+      data.fetchedAt ?? null,
+      data.inserted ?? null,
+      data.updated ?? null,
+      data.skipped ?? null,
+      data.excluded ?? null,
+      data.errorMessage ?? null,
+      id,
+    ]
+  );
+}
+
+export async function listCalendarSyncLogs(limit = 20): Promise<CalendarSyncLogRecord[]> {
+  const pool = getPool();
+  const [rows] = await pool.query<RowDataPacket[]>(
+    `SELECT id, trigger_source, trigger_user_id, trigger_label, status, started_at, finished_at,
+            fetched_at, inserted, updated, skipped, excluded, error_message
+       FROM google_calendar_sync_log
+       ORDER BY started_at DESC
+       LIMIT ?`,
+    [limit]
+  );
+  return rows as CalendarSyncLogRecord[];
 }
 
 export async function upsertWithdrawals(payouts: PayoutRecord[]) {

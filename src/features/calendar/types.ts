@@ -105,3 +105,19 @@ export type CalendarDaily = {
   };
   days: CalendarDayEvents[];
 };
+
+export type CalendarSyncLog = {
+  id: number;
+  triggerSource: string;
+  triggerUserId: number | null;
+  triggerLabel: string | null;
+  status: "SUCCESS" | "ERROR";
+  startedAt: string;
+  finishedAt: string | null;
+  fetchedAt: string | null;
+  inserted: number;
+  updated: number;
+  skipped: number;
+  excluded: number;
+  errorMessage: string | null;
+};

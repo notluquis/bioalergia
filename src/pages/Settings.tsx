@@ -8,6 +8,11 @@ const SETTINGS_PAGES = [
     description: "Colores, logo y datos básicos de la organización.",
   },
   {
+    to: "calendar",
+    label: "Calendario",
+    description: "Zona horaria, ventanas de sincronización y exclusiones de eventos.",
+  },
+  {
     to: "accesos",
     label: "Accesos y conexiones",
     description: "URLs de cPanel, base de datos y credenciales visibles.",
