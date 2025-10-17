@@ -5,7 +5,7 @@ import dayjs from "dayjs";
 
 import { googleCalendarConfig } from "../config.js";
 import { logEvent, logWarn } from "./logger.js";
-import { upsertGoogleCalendarEvents } from "./google-calendar-store.js";
+import { upsertGoogleCalendarEvents, removeGoogleCalendarEvents } from "./google-calendar-store.js";
 
 const CALENDAR_SCOPES = ["https://www.googleapis.com/auth/calendar.readonly"];
 const STORAGE_ROOT = path.resolve(process.cwd(), "storage", "google-calendar");
@@ -37,9 +37,16 @@ export type GoogleCalendarSyncPayload = {
   timeZone: string;
   calendars: Array<{ calendarId: string; totalEvents: number }>;
   events: CalendarEventRecord[];
+  excludedEvents: Array<{ calendarId: string; eventId: string }>;
 };
 
 let cachedClient: CalendarClient | null = null;
+
+function isEventExcluded(item: calendar_v3.Schema$Event): boolean {
+  if (!googleCalendarConfig) return false;
+  const text = `${item.summary ?? ""}\n${item.description ?? ""}`.toLowerCase();
+  return googleCalendarConfig.excludeSummaryPatterns.some((regex) => regex.test(text));
+}
 
 async function ensureStorageDir() {
   await fs.mkdir(STORAGE_ROOT, { recursive: true });
@@ -91,8 +98,9 @@ async function fetchCalendarEventsForId(
   client: CalendarClient,
   calendarId: string,
   range: FetchRange
-): Promise<CalendarEventRecord[]> {
+): Promise<{ events: CalendarEventRecord[]; excluded: Array<{ calendarId: string; eventId: string }> }> {
   const events: CalendarEventRecord[] = [];
+  const excluded: Array<{ calendarId: string; eventId: string }> = [];
   let pageToken: string | undefined;
 
   do {
@@ -111,6 +119,11 @@ async function fetchCalendarEventsForId(
 
     for (const item of items) {
       if (!item.id) {
+        continue;
+      }
+
+      if (isEventExcluded(item)) {
+        excluded.push({ calendarId, eventId: item.id });
         continue;
       }
 
@@ -136,7 +149,7 @@ async function fetchCalendarEventsForId(
     pageToken = response.data.nextPageToken ?? undefined;
   } while (pageToken);
 
-  return events;
+  return { events, excluded };
 }
 
 export async function fetchGoogleCalendarData(): Promise<GoogleCalendarSyncPayload> {
@@ -149,14 +162,20 @@ export async function fetchGoogleCalendarData(): Promise<GoogleCalendarSyncPaylo
 
   const events: CalendarEventRecord[] = [];
   const calendarsSummary: Array<{ calendarId: string; totalEvents: number }> = [];
+  const excludedEvents: Array<{ calendarId: string; eventId: string }> = [];
 
   for (const calendarId of googleCalendarConfig.calendarIds) {
     try {
       logEvent("googleCalendar.fetch.start", { calendarId, timeMin: range.timeMin, timeMax: range.timeMax });
-      const eventsForCalendar = await fetchCalendarEventsForId(client, calendarId, range);
-      events.push(...eventsForCalendar);
-      calendarsSummary.push({ calendarId, totalEvents: eventsForCalendar.length });
-      logEvent("googleCalendar.fetch.success", { calendarId, totalEvents: eventsForCalendar.length });
+      const result = await fetchCalendarEventsForId(client, calendarId, range);
+      events.push(...result.events);
+      excludedEvents.push(...result.excluded);
+      calendarsSummary.push({ calendarId, totalEvents: result.events.length });
+      logEvent("googleCalendar.fetch.success", {
+        calendarId,
+        totalEvents: result.events.length,
+        excluded: result.excluded.length,
+      });
     } catch (error) {
       logWarn("googleCalendar.fetch.error", {
         calendarId,
@@ -172,6 +191,7 @@ export async function fetchGoogleCalendarData(): Promise<GoogleCalendarSyncPaylo
     timeZone: range.timeZone,
     calendars: calendarsSummary,
     events,
+    excludedEvents,
   };
 }
 
@@ -193,6 +213,9 @@ export async function persistGoogleCalendarSnapshot(payload: GoogleCalendarSyncP
 export async function syncGoogleCalendarOnce() {
   const payload = await fetchGoogleCalendarData();
   const upsertResult = await upsertGoogleCalendarEvents(payload.events);
+  if (payload.excludedEvents.length) {
+    await removeGoogleCalendarEvents(payload.excludedEvents);
+  }
   const paths = await persistGoogleCalendarSnapshot(payload);
   return { payload, upsertResult, ...paths };
 }

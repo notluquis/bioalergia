@@ -30,6 +30,7 @@ export type GoogleCalendarConfig = {
   syncStartDate: string;
   syncLookAheadDays: number;
   impersonateUser?: string | null;
+  excludeSummaryPatterns: RegExp[];
 };
 
 function normalizePrivateKey(raw?: string | null) {
@@ -44,6 +45,27 @@ function parseCalendarIds(raw?: string | null) {
     .map((value) => value.trim())
     .filter(Boolean);
   return ids.length > 0 ? ids : null;
+}
+
+function parseExcludePatterns(raw?: string | null) {
+  if (!raw) {
+    return ["no disponible"]; // default placeholder blocker
+  }
+  return raw
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+}
+
+function compilePatterns(values: string[]): RegExp[] {
+  const patterns = values.length ? values : ["no disponible"];
+  return patterns.map((pattern) => {
+    try {
+      return new RegExp(pattern, "i");
+    } catch {
+      return new RegExp(pattern.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&"), "i");
+    }
+  });
 }
 
 const googleCalendarEnvMissing: string[] = [];
@@ -70,6 +92,8 @@ const syncLookAheadDays = Number.isFinite(syncLookAheadDaysParsed) && syncLookAh
   ? Math.floor(syncLookAheadDaysParsed)
   : 365;
 
+const excludePatternsRaw = compilePatterns(parseExcludePatterns(process.env.GOOGLE_CALENDAR_EXCLUDE_SUMMARIES ?? null));
+
 export const googleCalendarConfig: GoogleCalendarConfig | null =
   googleCalendarEnvMissing.length === 0
     ? {
@@ -80,6 +104,7 @@ export const googleCalendarConfig: GoogleCalendarConfig | null =
         syncStartDate,
         syncLookAheadDays,
         impersonateUser: process.env.GOOGLE_CALENDAR_IMPERSONATE_USER ?? null,
+        excludeSummaryPatterns: excludePatternsRaw,
       }
     : null;
 

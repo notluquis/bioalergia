@@ -225,3 +225,25 @@ export async function upsertGoogleCalendarEvents(
 
   return result;
 }
+
+export async function removeGoogleCalendarEvents(entries: Array<{ calendarId: string; eventId: string }>) {
+  if (!entries.length) return;
+  const pool = getPool();
+  const grouped = new Map<string, Set<string>>();
+  for (const entry of entries) {
+    if (!entry.eventId) continue;
+    const set = grouped.get(entry.calendarId) ?? new Set<string>();
+    set.add(entry.eventId);
+    grouped.set(entry.calendarId, set);
+  }
+
+  for (const [calendarId, ids] of grouped.entries()) {
+    const idList = Array.from(ids);
+    if (!idList.length) continue;
+    const placeholders = idList.map(() => "?").join(", ");
+    await pool.query(
+      `DELETE FROM google_calendar_events WHERE calendar_id = ? AND event_id IN (${placeholders})`,
+      [calendarId, ...idList]
+    );
+  }
+}
