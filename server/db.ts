@@ -2953,6 +2953,13 @@ export async function finalizeCalendarSyncLogEntry(
   }
 ) {
   const pool = getPool();
+  let fetchedAtValue: string | null = null;
+  if (data.fetchedAt) {
+    const parsed = new Date(data.fetchedAt);
+    if (!Number.isNaN(parsed.getTime())) {
+      fetchedAtValue = formatLocalDateForMySQL(parsed);
+    }
+  }
   await pool.query(
     `UPDATE google_calendar_sync_log
        SET status = ?,
@@ -2966,7 +2973,7 @@ export async function finalizeCalendarSyncLogEntry(
      WHERE id = ?`,
     [
       data.status,
-      data.fetchedAt ?? null,
+      fetchedAtValue,
       data.inserted ?? null,
       data.updated ?? null,
       data.skipped ?? null,
