@@ -102,6 +102,10 @@ function CalendarEventsPage() {
     isDirty,
     availableCalendars,
     availableEventTypes,
+    syncing,
+    syncError,
+    lastSyncInfo,
+    syncNow,
     updateFilters,
     applyFilters,
     resetFilters,
@@ -170,12 +174,17 @@ function CalendarEventsPage() {
 
   return (
     <section className="space-y-6">
-      <header className="space-y-2">
-        <h1 className="text-2xl font-bold text-[var(--brand-primary)]">Eventos de Calendario</h1>
-        <p className="text-sm text-slate-600">
-          Visualiza los eventos sincronizados desde Google Calendar, filtra por calendario, tipo o palabras clave y
-          revisa los agregados por año, mes, semana y día.
-        </p>
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-2">
+          <h1 className="text-2xl font-bold text-[var(--brand-primary)]">Eventos de Calendario</h1>
+          <p className="text-sm text-slate-600">
+            Visualiza los eventos sincronizados desde Google Calendar, filtra por calendario, tipo o palabras clave y
+            revisa los agregados por año, mes, semana y día.
+          </p>
+        </div>
+        <Button onClick={syncNow} disabled={syncing} className="self-start sm:self-auto">
+          {syncing ? "Sincronizando..." : "Sincronizar ahora"}
+        </Button>
       </header>
 
       <form
@@ -273,6 +282,15 @@ function CalendarEventsPage() {
       </form>
 
       {error && <Alert variant="error">{error}</Alert>}
+      {syncError && <Alert variant="error">{syncError}</Alert>}
+      {lastSyncInfo && !syncError && (
+        <Alert variant="success">
+          <span className="font-semibold">Sincronización completada:</span>{" "}
+          {`${numberFormatter.format(lastSyncInfo.inserted)} nuevas, ${numberFormatter.format(lastSyncInfo.updated)} actualizadas, ${numberFormatter.format(lastSyncInfo.skipped)} omitidas.`}
+          <br />
+          <span className="text-xs text-slate-500">Ejecutado: {dayjs(lastSyncInfo.fetchedAt).format("DD MMM YYYY HH:mm")}</span>
+        </Alert>
+      )}
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="glass-card glass-underlay-gradient rounded-2xl border border-white/60 p-4 text-sm shadow-sm">

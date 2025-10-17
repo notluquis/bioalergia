@@ -4,6 +4,14 @@ import type { CalendarFilters, CalendarSummary, CalendarDaily } from "./types";
 type CalendarSummaryResponse = CalendarSummary & { status: "ok" };
 
 type CalendarDailyResponse = CalendarDaily & { status: "ok" };
+type CalendarSyncResponse = {
+  status: "ok";
+  fetchedAt: string;
+  events: number;
+  inserted: number;
+  updated: number;
+  skipped: number;
+};
 
 function buildQuery(filters: CalendarFilters, options?: { includeMaxDays?: boolean }) {
   const query: Record<string, unknown> = {
@@ -61,4 +69,12 @@ export async function fetchCalendarDaily(filters: CalendarFilters): Promise<Cale
     totals: response.totals,
     days: response.days,
   };
+}
+
+export async function syncCalendarEvents(): Promise<CalendarSyncResponse> {
+  const response = await apiClient.post<CalendarSyncResponse>("/api/calendar/events/sync", {});
+  if (response.status !== "ok") {
+    throw new Error("No se pudo sincronizar el calendario");
+  }
+  return response;
 }

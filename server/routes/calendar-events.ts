@@ -8,6 +8,7 @@ import {
   getCalendarEventsByDate,
   type CalendarEventFilters,
 } from "../lib/google-calendar-queries.js";
+import { syncGoogleCalendarOnce } from "../lib/google-calendar.js";
 import { formatDateOnly, parseDateOnly } from "../lib/time.js";
 
 type QueryValue = string | ParsedQs | (string | ParsedQs)[] | undefined;
@@ -132,6 +133,23 @@ export function registerCalendarEventRoutes(app: express.Express) {
         },
         totals: events.totals,
         days: events.days,
+      });
+    })
+  );
+
+  app.post(
+    "/api/calendar/events/sync",
+    authenticate,
+    requireRole("ADMIN", "GOD"),
+    asyncHandler(async (_req, res) => {
+      const result = await syncGoogleCalendarOnce();
+      res.json({
+        status: "ok",
+        fetchedAt: result.payload.fetchedAt,
+        events: result.payload.events.length,
+        inserted: result.upsertResult.inserted,
+        updated: result.upsertResult.updated,
+        skipped: result.upsertResult.skipped,
       });
     })
   );

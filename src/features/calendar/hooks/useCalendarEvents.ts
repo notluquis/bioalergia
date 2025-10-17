@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dayjs from "dayjs";
 
-import { fetchCalendarDaily, fetchCalendarSummary } from "../api";
+import { fetchCalendarDaily, fetchCalendarSummary, syncCalendarEvents } from "../api";
 import type { CalendarDaily, CalendarFilters, CalendarSummary } from "../types";
 
 const DEFAULT_MAX_DAYS = 31;
@@ -56,6 +56,14 @@ export function useCalendarEvents() {
   const [daily, setDaily] = useState<CalendarDaily | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
+  const [lastSyncInfo, setLastSyncInfo] = useState<{
+    fetchedAt: string;
+    inserted: number;
+    updated: number;
+    skipped: number;
+  } | null>(null);
 
   const fetchData = useCallback(async (nextFilters: CalendarFilters) => {
     setLoading(true);
@@ -108,6 +116,28 @@ export function useCalendarEvents() {
   const availableCalendars = summary?.available.calendars ?? [];
   const availableEventTypes = summary?.available.eventTypes ?? [];
 
+  const syncNow = useCallback(async () => {
+    setSyncing(true);
+    setSyncError(null);
+    try {
+      const result = await syncCalendarEvents();
+      setLastSyncInfo({
+        fetchedAt: result.fetchedAt,
+        inserted: result.inserted,
+        updated: result.updated,
+        skipped: result.skipped,
+      });
+      await fetchData(filters).catch(() => {
+        /* handled */
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "No se pudo sincronizar";
+      setSyncError(message);
+    } finally {
+      setSyncing(false);
+    }
+  }, [fetchData, filters]);
+
   return {
     filters,
     appliedFilters,
@@ -122,5 +152,9 @@ export function useCalendarEvents() {
     resetFilters,
     availableCalendars,
     availableEventTypes,
+    syncing,
+    syncError,
+    lastSyncInfo,
+    syncNow,
   };
 }
