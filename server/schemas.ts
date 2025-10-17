@@ -38,6 +38,8 @@ const serviceRecurrenceEnum = z.enum(["RECURRING", "ONE_OFF"]);
 const serviceIndexationEnum = z.enum(["NONE", "UF"]);
 const serviceLateFeeModeEnum = z.enum(["NONE", "FIXED", "PERCENTAGE"]);
 const serviceEmissionModeEnum = z.enum(["FIXED_DAY", "DATE_RANGE", "SPECIFIC_DATE"]);
+const monthlyExpenseSourceEnum = z.enum(["MANUAL", "TRANSACTION", "SERVICE"]);
+const monthlyExpenseStatusEnum = z.enum(["OPEN", "CLOSED"]);
 
 export const settingsSchema = z.object({
   orgName: z.string().min(1).max(120),
