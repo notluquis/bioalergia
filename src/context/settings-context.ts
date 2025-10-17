@@ -17,6 +17,11 @@ export type AppSettings = {
   primaryCurrency: string;
   supportEmail: string;
   pageTitle: string;
+  calendarTimeZone: string;
+  calendarSyncStart: string;
+  calendarSyncLookaheadDays: string;
+  calendarExcludeSummaries: string;
+  calendarDailyMaxDays: string;
 };
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -35,6 +40,11 @@ export const DEFAULT_SETTINGS: AppSettings = {
   primaryCurrency: "CLP",
   supportEmail: "soporte@bioalergia.cl",
   pageTitle: "Bioalergia · Finanzas",
+  calendarTimeZone: "America/Santiago",
+  calendarSyncStart: "2000-01-01",
+  calendarSyncLookaheadDays: "365",
+  calendarExcludeSummaries: "No Disponible",
+  calendarDailyMaxDays: "31",
 };
 
 export type SettingsContextType = {

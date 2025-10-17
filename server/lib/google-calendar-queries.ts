@@ -2,6 +2,7 @@ import dayjs from "dayjs";
 import type { RowDataPacket } from "mysql2";
 
 import { getPool } from "../db.js";
+import { googleCalendarConfig } from "../config.js";
 
 const BASE_EVENTS_SELECT = `
   SELECT
@@ -427,9 +428,12 @@ export async function getCalendarEventsByDate(
 
 export function defaultDateRange(): { from: string; to: string } {
   const today = dayjs().startOf("day");
-  const from = today.subtract(30, "day");
+  const fromSource = googleCalendarConfig?.syncStartDate ?? "2000-01-01";
+  const lookahead = googleCalendarConfig?.syncLookAheadDays ?? 365;
+  const from = dayjs(fromSource).isValid() ? dayjs(fromSource) : today.subtract(365, "day");
+  const to = today.add(lookahead, "day");
   return {
     from: from.format("YYYY-MM-DD"),
-    to: today.format("YYYY-MM-DD"),
+    to: to.format("YYYY-MM-DD"),
   };
 }

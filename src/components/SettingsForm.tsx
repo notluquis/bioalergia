@@ -22,6 +22,25 @@ const fields: Array<{ key: keyof AppSettings; label: string; type?: string; help
   { key: "orgPhone", label: "Teléfono de contacto" },
   { key: "orgAddress", label: "Dirección" },
   { key: "primaryCurrency", label: "Moneda principal", helper: "Ejemplo: CLP, USD" },
+  { key: "calendarTimeZone", label: "Zona horaria calendario", helper: "Ejemplo: America/Santiago" },
+  { key: "calendarSyncStart", label: "Fecha inicial de sincronización", type: "date" },
+  {
+    key: "calendarSyncLookaheadDays",
+    label: "Días hacia adelante",
+    type: "number",
+    helper: "Cantidad de días futuros que se sincronizan (máximo 1095)",
+  },
+  {
+    key: "calendarExcludeSummaries",
+    label: "Excluir eventos que contengan",
+    helper: "Patrones separados por coma. Ej: No Disponible,Vacaciones",
+  },
+  {
+    key: "calendarDailyMaxDays",
+    label: "Días listados en vista diaria",
+    type: "number",
+    helper: "Número máximo de días mostrados (máximo 120)",
+  },
 ];
 
 interface UploadResponse {

@@ -96,14 +96,22 @@ function CalendarSummaryPage() {
     days: summary?.totals.days ?? 0,
   }), [summary?.totals.days, summary?.totals.events]);
 
-  const handleCalendarChange = (event: ChangeEvent<HTMLSelectElement>) => {
-    const values = Array.from(event.target.selectedOptions).map((option) => option.value);
-    updateFilters("calendarIds", values);
+  const toggleCalendar = (calendarId: string) => {
+    updateFilters(
+      "calendarIds",
+      filters.calendarIds.includes(calendarId)
+        ? filters.calendarIds.filter((id) => id !== calendarId)
+        : [...filters.calendarIds, calendarId]
+    );
   };
 
-  const handleEventTypeChange = (event: ChangeEvent<HTMLSelectElement>) => {
-    const values = Array.from(event.target.selectedOptions).map((option) => option.value);
-    updateFilters("eventTypes", values);
+  const toggleEventType = (value: string) => {
+    updateFilters(
+      "eventTypes",
+      filters.eventTypes.includes(value)
+        ? filters.eventTypes.filter((id) => id !== value)
+        : [...filters.eventTypes, value]
+    );
   };
 
   const aggregationRows = useMemo(() => {
@@ -171,50 +179,44 @@ function CalendarSummaryPage() {
           value={filters.to}
           onChange={(event: ChangeEvent<HTMLInputElement>) => updateFilters("to", event.target.value)}
         />
-        <Input
-          label="Calendarios"
-          type="select"
-          multiple
-          size={Math.min(4, Math.max(availableCalendars.length, 2))}
-          value={filters.calendarIds}
-          onChange={handleCalendarChange}
-        >
-          {availableCalendars.length === 0 ? (
-            <option value="" disabled>
-              Sin datos
-            </option>
-          ) : (
-            availableCalendars.map((entry) => (
-              <option key={entry.calendarId} value={entry.calendarId}>
-                {entry.calendarId} · {numberFormatter.format(entry.total)}
-              </option>
-            ))
-          )}
-        </Input>
-        <Input
-          label="Tipos de evento"
-          type="select"
-          multiple
-          size={Math.min(4, Math.max(availableEventTypes.length, 2))}
-          value={filters.eventTypes}
-          onChange={handleEventTypeChange}
-        >
-          {availableEventTypes.length === 0 ? (
-            <option value="" disabled>
-              Sin datos
-            </option>
-          ) : (
-            availableEventTypes.map((entry) => {
+        <div className="space-y-2 text-xs text-slate-600">
+          <span className="font-semibold uppercase tracking-wide text-slate-500">Calendarios</span>
+          <div className="muted-scrollbar max-h-36 space-y-2 overflow-y-auto rounded-xl border border-white/60 bg-white/70 p-3">
+            {availableCalendars.length === 0 && <p className="text-[11px] text-slate-400">Sin datos disponibles</p>}
+            {availableCalendars.map((entry) => (
+              <label key={entry.calendarId} className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4"
+                  checked={filters.calendarIds.includes(entry.calendarId)}
+                  onChange={() => toggleCalendar(entry.calendarId)}
+                />
+                <span>{`${entry.calendarId} · ${numberFormatter.format(entry.total)}`}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+        <div className="space-y-2 text-xs text-slate-600">
+          <span className="font-semibold uppercase tracking-wide text-slate-500">Tipos de evento</span>
+          <div className="muted-scrollbar max-h-36 space-y-2 overflow-y-auto rounded-xl border border-white/60 bg-white/70 p-3">
+            {availableEventTypes.length === 0 && <p className="text-[11px] text-slate-400">Sin datos disponibles</p>}
+            {availableEventTypes.map((entry) => {
               const value = entry.eventType ?? NULL_EVENT_TYPE_VALUE;
               const label = entry.eventType ?? "Sin tipo";
               return (
-                <option key={value} value={value}>
-                  {`${label} · ${numberFormatter.format(entry.total)}`}
-                </option>
+                <label key={value} className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4"
+                    checked={filters.eventTypes.includes(value)}
+                    onChange={() => toggleEventType(value)}
+                  />
+                  <span>{`${label} · ${numberFormatter.format(entry.total)}`}</span>
+                </label>
               );
-            })
-          )}
-        </Input>
+            })}
+          </div>
+        </div>
         <Input
           label="Buscar"
           placeholder="Título o descripción"
@@ -243,7 +245,7 @@ function CalendarSummaryPage() {
       {lastSyncInfo && !syncError && (
         <Alert variant="success">
           <span className="font-semibold">Sincronización completada:</span>{" "}
-          {`${numberFormatter.format(lastSyncInfo.inserted)} nuevas, ${numberFormatter.format(lastSyncInfo.updated)} actualizadas, ${numberFormatter.format(lastSyncInfo.skipped)} omitidas.`}
+          {`${numberFormatter.format(lastSyncInfo.inserted)} nuevas, ${numberFormatter.format(lastSyncInfo.updated)} actualizadas, ${numberFormatter.format(lastSyncInfo.skipped)} omitidas, ${numberFormatter.format(lastSyncInfo.excluded)} filtradas.`}
           <br />
           <span className="text-xs text-slate-500">
             Ejecutado: {dayjs(lastSyncInfo.fetchedAt).format("DD MMM YYYY HH:mm")}

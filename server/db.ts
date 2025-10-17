@@ -277,6 +277,11 @@ export type AppSettings = {
   primaryCurrency: string;
   supportEmail: string;
   pageTitle: string;
+  calendarTimeZone: string;
+  calendarSyncStart: string;
+  calendarSyncLookaheadDays: string;
+  calendarExcludeSummaries: string;
+  calendarDailyMaxDays: string;
 };
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -295,6 +300,11 @@ export const DEFAULT_SETTINGS: AppSettings = {
   primaryCurrency: "CLP",
   supportEmail: "soporte@bioalergia.cl",
   pageTitle: "Bioalergia · Finanzas",
+  calendarTimeZone: "America/Santiago",
+  calendarSyncStart: "2000-01-01",
+  calendarSyncLookaheadDays: "365",
+  calendarExcludeSummaries: "No Disponible",
+  calendarDailyMaxDays: "31",
 };
 
 const SETTINGS_KEY_MAP: Record<keyof AppSettings, string> = {
@@ -313,6 +323,11 @@ const SETTINGS_KEY_MAP: Record<keyof AppSettings, string> = {
   primaryCurrency: "org.primaryCurrency",
   supportEmail: "contact.supportEmail",
   pageTitle: "brand.pageTitle",
+  calendarTimeZone: "calendar.timeZone",
+  calendarSyncStart: "calendar.syncStart",
+  calendarSyncLookaheadDays: "calendar.syncLookaheadDays",
+  calendarExcludeSummaries: "calendar.excludeSummaries",
+  calendarDailyMaxDays: "calendar.dailyMaxDays",
 };
 
 const REQUIRED_ENV = ["DB_HOST", "DB_USER", "DB_PASSWORD", "DB_NAME"] as const;

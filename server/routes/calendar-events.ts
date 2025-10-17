@@ -1,5 +1,6 @@
 import express from "express";
 import type { ParsedQs } from "qs";
+import dayjs from "dayjs";
 
 import { asyncHandler, authenticate, requireRole } from "../lib/index.js";
 import {
@@ -10,6 +11,7 @@ import {
 } from "../lib/google-calendar-queries.js";
 import { syncGoogleCalendarOnce } from "../lib/google-calendar.js";
 import { formatDateOnly, parseDateOnly } from "../lib/time.js";
+import { loadSettings } from "../db.js";
 
 type QueryValue = string | ParsedQs | (string | ParsedQs)[] | undefined;
 
@@ -56,39 +58,40 @@ function coerceMaxDays(value: QueryValue): number | undefined {
   return parsed;
 }
 
-function buildFilters(query: ParsedQs): { filters: CalendarEventFilters; applied: Required<Pick<CalendarEventFilters, "from" | "to">> & {
-  calendarIds: string[];
-  eventTypes: string[];
-  search?: string;
-}; } {
-  let from = normalizeDate(query.from);
-  let to = normalizeDate(query.to);
+async function buildFilters(query: ParsedQs) {
+  const settings = await loadSettings();
+  const defaults = defaultDateRange();
 
-  if (!from && to) {
-    from = to;
-  }
-  if (!to && from) {
+  const baseStart = settings.calendarSyncStart?.trim() || defaults.from;
+  const lookaheadRaw = Number(settings.calendarSyncLookaheadDays ?? "365");
+  const lookaheadDays = Number.isFinite(lookaheadRaw) && lookaheadRaw > 0 ? Math.min(Math.floor(lookaheadRaw), 1095) : 365;
+  const defaultEnd = dayjs().add(lookaheadDays, "day").format("YYYY-MM-DD");
+
+  let from = normalizeDate(query.from) ?? baseStart;
+  let to = normalizeDate(query.to) ?? defaultEnd;
+
+  if (dayjs(from).isAfter(dayjs(to))) {
     to = from;
-  }
-
-  if (!from || !to) {
-    const defaults = defaultDateRange();
-    from = defaults.from;
-    to = defaults.to;
   }
 
   const calendarIds = ensureArray(query.calendarId) ?? [];
   const eventTypes = ensureArray(query.eventType) ?? [];
   const search = normalizeSearch(query.search);
 
+  const defaultMaxDays = Number(settings.calendarDailyMaxDays ?? "31");
+  const maxDaysInput = coerceMaxDays(query.maxDays);
+  const maxDays = maxDaysInput ?? (Number.isFinite(defaultMaxDays) && defaultMaxDays > 0 ? Math.min(Math.floor(defaultMaxDays), 120) : 31);
+
+  const filters: CalendarEventFilters = {
+    from,
+    to,
+    calendarIds: calendarIds.length ? calendarIds : undefined,
+    eventTypes: eventTypes.length ? eventTypes : undefined,
+    search,
+  };
+
   return {
-    filters: {
-      from,
-      to,
-      calendarIds: calendarIds.length ? calendarIds : undefined,
-      eventTypes: eventTypes.length ? eventTypes : undefined,
-      search,
-    },
+    filters,
     applied: {
       from,
       to,
@@ -96,6 +99,7 @@ function buildFilters(query: ParsedQs): { filters: CalendarEventFilters; applied
       eventTypes,
       search,
     },
+    maxDays,
   };
 }
 
@@ -105,7 +109,7 @@ export function registerCalendarEventRoutes(app: express.Express) {
     authenticate,
     requireRole("VIEWER", "ANALYST", "ADMIN", "GOD"),
     asyncHandler(async (req, res) => {
-      const { filters, applied } = buildFilters(req.query);
+      const { filters, applied } = await buildFilters(req.query);
       const aggregates = await getCalendarAggregates(filters);
       res.json({
         status: "ok",
@@ -122,14 +126,13 @@ export function registerCalendarEventRoutes(app: express.Express) {
     authenticate,
     requireRole("VIEWER", "ANALYST", "ADMIN", "GOD"),
     asyncHandler(async (req, res) => {
-      const { filters, applied } = buildFilters(req.query);
-      const maxDays = coerceMaxDays(req.query.maxDays);
+      const { filters, applied, maxDays } = await buildFilters(req.query);
       const events = await getCalendarEventsByDate(filters, { maxDays });
       res.json({
         status: "ok",
         filters: {
           ...applied,
-          maxDays: maxDays ?? 31,
+          maxDays,
         },
         totals: events.totals,
         days: events.days,
@@ -150,6 +153,7 @@ export function registerCalendarEventRoutes(app: express.Express) {
         inserted: result.upsertResult.inserted,
         updated: result.upsertResult.updated,
         skipped: result.upsertResult.skipped,
+        excluded: result.payload.excludedEvents.length,
       });
     })
   );

@@ -11,6 +11,7 @@ type CalendarSyncResponse = {
   inserted: number;
   updated: number;
   skipped: number;
+  excluded: number;
 };
 
 function buildQuery(filters: CalendarFilters, options?: { includeMaxDays?: boolean }) {

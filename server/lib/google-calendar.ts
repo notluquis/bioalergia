@@ -3,9 +3,10 @@ import path from "path";
 import { google, calendar_v3 } from "googleapis";
 import dayjs from "dayjs";
 
-import { googleCalendarConfig } from "../config.js";
+import { googleCalendarConfig, compileExcludePatterns } from "../config.js";
 import { logEvent, logWarn } from "./logger.js";
 import { upsertGoogleCalendarEvents, removeGoogleCalendarEvents } from "./google-calendar-store.js";
+import { loadSettings } from "../db.js";
 
 const CALENDAR_SCOPES = ["https://www.googleapis.com/auth/calendar.readonly"];
 const STORAGE_ROOT = path.resolve(process.cwd(), "storage", "google-calendar");
@@ -30,6 +31,13 @@ export type CalendarEventRecord = {
   hangoutLink?: string | null;
 };
 
+type CalendarRuntimeConfig = {
+  timeZone: string;
+  syncStartDate: string;
+  syncLookAheadDays: number;
+  excludeSummaryPatterns: RegExp[];
+};
+
 export type GoogleCalendarSyncPayload = {
   fetchedAt: string;
   timeMin: string;
@@ -42,10 +50,9 @@ export type GoogleCalendarSyncPayload = {
 
 let cachedClient: CalendarClient | null = null;
 
-function isEventExcluded(item: calendar_v3.Schema$Event): boolean {
-  if (!googleCalendarConfig) return false;
+function isEventExcluded(item: calendar_v3.Schema$Event, patterns: RegExp[]): boolean {
   const text = `${item.summary ?? ""}\n${item.description ?? ""}`.toLowerCase();
-  return googleCalendarConfig.excludeSummaryPatterns.some((regex) => regex.test(text));
+  return patterns.some((regex) => regex.test(text));
 }
 
 async function ensureStorageDir() {
@@ -78,26 +85,54 @@ type FetchRange = {
   timeZone: string;
 };
 
-function buildFetchRange(): FetchRange {
+async function getRuntimeCalendarConfig(): Promise<CalendarRuntimeConfig> {
   if (!googleCalendarConfig) {
     throw new Error("Google Calendar config not available. Check environment variables.");
   }
 
-  const startDate = dayjs(googleCalendarConfig.syncStartDate);
+  try {
+    const settings = await loadSettings();
+    const timeZone = settings.calendarTimeZone?.trim() || googleCalendarConfig.timeZone;
+    const syncStart = settings.calendarSyncStart?.trim() || googleCalendarConfig.syncStartDate;
+    const lookAheadRaw = Number(settings.calendarSyncLookaheadDays ?? googleCalendarConfig.syncLookAheadDays);
+    const syncLookAheadDays = Number.isFinite(lookAheadRaw) && lookAheadRaw > 0
+      ? Math.min(Math.floor(lookAheadRaw), 1095)
+      : googleCalendarConfig.syncLookAheadDays;
+    const excludeSetting = (settings.calendarExcludeSummaries ?? "")
+      .split(",")
+      .map((value) => value.trim())
+      .filter(Boolean);
+    const sources = Array.from(new Set([...googleCalendarConfig.excludeSummarySources, ...excludeSetting]));
+    const excludeSummaryPatterns = compileExcludePatterns(sources);
+    return { timeZone, syncStartDate: syncStart, syncLookAheadDays, excludeSummaryPatterns };
+  } catch {
+    const excludeSummaryPatterns = compileExcludePatterns(googleCalendarConfig.excludeSummarySources);
+    return {
+      timeZone: googleCalendarConfig.timeZone,
+      syncStartDate: googleCalendarConfig.syncStartDate,
+      syncLookAheadDays: googleCalendarConfig.syncLookAheadDays,
+      excludeSummaryPatterns,
+    };
+  }
+}
+
+function buildFetchRange(runtime: CalendarRuntimeConfig): FetchRange {
+  const startDate = dayjs(runtime.syncStartDate);
   const effectiveStart = startDate.isValid() ? startDate.startOf("day") : dayjs("2000-01-01").startOf("day");
-  const endDate = dayjs().add(googleCalendarConfig.syncLookAheadDays, "day").add(1, "day").startOf("day");
+  const endDate = dayjs().add(runtime.syncLookAheadDays, "day").add(1, "day").startOf("day");
 
   return {
     timeMin: effectiveStart.toISOString(),
     timeMax: endDate.toISOString(),
-    timeZone: googleCalendarConfig.timeZone,
+    timeZone: runtime.timeZone,
   };
 }
 
 async function fetchCalendarEventsForId(
   client: CalendarClient,
   calendarId: string,
-  range: FetchRange
+  range: FetchRange,
+  patterns: RegExp[]
 ): Promise<{ events: CalendarEventRecord[]; excluded: Array<{ calendarId: string; eventId: string }> }> {
   const events: CalendarEventRecord[] = [];
   const excluded: Array<{ calendarId: string; eventId: string }> = [];
@@ -122,7 +157,7 @@ async function fetchCalendarEventsForId(
         continue;
       }
 
-      if (isEventExcluded(item)) {
+      if (isEventExcluded(item, patterns)) {
         excluded.push({ calendarId, eventId: item.id });
         continue;
       }
@@ -158,7 +193,8 @@ export async function fetchGoogleCalendarData(): Promise<GoogleCalendarSyncPaylo
   }
 
   const client = await getCalendarClient();
-  const range = buildFetchRange();
+  const runtime = await getRuntimeCalendarConfig();
+  const range = buildFetchRange(runtime);
 
   const events: CalendarEventRecord[] = [];
   const calendarsSummary: Array<{ calendarId: string; totalEvents: number }> = [];
@@ -167,7 +203,7 @@ export async function fetchGoogleCalendarData(): Promise<GoogleCalendarSyncPaylo
   for (const calendarId of googleCalendarConfig.calendarIds) {
     try {
       logEvent("googleCalendar.fetch.start", { calendarId, timeMin: range.timeMin, timeMax: range.timeMax });
-      const result = await fetchCalendarEventsForId(client, calendarId, range);
+      const result = await fetchCalendarEventsForId(client, calendarId, range, runtime.excludeSummaryPatterns);
       events.push(...result.events);
       excludedEvents.push(...result.excluded);
       calendarsSummary.push({ calendarId, totalEvents: result.events.length });
@@ -188,7 +224,7 @@ export async function fetchGoogleCalendarData(): Promise<GoogleCalendarSyncPaylo
     fetchedAt: new Date().toISOString(),
     timeMin: range.timeMin,
     timeMax: range.timeMax,
-    timeZone: range.timeZone,
+    timeZone: runtime.timeZone,
     calendars: calendarsSummary,
     events,
     excludedEvents,

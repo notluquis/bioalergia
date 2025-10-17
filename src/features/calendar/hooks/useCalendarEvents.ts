@@ -3,21 +3,7 @@ import dayjs from "dayjs";
 
 import { fetchCalendarDaily, fetchCalendarSummary, syncCalendarEvents } from "../api";
 import type { CalendarDaily, CalendarFilters, CalendarSummary } from "../types";
-
-const DEFAULT_MAX_DAYS = 31;
-
-function createDefaultFilters(): CalendarFilters {
-  const today = dayjs().startOf("day");
-  const from = today.subtract(30, "day");
-  return {
-    from: from.format("YYYY-MM-DD"),
-    to: today.format("YYYY-MM-DD"),
-    calendarIds: [],
-    eventTypes: [],
-    search: "",
-    maxDays: DEFAULT_MAX_DAYS,
-  };
-}
+import { useSettings } from "../../../context/settings-context";
 
 function normalizeFilters(filters: CalendarFilters): CalendarFilters {
   const unique = (values: string[]) => Array.from(new Set(values)).sort();
@@ -49,9 +35,31 @@ function filtersEqual(a: CalendarFilters, b: CalendarFilters) {
 }
 
 export function useCalendarEvents() {
-  const defaultFiltersRef = useRef<CalendarFilters>(createDefaultFilters());
-  const [filters, setFilters] = useState<CalendarFilters>(() => ({ ...defaultFiltersRef.current }));
-  const [appliedFilters, setAppliedFilters] = useState<CalendarFilters>(() => ({ ...defaultFiltersRef.current }));
+  const { settings } = useSettings();
+
+  const computeDefaults = useCallback((): CalendarFilters => {
+    const syncStart = settings.calendarSyncStart?.trim() || "2000-01-01";
+    const lookaheadRaw = Number(settings.calendarSyncLookaheadDays ?? "365");
+    const lookahead = Number.isFinite(lookaheadRaw) && lookaheadRaw > 0 ? Math.min(Math.floor(lookaheadRaw), 1095) : 365;
+    const defaultMax = Number(settings.calendarDailyMaxDays ?? "31");
+    const maxDays = Number.isFinite(defaultMax) && defaultMax > 0 ? Math.min(Math.floor(defaultMax), 120) : 31;
+    const startDate = dayjs(syncStart);
+    const from = startDate.isValid() ? startDate : dayjs("2000-01-01");
+    const to = dayjs().add(lookahead, "day");
+    return {
+      from: from.format("YYYY-MM-DD"),
+      to: to.format("YYYY-MM-DD"),
+      calendarIds: [],
+      eventTypes: [],
+      search: "",
+      maxDays,
+    };
+  }, [settings]);
+
+  const initialDefaults = useMemo(() => computeDefaults(), [computeDefaults]);
+  const defaultFiltersRef = useRef<CalendarFilters>(initialDefaults);
+  const [filters, setFilters] = useState<CalendarFilters>(initialDefaults);
+  const [appliedFilters, setAppliedFilters] = useState<CalendarFilters>(initialDefaults);
   const [summary, setSummary] = useState<CalendarSummary | null>(null);
   const [daily, setDaily] = useState<CalendarDaily | null>(null);
   const [loading, setLoading] = useState(false);
@@ -63,6 +71,7 @@ export function useCalendarEvents() {
     inserted: number;
     updated: number;
     skipped: number;
+    excluded: number;
   } | null>(null);
 
   const fetchData = useCallback(async (nextFilters: CalendarFilters) => {
@@ -88,10 +97,14 @@ export function useCalendarEvents() {
   }, []);
 
   useEffect(() => {
-    fetchData(defaultFiltersRef.current).catch(() => {
-      // El error se maneja en el estado interno; evitamos logs duplicados.
+    const defaults = computeDefaults();
+    defaultFiltersRef.current = defaults;
+    setFilters(defaults);
+    setAppliedFilters(defaults);
+    fetchData(defaults).catch(() => {
+      /* handled */
     });
-  }, [fetchData]);
+  }, [computeDefaults, fetchData]);
 
   const updateFilters = useCallback(<K extends keyof CalendarFilters>(key: K, value: CalendarFilters[K]) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
@@ -104,12 +117,12 @@ export function useCalendarEvents() {
   }, [fetchData, filters]);
 
   const resetFilters = useCallback(async () => {
-    const defaults = createDefaultFilters();
+    const defaults = defaultFiltersRef.current ?? computeDefaults();
     setFilters(defaults);
     await fetchData(defaults).catch(() => {
       /* handled */
     });
-  }, [fetchData]);
+  }, [fetchData, computeDefaults]);
 
   const isDirty = useMemo(() => !filtersEqual(filters, appliedFilters), [filters, appliedFilters]);
 
@@ -126,6 +139,7 @@ export function useCalendarEvents() {
         inserted: result.inserted,
         updated: result.updated,
         skipped: result.skipped,
+        excluded: result.excluded,
       });
       await fetchData(filters).catch(() => {
         /* handled */
