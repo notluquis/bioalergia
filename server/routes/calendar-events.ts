@@ -6,8 +6,16 @@ import { asyncHandler, authenticate, requireRole } from "../lib/index.js";
 import { getCalendarAggregates, getCalendarEventsByDate, type CalendarEventFilters } from "../lib/google-calendar-queries.js";
 import { syncGoogleCalendarOnce } from "../lib/google-calendar.js";
 import { formatDateOnly, parseDateOnly } from "../lib/time.js";
-import { loadSettings, createCalendarSyncLogEntry, finalizeCalendarSyncLogEntry, listCalendarSyncLogs } from "../db.js";
+import {
+  loadSettings,
+  createCalendarSyncLogEntry,
+  finalizeCalendarSyncLogEntry,
+  listCalendarSyncLogs,
+  listUnclassifiedCalendarEvents,
+  updateCalendarEventClassification,
+} from "../db.js";
 import { googleCalendarConfig } from "../config.js";
+import { z } from "zod";
 
 type QueryValue = string | ParsedQs | (string | ParsedQs)[] | undefined;
 
@@ -72,6 +80,7 @@ async function buildFilters(query: ParsedQs) {
 
   const calendarIds = ensureArray(query.calendarId) ?? [];
   const eventTypes = ensureArray(query.eventType) ?? [];
+  const categories = ensureArray(query.category) ?? [];
   const search = normalizeSearch(query.search);
 
   const defaultMaxDays = Number(settings.calendarDailyMaxDays ?? "31");
@@ -83,6 +92,7 @@ async function buildFilters(query: ParsedQs) {
     to,
     calendarIds: calendarIds.length ? calendarIds : undefined,
     eventTypes: eventTypes.length ? eventTypes : undefined,
+    categories: categories.length ? categories : undefined,
     search,
   };
 
@@ -93,6 +103,7 @@ async function buildFilters(query: ParsedQs) {
       to,
       calendarIds,
       eventTypes,
+      categories,
       search,
     },
     maxDays,
@@ -202,6 +213,107 @@ export function registerCalendarEventRoutes(app: express.Express) {
           errorMessage: log.error_message ? String(log.error_message) : null,
         })),
       });
+    })
+  );
+
+  app.get(
+    "/api/calendar/events/unclassified",
+    authenticate,
+    requireRole("ANALYST", "ADMIN", "GOD"),
+    asyncHandler(async (req, res) => {
+      const limitParam = Array.isArray(req.query.limit) ? req.query.limit[0] : req.query.limit;
+      const limitRaw = limitParam ? Number.parseInt(String(limitParam), 10) : 50;
+      const limit = Number.isFinite(limitRaw) ? Math.min(Math.max(limitRaw, 1), 200) : 50;
+      const rows = await listUnclassifiedCalendarEvents(limit);
+      res.json({
+        status: "ok",
+        events: rows.map((row) => ({
+          calendarId: String(row.calendar_id),
+          eventId: String(row.event_id),
+          status: row.event_status ? String(row.event_status) : null,
+          eventType: row.event_type ? String(row.event_type) : null,
+          summary: row.summary != null ? String(row.summary) : null,
+          description: row.description != null ? String(row.description) : null,
+          startDate: row.start_date != null ? String(row.start_date) : null,
+          startDateTime: row.start_date_time != null ? String(row.start_date_time) : null,
+          endDate: row.end_date != null ? String(row.end_date) : null,
+          endDateTime: row.end_date_time != null ? String(row.end_date_time) : null,
+          category: row.category != null && row.category !== "" ? String(row.category) : null,
+          amountExpected: row.amount_expected != null ? Number(row.amount_expected) : null,
+          amountPaid: row.amount_paid != null ? Number(row.amount_paid) : null,
+          attended: row.attended == null ? null : row.attended === 1,
+        })),
+      });
+    })
+  );
+
+  const amountSchema = z
+    .union([z.number(), z.string(), z.null()])
+    .transform((value) => {
+      if (value == null) return null;
+      if (typeof value === "number") {
+        if (!Number.isFinite(value)) return Number.NaN;
+        return Math.trunc(value);
+      }
+      const trimmed = value.trim();
+      if (!trimmed) return null;
+      const parsed = Number.parseInt(trimmed, 10);
+      if (Number.isNaN(parsed)) {
+        return Number.NaN;
+      }
+      return parsed;
+    })
+    .refine((value) => value == null || (Number.isInteger(value) && value >= 0 && value <= 100_000_000), {
+      message: "Monto inválido",
+    })
+    .optional();
+
+  const updateClassificationSchema = z.object({
+    calendarId: z.string().min(1).max(200),
+    eventId: z.string().min(1).max(200),
+    category: z
+      .string()
+      .trim()
+      .min(1)
+      .max(120)
+      .or(z.literal(""))
+      .nullable()
+      .optional()
+      .transform((value) => {
+        if (value == null) return null;
+        const trimmed = value.trim();
+        return trimmed.length ? trimmed : null;
+      }),
+    amountExpected: amountSchema,
+    amountPaid: amountSchema,
+    attended: z.boolean().nullable().optional(),
+  });
+
+  app.post(
+    "/api/calendar/events/classify",
+    authenticate,
+    requireRole("ANALYST", "ADMIN", "GOD"),
+    asyncHandler(async (req, res) => {
+      const parsed = updateClassificationSchema.safeParse(req.body);
+      if (!parsed.success) {
+        res.status(400).json({
+          status: "error",
+          error: "Payload inválido",
+          details: parsed.error.flatten(),
+        });
+        return;
+      }
+
+      const payload = parsed.data;
+
+      await updateCalendarEventClassification(payload.calendarId, payload.eventId, {
+        category: payload.category ?? null,
+        amountExpected: payload.amountExpected ?? null,
+        amountPaid: payload.amountPaid ?? null,
+        attended: payload.attended ?? null,
+      });
+
+      res.json({ status: "ok" });
     })
   );
 }

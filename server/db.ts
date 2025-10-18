@@ -522,12 +522,21 @@ export async function ensureSchema() {
       transparency VARCHAR(32) NULL,
       visibility VARCHAR(32) NULL,
       hangout_link VARCHAR(512) NULL,
+      category VARCHAR(64) NULL,
+      amount_expected INT NULL,
+      amount_paid INT NULL,
+      attended TINYINT(1) NULL,
       raw_event JSON NULL,
       last_synced_at DATETIME NOT NULL,
       PRIMARY KEY (calendar_id, event_id),
       INDEX idx_google_calendar_events_updated (event_updated_at)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
   `);
+
+  await addColumnIfMissing(pool, "google_calendar_events", "`category` VARCHAR(64) NULL AFTER `hangout_link`");
+  await addColumnIfMissing(pool, "google_calendar_events", "`amount_expected` INT NULL AFTER `category`");
+  await addColumnIfMissing(pool, "google_calendar_events", "`amount_paid` INT NULL AFTER `amount_expected`");
+  await addColumnIfMissing(pool, "google_calendar_events", "`attended` TINYINT(1) NULL AFTER `amount_paid`");
 
   await pool.execute(`
     CREATE TABLE IF NOT EXISTS google_calendar_sync_log (
@@ -2995,6 +3004,67 @@ export async function listCalendarSyncLogs(limit = 20): Promise<CalendarSyncLogR
     [limit]
   );
   return rows as CalendarSyncLogRecord[];
+}
+
+export type CalendarEventRow = {
+  calendar_id: string;
+  event_id: string;
+  event_status: string | null;
+  event_type: string | null;
+  summary: string | null;
+  description: string | null;
+  start_date: string | null;
+  start_date_time: string | null;
+  end_date: string | null;
+  end_date_time: string | null;
+  category: string | null;
+  amount_expected: number | null;
+  amount_paid: number | null;
+  attended: number | null;
+};
+
+export async function listUnclassifiedCalendarEvents(limit = 50): Promise<CalendarEventRow[]> {
+  const pool = getPool();
+  const [rows] = await pool.query<RowDataPacket[]>(
+    `SELECT calendar_id, event_id, event_status, event_type, summary, description,
+            start_date, start_date_time, end_date, end_date_time,
+            category, amount_expected, amount_paid, attended
+       FROM google_calendar_events
+      WHERE (category IS NULL OR category = '')
+      ORDER BY event_date DESC, start_date_time DESC
+      LIMIT ?`,
+    [limit]
+  );
+  return rows as CalendarEventRow[];
+}
+
+export async function updateCalendarEventClassification(
+  calendarId: string,
+  eventId: string,
+  data: {
+    category?: string | null;
+    amountExpected?: number | null;
+    amountPaid?: number | null;
+    attended?: boolean | null;
+  }
+) {
+  const pool = getPool();
+  await pool.query(
+    `UPDATE google_calendar_events
+        SET category = ?,
+            amount_expected = ?,
+            amount_paid = ?,
+            attended = ?
+      WHERE calendar_id = ? AND event_id = ?`,
+    [
+      data.category ?? null,
+      data.amountExpected ?? null,
+      data.amountPaid ?? null,
+      data.attended == null ? null : data.attended ? 1 : 0,
+      calendarId,
+      eventId,
+    ]
+  );
 }
 
 export async function upsertWithdrawals(payouts: PayoutRecord[]) {

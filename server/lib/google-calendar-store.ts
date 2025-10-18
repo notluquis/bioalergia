@@ -108,6 +108,10 @@ export async function upsertGoogleCalendarEvents(
       transparency,
       visibility,
       hangout_link,
+      category,
+      amount_expected,
+      amount_paid,
+      attended,
       raw_event,
       last_synced_at
     ) VALUES ?
@@ -129,6 +133,10 @@ export async function upsertGoogleCalendarEvents(
       transparency = VALUES(transparency),
       visibility = VALUES(visibility),
       hangout_link = VALUES(hangout_link),
+      category = VALUES(category),
+      amount_expected = VALUES(amount_expected),
+      amount_paid = VALUES(amount_paid),
+      attended = VALUES(attended),
       raw_event = VALUES(raw_event),
       last_synced_at = VALUES(last_synced_at)
   `;
@@ -201,6 +209,10 @@ export async function upsertGoogleCalendarEvents(
           event.transparency ?? null,
           event.visibility ?? null,
           hangoutLink,
+          event.category ?? null,
+          event.amountExpected ?? null,
+          event.amountPaid ?? null,
+          event.attended == null ? null : event.attended ? 1 : 0,
           JSON.stringify(event),
           nowDb,
         ]);

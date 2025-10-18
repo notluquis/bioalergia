@@ -12,6 +12,10 @@ const BASE_EVENTS_SELECT = `
     event_type,
     summary,
     description,
+    category,
+    amount_expected,
+    amount_paid,
+    attended,
     start_date,
     start_date_time,
     start_time_zone,
@@ -33,33 +37,38 @@ const BASE_EVENTS_SELECT = `
 `;
 
 const NULL_EVENT_TYPE_TOKEN = "__NULL__";
+const NULL_CATEGORY_TOKEN = "__NULL_CATEGORY__";
 
 export type CalendarEventFilters = {
   from?: string;
   to?: string;
   calendarIds?: string[];
   eventTypes?: string[];
+  categories?: string[];
   search?: string;
   dates?: string[];
 };
 
 export type CalendarAggregates = {
-  byYear: Array<{ year: number; total: number }>;
-  byMonth: Array<{ year: number; month: number; total: number }>;
-  byWeek: Array<{ isoYear: number; isoWeek: number; total: number }>;
-  byWeekday: Array<{ weekday: number; total: number }>;
-  byDate: Array<{ date: string; total: number }>;
+  byYear: Array<{ year: number; total: number; amountExpected: number; amountPaid: number }>;
+  byMonth: Array<{ year: number; month: number; total: number; amountExpected: number; amountPaid: number }>;
+  byWeek: Array<{ isoYear: number; isoWeek: number; total: number; amountExpected: number; amountPaid: number }>;
+  byWeekday: Array<{ weekday: number; total: number; amountExpected: number; amountPaid: number }>;
+  byDate: Array<{ date: string; total: number; amountExpected: number; amountPaid: number }>;
 };
 
 export type CalendarAvailableFilters = {
   calendars: Array<{ calendarId: string; total: number }>;
   eventTypes: Array<{ eventType: string | null; total: number }>;
+  categories: Array<{ category: string | null; total: number }>;
 };
 
 export type CalendarAggregateResult = {
   totals: {
     events: number;
     days: number;
+    amountExpected: number;
+    amountPaid: number;
   };
   aggregates: CalendarAggregates;
   available: CalendarAvailableFilters;
@@ -70,6 +79,7 @@ export type CalendarEventDetail = {
   eventId: string;
   status: string | null;
   eventType: string | null;
+  category: string | null;
   summary: string | null;
   description: string | null;
   startDate: string | null;
@@ -88,12 +98,17 @@ export type CalendarEventDetail = {
   eventCreatedAt: string | null;
   eventUpdatedAt: string | null;
   rawEvent: unknown | null;
+  amountExpected?: number | null;
+  amountPaid?: number | null;
+  attended?: boolean | null;
 };
 
 export type CalendarEventsByDate = {
   date: string;
   total: number;
   events: CalendarEventDetail[];
+  amountExpected: number;
+  amountPaid: number;
 };
 
 export type CalendarEventsByDateResult = {
@@ -101,6 +116,8 @@ export type CalendarEventsByDateResult = {
   totals: {
     days: number;
     events: number;
+    amountExpected: number;
+    amountPaid: number;
   };
 };
 
@@ -150,6 +167,26 @@ function buildFilterClause(filters: CalendarEventFilters) {
     params.push(pattern, pattern);
   }
 
+  if (filters.categories?.length) {
+    const includeNullCategory = filters.categories.includes(NULL_CATEGORY_TOKEN);
+    const explicitCategories = filters.categories.filter((category) => category !== NULL_CATEGORY_TOKEN);
+    const categoryClauses: string[] = [];
+
+    if (explicitCategories.length) {
+      const placeholders = explicitCategories.map(() => "?").join(", ");
+      categoryClauses.push(`events.category IN (${placeholders})`);
+      params.push(...explicitCategories);
+    }
+
+    if (includeNullCategory) {
+      categoryClauses.push("(events.category IS NULL OR events.category = '')");
+    }
+
+    if (categoryClauses.length) {
+      conditions.push(`(${categoryClauses.join(" OR ")})`);
+    }
+  }
+
   if (filters.dates?.length) {
     const placeholders = filters.dates.map(() => "?").join(", ");
     conditions.push(`events.event_date IN (${placeholders})`);
@@ -166,7 +203,9 @@ export async function getCalendarAggregates(filters: CalendarEventFilters): Prom
   const { whereClause, params } = buildFilterClause(filters);
 
   const [yearRows] = await pool.query<RowDataPacket[]>(
-    `SELECT YEAR(events.event_datetime) AS year, COUNT(*) AS total
+    `SELECT YEAR(events.event_datetime) AS year, COUNT(*) AS total,
+            SUM(events.amount_expected) AS amountExpected,
+            SUM(events.amount_paid) AS amountPaid
      FROM (${BASE_EVENTS_SELECT}) AS events
      ${whereClause}
      GROUP BY YEAR(events.event_datetime)
@@ -175,7 +214,9 @@ export async function getCalendarAggregates(filters: CalendarEventFilters): Prom
   );
 
   const [monthRows] = await pool.query<RowDataPacket[]>(
-    `SELECT YEAR(events.event_datetime) AS year, MONTH(events.event_datetime) AS month, COUNT(*) AS total
+    `SELECT YEAR(events.event_datetime) AS year, MONTH(events.event_datetime) AS month, COUNT(*) AS total,
+            SUM(events.amount_expected) AS amountExpected,
+            SUM(events.amount_paid) AS amountPaid
      FROM (${BASE_EVENTS_SELECT}) AS events
      ${whereClause}
      GROUP BY YEAR(events.event_datetime), MONTH(events.event_datetime)
@@ -187,7 +228,9 @@ export async function getCalendarAggregates(filters: CalendarEventFilters): Prom
     `SELECT
         CAST(DATE_FORMAT(events.event_datetime, '%x') AS UNSIGNED) AS isoYear,
         CAST(DATE_FORMAT(events.event_datetime, '%v') AS UNSIGNED) AS isoWeek,
-        COUNT(*) AS total
+        COUNT(*) AS total,
+        SUM(events.amount_expected) AS amountExpected,
+        SUM(events.amount_paid) AS amountPaid
      FROM (${BASE_EVENTS_SELECT}) AS events
      ${whereClause}
      GROUP BY isoYear, isoWeek
@@ -196,7 +239,9 @@ export async function getCalendarAggregates(filters: CalendarEventFilters): Prom
   );
 
   const [weekdayRows] = await pool.query<RowDataPacket[]>(
-    `SELECT WEEKDAY(events.event_datetime) AS weekday, COUNT(*) AS total
+    `SELECT WEEKDAY(events.event_datetime) AS weekday, COUNT(*) AS total,
+            SUM(events.amount_expected) AS amountExpected,
+            SUM(events.amount_paid) AS amountPaid
      FROM (${BASE_EVENTS_SELECT}) AS events
      ${whereClause}
      GROUP BY WEEKDAY(events.event_datetime)
@@ -205,7 +250,9 @@ export async function getCalendarAggregates(filters: CalendarEventFilters): Prom
   );
 
   const [dateRows] = await pool.query<RowDataPacket[]>(
-    `SELECT events.event_date AS date, COUNT(*) AS total
+    `SELECT events.event_date AS date, COUNT(*) AS total,
+            SUM(events.amount_expected) AS amountExpected,
+            SUM(events.amount_paid) AS amountPaid
      FROM (${BASE_EVENTS_SELECT}) AS events
      ${whereClause}
      GROUP BY events.event_date
@@ -214,7 +261,9 @@ export async function getCalendarAggregates(filters: CalendarEventFilters): Prom
   );
 
   const [totalRows] = await pool.query<RowDataPacket[]>(
-    `SELECT COUNT(*) AS total
+    `SELECT COUNT(*) AS total,
+            SUM(events.amount_expected) AS total_expected,
+            SUM(events.amount_paid) AS total_paid
      FROM (${BASE_EVENTS_SELECT}) AS events
      ${whereClause}`,
     [...params]
@@ -240,30 +289,58 @@ export async function getCalendarAggregates(filters: CalendarEventFilters): Prom
     [...params]
   );
 
+  const [categoryRows] = await pool.query<RowDataPacket[]>(
+    `SELECT
+        CASE WHEN events.category IS NULL OR events.category = '' THEN NULL ELSE events.category END AS category,
+        COUNT(*) AS total
+     FROM (${BASE_EVENTS_SELECT}) AS events
+     ${whereClause}
+     GROUP BY CASE WHEN events.category IS NULL OR events.category = '' THEN NULL ELSE events.category END
+     ORDER BY category IS NULL, category`,
+    [...params]
+  );
+
   return {
     totals: {
       events: totalEvents,
       days: dateRows.length,
+      amountExpected: Number(totalRows[0]?.total_expected ?? 0),
+      amountPaid: Number(totalRows[0]?.total_paid ?? 0),
     },
     aggregates: {
-      byYear: yearRows.map((row) => ({ year: Number(row.year), total: Number(row.total) })),
+      byYear: yearRows.map((row) => ({
+        year: Number(row.year),
+        total: Number(row.total),
+        amountExpected: Number(row.amountExpected ?? 0),
+        amountPaid: Number(row.amountPaid ?? 0),
+      })),
       byMonth: monthRows.map((row) => ({
         year: Number(row.year),
         month: Number(row.month),
         total: Number(row.total),
+        amountExpected: Number(row.amountExpected ?? 0),
+        amountPaid: Number(row.amountPaid ?? 0),
       })),
       byWeek: weekRows.map((row) => ({
         isoYear: Number(row.isoYear),
         isoWeek: Number(row.isoWeek),
         total: Number(row.total),
+        amountExpected: Number(row.amountExpected ?? 0),
+        amountPaid: Number(row.amountPaid ?? 0),
       })),
-      byWeekday: weekdayRows.map((row) => ({
-        weekday: Number(row.weekday),
-        total: Number(row.total),
-      })),
+      byWeekday: weekdayRows
+        .filter((row) => Number(row.weekday) <= 5)
+        .map((row) => ({
+          weekday: Number(row.weekday),
+          total: Number(row.total),
+          amountExpected: Number(row.amountExpected ?? 0),
+          amountPaid: Number(row.amountPaid ?? 0),
+        })),
       byDate: dateRows.map((row) => ({
         date: String(row.date),
         total: Number(row.total),
+        amountExpected: Number(row.amountExpected ?? 0),
+        amountPaid: Number(row.amountPaid ?? 0),
       })),
     },
     available: {
@@ -273,6 +350,10 @@ export async function getCalendarAggregates(filters: CalendarEventFilters): Prom
       })),
       eventTypes: eventTypeRows.map((row) => ({
         eventType: row.eventType != null ? String(row.eventType) : null,
+        total: Number(row.total),
+      })),
+      categories: categoryRows.map((row) => ({
+        category: row.category != null ? String(row.category) : null,
         total: Number(row.total),
       })),
     },
@@ -289,7 +370,9 @@ export async function getCalendarEventsByDate(
   const { whereClause, params } = buildFilterClause(filters);
 
   const [dateRows] = await pool.query<RowDataPacket[]>(
-    `SELECT events.event_date AS date, COUNT(*) AS total
+    `SELECT events.event_date AS date, COUNT(*) AS total,
+            SUM(events.amount_expected) AS amountExpected,
+            SUM(events.amount_paid) AS amountPaid
      FROM (${BASE_EVENTS_SELECT}) AS events
      ${whereClause}
      GROUP BY events.event_date
@@ -304,6 +387,8 @@ export async function getCalendarEventsByDate(
       totals: {
         days: 0,
         events: 0,
+        amountExpected: 0,
+        amountPaid: 0,
       },
     };
   }
@@ -321,6 +406,10 @@ export async function getCalendarEventsByDate(
         events.event_id,
         events.event_status,
         events.event_type,
+        events.category,
+        events.amount_expected,
+        events.amount_paid,
+        events.attended,
         events.summary,
         events.description,
         events.start_date,
@@ -371,6 +460,7 @@ export async function getCalendarEventsByDate(
       eventId: String(row.event_id),
       status: row.event_status ? String(row.event_status) : null,
       eventType: row.event_type ? String(row.event_type) : null,
+      category: row.category ? String(row.category) : null,
       summary: row.summary != null ? String(row.summary) : null,
       description: row.description != null ? String(row.description) : null,
       startDate: row.start_date != null ? String(row.start_date) : null,
@@ -389,11 +479,23 @@ export async function getCalendarEventsByDate(
       eventCreatedAt: row.event_created_at != null ? String(row.event_created_at) : null,
       eventUpdatedAt: row.event_updated_at != null ? String(row.event_updated_at) : null,
       rawEvent: parsedRaw,
+      amountExpected: row.amount_expected != null ? Number(row.amount_expected) : null,
+      amountPaid: row.amount_paid != null ? Number(row.amount_paid) : null,
+      attended: row.attended != null ? row.attended === 1 : null,
     });
   }
 
   const days: CalendarEventsByDate[] = [];
   let totalEvents = 0;
+  let totalAmountExpected = 0;
+  let totalAmountPaid = 0;
+  const dateAggregateMap = new Map<string, { amountExpected: number; amountPaid: number }>();
+  for (const row of dateRows) {
+    dateAggregateMap.set(String(row.date), {
+      amountExpected: Number(row.amountExpected ?? 0),
+      amountPaid: Number(row.amountPaid ?? 0),
+    });
+  }
 
   const sortedDates = Array.from(grouped.keys()).sort((a, b) => (a < b ? 1 : a > b ? -1 : 0));
 
@@ -410,10 +512,18 @@ export async function getCalendarEventsByDate(
       return a.eventDateTime < b.eventDateTime ? -1 : 1;
     });
 
+    const aggregates = dateAggregateMap.get(date) ?? { amountExpected: 0, amountPaid: 0 };
+    const amountExpected = aggregates.amountExpected;
+    const amountPaid = aggregates.amountPaid;
+    totalAmountExpected += amountExpected;
+    totalAmountPaid += amountPaid;
+
     days.push({
       date,
       total: events.length,
       events,
+      amountExpected,
+      amountPaid,
     });
   }
 
@@ -422,6 +532,8 @@ export async function getCalendarEventsByDate(
     totals: {
       days: days.length,
       events: totalEvents,
+      amountExpected: totalAmountExpected,
+      amountPaid: totalAmountPaid,
     },
   };
 }

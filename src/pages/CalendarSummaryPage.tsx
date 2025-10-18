@@ -16,12 +16,16 @@ dayjs.locale("es");
 dayjs.extend(isoWeek);
 
 const numberFormatter = new Intl.NumberFormat("es-CL");
+const currencyFormatter = new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP", minimumFractionDigits: 0 });
 const weekdayLabels = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 const NULL_EVENT_TYPE_VALUE = "__NULL__";
+const NULL_CATEGORY_VALUE = "__NULL_CATEGORY__";
 
 type AggregationRow = {
   label: string;
   value: number;
+  amountExpected?: number;
+  amountPaid?: number;
   hint?: string;
 };
 
@@ -45,6 +49,13 @@ function AggregationCard({ title, rows }: { title: string; rows: AggregationRow[
               <span className="text-sm font-semibold text-[var(--brand-primary)]">
                 {numberFormatter.format(row.value)}
               </span>
+              {(row.amountExpected != null || row.amountPaid != null) && (
+                <span className="text-[11px] text-slate-500">
+                  {row.amountExpected != null ? `Esperado ${currencyFormatter.format(row.amountExpected)}` : ""}
+                  {row.amountExpected != null && row.amountPaid != null ? " · " : ""}
+                  {row.amountPaid != null ? `Pagado ${currencyFormatter.format(row.amountPaid)}` : ""}
+                </span>
+              )}
             </li>
           ))}
         </ul>
@@ -71,6 +82,8 @@ function topDates(byDate: CalendarAggregateByDate[], limit = 10): AggregationRow
     .map((entry) => ({
       label: dayjs(entry.date).format("DD MMM YYYY"),
       value: entry.total,
+      amountExpected: entry.amountExpected,
+      amountPaid: entry.amountPaid,
     }));
 }
 
@@ -83,6 +96,7 @@ function CalendarSummaryPage() {
     isDirty,
     availableCalendars,
     availableEventTypes,
+    availableCategories,
     syncing,
     syncError,
     lastSyncInfo,
@@ -92,10 +106,15 @@ function CalendarSummaryPage() {
     resetFilters,
   } = useCalendarEvents();
 
-  const totals = useMemo(() => ({
-    events: summary?.totals.events ?? 0,
-    days: summary?.totals.days ?? 0,
-  }), [summary?.totals.days, summary?.totals.events]);
+  const totals = useMemo(
+    () => ({
+      events: summary?.totals.events ?? 0,
+      days: summary?.totals.days ?? 0,
+      amountExpected: summary?.totals.amountExpected ?? 0,
+      amountPaid: summary?.totals.amountPaid ?? 0,
+    }),
+    [summary?.totals.amountExpected, summary?.totals.amountPaid, summary?.totals.days, summary?.totals.events]
+  );
 
   const toggleCalendar = (calendarId: string) => {
     updateFilters(
@@ -112,6 +131,15 @@ function CalendarSummaryPage() {
       filters.eventTypes.includes(value)
         ? filters.eventTypes.filter((id) => id !== value)
         : [...filters.eventTypes, value]
+    );
+  };
+
+  const toggleCategory = (value: string) => {
+    updateFilters(
+      "categories",
+      filters.categories.includes(value)
+        ? filters.categories.filter((id) => id !== value)
+        : [...filters.categories, value]
     );
   };
 
@@ -132,19 +160,26 @@ function CalendarSummaryPage() {
       .filter((entry) => entry.year === currentYear)
       .map((entry) => {
         const { label, hint } = formatMonthLabel(entry);
-        return { label, value: entry.total, hint };
+        return { label, value: entry.total, hint, amountExpected: entry.amountExpected, amountPaid: entry.amountPaid };
       });
 
     const byDateCurrentYear = summary.aggregates.byDate.filter((entry) => dayjs(entry.date).year() === currentYear);
 
-    const weekBuckets = new Map<number, Map<number, number>>();
+    const weekBuckets = new Map<
+      number,
+      Map<number, { events: number; amountExpected: number; amountPaid: number }>
+    >();
     byDateCurrentYear.forEach((entry) => {
       const date = dayjs(entry.date);
       const month = date.month() + 1;
       const week = date.isoWeek();
       if (!weekBuckets.has(month)) weekBuckets.set(month, new Map());
       const monthMap = weekBuckets.get(month)!;
-      monthMap.set(week, (monthMap.get(week) ?? 0) + entry.total);
+      const bucket = monthMap.get(week) ?? { events: 0, amountExpected: 0, amountPaid: 0 };
+      bucket.events += entry.total;
+      bucket.amountExpected += entry.amountExpected ?? 0;
+      bucket.amountPaid += entry.amountPaid ?? 0;
+      monthMap.set(week, bucket);
     });
 
     const byWeek: AggregationRow[] = Array.from(weekBuckets.entries())
@@ -153,11 +188,13 @@ function CalendarSummaryPage() {
         const monthName = dayjs().month(month - 1).format("MMMM");
         return Array.from(weeks.entries())
           .sort(([weekA], [weekB]) => weekA - weekB)
-          .map(([week, total]) => ({
+          .map(([week, bucket]) => ({
             label: `${monthName.charAt(0).toUpperCase()}${monthName.slice(1)} · Semana ${week
               .toString()
               .padStart(2, "0")}`,
-            value: total,
+            value: bucket.events,
+            amountExpected: bucket.amountExpected,
+            amountPaid: bucket.amountPaid,
           }));
       });
 
@@ -166,12 +203,19 @@ function CalendarSummaryPage() {
       .map((entry) => ({
         label: formatWeekdayLabel(entry.weekday),
         value: entry.total,
+        amountExpected: entry.amountExpected,
+        amountPaid: entry.amountPaid,
       }));
 
     return {
       byYear: summary.aggregates.byYear
         .filter((entry) => entry.year === currentYear)
-        .map((entry) => ({ label: entry.year.toString(), value: entry.total })),
+        .map((entry) => ({
+          label: entry.year.toString(),
+          value: entry.total,
+          amountExpected: entry.amountExpected,
+          amountPaid: entry.amountPaid,
+        })),
       byMonth,
       byWeek,
       byWeekday,
@@ -186,6 +230,16 @@ function CalendarSummaryPage() {
         label: `${entry.calendarId} · ${numberFormatter.format(entry.total)}`,
       })),
     [availableCalendars]
+  );
+
+  const categoryOptions: MultiSelectOption[] = useMemo(
+    () =>
+      availableCategories.map((entry) => {
+        const value = entry.category ?? NULL_CATEGORY_VALUE;
+        const label = entry.category ?? "Sin clasificación";
+        return { value, label: `${label} · ${numberFormatter.format(entry.total)}` };
+      }),
+    [availableCategories]
   );
 
   const eventTypeOptions: MultiSelectOption[] = useMemo(
@@ -207,13 +261,18 @@ function CalendarSummaryPage() {
             Visualiza los eventos sincronizados desde Google Calendar y analiza su distribución por periodos.
           </p>
         </div>
-        <Button onClick={syncNow} disabled={syncing} className="self-start sm:self-auto">
-          {syncing ? "Sincronizando..." : "Sincronizar ahora"}
-        </Button>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+          <Button onClick={syncNow} disabled={syncing} className="self-start sm:self-auto">
+            {syncing ? "Sincronizando..." : "Sincronizar ahora"}
+          </Button>
+          <Link to="/calendar/classify" className="text-xs font-semibold uppercase tracking-wide text-[var(--brand-secondary)] underline">
+            Clasificar pendientes
+          </Link>
+        </div>
       </header>
 
       <form
-        className="glass-card glass-underlay-gradient grid gap-4 rounded-2xl border border-[var(--brand-primary)]/15 bg-white/80 p-6 text-xs text-slate-600 shadow-sm md:grid-cols-5"
+        className="glass-card glass-underlay-gradient grid gap-4 rounded-2xl border border-[var(--brand-primary)]/15 bg-white/80 p-6 text-xs text-slate-600 shadow-sm md:grid-cols-6"
         onSubmit={(event) => {
           event.preventDefault();
           applyFilters();
@@ -245,13 +304,20 @@ function CalendarSummaryPage() {
           onToggle={toggleEventType}
           placeholder="Todos"
         />
+        <MultiSelectFilter
+          label="Clasificación"
+          options={categoryOptions}
+          selected={filters.categories}
+          onToggle={toggleCategory}
+          placeholder="Todas"
+        />
         <Input
           label="Buscar"
           placeholder="Título o descripción"
           value={filters.search}
           onChange={(event: ChangeEvent<HTMLInputElement>) => updateFilters("search", event.target.value)}
         />
-        <div className="flex items-end gap-2 md:col-span-1">
+        <div className="flex items-end gap-2 md:col-span-2">
           <Button type="submit" disabled={loading}>
             {loading ? "Actualizando..." : "Aplicar filtros"}
           </Button>
@@ -301,6 +367,18 @@ function CalendarSummaryPage() {
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Días con eventos</p>
           <p className="mt-2 text-2xl font-semibold text-[var(--brand-primary)]">
             {numberFormatter.format(totals.days)}
+          </p>
+        </div>
+        <div className="glass-card glass-underlay-gradient rounded-2xl border border-white/60 p-4 text-sm shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Monto esperado</p>
+          <p className="mt-2 text-2xl font-semibold text-[var(--brand-primary)]">
+            {currencyFormatter.format(totals.amountExpected)}
+          </p>
+        </div>
+        <div className="glass-card glass-underlay-gradient rounded-2xl border border-white/60 p-4 text-sm shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Monto pagado</p>
+          <p className="mt-2 text-2xl font-semibold text-[var(--brand-primary)]">
+            {currencyFormatter.format(totals.amountPaid)}
           </p>
         </div>
       </section>

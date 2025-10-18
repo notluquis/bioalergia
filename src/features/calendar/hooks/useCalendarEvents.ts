@@ -11,6 +11,7 @@ function normalizeFilters(filters: CalendarFilters): CalendarFilters {
     ...filters,
     calendarIds: unique(filters.calendarIds),
     eventTypes: unique(filters.eventTypes),
+    categories: unique(filters.categories),
     search: filters.search.trim(),
   };
 }
@@ -29,6 +30,7 @@ function filtersEqual(a: CalendarFilters, b: CalendarFilters) {
     a.to === b.to &&
     arraysEqual([...a.calendarIds].sort(), [...b.calendarIds].sort()) &&
     arraysEqual([...a.eventTypes].sort(), [...b.eventTypes].sort()) &&
+    arraysEqual([...a.categories].sort(), [...b.categories].sort()) &&
     a.search.trim() === b.search.trim() &&
     a.maxDays === b.maxDays
   );
@@ -44,13 +46,17 @@ export function useCalendarEvents() {
     const defaultMax = Number(settings.calendarDailyMaxDays ?? "31");
     const maxDays = Number.isFinite(defaultMax) && defaultMax > 0 ? Math.min(Math.floor(defaultMax), 120) : 31;
     const startDate = dayjs(syncStart);
-    const from = startDate.isValid() ? startDate : dayjs("2000-01-01");
-    const to = dayjs().add(lookahead, "day");
+    const monthStart = dayjs().startOf("month");
+    const monthEnd = dayjs().endOf("month");
+    const from = startDate.isValid() && startDate.isAfter(monthStart) ? startDate : monthStart;
+    const maxForward = dayjs().add(lookahead, "day");
+    const to = monthEnd.isBefore(maxForward) ? monthEnd : maxForward;
     return {
       from: from.format("YYYY-MM-DD"),
       to: to.format("YYYY-MM-DD"),
       calendarIds: [],
       eventTypes: [],
+      categories: [],
       search: "",
       maxDays,
     };
@@ -129,6 +135,7 @@ export function useCalendarEvents() {
 
   const availableCalendars = summary?.available.calendars ?? [];
   const availableEventTypes = summary?.available.eventTypes ?? [];
+  const availableCategories = summary?.available.categories ?? [];
 
   const syncNow = useCallback(async () => {
     setSyncing(true);
@@ -168,6 +175,7 @@ export function useCalendarEvents() {
     resetFilters,
     availableCalendars,
     availableEventTypes,
+    availableCategories,
     syncing,
     syncError,
     lastSyncInfo,

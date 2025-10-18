@@ -29,6 +29,10 @@ export type CalendarEventRecord = {
   transparency?: string | null;
   visibility?: string | null;
   hangoutLink?: string | null;
+  category?: string | null;
+  amountExpected?: number | null;
+  amountPaid?: number | null;
+  attended?: boolean | null;
 };
 
 type CalendarRuntimeConfig = {
@@ -47,6 +51,64 @@ export type GoogleCalendarSyncPayload = {
   events: CalendarEventRecord[];
   excludedEvents: Array<{ calendarId: string; eventId: string }>;
 };
+
+const SUBCUT_PATTERNS = [/\bclustoid\b/i, /\bvacc?\b/i, /\bvacuna\b/i, /\bvac\.?\b/i];
+const TEST_PATTERNS = [/\bexamen\b/i, /\btest\b/i, /cut[áa]neo/i, /ambiental/i, /panel/i, /multitest/i];
+const ATTENDED_PATTERNS = [/\blleg[oó]\b/i, /\basist[ií]o\b/i];
+
+function normalizeAmountRaw(raw: string): number | null {
+  const digits = raw.replace(/[^0-9]/g, "");
+  if (!digits) return null;
+  const value = Number.parseInt(digits, 10);
+  if (Number.isNaN(value) || value <= 0) return null;
+  return value >= 1000 ? value : value * 1000;
+}
+
+function extractAmounts(summary: string, description: string) {
+  let amountExpected: number | null = null;
+  let amountPaid: number | null = null;
+  const text = `${summary} ${description}`;
+  const regex = /\(([^)]+)\)/gi;
+  let match: RegExpExecArray | null;
+  while ((match = regex.exec(text)) !== null) {
+    const content = match[1];
+    const amount = normalizeAmountRaw(content);
+    if (amount == null) continue;
+    if (/pagado/i.test(content)) {
+      amountPaid = amount;
+      if (amountExpected == null) amountExpected = amount;
+    } else if (amountExpected == null) {
+      amountExpected = amount;
+    }
+  }
+  const paidOutside = /pagado\s*(\d+)/gi;
+  let matchPaid: RegExpExecArray | null;
+  while ((matchPaid = paidOutside.exec(text)) !== null) {
+    const amount = normalizeAmountRaw(matchPaid[1]);
+    if (amount != null) {
+      amountPaid = amount;
+      if (amountExpected == null) amountExpected = amount;
+    }
+  }
+  return { amountExpected, amountPaid };
+}
+
+function classifyCategory(summary: string, description: string): string | null {
+  const text = `${summary} ${description}`.toLowerCase();
+  if (SUBCUT_PATTERNS.some((pattern) => pattern.test(text))) {
+    return "Tratamiento subcutáneo";
+  }
+  if (TEST_PATTERNS.some((pattern) => pattern.test(text))) {
+    return "Test y exámenes";
+  }
+  return null;
+}
+
+function detectAttendance(summary: string, description: string, status?: string | null): boolean | null {
+  const text = `${summary} ${description}`;
+  if (ATTENDED_PATTERNS.some((pattern) => pattern.test(text))) return true;
+  return null;
+}
 
 let cachedClient: CalendarClient | null = null;
 
@@ -162,13 +224,24 @@ async function fetchCalendarEventsForId(
         continue;
       }
 
+      const summary = item.summary ?? "";
+      const description = item.description ?? "";
+      const category = classifyCategory(summary, description);
+      const amounts = extractAmounts(summary, description);
+      let amountExpected = amounts.amountExpected;
+      let amountPaid = amounts.amountPaid;
+      if (amountPaid != null && amountExpected == null) {
+        amountExpected = amountPaid;
+      }
+      const attended = detectAttendance(summary, description, item.status);
+
       events.push({
         calendarId,
         eventId: item.id,
         status: item.status,
         eventType: item.eventType,
-        summary: item.summary,
-        description: item.description,
+        summary: summary,
+        description: description,
         start: item.start ?? null,
         end: item.end ?? null,
         created: item.created,
@@ -178,6 +251,10 @@ async function fetchCalendarEventsForId(
         transparency: item.transparency,
         visibility: item.visibility,
         hangoutLink: item.hangoutLink,
+        category,
+        amountExpected,
+        amountPaid,
+        attended,
       });
     }
 

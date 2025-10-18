@@ -37,6 +37,7 @@ const InventoryPage = lazy(() => import("./pages/Inventory"));
 const CalendarSummaryPage = lazy(() => import("./pages/CalendarSummaryPage"));
 const CalendarDailyPage = lazy(() => import("./pages/CalendarDailyPage"));
 const CalendarSyncHistoryPage = lazy(() => import("./pages/CalendarSyncHistoryPage"));
+const CalendarClassificationPage = lazy(() => import("./pages/CalendarClassificationPage"));
 
 // Settings pages
 const GeneralSettingsPage = lazy(() => import("./pages/settings/GeneralSettingsPage"));
@@ -196,6 +197,14 @@ const router = createBrowserRouter([
         element: (
           <Suspense fallback={<PageLoader />}>
             <CalendarDailyPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: "/calendar/classify",
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <CalendarClassificationPage />
           </Suspense>
         ),
       },

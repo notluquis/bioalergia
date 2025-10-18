@@ -3,6 +3,7 @@ export type CalendarFilters = {
   to: string;
   calendarIds: string[];
   eventTypes: string[];
+  categories: string[];
   search: string;
   maxDays: number;
 };
@@ -10,28 +11,38 @@ export type CalendarFilters = {
 export type CalendarAggregateByYear = {
   year: number;
   total: number;
+  amountExpected: number;
+  amountPaid: number;
 };
 
 export type CalendarAggregateByMonth = {
   year: number;
   month: number;
   total: number;
+  amountExpected: number;
+  amountPaid: number;
 };
 
 export type CalendarAggregateByWeek = {
   isoYear: number;
   isoWeek: number;
   total: number;
+  amountExpected: number;
+  amountPaid: number;
 };
 
 export type CalendarAggregateByWeekday = {
   weekday: number;
   total: number;
+  amountExpected: number;
+  amountPaid: number;
 };
 
 export type CalendarAggregateByDate = {
   date: string;
   total: number;
+  amountExpected: number;
+  amountPaid: number;
 };
 
 export type CalendarSummary = {
@@ -40,11 +51,14 @@ export type CalendarSummary = {
     to: string;
     calendarIds: string[];
     eventTypes: string[];
+    categories: string[];
     search?: string;
   };
   totals: {
     events: number;
     days: number;
+    amountExpected: number;
+    amountPaid: number;
   };
   aggregates: {
     byYear: CalendarAggregateByYear[];
@@ -56,6 +70,7 @@ export type CalendarSummary = {
   available: {
     calendars: Array<{ calendarId: string; total: number }>;
     eventTypes: Array<{ eventType: string | null; total: number }>;
+    categories: Array<{ category: string | null; total: number }>;
   };
 };
 
@@ -82,12 +97,18 @@ export type CalendarEventDetail = {
   eventCreatedAt: string | null;
   eventUpdatedAt: string | null;
   rawEvent: unknown | null;
+  category?: string | null;
+  amountExpected?: number | null;
+  amountPaid?: number | null;
+  attended?: boolean | null;
 };
 
 export type CalendarDayEvents = {
   date: string;
   total: number;
   events: CalendarEventDetail[];
+  amountExpected: number;
+  amountPaid: number;
 };
 
 export type CalendarDaily = {
@@ -96,12 +117,15 @@ export type CalendarDaily = {
     to: string;
     calendarIds: string[];
     eventTypes: string[];
+    categories: string[];
     search?: string;
     maxDays: number;
   };
   totals: {
     days: number;
     events: number;
+    amountExpected: number;
+    amountPaid: number;
   };
   days: CalendarDayEvents[];
 };
@@ -120,4 +144,30 @@ export type CalendarSyncLog = {
   skipped: number;
   excluded: number;
   errorMessage: string | null;
+};
+
+export type CalendarUnclassifiedEvent = {
+  calendarId: string;
+  eventId: string;
+  status: string | null;
+  eventType: string | null;
+  summary: string | null;
+  description: string | null;
+  startDate: string | null;
+  startDateTime: string | null;
+  endDate: string | null;
+  endDateTime: string | null;
+  category: string | null;
+  amountExpected: number | null;
+  amountPaid: number | null;
+  attended: boolean | null;
+};
+
+export type CalendarEventClassificationPayload = {
+  calendarId: string;
+  eventId: string;
+  category?: string | null;
+  amountExpected?: number | null;
+  amountPaid?: number | null;
+  attended?: boolean | null;
 };

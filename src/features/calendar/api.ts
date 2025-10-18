@@ -1,5 +1,12 @@
 import { apiClient } from "../../lib/apiClient";
-import type { CalendarFilters, CalendarSummary, CalendarDaily, CalendarSyncLog } from "./types";
+import type {
+  CalendarFilters,
+  CalendarSummary,
+  CalendarDaily,
+  CalendarSyncLog,
+  CalendarUnclassifiedEvent,
+  CalendarEventClassificationPayload,
+} from "./types";
 
 type CalendarSummaryResponse = CalendarSummary & { status: "ok" };
 
@@ -27,6 +34,10 @@ function buildQuery(filters: CalendarFilters, options?: { includeMaxDays?: boole
 
   if (filters.eventTypes.length) {
     query.eventType = filters.eventTypes;
+  }
+
+  if (filters.categories.length) {
+    query.category = filters.categories;
   }
 
   if (filters.search.trim()) {
@@ -89,4 +100,21 @@ export async function fetchCalendarSyncLogs(limit = 50): Promise<CalendarSyncLog
     throw new Error("No se pudo obtener el historial de sincronizaciones");
   }
   return response.logs;
+}
+
+export async function fetchUnclassifiedCalendarEvents(limit = 50): Promise<CalendarUnclassifiedEvent[]> {
+  const response = await apiClient.get<{ status: "ok"; events: CalendarUnclassifiedEvent[] }>(
+    `/api/calendar/events/unclassified?limit=${limit}`
+  );
+  if (response.status !== "ok") {
+    throw new Error("No se pudo obtener la lista de eventos sin clasificar");
+  }
+  return response.events;
+}
+
+export async function classifyCalendarEvent(payload: CalendarEventClassificationPayload): Promise<void> {
+  const response = await apiClient.post<{ status: "ok" }>("/api/calendar/events/classify", payload);
+  if (response.status !== "ok") {
+    throw new Error("No se pudo actualizar la clasificación del evento");
+  }
 }

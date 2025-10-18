@@ -13,7 +13,9 @@ import type { CalendarEventDetail, CalendarDayEvents } from "../features/calenda
 dayjs.locale("es");
 
 const numberFormatter = new Intl.NumberFormat("es-CL");
+const currencyFormatter = new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP", minimumFractionDigits: 0 });
 const NULL_EVENT_TYPE_VALUE = "__NULL__";
+const NULL_CATEGORY_VALUE = "__NULL_CATEGORY__";
 
 const formatEventTime = (event: CalendarEventDetail) => {
   if (event.startDateTime) {
@@ -33,15 +35,21 @@ function CalendarDailyPage() {
     error,
     availableCalendars,
     availableEventTypes,
+    availableCategories,
     updateFilters,
     applyFilters,
     resetFilters,
   } = useCalendarEvents();
 
-  const totals = useMemo(() => ({
-    days: daily?.totals.days ?? 0,
-    events: daily?.totals.events ?? 0,
-  }), [daily?.totals.days, daily?.totals.events]);
+  const totals = useMemo(
+    () => ({
+      days: daily?.totals.days ?? 0,
+      events: daily?.totals.events ?? 0,
+      amountExpected: daily?.totals.amountExpected ?? 0,
+      amountPaid: daily?.totals.amountPaid ?? 0,
+    }),
+    [daily?.totals.amountExpected, daily?.totals.amountPaid, daily?.totals.days, daily?.totals.events]
+  );
 
   const toggleCalendar = (calendarId: string) => {
     updateFilters(
@@ -58,6 +66,15 @@ function CalendarDailyPage() {
       filters.eventTypes.includes(value)
         ? filters.eventTypes.filter((id) => id !== value)
         : [...filters.eventTypes, value]
+    );
+  };
+
+  const toggleCategory = (value: string) => {
+    updateFilters(
+      "categories",
+      filters.categories.includes(value)
+        ? filters.categories.filter((id) => id !== value)
+        : [...filters.categories, value]
     );
   };
 
@@ -80,6 +97,16 @@ function CalendarDailyPage() {
     [availableEventTypes]
   );
 
+  const categoryOptions: MultiSelectOption[] = useMemo(
+    () =>
+      availableCategories.map((entry) => {
+        const value = entry.category ?? NULL_CATEGORY_VALUE;
+        const label = entry.category ?? "Sin clasificación";
+        return { value, label: `${label} · ${numberFormatter.format(entry.total)}` };
+      }),
+    [availableCategories]
+  );
+
   const handleMaxDaysChange = (event: ChangeEvent<HTMLInputElement>) => {
     const parsed = Number.parseInt(event.target.value, 10);
     if (Number.isNaN(parsed)) {
@@ -97,8 +124,14 @@ function CalendarDailyPage() {
     >
       <summary className="flex cursor-pointer flex-wrap items-center justify-between gap-3 font-semibold text-[var(--brand-primary)]">
         <span>{dayjs(entry.date).format("dddd DD MMM YYYY")}</span>
-        <span className="text-xs text-slate-500">
-          {numberFormatter.format(entry.total)} evento{entry.total === 1 ? "" : "s"}
+        <span className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+          <span>
+            {numberFormatter.format(entry.total)} evento{entry.total === 1 ? "" : "s"}
+          </span>
+          <span className="hidden sm:inline">·</span>
+          <span>Esperado {currencyFormatter.format(entry.amountExpected ?? 0)}</span>
+          <span className="hidden sm:inline">·</span>
+          <span>Pagado {currencyFormatter.format(entry.amountPaid ?? 0)}</span>
         </span>
       </summary>
       <div className="mt-3 space-y-3">
@@ -120,6 +153,11 @@ function CalendarDailyPage() {
                 <span className="rounded-full bg-slate-100 px-2 py-1 font-semibold text-slate-600">
                   {event.calendarId}
                 </span>
+                {event.category && (
+                  <span className="rounded-full bg-[var(--brand-secondary)]/15 px-2 py-1 font-semibold text-[var(--brand-secondary)]">
+                    {event.category}
+                  </span>
+                )}
                 {event.eventType && (
                   <span className="rounded-full bg-slate-100 px-2 py-1 font-semibold text-slate-500">
                     {event.eventType}
@@ -135,6 +173,19 @@ function CalendarDailyPage() {
                 { label: "Visibilidad", value: event.visibility },
                 { label: "Color", value: event.colorId },
                 { label: "Zona horaria", value: event.startTimeZone ?? event.endTimeZone },
+                {
+                  label: "Monto esperado",
+                  value: event.amountExpected != null ? currencyFormatter.format(event.amountExpected) : null,
+                },
+                {
+                  label: "Monto pagado",
+                  value: event.amountPaid != null ? currencyFormatter.format(event.amountPaid) : null,
+                },
+                {
+                  label: "Asistencia",
+                  value:
+                    event.attended == null ? null : event.attended ? "Asistió" : "No asistió",
+                },
                 {
                   label: "Creado",
                   value: event.eventCreatedAt ? dayjs(event.eventCreatedAt).format("DD MMM YYYY HH:mm") : null,
@@ -219,7 +270,7 @@ function CalendarDailyPage() {
       </header>
 
       <form
-        className="glass-card glass-underlay-gradient grid gap-4 rounded-2xl border border-[var(--brand-primary)]/15 bg-white/80 p-6 text-xs text-slate-600 shadow-sm md:grid-cols-5"
+        className="glass-card glass-underlay-gradient grid gap-4 rounded-2xl border border-[var(--brand-primary)]/15 bg-white/80 p-6 text-xs text-slate-600 shadow-sm md:grid-cols-6"
         onSubmit={(event) => {
           event.preventDefault();
           applyFilters();
@@ -251,6 +302,13 @@ function CalendarDailyPage() {
           onToggle={toggleEventType}
           placeholder="Todos"
         />
+        <MultiSelectFilter
+          label="Clasificación"
+          options={categoryOptions}
+          selected={filters.categories}
+          onToggle={toggleCategory}
+          placeholder="Todas"
+        />
         <Input
           label="Buscar"
           placeholder="Título o descripción"
@@ -277,7 +335,7 @@ function CalendarDailyPage() {
 
       {error && <Alert variant="error">{error}</Alert>}
 
-      <section className="grid gap-4 sm:grid-cols-2">
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <div className="glass-card glass-underlay-gradient rounded-2xl border border-white/60 p-4 text-sm shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Días listados</p>
           <p className="mt-2 text-2xl font-semibold text-[var(--brand-primary)]">
@@ -288,6 +346,18 @@ function CalendarDailyPage() {
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Eventos listados</p>
           <p className="mt-2 text-2xl font-semibold text-[var(--brand-primary)]">
             {numberFormatter.format(totals.events)}
+          </p>
+        </div>
+        <div className="glass-card glass-underlay-gradient rounded-2xl border border-white/60 p-4 text-sm shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Monto esperado</p>
+          <p className="mt-2 text-2xl font-semibold text-[var(--brand-primary)]">
+            {currencyFormatter.format(totals.amountExpected)}
+          </p>
+        </div>
+        <div className="glass-card glass-underlay-gradient rounded-2xl border border-white/60 p-4 text-sm shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Monto pagado</p>
+          <p className="mt-2 text-2xl font-semibold text-[var(--brand-primary)]">
+            {currencyFormatter.format(totals.amountPaid)}
           </p>
         </div>
       </section>
