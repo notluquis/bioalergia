@@ -242,6 +242,8 @@ export function registerCalendarEventRoutes(app: express.Express) {
           amountExpected: row.amount_expected != null ? Number(row.amount_expected) : null,
           amountPaid: row.amount_paid != null ? Number(row.amount_paid) : null,
           attended: row.attended == null ? null : row.attended === 1,
+          dosage: row.dosage != null ? String(row.dosage) : null,
+          treatmentStage: row.treatment_stage != null ? String(row.treatment_stage) : null,
         })),
       });
     })
@@ -287,6 +289,18 @@ export function registerCalendarEventRoutes(app: express.Express) {
     amountExpected: amountSchema,
     amountPaid: amountSchema,
     attended: z.boolean().nullable().optional(),
+    dosage: z
+      .string()
+      .trim()
+      .max(64)
+      .optional()
+      .transform((value) => (value && value.length ? value : null)),
+    treatmentStage: z
+      .string()
+      .trim()
+      .max(64)
+      .optional()
+      .transform((value) => (value && value.length ? value : null)),
   });
 
   app.post(
@@ -311,6 +325,8 @@ export function registerCalendarEventRoutes(app: express.Express) {
         amountExpected: payload.amountExpected ?? null,
         amountPaid: payload.amountPaid ?? null,
         attended: payload.attended ?? null,
+        dosage: payload.dosage ?? null,
+        treatmentStage: payload.treatmentStage ?? null,
       });
 
       res.json({ status: "ok" });

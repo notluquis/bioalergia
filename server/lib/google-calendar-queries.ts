@@ -16,6 +16,8 @@ const BASE_EVENTS_SELECT = `
     amount_expected,
     amount_paid,
     attended,
+    dosage,
+    treatment_stage,
     start_date,
     start_date_time,
     start_time_zone,
@@ -101,6 +103,8 @@ export type CalendarEventDetail = {
   amountExpected?: number | null;
   amountPaid?: number | null;
   attended?: boolean | null;
+  dosage?: string | null;
+  treatmentStage?: string | null;
 };
 
 export type CalendarEventsByDate = {
@@ -413,6 +417,8 @@ export async function getCalendarEventsByDate(
         events.amount_expected,
         events.amount_paid,
         events.attended,
+        events.dosage,
+        events.treatment_stage,
         events.summary,
         events.description,
         events.start_date,
@@ -485,6 +491,8 @@ export async function getCalendarEventsByDate(
       amountExpected: row.amount_expected != null ? Number(row.amount_expected) : null,
       amountPaid: row.amount_paid != null ? Number(row.amount_paid) : null,
       attended: row.attended != null ? row.attended === 1 : null,
+      dosage: row.dosage != null ? String(row.dosage) : null,
+      treatmentStage: row.treatment_stage != null ? String(row.treatment_stage) : null,
     });
   }
 

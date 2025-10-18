@@ -101,6 +101,8 @@ export type CalendarEventDetail = {
   amountExpected?: number | null;
   amountPaid?: number | null;
   attended?: boolean | null;
+  dosage?: string | null;
+  treatmentStage?: string | null;
 };
 
 export type CalendarDayEvents = {
@@ -161,6 +163,8 @@ export type CalendarUnclassifiedEvent = {
   amountExpected: number | null;
   amountPaid: number | null;
   attended: boolean | null;
+  dosage: string | null;
+  treatmentStage: string | null;
 };
 
 export type CalendarEventClassificationPayload = {
@@ -170,4 +174,6 @@ export type CalendarEventClassificationPayload = {
   amountExpected?: number | null;
   amountPaid?: number | null;
   attended?: boolean | null;
+  dosage?: string | null;
+  treatmentStage?: string | null;
 };

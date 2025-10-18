@@ -19,9 +19,12 @@ type Draft = {
   amountExpected: string;
   amountPaid: string;
   attended: boolean;
+  dosage: string;
+  treatmentStage: string;
 };
 
 const CATEGORY_CHOICES = ["Tratamiento subcutáneo", "Test y exámenes"];
+const TREATMENT_STAGE_CHOICES = ["Mantención", "Inducción"];
 
 const currencyFormatter = new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP", minimumFractionDigits: 0 });
 
@@ -35,6 +38,8 @@ function buildDraft(event: CalendarUnclassifiedEvent): Draft {
     amountExpected: event.amountExpected != null ? String(event.amountExpected) : "",
     amountPaid: event.amountPaid != null ? String(event.amountPaid) : "",
     attended: event.attended ?? false,
+    dosage: event.dosage ?? "",
+    treatmentStage: event.treatmentStage ?? "",
   };
 }
 
@@ -125,8 +130,9 @@ function CalendarClassificationPage() {
   const removeEvent = useCallback((key: string) => {
     setEvents((prev) => prev.filter((event) => eventKey(event) !== key));
     setDrafts((prev) => {
-      const { [key]: _removed, ...rest } = prev;
-      return rest;
+      const next = { ...prev };
+      delete next[key];
+      return next;
     });
   }, []);
 
@@ -140,6 +146,8 @@ function CalendarClassificationPage() {
       const payloadCategory = draft.category.trim() ? draft.category.trim() : null;
       const payloadExpected = parseAmountInput(draft.amountExpected);
       const payloadPaid = parseAmountInput(draft.amountPaid);
+      const payloadDosage = draft.dosage.trim() ? draft.dosage.trim() : null;
+      const payloadStage = draft.treatmentStage.trim() ? draft.treatmentStage.trim() : null;
 
       try {
         await classifyCalendarEvent({
@@ -149,6 +157,8 @@ function CalendarClassificationPage() {
           amountExpected: payloadExpected,
           amountPaid: payloadPaid,
           attended: draft.attended,
+          dosage: payloadDosage,
+          treatmentStage: payloadStage,
         });
         removeEvent(key);
       } catch (err) {
@@ -257,6 +267,21 @@ function CalendarClassificationPage() {
                 </div>
               </header>
 
+              {(calendarEvent.dosage || draft.dosage || calendarEvent.treatmentStage || draft.treatmentStage) && (
+                <div className="flex flex-wrap gap-2 text-[11px] text-slate-500">
+                  {(draft.dosage || calendarEvent.dosage) && (
+                    <span className="rounded-full bg-white/70 px-2 py-1 font-semibold text-slate-600">
+                      Dosis: {draft.dosage || calendarEvent.dosage}
+                    </span>
+                  )}
+                  {(draft.treatmentStage || calendarEvent.treatmentStage) && (
+                    <span className="rounded-full bg-[var(--brand-primary)]/10 px-2 py-1 font-semibold text-[var(--brand-primary)]">
+                      {draft.treatmentStage || calendarEvent.treatmentStage}
+                    </span>
+                  )}
+                </div>
+              )}
+
               {description && (
                 <p className="rounded-xl bg-white/70 p-3 text-xs text-slate-600 shadow-inner">
                   <span className="font-semibold text-slate-700">Descripción:</span>{" "}
@@ -264,7 +289,7 @@ function CalendarClassificationPage() {
                 </p>
               )}
 
-              <div className="grid gap-4 text-xs text-slate-600 md:grid-cols-4">
+              <div className="grid gap-4 text-xs text-slate-600 md:grid-cols-6">
                 <Input
                   label="Clasificación"
                   type="select"
@@ -302,6 +327,29 @@ function CalendarClassificationPage() {
                     handleDraftChange(key, calendarEvent, { amountPaid: input.target.value })
                   }
                 />
+                <Input
+                  label="Dosis"
+                  placeholder="0.3 ml"
+                  value={draft.dosage}
+                  onChange={(input: ChangeEvent<HTMLInputElement>) =>
+                    handleDraftChange(key, calendarEvent, { dosage: input.target.value })
+                  }
+                />
+                <Input
+                  label="Etapa tratamiento"
+                  type="select"
+                  value={draft.treatmentStage}
+                  onChange={(input: ChangeEvent<HTMLSelectElement>) =>
+                    handleDraftChange(key, calendarEvent, { treatmentStage: input.target.value })
+                  }
+                >
+                  <option value="">Sin etapa</option>
+                  {TREATMENT_STAGE_CHOICES.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </Input>
                 <div className="flex items-end">
                   <Checkbox
                     label="Asistió / llegó"

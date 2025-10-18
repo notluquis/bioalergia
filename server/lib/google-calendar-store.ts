@@ -112,6 +112,8 @@ export async function upsertGoogleCalendarEvents(
       amount_expected,
       amount_paid,
       attended,
+      dosage,
+      treatment_stage,
       raw_event,
       last_synced_at
     ) VALUES ?
@@ -137,6 +139,8 @@ export async function upsertGoogleCalendarEvents(
       amount_expected = VALUES(amount_expected),
       amount_paid = VALUES(amount_paid),
       attended = VALUES(attended),
+      dosage = VALUES(dosage),
+      treatment_stage = VALUES(treatment_stage),
       raw_event = VALUES(raw_event),
       last_synced_at = VALUES(last_synced_at)
   `;
@@ -213,6 +217,8 @@ export async function upsertGoogleCalendarEvents(
           event.amountExpected ?? null,
           event.amountPaid ?? null,
           event.attended == null ? null : event.attended ? 1 : 0,
+          event.dosage ?? null,
+          event.treatmentStage ?? null,
           JSON.stringify(event),
           nowDb,
         ]);

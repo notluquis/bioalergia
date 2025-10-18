@@ -11,6 +11,7 @@ import { MultiSelectFilter, type MultiSelectOption } from "../features/calendar/
 import { useCalendarEvents } from "../features/calendar/hooks/useCalendarEvents";
 import type { CalendarAggregateByDate } from "../features/calendar/types";
 import { Link } from "react-router-dom";
+import { MonthlyHeatmap } from "../features/calendar/components/MonthlyHeatmap";
 
 dayjs.locale("es");
 dayjs.extend(isoWeek);
@@ -242,6 +243,43 @@ function CalendarSummaryPage() {
     [availableCategories]
   );
 
+  const statsByDate = useMemo(() => {
+    const map = new Map<string, { total: number; amountExpected: number; amountPaid: number }>();
+    summary?.aggregates.byDate.forEach((entry) => {
+      map.set(entry.date, {
+        total: entry.total,
+        amountExpected: entry.amountExpected ?? 0,
+        amountPaid: entry.amountPaid ?? 0,
+      });
+    });
+    return map;
+  }, [summary?.aggregates.byDate]);
+
+  const heatmapMonths = useMemo(() => {
+    const now = dayjs();
+    return [
+      now.subtract(1, "month").startOf("month"),
+      now.startOf("month"),
+      now.add(1, "month").startOf("month"),
+    ];
+  }, []);
+
+  const heatmapMonthKeys = useMemo(
+    () => new Set(heatmapMonths.map((month) => month.format("YYYY-MM"))),
+    [heatmapMonths]
+  );
+
+  const heatmapMaxValue = useMemo(() => {
+    if (!summary) return 0;
+    let max = 0;
+    summary.aggregates.byDate.forEach((entry) => {
+      if (heatmapMonthKeys.has(dayjs(entry.date).format("YYYY-MM"))) {
+        max = Math.max(max, entry.total);
+      }
+    });
+    return max;
+  }, [summary, heatmapMonthKeys]);
+
   const eventTypeOptions: MultiSelectOption[] = useMemo(
     () =>
       availableEventTypes.map((entry) => {
@@ -408,6 +446,24 @@ function CalendarSummaryPage() {
           <p className="mt-2 text-2xl font-semibold text-[var(--brand-primary)]">
             {currencyFormatter.format(totals.amountPaid)}
           </p>
+        </div>
+      </section>
+
+      <section className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Mapa de calor mensual</h2>
+          <span className="text-[11px] text-slate-500">Vista rápida de actividad reciente</span>
+        </div>
+        <div className="grid gap-4 lg:grid-cols-3">
+          {heatmapMonths.map((month) => (
+            <MonthlyHeatmap
+              key={month.format("YYYY-MM")}
+              month={month}
+              statsByDate={statsByDate}
+              maxValue={heatmapMaxValue}
+              titleSuffix="Eventos"
+            />
+          ))}
         </div>
       </section>
 

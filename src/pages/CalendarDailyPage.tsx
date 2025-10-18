@@ -158,6 +158,11 @@ function CalendarDailyPage() {
                     {event.category}
                   </span>
                 )}
+                {event.treatmentStage && (
+                  <span className="rounded-full bg-[var(--brand-primary)]/10 px-2 py-1 font-semibold text-[var(--brand-primary)]">
+                    {event.treatmentStage}
+                  </span>
+                )}
                 {event.eventType && (
                   <span className="rounded-full bg-slate-100 px-2 py-1 font-semibold text-slate-500">
                     {event.eventType}
@@ -185,6 +190,10 @@ function CalendarDailyPage() {
                   label: "Asistencia",
                   value:
                     event.attended == null ? null : event.attended ? "Asistió" : "No asistió",
+                },
+                {
+                  label: "Dosis",
+                  value: event.dosage ?? null,
                 },
                 {
                   label: "Creado",

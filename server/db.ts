@@ -526,6 +526,8 @@ export async function ensureSchema() {
       amount_expected INT NULL,
       amount_paid INT NULL,
       attended TINYINT(1) NULL,
+      dosage VARCHAR(64) NULL,
+      treatment_stage VARCHAR(64) NULL,
       raw_event JSON NULL,
       last_synced_at DATETIME NOT NULL,
       PRIMARY KEY (calendar_id, event_id),
@@ -537,6 +539,8 @@ export async function ensureSchema() {
   await addColumnIfMissing(pool, "google_calendar_events", "`amount_expected` INT NULL AFTER `category`");
   await addColumnIfMissing(pool, "google_calendar_events", "`amount_paid` INT NULL AFTER `amount_expected`");
   await addColumnIfMissing(pool, "google_calendar_events", "`attended` TINYINT(1) NULL AFTER `amount_paid`");
+  await addColumnIfMissing(pool, "google_calendar_events", "`dosage` VARCHAR(64) NULL AFTER `attended`");
+  await addColumnIfMissing(pool, "google_calendar_events", "`treatment_stage` VARCHAR(64) NULL AFTER `dosage`");
 
   await pool.execute(`
     CREATE TABLE IF NOT EXISTS google_calendar_sync_log (
@@ -3021,6 +3025,8 @@ export type CalendarEventRow = {
   amount_expected: number | null;
   amount_paid: number | null;
   attended: number | null;
+  dosage: string | null;
+  treatment_stage: string | null;
 };
 
 export async function listUnclassifiedCalendarEvents(limit = 50): Promise<CalendarEventRow[]> {
@@ -3028,7 +3034,7 @@ export async function listUnclassifiedCalendarEvents(limit = 50): Promise<Calend
   const [rows] = await pool.query<RowDataPacket[]>(
     `SELECT calendar_id, event_id, event_status, event_type, summary, description,
             start_date, start_date_time, end_date, end_date_time,
-            category, amount_expected, amount_paid, attended
+            category, amount_expected, amount_paid, attended, dosage, treatment_stage
        FROM google_calendar_events
       WHERE (category IS NULL OR category = '')
       ORDER BY COALESCE(start_date, DATE(start_date_time)) DESC, start_date_time DESC
@@ -3046,6 +3052,8 @@ export async function updateCalendarEventClassification(
     amountExpected?: number | null;
     amountPaid?: number | null;
     attended?: boolean | null;
+    dosage?: string | null;
+    treatmentStage?: string | null;
   }
 ) {
   const pool = getPool();
@@ -3054,13 +3062,17 @@ export async function updateCalendarEventClassification(
         SET category = ?,
             amount_expected = ?,
             amount_paid = ?,
-            attended = ?
+            attended = ?,
+            dosage = ?,
+            treatment_stage = ?
       WHERE calendar_id = ? AND event_id = ?`,
     [
       data.category ?? null,
       data.amountExpected ?? null,
       data.amountPaid ?? null,
       data.attended == null ? null : data.attended ? 1 : 0,
+      data.dosage ?? null,
+      data.treatmentStage ?? null,
       calendarId,
       eventId,
     ]

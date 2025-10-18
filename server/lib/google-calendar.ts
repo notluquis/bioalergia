@@ -33,6 +33,8 @@ export type CalendarEventRecord = {
   amountExpected?: number | null;
   amountPaid?: number | null;
   attended?: boolean | null;
+  dosage?: string | null;
+  treatmentStage?: string | null;
 };
 
 type CalendarRuntimeConfig = {
@@ -55,6 +57,12 @@ export type GoogleCalendarSyncPayload = {
 const SUBCUT_PATTERNS = [/\bclustoid\b/i, /\bvacc?\b/i, /\bvacuna\b/i, /\bvac\.?\b/i];
 const TEST_PATTERNS = [/\bexamen\b/i, /\btest\b/i, /cut[áa]neo/i, /ambiental/i, /panel/i, /multitest/i];
 const ATTENDED_PATTERNS = [/\blleg[oó]\b/i, /\basist[ií]o\b/i];
+const MAINTENANCE_PATTERNS = [/\bmantenci[oó]n\b/i, /\bmant\b/i];
+const DOSAGE_PATTERNS = [
+  /(\d+(?:[.,]\d+)?)\s*ml\b/i,
+  /(\d+(?:[.,]\d+)?)\s*cc\b/i,
+  /(\d+(?:[.,]\d+)?)\s*mg\b/i,
+];
 
 function normalizeAmountRaw(raw: string): number | null {
   const digits = raw.replace(/[^0-9]/g, "");
@@ -104,9 +112,42 @@ function classifyCategory(summary: string, description: string): string | null {
   return null;
 }
 
-function detectAttendance(summary: string, description: string, status?: string | null): boolean | null {
+function detectAttendance(summary: string, description: string): boolean | null {
   const text = `${summary} ${description}`;
   if (ATTENDED_PATTERNS.some((pattern) => pattern.test(text))) return true;
+  return null;
+}
+
+function extractDosage(summary: string, description: string): string | null {
+  const text = `${summary} ${description}`;
+  for (const pattern of DOSAGE_PATTERNS) {
+    const match = pattern.exec(text);
+    if (match) {
+      const valueRaw = match[1]?.replace(",", ".") ?? "";
+      const unit = match[0].replace(match[1] ?? "", "").trim().toLowerCase();
+      if (valueRaw) {
+        const normalizedValue = Number.parseFloat(valueRaw);
+        if (Number.isFinite(normalizedValue)) {
+          const formatter = new Intl.NumberFormat("es-CL", {
+            minimumFractionDigits: normalizedValue % 1 === 0 ? 0 : 1,
+            maximumFractionDigits: 2,
+          });
+          const formattedValue = formatter.format(normalizedValue);
+          return `${formattedValue} ${unit}`;
+        }
+        return `${match[1]} ${unit}`.trim();
+      }
+      return match[0].trim();
+    }
+  }
+  return null;
+}
+
+function detectTreatmentStage(summary: string, description: string): string | null {
+  const text = `${summary} ${description}`;
+  if (MAINTENANCE_PATTERNS.some((pattern) => pattern.test(text))) {
+    return "Mantención";
+  }
   return null;
 }
 
@@ -226,14 +267,19 @@ async function fetchCalendarEventsForId(
 
       const summary = item.summary ?? "";
       const description = item.description ?? "";
-      const category = classifyCategory(summary, description);
+      let category = classifyCategory(summary, description);
       const amounts = extractAmounts(summary, description);
       let amountExpected = amounts.amountExpected;
       let amountPaid = amounts.amountPaid;
       if (amountPaid != null && amountExpected == null) {
         amountExpected = amountPaid;
       }
-      const attended = detectAttendance(summary, description, item.status);
+      const attended = detectAttendance(summary, description);
+      const dosage = extractDosage(summary, description);
+      const treatmentStage = detectTreatmentStage(summary, description);
+      if (!category && dosage) {
+        category = "Tratamiento subcutáneo";
+      }
 
       events.push({
         calendarId,
@@ -255,6 +301,8 @@ async function fetchCalendarEventsForId(
         amountExpected,
         amountPaid,
         attended,
+        dosage,
+        treatmentStage,
       });
     }
 
