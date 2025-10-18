@@ -334,13 +334,41 @@ function CalendarSummaryPage() {
         </div>
       </form>
 
-      {syncing && <Alert variant="info">Sincronizando calendario…</Alert>}
+      {syncing && (
+        <Alert variant="info">
+          <span className="font-semibold text-slate-700">Sincronizando calendario…</span>
+          <ul className="mt-2 list-disc space-y-1 pl-4 text-[11px] text-slate-600">
+            <li>Consultando Google Calendar y descargando los eventos nuevos o modificados.</li>
+            <li>Actualizando la base de datos con los cambios detectados.</li>
+            <li>Eliminando eventos que quedaron excluidos por reglas de filtrado.</li>
+            <li>Recalculando totales y montos para el panel.</li>
+          </ul>
+        </Alert>
+      )}
       {error && <Alert variant="error">{error}</Alert>}
       {syncError && <Alert variant="error">{syncError}</Alert>}
       {lastSyncInfo && !syncError && (
         <Alert variant="success">
-          <span className="font-semibold">Sincronización completada:</span>{" "}
-          {`${numberFormatter.format(lastSyncInfo.inserted)} nuevas, ${numberFormatter.format(lastSyncInfo.updated)} actualizadas, ${numberFormatter.format(lastSyncInfo.skipped)} omitidas, ${numberFormatter.format(lastSyncInfo.excluded)} filtradas.`}
+          <span className="font-semibold text-slate-700">Sincronización completada</span>
+          <div className="mt-2 space-y-1 text-[11px] text-slate-600">
+            <p>
+              <span className="font-semibold text-slate-700">Nuevas:</span>{" "}
+              {numberFormatter.format(lastSyncInfo.inserted)} eventos que no existían y se agregaron.
+            </p>
+            <p>
+              <span className="font-semibold text-slate-700">Actualizadas:</span>{" "}
+              {numberFormatter.format(lastSyncInfo.updated)} eventos existentes que tenían cambios.
+            </p>
+            <p>
+              <span className="font-semibold text-slate-700">Omitidas:</span>{" "}
+              {numberFormatter.format(lastSyncInfo.skipped)} eventos sin cambios desde la última sincronización.
+            </p>
+            <p>
+              <span className="font-semibold text-slate-700">Filtradas:</span>{" "}
+              {numberFormatter.format(lastSyncInfo.excluded)} eventos descartados por coincidencias con las reglas de
+              exclusión (palabras clave configuradas).
+            </p>
+          </div>
           <br />
           <span className="text-xs text-slate-500">
             Ejecutado: {dayjs(lastSyncInfo.fetchedAt).format("DD MMM YYYY HH:mm")}

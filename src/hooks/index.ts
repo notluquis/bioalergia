@@ -12,3 +12,9 @@ export { useAsyncData, type UseAsyncDataState, type UseAsyncDataOptions } from "
 
 // File upload utilities
 export { useFileUpload } from "./useFileUpload";
+
+// Disclosure utilities
+export { useDisclosure, type UseDisclosureControls } from "./useDisclosure";
+
+// DOM interaction utilities
+export { useOutsideClick } from "./useOutsideClick";
