@@ -290,12 +290,15 @@ export async function getCalendarAggregates(filters: CalendarEventFilters): Prom
   );
 
   const [categoryRows] = await pool.query<RowDataPacket[]>(
-    `SELECT
-        CASE WHEN events.category IS NULL OR events.category = '' THEN NULL ELSE events.category END AS category,
-        COUNT(*) AS total
-     FROM (${BASE_EVENTS_SELECT}) AS events
-     ${whereClause}
-     GROUP BY CASE WHEN events.category IS NULL OR events.category = '' THEN NULL ELSE events.category END
+    `SELECT category, total
+     FROM (
+       SELECT
+         CASE WHEN events.category IS NULL OR events.category = '' THEN NULL ELSE events.category END AS category,
+         COUNT(*) AS total
+       FROM (${BASE_EVENTS_SELECT}) AS events
+       ${whereClause}
+       GROUP BY category
+     ) AS categorized
      ORDER BY category IS NULL, category`,
     [...params]
   );

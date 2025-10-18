@@ -3031,7 +3031,7 @@ export async function listUnclassifiedCalendarEvents(limit = 50): Promise<Calend
             category, amount_expected, amount_paid, attended
        FROM google_calendar_events
       WHERE (category IS NULL OR category = '')
-      ORDER BY event_date DESC, start_date_time DESC
+      ORDER BY COALESCE(start_date, DATE(start_date_time)) DESC, start_date_time DESC
       LIMIT ?`,
     [limit]
   );
