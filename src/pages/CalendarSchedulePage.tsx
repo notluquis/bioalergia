@@ -8,7 +8,7 @@ import Input from "../components/Input";
 import Alert from "../components/Alert";
 import { MultiSelectFilter, type MultiSelectOption } from "../features/calendar/components/MultiSelectFilter";
 import { useCalendarEvents } from "../features/calendar/hooks/useCalendarEvents";
-import { HeatmapMonth } from "../features/calendar/components/HeatmapMonth";
+import ScheduleCalendar from "../features/calendar/components/ScheduleCalendar";
 
 dayjs.locale("es");
 
@@ -16,9 +16,10 @@ const numberFormatter = new Intl.NumberFormat("es-CL");
 const NULL_EVENT_TYPE_VALUE = "__NULL__";
 const NULL_CATEGORY_VALUE = "__NULL_CATEGORY__";
 
-function CalendarHeatmapPage() {
+function CalendarSchedulePage() {
   const {
     filters,
+    daily,
     summary,
     loading,
     error,
@@ -60,50 +61,15 @@ function CalendarHeatmapPage() {
     [availableCategories]
   );
 
-  const statsByDate = useMemo(() => {
-    const map = new Map<string, { total: number; amountExpected: number; amountPaid: number }>();
-    summary?.aggregates.byDate.forEach((entry) => {
-      map.set(entry.date, {
-        total: entry.total,
-        amountExpected: entry.amountExpected ?? 0,
-        amountPaid: entry.amountPaid ?? 0,
-      });
-    });
-    return map;
-  }, [summary?.aggregates.byDate]);
-
-  const heatmapMonths = useMemo(() => {
-    const now = dayjs();
-    return [
-      now.subtract(1, "month").startOf("month"),
-      now.startOf("month"),
-      now.add(1, "month").startOf("month"),
-    ];
-  }, []);
-
-  const heatmapMonthKeys = useMemo(
-    () => new Set(heatmapMonths.map((month) => month.format("YYYY-MM"))),
-    [heatmapMonths]
-  );
-
-  const heatmapMaxValue = useMemo(() => {
-    if (!summary) return 0;
-    let max = 0;
-    summary.aggregates.byDate.forEach((entry) => {
-      if (heatmapMonthKeys.has(dayjs(entry.date).format("YYYY-MM"))) {
-        max = Math.max(max, entry.total);
-      }
-    });
-    return max;
-  }, [summary, heatmapMonthKeys]);
+  const allEvents = useMemo(() => daily?.days.flatMap((day) => day.events) ?? [], [daily?.days]);
 
   return (
     <section className="space-y-6">
       <header className="space-y-2">
-        <h1 className="text-2xl font-bold text-[var(--brand-primary)]">Mapa de calor de calendario</h1>
+        <h1 className="text-2xl font-bold text-[var(--brand-primary)]">Calendario interactivo</h1>
         <p className="text-sm text-slate-600">
-          Visualiza cómo se distribuyen los eventos por semana y día. Cambia los filtros para explorar distintos rangos
-          y categorías.
+          Navega por tus eventos sincronizados desde Google Calendar con vistas mensual, semanal y diaria. Puedes filtrar
+          por calendario, tipo de evento y clasificación.
         </p>
       </header>
 
@@ -193,27 +159,16 @@ function CalendarHeatmapPage() {
 
       {error && <Alert variant="error">{error}</Alert>}
 
-      <section className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Mapa de calor mensual</h2>
-          <span className="text-[11px] text-slate-500">
-            Mostrando {heatmapMonths[0].format("MMM YYYY")} – {heatmapMonths[2].format("MMM YYYY")}
-          </span>
-        </div>
+      <ScheduleCalendar events={allEvents} loading={loading} />
 
-        <div className="grid gap-4 lg:grid-cols-3">
-          {heatmapMonths.map((month) => (
-            <HeatmapMonth
-              key={month.format("YYYY-MM")}
-              month={month}
-              statsByDate={statsByDate}
-              maxValue={heatmapMaxValue}
-            />
-          ))}
-        </div>
-      </section>
+      {summary && (
+        <p className="text-xs text-slate-500">
+          Rango activo: {dayjs(summary.filters.from).format("DD MMM YYYY")} –{" "}
+          {dayjs(summary.filters.to).format("DD MMM YYYY")} · {numberFormatter.format(allEvents.length)} eventos listados.
+        </p>
+      )}
     </section>
   );
 }
 
-export default CalendarHeatmapPage;
+export default CalendarSchedulePage;

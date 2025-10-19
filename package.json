@@ -42,6 +42,10 @@
     "jsonwebtoken": "^9.0.2",
     "jspdf": "^3.0.3",
     "jspdf-autotable": "^5.0.2",
+    "@fullcalendar/react": "^6.1.11",
+    "@fullcalendar/daygrid": "^6.1.11",
+    "@fullcalendar/timegrid": "^6.1.11",
+    "@fullcalendar/interaction": "^6.1.11",
     "googleapis": "^164.0.0",
     "lucide-react": "^0.546.0",
     "multer": "^2.0.2",
@@ -50,6 +54,7 @@
     "papaparse": "^5.5.3",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "react-calendar-heatmap": "^1.8.1",
     "react-router-dom": "^7.9.4",
     "sharp": "^0.34.4",
     "zod": "^4.1.12"

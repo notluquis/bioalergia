@@ -49,6 +49,7 @@ const NAV_SECTIONS: NavSection[] = [
     title: "Calendario",
     items: [
       { to: "/calendar/summary", label: "Resumen", roles: ["GOD", "ADMIN", "ANALYST", "VIEWER"] },
+      { to: "/calendar/schedule", label: "Calendario", roles: ["GOD", "ADMIN", "ANALYST", "VIEWER"] },
       { to: "/calendar/daily", label: "Detalle diario", roles: ["GOD", "ADMIN", "ANALYST", "VIEWER"] },
       { to: "/calendar/heatmap", label: "Mapa de calor", roles: ["GOD", "ADMIN", "ANALYST", "VIEWER"] },
       { to: "/calendar/classify", label: "Clasificar pendientes", roles: ["GOD", "ADMIN", "ANALYST"] },
@@ -91,6 +92,7 @@ const TITLES: Record<string, string> = {
   "/services/agenda": "Agenda de servicios",
   "/services/create": "Crear servicio",
   "/calendar/summary": "Eventos de calendario",
+  "/calendar/schedule": "Calendario interactivo",
   "/calendar/daily": "Detalle diario",
   "/calendar/heatmap": "Mapa de calor",
   "/calendar/classify": "Clasificar eventos",

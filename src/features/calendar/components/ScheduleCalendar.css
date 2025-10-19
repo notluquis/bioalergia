@@ -1,0 +1,24 @@
+.fc {
+  --calendar-event-bg-default: rgba(148, 163, 184, 0.18);
+  --calendar-event-bg-subcutaneous: rgba(30, 64, 175, 0.18);
+  --calendar-event-bg-test: rgba(244, 114, 182, 0.18);
+}
+
+.calendar-event--default {
+  background-color: var(--calendar-event-bg-default) !important;
+  border-color: rgba(148, 163, 184, 0.4) !important;
+}
+
+.calendar-event--subcutaneous {
+  background-color: var(--calendar-event-bg-subcutaneous) !important;
+  border-color: rgba(30, 64, 175, 0.4) !important;
+}
+
+.calendar-event--test {
+  background-color: rgba(244, 114, 182, 0.18) !important;
+  border-color: rgba(244, 114, 182, 0.45) !important;
+}
+
+.calendar-loading {
+  cursor: progress !important;
+}
