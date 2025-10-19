@@ -4,6 +4,7 @@ import type {
   CalendarSummary,
   CalendarDaily,
   CalendarSyncLog,
+  CalendarSyncStep,
   CalendarUnclassifiedEvent,
   CalendarEventClassificationPayload,
 } from "./types";
@@ -20,6 +21,8 @@ type CalendarSyncResponse = {
   skipped: number;
   excluded: number;
   logId: number;
+  steps: CalendarSyncStep[];
+  totalDurationMs: number;
 };
 
 function buildQuery(filters: CalendarFilters, options?: { includeMaxDays?: boolean }) {

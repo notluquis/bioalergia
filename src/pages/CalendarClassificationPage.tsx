@@ -110,13 +110,24 @@ function CalendarClassificationPage() {
   const pendingCount = events.length;
 
   const handleDraftChange = useCallback((key: string, baseEvent: CalendarUnclassifiedEvent, patch: Partial<Draft>) => {
-    setDrafts((prev) => ({
-      ...prev,
-      [key]: {
-        ...(prev[key] ?? buildDraft(baseEvent)),
+    setDrafts((prev) => {
+      const previous = prev[key] ?? buildDraft(baseEvent);
+      const merged: Draft = {
+        ...previous,
         ...patch,
-      },
-    }));
+      };
+
+      const nextCategory = patch.category ?? merged.category;
+      if (nextCategory !== "Tratamiento subcutáneo") {
+        merged.dosage = "";
+        merged.treatmentStage = "";
+      }
+
+      return {
+        ...prev,
+        [key]: merged,
+      };
+    });
   }, []);
 
   const resetDraft = useCallback((event: CalendarUnclassifiedEvent) => {
@@ -146,8 +157,10 @@ function CalendarClassificationPage() {
       const payloadCategory = draft.category.trim() ? draft.category.trim() : null;
       const payloadExpected = parseAmountInput(draft.amountExpected);
       const payloadPaid = parseAmountInput(draft.amountPaid);
-      const payloadDosage = draft.dosage.trim() ? draft.dosage.trim() : null;
-      const payloadStage = draft.treatmentStage.trim() ? draft.treatmentStage.trim() : null;
+      const resolvedCategory = payloadCategory ?? event.category ?? "";
+      const isSubcutaneous = resolvedCategory === "Tratamiento subcutáneo";
+      const payloadDosage = isSubcutaneous && draft.dosage.trim() ? draft.dosage.trim() : null;
+      const payloadStage = isSubcutaneous && draft.treatmentStage.trim() ? draft.treatmentStage.trim() : null;
 
       try {
         await classifyCalendarEvent({
@@ -239,6 +252,8 @@ function CalendarClassificationPage() {
           const key = eventKey(calendarEvent);
           const draft = drafts[key] ?? buildDraft(calendarEvent);
           const description = calendarEvent.description?.trim();
+          const resolvedCategory = draft.category || calendarEvent.category || "";
+          const isSubcutaneous = resolvedCategory === "Tratamiento subcutáneo";
 
           return (
             <article
@@ -267,7 +282,7 @@ function CalendarClassificationPage() {
                 </div>
               </header>
 
-              {(calendarEvent.dosage || draft.dosage || calendarEvent.treatmentStage || draft.treatmentStage) && (
+              {isSubcutaneous && (calendarEvent.dosage || draft.dosage || calendarEvent.treatmentStage || draft.treatmentStage) && (
                 <div className="flex flex-wrap gap-2 text-[11px] text-slate-500">
                   {(draft.dosage || calendarEvent.dosage) && (
                     <span className="rounded-full bg-white/70 px-2 py-1 font-semibold text-slate-600">
@@ -289,7 +304,7 @@ function CalendarClassificationPage() {
                 </p>
               )}
 
-              <div className="grid gap-4 text-xs text-slate-600 md:grid-cols-6">
+              <div className={`grid gap-4 text-xs text-slate-600 ${isSubcutaneous ? "md:grid-cols-6" : "md:grid-cols-4"}`}>
                 <Input
                   label="Clasificación"
                   type="select"
@@ -327,29 +342,33 @@ function CalendarClassificationPage() {
                     handleDraftChange(key, calendarEvent, { amountPaid: input.target.value })
                   }
                 />
-                <Input
-                  label="Dosis"
-                  placeholder="0.3 ml"
-                  value={draft.dosage}
-                  onChange={(input: ChangeEvent<HTMLInputElement>) =>
-                    handleDraftChange(key, calendarEvent, { dosage: input.target.value })
-                  }
-                />
-                <Input
-                  label="Etapa tratamiento"
-                  type="select"
-                  value={draft.treatmentStage}
-                  onChange={(input: ChangeEvent<HTMLSelectElement>) =>
-                    handleDraftChange(key, calendarEvent, { treatmentStage: input.target.value })
-                  }
-                >
-                  <option value="">Sin etapa</option>
-                  {TREATMENT_STAGE_CHOICES.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </Input>
+                {isSubcutaneous && (
+                  <>
+                    <Input
+                      label="Dosis"
+                      placeholder="0.3 ml"
+                      value={draft.dosage}
+                      onChange={(input: ChangeEvent<HTMLInputElement>) =>
+                        handleDraftChange(key, calendarEvent, { dosage: input.target.value })
+                      }
+                    />
+                    <Input
+                      label="Etapa tratamiento"
+                      type="select"
+                      value={draft.treatmentStage}
+                      onChange={(input: ChangeEvent<HTMLSelectElement>) =>
+                        handleDraftChange(key, calendarEvent, { treatmentStage: input.target.value })
+                      }
+                    >
+                      <option value="">Sin etapa</option>
+                      {TREATMENT_STAGE_CHOICES.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </Input>
+                  </>
+                )}
                 <div className="flex items-end">
                   <Checkbox
                     label="Asistió / llegó"

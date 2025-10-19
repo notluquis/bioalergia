@@ -148,6 +148,13 @@ export type CalendarSyncLog = {
   errorMessage: string | null;
 };
 
+export type CalendarSyncStep = {
+  id: "fetch" | "upsert" | "exclude" | "snapshot";
+  label: string;
+  durationMs: number;
+  details: Record<string, unknown>;
+};
+
 export type CalendarUnclassifiedEvent = {
   calendarId: string;
   eventId: string;

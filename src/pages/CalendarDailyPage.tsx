@@ -135,117 +135,124 @@ function CalendarDailyPage() {
         </span>
       </summary>
       <div className="mt-3 space-y-3">
-        {entry.events.map((event) => (
-          <article
-            key={event.eventId}
-            className="rounded-2xl border border-white/50 bg-white/95 p-4 text-sm text-slate-700 shadow-inner"
-          >
-            <header className="flex flex-wrap items-start justify-between gap-3">
-              <div className="flex flex-col gap-1">
-                <h3 className="text-base font-semibold text-slate-800">
-                  {event.summary?.trim() || "(Sin título)"}
-                </h3>
-                <span className="text-xs font-semibold uppercase tracking-wide text-[var(--brand-secondary)]/70">
-                  {formatEventTime(event)}
-                </span>
-              </div>
-              <div className="flex flex-col items-end gap-1 text-[11px] text-slate-500">
-                <span className="rounded-full bg-slate-100 px-2 py-1 font-semibold text-slate-600">
-                  {event.calendarId}
-                </span>
-                {event.category && (
-                  <span className="rounded-full bg-[var(--brand-secondary)]/15 px-2 py-1 font-semibold text-[var(--brand-secondary)]">
-                    {event.category}
+        {entry.events.map((event) => {
+          const isSubcutaneous = event.category === "Tratamiento subcutáneo";
+          const detailEntries = [
+            { label: "Estado", value: event.status },
+            { label: "Transparencia", value: event.transparency },
+              { label: "Visibilidad", value: event.visibility },
+            { label: "Color", value: event.colorId },
+            { label: "Zona horaria", value: event.startTimeZone ?? event.endTimeZone },
+            {
+              label: "Monto esperado",
+              value: event.amountExpected != null ? currencyFormatter.format(event.amountExpected) : null,
+            },
+            {
+              label: "Monto pagado",
+              value: event.amountPaid != null ? currencyFormatter.format(event.amountPaid) : null,
+            },
+            {
+              label: "Asistencia",
+              value: event.attended == null ? null : event.attended ? "Asistió" : "No asistió",
+            },
+          ];
+
+          if (isSubcutaneous && event.dosage) {
+            detailEntries.push({ label: "Dosis", value: event.dosage });
+          }
+
+          detailEntries.push(
+            {
+              label: "Creado",
+              value: event.eventCreatedAt ? dayjs(event.eventCreatedAt).format("DD MMM YYYY HH:mm") : null,
+            },
+            {
+              label: "Actualizado",
+              value: event.eventUpdatedAt ? dayjs(event.eventUpdatedAt).format("DD MMM YYYY HH:mm") : null,
+            }
+          );
+
+          return (
+            <article
+              key={event.eventId}
+              className="rounded-2xl border border-white/50 bg-white/95 p-4 text-sm text-slate-700 shadow-inner"
+            >
+              <header className="flex flex-wrap items-start justify-between gap-3">
+                <div className="flex flex-col gap-1">
+                  <h3 className="text-base font-semibold text-slate-800">
+                    {event.summary?.trim() || "(Sin título)"}
+                  </h3>
+                  <span className="text-xs font-semibold uppercase tracking-wide text-[var(--brand-secondary)]/70">
+                    {formatEventTime(event)}
                   </span>
-                )}
-                {event.treatmentStage && (
-                  <span className="rounded-full bg-[var(--brand-primary)]/10 px-2 py-1 font-semibold text-[var(--brand-primary)]">
-                    {event.treatmentStage}
+                </div>
+                <div className="flex flex-col items-end gap-1 text-[11px] text-slate-500">
+                  <span className="rounded-full bg-slate-100 px-2 py-1 font-semibold text-slate-600">
+                    {event.calendarId}
                   </span>
-                )}
-                {event.eventType && (
-                  <span className="rounded-full bg-slate-100 px-2 py-1 font-semibold text-slate-500">
-                    {event.eventType}
-                  </span>
-                )}
-              </div>
-            </header>
+                  {event.category && (
+                    <span className="rounded-full bg-[var(--brand-secondary)]/15 px-2 py-1 font-semibold text-[var(--brand-secondary)]">
+                      {event.category}
+                    </span>
+                  )}
+                  {isSubcutaneous && event.treatmentStage && (
+                    <span className="rounded-full bg-[var(--brand-primary)]/10 px-2 py-1 font-semibold text-[var(--brand-primary)]">
+                      {event.treatmentStage}
+                    </span>
+                  )}
+                  {event.eventType && (
+                    <span className="rounded-full bg-slate-100 px-2 py-1 font-semibold text-slate-500">
+                      {event.eventType}
+                    </span>
+                  )}
+                </div>
+              </header>
 
-            <dl className="mt-3 grid gap-2 text-xs text-slate-500 sm:grid-cols-2">
-              {[
-                { label: "Estado", value: event.status },
-                { label: "Transparencia", value: event.transparency },
-                { label: "Visibilidad", value: event.visibility },
-                { label: "Color", value: event.colorId },
-                { label: "Zona horaria", value: event.startTimeZone ?? event.endTimeZone },
-                {
-                  label: "Monto esperado",
-                  value: event.amountExpected != null ? currencyFormatter.format(event.amountExpected) : null,
-                },
-                {
-                  label: "Monto pagado",
-                  value: event.amountPaid != null ? currencyFormatter.format(event.amountPaid) : null,
-                },
-                {
-                  label: "Asistencia",
-                  value:
-                    event.attended == null ? null : event.attended ? "Asistió" : "No asistió",
-                },
-                {
-                  label: "Dosis",
-                  value: event.dosage ?? null,
-                },
-                {
-                  label: "Creado",
-                  value: event.eventCreatedAt ? dayjs(event.eventCreatedAt).format("DD MMM YYYY HH:mm") : null,
-                },
-                {
-                  label: "Actualizado",
-                  value: event.eventUpdatedAt ? dayjs(event.eventUpdatedAt).format("DD MMM YYYY HH:mm") : null,
-                },
-              ]
-                .filter((entry) => entry.value)
-                .map((entry) => (
-                  <div key={entry.label} className="flex flex-col">
-                    <dt className="font-semibold text-slate-600">{entry.label}</dt>
-                    <dd className="text-slate-500">{entry.value}</dd>
-                  </div>
-                ))}
-            </dl>
+              <dl className="mt-3 grid gap-2 text-xs text-slate-500 sm:grid-cols-2">
+                {detailEntries
+                  .filter((entry) => entry.value)
+                  .map((entry) => (
+                    <div key={entry.label} className="flex flex-col">
+                      <dt className="font-semibold text-slate-600">{entry.label}</dt>
+                      <dd className="text-slate-500">{entry.value}</dd>
+                    </div>
+                  ))}
+              </dl>
 
-            {event.location && (
-              <p className="mt-3 text-xs text-slate-500">
-                <span className="font-semibold text-slate-600">Ubicación:</span> {event.location}
-              </p>
-            )}
+              {event.location && (
+                <p className="mt-3 text-xs text-slate-500">
+                  <span className="font-semibold text-slate-600">Ubicación:</span> {event.location}
+                </p>
+              )}
 
-            {event.hangoutLink && (
-              <p className="mt-2 text-xs">
-                <a
-                  href={event.hangoutLink}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-[var(--brand-primary)] underline"
-                >
-                  Enlace de videollamada
-                </a>
-              </p>
-            )}
+              {event.hangoutLink && (
+                <p className="mt-2 text-xs">
+                  <a
+                    href={event.hangoutLink}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[var(--brand-primary)] underline"
+                  >
+                    Enlace de videollamada
+                  </a>
+                </p>
+              )}
 
-            {event.description && (
-              <p className="mt-3 whitespace-pre-wrap text-sm text-slate-600">{event.description}</p>
-            )}
+              {event.description && (
+                <p className="mt-3 whitespace-pre-wrap text-sm text-slate-600">{event.description}</p>
+              )}
 
-            {event.rawEvent != null && (
-              <details className="mt-3 text-xs text-slate-500">
-                <summary className="cursor-pointer font-semibold text-[var(--brand-primary)]">Ver payload completo</summary>
-                <pre className="mt-2 max-h-64 overflow-x-auto rounded-lg bg-slate-900/90 p-3 text-[10px] text-white">
-                  {JSON.stringify(event.rawEvent, null, 2)}
-                </pre>
-              </details>
-            )}
-          </article>
-        ))}
+              {event.rawEvent != null && (
+                <details className="mt-3 text-xs text-slate-500">
+                  <summary className="cursor-pointer font-semibold text-[var(--brand-primary)]">Ver payload completo</summary>
+                  <pre className="mt-2 max-h-64 overflow-x-auto rounded-lg bg-slate-900/90 p-3 text-[10px] text-white">
+                    {JSON.stringify(event.rawEvent, null, 2)}
+                  </pre>
+                </details>
+              )}
+            </article>
+          );
+        })}
       </div>
     </details>
   );

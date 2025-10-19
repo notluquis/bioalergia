@@ -2,8 +2,19 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dayjs from "dayjs";
 
 import { fetchCalendarDaily, fetchCalendarSummary, syncCalendarEvents } from "../api";
-import type { CalendarDaily, CalendarFilters, CalendarSummary } from "../types";
+import type { CalendarDaily, CalendarFilters, CalendarSummary, CalendarSyncStep } from "../types";
 import { useSettings } from "../../../context/settings-context";
+
+type SyncProgressStatus = "pending" | "in_progress" | "completed" | "error";
+
+type SyncProgressEntry = CalendarSyncStep & { status: SyncProgressStatus };
+
+const SYNC_STEPS_TEMPLATE: Array<{ id: CalendarSyncStep["id"]; label: string }> = [
+  { id: "fetch", label: "Consultando Google Calendar" },
+  { id: "upsert", label: "Actualizando base de datos" },
+  { id: "exclude", label: "Eliminando eventos excluidos" },
+  { id: "snapshot", label: "Guardando snapshot" },
+];
 
 function normalizeFilters(filters: CalendarFilters): CalendarFilters {
   const unique = (values: string[]) => Array.from(new Set(values)).sort();
@@ -80,6 +91,8 @@ export function useCalendarEvents() {
     excluded: number;
     logId?: number;
   } | null>(null);
+  const [syncProgress, setSyncProgress] = useState<SyncProgressEntry[]>([]);
+  const [syncDurationMs, setSyncDurationMs] = useState<number | null>(null);
 
   const fetchData = useCallback(async (nextFilters: CalendarFilters) => {
     setLoading(true);
@@ -140,22 +153,55 @@ export function useCalendarEvents() {
   const syncNow = useCallback(async () => {
     setSyncing(true);
     setSyncError(null);
+    setSyncDurationMs(null);
+    setSyncProgress(
+      SYNC_STEPS_TEMPLATE.map((step, index) => ({
+        id: step.id,
+        label: step.label,
+        durationMs: 0,
+        details: {},
+        status: index === 0 ? "in_progress" : "pending",
+      }))
+    );
     try {
       const result = await syncCalendarEvents();
-        setLastSyncInfo({
-          fetchedAt: result.fetchedAt,
-          inserted: result.inserted,
-          updated: result.updated,
-          skipped: result.skipped,
-          excluded: result.excluded,
-          logId: result.logId,
-        });
+      setSyncDurationMs(result.totalDurationMs ?? null);
+      setSyncProgress(
+        SYNC_STEPS_TEMPLATE.map((step) => {
+          const payloadStep = result.steps.find((entry) => entry.id === step.id);
+          return {
+            id: step.id,
+            label: step.label,
+            durationMs: payloadStep?.durationMs ?? 0,
+            details: payloadStep?.details ?? {},
+            status: "completed" as SyncProgressStatus,
+          };
+        })
+      );
+      setLastSyncInfo({
+        fetchedAt: result.fetchedAt,
+        inserted: result.inserted,
+        updated: result.updated,
+        skipped: result.skipped,
+        excluded: result.excluded,
+        logId: result.logId,
+      });
       await fetchData(filters).catch(() => {
         /* handled */
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : "No se pudo sincronizar";
       setSyncError(message);
+      setSyncProgress((prev) =>
+        prev.map((entry) =>
+          entry.status === "in_progress"
+            ? {
+                ...entry,
+                status: "error" as SyncProgressStatus,
+              }
+            : entry
+        )
+      );
     } finally {
       setSyncing(false);
     }
@@ -179,6 +225,8 @@ export function useCalendarEvents() {
     syncing,
     syncError,
     lastSyncInfo,
+    syncProgress,
+    syncDurationMs,
     syncNow,
   };
 }

@@ -1,5 +1,6 @@
 import { promises as fs } from "fs";
 import path from "path";
+import { performance } from "node:perf_hooks";
 import { google, calendar_v3 } from "googleapis";
 import dayjs from "dayjs";
 
@@ -52,6 +53,14 @@ export type GoogleCalendarSyncPayload = {
   calendars: Array<{ calendarId: string; totalEvents: number }>;
   events: CalendarEventRecord[];
   excludedEvents: Array<{ calendarId: string; eventId: string }>;
+};
+
+export type SyncMetrics = {
+  fetchDurationMs: number;
+  upsertDurationMs: number;
+  removeDurationMs: number;
+  snapshotDurationMs: number;
+  totalDurationMs: number;
 };
 
 const SUBCUT_PATTERNS = [/\bclustoid\b/i, /\bvacc?\b/i, /\bvacuna\b/i, /\bvac\.?\b/i];
@@ -372,11 +381,39 @@ export async function persistGoogleCalendarSnapshot(payload: GoogleCalendarSyncP
 }
 
 export async function syncGoogleCalendarOnce() {
+  const syncStart = performance.now();
+
+  const fetchStart = performance.now();
   const payload = await fetchGoogleCalendarData();
+  const fetchDurationMs = performance.now() - fetchStart;
+
+  const upsertStart = performance.now();
   const upsertResult = await upsertGoogleCalendarEvents(payload.events);
+  const upsertDurationMs = performance.now() - upsertStart;
+
+  let removeDurationMs = 0;
   if (payload.excludedEvents.length) {
+    const removeStart = performance.now();
     await removeGoogleCalendarEvents(payload.excludedEvents);
+    removeDurationMs = performance.now() - removeStart;
   }
+
+  const snapshotStart = performance.now();
   const paths = await persistGoogleCalendarSnapshot(payload);
-  return { payload, upsertResult, ...paths };
+  const snapshotDurationMs = performance.now() - snapshotStart;
+
+  const totalDurationMs = performance.now() - syncStart;
+
+  return {
+    payload,
+    upsertResult,
+    ...paths,
+    metrics: {
+      fetchDurationMs,
+      upsertDurationMs,
+      removeDurationMs,
+      snapshotDurationMs,
+      totalDurationMs,
+    } satisfies SyncMetrics,
+  };
 }

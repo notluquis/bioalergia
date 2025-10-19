@@ -5,7 +5,7 @@ dist/server/uploads
 storage/
 .vite
 .DS_Store
-
+.vscode/
 # Variables de entorno sensibles
 .env
 .env.local

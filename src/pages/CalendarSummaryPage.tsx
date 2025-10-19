@@ -11,7 +11,6 @@ import { MultiSelectFilter, type MultiSelectOption } from "../features/calendar/
 import { useCalendarEvents } from "../features/calendar/hooks/useCalendarEvents";
 import type { CalendarAggregateByDate } from "../features/calendar/types";
 import { Link } from "react-router-dom";
-import { MonthlyHeatmap } from "../features/calendar/components/MonthlyHeatmap";
 
 dayjs.locale("es");
 dayjs.extend(isoWeek);
@@ -101,6 +100,8 @@ function CalendarSummaryPage() {
     syncing,
     syncError,
     lastSyncInfo,
+    syncProgress,
+    syncDurationMs,
     syncNow,
     updateFilters,
     applyFilters,
@@ -243,42 +244,6 @@ function CalendarSummaryPage() {
     [availableCategories]
   );
 
-  const statsByDate = useMemo(() => {
-    const map = new Map<string, { total: number; amountExpected: number; amountPaid: number }>();
-    summary?.aggregates.byDate.forEach((entry) => {
-      map.set(entry.date, {
-        total: entry.total,
-        amountExpected: entry.amountExpected ?? 0,
-        amountPaid: entry.amountPaid ?? 0,
-      });
-    });
-    return map;
-  }, [summary?.aggregates.byDate]);
-
-  const heatmapMonths = useMemo(() => {
-    const now = dayjs();
-    return [
-      now.subtract(1, "month").startOf("month"),
-      now.startOf("month"),
-      now.add(1, "month").startOf("month"),
-    ];
-  }, []);
-
-  const heatmapMonthKeys = useMemo(
-    () => new Set(heatmapMonths.map((month) => month.format("YYYY-MM"))),
-    [heatmapMonths]
-  );
-
-  const heatmapMaxValue = useMemo(() => {
-    if (!summary) return 0;
-    let max = 0;
-    summary.aggregates.byDate.forEach((entry) => {
-      if (heatmapMonthKeys.has(dayjs(entry.date).format("YYYY-MM"))) {
-        max = Math.max(max, entry.total);
-      }
-    });
-    return max;
-  }, [summary, heatmapMonthKeys]);
 
   const eventTypeOptions: MultiSelectOption[] = useMemo(
     () =>
@@ -372,55 +337,148 @@ function CalendarSummaryPage() {
         </div>
       </form>
 
-      {syncing && (
-        <Alert variant="info">
-          <span className="font-semibold text-slate-700">Sincronizando calendario…</span>
-          <ul className="mt-2 list-disc space-y-1 pl-4 text-[11px] text-slate-600">
-            <li>Consultando Google Calendar y descargando los eventos nuevos o modificados.</li>
-            <li>Actualizando la base de datos con los cambios detectados.</li>
-            <li>Eliminando eventos que quedaron excluidos por reglas de filtrado.</li>
-            <li>Recalculando totales y montos para el panel.</li>
-          </ul>
-        </Alert>
-      )}
       {error && <Alert variant="error">{error}</Alert>}
-      {syncError && <Alert variant="error">{syncError}</Alert>}
-      {lastSyncInfo && !syncError && (
-        <Alert variant="success">
-          <span className="font-semibold text-slate-700">Sincronización completada</span>
-          <div className="mt-2 space-y-1 text-[11px] text-slate-600">
-            <p>
-              <span className="font-semibold text-slate-700">Nuevas:</span>{" "}
-              {numberFormatter.format(lastSyncInfo.inserted)} eventos que no existían y se agregaron.
-            </p>
-            <p>
-              <span className="font-semibold text-slate-700">Actualizadas:</span>{" "}
-              {numberFormatter.format(lastSyncInfo.updated)} eventos existentes que tenían cambios.
-            </p>
-            <p>
-              <span className="font-semibold text-slate-700">Omitidas:</span>{" "}
-              {numberFormatter.format(lastSyncInfo.skipped)} eventos sin cambios desde la última sincronización.
-            </p>
-            <p>
-              <span className="font-semibold text-slate-700">Filtradas:</span>{" "}
-              {numberFormatter.format(lastSyncInfo.excluded)} eventos descartados por coincidencias con las reglas de
-              exclusión (palabras clave configuradas).
-            </p>
-          </div>
-          <br />
-          <span className="text-xs text-slate-500">
-            Ejecutado: {dayjs(lastSyncInfo.fetchedAt).format("DD MMM YYYY HH:mm")}
-            {lastSyncInfo.logId ? (
-              <>
-                {" • "}
-                <Link to="/calendar/history" className="underline">
-                  Ver historial
-                </Link>
-              </>
-            ) : null}
-          </span>
-        </Alert>
-      )}
+
+      {(() => {
+        const hasProgress = syncProgress.length > 0;
+        if (!syncing && !syncError && !hasProgress) {
+          return null;
+        }
+
+        const variant = syncError ? "error" : syncing ? "info" : "success";
+        const title = syncError
+          ? "Error al sincronizar"
+          : syncing
+            ? "Sincronizando calendario"
+            : "Sincronización completada";
+
+        const statusLabelMap: Record<string, string> = {
+          pending: "Pendiente",
+          in_progress: "En progreso",
+          completed: "Listo",
+          error: "Error",
+        };
+
+        const statusClassMap: Record<string, string> = {
+          pending: "text-slate-400",
+          in_progress: "text-[var(--brand-primary)]",
+          completed: "text-[var(--brand-secondary)]",
+          error: "text-red-500",
+        };
+
+        const detailLabels: Record<string, string> = {
+          calendars: "Calendarios",
+          events: "Eventos",
+          inserted: "Nuevas",
+          updated: "Actualizadas",
+          skipped: "Omitidas",
+          excluded: "Excluidas",
+          stored: "Snapshot",
+        };
+
+        const formatDuration = (value: number) => {
+          if (!value) return null;
+          if (value >= 1000) {
+            return `${(value / 1000).toFixed(1)} s`;
+          }
+          return `${Math.round(value)} ms`;
+        };
+
+        const formatDetails = (details: Record<string, unknown>) => {
+          const parts: string[] = [];
+          Object.entries(details ?? {}).forEach(([key, rawValue]) => {
+            if (rawValue == null) return;
+            const label = detailLabels[key] ?? key;
+            if (typeof rawValue === "number" && Number.isFinite(rawValue)) {
+              parts.push(`${label}: ${numberFormatter.format(rawValue)}`);
+            } else if (typeof rawValue === "boolean") {
+              parts.push(`${label}: ${rawValue ? "Sí" : "No"}`);
+            } else if (typeof rawValue === "string" && rawValue.length) {
+              parts.push(`${label}: ${rawValue}`);
+            }
+          });
+          return parts.join(" · ");
+        };
+
+        return (
+          <Alert variant={variant}>
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-semibold text-slate-700">{title}</span>
+                {!syncing && syncDurationMs != null && !syncError && (
+                  <span className="rounded-full bg-white/60 px-2 py-1 text-[11px] text-slate-500">
+                    Duración total: {formatDuration(syncDurationMs)}
+                  </span>
+                )}
+              </div>
+
+              {lastSyncInfo && !syncing && !syncError && (
+                <div className="space-y-1 text-[11px] text-slate-600">
+                  <p>
+                    <span className="font-semibold text-slate-700">Nuevas:</span>{" "}
+                    {numberFormatter.format(lastSyncInfo.inserted)} eventos que no existían y se agregaron.
+                  </p>
+                  <p>
+                    <span className="font-semibold text-slate-700">Actualizadas:</span>{" "}
+                    {numberFormatter.format(lastSyncInfo.updated)} eventos existentes que tenían cambios.
+                  </p>
+                  <p>
+                    <span className="font-semibold text-slate-700">Omitidas:</span>{" "}
+                    {numberFormatter.format(lastSyncInfo.skipped)} eventos sin cambios desde la última sincronización.
+                  </p>
+                  <p>
+                    <span className="font-semibold text-slate-700">Filtradas:</span>{" "}
+                    {numberFormatter.format(lastSyncInfo.excluded)} eventos descartados por coincidencias con las reglas de
+                    exclusión (palabras clave configuradas).
+                  </p>
+                  <p className="text-[10px] text-slate-500">
+                    Ejecutado: {dayjs(lastSyncInfo.fetchedAt).format("DD MMM YYYY HH:mm")}
+                    {lastSyncInfo.logId ? (
+                      <>
+                        {" • "}
+                        <Link to="/calendar/history" className="underline">
+                          Ver historial
+                        </Link>
+                      </>
+                    ) : null}
+                  </p>
+                </div>
+              )}
+
+              {syncError && <p className="text-[11px] text-red-600">{syncError}</p>}
+
+              {syncProgress.length > 0 && (
+                <ul className="space-y-2">
+                  {syncProgress.map((step) => {
+                    const status = statusLabelMap[step.status] ?? step.status;
+                    const statusClass = statusClassMap[step.status] ?? "text-slate-500";
+                    const details = formatDetails(step.details);
+                    const duration = formatDuration(step.durationMs);
+                    return (
+                      <li
+                        key={step.id}
+                        className="rounded-xl bg-white/65 px-3 py-2 shadow-inner"
+                      >
+                        <div className="flex items-center justify-between gap-3 text-xs font-semibold text-slate-700">
+                          <span>{step.label}</span>
+                          <span className={statusClass}>{status}</span>
+                        </div>
+                        {(details || duration) && (
+                          <p className="mt-1 text-[10px] text-slate-500">
+                            {details}
+                            {details && duration ? " · " : ""}
+                            {duration ? `Tiempo: ${duration}` : ""}
+                          </p>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+          </Alert>
+        );
+      })()}
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="glass-card glass-underlay-gradient rounded-2xl border border-white/60 p-4 text-sm shadow-sm">
@@ -446,24 +504,6 @@ function CalendarSummaryPage() {
           <p className="mt-2 text-2xl font-semibold text-[var(--brand-primary)]">
             {currencyFormatter.format(totals.amountPaid)}
           </p>
-        </div>
-      </section>
-
-      <section className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Mapa de calor mensual</h2>
-          <span className="text-[11px] text-slate-500">Vista rápida de actividad reciente</span>
-        </div>
-        <div className="grid gap-4 lg:grid-cols-3">
-          {heatmapMonths.map((month) => (
-            <MonthlyHeatmap
-              key={month.format("YYYY-MM")}
-              month={month}
-              statsByDate={statsByDate}
-              maxValue={heatmapMaxValue}
-              titleSuffix="Eventos"
-            />
-          ))}
         </div>
       </section>
 
