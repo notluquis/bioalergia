@@ -29,9 +29,13 @@ export function MultiSelectFilter({
   const containerRef = useRef<HTMLDivElement>(null);
   const { isOpen, toggle, close } = useDisclosure(false);
 
-  useOutsideClick(containerRef, () => {
-    close();
-  }, isOpen);
+  useOutsideClick(
+    containerRef,
+    () => {
+      close();
+    },
+    isOpen
+  );
 
   useEffect(() => {
     if (!isOpen) return;
@@ -45,7 +49,8 @@ export function MultiSelectFilter({
   }, [close, isOpen]);
 
   return (
-    <div ref={containerRef} className="relative" data-multiselect>
+    <div ref={containerRef} className="relative flex flex-col gap-2 text-sm text-slate-600" data-multiselect>
+      <span className="text-xs font-semibold uppercase tracking-wide text-slate-600/90">{label}</span>
       <button
         type="button"
         className="glass-input flex w-full cursor-pointer select-none items-center justify-between gap-2 text-xs text-slate-600"
@@ -53,8 +58,19 @@ export function MultiSelectFilter({
         aria-expanded={isOpen}
         onClick={toggle}
       >
-        <span className="font-semibold text-slate-700">{label}</span>
-        <span className="rounded-full bg-white/70 px-2 py-1 text-[11px] text-slate-500">{displayLabel}</span>
+        <span className="truncate text-[13px] font-medium text-slate-700">{displayLabel}</span>
+        <svg
+          className={`h-4 w-4 text-slate-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
+          viewBox="0 0 20 20"
+          fill="currentColor"
+          aria-hidden="true"
+        >
+          <path
+            fillRule="evenodd"
+            d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.08 1.04l-4.25 4.25a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z"
+            clipRule="evenodd"
+          />
+        </svg>
       </button>
       {isOpen && (
         <div className="absolute z-20 mt-2 w-full space-y-2 rounded-2xl border border-white/60 bg-white/95 p-3 shadow-lg">

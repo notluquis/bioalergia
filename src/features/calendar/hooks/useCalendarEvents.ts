@@ -138,10 +138,10 @@ export function useCalendarEvents() {
   }, [normalizedDraft, setFilters]);
 
   const resetFilters = useCallback(() => {
-    const defaults = initialDefaults;
+    const defaults = computeDefaults();
     setFilters(defaults);
     setAppliedFilters(defaults);
-  }, [initialDefaults, setFilters]);
+  }, [computeDefaults, setFilters]);
 
   const availableCalendars = summary?.available.calendars ?? [];
   const availableEventTypes = summary?.available.eventTypes ?? [];
