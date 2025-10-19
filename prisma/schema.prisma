@@ -1,0 +1,60 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model GoogleCalendarEvent {
+  calendarId      String  @map("calendar_id")
+  eventId         String  @map("event_id")
+  eventStatus     String? @map("event_status")
+  eventType       String? @map("event_type")
+  summary         String? @db.VarChar(512)
+  description     String? @db.Text
+  startDate       DateTime? @map("start_date")
+  startDateTime   DateTime? @map("start_date_time")
+  startTimeZone   String? @map("start_time_zone")
+  endDate         DateTime? @map("end_date")
+  endDateTime     DateTime? @map("end_date_time")
+  endTimeZone     String? @map("end_time_zone")
+  eventCreatedAt  DateTime? @map("event_created_at")
+  eventUpdatedAt  DateTime? @map("event_updated_at")
+  colorId         String? @map("color_id")
+  location        String? @db.VarChar(512)
+  transparency    String?
+  visibility      String?
+  hangoutLink     String? @map("hangout_link") @db.VarChar(512)
+  category        String?
+  amountExpected  Int?    @map("amount_expected")
+  amountPaid      Int?    @map("amount_paid")
+  attended        Boolean?
+  dosage          String?
+  treatmentStage  String? @map("treatment_stage")
+  rawEvent        Json?   @map("raw_event")
+  lastSyncedAt    DateTime @map("last_synced_at")
+
+  @@id([calendarId, eventId])
+  @@map("google_calendar_events")
+}
+
+model GoogleCalendarSyncLog {
+  id            BigInt   @id @default(autoincrement())
+  triggerSource String   @map("trigger_source")
+  triggerUserId Int?     @map("trigger_user_id")
+  triggerLabel  String?  @map("trigger_label")
+  status        String
+  startedAt     DateTime @map("started_at")
+  finishedAt    DateTime? @map("finished_at")
+  fetchedAt     DateTime? @map("fetched_at")
+  inserted      Int?
+  updated       Int?
+  skipped       Int?
+  excluded      Int?
+  errorMessage  String? @map("error_message")
+
+  @@map("google_calendar_sync_log")
+}

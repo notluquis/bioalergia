@@ -1,0 +1,35 @@
+{
+  "app": {
+    "title": "Finanzas Bioalergia",
+    "loading": "Cargando..."
+  },
+  "calendar": {
+    "heatmap": "Mapa de calor de calendario",
+    "schedule": "Calendario interactivo",
+    "summary": "Resumen de calendario",
+    "daily": "Detalle diario",
+    "scheduleTitle": "Calendario interactivo",
+    "scheduleDescription": "Navega por tus eventos sincronizados desde Google Calendar con vistas mensual, semanal y diaria. Puedes filtrar por calendario, tipo de evento y clasificación.",
+    "heatmapTitle": "Mapa de calor de calendario",
+    "heatmapDescription": "Visualiza cómo se distribuyen los eventos por semana y día. Inicialmente se muestran todos los datos disponibles; usa los filtros si necesitas acotar la vista.",
+    "filters": {
+      "from": "Desde",
+      "to": "Hasta",
+      "search": "Buscar",
+      "calendars": "Calendarios",
+      "eventTypes": "Tipos de evento",
+      "categories": "Clasificación",
+      "all": "Todos",
+      "allCategories": "Todas"
+    },
+    "applyFilters": "Aplicar filtros",
+    "resetFilters": "Reestablecer",
+    "loading": "Actualizando...",
+    "activeRange": "Rango activo: {{from}} – {{to}} · {{events}} eventos listados.",
+    "heatmapSection": "Mapa de calor mensual",
+    "heatmapRange": "Mostrando {{start}} – {{end}}",
+    "heatmapTotals": "Σ total: {{events}} eventos · Esperado {{expected}} · Pagado {{paid}}",
+    "heatmapLegend": "Más oscuro = más eventos",
+    "searchPlaceholder": "Título o descripción"
+  }
+}

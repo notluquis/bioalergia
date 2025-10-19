@@ -1,0 +1,35 @@
+{
+  "app": {
+    "title": "Bioalergia Finance",
+    "loading": "Loading..."
+  },
+  "calendar": {
+    "heatmap": "Calendar heat map",
+    "schedule": "Interactive calendar",
+    "summary": "Calendar summary",
+    "daily": "Daily detail",
+    "scheduleTitle": "Interactive calendar",
+    "scheduleDescription": "Browse your Google Calendar events with monthly, weekly and daily views. Filter by calendar, event type and classification.",
+    "heatmapTitle": "Calendar heat map",
+    "heatmapDescription": "See how events are distributed by week and day. All data is shown by default; use the filters if you need to narrow the view.",
+    "filters": {
+      "from": "From",
+      "to": "To",
+      "search": "Search",
+      "calendars": "Calendars",
+      "eventTypes": "Event types",
+      "categories": "Classification",
+      "all": "All",
+      "allCategories": "All"
+    },
+    "applyFilters": "Apply filters",
+    "resetFilters": "Reset",
+    "loading": "Updating...",
+    "activeRange": "Active range: {{from}} – {{to}} · {{events}} events listed.",
+    "heatmapSection": "Monthly heat map",
+    "heatmapRange": "Showing {{start}} – {{end}}",
+    "heatmapTotals": "Σ total: {{events}} events · Expected {{expected}} · Paid {{paid}}",
+    "heatmapLegend": "Darker = more events",
+    "searchPlaceholder": "Title or description"
+  }
+}

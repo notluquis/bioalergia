@@ -1,6 +1,3 @@
-// Form utilities
-export { useForm, type UseFormOptions, type FormState } from "./useForm";
-
 // Table utilities
 export { usePagination, type PaginationState, type UsePaginationOptions } from "./usePagination";
 export { useSorting, type SortDirection, type SortState, type UseSortingOptions } from "./useSorting";
@@ -18,3 +15,5 @@ export { useDisclosure, type UseDisclosureControls } from "./useDisclosure";
 
 // DOM interaction utilities
 export { useOutsideClick } from "./useOutsideClick";
+// Form utilities (legacy hook)
+export { useForm, type UseFormOptions, type FormState } from "./useForm";

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type ChangeEvent } from "react";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
+import { useTranslation } from "react-i18next";
 
 import Button from "../components/Button";
 import Input from "../components/Input";
@@ -77,6 +78,7 @@ function CalendarHeatmapPage() {
   const [loading, setLoading] = useState(false);
   const [initializing, setInitializing] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { t } = useTranslation("calendar");
 
   const fetchSummary = useCallback(
     async (useFilters: boolean) => {
@@ -192,9 +194,7 @@ function CalendarHeatmapPage() {
   const handleToggle = (key: "calendarIds" | "eventTypes" | "categories", value: string) => {
     setFilters((prev) => ({
       ...prev,
-      [key]: prev[key].includes(value)
-        ? prev[key].filter((item) => item !== value)
-        : [...prev[key], value],
+      [key]: prev[key].includes(value) ? prev[key].filter((item) => item !== value) : [...prev[key], value],
     }));
   };
 
@@ -212,10 +212,8 @@ function CalendarHeatmapPage() {
   return (
     <section className="space-y-6">
       <header className="space-y-2">
-        <h1 className="text-2xl font-bold text-[var(--brand-primary)]">Mapa de calor de calendario</h1>
-        <p className="text-sm text-slate-600">
-          Visualiza cómo se distribuyen los eventos por semana y día. Inicialmente se muestran todos los datos disponibles; usa los filtros si necesitas acotar la vista.
-        </p>
+        <h1 className="text-2xl font-bold text-[var(--brand-primary)]">{t("heatmapTitle")}</h1>
+        <p className="text-sm text-slate-600">{t("heatmapDescription")}</p>
       </header>
 
       <form
@@ -228,47 +226,53 @@ function CalendarHeatmapPage() {
         }}
       >
         <Input
-          label="Desde"
+          label={t("filters.from")}
           type="date"
           value={filters.from}
-          onChange={(event: ChangeEvent<HTMLInputElement>) => setFilters((prev) => ({ ...prev, from: event.target.value }))}
+          onChange={(event: ChangeEvent<HTMLInputElement>) =>
+            setFilters((prev) => ({ ...prev, from: event.target.value }))
+          }
         />
         <Input
-          label="Hasta"
+          label={t("filters.to")}
           type="date"
           value={filters.to}
-          onChange={(event: ChangeEvent<HTMLInputElement>) => setFilters((prev) => ({ ...prev, to: event.target.value }))}
+          onChange={(event: ChangeEvent<HTMLInputElement>) =>
+            setFilters((prev) => ({ ...prev, to: event.target.value }))
+          }
         />
         <MultiSelectFilter
-          label="Calendarios"
+          label={t("filters.calendars")}
           options={availableCalendars}
           selected={filters.calendarIds}
           onToggle={(value) => handleToggle("calendarIds", value)}
-          placeholder="Todos"
+          placeholder={t("filters.all")}
         />
         <MultiSelectFilter
-          label="Tipos de evento"
+          label={t("filters.eventTypes")}
           options={availableEventTypes}
           selected={filters.eventTypes}
           onToggle={(value) => handleToggle("eventTypes", value)}
-          placeholder="Todos"
+          placeholder={t("filters.all")}
         />
         <MultiSelectFilter
-          label="Clasificación"
+          label={t("filters.categories")}
           options={availableCategories}
           selected={filters.categories}
           onToggle={(value) => handleToggle("categories", value)}
-          placeholder="Todas"
+          placeholder={t("filters.allCategories")}
         />
         <Input
-          label="Buscar"
-          placeholder="Título o descripción"
+          label={t("filters.search")}
+          placeholder={t("searchPlaceholder")}
           value={filters.search}
-          onChange={(event: ChangeEvent<HTMLInputElement>) => setFilters((prev) => ({ ...prev, search: event.target.value }))}
+          onChange={(event: ChangeEvent<HTMLInputElement>) =>
+            setFilters((prev) => ({ ...prev, search: event.target.value }))
+          }
         />
         <div className="flex items-end gap-2 md:col-span-2">
           <Button type="submit" disabled={busy}>
-            {loading ? "Actualizando..." : "Aplicar filtros"}
+            {loading ? t("loading") : t("applyFilters")}
           </Button>
           <Button
             type="button"
@@ -280,7 +284,7 @@ function CalendarHeatmapPage() {
               });
             }}
           >
-            Reestablecer
+            {t("resetFilters")}
           </Button>
         </div>
       </form>
@@ -288,13 +292,16 @@ function CalendarHeatmapPage() {
       {error && <Alert variant="error">{error}</Alert>}
 
       {initializing && !summary ? (
-        <p className="text-sm text-slate-500">Cargando mapa de calor...</p>
+        <p className="text-sm text-slate-500">{t("loading")}</p>
       ) : summary ? (
         <section className="space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Mapa de calor mensual</h2>
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">{t("heatmapSection")}</h2>
             <span className="text-[11px] text-slate-500">
-              Mostrando {heatmapMonths[0].format("MMM YYYY")} – {heatmapMonths[2].format("MMM YYYY")}
+              {t("heatmapRange", {
+                start: heatmapMonths[0].format("MMM YYYY"),
+                end: heatmapMonths[2].format("MMM YYYY"),
+              })}
             </span>
           </div>
 
@@ -309,7 +316,11 @@ function CalendarHeatmapPage() {
             ))}
           </div>
           <p className="text-[11px] text-slate-500">
-            Σ total: {numberFormatter.format(summary.totals.events)} eventos · Esperado {currencyFormatter.format(summary.totals.amountExpected)} · Pagado {currencyFormatter.format(summary.totals.amountPaid)}
+            {t("heatmapTotals", {
+              events: numberFormatter.format(summary.totals.events),
+              expected: currencyFormatter.format(summary.totals.amountExpected),
+              paid: currencyFormatter.format(summary.totals.amountPaid),
+            })}
           </p>
         </section>
       ) : (

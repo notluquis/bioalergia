@@ -15,10 +15,22 @@ npm run prod          # Build completo + start
 npm run deploy        # Build y prune de dependencias (producción)
 npm start             # Solo start (requiere build previo)
 
+# Calidad
+npm run lint          # ESLint sobre TS/TSX/JS
+npm run type-check    # tsc --noEmit
+
 # Seguridad
 npm run security:check    # Auditoría de seguridad
 npm run env:encrypt      # Encriptar variables para producción
 npm run prod:secure      # Producción con encriptación
+```
+
+## ✅ Pre-commit
+
+Usamos Husky + lint-staged. Cada commit corre automáticamente:
+
+```bash
+npx lint-staged
 ```
 
 ## 🔐 Seguridad y Variables de Entorno
@@ -26,11 +38,13 @@ npm run prod:secure      # Producción con encriptación
 ⚠️ **Importante**: Los secretos se gestionan desde Railway → Variables. Usa scopes por entorno (Production/Staging/Preview) y variable groups para compartir claves entre servicios.
 
 ### Configuración local
+
 1. Copia `.env.example` a `.env` **solo para desarrollo** y rellena con valores dummy si es necesario.
 2. Carga los valores reales en Railway; evita sincronizar `.env` reales con el repo.
 3. Para producción, usa `npx @dotenvx/dotenvx encrypt` si necesitas vault local, pero prioriza los secretos de Railway.
 
 ### Medidas de Seguridad
+
 - ✅ Hook de pre-commit que previene subir secrets
 - ✅ Variables encriptadas para producción con dotenvx
 - ✅ Auditoría automática de dependencias
@@ -38,6 +52,7 @@ npm run prod:secure      # Producción con encriptación
 - ✅ Documentación de seguridad detallada en `docs/SECURITY.md`
 
 ## 🏗️ Arquitectura
+
 - Tailwind v4 se integra con `@tailwindcss/vite`. No se requiere `tailwind.config` ni `postcss.config` para el caso base.
 - Para Excel se usa `exceljs`. Prefiere CSV cuando sea posible con `papaparse`.
 - Los reportes de Mercado Pago se manejan en `src/mp/reports.ts`. El parser autodetecta separadores `,`, `;` o `|`; si necesitas casos más complejos, considera integrar Papa Parse.
@@ -45,6 +60,7 @@ npm run prod:secure      # Producción con encriptación
 - Los colores, logo, correos y metadatos de referencia se guardan en la tabla `settings` y se gestionan desde la página **Configuración** (`/settings`).
 
 ## Backend (Express + MySQL)
+
 - Variables de entorno en `.env` (ver `.env.example`): `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `PORT`, `JWT_SECRET`, `ADMIN_EMAIL` y `ADMIN_PASSWORD`.
 - En el primer arranque, si la tabla `users` está vacía y `ADMIN_EMAIL`/`ADMIN_PASSWORD` están definidos, se crea automáticamente un usuario con rol **GOD**.
 - Ejecuta `npm run server` para levantar la API (por defecto en `http://localhost:4000`).
@@ -57,6 +73,7 @@ npm run prod:secure      # Producción con encriptación
 - Para compilar el backend ejecuta `npm run build:server`; la salida queda en `dist/server` y se puede iniciar con `npm run start:server`.
 
 ## Vistas
+
 - `/` → Resumen y accesos rápidos.
 - `/report` → Vista local para analizar CSV sin cargarlo a la base.
 - `/upload` → Subir CSV a la base de datos.

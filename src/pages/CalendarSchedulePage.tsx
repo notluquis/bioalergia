@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import type { ChangeEvent } from "react";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
+import { useTranslation } from "react-i18next";
 
 import Button from "../components/Button";
 import Input from "../components/Input";
@@ -17,6 +18,7 @@ const NULL_EVENT_TYPE_VALUE = "__NULL__";
 const NULL_CATEGORY_VALUE = "__NULL_CATEGORY__";
 
 function CalendarSchedulePage() {
+  const { t } = useTranslation("calendar");
   const {
     filters,
     daily,
@@ -66,11 +68,8 @@ function CalendarSchedulePage() {
   return (
     <section className="space-y-6">
       <header className="space-y-2">
-        <h1 className="text-2xl font-bold text-[var(--brand-primary)]">Calendario interactivo</h1>
-        <p className="text-sm text-slate-600">
-          Navega por tus eventos sincronizados desde Google Calendar con vistas mensual, semanal y diaria. Puedes filtrar
-          por calendario, tipo de evento y clasificación.
-        </p>
+        <h1 className="text-2xl font-bold text-[var(--brand-primary)]">{t("scheduleTitle")}</h1>
+        <p className="text-sm text-slate-600">{t("scheduleDescription")}</p>
       </header>
 
       <form
@@ -81,19 +80,19 @@ function CalendarSchedulePage() {
         }}
       >
         <Input
-          label="Desde"
+          label={t("filters.from")}
           type="date"
           value={filters.from}
           onChange={(event: ChangeEvent<HTMLInputElement>) => updateFilters("from", event.target.value)}
         />
         <Input
-          label="Hasta"
+          label={t("filters.to")}
           type="date"
           value={filters.to}
           onChange={(event: ChangeEvent<HTMLInputElement>) => updateFilters("to", event.target.value)}
         />
         <MultiSelectFilter
-          label="Calendarios"
+          label={t("filters.calendars")}
           options={calendarOptions}
           selected={filters.calendarIds}
           onToggle={(value) => {
@@ -104,10 +103,10 @@ function CalendarSchedulePage() {
                 : [...filters.calendarIds, value]
             );
           }}
-          placeholder="Todos"
+          placeholder={t("filters.all")}
         />
         <MultiSelectFilter
-          label="Tipos de evento"
+          label={t("filters.eventTypes")}
           options={eventTypeOptions}
           selected={filters.eventTypes}
           onToggle={(value) => {
@@ -118,10 +117,10 @@ function CalendarSchedulePage() {
                 : [...filters.eventTypes, value]
             );
           }}
-          placeholder="Todos"
+          placeholder={t("filters.all")}
         />
         <MultiSelectFilter
-          label="Clasificación"
+          label={t("filters.categories")}
           options={categoryOptions}
           selected={filters.categories}
           onToggle={(value) => {
@@ -132,17 +131,17 @@ function CalendarSchedulePage() {
                 : [...filters.categories, value]
             );
           }}
-          placeholder="Todas"
+          placeholder={t("filters.allCategories")}
         />
         <Input
-          label="Buscar"
-          placeholder="Título o descripción"
+          label={t("filters.search")}
+          placeholder={t("searchPlaceholder")}
           value={filters.search}
           onChange={(event: ChangeEvent<HTMLInputElement>) => updateFilters("search", event.target.value)}
         />
         <div className="flex items-end gap-2 md:col-span-2">
           <Button type="submit" disabled={loading}>
-            {loading ? "Actualizando..." : "Aplicar filtros"}
+            {loading ? t("loading") : t("applyFilters")}
           </Button>
           <Button
             type="button"
@@ -152,7 +151,7 @@ function CalendarSchedulePage() {
               resetFilters();
             }}
           >
-            Reestablecer
+            {t("resetFilters")}
           </Button>
         </div>
       </form>
@@ -163,8 +162,11 @@ function CalendarSchedulePage() {
 
       {summary && (
         <p className="text-xs text-slate-500">
-          Rango activo: {dayjs(summary.filters.from).format("DD MMM YYYY")} –{" "}
-          {dayjs(summary.filters.to).format("DD MMM YYYY")} · {numberFormatter.format(allEvents.length)} eventos listados.
+          {t("activeRange", {
+            from: dayjs(summary.filters.from).format("DD MMM YYYY"),
+            to: dayjs(summary.filters.to).format("DD MMM YYYY"),
+            events: numberFormatter.format(allEvents.length),
+          })}
         </p>
       )}
     </section>

@@ -184,3 +184,38 @@ export type CalendarEventClassificationPayload = {
   dosage?: string | null;
   treatmentStage?: string | null;
 };
+
+export type ClassificationFormValues = {
+  category: string;
+  amountExpected: string;
+  amountPaid: string;
+  attended: boolean;
+  dosage: string;
+  treatmentStage: string;
+};
+
+export const calendarClassificationSchema = z.object({
+  category: z.string().max(120).optional().nullable(),
+  amountExpected: z
+    .string()
+    .trim()
+    .optional()
+    .transform((value) => {
+      if (!value) return null;
+      const parsed = Number.parseInt(value.replace(/[^0-9]/g, ""), 10);
+      return Number.isNaN(parsed) ? null : parsed;
+    }),
+  amountPaid: z
+    .string()
+    .trim()
+    .optional()
+    .transform((value) => {
+      if (!value) return null;
+      const parsed = Number.parseInt(value.replace(/[^0-9]/g, ""), 10);
+      return Number.isNaN(parsed) ? null : parsed;
+    }),
+  attended: z.boolean().optional().nullable(),
+  dosage: z.string().max(64).optional().nullable(),
+  treatmentStage: z.string().max(64).optional().nullable(),
+});
+import { z } from "zod";

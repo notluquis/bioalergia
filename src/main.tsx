@@ -7,6 +7,9 @@ import RequireAuth from "./components/RequireAuth";
 import { AuthProvider } from "./context/AuthContext";
 import { SettingsProvider } from "./context/SettingsContext";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "./lib/queryClient";
+import "./i18n";
 
 // Lazy loading de componentes principales
 const Home = lazy(() => import("./pages/Home"));
@@ -315,15 +318,16 @@ const router = createBrowserRouter([
   { path: "*", element: <Navigate to="/" replace /> },
 ]);
 
-
 export function RootApp() {
   return (
     <React.StrictMode>
       <AuthProvider>
         <SettingsProvider>
-          <ErrorBoundary>
-            <RouterProvider router={router} />
-          </ErrorBoundary>
+          <QueryClientProvider client={queryClient}>
+            <ErrorBoundary>
+              <RouterProvider router={router} />
+            </ErrorBoundary>
+          </QueryClientProvider>
         </SettingsProvider>
       </AuthProvider>
     </React.StrictMode>

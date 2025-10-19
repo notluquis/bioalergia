@@ -1,9 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import dayjs from "dayjs";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { fetchCalendarDaily, fetchCalendarSummary, syncCalendarEvents } from "../api";
 import type { CalendarDaily, CalendarFilters, CalendarSummary, CalendarSyncStep } from "../types";
 import { useSettings } from "../../../context/settings-context";
+import { useCalendarFilterStore } from "../../../store/calendarFilters";
 
 type SyncProgressStatus = "pending" | "in_progress" | "completed" | "error";
 
@@ -49,11 +51,15 @@ function filtersEqual(a: CalendarFilters, b: CalendarFilters) {
 
 export function useCalendarEvents() {
   const { settings } = useSettings();
+  const queryClient = useQueryClient();
+  const filters = useCalendarFilterStore((state) => state);
+  const setFilters = useCalendarFilterStore((state) => state.setFilters);
 
   const computeDefaults = useCallback((): CalendarFilters => {
     const syncStart = settings.calendarSyncStart?.trim() || "2000-01-01";
     const lookaheadRaw = Number(settings.calendarSyncLookaheadDays ?? "365");
-    const lookahead = Number.isFinite(lookaheadRaw) && lookaheadRaw > 0 ? Math.min(Math.floor(lookaheadRaw), 1095) : 365;
+    const lookahead =
+      Number.isFinite(lookaheadRaw) && lookaheadRaw > 0 ? Math.min(Math.floor(lookaheadRaw), 1095) : 365;
     const defaultMax = Number(settings.calendarDailyMaxDays ?? "31");
     const maxDays = Number.isFinite(defaultMax) && defaultMax > 0 ? Math.min(Math.floor(defaultMax), 120) : 31;
     const startDate = dayjs(syncStart);
@@ -74,15 +80,10 @@ export function useCalendarEvents() {
   }, [settings]);
 
   const initialDefaults = useMemo(() => computeDefaults(), [computeDefaults]);
-  const defaultFiltersRef = useRef<CalendarFilters>(initialDefaults);
-  const [filters, setFilters] = useState<CalendarFilters>(initialDefaults);
   const [appliedFilters, setAppliedFilters] = useState<CalendarFilters>(initialDefaults);
-  const [summary, setSummary] = useState<CalendarSummary | null>(null);
-  const [daily, setDaily] = useState<CalendarDaily | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [syncProgress, setSyncProgress] = useState<SyncProgressEntry[]>([]);
+  const [syncDurationMs, setSyncDurationMs] = useState<number | null>(null);
   const [syncing, setSyncing] = useState(false);
-  const [syncError, setSyncError] = useState<string | null>(null);
   const [lastSyncInfo, setLastSyncInfo] = useState<{
     fetchedAt: string;
     inserted: number;
@@ -91,80 +92,78 @@ export function useCalendarEvents() {
     excluded: number;
     logId?: number;
   } | null>(null);
-  const [syncProgress, setSyncProgress] = useState<SyncProgressEntry[]>([]);
-  const [syncDurationMs, setSyncDurationMs] = useState<number | null>(null);
-
-  const fetchData = useCallback(async (nextFilters: CalendarFilters) => {
-    setLoading(true);
-    setError(null);
-    const normalized = normalizeFilters(nextFilters);
-    try {
-      const [summaryResponse, dailyResponse] = await Promise.all([
-        fetchCalendarSummary(normalized),
-        fetchCalendarDaily(normalized),
-      ]);
-      setSummary(summaryResponse);
-      setDaily(dailyResponse);
-      setAppliedFilters(normalized);
-      setFilters(normalized);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "No se pudieron obtener los eventos";
-      setError(message);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const [syncError, setSyncError] = useState<string | null>(null);
 
   useEffect(() => {
-    const defaults = computeDefaults();
-    defaultFiltersRef.current = defaults;
+    const defaults = initialDefaults;
     setFilters(defaults);
     setAppliedFilters(defaults);
-    fetchData(defaults).catch(() => {
-      /* handled */
-    });
-  }, [computeDefaults, fetchData]);
+  }, [initialDefaults, setFilters]);
 
-  const updateFilters = useCallback(<K extends keyof CalendarFilters>(key: K, value: CalendarFilters[K]) => {
-    setFilters((prev) => ({ ...prev, [key]: value }));
-  }, []);
+  const normalizedApplied = useMemo(() => normalizeFilters(appliedFilters), [appliedFilters]);
 
-  const applyFilters = useCallback(async () => {
-    await fetchData(filters).catch(() => {
-      /* handled */
-    });
-  }, [fetchData, filters]);
+  const summaryQuery = useQuery<CalendarSummary, Error>({
+    queryKey: ["calendar", "summary", normalizedApplied],
+    queryFn: () => fetchCalendarSummary(normalizedApplied),
+    enabled: Boolean(normalizedApplied.from && normalizedApplied.to),
+  });
 
-  const resetFilters = useCallback(async () => {
-    const defaults = defaultFiltersRef.current ?? computeDefaults();
+  const dailyQuery = useQuery<CalendarDaily, Error>({
+    queryKey: ["calendar", "daily", normalizedApplied],
+    queryFn: () => fetchCalendarDaily(normalizedApplied),
+    enabled: Boolean(normalizedApplied.from && normalizedApplied.to),
+  });
+
+  const summary = summaryQuery.data ?? null;
+  const daily = dailyQuery.data ?? null;
+  const loading = summaryQuery.isLoading || dailyQuery.isLoading;
+  const error = summaryQuery.error?.message || dailyQuery.error?.message || null;
+
+  const normalizedDraft = useMemo(() => normalizeFilters(filters), [filters]);
+  const isDirty = useMemo(
+    () => !filtersEqual(normalizedDraft, normalizedApplied),
+    [normalizedDraft, normalizedApplied]
+  );
+
+  const updateFilters = useCallback(
+    <K extends keyof CalendarFilters>(key: K, value: CalendarFilters[K]) => {
+      setFilters({ [key]: value } as Partial<CalendarFilters>);
+    },
+    [setFilters]
+  );
+
+  const applyFilters = useCallback(() => {
+    setAppliedFilters(normalizedDraft);
+    setFilters(normalizedDraft);
+  }, [normalizedDraft, setFilters]);
+
+  const resetFilters = useCallback(() => {
+    const defaults = initialDefaults;
     setFilters(defaults);
-    await fetchData(defaults).catch(() => {
-      /* handled */
-    });
-  }, [fetchData, computeDefaults]);
-
-  const isDirty = useMemo(() => !filtersEqual(filters, appliedFilters), [filters, appliedFilters]);
+    setAppliedFilters(defaults);
+  }, [initialDefaults, setFilters]);
 
   const availableCalendars = summary?.available.calendars ?? [];
   const availableEventTypes = summary?.available.eventTypes ?? [];
   const availableCategories = summary?.available.categories ?? [];
 
-  const syncNow = useCallback(async () => {
-    setSyncing(true);
-    setSyncError(null);
-    setSyncDurationMs(null);
-    setSyncProgress(
-      SYNC_STEPS_TEMPLATE.map((step, index) => ({
-        id: step.id,
-        label: step.label,
-        durationMs: 0,
-        details: {},
-        status: index === 0 ? "in_progress" : "pending",
-      }))
-    );
-    try {
-      const result = await syncCalendarEvents();
+  const syncMutation = useMutation({
+    mutationFn: syncCalendarEvents,
+    onMutate: () => {
+      setSyncing(true);
+      setSyncError(null);
+      setSyncDurationMs(null);
+      setSyncProgress(
+        SYNC_STEPS_TEMPLATE.map((step, index) => ({
+          id: step.id,
+          label: step.label,
+          durationMs: 0,
+          details: {},
+          status: index === 0 ? "in_progress" : "pending",
+        }))
+      );
+    },
+    onSuccess: (result) => {
       setSyncDurationMs(result.totalDurationMs ?? null);
       setSyncProgress(
         SYNC_STEPS_TEMPLATE.map((step) => {
@@ -186,10 +185,11 @@ export function useCalendarEvents() {
         excluded: result.excluded,
         logId: result.logId,
       });
-      await fetchData(filters).catch(() => {
+      queryClient.invalidateQueries({ queryKey: ["calendar"] }).catch(() => {
         /* handled */
       });
-    } catch (err) {
+    },
+    onError: (err: unknown) => {
       const message = err instanceof Error ? err.message : "No se pudo sincronizar";
       setSyncError(message);
       setSyncProgress((prev) =>
@@ -202,10 +202,15 @@ export function useCalendarEvents() {
             : entry
         )
       );
-    } finally {
+    },
+    onSettled: () => {
       setSyncing(false);
-    }
-  }, [fetchData, filters]);
+    },
+  });
+
+  const syncNow = useCallback(() => {
+    syncMutation.mutate();
+  }, [syncMutation]);
 
   return {
     filters,
@@ -216,7 +221,6 @@ export function useCalendarEvents() {
     error,
     isDirty,
     updateFilters,
-    setFilters,
     applyFilters,
     resetFilters,
     availableCalendars,

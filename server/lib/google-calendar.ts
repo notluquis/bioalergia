@@ -8,6 +8,7 @@ import { googleCalendarConfig, compileExcludePatterns } from "../config.js";
 import { logEvent, logWarn } from "./logger.js";
 import { upsertGoogleCalendarEvents, removeGoogleCalendarEvents } from "./google-calendar-store.js";
 import { loadSettings } from "../db.js";
+import { parseCalendarMetadata } from "../modules/calendar/parsers.js";
 
 const CALENDAR_SCOPES = ["https://www.googleapis.com/auth/calendar.readonly"];
 const STORAGE_ROOT = path.resolve(process.cwd(), "storage", "google-calendar");
@@ -63,103 +64,6 @@ export type SyncMetrics = {
   totalDurationMs: number;
 };
 
-const SUBCUT_PATTERNS = [/\bclustoid\b/i, /\bvacc?\b/i, /\bvacuna\b/i, /\bvac\.?\b/i];
-const TEST_PATTERNS = [/\bexamen\b/i, /\btest\b/i, /cut[áa]neo/i, /ambiental/i, /panel/i, /multitest/i];
-const ATTENDED_PATTERNS = [/\blleg[oó]\b/i, /\basist[ií]o\b/i];
-const MAINTENANCE_PATTERNS = [/\bmantenci[oó]n\b/i, /\bmant\b/i];
-const DOSAGE_PATTERNS = [
-  /(\d+(?:[.,]\d+)?)\s*ml\b/i,
-  /(\d+(?:[.,]\d+)?)\s*cc\b/i,
-  /(\d+(?:[.,]\d+)?)\s*mg\b/i,
-];
-
-function normalizeAmountRaw(raw: string): number | null {
-  const digits = raw.replace(/[^0-9]/g, "");
-  if (!digits) return null;
-  const value = Number.parseInt(digits, 10);
-  if (Number.isNaN(value) || value <= 0) return null;
-  return value >= 1000 ? value : value * 1000;
-}
-
-function extractAmounts(summary: string, description: string) {
-  let amountExpected: number | null = null;
-  let amountPaid: number | null = null;
-  const text = `${summary} ${description}`;
-  const regex = /\(([^)]+)\)/gi;
-  let match: RegExpExecArray | null;
-  while ((match = regex.exec(text)) !== null) {
-    const content = match[1];
-    const amount = normalizeAmountRaw(content);
-    if (amount == null) continue;
-    if (/pagado/i.test(content)) {
-      amountPaid = amount;
-      if (amountExpected == null) amountExpected = amount;
-    } else if (amountExpected == null) {
-      amountExpected = amount;
-    }
-  }
-  const paidOutside = /pagado\s*(\d+)/gi;
-  let matchPaid: RegExpExecArray | null;
-  while ((matchPaid = paidOutside.exec(text)) !== null) {
-    const amount = normalizeAmountRaw(matchPaid[1]);
-    if (amount != null) {
-      amountPaid = amount;
-      if (amountExpected == null) amountExpected = amount;
-    }
-  }
-  return { amountExpected, amountPaid };
-}
-
-function classifyCategory(summary: string, description: string): string | null {
-  const text = `${summary} ${description}`.toLowerCase();
-  if (SUBCUT_PATTERNS.some((pattern) => pattern.test(text))) {
-    return "Tratamiento subcutáneo";
-  }
-  if (TEST_PATTERNS.some((pattern) => pattern.test(text))) {
-    return "Test y exámenes";
-  }
-  return null;
-}
-
-function detectAttendance(summary: string, description: string): boolean | null {
-  const text = `${summary} ${description}`;
-  if (ATTENDED_PATTERNS.some((pattern) => pattern.test(text))) return true;
-  return null;
-}
-
-function extractDosage(summary: string, description: string): string | null {
-  const text = `${summary} ${description}`;
-  for (const pattern of DOSAGE_PATTERNS) {
-    const match = pattern.exec(text);
-    if (match) {
-      const valueRaw = match[1]?.replace(",", ".") ?? "";
-      const unit = match[0].replace(match[1] ?? "", "").trim().toLowerCase();
-      if (valueRaw) {
-        const normalizedValue = Number.parseFloat(valueRaw);
-        if (Number.isFinite(normalizedValue)) {
-          const formatter = new Intl.NumberFormat("es-CL", {
-            minimumFractionDigits: normalizedValue % 1 === 0 ? 0 : 1,
-            maximumFractionDigits: 2,
-          });
-          const formattedValue = formatter.format(normalizedValue);
-          return `${formattedValue} ${unit}`;
-        }
-        return `${match[1]} ${unit}`.trim();
-      }
-      return match[0].trim();
-    }
-  }
-  return null;
-}
-
-function detectTreatmentStage(summary: string, description: string): string | null {
-  const text = `${summary} ${description}`;
-  if (MAINTENANCE_PATTERNS.some((pattern) => pattern.test(text))) {
-    return "Mantención";
-  }
-  return null;
-}
-
 let cachedClient: CalendarClient | null = null;
 
 function isEventExcluded(item: calendar_v3.Schema$Event, patterns: RegExp[]): boolean {
@@ -207,9 +111,10 @@ async function getRuntimeCalendarConfig(): Promise<CalendarRuntimeConfig> {
     const timeZone = settings.calendarTimeZone?.trim() || googleCalendarConfig.timeZone;
     const syncStart = settings.calendarSyncStart?.trim() || googleCalendarConfig.syncStartDate;
     const lookAheadRaw = Number(settings.calendarSyncLookaheadDays ?? googleCalendarConfig.syncLookAheadDays);
-    const syncLookAheadDays = Number.isFinite(lookAheadRaw) && lookAheadRaw > 0
-      ? Math.min(Math.floor(lookAheadRaw), 1095)
-      : googleCalendarConfig.syncLookAheadDays;
+    const syncLookAheadDays =
+      Number.isFinite(lookAheadRaw) && lookAheadRaw > 0
+        ? Math.min(Math.floor(lookAheadRaw), 1095)
+        : googleCalendarConfig.syncLookAheadDays;
     const excludeSetting = (settings.calendarExcludeSummaries ?? "")
       .split(",")
       .map((value) => value.trim())
@@ -276,18 +181,10 @@ async function fetchCalendarEventsForId(
 
       const summary = item.summary ?? "";
       const description = item.description ?? "";
-      let category = classifyCategory(summary, description);
-      const amounts = extractAmounts(summary, description);
-      let amountExpected = amounts.amountExpected;
-      let amountPaid = amounts.amountPaid;
+      const metadata = parseCalendarMetadata({ summary, description });
+      let { amountExpected, amountPaid } = metadata;
       if (amountPaid != null && amountExpected == null) {
         amountExpected = amountPaid;
-      }
-      const attended = detectAttendance(summary, description);
-      const dosage = extractDosage(summary, description);
-      const treatmentStage = detectTreatmentStage(summary, description);
-      if (!category && dosage) {
-        category = "Tratamiento subcutáneo";
       }
 
       events.push({
@@ -306,12 +203,12 @@ async function fetchCalendarEventsForId(
         transparency: item.transparency,
         visibility: item.visibility,
         hangoutLink: item.hangoutLink,
-        category,
+        category: metadata.category,
         amountExpected,
         amountPaid,
-        attended,
-        dosage,
-        treatmentStage,
+        attended: metadata.attended,
+        dosage: metadata.dosage,
+        treatmentStage: metadata.treatmentStage,
       });
     }
 

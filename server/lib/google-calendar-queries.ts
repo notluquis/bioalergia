@@ -1,45 +1,8 @@
 import dayjs from "dayjs";
-import type { RowDataPacket } from "mysql2";
+import { Prisma } from "../../generated/prisma";
+import { prisma } from "./prisma.js";
 
-import { getPool } from "../db.js";
 import { googleCalendarConfig } from "../config.js";
-
-const BASE_EVENTS_SELECT = `
-  SELECT
-    calendar_id,
-    event_id,
-    event_status,
-    event_type,
-    summary,
-    description,
-    category,
-    amount_expected,
-    amount_paid,
-    attended,
-    dosage,
-    treatment_stage,
-    start_date,
-    start_date_time,
-    start_time_zone,
-    end_date,
-    end_date_time,
-    end_time_zone,
-    event_created_at,
-    event_updated_at,
-    color_id,
-    location,
-    transparency,
-    visibility,
-    hangout_link,
-    raw_event,
-    last_synced_at,
-    COALESCE(start_date_time, STR_TO_DATE(CONCAT(start_date, ' 00:00:00'), '%Y-%m-%d %H:%i:%s')) AS event_datetime,
-    COALESCE(start_date, DATE(start_date_time)) AS event_date
-  FROM google_calendar_events
-`;
-
-const NULL_EVENT_TYPE_TOKEN = "__NULL__";
-const NULL_CATEGORY_TOKEN = "__NULL_CATEGORY__";
 
 export type CalendarEventFilters = {
   from?: string;
@@ -125,243 +88,239 @@ export type CalendarEventsByDateResult = {
   };
 };
 
-function buildFilterClause(filters: CalendarEventFilters) {
-  const conditions: string[] = ["events.event_datetime IS NOT NULL"];
-  const params: unknown[] = [];
+const NULL_EVENT_TYPE_TOKEN = "__NULL__";
+const NULL_CATEGORY_TOKEN = "__NULL_CATEGORY__";
+
+const EVENT_DATETIME = Prisma.sql`COALESCE(events.start_date_time, STR_TO_DATE(CONCAT(events.start_date, ' 00:00:00'), '%Y-%m-%d %H:%i:%s'))`;
+const EVENT_DATE = Prisma.sql`COALESCE(events.start_date, DATE(events.start_date_time))`;
+
+function buildWhereClause(filters: CalendarEventFilters) {
+  const conditions: Prisma.Sql[] = [Prisma.sql`${EVENT_DATETIME} IS NOT NULL`];
 
   if (filters.from) {
-    conditions.push("events.event_datetime >= ?");
-    params.push(`${filters.from} 00:00:00`);
+    conditions.push(Prisma.sql`${EVENT_DATETIME} >= ${filters.from} `);
   }
 
   if (filters.to) {
-    conditions.push("events.event_datetime < DATE_ADD(?, INTERVAL 1 DAY)");
-    params.push(filters.to);
+    conditions.push(Prisma.sql`${EVENT_DATETIME} < DATE_ADD(${filters.to}, INTERVAL 1 DAY)`);
   }
 
   if (filters.calendarIds?.length) {
-    const placeholders = filters.calendarIds.map(() => "?").join(", ");
-    conditions.push(`events.calendar_id IN (${placeholders})`);
-    params.push(...filters.calendarIds);
+    const values = Prisma.join(
+      filters.calendarIds.map((id) => Prisma.sql`${id}`),
+      Prisma.sql`, `
+    );
+    conditions.push(Prisma.sql`events.calendar_id IN (${values})`);
   }
 
   if (filters.eventTypes?.length) {
     const includeNull = filters.eventTypes.includes(NULL_EVENT_TYPE_TOKEN);
-    const explicitTypes = filters.eventTypes.filter((type) => type !== NULL_EVENT_TYPE_TOKEN);
-    const clauses: string[] = [];
+    const explicit = filters.eventTypes.filter((type) => type !== NULL_EVENT_TYPE_TOKEN);
+    const clauses: Prisma.Sql[] = [];
 
-    if (explicitTypes.length) {
-      const placeholders = explicitTypes.map(() => "?").join(", ");
-      clauses.push(`events.event_type IN (${placeholders})`);
-      params.push(...explicitTypes);
+    if (explicit.length) {
+      const list = Prisma.join(
+        explicit.map((type) => Prisma.sql`${type}`),
+        Prisma.sql`, `
+      );
+      clauses.push(Prisma.sql`events.event_type IN (${list})`);
     }
 
     if (includeNull) {
-      clauses.push("events.event_type IS NULL");
+      clauses.push(Prisma.sql`events.event_type IS NULL`);
     }
 
     if (clauses.length) {
-      conditions.push(`(${clauses.join(" OR ")})`);
+      conditions.push(Prisma.sql`(${Prisma.join(clauses, Prisma.sql` OR `)})`);
+    }
+  }
+
+  if (filters.categories?.length) {
+    const includeNull = filters.categories.includes(NULL_CATEGORY_TOKEN);
+    const explicit = filters.categories.filter((item) => item !== NULL_CATEGORY_TOKEN);
+    const clauses: Prisma.Sql[] = [];
+
+    if (explicit.length) {
+      const list = Prisma.join(
+        explicit.map((value) => Prisma.sql`${value}`),
+        Prisma.sql`, `
+      );
+      clauses.push(Prisma.sql`events.category IN (${list})`);
+    }
+
+    if (includeNull) {
+      clauses.push(Prisma.sql`(events.category IS NULL OR events.category = '')`);
+    }
+
+    if (clauses.length) {
+      conditions.push(Prisma.sql`(${Prisma.join(clauses, Prisma.sql` OR `)})`);
     }
   }
 
   if (filters.search) {
-    conditions.push("(events.summary LIKE ? OR events.description LIKE ?)");
-    const pattern = `%${filters.search}%`;
-    params.push(pattern, pattern);
-  }
-
-  if (filters.categories?.length) {
-    const includeNullCategory = filters.categories.includes(NULL_CATEGORY_TOKEN);
-    const explicitCategories = filters.categories.filter((category) => category !== NULL_CATEGORY_TOKEN);
-    const categoryClauses: string[] = [];
-
-    if (explicitCategories.length) {
-      const placeholders = explicitCategories.map(() => "?").join(", ");
-      categoryClauses.push(`events.category IN (${placeholders})`);
-      params.push(...explicitCategories);
-    }
-
-    if (includeNullCategory) {
-      categoryClauses.push("(events.category IS NULL OR events.category = '')");
-    }
-
-    if (categoryClauses.length) {
-      conditions.push(`(${categoryClauses.join(" OR ")})`);
-    }
+    const likePattern = `%${filters.search}%`;
+    conditions.push(Prisma.sql`(events.summary LIKE ${likePattern} OR events.description LIKE ${likePattern})`);
   }
 
   if (filters.dates?.length) {
-    const placeholders = filters.dates.map(() => "?").join(", ");
-    conditions.push(`events.event_date IN (${placeholders})`);
-    params.push(...filters.dates);
+    const list = Prisma.join(
+      filters.dates.map((date) => Prisma.sql`${date}`),
+      Prisma.sql`, `
+    );
+    conditions.push(Prisma.sql`${EVENT_DATE} IN (${list})`);
   }
 
-  const whereClause = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
+  return conditions.length ? Prisma.sql`WHERE ${Prisma.join(conditions, Prisma.sql` AND `)}` : Prisma.empty;
+}
 
-  return { whereClause, params };
+function mapAggregateRow(row: { total: bigint | number; amountExpected: number | null; amountPaid: number | null }) {
+  return {
+    total: Number(row.total ?? 0),
+    amountExpected: Number(row.amountExpected ?? 0),
+    amountPaid: Number(row.amountPaid ?? 0),
+  };
 }
 
 export async function getCalendarAggregates(filters: CalendarEventFilters): Promise<CalendarAggregateResult> {
-  const pool = getPool();
-  const { whereClause, params } = buildFilterClause(filters);
+  const where = buildWhereClause(filters);
 
-  const [yearRows] = await pool.query<RowDataPacket[]>(
-    `SELECT YEAR(events.event_datetime) AS year, COUNT(*) AS total,
-            SUM(events.amount_expected) AS amountExpected,
-            SUM(events.amount_paid) AS amountPaid
-     FROM (${BASE_EVENTS_SELECT}) AS events
-     ${whereClause}
-     GROUP BY YEAR(events.event_datetime)
-     ORDER BY YEAR(events.event_datetime)`,
-    [...params]
-  );
+  const yearRows = await prisma.$queryRaw<
+    Array<{ year: number; total: bigint; amountExpected: number | null; amountPaid: number | null }>
+  >(Prisma.sql`
+    SELECT YEAR(${EVENT_DATETIME}) AS year,
+           COUNT(*) AS total,
+           SUM(events.amount_expected) AS amountExpected,
+           SUM(events.amount_paid) AS amountPaid
+      FROM google_calendar_events events
+      ${where}
+     GROUP BY YEAR(${EVENT_DATETIME})
+     ORDER BY YEAR(${EVENT_DATETIME})
+  `);
 
-  const [monthRows] = await pool.query<RowDataPacket[]>(
-    `SELECT YEAR(events.event_datetime) AS year, MONTH(events.event_datetime) AS month, COUNT(*) AS total,
-            SUM(events.amount_expected) AS amountExpected,
-            SUM(events.amount_paid) AS amountPaid
-     FROM (${BASE_EVENTS_SELECT}) AS events
-     ${whereClause}
-     GROUP BY YEAR(events.event_datetime), MONTH(events.event_datetime)
-     ORDER BY YEAR(events.event_datetime), MONTH(events.event_datetime)`,
-    [...params]
-  );
+  const monthRows = await prisma.$queryRaw<
+    Array<{ year: number; month: number; total: bigint; amountExpected: number | null; amountPaid: number | null }>
+  >(Prisma.sql`
+    SELECT YEAR(${EVENT_DATETIME}) AS year,
+           MONTH(${EVENT_DATETIME}) AS month,
+           COUNT(*) AS total,
+           SUM(events.amount_expected) AS amountExpected,
+           SUM(events.amount_paid) AS amountPaid
+      FROM google_calendar_events events
+      ${where}
+     GROUP BY YEAR(${EVENT_DATETIME}), MONTH(${EVENT_DATETIME})
+     ORDER BY YEAR(${EVENT_DATETIME}), MONTH(${EVENT_DATETIME})
+  `);
 
-  const [weekRows] = await pool.query<RowDataPacket[]>(
-    `SELECT
-        CAST(DATE_FORMAT(events.event_datetime, '%x') AS UNSIGNED) AS isoYear,
-        CAST(DATE_FORMAT(events.event_datetime, '%v') AS UNSIGNED) AS isoWeek,
-        COUNT(*) AS total,
-        SUM(events.amount_expected) AS amountExpected,
-        SUM(events.amount_paid) AS amountPaid
-     FROM (${BASE_EVENTS_SELECT}) AS events
-     ${whereClause}
+  const weekRows = await prisma.$queryRaw<
+    Array<{ isoYear: number; isoWeek: number; total: bigint; amountExpected: number | null; amountPaid: number | null }>
+  >(Prisma.sql`
+    SELECT CAST(DATE_FORMAT(${EVENT_DATETIME}, '%x') AS UNSIGNED) AS isoYear,
+           CAST(DATE_FORMAT(${EVENT_DATETIME}, '%v') AS UNSIGNED) AS isoWeek,
+           COUNT(*) AS total,
+           SUM(events.amount_expected) AS amountExpected,
+           SUM(events.amount_paid) AS amountPaid
+      FROM google_calendar_events events
+      ${where}
      GROUP BY isoYear, isoWeek
-     ORDER BY isoYear, isoWeek`,
-    [...params]
-  );
+     ORDER BY isoYear, isoWeek
+  `);
 
-  const [weekdayRows] = await pool.query<RowDataPacket[]>(
-    `SELECT WEEKDAY(events.event_datetime) AS weekday, COUNT(*) AS total,
-            SUM(events.amount_expected) AS amountExpected,
-            SUM(events.amount_paid) AS amountPaid
-     FROM (${BASE_EVENTS_SELECT}) AS events
-     ${whereClause}
-     GROUP BY WEEKDAY(events.event_datetime)
-     ORDER BY WEEKDAY(events.event_datetime)`,
-    [...params]
-  );
+  const weekdayRows = await prisma.$queryRaw<
+    Array<{ weekday: number; total: bigint; amountExpected: number | null; amountPaid: number | null }>
+  >(Prisma.sql`
+    SELECT WEEKDAY(${EVENT_DATETIME}) AS weekday,
+           COUNT(*) AS total,
+           SUM(events.amount_expected) AS amountExpected,
+           SUM(events.amount_paid) AS amountPaid
+      FROM google_calendar_events events
+      ${where}
+     GROUP BY WEEKDAY(${EVENT_DATETIME})
+     ORDER BY WEEKDAY(${EVENT_DATETIME})
+  `);
 
-  const [dateRows] = await pool.query<RowDataPacket[]>(
-    `SELECT events.event_date AS date, COUNT(*) AS total,
-            SUM(events.amount_expected) AS amountExpected,
-            SUM(events.amount_paid) AS amountPaid
-     FROM (${BASE_EVENTS_SELECT}) AS events
-     ${whereClause}
-     GROUP BY events.event_date
-     ORDER BY events.event_date`,
-    [...params]
-  );
+  const dateRows = await prisma.$queryRaw<
+    Array<{ date: string; total: bigint; amountExpected: number | null; amountPaid: number | null }>
+  >(Prisma.sql`
+    SELECT ${EVENT_DATE} AS date,
+           COUNT(*) AS total,
+           SUM(events.amount_expected) AS amountExpected,
+           SUM(events.amount_paid) AS amountPaid
+      FROM google_calendar_events events
+      ${where}
+     GROUP BY date
+     ORDER BY date
+  `);
 
-  const [totalRows] = await pool.query<RowDataPacket[]>(
-    `SELECT COUNT(*) AS total,
-            SUM(events.amount_expected) AS total_expected,
-            SUM(events.amount_paid) AS total_paid
-     FROM (${BASE_EVENTS_SELECT}) AS events
-     ${whereClause}`,
-    [...params]
-  );
+  const totalsRow = await prisma.$queryRaw<
+    Array<{ total: bigint; total_expected: number | null; total_paid: number | null }>
+  >(Prisma.sql`
+    SELECT COUNT(*) AS total,
+           SUM(events.amount_expected) AS total_expected,
+           SUM(events.amount_paid) AS total_paid
+      FROM google_calendar_events events
+      ${where}
+  `);
 
-  const totalEvents = totalRows.length ? Number(totalRows[0].total ?? 0) : 0;
-
-  const [calendarRows] = await pool.query<RowDataPacket[]>(
-    `SELECT events.calendar_id AS calendarId, COUNT(*) AS total
-     FROM (${BASE_EVENTS_SELECT}) AS events
-     ${whereClause}
+  const calendarRows = await prisma.$queryRaw<Array<{ calendarId: string; total: bigint }>>(Prisma.sql`
+    SELECT events.calendar_id AS calendarId,
+           COUNT(*) AS total
+      FROM google_calendar_events events
+      ${where}
      GROUP BY events.calendar_id
-     ORDER BY events.calendar_id`,
-    [...params]
-  );
+     ORDER BY events.calendar_id
+  `);
 
-  const [eventTypeRows] = await pool.query<RowDataPacket[]>(
-    `SELECT events.event_type AS eventType, COUNT(*) AS total
-     FROM (${BASE_EVENTS_SELECT}) AS events
-     ${whereClause}
+  const eventTypeRows = await prisma.$queryRaw<Array<{ eventType: string | null; total: bigint }>>(Prisma.sql`
+    SELECT events.event_type AS eventType,
+           COUNT(*) AS total
+      FROM google_calendar_events events
+      ${where}
      GROUP BY events.event_type
-     ORDER BY events.event_type IS NULL, events.event_type`,
-    [...params]
-  );
+     ORDER BY events.event_type IS NULL, events.event_type
+  `);
 
-  const [categoryRows] = await pool.query<RowDataPacket[]>(
-    `SELECT category, total
-     FROM (
-       SELECT
-         CASE WHEN events.category IS NULL OR events.category = '' THEN NULL ELSE events.category END AS category,
-         COUNT(*) AS total
-       FROM (${BASE_EVENTS_SELECT}) AS events
-       ${whereClause}
-       GROUP BY category
-     ) AS categorized
-     ORDER BY category IS NULL, category`,
-    [...params]
-  );
+  const categoryRows = await prisma.$queryRaw<Array<{ category: string | null; total: bigint }>>(Prisma.sql`
+    SELECT CASE WHEN events.category IS NULL OR events.category = '' THEN NULL ELSE events.category END AS category,
+           COUNT(*) AS total
+      FROM google_calendar_events events
+      ${where}
+     GROUP BY category
+     ORDER BY category IS NULL, category
+  `);
+
+  const totalEvents = totalsRow.length ? Number(totalsRow[0].total ?? 0) : 0;
+  const totalAmountExpected = totalsRow.length ? Number(totalsRow[0].total_expected ?? 0) : 0;
+  const totalAmountPaid = totalsRow.length ? Number(totalsRow[0].total_paid ?? 0) : 0;
 
   return {
     totals: {
       events: totalEvents,
       days: dateRows.length,
-      amountExpected: Number(totalRows[0]?.total_expected ?? 0),
-      amountPaid: Number(totalRows[0]?.total_paid ?? 0),
+      amountExpected: totalAmountExpected,
+      amountPaid: totalAmountPaid,
     },
     aggregates: {
-      byYear: yearRows.map((row) => ({
-        year: Number(row.year),
-        total: Number(row.total),
-        amountExpected: Number(row.amountExpected ?? 0),
-        amountPaid: Number(row.amountPaid ?? 0),
-      })),
-      byMonth: monthRows.map((row) => ({
-        year: Number(row.year),
-        month: Number(row.month),
-        total: Number(row.total),
-        amountExpected: Number(row.amountExpected ?? 0),
-        amountPaid: Number(row.amountPaid ?? 0),
-      })),
+      byYear: yearRows.map((row) => ({ year: Number(row.year), ...mapAggregateRow(row) })),
+      byMonth: monthRows.map((row) => ({ year: Number(row.year), month: Number(row.month), ...mapAggregateRow(row) })),
       byWeek: weekRows.map((row) => ({
         isoYear: Number(row.isoYear),
         isoWeek: Number(row.isoWeek),
-        total: Number(row.total),
-        amountExpected: Number(row.amountExpected ?? 0),
-        amountPaid: Number(row.amountPaid ?? 0),
+        ...mapAggregateRow(row),
       })),
       byWeekday: weekdayRows
-        .filter((row) => Number(row.weekday) <= 5)
-        .map((row) => ({
-          weekday: Number(row.weekday),
-          total: Number(row.total),
-          amountExpected: Number(row.amountExpected ?? 0),
-          amountPaid: Number(row.amountPaid ?? 0),
-        })),
-      byDate: dateRows.map((row) => ({
-        date: String(row.date),
-        total: Number(row.total),
-        amountExpected: Number(row.amountExpected ?? 0),
-        amountPaid: Number(row.amountPaid ?? 0),
-      })),
+        .filter((row) => Number(row.weekday) <= 6)
+        .map((row) => ({ weekday: Number(row.weekday), ...mapAggregateRow(row) })),
+      byDate: dateRows.map((row) => ({ date: String(row.date), ...mapAggregateRow(row) })),
     },
     available: {
-      calendars: calendarRows.map((row) => ({
-        calendarId: String(row.calendarId),
-        total: Number(row.total),
-      })),
+      calendars: calendarRows.map((row) => ({ calendarId: String(row.calendarId), total: Number(row.total ?? 0) })),
       eventTypes: eventTypeRows.map((row) => ({
         eventType: row.eventType != null ? String(row.eventType) : null,
-        total: Number(row.total),
+        total: Number(row.total ?? 0),
       })),
       categories: categoryRows.map((row) => ({
         category: row.category != null ? String(row.category) : null,
-        total: Number(row.total),
+        total: Number(row.total ?? 0),
       })),
     },
   };
@@ -371,22 +330,22 @@ export async function getCalendarEventsByDate(
   filters: CalendarEventFilters,
   options: { maxDays?: number } = {}
 ): Promise<CalendarEventsByDateResult> {
-  const pool = getPool();
   const maxDays = Math.min(Math.max(options.maxDays ?? 31, 1), 120);
+  const where = buildWhereClause(filters);
 
-  const { whereClause, params } = buildFilterClause(filters);
-
-  const [dateRows] = await pool.query<RowDataPacket[]>(
-    `SELECT events.event_date AS date, COUNT(*) AS total,
-            SUM(events.amount_expected) AS amountExpected,
-            SUM(events.amount_paid) AS amountPaid
-     FROM (${BASE_EVENTS_SELECT}) AS events
-     ${whereClause}
-     GROUP BY events.event_date
-     ORDER BY events.event_date DESC
-     LIMIT ?`,
-    [...params, maxDays]
-  );
+  const dateRows = await prisma.$queryRaw<
+    Array<{ date: string; total: bigint; amountExpected: number | null; amountPaid: number | null }>
+  >(Prisma.sql`
+    SELECT ${EVENT_DATE} AS date,
+           COUNT(*) AS total,
+           SUM(events.amount_expected) AS amountExpected,
+           SUM(events.amount_paid) AS amountPaid
+      FROM google_calendar_events events
+      ${where}
+     GROUP BY date
+     ORDER BY date DESC
+     LIMIT ${maxDays}
+  `);
 
   if (!dateRows.length) {
     return {
@@ -400,138 +359,107 @@ export async function getCalendarEventsByDate(
     };
   }
 
-  const selectedDates = dateRows.map((row) => String(row.date));
+  const selectedDates = dateRows.map((row) => row.date);
+  const whereWithDates = buildWhereClause({ ...filters, dates: selectedDates });
 
-  const { whereClause: dateFilteredWhere, params: dateFilteredParams } = buildFilterClause({
-    ...filters,
-    dates: selectedDates,
-  });
-
-  const [eventRows] = await pool.query<RowDataPacket[]>(
-    `SELECT
-        events.calendar_id,
-        events.event_id,
-        events.event_status,
-        events.event_type,
-        events.category,
-        events.amount_expected,
-        events.amount_paid,
-        events.attended,
-        events.dosage,
-        events.treatment_stage,
+  const eventRows = await prisma.$queryRaw<
+    Array<CalendarEventDetail & { event_date: string; event_date_time: string | null }>
+  >(Prisma.sql`
+    SELECT
+        events.calendar_id AS calendarId,
+        events.event_id AS eventId,
+        events.event_status AS status,
+        events.event_type AS eventType,
         events.summary,
         events.description,
-        events.start_date,
-        DATE_FORMAT(events.event_datetime, '%Y-%m-%dT%H:%i:%s') AS event_date_time,
-        events.start_date_time,
-        events.start_time_zone,
-        events.end_date,
-        events.end_date_time,
-        events.end_time_zone,
-        events.event_created_at,
-        events.event_updated_at,
-        events.color_id,
+        events.category,
+        events.amount_expected AS amountExpected,
+        events.amount_paid AS amountPaid,
+        events.attended,
+        events.dosage,
+        events.treatment_stage AS treatmentStage,
+        events.start_date AS startDate,
+        events.start_date_time AS startDateTime,
+        events.start_time_zone AS startTimeZone,
+        events.end_date AS endDate,
+        events.end_date_time AS endDateTime,
+        events.end_time_zone AS endTimeZone,
+        events.event_created_at AS eventCreatedAt,
+        events.event_updated_at AS eventUpdatedAt,
+        events.color_id AS colorId,
         events.location,
         events.transparency,
         events.visibility,
-        events.hangout_link,
-        events.raw_event,
-        events.event_date
-     FROM (${BASE_EVENTS_SELECT}) AS events
-     ${dateFilteredWhere}
-     ORDER BY events.event_date DESC, events.event_datetime ASC, events.event_id ASC`,
-    [...dateFilteredParams]
-  );
+        events.hangout_link AS hangoutLink,
+        events.raw_event AS rawEvent,
+        ${EVENT_DATE} AS event_date,
+        DATE_FORMAT(${EVENT_DATETIME}, '%Y-%m-%dT%H:%i:%s') AS event_date_time
+      FROM google_calendar_events events
+      ${whereWithDates}
+     ORDER BY event_date DESC, ${EVENT_DATETIME} ASC, events.event_id ASC
+  `);
 
   const grouped = new Map<string, CalendarEventDetail[]>();
-
   for (const row of eventRows) {
-    const date = String(row.event_date);
-    if (!grouped.has(date)) {
-      grouped.set(date, []);
-    }
-    const raw = row.raw_event;
-    let parsedRaw: unknown | null = null;
-    if (raw != null) {
-      if (typeof raw === "string") {
-        try {
-          parsedRaw = JSON.parse(raw);
-        } catch {
-          parsedRaw = raw;
-        }
-      } else {
-        parsedRaw = raw;
-      }
-    }
-
-    grouped.get(date)!.push({
-      calendarId: String(row.calendar_id),
-      eventId: String(row.event_id),
-      status: row.event_status ? String(row.event_status) : null,
-      eventType: row.event_type ? String(row.event_type) : null,
+    const list = grouped.get(row.event_date) ?? [];
+    list.push({
+      calendarId: String(row.calendarId),
+      eventId: String(row.eventId),
+      status: row.status ? String(row.status) : null,
+      eventType: row.eventType ? String(row.eventType) : null,
       category: row.category ? String(row.category) : null,
       summary: row.summary != null ? String(row.summary) : null,
       description: row.description != null ? String(row.description) : null,
-      startDate: row.start_date != null ? String(row.start_date) : null,
-      startDateTime: row.start_date_time != null ? String(row.start_date_time) : null,
-      startTimeZone: row.start_time_zone != null ? String(row.start_time_zone) : null,
-      endDate: row.end_date != null ? String(row.end_date) : null,
-      endDateTime: row.end_date_time != null ? String(row.end_date_time) : null,
-      endTimeZone: row.end_time_zone != null ? String(row.end_time_zone) : null,
-      colorId: row.color_id != null ? String(row.color_id) : null,
+      startDate: row.startDate ? dayjs(row.startDate).format("YYYY-MM-DD") : null,
+      startDateTime: row.startDateTime ? dayjs(row.startDateTime).format("YYYY-MM-DDTHH:mm:ss") : null,
+      startTimeZone: row.startTimeZone ? String(row.startTimeZone) : null,
+      endDate: row.endDate ? dayjs(row.endDate).format("YYYY-MM-DD") : null,
+      endDateTime: row.endDateTime ? dayjs(row.endDateTime).format("YYYY-MM-DDTHH:mm:ss") : null,
+      endTimeZone: row.endTimeZone ? String(row.endTimeZone) : null,
+      colorId: row.colorId ? String(row.colorId) : null,
       location: row.location != null ? String(row.location) : null,
       transparency: row.transparency != null ? String(row.transparency) : null,
       visibility: row.visibility != null ? String(row.visibility) : null,
-      hangoutLink: row.hangout_link != null ? String(row.hangout_link) : null,
-      eventDate: date,
-      eventDateTime: row.event_date_time != null ? String(row.event_date_time) : null,
-      eventCreatedAt: row.event_created_at != null ? String(row.event_created_at) : null,
-      eventUpdatedAt: row.event_updated_at != null ? String(row.event_updated_at) : null,
-      rawEvent: parsedRaw,
-      amountExpected: row.amount_expected != null ? Number(row.amount_expected) : null,
-      amountPaid: row.amount_paid != null ? Number(row.amount_paid) : null,
-      attended: row.attended != null ? row.attended === 1 : null,
-      dosage: row.dosage != null ? String(row.dosage) : null,
-      treatmentStage: row.treatment_stage != null ? String(row.treatment_stage) : null,
+      hangoutLink: row.hangoutLink != null ? String(row.hangoutLink) : null,
+      eventDate: row.event_date,
+      eventDateTime: row.event_date_time,
+      eventCreatedAt: row.eventCreatedAt ? dayjs(row.eventCreatedAt).format("YYYY-MM-DD HH:mm:ss") : null,
+      eventUpdatedAt: row.eventUpdatedAt ? dayjs(row.eventUpdatedAt).format("YYYY-MM-DD HH:mm:ss") : null,
+      rawEvent: row.rawEvent ?? null,
+      amountExpected: row.amountExpected ?? null,
+      amountPaid: row.amountPaid ?? null,
+      attended: row.attended ?? null,
+      dosage: row.dosage ?? null,
+      treatmentStage: row.treatmentStage ?? null,
     });
+    grouped.set(row.event_date, list);
   }
 
   const days: CalendarEventsByDate[] = [];
   let totalEvents = 0;
-  let totalAmountExpected = 0;
-  let totalAmountPaid = 0;
-  const dateAggregateMap = new Map<string, { amountExpected: number; amountPaid: number }>();
-  for (const row of dateRows) {
-    dateAggregateMap.set(String(row.date), {
-      amountExpected: Number(row.amountExpected ?? 0),
-      amountPaid: Number(row.amountPaid ?? 0),
-    });
-  }
+  let totalExpected = 0;
+  let totalPaid = 0;
 
-  const sortedDates = Array.from(grouped.keys()).sort((a, b) => (a < b ? 1 : a > b ? -1 : 0));
-
-  for (const date of sortedDates) {
-    const events = grouped.get(date) ?? [];
+  for (const dateRow of dateRows) {
+    const dateKey = String(dateRow.date);
+    const events = grouped.get(dateKey) ?? [];
     totalEvents += events.length;
+    const amountExpected = Number(dateRow.amountExpected ?? 0);
+    const amountPaid = Number(dateRow.amountPaid ?? 0);
+    totalExpected += amountExpected;
+    totalPaid += amountPaid;
+
     events.sort((a, b) => {
       if (!a.eventDateTime && !b.eventDateTime) return a.eventId.localeCompare(b.eventId);
       if (!a.eventDateTime) return -1;
       if (!b.eventDateTime) return 1;
-      if (a.eventDateTime === b.eventDateTime) {
-        return a.eventId.localeCompare(b.eventId);
-      }
+      if (a.eventDateTime === b.eventDateTime) return a.eventId.localeCompare(b.eventId);
       return a.eventDateTime < b.eventDateTime ? -1 : 1;
     });
 
-    const aggregates = dateAggregateMap.get(date) ?? { amountExpected: 0, amountPaid: 0 };
-    const amountExpected = aggregates.amountExpected;
-    const amountPaid = aggregates.amountPaid;
-    totalAmountExpected += amountExpected;
-    totalAmountPaid += amountPaid;
-
     days.push({
-      date,
-      total: events.length,
+      date: dateKey,
+      total: Number(dateRow.total ?? 0),
       events,
       amountExpected,
       amountPaid,
@@ -543,8 +471,8 @@ export async function getCalendarEventsByDate(
     totals: {
       days: days.length,
       events: totalEvents,
-      amountExpected: totalAmountExpected,
-      amountPaid: totalAmountPaid,
+      amountExpected: totalExpected,
+      amountPaid: totalPaid,
     },
   };
 }
