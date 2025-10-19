@@ -162,11 +162,15 @@ function CalendarHeatmapPage() {
 
   const heatmapMonths = useMemo(() => {
     const now = dayjs();
-    return [
-      now.subtract(1, "month").startOf("month"),
-      now.startOf("month"),
-      now.add(1, "month").startOf("month"),
-    ];
+    const prev = now.subtract(1, "month").startOf("month");
+    const current = now.startOf("month");
+    const next = now.add(1, "month").startOf("month");
+    setFilters((prevState) => ({
+      ...prevState,
+      from: prev.format("YYYY-MM-DD"),
+      to: next.endOf("month").format("YYYY-MM-DD"),
+    }));
+    return [prev, current, next];
   }, []);
 
   const heatmapMonthKeys = useMemo(

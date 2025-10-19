@@ -13,29 +13,12 @@
   fill: rgba(226, 232, 240, 0.6);
 }
 
-.react-calendar-heatmap .heatmap-color-0 {
-  fill: rgba(226, 232, 240, 0.6);
-}
-
-.react-calendar-heatmap .heatmap-color-1 {
-  fill: rgba(191, 219, 254, 0.7);
-}
-
-.react-calendar-heatmap .heatmap-color-2 {
-  fill: rgba(147, 197, 253, 0.75);
-}
-
-.react-calendar-heatmap .heatmap-color-3 {
-  fill: rgba(96, 165, 250, 0.8);
-}
-
-.react-calendar-heatmap .heatmap-color-4 {
-  fill: rgba(59, 130, 246, 0.85);
-}
-
-.react-calendar-heatmap .heatmap-color-5 {
-  fill: rgba(30, 64, 175, 0.9);
-}
+.react-calendar-heatmap .heatmap-color-0 { fill: rgba(226, 232, 240, 0.6); }
+.react-calendar-heatmap .heatmap-color-1 { fill: rgba(191, 219, 254, 0.7); }
+.react-calendar-heatmap .heatmap-color-2 { fill: rgba(147, 197, 253, 0.75); }
+.react-calendar-heatmap .heatmap-color-3 { fill: rgba(96, 165, 250, 0.8); }
+.react-calendar-heatmap .heatmap-color-4 { fill: rgba(59, 130, 246, 0.85); }
+.react-calendar-heatmap .heatmap-color-5 { fill: rgba(30, 64, 175, 0.9); }
 
 .react-calendar-heatmap text {
   fill: rgba(71, 85, 105, 0.8);
