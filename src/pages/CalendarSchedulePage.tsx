@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import type { ChangeEvent } from "react";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
@@ -18,7 +18,8 @@ const NULL_EVENT_TYPE_VALUE = "__NULL__";
 const NULL_CATEGORY_VALUE = "__NULL_CATEGORY__";
 
 function CalendarSchedulePage() {
-  const { t } = useTranslation("calendar");
+  const { t } = useTranslation();
+  const tc = useCallback((key: string, options?: Record<string, unknown>) => t(`calendar.${key}`, options), [t]);
   const {
     filters,
     daily,
@@ -68,8 +69,8 @@ function CalendarSchedulePage() {
   return (
     <section className="space-y-6">
       <header className="space-y-2">
-        <h1 className="text-2xl font-bold text-[var(--brand-primary)]">{t("scheduleTitle")}</h1>
-        <p className="text-sm text-slate-600">{t("scheduleDescription")}</p>
+        <h1 className="text-2xl font-bold text-[var(--brand-primary)]">{tc("scheduleTitle")}</h1>
+        <p className="text-sm text-slate-600">{tc("scheduleDescription")}</p>
       </header>
 
       <form
@@ -80,19 +81,19 @@ function CalendarSchedulePage() {
         }}
       >
         <Input
-          label={t("filters.from")}
+          label={tc("filters.from")}
           type="date"
           value={filters.from}
           onChange={(event: ChangeEvent<HTMLInputElement>) => updateFilters("from", event.target.value)}
         />
         <Input
-          label={t("filters.to")}
+          label={tc("filters.to")}
           type="date"
           value={filters.to}
           onChange={(event: ChangeEvent<HTMLInputElement>) => updateFilters("to", event.target.value)}
         />
         <MultiSelectFilter
-          label={t("filters.calendars")}
+          label={tc("filters.calendars")}
           options={calendarOptions}
           selected={filters.calendarIds}
           onToggle={(value) => {
@@ -103,10 +104,10 @@ function CalendarSchedulePage() {
                 : [...filters.calendarIds, value]
             );
           }}
-          placeholder={t("filters.all")}
+          placeholder={tc("filters.all")}
         />
         <MultiSelectFilter
-          label={t("filters.eventTypes")}
+          label={tc("filters.eventTypes")}
           options={eventTypeOptions}
           selected={filters.eventTypes}
           onToggle={(value) => {
@@ -117,10 +118,10 @@ function CalendarSchedulePage() {
                 : [...filters.eventTypes, value]
             );
           }}
-          placeholder={t("filters.all")}
+          placeholder={tc("filters.all")}
         />
         <MultiSelectFilter
-          label={t("filters.categories")}
+          label={tc("filters.categories")}
           options={categoryOptions}
           selected={filters.categories}
           onToggle={(value) => {
@@ -131,17 +132,17 @@ function CalendarSchedulePage() {
                 : [...filters.categories, value]
             );
           }}
-          placeholder={t("filters.allCategories")}
+          placeholder={tc("filters.allCategories")}
         />
         <Input
-          label={t("filters.search")}
-          placeholder={t("searchPlaceholder")}
+          label={tc("filters.search")}
+          placeholder={tc("searchPlaceholder")}
           value={filters.search}
           onChange={(event: ChangeEvent<HTMLInputElement>) => updateFilters("search", event.target.value)}
         />
         <div className="flex items-end gap-2 md:col-span-2">
           <Button type="submit" disabled={loading}>
-            {loading ? t("loading") : t("applyFilters")}
+            {loading ? tc("loading") : tc("applyFilters")}
           </Button>
           <Button
             type="button"
@@ -151,7 +152,7 @@ function CalendarSchedulePage() {
               resetFilters();
             }}
           >
-            {t("resetFilters")}
+            {tc("resetFilters")}
           </Button>
         </div>
       </form>
@@ -162,7 +163,7 @@ function CalendarSchedulePage() {
 
       {summary && (
         <p className="text-xs text-slate-500">
-          {t("activeRange", {
+          {tc("activeRange", {
             from: dayjs(summary.filters.from).format("DD MMM YYYY"),
             to: dayjs(summary.filters.to).format("DD MMM YYYY"),
             events: numberFormatter.format(allEvents.length),

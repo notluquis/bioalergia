@@ -4,24 +4,22 @@ import react from "@vitejs/plugin-react-swc";
 import tailwindcss from "@tailwindcss/vite";
 
 export default defineConfig({
-  plugins: [
-    react(),
-    tailwindcss(),
-  ],
-  build: { 
+  plugins: [react(), tailwindcss()],
+  build: {
+    modulePreload: false,
     outDir: "dist/client",
     chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
         manualChunks: {
           // Vendor chunks
-          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          'ui-vendor': ['lucide-react'],
-          'data-vendor': ['dayjs', 'zod', 'papaparse'],
-          'pdf-vendor': ['jspdf', 'html2canvas']
-        }
-      }
-    }
+          "react-vendor": ["react", "react-dom", "react-router-dom"],
+          "ui-vendor": ["lucide-react"],
+          "data-vendor": ["dayjs", "zod", "papaparse"],
+          "pdf-vendor": ["jspdf", "html2canvas"],
+        },
+      },
+    },
   },
   resolve: {
     alias: {
