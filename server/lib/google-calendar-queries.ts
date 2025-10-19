@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import { Prisma } from "../../generated/prisma";
+import { Prisma } from "../../generated/prisma/index.js";
 import { prisma } from "./prisma.js";
 
 import { googleCalendarConfig } from "../config.js";
@@ -108,7 +108,7 @@ function buildWhereClause(filters: CalendarEventFilters) {
   if (filters.calendarIds?.length) {
     const values = Prisma.join(
       filters.calendarIds.map((id) => Prisma.sql`${id}`),
-      Prisma.sql`, `
+      ", "
     );
     conditions.push(Prisma.sql`events.calendar_id IN (${values})`);
   }
@@ -121,7 +121,7 @@ function buildWhereClause(filters: CalendarEventFilters) {
     if (explicit.length) {
       const list = Prisma.join(
         explicit.map((type) => Prisma.sql`${type}`),
-        Prisma.sql`, `
+        ", "
       );
       clauses.push(Prisma.sql`events.event_type IN (${list})`);
     }
@@ -131,7 +131,7 @@ function buildWhereClause(filters: CalendarEventFilters) {
     }
 
     if (clauses.length) {
-      conditions.push(Prisma.sql`(${Prisma.join(clauses, Prisma.sql` OR `)})`);
+      conditions.push(Prisma.sql`(${Prisma.join(clauses, " OR ")})`);
     }
   }
 
@@ -143,7 +143,7 @@ function buildWhereClause(filters: CalendarEventFilters) {
     if (explicit.length) {
       const list = Prisma.join(
         explicit.map((value) => Prisma.sql`${value}`),
-        Prisma.sql`, `
+        ", "
       );
       clauses.push(Prisma.sql`events.category IN (${list})`);
     }
@@ -153,7 +153,7 @@ function buildWhereClause(filters: CalendarEventFilters) {
     }
 
     if (clauses.length) {
-      conditions.push(Prisma.sql`(${Prisma.join(clauses, Prisma.sql` OR `)})`);
+      conditions.push(Prisma.sql`(${Prisma.join(clauses, " OR ")})`);
     }
   }
 
@@ -165,15 +165,22 @@ function buildWhereClause(filters: CalendarEventFilters) {
   if (filters.dates?.length) {
     const list = Prisma.join(
       filters.dates.map((date) => Prisma.sql`${date}`),
-      Prisma.sql`, `
+      ", "
     );
     conditions.push(Prisma.sql`${EVENT_DATE} IN (${list})`);
   }
 
-  return conditions.length ? Prisma.sql`WHERE ${Prisma.join(conditions, Prisma.sql` AND `)}` : Prisma.empty;
+  return conditions.length ? Prisma.sql`WHERE ${Prisma.join(conditions, " AND ")}` : Prisma.empty;
 }
 
-function mapAggregateRow(row: { total: bigint | number; amountExpected: number | null; amountPaid: number | null }) {
+type AggregateRowBase = { total: bigint | number; amountExpected: number | null; amountPaid: number | null };
+type YearAggregateRow = AggregateRowBase & { year: number };
+type MonthAggregateRow = AggregateRowBase & { year: number; month: number };
+type WeekAggregateRow = AggregateRowBase & { isoYear: number; isoWeek: number };
+type WeekdayAggregateRow = AggregateRowBase & { weekday: number };
+type DateAggregateRow = AggregateRowBase & { date: string };
+
+function mapAggregateRow(row: AggregateRowBase) {
   return {
     total: Number(row.total ?? 0),
     amountExpected: Number(row.amountExpected ?? 0),
@@ -300,17 +307,21 @@ export async function getCalendarAggregates(filters: CalendarEventFilters): Prom
       amountPaid: totalAmountPaid,
     },
     aggregates: {
-      byYear: yearRows.map((row) => ({ year: Number(row.year), ...mapAggregateRow(row) })),
-      byMonth: monthRows.map((row) => ({ year: Number(row.year), month: Number(row.month), ...mapAggregateRow(row) })),
-      byWeek: weekRows.map((row) => ({
+      byYear: yearRows.map((row: YearAggregateRow) => ({ year: Number(row.year), ...mapAggregateRow(row) })),
+      byMonth: monthRows.map((row: MonthAggregateRow) => ({
+        year: Number(row.year),
+        month: Number(row.month),
+        ...mapAggregateRow(row),
+      })),
+      byWeek: weekRows.map((row: WeekAggregateRow) => ({
         isoYear: Number(row.isoYear),
         isoWeek: Number(row.isoWeek),
         ...mapAggregateRow(row),
       })),
       byWeekday: weekdayRows
-        .filter((row) => Number(row.weekday) <= 6)
-        .map((row) => ({ weekday: Number(row.weekday), ...mapAggregateRow(row) })),
-      byDate: dateRows.map((row) => ({ date: String(row.date), ...mapAggregateRow(row) })),
+        .filter((row: WeekdayAggregateRow) => Number(row.weekday) <= 6)
+        .map((row: WeekdayAggregateRow) => ({ weekday: Number(row.weekday), ...mapAggregateRow(row) })),
+      byDate: dateRows.map((row: DateAggregateRow) => ({ date: String(row.date), ...mapAggregateRow(row) })),
     },
     available: {
       calendars: calendarRows.map((row) => ({ calendarId: String(row.calendarId), total: Number(row.total ?? 0) })),

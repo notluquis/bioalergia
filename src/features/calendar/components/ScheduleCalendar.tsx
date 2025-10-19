@@ -7,9 +7,6 @@ import dayjs from "dayjs";
 
 import type { CalendarEventDetail } from "../types";
 
-import "@fullcalendar/core/index.css";
-import "@fullcalendar/daygrid/index.css";
-import "@fullcalendar/timegrid/index.css";
 import "./ScheduleCalendar.css";
 
 export type ScheduleCalendarProps = {
