@@ -66,7 +66,7 @@ router.get(
       builder.where("sr.status IN ('pending', 'ordered', 'in_transit')");
     }
 
-    builder.orderBy("sr.created_at DESC");
+    builder.orderBy("sr.created_at", "DESC");
 
     const { sql: query, params } = builder.build();
     const [rows] = await db.execute<RowDataPacket[]>(query, params);
