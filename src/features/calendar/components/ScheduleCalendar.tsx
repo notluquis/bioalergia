@@ -85,6 +85,38 @@ function asFullCalendarEvents(source: CalendarEventDetail[]): CalendarEventInput
 export function ScheduleCalendar({ events, loading = false }: ScheduleCalendarProps) {
   const calendarEvents = useMemo(() => asFullCalendarEvents(events), [events]);
 
+  const timeBounds = useMemo(() => {
+    if (!events.length) {
+      return {
+        slotMinTime: "06:00:00",
+        slotMaxTime: "20:00:00",
+      };
+    }
+
+    let minStart: dayjs.Dayjs | null = null;
+    let maxEnd: dayjs.Dayjs | null = null;
+
+    for (const event of events) {
+      const start = event.startDateTime || (event.startDate ? `${event.startDate}T00:00:00` : null);
+      const end = event.endDateTime || (event.endDate ? `${event.endDate}T23:59:59` : null);
+
+      const startDate = start ? dayjs(start) : null;
+      const endDate = end ? dayjs(end) : null;
+
+      if (startDate) {
+        minStart = minStart ? dayjs.min(minStart, startDate) : startDate;
+      }
+      if (endDate) {
+        maxEnd = maxEnd ? dayjs.max(maxEnd, endDate) : endDate;
+      }
+    }
+
+    const slotMinTime = minStart ? minStart.subtract(30, "minute").format("HH:mm:ss") : "06:00:00";
+    const slotMaxTime = maxEnd ? maxEnd.add(30, "minute").format("HH:mm:ss") : "20:00:00";
+
+    return { slotMinTime, slotMaxTime };
+  }, [events]);
+
   return (
     <div className="rounded-2xl border border-white/50 bg-white/90 p-4 shadow-sm">
       <FullCalendar
@@ -99,6 +131,9 @@ export function ScheduleCalendar({ events, loading = false }: ScheduleCalendarPr
         events={calendarEvents}
         eventTimeFormat={{ hour: "2-digit", minute: "2-digit", hour12: false }}
         slotLabelFormat={{ hour: "2-digit", minute: "2-digit", hour12: false }}
+        slotMinTime={timeBounds.slotMinTime}
+        slotMaxTime={timeBounds.slotMaxTime}
+        hiddenDays={[0]}
         eventClassNames={(arg: { event: { extendedProps?: CalendarEventInput["extendedProps"] } }) => {
           const category = arg.event.extendedProps?.category;
           if (category === "Tratamiento subcutáneo") return ["calendar-event--subcutaneous"];
