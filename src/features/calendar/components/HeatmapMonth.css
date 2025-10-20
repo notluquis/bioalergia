@@ -1,27 +1,139 @@
-.heatmap-month {
-  padding: 16px;
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 12px 28px -18px rgba(15, 23, 42, 0.35);
+.calendar-month-card {
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(255, 255, 255, 0.82));
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 18px 36px -26px rgba(15, 23, 42, 0.45);
+  padding: 20px;
   display: flex;
   flex-direction: column;
+  gap: 16px;
+}
+
+.calendar-month-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 12px;
 }
 
-.react-calendar-heatmap .color-empty {
-  fill: rgba(226, 232, 240, 0.6);
+.calendar-month-card__title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  text-transform: capitalize;
+  color: var(--brand-primary);
 }
 
-.react-calendar-heatmap .heatmap-color-0 { fill: rgba(226, 232, 240, 0.6); }
-.react-calendar-heatmap .heatmap-color-1 { fill: rgba(191, 219, 254, 0.7); }
-.react-calendar-heatmap .heatmap-color-2 { fill: rgba(147, 197, 253, 0.75); }
-.react-calendar-heatmap .heatmap-color-3 { fill: rgba(96, 165, 250, 0.8); }
-.react-calendar-heatmap .heatmap-color-4 { fill: rgba(59, 130, 246, 0.85); }
-.react-calendar-heatmap .heatmap-color-5 { fill: rgba(30, 64, 175, 0.9); }
-
-.react-calendar-heatmap text {
-  fill: rgba(71, 85, 105, 0.8);
-  font-size: 11px;
+.calendar-month-card__subtitle {
+  font-size: 0.75rem;
   font-weight: 600;
+  color: rgba(51, 65, 85, 0.65);
+}
+
+.calendar-month-card__grid {
+  display: grid;
+  grid-template-columns: 68px repeat(6, minmax(48px, 1fr)) 64px;
+  gap: 6px;
+  align-items: stretch;
+}
+
+.calendar-month-card__grid-corner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: rgba(51, 65, 85, 0.7);
+}
+
+.calendar-month-card__column-header,
+.calendar-month-card__column-header--total,
+.calendar-month-card__row-label,
+.calendar-month-card__week-total {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: rgba(51, 65, 85, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.calendar-month-card__column-header--total,
+.calendar-month-card__week-total {
+  background: rgba(226, 232, 240, 0.6);
+  border-radius: 12px;
+  color: rgba(30, 41, 59, 0.8);
+}
+
+.calendar-month-card__row {
+  display: contents;
+}
+
+.calendar-month-card__row-label {
+  align-self: center;
+  font-weight: 600;
+  color: rgba(51, 65, 85, 0.75);
+}
+
+.calendar-month-card__cell {
+  position: relative;
+  border-radius: 14px;
+  min-height: 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--glass-elevated, rgba(248, 250, 252, 0.9));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.calendar-month-card__cell:hover {
+  transform: translateY(-1px) scale(1.01);
+  box-shadow: 0 10px 18px -16px rgba(15, 23, 42, 0.4);
+  z-index: 2;
+}
+
+.calendar-month-card__cell--empty {
+  background: rgba(241, 245, 249, 0.6);
+  box-shadow: none;
+}
+
+.calendar-month-card__cell-day {
+  position: absolute;
+  top: 6px;
+  left: 8px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: rgba(30, 41, 59, 0.7);
+}
+
+.calendar-month-card__cell-count {
+  font-size: 1rem;
+  font-weight: 700;
+  color: rgba(17, 24, 39, 0.85);
+}
+
+.calendar-month-card__cell--today {
+  outline: 2px solid rgba(14, 165, 233, 0.85);
+  outline-offset: 2px;
+}
+
+.calendar-month-card__week-total {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: rgba(30, 41, 59, 0.85);
+}
+
+@media (max-width: 1200px) {
+  .calendar-month-card__grid {
+    grid-template-columns: 54px repeat(6, minmax(42px, 1fr)) 54px;
+  }
+
+  .calendar-month-card__cell {
+    min-height: 52px;
+  }
 }

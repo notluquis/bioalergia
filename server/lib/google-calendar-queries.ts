@@ -412,7 +412,8 @@ export async function getCalendarEventsByDate(
 
   const grouped = new Map<string, CalendarEventDetail[]>();
   for (const row of eventRows) {
-    const list = grouped.get(row.event_date) ?? [];
+    const dateKey = dayjs(row.event_date).format("YYYY-MM-DD");
+    const list = grouped.get(dateKey) ?? [];
     list.push({
       calendarId: String(row.calendarId),
       eventId: String(row.eventId),
@@ -432,8 +433,8 @@ export async function getCalendarEventsByDate(
       transparency: row.transparency != null ? String(row.transparency) : null,
       visibility: row.visibility != null ? String(row.visibility) : null,
       hangoutLink: row.hangoutLink != null ? String(row.hangoutLink) : null,
-      eventDate: row.event_date,
-      eventDateTime: row.event_date_time,
+      eventDate: dateKey,
+      eventDateTime: row.event_date_time ? dayjs(row.event_date_time).format("YYYY-MM-DDTHH:mm:ss") : null,
       eventCreatedAt: row.eventCreatedAt ? dayjs(row.eventCreatedAt).format("YYYY-MM-DD HH:mm:ss") : null,
       eventUpdatedAt: row.eventUpdatedAt ? dayjs(row.eventUpdatedAt).format("YYYY-MM-DD HH:mm:ss") : null,
       rawEvent: row.rawEvent ?? null,
@@ -443,7 +444,7 @@ export async function getCalendarEventsByDate(
       dosage: row.dosage ?? null,
       treatmentStage: row.treatmentStage ?? null,
     });
-    grouped.set(row.event_date, list);
+    grouped.set(dateKey, list);
   }
 
   const days: CalendarEventsByDate[] = [];
@@ -452,7 +453,7 @@ export async function getCalendarEventsByDate(
   let totalPaid = 0;
 
   for (const dateRow of dateRows) {
-    const dateKey = String(dateRow.date);
+    const dateKey = dayjs(dateRow.date).format("YYYY-MM-DD");
     const events = grouped.get(dateKey) ?? [];
     totalEvents += events.length;
     const amountExpected = Number(dateRow.amountExpected ?? 0);

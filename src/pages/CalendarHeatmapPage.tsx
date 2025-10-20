@@ -92,17 +92,23 @@ function CalendarHeatmapPage() {
         if (response.status !== "ok") {
           throw new Error("No se pudo cargar el resumen de calendario");
         }
+        const normalizedServerFilters: HeatmapFilters = {
+          from: response.filters.from ?? "",
+          to: response.filters.to ?? "",
+          calendarIds: response.filters.calendarIds ?? [],
+          eventTypes: response.filters.eventTypes ?? [],
+          categories: response.filters.categories ?? [],
+          search: response.filters.search ?? "",
+        };
+
         setSummary({
           filters: response.filters,
           totals: response.totals,
           aggregates: response.aggregates,
           available: response.available,
         });
-        if (useFilters) {
-          setAppliedFilters({ ...filters });
-        } else {
-          setAppliedFilters(createInitialFilters());
-        }
+        setFilters(normalizedServerFilters);
+        setAppliedFilters(normalizedServerFilters);
       } catch (err) {
         const message = err instanceof Error ? err.message : "No se pudo obtener los datos";
         setError(message);
@@ -165,17 +171,30 @@ function CalendarHeatmapPage() {
   }, [summary?.aggregates.byDate]);
 
   const heatmapMonths = useMemo(() => {
-    const now = dayjs();
-    const prev = now.subtract(1, "month").startOf("month");
-    const current = now.startOf("month");
-    const next = now.add(1, "month").startOf("month");
-    setFilters((prevState) => ({
-      ...prevState,
-      from: prev.format("YYYY-MM-DD"),
-      to: next.endOf("month").format("YYYY-MM-DD"),
-    }));
-    return [prev, current, next];
-  }, []);
+    const sourceFrom = summary?.filters.from || filters.from;
+    const sourceTo = summary?.filters.to || filters.to;
+
+    let start = sourceFrom ? dayjs(sourceFrom).startOf("month") : dayjs().startOf("month").subtract(1, "month");
+    let end = sourceTo ? dayjs(sourceTo).startOf("month") : dayjs().startOf("month").add(1, "month");
+
+    if (!start.isValid()) {
+      start = dayjs().startOf("month").subtract(1, "month");
+    }
+    if (!end.isValid() || end.isBefore(start)) {
+      end = start.add(2, "month");
+    }
+
+    const months: Dayjs[] = [];
+    let cursor = start.clone();
+    let guard = 0;
+    while (cursor.isBefore(end) || cursor.isSame(end)) {
+      months.push(cursor);
+      cursor = cursor.add(1, "month");
+      guard += 1;
+      if (guard > 18) break;
+    }
+    return months;
+  }, [summary?.filters.from, summary?.filters.to, filters.from, filters.to]);
 
   const heatmapMonthKeys = useMemo(
     () => new Set(heatmapMonths.map((month) => month.format("YYYY-MM"))),
@@ -210,6 +229,8 @@ function CalendarHeatmapPage() {
   };
 
   const busy = loading || initializing;
+  const rangeStartLabel = heatmapMonths[0]?.format("MMM YYYY") ?? "—";
+  const rangeEndLabel = heatmapMonths[heatmapMonths.length - 1]?.format("MMM YYYY") ?? "—";
 
   return (
     <section className="space-y-6">
@@ -302,8 +323,8 @@ function CalendarHeatmapPage() {
             <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">{tc("heatmapSection")}</h2>
             <span className="text-[11px] text-slate-500">
               {tc("heatmapRange", {
-                start: heatmapMonths[0].format("MMM YYYY"),
-                end: heatmapMonths[2].format("MMM YYYY"),
+                start: rangeStartLabel,
+                end: rangeEndLabel,
               })}
             </span>
           </div>
