@@ -3,7 +3,11 @@ import type { ParsedQs } from "qs";
 import dayjs from "dayjs";
 
 import { asyncHandler, authenticate, requireRole } from "../lib/index.js";
-import { getCalendarAggregates, getCalendarEventsByDate, type CalendarEventFilters } from "../lib/google-calendar-queries.js";
+import {
+  getCalendarAggregates,
+  getCalendarEventsByDate,
+  type CalendarEventFilters,
+} from "../lib/google-calendar-queries.js";
 import { syncGoogleCalendarOnce } from "../lib/google-calendar.js";
 import { formatDateOnly, parseDateOnly } from "../lib/time.js";
 import {
@@ -68,7 +72,8 @@ async function buildFilters(query: ParsedQs) {
 
   const baseStart = configStart;
   const lookaheadRaw = Number(settings.calendarSyncLookaheadDays ?? "365");
-  const lookaheadDays = Number.isFinite(lookaheadRaw) && lookaheadRaw > 0 ? Math.min(Math.floor(lookaheadRaw), 1095) : 365;
+  const lookaheadDays =
+    Number.isFinite(lookaheadRaw) && lookaheadRaw > 0 ? Math.min(Math.floor(lookaheadRaw), 1095) : 365;
   const defaultEnd = dayjs().add(lookaheadDays, "day").format("YYYY-MM-DD");
 
   let from = normalizeDate(query.from) ?? baseStart;
@@ -85,7 +90,9 @@ async function buildFilters(query: ParsedQs) {
 
   const defaultMaxDays = Number(settings.calendarDailyMaxDays ?? "31");
   const maxDaysInput = coerceMaxDays(query.maxDays);
-  const maxDays = maxDaysInput ?? (Number.isFinite(defaultMaxDays) && defaultMaxDays > 0 ? Math.min(Math.floor(defaultMaxDays), 120) : 31);
+  const maxDays =
+    maxDaysInput ??
+    (Number.isFinite(defaultMaxDays) && defaultMaxDays > 0 ? Math.min(Math.floor(defaultMaxDays), 120) : 31);
 
   const filters: CalendarEventFilters = {
     from,
@@ -331,13 +338,13 @@ export function registerCalendarEventRoutes(app: express.Express) {
       .string()
       .trim()
       .max(64)
-      .optional()
+      .nullish()
       .transform((value) => (value && value.length ? value : null)),
     treatmentStage: z
       .string()
       .trim()
       .max(64)
-      .optional()
+      .nullish()
       .transform((value) => (value && value.length ? value : null)),
   });
 
