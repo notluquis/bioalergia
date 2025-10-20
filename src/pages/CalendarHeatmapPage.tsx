@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type ChangeEvent } from "react";
-import dayjs from "dayjs";
+import dayjs, { type Dayjs } from "dayjs";
 import "dayjs/locale/es";
 import { useTranslation } from "react-i18next";
 
@@ -33,14 +33,18 @@ type HeatmapFilters = {
 
 type CalendarSummaryResponse = CalendarSummary & { status: "ok" };
 
-const createInitialFilters = (): HeatmapFilters => ({
-  from: "",
-  to: "",
-  calendarIds: [],
-  eventTypes: [],
-  categories: [],
-  search: "",
-});
+const createInitialFilters = (): HeatmapFilters => {
+  const start = dayjs().startOf("month").subtract(2, "month");
+  const end = dayjs().endOf("month").add(2, "month");
+  return {
+    from: start.format("YYYY-MM-DD"),
+    to: end.format("YYYY-MM-DD"),
+    calendarIds: [],
+    eventTypes: [],
+    categories: [],
+    search: "",
+  };
+};
 
 function arraysEqual(a: string[], b: string[]): boolean {
   if (a.length !== b.length) return false;
@@ -72,8 +76,9 @@ function buildQuery(filters: HeatmapFilters): Record<string, unknown> {
 }
 
 function CalendarHeatmapPage() {
-  const [filters, setFilters] = useState<HeatmapFilters>(() => createInitialFilters());
-  const [appliedFilters, setAppliedFilters] = useState<HeatmapFilters>(() => createInitialFilters());
+  const initialFilters = useMemo(() => createInitialFilters(), []);
+  const [filters, setFilters] = useState<HeatmapFilters>(initialFilters);
+  const [appliedFilters, setAppliedFilters] = useState<HeatmapFilters>(initialFilters);
   const [summary, setSummary] = useState<CalendarSummary | null>(null);
   const [loading, setLoading] = useState(false);
   const [initializing, setInitializing] = useState(true);
@@ -81,50 +86,47 @@ function CalendarHeatmapPage() {
   const { t } = useTranslation();
   const tc = useCallback((key: string, options?: Record<string, unknown>) => t(`calendar.${key}`, options), [t]);
 
-  const fetchSummary = useCallback(
-    async (useFilters: boolean) => {
-      setLoading(true);
-      setError(null);
-      try {
-        const response = await apiClient.get<CalendarSummaryResponse>("/api/calendar/events/summary", {
-          query: useFilters ? buildQuery(filters) : undefined,
-        });
-        if (response.status !== "ok") {
-          throw new Error("No se pudo cargar el resumen de calendario");
-        }
-        const normalizedServerFilters: HeatmapFilters = {
-          from: response.filters.from ?? "",
-          to: response.filters.to ?? "",
-          calendarIds: response.filters.calendarIds ?? [],
-          eventTypes: response.filters.eventTypes ?? [],
-          categories: response.filters.categories ?? [],
-          search: response.filters.search ?? "",
-        };
-
-        setSummary({
-          filters: response.filters,
-          totals: response.totals,
-          aggregates: response.aggregates,
-          available: response.available,
-        });
-        setFilters(normalizedServerFilters);
-        setAppliedFilters(normalizedServerFilters);
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "No se pudo obtener los datos";
-        setError(message);
-      } finally {
-        setLoading(false);
-        setInitializing(false);
+  const fetchSummary = useCallback(async (target: HeatmapFilters) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await apiClient.get<CalendarSummaryResponse>("/api/calendar/events/summary", {
+        query: buildQuery(target),
+      });
+      if (response.status !== "ok") {
+        throw new Error("No se pudo cargar el resumen de calendario");
       }
-    },
-    [filters]
-  );
+      const normalizedServerFilters: HeatmapFilters = {
+        from: response.filters.from ?? "",
+        to: response.filters.to ?? "",
+        calendarIds: response.filters.calendarIds ?? [],
+        eventTypes: response.filters.eventTypes ?? [],
+        categories: response.filters.categories ?? [],
+        search: response.filters.search ?? "",
+      };
+
+      setSummary({
+        filters: response.filters,
+        totals: response.totals,
+        aggregates: response.aggregates,
+        available: response.available,
+      });
+      setFilters(normalizedServerFilters);
+      setAppliedFilters(normalizedServerFilters);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "No se pudo obtener los datos";
+      setError(message);
+    } finally {
+      setLoading(false);
+      setInitializing(false);
+    }
+  }, []);
 
   useEffect(() => {
-    fetchSummary(false).catch(() => {
+    fetchSummary(initialFilters).catch(() => {
       /* handled */
     });
-  }, [fetchSummary]);
+  }, [fetchSummary, initialFilters]);
 
   const isDirty = useMemo(() => !filtersEqual(filters, appliedFilters), [filters, appliedFilters]);
 
@@ -220,12 +222,13 @@ function CalendarHeatmapPage() {
   };
 
   const handleApply = async () => {
-    await fetchSummary(true);
+    await fetchSummary(filters);
   };
 
   const handleReset = async () => {
-    setFilters(createInitialFilters());
-    await fetchSummary(false);
+    const defaults = createInitialFilters();
+    setFilters(defaults);
+    await fetchSummary(defaults);
   };
 
   const busy = loading || initializing;

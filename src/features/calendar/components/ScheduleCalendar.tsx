@@ -104,10 +104,10 @@ export function ScheduleCalendar({ events, loading = false }: ScheduleCalendarPr
       const endDate = end ? dayjs(end) : null;
 
       if (startDate) {
-        minStart = minStart ? dayjs.min(minStart, startDate) : startDate;
+        minStart = !minStart || startDate.isBefore(minStart) ? startDate : minStart;
       }
       if (endDate) {
-        maxEnd = maxEnd ? dayjs.max(maxEnd, endDate) : endDate;
+        maxEnd = !maxEnd || endDate.isAfter(maxEnd) ? endDate : maxEnd;
       }
     }
 

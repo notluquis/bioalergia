@@ -26,12 +26,12 @@ const currencyFormatter = new Intl.NumberFormat("es-CL", {
 });
 
 const classificationSchema = z.object({
-  category: z.string().optional(),
-  amountExpected: z.string().optional(),
-  amountPaid: z.string().optional(),
+  category: z.string().optional().nullable(),
+  amountExpected: z.string().optional().nullable(),
+  amountPaid: z.string().optional().nullable(),
   attended: z.boolean(),
-  dosage: z.string().optional(),
-  treatmentStage: z.string().optional(),
+  dosage: z.string().optional().nullable(),
+  treatmentStage: z.string().optional().nullable(),
 });
 
 const classificationArraySchema = z.object({
@@ -73,7 +73,7 @@ function formatEventDate(event: CalendarUnclassifiedEvent) {
   return "Sin fecha";
 }
 
-function parseAmountInput(value: string | undefined): number | null {
+function parseAmountInput(value: string | null | undefined): number | null {
   if (!value) return null;
   const normalized = value.replace(/[^0-9]/g, "");
   if (!normalized.length) return null;
@@ -113,12 +113,14 @@ function buildPayload(entry: z.infer<typeof classificationSchema>, event: Calend
 }
 
 function CalendarClassificationPage() {
+  const PAGE_SIZE = 10;
   const [events, setEvents] = useState<CalendarUnclassifiedEvent[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastOpen, setToastOpen] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(classificationArraySchema),
@@ -134,9 +136,10 @@ function CalendarClassificationPage() {
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchUnclassifiedCalendarEvents(100);
+      const data = await fetchUnclassifiedCalendarEvents(200);
       setEvents(data);
       reset({ entries: data.map(buildDefaultEntry) });
+      setVisibleCount(PAGE_SIZE);
     } catch (err) {
       const message = err instanceof Error ? err.message : "No se pudieron obtener los eventos pendientes";
       setError(message);
@@ -273,7 +276,7 @@ function CalendarClassificationPage() {
           )}
 
           <div className="space-y-4">
-            {fields.map((field, index) => {
+            {fields.slice(0, visibleCount).map((field, index) => {
               const event = events[index];
               if (!event) return null;
               const entry = watchedEntries?.[index] ?? buildDefaultEntry(event);
@@ -428,6 +431,17 @@ function CalendarClassificationPage() {
               );
             })}
           </div>
+          {visibleCount < events.length ? (
+            <div className="flex justify-center">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setVisibleCount((count) => Math.min(count + PAGE_SIZE, events.length))}
+              >
+                Ver más eventos ({events.length - visibleCount} restantes)
+              </Button>
+            </div>
+          ) : null}
         </section>
       </Tooltip.Provider>
       <Toast.Root
