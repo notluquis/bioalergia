@@ -141,12 +141,13 @@ function CalendarSchedulePage() {
           onChange={(event: ChangeEvent<HTMLInputElement>) => updateFilters("search", event.target.value)}
         />
         <div className="flex items-end gap-2 md:col-span-2">
-          <Button type="submit" disabled={loading}>
+          <Button type="submit" size="lg" disabled={loading}>
             {loading ? tc("loading") : tc("applyFilters")}
           </Button>
           <Button
             type="button"
             variant="secondary"
+            size="lg"
             disabled={loading || !isDirty}
             onClick={() => {
               resetFilters();

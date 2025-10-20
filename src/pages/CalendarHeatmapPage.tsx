@@ -272,12 +272,13 @@ function CalendarHeatmapPage() {
           }
         />
         <div className="flex items-end gap-2 md:col-span-2">
-          <Button type="submit" disabled={busy}>
+          <Button type="submit" size="lg" disabled={busy}>
             {loading ? tc("loading") : tc("applyFilters")}
           </Button>
           <Button
             type="button"
             variant="secondary"
+            size="lg"
             disabled={busy || !isDirty}
             onClick={() => {
               handleReset().catch(() => {

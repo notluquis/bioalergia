@@ -80,6 +80,7 @@ body::before {
   border: 1px solid rgba(255, 255, 255, 0.4);
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.6));
   padding: 0.55rem 0.9rem;
+  min-height: 3rem;
   color: #102542;
   transition:
     border-color 0.2s ease,

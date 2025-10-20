@@ -107,7 +107,17 @@ async function request<T>(method: string, url: string, options?: RequestOptions)
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({ message: response.statusText }));
-    throw new Error(errorData.message || "Ocurrió un error inesperado.");
+    const serverMessage =
+      typeof errorData?.message === "string"
+        ? errorData.message
+        : typeof errorData?.error === "string"
+          ? errorData.error
+          : response.statusText;
+    const details =
+      errorData && typeof errorData === "object" && "details" in errorData
+        ? JSON.stringify(errorData.details)
+        : undefined;
+    throw new Error(details ? `${serverMessage}: ${details}` : serverMessage || "Ocurrió un error inesperado.");
   }
 
   const data = await response.json();

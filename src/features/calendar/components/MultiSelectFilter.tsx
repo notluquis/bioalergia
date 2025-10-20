@@ -23,10 +23,15 @@ export function MultiSelectFilter({
     const matches = options
       .filter((option) => selected.includes(option.value))
       .map((option) => option.label.split(" · ")[0]);
-    return matches.length ? matches.join(", ") : placeholder;
+
+    if (!matches.length) return placeholder;
+    if (matches.length === 1) return matches[0];
+
+    const preview = matches.slice(0, 2).join(", ");
+    return matches.length > 2 ? `${preview} +${matches.length - 2}` : preview;
   }, [options, placeholder, selected]);
 
-  const containerRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLLabelElement>(null);
   const { isOpen, toggle, close } = useDisclosure(false);
 
   useOutsideClick(
@@ -49,18 +54,18 @@ export function MultiSelectFilter({
   }, [close, isOpen]);
 
   return (
-    <div ref={containerRef} className="relative flex flex-col gap-2 text-sm text-slate-600" data-multiselect>
-      <span className="text-xs font-semibold uppercase tracking-wide text-slate-600/90">{label}</span>
+    <label ref={containerRef} className="relative flex flex-col gap-2 text-xs text-slate-600" data-multiselect>
+      <span className="font-semibold uppercase tracking-wide text-slate-600/90">{label}</span>
       <button
         type="button"
-        className="glass-input flex w-full cursor-pointer select-none items-center justify-between gap-2 text-xs text-slate-600"
+        className="glass-input flex h-12 w-full cursor-pointer select-none items-center justify-between gap-3 text-sm text-slate-600"
         aria-haspopup="true"
         aria-expanded={isOpen}
         onClick={toggle}
       >
-        <span className="truncate text-[13px] font-medium text-slate-700">{displayLabel}</span>
+        <span className="truncate font-medium text-slate-700">{displayLabel}</span>
         <svg
-          className={`h-4 w-4 text-slate-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
+          className={`h-4 w-4 shrink-0 text-slate-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
           viewBox="0 0 20 20"
           fill="currentColor"
           aria-hidden="true"
@@ -91,7 +96,7 @@ export function MultiSelectFilter({
           )}
         </div>
       )}
-    </div>
+    </label>
   );
 }
 
