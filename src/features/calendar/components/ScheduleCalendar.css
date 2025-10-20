@@ -19,6 +19,34 @@
   border-color: rgba(244, 114, 182, 0.45) !important;
 }
 
+.fc-timegrid-event {
+  border-radius: 14px !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
+.fc-timegrid-event .fc-event-main {
+  padding: 6px 8px !important;
+  white-space: normal !important;
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: flex-start !important;
+  font-size: 11px !important;
+  line-height: 1.25 !important;
+}
+
+.fc-timegrid-event .fc-event-main-frame {
+  width: 100% !important;
+}
+
+.fc-timegrid-event .fc-event-main > div {
+  width: 100%;
+}
+
+.fc-timegrid-event:hover {
+  box-shadow: 0 12px 28px -24px rgba(15, 23, 42, 0.5);
+}
+
 .calendar-loading {
   cursor: progress !important;
 }

@@ -49,6 +49,15 @@ const currencyFormatter = new Intl.NumberFormat("es-CL", {
   currency: "CLP",
   minimumFractionDigits: 0,
 });
+const TITLE_MAX_LENGTH = 42;
+const MAX_DETAIL_LINES = 2;
+
+function formatTitle(value: string | null | undefined) {
+  if (!value) return "(Sin título)";
+  const trimmed = value.trim();
+  if (trimmed.length <= TITLE_MAX_LENGTH) return trimmed;
+  return `${trimmed.slice(0, TITLE_MAX_LENGTH - 1)}…`;
+}
 
 function asFullCalendarEvents(source: CalendarEventDetail[]): CalendarEventInput[] {
   return source.map((event) => {
@@ -57,7 +66,7 @@ function asFullCalendarEvents(source: CalendarEventDetail[]): CalendarEventInput
     const allDay = !event.startDateTime && !!event.startDate && !event.endDateTime;
     return {
       id: event.eventId,
-      title: event.summary?.trim() || "(Sin título)",
+      title: formatTitle(event.summary),
       start: start ?? dayjs().toISOString(),
       end: end ?? undefined,
       allDay,
@@ -110,12 +119,13 @@ export function ScheduleCalendar({ events, loading = false }: ScheduleCalendarPr
           }
           return (
             <div className="flex flex-col gap-[2px] text-[11px] leading-tight">
-              <span className="font-semibold text-slate-800">{arg.event.title}</span>
-              {lines.map((line, index) => (
+              <span className="font-semibold text-slate-800">{formatTitle(arg.event.title)}</span>
+              {lines.slice(0, MAX_DETAIL_LINES).map((line, index) => (
                 <span key={index} className="text-slate-600">
                   {line}
                 </span>
               ))}
+              {lines.length > MAX_DETAIL_LINES ? <span className="text-[10px] text-slate-400">…</span> : null}
             </div>
           );
         }}
