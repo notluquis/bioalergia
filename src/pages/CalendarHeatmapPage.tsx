@@ -154,7 +154,8 @@ function CalendarHeatmapPage() {
   const statsByDate = useMemo(() => {
     const map = new Map<string, { total: number; amountExpected: number; amountPaid: number }>();
     summary?.aggregates.byDate.forEach((entry) => {
-      map.set(entry.date, {
+      const key = dayjs(entry.date).format("YYYY-MM-DD");
+      map.set(key, {
         total: entry.total,
         amountExpected: entry.amountExpected ?? 0,
         amountPaid: entry.amountPaid ?? 0,

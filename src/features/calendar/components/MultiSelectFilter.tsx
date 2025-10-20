@@ -5,6 +5,11 @@ import { useOutsideClick } from "../../../hooks/useOutsideClick";
 
 type Option = { value: string; label: string };
 
+function truncateLabel(text: string, max = 32) {
+  if (!text) return "";
+  return text.length > max ? `${text.slice(0, max - 1)}…` : text;
+}
+
 export function MultiSelectFilter({
   label,
   options,
@@ -18,17 +23,30 @@ export function MultiSelectFilter({
   onToggle: (value: string) => void;
   placeholder: string;
 }) {
-  const displayLabel = useMemo(() => {
-    if (!selected.length) return placeholder;
+  const { displayText, fullText } = useMemo(() => {
+    if (!selected.length) {
+      return { displayText: placeholder, fullText: placeholder };
+    }
+
     const matches = options
       .filter((option) => selected.includes(option.value))
       .map((option) => option.label.split(" · ")[0]);
 
-    if (!matches.length) return placeholder;
-    if (matches.length === 1) return matches[0];
+    if (!matches.length) {
+      return { displayText: placeholder, fullText: placeholder };
+    }
 
-    const preview = matches.slice(0, 2).join(", ");
-    return matches.length > 2 ? `${preview} +${matches.length - 2}` : preview;
+    const preview = matches
+      .slice(0, 2)
+      .map((value) => truncateLabel(value))
+      .join(", ");
+    const full = matches.join(", ");
+
+    if (matches.length > 2) {
+      return { displayText: `${preview} +${matches.length - 2}`, fullText: full };
+    }
+
+    return { displayText: preview || placeholder, fullText: full || placeholder };
   }, [options, placeholder, selected]);
 
   const containerRef = useRef<HTMLLabelElement>(null);
@@ -62,8 +80,9 @@ export function MultiSelectFilter({
         aria-haspopup="true"
         aria-expanded={isOpen}
         onClick={toggle}
+        title={fullText}
       >
-        <span className="truncate font-medium text-slate-700">{displayLabel}</span>
+        <span className="truncate font-medium text-slate-700">{displayText}</span>
         <svg
           className={`h-4 w-4 shrink-0 text-slate-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
           viewBox="0 0 20 20"
@@ -82,17 +101,30 @@ export function MultiSelectFilter({
           {options.length === 0 ? (
             <p className="text-[11px] text-slate-400">Sin datos disponibles</p>
           ) : (
-            options.map((option) => (
-              <label key={option.value} className="flex items-center gap-2 text-xs text-slate-600">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4"
-                  checked={selected.includes(option.value)}
-                  onChange={() => onToggle(option.value)}
-                />
-                <span>{option.label}</span>
-              </label>
-            ))
+            options.map((option) => {
+              const [namePart = "", metaPart] = option.label.split(" · ");
+              const truncatedName = truncateLabel(namePart);
+              return (
+                <label key={option.value} className="flex items-center gap-3 text-xs text-slate-600">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4"
+                    checked={selected.includes(option.value)}
+                    onChange={() => onToggle(option.value)}
+                  />
+                  <span className="flex flex-col text-left">
+                    <span className="truncate font-medium text-slate-700" title={namePart}>
+                      {truncatedName || placeholder}
+                    </span>
+                    {metaPart && (
+                      <span className="text-[11px] text-slate-400" title={metaPart}>
+                        · {metaPart}
+                      </span>
+                    )}
+                  </span>
+                </label>
+              );
+            })
           )}
         </div>
       )}

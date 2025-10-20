@@ -198,6 +198,9 @@ function CalendarClassificationPage() {
         await loadEvents();
       } catch (err) {
         const message = err instanceof Error ? err.message : "No se pudo guardar la clasificación";
+        if (err instanceof Error) {
+          console.error("[calendar:classify] error", err);
+        }
         setError(message);
       } finally {
         setSavingKey(null);
