@@ -56,19 +56,24 @@ body::before {
   color: white;
 }
 
-.glass-panel,
-.glass-card {
-  border: 1px solid var(--glass-border);
-  border-radius: 1.5rem;
-  background: linear-gradient(135deg, var(--glass-elevated), rgba(255, 255, 255, 0.65));
-  box-shadow: var(--glass-shadow);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
-}
+/* Tailwind component helpers: prefer utilities via @apply, keep custom visuals here */
+@layer components {
+  .glass-panel,
+  .glass-card {
+    /* structural utilities */
+    @apply border rounded-2xl;
+    /* preserve visual specifics that rely on CSS variables */
+    border-color: var(--glass-border);
+    background: linear-gradient(135deg, var(--glass-elevated), rgba(255, 255, 255, 0.65));
+    box-shadow: var(--glass-shadow);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+  }
 
-.glass-card {
-  border-radius: 1.25rem;
-  box-shadow: var(--glass-shadow-soft);
+  .glass-card {
+    @apply rounded-[1.25rem];
+    box-shadow: var(--glass-shadow-soft);
+  }
 }
 
 .glass-panel--tinted {
@@ -76,11 +81,11 @@ body::before {
 }
 
 .glass-input {
-  border-radius: 0.9rem;
+  /* Use Tailwind utilities for spacing/rounded where possible */
+  @apply rounded-lg px-4 py-2 min-h-[3rem] text-slate-900;
+  /* keep visual effects that rely on variables and gradients */
   border: 1px solid rgba(255, 255, 255, 0.4);
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.6));
-  padding: 0.55rem 0.9rem;
-  min-height: 3rem;
   color: #102542;
   transition:
     border-color 0.2s ease,
@@ -141,20 +146,16 @@ body::before {
   width: 0.45rem;
   height: 0.45rem;
 }
-
 .muted-scrollbar::-webkit-scrollbar-thumb {
   background: rgba(16, 37, 66, 0.22);
   border-radius: 9999px;
 }
-
 .muted-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(16, 37, 66, 0.35);
 }
-
 .muted-scrollbar::-webkit-scrollbar-track {
   background: transparent;
 }
-
 .muted-scrollbar {
   scrollbar-width: thin;
   scrollbar-color: rgba(16, 37, 66, 0.22) transparent;
