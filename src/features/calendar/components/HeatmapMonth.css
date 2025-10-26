@@ -7,6 +7,8 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .calendar-month-card__header {
@@ -31,9 +33,13 @@
 
 .calendar-month-card__grid {
   display: grid;
-  grid-template-columns: 68px repeat(6, minmax(48px, 1fr)) 64px;
-  gap: 6px;
-  align-items: stretch;
+  /* Make the central 6 columns flexible so the heat boxes resize to the
+     available container width. The first and last columns (row label and
+     week total) are auto-sized. */
+  grid-template-columns: auto repeat(6, 1fr) auto;
+  gap: 8px;
+  align-items: start;
+  width: 100%;
 }
 
 .calendar-month-card__grid-corner {
@@ -79,7 +85,9 @@
 .calendar-month-card__cell {
   position: relative;
   border-radius: 14px;
-  min-height: 60px;
+  /* Use aspect-ratio to keep boxes square and responsive to the grid column
+     width. This makes the heatmap scale naturally with container size. */
+  aspect-ratio: 1 / 1;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -89,6 +97,7 @@
   transition:
     transform 0.15s ease,
     box-shadow 0.15s ease;
+  overflow: hidden;
 }
 
 .calendar-month-card__cell:hover {
@@ -106,13 +115,13 @@
   position: absolute;
   top: 6px;
   left: 8px;
-  font-size: 0.65rem;
+  font-size: clamp(0.6rem, 1.2vw, 0.75rem);
   font-weight: 600;
   color: rgba(30, 41, 59, 0.7);
 }
 
 .calendar-month-card__cell-count {
-  font-size: 1rem;
+  font-size: clamp(0.9rem, 2.4vw, 1.1rem);
   font-weight: 700;
   color: rgba(17, 24, 39, 0.85);
 }
@@ -130,10 +139,32 @@
 
 @media (max-width: 1200px) {
   .calendar-month-card__grid {
-    grid-template-columns: 54px repeat(6, minmax(42px, 1fr)) 54px;
+    grid-template-columns: auto repeat(6, 1fr) auto;
   }
 
   .calendar-month-card__cell {
-    min-height: 52px;
+    /* allow a slightly smaller aspect ratio on narrower screens */
+    aspect-ratio: 1 / 1;
+  }
+}
+
+@media (max-width: 640px) {
+  .calendar-month-card {
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .calendar-month-card__title {
+    font-size: 0.95rem;
+  }
+
+  .calendar-month-card__grid {
+    gap: 6px;
+  }
+
+  .calendar-month-card__column-header,
+  .calendar-month-card__row-label,
+  .calendar-month-card__week-total {
+    font-size: 0.65rem;
   }
 }
