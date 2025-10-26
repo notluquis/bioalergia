@@ -36,11 +36,17 @@
 }
 
 .fc-timegrid-event .fc-event-main-frame {
-  width: 100% !important;
+  /* Don't force 100% width here — FullCalendar positions event frames absolutely
+     to avoid overlaps. Forcing full width breaks the layout and causes events
+     to overlap. Keep natural sizing and let FullCalendar compute widths. */
+  max-width: 100% !important;
 }
 
 .fc-timegrid-event .fc-event-main > div {
-  width: 100%;
+  /* Allow the inner content to size naturally. Removing forced width prevents
+     different events from stacking on top of each other when FullCalendar
+     calculates side-by-side positions. */
+  width: auto !important;
 }
 
 .fc-timegrid-event:hover {
