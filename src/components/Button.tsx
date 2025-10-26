@@ -1,32 +1,35 @@
 import React from "react";
+import { Button as FlowbiteButton } from "flowbite-react";
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: "primary" | "secondary";
   size?: "sm" | "md" | "lg" | "xs";
 }
 
-export default function Button({ variant = "primary", size = "md", className = "", ...props }: ButtonProps) {
-  const baseClasses =
-    "inline-flex items-center justify-center rounded-full font-semibold transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-60 backdrop-blur-sm";
-
-  const variantClasses: Record<Required<ButtonProps>["variant"], string> = {
-    primary:
-      "bg-[var(--brand-primary)]/95 text-white shadow-[0_16px_30px_-18px_rgba(14,100,183,0.9)] hover:bg-[var(--brand-primary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgba(var(--brand-primary-rgb)/0.55)]",
-    secondary:
-      "border border-white/60 bg-white/65 text-slate-700 shadow-[0_12px_28px_-16px_rgba(16,37,66,0.28)] hover:bg-white/80 hover:text-[var(--brand-primary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgba(var(--brand-primary-rgb)/0.35)]",
+/**
+ * Thin wrapper around flowbite-react Button so we can swap implementations easily.
+ * Keeps a similar API to the previous Button component (variant/size/className/support for native button props).
+ */
+export default function Button({ variant = "primary", size = "md", className = "", children, ...props }: ButtonProps) {
+  // Map our variant/size to Tailwind classes so branding is preserved.
+  const variantClasses: Record<string, string> = {
+    primary: "bg-[var(--brand-primary)] text-white hover:bg-[var(--brand-primary)]/90",
+    secondary: "bg-white text-slate-700 border border-white/60 hover:bg-white/80",
   };
 
-  const sizeClasses: Record<NonNullable<ButtonProps["size"]>, string> = {
+  const sizeClasses: Record<string, string> = {
     xs: "px-2.5 py-1 text-xs",
     sm: "px-3.5 py-1.5 text-sm",
     md: "px-5 py-2.5 text-sm",
     lg: "px-[1.75rem] py-3 text-base",
   };
 
+  const mergedClassName = `${variantClasses[variant]} ${sizeClasses[size]} ${className}`.trim();
+
+  // flowbite-react's Button accepts className and native props; forward props using the component's prop types.
   return (
-    <button
-      {...props}
-      className={`${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${className}`.trim()}
-    />
+    <FlowbiteButton className={mergedClassName} {...(props as React.ComponentProps<typeof FlowbiteButton>)}>
+      {children}
+    </FlowbiteButton>
   );
 }
