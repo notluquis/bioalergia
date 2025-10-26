@@ -332,7 +332,7 @@ function CalendarHeatmapPage() {
             </span>
           </div>
 
-          <div className="grid gap-4 lg:grid-cols-3">
+          <div className="grid gap-4 lg:grid-cols-3 items-start">
             {heatmapMonths.map((month) => (
               <HeatmapMonth
                 key={month.format("YYYY-MM")}
