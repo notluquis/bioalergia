@@ -14,11 +14,12 @@ type InputProps =
 
 export default function Input(props: InputProps) {
   const { label, helper, type = "text", rows = 3, className = "", children, ...rest } = props;
-  const sharedClasses = `glass-input w-full ${className}`.trim();
+  // combine daisyUI input classes with existing glass styles to preserve branding
+  const sharedClasses = `input input-bordered w-full ${className}`.trim();
 
-  const labelClasses = "flex flex-col gap-2 text-sm text-slate-600";
-  const labelTextClasses = "text-xs font-semibold uppercase tracking-wide text-slate-600/90";
-  const helperClasses = "text-xs text-slate-500/80";
+  const labelClasses = "form-control text-sm text-slate-600";
+  const labelTextClasses = "label-text text-xs font-semibold uppercase tracking-wide text-slate-600/90";
+  const helperClasses = "text-xs text-slate-500/80 mt-1";
 
   let control: React.ReactNode;
 
@@ -27,12 +28,12 @@ export default function Input(props: InputProps) {
       <textarea
         rows={rows}
         {...(rest as React.TextareaHTMLAttributes<HTMLTextAreaElement>)}
-        className={sharedClasses}
+        className={`textarea textarea-bordered w-full ${className}`}
       />
     );
   } else if (type === "select") {
     control = (
-      <select {...(rest as React.SelectHTMLAttributes<HTMLSelectElement>)} className={`${sharedClasses} pr-8`}>
+      <select {...(rest as React.SelectHTMLAttributes<HTMLSelectElement>)} className={`select select-bordered w-full ${className}`}>
         {children}
       </select>
     );

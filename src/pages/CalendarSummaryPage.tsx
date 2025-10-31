@@ -31,10 +31,10 @@ type AggregationRow = {
 
 function AggregationCard({ title, rows }: { title: string; rows: AggregationRow[] }) {
   return (
-    <section className="glass-card glass-underlay-gradient space-y-3 rounded-2xl border border-white/60 p-5 text-sm shadow-sm">
+    <section className="space-y-3 rounded-2xl border border-white/60 p-5 text-sm shadow-sm bg-base-100">
       <header className="flex items-center justify-between gap-2">
         <h3 className="text-base font-semibold text-[var(--brand-secondary)]">{title}</h3>
-        <span className="rounded-full bg-white/70 px-3 py-1 text-xs font-semibold text-slate-500">{rows.length}</span>
+        <span className="rounded-full bg-base-100/70 px-3 py-1 text-xs font-semibold text-slate-500">{rows.length}</span>
       </header>
       {rows.length === 0 ? (
         <p className="text-xs text-slate-500">Sin datos para los filtros aplicados.</p>
@@ -275,7 +275,7 @@ function CalendarSummaryPage() {
       </header>
 
       <form
-        className="glass-card glass-underlay-gradient grid gap-4 rounded-2xl border border-[var(--brand-primary)]/15 bg-white/80 p-6 text-xs text-slate-600 shadow-sm md:grid-cols-6"
+        className="grid gap-4 rounded-2xl border border-[var(--brand-primary)]/15 bg-base-100 p-6 text-xs text-slate-600 shadow-sm md:grid-cols-6"
         onSubmit={(event) => {
           event.preventDefault();
           applyFilters();
@@ -406,7 +406,7 @@ function CalendarSummaryPage() {
               <div className="flex flex-wrap items-center gap-2">
                 <span className="font-semibold text-slate-700">{title}</span>
                 {!syncing && syncDurationMs != null && !syncError && (
-                  <span className="rounded-full bg-white/60 px-2 py-1 text-[11px] text-slate-500">
+                  <span className="rounded-full bg-base-100/60 px-2 py-1 text-[11px] text-slate-500">
                     Duración total: {formatDuration(syncDurationMs)}
                   </span>
                 )}
@@ -457,7 +457,7 @@ function CalendarSummaryPage() {
                     return (
                       <li
                         key={step.id}
-                        className="rounded-xl bg-white/65 px-3 py-2 shadow-inner"
+                        className="rounded-xl bg-base-100/65 px-3 py-2 shadow-inner"
                       >
                         <div className="flex items-center justify-between gap-3 text-xs font-semibold text-slate-700">
                           <span>{step.label}</span>
@@ -481,25 +481,25 @@ function CalendarSummaryPage() {
       })()}
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="glass-card glass-underlay-gradient rounded-2xl border border-white/60 p-4 text-sm shadow-sm">
+        <div className="rounded-2xl border border-white/60 p-4 text-sm shadow-sm bg-base-100">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Eventos en el rango</p>
           <p className="mt-2 text-2xl font-semibold text-[var(--brand-primary)]">
             {numberFormatter.format(totals.events)}
           </p>
         </div>
-        <div className="glass-card glass-underlay-gradient rounded-2xl border border-white/60 p-4 text-sm shadow-sm">
+        <div className="rounded-2xl border border-white/60 p-4 text-sm shadow-sm bg-base-100">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Días con eventos</p>
           <p className="mt-2 text-2xl font-semibold text-[var(--brand-primary)]">
             {numberFormatter.format(totals.days)}
           </p>
         </div>
-        <div className="glass-card glass-underlay-gradient rounded-2xl border border-white/60 p-4 text-sm shadow-sm">
+        <div className="rounded-2xl border border-white/60 p-4 text-sm shadow-sm bg-base-100">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Monto esperado</p>
           <p className="mt-2 text-2xl font-semibold text-[var(--brand-primary)]">
             {currencyFormatter.format(totals.amountExpected)}
           </p>
         </div>
-        <div className="glass-card glass-underlay-gradient rounded-2xl border border-white/60 p-4 text-sm shadow-sm">
+        <div className="rounded-2xl border border-white/60 p-4 text-sm shadow-sm bg-base-100">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Monto pagado</p>
           <p className="mt-2 text-2xl font-semibold text-[var(--brand-primary)]">
             {currencyFormatter.format(totals.amountPaid)}

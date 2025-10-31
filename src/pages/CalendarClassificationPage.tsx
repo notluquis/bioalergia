@@ -226,7 +226,7 @@ function CalendarClassificationPage() {
               <Tooltip.Trigger asChild>
                 <span className="inline-flex cursor-help items-center gap-1 text-[11px] text-slate-500">
                   ¿Cómo se clasifica?
-                  <span className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-slate-300 bg-white text-[9px] text-slate-500">
+                  <span className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-slate-300 bg-base-100 text-[9px] text-slate-500">
                     i
                   </span>
                 </span>
@@ -242,7 +242,7 @@ function CalendarClassificationPage() {
             </Tooltip.Root>
           </header>
 
-          <div className="glass-card glass-underlay-gradient grid gap-4 rounded-2xl border border-white/60 p-4 text-xs shadow-sm sm:grid-cols-3">
+          <div className="grid gap-4 rounded-2xl border border-white/60 bg-base-100 p-4 text-xs shadow-sm sm:grid-cols-3">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Pendientes</p>
               <p className="mt-1 text-xl font-semibold text-[var(--brand-primary)]">{pendingCount}</p>
@@ -287,7 +287,7 @@ function CalendarClassificationPage() {
               return (
                 <article
                   key={field.id}
-                  className="glass-card glass-underlay-gradient space-y-4 rounded-2xl border border-white/60 bg-white/80 p-5 text-sm shadow-sm"
+                  className="space-y-4 rounded-2xl border border-white/60 bg-base-100 p-5 text-sm shadow-sm"
                 >
                   <header className="flex flex-wrap items-start justify-between gap-3">
                     <div className="flex flex-col gap-1">
@@ -312,7 +312,7 @@ function CalendarClassificationPage() {
                   </header>
 
                   {description && (
-                    <p className="rounded-xl bg-white/70 p-3 text-xs text-slate-600 shadow-inner">
+                    <p className="rounded-xl bg-base-100/70 p-3 text-xs text-slate-600 shadow-inner">
                       <span className="font-semibold text-slate-700">Descripción:</span>{" "}
                       <span className="whitespace-pre-wrap">{description}</span>
                     </p>

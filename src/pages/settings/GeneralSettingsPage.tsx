@@ -6,7 +6,7 @@ export default function GeneralSettingsPage() {
 
   return (
     <div className="space-y-6">
-      <section className="relative overflow-hidden rounded-3xl border border-white/50 bg-white/80 p-6 shadow-[0_24px_60px_-36px_rgba(14,100,183,0.45)]">
+      <section className="relative overflow-hidden rounded-3xl border border-white/50 bg-base-100/80 p-6 shadow-[0_24px_60px_-36px_rgba(14,100,183,0.45)]">
         <div
           className="absolute inset-0 opacity-90"
           style={{
@@ -15,7 +15,7 @@ export default function GeneralSettingsPage() {
         />
         <div className="relative flex flex-col gap-6 md:flex-row md:items-center">
           <div className="flex flex-1 flex-col gap-3">
-            <div className="inline-flex items-center gap-3 rounded-full bg-white/75 px-4 py-2 text-xs font-semibold tracking-wide text-[var(--brand-primary)]">
+            <div className="inline-flex items-center gap-3 rounded-full bg-base-100/75 px-4 py-2 text-xs font-semibold tracking-wide text-[var(--brand-primary)]">
               Marca activa
             </div>
             <div>
@@ -42,8 +42,8 @@ export default function GeneralSettingsPage() {
               </div>
             </dl>
           </div>
-          <div className="flex w-full max-w-[240px] flex-col items-center gap-4 rounded-2xl border border-white/50 bg-white/75 p-4 text-center shadow-inner">
-            <div className="aspect-square w-24 overflow-hidden rounded-2xl border border-white/60 bg-white/70 p-2">
+          <div className="flex w-full max-w-[240px] flex-col items-center gap-4 rounded-2xl border border-white/50 bg-base-100/75 p-4 text-center shadow-inner">
+            <div className="aspect-square w-24 overflow-hidden rounded-2xl border border-white/60 bg-base-100/70 p-2">
               <img src={settings.logoUrl} alt="Logo actual" className="h-full w-full object-contain" />
             </div>
             <div className="flex items-center gap-3 text-xs font-semibold uppercase tracking-wide text-slate-500">

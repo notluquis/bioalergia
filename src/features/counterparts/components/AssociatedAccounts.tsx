@@ -371,7 +371,7 @@ export default function AssociatedAccounts({
   }
 
   return (
-    <section className="glass-card glass-underlay-gradient space-y-5 p-6">
+    <section className="space-y-5 p-6 bg-base-100">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div className="space-y-1">
           <h2 className="text-lg font-semibold text-[var(--brand-primary)] drop-shadow-sm">Cuentas asociadas</h2>
@@ -383,7 +383,7 @@ export default function AssociatedAccounts({
       {error && <Alert variant="error">{error}</Alert>}
       <div className="overflow-x-auto">
         <table className="min-w-full text-sm text-slate-600">
-          <thead className="bg-white/60 text-[var(--brand-primary)]">
+          <thead className="bg-base-100/60 text-[var(--brand-primary)]">
             <tr>
               <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide">Cuenta</th>
               <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide">Banco</th>
@@ -398,7 +398,7 @@ export default function AssociatedAccounts({
               const state = accountDetails[group.key];
               return (
                 <Fragment key={group.key}>
-                  <tr className="border-b border-white/45 bg-white/45 last:border-none even:bg-white/35">
+                  <tr className="border-b border-white/45 bg-base-100/45 last:border-none even:bg-base-100/35">
                     <td className="px-3 py-3 text-slate-600">
                       <div className="font-mono text-xs text-slate-600">{group.label}</div>
                       {group.accounts.length > 1 && (
@@ -441,7 +441,7 @@ export default function AssociatedAccounts({
                     </td>
                   </tr>
                   {state?.expanded && (
-                    <tr className="bg-white/65">
+                    <tr className="bg-base-100/65">
                       <td colSpan={5} className="px-3 pb-4 pt-2">
                         {state.loading ? (
                           <p className="text-xs text-slate-500">Cargando movimientos...</p>
@@ -452,7 +452,7 @@ export default function AssociatedAccounts({
                         ) : state.rows.length ? (
                           <div className="overflow-x-auto">
                             <table className="min-w-full text-xs text-slate-600">
-                              <thead className="bg-white/60 text-[var(--brand-primary)]">
+                              <thead className="bg-base-100/60 text-[var(--brand-primary)]">
                                 <tr>
                                   <th className="px-2 py-2 text-left text-[10px] font-semibold uppercase tracking-wide">
                                     Fecha
@@ -512,7 +512,7 @@ export default function AssociatedAccounts({
         </table>
       </div>
 
-      <div className="glass-card border border-white/55 bg-white/55 p-5">
+      <div className="border border-white/55 bg-base-100 p-5">
         <h3 className="text-sm font-semibold text-[var(--brand-primary)] drop-shadow-sm">Agregar cuenta</h3>
         <div className="mt-3 grid gap-3 md:grid-cols-2">
           <Input
@@ -525,7 +525,7 @@ export default function AssociatedAccounts({
           {suggestionsLoading ? (
             <span className="text-[10px] text-slate-500">Buscando sugerencias...</span>
           ) : accountSuggestions.length ? (
-            <div className="glass-card max-h-60 overflow-y-auto border border-white/55 bg-white/65">
+            <div className="max-h-60 overflow-y-auto border border-white/55 bg-base-100">
               {accountSuggestions.map((suggestion) => (
                 <div
                   key={suggestion.accountIdentifier}

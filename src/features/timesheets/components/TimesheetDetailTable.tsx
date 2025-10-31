@@ -131,7 +131,7 @@ export default function TimesheetDetailTable({
   }, []);
 
   return (
-    <div className="space-y-4 glass-card glass-underlay-gradient p-6">
+    <div className="space-y-4 p-6 bg-base-100">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="text-sm text-slate-600">
           <span className="font-semibold">{monthLabel}</span>
@@ -172,26 +172,7 @@ export default function TimesheetDetailTable({
             </tr>
           </thead>
           <tbody>
-            {loadingDetail && (
-              <tr>
-                <td colSpan={7} className="px-4 py-6 text-center text-[var(--brand-primary)]">
-                  Cargando detalle...
-                </td>
-              </tr>
-            )}
-            {!loadingDetail &&
-              bulkRows.map((row, index) => {
-                const initial = initialRows[index];
-                const dirty = isRowDirty(row, initial);
-                const status = computeStatus(row, dirty);
-                const statusColor =
-                  status === "Registrado"
-                    ? "text-emerald-600"
-                    : status === "Pendiente"
-                      ? "text-slate-400"
-                      : status === "Sin guardar"
-                        ? "text-amber-600"
-                        : "text-slate-600";
+            {bulkRows.map((row, index) => {
 
                 // Calcular duración del turno
                 const worked = calculateWorkedHours(row.entrada, row.salida);
@@ -223,6 +204,11 @@ export default function TimesheetDetailTable({
                 const bangTitle = tooltipParts.join(" — ");
 
                 const isMarkedNotWorked = notWorkedDays.has(row.date);
+                // determine whether this row is dirty compared to initial values
+                const dirty = isRowDirty(row, initialRows?.[index]);
+                const status = computeStatus(row, dirty);
+                const statusColor =
+                  status === "Registrado" ? "text-green-600" : status === "Sin guardar" ? "text-amber-600" : "text-slate-400";
                 return (
                   <tr
                     key={row.date}
@@ -278,11 +264,13 @@ export default function TimesheetDetailTable({
                     <td className="px-3 py-2 text-slate-700 tabular-nums">{worked}</td>
                     {/* Extras */}
                     <td className="px-3 py-2">
-                      {!row.overtime?.trim() && !openOvertimeEditors.has(row.date) ? (
+                      { !row.overtime?.trim() && !openOvertimeEditors.has(row.date) ? (
                         canEditRow ? (
-                          <button
+                          <Button
                             type="button"
-                            className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/60 bg-white/70 text-[var(--brand-primary)] shadow hover:bg-white/90"
+                            size="sm"
+                            variant="secondary"
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/60 bg-base-100/70 text-[var(--brand-primary)] shadow hover:bg-base-100/90"
                             aria-label="Agregar horas extra"
                             title="Agregar horas extra"
                             onClick={() =>
@@ -294,7 +282,7 @@ export default function TimesheetDetailTable({
                             }
                           >
                             +
-                          </button>
+                          </Button>
                         ) : (
                           <span className="text-slate-400">—</span>
                         )
@@ -334,22 +322,26 @@ export default function TimesheetDetailTable({
                     <td className="px-3 py-2">
                       {canEditRow ? (
                         <div className="relative inline-block text-left">
-                          <button
+                          <Button
                             type="button"
-                            className="dropdown-trigger inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/60 bg-white/70 text-slate-500 shadow hover:bg-white/90 hover:text-slate-700"
+                            variant="secondary"
+                            size="sm"
+                            className="dropdown-trigger"
                             aria-haspopup="true"
                             aria-expanded="false"
                             onClick={() => toggleMenu(`menu-${row.date}`)}
                             title="Acciones"
                           >
                             ⋯
-                          </button>
+                          </Button>
                           <div
                             id={`menu-${row.date}`}
-                            className="dropdown-menu hidden absolute right-0 z-20 mt-2 w-44 origin-top-right rounded-xl bg-white p-1 shadow-xl ring-1 ring-black/5"
+                            className="dropdown-menu hidden absolute right-0 z-20 mt-2 w-44 origin-top-right rounded-xl bg-base-100 p-1 shadow-xl ring-1 ring-black/5"
                             role="menu"
                           >
-                            <button
+                            <Button
+                              variant="secondary"
+                              size="sm"
                               className="w-full rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
                               role="menuitem"
                               onClick={() => {
@@ -358,9 +350,11 @@ export default function TimesheetDetailTable({
                               }}
                             >
                               Ver comentario
-                            </button>
+                            </Button>
                             {dirty && (
-                              <button
+                              <Button
+                                variant="secondary"
+                                size="sm"
                                 className="w-full rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
                                 role="menuitem"
                                 onClick={() => {
@@ -369,9 +363,11 @@ export default function TimesheetDetailTable({
                                 }}
                               >
                                 Deshacer cambios
-                              </button>
+                              </Button>
                             )}
-                            <button
+                            <Button
+                              variant="secondary"
+                              size="sm"
                               className="w-full rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
                               role="menuitem"
                               onClick={() => {
@@ -385,9 +381,11 @@ export default function TimesheetDetailTable({
                               }}
                             >
                               {isMarkedNotWorked ? "Marcar como trabajado" : "Día no trabajado"}
-                            </button>
+                            </Button>
                             {row.entryId && (
-                              <button
+                              <Button
+                                variant="secondary"
+                                size="sm"
                                 className="w-full rounded-lg px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50"
                                 role="menuitem"
                                 onClick={() => {
@@ -396,7 +394,7 @@ export default function TimesheetDetailTable({
                                 }}
                               >
                                 Eliminar registro
-                              </button>
+                              </Button>
                             )}
                             {!dirty && !row.entryId && (
                               <div className="px-3 py-2 text-xs text-slate-400">Sin acciones</div>

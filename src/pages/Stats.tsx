@@ -70,7 +70,7 @@ export default function Stats() {
           event.preventDefault();
           fetchStats();
         }}
-        className="grid gap-4 rounded-2xl border border-[var(--brand-primary)]/10 bg-white p-6 text-xs text-slate-600 shadow-sm sm:grid-cols-5"
+        className="grid gap-4 rounded-2xl border border-[var(--brand-primary)]/10 bg-base-100 p-6 text-xs text-slate-600 shadow-sm sm:grid-cols-5"
       >
         <Input
           label="Desde"
@@ -126,7 +126,7 @@ export default function Stats() {
 
           <BalanceSummary report={balancesReport} loading={balancesLoading} error={balancesError} />
 
-          <section className="space-y-3 glass-card glass-underlay-gradient p-6">
+          <section className="space-y-3 bg-base-100 p-6">
             <h2 className="text-lg font-semibold text-[var(--brand-secondary)]">Por tipo de movimiento</h2>
             <MovementTypeList data={data.byType} />
           </section>

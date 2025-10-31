@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import Button from "../../../components/Button";
 import { fetchServices } from "../../services/api";
 import type { ServiceSummary } from "../../services/types";
 
@@ -57,19 +58,13 @@ export default function ServicesLayout() {
 
   return (
     <section className="flex h-full flex-col gap-6">
-      <header className="glass-card glass-underlay-gradient border border-white/40 bg-white/80 px-6 py-5 shadow-sm">
+      <header className="border border-white/40 bg-base-100 px-6 py-5 shadow-sm">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="space-y-1">
             <h1 className="text-2xl font-bold text-[var(--brand-primary)] drop-shadow-sm">Servicios</h1>
             <p className="text-sm text-slate-600/90">Gestiona contratos, vencimientos y plantillas de tus servicios.</p>
           </div>
-          <button
-            type="button"
-            className="rounded-full border border-white/60 bg-white/70 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-[var(--brand-primary)] shadow hover:border-[var(--brand-primary)]/45"
-            onClick={() => navigate("/services/create")}
-          >
-            Nuevo servicio
-          </button>
+          <Button type="button" variant="primary" onClick={() => navigate("/services/create")}>Nuevo servicio</Button>
         </div>
       </header>
 
@@ -84,7 +79,7 @@ export default function ServicesLayout() {
         />
       </div>
 
-      <nav className="glass-card glass-underlay-gradient flex flex-wrap gap-2 border border-white/40 p-3 text-sm text-slate-600">
+      <nav className="flex flex-wrap gap-2 border border-white/40 p-3 text-sm text-slate-600 bg-base-100">
         {NAV_ITEMS.map((item) => (
           <NavLink
             key={item.to}
@@ -94,7 +89,7 @@ export default function ServicesLayout() {
               `rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide transition-all ${
                 isActive
                   ? "bg-[var(--brand-primary)]/15 text-[var(--brand-primary)] shadow-inner"
-                  : "border border-white/50 bg-white/70 text-slate-500 hover:border-[var(--brand-primary)]/35 hover:text-[var(--brand-primary)]"
+                  : "border border-white/50 bg-base-100/70 text-slate-500 hover:border-[var(--brand-primary)]/35 hover:text-[var(--brand-primary)]"
               }`
             }
           >
@@ -119,7 +114,7 @@ function MetricCard({ title, value, helper, accent = "default" }: MetricCardProp
   const accentClasses =
     accent === "warning"
       ? "border-amber-300/70 bg-amber-50/60 text-amber-700"
-      : "border-white/45 bg-white/70 text-slate-600";
+      : "border-white/45 bg-base-100/70 text-slate-600";
   return (
     <article className={`rounded-2xl border p-4 shadow-sm ${accentClasses}`}>
       <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{title}</p>

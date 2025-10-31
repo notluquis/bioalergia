@@ -118,7 +118,7 @@ export function ScheduleCalendar({ events, loading = false }: ScheduleCalendarPr
   }, [events]);
 
   return (
-    <div className="rounded-2xl border border-white/50 bg-white/90 p-4 shadow-sm">
+    <div className="rounded-2xl border border-white/50 bg-base-100/90 p-4 shadow-sm">
       <FullCalendar
         plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
         initialView="timeGridWeek"

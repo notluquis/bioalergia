@@ -16,7 +16,7 @@ export function TransactionsColumnToggles({ visibleColumns, onToggle }: Props) {
           label={column.label}
           checked={visibleColumns.has(column.key)}
           onChange={() => onToggle(column.key)}
-          className="rounded-full border border-white/55 bg-white/55 px-4 py-1.5 shadow-[0_8px_16px_-12px_rgba(16,37,66,0.4)] hover:border-white/70 hover:bg-white/70"
+            className="rounded-full border border-white/55 bg-base-100/55 px-4 py-1.5 shadow-[0_8px_16px_-12px_rgba(16,37,66,0.4)] hover:border-white/70 hover:bg-base-100/70"
         />
       ))}
     </div>

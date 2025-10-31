@@ -1,5 +1,6 @@
 import dayjs from "dayjs";
 import type { LoanSummary } from "../types";
+import Button from "../../../components/Button";
 
 interface LoanListProps {
   loans: LoanSummary[];
@@ -11,20 +12,16 @@ interface LoanListProps {
 
 export function LoanList({ loans, selectedId, onSelect, onCreateRequest, canManage }: LoanListProps) {
   return (
-    <aside className="glass-card glass-underlay-gradient flex h-full flex-col gap-4 p-6 text-sm text-slate-600">
+    <aside className="flex h-full flex-col gap-4 p-6 text-sm text-slate-600 bg-base-100">
       <header className="flex items-center justify-between">
         <div>
           <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500/90">Préstamos</h2>
           <p className="text-[11px] text-slate-500">Resumen rápido de capital y estado.</p>
         </div>
         {canManage && (
-          <button
-            type="button"
-            onClick={onCreateRequest}
-            className="rounded-full bg-[var(--brand-primary)] px-4 py-2 text-xs font-semibold text-white shadow hover:bg-[var(--brand-primary)]/90"
-          >
+          <Button type="button" variant="primary" size="sm" onClick={onCreateRequest}>
             Nuevo préstamo
-          </button>
+          </Button>
         )}
       </header>
       <div className="muted-scrollbar flex-1 space-y-3 overflow-y-auto pr-2">
@@ -46,7 +43,7 @@ export function LoanList({ loans, selectedId, onSelect, onCreateRequest, canMana
               className={`w-full rounded-2xl border px-4 py-3 text-left transition-all ${
                 isActive
                   ? "border-white/70 bg-[var(--brand-primary)]/20 text-[var(--brand-primary)]"
-                  : "border-transparent bg-white/45 text-slate-600 hover:border-white/60 hover:bg-white/65"
+                  : "border-transparent bg-base-100/45 text-slate-600 hover:border-white/60 hover:bg-base-100/65"
               }`}
             >
               <div className="flex items-center justify-between gap-3">
@@ -65,7 +62,7 @@ export function LoanList({ loans, selectedId, onSelect, onCreateRequest, canMana
                 </span>
                 <span className="text-slate-500">Inicio {dayjs(loan.start_date).format("DD MMM YYYY")}</span>
               </div>
-              <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-white/60">
+              <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-base-100/60">
                 <div
                   className="h-full rounded-full bg-[var(--brand-primary)]/60"
                   style={{ width: `${Math.min(100, Math.round(paidRatio * 100))}%` }}
@@ -75,7 +72,7 @@ export function LoanList({ loans, selectedId, onSelect, onCreateRequest, canMana
           );
         })}
         {!loans.length && (
-          <p className="rounded-2xl border border-dashed border-white/60 bg-white/40 p-4 text-xs text-slate-500">
+          <p className="rounded-2xl border border-dashed border-white/60 bg-base-100/40 p-4 text-xs text-slate-500"> 
             Aún no registras préstamos. Crea el primero para comenzar a seguir cuotas y pagos.
           </p>
         )}

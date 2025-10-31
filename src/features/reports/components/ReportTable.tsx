@@ -18,10 +18,10 @@ function formatAmount(direction: Movement["direction"], amount: number) {
 
 export default function ReportTable({ ledger }: ReportTableProps) {
   return (
-    <div className="glass-card glass-underlay-gradient overflow-hidden">
+    <div className="overflow-hidden bg-base-100">
       <div className="overflow-x-auto muted-scrollbar">
         <table className="min-w-full text-sm text-slate-600">
-          <thead className="bg-white/55 text-[var(--brand-primary)]">
+          <thead className="bg-base-100/55 text-[var(--brand-primary)]">
             <tr>
               <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide whitespace-nowrap">
                 Fecha
@@ -46,7 +46,7 @@ export default function ReportTable({ ledger }: ReportTableProps) {
           </thead>
           <tbody>
             {ledger.map((m, i) => (
-              <tr key={i} className="border-b border-white/45 bg-white/45 last:border-none even:bg-white/35">
+              <tr key={i} className="border-b border-white/45 bg-base-100/45 last:border-none even:bg-base-100/35">
                 <td className="whitespace-nowrap px-4 py-3 font-medium text-slate-700">{m.timestamp}</td>
                 <td className="px-4 py-3">{m.description ?? m.counterparty ?? "-"}</td>
                 <td className="px-4 py-3">{m.from ?? "-"}</td>

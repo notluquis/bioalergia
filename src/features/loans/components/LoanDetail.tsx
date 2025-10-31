@@ -70,14 +70,14 @@ export function LoanDetail({
 
   if (!loan) {
     return (
-      <section className="glass-card glass-underlay-gradient flex h-full flex-col items-center justify-center rounded-3xl p-10 text-sm text-slate-500">
+      <section className="flex h-full flex-col items-center justify-center rounded-3xl p-10 text-sm text-slate-500 bg-base-100">
         <p>Selecciona un préstamo para ver el detalle.</p>
       </section>
     );
   }
 
   return (
-    <section className="glass-card glass-underlay-gradient relative flex h-full flex-col gap-6 rounded-3xl p-6">
+    <section className="relative flex h-full flex-col gap-6 rounded-3xl p-6 bg-base-100">
       <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="space-y-1">
           <h1 className="text-2xl font-bold text-[var(--brand-primary)] drop-shadow-sm">{loan.title}</h1>
@@ -107,7 +107,7 @@ export function LoanDetail({
         </div>
       </header>
 
-      <section className="grid gap-4 rounded-2xl border border-white/55 bg-white/55 p-4 text-sm text-slate-600 sm:grid-cols-4">
+      <section className="grid gap-4 rounded-2xl border border-white/55 bg-base-100/55 p-4 text-sm text-slate-600 sm:grid-cols-4">
         <div>
           <p className="text-xs uppercase tracking-wide text-slate-400">Capital</p>
           <p className="text-lg font-semibold text-slate-800">${loan.principal_amount.toLocaleString("es-CL")}</p>
@@ -140,7 +140,7 @@ export function LoanDetail({
       />
 
       {loan.notes && (
-        <div className="rounded-2xl border border-white/55 bg-white/55 p-4 text-sm text-slate-600">
+        <div className="rounded-2xl border border-white/55 bg-base-100/55 p-4 text-sm text-slate-600">
           <p className="text-xs uppercase tracking-wide text-slate-400">Notas</p>
           <p>{loan.notes}</p>
         </div>
@@ -206,8 +206,8 @@ export function LoanDetail({
       </Modal>
 
       {loading && (
-        <div className="absolute inset-0 z-30 flex items-center justify-center bg-white/40 backdrop-blur-sm">
-          <p className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-[var(--brand-primary)] shadow">
+        <div className="absolute inset-0 z-30 flex items-center justify-center bg-base-100/40 backdrop-blur-sm">
+          <p className="rounded-full bg-base-100 px-4 py-2 text-sm font-semibold text-[var(--brand-primary)] shadow">
             Cargando préstamo...
           </p>
         </div>

@@ -15,7 +15,7 @@ export function TransactionsFilters({ filters, loading, onChange, onSubmit }: Tr
         event.preventDefault();
         onSubmit();
       }}
-      className="glass-card glass-underlay-gradient grid gap-4 p-6 text-xs text-slate-600 lg:grid-cols-4"
+      className="grid gap-4 p-6 text-xs text-slate-600 lg:grid-cols-4 bg-base-100"
     >
       <label className="flex flex-col gap-2">
         <span className="font-semibold uppercase tracking-wide text-slate-500">Fecha desde</span>
@@ -23,7 +23,7 @@ export function TransactionsFilters({ filters, loading, onChange, onSubmit }: Tr
           type="date"
           value={filters.from}
           onChange={(event) => onChange({ from: event.target.value })}
-          className="glass-input"
+          className="input input-bordered"
         />
       </label>
       <label className="flex flex-col gap-2">
@@ -32,7 +32,7 @@ export function TransactionsFilters({ filters, loading, onChange, onSubmit }: Tr
           type="date"
           value={filters.to}
           onChange={(event) => onChange({ to: event.target.value })}
-          className="glass-input"
+          className="input input-bordered"
         />
       </label>
       <label className="flex flex-col gap-2">
@@ -41,7 +41,7 @@ export function TransactionsFilters({ filters, loading, onChange, onSubmit }: Tr
           type="text"
           value={filters.description}
           onChange={(event) => onChange({ description: event.target.value })}
-          className="glass-input"
+          className="input input-bordered"
           placeholder="Contiene..."
         />
       </label>
@@ -51,7 +51,7 @@ export function TransactionsFilters({ filters, loading, onChange, onSubmit }: Tr
           type="text"
           value={filters.sourceId}
           onChange={(event) => onChange({ sourceId: event.target.value })}
-          className="glass-input"
+          className="input input-bordered"
           placeholder="SOURCE_ID"
         />
       </label>
@@ -61,7 +61,7 @@ export function TransactionsFilters({ filters, loading, onChange, onSubmit }: Tr
           type="text"
           value={filters.origin}
           onChange={(event) => onChange({ origin: event.target.value })}
-          className="glass-input"
+          className="input input-bordered"
           placeholder="Origen"
         />
       </label>
@@ -71,7 +71,7 @@ export function TransactionsFilters({ filters, loading, onChange, onSubmit }: Tr
           type="text"
           value={filters.destination}
           onChange={(event) => onChange({ destination: event.target.value })}
-          className="glass-input"
+          className="input input-bordered"
           placeholder="Destino"
         />
       </label>
@@ -80,7 +80,7 @@ export function TransactionsFilters({ filters, loading, onChange, onSubmit }: Tr
         <select
           value={filters.direction}
           onChange={(event) => onChange({ direction: event.target.value as Filters["direction"] })}
-          className="glass-input"
+          className="select select-bordered"
         >
           <option value="">Todos</option>
           <option value="IN">Ingreso</option>

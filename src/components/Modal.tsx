@@ -1,4 +1,7 @@
+import React from "react";
 import { X } from "lucide-react";
+
+import Button from "./Button";
 
 interface ModalProps {
   isOpen: boolean;
@@ -8,18 +11,27 @@ interface ModalProps {
 }
 
 export default function Modal({ isOpen, onClose, title, children }: ModalProps) {
+  React.useEffect(() => {
+    if (!isOpen) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="relative w-full max-w-2xl rounded-2xl bg-white p-8 shadow-2xl">
+    <div className="modal modal-open" role="dialog" aria-modal="true" aria-label={title}>
+      <div className="modal-box relative w-full max-w-2xl rounded-2xl p-6" tabIndex={-1}>
         <div className="flex items-start justify-between">
           <h2 className="text-xl font-bold text-[var(--brand-primary)]">{title}</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
-            <X size={24} />
-          </button>
+          <Button variant="secondary" size="sm" onClick={onClose} aria-label="Cerrar modal">
+            <X size={18} />
+          </Button>
         </div>
-        <div className="mt-6">{children}</div>
+        <div className="mt-4">{children}</div>
       </div>
     </div>
   );

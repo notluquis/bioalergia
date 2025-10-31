@@ -32,10 +32,10 @@ export function LoanScheduleTable({
   canManage,
 }: LoanScheduleTableProps) {
   return (
-    <div className="glass-card glass-underlay-gradient overflow-hidden">
+    <div className="overflow-hidden bg-base-100">
       <div className="overflow-x-auto muted-scrollbar">
         <table className="min-w-full text-sm text-slate-600">
-          <thead className="bg-white/60 text-[var(--brand-primary)]">
+          <thead className="bg-base-100/60 text-[var(--brand-primary)]">
             <tr>
               <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide whitespace-nowrap">
                 Cuota
@@ -66,7 +66,7 @@ export function LoanScheduleTable({
               return (
                 <tr
                   key={schedule.id}
-                  className="border-b border-white/45 bg-white/45 last:border-none even:bg-white/35"
+                  className="border-b border-white/45 bg-base-100/45 last:border-none even:bg-base-100/35"
                 >
                   <td className="px-4 py-3 font-semibold text-slate-700">#{schedule.installment_number}</td>
                   <td className="px-4 py-3 text-slate-600">{dayjs(schedule.due_date).format("DD MMM YYYY")}</td>

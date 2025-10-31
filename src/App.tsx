@@ -1,5 +1,7 @@
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import React from "react";
+import Button from "./components/Button";
+import ThemeToggle from "./components/ThemeToggle";
 import { useAuth } from "./context/auth-context";
 import { useSettings } from "./context/settings-context";
 import CollapsibleNavSection from "./components/CollapsibleNavSection";
@@ -166,11 +168,14 @@ export default function App() {
   // Toggle sidebar (hamburguesa)
   const toggleSidebar = () => setSidebarOpen((open) => !open);
 
+  // Preline runtime removed: we avoid optional runtime helpers and rely on Tailwind + DaisyUI utilities
+
   return (
     <div className="layout-container relative mx-auto flex min-h-screen max-w-[1440px] gap-6 px-4 py-6 text-slate-900 sm:px-6 lg:px-10">
       {/* Hamburger button: always visible */}
-      <button
-        className="fixed left-4 top-6 z-40 flex h-10 w-10 items-center justify-center rounded-full bg-white/80 shadow-lg"
+      <Button
+        variant="secondary"
+        className={`fixed left-4 top-6 z-40 btn-circle bg-base-100`}
         onClick={toggleSidebar}
         aria-label={sidebarOpen ? "Cerrar menú" : "Abrir menú"}
       >
@@ -183,7 +188,7 @@ export default function App() {
             <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         )}
-      </button>
+      </Button>
 
       {/* Overlay for mobile/tablet when sidebar is open */}
       {isMobile && sidebarOpen && (
@@ -195,41 +200,45 @@ export default function App() {
 
       {/* Sidebar: animated, overlay on mobile, collapsible on desktop */}
       <aside
-        className={`glass-panel glass-underlay-gradient flex w-64 flex-shrink-0 flex-col overflow-hidden rounded-3xl p-5 text-sm text-slate-700 shadow-xl
+        className={`flex w-64 flex-shrink-0 flex-col overflow-hidden rounded-3xl p-5 text-sm text-slate-700 shadow-xl bg-base-100
           fixed inset-y-0 left-0 z-50 transition-transform duration-300
           ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
           md:static md:translate-x-0 md:z-auto md:rounded-3xl md:p-5 md:shadow-xl
           ${!sidebarOpen && !isMobile ? "hidden" : ""}`}
         style={{ maxWidth: "100vw" }}
       >
-        <div className="flex h-16 items-center justify-center rounded-2xl border border-white/40 bg-white/60 px-3 shadow-inner">
-          <img src={settings.logoUrl} alt="Logo" className="h-10" />
+        <div className="flex h-16 items-center justify-center rounded-2xl border border-white/40 bg-base-100/60 px-3 shadow-inner">
+          <img src={settings.logoUrl || '/logo_sin_eslogan.png'} alt="Logo" className="h-10" />
         </div>
-        <nav className="muted-scrollbar mt-4 flex-1 space-y-3 overflow-y-auto pr-2">
+        <nav className="muted-scrollbar mt-4 flex-1 overflow-y-auto pr-2">
           {navigation.map((section) => (
-            <CollapsibleNavSection key={section.title} title={section.title}>
-              {section.items.map((item) => (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  className={({ isActive }) =>
-                    `flex items-center rounded-xl border px-3 py-2 text-sm font-semibold transition-all ${
-                      isActive
-                        ? "border-white/60 bg-[var(--brand-primary)]/20 text-[var(--brand-primary)] shadow-[0_10px_30px_-20px_rgba(14,100,183,0.9)]"
-                        : "border-transparent text-slate-600 hover:border-white/40 hover:bg-white/35 hover:text-[var(--brand-primary)]"
-                    }`
-                  }
-                  onClick={() => {
-                    if (isMobile) setSidebarOpen(false);
-                  }}
-                >
-                  {item.label}
-                </NavLink>
-              ))}
-            </CollapsibleNavSection>
+            <div key={section.title} className="mb-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">{section.title}</p>
+              <ul className="menu menu-compact bg-transparent p-0">
+                {section.items.map((item) => (
+                  <li key={item.to}>
+                    <NavLink
+                      to={item.to}
+                      className={({ isActive }) =>
+                        `flex items-center rounded-xl px-3 py-2 text-sm font-semibold transition-all ${
+                          isActive
+                            ? "active text-[var(--brand-primary)]"
+                            : "text-slate-600 hover:text-[var(--brand-primary)]"
+                        }`
+                      }
+                      onClick={() => {
+                        if (isMobile) setSidebarOpen(false);
+                      }}
+                    >
+                      {item.label}
+                    </NavLink>
+                  </li>
+                ))}
+              </ul>
+            </div>
           ))}
         </nav>
-        <div className="mt-6 space-y-1 rounded-2xl border border-white/40 bg-white/70 p-3 text-[11px] text-slate-500 shadow-inner">
+        <div className="mt-6 space-y-1 rounded-2xl border border-white/40 bg-base-100/70 p-3 text-[11px] text-slate-500 shadow-inner">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">Versión</p>
           <p className="font-semibold text-slate-700">{APP_VERSION}</p>
           <p className="text-[10px] text-slate-400">Build: {buildLabel}</p>
@@ -239,18 +248,16 @@ export default function App() {
       {/* Main content */}
       <div className="layout-container flex flex-1 flex-col gap-6 min-w-0">
         {/* min-w-0 permite que se encoja */}
-        <header className="glass-panel glass-panel--tinted flex items-center justify-between rounded-3xl px-6 py-4">
+        <header className="flex items-center justify-between rounded-3xl px-6 py-4 bg-base-100">
           <h1 className="text-xl font-semibold text-slate-800 drop-shadow-sm">{title}</h1>
           <div className="flex items-center gap-4">
+            <ThemeToggle />
             <ConnectionIndicator />
             <div className="text-right">
               <p className="font-semibold text-slate-800">{capitalizedName}</p>
               <p className="text-xs text-slate-500">{user?.email}</p>
             </div>
-            <button
-              onClick={handleLogout}
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-white/50 bg-white/70 text-slate-600 transition-all hover:scale-[1.02] hover:text-[var(--brand-primary)]"
-            >
+            <Button variant="secondary" className="btn-circle" onClick={handleLogout} aria-label="Cerrar sesión">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                 <path
                   fillRule="evenodd"
@@ -258,11 +265,11 @@ export default function App() {
                   clipRule="evenodd"
                 />
               </svg>
-            </button>
+            </Button>
           </div>
         </header>
 
-        <main className="glass-panel flex-1 rounded-3xl">
+        <main className="flex-1 rounded-3xl bg-base-100">
           <div className="h-full px-6 py-6">
             <div className="muted-scrollbar h-full overflow-auto">
               <Outlet />
@@ -270,7 +277,7 @@ export default function App() {
           </div>
         </main>
 
-        <footer className="glass-panel flex items-center justify-between rounded-3xl px-6 py-3 text-sm text-slate-600">
+        <footer className="flex items-center justify-between rounded-3xl px-6 py-3 text-sm text-slate-600 bg-base-100">
           <span className="font-medium text-slate-500">Bioalergia Finanzas</span>
           <Clock />
         </footer>

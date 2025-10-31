@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import Button from "./Button";
 
 interface HealthResponse {
   status: "ok" | "degraded" | "error";
@@ -168,20 +169,23 @@ export function ConnectionIndicator() {
   const statusCopy = useMemo(() => STATUS_COPY[state.level], [state.level]);
 
   return (
-    <div className="relative">
-      <button
+    <div className="relative dropdown dropdown-end">
+      <Button
         type="button"
+        size="xs"
+        variant="secondary"
         onClick={() => setOpen((prev) => !prev)}
-        className="glass-card flex items-center gap-2 rounded-full border border-white/60 bg-white/60 px-3 py-1 text-xs font-medium text-slate-600 transition hover:border-white/80 hover:bg-white/75 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgba(14,100,183,0.35)]"
+        className="flex items-center gap-2 rounded-full px-2 py-1 text-xs font-medium text-slate-600 transition bg-base-100"
         aria-pressed={open}
         aria-label={`Estado de la conexión: ${statusCopy.label}`}
       >
         <span className={`h-2.5 w-2.5 rounded-full shadow-inner transition ${INDICATOR_COLORS[state.level]}`} />
         <span className="hidden sm:inline">{statusCopy.label}</span>
-      </button>
+      </Button>
+
       {open && (
-        <div className="absolute right-0 top-full mt-2 z-50 w-72 text-sm">
-          <div className="glass-card glass-underlay-gradient space-y-3 rounded-2xl p-4 shadow-xl border border-white/20">
+        <div tabIndex={0} className="dropdown-content mt-2 w-72">
+          <div className="space-y-3 rounded-2xl p-4 shadow-xl border border-white/20 bg-base-100">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-semibold text-slate-700">{statusCopy.label}</p>

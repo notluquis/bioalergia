@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { InventoryCategory, InventoryItem } from "../types";
+import Button from "../../../components/Button";
 import { getInventoryCategories } from "../api";
 
 interface InventoryItemFormProps {
@@ -76,20 +77,12 @@ export default function InventoryItemForm({ item, onSave, onCancel, saving }: In
         />
       </label>
       <div className="flex items-center justify-end gap-3 pt-4">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="text-xs font-semibold uppercase tracking-wide text-slate-500"
-        >
+        <Button type="button" variant="secondary" onClick={onCancel}>
           Cancelar
-        </button>
-        <button
-          type="submit"
-          disabled={saving}
-          className="rounded-full bg-[var(--brand-primary)] px-4 py-2 text-sm font-semibold text-white shadow disabled:cursor-not-allowed"
-        >
+        </Button>
+        <Button type="submit" variant="primary" disabled={saving}>
           {saving ? "Guardando..." : "Guardar Item"}
-        </button>
+        </Button>
       </div>
     </form>
   );

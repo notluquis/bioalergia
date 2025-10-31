@@ -1,35 +1,53 @@
 import React from "react";
-import { Button as FlowbiteButton } from "flowbite-react";
 
-interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "primary" | "secondary";
+type AsElement = string;
+
+interface ButtonProps extends React.HTMLAttributes<HTMLElement> {
+  variant?: "primary" | "secondary" | "ghost" | "link";
   size?: "sm" | "md" | "lg" | "xs";
+  as?: AsElement;
+  href?: string;
+  type?: "button" | "submit" | "reset";
+  disabled?: boolean;
 }
 
 /**
- * Thin wrapper around flowbite-react Button so we can swap implementations easily.
- * Keeps a similar API to the previous Button component (variant/size/className/support for native button props).
+ * Polymorphic project Button primitive.
+ * - `as` allows rendering as 'a', 'label', etc.
+ * - `href` is forwarded when rendering anchors.
+ * Keeps variant/size API and preserves existing className overrides.
  */
-export default function Button({ variant = "primary", size = "md", className = "", children, ...props }: ButtonProps) {
-  // Map our variant/size to Tailwind classes so branding is preserved.
+export default function Button({
+  variant,
+  size = "md",
+  className = "",
+  as,
+  href,
+  children,
+  ...props
+}: ButtonProps) {
+  const v = variant ?? "primary";
   const variantClasses: Record<string, string> = {
-    primary: "bg-[var(--brand-primary)] text-white hover:bg-[var(--brand-primary)]/90",
-    secondary: "bg-white text-slate-700 border border-white/60 hover:bg-white/80",
+    primary: "btn btn-primary",
+    secondary: "btn btn-ghost",
+    ghost: "btn btn-ghost",
+    link: "btn btn-link",
   };
 
   const sizeClasses: Record<string, string> = {
-    xs: "px-2.5 py-1 text-xs",
-    sm: "px-3.5 py-1.5 text-sm",
-    md: "px-5 py-2.5 text-sm",
-    lg: "px-[1.75rem] py-3 text-base",
+    xs: "btn-xs",
+    sm: "btn-sm",
+    md: "btn-md",
+    lg: "btn-lg",
   };
 
-  const mergedClassName = `${variantClasses[variant]} ${sizeClasses[size]} ${className}`.trim();
+  const mergedClassName = `${variantClasses[v]} ${sizeClasses[size]} ${className}`.trim();
 
-  // flowbite-react's Button accepts className and native props; forward props using the component's prop types.
-  return (
-    <FlowbiteButton className={mergedClassName} {...(props as React.ComponentProps<typeof FlowbiteButton>)}>
-      {children}
-    </FlowbiteButton>
-  );
+  const Component: AsElement = (as as AsElement) ?? (href ? "a" : "button");
+
+  // Build props to forward — include href when provided
+  const forwardProps: Record<string, unknown> = { className: mergedClassName, ...(props as Record<string, unknown>) };
+  if (href) forwardProps.href = href;
+
+  return React.createElement(Component, forwardProps, children);
 }

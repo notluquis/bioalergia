@@ -10,7 +10,7 @@ interface TopParticipantsSectionProps {
 
 export default function TopParticipantsSection({ data, loading, error }: TopParticipantsSectionProps) {
   return (
-    <section className="space-y-3 glass-card glass-underlay-gradient p-6">
+    <section className="space-y-3 bg-base-100 p-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-lg font-semibold text-[var(--brand-primary)]">Top retiros</h2>
         <span className="text-xs uppercase tracking-wide text-slate-400">Mayores egresos</span>

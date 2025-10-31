@@ -24,7 +24,7 @@ export default function MonthlySummaryChart({ data }: MonthlySummaryChartProps) 
             const height = max ? Math.max((total / max) * 140, 4) : 4;
             return (
               <div key={month} className="flex min-w-[72px] flex-col items-center gap-2">
-                <div className="flex h-40 w-full items-end rounded-2xl border border-white/55 bg-white/60 p-1">
+                <div className="flex h-40 w-full items-end rounded-2xl border border-white/55 bg-base-100/60 p-1">
                   <div
                     className="w-full rounded-full bg-[var(--brand-primary)]/70 shadow-[0_12px_24px_-18px_rgba(16,37,66,0.4)]"
                     style={{ height: `${height}px` }}

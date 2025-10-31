@@ -1,6 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
 import { useAuth } from "../context/auth-context";
+import Button from "../components/Button";
 import { fetchEmployees } from "../features/employees/api";
 import type { Employee } from "../features/employees/types";
 import {
@@ -291,7 +292,7 @@ export default function TimesheetsPage() {
               setMonth(e.target.value);
               setInfo(null);
             }}
-            className="rounded border px-3 py-2 text-sm bg-white"
+            className="rounded border px-3 py-2 text-sm bg-base-100"
             disabled={loadingMonths}
           >
             {months.slice(0, visibleCount).map((m) => (
@@ -301,13 +302,15 @@ export default function TimesheetsPage() {
             ))}
           </select>
           {months.length > visibleCount && (
-            <button
+            <Button
               type="button"
+              variant="secondary"
+              size="sm"
               className="text-xs text-[var(--brand-primary)] underline mt-1"
               onClick={() => setVisibleCount((c) => c + 4)}
             >
               Ver más meses...
-            </button>
+            </Button>
           )}
         </div>
       </div>
@@ -318,13 +321,14 @@ export default function TimesheetsPage() {
           <Suspense
             fallback={
               <div className="flex items-center gap-2">
-                <button
+                <Button
                   type="button"
                   disabled
+                  variant="primary"
                   className="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-[var(--brand-primary)]/70 cursor-wait"
                 >
                   Cargando exportador...
-                </button>
+                </Button>
               </div>
             }
           >

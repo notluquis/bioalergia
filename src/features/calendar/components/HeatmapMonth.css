@@ -94,7 +94,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: var(--glass-elevated, rgba(248, 250, 252, 0.9));
+  background: var(--color-base-200, rgba(248, 250, 252, 0.9));
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
   transition:
     transform 0.15s ease,

@@ -59,7 +59,7 @@ export default function CalendarSettingsPage() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="glass-card glass-underlay-gradient space-y-5 p-6">
+    <form onSubmit={handleSubmit} className="bg-base-100 space-y-5 p-6">
       <div className="space-y-1">
         <h2 className="text-lg font-semibold text-[var(--brand-primary)] drop-shadow-sm">Sincronización de Calendario</h2>
         <p className="text-sm text-slate-600/90">
@@ -75,7 +75,7 @@ export default function CalendarSettingsPage() {
             type="text"
             value={form.calendarTimeZone}
             onChange={(event) => handleChange("calendarTimeZone", event.target.value)}
-            className="glass-input"
+            className="input input-bordered"
             placeholder="America/Santiago"
           />
           <span className="text-[11px] text-slate-400">Se utiliza para cron y conversión de fechas.</span>
@@ -87,7 +87,7 @@ export default function CalendarSettingsPage() {
             type="date"
             value={form.calendarSyncStart}
             onChange={(event) => handleChange("calendarSyncStart", event.target.value)}
-            className="glass-input"
+            className="input input-bordered"
           />
           <span className="text-[11px] text-slate-400">Primer día que se sincroniza desde Google Calendar.</span>
         </label>
@@ -100,7 +100,7 @@ export default function CalendarSettingsPage() {
             max={1095}
             value={form.calendarSyncLookaheadDays}
             onChange={(event) => handleChange("calendarSyncLookaheadDays", event.target.value)}
-            className="glass-input"
+            className="input input-bordered"
           />
           <span className="text-[11px] text-slate-400">Cuántos días futuros se sincronizan (máximo 1095).</span>
         </label>
@@ -113,7 +113,7 @@ export default function CalendarSettingsPage() {
             max={120}
             value={form.calendarDailyMaxDays}
             onChange={(event) => handleChange("calendarDailyMaxDays", event.target.value)}
-            className="glass-input"
+            className="input input-bordered"
           />
           <span className="text-[11px] text-slate-400">Número máximo de días listados en la vista “Detalle diario”.</span>
         </label>
@@ -125,7 +125,7 @@ export default function CalendarSettingsPage() {
           rows={3}
           value={form.calendarExcludeSummaries}
           onChange={(event) => handleChange("calendarExcludeSummaries", event.target.value)}
-          className="glass-input"
+          className="textarea textarea-bordered"
           placeholder={DEFAULT_EXCLUDE}
         />
         <span className="text-[11px] text-slate-400">
@@ -134,12 +134,12 @@ export default function CalendarSettingsPage() {
       </label>
 
       {error && (
-        <p className="glass-card border-l-4 border-rose-300/80 bg-gradient-to-r from-rose-50/65 via-white/70 to-white/55 px-4 py-3 text-sm text-rose-700">
+        <p className="border-l-4 border-rose-300/80 bg-gradient-to-r from-rose-50/65 via-white/70 to-white/55 px-4 py-3 text-sm text-rose-700">
           {error}
         </p>
       )}
       {status === "success" && !error && (
-        <p className="glass-card border-l-4 border-emerald-300/80 bg-gradient-to-r from-emerald-50/70 via-white/70 to-white/55 px-4 py-3 text-sm text-emerald-700">
+        <p className="border-l-4 border-emerald-300/80 bg-gradient-to-r from-emerald-50/70 via-white/70 to-white/55 px-4 py-3 text-sm text-emerald-700">
           Configuración de calendario actualizada correctamente.
         </p>
       )}

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Button from "../components/Button";
 import dayjs from "dayjs";
 import { coerceAmount } from "../lib/format";
 import { useAuth } from "../context/auth-context";
@@ -173,7 +174,7 @@ export default function TransactionsMovements() {
   return (
     <section className="space-y-6">
       {!canView ? (
-        <div className="rounded-2xl border border-rose-200 bg-white p-6 text-sm text-rose-600 shadow-sm">
+        <div className="rounded-2xl border border-rose-200 bg-base-100 p-6 text-sm text-rose-600 shadow-sm">
           No tienes permisos para ver los movimientos almacenados.
         </div>
       ) : (
@@ -243,15 +244,15 @@ export default function TransactionsMovements() {
                   ))}
                 </select>
               </label>
-              <button
+              <Button
                 type="button"
+                variant="primary"
+                size="sm"
                 onClick={() => refresh(filters, page, pageSize)}
                 disabled={loading}
-                className="inline-flex items-center justify-center rounded-full px-4 py-2 text-sm font-semibold text-white shadow disabled:cursor-not-allowed"
-                style={{ backgroundColor: "var(--brand-primary)", opacity: loading ? 0.6 : 1 }}
               >
                 {loading ? "Actualizando..." : "Actualizar"}
-              </button>
+              </Button>
               <label className="flex items-center gap-2 text-xs text-slate-600">
                 <input
                   type="checkbox"

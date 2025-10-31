@@ -50,7 +50,7 @@ export default function Login() {
     <div className="relative flex min-h-screen items-center justify-center px-6 py-12">
       <div className="absolute inset-x-0 top-0 h-1/3 max-h-[220px] rounded-b-[50%] bg-[radial-gradient(circle_at_top,_rgba(14,100,183,0.18),_transparent_70%)]" />
       <div className="absolute inset-x-0 bottom-0 h-1/3 max-h-[220px] rounded-t-[55%] bg-[radial-gradient(circle_at_bottom,_rgba(241,167,34,0.22),_transparent_72%)]" />
-      <div className="glass-card glass-underlay-gradient relative z-10 w-full max-w-md p-10">
+      <div className="bg-base-100 relative z-10 w-full max-w-md p-10">
         <div className="mb-6 flex justify-end">
           <ConnectionIndicator />
         </div>

@@ -87,7 +87,7 @@ export default function DailyBalances() {
         <Alert variant="error">No tienes permisos para ver los saldos diarios.</Alert>
       ) : (
         <>
-          <div className="glass-card glass-underlay-gradient flex flex-col gap-4 p-6 sm:flex-row sm:items-end sm:justify-between">
+          <div className="bg-base-100 flex flex-col gap-4 p-6 sm:flex-row sm:items-end sm:justify-between">
             <div className="space-y-2">
               <h1 className="text-2xl font-bold text-[var(--brand-primary)] drop-shadow-sm">Saldos diarios</h1>
               <p className="max-w-2xl text-sm text-slate-600/90">

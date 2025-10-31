@@ -5,7 +5,7 @@ import type { DbMovement } from "../../transactions/types";
 
 export default function RecentMovementsWidget({ rows }: { rows: DbMovement[] }) {
   return (
-    <article className="glass-card glass-underlay-gradient space-y-4 p-6">
+    <article className="space-y-4 p-6 bg-base-100">
       <div className="flex items-center justify-between">
         <h3 className="text-base font-semibold text-slate-700 drop-shadow-sm">Últimos movimientos</h3>
         <Link
@@ -20,7 +20,7 @@ export default function RecentMovementsWidget({ rows }: { rows: DbMovement[] }) 
           {rows.map((row) => (
             <li
               key={row.id}
-              className="flex items-start justify-between gap-3 rounded-2xl border border-white/55 bg-white/55 px-4 py-3 shadow-[0_10px_24px_-16px_rgba(16,37,66,0.4)]"
+              className="flex items-start justify-between gap-3 rounded-2xl border border-white/55 bg-base-100/55 px-4 py-3 shadow-[0_10px_24px_-16px_rgba(16,37,66,0.4)]"
             >
               <div>
                 <p className="font-medium text-slate-700">{row.description ?? row.source_id ?? "(sin descripción)"}</p>

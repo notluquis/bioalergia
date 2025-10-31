@@ -1,4 +1,5 @@
 import dayjs from "dayjs";
+import Button from "../../../components/Button";
 import type { ServiceSummary, ServiceFrequency, ServiceType } from "../types";
 
 interface ServiceListProps {
@@ -11,20 +12,16 @@ interface ServiceListProps {
 
 export function ServiceList({ services, selectedId, onSelect, onCreateRequest, canManage }: ServiceListProps) {
   return (
-    <aside className="glass-card glass-underlay-gradient flex h-full flex-col gap-4 p-6 text-sm text-slate-600">
+    <aside className="flex h-full flex-col gap-4 p-6 text-sm text-slate-600 bg-base-100">
       <header className="flex items-center justify-between">
         <div>
           <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500/90">Servicios</h2>
           <p className="text-[11px] text-slate-500">Suscripciones y gastos recurrentes.</p>
         </div>
         {canManage && (
-          <button
-            type="button"
-            onClick={onCreateRequest}
-            className="rounded-full bg-[var(--brand-primary)] px-4 py-2 text-xs font-semibold text-white shadow hover:bg-[var(--brand-primary)]/90"
-          >
+          <Button type="button" variant="primary" size="sm" onClick={onCreateRequest}>
             Nuevo servicio
-          </button>
+          </Button>
         )}
       </header>
       <div className="muted-scrollbar flex-1 space-y-3 overflow-y-auto pr-2">
@@ -67,7 +64,7 @@ export function ServiceList({ services, selectedId, onSelect, onCreateRequest, c
               className={`w-full rounded-2xl border px-4 py-3 text-left transition-all ${
                 isActive
                   ? "border-white/70 bg-[var(--brand-primary)]/20 text-[var(--brand-primary)]"
-                  : "border-transparent bg-white/45 text-slate-600 hover:border-white/60 hover:bg-white/65"
+                  : "border-transparent bg-base-100/45 text-slate-600 hover:border-white/60 hover:bg-base-100/65"
               }`}
             >
               <div className="flex items-center justify-between gap-3">
@@ -95,7 +92,7 @@ export function ServiceList({ services, selectedId, onSelect, onCreateRequest, c
           );
         })}
         {!services.length && (
-          <p className="rounded-2xl border border-dashed border-white/60 bg-white/40 p-4 text-xs text-slate-500">
+          <p className="rounded-2xl border border-dashed border-white/60 bg-base-100/40 p-4 text-xs text-slate-500">
             Aún no registras servicios recurrentes. Crea el primero para controlar gastos mensuales.
           </p>
         )}

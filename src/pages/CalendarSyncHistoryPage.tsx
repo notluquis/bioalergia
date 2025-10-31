@@ -49,9 +49,9 @@ export default function CalendarSyncHistoryPage() {
 
       {error && <Alert variant="error">{error}</Alert>}
 
-      <div className="glass-card glass-underlay-gradient overflow-hidden rounded-3xl border border-white/60">
+      <div className="bg-base-100 overflow-hidden rounded-3xl border border-white/60">
         <table className="w-full text-left text-xs text-slate-600">
-          <thead className="bg-white/70 uppercase tracking-wide text-slate-500">
+          <thead className="bg-base-100/70 uppercase tracking-wide text-slate-500">
             <tr>
               <th className="px-4 py-3">Inicio</th>
               <th className="px-4 py-3">Estado</th>
@@ -81,7 +81,7 @@ export default function CalendarSyncHistoryPage() {
                     ? "text-emerald-600"
                     : "text-rose-600";
                 return (
-                  <tr key={log.id} className="border-t border-white/40 bg-white/60">
+                  <tr key={log.id} className="border-t border-white/40 bg-base-100/60">
                     <td className="px-4 py-3 font-medium text-slate-700">{started}</td>
                     <td className={`px-4 py-3 font-semibold ${statusClass}`}>{log.status === "SUCCESS" ? "Éxito" : "Error"}</td>
                     <td className="px-4 py-3">{numberFormatter.format(log.inserted)}</td>
@@ -99,7 +99,7 @@ export default function CalendarSyncHistoryPage() {
       </div>
 
       {logs.some((log) => log.errorMessage) && (
-        <div className="glass-card glass-underlay-gradient space-y-2 rounded-3xl border border-rose-200/70 p-4 text-xs text-rose-700">
+        <div className="bg-base-100 space-y-2 rounded-3xl border border-rose-200/70 p-4 text-xs text-rose-700">
           <p className="font-semibold uppercase tracking-wide">Errores recientes</p>
           <ul className="space-y-1">
             {logs

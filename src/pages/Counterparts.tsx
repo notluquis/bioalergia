@@ -147,7 +147,7 @@ export default function CounterpartsPage() {
           />
         )}
         {selectedId && (
-          <section className="glass-card glass-underlay-gradient space-y-5 p-6">
+          <section className="bg-base-100 space-y-5 p-6">
             <header className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
               <div className="space-y-1">
                 <h2 className="text-lg font-semibold text-[var(--brand-primary)] drop-shadow-sm">Resumen mensual</h2>

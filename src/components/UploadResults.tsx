@@ -28,30 +28,31 @@ export default function UploadResults({ results, variant = "primary" }: UploadRe
     variant === "primary"
       ? "bg-[var(--brand-primary)]/10 text-[var(--brand-primary)]"
       : "bg-[var(--brand-secondary)]/10 text-[var(--brand-secondary)]";
-
   return (
-    <div className={`space-y-2 rounded-lg p-4 text-xs ${colorClass}`}>
-      <p className="font-semibold">Resultados</p>
-      <ul className="space-y-1 text-slate-600">
-        {results.map((result) => (
-          <li key={result.file} className="flex flex-wrap items-center justify-between gap-2">
-            <span>{result.file}</span>
-            {result.summary ? (
-              <span>
-                Insertadas: {result.summary.inserted}
-                {typeof result.summary.updated === "number"
-                  ? ` · Actualizadas: ${result.summary.updated}`
-                  : typeof result.summary.skipped === "number"
-                    ? ` · Omitidas: ${result.summary.skipped}`
-                    : ""}
-                · Total: {result.summary.total}
-              </span>
-            ) : (
-              <span className="text-rose-600">{result.error}</span>
-            )}
-          </li>
-        ))}
-      </ul>
+    <div className={`card bg-base-100 p-4 text-xs shadow-sm ${colorClass}`}>
+      <div className="card-body p-0">
+        <p className="font-semibold mb-2">Resultados</p>
+        <ul className="space-y-2 text-slate-600">
+          {results.map((result) => (
+            <li key={result.file} className="flex flex-wrap items-center justify-between gap-2 rounded-lg p-2">
+              <span className="font-medium">{result.file}</span>
+              {result.summary ? (
+                <div className="text-xs text-slate-600">
+                  <span className="mr-2">Inserted: {result.summary.inserted}</span>
+                  {typeof result.summary.updated === "number" ? (
+                    <span className="mr-2">Updated: {result.summary.updated}</span>
+                  ) : typeof result.summary.skipped === "number" ? (
+                    <span className="mr-2">Skipped: {result.summary.skipped}</span>
+                  ) : null}
+                  <span>Total: {result.summary.total}</span>
+                </div>
+              ) : (
+                <span className="text-rose-600">{result.error}</span>
+              )}
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }

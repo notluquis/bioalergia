@@ -10,7 +10,7 @@ interface InventoryTableProps {
 
 export default function InventoryTable({ items, loading, openAdjustStockModal, openEditModal }: InventoryTableProps) {
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-base-100 shadow-sm">
       <div className="overflow-x-auto muted-scrollbar">
         <table className="min-w-full text-sm">
           <thead className="bg-slate-50 text-slate-700">

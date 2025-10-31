@@ -2923,6 +2923,30 @@ export async function saveSettings(update: Partial<AppSettings>) {
   );
 }
 
+// Internal configuration helpers (allows storing internal keys under settings table)
+export async function getInternalConfig(key: string): Promise<string | null> {
+  const pool = getPool();
+  const [[row]] = await pool.query<RowDataPacket[]>(
+    `SELECT config_value FROM settings WHERE config_key = ? LIMIT 1` as string,
+    [key]
+  );
+  if (!row) return null;
+  return row.config_value ?? null;
+}
+
+export async function setInternalConfig(key: string, value: string | null) {
+  const pool = getPool();
+  if (value === null) {
+    await pool.query(`DELETE FROM settings WHERE config_key = ?`, [key]);
+    return;
+  }
+  const values = [[key, value]];
+  await pool.query(
+    `INSERT INTO settings (config_key, config_value) VALUES ? ON DUPLICATE KEY UPDATE config_value = VALUES(config_value)` as string,
+    [values]
+  );
+}
+
 export type CalendarSyncLogRecord = {
   id: number;
   trigger_source: string;
@@ -3081,74 +3105,178 @@ export async function updateCalendarEventClassification(
 
 export async function upsertWithdrawals(payouts: PayoutRecord[]) {
   if (!payouts.length) {
-    return { inserted: 0, updated: 0 };
+    return { inserted: 0, updated: 0, skipped: 0, total: 0 };
   }
 
   const pool = getPool();
-  const values = payouts.map((payout) => [
-    payout.withdrawId,
-    payout.dateCreated,
-    payout.status,
-    payout.statusDetail,
-    payout.amount,
-    payout.fee,
-    payout.activityUrl,
-    payout.payoutDesc,
-    payout.bankAccountHolder,
-    payout.identificationType,
-    payout.identificationNumber,
-    payout.bankId,
-    payout.bankName,
-    payout.bankBranch,
-    payout.bankAccountType,
-    payout.bankAccountNumber,
-    JSON.stringify(payout.raw),
-  ]);
 
-  const [result] = await pool.query<ResultSetHeader>(
-    `INSERT INTO mp_withdrawals (
-        withdraw_id,
-        date_created,
-        status,
-        status_detail,
-        amount,
-        fee,
-        activity_url,
-        payout_desc,
-        bank_account_holder,
-        identification_type,
-        identification_number,
-        bank_id,
-        bank_name,
-        bank_branch,
-        bank_account_type,
-        bank_account_number,
-        raw_json
-      ) VALUES ?
-      ON DUPLICATE KEY UPDATE
-        date_created = VALUES(date_created),
-        status = VALUES(status),
-        status_detail = VALUES(status_detail),
-        amount = VALUES(amount),
-        fee = VALUES(fee),
-        activity_url = VALUES(activity_url),
-        payout_desc = VALUES(payout_desc),
-        bank_account_holder = VALUES(bank_account_holder),
-        identification_type = VALUES(identification_type),
-        identification_number = VALUES(identification_number),
-        bank_id = VALUES(bank_id),
-        bank_name = VALUES(bank_name),
-        bank_branch = VALUES(bank_branch),
-        bank_account_type = VALUES(bank_account_type),
-        bank_account_number = VALUES(bank_account_number),
-        raw_json = VALUES(raw_json)` as string,
-    [values]
-  );
+  // Configuration: tune chunk size to avoid exceeding DB parameter limits
+  // Priority: environment variable BIOALERGIA_X_UPSERT_CHUNK_SIZE -> internal setting 'bioalergia_x.upsert_chunk_size' -> default
+  let CHUNK_SIZE = 0;
+  const envVal = process.env.BIOALERGIA_X_UPSERT_CHUNK_SIZE;
+  if (envVal) {
+    const parsed = Number(envVal);
+    if (!Number.isNaN(parsed) && parsed > 0) CHUNK_SIZE = Math.max(50, Math.min(parsed, 5000));
+  }
+  if (!CHUNK_SIZE) {
+    try {
+      const [[row]] = await pool.query<RowDataPacket[]>(
+        `SELECT config_value FROM settings WHERE config_key = ? LIMIT 1` as string,
+        ["bioalergia_x.upsert_chunk_size"]
+      );
+      if (row && row.config_value) {
+        const parsed = Number(row.config_value);
+        if (!Number.isNaN(parsed) && parsed > 0) CHUNK_SIZE = Math.max(50, Math.min(parsed, 5000));
+      }
+    } catch (err) {
+      // ignore and fall back to default
+    }
+  }
+  if (!CHUNK_SIZE) CHUNK_SIZE = 500;
 
-  const inserted = result.affectedRows - result.changedRows;
-  const updated = result.changedRows;
+  // Deterministic JSON canonicalizer: sorts object keys recursively so that
+  // semantically-equal objects compare equal even if field order differs.
+  function canonicalize(value: unknown): string {
+    if (value === null || value === undefined) return JSON.stringify(null);
+    if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+      return JSON.stringify(value);
+    }
+    if (Array.isArray(value)) {
+      return JSON.stringify(value.map((v) => JSON.parse(canonicalize(v))));
+    }
+    if (typeof value === "object") {
+      const obj = value as Record<string, unknown>;
+      const keys = Object.keys(obj).sort();
+      const normalized: Record<string, unknown> = {};
+      for (const k of keys) {
+        normalized[k] = JSON.parse(canonicalize(obj[k]));
+      }
+      return JSON.stringify(normalized);
+    }
+    return JSON.stringify(value);
+  }
 
-  return { inserted, updated };
+  let totalInserted = 0;
+  let totalUpdated = 0;
+  let totalSkipped = 0;
+
+  // Process payouts in chunks to keep queries and parameter lists bounded
+  for (let offset = 0; offset < payouts.length; offset += CHUNK_SIZE) {
+    const chunk = payouts.slice(offset, offset + CHUNK_SIZE);
+    const ids = chunk.map((p) => p.withdrawId).filter(Boolean);
+
+    const existingMap: Record<string, string | null> = {};
+    if (ids.length) {
+      const placeholders = ids.map(() => "?").join(",");
+      const [rows] = await pool.query<RowDataPacket[]>(
+        `SELECT withdraw_id, raw_json FROM mp_withdrawals WHERE withdraw_id IN (${placeholders})`,
+        ids
+      );
+      for (const r of rows) {
+        existingMap[String(r.withdraw_id)] = r.raw_json == null ? null : String(r.raw_json);
+      }
+    }
+
+    let newCount = 0;
+    let changedCount = 0;
+    let existingCount = 0;
+
+    // Prepare values for DB insert (preserve original raw JSON formatting for storage)
+    const values: Array<unknown[]> = [];
+    for (const p of chunk) {
+      const rawCanonical = canonicalize(p.raw);
+      const rawForStore = JSON.stringify(p.raw);
+
+      if (!Object.prototype.hasOwnProperty.call(existingMap, p.withdrawId)) {
+        newCount += 1;
+      } else {
+        existingCount += 1;
+        const existingRaw = existingMap[p.withdrawId];
+        // compare canonical forms to avoid false positives due to ordering
+        if (existingRaw === null) {
+          if (rawCanonical !== JSON.stringify(null)) changedCount += 1;
+        } else {
+          // existingRaw may be stored with arbitrary ordering; canonicalize before compare
+          let existingCanon: string;
+          try {
+            existingCanon = canonicalize(JSON.parse(existingRaw));
+          } catch {
+            existingCanon = String(existingRaw);
+          }
+          if (existingCanon !== rawCanonical) changedCount += 1;
+        }
+      }
+
+      values.push([
+        p.withdrawId,
+        p.dateCreated,
+        p.status,
+        p.statusDetail,
+        p.amount,
+        p.fee,
+        p.activityUrl,
+        p.payoutDesc,
+        p.bankAccountHolder,
+        p.identificationType,
+        p.identificationNumber,
+        p.bankId,
+        p.bankName,
+        p.bankBranch,
+        p.bankAccountType,
+        p.bankAccountNumber,
+        rawForStore,
+      ]);
+    }
+
+    // Execute chunked upsert
+    if (values.length) {
+      await pool.query<ResultSetHeader>(
+        `INSERT INTO mp_withdrawals (
+            withdraw_id,
+            date_created,
+            status,
+            status_detail,
+            amount,
+            fee,
+            activity_url,
+            payout_desc,
+            bank_account_holder,
+            identification_type,
+            identification_number,
+            bank_id,
+            bank_name,
+            bank_branch,
+            bank_account_type,
+            bank_account_number,
+            raw_json
+          ) VALUES ?
+          ON DUPLICATE KEY UPDATE
+            date_created = VALUES(date_created),
+            status = VALUES(status),
+            status_detail = VALUES(status_detail),
+            amount = VALUES(amount),
+            fee = VALUES(fee),
+            activity_url = VALUES(activity_url),
+            payout_desc = VALUES(payout_desc),
+            bank_account_holder = VALUES(bank_account_holder),
+            identification_type = VALUES(identification_type),
+            identification_number = VALUES(identification_number),
+            bank_id = VALUES(bank_id),
+            bank_name = VALUES(bank_name),
+            bank_branch = VALUES(bank_branch),
+            bank_account_type = VALUES(bank_account_type),
+            bank_account_number = VALUES(bank_account_number),
+            raw_json = VALUES(raw_json)` as string,
+        [values]
+      );
+    }
+
+    totalInserted += newCount;
+    totalUpdated += changedCount;
+    totalSkipped += Math.max(0, existingCount - changedCount);
+  }
+
+  return { inserted: totalInserted, updated: totalUpdated, skipped: totalSkipped, total: payouts.length };
 }
 
 function mapCounterpart(row: RowDataPacket): CounterpartRecord {

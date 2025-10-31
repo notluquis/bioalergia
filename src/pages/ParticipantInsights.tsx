@@ -35,7 +35,7 @@ export default function ParticipantInsightsPage() {
 
   return (
     <section className="space-y-6">
-      <div className="glass-card glass-underlay-gradient space-y-2 p-6">
+      <div className="bg-base-100 space-y-2 p-6">
         <h1 className="text-2xl font-bold text-[var(--brand-primary)] drop-shadow-sm">
           Participantes en transacciones
         </h1>
@@ -47,7 +47,7 @@ export default function ParticipantInsightsPage() {
 
       <form
         onSubmit={handleSubmit}
-        className="glass-card glass-underlay-gradient grid gap-4 p-6 text-sm text-slate-600 lg:grid-cols-4"
+        className="bg-base-100 grid gap-4 p-6 text-sm text-slate-600 lg:grid-cols-4"
       >
         <Input
           label="ID participante"
@@ -89,7 +89,7 @@ export default function ParticipantInsightsPage() {
         </div>
       </form>
 
-      <section className="space-y-4 glass-card glass-underlay-gradient p-6">
+      <section className="space-y-4 bg-base-100 p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="space-y-1">
             <h2 className="text-lg font-semibold text-[var(--brand-secondary)]">Ranking de retiros</h2>
@@ -133,7 +133,7 @@ export default function ParticipantInsightsPage() {
 
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm text-slate-600">
-            <thead className="bg-white/60 text-[var(--brand-secondary)]">
+            <thead className="bg-base-100/60 text-[var(--brand-secondary)]">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide">Titular</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide">RUT</th>
@@ -157,7 +157,7 @@ export default function ParticipantInsightsPage() {
                   return (
                     <tr
                       key={row.key}
-                      className={`border-b border-white/45 bg-white/45 transition-colors last:border-none even:bg-white/35 ${
+                      className={`border-b border-white/45 bg-base-100/45 transition-colors last:border-none even:bg-base-100/35 ${
                         isActive ? "bg-[var(--brand-secondary)]/15" : ""
                       }`}
                     >
@@ -204,11 +204,11 @@ export default function ParticipantInsightsPage() {
         </p>
       ) : (
         <div className="space-y-6">
-          <section className="space-y-3 glass-card glass-underlay-gradient p-6">
+          <section className="space-y-3 bg-base-100 p-6">
             <h2 className="text-lg font-semibold text-[var(--brand-primary)]">Resumen mensual</h2>
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm text-slate-600">
-                <thead className="bg-white/60 text-[var(--brand-primary)]">
+                <thead className="bg-base-100/60 text-[var(--brand-primary)]">
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide">Mes</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide">
@@ -223,7 +223,7 @@ export default function ParticipantInsightsPage() {
                   {monthly.map((row) => (
                     <tr
                       key={row.month}
-                      className="border-b border-white/45 bg-white/45 last:border-none even:bg-white/35"
+                      className="border-b border-white/45 bg-base-100/45 last:border-none even:bg-base-100/35"
                     >
                       <td className="px-4 py-3 font-medium text-slate-700">{dayjs(row.month).format("MMMM YYYY")}</td>
                       <td className="px-4 py-3 text-slate-600">{row.outgoingCount}</td>
@@ -242,11 +242,11 @@ export default function ParticipantInsightsPage() {
             </div>
           </section>
 
-          <section className="space-y-3 glass-card glass-underlay-gradient p-6">
+          <section className="space-y-3 bg-base-100 p-6">
             <h2 className="text-lg font-semibold text-[var(--brand-secondary)]">Contrapartes</h2>
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm text-slate-600">
-                <thead className="bg-white/60 text-[var(--brand-secondary)]">
+                <thead className="bg-base-100/60 text-[var(--brand-secondary)]">
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide">Titular</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide">RUT</th>
@@ -286,7 +286,7 @@ export default function ParticipantInsightsPage() {
                     const metadata = metadataParts.join(" · ");
 
                     return (
-                      <tr key={key} className="border-b border-white/45 bg-white/45 last:border-none even:bg-white/35">
+                      <tr key={key} className="border-b border-white/45 bg-base-100/45 last:border-none even:bg-base-100/35">
                         <td className="px-4 py-3 text-slate-700">
                           <div className="font-medium">
                             {row.bankAccountHolder || row.counterpart || "(desconocido)"}

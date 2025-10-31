@@ -36,10 +36,10 @@ export function BalanceSummary({ report, loading, error }: BalanceSummaryProps) 
   const { mismatchDays, hasRecordedBalances, lastRecorded, lastExpected } = useBalanceReportSummary(report);
 
   return (
-    <section className="glass-card glass-underlay-gradient space-y-4 p-6">
+    <section className="space-y-4 p-6 bg-base-100">
       <h2 className="text-lg font-semibold text-[var(--brand-primary)] drop-shadow-sm">Conciliación de saldo</h2>
       {error && (
-        <p className="glass-card border-l-4 border-rose-300/80 bg-gradient-to-r from-rose-50/65 via-white/70 to-white/55 px-4 py-2 text-xs text-rose-700">
+        <p className="border-l-4 border-rose-300/80 bg-gradient-to-r from-rose-50/65 via-white/70 to-white/55 px-4 py-2 text-xs text-rose-700">
           {error}
         </p>
       )}
@@ -55,7 +55,7 @@ export function BalanceSummary({ report, loading, error }: BalanceSummaryProps) 
       ) : (
         <div className="space-y-3 text-xs text-slate-600">
           {report.previous && (
-            <div className="rounded-2xl border border-white/55 bg-white/60 px-4 py-3 text-slate-600">
+            <div className="rounded-2xl border border-white/55 bg-base-100/60 px-4 py-3 text-slate-600">
               Saldo cierre previo ({dayjs(report.previous.date).format("DD-MM-YYYY")} 23:59)
               <span className="ml-2 font-semibold text-slate-800">{fmtCLP(report.previous.balance)}</span>
             </div>
@@ -74,7 +74,7 @@ export function BalanceSummary({ report, loading, error }: BalanceSummaryProps) 
           )}
 
           {!lastRecorded && lastExpected && (
-            <div className="rounded-2xl border border-white/55 bg-white/60 px-4 py-3 text-slate-600">
+            <div className="rounded-2xl border border-white/55 bg-base-100/60 px-4 py-3 text-slate-600">
               Saldo esperado del último día ({dayjs(lastExpected.date).format("DD-MM-YYYY")}):
               <span className="ml-2 font-semibold text-slate-800">{fmtCLP(lastExpected.expectedBalance!)}</span>
             </div>

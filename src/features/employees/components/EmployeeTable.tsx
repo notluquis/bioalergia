@@ -133,7 +133,7 @@ export default function EmployeeTable({ employees, loading, onEdit, onDeactivate
           ))}
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-[var(--brand-primary)]/15 bg-white shadow-sm">
+      <div className="overflow-hidden rounded-2xl border border-[var(--brand-primary)]/15 bg-base-100 shadow-sm">
         <div className="overflow-x-auto muted-scrollbar">
           <table className="min-w-full text-sm">
             <thead className="bg-[var(--brand-primary)]/10 text-[var(--brand-primary)]">

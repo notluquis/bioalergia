@@ -116,7 +116,7 @@ export default function ServicesUnifiedAgenda({
 
   return (
     <section className="space-y-4">
-      <header className="glass-card glass-underlay-gradient grid gap-4 border border-white/40 p-4 text-sm text-slate-600 sm:grid-cols-3">
+      <header className="grid gap-4 border border-white/40 p-4 text-sm text-slate-600 sm:grid-cols-3 bg-base-100">
         <div>
           <p className="text-xs uppercase tracking-wide text-slate-500">Pagos hoy</p>
           <p className="text-xl font-semibold text-slate-800">{currencyFormatter.format(totals.day)}</p>
@@ -131,7 +131,7 @@ export default function ServicesUnifiedAgenda({
         </div>
       </header>
 
-      <div className="glass-card glass-underlay-gradient space-y-3 border border-white/40 p-4 text-sm text-slate-600">
+      <div className="space-y-3 border border-white/40 p-4 text-sm text-slate-600 bg-base-100">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Agenda unificada</h2>
@@ -151,12 +151,13 @@ export default function ServicesUnifiedAgenda({
             return (
               <article
                 key={group.dateKey}
-                className="rounded-2xl border border-white/45 bg-white/70 shadow-sm transition hover:border-[var(--brand-primary)]/35"
+                className="rounded-2xl border border-white/45 bg-base-100/70 shadow-sm transition hover:border-[var(--brand-primary)]/35"
               >
-                <button
+                <Button
                   type="button"
-                  onClick={() => toggle(group.dateKey)}
+                  variant="secondary"
                   className="flex w-full items-center justify-between gap-4 px-4 py-3 text-left"
+                  onClick={() => toggle(group.dateKey)}
                 >
                   <div>
                     <p className="text-sm font-semibold text-slate-700 capitalize">{group.label}</p>
@@ -169,14 +170,14 @@ export default function ServicesUnifiedAgenda({
                       {currencyFormatter.format(group.total)}
                     </span>
                     <span
-                      className={`inline-flex h-7 w-7 items-center justify-center rounded-full border border-white/60 bg-white/70 text-xs font-semibold text-slate-500 transition-transform ${
+                      className={`inline-flex h-7 w-7 items-center justify-center rounded-full border border-white/60 bg-base-100/70 text-xs font-semibold text-slate-500 transition-transform ${
                         isExpanded ? "rotate-180" : ""
                       }`}
                     >
                       ⌃
                     </span>
                   </div>
-                </button>
+                </Button>
                 {isExpanded && (
                   <div className="space-y-2 border-t border-white/55 px-4 py-3">
                     {group.entries.map(({ service, schedule }) => {
@@ -186,7 +187,7 @@ export default function ServicesUnifiedAgenda({
                       return (
                         <div
                           key={`${service.public_id}-${schedule.id}`}
-                          className="rounded-xl border border-white/50 bg-white/80 p-3 shadow-inner transition hover:border-[var(--brand-primary)]/40"
+                          className="rounded-xl border border-white/50 bg-base-100/80 p-3 shadow-inner transition hover:border-[var(--brand-primary)]/40"
                         >
                           <div className="flex flex-wrap items-center justify-between gap-3">
                             <div>

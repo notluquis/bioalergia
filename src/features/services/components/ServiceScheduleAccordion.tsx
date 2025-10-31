@@ -93,7 +93,7 @@ export default function ServiceScheduleAccordion({
 
   if (!groups.length) {
     return (
-      <section className="space-y-3 rounded-2xl border border-white/55 bg-white/55 p-4 text-sm text-slate-600">
+          <section className="space-y-3 rounded-2xl border border-white/55 bg-base-100/55 p-4 text-sm text-slate-600">
         <header className="flex items-center justify-between">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
             Agenda de vencimientos
@@ -105,7 +105,7 @@ export default function ServiceScheduleAccordion({
   }
 
   return (
-    <section className="space-y-3 rounded-2xl border border-white/55 bg-white/55 p-4 text-sm text-slate-600">
+    <section className="space-y-3 rounded-2xl border border-white/55 bg-base-100/55 p-4 text-sm text-slate-600">
       <header className="flex items-center justify-between">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
           Agenda de vencimientos
@@ -118,11 +118,11 @@ export default function ServiceScheduleAccordion({
         {groups.map((group) => {
           const isExpanded = expanded[group.dateKey] ?? false;
           return (
-            <article key={group.dateKey} className="rounded-xl border border-white/50 bg-white/65 shadow-sm">
+            <article key={group.dateKey} className="rounded-xl border border-white/50 bg-base-100/65 shadow-sm">
               <button
                 type="button"
                 onClick={() => toggleGroup(group.dateKey)}
-                className="flex w-full items-center justify-between gap-4 px-4 py-3 text-left transition-colors hover:bg-white/70"
+                className="flex w-full items-center justify-between gap-4 px-4 py-3 text-left transition-colors hover:bg-base-100/70"
               >
                 <div>
                   <p className="text-sm font-semibold text-slate-700 capitalize">{group.label}</p>
@@ -131,7 +131,7 @@ export default function ServiceScheduleAccordion({
                   </p>
                 </div>
                 <span
-                  className={`inline-flex h-7 w-7 items-center justify-center rounded-full border border-white/60 bg-white/70 text-xs font-semibold text-slate-500 transition-transform ${
+                  className={`inline-flex h-7 w-7 items-center justify-center rounded-full border border-white/60 bg-base-100/70 text-xs font-semibold text-slate-500 transition-transform ${
                     isExpanded ? "rotate-180" : ""
                   }`}
                 >
@@ -153,7 +153,7 @@ export default function ServiceScheduleAccordion({
                   return (
                     <div
                       key={item.id}
-                      className="rounded-xl border border-white/50 bg-white/80 p-3 shadow-inner transition hover:border-[var(--brand-primary)]/40"
+                      className="rounded-xl border border-white/50 bg-base-100/80 p-3 shadow-inner transition hover:border-[var(--brand-primary)]/40"
                     >
                       <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>

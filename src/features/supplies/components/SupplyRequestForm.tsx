@@ -82,7 +82,7 @@ export default function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyR
       : [];
 
   return (
-    <div className="mb-8 p-6 bg-white shadow-md rounded-lg">
+    <div className="mb-8 p-6 bg-base-100 shadow-md rounded-lg">
       <h2 className="text-xl font-semibold mb-4">Solicitar Nuevo Insumo</h2>
       {successMessage && <Alert variant="success">{successMessage}</Alert>}
       {errorMessage && <Alert variant="error">{errorMessage}</Alert>}

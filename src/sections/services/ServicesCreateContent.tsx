@@ -3,6 +3,7 @@ import CollapsibleSection from "../../components/CollapsibleSection";
 import ServiceTemplateGallery from "../../features/services/components/ServiceTemplateGallery";
 import ServiceForm from "../../features/services/components/ServiceForm";
 import Modal from "../../components/Modal";
+import Button from "../../components/Button";
 import { useServicesOverview } from "../../features/services/hooks/useServicesOverview";
 
 export default function ServicesCreateContent() {
@@ -35,13 +36,9 @@ export default function ServicesCreateContent() {
         title="Crear servicio manualmente"
         defaultOpen
         actions={
-          <button
-            type="button"
-            className="rounded-full border border-white/60 bg-white/70 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[var(--brand-primary)] shadow hover:border-[var(--brand-primary)]/45"
-            onClick={openCreateModal}
-          >
+          <Button type="button" variant="secondary" size="sm" onClick={openCreateModal}>
             Abrir formulario
-          </button>
+          </Button>
         }
       >
         <p className="text-xs text-slate-400">Completa manualmente si ninguna plantilla aplica.</p>

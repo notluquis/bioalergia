@@ -2,6 +2,7 @@ import dayjs from "dayjs";
 import { useMemo } from "react";
 import { useTable } from "../../../hooks";
 import Button from "../../../components/Button";
+import Checkbox from "../../../components/Checkbox";
 import { fmtCLP } from "../../../lib/format";
 import { COLUMN_DEFS, type ColumnKey } from "../constants";
 import type { LedgerRow } from "../types";
@@ -112,27 +113,25 @@ export function TransactionsTable({
       <div className="flex flex-wrap gap-2">
         <span className="text-xs font-semibold text-slate-600">Mostrar columnas:</span>
         {COLUMN_DEFS.map((column) => (
-          <label key={column.key} className="flex items-center gap-1 text-xs">
-            <input
-              type="checkbox"
-              checked={isColumnVisible(column.key)}
-              onChange={() => toggleColumn(column.key)}
-              className="rounded"
-            />
-            <span className="text-slate-600">{column.label}</span>
-          </label>
+          <Checkbox
+            key={column.key}
+            checked={isColumnVisible(column.key)}
+            onChange={() => toggleColumn(column.key)}
+            className="text-xs"
+            label={column.label}
+          />
         ))}
       </div>
 
-      <div className="glass-card glass-underlay-gradient overflow-hidden">
+      <div className="overflow-hidden bg-base-100">
         <div className="overflow-x-auto muted-scrollbar">
           <table className="min-w-full text-sm text-slate-600">
-            <thead className="bg-white/55 text-[var(--brand-primary)] backdrop-blur-md">
+            <thead className="bg-base-100/55 text-[var(--brand-primary)] backdrop-blur-md">
               <tr>
                 {visibleColumns.map((column) => (
                   <th
                     key={column.key}
-                    className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide cursor-pointer hover:bg-white/70 whitespace-nowrap"
+                    className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide cursor-pointer hover:bg-base-100/70 whitespace-nowrap"
                     {...getSortProps(column.key)}
                   >
                     {column.label} {getSortIcon(column.key)}
@@ -144,7 +143,7 @@ export function TransactionsTable({
               {displayedRows.map((row) => (
                 <tr
                   key={row.id}
-                  className="border-b border-white/40 bg-white/40 text-slate-700 transition-colors last:border-none even:bg-white/25 hover:bg-[var(--brand-primary)]/10"
+                  className="border-b border-white/40 bg-base-100/40 text-slate-700 transition-colors last:border-none even:bg-base-100/25 hover:bg-[var(--brand-primary)]/10"
                 >
                   {visibleColumns.map((column) => (
                     <td key={column.key} className="px-4 py-3">
@@ -172,7 +171,7 @@ export function TransactionsTable({
         </div>
 
         {/* Pagination */}
-        <div className="flex flex-wrap items-center justify-between gap-4 border-t border-white/40 bg-white/45 px-4 py-3 text-xs text-slate-600">
+        <div className="flex flex-wrap items-center justify-between gap-4 border-t border-white/40 bg-base-100/45 px-4 py-3 text-xs text-slate-600">
           <div className="font-semibold text-slate-600/90">
             Página {pageInfo.start} - {pageInfo.end} de {pageInfo.total} movimientos
           </div>
@@ -185,7 +184,7 @@ export function TransactionsTable({
                   const newSize = Number(event.target.value);
                   handlePageSizeChange(newSize);
                 }}
-                className="glass-input py-1 text-xs"
+                className="select select-bordered py-1 text-xs"
               >
                 {tablePageSizeOptions.map((size) => (
                   <option key={size} value={size}>

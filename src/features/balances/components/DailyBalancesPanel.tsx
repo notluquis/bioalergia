@@ -17,7 +17,7 @@ type Props = {
 
 export function DailyBalancesPanel({ report, drafts, onDraftChange, onSave, saving, loading, error }: Props) {
   return (
-    <section className="glass-card glass-underlay-gradient space-y-4 p-6">
+    <section className="space-y-4 p-6 bg-base-100">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1">
           <h2 className="text-lg font-semibold text-[var(--brand-primary)] drop-shadow-sm">Saldos diarios</h2>
@@ -26,7 +26,7 @@ export function DailyBalancesPanel({ report, drafts, onDraftChange, onSave, savi
           </p>
         </div>
         {report?.previous && (
-          <div className="rounded-xl border border-white/55 bg-white/60 px-4 py-2 text-xs font-medium text-slate-600 shadow-inner">
+          <div className="rounded-xl border border-white/55 bg-base-100/60 px-4 py-2 text-xs font-medium text-slate-600 shadow-inner">
             Saldo cierre previo ({dayjs(report.previous.date).format("DD-MM-YYYY")})
             <span className="ml-2 font-semibold text-slate-800">{fmtCLP(report.previous.balance)}</span>
           </div>
@@ -50,7 +50,7 @@ export function DailyBalancesPanel({ report, drafts, onDraftChange, onSave, savi
       ) : (
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm text-slate-700">
-            <thead className="bg-white/60 text-[var(--brand-primary)]">
+            <thead className="bg-base-100/60 text-[var(--brand-primary)]">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide">Fecha</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide">Ingresos</th>
@@ -76,9 +76,9 @@ export function DailyBalancesPanel({ report, drafts, onDraftChange, onSave, savi
 
                 return (
                   <tr
-                    key={day.date}
-                    className="align-top border-b border-white/40 bg-white/45 last:border-none even:bg-white/35"
-                  >
+                      key={day.date}
+                      className="align-top border-b border-white/40 bg-base-100/45 last:border-none even:bg-base-100/35"
+                    >
                     <td className="whitespace-nowrap px-4 py-3 font-medium text-slate-700">
                       <div className="flex flex-col gap-1">
                         <span>{dayjs(day.date).format("DD-MM-YYYY")}</span>
@@ -104,7 +104,7 @@ export function DailyBalancesPanel({ report, drafts, onDraftChange, onSave, savi
                         type="text"
                         value={draft.value}
                         onChange={(event) => onDraftChange(day.date, { value: event.target.value })}
-                        className="glass-input w-full text-sm"
+                        className="input input-bordered w-full text-sm"
                         placeholder="0"
                       />
                     </td>
@@ -120,7 +120,7 @@ export function DailyBalancesPanel({ report, drafts, onDraftChange, onSave, savi
                         rows={2}
                         value={draft.note}
                         onChange={(event) => onDraftChange(day.date, { note: event.target.value })}
-                        className="glass-input w-full text-xs"
+                        className="textarea textarea-bordered w-full text-xs"
                         placeholder="Comentario opcional"
                       />
                     </td>

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import type { ChangeEvent } from "react";
 import dayjs from "dayjs";
 import Button from "../../../components/Button";
@@ -38,10 +38,13 @@ export function ServiceDetail({
   onRegisterPayment,
   onUnlinkPayment,
 }: ServiceDetailProps) {
+  
   const [regenerateOpen, setRegenerateOpen] = useState(false);
   const [regenerateForm, setRegenerateForm] = useState<RegenerateServicePayload>({});
   const [regenerating, setRegenerating] = useState(false);
   const [regenerateError, setRegenerateError] = useState<string | null>(null);
+  const navigate = useNavigate();
+  
 
   const statusBadge = useMemo(() => {
     if (!service) return { label: "", className: "" };
@@ -159,14 +162,14 @@ export function ServiceDetail({
 
   if (!service) {
     return (
-      <section className="glass-card glass-underlay-gradient flex h-full flex-col items-center justify-center rounded-3xl p-10 text-sm text-slate-500">
+      <section className="flex h-full flex-col items-center justify-center rounded-3xl p-10 text-sm text-slate-500 bg-base-100">
         <p>Selecciona un servicio para ver el detalle.</p>
       </section>
     );
   }
 
   return (
-    <section className="glass-card glass-underlay-gradient relative flex h-full flex-col gap-6 rounded-3xl p-6">
+    <section className="relative flex h-full flex-col gap-6 rounded-3xl p-6 bg-base-100">
       <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="space-y-1">
           <h1 className="text-2xl font-bold text-[var(--brand-primary)] drop-shadow-sm">{service.name}</h1>
@@ -192,17 +195,14 @@ export function ServiceDetail({
             </Button>
           )}
           {canManage && (
-            <Link
-              to={`/services/${service.public_id}/edit`}
-              className="rounded-full border border-white/60 bg-white/65 px-3 py-1 text-xs font-semibold text-slate-600 transition hover:border-[var(--brand-primary)]/40 hover:text-[var(--brand-primary)]"
-            >
+            <Button type="button" variant="secondary" onClick={() => navigate(`/services/${service.public_id}/edit`)}>
               Editar servicio
-            </Link>
+            </Button>
           )}
         </div>
       </header>
 
-      <section className="grid gap-4 rounded-2xl border border-white/55 bg-white/55 p-4 text-sm text-slate-600 sm:grid-cols-3 lg:grid-cols-5">
+      <section className="grid gap-4 rounded-2xl border border-white/55 bg-base-100/55 p-4 text-sm text-slate-600 sm:grid-cols-3 lg:grid-cols-5">
         <div>
           <p className="text-xs uppercase tracking-wide text-slate-400">Monto base</p>
           <p className="text-lg font-semibold text-slate-800">${service.default_amount.toLocaleString("es-CL")}</p>
@@ -234,7 +234,7 @@ export function ServiceDetail({
         </div>
       </section>
 
-      <section className="grid gap-4 rounded-2xl border border-white/55 bg-white/55 p-4 text-sm text-slate-600 md:grid-cols-3">
+      <section className="grid gap-4 rounded-2xl border border-white/55 bg-base-100/55 p-4 text-sm text-slate-600 md:grid-cols-3">
         <div>
           <p className="text-xs uppercase tracking-wide text-slate-400">Contraparte</p>
           <p className="font-semibold text-slate-700">{counterpartSummary}</p>
@@ -283,7 +283,7 @@ export function ServiceDetail({
       />
 
       {service.notes && (
-        <div className="rounded-2xl border border-white/55 bg-white/55 p-4 text-sm text-slate-600">
+        <div className="rounded-2xl border border-white/55 bg-base-100/55 p-4 text-sm text-slate-600">
           <p className="text-xs uppercase tracking-wide text-slate-400">Notas</p>
           <p>{service.notes}</p>
         </div>
@@ -383,8 +383,8 @@ export function ServiceDetail({
       </Modal>
 
       {loading && (
-        <div className="absolute inset-0 z-30 flex items-center justify-center bg-white/40 backdrop-blur-sm">
-          <p className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-[var(--brand-primary)] shadow">
+        <div className="absolute inset-0 z-30 flex items-center justify-center bg-base-100/40 backdrop-blur-sm">
+          <p className="rounded-full bg-base-100 px-4 py-2 text-sm font-semibold text-[var(--brand-primary)] shadow">
             Cargando servicio...
           </p>
         </div>

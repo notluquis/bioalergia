@@ -76,7 +76,7 @@ export default function AccessSettingsPage() {
 
   return (
     <div className="space-y-6">
-      <section className="glass-card glass-underlay-gradient space-y-4 p-6">
+      <section className="bg-base-100 space-y-4 p-6">
         <div className="space-y-1">
           <h2 className="text-lg font-semibold text-[var(--brand-primary)] drop-shadow-sm">Accesos rápidos</h2>
           <p className="text-sm text-slate-600/90">
@@ -89,7 +89,7 @@ export default function AccessSettingsPage() {
               key={link.label}
               onClick={() => link.href && window.open(link.href, "_blank", "noopener,noreferrer")}
               disabled={!link.href}
-              className="flex flex-col rounded-2xl border border-white/45 bg-white/70 px-4 py-3 text-left text-sm text-slate-600 transition hover:border-[var(--brand-primary)]/35 hover:bg-[var(--brand-primary)]/10 hover:text-[var(--brand-primary)] disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex flex-col rounded-2xl border border-white/45 bg-base-100/70 px-4 py-3 text-left text-sm text-slate-600 transition hover:border-[var(--brand-primary)]/35 hover:bg-[var(--brand-primary)]/10 hover:text-[var(--brand-primary)] disabled:cursor-not-allowed disabled:opacity-60"
             >
               <span className="font-semibold text-slate-700">{link.label}</span>
               <span className="text-xs text-slate-500">{link.description}</span>
@@ -98,7 +98,7 @@ export default function AccessSettingsPage() {
         </div>
       </section>
 
-      <form onSubmit={handleSubmit} className="glass-card glass-underlay-gradient space-y-5 p-6">
+      <form onSubmit={handleSubmit} className="bg-base-100 space-y-5 p-6">
         <div className="space-y-1">
           <h2 className="text-lg font-semibold text-[var(--brand-secondary)] drop-shadow-sm">Detalle de conexiones</h2>
           <p className="text-sm text-slate-600/90">
@@ -113,7 +113,7 @@ export default function AccessSettingsPage() {
               type="text"
               value={form.dbDisplayHost}
               onChange={(event) => handleChange("dbDisplayHost", event.target.value)}
-              className="glass-input"
+              className="input input-bordered"
               placeholder="Ej: db.bioalergia.cl"
             />
           </label>
@@ -123,7 +123,7 @@ export default function AccessSettingsPage() {
               type="text"
               value={form.dbDisplayName}
               onChange={(event) => handleChange("dbDisplayName", event.target.value)}
-              className="glass-input"
+              className="input input-bordered"
               placeholder="Ej: bio_finanzas"
             />
           </label>
@@ -133,7 +133,7 @@ export default function AccessSettingsPage() {
               type="url"
               value={form.dbConsoleUrl}
               onChange={(event) => handleChange("dbConsoleUrl", event.target.value)}
-              className="glass-input"
+              className="input input-bordered"
               placeholder="https://"
             />
             <span className="text-xs text-slate-400">Se normaliza automáticamente para incluir https://</span>
@@ -144,19 +144,19 @@ export default function AccessSettingsPage() {
               type="url"
               value={form.cpanelUrl}
               onChange={(event) => handleChange("cpanelUrl", event.target.value)}
-              className="glass-input"
+              className="input input-bordered"
               placeholder="https://"
             />
           </label>
         </div>
 
         {error && (
-          <p className="glass-card border-l-4 border-rose-300/80 bg-gradient-to-r from-rose-50/65 via-white/70 to-white/55 px-4 py-3 text-sm text-rose-700">
+          <p className="border-l-4 border-rose-300/80 bg-gradient-to-r from-rose-50/65 via-white/70 to-white/55 px-4 py-3 text-sm text-rose-700">
             {error}
           </p>
         )}
         {status === "success" && !error && (
-          <p className="glass-card border-l-4 border-emerald-300/80 bg-gradient-to-r from-emerald-50/70 via-white/70 to-white/55 px-4 py-3 text-sm text-emerald-700">
+          <p className="border-l-4 border-emerald-300/80 bg-gradient-to-r from-emerald-50/70 via-white/70 to-white/55 px-4 py-3 text-sm text-emerald-700">
             Accesos actualizados correctamente.
           </p>
         )}

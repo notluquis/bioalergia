@@ -81,14 +81,14 @@ export default function RoleMappingManager() {
 
   if (loading) {
     return (
-      <div className="glass-card glass-underlay-gradient p-6 text-sm text-[var(--brand-primary)]">
+      <div className="p-6 text-sm text-[var(--brand-primary)] bg-base-100">
         Cargando configuración de roles...
       </div>
     );
   }
 
   return (
-    <section className="glass-card glass-underlay-gradient space-y-5 p-6">
+    <section className="space-y-5 p-6 bg-base-100">
       <div className="space-y-1">
         <h2 className="text-lg font-semibold text-[var(--brand-primary)] drop-shadow-sm">Gobernanza de Roles</h2>
         <p className="text-sm text-slate-600/90">
@@ -98,7 +98,7 @@ export default function RoleMappingManager() {
 
       {error && <p className="text-sm text-rose-600">{error}</p>}
 
-      <div className="divide-y divide-white/45 rounded-2xl border border-white/55 bg-white/55">
+      <div className="divide-y divide-white/45 rounded-2xl border border-white/55 bg-base-100/55">
         {mappings.map((mapping) => (
           <div
             key={mapping.employee_role}
@@ -108,7 +108,7 @@ export default function RoleMappingManager() {
             <select
               value={mapping.app_role}
               onChange={(e) => handleRoleChange(mapping.employee_role, e.target.value as UserRole)}
-              className="glass-input text-sm"
+              className="select select-bordered text-sm"
             >
               {APP_ROLES.map((role) => (
                 <option key={role} value={role}>

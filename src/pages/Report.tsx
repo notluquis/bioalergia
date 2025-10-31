@@ -24,14 +24,14 @@ export default function Report() {
 
   return (
     <section className="space-y-6">
-      <div className="glass-card glass-underlay-gradient space-y-2 p-6">
+      <div className="bg-base-100 space-y-2 p-6">
         <h1 className="text-2xl font-bold text-[var(--brand-primary)] drop-shadow-sm">Reporte financiero</h1>
         <p className="text-sm text-slate-600/90">
           Visualiza y valida un CSV antes de cargarlo en la base. Ajusta el saldo inicial para obtener la evolución al
           instante.
         </p>
       </div>
-      <div className="glass-card glass-underlay-gradient space-y-3 p-6 text-sm">
+      <div className="bg-base-100 space-y-3 p-6 text-sm">
         <p>
           Genera el <strong>Account balance report</strong> desde el panel de Mercado Pago y súbelo para ver los
           movimientos IN/OUT.

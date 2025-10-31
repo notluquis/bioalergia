@@ -5,6 +5,11 @@ import tailwindcss from "@tailwindcss/vite";
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  // Ensure process.env.NODE_ENV is available inside the client bundle.
+  // Vite sets NODE_ENV based on the current mode (development/production).
+  define: {
+    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
+  },
   build: {
     modulePreload: false,
     outDir: "dist/client",

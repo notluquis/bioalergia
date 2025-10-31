@@ -1,5 +1,6 @@
 import dayjs from "dayjs";
 import type { MonthlyExpense } from "../types";
+import Button from "../../../components/Button";
 
 interface MonthlyExpenseListProps {
   expenses: MonthlyExpense[];
@@ -17,13 +18,9 @@ export default function MonthlyExpenseList({ expenses, selectedId, onSelect, onC
           <p className="text-xs text-slate-400">Registros de gastos mensuales y puntuales.</p>
         </div>
         {onCreateRequest && (
-          <button
-            type="button"
-            onClick={onCreateRequest}
-            className="rounded-full border border-white/60 bg-white/70 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[var(--brand-primary)] shadow hover:border-[var(--brand-primary)]/45"
-          >
+          <Button type="button" variant="secondary" size="sm" onClick={onCreateRequest}>
             Nuevo
-          </button>
+          </Button>
         )}
       </div>
       <div className="space-y-3">
@@ -37,7 +34,7 @@ export default function MonthlyExpenseList({ expenses, selectedId, onSelect, onC
               className={`w-full rounded-2xl border px-4 py-3 text-left transition-all ${
                 isActive
                   ? "border-[var(--brand-primary)]/40 bg-[var(--brand-primary)]/15 text-[var(--brand-primary)] shadow"
-                  : "border-transparent bg-white/55 text-slate-600 hover:border-white/60 hover:bg-white/70"
+                  : "border-transparent bg-base-100/55 text-slate-600 hover:border-white/60 hover:bg-base-100/70"
               }`}
             >
               <div className="flex items-center justify-between gap-3">
@@ -58,7 +55,7 @@ export default function MonthlyExpenseList({ expenses, selectedId, onSelect, onC
           );
         })}
         {!expenses.length && (
-          <p className="rounded-2xl border border-dashed border-white/60 bg-white/40 p-4 text-xs text-slate-500">
+          <p className="rounded-2xl border border-dashed border-white/60 bg-base-100/40 p-4 text-xs text-slate-500"> 
             Aún no registras gastos. Crea el primero para llevar control mensual.
           </p>
         )}

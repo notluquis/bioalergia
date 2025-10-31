@@ -15,7 +15,7 @@ export default function TransactionUploadForm() {
   });
 
   return (
-    <div className="space-y-4 rounded-2xl border border-[var(--brand-primary)]/15 bg-white p-6 text-sm shadow-sm">
+    <div className="space-y-4 rounded-2xl border border-[var(--brand-primary)]/15 bg-base-100 p-6 text-sm shadow-sm">
       <FileInput
         label="Selecciona uno o varios archivos CSV de Mercado Pago"
         accept=".csv,.txt"

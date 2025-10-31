@@ -76,7 +76,7 @@ export function MultiSelectFilter({
       <span className="font-semibold uppercase tracking-wide text-slate-600/90">{label}</span>
       <button
         type="button"
-        className="glass-input flex h-12 w-full cursor-pointer select-none items-center justify-between gap-3 text-sm text-slate-600"
+        className="input input-bordered flex h-12 w-full cursor-pointer select-none items-center justify-between gap-3 text-sm text-slate-600"
         aria-haspopup="true"
         aria-expanded={isOpen}
         onClick={toggle}
@@ -97,7 +97,7 @@ export function MultiSelectFilter({
         </svg>
       </button>
       {isOpen && (
-        <div className="absolute z-20 mt-2 w-full space-y-2 rounded-2xl border border-white/60 bg-white/95 p-3 shadow-lg">
+        <div className="absolute z-20 mt-2 w-full space-y-2 rounded-2xl border border-white/60 bg-base-100/95 p-3 shadow-lg">
           {options.length === 0 ? (
             <p className="text-[11px] text-slate-400">Sin datos disponibles</p>
           ) : (
@@ -108,7 +108,7 @@ export function MultiSelectFilter({
                 <label key={option.value} className="flex items-center gap-3 text-xs text-slate-600">
                   <input
                     type="checkbox"
-                    className="h-4 w-4"
+                    className="checkbox checkbox-primary"
                     checked={selected.includes(option.value)}
                     onChange={() => onToggle(option.value)}
                   />

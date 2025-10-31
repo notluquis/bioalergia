@@ -207,11 +207,11 @@ export default function ServiceEditPage() {
 
       {service && (
         <div className="grid gap-6 lg:grid-cols-[320px,minmax(0,1fr)]">
-          <aside className="glass-card glass-underlay-gradient space-y-4 border border-white/40 p-4 text-sm text-slate-600">
+          <aside className="bg-base-100 space-y-4 border border-white/40 p-4 text-sm text-slate-600">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Resumen</h2>
             <div className="space-y-3">
               {summaryCards.map((card) => (
-                <div key={card.label} className="rounded-2xl border border-white/45 bg-white/70 p-3">
+                <div key={card.label} className="rounded-2xl border border-white/45 bg-base-100/70 p-3">
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{card.label}</p>
                   <p className="mt-1 text-lg font-semibold text-slate-800">{card.value}</p>
                   {card.helper && <p className="text-[11px] text-slate-400">{card.helper}</p>}
@@ -222,7 +222,7 @@ export default function ServiceEditPage() {
               <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">Historial</h3>
               <ol className="space-y-2 text-xs text-slate-500">
                 {historyItems.map((item) => (
-                  <li key={item.title} className="rounded-xl border border-white/45 bg-white/70 p-3">
+                  <li key={item.title} className="rounded-xl border border-white/45 bg-base-100/70 p-3">
                     <p className="font-semibold text-slate-700">{item.title}</p>
                     {item.description && <p className="text-[11px] text-slate-400">{item.description}</p>}
                     <p className="text-[10px] uppercase tracking-wide text-slate-300">{item.date}</p>
@@ -233,7 +233,7 @@ export default function ServiceEditPage() {
           </aside>
 
           <div className="space-y-6">
-            <section className="glass-card glass-underlay-gradient border border-white/40 p-6">
+            <section className="bg-base-100 border border-white/40 p-6">
               <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Datos generales</h2>
               {initialValues && (
                 <ServiceForm

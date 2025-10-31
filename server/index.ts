@@ -1,3 +1,62 @@
+// Load .env early and support expansion of values written as ${{VAR}} -> ${VAR}
+import fs from 'fs';
+import dotenv from 'dotenv';
+import dotenvExpand from 'dotenv-expand';
+
+try {
+  const envPath = process.env.DOTENV_CONFIG_PATH || '.env';
+  if (fs.existsSync(envPath)) {
+    let raw = fs.readFileSync(envPath, 'utf8');
+    // Convert ${{VAR}} (double-brace) into ${VAR} so dotenv can expand it
+    raw = raw.replace(/\$\{\{\s*([A-Z0-9_]+)\s*\}\}/g, '${$1}');
+    const parsed = dotenv.parse(raw);
+    // Merge parsed values into process.env but don't overwrite existing env vars
+    Object.keys(parsed).forEach((k) => {
+      if (process.env[k] === undefined) process.env[k] = parsed[k];
+    });
+    // Allow expansion of references (e.g. VAR=${OTHER_VAR}).
+    // Some CI/local .env files may use different ordering; perform a safe, iterative
+    // expansion over the parsed values so ${VAR} and previously-defined keys expand.
+    const expandOnce = (input: string, ctx: Record<string, string | undefined>) =>
+      input.replace(/\$\{([A-Z0-9_]+)\}/g, (_m, name) => ctx[name] ?? process.env[name] ?? '');
+
+    const expandIterative = (obj: Record<string, string>) => {
+      const maxRounds = 5;
+      for (let i = 0; i < maxRounds; i++) {
+        let changed = false;
+        Object.keys(obj).forEach((k) => {
+          const before = obj[k];
+          const after = expandOnce(before, obj);
+          if (after !== before) {
+            obj[k] = after;
+            changed = true;
+          }
+        });
+        if (!changed) break;
+      }
+    };
+
+    try {
+      expandIterative(parsed);
+      // Propagate expanded values into process.env (overwrite to ensure expansion wins).
+      Object.keys(parsed).forEach((k) => {
+        process.env[k] = parsed[k];
+      });
+    } catch (e) {
+      // fallback to dotenv-expand if available
+      try { (dotenvExpand as any)({ parsed: parsed as Record<string, string> }); } catch (_) { /* ignore */ }
+    }
+  } else {
+    // fallback to normal dotenv behaviour
+    const res = dotenv.config();
+    try { (dotenvExpand as any)(res); } catch (_) { /* ignore */ }
+  }
+} catch (e) {
+  // Do not fail startup just because env parsing failed; log for debugging
+   
+  console.warn('[startup] .env expansion failed:', e);
+}
+
 import express from "express";
 import multer from "multer";
 import cors from "cors";

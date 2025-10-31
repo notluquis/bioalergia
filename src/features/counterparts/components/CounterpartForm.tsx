@@ -66,7 +66,7 @@ export default function CounterpartForm({ counterpart, onSave, error, saving }: 
   }, [counterpart, form]);
 
   return (
-    <section className="glass-card glass-underlay-gradient space-y-5 p-6">
+    <section className="space-y-5 p-6 bg-base-100">
       <div className="flex flex-col gap-1">
         <h1 className="text-xl font-semibold text-[var(--brand-primary)] drop-shadow-sm">
           {counterpart ? "Editar contraparte" : "Nueva contraparte"}

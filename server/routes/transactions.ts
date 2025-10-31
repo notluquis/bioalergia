@@ -117,63 +117,113 @@ export function registerTransactionRoutes(app: express.Express) {
     })
   );
 
+  // NOTE: legacy server-side CSV upload for withdrawals removed in favor of
+  // client-side parse + preview → import flow. Use:
+  // - POST /api/transactions/withdrawals/preview  (send { ids: string[] })
+  // - POST /api/transactions/withdrawals/import   (send { payouts: PayoutRecord[] })
+
+    // Compatibility wrapper: accept a file upload and perform the same import
+    // flow as the client-side import. This preserves backwards compatibility
+    // for external scripts that still POST files to the old endpoint.
+    app.post(
+      "/api/transactions/withdrawals/upload",
+      authenticate,
+      requireRole("GOD", "ADMIN", "ANALYST"),
+      upload.single("file"),
+      asyncHandler(async (req: AuthenticatedRequest, res) => {
+        if (!req.file) return res.status(400).json({ status: "error", message: "Selecciona un archivo CSV" });
+
+        logEvent("withdrawals/upload-compat:start", requestContext(req, {
+          file: req.file.originalname,
+          size: req.file.size,
+        }));
+
+        const text = req.file.buffer.toString("utf-8");
+        const parsed = Papa.parse<PayoutCsvRow>(text, {
+          header: true,
+          skipEmptyLines: true,
+          transformHeader: (header: string) => header.trim(),
+        });
+
+        if (parsed.errors.length) {
+          const details = parsed.errors.slice(0, 3).map((err: ParseError) => err.message);
+          return res.status(400).json({ status: "error", message: "No se pudo leer el CSV", details });
+        }
+
+        const rows = parsed.data.filter((row: PayoutCsvRow) =>
+          Object.values(row).some((value) => value != null && String(value).trim() !== "")
+        );
+
+        if (!rows.length) return res.status(400).json({ status: "error", message: "El archivo no contiene filas válidas" });
+
+        const payouts = buildPayouts(rows);
+        if (!payouts.length) return res.status(400).json({ status: "error", message: "No se detectaron retiros válidos en el CSV" });
+
+        const result = await upsertWithdrawals(payouts as any);
+
+        logEvent("withdrawals/upload-compat:complete", requestContext(req, {
+          file: req.file.originalname,
+          detected: payouts.length,
+          inserted: result.inserted,
+          updated: result.updated,
+          skipped: (result as any).skipped ?? 0,
+        }));
+
+        res.json({ status: "ok", inserted: result.inserted, updated: result.updated, skipped: (result as any).skipped ?? 0, total: payouts.length });
+      })
+    );
+
+  // Preview existing withdrawals for a set of withdrawIds. The client should
+  // perform CSV parsing and send the extracted withdrawIds here to keep heavy
+  // parsing work on the client.
   app.post(
-    "/api/transactions/withdrawals/upload",
+    "/api/transactions/withdrawals/preview",
     authenticate,
     requireRole("GOD", "ADMIN", "ANALYST"),
-    upload.single("file"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
-      if (!req.file) {
-        return res.status(400).json({ status: "error", message: "Selecciona un archivo CSV" });
+      const ids = Array.isArray(req.body?.ids) ? req.body.ids.map(String).filter(Boolean) : [];
+      if (!ids.length) return res.json({ status: "ok", existing: {} });
+
+      const pool = getPool();
+      const CHUNK = 500;
+      const existing: Record<string, string | null> = {};
+      for (let i = 0; i < ids.length; i += CHUNK) {
+        const chunk = ids.slice(i, i + CHUNK);
+        const placeholders = chunk.map(() => "?").join(",");
+        const [rows] = await pool.query<RowDataPacket[]>(
+          `SELECT withdraw_id, raw_json FROM mp_withdrawals WHERE withdraw_id IN (${placeholders})`,
+          chunk
+        );
+        for (const r of rows) {
+          existing[String(r.withdraw_id)] = r.raw_json == null ? null : String(r.raw_json);
+        }
       }
 
-      logEvent("withdrawals/upload:start", requestContext(req, {
-        file: req.file.originalname,
-        size: req.file.size,
+      res.json({ status: "ok", existing });
+    })
+  );
+
+  // Import payouts provided as JSON (client-side parsed). This avoids re-parsing
+  // the CSV on the server. The payload should be an array of payouts matching
+  // the PayoutRecord shape used by upsertWithdrawals.
+  app.post(
+    "/api/transactions/withdrawals/import",
+    authenticate,
+    requireRole("GOD", "ADMIN", "ANALYST"),
+    asyncHandler(async (req: AuthenticatedRequest, res) => {
+      const payouts = Array.isArray(req.body?.payouts) ? req.body.payouts : [];
+      if (!payouts.length) return res.status(400).json({ status: "error", message: "No hay retiros para importar" });
+
+      const result = await upsertWithdrawals(payouts as any);
+
+      logEvent("withdrawals/import:complete", requestContext(req, {
+        imported: result.inserted,
+        updated: result.updated,
+        skipped: (result as any).skipped ?? 0,
+        total: (result as any).total ?? payouts.length,
       }));
 
-      const text = req.file.buffer.toString("utf-8");
-      const parsed = Papa.parse<PayoutCsvRow>(text, {
-        header: true,
-        skipEmptyLines: true,
-        transformHeader: (header: string) => header.trim(),
-      });
-
-      if (parsed.errors.length) {
-        const details = parsed.errors.slice(0, 3).map((err: ParseError) => err.message);
-        return res.status(400).json({ status: "error", message: "No se pudo leer el CSV", details });
-      }
-
-      const rows = parsed.data.filter((row: PayoutCsvRow) =>
-        Object.values(row).some((value) => value != null && String(value).trim() !== "")
-      );
-
-      if (!rows.length) {
-        logWarn("withdrawals/upload:empty", requestContext(req, { file: req.file.originalname }));
-        return res.status(400).json({ status: "error", message: "El archivo no contiene filas válidas" });
-      }
-
-      const payouts = buildPayouts(rows);
-      if (!payouts.length) {
-        logWarn("withdrawals/upload:no-payouts", requestContext(req, { file: req.file.originalname }));
-        return res.status(400).json({ status: "error", message: "No se detectaron retiros válidos en el CSV" });
-      }
-
-      const result = await upsertWithdrawals(payouts);
-
-      logEvent("withdrawals/upload:complete", requestContext(req, {
-        file: req.file.originalname,
-        detected: payouts.length,
-        inserted: result.inserted,
-        updated: result.updated,
-      }));
-
-      res.json({
-        status: "ok",
-        inserted: result.inserted,
-        updated: result.updated,
-        total: payouts.length,
-      });
+      res.json({ status: "ok", ...result, total: (result as any).total ?? payouts.length });
     })
   );
 

@@ -119,7 +119,7 @@ function CalendarDailyPage() {
   const renderDay = (entry: CalendarDayEvents, defaultOpen = false) => (
     <details
       key={entry.date}
-      className="rounded-2xl border border-white/60 bg-white/85 p-4 text-sm text-slate-700 shadow-sm"
+      className="rounded-2xl border border-white/60 bg-base-100/85 p-4 text-sm text-slate-700 shadow-sm"
       open={defaultOpen}
     >
       <summary className="flex cursor-pointer flex-wrap items-center justify-between gap-3 font-semibold text-[var(--brand-primary)]">
@@ -175,7 +175,7 @@ function CalendarDailyPage() {
           return (
             <article
               key={event.eventId}
-              className="rounded-2xl border border-white/50 bg-white/95 p-4 text-sm text-slate-700 shadow-inner"
+              className="rounded-2xl border border-white/50 bg-base-100/95 p-4 text-sm text-slate-700 shadow-inner"
             >
               <header className="flex flex-wrap items-start justify-between gap-3">
                 <div className="flex flex-col gap-1">
@@ -286,7 +286,7 @@ function CalendarDailyPage() {
       </header>
 
       <form
-        className="glass-card glass-underlay-gradient grid gap-4 rounded-2xl border border-[var(--brand-primary)]/15 bg-white/80 p-6 text-xs text-slate-600 shadow-sm md:grid-cols-6"
+        className="grid gap-4 rounded-2xl border border-[var(--brand-primary)]/15 bg-base-100 p-6 text-xs text-slate-600 shadow-sm md:grid-cols-6"
         onSubmit={(event) => {
           event.preventDefault();
           applyFilters();
@@ -352,25 +352,25 @@ function CalendarDailyPage() {
       {error && <Alert variant="error">{error}</Alert>}
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <div className="glass-card glass-underlay-gradient rounded-2xl border border-white/60 p-4 text-sm shadow-sm">
+        <div className="rounded-2xl border border-white/60 bg-base-100 p-4 text-sm shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Días listados</p>
           <p className="mt-2 text-2xl font-semibold text-[var(--brand-primary)]">
             {numberFormatter.format(totals.days)}
           </p>
         </div>
-        <div className="glass-card glass-underlay-gradient rounded-2xl border border-white/60 p-4 text-sm shadow-sm">
+        <div className="rounded-2xl border border-white/60 bg-base-100 p-4 text-sm shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Eventos listados</p>
           <p className="mt-2 text-2xl font-semibold text-[var(--brand-primary)]">
             {numberFormatter.format(totals.events)}
           </p>
         </div>
-        <div className="glass-card glass-underlay-gradient rounded-2xl border border-white/60 p-4 text-sm shadow-sm">
+        <div className="rounded-2xl border border-white/60 bg-base-100 p-4 text-sm shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Monto esperado</p>
           <p className="mt-2 text-2xl font-semibold text-[var(--brand-primary)]">
             {currencyFormatter.format(totals.amountExpected)}
           </p>
         </div>
-        <div className="glass-card glass-underlay-gradient rounded-2xl border border-white/60 p-4 text-sm shadow-sm">
+        <div className="rounded-2xl border border-white/60 bg-base-100 p-4 text-sm shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Monto pagado</p>
           <p className="mt-2 text-2xl font-semibold text-[var(--brand-primary)]">
             {currencyFormatter.format(totals.amountPaid)}

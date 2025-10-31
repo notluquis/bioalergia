@@ -82,7 +82,7 @@ export default function Home() {
 
   return (
     <section className="space-y-6">
-      <header className="glass-card glass-underlay-gradient space-y-2 p-6">
+      <header className="bg-base-100 space-y-2 p-6">
         <h1 className="text-2xl font-bold text-[var(--brand-primary)] drop-shadow-sm">Panel financiero</h1>
         <p className="text-sm text-slate-600/90">
           Resumen rápido de los últimos {RANGE_DAYS} días con accesos directos a tus vistas principales.

@@ -29,7 +29,7 @@ export default function MonthlyExpenseDetail({
   }
 
   return (
-    <section className="glass-card glass-underlay-gradient space-y-4 border border-white/40 p-4 text-sm text-slate-600">
+    <section className="space-y-4 border border-white/40 p-4 text-sm text-slate-600 bg-base-100">
       <header className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <h2 className="text-xl font-semibold text-[var(--brand-primary)]">{expense.name}</h2>
@@ -62,13 +62,13 @@ export default function MonthlyExpenseDetail({
         />
       </div>
 
-      {expense.notes && <p className="rounded-xl bg-white/60 p-3 text-xs text-slate-500">{expense.notes}</p>}
+      {expense.notes && <p className="rounded-xl bg-base-100/60 p-3 text-xs text-slate-500">{expense.notes}</p>}
 
       <section className="space-y-2">
         <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">Transacciones</h3>
         <div className="muted-scrollbar max-h-72 space-y-2 overflow-y-auto pr-1">
           {expense.transactions.map((tx) => (
-            <article key={tx.transactionId} className="rounded-xl border border-white/50 bg-white/80 p-3 shadow-inner">
+            <article key={tx.transactionId} className="rounded-xl border border-white/50 bg-base-100/80 p-3 shadow-inner">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="text-sm font-semibold text-slate-700">ID #{tx.transactionId}</p>
@@ -93,7 +93,7 @@ export default function MonthlyExpenseDetail({
             </article>
           ))}
           {!expense.transactions.length && (
-            <p className="rounded-xl border border-dashed border-white/50 bg-white/60 p-3 text-xs text-slate-500">
+            <p className="rounded-xl border border-dashed border-white/50 bg-base-100/60 p-3 text-xs text-slate-500">
               Aún no se han vinculado transacciones a este gasto.
             </p>
           )}
@@ -105,7 +105,7 @@ export default function MonthlyExpenseDetail({
 
 function DetailCard({ title, value, helper }: { title: string; value: string; helper?: string }) {
   return (
-    <article className="rounded-xl border border-white/45 bg-white/70 p-3 shadow-sm">
+    <article className="rounded-xl border border-white/45 bg-base-100/70 p-3 shadow-sm">
       <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">{title}</p>
       <p className="mt-1 text-lg font-semibold text-slate-800">{value}</p>
       {helper && <p className="text-[11px] text-slate-400">{helper}</p>}

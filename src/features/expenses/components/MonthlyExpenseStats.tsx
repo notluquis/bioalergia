@@ -23,7 +23,7 @@ export default function MonthlyExpenseStats({ stats, loading }: MonthlyExpenseSt
   return (
     <div className="muted-scrollbar max-h-64 space-y-2 overflow-y-auto pr-1 text-xs text-slate-500">
       {stats.map((row) => (
-        <article key={row.period} className="rounded-xl border border-white/45 bg-white/70 p-3 shadow-sm">
+        <article key={row.period} className="rounded-xl border border-white/45 bg-base-100/70 p-3 shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <p className="text-sm font-semibold text-slate-700">{row.period}</p>

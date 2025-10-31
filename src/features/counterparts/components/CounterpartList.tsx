@@ -24,7 +24,7 @@ const CATEGORY_LABELS = CATEGORY_OPTIONS.reduce<Record<string, string>>((acc, it
 
 export default function CounterpartList({ counterparts, selectedId, onSelectCounterpart }: CounterpartListProps) {
   return (
-    <aside className="glass-card glass-underlay-gradient flex h-full flex-col gap-4 p-5 text-sm text-slate-600">
+    <aside className="flex h-full flex-col gap-4 p-5 text-sm text-slate-600 bg-base-100">
       <header className="flex items-center justify-between gap-3">
         <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500/90">Contrapartes</h2>
         <Button size="xs" onClick={() => onSelectCounterpart(null)}>
@@ -36,20 +36,21 @@ export default function CounterpartList({ counterparts, selectedId, onSelectCoun
           const isActive = selectedId === item.id;
           return (
             <li key={item.id}>
-              <button
+              <Button
                 type="button"
+                variant={isActive ? "primary" : "secondary"}
                 onClick={() => onSelectCounterpart(item.id)}
                 className={`group w-full rounded-2xl border px-3 py-2 text-left transition-all ${
-                  isActive
-                    ? "border-white/70 bg-[var(--brand-primary)]/18 text-[var(--brand-primary)] shadow-[0_14px_28px_-22px_rgba(14,100,183,0.8)]"
-                    : "border-transparent bg-white/35 text-slate-600 hover:border-white/60 hover:bg-white/55"
+                    isActive
+                      ? "border-white/70 bg-[var(--brand-primary)]/18 text-[var(--brand-primary)] shadow-[0_14px_28px_-22px_rgba(14,100,183,0.8)]"
+                      : "border-transparent bg-base-100/35 text-slate-600 hover:border-white/60 hover:bg-base-100/55"
                 }`}
               >
                 <span className="flex items-center justify-between gap-2">
                   <span className="block font-medium tracking-tight">{item.name}</span>
                   <span
                     className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
-                      isActive ? "bg-white/70 text-[var(--brand-primary)]" : "bg-white/55 text-slate-500"
+                      isActive ? "bg-base-100/70 text-[var(--brand-primary)]" : "bg-base-100/55 text-slate-500"
                     }`}
                   >
                     {CATEGORY_LABELS[item.category] ?? item.category}
@@ -58,12 +59,12 @@ export default function CounterpartList({ counterparts, selectedId, onSelectCoun
                 {item.rut && (
                   <span className="mt-1 block text-[11px] text-slate-500/90">RUT {formatRut(item.rut)}</span>
                 )}
-              </button>
+              </Button>
             </li>
           );
         })}
         {!counterparts.length && (
-          <li className="rounded-xl border border-white/55 bg-white/60 px-3 py-2 text-xs text-slate-500">
+          <li className="rounded-xl border border-white/55 bg-base-100/60 px-3 py-2 text-xs text-slate-500">
             No hay registros aún.
           </li>
         )}

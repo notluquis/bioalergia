@@ -11,11 +11,11 @@ export default function Clock() {
   }, []);
 
   return (
-    <div className="text-sm font-mono">
-      {time.toLocaleTimeString("es-CL", {
+    <div className="badge badge-ghost text-sm font-mono">{
+      time.toLocaleTimeString("es-CL", {
         hour: "2-digit",
         minute: "2-digit",
-      })}
-    </div>
+      })
+    }</div>
   );
 }
