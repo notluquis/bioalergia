@@ -1,14 +1,14 @@
 // Load .env early and support expansion of values written as ${{VAR}} -> ${VAR}
-import fs from 'fs';
-import dotenv from 'dotenv';
-import dotenvExpand from 'dotenv-expand';
+import fs from "fs";
+import dotenv from "dotenv";
+import dotenvExpand from "dotenv-expand";
 
 try {
-  const envPath = process.env.DOTENV_CONFIG_PATH || '.env';
+  const envPath = process.env.DOTENV_CONFIG_PATH || ".env";
   if (fs.existsSync(envPath)) {
-    let raw = fs.readFileSync(envPath, 'utf8');
+    let raw = fs.readFileSync(envPath, "utf8");
     // Convert ${{VAR}} (double-brace) into ${VAR} so dotenv can expand it
-    raw = raw.replace(/\$\{\{\s*([A-Z0-9_]+)\s*\}\}/g, '${$1}');
+    raw = raw.replace(/\$\{\{\s*([A-Z0-9_]+)\s*\}\}/g, "${$1}");
     const parsed = dotenv.parse(raw);
     // Merge parsed values into process.env but don't overwrite existing env vars
     Object.keys(parsed).forEach((k) => {
@@ -18,7 +18,7 @@ try {
     // Some CI/local .env files may use different ordering; perform a safe, iterative
     // expansion over the parsed values so ${VAR} and previously-defined keys expand.
     const expandOnce = (input: string, ctx: Record<string, string | undefined>) =>
-      input.replace(/\$\{([A-Z0-9_]+)\}/g, (_m, name) => ctx[name] ?? process.env[name] ?? '');
+      input.replace(/\$\{([A-Z0-9_]+)\}/g, (_m, name) => ctx[name] ?? process.env[name] ?? "");
 
     const expandIterative = (obj: Record<string, string>) => {
       const maxRounds = 5;
@@ -42,19 +42,29 @@ try {
       Object.keys(parsed).forEach((k) => {
         process.env[k] = parsed[k];
       });
-    } catch (e) {
+    } catch {
       // fallback to dotenv-expand if available
-      try { (dotenvExpand as any)({ parsed: parsed as Record<string, string> }); } catch (_) { /* ignore */ }
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (dotenvExpand as any)({ parsed: parsed as Record<string, string> });
+      } catch {
+        /* ignore */
+      }
     }
   } else {
     // fallback to normal dotenv behaviour
     const res = dotenv.config();
-    try { (dotenvExpand as any)(res); } catch (_) { /* ignore */ }
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (dotenvExpand as any)(res);
+    } catch {
+      /* ignore */
+    }
   }
 } catch (e) {
   // Do not fail startup just because env parsing failed; log for debugging
-   
-  console.warn('[startup] .env expansion failed:', e);
+
+  console.warn("[startup] .env expansion failed:", e);
 }
 
 import express from "express";
@@ -65,10 +75,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 import { ensureSchema, getPool } from "./db.js";
-import {
-  PORT,
-  isProduction,
-} from "./config.js";
+import { PORT, isProduction } from "./config.js";
 import { registerAuthRoutes } from "./routes/auth.js";
 import { registerSettingsRoutes } from "./routes/settings.js";
 import { registerTransactionRoutes } from "./routes/transactions.js";
@@ -86,6 +93,22 @@ import { registerMonthlyExpenseRoutes } from "./routes/monthly-expenses.js";
 import { ensureUploadStructure, getUploadsRootDir } from "./lib/uploads.js";
 import { startGoogleCalendarScheduler } from "./lib/google-calendar-scheduler.js";
 import { registerCalendarEventRoutes } from "./routes/calendar-events.js";
+
+// Helper para esperar a que la DB esté lista (maneja scale-to-zero en Railway serverless)
+async function waitForDatabase(retries = 6, baseMs = 500) {
+  const pool = getPool();
+  for (let i = 0; i < retries; i++) {
+    try {
+      await pool.execute("SELECT 1");
+      return;
+    } catch {
+      const backoff = baseMs * Math.pow(2, i);
+      console.warn(`[startup] DB not ready yet, retrying in ${backoff}ms (${i + 1}/${retries})`);
+      await new Promise((r) => setTimeout(r, backoff));
+    }
+  }
+  throw new Error("No se pudo conectar a la base de datos tras varios reintentos");
+}
 
 const app = express();
 
@@ -173,8 +196,10 @@ const clientDir = path.resolve(__dirname, "../client");
 if (!process.env.VITE_SKIP_CLIENT_CHECK) {
   try {
     // Lightweight existence check
-    if (!require('fs').existsSync(clientDir)) {
-      console.warn(`[startup] Advertencia: carpeta de cliente no encontrada en ${clientDir}. ¿Olvidaste ejecutar 'npm run build:prod'?`);
+    if (!require("fs").existsSync(clientDir)) {
+      console.warn(
+        `[startup] Advertencia: carpeta de cliente no encontrada en ${clientDir}. ¿Olvidaste ejecutar 'npm run build:prod'?`
+      );
     }
   } catch {
     // ignore
@@ -190,21 +215,19 @@ app.get(/^(?!\/api).*$/, (_req, res) => {
 });
 // --- End Production Frontend Serving ---
 
-interface GenericErrorLike { statusCode?: number; message?: unknown }
+interface GenericErrorLike {
+  statusCode?: number;
+  message?: unknown;
+}
 function isGenericErrorLike(value: unknown): value is GenericErrorLike {
-  return typeof value === 'object' && value !== null;
+  return typeof value === "object" && value !== null;
 }
 
 /**
  * Express error handler middleware.
  * All four parameters must remain in the signature so Express registers it correctly.
  */
-app.use(function errorHandler(
-  err: unknown,
-  req: express.Request,
-  res: express.Response,
-  next: express.NextFunction
-) {
+app.use(function errorHandler(err: unknown, req: express.Request, res: express.Response, next: express.NextFunction) {
   if (!isProduction) {
     logInDevelopment("[errorHandler]", err);
   } else {
@@ -214,7 +237,7 @@ app.use(function errorHandler(
     return next(err);
   }
   let status = 500;
-  let message = 'Error inesperado en el servidor';
+  let message = "Error inesperado en el servidor";
   if (err instanceof multer.MulterError) {
     if (err.code === "LIMIT_FILE_SIZE") {
       status = 413;
@@ -230,26 +253,27 @@ app.use(function errorHandler(
   if (err instanceof Error) {
     message = err.message;
   } else if (isGenericErrorLike(err)) {
-    if (typeof err.message === 'string') message = err.message;
-    if (typeof err.statusCode === 'number') status = err.statusCode;
+    if (typeof err.message === "string") message = err.message;
+    if (typeof err.statusCode === "number") status = err.statusCode;
   }
-  res.status(status).json({ status: 'error', message });
+  res.status(status).json({ status: "error", message });
 });
 
-ensureSchema()
-  .then(() => {
-    app.listen(PORT, () => {
-      console.log('\n🚀 ===== SERVIDOR FINANZAS APP =====');
-      console.log(`📡 API: http://localhost:${PORT}/api/health`);
-      console.log(`🌐 Frontend: http://localhost:${PORT}/`);
-      console.log(`⚡ Estado: Servidor iniciado y listo`);
-      console.log('=====================================\n');
-    });
-  })
-  .catch((error) => {
-    console.error('\n❌ ===== ERROR DE INICIALIZACIÓN =====');
-    console.error("💾 No se pudo inicializar la base de datos:");
-    console.error(error);
-    console.error('=====================================\n');
-    process.exit(1);
+// Inicialización asíncrona con reintentos para DB
+(async () => {
+  await waitForDatabase();
+  await ensureSchema();
+  app.listen(PORT, () => {
+    console.log("\n🚀 ===== SERVIDOR FINANZAS APP =====");
+    console.log(`📡 API: http://localhost:${PORT}/api/health`);
+    console.log(`🌐 Frontend: http://localhost:${PORT}/`);
+    console.log(`⚡ Estado: Servidor iniciado y listo`);
+    console.log("=====================================\n");
   });
+})().catch((error) => {
+  console.error("\n❌ ===== ERROR DE INICIALIZACIÓN =====");
+  console.error("💾 No se pudo inicializar la base de datos:");
+  console.error(error);
+  console.error("=====================================\n");
+  process.exit(1);
+});

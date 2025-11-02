@@ -153,14 +153,14 @@ export function ScheduleCalendar({ events, loading = false }: ScheduleCalendarPr
             lines.push(`Dosis ${props.dosage}`);
           }
           return (
-            <div className="flex flex-col gap-[2px] text-[11px] leading-tight">
+            <div className="flex flex-col gap-0.5 text-xs leading-tight">
               <span className="font-semibold text-slate-800">{formatTitle(arg.event.title)}</span>
               {lines.slice(0, MAX_DETAIL_LINES).map((line, index) => (
                 <span key={index} className="text-slate-600">
                   {line}
                 </span>
               ))}
-              {lines.length > MAX_DETAIL_LINES ? <span className="text-[10px] text-slate-400">…</span> : null}
+              {lines.length > MAX_DETAIL_LINES ? <span className="text-xs text-slate-400">…</span> : null}
             </div>
           );
         }}

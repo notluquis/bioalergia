@@ -27,18 +27,18 @@ function request<TResponse = unknown>(
       {
         method,
         headers: {
-          'Content-Type': 'application/json',
-          'Content-Length': data ? String(data.length) : '0',
-          'Accept': 'application/json',
+          "Content-Type": "application/json",
+          "Content-Length": data ? String(data.length) : "0",
+          Accept: "application/json",
           ...(process.env.TEST_COOKIE ? { Cookie: process.env.TEST_COOKIE } : {}),
           ...headers,
         },
       },
       (res) => {
         const chunks: Buffer[] = [];
-        res.on('data', (d) => chunks.push(d));
-        res.on('end', () => {
-          const text = Buffer.concat(chunks).toString('utf-8');
+        res.on("data", (d) => chunks.push(d));
+        res.on("end", () => {
+          const text = Buffer.concat(chunks).toString("utf-8");
           let parsed: unknown = null;
           try {
             parsed = text ? JSON.parse(text) : null;
@@ -49,65 +49,69 @@ function request<TResponse = unknown>(
         });
       }
     );
-    req.on('error', reject);
+    req.on("error", reject);
     if (data) req.write(data);
     req.end();
   });
 }
 
 async function run() {
-  if (process.env.RUN_WITHDRAWALS_IT !== '1') {
-    console.log('Skipping withdrawals integration tests. Set RUN_WITHDRAWALS_IT=1 to run.');
+  if (process.env.RUN_WITHDRAWALS_IT !== "1") {
+    console.log("Skipping withdrawals integration tests. Set RUN_WITHDRAWALS_IT=1 to run.");
     return;
   }
 
   // Use a unique withdrawId to avoid collisions
-  const uniqueId = `test-withdraw-${Date.now()}-${Math.floor(Math.random()*10000)}`;
+  const uniqueId = `test-withdraw-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
 
   // Preview: should be empty
-  const previewBefore = await request('POST', '/api/transactions/withdrawals/preview', { ids: [uniqueId] });
+  const previewBefore = await request("POST", "/api/transactions/withdrawals/preview", { ids: [uniqueId] });
   assert.equal(previewBefore.status, 200);
-  const existing = (previewBefore.json as any)?.existing ?? {};
+
+  const existing = (previewBefore.json as { existing?: Record<string, unknown> })?.existing ?? {};
   assert.ok(existing[uniqueId] === undefined || existing[uniqueId] === null);
 
   // Import: create one payout
   const payout = {
     withdrawId: uniqueId,
     dateCreated: new Date().toISOString(),
-    status: 'PAID',
+    status: "PAID",
     statusDetail: null,
     amount: 1000,
     fee: 10,
     activityUrl: null,
-    payoutDesc: 'Integration test payout',
-    bankAccountHolder: 'Test User',
+    payoutDesc: "Integration test payout",
+    bankAccountHolder: "Test User",
     identificationType: null,
     identificationNumber: null,
     bankId: null,
-    bankName: 'Banco de Prueba',
+    bankName: "Banco de Prueba",
     bankBranch: null,
-    bankAccountType: 'RUT',
-    bankAccountNumber: '11111111',
-    raw: { test: 'data' },
+    bankAccountType: "RUT",
+    bankAccountNumber: "11111111",
+    raw: { test: "data" },
   };
 
-  const importResp = await request('POST', '/api/transactions/withdrawals/import', { payouts: [payout] });
+  const importResp = await request("POST", "/api/transactions/withdrawals/import", { payouts: [payout] });
   assert.equal(importResp.status, 200);
-  assert.equal((importResp.json as any)?.status, 'ok');
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  assert.equal((importResp.json as any)?.status, "ok");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const summary1 = importResp.json as any;
   assert.equal(summary1.total, 1);
   assert.equal(summary1.inserted + summary1.updated + (summary1.skipped ?? 0), 1);
 
   // Re-import identical payload: should not insert again; check that totals still add up
-  const importResp2 = await request('POST', '/api/transactions/withdrawals/import', { payouts: [payout] });
+  const importResp2 = await request("POST", "/api/transactions/withdrawals/import", { payouts: [payout] });
   assert.equal(importResp2.status, 200);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const summary2 = importResp2.json as any;
   assert.equal(summary2.total, 1);
   // inserted should be <= previous inserted
   assert.ok(summary2.inserted <= (summary1.inserted ?? 1));
   assert.equal(summary2.inserted + summary2.updated + (summary2.skipped ?? 0), 1);
 
-  console.log('Preview->Import integration test completed successfully');
+  console.log("Preview->Import integration test completed successfully");
 }
 
 run().catch((err) => {

@@ -37,9 +37,10 @@ export default function TimesheetsPage() {
   const { months, loading: loadingMonths } = useMonths();
   const [month, setMonth] = useState<string>("");
   const [visibleCount, setVisibleCount] = useState(5);
-  const [summary, setSummary] = useState<
-    { employees: TimesheetSummaryRow[]; totals: TimesheetSummaryResponse["totals"] } | null
-  >(null);
+  const [summary, setSummary] = useState<{
+    employees: TimesheetSummaryRow[];
+    totals: TimesheetSummaryResponse["totals"];
+  } | null>(null);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<number | null>(null);
   const [bulkRows, setBulkRows] = useState<BulkRow[]>([]);
@@ -278,7 +279,7 @@ export default function TimesheetsPage() {
     <section className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-2">
-          <h1 className="text-2xl font-bold text-[var(--brand-primary)]">Registro de horas y pagos</h1>
+          <h1 className="text-2xl font-bold text-(--brand-primary)">Registro de horas y pagos</h1>
           <p className="max-w-2xl text-sm text-slate-600">
             Consolida horas trabajadas, extras y montos líquidos por trabajador. Selecciona el mes, revisa el resumen y
             completa la tabla diaria sin volver a guardar cada fila.
@@ -306,7 +307,7 @@ export default function TimesheetsPage() {
               type="button"
               variant="secondary"
               size="sm"
-              className="text-xs text-[var(--brand-primary)] underline mt-1"
+              className="text-xs text-(--brand-primary) underline mt-1"
               onClick={() => setVisibleCount((c) => c + 4)}
             >
               Ver más meses...
@@ -325,7 +326,7 @@ export default function TimesheetsPage() {
                   type="button"
                   disabled
                   variant="primary"
-                  className="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-[var(--brand-primary)]/70 cursor-wait"
+                  className="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-(--brand-primary)/70 cursor-wait"
                 >
                   Cargando exportador...
                 </Button>

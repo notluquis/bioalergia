@@ -61,10 +61,12 @@ export default function ServicesLayout() {
       <header className="border border-white/40 bg-base-100 px-6 py-5 shadow-sm">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="space-y-1">
-            <h1 className="text-2xl font-bold text-[var(--brand-primary)] drop-shadow-sm">Servicios</h1>
+            <h1 className="text-2xl font-bold text-(--brand-primary) drop-shadow-sm">Servicios</h1>
             <p className="text-sm text-slate-600/90">Gestiona contratos, vencimientos y plantillas de tus servicios.</p>
           </div>
-          <Button type="button" variant="primary" onClick={() => navigate("/services/create")}>Nuevo servicio</Button>
+          <Button type="button" variant="primary" onClick={() => navigate("/services/create")}>
+            Nuevo servicio
+          </Button>
         </div>
       </header>
 
@@ -88,8 +90,8 @@ export default function ServicesLayout() {
             className={({ isActive }) =>
               `rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide transition-all ${
                 isActive
-                  ? "bg-[var(--brand-primary)]/15 text-[var(--brand-primary)] shadow-inner"
-                  : "border border-white/50 bg-base-100/70 text-slate-500 hover:border-[var(--brand-primary)]/35 hover:text-[var(--brand-primary)]"
+                  ? "bg-(--brand-primary)/15 text-(--brand-primary) shadow-inner"
+                  : "border border-white/50 bg-base-100/70 text-slate-500 hover:border-(--brand-primary)/35 hover:text-(--brand-primary)"
               }`
             }
           >

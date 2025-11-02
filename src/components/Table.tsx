@@ -46,12 +46,6 @@ const TABLE_VARIANTS = {
   minimal: "overflow-hidden rounded-lg border border-gray-200 bg-base-100",
 };
 
-const HEADER_VARIANTS = {
-  default: "bg-slate-50 text-slate-700",
-  glass: "bg-base-100/55 text-[var(--brand-primary)] backdrop-blur-md",
-  minimal: "bg-gray-50 text-gray-700",
-};
-
 function TableHeader<T extends string>({ columns, sortState, onSort, visibleColumns }: TableHeaderProps<T>) {
   const getSortIcon = (column: T) => {
     if (!sortState || sortState.column !== column) return null;
@@ -99,7 +93,7 @@ function TableBody({
     <tbody>
       {loading ? (
         <tr>
-          <td colSpan={columnsCount} className="px-4 py-8 text-center text-[var(--brand-primary)]">
+          <td colSpan={columnsCount} className="px-4 py-8 text-center text-(--brand-primary)">
             {loadingMessage}
           </td>
         </tr>
@@ -127,10 +121,9 @@ export function Table<T extends string>({
   ...props
 }: TableProps<T>) {
   const containerClasses = `${TABLE_VARIANTS[variant]} ${className}`;
-  const headerClasses = HEADER_VARIANTS[variant];
 
   // Use daisyUI table classes where appropriate; keep existing variants for glass/minimal
-  const tableClass = `table w-full text-sm ${variant === 'glass' ? 'table-zebra' : ''}`.trim();
+  const tableClass = `table w-full text-sm ${variant === "glass" ? "table-zebra" : ""}`.trim();
 
   const tableContent = (
     <table className={tableClass} {...props}>

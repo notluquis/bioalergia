@@ -201,7 +201,7 @@ export default function LoansPage() {
   if (!canView) {
     return (
       <section className="space-y-4">
-        <h1 className="text-2xl font-bold text-[var(--brand-primary)]">Préstamos y créditos</h1>
+        <h1 className="text-2xl font-bold text-(--brand-primary)">Préstamos y créditos</h1>
         <Alert variant="error">No tienes permisos para ver los préstamos registrados.</Alert>
       </section>
     );
@@ -210,7 +210,7 @@ export default function LoansPage() {
   return (
     <section className="flex h-full flex-col gap-4">
       <header className="flex flex-col gap-2">
-        <h1 className="text-2xl font-bold text-[var(--brand-primary)]">Préstamos y créditos</h1>
+        <h1 className="text-2xl font-bold text-(--brand-primary)">Préstamos y créditos</h1>
         <p className="text-sm text-slate-600/90">
           Gestiona préstamos internos, cronogramas de pago y vincula cada cuota con las transacciones reales.
         </p>

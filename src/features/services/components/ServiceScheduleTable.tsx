@@ -27,7 +27,7 @@ export function ServiceScheduleTable({
   return (
     <div className="overflow-hidden bg-base-100">
       <table className="min-w-full text-sm text-slate-600">
-        <thead className="bg-base-100/60 text-[var(--brand-primary)]">
+        <thead className="bg-base-100/60 text-(--brand-primary)">
           <tr>
             <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide">Periodo</th>
             <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide">Vencimiento</th>
@@ -44,7 +44,10 @@ export function ServiceScheduleTable({
           {schedules.map((schedule) => {
             const badgeClass = statusBadge(schedule.status, schedule.due_date);
             return (
-              <tr key={schedule.id} className="border-b border-white/45 bg-base-100/45 last:border-none even:bg-base-100/35">
+              <tr
+                key={schedule.id}
+                className="border-b border-white/45 bg-base-100/45 last:border-none even:bg-base-100/35"
+              >
                 <td className="px-4 py-3 font-semibold text-slate-700">
                   {dayjs(schedule.period_start).format("MMM YYYY")}
                 </td>
@@ -54,25 +57,25 @@ export function ServiceScheduleTable({
                     ${schedule.effective_amount.toLocaleString("es-CL")}
                   </div>
                   {schedule.late_fee_amount > 0 && (
-                    <div className="text-[11px] text-rose-500">
+                    <div className="text-xs text-rose-500">
                       Incluye recargo ${schedule.late_fee_amount.toLocaleString("es-CL")}
                     </div>
                   )}
                   {schedule.late_fee_amount === 0 && schedule.expected_amount !== schedule.effective_amount && (
-                    <div className="text-[11px] text-slate-400">Monto ajustado</div>
+                    <div className="text-xs text-slate-400">Monto ajustado</div>
                   )}
                   {schedule.overdue_days > 0 && schedule.status === "PENDING" && (
-                    <div className="text-[11px] text-rose-400">{schedule.overdue_days} días de atraso</div>
+                    <div className="text-xs text-rose-400">{schedule.overdue_days} días de atraso</div>
                   )}
                   {schedule.late_fee_amount > 0 && (
-                    <div className="text-[11px] text-slate-400">
+                    <div className="text-xs text-slate-400">
                       Base ${schedule.expected_amount.toLocaleString("es-CL")}
                     </div>
                   )}
                 </td>
                 <td className="px-4 py-3">
                   <span
-                    className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wide ${badgeClass}`}
+                    className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${badgeClass}`}
                   >
                     {schedule.status === "PAID"
                       ? "Pagado"
@@ -86,7 +89,7 @@ export function ServiceScheduleTable({
                 <td className="px-4 py-3 text-slate-600">
                   <div className="space-y-1">
                     <div>{schedule.paid_amount != null ? `$${schedule.paid_amount.toLocaleString("es-CL")}` : "—"}</div>
-                    <div className="text-[11px] text-slate-400">
+                    <div className="text-xs text-slate-400">
                       {schedule.paid_date ? dayjs(schedule.paid_date).format("DD MMM YYYY") : "—"}
                     </div>
                   </div>
@@ -95,7 +98,7 @@ export function ServiceScheduleTable({
                   {schedule.transaction ? (
                     <div className="space-y-1">
                       <div className="font-medium">ID #{schedule.transaction.id}</div>
-                      <div className="text-[11px] text-slate-400">
+                      <div className="text-xs text-slate-400">
                         {schedule.transaction.description ?? "(sin descripción)"}
                       </div>
                     </div>

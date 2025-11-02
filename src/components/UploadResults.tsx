@@ -26,8 +26,8 @@ export default function UploadResults({ results, variant = "primary" }: UploadRe
 
   const colorClass =
     variant === "primary"
-      ? "bg-[var(--brand-primary)]/10 text-[var(--brand-primary)]"
-      : "bg-[var(--brand-secondary)]/10 text-[var(--brand-secondary)]";
+      ? "bg-(--brand-primary)/10 text-(--brand-primary)"
+      : "bg-(--brand-secondary)/10 text-(--brand-secondary)";
   return (
     <div className={`card bg-base-100 p-4 text-xs shadow-sm ${colorClass}`}>
       <div className="card-body p-0">

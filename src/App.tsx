@@ -4,7 +4,6 @@ import Button from "./components/Button";
 import ThemeToggle from "./components/ThemeToggle";
 import { useAuth } from "./context/auth-context";
 import { useSettings } from "./context/settings-context";
-import CollapsibleNavSection from "./components/CollapsibleNavSection";
 import Clock from "./components/Clock";
 import ConnectionIndicator from "./components/ConnectionIndicator";
 import { APP_VERSION, BUILD_TIMESTAMP } from "./version";
@@ -200,7 +199,7 @@ export default function App() {
 
       {/* Sidebar: animated, overlay on mobile, collapsible on desktop */}
       <aside
-        className={`flex w-64 flex-shrink-0 flex-col overflow-hidden rounded-3xl p-5 text-sm text-slate-700 shadow-xl bg-base-100
+        className={`flex w-64 shrink-0 flex-col overflow-hidden rounded-3xl p-5 text-sm text-base-content shadow-xl bg-base-100
           fixed inset-y-0 left-0 z-50 transition-transform duration-300
           ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
           md:static md:translate-x-0 md:z-auto md:rounded-3xl md:p-5 md:shadow-xl
@@ -208,12 +207,12 @@ export default function App() {
         style={{ maxWidth: "100vw" }}
       >
         <div className="flex h-16 items-center justify-center rounded-2xl border border-white/40 bg-base-100/60 px-3 shadow-inner">
-          <img src={settings.logoUrl || '/logo_sin_eslogan.png'} alt="Logo" className="h-10" />
+          <img src={settings.logoUrl || "/logo_sin_eslogan.png"} alt="Logo" className="h-10" />
         </div>
         <nav className="muted-scrollbar mt-4 flex-1 overflow-y-auto pr-2">
           {navigation.map((section) => (
             <div key={section.title} className="mb-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">{section.title}</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-base-content/70 mb-2">{section.title}</p>
               <ul className="menu menu-compact bg-transparent p-0">
                 {section.items.map((item) => (
                   <li key={item.to}>
@@ -221,9 +220,7 @@ export default function App() {
                       to={item.to}
                       className={({ isActive }) =>
                         `flex items-center rounded-xl px-3 py-2 text-sm font-semibold transition-all ${
-                          isActive
-                            ? "active text-[var(--brand-primary)]"
-                            : "text-slate-600 hover:text-[var(--brand-primary)]"
+                          isActive ? "active text-(--brand-primary)" : "text-base-content hover:text-(--brand-primary)"
                         }`
                       }
                       onClick={() => {
@@ -238,10 +235,10 @@ export default function App() {
             </div>
           ))}
         </nav>
-        <div className="mt-6 space-y-1 rounded-2xl border border-white/40 bg-base-100/70 p-3 text-[11px] text-slate-500 shadow-inner">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">Versión</p>
-          <p className="font-semibold text-slate-700">{APP_VERSION}</p>
-          <p className="text-[10px] text-slate-400">Build: {buildLabel}</p>
+        <div className="mt-6 space-y-1 rounded-2xl border border-white/40 bg-base-100/70 p-3 text-xs text-base-content/70 shadow-inner">
+          <p className="text-xs font-semibold uppercase tracking-wide text-base-content">Versión</p>
+          <p className="font-semibold text-base-content">{APP_VERSION}</p>
+          <p className="text-xs text-base-content/50">Build: {buildLabel}</p>
         </div>
       </aside>
 
@@ -249,13 +246,13 @@ export default function App() {
       <div className="layout-container flex flex-1 flex-col gap-6 min-w-0">
         {/* min-w-0 permite que se encoja */}
         <header className="flex items-center justify-between rounded-3xl px-6 py-4 bg-base-100">
-          <h1 className="text-xl font-semibold text-slate-800 drop-shadow-sm">{title}</h1>
+          <h1 className="text-xl font-semibold text-base-content drop-shadow-sm">{title}</h1>
           <div className="flex items-center gap-4">
             <ThemeToggle />
             <ConnectionIndicator />
             <div className="text-right">
-              <p className="font-semibold text-slate-800">{capitalizedName}</p>
-              <p className="text-xs text-slate-500">{user?.email}</p>
+              <p className="font-semibold text-base-content">{capitalizedName}</p>
+              <p className="text-xs text-base-content/70">{user?.email}</p>
             </div>
             <Button variant="secondary" className="btn-circle" onClick={handleLogout} aria-label="Cerrar sesión">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -277,8 +274,8 @@ export default function App() {
           </div>
         </main>
 
-        <footer className="flex items-center justify-between rounded-3xl px-6 py-3 text-sm text-slate-600 bg-base-100">
-          <span className="font-medium text-slate-500">Bioalergia Finanzas</span>
+        <footer className="flex items-center justify-between rounded-3xl px-6 py-3 text-sm text-base-content bg-base-100">
+          <span className="font-medium text-base-content/70">Bioalergia Finanzas</span>
           <Clock />
         </footer>
       </div>

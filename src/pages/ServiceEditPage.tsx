@@ -11,10 +11,7 @@ import {
   updateService as updateServiceRequest,
   regenerateServiceSchedules,
 } from "../features/services/api";
-import type {
-  CreateServicePayload,
-  ServiceDetailResponse,
-} from "../features/services/types";
+import type { CreateServicePayload, ServiceDetailResponse } from "../features/services/types";
 
 function mapServiceToForm(service: ServiceDetailResponse["service"]): Partial<CreateServicePayload> {
   return {
@@ -190,10 +187,8 @@ export default function ServiceEditPage() {
     <section className="flex flex-col gap-6">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-[var(--brand-primary)]">Editar servicio</h1>
-          {service && (
-            <p className="text-sm text-slate-500">{service.name}</p>
-          )}
+          <h1 className="text-2xl font-bold text-(--brand-primary)">Editar servicio</h1>
+          {service && <p className="text-sm text-slate-500">{service.name}</p>}
         </div>
         <div className="flex gap-2">
           <Button variant="secondary" onClick={() => navigate(-1)}>
@@ -214,7 +209,7 @@ export default function ServiceEditPage() {
                 <div key={card.label} className="rounded-2xl border border-white/45 bg-base-100/70 p-3">
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{card.label}</p>
                   <p className="mt-1 text-lg font-semibold text-slate-800">{card.value}</p>
-                  {card.helper && <p className="text-[11px] text-slate-400">{card.helper}</p>}
+                  {card.helper && <p className="text-xs text-slate-400">{card.helper}</p>}
                 </div>
               ))}
             </div>
@@ -224,8 +219,8 @@ export default function ServiceEditPage() {
                 {historyItems.map((item) => (
                   <li key={item.title} className="rounded-xl border border-white/45 bg-base-100/70 p-3">
                     <p className="font-semibold text-slate-700">{item.title}</p>
-                    {item.description && <p className="text-[11px] text-slate-400">{item.description}</p>}
-                    <p className="text-[10px] uppercase tracking-wide text-slate-300">{item.date}</p>
+                    {item.description && <p className="text-xs text-slate-400">{item.description}</p>}
+                    <p className="text-xs uppercase tracking-wide text-slate-300">{item.date}</p>
                   </li>
                 ))}
               </ol>
@@ -262,7 +257,9 @@ export default function ServiceEditPage() {
               <div className="flex justify-end">
                 <Button
                   variant="secondary"
-                  onClick={() => handleRegenerate({ months: service.next_generation_months, startDate: service.start_date })}
+                  onClick={() =>
+                    handleRegenerate({ months: service.next_generation_months, startDate: service.start_date })
+                  }
                   disabled={saving}
                 >
                   Regenerar cronograma

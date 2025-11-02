@@ -208,7 +208,7 @@ export function ConnectionIndicator() {
                 💡 El servidor puede tardar 10-20 segundos en inicializar.
               </div>
             )}
-            <div className="flex justify-between text-[11px] uppercase tracking-wide text-slate-400">
+            <div className="flex justify-between text-xs uppercase tracking-wide text-slate-400">
               <span>Servicio API</span>
               <span>
                 {state.fetchedAt

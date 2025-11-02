@@ -100,7 +100,7 @@ export default function InventoryPage() {
     <section className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-2">
-          <h1 className="text-2xl font-bold text-[var(--brand-primary)]">Inventario</h1>
+          <h1 className="text-2xl font-bold text-(--brand-primary)">Inventario</h1>
           <p className="max-w-2xl text-sm text-slate-600">Gestiona los insumos, materiales y stock de la clínica.</p>
         </div>
         <Button onClick={openCreateModal}>

@@ -1,6 +1,6 @@
-import { promises as fs } from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import { promises as fs } from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 import { randomUUID } from "node:crypto";
 import mysql from "mysql2/promise";
 import type { ResultSetHeader, RowDataPacket } from "mysql2";
@@ -107,15 +107,7 @@ export type ServiceFrequency =
   | "SEMIANNUAL"
   | "ANNUAL"
   | "ONCE";
-export type ServiceType =
-  | "BUSINESS"
-  | "PERSONAL"
-  | "SUPPLIER"
-  | "TAX"
-  | "UTILITY"
-  | "LEASE"
-  | "SOFTWARE"
-  | "OTHER";
+export type ServiceType = "BUSINESS" | "PERSONAL" | "SUPPLIER" | "TAX" | "UTILITY" | "LEASE" | "SOFTWARE" | "OTHER";
 export type ServiceOwnership = "COMPANY" | "OWNER" | "MIXED" | "THIRD_PARTY";
 export type ServiceObligationType = "SERVICE" | "DEBT" | "LOAN" | "OTHER";
 export type ServiceRecurrenceType = "RECURRING" | "ONE_OFF";
@@ -235,7 +227,7 @@ export type CreateMonthlyExpensePayload = {
   source?: MonthlyExpenseSource;
   serviceId?: number | null;
   tags?: string[];
-  status?: 'OPEN' | 'CLOSED';
+  status?: "OPEN" | "CLOSED";
 };
 
 export type LinkMonthlyExpenseTransactionPayload = {
@@ -470,11 +462,7 @@ export async function ensureSchema() {
     "mp_counterparts",
     "`category` ENUM('SUPPLIER','PATIENT','EMPLOYEE','PARTNER','RELATED','OTHER') NOT NULL DEFAULT 'SUPPLIER' AFTER person_type"
   );
-  await addColumnIfMissing(
-    pool,
-    "mp_counterparts",
-    "`employee_id` INT UNSIGNED NULL AFTER category"
-  );
+  await addColumnIfMissing(pool, "mp_counterparts", "`employee_id` INT UNSIGNED NULL AFTER category");
   try {
     await pool.query(
       `ALTER TABLE mp_counterparts
@@ -562,11 +550,7 @@ export async function ensureSchema() {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
   `);
 
-  await addColumnIfMissing(
-    pool,
-    "google_calendar_events",
-    "`event_type` VARCHAR(64) NULL AFTER `event_status`"
-  );
+  await addColumnIfMissing(pool, "google_calendar_events", "`event_type` VARCHAR(64) NULL AFTER `event_status`");
 
   await pool.execute(`
     CREATE TABLE IF NOT EXISTS users (
@@ -610,7 +594,11 @@ export async function ensureSchema() {
 
   // Extend employees with RUT and banking info (idempotent)
   // Extiende empleados con tipo de salario y sueldo fijo (idempotente)
-  await addColumnIfMissing(pool, "employees", "`salary_type` ENUM('hourly','fixed') NOT NULL DEFAULT 'hourly' AFTER email");
+  await addColumnIfMissing(
+    pool,
+    "employees",
+    "`salary_type` ENUM('hourly','fixed') NOT NULL DEFAULT 'hourly' AFTER email"
+  );
   await addColumnIfMissing(pool, "employees", "`fixed_salary` DECIMAL(12,2) NULL AFTER hourly_rate");
   await addColumnIfMissing(pool, "employees", "`rut` VARCHAR(20) NULL AFTER email");
   await addColumnIfMissing(pool, "employees", "`bank_name` VARCHAR(120) NULL AFTER rut");
@@ -755,21 +743,39 @@ export async function ensureSchema() {
 
   // Agregar columnas de servicios de forma segura
   const columnsToAdd = [
-    { name: 'ownership', sql: "ADD COLUMN ownership ENUM('COMPANY','OWNER','MIXED','THIRD_PARTY') NOT NULL DEFAULT 'COMPANY' AFTER service_type" },
-    { name: 'obligation_type', sql: "ADD COLUMN obligation_type ENUM('SERVICE','DEBT','LOAN','OTHER') NOT NULL DEFAULT 'SERVICE' AFTER ownership" },
-    { name: 'recurrence_type', sql: "ADD COLUMN recurrence_type ENUM('RECURRING','ONE_OFF') NOT NULL DEFAULT 'RECURRING' AFTER obligation_type" },
-    { name: 'amount_indexation', sql: "ADD COLUMN amount_indexation ENUM('NONE','UF') NOT NULL DEFAULT 'NONE' AFTER default_amount" },
-    { name: 'counterpart_id', sql: "ADD COLUMN counterpart_id INT UNSIGNED NULL AFTER amount_indexation" },
-    { name: 'counterpart_account_id', sql: "ADD COLUMN counterpart_account_id INT UNSIGNED NULL AFTER counterpart_id" },
-    { name: 'account_reference', sql: "ADD COLUMN account_reference VARCHAR(191) NULL AFTER counterpart_account_id" },
-    { name: 'emission_mode', sql: "ADD COLUMN emission_mode ENUM('FIXED_DAY','DATE_RANGE','SPECIFIC_DATE') NOT NULL DEFAULT 'FIXED_DAY' AFTER emission_day" },
-    { name: 'emission_start_day', sql: "ADD COLUMN emission_start_day TINYINT NULL AFTER emission_mode" },
-    { name: 'emission_end_day', sql: "ADD COLUMN emission_end_day TINYINT NULL AFTER emission_start_day" },
-    { name: 'emission_exact_date', sql: "ADD COLUMN emission_exact_date DATE NULL AFTER emission_end_day" },
-    { name: 'start_date', sql: "ADD COLUMN start_date DATE NOT NULL DEFAULT '1970-01-01' AFTER due_day" },
-    { name: 'late_fee_mode', sql: "ADD COLUMN late_fee_mode ENUM('NONE','FIXED','PERCENTAGE') NOT NULL DEFAULT 'NONE' AFTER next_generation_months" },
-    { name: 'late_fee_value', sql: "ADD COLUMN late_fee_value DECIMAL(15,2) NULL AFTER late_fee_mode" },
-    { name: 'late_fee_grace_days', sql: "ADD COLUMN late_fee_grace_days TINYINT NULL AFTER late_fee_value" }
+    {
+      name: "ownership",
+      sql: "ADD COLUMN ownership ENUM('COMPANY','OWNER','MIXED','THIRD_PARTY') NOT NULL DEFAULT 'COMPANY' AFTER service_type",
+    },
+    {
+      name: "obligation_type",
+      sql: "ADD COLUMN obligation_type ENUM('SERVICE','DEBT','LOAN','OTHER') NOT NULL DEFAULT 'SERVICE' AFTER ownership",
+    },
+    {
+      name: "recurrence_type",
+      sql: "ADD COLUMN recurrence_type ENUM('RECURRING','ONE_OFF') NOT NULL DEFAULT 'RECURRING' AFTER obligation_type",
+    },
+    {
+      name: "amount_indexation",
+      sql: "ADD COLUMN amount_indexation ENUM('NONE','UF') NOT NULL DEFAULT 'NONE' AFTER default_amount",
+    },
+    { name: "counterpart_id", sql: "ADD COLUMN counterpart_id INT UNSIGNED NULL AFTER amount_indexation" },
+    { name: "counterpart_account_id", sql: "ADD COLUMN counterpart_account_id INT UNSIGNED NULL AFTER counterpart_id" },
+    { name: "account_reference", sql: "ADD COLUMN account_reference VARCHAR(191) NULL AFTER counterpart_account_id" },
+    {
+      name: "emission_mode",
+      sql: "ADD COLUMN emission_mode ENUM('FIXED_DAY','DATE_RANGE','SPECIFIC_DATE') NOT NULL DEFAULT 'FIXED_DAY' AFTER emission_day",
+    },
+    { name: "emission_start_day", sql: "ADD COLUMN emission_start_day TINYINT NULL AFTER emission_mode" },
+    { name: "emission_end_day", sql: "ADD COLUMN emission_end_day TINYINT NULL AFTER emission_start_day" },
+    { name: "emission_exact_date", sql: "ADD COLUMN emission_exact_date DATE NULL AFTER emission_end_day" },
+    { name: "start_date", sql: "ADD COLUMN start_date DATE NOT NULL DEFAULT '1970-01-01' AFTER due_day" },
+    {
+      name: "late_fee_mode",
+      sql: "ADD COLUMN late_fee_mode ENUM('NONE','FIXED','PERCENTAGE') NOT NULL DEFAULT 'NONE' AFTER next_generation_months",
+    },
+    { name: "late_fee_value", sql: "ADD COLUMN late_fee_value DECIMAL(15,2) NULL AFTER late_fee_mode" },
+    { name: "late_fee_grace_days", sql: "ADD COLUMN late_fee_grace_days TINYINT NULL AFTER late_fee_value" },
   ];
 
   for (const column of columnsToAdd) {
@@ -780,7 +786,7 @@ export async function ensureSchema() {
          WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'services' AND COLUMN_NAME = ?`,
         [column.name]
       );
-      
+
       // Si no existe, agregarla
       if (rows.length === 0) {
         await pool.execute(`ALTER TABLE services ${column.sql}`);
@@ -832,9 +838,7 @@ export async function ensureSchema() {
       LIMIT 1`
   );
   if (!serviceScheduleIndex.length) {
-    await pool.execute(
-      `ALTER TABLE service_schedules ADD UNIQUE KEY uniq_service_period (service_id, period_start)`
-    );
+    await pool.execute(`ALTER TABLE service_schedules ADD UNIQUE KEY uniq_service_period (service_id, period_start)`);
   }
 
   await pool.execute(`
@@ -888,9 +892,9 @@ export async function ensureSchema() {
 
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = path.dirname(__filename);
-  const inventorySchemaPath = path.join(__dirname, 'sql', 'create_inventory_tables.sql');
-  const inventorySchemaSql = await fs.readFile(inventorySchemaPath, 'utf-8');
-  const inventoryStatements = inventorySchemaSql.split(';').filter(s => s.trim().length > 0);
+  const inventorySchemaPath = path.join(__dirname, "sql", "create_inventory_tables.sql");
+  const inventorySchemaSql = await fs.readFile(inventorySchemaPath, "utf-8");
+  const inventoryStatements = inventorySchemaSql.split(";").filter((s) => s.trim().length > 0);
 
   for (const statement of inventoryStatements) {
     if (statement.trim().length === 0) continue;
@@ -904,14 +908,14 @@ function mapLoanRow(row: RowDataPacket): LoanRecord {
     public_id: String(row.public_id),
     title: String(row.title),
     borrower_name: String(row.borrower_name),
-    borrower_type: row.borrower_type as 'PERSON' | 'COMPANY',
+    borrower_type: row.borrower_type as "PERSON" | "COMPANY",
     principal_amount: Number(row.principal_amount ?? 0),
     interest_rate: Number(row.interest_rate ?? 0),
-    interest_type: (row.interest_type as LoanInterestType) ?? 'SIMPLE',
-    frequency: (row.frequency as LoanFrequency) ?? 'MONTHLY',
+    interest_type: (row.interest_type as LoanInterestType) ?? "SIMPLE",
+    frequency: (row.frequency as LoanFrequency) ?? "MONTHLY",
     total_installments: Number(row.total_installments ?? 0),
     start_date: toDateOnly(row.start_date),
-    status: (row.status as LoanStatus) ?? 'ACTIVE',
+    status: (row.status as LoanStatus) ?? "ACTIVE",
     notes: row.notes != null ? String(row.notes) : null,
     created_at: row.created_at instanceof Date ? row.created_at.toISOString() : String(row.created_at),
     updated_at: row.updated_at instanceof Date ? row.updated_at.toISOString() : String(row.updated_at),
@@ -927,7 +931,7 @@ function mapLoanScheduleRow(row: RowDataPacket): LoanScheduleRecord {
     expected_amount: Number(row.expected_amount ?? 0),
     expected_principal: Number(row.expected_principal ?? 0),
     expected_interest: Number(row.expected_interest ?? 0),
-    status: (row.status as LoanScheduleRecord['status']) ?? 'PENDING',
+    status: (row.status as LoanScheduleRecord["status"]) ?? "PENDING",
     transaction_id: row.transaction_id != null ? Number(row.transaction_id) : null,
     paid_amount: row.paid_amount != null ? Number(row.paid_amount) : null,
     paid_date: row.paid_date ? toDateOnly(row.paid_date) : null,
@@ -1021,7 +1025,11 @@ function computeLoanSchedule(
   return schedule;
 }
 
-async function insertScheduleEntries(connection: mysql.PoolConnection | Pool, loanId: number, schedule: ScheduleComputation[]) {
+async function insertScheduleEntries(
+  connection: mysql.PoolConnection | Pool,
+  loanId: number,
+  schedule: ScheduleComputation[]
+) {
   if (!schedule.length) return;
   const values = schedule.map((entry) => [
     loanId,
@@ -1059,10 +1067,7 @@ async function refreshLoanStatus(connection: mysql.PoolConnection | Pool, loanId
     nextStatus = "DEFAULTED";
   }
 
-  await connection.query(
-    `UPDATE loans SET status = ?, updated_at = NOW() WHERE id = ? LIMIT 1`,
-    [nextStatus, loanId]
-  );
+  await connection.query(`UPDATE loans SET status = ?, updated_at = NOW() WHERE id = ? LIMIT 1`, [nextStatus, loanId]);
 }
 
 export async function createLoan(payload: CreateLoanPayload): Promise<LoanRecord> {
@@ -1079,7 +1084,7 @@ export async function createLoan(payload: CreateLoanPayload): Promise<LoanRecord
       payload.borrowerType,
       payload.principalAmount,
       payload.interestRate,
-      payload.interestType ?? 'SIMPLE',
+      payload.interestType ?? "SIMPLE",
       payload.frequency,
       payload.totalInstallments,
       payload.startDate,
@@ -1087,10 +1092,7 @@ export async function createLoan(payload: CreateLoanPayload): Promise<LoanRecord
     ]
   );
 
-  const [rows] = await pool.query<RowDataPacket[]>(
-    `SELECT * FROM loans WHERE id = ? LIMIT 1`,
-    [result.insertId]
-  );
+  const [rows] = await pool.query<RowDataPacket[]>(`SELECT * FROM loans WHERE id = ? LIMIT 1`, [result.insertId]);
   return mapLoanRow(rows[0]);
 }
 
@@ -1135,10 +1137,7 @@ export async function getLoanDetail(publicId: string): Promise<{
   };
 } | null> {
   const pool = getPool();
-  const [loanRows] = await pool.query<RowDataPacket[]>(
-    `SELECT * FROM loans WHERE public_id = ? LIMIT 1`,
-    [publicId]
-  );
+  const [loanRows] = await pool.query<RowDataPacket[]>(`SELECT * FROM loans WHERE public_id = ? LIMIT 1`, [publicId]);
 
   if (!loanRows.length) return null;
   const loan = mapLoanRow(loanRows[0]);
@@ -1162,8 +1161,8 @@ export async function getLoanDetail(publicId: string): Promise<{
             row.transaction_timestamp instanceof Date
               ? row.transaction_timestamp.toISOString()
               : row.transaction_timestamp
-              ? String(row.transaction_timestamp)
-              : "",
+                ? String(row.transaction_timestamp)
+                : "",
           amount: row.transaction_amount != null ? Number(row.transaction_amount) : null,
         }
       : null;
@@ -1191,11 +1190,12 @@ export async function getLoanDetail(publicId: string): Promise<{
   const summary = normalizedSchedules.reduce(
     (acc, schedule) => {
       acc.total_expected = roundCurrency(acc.total_expected + schedule.expected_amount);
-      const paidAmount = schedule.status === 'PAID' || schedule.status === 'PARTIAL'
-        ? schedule.paid_amount ?? schedule.expected_amount
-        : 0;
+      const paidAmount =
+        schedule.status === "PAID" || schedule.status === "PARTIAL"
+          ? (schedule.paid_amount ?? schedule.expected_amount)
+          : 0;
       acc.total_paid = roundCurrency(acc.total_paid + (paidAmount ?? 0));
-      if (schedule.status === 'PAID') {
+      if (schedule.status === "PAID") {
         acc.paid_installments += 1;
       } else {
         acc.pending_installments += 1;
@@ -1274,7 +1274,7 @@ export async function markLoanSchedulePayment(payload: {
     }
 
     const paidAmount = roundCurrency(payload.paidAmount);
-    const status = paidAmount >= schedule.expected_amount ? 'PAID' : 'PARTIAL';
+    const status = paidAmount >= schedule.expected_amount ? "PAID" : "PARTIAL";
 
     await connection.query(
       `UPDATE loan_schedules
@@ -1309,8 +1309,8 @@ export async function markLoanSchedulePayment(payload: {
             updatedRow.transaction_timestamp instanceof Date
               ? updatedRow.transaction_timestamp.toISOString()
               : updatedRow.transaction_timestamp
-              ? String(updatedRow.transaction_timestamp)
-              : "",
+                ? String(updatedRow.transaction_timestamp)
+                : "",
           amount: updatedRow.transaction_amount != null ? Number(updatedRow.transaction_amount) : null,
         }
       : null;
@@ -1415,7 +1415,14 @@ const FREQUENCY_CONFIG: Record<ServiceFrequency, { unit: dayjs.ManipulateType; a
 
 function computeServiceSchedule(
   service: ServiceRecord,
-  overrides?: { months?: number; startDate?: string; defaultAmount?: number; dueDay?: number | null; emissionDay?: number | null; frequency?: ServiceFrequency }
+  overrides?: {
+    months?: number;
+    startDate?: string;
+    defaultAmount?: number;
+    dueDay?: number | null;
+    emissionDay?: number | null;
+    frequency?: ServiceFrequency;
+  }
 ): ServiceScheduleComputation[] {
   const config = FREQUENCY_CONFIG[overrides?.frequency ?? service.frequency];
   if (!config) {
@@ -1423,9 +1430,10 @@ function computeServiceSchedule(
   }
 
   const rawPeriods = overrides?.months ?? service.next_generation_months;
-  const totalPeriods = (overrides?.frequency ?? service.frequency) === "ONCE" || service.recurrence_type === "ONE_OFF"
-    ? Math.min(rawPeriods, 1)
-    : rawPeriods;
+  const totalPeriods =
+    (overrides?.frequency ?? service.frequency) === "ONCE" || service.recurrence_type === "ONE_OFF"
+      ? Math.min(rawPeriods, 1)
+      : rawPeriods;
   const baseAmount = overrides?.defaultAmount ?? service.default_amount;
   if (totalPeriods <= 0) return [];
 
@@ -1500,10 +1508,10 @@ async function refreshServiceStatus(connection: mysql.PoolConnection | Pool, ser
     status = "ACTIVE";
   }
 
-  await connection.query(
-    `UPDATE services SET status = ?, updated_at = NOW() WHERE id = ? LIMIT 1`,
-    [status, serviceId]
-  );
+  await connection.query(`UPDATE services SET status = ?, updated_at = NOW() WHERE id = ? LIMIT 1`, [
+    status,
+    serviceId,
+  ]);
 }
 
 export async function createService(payload: CreateServicePayload): Promise<ServiceRecord> {
@@ -1563,9 +1571,7 @@ export async function createService(payload: CreateServicePayload): Promise<Serv
       payload.emissionExactDate ?? null,
       payload.dueDay ?? null,
       payload.startDate,
-      (payload.frequency === "ONCE" || payload.recurrenceType === "ONE_OFF")
-        ? 1
-        : payload.monthsToGenerate ?? 12,
+      payload.frequency === "ONCE" || payload.recurrenceType === "ONE_OFF" ? 1 : (payload.monthsToGenerate ?? 12),
       payload.lateFeeMode ?? "NONE",
       payload.lateFeeValue ?? null,
       payload.lateFeeGraceDays ?? null,
@@ -1592,17 +1598,13 @@ export async function createService(payload: CreateServicePayload): Promise<Serv
 
 export async function updateService(publicId: string, payload: CreateServicePayload): Promise<ServiceRecord> {
   const pool = getPool();
-  const [rows] = await pool.query<RowDataPacket[]>(
-    `SELECT * FROM services WHERE public_id = ? LIMIT 1`,
-    [publicId]
-  );
+  const [rows] = await pool.query<RowDataPacket[]>(`SELECT * FROM services WHERE public_id = ? LIMIT 1`, [publicId]);
   if (!rows.length) {
     throw new Error("Servicio no encontrado");
   }
   const current = mapServiceRow(rows[0]);
 
-  const nextGenerationMonths =
-    payload.monthsToGenerate ?? current.next_generation_months;
+  const nextGenerationMonths = payload.monthsToGenerate ?? current.next_generation_months;
 
   await pool.query(
     `UPDATE services SET
@@ -1648,26 +1650,25 @@ export async function updateService(publicId: string, payload: CreateServicePayl
       payload.counterpartId ?? null,
       payload.counterpartAccountId ?? null,
       payload.accountReference ?? null,
-      payload.emissionMode === "FIXED_DAY" ? payload.emissionDay ?? null : null,
+      payload.emissionMode === "FIXED_DAY" ? (payload.emissionDay ?? null) : null,
       payload.emissionMode ?? current.emission_mode,
-      payload.emissionMode === "DATE_RANGE" ? payload.emissionStartDay ?? null : null,
-      payload.emissionMode === "DATE_RANGE" ? payload.emissionEndDay ?? null : null,
-      payload.emissionMode === "SPECIFIC_DATE" ? payload.emissionExactDate ?? null : null,
+      payload.emissionMode === "DATE_RANGE" ? (payload.emissionStartDay ?? null) : null,
+      payload.emissionMode === "DATE_RANGE" ? (payload.emissionEndDay ?? null) : null,
+      payload.emissionMode === "SPECIFIC_DATE" ? (payload.emissionExactDate ?? null) : null,
       payload.dueDay ?? null,
       payload.startDate,
       nextGenerationMonths,
       payload.lateFeeMode ?? current.late_fee_mode,
-      payload.lateFeeMode === "NONE" ? null : payload.lateFeeValue ?? null,
-      payload.lateFeeMode === "NONE" ? null : payload.lateFeeGraceDays ?? null,
+      payload.lateFeeMode === "NONE" ? null : (payload.lateFeeValue ?? null),
+      payload.lateFeeMode === "NONE" ? null : (payload.lateFeeGraceDays ?? null),
       payload.notes ?? null,
       publicId,
     ]
   );
 
-  const [updatedRows] = await pool.query<RowDataPacket[]>(
-    `SELECT * FROM services WHERE public_id = ? LIMIT 1`,
-    [publicId]
-  );
+  const [updatedRows] = await pool.query<RowDataPacket[]>(`SELECT * FROM services WHERE public_id = ? LIMIT 1`, [
+    publicId,
+  ]);
   if (!updatedRows.length) {
     throw new Error("Servicio no encontrado");
   }
@@ -1676,7 +1677,7 @@ export async function updateService(publicId: string, payload: CreateServicePayl
 
 export async function listServicesWithSummary(): Promise<ServiceWithSummary[]> {
   const pool = getPool();
-  
+
   const { sql, params } = new SQLBuilder("services s")
     .select(
       "s.*",
@@ -1693,10 +1694,10 @@ export async function listServicesWithSummary(): Promise<ServiceWithSummary[]> {
     .leftJoin("mp_counterparts c", "c.id = s.counterpart_id")
     .leftJoin("mp_counterpart_accounts ca", "ca.id = s.counterpart_account_id")
     .build();
-  
+
   // Agregar GROUP BY y ORDER BY que no están soportados en el builder básico
   const finalSql = sql + " GROUP BY s.id ORDER BY s.created_at DESC";
-  
+
   const rows = await selectMany<RowDataPacket>(pool, finalSql, params);
 
   return rows.map((row) => {
@@ -1752,8 +1753,8 @@ export async function getServiceDetail(publicId: string): Promise<{
             row.transaction_timestamp instanceof Date
               ? row.transaction_timestamp.toISOString()
               : row.transaction_timestamp
-              ? String(row.transaction_timestamp)
-              : "",
+                ? String(row.transaction_timestamp)
+                : "",
           amount: row.transaction_amount != null ? Number(row.transaction_amount) : null,
         }
       : null;
@@ -1795,7 +1796,14 @@ export async function getServiceDetail(publicId: string): Promise<{
 
 export async function regenerateServiceSchedule(
   publicId: string,
-  overrides?: { months?: number; startDate?: string; defaultAmount?: number; dueDay?: number | null; frequency?: ServiceFrequency; emissionDay?: number | null }
+  overrides?: {
+    months?: number;
+    startDate?: string;
+    defaultAmount?: number;
+    dueDay?: number | null;
+    frequency?: ServiceFrequency;
+    emissionDay?: number | null;
+  }
 ) {
   const pool = getPool();
   const connection = await pool.getConnection();
@@ -1833,24 +1841,22 @@ export async function markServicePayment(payload: {
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
-    const [rows] = await connection.query<RowDataPacket[]>(
-      `SELECT * FROM service_schedules WHERE id = ? FOR UPDATE`,
-      [payload.scheduleId]
-    );
+    const [rows] = await connection.query<RowDataPacket[]>(`SELECT * FROM service_schedules WHERE id = ? FOR UPDATE`, [
+      payload.scheduleId,
+    ]);
     if (!rows.length) throw new Error("Periodo no encontrado");
     const schedule = mapServiceScheduleRow(rows[0]);
     const service = await fetchServiceRecordById(connection, schedule.service_id);
     const derivedBefore = applyDerivedScheduleAmounts(service, { ...schedule, transaction: null });
 
-    const [txRows] = await connection.query<RowDataPacket[]>(
-      `SELECT id FROM mp_transactions WHERE id = ? LIMIT 1`,
-      [payload.transactionId]
-    );
+    const [txRows] = await connection.query<RowDataPacket[]>(`SELECT id FROM mp_transactions WHERE id = ? LIMIT 1`, [
+      payload.transactionId,
+    ]);
     if (!txRows.length) throw new Error("Transacción no encontrada");
 
     const paidAmount = roundCurrency(payload.paidAmount);
     const targetAmount = derivedBefore.effective_amount;
-    const status = paidAmount >= targetAmount ? 'PAID' : 'PARTIAL';
+    const status = paidAmount >= targetAmount ? "PAID" : "PARTIAL";
 
     await connection.query(
       `UPDATE service_schedules
@@ -1876,13 +1882,14 @@ export async function markServicePayment(payload: {
     const transaction = updatedRows[0].transaction_id
       ? {
           id: Number(updatedRows[0].transaction_id),
-          description: updatedRows[0].transaction_description != null ? String(updatedRows[0].transaction_description) : null,
+          description:
+            updatedRows[0].transaction_description != null ? String(updatedRows[0].transaction_description) : null,
           timestamp:
             updatedRows[0].transaction_timestamp instanceof Date
               ? updatedRows[0].transaction_timestamp.toISOString()
               : updatedRows[0].transaction_timestamp
-              ? String(updatedRows[0].transaction_timestamp)
-              : "",
+                ? String(updatedRows[0].transaction_timestamp)
+                : "",
           amount: updatedRows[0].transaction_amount != null ? Number(updatedRows[0].transaction_amount) : null,
         }
       : null;
@@ -1900,10 +1907,9 @@ export async function unlinkServicePayment(scheduleId: number): Promise<ServiceS
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
-    const [rows] = await connection.query<RowDataPacket[]>(
-      `SELECT * FROM service_schedules WHERE id = ? FOR UPDATE`,
-      [scheduleId]
-    );
+    const [rows] = await connection.query<RowDataPacket[]>(`SELECT * FROM service_schedules WHERE id = ? FOR UPDATE`, [
+      scheduleId,
+    ]);
     if (!rows.length) throw new Error("Periodo no encontrado");
     const schedule = mapServiceScheduleRow(rows[0]);
     const service = await fetchServiceRecordById(connection, schedule.service_id);
@@ -2001,7 +2007,8 @@ export async function getMonthlyExpenseDetail(publicId: string): Promise<Monthly
     transactions: transactions.map((row) => ({
       transaction_id: Number(row.transaction_id),
       amount: Number(row.amount ?? 0),
-      timestamp: row.timestamp instanceof Date ? row.timestamp.toISOString() : row.timestamp ? String(row.timestamp) : "",
+      timestamp:
+        row.timestamp instanceof Date ? row.timestamp.toISOString() : row.timestamp ? String(row.timestamp) : "",
       description: row.description != null ? String(row.description) : null,
       direction: row.direction != null ? String(row.direction) : "",
     })),
@@ -2037,7 +2044,10 @@ export async function createMonthlyExpense(payload: CreateMonthlyExpensePayload)
   return detail;
 }
 
-export async function updateMonthlyExpense(publicId: string, payload: CreateMonthlyExpensePayload): Promise<MonthlyExpenseRecord> {
+export async function updateMonthlyExpense(
+  publicId: string,
+  payload: CreateMonthlyExpensePayload
+): Promise<MonthlyExpenseRecord> {
   const pool = getPool();
   const tags = payload.tags ? JSON.stringify(payload.tags) : null;
   const source = payload.source ?? "MANUAL";
@@ -2081,17 +2091,15 @@ export async function linkMonthlyExpenseTransaction(
   payload: LinkMonthlyExpenseTransactionPayload
 ): Promise<MonthlyExpenseDetail> {
   const pool = getPool();
-  const [rows] = await pool.query<RowDataPacket[]>(
-    `SELECT id FROM monthly_expenses WHERE public_id = ? LIMIT 1`,
-    [publicId]
-  );
+  const [rows] = await pool.query<RowDataPacket[]>(`SELECT id FROM monthly_expenses WHERE public_id = ? LIMIT 1`, [
+    publicId,
+  ]);
   if (!rows.length) throw new Error("Gasto mensual no encontrado");
   const expenseId = Number(rows[0].id);
 
-  const [txRows] = await pool.query<RowDataPacket[]>(
-    `SELECT amount FROM mp_transactions WHERE id = ? LIMIT 1`,
-    [payload.transactionId]
-  );
+  const [txRows] = await pool.query<RowDataPacket[]>(`SELECT amount FROM mp_transactions WHERE id = ? LIMIT 1`, [
+    payload.transactionId,
+  ]);
   if (!txRows.length) throw new Error("Transacción no encontrada");
   const txAmount = Number(txRows[0].amount ?? 0);
   const amount = payload.amount != null ? payload.amount : Math.abs(txAmount);
@@ -2113,10 +2121,9 @@ export async function unlinkMonthlyExpenseTransaction(
   transactionId: number
 ): Promise<MonthlyExpenseDetail> {
   const pool = getPool();
-  const [rows] = await pool.query<RowDataPacket[]>(
-    `SELECT id FROM monthly_expenses WHERE public_id = ? LIMIT 1`,
-    [publicId]
-  );
+  const [rows] = await pool.query<RowDataPacket[]>(`SELECT id FROM monthly_expenses WHERE public_id = ? LIMIT 1`, [
+    publicId,
+  ]);
   if (!rows.length) throw new Error("Gasto mensual no encontrado");
   const expenseId = Number(rows[0].id);
 
@@ -2147,7 +2154,8 @@ export async function getMonthlyExpenseStats(options: {
   const groupBy = options.groupBy ?? "month";
   let expr = "DATE_FORMAT(me.expense_date, '%Y-%m-01')";
   if (groupBy === "day") expr = "DATE_FORMAT(me.expense_date, '%Y-%m-%d')";
-  if (groupBy === "week") expr = "STR_TO_DATE(CONCAT(YEAR(me.expense_date), '-', LPAD(WEEK(me.expense_date, 1), 2, '0'), '-1'), '%X-%V-%w')";
+  if (groupBy === "week")
+    expr = "STR_TO_DATE(CONCAT(YEAR(me.expense_date), '-', LPAD(WEEK(me.expense_date, 1), 2, '0'), '-1'), '%X-%V-%w')";
   if (groupBy === "quarter") expr = "CONCAT(YEAR(me.expense_date), '-Q', QUARTER(me.expense_date))";
   if (groupBy === "year") expr = "DATE_FORMAT(me.expense_date, '%Y-01-01')";
 
@@ -2203,43 +2211,42 @@ function mapServiceRow(row: RowDataPacket): ServiceRecord {
     name: String(row.name),
     detail: row.detail != null ? String(row.detail) : null,
     category: row.category != null ? String(row.category) : null,
-    service_type: (row.service_type as ServiceType) ?? 'BUSINESS',
-    ownership: (row.ownership as ServiceOwnership) ?? 'COMPANY',
-    obligation_type: (row.obligation_type as ServiceObligationType) ?? 'SERVICE',
-    recurrence_type: (row.recurrence_type as ServiceRecurrenceType) ?? 'RECURRING',
-    frequency: (row.frequency as ServiceFrequency) ?? 'MONTHLY',
+    service_type: (row.service_type as ServiceType) ?? "BUSINESS",
+    ownership: (row.ownership as ServiceOwnership) ?? "COMPANY",
+    obligation_type: (row.obligation_type as ServiceObligationType) ?? "SERVICE",
+    recurrence_type: (row.recurrence_type as ServiceRecurrenceType) ?? "RECURRING",
+    frequency: (row.frequency as ServiceFrequency) ?? "MONTHLY",
     default_amount: Number(row.default_amount ?? 0),
-    amount_indexation: (row.amount_indexation as ServiceAmountIndexation) ?? 'NONE',
+    amount_indexation: (row.amount_indexation as ServiceAmountIndexation) ?? "NONE",
     counterpart_id: row.counterpart_id != null ? Number(row.counterpart_id) : null,
     counterpart_account_id: row.counterpart_account_id != null ? Number(row.counterpart_account_id) : null,
     account_reference: row.account_reference != null ? String(row.account_reference) : null,
     emission_day: row.emission_day != null ? Number(row.emission_day) : null,
-    emission_mode: (row.emission_mode as ServiceEmissionMode) ?? 'FIXED_DAY',
+    emission_mode: (row.emission_mode as ServiceEmissionMode) ?? "FIXED_DAY",
     emission_start_day: row.emission_start_day != null ? Number(row.emission_start_day) : null,
     emission_end_day: row.emission_end_day != null ? Number(row.emission_end_day) : null,
     emission_exact_date: row.emission_exact_date != null ? toDateOnly(row.emission_exact_date) : null,
     due_day: row.due_day != null ? Number(row.due_day) : null,
     start_date: toDateOnly(row.start_date),
     next_generation_months: Number(row.next_generation_months ?? 12),
-    late_fee_mode: (row.late_fee_mode as ServiceLateFeeMode) ?? 'NONE',
+    late_fee_mode: (row.late_fee_mode as ServiceLateFeeMode) ?? "NONE",
     late_fee_value: row.late_fee_value != null ? Number(row.late_fee_value) : null,
     late_fee_grace_days: row.late_fee_grace_days != null ? Number(row.late_fee_grace_days) : null,
-    status: (row.status as ServiceStatus) ?? 'ACTIVE',
+    status: (row.status as ServiceStatus) ?? "ACTIVE",
     notes: row.notes != null ? String(row.notes) : null,
     created_at: row.created_at instanceof Date ? row.created_at.toISOString() : String(row.created_at),
     updated_at: row.updated_at instanceof Date ? row.updated_at.toISOString() : String(row.updated_at),
     counterpart_name: row.counterpart_name != null ? String(row.counterpart_name) : null,
-    counterpart_account_identifier: row.counterpart_account_identifier != null ? String(row.counterpart_account_identifier) : null,
-    counterpart_account_bank_name: row.counterpart_account_bank_name != null ? String(row.counterpart_account_bank_name) : null,
+    counterpart_account_identifier:
+      row.counterpart_account_identifier != null ? String(row.counterpart_account_identifier) : null,
+    counterpart_account_bank_name:
+      row.counterpart_account_bank_name != null ? String(row.counterpart_account_bank_name) : null,
     counterpart_account_type: row.counterpart_account_type != null ? String(row.counterpart_account_type) : null,
   } satisfies ServiceRecord;
 }
 
 async function fetchServiceRecordById(connection: mysql.PoolConnection | Pool, id: number): Promise<ServiceRecord> {
-  const [rows] = await connection.query<RowDataPacket[]>(
-    `SELECT * FROM services WHERE id = ? LIMIT 1`,
-    [id]
-  );
+  const [rows] = await connection.query<RowDataPacket[]>(`SELECT * FROM services WHERE id = ? LIMIT 1`, [id]);
   if (!rows.length) {
     throw new Error("Servicio no encontrado");
   }
@@ -2250,7 +2257,7 @@ function parseTags(value: unknown): string[] {
   if (!value) return [];
   if (Array.isArray(value)) return value.map(String);
   try {
-    const parsed = typeof value === 'string' ? JSON.parse(value) : value;
+    const parsed = typeof value === "string" ? JSON.parse(value) : value;
     if (Array.isArray(parsed)) return parsed.map((item) => String(item));
   } catch {
     // ignore
@@ -2265,12 +2272,13 @@ function mapMonthlyExpenseRow(row: RowDataPacket): MonthlyExpenseRecord {
     name: String(row.name),
     category: row.category != null ? String(row.category) : null,
     amount_expected: Number(row.amount_expected ?? 0),
-    expense_date: row.expense_date instanceof Date ? row.expense_date.toISOString().slice(0, 10) : String(row.expense_date),
+    expense_date:
+      row.expense_date instanceof Date ? row.expense_date.toISOString().slice(0, 10) : String(row.expense_date),
     notes: row.notes != null ? String(row.notes) : null,
-    source: (row.source as MonthlyExpenseSource) ?? 'MANUAL',
+    source: (row.source as MonthlyExpenseSource) ?? "MANUAL",
     service_id: row.service_id != null ? Number(row.service_id) : null,
     tags: parseTags(row.tags),
-    status: (row.status as 'OPEN' | 'CLOSED') ?? 'OPEN',
+    status: (row.status as "OPEN" | "CLOSED") ?? "OPEN",
     created_at: row.created_at instanceof Date ? row.created_at.toISOString() : String(row.created_at),
     updated_at: row.updated_at instanceof Date ? row.updated_at.toISOString() : String(row.updated_at),
     amount_applied: Number(row.amount_applied ?? 0),
@@ -2286,7 +2294,7 @@ function mapServiceScheduleRow(row: RowDataPacket): ServiceScheduleRecord {
     period_end: toDateOnly(row.period_end),
     due_date: toDateOnly(row.due_date),
     expected_amount: Number(row.expected_amount ?? 0),
-    status: (row.status as ServiceScheduleRecord['status']) ?? 'PENDING',
+    status: (row.status as ServiceScheduleRecord["status"]) ?? "PENDING",
     transaction_id: row.transaction_id != null ? Number(row.transaction_id) : null,
     paid_amount: row.paid_amount != null ? Number(row.paid_amount) : null,
     paid_date: row.paid_date != null ? toDateOnly(row.paid_date) : null,
@@ -2303,19 +2311,19 @@ function applyDerivedScheduleAmounts(
   service: ServiceRecord,
   schedule: ServiceScheduleWithTransaction
 ): ServiceScheduleWithTransaction {
-  const today = dayjs().startOf('day');
+  const today = dayjs().startOf("day");
   const dueDate = dayjs(schedule.due_date);
-  const overdueDays = Math.max(0, today.diff(dueDate, 'day'));
+  const overdueDays = Math.max(0, today.diff(dueDate, "day"));
 
   let lateFee = 0;
   if (
-    service.late_fee_mode !== 'NONE' &&
-    !['PAID', 'SKIPPED'].includes(schedule.status) &&
+    service.late_fee_mode !== "NONE" &&
+    !["PAID", "SKIPPED"].includes(schedule.status) &&
     overdueDays > (service.late_fee_grace_days ?? 0)
   ) {
     const baseline = schedule.expected_amount;
     const feeValue = service.late_fee_value ?? 0;
-    if (service.late_fee_mode === 'FIXED') {
+    if (service.late_fee_mode === "FIXED") {
       lateFee = feeValue;
     } else {
       lateFee = roundCurrency(baseline * (feeValue / 100));
@@ -2485,7 +2493,7 @@ export async function createEmployee(data: {
   const [result] = await pool.query<ResultSetHeader>(
     `INSERT INTO employees
       (full_name, role, email, rut, bank_name, bank_account_type, bank_account_number, salary_type, hourly_rate, fixed_salary, overtime_rate, retention_rate, metadata)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)` ,
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       data.full_name,
       data.role,
@@ -2660,7 +2668,7 @@ export type TimesheetEntry = {
 // Helper function to convert HH:MM to minutes
 function timeToMinutes(time: string): number | null {
   if (!/^[0-9]{1,2}:[0-9]{2}(:[0-9]{2})?$/.test(time)) return null;
-  const [hours, minutes] = time.split(':').map(Number);
+  const [hours, minutes] = time.split(":").map(Number);
   if (hours < 0 || hours > 23 || minutes < 0 || minutes >= 60) return null;
   return hours * 60 + minutes;
 }
@@ -2677,14 +2685,14 @@ export async function upsertTimesheetEntry(entry: {
   const pool = getPool();
   const startTime = entry.start_time ?? null;
   const endTime = entry.end_time ?? null;
-  
+
   // Calcular worked_minutes desde start_time y end_time
   let workedMinutes = 0;
   if (startTime && endTime) {
     const start = timeToMinutes(startTime);
     const end = timeToMinutes(endTime);
     if (start !== null && end !== null) {
-      workedMinutes = end >= start ? end - start : (24 * 60) + (end - start);
+      workedMinutes = end >= start ? end - start : 24 * 60 + (end - start);
     }
   }
 
@@ -2779,11 +2787,7 @@ export async function deleteTimesheetEntry(id: number) {
   await pool.query<ResultSetHeader>(`DELETE FROM employee_timesheets WHERE id = ?`, [id]);
 }
 
-export async function listTimesheetEntries(options: {
-  employee_id?: number;
-  from: string;
-  to: string;
-}) {
+export async function listTimesheetEntries(options: { employee_id?: number; from: string; to: string }) {
   const pool = getPool();
   const conditions = ["work_date >= ?", "work_date <= ?"];
   const params: Array<string | number> = [options.from, options.to];
@@ -2857,9 +2861,7 @@ async function seedDefaultSettings(pool: Pool) {
 }
 
 async function seedDefaultAdmin(pool: Pool) {
-  const [rows] = await pool.query<RowDataPacket[]>(
-    `SELECT COUNT(*) AS total FROM users`
-  );
+  const [rows] = await pool.query<RowDataPacket[]>(`SELECT COUNT(*) AS total FROM users`);
   const total = rows.length ? Number(rows[0].total ?? 0) : 0;
   if (total > 0) return;
 
@@ -2874,10 +2876,10 @@ async function seedDefaultAdmin(pool: Pool) {
   }
 
   const passwordHash = await bcrypt.hash(password, 12);
-  await pool.execute(
-    `INSERT INTO users (email, password_hash, role) VALUES (?, ?, 'GOD')`,
-    [email.toLowerCase(), passwordHash]
-  );
+  await pool.execute(`INSERT INTO users (email, password_hash, role) VALUES (?, ?, 'GOD')`, [
+    email.toLowerCase(),
+    passwordHash,
+  ]);
 
   console.info(
     `Usuario administrador inicial creado (${email.toLowerCase()}). Cambia la contraseña después del primer inicio.`
@@ -2886,9 +2888,7 @@ async function seedDefaultAdmin(pool: Pool) {
 
 export async function loadSettings(): Promise<AppSettings> {
   const pool = getPool();
-  const [rows] = await pool.query<RowDataPacket[]>(
-    `SELECT config_key AS keyName, config_value AS value FROM settings`
-  );
+  const [rows] = await pool.query<RowDataPacket[]>(`SELECT config_key AS keyName, config_value AS value FROM settings`);
 
   const map = new Map<string, string>();
   rows.forEach((row) => {
@@ -3128,7 +3128,7 @@ export async function upsertWithdrawals(payouts: PayoutRecord[]) {
         const parsed = Number(row.config_value);
         if (!Number.isNaN(parsed) && parsed > 0) CHUNK_SIZE = Math.max(50, Math.min(parsed, 5000));
       }
-    } catch (err) {
+    } catch {
       // ignore and fall back to default
     }
   }
@@ -3646,10 +3646,7 @@ export async function updateCounterpartAccount(
   if (!fields.length) return;
   params.push(accountId);
   const pool = getPool();
-  await pool.query(
-    `UPDATE mp_counterpart_accounts SET ${fields.join(", ")} WHERE id = ? LIMIT 1` as string,
-    params
-  );
+  await pool.query(`UPDATE mp_counterpart_accounts SET ${fields.join(", ")} WHERE id = ? LIMIT 1` as string, params);
 }
 
 export type CounterpartAccountSuggestion = {
@@ -3848,9 +3845,7 @@ export type RoleMapping = {
 
 export async function listRoleMappings(): Promise<RoleMapping[]> {
   const pool = getPool();
-  const [rows] = await pool.query<RowDataPacket[]>(
-    `SELECT employee_role, app_role FROM role_mappings`
-  );
+  const [rows] = await pool.query<RowDataPacket[]>(`SELECT employee_role, app_role FROM role_mappings`);
   return rows as RoleMapping[];
 }
 
@@ -3875,10 +3870,7 @@ export async function listInventoryCategories(): Promise<InventoryCategory[]> {
 
 export async function createInventoryCategory(name: string): Promise<InventoryCategory> {
   const pool = getPool();
-  const [result] = await pool.query<ResultSetHeader>(
-    `INSERT INTO inventory_categories (name) VALUES (?)`,
-    [name]
-  );
+  const [result] = await pool.query<ResultSetHeader>(`INSERT INTO inventory_categories (name) VALUES (?)`, [name]);
   const [rows] = await pool.query<RowDataPacket[]>(
     `SELECT id, name, created_at FROM inventory_categories WHERE id = ?`,
     [result.insertId]
@@ -3898,7 +3890,9 @@ export async function listInventoryItems(): Promise<InventoryItem[]> {
   return rows as InventoryItem[];
 }
 
-export async function createInventoryItem(item: Omit<InventoryItem, 'id' | 'created_at' | 'updated_at'>): Promise<InventoryItem> {
+export async function createInventoryItem(
+  item: Omit<InventoryItem, "id" | "created_at" | "updated_at">
+): Promise<InventoryItem> {
   const pool = getPool();
   const [result] = await pool.query<ResultSetHeader>(
     `INSERT INTO inventory_items (category_id, name, description, current_stock) VALUES (?, ?, ?, ?)`,
@@ -3911,14 +3905,16 @@ export async function createInventoryItem(item: Omit<InventoryItem, 'id' | 'crea
   return rows[0] as InventoryItem;
 }
 
-export async function updateInventoryItem(id: number, item: Partial<Omit<InventoryItem, 'id' | 'created_at' | 'updated_at'>>): Promise<InventoryItem> {
+export async function updateInventoryItem(
+  id: number,
+  item: Partial<Omit<InventoryItem, "id" | "created_at" | "updated_at">>
+): Promise<InventoryItem> {
   const pool = getPool();
-  const fields = Object.keys(item).map(k => `\`${k}\` = ?`).join(', ');
+  const fields = Object.keys(item)
+    .map((k) => `\`${k}\` = ?`)
+    .join(", ");
   const values = Object.values(item);
-  await pool.query(
-    `UPDATE inventory_items SET ${fields} WHERE id = ?`,
-    [...values, id]
-  );
+  await pool.query(`UPDATE inventory_items SET ${fields} WHERE id = ?`, [...values, id]);
   const [rows] = await pool.query<RowDataPacket[]>(
     `SELECT id, category_id, name, description, current_stock, created_at, updated_at FROM inventory_items WHERE id = ?`,
     [id]
@@ -3928,22 +3924,23 @@ export async function updateInventoryItem(id: number, item: Partial<Omit<Invento
 
 export async function deleteInventoryItem(id: number): Promise<void> {
   const pool = getPool();
-  await pool.query('DELETE FROM inventory_items WHERE id = ?', [id]);
+  await pool.query("DELETE FROM inventory_items WHERE id = ?", [id]);
 }
 
-export async function createInventoryMovement(movement: Omit<InventoryMovement, 'id' | 'created_at'>): Promise<void> {
+export async function createInventoryMovement(movement: Omit<InventoryMovement, "id" | "created_at">): Promise<void> {
   const pool = getPool();
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
-    await connection.query(
-      `INSERT INTO inventory_movements (item_id, quantity_change, reason) VALUES (?, ?, ?)`,
-      [movement.item_id, movement.quantity_change, movement.reason]
-    );
-    await connection.query(
-      `UPDATE inventory_items SET current_stock = current_stock + ? WHERE id = ?`,
-      [movement.quantity_change, movement.item_id]
-    );
+    await connection.query(`INSERT INTO inventory_movements (item_id, quantity_change, reason) VALUES (?, ?, ?)`, [
+      movement.item_id,
+      movement.quantity_change,
+      movement.reason,
+    ]);
+    await connection.query(`UPDATE inventory_items SET current_stock = current_stock + ? WHERE id = ?`, [
+      movement.quantity_change,
+      movement.item_id,
+    ]);
     await connection.commit();
   } catch (error) {
     await connection.rollback();

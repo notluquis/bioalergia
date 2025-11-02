@@ -97,13 +97,13 @@ export default function SettingsForm() {
         const payload = await res.json();
         setUpsertChunkSize(payload?.internal?.upsertChunkSize ?? "");
         setEnvUpsertChunkSize(payload?.internal?.envUpsertChunkSize ?? null);
-      } catch (err) {
+      } catch {
         // noop: keep internal states empty
       } finally {
         setInternalLoading(false);
       }
     })();
-  }, [settings, resetLogoSelection, resetFaviconSelection]);
+  }, [settings, resetLogoSelection, resetFaviconSelection, hasRole]);
 
   useEffect(() => {
     return () => {
@@ -261,7 +261,7 @@ export default function SettingsForm() {
   return (
     <form onSubmit={handleSubmit} className="bg-base-100 space-y-6 p-6">
       <div className="space-y-1">
-        <h2 className="text-lg font-semibold text-[var(--brand-primary)] drop-shadow-sm">Configuración General</h2>
+        <h2 className="text-lg font-semibold text-(--brand-primary) drop-shadow-sm">Configuración General</h2>
         <p className="text-sm text-slate-600/90">Personaliza la identidad visual y la información de contacto.</p>
       </div>
       <div className="grid gap-4 md:grid-cols-2">
@@ -309,7 +309,7 @@ export default function SettingsForm() {
               </Button>
             </div>
           </div>
-              {logoMode === "url" ? (
+          {logoMode === "url" ? (
             <label className="flex flex-col gap-2 text-sm text-slate-600">
               <span className="sr-only">URL del logo</span>
               <input
@@ -320,8 +320,8 @@ export default function SettingsForm() {
                 placeholder="https://..."
               />
               <span className="text-xs text-slate-400">
-                Puedes usar una URL pública (https://) o una ruta interna generada tras subir un archivo
-                (ej: /uploads/branding/logo.png).
+                Puedes usar una URL pública (https://) o una ruta interna generada tras subir un archivo (ej:
+                /uploads/branding/logo.png).
               </span>
             </label>
           ) : (
@@ -340,11 +340,7 @@ export default function SettingsForm() {
               </div>
               <div className="flex flex-wrap items-center gap-4">
                 <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-xl border border-white/60 bg-base-100/80 p-2">
-                  <img
-                    src={displayedLogo}
-                    alt="Vista previa del logo"
-                    className="h-full w-full object-contain"
-                  />
+                  <img src={displayedLogo} alt="Vista previa del logo" className="h-full w-full object-contain" />
                 </div>
                 <div className="text-xs text-slate-500">
                   <p>{logoPreview ? "Vista previa sin guardar" : "Logo actual"}</p>
@@ -352,7 +348,8 @@ export default function SettingsForm() {
                 </div>
               </div>
               <span className="text-xs text-slate-400">
-                Tamaño máximo 12&nbsp;MB. Los archivos subidos se guardan en <code className="font-mono">/uploads/branding</code>.
+                Tamaño máximo 12&nbsp;MB. Los archivos subidos se guardan en{" "}
+                <code className="font-mono">/uploads/branding</code>.
               </span>
             </div>
           )}
@@ -390,12 +387,12 @@ export default function SettingsForm() {
                 placeholder="https://..."
               />
               <span className="text-xs text-slate-400">
-                Puedes usar una URL pública (https://) o una ruta interna generada tras subir un archivo
-                (ej: /uploads/branding/favicon.png).
+                Puedes usar una URL pública (https://) o una ruta interna generada tras subir un archivo (ej:
+                /uploads/branding/favicon.png).
               </span>
             </label>
           ) : (
-              <div className="space-y-3 text-sm text-slate-600">
+            <div className="space-y-3 text-sm text-slate-600">
               <div>
                 <input
                   ref={faviconInputRef}
@@ -410,11 +407,7 @@ export default function SettingsForm() {
               </div>
               <div className="flex flex-wrap items-center gap-4">
                 <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl border border-white/60 bg-base-100/80 p-2">
-                  <img
-                    src={displayedFavicon}
-                    alt="Vista previa del favicon"
-                    className="h-full w-full object-contain"
-                  />
+                  <img src={displayedFavicon} alt="Vista previa del favicon" className="h-full w-full object-contain" />
                 </div>
                 <div className="text-xs text-slate-500">
                   <p>{faviconPreview ? "Vista previa sin guardar" : "Favicon actual"}</p>
@@ -422,7 +415,8 @@ export default function SettingsForm() {
                 </div>
               </div>
               <span className="text-xs text-slate-400">
-                Usa imágenes cuadradas (ideal 512&nbsp;px) con fondo transparente cuando sea posible. Tamaño máximo 12&nbsp;MB.
+                Usa imágenes cuadradas (ideal 512&nbsp;px) con fondo transparente cuando sea posible. Tamaño máximo
+                12&nbsp;MB.
               </span>
             </div>
           )}
@@ -446,10 +440,14 @@ export default function SettingsForm() {
       {hasRole() && (
         <div className="mt-6 rounded-lg border border-white/30 bg-base-200 p-4">
           <h3 className="text-sm font-semibold">Ajustes internos (avanzado)</h3>
-          <p className="text-xs text-slate-500">Variables internas editables (prefijo BIOALERGIA_X_). Solo administradores.</p>
+          <p className="text-xs text-slate-500">
+            Variables internas editables (prefijo BIOALERGIA_X_). Solo administradores.
+          </p>
           <div className="mt-3 grid gap-3 md:grid-cols-3">
             <label className="flex flex-col gap-2 text-sm text-slate-600">
-              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Tamaño de chunk para retiros</span>
+              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Tamaño de chunk para retiros
+              </span>
               <input
                 type="number"
                 min={50}
@@ -458,7 +456,9 @@ export default function SettingsForm() {
                 onChange={(e) => setUpsertChunkSize(e.target.value)}
                 className="input input-bordered"
               />
-              <span className="text-xs text-slate-400">Env var: <code>{envUpsertChunkSize ?? "(no definido)"}</code></span>
+              <span className="text-xs text-slate-400">
+                Env var: <code>{envUpsertChunkSize ?? "(no definido)"}</code>
+              </span>
             </label>
             <div className="flex items-end gap-2 md:col-span-2">
               <Button

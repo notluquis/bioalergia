@@ -110,7 +110,7 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
   return (
     <form
       onSubmit={form.handleSubmit}
-      className="space-y-4 rounded-2xl border border-[var(--brand-primary)]/15 bg-base-100 p-6 text-sm shadow-sm"
+      className="space-y-4 rounded-2xl border border-(--brand-primary)/15 bg-base-100 p-6 text-sm shadow-sm"
     >
       <div className="grid gap-4 md:grid-cols-3">
         {form.values.salary_type === "fixed" && (
@@ -238,10 +238,7 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
               type="number"
               value={typeof form.values.fixed_salary === "boolean" ? "" : (form.values.fixed_salary ?? "")}
               onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
-                form.setValue(
-                  "fixed_salary",
-                  event.target.value ? Number(event.target.value) : undefined
-                )
+                form.setValue("fixed_salary", event.target.value ? Number(event.target.value) : undefined)
               }
               required
             />

@@ -36,19 +36,14 @@ export default function ParticipantInsightsPage() {
   return (
     <section className="space-y-6">
       <div className="bg-base-100 space-y-2 p-6">
-        <h1 className="text-2xl font-bold text-[var(--brand-primary)] drop-shadow-sm">
-          Participantes en transacciones
-        </h1>
+        <h1 className="text-2xl font-bold text-(--brand-primary) drop-shadow-sm">Participantes en transacciones</h1>
         <p className="max-w-2xl text-sm text-slate-600/90">
           Revisa la actividad de un identificador en los campos <strong>Desde</strong> y <strong>Hacia</strong>, con un
           resumen mensual y las contrapartes más frecuentes.
         </p>
       </div>
 
-      <form
-        onSubmit={handleSubmit}
-        className="bg-base-100 grid gap-4 p-6 text-sm text-slate-600 lg:grid-cols-4"
-      >
+      <form onSubmit={handleSubmit} className="bg-base-100 grid gap-4 p-6 text-sm text-slate-600 lg:grid-cols-4">
         <Input
           label="ID participante"
           type="text"
@@ -92,12 +87,12 @@ export default function ParticipantInsightsPage() {
       <section className="space-y-4 bg-base-100 p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="space-y-1">
-            <h2 className="text-lg font-semibold text-[var(--brand-secondary)]">Ranking de retiros</h2>
-            <p className="text-sm text-slate-600">
+            <h2 className="text-lg font-semibold text-(--brand-secondary)">Ranking de retiros</h2>
+            <p className="text-sm text-base-content">
               Contrapartes con mayores egresos en el rango seleccionado, agrupadas por RUT y cuenta.
             </p>
           </div>
-          <div className="flex flex-wrap gap-4 text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <div className="flex flex-wrap gap-4 text-xs font-semibold uppercase tracking-wide text-base-content/70">
             <Input
               label="Mostrar top"
               type="select"
@@ -132,8 +127,8 @@ export default function ParticipantInsightsPage() {
         {leaderboardError && <Alert variant="error">{leaderboardError}</Alert>}
 
         <div className="overflow-x-auto">
-          <table className="min-w-full text-sm text-slate-600">
-            <thead className="bg-base-100/60 text-[var(--brand-secondary)]">
+          <table className="min-w-full text-sm text-base-content">
+            <thead className="bg-base-100/60 text-(--brand-secondary)">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide">Titular</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide">RUT</th>
@@ -146,7 +141,7 @@ export default function ParticipantInsightsPage() {
             <tbody>
               {leaderboardLoading ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-6 text-center text-slate-500">
+                  <td colSpan={6} className="px-4 py-6 text-center text-base-content/70">
                     Cargando ranking...
                   </td>
                 </tr>
@@ -158,15 +153,15 @@ export default function ParticipantInsightsPage() {
                     <tr
                       key={row.key}
                       className={`border-b border-white/45 bg-base-100/45 transition-colors last:border-none even:bg-base-100/35 ${
-                        isActive ? "bg-[var(--brand-secondary)]/15" : ""
+                        isActive ? "bg-(--brand-secondary)/15" : ""
                       }`}
                     >
-                      <td className="px-4 py-3 font-medium text-slate-700">{row.displayName}</td>
-                      <td className="px-4 py-3 text-slate-600">{row.rut}</td>
-                      <td className="px-4 py-3 text-slate-600">{row.account}</td>
-                      <td className="px-4 py-3 text-slate-600">{row.outgoingCount}</td>
-                      <td className="px-4 py-3 text-slate-600">{fmtCLP(row.outgoingAmount)}</td>
-                      <td className="px-4 py-3 text-slate-600">
+                      <td className="px-4 py-3 font-medium text-base-content">{row.displayName}</td>
+                      <td className="px-4 py-3 text-base-content">{row.rut}</td>
+                      <td className="px-4 py-3 text-base-content">{row.account}</td>
+                      <td className="px-4 py-3 text-base-content">{row.outgoingCount}</td>
+                      <td className="px-4 py-3 text-base-content">{fmtCLP(row.outgoingAmount)}</td>
+                      <td className="px-4 py-3 text-base-content">
                         <Button
                           variant="secondary"
                           size="sm"
@@ -184,7 +179,7 @@ export default function ParticipantInsightsPage() {
                 })
               ) : (
                 <tr>
-                  <td colSpan={6} className="px-4 py-6 text-center text-slate-500">
+                  <td colSpan={6} className="px-4 py-6 text-center text-base-content/70">
                     Sin participantes en el rango seleccionado.
                   </td>
                 </tr>
@@ -197,7 +192,7 @@ export default function ParticipantInsightsPage() {
       {detailError && <Alert variant="error">{detailError}</Alert>}
 
       {!visible ? (
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-base-content/70">
           {detailLoading
             ? "Buscando información del participante..."
             : "Ingresa un identificador y selecciona el rango para ver su actividad."}
@@ -205,10 +200,10 @@ export default function ParticipantInsightsPage() {
       ) : (
         <div className="space-y-6">
           <section className="space-y-3 bg-base-100 p-6">
-            <h2 className="text-lg font-semibold text-[var(--brand-primary)]">Resumen mensual</h2>
+            <h2 className="text-lg font-semibold text-(--brand-primary)">Resumen mensual</h2>
             <div className="overflow-x-auto">
-              <table className="min-w-full text-sm text-slate-600">
-                <thead className="bg-base-100/60 text-[var(--brand-primary)]">
+              <table className="min-w-full text-sm text-base-content">
+                <thead className="bg-base-100/60 text-(--brand-primary)">
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide">Mes</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide">
@@ -225,14 +220,16 @@ export default function ParticipantInsightsPage() {
                       key={row.month}
                       className="border-b border-white/45 bg-base-100/45 last:border-none even:bg-base-100/35"
                     >
-                      <td className="px-4 py-3 font-medium text-slate-700">{dayjs(row.month).format("MMMM YYYY")}</td>
-                      <td className="px-4 py-3 text-slate-600">{row.outgoingCount}</td>
-                      <td className="px-4 py-3 text-slate-600">{fmtCLP(row.outgoingAmount)}</td>
+                      <td className="px-4 py-3 font-medium text-base-content">
+                        {dayjs(row.month).format("MMMM YYYY")}
+                      </td>
+                      <td className="px-4 py-3 text-base-content">{row.outgoingCount}</td>
+                      <td className="px-4 py-3 text-base-content">{fmtCLP(row.outgoingAmount)}</td>
                     </tr>
                   ))}
                   {!monthly.length && (
                     <tr>
-                      <td colSpan={3} className="px-4 py-6 text-center text-slate-500">
+                      <td colSpan={3} className="px-4 py-6 text-center text-base-content/70">
                         Sin movimientos en el rango seleccionado.
                       </td>
                     </tr>
@@ -243,10 +240,10 @@ export default function ParticipantInsightsPage() {
           </section>
 
           <section className="space-y-3 bg-base-100 p-6">
-            <h2 className="text-lg font-semibold text-[var(--brand-secondary)]">Contrapartes</h2>
+            <h2 className="text-lg font-semibold text-(--brand-secondary)">Contrapartes</h2>
             <div className="overflow-x-auto">
-              <table className="min-w-full text-sm text-slate-600">
-                <thead className="bg-base-100/60 text-[var(--brand-secondary)]">
+              <table className="min-w-full text-sm text-base-content">
+                <thead className="bg-base-100/60 text-(--brand-secondary)">
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide">Titular</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide">RUT</th>
@@ -286,26 +283,29 @@ export default function ParticipantInsightsPage() {
                     const metadata = metadataParts.join(" · ");
 
                     return (
-                      <tr key={key} className="border-b border-white/45 bg-base-100/45 last:border-none even:bg-base-100/35">
-                        <td className="px-4 py-3 text-slate-700">
+                      <tr
+                        key={key}
+                        className="border-b border-white/45 bg-base-100/45 last:border-none even:bg-base-100/35"
+                      >
+                        <td className="px-4 py-3 text-base-content">
                           <div className="font-medium">
                             {row.bankAccountHolder || row.counterpart || "(desconocido)"}
                           </div>
-                          {bankSummary && <div className="text-xs text-slate-500/90">{bankSummary}</div>}
-                          {metadata && <div className="text-xs text-slate-400/80">{metadata}</div>}
+                          {bankSummary && <div className="text-xs text-base-content/90">{bankSummary}</div>}
+                          {metadata && <div className="text-xs text-base-content/80">{metadata}</div>}
                         </td>
-                        <td className="px-4 py-3 text-slate-600">{row.identificationNumber || "-"}</td>
-                        <td className="px-4 py-3 text-slate-600">
+                        <td className="px-4 py-3 text-base-content">{row.identificationNumber || "-"}</td>
+                        <td className="px-4 py-3 text-base-content">
                           {row.bankAccountNumber || row.withdrawId || row.counterpartId || "-"}
                         </td>
-                        <td className="px-4 py-3 text-slate-600">{row.outgoingCount}</td>
-                        <td className="px-4 py-3 text-slate-600">{fmtCLP(row.outgoingAmount)}</td>
+                        <td className="px-4 py-3 text-base-content">{row.outgoingCount}</td>
+                        <td className="px-4 py-3 text-base-content">{fmtCLP(row.outgoingAmount)}</td>
                       </tr>
                     );
                   })}
                   {!counterparts.length && (
                     <tr>
-                      <td colSpan={5} className="px-4 py-6 text-center text-slate-500">
+                      <td colSpan={5} className="px-4 py-6 text-center text-base-content/70">
                         No hay contrapartes registradas.
                       </td>
                     </tr>

@@ -203,7 +203,7 @@ export default function TransactionsMovements() {
 
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div className="space-y-2">
-              <h1 className="text-2xl font-bold text-[var(--brand-primary)]">Movimientos en base</h1>
+              <h1 className="text-2xl font-bold text-(--brand-primary)">Movimientos en base</h1>
               <p className="max-w-2xl text-sm text-slate-600">
                 Los datos provienen de la tabla <code>mp_transactions</code>. Ajusta el saldo inicial para recalcular el
                 saldo acumulado. Para consultas o soporte escribe a<strong> {settings.supportEmail}</strong>.

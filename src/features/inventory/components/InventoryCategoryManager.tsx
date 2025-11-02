@@ -48,7 +48,7 @@ export default function InventoryCategoryManager() {
   return (
     <section className="space-y-5 p-6 bg-base-100">
       <div className="space-y-1">
-        <h2 className="text-lg font-semibold text-[var(--brand-secondary)] drop-shadow-sm">Categorías de Inventario</h2>
+        <h2 className="text-lg font-semibold text-(--brand-secondary) drop-shadow-sm">Categorías de Inventario</h2>
         <p className="text-sm text-slate-600/90">Administra las categorías para organizar los items del inventario.</p>
       </div>
 

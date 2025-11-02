@@ -125,7 +125,7 @@ export default function CounterpartsPage() {
 
   return (
     <section className="flex flex-col gap-6 xl:flex-row xl:items-start">
-      <div className="xl:w-72 xl:flex-shrink-0">
+      <div className="xl:w-72 xl:shrink-0">
         <CounterpartList counterparts={counterparts} selectedId={selectedId} onSelectCounterpart={selectCounterpart} />
       </div>
 
@@ -150,7 +150,7 @@ export default function CounterpartsPage() {
           <section className="bg-base-100 space-y-5 p-6">
             <header className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
               <div className="space-y-1">
-                <h2 className="text-lg font-semibold text-[var(--brand-primary)] drop-shadow-sm">Resumen mensual</h2>
+                <h2 className="text-lg font-semibold text-(--brand-primary) drop-shadow-sm">Resumen mensual</h2>
                 <p className="text-xs text-slate-600/90">Transferencias de egreso asociadas a esta contraparte.</p>
               </div>
               <div className="flex flex-wrap items-end gap-3 text-xs">

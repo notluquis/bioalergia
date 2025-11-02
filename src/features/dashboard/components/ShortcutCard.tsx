@@ -21,7 +21,7 @@ export default function ShortcutCard({
         <h2 className="text-lg font-semibold" style={{ color: accentColor }}>
           {title}
         </h2>
-        <p className="mt-2 text-sm text-slate-600/90">{description}</p>
+        <p className="mt-2 text-sm text-base-content/90">{description}</p>
       </div>
       <ShortcutButton to={to} accentColor={accentColor} accentTint={accentTint} />
     </article>

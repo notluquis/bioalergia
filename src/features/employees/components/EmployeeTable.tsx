@@ -133,14 +133,14 @@ export default function EmployeeTable({ employees, loading, onEdit, onDeactivate
           ))}
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-[var(--brand-primary)]/15 bg-base-100 shadow-sm">
+      <div className="overflow-hidden rounded-2xl border border-(--brand-primary)/15 bg-base-100 shadow-sm">
         <div className="overflow-x-auto muted-scrollbar">
           <table className="min-w-full text-sm">
-            <thead className="bg-[var(--brand-primary)]/10 text-[var(--brand-primary)]">
+            <thead className="bg-(--brand-primary)/10 text-(--brand-primary)">
               <tr>
                 {table.isColumnVisible("name") && (
                   <th
-                    className="px-4 py-3 text-left font-semibold cursor-pointer hover:bg-[var(--brand-primary)]/20 whitespace-nowrap"
+                    className="px-4 py-3 text-left font-semibold cursor-pointer hover:bg-(--brand-primary)/20 whitespace-nowrap"
                     {...table.getSortProps("name")}
                   >
                     <span className="inline-flex items-center gap-1">Nombre {table.getSortIcon("name")}</span>
@@ -148,7 +148,7 @@ export default function EmployeeTable({ employees, loading, onEdit, onDeactivate
                 )}
                 {table.isColumnVisible("role") && (
                   <th
-                    className="px-4 py-3 text-left font-semibold cursor-pointer hover:bg-[var(--brand-primary)]/20 whitespace-nowrap"
+                    className="px-4 py-3 text-left font-semibold cursor-pointer hover:bg-(--brand-primary)/20 whitespace-nowrap"
                     {...table.getSortProps("role")}
                   >
                     <span className="inline-flex items-center gap-1">Cargo {table.getSortIcon("role")}</span>
@@ -156,7 +156,7 @@ export default function EmployeeTable({ employees, loading, onEdit, onDeactivate
                 )}
                 {table.isColumnVisible("email") && (
                   <th
-                    className="px-4 py-3 text-left font-semibold cursor-pointer hover:bg-[var(--brand-primary)]/20 whitespace-nowrap"
+                    className="px-4 py-3 text-left font-semibold cursor-pointer hover:bg-(--brand-primary)/20 whitespace-nowrap"
                     {...table.getSortProps("email")}
                   >
                     <span className="inline-flex items-center gap-1">Correo {table.getSortIcon("email")}</span>
@@ -170,7 +170,7 @@ export default function EmployeeTable({ employees, loading, onEdit, onDeactivate
                 )}
                 {table.isColumnVisible("hourlyRate") && (
                   <th
-                    className="px-4 py-3 text-left font-semibold cursor-pointer hover:bg-[var(--brand-primary)]/20"
+                    className="px-4 py-3 text-left font-semibold cursor-pointer hover:bg-(--brand-primary)/20"
                     {...table.getSortProps("hourlyRate")}
                   >
                     <span className="inline-flex items-center gap-1">Hora base {table.getSortIcon("hourlyRate")}</span>
@@ -178,7 +178,7 @@ export default function EmployeeTable({ employees, loading, onEdit, onDeactivate
                 )}
                 {table.isColumnVisible("overtimeRate") && (
                   <th
-                    className="px-4 py-3 text-left font-semibold cursor-pointer hover:bg-[var(--brand-primary)]/20"
+                    className="px-4 py-3 text-left font-semibold cursor-pointer hover:bg-(--brand-primary)/20"
                     {...table.getSortProps("overtimeRate")}
                   >
                     <span className="inline-flex items-center gap-1">
@@ -188,7 +188,7 @@ export default function EmployeeTable({ employees, loading, onEdit, onDeactivate
                 )}
                 {table.isColumnVisible("retentionRate") && (
                   <th
-                    className="px-4 py-3 text-left font-semibold cursor-pointer hover:bg-[var(--brand-primary)]/20"
+                    className="px-4 py-3 text-left font-semibold cursor-pointer hover:bg-(--brand-primary)/20"
                     {...table.getSortProps("retentionRate")}
                   >
                     <span className="inline-flex items-center gap-1">
@@ -198,7 +198,7 @@ export default function EmployeeTable({ employees, loading, onEdit, onDeactivate
                 )}
                 {table.isColumnVisible("status") && (
                   <th
-                    className="px-4 py-3 text-left font-semibold cursor-pointer hover:bg-[var(--brand-primary)]/20"
+                    className="px-4 py-3 text-left font-semibold cursor-pointer hover:bg-(--brand-primary)/20"
                     {...table.getSortProps("status")}
                   >
                     <span className="inline-flex items-center gap-1">Estado {table.getSortIcon("status")}</span>
@@ -279,7 +279,7 @@ export default function EmployeeTable({ employees, loading, onEdit, onDeactivate
                 <tr>
                   <td
                     colSpan={table.getVisibleColumns(columns).length}
-                    className="px-4 py-6 text-center text-[var(--brand-primary)]"
+                    className="px-4 py-6 text-center text-(--brand-primary)"
                   >
                     Cargando...
                   </td>

@@ -80,7 +80,7 @@ export function LoanDetail({
     <section className="relative flex h-full flex-col gap-6 rounded-3xl p-6 bg-base-100">
       <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="space-y-1">
-          <h1 className="text-2xl font-bold text-[var(--brand-primary)] drop-shadow-sm">{loan.title}</h1>
+          <h1 className="text-2xl font-bold text-(--brand-primary) drop-shadow-sm">{loan.title}</h1>
           <p className="text-sm text-slate-600/90">
             {loan.borrower_name} · {loan.borrower_type === "PERSON" ? "Persona natural" : "Empresa"}
           </p>
@@ -207,7 +207,7 @@ export function LoanDetail({
 
       {loading && (
         <div className="absolute inset-0 z-30 flex items-center justify-center bg-base-100/40 backdrop-blur-sm">
-          <p className="rounded-full bg-base-100 px-4 py-2 text-sm font-semibold text-[var(--brand-primary)] shadow">
+          <p className="rounded-full bg-base-100 px-4 py-2 text-sm font-semibold text-(--brand-primary) shadow">
             Cargando préstamo...
           </p>
         </div>

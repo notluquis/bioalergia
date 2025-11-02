@@ -54,7 +54,7 @@ const CalendarSettingsPage = lazy(() => import("./pages/settings/CalendarSetting
 // Componente de loading
 const PageLoader = () => (
   <div className="flex items-center justify-center min-h-[200px]">
-    <div className="text-[var(--brand-primary)] font-medium">Cargando...</div>
+    <div className="text-(--brand-primary) font-medium">Cargando...</div>
   </div>
 );
 

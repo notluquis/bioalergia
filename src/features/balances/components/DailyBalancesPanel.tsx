@@ -20,7 +20,7 @@ export function DailyBalancesPanel({ report, drafts, onDraftChange, onSave, savi
     <section className="space-y-4 p-6 bg-base-100">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1">
-          <h2 className="text-lg font-semibold text-[var(--brand-primary)] drop-shadow-sm">Saldos diarios</h2>
+          <h2 className="text-lg font-semibold text-(--brand-primary) drop-shadow-sm">Saldos diarios</h2>
           <p className="text-xs text-slate-600/90">
             Registra el saldo de la cuenta a las 23:59 de cada día para conciliar los movimientos.
           </p>
@@ -40,7 +40,7 @@ export function DailyBalancesPanel({ report, drafts, onDraftChange, onSave, savi
       )}
 
       {loading ? (
-        <p className="px-4 py-3 text-sm text-[var(--brand-primary)]">Cargando saldos diarios...</p>
+        <p className="px-4 py-3 text-sm text-(--brand-primary)">Cargando saldos diarios...</p>
       ) : !report ? (
         <p className="px-4 py-3 text-sm text-slate-600">
           Selecciona un rango con movimientos para conciliar los saldos diarios.
@@ -50,7 +50,7 @@ export function DailyBalancesPanel({ report, drafts, onDraftChange, onSave, savi
       ) : (
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm text-slate-700">
-            <thead className="bg-base-100/60 text-[var(--brand-primary)]">
+            <thead className="bg-base-100/60 text-(--brand-primary)">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide">Fecha</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide">Ingresos</th>
@@ -76,14 +76,14 @@ export function DailyBalancesPanel({ report, drafts, onDraftChange, onSave, savi
 
                 return (
                   <tr
-                      key={day.date}
-                      className="align-top border-b border-white/40 bg-base-100/45 last:border-none even:bg-base-100/35"
-                    >
+                    key={day.date}
+                    className="align-top border-b border-white/40 bg-base-100/45 last:border-none even:bg-base-100/35"
+                  >
                     <td className="whitespace-nowrap px-4 py-3 font-medium text-slate-700">
                       <div className="flex flex-col gap-1">
                         <span>{dayjs(day.date).format("DD-MM-YYYY")}</span>
                         {day.hasCashback && (
-                          <span className="inline-flex items-center gap-1 rounded-full border border-amber-300/70 bg-amber-50/70 px-2 py-0.5 text-[11px] font-medium text-amber-700 shadow-sm">
+                          <span className="inline-flex items-center gap-1 rounded-full border border-amber-300/70 bg-amber-50/70 px-2 py-0.5 text-xs font-medium text-amber-700 shadow-sm">
                             Cashback excluido
                           </span>
                         )}

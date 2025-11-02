@@ -37,14 +37,14 @@ export function BalanceSummary({ report, loading, error }: BalanceSummaryProps) 
 
   return (
     <section className="space-y-4 p-6 bg-base-100">
-      <h2 className="text-lg font-semibold text-[var(--brand-primary)] drop-shadow-sm">Conciliación de saldo</h2>
+      <h2 className="text-lg font-semibold text-(--brand-primary) drop-shadow-sm">Conciliación de saldo</h2>
       {error && (
-        <p className="border-l-4 border-rose-300/80 bg-gradient-to-r from-rose-50/65 via-white/70 to-white/55 px-4 py-2 text-xs text-rose-700">
+        <p className="border-l-4 border-rose-300/80 bg-linear-to-r from-rose-50/65 via-white/70 to-white/55 px-4 py-2 text-xs text-rose-700">
           {error}
         </p>
       )}
       {loading ? (
-        <p className="text-sm text-[var(--brand-primary)]">Cargando conciliación...</p>
+        <p className="text-sm text-(--brand-primary)">Cargando conciliación...</p>
       ) : !report ? (
         <p className="text-sm text-slate-600">Selecciona un rango para revisar los saldos de cierre registrados.</p>
       ) : !hasRecordedBalances ? (

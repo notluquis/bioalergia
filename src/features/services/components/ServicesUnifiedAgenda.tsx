@@ -135,9 +135,7 @@ export default function ServicesUnifiedAgenda({
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Agenda unificada</h2>
-            <p className="text-xs text-slate-400">
-              Visualiza todos los pagos programados por fecha de vencimiento.
-            </p>
+            <p className="text-xs text-slate-400">Visualiza todos los pagos programados por fecha de vencimiento.</p>
           </div>
           {loading && <span className="text-xs text-slate-400">Actualizando agenda…</span>}
         </div>
@@ -145,13 +143,13 @@ export default function ServicesUnifiedAgenda({
         {!groups.length && !loading && !error && (
           <p className="text-xs text-slate-400">No hay cuotas programadas en el periodo consultado.</p>
         )}
-        <div className="muted-scrollbar max-h-[32rem] space-y-2 overflow-y-auto pr-1">
+        <div className="muted-scrollbar max-h-128 space-y-2 overflow-y-auto pr-1">
           {groups.map((group) => {
             const isExpanded = expanded[group.dateKey] ?? false;
             return (
               <article
                 key={group.dateKey}
-                className="rounded-2xl border border-white/45 bg-base-100/70 shadow-sm transition hover:border-[var(--brand-primary)]/35"
+                className="rounded-2xl border border-white/45 bg-base-100/70 shadow-sm transition hover:border-(--brand-primary)/35"
               >
                 <Button
                   type="button"
@@ -187,16 +185,14 @@ export default function ServicesUnifiedAgenda({
                       return (
                         <div
                           key={`${service.public_id}-${schedule.id}`}
-                          className="rounded-xl border border-white/50 bg-base-100/80 p-3 shadow-inner transition hover:border-[var(--brand-primary)]/40"
+                          className="rounded-xl border border-white/50 bg-base-100/80 p-3 shadow-inner transition hover:border-(--brand-primary)/40"
                         >
                           <div className="flex flex-wrap items-center justify-between gap-3">
                             <div>
                               <p className="text-sm font-semibold text-slate-700">{service.name}</p>
-                              {service.detail && (
-                                <p className="text-xs text-slate-400">{service.detail}</p>
-                              )}
+                              {service.detail && <p className="text-xs text-slate-400">{service.detail}</p>}
                               <p className="mt-1 text-xs text-slate-400">
-                                {currencyFormatter.format(schedule.expected_amount)} · Vence el {" "}
+                                {currencyFormatter.format(schedule.expected_amount)} · Vence el{" "}
                                 {dateFormatter.format(dueDate.toDate())}
                               </p>
                             </div>
@@ -205,9 +201,7 @@ export default function ServicesUnifiedAgenda({
                                 statusClasses[schedule.status]
                               }`}
                             >
-                              {schedule.status === "PENDING" && isOverdue
-                                ? "Pendiente · Vencido"
-                                : schedule.status}
+                              {schedule.status === "PENDING" && isOverdue ? "Pendiente · Vencido" : schedule.status}
                             </span>
                           </div>
                           {canManage && (

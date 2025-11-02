@@ -48,15 +48,15 @@ export default function Login() {
 
   return (
     <div className="relative flex min-h-screen items-center justify-center px-6 py-12">
-      <div className="absolute inset-x-0 top-0 h-1/3 max-h-[220px] rounded-b-[50%] bg-[radial-gradient(circle_at_top,_rgba(14,100,183,0.18),_transparent_70%)]" />
-      <div className="absolute inset-x-0 bottom-0 h-1/3 max-h-[220px] rounded-t-[55%] bg-[radial-gradient(circle_at_bottom,_rgba(241,167,34,0.22),_transparent_72%)]" />
+      <div className="absolute inset-x-0 top-0 h-1/3 max-h-[220px] rounded-b-[50%] bg-[radial-gradient(circle_at_top,rgba(14,100,183,0.18),transparent_70%)]" />
+      <div className="absolute inset-x-0 bottom-0 h-1/3 max-h-[220px] rounded-t-[55%] bg-[radial-gradient(circle_at_bottom,rgba(241,167,34,0.22),transparent_72%)]" />
       <div className="bg-base-100 relative z-10 w-full max-w-md p-10">
         <div className="mb-6 flex justify-end">
           <ConnectionIndicator />
         </div>
         <div className="flex flex-col items-center gap-3 text-center">
           <img src={settings.logoUrl} alt={settings.orgName} className="max-h-20 object-contain" />
-          <h1 className="text-xl font-semibold text-[var(--brand-primary)] drop-shadow-sm">
+          <h1 className="text-xl font-semibold text-(--brand-primary) drop-shadow-sm">
             Inicia sesión en {settings.orgName}
           </h1>
           <p className="text-sm text-slate-600/90">Usa tu correo corporativo para continuar.</p>

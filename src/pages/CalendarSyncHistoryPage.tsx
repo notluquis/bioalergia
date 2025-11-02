@@ -37,7 +37,7 @@ export default function CalendarSyncHistoryPage() {
     <section className="space-y-4">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
-          <h1 className="text-2xl font-bold text-[var(--brand-primary)]">Historial de sincronizaciones</h1>
+          <h1 className="text-2xl font-bold text-(--brand-primary)">Historial de sincronizaciones</h1>
           <p className="text-sm text-slate-600">
             Consulta las sincronizaciones ejecutadas (manuales y programadas) y sus resultados.
           </p>
@@ -76,14 +76,13 @@ export default function CalendarSyncHistoryPage() {
                 const finished = log.finishedAt ? dayjs(log.finishedAt) : null;
                 const duration = finished ? `${finished.diff(dayjs(log.startedAt), "second")}s` : "-";
                 const sourceLabel = log.triggerLabel ?? log.triggerSource;
-                const statusClass =
-                  log.status === "SUCCESS"
-                    ? "text-emerald-600"
-                    : "text-rose-600";
+                const statusClass = log.status === "SUCCESS" ? "text-emerald-600" : "text-rose-600";
                 return (
                   <tr key={log.id} className="border-t border-white/40 bg-base-100/60">
                     <td className="px-4 py-3 font-medium text-slate-700">{started}</td>
-                    <td className={`px-4 py-3 font-semibold ${statusClass}`}>{log.status === "SUCCESS" ? "Éxito" : "Error"}</td>
+                    <td className={`px-4 py-3 font-semibold ${statusClass}`}>
+                      {log.status === "SUCCESS" ? "Éxito" : "Error"}
+                    </td>
                     <td className="px-4 py-3">{numberFormatter.format(log.inserted)}</td>
                     <td className="px-4 py-3">{numberFormatter.format(log.updated)}</td>
                     <td className="px-4 py-3">{numberFormatter.format(log.skipped)}</td>

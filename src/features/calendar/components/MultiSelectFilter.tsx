@@ -99,7 +99,7 @@ export function MultiSelectFilter({
       {isOpen && (
         <div className="absolute z-20 mt-2 w-full space-y-2 rounded-2xl border border-white/60 bg-base-100/95 p-3 shadow-lg">
           {options.length === 0 ? (
-            <p className="text-[11px] text-slate-400">Sin datos disponibles</p>
+            <p className="text-xs text-slate-400">Sin datos disponibles</p>
           ) : (
             options.map((option) => {
               const [namePart = "", metaPart] = option.label.split(" · ");
@@ -117,7 +117,7 @@ export function MultiSelectFilter({
                       {truncatedName || placeholder}
                     </span>
                     {metaPart && (
-                      <span className="text-[11px] text-slate-400" title={metaPart}>
+                      <span className="text-xs text-slate-400" title={metaPart}>
                         · {metaPart}
                       </span>
                     )}

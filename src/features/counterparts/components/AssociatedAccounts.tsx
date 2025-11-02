@@ -289,14 +289,16 @@ export default function AssociatedAccounts({
     return account.metadata?.withdrawId?.trim() || account.account_identifier;
   }
 
-  const updateAccountForm = <K extends keyof AccountForm>(key: K) => (event: ChangeEvent<HTMLInputElement>) => {
-    const value = event.target.value;
-    setAccountForm(prev => ({ ...prev, [key]: value }));
-  };
+  const updateAccountForm =
+    <K extends keyof AccountForm>(key: K) =>
+    (event: ChangeEvent<HTMLInputElement>) => {
+      const value = event.target.value;
+      setAccountForm((prev) => ({ ...prev, [key]: value }));
+    };
 
   const handleAccountIdentifierChange = (event: ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
-    setAccountForm(prev => ({ ...prev, accountIdentifier: value }));
+    setAccountForm((prev) => ({ ...prev, accountIdentifier: value }));
     setSuggestionQuery(value);
   };
 
@@ -374,7 +376,7 @@ export default function AssociatedAccounts({
     <section className="space-y-5 p-6 bg-base-100">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div className="space-y-1">
-          <h2 className="text-lg font-semibold text-[var(--brand-primary)] drop-shadow-sm">Cuentas asociadas</h2>
+          <h2 className="text-lg font-semibold text-(--brand-primary) drop-shadow-sm">Cuentas asociadas</h2>
           <p className="text-xs text-slate-600/90">
             Identificadores detectados en los movimientos y asignados a esta contraparte.
           </p>
@@ -383,7 +385,7 @@ export default function AssociatedAccounts({
       {error && <Alert variant="error">{error}</Alert>}
       <div className="overflow-x-auto">
         <table className="min-w-full text-sm text-slate-600">
-          <thead className="bg-base-100/60 text-[var(--brand-primary)]">
+          <thead className="bg-base-100/60 text-(--brand-primary)">
             <tr>
               <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide">Cuenta</th>
               <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide">Banco</th>
@@ -402,7 +404,7 @@ export default function AssociatedAccounts({
                     <td className="px-3 py-3 text-slate-600">
                       <div className="font-mono text-xs text-slate-600">{group.label}</div>
                       {group.accounts.length > 1 && (
-                        <div className="text-[10px] text-slate-400/90">
+                        <div className="text-xs text-slate-400/90">
                           {group.accounts.length} identificadores vinculados
                         </div>
                       )}
@@ -425,7 +427,7 @@ export default function AssociatedAccounts({
                         <Button variant="secondary" onClick={() => toggleAccountDetails(group)} className="self-start">
                           {state?.expanded ? "Ocultar movimientos" : "Ver movimientos"}
                         </Button>
-                        <div className="text-[11px] text-slate-500">
+                        <div className="text-xs text-slate-500">
                           {state?.loading
                             ? "Cargando movimientos..."
                             : summaryInfo
@@ -433,7 +435,7 @@ export default function AssociatedAccounts({
                               : "Sin movimientos en el rango"}
                         </div>
                         {state?.error && (
-                          <Alert variant="error" className="text-[11px]">
+                          <Alert variant="error" className="text-xs">
                             {state.error}
                           </Alert>
                         )}
@@ -452,21 +454,21 @@ export default function AssociatedAccounts({
                         ) : state.rows.length ? (
                           <div className="overflow-x-auto">
                             <table className="min-w-full text-xs text-slate-600">
-                              <thead className="bg-base-100/60 text-[var(--brand-primary)]">
+                              <thead className="bg-base-100/60 text-(--brand-primary)">
                                 <tr>
-                                  <th className="px-2 py-2 text-left text-[10px] font-semibold uppercase tracking-wide">
+                                  <th className="px-2 py-2 text-left text-xs font-semibold uppercase tracking-wide">
                                     Fecha
                                   </th>
-                                  <th className="px-2 py-2 text-left text-[10px] font-semibold uppercase tracking-wide">
+                                  <th className="px-2 py-2 text-left text-xs font-semibold uppercase tracking-wide">
                                     Descripción
                                   </th>
-                                  <th className="px-2 py-2 text-left text-[10px] font-semibold uppercase tracking-wide">
+                                  <th className="px-2 py-2 text-left text-xs font-semibold uppercase tracking-wide">
                                     Origen
                                   </th>
-                                  <th className="px-2 py-2 text-left text-[10px] font-semibold uppercase tracking-wide">
+                                  <th className="px-2 py-2 text-left text-xs font-semibold uppercase tracking-wide">
                                     Destino
                                   </th>
-                                  <th className="px-2 py-2 text-right text-[10px] font-semibold uppercase tracking-wide">
+                                  <th className="px-2 py-2 text-right text-xs font-semibold uppercase tracking-wide">
                                     Monto
                                   </th>
                                 </tr>
@@ -513,7 +515,7 @@ export default function AssociatedAccounts({
       </div>
 
       <div className="border border-white/55 bg-base-100 p-5">
-        <h3 className="text-sm font-semibold text-[var(--brand-primary)] drop-shadow-sm">Agregar cuenta</h3>
+        <h3 className="text-sm font-semibold text-(--brand-primary) drop-shadow-sm">Agregar cuenta</h3>
         <div className="mt-3 grid gap-3 md:grid-cols-2">
           <Input
             label="Identificador / Cuenta"
@@ -523,23 +525,21 @@ export default function AssociatedAccounts({
             placeholder="Ej. 124282432930"
           />
           {suggestionsLoading ? (
-            <span className="text-[10px] text-slate-500">Buscando sugerencias...</span>
+            <span className="text-xs text-slate-500">Buscando sugerencias...</span>
           ) : accountSuggestions.length ? (
             <div className="max-h-60 overflow-y-auto border border-white/55 bg-base-100">
               {accountSuggestions.map((suggestion) => (
                 <div
                   key={suggestion.accountIdentifier}
-                  className="flex flex-col gap-1 border-b border-white/45 px-3 py-2 text-[11px] last:border-b-0"
+                  className="flex flex-col gap-1 border-b border-white/45 px-3 py-2 text-xs last:border-b-0"
                 >
                   <span className="font-semibold text-slate-600">{suggestion.accountIdentifier}</span>
                   <span className="text-slate-500/90">{suggestion.holder ?? "(sin titular)"}</span>
                   {suggestion.bankAccountNumber && (
-                    <span className="text-[10px] text-slate-400/90">Cuenta {suggestion.bankAccountNumber}</span>
+                    <span className="text-xs text-slate-400/90">Cuenta {suggestion.bankAccountNumber}</span>
                   )}
-                  {suggestion.rut && (
-                    <span className="text-[10px] text-slate-400/90">RUT {formatRut(suggestion.rut)}</span>
-                  )}
-                  <span className="text-[10px] text-slate-400/90">
+                  {suggestion.rut && <span className="text-xs text-slate-400/90">RUT {formatRut(suggestion.rut)}</span>}
+                  <span className="text-xs text-slate-400/90">
                     {suggestion.movements} mov. · {fmtCLP(suggestion.totalAmount)}
                   </span>
                   <div className="flex flex-wrap gap-2 pt-1">

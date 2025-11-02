@@ -160,7 +160,7 @@ export default function TimesheetDetailTable({
 
       <div className="overflow-x-auto muted-scrollbar transform-gpu">
         <table className="min-w-full text-sm will-change-scroll">
-          <thead className="bg-[var(--brand-primary)]/10 text-[var(--brand-primary)] sticky top-0 z-10">
+          <thead className="bg-(--brand-primary)/10 text-(--brand-primary) sticky top-0 z-10">
             <tr>
               <th className="px-3 py-2 text-left font-semibold whitespace-nowrap">Fecha</th>
               <th className="px-3 py-2 text-left font-semibold whitespace-nowrap">Entrada</th>
@@ -173,241 +173,244 @@ export default function TimesheetDetailTable({
           </thead>
           <tbody>
             {bulkRows.map((row, index) => {
-
-                // Calcular duración del turno
-                const worked = calculateWorkedHours(row.entrada, row.salida);
-                const [h, m] = worked.split(":").map(Number);
-                const totalHours = h + m / 60;
-                let showWarning = false;
-                let warningText = "";
-                if (row.entrada && row.salida) {
-                  if (totalHours < 3) {
-                    showWarning = true;
-                    warningText = "Turno muy corto (menos de 3 horas)";
-                  } else if (totalHours > 10) {
-                    showWarning = true;
-                    warningText = "Turno muy largo (más de 10 horas)";
-                  }
+              // Calcular duración del turno
+              const worked = calculateWorkedHours(row.entrada, row.salida);
+              const [h, m] = worked.split(":").map(Number);
+              const totalHours = h + m / 60;
+              let showWarning = false;
+              let warningText = "";
+              if (row.entrada && row.salida) {
+                if (totalHours < 3) {
+                  showWarning = true;
+                  warningText = "Turno muy corto (menos de 3 horas)";
+                } else if (totalHours > 10) {
+                  showWarning = true;
+                  warningText = "Turno muy largo (más de 10 horas)";
                 }
-                const isSunday = dayjs(row.date).day() === 0;
-                const canEditRow = canEdit && !isSunday;
+              }
+              const isSunday = dayjs(row.date).day() === 0;
+              const canEditRow = canEdit && !isSunday;
 
-                // Unificado: un solo "!" para warning y comentario
-                const hasComment = Boolean(row.comment?.trim());
-                const showBang = showWarning || hasComment;
-                const bangColor = showWarning
-                  ? "text-red-600 hover:text-red-800"
-                  : "text-[var(--brand-primary)] hover:text-[var(--brand-primary)]/80";
-                const tooltipParts: string[] = [];
-                if (showWarning && warningText) tooltipParts.push(warningText);
-                if (hasComment) tooltipParts.push(`Comentario: ${row.comment.trim()}`);
-                const bangTitle = tooltipParts.join(" — ");
+              // Unificado: un solo "!" para warning y comentario
+              const hasComment = Boolean(row.comment?.trim());
+              const showBang = showWarning || hasComment;
+              const bangColor = showWarning
+                ? "text-red-600 hover:text-red-800"
+                : "text-(--brand-primary) hover:text-(--brand-primary)/80";
+              const tooltipParts: string[] = [];
+              if (showWarning && warningText) tooltipParts.push(warningText);
+              if (hasComment) tooltipParts.push(`Comentario: ${row.comment.trim()}`);
+              const bangTitle = tooltipParts.join(" — ");
 
-                const isMarkedNotWorked = notWorkedDays.has(row.date);
-                // determine whether this row is dirty compared to initial values
-                const dirty = isRowDirty(row, initialRows?.[index]);
-                const status = computeStatus(row, dirty);
-                const statusColor =
-                  status === "Registrado" ? "text-green-600" : status === "Sin guardar" ? "text-amber-600" : "text-slate-400";
-                return (
-                  <tr
-                    key={row.date}
-                    className={`odd:bg-slate-50/60 hover:bg-slate-100/80 transition-colors ${
-                      isMarkedNotWorked ? "opacity-60 pointer-events-none" : ""
-                    }`}
-                  >
-                    {/* Fecha */}
-                    <td className="px-3 py-2 text-slate-600 whitespace-nowrap">
-                      {formatDateLabel(row.date)}
-                      {(() => {
-                        const dayIdx = dayjs(row.date).day();
-                        const labels = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
-                        const isSun = dayIdx === 0;
-                        return (
-                          <span
-                            className={`ml-2 rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase ${
-                              isSun ? "bg-slate-100 text-slate-400" : "bg-slate-50 text-slate-500"
-                            }`}
-                          >
-                            {labels[dayIdx]}
-                          </span>
-                        );
-                      })()}
-                    </td>
-                    {/* Entrada */}
-                    <td className="px-3 py-2">
-                      <Input
-                        type="text"
-                        value={row.entrada}
-                        onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                          onRowChange(index, "entrada", formatTimeInput(event.target.value))
-                        }
-                        placeholder="HH:MM"
-                        className="w-28"
-                        disabled={!canEditRow}
-                      />
-                    </td>
-                    {/* Salida */}
-                    <td className="px-3 py-2">
-                      <Input
-                        type="text"
-                        value={row.salida}
-                        onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                          onRowChange(index, "salida", formatTimeInput(event.target.value))
-                        }
-                        placeholder="HH:MM"
-                        className="w-28"
-                        disabled={!canEditRow}
-                      />
-                    </td>
-                    {/* Trabajadas */}
-                    <td className="px-3 py-2 text-slate-700 tabular-nums">{worked}</td>
-                    {/* Extras */}
-                    <td className="px-3 py-2">
-                      { !row.overtime?.trim() && !openOvertimeEditors.has(row.date) ? (
-                        canEditRow ? (
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="secondary"
-                            className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/60 bg-base-100/70 text-[var(--brand-primary)] shadow hover:bg-base-100/90"
-                            aria-label="Agregar horas extra"
-                            title="Agregar horas extra"
-                            onClick={() =>
-                              setOpenOvertimeEditors((prev) => {
-                                const next = new Set(prev);
-                                next.add(row.date);
-                                return next;
-                              })
-                            }
-                          >
-                            +
-                          </Button>
-                        ) : (
-                          <span className="text-slate-400">—</span>
-                        )
-                      ) : (
-                        <Input
-                          type="text"
-                          value={row.overtime}
-                          onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                            onRowChange(index, "overtime", event.target.value)
+              const isMarkedNotWorked = notWorkedDays.has(row.date);
+              // determine whether this row is dirty compared to initial values
+              const dirty = isRowDirty(row, initialRows?.[index]);
+              const status = computeStatus(row, dirty);
+              const statusColor =
+                status === "Registrado"
+                  ? "text-green-600"
+                  : status === "Sin guardar"
+                    ? "text-amber-600"
+                    : "text-slate-400";
+              return (
+                <tr
+                  key={row.date}
+                  className={`odd:bg-slate-50/60 hover:bg-slate-100/80 transition-colors ${
+                    isMarkedNotWorked ? "opacity-60 pointer-events-none" : ""
+                  }`}
+                >
+                  {/* Fecha */}
+                  <td className="px-3 py-2 text-slate-600 whitespace-nowrap">
+                    {formatDateLabel(row.date)}
+                    {(() => {
+                      const dayIdx = dayjs(row.date).day();
+                      const labels = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+                      const isSun = dayIdx === 0;
+                      return (
+                        <span
+                          className={`ml-2 rounded px-1.5 py-0.5 text-xs font-semibold uppercase ${
+                            isSun ? "bg-slate-100 text-slate-400" : "bg-slate-50 text-slate-500"
+                          }`}
+                        >
+                          {labels[dayIdx]}
+                        </span>
+                      );
+                    })()}
+                  </td>
+                  {/* Entrada */}
+                  <td className="px-3 py-2">
+                    <Input
+                      type="text"
+                      value={row.entrada}
+                      onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                        onRowChange(index, "entrada", formatTimeInput(event.target.value))
+                      }
+                      placeholder="HH:MM"
+                      className="w-28"
+                      disabled={!canEditRow}
+                    />
+                  </td>
+                  {/* Salida */}
+                  <td className="px-3 py-2">
+                    <Input
+                      type="text"
+                      value={row.salida}
+                      onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                        onRowChange(index, "salida", formatTimeInput(event.target.value))
+                      }
+                      placeholder="HH:MM"
+                      className="w-28"
+                      disabled={!canEditRow}
+                    />
+                  </td>
+                  {/* Trabajadas */}
+                  <td className="px-3 py-2 text-slate-700 tabular-nums">{worked}</td>
+                  {/* Extras */}
+                  <td className="px-3 py-2">
+                    {!row.overtime?.trim() && !openOvertimeEditors.has(row.date) ? (
+                      canEditRow ? (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="secondary"
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/60 bg-base-100/70 text-(--brand-primary) shadow hover:bg-base-100/90"
+                          aria-label="Agregar horas extra"
+                          title="Agregar horas extra"
+                          onClick={() =>
+                            setOpenOvertimeEditors((prev) => {
+                              const next = new Set(prev);
+                              next.add(row.date);
+                              return next;
+                            })
                           }
-                          placeholder="HH:MM"
-                          className="w-28"
-                          disabled={!canEditRow}
-                          onBlur={() => {
-                            const value = (row.overtime || "").trim();
-                            if (!value) {
-                              setOpenOvertimeEditors((prev) => {
+                        >
+                          +
+                        </Button>
+                      ) : (
+                        <span className="text-slate-400">—</span>
+                      )
+                    ) : (
+                      <Input
+                        type="text"
+                        value={row.overtime}
+                        onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                          onRowChange(index, "overtime", event.target.value)
+                        }
+                        placeholder="HH:MM"
+                        className="w-28"
+                        disabled={!canEditRow}
+                        onBlur={() => {
+                          const value = (row.overtime || "").trim();
+                          if (!value) {
+                            setOpenOvertimeEditors((prev) => {
+                              const next = new Set(prev);
+                              next.delete(row.date);
+                              return next;
+                            });
+                          }
+                        }}
+                      />
+                    )}
+                  </td>
+                  {/* Estado + indicador unificado "!" */}
+                  <td className={`px-3 py-2 text-xs font-semibold uppercase tracking-wide ${statusColor} relative`}>
+                    {status}
+                    {showBang && (
+                      <span title={bangTitle} className={`ml-2 font-bold cursor-help ${bangColor}`}>
+                        !
+                      </span>
+                    )}
+                  </td>
+                  {/* Acciones (menú de tres puntos) */}
+                  <td className="px-3 py-2">
+                    {canEditRow ? (
+                      <div className="relative inline-block text-left">
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          className="dropdown-trigger"
+                          aria-haspopup="true"
+                          aria-expanded="false"
+                          onClick={() => toggleMenu(`menu-${row.date}`)}
+                          title="Acciones"
+                        >
+                          ⋯
+                        </Button>
+                        <div
+                          id={`menu-${row.date}`}
+                          className="dropdown-menu hidden absolute right-0 z-20 mt-2 w-44 origin-top-right rounded-xl bg-base-100 p-1 shadow-xl ring-1 ring-black/5"
+                          role="menu"
+                        >
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            className="w-full rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+                            role="menuitem"
+                            onClick={() => {
+                              toggleMenu(`menu-${row.date}`);
+                              setCommentPreview({ date: row.date, text: row.comment || "(Sin comentario)" });
+                            }}
+                          >
+                            Ver comentario
+                          </Button>
+                          {dirty && (
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              className="w-full rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+                              role="menuitem"
+                              onClick={() => {
+                                onResetRow(index);
+                                toggleMenu(`menu-${row.date}`);
+                              }}
+                            >
+                              Deshacer cambios
+                            </Button>
+                          )}
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            className="w-full rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+                            role="menuitem"
+                            onClick={() => {
+                              toggleMenu(`menu-${row.date}`);
+                              setNotWorkedDays((prev) => {
                                 const next = new Set(prev);
-                                next.delete(row.date);
+                                if (next.has(row.date)) next.delete(row.date);
+                                else next.add(row.date);
                                 return next;
                               });
-                            }
-                          }}
-                        />
-                      )}
-                    </td>
-                    {/* Estado + indicador unificado "!" */}
-                    <td className={`px-3 py-2 text-xs font-semibold uppercase tracking-wide ${statusColor} relative`}>
-                      {status}
-                      {showBang && (
-                        <span title={bangTitle} className={`ml-2 font-bold cursor-help ${bangColor}`}>
-                          !
-                        </span>
-                      )}
-                    </td>
-                    {/* Acciones (menú de tres puntos) */}
-                    <td className="px-3 py-2">
-                      {canEditRow ? (
-                        <div className="relative inline-block text-left">
-                          <Button
-                            type="button"
-                            variant="secondary"
-                            size="sm"
-                            className="dropdown-trigger"
-                            aria-haspopup="true"
-                            aria-expanded="false"
-                            onClick={() => toggleMenu(`menu-${row.date}`)}
-                            title="Acciones"
+                            }}
                           >
-                            ⋯
+                            {isMarkedNotWorked ? "Marcar como trabajado" : "Día no trabajado"}
                           </Button>
-                          <div
-                            id={`menu-${row.date}`}
-                            className="dropdown-menu hidden absolute right-0 z-20 mt-2 w-44 origin-top-right rounded-xl bg-base-100 p-1 shadow-xl ring-1 ring-black/5"
-                            role="menu"
-                          >
+                          {row.entryId && (
                             <Button
                               variant="secondary"
                               size="sm"
-                              className="w-full rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+                              className="w-full rounded-lg px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50"
                               role="menuitem"
                               onClick={() => {
                                 toggleMenu(`menu-${row.date}`);
-                                setCommentPreview({ date: row.date, text: row.comment || "(Sin comentario)" });
+                                onRemoveEntry(row);
                               }}
                             >
-                              Ver comentario
+                              Eliminar registro
                             </Button>
-                            {dirty && (
-                              <Button
-                                variant="secondary"
-                                size="sm"
-                                className="w-full rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
-                                role="menuitem"
-                                onClick={() => {
-                                  onResetRow(index);
-                                  toggleMenu(`menu-${row.date}`);
-                                }}
-                              >
-                                Deshacer cambios
-                              </Button>
-                            )}
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              className="w-full rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
-                              role="menuitem"
-                              onClick={() => {
-                                toggleMenu(`menu-${row.date}`);
-                                setNotWorkedDays((prev) => {
-                                  const next = new Set(prev);
-                                  if (next.has(row.date)) next.delete(row.date);
-                                  else next.add(row.date);
-                                  return next;
-                                });
-                              }}
-                            >
-                              {isMarkedNotWorked ? "Marcar como trabajado" : "Día no trabajado"}
-                            </Button>
-                            {row.entryId && (
-                              <Button
-                                variant="secondary"
-                                size="sm"
-                                className="w-full rounded-lg px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50"
-                                role="menuitem"
-                                onClick={() => {
-                                  toggleMenu(`menu-${row.date}`);
-                                  onRemoveEntry(row);
-                                }}
-                              >
-                                Eliminar registro
-                              </Button>
-                            )}
-                            {!dirty && !row.entryId && (
-                              <div className="px-3 py-2 text-xs text-slate-400">Sin acciones</div>
-                            )}
-                          </div>
+                          )}
+                          {!dirty && !row.entryId && (
+                            <div className="px-3 py-2 text-xs text-slate-400">Sin acciones</div>
+                          )}
                         </div>
-                      ) : (
-                        <span className="text-xs text-slate-400">—</span>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
+                      </div>
+                    ) : (
+                      <span className="text-xs text-slate-400">—</span>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
             {!loadingDetail && !bulkRows.length && (
               <tr>
                 <td colSpan={7} className="px-4 py-6 text-center text-slate-500">

@@ -25,10 +25,10 @@ export default function TimesheetSummaryTable({
   onSelectEmployee,
 }: TimesheetSummaryTableProps) {
   return (
-    <div className="overflow-hidden rounded-2xl border border-[var(--brand-primary)]/15 bg-base-100 shadow-sm">
+    <div className="overflow-hidden rounded-2xl border border-(--brand-primary)/15 bg-base-100 shadow-sm">
       <div className="overflow-x-auto muted-scrollbar">
         <table className="min-w-full text-sm">
-          <thead className="bg-[var(--brand-primary)]/10 text-[var(--brand-primary)]">
+          <thead className="bg-(--brand-primary)/10 text-(--brand-primary)">
             <tr>
               <th className="px-4 py-3 text-left font-semibold whitespace-nowrap">Trabajador</th>
               <th className="px-4 py-3 text-left font-semibold whitespace-nowrap">Función</th>
@@ -45,7 +45,7 @@ export default function TimesheetSummaryTable({
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={10} className="px-4 py-6 text-center text-[var(--brand-primary)]">
+                <td colSpan={10} className="px-4 py-6 text-center text-(--brand-primary)">
                   Cargando resumen...
                 </td>
               </tr>
@@ -56,9 +56,9 @@ export default function TimesheetSummaryTable({
                   key={row.employeeId}
                   role="button"
                   tabIndex={0}
-                  className={`cursor-pointer odd:bg-slate-50/60 hover:bg-[var(--brand-primary)]/5 transition-colors will-change-auto ${
+                  className={`cursor-pointer odd:bg-slate-50/60 hover:bg-(--brand-primary)/5 transition-colors will-change-auto ${
                     row.employeeId === selectedEmployeeId
-                      ? "bg-[var(--brand-primary)]/10 outline outline-2 outline-[var(--brand-primary)]/30"
+                      ? "bg-(--brand-primary)/10 outline-2 outline-(--brand-primary)/30"
                       : ""
                   }`}
                   onClick={() => onSelectEmployee(row.employeeId)}

@@ -70,7 +70,7 @@ export default function EmployeesPage() {
     <section className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-2">
-          <h1 className="text-2xl font-bold text-[var(--brand-primary)]">Equipo y tarifas</h1>
+          <h1 className="text-2xl font-bold text-(--brand-primary)">Equipo y tarifas</h1>
           <p className="max-w-2xl text-sm text-slate-600">
             Registra trabajadores, correos y tarifas para calcular automáticamente los totales mensuales.
           </p>

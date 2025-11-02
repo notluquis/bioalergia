@@ -13,7 +13,11 @@ import type { CalendarEventDetail, CalendarDayEvents } from "../features/calenda
 dayjs.locale("es");
 
 const numberFormatter = new Intl.NumberFormat("es-CL");
-const currencyFormatter = new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP", minimumFractionDigits: 0 });
+const currencyFormatter = new Intl.NumberFormat("es-CL", {
+  style: "currency",
+  currency: "CLP",
+  minimumFractionDigits: 0,
+});
 const NULL_EVENT_TYPE_VALUE = "__NULL__";
 const NULL_CATEGORY_VALUE = "__NULL_CATEGORY__";
 
@@ -122,7 +126,7 @@ function CalendarDailyPage() {
       className="rounded-2xl border border-white/60 bg-base-100/85 p-4 text-sm text-slate-700 shadow-sm"
       open={defaultOpen}
     >
-      <summary className="flex cursor-pointer flex-wrap items-center justify-between gap-3 font-semibold text-[var(--brand-primary)]">
+      <summary className="flex cursor-pointer flex-wrap items-center justify-between gap-3 font-semibold text-(--brand-primary)">
         <span>{dayjs(entry.date).format("dddd DD MMM YYYY")}</span>
         <span className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
           <span>
@@ -140,7 +144,7 @@ function CalendarDailyPage() {
           const detailEntries = [
             { label: "Estado", value: event.status },
             { label: "Transparencia", value: event.transparency },
-              { label: "Visibilidad", value: event.visibility },
+            { label: "Visibilidad", value: event.visibility },
             { label: "Color", value: event.colorId },
             { label: "Zona horaria", value: event.startTimeZone ?? event.endTimeZone },
             {
@@ -179,24 +183,22 @@ function CalendarDailyPage() {
             >
               <header className="flex flex-wrap items-start justify-between gap-3">
                 <div className="flex flex-col gap-1">
-                  <h3 className="text-base font-semibold text-slate-800">
-                    {event.summary?.trim() || "(Sin título)"}
-                  </h3>
-                  <span className="text-xs font-semibold uppercase tracking-wide text-[var(--brand-secondary)]/70">
+                  <h3 className="text-base font-semibold text-slate-800">{event.summary?.trim() || "(Sin título)"}</h3>
+                  <span className="text-xs font-semibold uppercase tracking-wide text-(--brand-secondary)/70">
                     {formatEventTime(event)}
                   </span>
                 </div>
-                <div className="flex flex-col items-end gap-1 text-[11px] text-slate-500">
+                <div className="flex flex-col items-end gap-1 text-xs text-slate-500">
                   <span className="rounded-full bg-slate-100 px-2 py-1 font-semibold text-slate-600">
                     {event.calendarId}
                   </span>
                   {event.category && (
-                    <span className="rounded-full bg-[var(--brand-secondary)]/15 px-2 py-1 font-semibold text-[var(--brand-secondary)]">
+                    <span className="rounded-full bg-(--brand-secondary)/15 px-2 py-1 font-semibold text-(--brand-secondary)">
                       {event.category}
                     </span>
                   )}
                   {isSubcutaneous && event.treatmentStage && (
-                    <span className="rounded-full bg-[var(--brand-primary)]/10 px-2 py-1 font-semibold text-[var(--brand-primary)]">
+                    <span className="rounded-full bg-(--brand-primary)/10 px-2 py-1 font-semibold text-(--brand-primary)">
                       {event.treatmentStage}
                     </span>
                   )}
@@ -231,7 +233,7 @@ function CalendarDailyPage() {
                     href={event.hangoutLink}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-[var(--brand-primary)] underline"
+                    className="text-(--brand-primary) underline"
                   >
                     Enlace de videollamada
                   </a>
@@ -244,8 +246,10 @@ function CalendarDailyPage() {
 
               {event.rawEvent != null && (
                 <details className="mt-3 text-xs text-slate-500">
-                  <summary className="cursor-pointer font-semibold text-[var(--brand-primary)]">Ver payload completo</summary>
-                  <pre className="mt-2 max-h-64 overflow-x-auto rounded-lg bg-slate-900/90 p-3 text-[10px] text-white">
+                  <summary className="cursor-pointer font-semibold text-(--brand-primary)">
+                    Ver payload completo
+                  </summary>
+                  <pre className="mt-2 max-h-64 overflow-x-auto rounded-lg bg-slate-900/90 p-3 text-xs text-white">
                     {JSON.stringify(event.rawEvent, null, 2)}
                   </pre>
                 </details>
@@ -278,7 +282,7 @@ function CalendarDailyPage() {
   return (
     <section className="space-y-6">
       <header className="space-y-2">
-        <h1 className="text-2xl font-bold text-[var(--brand-primary)]">Detalle diario de eventos</h1>
+        <h1 className="text-2xl font-bold text-(--brand-primary)">Detalle diario de eventos</h1>
         <p className="text-sm text-slate-600">
           Revisa el detalle de cada jornada con los eventos sincronizados. Los días aparecen colapsados para que puedas
           expandir solo los que te interesen.
@@ -286,7 +290,7 @@ function CalendarDailyPage() {
       </header>
 
       <form
-        className="grid gap-4 rounded-2xl border border-[var(--brand-primary)]/15 bg-base-100 p-6 text-xs text-slate-600 shadow-sm md:grid-cols-6"
+        className="grid gap-4 rounded-2xl border border-(--brand-primary)/15 bg-base-100 p-6 text-xs text-slate-600 shadow-sm md:grid-cols-6"
         onSubmit={(event) => {
           event.preventDefault();
           applyFilters();
@@ -354,25 +358,21 @@ function CalendarDailyPage() {
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <div className="rounded-2xl border border-white/60 bg-base-100 p-4 text-sm shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Días listados</p>
-          <p className="mt-2 text-2xl font-semibold text-[var(--brand-primary)]">
-            {numberFormatter.format(totals.days)}
-          </p>
+          <p className="mt-2 text-2xl font-semibold text-(--brand-primary)">{numberFormatter.format(totals.days)}</p>
         </div>
         <div className="rounded-2xl border border-white/60 bg-base-100 p-4 text-sm shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Eventos listados</p>
-          <p className="mt-2 text-2xl font-semibold text-[var(--brand-primary)]">
-            {numberFormatter.format(totals.events)}
-          </p>
+          <p className="mt-2 text-2xl font-semibold text-(--brand-primary)">{numberFormatter.format(totals.events)}</p>
         </div>
         <div className="rounded-2xl border border-white/60 bg-base-100 p-4 text-sm shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Monto esperado</p>
-          <p className="mt-2 text-2xl font-semibold text-[var(--brand-primary)]">
+          <p className="mt-2 text-2xl font-semibold text-(--brand-primary)">
             {currencyFormatter.format(totals.amountExpected)}
           </p>
         </div>
         <div className="rounded-2xl border border-white/60 bg-base-100 p-4 text-sm shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Monto pagado</p>
-          <p className="mt-2 text-2xl font-semibold text-[var(--brand-primary)]">
+          <p className="mt-2 text-2xl font-semibold text-(--brand-primary)">
             {currencyFormatter.format(totals.amountPaid)}
           </p>
         </div>
@@ -401,18 +401,14 @@ function CalendarDailyPage() {
         {futureBeyond.length > 0 && (
           <section className="space-y-2">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Próximos días</h2>
-            <div className="space-y-3">
-              {futureBeyond.map((entry) => renderDay(entry))}
-            </div>
+            <div className="space-y-3">{futureBeyond.map((entry) => renderDay(entry))}</div>
           </section>
         )}
 
         {pastDays.length > 0 && (
           <section className="space-y-2">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Días anteriores</h2>
-            <div className="space-y-3">
-              {pastDays.map((entry) => renderDay(entry))}
-            </div>
+            <div className="space-y-3">{pastDays.map((entry) => renderDay(entry))}</div>
           </section>
         )}
       </div>

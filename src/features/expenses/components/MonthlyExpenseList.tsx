@@ -9,7 +9,12 @@ interface MonthlyExpenseListProps {
   onCreateRequest?: () => void;
 }
 
-export default function MonthlyExpenseList({ expenses, selectedId, onSelect, onCreateRequest }: MonthlyExpenseListProps) {
+export default function MonthlyExpenseList({
+  expenses,
+  selectedId,
+  onSelect,
+  onCreateRequest,
+}: MonthlyExpenseListProps) {
   return (
     <div className="muted-scrollbar h-full overflow-y-auto pr-2">
       <div className="flex items-center justify-between pb-3">
@@ -33,14 +38,16 @@ export default function MonthlyExpenseList({ expenses, selectedId, onSelect, onC
               onClick={() => onSelect(expense.publicId)}
               className={`w-full rounded-2xl border px-4 py-3 text-left transition-all ${
                 isActive
-                  ? "border-[var(--brand-primary)]/40 bg-[var(--brand-primary)]/15 text-[var(--brand-primary)] shadow"
+                  ? "border-(--brand-primary)/40 bg-(--brand-primary)/15 text-(--brand-primary) shadow"
                   : "border-transparent bg-base-100/55 text-slate-600 hover:border-white/60 hover:bg-base-100/70"
               }`}
             >
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-sm font-semibold text-slate-700">{expense.name}</p>
-                  {expense.category && <p className="text-[11px] uppercase tracking-wide text-slate-400">{expense.category}</p>}
+                  {expense.category && (
+                    <p className="text-xs uppercase tracking-wide text-slate-400">{expense.category}</p>
+                  )}
                 </div>
                 <span className="text-sm font-semibold text-slate-600">
                   ${expense.amountExpected.toLocaleString("es-CL")}
@@ -55,7 +62,7 @@ export default function MonthlyExpenseList({ expenses, selectedId, onSelect, onC
           );
         })}
         {!expenses.length && (
-          <p className="rounded-2xl border border-dashed border-white/60 bg-base-100/40 p-4 text-xs text-slate-500"> 
+          <p className="rounded-2xl border border-dashed border-white/60 bg-base-100/40 p-4 text-xs text-slate-500">
             Aún no registras gastos. Crea el primero para llevar control mensual.
           </p>
         )}

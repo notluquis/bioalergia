@@ -39,9 +39,7 @@ export default function ServiceScheduleAccordion({
   const groups = useMemo<ScheduleGroup[]>(() => {
     if (!schedules.length) return [];
 
-    const sorted = [...schedules].sort((a, b) =>
-      dayjs(a.due_date).valueOf() - dayjs(b.due_date).valueOf()
-    );
+    const sorted = [...schedules].sort((a, b) => dayjs(a.due_date).valueOf() - dayjs(b.due_date).valueOf());
 
     const today = dayjs().startOf("day");
     const map = new Map<string, ScheduleGroup>();
@@ -93,11 +91,9 @@ export default function ServiceScheduleAccordion({
 
   if (!groups.length) {
     return (
-          <section className="space-y-3 rounded-2xl border border-white/55 bg-base-100/55 p-4 text-sm text-slate-600">
+      <section className="space-y-3 rounded-2xl border border-white/55 bg-base-100/55 p-4 text-sm text-slate-600">
         <header className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-            Agenda de vencimientos
-          </h2>
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Agenda de vencimientos</h2>
         </header>
         <p className="text-xs text-slate-500">No hay cuotas generadas para este servicio.</p>
       </section>
@@ -107,9 +103,7 @@ export default function ServiceScheduleAccordion({
   return (
     <section className="space-y-3 rounded-2xl border border-white/55 bg-base-100/55 p-4 text-sm text-slate-600">
       <header className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-          Agenda de vencimientos
-        </h2>
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Agenda de vencimientos</h2>
         <span className="text-xs text-slate-400">
           {service.pending_count + service.overdue_count} pendientes totales
         </span>
@@ -153,16 +147,14 @@ export default function ServiceScheduleAccordion({
                   return (
                     <div
                       key={item.id}
-                      className="rounded-xl border border-white/50 bg-base-100/80 p-3 shadow-inner transition hover:border-[var(--brand-primary)]/40"
+                      className="rounded-xl border border-white/50 bg-base-100/80 p-3 shadow-inner transition hover:border-(--brand-primary)/40"
                     >
                       <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
                           <p className="text-sm font-semibold text-slate-700">
                             {currencyFormatter.format(item.expected_amount)}
                           </p>
-                          <p className="text-xs text-slate-400">
-                            Vence el {dateFormatter.format(dueDate.toDate())}
-                          </p>
+                          <p className="text-xs text-slate-400">Vence el {dateFormatter.format(dueDate.toDate())}</p>
                         </div>
                         <span
                           className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${

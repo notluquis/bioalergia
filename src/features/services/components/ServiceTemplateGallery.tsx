@@ -107,13 +107,13 @@ export default function ServiceTemplateGallery({ onApply }: ServiceTemplateGalle
         {SERVICE_TEMPLATES.map((template) => (
           <article
             key={template.id}
-            className="flex h-full flex-col justify-between rounded-2xl border border-white/45 bg-base-100/70 p-4 shadow-sm transition hover:border-[var(--brand-primary)]/45 hover:shadow-md"
+            className="flex h-full flex-col justify-between rounded-2xl border border-white/45 bg-base-100/70 p-4 shadow-sm transition hover:border-(--brand-primary)/45 hover:shadow-md"
           >
             <div className="space-y-2">
               <p className="text-sm font-semibold text-slate-700">{template.name}</p>
               <p className="text-xs text-slate-500">{template.description}</p>
               {template.category && (
-                <span className="inline-flex items-center rounded-full border border-white/60 bg-base-100/75 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                <span className="inline-flex items-center rounded-full border border-white/60 bg-base-100/75 px-2 py-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
                   {template.category}
                 </span>
               )}

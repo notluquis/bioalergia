@@ -340,7 +340,7 @@ export default function TimesheetExportPDF({
         <Button
           type="button"
           variant="primary"
-          className="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-[var(--brand-primary)] hover:bg-[var(--brand-primary)]/85 shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgba(14,100,183,0.35)]"
+          className="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-(--brand-primary) hover:bg-(--brand-primary)/85 shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgba(14,100,183,0.35)]"
           onClick={() => handleExport(true)}
         >
           Exportar PDF
@@ -349,7 +349,7 @@ export default function TimesheetExportPDF({
           type="button"
           size="sm"
           variant="secondary"
-          className="ml-1 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/60 bg-base-100 text-[var(--brand-primary)] shadow hover:bg-base-100/90"
+          className="ml-1 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/60 bg-base-100 text-(--brand-primary) shadow hover:bg-base-100/90"
           title="Opciones"
           onClick={() => setShowOptions((v) => !v)}
         >
@@ -384,20 +384,34 @@ export default function TimesheetExportPDF({
               </label>
             ))}
             <div className="mt-3 flex justify-end gap-2">
-              <Button size="sm" variant="secondary" className="text-xs text-slate-500 hover:text-slate-700" onClick={() => setShowOptions(false)}>
+              <Button
+                size="sm"
+                variant="secondary"
+                className="text-xs text-slate-500 hover:text-slate-700"
+                onClick={() => setShowOptions(false)}
+              >
                 Cerrar
               </Button>
-              <Button size="sm" variant="secondary" className="text-xs text-[var(--brand-primary)] hover:underline" onClick={() => handleExport(true)}>
+              <Button
+                size="sm"
+                variant="secondary"
+                className="text-xs text-(--brand-primary) hover:underline"
+                onClick={() => handleExport(true)}
+              >
                 Vista previa
               </Button>
-              <Button size="sm" variant="secondary" className="text-xs text-[var(--brand-primary)] hover:underline" onClick={() => handleExport(false)}>
+              <Button
+                size="sm"
+                variant="secondary"
+                className="text-xs text-(--brand-primary) hover:underline"
+                onClick={() => handleExport(false)}
+              >
                 Descargar
               </Button>
             </div>
           </div>
         )}
       </div>
-
     </div>
   );
 }

@@ -11,7 +11,7 @@ export default function MonthlyFlowChart({ data }: MonthlyFlowChartProps) {
   return (
     <section className="space-y-3 bg-base-100 p-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-lg font-semibold text-[var(--brand-primary)]">Flujo mensual</h2>
+        <h2 className="text-lg font-semibold text-(--brand-primary)">Flujo mensual</h2>
         <p className="text-xs text-slate-500">Ingresos vs egresos por mes</p>
       </div>
       <div className="flex items-end gap-4 overflow-x-auto pb-2">
@@ -19,7 +19,7 @@ export default function MonthlyFlowChart({ data }: MonthlyFlowChartProps) {
           const inHeight = maxValue ? Math.max((row.in / maxValue) * 140, 4) : 4;
           const outHeight = maxValue ? Math.max((row.out / maxValue) * 140, 4) : 4;
           return (
-            <div key={row.month} className="flex min-w-[80px] flex-col items-center gap-2">
+            <div key={row.month} className="flex min-w-20 flex-col items-center gap-2">
               <div className="flex h-40 w-full items-end gap-2">
                 <div
                   title={`Ingresos ${fmtCLP(row.in)}`}

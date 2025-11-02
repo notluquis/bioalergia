@@ -41,24 +41,22 @@ export default function CounterpartList({ counterparts, selectedId, onSelectCoun
                 variant={isActive ? "primary" : "secondary"}
                 onClick={() => onSelectCounterpart(item.id)}
                 className={`group w-full rounded-2xl border px-3 py-2 text-left transition-all ${
-                    isActive
-                      ? "border-white/70 bg-[var(--brand-primary)]/18 text-[var(--brand-primary)] shadow-[0_14px_28px_-22px_rgba(14,100,183,0.8)]"
-                      : "border-transparent bg-base-100/35 text-slate-600 hover:border-white/60 hover:bg-base-100/55"
+                  isActive
+                    ? "border-white/70 bg-(--brand-primary)/18 text-(--brand-primary) shadow-[0_14px_28px_-22px_rgba(14,100,183,0.8)]"
+                    : "border-transparent bg-base-100/35 text-slate-600 hover:border-white/60 hover:bg-base-100/55"
                 }`}
               >
                 <span className="flex items-center justify-between gap-2">
                   <span className="block font-medium tracking-tight">{item.name}</span>
                   <span
-                    className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
-                      isActive ? "bg-base-100/70 text-[var(--brand-primary)]" : "bg-base-100/55 text-slate-500"
+                    className={`rounded-full px-2 py-0.5 text-xs font-semibold uppercase tracking-wide ${
+                      isActive ? "bg-base-100/70 text-(--brand-primary)" : "bg-base-100/55 text-slate-500"
                     }`}
                   >
                     {CATEGORY_LABELS[item.category] ?? item.category}
                   </span>
                 </span>
-                {item.rut && (
-                  <span className="mt-1 block text-[11px] text-slate-500/90">RUT {formatRut(item.rut)}</span>
-                )}
+                {item.rut && <span className="mt-1 block text-xs text-slate-500/90">RUT {formatRut(item.rut)}</span>}
               </Button>
             </li>
           );

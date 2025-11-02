@@ -11,7 +11,7 @@ export default function Upload() {
   return (
     <section className="space-y-6">
       <div className="space-y-2">
-        <h1 className="text-2xl font-bold text-[var(--brand-primary)]">Subir CSV a la base de datos</h1>
+        <h1 className="text-2xl font-bold text-(--brand-primary)">Subir CSV a la base de datos</h1>
         <p className="text-sm text-slate-600">
           Envía el reporte de Mercado Pago directamente a tu base de datos MySQL en HostGator. Detectamos las filas
           duplicadas usando la fecha, la dirección, el monto y el archivo de origen.

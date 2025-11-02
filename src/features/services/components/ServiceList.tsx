@@ -16,7 +16,7 @@ export function ServiceList({ services, selectedId, onSelect, onCreateRequest, c
       <header className="flex items-center justify-between">
         <div>
           <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500/90">Servicios</h2>
-          <p className="text-[11px] text-slate-500">Suscripciones y gastos recurrentes.</p>
+          <p className="text-xs text-slate-500">Suscripciones y gastos recurrentes.</p>
         </div>
         {canManage && (
           <Button type="button" variant="primary" size="sm" onClick={onCreateRequest}>
@@ -63,16 +63,14 @@ export function ServiceList({ services, selectedId, onSelect, onCreateRequest, c
               onClick={() => onSelect(service.public_id)}
               className={`w-full rounded-2xl border px-4 py-3 text-left transition-all ${
                 isActive
-                  ? "border-white/70 bg-[var(--brand-primary)]/20 text-[var(--brand-primary)]"
+                  ? "border-white/70 bg-(--brand-primary)/20 text-(--brand-primary)"
                   : "border-transparent bg-base-100/45 text-slate-600 hover:border-white/60 hover:bg-base-100/65"
               }`}
             >
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-sm font-semibold tracking-tight">{service.name}</p>
-                  {service.detail && (
-                    <p className="text-[11px] uppercase tracking-wide text-slate-400">{service.detail}</p>
-                  )}
+                  {service.detail && <p className="text-xs uppercase tracking-wide text-slate-400">{service.detail}</p>}
                 </div>
                 <span className={`h-2.5 w-2.5 rounded-full ${indicatorColor} shadow-inner`} aria-hidden="true" />
               </div>
@@ -81,11 +79,11 @@ export function ServiceList({ services, selectedId, onSelect, onCreateRequest, c
                 <span className="text-slate-500">{frequencyLabels[service.frequency]}</span>
                 <span className="text-slate-500">{typeLabels[service.service_type]}</span>
               </div>
-              <div className="mt-1 flex flex-wrap items-center gap-3 text-[11px] text-slate-400">
+              <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-slate-400">
                 <span>Inicio {dayjs(service.start_date).format("DD MMM YYYY")}</span>
                 {service.counterpart_name && <span>{service.counterpart_name}</span>}
               </div>
-              <div className="mt-2 text-[11px] text-slate-400">
+              <div className="mt-2 text-xs text-slate-400">
                 Pendientes {service.pending_count} · Vencidos {service.overdue_count}
               </div>
             </button>

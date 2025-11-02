@@ -37,8 +37,14 @@ export function TransactionsTable({
     initialSortDirection: "desc",
   });
 
-  const { sortState, pageSizeOptions: tablePageSizeOptions, toggleColumn, getSortProps, getSortIcon, isColumnVisible } =
-    table;
+  const {
+    sortState,
+    pageSizeOptions: tablePageSizeOptions,
+    toggleColumn,
+    getSortProps,
+    getSortIcon,
+    isColumnVisible,
+  } = table;
 
   const visibleColumns = useMemo(() => {
     return COLUMN_DEFS.filter((column) => isColumnVisible(column.key));
@@ -126,7 +132,7 @@ export function TransactionsTable({
       <div className="overflow-hidden bg-base-100">
         <div className="overflow-x-auto muted-scrollbar">
           <table className="min-w-full text-sm text-slate-600">
-            <thead className="bg-base-100/55 text-[var(--brand-primary)] backdrop-blur-md">
+            <thead className="bg-base-100/55 text-(--brand-primary) backdrop-blur-md">
               <tr>
                 {visibleColumns.map((column) => (
                   <th
@@ -143,7 +149,7 @@ export function TransactionsTable({
               {displayedRows.map((row) => (
                 <tr
                   key={row.id}
-                  className="border-b border-white/40 bg-base-100/40 text-slate-700 transition-colors last:border-none even:bg-base-100/25 hover:bg-[var(--brand-primary)]/10"
+                  className="border-b border-white/40 bg-base-100/40 text-slate-700 transition-colors last:border-none even:bg-base-100/25 hover:bg-(--brand-primary)/10"
                 >
                   {visibleColumns.map((column) => (
                     <td key={column.key} className="px-4 py-3">
@@ -161,7 +167,7 @@ export function TransactionsTable({
               )}
               {loading && (
                 <tr>
-                  <td colSpan={visibleColumns.length} className="px-4 py-6 text-center text-[var(--brand-primary)]">
+                  <td colSpan={visibleColumns.length} className="px-4 py-6 text-center text-(--brand-primary)">
                     Cargando movimientos...
                   </td>
                 </tr>

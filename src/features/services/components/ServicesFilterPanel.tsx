@@ -72,7 +72,7 @@ export default function ServicesFilterPanel({ services, filters, onChange }: Ser
           variant="secondary"
           size="sm"
           onClick={resetFilters}
-          className="text-xs font-semibold uppercase tracking-wide text-[var(--brand-primary)] hover:underline"
+          className="text-xs font-semibold uppercase tracking-wide text-(--brand-primary) hover:underline"
         >
           Limpiar filtros
         </Button>
@@ -92,20 +92,20 @@ export default function ServicesFilterPanel({ services, filters, onChange }: Ser
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Estado</p>
           <div className="mt-2 flex flex-wrap gap-2">
             {STATUS_ORDER.map((status) => (
-                <Button
-                  key={status}
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => handleStatusToggle(status)}
-                  className={`rounded-full border px-3 py-1 text-xs font-semibold transition-all ${
-                    filters.statuses.size === 0 || filters.statuses.has(status)
-                      ? "border-[var(--brand-primary)]/40 bg-[var(--brand-primary)]/10 text-[var(--brand-primary)]"
-                      : "border-white/40 bg-base-100/50 text-slate-500 hover:border-[var(--brand-primary)]/35 hover:text-[var(--brand-primary)]"
-                  }`}
-                >
-                  {STATUS_LABELS[status]}
-                </Button>
+              <Button
+                key={status}
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => handleStatusToggle(status)}
+                className={`rounded-full border px-3 py-1 text-xs font-semibold transition-all ${
+                  filters.statuses.size === 0 || filters.statuses.has(status)
+                    ? "border-(--brand-primary)/40 bg-(--brand-primary)/10 text-(--brand-primary)"
+                    : "border-white/40 bg-base-100/50 text-slate-500 hover:border-(--brand-primary)/35 hover:text-(--brand-primary)"
+                }`}
+              >
+                {STATUS_LABELS[status]}
+              </Button>
             ))}
           </div>
         </div>
@@ -124,8 +124,8 @@ export default function ServicesFilterPanel({ services, filters, onChange }: Ser
                   onClick={() => handleTypeToggle(type)}
                   className={`rounded-full border px-3 py-1 text-xs font-semibold transition-all ${
                     isActive
-                      ? "border-[var(--brand-secondary)]/40 bg-[var(--brand-secondary)]/10 text-[var(--brand-secondary)]"
-                      : "border-white/40 bg-base-100/50 text-slate-500 hover:border-[var(--brand-secondary)]/35 hover:text-[var(--brand-secondary)]"
+                      ? "border-(--brand-secondary)/40 bg-(--brand-secondary)/10 text-(--brand-secondary)"
+                      : "border-white/40 bg-base-100/50 text-slate-500 hover:border-(--brand-secondary)/35 hover:text-(--brand-secondary)"
                   }`}
                 >
                   {type.toLowerCase()} ({count})

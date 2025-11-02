@@ -39,7 +39,7 @@ export function useSorting<T extends string>({
     (column: T): React.ReactNode => {
       if (sortState.column !== column) return null;
       const symbol = sortState.direction === "asc" ? "▲" : "▼";
-      return React.createElement("span", { className: "ml-1 text-[10px] opacity-60 align-middle select-none" }, symbol);
+      return React.createElement("span", { className: "ml-1 text-xs opacity-60 align-middle select-none" }, symbol);
     },
     [sortState]
   );

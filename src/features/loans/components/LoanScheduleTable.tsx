@@ -35,7 +35,7 @@ export function LoanScheduleTable({
     <div className="overflow-hidden bg-base-100">
       <div className="overflow-x-auto muted-scrollbar">
         <table className="min-w-full text-sm text-slate-600">
-          <thead className="bg-base-100/60 text-[var(--brand-primary)]">
+          <thead className="bg-base-100/60 text-(--brand-primary)">
             <tr>
               <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide whitespace-nowrap">
                 Cuota
@@ -73,7 +73,7 @@ export function LoanScheduleTable({
                   <td className="px-4 py-3 text-slate-600">${schedule.expected_amount.toLocaleString("es-CL")}</td>
                   <td className="px-4 py-3">
                     <span
-                      className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wide ${badgeClass}`}
+                      className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${badgeClass}`}
                     >
                       {schedule.status === "PENDING"
                         ? "Pendiente"
@@ -87,14 +87,14 @@ export function LoanScheduleTable({
                   <td className="px-4 py-3 text-slate-600">
                     <div className="space-y-1">
                       <div>{paidInfo}</div>
-                      <div className="text-[11px] text-slate-400">{paidDate}</div>
+                      <div className="text-xs text-slate-400">{paidDate}</div>
                     </div>
                   </td>
                   <td className="px-4 py-3 text-slate-600">
                     {schedule.transaction ? (
                       <div className="space-y-1">
                         <div className="font-medium">ID #{schedule.transaction.id}</div>
-                        <div className="text-[11px] text-slate-400">
+                        <div className="text-xs text-slate-400">
                           {schedule.transaction.description ?? "(sin descripción)"}
                         </div>
                       </div>

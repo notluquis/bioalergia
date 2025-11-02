@@ -217,16 +217,16 @@ function CalendarClassificationPage() {
       <Tooltip.Provider delayDuration={200}>
         <section className="space-y-6">
           <header className="space-y-2">
-            <h1 className="text-2xl font-bold text-[var(--brand-primary)]">Clasificar eventos pendientes</h1>
+            <h1 className="text-2xl font-bold text-(--brand-primary)">Clasificar eventos pendientes</h1>
             <p className="text-sm text-slate-600">
               Revisa los eventos que no pudieron clasificarse automáticamente. Asigna la categoría correcta, confirma
               montos y marca si la persona asistió.
             </p>
             <Tooltip.Root>
               <Tooltip.Trigger asChild>
-                <span className="inline-flex cursor-help items-center gap-1 text-[11px] text-slate-500">
+                <span className="inline-flex cursor-help items-center gap-1 text-xs text-slate-500">
                   ¿Cómo se clasifica?
-                  <span className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-slate-300 bg-base-100 text-[9px] text-slate-500">
+                  <span className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-slate-300 bg-base-100 text-xs text-slate-500">
                     i
                   </span>
                 </span>
@@ -244,20 +244,18 @@ function CalendarClassificationPage() {
 
           <div className="grid gap-4 rounded-2xl border border-white/60 bg-base-100 p-4 text-xs shadow-sm sm:grid-cols-3">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Pendientes</p>
-              <p className="mt-1 text-xl font-semibold text-[var(--brand-primary)]">{pendingCount}</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Pendientes</p>
+              <p className="mt-1 text-xl font-semibold text-(--brand-primary)">{pendingCount}</p>
             </div>
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                Monto esperado sugerido
-              </p>
-              <p className="mt-1 text-xl font-semibold text-[var(--brand-primary)]">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Monto esperado sugerido</p>
+              <p className="mt-1 text-xl font-semibold text-(--brand-primary)">
                 {currencyFormatter.format(totals.expected)}
               </p>
             </div>
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Monto pagado sugerido</p>
-              <p className="mt-1 text-xl font-semibold text-[var(--brand-primary)]">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Monto pagado sugerido</p>
+              <p className="mt-1 text-xl font-semibold text-(--brand-primary)">
                 {currencyFormatter.format(totals.paid)}
               </p>
             </div>
@@ -291,20 +289,20 @@ function CalendarClassificationPage() {
                 >
                   <header className="flex flex-wrap items-start justify-between gap-3">
                     <div className="flex flex-col gap-1">
-                      <span className="text-xs font-semibold uppercase tracking-wide text-[var(--brand-secondary)]/70">
+                      <span className="text-xs font-semibold uppercase tracking-wide text-(--brand-secondary)/70">
                         {event.calendarId}
                       </span>
                       <h2 className="text-lg font-semibold text-slate-800">{event.summary ?? "(Sin título)"}</h2>
                       <span className="text-xs text-slate-500">{formatEventDate(event)}</span>
                     </div>
-                    <div className="flex flex-col items-end gap-2 text-[11px] text-slate-500">
+                    <div className="flex flex-col items-end gap-2 text-xs text-slate-500">
                       {event.eventType && (
                         <span className="rounded-full bg-slate-100 px-2 py-1 font-semibold text-slate-600">
                           {event.eventType}
                         </span>
                       )}
                       {event.category && (
-                        <span className="rounded-full bg-[var(--brand-secondary)]/15 px-2 py-1 font-semibold text-[var(--brand-secondary)]">
+                        <span className="rounded-full bg-(--brand-secondary)/15 px-2 py-1 font-semibold text-(--brand-secondary)">
                           {event.category}
                         </span>
                       )}

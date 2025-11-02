@@ -27,8 +27,10 @@ export default function CollapsibleSection({
           <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">{title}</p>
           {description && <p className="text-xs text-slate-400">{description}</p>}
         </div>
-        <span className={`inline-flex h-7 w-7 items-center justify-center rounded-full border border-white/60 bg-base-100/70 text-xs font-semibold text-slate-500 transition-transform ${open ? "rotate-180" : ""}`}>
-          <span className="text-[10px]">⌃</span>
+        <span
+          className={`inline-flex h-7 w-7 items-center justify-center rounded-full border border-white/60 bg-base-100/70 text-xs font-semibold text-slate-500 transition-transform ${open ? "rotate-180" : ""}`}
+        >
+          <span className="text-xs">⌃</span>
         </span>
       </div>
       <div className="collapse-content p-4">

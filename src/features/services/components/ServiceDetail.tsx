@@ -38,13 +38,11 @@ export function ServiceDetail({
   onRegisterPayment,
   onUnlinkPayment,
 }: ServiceDetailProps) {
-  
   const [regenerateOpen, setRegenerateOpen] = useState(false);
   const [regenerateForm, setRegenerateForm] = useState<RegenerateServicePayload>({});
   const [regenerating, setRegenerating] = useState(false);
   const [regenerateError, setRegenerateError] = useState<string | null>(null);
   const navigate = useNavigate();
-  
 
   const statusBadge = useMemo(() => {
     if (!service) return { label: "", className: "" };
@@ -172,7 +170,7 @@ export function ServiceDetail({
     <section className="relative flex h-full flex-col gap-6 rounded-3xl p-6 bg-base-100">
       <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="space-y-1">
-          <h1 className="text-2xl font-bold text-[var(--brand-primary)] drop-shadow-sm">{service.name}</h1>
+          <h1 className="text-2xl font-bold text-(--brand-primary) drop-shadow-sm">{service.name}</h1>
           <p className="text-sm text-slate-600/90">
             {service.detail || "Gasto"} · {serviceTypeLabel} · {ownershipLabel}
           </p>
@@ -384,7 +382,7 @@ export function ServiceDetail({
 
       {loading && (
         <div className="absolute inset-0 z-30 flex items-center justify-center bg-base-100/40 backdrop-blur-sm">
-          <p className="rounded-full bg-base-100 px-4 py-2 text-sm font-semibold text-[var(--brand-primary)] shadow">
+          <p className="rounded-full bg-base-100 px-4 py-2 text-sm font-semibold text-(--brand-primary) shadow">
             Cargando servicio...
           </p>
         </div>

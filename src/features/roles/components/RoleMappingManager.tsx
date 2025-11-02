@@ -80,17 +80,13 @@ export default function RoleMappingManager() {
   };
 
   if (loading) {
-    return (
-      <div className="p-6 text-sm text-[var(--brand-primary)] bg-base-100">
-        Cargando configuración de roles...
-      </div>
-    );
+    return <div className="p-6 text-sm text-(--brand-primary) bg-base-100">Cargando configuración de roles...</div>;
   }
 
   return (
     <section className="space-y-5 p-6 bg-base-100">
       <div className="space-y-1">
-        <h2 className="text-lg font-semibold text-[var(--brand-primary)] drop-shadow-sm">Gobernanza de Roles</h2>
+        <h2 className="text-lg font-semibold text-(--brand-primary) drop-shadow-sm">Gobernanza de Roles</h2>
         <p className="text-sm text-slate-600/90">
           Asigna un rol de la aplicación a cada cargo de empleado para controlar los permisos de acceso.
         </p>

@@ -238,12 +238,12 @@ function CalendarHeatmapPage() {
   return (
     <section className="space-y-6">
       <header className="space-y-2">
-        <h1 className="text-2xl font-bold text-[var(--brand-primary)]">{tc("heatmapTitle")}</h1>
+        <h1 className="text-2xl font-bold text-(--brand-primary)">{tc("heatmapTitle")}</h1>
         <p className="text-sm text-slate-600">{tc("heatmapDescription")}</p>
       </header>
 
       <form
-        className="grid gap-4 rounded-2xl border border-[var(--brand-primary)]/15 bg-base-100 p-6 text-xs text-slate-600 shadow-sm md:grid-cols-6"
+        className="grid gap-4 rounded-2xl border border-(--brand-primary)/15 bg-base-100 p-6 text-xs text-slate-600 shadow-sm md:grid-cols-6"
         onSubmit={(event) => {
           event.preventDefault();
           handleApply().catch(() => {
@@ -324,7 +324,7 @@ function CalendarHeatmapPage() {
         <section className="space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">{tc("heatmapSection")}</h2>
-            <span className="text-[11px] text-slate-500">
+            <span className="text-xs text-slate-500">
               {tc("heatmapRange", {
                 start: rangeStartLabel,
                 end: rangeEndLabel,
@@ -342,7 +342,7 @@ function CalendarHeatmapPage() {
               />
             ))}
           </div>
-          <p className="text-[11px] text-slate-500">
+          <p className="text-xs text-slate-500">
             {tc("heatmapTotals", {
               events: numberFormatter.format(summary.totals.events),
               expected: currencyFormatter.format(summary.totals.amountExpected),

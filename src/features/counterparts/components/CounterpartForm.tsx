@@ -68,7 +68,7 @@ export default function CounterpartForm({ counterpart, onSave, error, saving }: 
   return (
     <section className="space-y-5 p-6 bg-base-100">
       <div className="flex flex-col gap-1">
-        <h1 className="text-xl font-semibold text-[var(--brand-primary)] drop-shadow-sm">
+        <h1 className="text-xl font-semibold text-(--brand-primary) drop-shadow-sm">
           {counterpart ? "Editar contraparte" : "Nueva contraparte"}
         </h1>
         <p className="text-xs text-slate-600/90">
@@ -113,7 +113,7 @@ export default function CounterpartForm({ counterpart, onSave, error, saving }: 
           )}
         </div>
         {form.values.category === "EMPLOYEE" && (
-          <p className="md:col-span-2 text-[11px] text-slate-500/80">
+          <p className="md:col-span-2 text-xs text-slate-500/80">
             Se vinculará como empleado utilizando el correo electrónico ingresado.
           </p>
         )}
@@ -139,7 +139,7 @@ export default function CounterpartForm({ counterpart, onSave, error, saving }: 
         {counterpart?.employeeId && (
           <p className="md:col-span-2 text-xs text-slate-500/80">
             Empleado vinculado (ID #{counterpart.employeeId}).{" "}
-            <Link to="/employees" className="font-semibold text-[var(--brand-primary)]">
+            <Link to="/employees" className="font-semibold text-(--brand-primary)">
               Ver empleados
             </Link>
           </p>

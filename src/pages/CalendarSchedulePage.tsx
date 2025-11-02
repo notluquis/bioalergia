@@ -69,12 +69,12 @@ function CalendarSchedulePage() {
   return (
     <section className="space-y-6">
       <header className="space-y-2">
-        <h1 className="text-2xl font-bold text-[var(--brand-primary)]">{tc("scheduleTitle")}</h1>
+        <h1 className="text-2xl font-bold text-(--brand-primary)">{tc("scheduleTitle")}</h1>
         <p className="text-sm text-slate-600">{tc("scheduleDescription")}</p>
       </header>
 
       <form
-        className="grid gap-4 rounded-2xl border border-[var(--brand-primary)]/15 bg-base-100 p-6 text-xs text-slate-600 shadow-sm md:grid-cols-6"
+        className="grid gap-4 rounded-2xl border border-(--brand-primary)/15 bg-base-100 p-6 text-xs text-slate-600 shadow-sm md:grid-cols-6"
         onSubmit={(event) => {
           event.preventDefault();
           applyFilters();

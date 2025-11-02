@@ -27,11 +27,13 @@ export default function MonthlyExpenseStats({ stats, loading }: MonthlyExpenseSt
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <p className="text-sm font-semibold text-slate-700">{row.period}</p>
-              <p className="text-[11px] text-slate-400">{row.expenseCount} gastos registrados</p>
+              <p className="text-xs text-slate-400">{row.expenseCount} gastos registrados</p>
             </div>
             <div className="text-right">
-              <p className="text-sm font-semibold text-slate-700">Esperado {currencyFormatter.format(row.totalExpected)}</p>
-              <p className="text-[11px] text-slate-400">Aplicado {currencyFormatter.format(row.totalApplied)}</p>
+              <p className="text-sm font-semibold text-slate-700">
+                Esperado {currencyFormatter.format(row.totalExpected)}
+              </p>
+              <p className="text-xs text-slate-400">Aplicado {currencyFormatter.format(row.totalApplied)}</p>
             </div>
           </div>
         </article>
