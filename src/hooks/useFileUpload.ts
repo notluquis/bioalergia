@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useMutation, useQueryClient, type QueryKey } from "@tanstack/react-query";
 import { uploadFiles, type UploadResult } from "../lib/apiClient";
 import { logger } from "../lib/logger";
 
@@ -12,6 +13,8 @@ interface UseFileUploadOptions {
   validator?: FileValidator;
   multiple?: boolean;
   confirmOnValidationWarning?: boolean;
+  invalidateKeys?: QueryKey[];
+  onUploadSuccess?: (results: UploadResult[]) => void;
 }
 
 export function useFileUpload({
@@ -20,28 +23,48 @@ export function useFileUpload({
   validator,
   multiple = true,
   confirmOnValidationWarning = true,
+  invalidateKeys = [],
+  onUploadSuccess,
 }: UseFileUploadOptions) {
   const [files, setFiles] = useState<File[]>([]);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<UploadResult[]>([]);
+  const queryClient = useQueryClient();
+
+  const uploadMutation = useMutation<UploadResult[], Error, File[]>({
+    mutationFn: async (selectedFiles) => {
+      return uploadFiles(selectedFiles, endpoint, logContext);
+    },
+    onSuccess: (uploadResults) => {
+      setResults(uploadResults);
+      setError(null);
+      invalidateKeys.forEach((key) => {
+        queryClient.invalidateQueries({ queryKey: key });
+      });
+      onUploadSuccess?.(uploadResults);
+    },
+    onError: (err) => {
+      setError(err.message || "Error al subir archivos");
+    },
+  });
 
   const handleUpload = async () => {
     if (!files.length) {
       setError("Selecciona uno o más archivos antes de subirlos.");
       return;
     }
-    setLoading(true);
     setError(null);
     setResults([]);
 
     try {
-      const uploadResults = await uploadFiles(files, endpoint, logContext);
-      setResults(uploadResults);
+      uploadMutation.reset();
+      await uploadMutation.mutateAsync(files);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al subir archivos");
-    } finally {
-      setLoading(false);
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Error al subir archivos");
+      }
     }
   };
 
@@ -95,12 +118,13 @@ export function useFileUpload({
     setFiles([]);
     setError(null);
     setResults([]);
+    uploadMutation.reset();
   };
 
   return {
     files,
     setFiles,
-    loading,
+    loading: uploadMutation.isPending,
     error,
     results,
     handleUpload,

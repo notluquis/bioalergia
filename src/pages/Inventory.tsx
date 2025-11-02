@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   getInventoryItems,
   createInventoryItem,
@@ -13,34 +14,26 @@ import AdjustStockForm from "../features/inventory/components/AdjustStockForm";
 import InventoryTable from "../features/inventory/components/InventoryTable";
 import Alert from "../components/Alert";
 import Button from "../components/Button";
+import { queryKeys } from "../lib/queryKeys";
+import { useToast } from "../context/ToastContext";
 
 export default function InventoryPage() {
-  const [items, setItems] = useState<InventoryItem[]>([]);
-  const [loading, setLoading] = useState(false);
+  const queryClient = useQueryClient();
+  const { success: toastSuccess, error: toastError } = useToast();
+  const { data: itemsData, isPending, isFetching, error: itemsError } = useQuery<InventoryItem[], Error>({
+    queryKey: queryKeys.inventory.items(),
+    queryFn: getInventoryItems,
+    staleTime: 2 * 60 * 1000,
+  });
+  const items = itemsData ?? [];
+
   const [error, setError] = useState<string | null>(null);
   const [isItemModalOpen, setIsItemModalOpen] = useState(false);
   const [isAdjustStockModalOpen, setIsAdjustStockModalOpen] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
   const [itemForStockAdjust, setItemForStockAdjust] = useState<InventoryItem | null>(null);
 
-  useEffect(() => {
-    loadItems();
-  }, []);
-
-  async function loadItems() {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await getInventoryItems();
-      setItems(data);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "No se pudo cargar el inventario";
-      setError(message);
-    } finally {
-      setLoading(false);
-    }
-  }
+  const loading = isPending || isFetching;
 
   function openCreateModal() {
     setEditingItem(null);
@@ -64,37 +57,137 @@ export default function InventoryPage() {
     setItemForStockAdjust(null);
   }
 
+  const createItemMutation = useMutation<
+    InventoryItem,
+    Error,
+    Omit<InventoryItem, "id">,
+    { previousItems?: InventoryItem[]; optimisticId?: number }
+  >({
+    mutationFn: createInventoryItem,
+    onMutate: async (newItem) => {
+      setError(null);
+      await queryClient.cancelQueries({ queryKey: queryKeys.inventory.items() });
+      const previousItems = queryClient.getQueryData<InventoryItem[]>(queryKeys.inventory.items());
+      const optimisticItem: InventoryItem = {
+        id: Date.now() * -1,
+        ...newItem,
+      };
+      queryClient.setQueryData<InventoryItem[]>(queryKeys.inventory.items(), (old = []) => [...old, optimisticItem]);
+      return { previousItems, optimisticId: optimisticItem.id };
+    },
+    onError: (err, _variables, context) => {
+      const message = err.message || "No se pudo guardar el item";
+      setError(message);
+      toastError(message);
+      if (context?.previousItems) {
+        queryClient.setQueryData(queryKeys.inventory.items(), context.previousItems);
+      }
+    },
+    onSuccess: (createdItem, _variables, context) => {
+      queryClient.setQueryData<InventoryItem[]>(queryKeys.inventory.items(), (old = []) =>
+        old.map((item) => (item.id === context?.optimisticId ? createdItem : item))
+      );
+      toastSuccess("Item creado correctamente");
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.inventory.items() });
+    },
+  });
+
+  const updateItemMutation = useMutation<
+    InventoryItem,
+    Error,
+    { id: number; data: Partial<Omit<InventoryItem, "id">> },
+    { previousItems?: InventoryItem[] }
+  >({
+    mutationFn: ({ id, data }) => updateInventoryItem(id, data),
+    onMutate: async ({ id, data }) => {
+      setError(null);
+      await queryClient.cancelQueries({ queryKey: queryKeys.inventory.items() });
+      const previousItems = queryClient.getQueryData<InventoryItem[]>(queryKeys.inventory.items());
+      queryClient.setQueryData<InventoryItem[]>(queryKeys.inventory.items(), (old = []) =>
+        old.map((item) => (item.id === id ? { ...item, ...data } : item))
+      );
+      return { previousItems };
+    },
+    onError: (err, _variables, context) => {
+      const message = err.message || "No se pudo actualizar el item";
+      setError(message);
+      toastError(message);
+      if (context?.previousItems) {
+        queryClient.setQueryData(queryKeys.inventory.items(), context.previousItems);
+      }
+    },
+    onSuccess: () => {
+      toastSuccess("Item actualizado");
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.inventory.items() });
+    },
+  });
+
+  const adjustStockMutation = useMutation<
+    void,
+    Error,
+    InventoryMovement,
+    { previousItems?: InventoryItem[] }
+  >({
+    mutationFn: createInventoryMovement,
+    onMutate: async (movement) => {
+      setError(null);
+      await queryClient.cancelQueries({ queryKey: queryKeys.inventory.items() });
+      const previousItems = queryClient.getQueryData<InventoryItem[]>(queryKeys.inventory.items());
+      queryClient.setQueryData<InventoryItem[]>(queryKeys.inventory.items(), (old = []) =>
+        old.map((item) =>
+          item.id === movement.item_id
+            ? { ...item, current_stock: item.current_stock + movement.quantity_change }
+            : item
+        )
+      );
+      return { previousItems };
+    },
+    onError: (err, _variables, context) => {
+      const message = err.message || "No se pudo ajustar el stock";
+      setError(message);
+      toastError(message);
+      if (context?.previousItems) {
+        queryClient.setQueryData(queryKeys.inventory.items(), context.previousItems);
+      }
+    },
+    onSuccess: () => {
+      toastSuccess("Stock ajustado correctamente");
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.inventory.items() });
+    },
+  });
+
+  const saving =
+    createItemMutation.isPending || updateItemMutation.isPending || adjustStockMutation.isPending;
+
   async function handleSaveItem(itemData: Omit<InventoryItem, "id">) {
-    setSaving(true);
     try {
       if (editingItem) {
-        await updateInventoryItem(editingItem.id, itemData);
+        await updateItemMutation.mutateAsync({ id: editingItem.id, data: itemData });
       } else {
-        await createInventoryItem(itemData);
+        await createItemMutation.mutateAsync(itemData);
       }
       closeModal();
-      await loadItems();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "No se pudo guardar el item";
-      setError(message);
-    } finally {
-      setSaving(false);
+    } catch {
+      // Error handled in mutations
     }
   }
 
   async function handleAdjustStock(movement: InventoryMovement) {
-    setSaving(true);
     try {
-      await createInventoryMovement(movement);
+      await adjustStockMutation.mutateAsync(movement);
       closeModal();
-      await loadItems();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "No se pudo ajustar el stock";
-      setError(message);
-    } finally {
-      setSaving(false);
+    } catch {
+      // Error handled in mutation
     }
   }
+
+  const combinedError = error || (itemsError ? itemsError.message : null);
 
   return (
     <section className="space-y-6">
@@ -109,7 +202,7 @@ export default function InventoryPage() {
         </Button>
       </div>
 
-      {error && <Alert variant="error">{error}</Alert>}
+      {combinedError && <Alert variant="error">{combinedError}</Alert>}
 
       <InventoryTable
         items={items}

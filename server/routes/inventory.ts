@@ -1,14 +1,14 @@
 import express from "express";
 import { asyncHandler, authenticate } from "../lib/http.js";
-import { 
-  createInventoryCategory, 
-  listInventoryCategories, 
-  listInventoryItems, 
-  createInventoryItem, 
-  updateInventoryItem, 
-  deleteInventoryItem, 
-  createInventoryMovement 
-} from "../db.js";
+import {
+  createInventoryCategory,
+  listInventoryCategories,
+  listInventoryItems,
+  createInventoryItem,
+  updateInventoryItem,
+  deleteInventoryItem,
+  createInventoryMovement,
+} from "../repositories/inventory.js";
 import {
   inventoryCategorySchema,
   inventoryItemSchema,

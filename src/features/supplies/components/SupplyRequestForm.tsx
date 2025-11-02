@@ -1,12 +1,14 @@
 import React, { useMemo, useState } from "react";
-import type { ChangeEvent } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { useForm } from "../../../hooks";
 import Button from "../../../components/Button";
 import Input from "../../../components/Input";
 import Alert from "../../../components/Alert";
-import { apiClient } from "../../../lib";
 import type { CommonSupply, StructuredSupplies } from "../types";
+import { createSupplyRequest, type SupplyRequestPayload } from "../api";
+import { queryKeys } from "../../../lib/queryKeys";
+import { useToast } from "../../../context/ToastContext";
 
 const supplyRequestSchema = z.object({
   selectedSupply: z.string().min(1, "Seleccione un insumo"),
@@ -16,6 +18,8 @@ const supplyRequestSchema = z.object({
   notes: z.string().optional(),
 });
 
+type SupplyRequestFormData = z.infer<typeof supplyRequestSchema>;
+
 interface SupplyRequestFormProps {
   commonSupplies: CommonSupply[];
   onSuccess: () => void;
@@ -24,11 +28,20 @@ interface SupplyRequestFormProps {
 export default function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyRequestFormProps) {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const { success: toastSuccess, error: toastError } = useToast();
 
+  const createRequestMutation = useMutation<void, Error, SupplyRequestPayload>({
+    mutationFn: createSupplyRequest,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.supplies.requests() });
+    },
+  });
+  
   const form = useForm({
     initialValues: {
       selectedSupply: "",
-      selectedBrand: "",
+      selectedBrand: "", 
       selectedModel: "",
       quantity: 1,
       notes: "",
@@ -38,19 +51,21 @@ export default function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyR
       setErrorMessage(null);
       setSuccessMessage(null);
       try {
-        await apiClient.post("/api/supplies/requests", {
+        await createRequestMutation.mutateAsync({
           supplyName: values.selectedSupply,
           quantity: values.quantity,
-          brand: values.selectedBrand === "N/A" || !values.selectedBrand ? undefined : values.selectedBrand,
-          model: values.selectedModel === "N/A" || !values.selectedModel ? undefined : values.selectedModel,
+          brand: values.selectedBrand === 'N/A' || !values.selectedBrand ? undefined : values.selectedBrand,
+          model: values.selectedModel === 'N/A' || !values.selectedModel ? undefined : values.selectedModel,
           notes: values.notes || undefined,
         });
         setSuccessMessage("¡Solicitud de insumo enviada con éxito!");
+        toastSuccess("Solicitud de insumo enviada");
         form.reset();
         onSuccess();
-      } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : "Error al enviar la solicitud";
+      } catch (err: any) {
+        const message = err.message || "Error al enviar la solicitud";
         setErrorMessage(message);
+        toastError(message);
       }
     },
     validateOnChange: false,
@@ -63,7 +78,7 @@ export default function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyR
       if (!acc[supply.name]) {
         acc[supply.name] = {};
       }
-      const brand = supply.brand || "N/A";
+      const brand = supply.brand || 'N/A';
       if (!acc[supply.name][brand]) {
         acc[supply.name][brand] = [];
       }
@@ -76,13 +91,10 @@ export default function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyR
 
   const supplyNames = Object.keys(structuredSupplies);
   const availableBrands = form.values.selectedSupply ? Object.keys(structuredSupplies[form.values.selectedSupply]) : [];
-  const availableModels =
-    form.values.selectedSupply && form.values.selectedBrand
-      ? structuredSupplies[form.values.selectedSupply][form.values.selectedBrand]
-      : [];
+  const availableModels = form.values.selectedSupply && form.values.selectedBrand ? structuredSupplies[form.values.selectedSupply][form.values.selectedBrand] : [];
 
   return (
-    <div className="mb-8 p-6 bg-base-100 shadow-md rounded-lg">
+    <div className="mb-8 p-6 bg-white shadow-md rounded-lg">
       <h2 className="text-xl font-semibold mb-4">Solicitar Nuevo Insumo</h2>
       {successMessage && <Alert variant="success">{successMessage}</Alert>}
       {errorMessage && <Alert variant="error">{errorMessage}</Alert>}
@@ -92,8 +104,8 @@ export default function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyR
             label="Nombre del Insumo"
             type="select"
             {...form.getFieldProps("selectedSupply")}
-            onChange={(event: ChangeEvent<HTMLSelectElement>) => {
-              form.setValue("selectedSupply", event.target.value);
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+              form.setValue("selectedSupply", e.target.value);
               form.setValue("selectedBrand", "");
               form.setValue("selectedModel", "");
             }}
@@ -101,9 +113,7 @@ export default function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyR
           >
             <option value="">Seleccione un insumo</option>
             {supplyNames.map((name) => (
-              <option key={name} value={name}>
-                {name}
-              </option>
+              <option key={name} value={name}>{name}</option>
             ))}
           </Input>
           {form.getFieldError("selectedSupply") && (
@@ -111,7 +121,13 @@ export default function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyR
           )}
         </div>
         <div>
-          <Input label="Cantidad" type="number" {...form.getFieldProps("quantity")} min="1" required />
+          <Input
+            label="Cantidad"
+            type="number"
+            {...form.getFieldProps("quantity")}
+            min="1"
+            required
+          />
           {form.getFieldError("quantity") && (
             <p className="mt-1 text-xs text-red-600">{form.getFieldError("quantity")}</p>
           )}
@@ -121,17 +137,15 @@ export default function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyR
             label="Marca"
             type="select"
             {...form.getFieldProps("selectedBrand")}
-            onChange={(event: ChangeEvent<HTMLSelectElement>) => {
-              form.setValue("selectedBrand", event.target.value);
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+              form.setValue("selectedBrand", e.target.value);
               form.setValue("selectedModel", "");
             }}
             disabled={!form.values.selectedSupply}
           >
             <option value="">Seleccione una marca</option>
             {availableBrands.map((brand) => (
-              <option key={brand} value={brand}>
-                {brand}
-              </option>
+              <option key={brand} value={brand}>{brand}</option>
             ))}
           </Input>
           {form.getFieldError("selectedBrand") && (
@@ -147,9 +161,7 @@ export default function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyR
           >
             <option value="">Seleccione un modelo</option>
             {availableModels.map((model) => (
-              <option key={model} value={model}>
-                {model}
-              </option>
+              <option key={model} value={model}>{model}</option>
             ))}
           </Input>
           {form.getFieldError("selectedModel") && (
@@ -157,8 +169,15 @@ export default function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyR
           )}
         </div>
         <div className="md:col-span-2">
-          <Input label="Notas (Opcional)" type="textarea" rows={3} {...form.getFieldProps("notes")} />
-          {form.getFieldError("notes") && <p className="mt-1 text-xs text-red-600">{form.getFieldError("notes")}</p>}
+          <Input
+            label="Notas (Opcional)"
+            type="textarea"
+            rows={3}
+            {...form.getFieldProps("notes")}
+          />
+          {form.getFieldError("notes") && (
+            <p className="mt-1 text-xs text-red-600">{form.getFieldError("notes")}</p>
+          )}
         </div>
         <div className="md:col-span-2">
           <Button type="submit" disabled={form.isSubmitting}>

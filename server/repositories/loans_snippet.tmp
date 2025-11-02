@@ -1,0 +1,722 @@
+export type LoanFrequency = "WEEKLY" | "BIWEEKLY" | "MONTHLY";
+export type LoanInterestType = "SIMPLE" | "COMPOUND";
+export type LoanStatus = "ACTIVE" | "COMPLETED" | "DEFAULTED";
+
+export type LoanRecord = {
+  id: number;
+  public_id: string;
+  title: string;
+  borrower_name: string;
+  borrower_type: "PERSON" | "COMPANY";
+  principal_amount: number;
+  interest_rate: number;
+  interest_type: LoanInterestType;
+  frequency: LoanFrequency;
+  total_installments: number;
+  start_date: string;
+  status: LoanStatus;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type LoanScheduleRecord = {
+  id: number;
+  loan_id: number;
+  installment_number: number;
+  due_date: string;
+  expected_amount: number;
+  expected_principal: number;
+  expected_interest: number;
+  status: "PENDING" | "PARTIAL" | "PAID" | "OVERDUE";
+  transaction_id: number | null;
+  paid_amount: number | null;
+  paid_date: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type LoanWithSummary = LoanRecord & {
+  total_expected: number;
+  total_paid: number;
+  remaining_amount: number;
+  paid_installments: number;
+  pending_installments: number;
+};
+
+export type LoanScheduleWithTransaction = LoanScheduleRecord & {
+  transaction?: {
+    id: number;
+    description: string | null;
+    timestamp: string;
+    amount: number | null;
+  } | null;
+};
+
+export type ServiceFrequency =
+  | "WEEKLY"
+  | "BIWEEKLY"
+  | "MONTHLY"
+  | "BIMONTHLY"
+  | "QUARTERLY"
+  | "SEMIANNUAL"
+  | "ANNUAL"
+  | "ONCE";
+export type ServiceType =
+  | "BUSINESS"
+  | "PERSONAL"
+  | "SUPPLIER"
+  | "TAX"
+  | "UTILITY"
+  | "LEASE"
+  | "SOFTWARE"
+  | "OTHER";
+export type ServiceOwnership = "COMPANY" | "OWNER" | "MIXED" | "THIRD_PARTY";
+export type ServiceObligationType = "SERVICE" | "DEBT" | "LOAN" | "OTHER";
+export type ServiceRecurrenceType = "RECURRING" | "ONE_OFF";
+export type ServiceAmountIndexation = "NONE" | "UF";
+export type ServiceLateFeeMode = "NONE" | "FIXED" | "PERCENTAGE";
+export type ServiceEmissionMode = "FIXED_DAY" | "DATE_RANGE" | "SPECIFIC_DATE";
+export type ServiceStatus = "ACTIVE" | "INACTIVE" | "ARCHIVED";
+
+export type ServiceRecord = {
+  id: number;
+  public_id: string;
+  name: string;
+  detail: string | null;
+  category: string | null;
+  service_type: ServiceType;
+  ownership: ServiceOwnership;
+  obligation_type: ServiceObligationType;
+  recurrence_type: ServiceRecurrenceType;
+  frequency: ServiceFrequency;
+  default_amount: number;
+  amount_indexation: ServiceAmountIndexation;
+  counterpart_id: number | null;
+  counterpart_account_id: number | null;
+  account_reference: string | null;
+  emission_day: number | null;
+  emission_mode: ServiceEmissionMode;
+  emission_start_day: number | null;
+  emission_end_day: number | null;
+  emission_exact_date: string | null;
+  due_day: number | null;
+  start_date: string;
+  next_generation_months: number;
+  late_fee_mode: ServiceLateFeeMode;
+  late_fee_value: number | null;
+  late_fee_grace_days: number | null;
+  status: ServiceStatus;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+  counterpart_name?: string | null;
+  counterpart_account_identifier?: string | null;
+  counterpart_account_bank_name?: string | null;
+  counterpart_account_type?: string | null;
+};
+
+export type ServiceScheduleRecord = {
+  id: number;
+  service_id: number;
+  period_start: string;
+  period_end: string;
+  due_date: string;
+  expected_amount: number;
+  status: "PENDING" | "PAID" | "PARTIAL" | "SKIPPED";
+  transaction_id: number | null;
+  paid_amount: number | null;
+  paid_date: string | null;
+  note: string | null;
+  created_at: string;
+  updated_at: string;
+  late_fee_amount: number;
+  effective_amount: number;
+  overdue_days: number;
+};
+
+export type ServiceWithSummary = ServiceRecord & {
+  total_expected: number;
+  total_paid: number;
+  pending_count: number;
+  overdue_count: number;
+};
+
+export type ServiceScheduleWithTransaction = ServiceScheduleRecord & {
+  transaction?: {
+    id: number;
+    description: string | null;
+    timestamp: string;
+    amount: number | null;
+  } | null;
+};
+
+export type CounterpartAccountRecord = {
+  id: number;
+  counterpart_id: number;
+  account_identifier: string;
+  bank_name: string | null;
+  account_type: string | null;
+  holder: string | null;
+  concept: string | null;
+  metadata: CounterpartAccountMetadata | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CounterpartAccountMetadata = {
+  bankAccountNumber?: string | null;
+  withdrawId?: string | null;
+};
+
+export type AppSettings = {
+  orgName: string;
+  tagline: string;
+  primaryColor: string;
+  secondaryColor: string;
+  logoUrl: string;
+  dbDisplayHost: string;
+  dbDisplayName: string;
+  dbConsoleUrl: string;
+  cpanelUrl: string;
+  orgAddress: string;
+  orgPhone: string;
+  primaryCurrency: string;
+  supportEmail: string;
+};
+
+export const DEFAULT_SETTINGS: AppSettings = {
+  orgName: "Bioalergia",
+  tagline: "Gestión integral de finanzas",
+  primaryColor: "#0e64b7",
+  secondaryColor: "#f1a722",
+  logoUrl:
+    "https://bioalergia.cl/wp-content/uploads/2025/04/Logo-Bioalergia-con-eslogan-y-marca-registrada-1-scaled.png",
+  dbDisplayHost: "localhost",
+  dbDisplayName: "finanzas",
+  dbConsoleUrl: "",
+  cpanelUrl: "",
+  orgAddress: "",
+  orgPhone: "",
+  primaryCurrency: "CLP",
+  supportEmail: "soporte@bioalergia.cl",
+};
+
+const SETTINGS_KEY_MAP: Record<keyof AppSettings, string> = {
+  orgName: "brand.orgName",
+  tagline: "brand.tagline",
+  primaryColor: "brand.primaryColor",
+  secondaryColor: "brand.secondaryColor",
+  logoUrl: "brand.logoUrl",
+  dbDisplayHost: "db.displayHost",
+  dbDisplayName: "db.displayName",
+  dbConsoleUrl: "db.consoleUrl",
+  cpanelUrl: "cpanel.url",
+  orgAddress: "org.address",
+  orgPhone: "org.phone",
+  primaryCurrency: "org.primaryCurrency",
+  supportEmail: "contact.supportEmail",
+};
+
+const REQUIRED_ENV = ["DB_HOST", "DB_USER", "DB_PASSWORD", "DB_NAME"] as const;
+
+let pool: Pool | null = null;
+
+function assertEnv() {
+  const missing = REQUIRED_ENV.filter((key) => !process.env[key]);
+  if (missing.length) {
+    throw new Error(
+      `Faltan variables de entorno para la base de datos: ${missing.join(", ")}. ` +
+        `Configura el archivo .env con las credenciales de HostGator.`
+    );
+  }
+}
+
+export function getPool(): Pool {
+  if (pool) return pool;
+  assertEnv();
+
+  pool = mysql.createPool({
+    host: process.env.DB_HOST,
+    port: Number(process.env.DB_PORT ?? 3306),
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+    waitForConnections: true,
+    connectionLimit: 8,
+    connectTimeout: Number(process.env.DB_CONNECT_TIMEOUT ?? 5000),
+    namedPlaceholders: false,
+    dateStrings: true,
+  });
+
+  return pool;
+}
+
+function mapLoanRow(row: RowDataPacket): LoanRecord {
+  return {
+    id: Number(row.id),
+    public_id: String(row.public_id),
+    title: String(row.title),
+    borrower_name: String(row.borrower_name),
+    borrower_type: row.borrower_type as 'PERSON' | 'COMPANY',
+    principal_amount: Number(row.principal_amount ?? 0),
+    interest_rate: Number(row.interest_rate ?? 0),
+    interest_type: (row.interest_type as LoanInterestType) ?? 'SIMPLE',
+    frequency: (row.frequency as LoanFrequency) ?? 'MONTHLY',
+    total_installments: Number(row.total_installments ?? 0),
+    start_date: toDateOnly(row.start_date),
+    status: (row.status as LoanStatus) ?? 'ACTIVE',
+    notes: row.notes != null ? String(row.notes) : null,
+    created_at: row.created_at instanceof Date ? row.created_at.toISOString() : String(row.created_at),
+    updated_at: row.updated_at instanceof Date ? row.updated_at.toISOString() : String(row.updated_at),
+  } satisfies LoanRecord;
+}
+
+function mapLoanScheduleRow(row: RowDataPacket): LoanScheduleRecord {
+  return {
+    id: Number(row.id),
+    loan_id: Number(row.loan_id),
+    installment_number: Number(row.installment_number),
+    due_date: toDateOnly(row.due_date),
+    expected_amount: Number(row.expected_amount ?? 0),
+    expected_principal: Number(row.expected_principal ?? 0),
+    expected_interest: Number(row.expected_interest ?? 0),
+    status: (row.status as LoanScheduleRecord['status']) ?? 'PENDING',
+    transaction_id: row.transaction_id != null ? Number(row.transaction_id) : null,
+    paid_amount: row.paid_amount != null ? Number(row.paid_amount) : null,
+    paid_date: row.paid_date ? toDateOnly(row.paid_date) : null,
+    created_at: row.created_at instanceof Date ? row.created_at.toISOString() : String(row.created_at),
+    updated_at: row.updated_at instanceof Date ? row.updated_at.toISOString() : String(row.updated_at),
+  } satisfies LoanScheduleRecord;
+}
+
+export type CreateLoanPayload = {
+  title: string;
+  borrowerName: string;
+  borrowerType: "PERSON" | "COMPANY";
+  principalAmount: number;
+  interestRate: number;
+  interestType?: LoanInterestType;
+  frequency: LoanFrequency;
+  totalInstallments: number;
+  startDate: string;
+  notes?: string | null;
+};
+
+type ScheduleComputation = {
+  installment_number: number;
+  due_date: string;
+  expected_amount: number;
+  expected_principal: number;
+  expected_interest: number;
+};
+
+function computeLoanSchedule(
+  loan: LoanRecord,
+  overrides?: { totalInstallments?: number; startDate?: string; interestRate?: number; frequency?: LoanFrequency }
+): ScheduleComputation[] {
+  const totalInstallments = overrides?.totalInstallments ?? loan.total_installments;
+  const frequency = overrides?.frequency ?? loan.frequency;
+  const startDate = overrides?.startDate ?? loan.start_date;
+  const interestRate = overrides?.interestRate ?? loan.interest_rate;
+
+  if (!totalInstallments || totalInstallments <= 0) {
+    throw new Error("El número total de cuotas debe ser mayor a cero");
+  }
+
+  const principal = loan.principal_amount;
+  const rateDecimal = interestRate / 100;
+  const simpleInterestTotal = principal * rateDecimal;
+  const totalAmount = principal + simpleInterestTotal;
+  const basePrincipal = principal / totalInstallments;
+  const baseInterest = simpleInterestTotal / totalInstallments;
+
+  let remainingPrincipal = principal;
+  let interestAccum = 0;
+  let amountAccum = 0;
+  const schedule: ScheduleComputation[] = [];
+  const baseDate = dayjs(startDate ?? loan.start_date);
+
+  for (let i = 0; i < totalInstallments; i += 1) {
+    const installmentNumber = i + 1;
+    const isLast = installmentNumber === totalInstallments;
+
+    let principalShare = roundCurrency(isLast ? remainingPrincipal : basePrincipal);
+    remainingPrincipal = roundCurrency(remainingPrincipal - principalShare);
+
+    let interestShare = roundCurrency(isLast ? simpleInterestTotal - interestAccum : baseInterest);
+    interestAccum = roundCurrency(interestAccum + interestShare);
+
+    let amountShare = roundCurrency(principalShare + interestShare);
+    if (isLast) {
+      const expectedTotal = roundCurrency(totalAmount);
+      amountShare = roundCurrency(expectedTotal - amountAccum);
+    }
+    amountAccum = roundCurrency(amountAccum + amountShare);
+
+    let dueDate = baseDate;
+    if (frequency === "WEEKLY") {
+      dueDate = baseDate.add(i, "week");
+    } else if (frequency === "BIWEEKLY") {
+      dueDate = baseDate.add(i * 2, "week");
+    } else {
+      dueDate = baseDate.add(i, "month");
+    }
+
+    schedule.push({
+      installment_number: installmentNumber,
+      due_date: formatLocalDateForMySQL(dueDate.toDate()),
+      expected_amount: amountShare,
+      expected_principal: principalShare,
+      expected_interest: interestShare,
+    });
+  }
+
+  return schedule;
+}
+
+async function insertScheduleEntries(connection: mysql.PoolConnection | Pool, loanId: number, schedule: ScheduleComputation[]) {
+  if (!schedule.length) return;
+  const values = schedule.map((entry) => [
+    loanId,
+    entry.installment_number,
+    entry.due_date,
+    entry.expected_amount,
+    entry.expected_principal,
+    entry.expected_interest,
+  ]);
+
+  await connection.query<ResultSetHeader>(
+    `INSERT INTO loan_schedules
+      (loan_id, installment_number, due_date, expected_amount, expected_principal, expected_interest)
+     VALUES ?`,
+    [values]
+  );
+}
+
+async function refreshLoanStatus(connection: mysql.PoolConnection | Pool, loanId: number) {
+  const [rows] = await connection.query<RowDataPacket[]>(
+    `SELECT
+        SUM(CASE WHEN status = 'PAID' THEN 1 ELSE 0 END) AS paid_count,
+        SUM(CASE WHEN status IN ('PENDING','PARTIAL','OVERDUE') THEN 1 ELSE 0 END) AS pending_count,
+        SUM(CASE WHEN status = 'OVERDUE' THEN 1 ELSE 0 END) AS overdue_count
+     FROM loan_schedules
+     WHERE loan_id = ?`,
+    [loanId]
+  );
+
+  const row = rows[0] ?? { paid_count: 0, pending_count: 0, overdue_count: 0 };
+  let nextStatus: LoanStatus = "ACTIVE";
+  if (Number(row.pending_count ?? 0) === 0) {
+    nextStatus = "COMPLETED";
+  } else if (Number(row.overdue_count ?? 0) > 0) {
+    nextStatus = "DEFAULTED";
+  }
+
+  await connection.query(
+    `UPDATE loans SET status = ?, updated_at = NOW() WHERE id = ? LIMIT 1`,
+    [nextStatus, loanId]
+  );
+}
+
+export async function createLoan(payload: CreateLoanPayload): Promise<LoanRecord> {
+  const pool = getPool();
+  const publicId = randomUUID();
+  const [result] = await pool.query<ResultSetHeader>(
+    `INSERT INTO loans
+      (public_id, title, borrower_name, borrower_type, principal_amount, interest_rate, interest_type, frequency, total_installments, start_date, status, notes)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE', ?)` as string,
+    [
+      publicId,
+      payload.title,
+      payload.borrowerName,
+      payload.borrowerType,
+      payload.principalAmount,
+      payload.interestRate,
+      payload.interestType ?? 'SIMPLE',
+      payload.frequency,
+      payload.totalInstallments,
+      payload.startDate,
+      payload.notes ?? null,
+    ]
+  );
+
+  const [rows] = await pool.query<RowDataPacket[]>(
+    `SELECT * FROM loans WHERE id = ? LIMIT 1`,
+    [result.insertId]
+  );
+  return mapLoanRow(rows[0]);
+}
+
+export async function listLoansWithSummary(): Promise<LoanWithSummary[]> {
+  const pool = getPool();
+  const [rows] = await pool.query<RowDataPacket[]>(
+    `SELECT
+        l.*,
+        COALESCE(SUM(ls.expected_amount), 0) AS total_expected,
+        COALESCE(SUM(CASE WHEN ls.status = 'PAID' THEN COALESCE(ls.paid_amount, ls.expected_amount) ELSE 0 END), 0) AS total_paid,
+        COALESCE(SUM(CASE WHEN ls.status IN ('PENDING','PARTIAL','OVERDUE') THEN ls.expected_amount ELSE 0 END), 0) AS remaining_amount,
+        COALESCE(SUM(CASE WHEN ls.status = 'PAID' THEN 1 ELSE 0 END), 0) AS paid_installments,
+        COALESCE(SUM(CASE WHEN ls.status IN ('PENDING','PARTIAL','OVERDUE') THEN 1 ELSE 0 END), 0) AS pending_installments
+      FROM loans l
+      LEFT JOIN loan_schedules ls ON ls.loan_id = l.id
+      GROUP BY l.id
+      ORDER BY l.created_at DESC`
+  );
+
+  return rows.map((row) => {
+    const loan = mapLoanRow(row);
+    return {
+      ...loan,
+      total_expected: Number(row.total_expected ?? 0),
+      total_paid: Number(row.total_paid ?? 0),
+      remaining_amount: Number(row.remaining_amount ?? 0),
+      paid_installments: Number(row.paid_installments ?? 0),
+      pending_installments: Number(row.pending_installments ?? 0),
+    } satisfies LoanWithSummary;
+  });
+}
+
+export async function getLoanDetail(publicId: string): Promise<{
+  loan: LoanRecord;
+  schedules: LoanScheduleWithTransaction[];
+  summary: {
+    total_expected: number;
+    total_paid: number;
+    remaining_amount: number;
+    paid_installments: number;
+    pending_installments: number;
+  };
+} | null> {
+  const pool = getPool();
+  const [loanRows] = await pool.query<RowDataPacket[]>(
+    `SELECT * FROM loans WHERE public_id = ? LIMIT 1`,
+    [publicId]
+  );
+
+  if (!loanRows.length) return null;
+  const loan = mapLoanRow(loanRows[0]);
+
+  const [scheduleRows] = await pool.query<RowDataPacket[]>(
+    `SELECT ls.*, t.description AS transaction_description, t.timestamp AS transaction_timestamp, t.amount AS transaction_amount
+       FROM loan_schedules ls
+       LEFT JOIN mp_transactions t ON t.id = ls.transaction_id
+      WHERE ls.loan_id = ?
+      ORDER BY ls.installment_number ASC`,
+    [loan.id]
+  );
+
+  const schedules: LoanScheduleWithTransaction[] = scheduleRows.map((row) => {
+    const base = mapLoanScheduleRow(row);
+    const transaction = row.transaction_id
+      ? {
+          id: Number(row.transaction_id),
+          description: row.transaction_description != null ? String(row.transaction_description) : null,
+          timestamp:
+            row.transaction_timestamp instanceof Date
+              ? row.transaction_timestamp.toISOString()
+              : row.transaction_timestamp
+              ? String(row.transaction_timestamp)
+              : "",
+          amount: row.transaction_amount != null ? Number(row.transaction_amount) : null,
+        }
+      : null;
+    return { ...base, transaction } satisfies LoanScheduleWithTransaction;
+  });
+
+  const today = dayjs().startOf("day");
+  const overdueIds: number[] = [];
+  const normalizedSchedules = schedules.map((schedule) => {
+    if (schedule.status === "PENDING" && dayjs(schedule.due_date).isBefore(today)) {
+      overdueIds.push(schedule.id);
+      return { ...schedule, status: "OVERDUE" as const };
+    }
+    return schedule;
+  });
+
+  if (overdueIds.length) {
+    await pool.query(
+      `UPDATE loan_schedules SET status = 'OVERDUE', updated_at = NOW() WHERE id IN (?) AND status = 'PENDING'`,
+      [overdueIds]
+    );
+    await refreshLoanStatus(pool, loan.id);
+  }
+
+  const summary = normalizedSchedules.reduce(
+    (acc, schedule) => {
+      acc.total_expected = roundCurrency(acc.total_expected + schedule.expected_amount);
+      const paidAmount = schedule.status === 'PAID' || schedule.status === 'PARTIAL'
+        ? schedule.paid_amount ?? schedule.expected_amount
+        : 0;
+      acc.total_paid = roundCurrency(acc.total_paid + (paidAmount ?? 0));
+      if (schedule.status === 'PAID') {
+        acc.paid_installments += 1;
+      } else {
+        acc.pending_installments += 1;
+        acc.remaining_amount = roundCurrency(acc.remaining_amount + schedule.expected_amount);
+      }
+      return acc;
+    },
+    {
+      total_expected: 0,
+      total_paid: 0,
+      remaining_amount: 0,
+      paid_installments: 0,
+      pending_installments: 0,
+    }
+  );
+
+  return { loan, schedules: normalizedSchedules, summary };
+}
+
+export async function regenerateLoanSchedule(
+  publicId: string,
+  options?: { totalInstallments?: number; startDate?: string; interestRate?: number; frequency?: LoanFrequency }
+) {
+  const pool = getPool();
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+    const [loanRows] = await connection.query<RowDataPacket[]>(
+      `SELECT * FROM loans WHERE public_id = ? LIMIT 1 FOR UPDATE`,
+      [publicId]
+    );
+    if (!loanRows.length) {
+      throw new Error("Préstamo no encontrado");
+    }
+    const loan = mapLoanRow(loanRows[0]);
+
+    const schedule = computeLoanSchedule(loan, options);
+    await connection.query(`DELETE FROM loan_schedules WHERE loan_id = ?`, [loan.id]);
+    await insertScheduleEntries(connection, loan.id, schedule);
+    await refreshLoanStatus(connection, loan.id);
+    await connection.commit();
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+}
+
+export async function markLoanSchedulePayment(payload: {
+  scheduleId: number;
+  transactionId: number;
+  paidAmount: number;
+  paidDate: string;
+}): Promise<LoanScheduleWithTransaction> {
+  const pool = getPool();
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    const [scheduleRows] = await connection.query<RowDataPacket[]>(
+      `SELECT ls.*, l.public_id FROM loan_schedules ls JOIN loans l ON l.id = ls.loan_id WHERE ls.id = ? FOR UPDATE`,
+      [payload.scheduleId]
+    );
+    if (!scheduleRows.length) {
+      throw new Error("Cuota no encontrada");
+    }
+    const schedule = mapLoanScheduleRow(scheduleRows[0]);
+
+    const [transactionRows] = await connection.query<RowDataPacket[]>(
+      `SELECT id, amount, timestamp FROM mp_transactions WHERE id = ? LIMIT 1`,
+      [payload.transactionId]
+    );
+    if (!transactionRows.length) {
+      throw new Error("Transacción no encontrada");
+    }
+
+    const paidAmount = roundCurrency(payload.paidAmount);
+    const status = paidAmount >= schedule.expected_amount ? 'PAID' : 'PARTIAL';
+
+    await connection.query(
+      `UPDATE loan_schedules
+          SET transaction_id = ?, paid_amount = ?, paid_date = ?, status = ?, updated_at = NOW()
+        WHERE id = ?
+        LIMIT 1`,
+      [payload.transactionId, paidAmount, payload.paidDate, status, payload.scheduleId]
+    );
+
+    await refreshLoanStatus(connection, schedule.loan_id);
+
+    const [updatedRows] = await connection.query<RowDataPacket[]>(
+      `SELECT ls.*, t.description AS transaction_description, t.timestamp AS transaction_timestamp, t.amount AS transaction_amount
+         FROM loan_schedules ls
+         LEFT JOIN mp_transactions t ON t.id = ls.transaction_id
+        WHERE ls.id = ?
+        LIMIT 1`,
+      [payload.scheduleId]
+    );
+
+    await connection.commit();
+    if (!updatedRows.length) {
+      throw new Error("No se pudo recuperar la cuota actualizada");
+    }
+    const updatedRow = updatedRows[0];
+    const mapped = mapLoanScheduleRow(updatedRow);
+    const transaction = updatedRow.transaction_id
+      ? {
+          id: Number(updatedRow.transaction_id),
+          description: updatedRow.transaction_description != null ? String(updatedRow.transaction_description) : null,
+          timestamp:
+            updatedRow.transaction_timestamp instanceof Date
+              ? updatedRow.transaction_timestamp.toISOString()
+              : updatedRow.transaction_timestamp
+              ? String(updatedRow.transaction_timestamp)
+              : "",
+          amount: updatedRow.transaction_amount != null ? Number(updatedRow.transaction_amount) : null,
+        }
+      : null;
+    return { ...mapped, transaction } satisfies LoanScheduleWithTransaction;
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+}
+
+export async function unlinkLoanSchedulePayment(scheduleId: number): Promise<LoanScheduleWithTransaction> {
+  const pool = getPool();
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+    const [rows] = await connection.query<RowDataPacket[]>(
+      `SELECT id, loan_id FROM loan_schedules WHERE id = ? FOR UPDATE`,
+      [scheduleId]
+    );
+    if (!rows.length) {
+      throw new Error("Cuota no encontrada");
+    }
+    const loanId = Number(rows[0].loan_id);
+    await connection.query(
+      `UPDATE loan_schedules
+          SET transaction_id = NULL, paid_amount = NULL, paid_date = NULL, status = 'PENDING', updated_at = NOW()
+        WHERE id = ?
+        LIMIT 1`,
+      [scheduleId]
+    );
+    await refreshLoanStatus(connection, loanId);
+
+    const [updatedRows] = await connection.query<RowDataPacket[]>(
+      `SELECT ls.*, NULL AS transaction_description, NULL AS transaction_timestamp, NULL AS transaction_amount
+         FROM loan_schedules ls
+        WHERE ls.id = ?
+        LIMIT 1`,
+      [scheduleId]
+    );
+
+    await connection.commit();
+    if (!updatedRows.length) {
+      throw new Error("No se pudo recuperar la cuota actualizada");
+    }
+    const mapped = mapLoanScheduleRow(updatedRows[0]);
+    return { ...mapped, transaction: null } satisfies LoanScheduleWithTransaction;
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+}

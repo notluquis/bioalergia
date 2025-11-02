@@ -1,5 +1,6 @@
 import { fileURLToPath, URL } from "node:url";
 import { defineConfig } from "vite";
+import { configDefaults } from "vitest/config";
 import react from "@vitejs/plugin-react-swc";
 import tailwindcss from "@tailwindcss/vite";
 
@@ -38,6 +39,16 @@ export default defineConfig({
         target: "http://localhost:4000",
         changeOrigin: true,
       },
+    },
+  },
+  test: {
+    environment: "jsdom",
+    globals: true,
+    setupFiles: "./test/setup.ts",
+    exclude: [...configDefaults.exclude, "test/employees.integration.test.ts"],
+    coverage: {
+      reporter: ["text", "lcov"],
+      exclude: [...configDefaults.coverage.exclude, "test/setup.ts"],
     },
   },
 });

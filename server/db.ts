@@ -14,7 +14,12 @@ import { formatLocalDateForMySQL } from "./lib/time.js";
 import { InventoryCategory, InventoryItem, InventoryMovement } from "./types.js";
 import { roundCurrency } from "../shared/currency.js";
 import { SQLBuilder, selectMany } from "./lib/database.js";
-
+import type {
+  Counterpart as CounterpartRecord,
+  CounterpartAccount as CounterpartAccountRecord,
+  CounterpartAccountMetadata,
+  CounterpartPersonType,
+} from "../src/features/counterparts/types.js";
 dotenv.config();
 
 type Pool = mysql.Pool;
@@ -26,21 +31,6 @@ export type UserRecord = {
   role: UserRole;
   password_hash: string;
   name: string | null;
-};
-
-export type CounterpartPersonType = "PERSON" | "COMPANY" | "OTHER";
-
-export type CounterpartRecord = {
-  id: number;
-  rut: string | null;
-  name: string;
-  personType: CounterpartPersonType;
-  category: "SUPPLIER" | "PATIENT" | "EMPLOYEE" | "PARTNER" | "RELATED" | "OTHER";
-  employeeId: number | null;
-  email: string | null;
-  notes: string | null;
-  created_at: string;
-  updated_at: string;
 };
 
 export type LoanFrequency = "WEEKLY" | "BIWEEKLY" | "MONTHLY";
@@ -233,24 +223,6 @@ export type CreateMonthlyExpensePayload = {
 export type LinkMonthlyExpenseTransactionPayload = {
   transactionId: number;
   amount?: number;
-};
-
-export type CounterpartAccountRecord = {
-  id: number;
-  counterpart_id: number;
-  account_identifier: string;
-  bank_name: string | null;
-  account_type: string | null;
-  holder: string | null;
-  concept: string | null;
-  metadata: CounterpartAccountMetadata | null;
-  created_at: string;
-  updated_at: string;
-};
-
-export type CounterpartAccountMetadata = {
-  bankAccountNumber?: string | null;
-  withdrawId?: string | null;
 };
 
 export type AppSettings = {

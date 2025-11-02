@@ -1,12 +1,15 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import { useAuth } from "../../../context/auth-context";
+import { useAuth } from "../../../context/AuthContext";
 import { fetchParticipantLeaderboard } from "../../participants/api";
 import type { ParticipantSummaryRow } from "../../participants/types";
 import type { BalancesApiResponse } from "../../balances/types";
 import { fetchBalances } from "../../balances/api";
 import { useQuickDateRange } from "../../balances/hooks/useQuickDateRange";
 import { apiClient } from "../../../lib/apiClient";
+import { queryKeys } from "../../../lib/queryKeys";
+import { useParticipantLeaderboardQuery } from "../../participants/hooks";
 
 type StatsResponse = {
   status: "ok";
@@ -37,17 +40,11 @@ interface UseStatsDataResult {
 
 export function useStatsData(): UseStatsDataResult {
   const { hasRole } = useAuth();
-  const [from, setFrom] = useState(dayjs().subtract(3, "month").startOf("month").format("YYYY-MM-DD"));
+  const queryClient = useQueryClient();
+  const [from, setFrom] = useState(
+    dayjs().subtract(3, "month").startOf("month").format("YYYY-MM-DD")
+  );
   const [to, setTo] = useState(dayjs().format("YYYY-MM-DD"));
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [data, setData] = useState<StatsResponse | null>(null);
-  const [balancesReport, setBalancesReport] = useState<BalancesApiResponse | null>(null);
-  const [balancesLoading, setBalancesLoading] = useState(false);
-  const [balancesError, setBalancesError] = useState<string | null>(null);
-  const [topParticipants, setTopParticipants] = useState<ParticipantSummaryRow[]>([]);
-  const [participantsLoading, setParticipantsLoading] = useState(false);
-  const [participantsError, setParticipantsError] = useState<string | null>(null);
 
   const canView = hasRole("GOD", "ADMIN", "ANALYST", "VIEWER");
 
@@ -58,78 +55,75 @@ export function useStatsData(): UseStatsDataResult {
     return match ? match.value : "custom";
   }, [quickMonths, from, to]);
 
-  const loadBalances = useCallback(async (fromValue: string, toValue: string) => {
-    if (!fromValue || !toValue) {
-      setBalancesReport(null);
-      return;
-    }
-
-    setBalancesLoading(true);
-    setBalancesError(null);
-    try {
-      const payload = await fetchBalances(fromValue, toValue);
-      setBalancesReport(payload);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "No se pudieron obtener los saldos diarios";
-      setBalancesError(message);
-      setBalancesReport(null);
-    } finally {
-      setBalancesLoading(false);
-    }
+  const fetchStatsForRange = useCallback((fromValue: string, toValue: string) => {
+    const params = new URLSearchParams();
+    if (fromValue) params.set("from", fromValue);
+    if (toValue) params.set("to", toValue);
+    return apiClient.get<StatsResponse>(`/api/transactions/stats?${params.toString()}`);
   }, []);
 
-  const loadLeaderboard = useCallback(async (fromValue: string, toValue: string) => {
-    setParticipantsLoading(true);
-    setParticipantsError(null);
-    try {
-      const params: { limit: number; mode: "outgoing" | "combined"; from?: string; to?: string } = {
-        limit: 5,
-        mode: "outgoing",
-      };
-      if (fromValue) params.from = fromValue;
-      if (toValue) params.to = toValue;
-      const response = await fetchParticipantLeaderboard(params);
-      setTopParticipants(response.participants);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "No se pudieron obtener los retiros principales";
-      setParticipantsError(message);
-      setTopParticipants([]);
-    } finally {
-      setParticipantsLoading(false);
-    }
-  }, []);
+  const statsQuery = useQuery<StatsResponse, Error>({
+    queryKey: queryKeys.stats.overview({ from, to }),
+    queryFn: () => fetchStatsForRange(from, to),
+    enabled: canView && Boolean(from && to),
+    placeholderData: keepPreviousData,
+    staleTime: 2 * 60 * 1000,
+  });
+
+  const balancesQuery = useQuery<BalancesApiResponse, Error>({
+    queryKey: queryKeys.balances.report({ from, to }),
+    queryFn: () => fetchBalances(from, to),
+    enabled: canView && Boolean(from && to),
+    staleTime: 2 * 60 * 1000,
+  });
+
+  const participantsQuery = useParticipantLeaderboardQuery(
+    { from, to, limit: 5, mode: "outgoing" },
+    { enabled: canView && Boolean(from && to) }
+  );
+
+  const fetchStats = useCallback(async () => {
+    if (!canView) return;
+    await Promise.all([
+      statsQuery.refetch(),
+      balancesQuery.refetch(),
+      participantsQuery.refetch?.(),
+    ]);
+  }, [canView, statsQuery, balancesQuery, participantsQuery]);
 
   const fetchStatsWithRange = useCallback(
     async (fromValue: string, toValue: string) => {
       if (!canView) return;
-      setLoading(true);
-      setError(null);
-      try {
-        const params = new URLSearchParams();
-        if (fromValue) params.set("from", fromValue);
-        if (toValue) params.set("to", toValue);
-        const payload = await apiClient.get<StatsResponse>(`/api/transactions/stats?${params.toString()}`);
-        setData(payload);
-        await Promise.all([loadBalances(fromValue, toValue), loadLeaderboard(fromValue, toValue)]);
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "Error inesperado";
-        setError(message);
-        setData(null);
-      } finally {
-        setLoading(false);
-      }
+      setFrom(fromValue);
+      setTo(toValue);
+      await Promise.all([
+        queryClient.prefetchQuery({
+          queryKey: queryKeys.stats.overview({ from: fromValue, to: toValue }),
+          queryFn: () => fetchStatsForRange(fromValue, toValue),
+        }),
+        queryClient.prefetchQuery({
+          queryKey: queryKeys.balances.report({ from: fromValue, to: toValue }),
+          queryFn: () => fetchBalances(fromValue, toValue),
+        }),
+        queryClient.prefetchQuery({
+          queryKey: queryKeys.participants.leaderboard({
+            from: fromValue,
+            to: toValue,
+            limit: 5,
+            mode: "outgoing",
+          }),
+          queryFn: () =>
+            fetchParticipantLeaderboard({
+              from: fromValue,
+              to: toValue,
+              limit: 5,
+              mode: "outgoing",
+            }),
+        }),
+      ]);
     },
-    [canView, loadBalances, loadLeaderboard]
+    [canView, queryClient, fetchStatsForRange]
   );
-
-  const fetchStats = useCallback(async () => {
-    await fetchStatsWithRange(from, to);
-  }, [from, to, fetchStatsWithRange]);
-
-  useEffect(() => {
-    if (!canView) return;
-    fetchStats();
-  }, [canView, fetchStats]);
 
   return {
     from,
@@ -138,15 +132,15 @@ export function useStatsData(): UseStatsDataResult {
     setTo,
     quickRange,
     quickMonths,
-    loading,
-    error,
-    data,
-    balancesReport,
-    balancesLoading,
-    balancesError,
-    topParticipants,
-    participantsLoading,
-    participantsError,
+    loading: statsQuery.isPending || statsQuery.isFetching,
+    error: statsQuery.error?.message ?? null,
+    data: statsQuery.data ?? null,
+    balancesReport: balancesQuery.data ?? null,
+    balancesLoading: balancesQuery.isPending || balancesQuery.isFetching,
+    balancesError: balancesQuery.error?.message ?? null,
+    topParticipants: participantsQuery.data ?? [],
+    participantsLoading: participantsQuery.isPending || participantsQuery.isFetching,
+    participantsError: participantsQuery.error instanceof Error ? participantsQuery.error.message : null,
     fetchStats,
     fetchStatsWithRange,
   };

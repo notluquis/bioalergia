@@ -1,96 +1,87 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useMemo, type ReactNode } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { logger } from "../lib/logger";
-import {
-  AuthContext,
-  type AuthContextType,
-  type AuthUser,
-  type UserRole,
-} from "./auth-context";
+
+export type UserRole = "GOD" | "ADMIN" | "ANALYST" | "VIEWER";
+
+export type AuthUser = {
+  id: number;
+  email: string;
+  role: UserRole;
+  name: string | null;
+};
+
+export type AuthContextType = {
+  user: AuthUser | null;
+  initializing: boolean;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
+  hasRole: (...roles: UserRole[]) => boolean;
+};
+
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [initializing, setInitializing] = useState(true);
+  const queryClient = useQueryClient();
+  const timeoutSeconds = Number(import.meta.env?.VITE_AUTH_TIMEOUT ?? 8);
 
-  useEffect(() => {
-    let cancelled = false;
-    if (typeof window === "undefined" || !("AbortController" in window)) {
-      logger.warn("[auth] bootstrap: AbortController no disponible en este entorno");
-      fetch("/api/auth/me", { credentials: "include" })
-        .then(async (res) => {
-          if (!res.ok) {
-            logger.warn("[auth] bootstrap: sin sesión", { status: res.status });
-            setUser(null);
-            return;
-          }
-          const payload = (await res.json()) as { status: string; user: AuthUser };
-          if (payload.status === "ok") {
-            setUser(payload.user);
-            logger.info("[auth] bootstrap: sesión válida", payload.user);
-          }
-        })
-        .catch((error) => {
-          logger.error("[auth] bootstrap: error", error);
-          setUser(null);
-        })
-        .finally(() => setInitializing(false));
-      return;
-    }
+  const sessionQuery = useQuery({
+    queryKey: ["auth", "session"],
+    queryFn: async (): Promise<AuthUser | null> => {
+      const controller = typeof AbortController !== "undefined" ? new AbortController() : undefined;
+      const timeoutId =
+        typeof window !== "undefined" && controller
+          ? window.setTimeout(() => {
+              if (!controller.signal.aborted) {
+                logger.warn("[auth] bootstrap: cancelado por timeout", { timeoutSeconds });
+                controller.abort();
+              }
+            }, timeoutSeconds * 1000)
+          : null;
 
-    const controller = new AbortController();
-    const timeoutSeconds = Number(import.meta.env?.VITE_AUTH_TIMEOUT ?? 8);
-    const timeoutId = window.setTimeout(() => {
-      if (!controller.signal.aborted) {
-        logger.warn("[auth] bootstrap: cancelado por timeout", { timeoutSeconds });
-        controller.abort();
-      }
-    }, timeoutSeconds * 1000);
-
-    async function bootstrap() {
       try {
-        console.debug("[steps][auth] Step 1: iniciando bootstrap de sesión activa");
-        logger.info("[auth] bootstrap: solicitando sesión activa");
-        logger.info("[steps][auth] configurado timeout", { timeoutSeconds });
         const res = await fetch("/api/auth/me", {
           credentials: "include",
-          signal: controller.signal,
+          signal: controller?.signal,
         });
-        console.debug("[steps][auth] Step 2: respuesta /api/auth/me", res.status);
-        if (!res.ok) {
+
+        if (res.status === 401) {
           logger.warn("[auth] bootstrap: sin sesión", { status: res.status });
-          console.warn("[steps][auth] Step 3: sesión no válida", res.status);
-          if (!cancelled) {
-            setUser(null);
-          }
-          return;
+          return null;
         }
-        const payload = (await res.json()) as { status: string; user: AuthUser };
-        console.debug("[steps][auth] Step 4: payload recibido", payload.status);
-        if (!cancelled && payload?.status === "ok") {
-          setUser(payload.user);
+
+        if (!res.ok) {
+          const message = `${res.status} ${res.statusText}`;
+          logger.warn("[auth] bootstrap: error de respuesta", { message });
+          throw new Error(message);
+        }
+
+        const payload = (await res.json()) as { status: string; user?: AuthUser };
+        if (payload.status === "ok" && payload.user) {
           logger.info("[auth] bootstrap: sesión válida", payload.user);
-          console.debug("[steps][auth] Step 5: usuario establecido", payload.user?.email);
+          return payload.user;
         }
+
+        return null;
       } catch (error) {
         if ((error as DOMException)?.name === "AbortError") {
-          console.warn("[steps][auth] Step error: solicitud abortada", error);
-          return;
+          logger.warn("[auth] bootstrap: abortado por timeout");
+          return null;
         }
         logger.error("[auth] bootstrap: error", error);
-        console.error("[steps][auth] Step error: se produjo una excepción", error);
-        if (!cancelled) setUser(null);
+        return null;
       } finally {
-        window.clearTimeout(timeoutId);
-        console.debug("[steps][auth] Step final: inicialización completada");
-        if (!cancelled) setInitializing(false);
+        if (typeof window !== "undefined" && timeoutId != null) {
+          window.clearTimeout(timeoutId);
+        }
       }
-    }
-    bootstrap();
-    return () => {
-      cancelled = true;
-      window.clearTimeout(timeoutId);
-      controller.abort();
-    };
-  }, []);
+    },
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+  });
+
+  const user = sessionQuery.data ?? null;
+  const initializing = sessionQuery.isPending;
 
   const login = useCallback(async (email: string, password: string) => {
     logger.info("[auth] login:start", { email });
@@ -107,9 +98,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error(payload.message || "No se pudo iniciar sesión");
     }
 
-    setUser(payload.user);
+    queryClient.setQueryData(["auth", "session"], payload.user);
     logger.info("[auth] login:success", payload.user);
-  }, []);
+  }, [queryClient]);
 
   const logout = useCallback(async () => {
     logger.info("[auth] logout:start");
@@ -117,9 +108,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       method: "POST",
       credentials: "include",
     });
-    setUser(null);
+    queryClient.setQueryData(["auth", "session"], null);
+    await queryClient.invalidateQueries({ queryKey: ["settings"] });
     logger.info("[auth] logout:done");
-  }, []);
+  }, [queryClient]);
 
   const hasRole = useCallback((...roles: UserRole[]) => {
     if (!user) return false;
@@ -134,4 +126,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+export function useAuth() {
+  const ctx = useContext(AuthContext);
+  if (!ctx) {
+    throw new Error("useAuth debe usarse dentro de un AuthProvider.");
+  }
+  return ctx;
 }
