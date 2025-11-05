@@ -1,9 +1,8 @@
 import dayjs from "dayjs";
 import { useAuth } from "../../../context/AuthContext";
-import { useEffect, useState, type ChangeEvent } from "react";
+import { useEffect, useState } from "react";
 import Modal from "../../../components/Modal";
 import Button from "../../../components/Button";
-import Input from "../../../components/Input";
 import TimeInput from "../../../components/TimeInput";
 import { computeStatus, isRowDirty, formatDateLabel } from "../utils";
 import type { BulkRow } from "../types";
@@ -258,18 +257,12 @@ export default function TimesheetDetailTable({
                         <span className="text-base-content/50">—</span>
                       )
                     ) : (
-                      <Input
-                        type="text"
+                      <TimeInput
                         value={row.overtime}
-                        onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                          onRowChange(index, "overtime", event.target.value)
-                        }
-                        placeholder="HH:MM"
-                        className="w-28"
-                        disabled={!canEditRow}
-                        onBlur={() => {
-                          const value = (row.overtime || "").trim();
-                          if (!value) {
+                        onChange={(value) => {
+                          onRowChange(index, "overtime", value);
+                          // Si se borra el valor, cerrar el editor
+                          if (!value.trim()) {
                             setOpenOvertimeEditors((prev) => {
                               const next = new Set(prev);
                               next.delete(row.date);
@@ -277,6 +270,9 @@ export default function TimesheetDetailTable({
                             });
                           }
                         }}
+                        placeholder="HH:MM"
+                        className="w-28"
+                        disabled={!canEditRow}
                       />
                     )}
                   </td>
