@@ -17,15 +17,7 @@ interface ButtonProps extends React.HTMLAttributes<HTMLElement> {
  * - `href` is forwarded when rendering anchors.
  * Keeps variant/size API and preserves existing className overrides.
  */
-export default function Button({
-  variant,
-  size = "md",
-  className = "",
-  as,
-  href,
-  children,
-  ...props
-}: ButtonProps) {
+export default function Button({ variant, size = "md", className = "", as, href, children, ...props }: ButtonProps) {
   const v = variant ?? "primary";
   const variantClasses: Record<string, string> = {
     primary: "btn btn-primary",

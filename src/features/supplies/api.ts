@@ -21,9 +21,6 @@ export async function createSupplyRequest(payload: SupplyRequestPayload): Promis
   await apiClient.post("/api/supplies/requests", payload);
 }
 
-export async function updateSupplyRequestStatus(
-  requestId: number,
-  status: SupplyRequest["status"]
-): Promise<void> {
+export async function updateSupplyRequestStatus(requestId: number, status: SupplyRequest["status"]): Promise<void> {
   await apiClient.put(`/api/supplies/requests/${requestId}/status`, { status });
 }

@@ -83,24 +83,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const user = sessionQuery.data ?? null;
   const initializing = sessionQuery.isPending;
 
-  const login = useCallback(async (email: string, password: string) => {
-    logger.info("[auth] login:start", { email });
-    const res = await fetch("/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ email, password }),
-    });
+  const login = useCallback(
+    async (email: string, password: string) => {
+      logger.info("[auth] login:start", { email });
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ email, password }),
+      });
 
-    const payload = (await res.json()) as { status: string; user?: AuthUser; message?: string };
-    if (!res.ok || payload.status !== "ok" || !payload.user) {
-      logger.warn("[auth] login:error", { email, status: res.status, message: payload.message });
-      throw new Error(payload.message || "No se pudo iniciar sesión");
-    }
+      const payload = (await res.json()) as { status: string; user?: AuthUser; message?: string };
+      if (!res.ok || payload.status !== "ok" || !payload.user) {
+        logger.warn("[auth] login:error", { email, status: res.status, message: payload.message });
+        throw new Error(payload.message || "No se pudo iniciar sesión");
+      }
 
-    queryClient.setQueryData(["auth", "session"], payload.user);
-    logger.info("[auth] login:success", payload.user);
-  }, [queryClient]);
+      queryClient.setQueryData(["auth", "session"], payload.user);
+      logger.info("[auth] login:success", payload.user);
+    },
+    [queryClient]
+  );
 
   const logout = useCallback(async () => {
     logger.info("[auth] logout:start");
@@ -113,12 +116,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     logger.info("[auth] logout:done");
   }, [queryClient]);
 
-  const hasRole = useCallback((...roles: UserRole[]) => {
-    if (!user) return false;
-    if (user.role === "GOD") return true;
-    if (!roles.length) return true;
-    return roles.includes(user.role);
-  }, [user]);
+  const hasRole = useCallback(
+    (...roles: UserRole[]) => {
+      if (!user) return false;
+      if (user.role === "GOD") return true;
+      if (!roles.length) return true;
+      return roles.includes(user.role);
+    },
+    [user]
+  );
 
   const value = useMemo<AuthContextType>(
     () => ({ user, initializing, login, logout, hasRole }),

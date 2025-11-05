@@ -34,10 +34,7 @@ export async function createCounterpart(payload: CounterpartUpsertPayload) {
   );
 }
 
-export async function updateCounterpart(
-  id: number,
-  payload: Partial<CounterpartUpsertPayload>
-) {
+export async function updateCounterpart(id: number, payload: Partial<CounterpartUpsertPayload>) {
   return await apiClient.put<{ counterpart: Counterpart; accounts: CounterpartAccount[] }>(
     `/api/counterparts/${id}`,
     payload

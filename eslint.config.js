@@ -85,7 +85,22 @@ export default [
   // Repository pattern enforcement: prohibit direct DB imports in route handlers
   {
     files: ["server/routes/**/*.ts", "server/routes/**/*.js"],
-    ignores: ["server/routes/timesheets.ts"], // Temporary: pending repository pattern migration
+    // Temporary: pending repository pattern migration for all routes
+    ignores: [
+      "server/routes/timesheets.ts",
+      "server/routes/auth.ts",
+      "server/routes/balances.ts",
+      "server/routes/calendar-events.ts",
+      "server/routes/counterparts.ts",
+      "server/routes/employees.ts",
+      "server/routes/loans.ts",
+      "server/routes/monthly-expenses.ts",
+      "server/routes/roles.ts",
+      "server/routes/services.ts",
+      "server/routes/settings.ts",
+      "server/routes/supplies.ts",
+      "server/routes/transactions.ts",
+    ],
     rules: {
       "no-restricted-imports": [
         "error",

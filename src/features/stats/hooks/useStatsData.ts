@@ -41,9 +41,7 @@ interface UseStatsDataResult {
 export function useStatsData(): UseStatsDataResult {
   const { hasRole } = useAuth();
   const queryClient = useQueryClient();
-  const [from, setFrom] = useState(
-    dayjs().subtract(3, "month").startOf("month").format("YYYY-MM-DD")
-  );
+  const [from, setFrom] = useState(dayjs().subtract(3, "month").startOf("month").format("YYYY-MM-DD"));
   const [to, setTo] = useState(dayjs().format("YYYY-MM-DD"));
 
   const canView = hasRole("GOD", "ADMIN", "ANALYST", "VIEWER");
@@ -84,11 +82,7 @@ export function useStatsData(): UseStatsDataResult {
 
   const fetchStats = useCallback(async () => {
     if (!canView) return;
-    await Promise.all([
-      statsQuery.refetch(),
-      balancesQuery.refetch(),
-      participantsQuery.refetch?.(),
-    ]);
+    await Promise.all([statsQuery.refetch(), balancesQuery.refetch(), participantsQuery.refetch?.()]);
   }, [canView, statsQuery, balancesQuery, participantsQuery]);
 
   const fetchStatsWithRange = useCallback(

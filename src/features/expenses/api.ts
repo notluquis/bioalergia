@@ -16,7 +16,9 @@ export async function fetchMonthlyExpenses(params?: {
   return apiClient.get("/api/expenses", { query: params });
 }
 
-export async function fetchMonthlyExpenseDetail(publicId: string): Promise<{ status: "ok"; expense: MonthlyExpenseDetail }> {
+export async function fetchMonthlyExpenseDetail(
+  publicId: string
+): Promise<{ status: "ok"; expense: MonthlyExpenseDetail }> {
   return apiClient.get(`/api/expenses/${publicId}`);
 }
 
