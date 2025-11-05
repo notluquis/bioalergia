@@ -111,7 +111,7 @@ export default function ServicesOverviewContent() {
           )
         }
       >
-        {loadingList && <p className="text-xs text-slate-400">Actualizando listado de servicios...</p>}
+        {loadingList && <p className="text-xs text-base-content/50">Actualizando listado de servicios...</p>}
         <div className="grid gap-6 xl:grid-cols-[320px,minmax(0,1fr)]">
           <div className="h-full">
             <ServiceList
@@ -178,18 +178,14 @@ export default function ServicesOverviewContent() {
               label="ID transacción"
               type="number"
               value={paymentForm.transactionId}
-              onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                handlePaymentFieldChange("transactionId", event)
-              }
+              onChange={(event: ChangeEvent<HTMLInputElement>) => handlePaymentFieldChange("transactionId", event)}
               required
             />
             <Input
               label="Monto pagado"
               type="number"
               value={paymentForm.paidAmount}
-              onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                handlePaymentFieldChange("paidAmount", event)
-              }
+              onChange={(event: ChangeEvent<HTMLInputElement>) => handlePaymentFieldChange("paidAmount", event)}
               min={0}
               step="0.01"
               required
@@ -198,9 +194,7 @@ export default function ServicesOverviewContent() {
               label="Fecha de pago"
               type="date"
               value={paymentForm.paidDate}
-              onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                handlePaymentFieldChange("paidDate", event)
-              }
+              onChange={(event: ChangeEvent<HTMLInputElement>) => handlePaymentFieldChange("paidDate", event)}
               required
             />
             <Input
@@ -208,9 +202,7 @@ export default function ServicesOverviewContent() {
               type="textarea"
               rows={2}
               value={paymentForm.note}
-              onChange={(event: ChangeEvent<HTMLTextAreaElement>) =>
-                handlePaymentFieldChange("note", event)
-              }
+              onChange={(event: ChangeEvent<HTMLTextAreaElement>) => handlePaymentFieldChange("note", event)}
             />
             {paymentError && <p className="rounded-lg bg-rose-100 px-4 py-2 text-sm text-rose-700">{paymentError}</p>}
             <div className="flex justify-end gap-3">
@@ -236,10 +228,10 @@ type MetricCardProps = {
 
 function MetricCard({ title, value, helper }: MetricCardProps) {
   return (
-    <article className="rounded-2xl border border-white/45 bg-white/70 p-4 shadow-sm">
-      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{title}</p>
-      <p className="mt-2 text-2xl font-semibold text-slate-800">{value}</p>
-      {helper && <p className="mt-1 text-xs text-slate-400">{helper}</p>}
+    <article className="rounded-2xl border border-base-300 bg-base-100/70 p-4 shadow-sm">
+      <p className="text-xs font-semibold uppercase tracking-wide text-base-content/80">{title}</p>
+      <p className="mt-2 text-2xl font-semibold text-base-content">{value}</p>
+      {helper && <p className="mt-1 text-xs text-base-content/50">{helper}</p>}
     </article>
   );
 }

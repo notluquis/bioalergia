@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import Button from "./Button";
 
 interface HealthResponse {
   status: "ok" | "degraded" | "error";
@@ -57,13 +58,15 @@ export function ConnectionIndicator() {
     retryCount: 0,
   });
   const [open, setOpen] = useState(false);
-  const [hasConnectedOnce, setHasConnectedOnce] = useState(false);
+
+  // Use refs to persist retry state and connection status across effect reruns
+  const retryCountRef = useRef(0);
+  const delayRef = useRef(120000);
+  const timeoutIdRef = useRef<number | null>(null);
+  const hasConnectedRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
-    let timeoutId: number | null = null;
-    let retryCount = 0;
-    let delay = 120000; // 2 minutes
 
     async function fetchHealthWithBackoff() {
       const controller = new AbortController();
@@ -77,11 +80,13 @@ export function ConnectionIndicator() {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const payload = (await res.json()) as HealthResponse;
         if (cancelled) return;
-        if (!hasConnectedOnce) {
-          setHasConnectedOnce(true);
-          retryCount = 0;
-          delay = 120000;
+
+        if (!hasConnectedRef.current) {
+          hasConnectedRef.current = true;
+          retryCountRef.current = 0;
+          delayRef.current = 120000;
         }
+
         const details: string[] = [];
         if (payload.checks?.db) {
           const dbCheck = payload.checks.db;
@@ -94,24 +99,33 @@ export function ConnectionIndicator() {
           }
         }
         if (payload.status === "ok") {
-          setState({ level: "online", fetchedAt, message: STATUS_COPY.online.description, details, retryCount: 0 });
-          retryCount = 0;
-          delay = 120000;
+          if (!cancelled)
+            setState({ level: "online", fetchedAt, message: STATUS_COPY.online.description, details, retryCount: 0 });
+          retryCountRef.current = 0;
+          delayRef.current = 120000;
         } else if (payload.status === "degraded") {
-          setState({ level: "degraded", fetchedAt, message: STATUS_COPY.degraded.description, details, retryCount: 0 });
-          retryCount = 0;
-          delay = 120000;
+          if (!cancelled)
+            setState({
+              level: "degraded",
+              fetchedAt,
+              message: STATUS_COPY.degraded.description,
+              details,
+              retryCount: 0,
+            });
+          retryCountRef.current = 0;
+          delayRef.current = 120000;
         } else {
-          setState({ level: "offline", fetchedAt, message: STATUS_COPY.offline.description, details, retryCount: 0 });
-          retryCount++;
-          delay = Math.min(300000, 120000 * Math.pow(2, retryCount)); // up to 5 min
+          if (!cancelled)
+            setState({ level: "offline", fetchedAt, message: STATUS_COPY.offline.description, details, retryCount: 0 });
+          retryCountRef.current++;
+          delayRef.current = Math.min(300000, 120000 * Math.pow(2, retryCountRef.current));
         }
       } catch (error) {
         if (cancelled) return;
         const fetchedAt = new Date();
         setState((prevState) => {
           const newRetryCount = prevState.retryCount + 1;
-          const isStarting = !hasConnectedOnce && newRetryCount < 4;
+          const isStarting = !hasConnectedRef.current && newRetryCount < 4;
           const detailMessage =
             error instanceof Error
               ? error.message === "The user aborted a request."
@@ -126,37 +140,37 @@ export function ConnectionIndicator() {
             retryCount: newRetryCount,
           };
         });
-        retryCount++;
-        delay = Math.min(300000, 120000 * Math.pow(2, retryCount));
-        if (!hasConnectedOnce && retryCount > 2) setOpen(true);
+        retryCountRef.current++;
+        delayRef.current = Math.min(300000, 120000 * Math.pow(2, retryCountRef.current));
+        if (!hasConnectedRef.current && retryCountRef.current > 2 && !cancelled) setOpen(true);
       } finally {
         window.clearTimeout(requestTimeoutId);
       }
       if (!cancelled) {
-        timeoutId = window.setTimeout(fetchHealthWithBackoff, delay);
+        timeoutIdRef.current = window.setTimeout(fetchHealthWithBackoff, delayRef.current);
       }
     }
 
     // Initial delay before first health check
-    timeoutId = window.setTimeout(fetchHealthWithBackoff, 2000);
+    timeoutIdRef.current = window.setTimeout(fetchHealthWithBackoff, 2000);
 
     // Listen for global API success events to reset health check
     function resetHealthCheck() {
-      if (timeoutId) window.clearTimeout(timeoutId);
-      retryCount = 0;
-      delay = 120000;
-      timeoutId = window.setTimeout(fetchHealthWithBackoff, 2000);
+      if (timeoutIdRef.current) window.clearTimeout(timeoutIdRef.current);
+      retryCountRef.current = 0;
+      delayRef.current = 120000;
+      timeoutIdRef.current = window.setTimeout(fetchHealthWithBackoff, 2000);
     }
     window.addEventListener("api-success", resetHealthCheck);
     window.addEventListener("beforeunload", resetHealthCheck);
 
     return () => {
       cancelled = true;
-      if (timeoutId) window.clearTimeout(timeoutId);
+      if (timeoutIdRef.current) window.clearTimeout(timeoutIdRef.current);
       window.removeEventListener("api-success", resetHealthCheck);
       window.removeEventListener("beforeunload", resetHealthCheck);
     };
-  }, [hasConnectedOnce]);
+  }, []);
 
   // Auto-cerrar después de un tiempo si no está online
   useEffect(() => {
@@ -168,24 +182,27 @@ export function ConnectionIndicator() {
   const statusCopy = useMemo(() => STATUS_COPY[state.level], [state.level]);
 
   return (
-    <div className="relative">
-      <button
+    <div className="relative dropdown dropdown-end">
+      <Button
         type="button"
+        size="xs"
+        variant="secondary"
         onClick={() => setOpen((prev) => !prev)}
-        className="glass-card flex items-center gap-2 rounded-full border border-white/60 bg-white/60 px-3 py-1 text-xs font-medium text-slate-600 transition hover:border-white/80 hover:bg-white/75 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgba(14,100,183,0.35)]"
+        className="flex items-center gap-2 rounded-full px-2 py-1 text-xs font-medium text-base-content transition bg-base-100"
         aria-pressed={open}
         aria-label={`Estado de la conexión: ${statusCopy.label}`}
       >
         <span className={`h-2.5 w-2.5 rounded-full shadow-inner transition ${INDICATOR_COLORS[state.level]}`} />
         <span className="hidden sm:inline">{statusCopy.label}</span>
-      </button>
+      </Button>
+
       {open && (
-        <div className="absolute right-0 top-full mt-2 z-50 w-72 text-sm">
-          <div className="glass-card glass-underlay-gradient space-y-3 rounded-2xl p-4 shadow-xl border border-white/20">
+        <div tabIndex={0} className="dropdown-content mt-2 w-72">
+          <div className="space-y-3 rounded-2xl p-4 shadow-xl border border-base-300 bg-base-100">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-sm font-semibold text-slate-700">{statusCopy.label}</p>
-                <p className="text-xs text-slate-500/90">{state.message}</p>
+                <p className="text-sm font-semibold text-base-content">{statusCopy.label}</p>
+                <p className="text-xs text-base-content/70">{state.message}</p>
               </div>
               <span
                 className={`h-3 w-3 rounded-full ${INDICATOR_COLORS[state.level]} shadow-inner`}
@@ -193,18 +210,18 @@ export function ConnectionIndicator() {
               />
             </div>
             {state.details.length > 0 && (
-              <ul className="space-y-1 text-xs text-slate-500">
+              <ul className="space-y-1 text-xs text-base-content/60">
                 {state.details.map((detail, index) => (
                   <li key={index}>• {detail}</li>
                 ))}
               </ul>
             )}
             {state.level === "starting" && (
-              <div className="rounded-lg bg-blue-50 p-2 text-xs text-blue-700">
+              <div className="rounded-lg bg-info/10 p-2 text-xs text-info">
                 💡 El servidor puede tardar 10-20 segundos en inicializar.
               </div>
             )}
-            <div className="flex justify-between text-[11px] uppercase tracking-wide text-slate-400">
+            <div className="flex justify-between text-xs uppercase tracking-wide text-base-content/50">
               <span>Servicio API</span>
               <span>
                 {state.fetchedAt

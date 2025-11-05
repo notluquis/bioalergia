@@ -38,7 +38,7 @@ export function MultiSelectFilter({
 
     const preview = matches
       .slice(0, 2)
-      .map((value) => truncateLabel(value))
+      .map((value) => truncateLabel(value ?? ""))
       .join(", ");
     const full = matches.join(", ");
 
@@ -72,19 +72,19 @@ export function MultiSelectFilter({
   }, [close, isOpen]);
 
   return (
-    <label ref={containerRef} className="relative flex flex-col gap-2 text-xs text-slate-600" data-multiselect>
-      <span className="font-semibold uppercase tracking-wide text-slate-600/90">{label}</span>
+    <label ref={containerRef} className="relative flex flex-col gap-2 text-xs text-base-content" data-multiselect>
+      <span className="font-semibold uppercase tracking-wide text-base-content/90">{label}</span>
       <button
         type="button"
-        className="glass-input flex h-12 w-full cursor-pointer select-none items-center justify-between gap-3 text-sm text-slate-600"
+        className="input input-bordered flex h-12 w-full cursor-pointer select-none items-center justify-between gap-3 text-sm text-base-content"
         aria-haspopup="true"
         aria-expanded={isOpen}
         onClick={toggle}
         title={fullText}
       >
-        <span className="truncate font-medium text-slate-700">{displayText}</span>
+        <span className="truncate font-medium text-base-content">{displayText}</span>
         <svg
-          className={`h-4 w-4 shrink-0 text-slate-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
+          className={`h-4 w-4 shrink-0 text-base-content/50 transition-transform ${isOpen ? "rotate-180" : ""}`}
           viewBox="0 0 20 20"
           fill="currentColor"
           aria-hidden="true"
@@ -97,27 +97,27 @@ export function MultiSelectFilter({
         </svg>
       </button>
       {isOpen && (
-        <div className="absolute z-20 mt-2 w-full space-y-2 rounded-2xl border border-white/60 bg-white/95 p-3 shadow-lg">
+        <div className="absolute z-20 mt-2 w-full space-y-2 rounded-2xl border border-base-300 bg-base-200 p-3 shadow-lg">
           {options.length === 0 ? (
-            <p className="text-[11px] text-slate-400">Sin datos disponibles</p>
+            <p className="text-xs text-base-content/50">Sin datos disponibles</p>
           ) : (
             options.map((option) => {
               const [namePart = "", metaPart] = option.label.split(" · ");
               const truncatedName = truncateLabel(namePart);
               return (
-                <label key={option.value} className="flex items-center gap-3 text-xs text-slate-600">
+                <label key={option.value} className="flex items-center gap-3 text-xs text-base-content">
                   <input
                     type="checkbox"
-                    className="h-4 w-4"
+                    className="checkbox checkbox-primary"
                     checked={selected.includes(option.value)}
                     onChange={() => onToggle(option.value)}
                   />
                   <span className="flex flex-col text-left">
-                    <span className="truncate font-medium text-slate-700" title={namePart}>
+                    <span className="truncate font-medium text-base-content" title={namePart}>
                       {truncatedName || placeholder}
                     </span>
                     {metaPart && (
-                      <span className="text-[11px] text-slate-400" title={metaPart}>
+                      <span className="text-xs text-base-content/50" title={metaPart}>
                         · {metaPart}
                       </span>
                     )}

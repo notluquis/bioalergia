@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const colorRegex = /^#(?:[0-9a-fA-F]{3}){1,2}$/;
+const colorRegex = /^(?:#(?:[0-9a-fA-F]{3}){1,2}|(?:oklch|hsl|rgb|var)\(.+\))$/;
 const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
 const httpsUrlSchema = z
   .string()
@@ -16,10 +16,9 @@ const brandAssetUrlSchema = z
   .string()
   .trim()
   .min(1)
-  .refine(
-    (value) => value.startsWith("https://") || value.startsWith("/uploads/"),
-    { message: "Debe comenzar con https:// o /uploads/" }
-  );
+  .refine((value) => value.startsWith("https://") || value.startsWith("/uploads/"), {
+    message: "Debe comenzar con https:// o /uploads/",
+  });
 
 const serviceFrequencyEnum = z.enum([
   "WEEKLY",
@@ -44,8 +43,8 @@ const monthlyExpenseStatusEnum = z.enum(["OPEN", "CLOSED"]);
 export const settingsSchema = z.object({
   orgName: z.string().min(1).max(120),
   tagline: z.string().max(200).optional().default(""),
-  primaryColor: z.string().regex(colorRegex, "Debe ser un color HEX"),
-  secondaryColor: z.string().regex(colorRegex, "Debe ser un color HEX"),
+  primaryColor: z.string().regex(colorRegex, "Debe ser un color HEX o CSS válido"),
+  secondaryColor: z.string().regex(colorRegex, "Debe ser un color HEX o CSS válido"),
   logoUrl: brandAssetUrlSchema,
   faviconUrl: brandAssetUrlSchema,
   pageTitle: z.string().trim().min(1).max(160),
@@ -59,8 +58,7 @@ export const settingsSchema = z.object({
   supportEmail: z.string().email(),
   calendarTimeZone: z.string().trim().min(2).max(60).optional().default("America/Santiago"),
   calendarSyncStart: z.string().regex(dateRegex).optional().default("2000-01-01"),
-  calendarSyncLookaheadDays: z
-    .coerce
+  calendarSyncLookaheadDays: z.coerce
     .number()
     .int()
     .min(1)
@@ -69,8 +67,7 @@ export const settingsSchema = z.object({
     .optional()
     .default("365"),
   calendarExcludeSummaries: z.string().optional().default("No Disponible"),
-  calendarDailyMaxDays: z
-    .coerce
+  calendarDailyMaxDays: z.coerce
     .number()
     .int()
     .min(1)
@@ -158,13 +155,7 @@ export const employeeSchema = z.object({
   full_name: z.string().min(1).max(191),
   role: z.string().min(1).max(120),
   email: z.string().email().nullable().optional(),
-  rut: z
-    .string()
-    .trim()
-    .min(3)
-    .max(20)
-    .nullable()
-    .optional(),
+  rut: z.string().trim().min(3).max(20).nullable().optional(),
   bank_name: z.string().trim().max(120).nullable().optional(),
   bank_account_type: z.string().trim().max(32).nullable().optional(),
   bank_account_number: z.string().trim().max(64).nullable().optional(),
@@ -183,17 +174,23 @@ export const employeeUpdateSchema = employeeSchema.partial().extend({
 export const timesheetPayloadSchema = z.object({
   employee_id: z.coerce.number().int().positive(),
   work_date: z.string().regex(dateRegex),
-  start_time: z.string().regex(/^\d{2}:\d{2}$/).nullable().optional(),
-  end_time: z.string().regex(/^\d{2}:\d{2}$/).nullable().optional(),
+  start_time: z
+    .string()
+    .regex(/^\d{2}:\d{2}$/)
+    .nullable()
+    .optional(),
+  end_time: z
+    .string()
+    .regex(/^\d{2}:\d{2}$/)
+    .nullable()
+    .optional(),
   worked_minutes: z.coerce.number().int().min(0),
   overtime_minutes: z.coerce.number().int().min(0).default(0),
   extra_amount: z.coerce.number().min(0).default(0),
   comment: z.string().max(255).nullable().optional(),
 });
 
-export const timesheetUpdateSchema = timesheetPayloadSchema
-  .omit({ employee_id: true, work_date: true })
-  .partial();
+export const timesheetUpdateSchema = timesheetPayloadSchema.omit({ employee_id: true, work_date: true }).partial();
 
 export const timesheetBulkSchema = z.object({
   employee_id: z.coerce.number().int().positive(),
@@ -201,8 +198,16 @@ export const timesheetBulkSchema = z.object({
     .array(
       z.object({
         work_date: z.string().regex(dateRegex),
-        start_time: z.string().regex(/^\d{2}:\d{2}$/).nullable().optional(),
-        end_time: z.string().regex(/^\d{2}:\d{2}$/).nullable().optional(),
+        start_time: z
+          .string()
+          .regex(/^\d{2}:\d{2}$/)
+          .nullable()
+          .optional(),
+        end_time: z
+          .string()
+          .regex(/^\d{2}:\d{2}$/)
+          .nullable()
+          .optional(),
         overtime_minutes: z.coerce.number().int().min(0).default(0),
         extra_amount: z.coerce.number().min(0).default(0),
         comment: z.string().max(255).nullable().optional(),
@@ -265,7 +270,9 @@ export const serviceCreateSchema = z
     name: z.string().min(1).max(191),
     detail: z.string().max(255).optional().nullable(),
     category: z.string().max(120).optional().nullable(),
-    serviceType: z.enum(["BUSINESS", "PERSONAL", "SUPPLIER", "TAX", "UTILITY", "LEASE", "SOFTWARE", "OTHER"]).default("BUSINESS"),
+    serviceType: z
+      .enum(["BUSINESS", "PERSONAL", "SUPPLIER", "TAX", "UTILITY", "LEASE", "SOFTWARE", "OTHER"])
+      .default("BUSINESS"),
     ownership: serviceOwnershipEnum.optional().default("COMPANY"),
     obligationType: serviceObligationEnum.optional().default("SERVICE"),
     recurrenceType: serviceRecurrenceEnum.optional().default("RECURRING"),
@@ -330,14 +337,17 @@ export const serviceCreateSchema = z
     }
   });
 
-export const serviceRegenerateSchema = z.object({
-  months: z.coerce.number().int().positive().max(60).optional(),
-  startDate: z.string().regex(dateRegex).optional(),
-  defaultAmount: moneySchema.optional(),
-  dueDay: z.coerce.number().int().min(1).max(31).optional().nullable(),
-  frequency: serviceFrequencyEnum.optional(),
-  emissionDay: z.coerce.number().int().min(1).max(31).optional().nullable(),
-}).optional().default({});
+export const serviceRegenerateSchema = z
+  .object({
+    months: z.coerce.number().int().positive().max(60).optional(),
+    startDate: z.string().regex(dateRegex).optional(),
+    defaultAmount: moneySchema.optional(),
+    dueDay: z.coerce.number().int().min(1).max(31).optional().nullable(),
+    frequency: serviceFrequencyEnum.optional(),
+    emissionDay: z.coerce.number().int().min(1).max(31).optional().nullable(),
+  })
+  .optional()
+  .default({});
 
 export const servicePaymentSchema = z.object({
   transactionId: z.coerce.number().int().positive(),
@@ -350,7 +360,7 @@ export const monthlyExpenseSchema = z.object({
   name: z.string().min(1).max(191),
   category: z.string().max(120).optional().nullable(),
   amountExpected: z.coerce.number().min(0),
-  expenseDate: z.string().regex(dateRegex, 'Fecha inválida'),
+  expenseDate: z.string().regex(dateRegex, "Fecha inválida"),
   notes: z.string().max(500).optional().nullable(),
   source: monthlyExpenseSourceEnum.optional(),
   serviceId: z.coerce.number().int().positive().optional().nullable(),
@@ -366,6 +376,6 @@ export const monthlyExpenseLinkSchema = z.object({
 export const monthlyExpenseStatsSchema = z.object({
   from: z.string().regex(dateRegex).optional(),
   to: z.string().regex(dateRegex).optional(),
-  groupBy: z.enum(['day', 'week', 'month', 'quarter', 'year']).optional(),
+  groupBy: z.enum(["day", "week", "month", "quarter", "year"]).optional(),
   category: z.string().optional().nullable(),
 });

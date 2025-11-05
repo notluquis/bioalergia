@@ -1,20 +1,32 @@
 import React from "react";
+import Button from "./Button";
 
 interface AlertProps {
   variant?: "error" | "success" | "warning" | "info";
   children: React.ReactNode;
   className?: string;
+  onClose?: () => void;
 }
 
-export default function Alert({ variant = "error", children, className = "" }: AlertProps) {
-  const baseClasses = "glass-card border-l-4 px-5 py-4 text-sm";
-
-  const variantClasses: Record<Required<AlertProps>["variant"], string> = {
-    error: "border-rose-300/80 text-rose-700 bg-gradient-to-r from-rose-50/65 via-white/70 to-white/55",
-    success: "border-emerald-300/80 text-emerald-700 bg-gradient-to-r from-emerald-50/70 via-white/70 to-white/55",
-    warning: "border-amber-300/80 text-amber-700 bg-gradient-to-r from-amber-50/70 via-white/70 to-white/55",
-    info: "border-sky-300/80 text-sky-700 bg-gradient-to-r from-sky-50/70 via-white/70 to-white/55",
+export default function Alert({ variant = "error", children, className = "", onClose }: AlertProps) {
+  // Map to daisyUI alert variants. Use DaisyUI tokens (card, btn, bg-base-100) for visuals.
+  const variantMap: Record<Required<AlertProps>["variant"], string> = {
+    error: "alert-error",
+    success: "alert-success",
+    warning: "alert-warning",
+    info: "alert-info",
   };
 
-  return <p className={`${baseClasses} ${variantClasses[variant]} ${className}`.trim()}>{children}</p>;
+  return (
+    <div className={`alert ${variantMap[variant]} px-4 py-3 text-sm ${className}`.trim()} role="alert">
+      <div className="flex-1">{children}</div>
+      {onClose && (
+        <div className="flex-none">
+          <Button variant="secondary" size="sm" aria-label="Cerrar" onClick={onClose}>
+            ✕
+          </Button>
+        </div>
+      )}
+    </div>
+  );
 }

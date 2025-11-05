@@ -1,5 +1,10 @@
-import { formatISO, parseISO } from "date-fns";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc.js";
+import timezone from "dayjs/plugin/timezone.js";
 import { z } from "zod";
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 const SUBCUT_PATTERNS = [/\bclustoid\b/i, /\bvacc?\b/i, /\bvacuna\b/i, /\bvac\.?\b/i];
 const TEST_PATTERNS = [/\bexamen\b/i, /\btest\b/i, /cut[áa]neo/i, /ambiental/i, /panel/i, /multitest/i];
@@ -29,7 +34,7 @@ export type ParsedCalendarMetadata = {
 export function normalizeEventDate(value: string | null | undefined): string | null {
   if (!value) return null;
   try {
-    return formatISO(parseISO(value));
+    return dayjs(value).toISOString();
   } catch {
     return null;
   }

@@ -1,4 +1,4 @@
-import type { DbMovement } from "@/features/transactions/types";
+import type { DbMovement } from "../transactions/types";
 
 export type CounterpartPersonType = "PERSON" | "COMPANY" | "OTHER";
 export type CounterpartCategory = "SUPPLIER" | "PATIENT" | "EMPLOYEE" | "PARTNER" | "RELATED" | "OTHER";

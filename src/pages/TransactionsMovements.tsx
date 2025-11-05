@@ -1,34 +1,22 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import dayjs from "dayjs";
 import { coerceAmount } from "../lib/format";
-import { useAuth } from "../context/auth-context";
-import { useSettings } from "../context/settings-context";
+import { useAuth } from "../context/AuthContext";
+import { useSettings } from "../context/SettingsContext";
 import { logger } from "../lib/logger";
 import { isCashbackCandidate } from "../../shared/cashback";
 import { TransactionsFilters } from "../features/transactions/components/TransactionsFilters";
 import { TransactionsColumnToggles } from "../features/transactions/components/TransactionsColumnToggles";
 import { TransactionsTable } from "../features/transactions/components/TransactionsTable";
 import { COLUMN_DEFS, type ColumnKey } from "../features/transactions/constants";
-import type { DbMovement, Filters, LedgerRow } from "../features/transactions/types";
+import type { Filters, LedgerRow } from "../features/transactions/types";
+import { useTransactionsQuery } from "../features/transactions/hooks/useTransactionsQuery";
 
 const DEFAULT_PAGE_SIZE = 50;
 
-type ApiResponse = {
-  status: "ok" | "error";
-  data: DbMovement[];
-  hasAmounts?: boolean;
-  total?: number;
-  page?: number;
-  pageSize?: number;
-  message?: string;
-};
-
 export default function TransactionsMovements() {
-  const [rows, setRows] = useState<DbMovement[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [initialBalance, setInitialBalance] = useState<string>("0");
-  const [filters, setFilters] = useState<Filters>({
+  const [draftFilters, setDraftFilters] = useState<Filters>({
     from: dayjs().subtract(10, "day").format("YYYY-MM-DD"),
     to: dayjs().format("YYYY-MM-DD"),
     description: "",
@@ -38,13 +26,12 @@ export default function TransactionsMovements() {
     direction: "",
     includeAmounts: false,
   });
-  const [hasAmounts, setHasAmounts] = useState(false);
+  const [appliedFilters, setAppliedFilters] = useState<Filters>(draftFilters);
   const [visibleColumns, setVisibleColumns] = useState<Set<ColumnKey>>(
     () => new Set(COLUMN_DEFS.map((column) => column.key))
   );
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
-  const [total, setTotal] = useState(0);
 
   const quickMonths = useMemo(() => {
     const months: Array<{ value: string; label: string; from: string; to: string }> = [];
@@ -59,9 +46,11 @@ export default function TransactionsMovements() {
   }, []);
 
   const quickRange = useMemo(() => {
-    const match = quickMonths.find(({ from: start, to: end }) => start === filters.from && end === filters.to);
+    const match = quickMonths.find(
+      ({ from: start, to: end }) => start === draftFilters.from && end === draftFilters.to
+    );
     return match ? match.value : "custom";
-  }, [quickMonths, filters.from, filters.to]);
+  }, [quickMonths, draftFilters.from, draftFilters.to]);
 
   const { hasRole } = useAuth();
   const { settings } = useSettings();
@@ -69,6 +58,23 @@ export default function TransactionsMovements() {
   const canView = hasRole("GOD", "ADMIN", "ANALYST", "VIEWER");
 
   const initialBalanceNumber = useMemo(() => coerceAmount(initialBalance), [initialBalance]);
+
+  const queryParams = useMemo(
+    () => ({
+      filters: appliedFilters,
+      page,
+      pageSize,
+    }),
+    [appliedFilters, page, pageSize]
+  );
+
+  const transactionsQuery = useTransactionsQuery(queryParams, canView);
+
+  const rows = useMemo(() => transactionsQuery.data?.data ?? [], [transactionsQuery.data?.data]);
+  const hasAmounts = Boolean(transactionsQuery.data?.hasAmounts);
+  const total = transactionsQuery.data?.total ?? rows.length;
+  const loading = transactionsQuery.isPending || transactionsQuery.isFetching;
+  const error = transactionsQuery.error?.message ?? null;
 
   const ledger = useMemo<LedgerRow[]>(() => {
     let balance = initialBalanceNumber;
@@ -97,94 +103,25 @@ export default function TransactionsMovements() {
     return chronological.reverse();
   }, [rows, initialBalanceNumber, hasAmounts]);
 
-  const refresh = useCallback(
-    async (next: Filters, nextPage: number, nextPageSize: number) => {
-      if (!canView) {
-        setRows([]);
-        return;
-      }
-
-      setLoading(true);
-      setError(null);
-      try {
-        logger.info("[movements] fetch:start", {
-          filters: next,
-          page: nextPage,
-          pageSize: nextPageSize,
-        });
-        const params = new URLSearchParams();
-        params.set("page", String(nextPage));
-        params.set("pageSize", String(nextPageSize));
-        if (next.from) params.set("from", next.from);
-        if (next.to) params.set("to", next.to);
-        if (next.description) params.set("description", next.description);
-        if (next.sourceId) params.set("sourceId", next.sourceId);
-        if (next.origin) params.set("origin", next.origin);
-        if (next.destination) params.set("destination", next.destination);
-        if (next.direction) params.set("direction", next.direction);
-        if (next.includeAmounts) params.set("includeAmounts", "true");
-
-        const res = await fetch(`/api/transactions?${params.toString()}`, {
-          credentials: "include",
-        });
-        const payload = (await res.json()) as ApiResponse;
-        if (!res.ok || payload.status !== "ok") {
-          throw new Error(payload.message || "No se pudieron obtener los movimientos");
-        }
-        setRows(payload.data);
-        setHasAmounts(Boolean(payload.hasAmounts));
-        const resolvedPage = payload.page ?? nextPage;
-        const resolvedPageSize = payload.pageSize ?? nextPageSize;
-        setTotal(payload.total ?? payload.data.length);
-        setPage(resolvedPage);
-        setPageSize(resolvedPageSize);
-        logger.info("[movements] fetch:success", {
-          rows: payload.data.length,
-          hasAmounts: Boolean(payload.hasAmounts),
-          total: payload.total,
-          page: resolvedPage,
-          pageSize: resolvedPageSize,
-        });
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "Error inesperado al cargar";
-        setError(message);
-        setRows([]);
-        setHasAmounts(false);
-        logger.error("[movements] fetch:error", message);
-      } finally {
-        setLoading(false);
-      }
-    },
-    [canView]
-  );
-
-  useEffect(() => {
-    if (canView) {
-      refresh(filters, 1, pageSize);
-    } else {
-      setRows([]);
-    }
-  }, [canView, filters, pageSize, refresh, setRows]);
-
   const handleFilterChange = (update: Partial<Filters>) => {
-    setFilters((prev) => ({ ...prev, ...update }));
+    setDraftFilters((prev) => ({ ...prev, ...update }));
   };
 
   return (
     <section className="space-y-6">
       {!canView ? (
-        <div className="rounded-2xl border border-rose-200 bg-white p-6 text-sm text-rose-600 shadow-sm">
+        <div className="card bg-base-100 border border-error/20 p-6 text-sm text-error shadow-sm">
           No tienes permisos para ver los movimientos almacenados.
         </div>
       ) : (
         <>
           <TransactionsFilters
-            filters={filters}
+            filters={draftFilters}
             loading={loading}
             onChange={handleFilterChange}
             onSubmit={() => {
               setPage(1);
-              refresh(filters, 1, pageSize);
+              setAppliedFilters({ ...draftFilters });
             }}
           />
 
@@ -202,14 +139,14 @@ export default function TransactionsMovements() {
 
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div className="space-y-2">
-              <h1 className="text-2xl font-bold text-[var(--brand-primary)]">Movimientos en base</h1>
-              <p className="max-w-2xl text-sm text-slate-600">
+              <h1 className="text-2xl font-bold text-primary">Movimientos en base</h1>
+              <p className="max-w-2xl text-sm text-base-content">
                 Los datos provienen de la tabla <code>mp_transactions</code>. Ajusta el saldo inicial para recalcular el
                 saldo acumulado. Para consultas o soporte escribe a<strong> {settings.supportEmail}</strong>.
               </p>
             </div>
             <div className="flex flex-wrap items-end gap-3">
-              <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-wide text-slate-600">
+              <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-wide text-base-content">
                 Saldo inicial (CLP)
                 <input
                   type="text"
@@ -219,7 +156,7 @@ export default function TransactionsMovements() {
                   placeholder="0"
                 />
               </label>
-              <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-wide text-slate-600">
+              <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-wide text-base-content">
                 Mes rápido
                 <select
                   value={quickRange}
@@ -228,10 +165,10 @@ export default function TransactionsMovements() {
                     if (value === "custom") return;
                     const match = quickMonths.find((month) => month.value === value);
                     if (!match) return;
-                    const nextFilters = { ...filters, from: match.from, to: match.to };
-                    setFilters(nextFilters);
+                    const nextFilters = { ...draftFilters, from: match.from, to: match.to };
+                    setDraftFilters(nextFilters);
                     setPage(1);
-                    refresh(nextFilters, 1, pageSize);
+                    setAppliedFilters(nextFilters);
                   }}
                   className="rounded border px-2 py-1"
                 >
@@ -245,22 +182,22 @@ export default function TransactionsMovements() {
               </label>
               <button
                 type="button"
-                onClick={() => refresh(filters, page, pageSize)}
+                onClick={() => transactionsQuery.refetch()}
                 disabled={loading}
-                className="inline-flex items-center justify-center rounded-full px-4 py-2 text-sm font-semibold text-white shadow disabled:cursor-not-allowed"
-                style={{ backgroundColor: "var(--brand-primary)", opacity: loading ? 0.6 : 1 }}
+                className="inline-flex items-center justify-center rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white shadow disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {loading ? "Actualizando..." : "Actualizar"}
               </button>
-              <label className="flex items-center gap-2 text-xs text-slate-600">
+              <label className="flex items-center gap-2 text-xs text-base-content">
                 <input
                   type="checkbox"
-                  checked={filters.includeAmounts}
+                  checked={draftFilters.includeAmounts}
                   onChange={(event) => {
-                    const nextFilters = { ...filters, includeAmounts: event.target.checked };
-                    setFilters(nextFilters);
+                    const nextFilters = { ...draftFilters, includeAmounts: event.target.checked };
+                    setDraftFilters(nextFilters);
                     logger.info("[movements] toggle includeAmounts", nextFilters.includeAmounts);
-                    refresh(nextFilters, page, pageSize);
+                    setPage(1);
+                    setAppliedFilters(nextFilters);
                   }}
                 />
                 Mostrar montos
@@ -279,12 +216,10 @@ export default function TransactionsMovements() {
             pageSize={pageSize}
             onPageChange={(nextPage: number) => {
               setPage(nextPage);
-              refresh(filters, nextPage, pageSize);
             }}
             onPageSizeChange={(nextPageSize: number) => {
               setPageSize(nextPageSize);
               setPage(1);
-              refresh(filters, 1, nextPageSize);
             }}
           />
         </>

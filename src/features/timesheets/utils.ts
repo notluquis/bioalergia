@@ -49,7 +49,9 @@ export function parseDuration(value: string): number | null {
   const trimmed = value.trim();
   if (!trimmed) return 0;
   if (!/^[0-9]{1,2}:[0-9]{2}$/.test(trimmed)) return null;
-  const [hours, minutes] = trimmed.split(":").map(Number);
+  const parts = trimmed.split(":").map(Number);
+  const [hours, minutes] = parts;
+  if (hours === undefined || minutes === undefined) return null;
   if (minutes >= 60) return null;
   return hours * 60 + minutes;
 }
@@ -74,7 +76,9 @@ export function calculateWorkedMinutes(startTime: string, endTime: string): numb
 
 function timeToMinutes(time: string): number | null {
   if (!/^[0-9]{1,2}:[0-9]{2}$/.test(time)) return null;
-  const [hours, minutes] = time.split(":").map(Number);
+  const parts = time.split(":").map(Number);
+  const [hours, minutes] = parts;
+  if (hours === undefined || minutes === undefined) return null;
   if (hours < 0 || hours > 23 || minutes < 0 || minutes >= 60) return null;
   return hours * 60 + minutes;
 }

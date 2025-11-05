@@ -10,10 +10,10 @@ interface InventoryTableProps {
 
 export default function InventoryTable({ items, loading, openAdjustStockModal, openEditModal }: InventoryTableProps) {
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <div className="overflow-hidden rounded-2xl border border-base-300 bg-base-100 shadow-sm">
       <div className="overflow-x-auto muted-scrollbar">
         <table className="min-w-full text-sm">
-          <thead className="bg-slate-50 text-slate-700">
+          <thead className="bg-base-200 text-base-content">
             <tr>
               <th className="px-4 py-3 text-left font-semibold whitespace-nowrap">Nombre</th>
               <th className="px-4 py-3 text-left font-semibold whitespace-nowrap">Categoría</th>
@@ -24,11 +24,11 @@ export default function InventoryTable({ items, loading, openAdjustStockModal, o
           </thead>
           <tbody>
             {items.map((item) => (
-              <tr key={item.id} className="odd:bg-slate-50/60">
-                <td className="px-4 py-3 font-medium text-slate-700">{item.name}</td>
-                <td className="px-4 py-3 text-slate-600">{item.category_name ?? "Sin categoría"}</td>
-                <td className="px-4 py-3 text-slate-500">{item.description ?? "—"}</td>
-                <td className="px-4 py-3 text-slate-600">{item.current_stock}</td>
+              <tr key={item.id} className="odd:bg-base-200/60">
+                <td className="px-4 py-3 font-medium text-base-content">{item.name}</td>
+                <td className="px-4 py-3 text-base-content">{item.category_name ?? "Sin categoría"}</td>
+                <td className="px-4 py-3 text-base-content/60">{item.description ?? "—"}</td>
+                <td className="px-4 py-3 text-base-content">{item.current_stock}</td>
                 <td className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide">
                   <Button variant="secondary" onClick={() => openAdjustStockModal(item)} className="mr-3">
                     Ajustar Stock
@@ -41,14 +41,14 @@ export default function InventoryTable({ items, loading, openAdjustStockModal, o
             ))}
             {!items.length && !loading && (
               <tr>
-                <td colSpan={5} className="px-4 py-6 text-center text-slate-500">
+                <td colSpan={5} className="px-4 py-6 text-center text-base-content/60">
                   No hay items en el inventario.
                 </td>
               </tr>
             )}
             {loading && (
               <tr>
-                <td colSpan={5} className="px-4 py-6 text-center text-[var(--brand-primary)]">
+                <td colSpan={5} className="px-4 py-6 text-center text-primary">
                   Cargando...
                 </td>
               </tr>

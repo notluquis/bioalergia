@@ -1,4 +1,5 @@
 import dayjs from "dayjs";
+import Button from "../../../components/Button";
 import type { ServiceSummary, ServiceFrequency, ServiceType } from "../types";
 
 interface ServiceListProps {
@@ -11,20 +12,16 @@ interface ServiceListProps {
 
 export function ServiceList({ services, selectedId, onSelect, onCreateRequest, canManage }: ServiceListProps) {
   return (
-    <aside className="glass-card glass-underlay-gradient flex h-full flex-col gap-4 p-6 text-sm text-slate-600">
+    <aside className="flex h-full flex-col gap-4 p-6 text-sm text-base-content bg-base-100">
       <header className="flex items-center justify-between">
         <div>
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500/90">Servicios</h2>
-          <p className="text-[11px] text-slate-500">Suscripciones y gastos recurrentes.</p>
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-base-content/60">Servicios</h2>
+          <p className="text-xs text-base-content/60">Suscripciones y gastos recurrentes.</p>
         </div>
         {canManage && (
-          <button
-            type="button"
-            onClick={onCreateRequest}
-            className="rounded-full bg-[var(--brand-primary)] px-4 py-2 text-xs font-semibold text-white shadow hover:bg-[var(--brand-primary)]/90"
-          >
+          <Button type="button" variant="primary" size="sm" onClick={onCreateRequest}>
             Nuevo servicio
-          </button>
+          </Button>
         )}
       </header>
       <div className="muted-scrollbar flex-1 space-y-3 overflow-y-auto pr-2">
@@ -66,36 +63,38 @@ export function ServiceList({ services, selectedId, onSelect, onCreateRequest, c
               onClick={() => onSelect(service.public_id)}
               className={`w-full rounded-2xl border px-4 py-3 text-left transition-all ${
                 isActive
-                  ? "border-white/70 bg-[var(--brand-primary)]/20 text-[var(--brand-primary)]"
-                  : "border-transparent bg-white/45 text-slate-600 hover:border-white/60 hover:bg-white/65"
+                  ? "border-base-300 bg-primary/20 text-primary"
+                  : "border-transparent bg-base-100/45 text-base-content hover:border-base-300 hover:bg-base-100/65"
               }`}
             >
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-sm font-semibold tracking-tight">{service.name}</p>
                   {service.detail && (
-                    <p className="text-[11px] uppercase tracking-wide text-slate-400">{service.detail}</p>
+                    <p className="text-xs uppercase tracking-wide text-base-content/50">{service.detail}</p>
                   )}
                 </div>
                 <span className={`h-2.5 w-2.5 rounded-full ${indicatorColor} shadow-inner`} aria-hidden="true" />
               </div>
               <div className="mt-2 flex flex-wrap items-center gap-4 text-xs">
-                <span className="font-semibold text-slate-700">${service.default_amount.toLocaleString("es-CL")}</span>
-                <span className="text-slate-500">{frequencyLabels[service.frequency]}</span>
-                <span className="text-slate-500">{typeLabels[service.service_type]}</span>
+                <span className="font-semibold text-base-content">
+                  ${service.default_amount.toLocaleString("es-CL")}
+                </span>
+                <span className="text-base-content/60">{frequencyLabels[service.frequency]}</span>
+                <span className="text-base-content/60">{typeLabels[service.service_type]}</span>
               </div>
-              <div className="mt-1 flex flex-wrap items-center gap-3 text-[11px] text-slate-400">
+              <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-base-content/50">
                 <span>Inicio {dayjs(service.start_date).format("DD MMM YYYY")}</span>
                 {service.counterpart_name && <span>{service.counterpart_name}</span>}
               </div>
-              <div className="mt-2 text-[11px] text-slate-400">
+              <div className="mt-2 text-xs text-base-content/50">
                 Pendientes {service.pending_count} · Vencidos {service.overdue_count}
               </div>
             </button>
           );
         })}
         {!services.length && (
-          <p className="rounded-2xl border border-dashed border-white/60 bg-white/40 p-4 text-xs text-slate-500">
+          <p className="rounded-2xl border border-dashed border-base-300 bg-base-100/40 p-4 text-xs text-base-content/60">
             Aún no registras servicios recurrentes. Crea el primero para controlar gastos mensuales.
           </p>
         )}

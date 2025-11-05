@@ -1,6 +1,7 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dayjs from "dayjs";
-import { useAuth } from "../context/auth-context";
+import { useAuth } from "../context/AuthContext";
+import Button from "../components/Button";
 import { fetchEmployees } from "../features/employees/api";
 import type { Employee } from "../features/employees/types";
 import {
@@ -33,12 +34,13 @@ export default function TimesheetsPage() {
   useAuth(); // invoke to ensure auth refresh (no direct usage of hasRole here)
   // canEdit removed (unused in current UI flow)
 
-  const { months, loading: loadingMonths } = useMonths();
+  const { months, monthsWithData, loading: loadingMonths } = useMonths();
   const [month, setMonth] = useState<string>("");
-  const [visibleCount, setVisibleCount] = useState(5);
-  const [summary, setSummary] = useState<
-    { employees: TimesheetSummaryRow[]; totals: TimesheetSummaryResponse["totals"] } | null
-  >(null);
+  const [visibleCount, setVisibleCount] = useState(10);
+  const [summary, setSummary] = useState<{
+    employees: TimesheetSummaryRow[];
+    totals: TimesheetSummaryResponse["totals"];
+  } | null>(null);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<number | null>(null);
   const [bulkRows, setBulkRows] = useState<BulkRow[]>([]);
@@ -49,55 +51,101 @@ export default function TimesheetsPage() {
   const [info, setInfo] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
+  const selectedEmployeeIdRef = useRef<number | null>(null);
+  const monthRef = useRef<string>("");
+
   const loadEmployees = useCallback(async () => {
     try {
       const data = await fetchEmployees(false);
       setEmployees(data);
-      if (!selectedEmployeeId && data.length) {
-        setSelectedEmployeeId(data[0].id);
-      }
     } catch (err) {
       const message = err instanceof Error ? err.message : "No se pudieron cargar los trabajadores";
       setError(message);
     }
+  }, []);
+
+  // Update ref when selectedEmployeeId changes
+  useEffect(() => {
+    selectedEmployeeIdRef.current = selectedEmployeeId;
   }, [selectedEmployeeId]);
 
+  // Update month ref when month changes
+  useEffect(() => {
+    monthRef.current = month;
+  }, [month]);
+
+  // Load employees on mount
   useEffect(() => {
     loadEmployees();
   }, [loadEmployees]);
 
+  // Set initial month when months list is loaded
   useEffect(() => {
-    if (months.length && !month) {
-      setMonth(months[0]);
+    if (months.length && !monthRef.current) {
+      const firstMonth = months[0];
+      if (firstMonth) setMonth(firstMonth);
     }
-  }, [months, month]);
+  }, [months]);
 
-  const loadSummary = useCallback(async () => {
-    setLoadingSummary(true);
-    setError(null);
-    setInfo(null);
-    try {
-      const formattedMonth = formatMonthString(month);
-      const data = await fetchTimesheetSummary(formattedMonth);
-      setSummary({ employees: data.employees, totals: data.totals });
-      const hasDataIds = new Set(data.employees.map((e) => e.employeeId));
-      if (!selectedEmployeeId && data.employees.length) {
-        setSelectedEmployeeId(data.employees[0].employeeId);
-      } else if (selectedEmployeeId && !hasDataIds.has(selectedEmployeeId) && data.employees.length) {
-        setSelectedEmployeeId(data.employees[0].employeeId);
+  // Consolidated effect: load summary and detail when month or selectedEmployeeId changes
+  useEffect(() => {
+    if (!monthRef.current) return;
+
+    async function loadData() {
+      // Load summary
+      setLoadingSummary(true);
+      setError(null);
+      setInfo(null);
+      try {
+        const formattedMonth = formatMonthString(monthRef.current);
+        const data = await fetchTimesheetSummary(formattedMonth);
+        setSummary({ employees: data.employees, totals: data.totals });
+        const hasDataIds = new Set(data.employees.map((e) => e.employeeId));
+        if (!selectedEmployeeIdRef.current && data.employees.length) {
+          const firstEmployee = data.employees[0];
+          if (firstEmployee) setSelectedEmployeeId(firstEmployee.employeeId);
+        } else if (
+          selectedEmployeeIdRef.current &&
+          !hasDataIds.has(selectedEmployeeIdRef.current) &&
+          data.employees.length
+        ) {
+          const firstEmployee = data.employees[0];
+          if (firstEmployee) setSelectedEmployeeId(firstEmployee.employeeId);
+        }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "No se pudo obtener el resumen";
+        setError(message);
+        setSummary(null);
+      } finally {
+        setLoadingSummary(false);
       }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "No se pudo obtener el resumen";
-      setError(message);
-      setSummary(null);
-    } finally {
-      setLoadingSummary(false);
-    }
-  }, [month, selectedEmployeeId]);
 
-  useEffect(() => {
-    if (month) loadSummary();
-  }, [month, loadSummary]);
+      // Load detail if employee selected
+      if (selectedEmployeeIdRef.current) {
+        setLoadingDetail(true);
+        setError(null);
+        try {
+          const formattedMonth = formatMonthString(monthRef.current);
+          const data = await fetchTimesheetDetail(selectedEmployeeIdRef.current, formattedMonth);
+          const rows = buildBulkRows(formattedMonth, data.entries);
+          setBulkRows(rows);
+          setInitialRows(rows);
+        } catch (err) {
+          const message = err instanceof Error ? err.message : "No se pudo obtener el detalle";
+          setError(message);
+          setBulkRows([]);
+          setInitialRows([]);
+        } finally {
+          setLoadingDetail(false);
+        }
+      } else {
+        setBulkRows([]);
+        setInitialRows([]);
+      }
+    }
+
+    loadData();
+  }, [month, selectedEmployeeId]);
 
   const monthLabel = useMemo(() => {
     const [year, monthStr] = month.split("-");
@@ -116,36 +164,55 @@ export default function TimesheetsPage() {
     return summary.employees.find((e) => e.employeeId === selectedEmployee.id) ?? null;
   }, [summary, selectedEmployee]);
 
-  const loadDetail = useCallback(
-    async (employeeId: number) => {
-      setLoadingDetail(true);
-      setError(null);
-      try {
-        const formattedMonth = formatMonthString(month);
-        const data = await fetchTimesheetDetail(employeeId, formattedMonth);
-        const rows = buildBulkRows(formattedMonth, data.entries);
-        setBulkRows(rows);
-        setInitialRows(rows);
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "No se pudo obtener el detalle";
-        setError(message);
-        setBulkRows([]);
-        setInitialRows([]);
-      } finally {
-        setLoadingDetail(false);
+  const loadSummary = useCallback(async () => {
+    if (!monthRef.current) return;
+    setLoadingSummary(true);
+    setError(null);
+    setInfo(null);
+    try {
+      const formattedMonth = formatMonthString(monthRef.current);
+      const data = await fetchTimesheetSummary(formattedMonth);
+      setSummary({ employees: data.employees, totals: data.totals });
+      const hasDataIds = new Set(data.employees.map((e) => e.employeeId));
+      if (!selectedEmployeeIdRef.current && data.employees.length) {
+        const firstEmployee = data.employees[0];
+        if (firstEmployee) setSelectedEmployeeId(firstEmployee.employeeId);
+      } else if (
+        selectedEmployeeIdRef.current &&
+        !hasDataIds.has(selectedEmployeeIdRef.current) &&
+        data.employees.length
+      ) {
+        const firstEmployee = data.employees[0];
+        if (firstEmployee) setSelectedEmployeeId(firstEmployee.employeeId);
       }
-    },
-    [month]
-  );
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "No se pudo obtener el resumen";
+      setError(message);
+      setSummary(null);
+    } finally {
+      setLoadingSummary(false);
+    }
+  }, []);
 
-  useEffect(() => {
-    if (selectedEmployeeId) {
-      loadDetail(selectedEmployeeId);
-    } else {
+  const loadDetail = useCallback(async (employeeId: number) => {
+    if (!monthRef.current) return;
+    setLoadingDetail(true);
+    setError(null);
+    try {
+      const formattedMonth = formatMonthString(monthRef.current);
+      const data = await fetchTimesheetDetail(employeeId, formattedMonth);
+      const rows = buildBulkRows(formattedMonth, data.entries);
+      setBulkRows(rows);
+      setInitialRows(rows);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "No se pudo obtener el detalle";
+      setError(message);
       setBulkRows([]);
       setInitialRows([]);
+    } finally {
+      setLoadingDetail(false);
     }
-  }, [selectedEmployeeId, loadDetail]);
+  }, []);
 
   const pendingCount = useMemo(() => bulkRows.filter((row) => !row.entryId && hasRowData(row)).length, [bulkRows]);
 
@@ -156,7 +223,8 @@ export default function TimesheetsPage() {
 
   function handleRowChange(index: number, field: keyof Omit<BulkRow, "date" | "entryId">, value: string) {
     setBulkRows((prev) => {
-      if (prev[index][field] === value) return prev;
+      const currentRow = prev[index];
+      if (!currentRow || currentRow[field] === value) return prev;
       const next = prev.map((row, i) => (i === index ? { ...row, [field]: value } : row));
       return next;
     });
@@ -166,7 +234,8 @@ export default function TimesheetsPage() {
   function handleResetRow(index: number) {
     setBulkRows((prev) => {
       const next = [...prev];
-      next[index] = { ...initialRows[index] };
+      const initialRow = initialRows[index];
+      if (initialRow) next[index] = { ...initialRow };
       return next;
     });
     setInfo(null);
@@ -214,6 +283,7 @@ export default function TimesheetsPage() {
     for (let index = 0; index < bulkRows.length; index += 1) {
       const row = bulkRows[index];
       const initial = initialRows[index];
+      if (!row || !initial) continue;
       if (!isRowDirty(row, initial)) continue;
 
       // Validar entrada/salida si están presentes
@@ -275,40 +345,70 @@ export default function TimesheetsPage() {
 
   return (
     <section className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-2">
-          <h1 className="text-2xl font-bold text-[var(--brand-primary)]">Registro de horas y pagos</h1>
-          <p className="max-w-2xl text-sm text-slate-600">
-            Consolida horas trabajadas, extras y montos líquidos por trabajador. Selecciona el mes, revisa el resumen y
+          <h1 className="text-2xl font-bold text-primary">Registro de horas y pagos</h1>
+          <p className="max-w-2xl text-sm text-base-content/70">
+            Consolida horas trabajadas, extras y montos líquidos por trabajador. Selecciona el mes y trabajador, luego
             completa la tabla diaria sin volver a guardar cada fila.
           </p>
         </div>
-        <div className="flex flex-col gap-2">
-          <label className="text-xs font-semibold text-slate-500">Periodo</label>
-          <select
-            value={month}
-            onChange={(e) => {
-              setMonth(e.target.value);
-              setInfo(null);
-            }}
-            className="rounded border px-3 py-2 text-sm bg-white"
-            disabled={loadingMonths}
-          >
-            {months.slice(0, visibleCount).map((m) => (
-              <option key={m} value={m}>
-                {dayjs(m + "-01").format("MMMM YYYY")}
-              </option>
-            ))}
-          </select>
-          {months.length > visibleCount && (
-            <button
-              type="button"
-              className="text-xs text-[var(--brand-primary)] underline mt-1"
-              onClick={() => setVisibleCount((c) => c + 4)}
+        <div className="flex flex-col sm:flex-row gap-3">
+          {/* Selector de Trabajador */}
+          <div className="flex flex-col gap-2 min-w-[200px]">
+            <label className="text-xs font-semibold text-base-content/80">Trabajador</label>
+            <select
+              value={selectedEmployeeId ?? ""}
+              onChange={(e) => {
+                const value = e.target.value;
+                setSelectedEmployeeId(value ? Number(value) : null);
+                setInfo(null);
+              }}
+              className="rounded border px-3 py-2 text-sm bg-base-100"
+              disabled={!employeeOptions.length}
             >
-              Ver más meses...
-            </button>
-          )}
+              <option value="">Seleccionar...</option>
+              {employeeOptions.map((emp) => (
+                <option key={emp.id} value={emp.id}>
+                  {emp.full_name}
+                </option>
+              ))}
+            </select>
+          </div>
+          {/* Selector de Periodo */}
+          <div className="flex flex-col gap-2 min-w-[180px]">
+            <label className="text-xs font-semibold text-base-content/80">Periodo</label>
+            <select
+              value={month}
+              onChange={(e) => {
+                setMonth(e.target.value);
+                setInfo(null);
+              }}
+              className="rounded border px-3 py-2 text-sm bg-base-100"
+              disabled={loadingMonths}
+            >
+              {months.slice(0, visibleCount).map((m) => {
+                const hasData = monthsWithData.has(m);
+                const label = dayjs(m + "-01").format("MMMM YYYY");
+                return (
+                  <option key={m} value={m}>
+                    {hasData ? `${label} ✓` : label}
+                  </option>
+                );
+              })}
+            </select>
+            {months.length > visibleCount && (
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                className="text-xs text-primary underline mt-1"
+                onClick={() => setVisibleCount((c) => c + 4)}
+              >
+                Ver más meses...
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -318,13 +418,14 @@ export default function TimesheetsPage() {
           <Suspense
             fallback={
               <div className="flex items-center gap-2">
-                <button
+                <Button
                   type="button"
                   disabled
-                  className="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-[var(--brand-primary)]/70 cursor-wait"
+                  variant="primary"
+                  className="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-primary/70 cursor-wait"
                 >
                   Cargando exportador...
-                </button>
+                </Button>
               </div>
             }
           >

@@ -1,20 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
-import type { ChangeEvent } from "react";
 import dayjs from "dayjs";
-import Input from "../../../components/Input";
 import Button from "../../../components/Button";
-import type {
-  CreateServicePayload,
-  ServiceEmissionMode,
-  ServiceFrequency,
-  ServiceLateFeeMode,
-  ServiceOwnership,
-  ServiceObligationType,
-  ServiceRecurrenceType,
-  ServiceType,
-} from "../types";
+import type { CreateServicePayload } from "../types";
 import { fetchCounterparts, fetchCounterpart } from "../../counterparts/api";
 import type { Counterpart, CounterpartAccount } from "../../counterparts/types";
+import {
+  BasicInfoSection,
+  ServiceClassificationSection,
+  CounterpartSection,
+  SchedulingSection,
+  EmissionSection,
+  FinancialSection,
+} from "./ServiceForm/index";
 
 interface ServiceFormProps {
   onSubmit: (payload: CreateServicePayload) => Promise<void>;
@@ -23,67 +20,9 @@ interface ServiceFormProps {
   submitLabel?: string;
 }
 
-type ServiceFormState = CreateServicePayload & {
+export type ServiceFormState = CreateServicePayload & {
   emissionExactDate?: string | null;
 };
-
-const SERVICE_TYPE_OPTIONS: Array<{ value: ServiceType; label: string }> = [
-  { value: "BUSINESS", label: "Operación general" },
-  { value: "SUPPLIER", label: "Proveedor" },
-  { value: "UTILITY", label: "Servicios básicos" },
-  { value: "LEASE", label: "Arriendo / leasing" },
-  { value: "SOFTWARE", label: "Software / suscripciones" },
-  { value: "TAX", label: "Impuestos / contribuciones" },
-  { value: "PERSONAL", label: "Personal" },
-  { value: "OTHER", label: "Otro" },
-];
-
-const OWNERSHIP_OPTIONS: Array<{ value: ServiceOwnership; label: string }> = [
-  { value: "COMPANY", label: "Empresa" },
-  { value: "OWNER", label: "Personal del dueño" },
-  { value: "MIXED", label: "Compartido" },
-  { value: "THIRD_PARTY", label: "Terceros" },
-];
-
-const OBLIGATION_OPTIONS: Array<{ value: ServiceObligationType; label: string }> = [
-  { value: "SERVICE", label: "Servicio / gasto" },
-  { value: "DEBT", label: "Deuda" },
-  { value: "LOAN", label: "Préstamo" },
-  { value: "OTHER", label: "Otro" },
-];
-
-const RECURRENCE_OPTIONS: Array<{ value: ServiceRecurrenceType; label: string }> = [
-  { value: "RECURRING", label: "Recurrente" },
-  { value: "ONE_OFF", label: "Puntual" },
-];
-
-const FREQUENCY_OPTIONS: Array<{ value: ServiceFrequency; label: string }> = [
-  { value: "WEEKLY", label: "Semanal" },
-  { value: "BIWEEKLY", label: "Quincenal" },
-  { value: "MONTHLY", label: "Mensual" },
-  { value: "BIMONTHLY", label: "Bimensual" },
-  { value: "QUARTERLY", label: "Trimestral" },
-  { value: "SEMIANNUAL", label: "Semestral" },
-  { value: "ANNUAL", label: "Anual" },
-  { value: "ONCE", label: "Única vez" },
-];
-
-const INDEXATION_OPTIONS = [
-  { value: "NONE", label: "Monto fijo" },
-  { value: "UF", label: "Actualiza por UF" },
-];
-
-const EMISSION_MODE_OPTIONS: Array<{ value: ServiceEmissionMode; label: string }> = [
-  { value: "FIXED_DAY", label: "Día específico" },
-  { value: "DATE_RANGE", label: "Rango de días" },
-  { value: "SPECIFIC_DATE", label: "Fecha exacta" },
-];
-
-const LATE_FEE_OPTIONS: Array<{ value: ServiceLateFeeMode; label: string }> = [
-  { value: "NONE", label: "Sin recargo" },
-  { value: "FIXED", label: "Monto fijo" },
-  { value: "PERCENTAGE", label: "% del monto" },
-];
 
 const INITIAL_STATE: ServiceFormState = {
   name: "",
@@ -135,8 +74,7 @@ export function ServiceForm({ onSubmit, onCancel, initialValues, submitLabel }: 
       setForm({
         ...INITIAL_STATE,
         ...initialValues,
-        monthsToGenerate:
-          initialValues.monthsToGenerate ?? INITIAL_STATE.monthsToGenerate,
+        monthsToGenerate: initialValues.monthsToGenerate ?? INITIAL_STATE.monthsToGenerate,
         startDate: initialValues.startDate ?? INITIAL_STATE.startDate,
       });
     } else {
@@ -144,18 +82,26 @@ export function ServiceForm({ onSubmit, onCancel, initialValues, submitLabel }: 
     }
   }, [initialValues]);
 
-  useEffect(() => {
-    setForm((prev) => {
-      if (prev.lateFeeMode === "NONE" && (prev.lateFeeValue != null || prev.lateFeeGraceDays != null)) {
-        return { ...prev, lateFeeValue: null, lateFeeGraceDays: null };
-      }
-      return prev;
-    });
-  }, [form.lateFeeMode]);
+  // Memoize extracted mode values to prevent unnecessary effect runs
+  const lateFeeMode = useMemo(() => form.lateFeeMode ?? "NONE", [form.lateFeeMode]);
+  const emissionMode = useMemo(() => form.emissionMode ?? "FIXED_DAY", [form.emissionMode]);
 
+  // Clear late fee fields when mode is NONE
+  useEffect(() => {
+    if (lateFeeMode === "NONE") {
+      setForm((prev) => {
+        if (prev.lateFeeValue != null || prev.lateFeeGraceDays != null) {
+          return { ...prev, lateFeeValue: null, lateFeeGraceDays: null };
+        }
+        return prev;
+      });
+    }
+  }, [lateFeeMode]);
+
+  // Adjust emission fields based on emission mode
   useEffect(() => {
     setForm((prev) => {
-      if (prev.emissionMode === "FIXED_DAY") {
+      if (emissionMode === "FIXED_DAY") {
         if (prev.emissionStartDay !== null || prev.emissionEndDay !== null || prev.emissionExactDate) {
           return {
             ...prev,
@@ -202,7 +148,7 @@ export function ServiceForm({ onSubmit, onCancel, initialValues, submitLabel }: 
       }
       return prev;
     });
-  }, [form.emissionMode]);
+  }, [emissionMode]);
 
   useEffect(() => {
     let cancelled = false;
@@ -256,9 +202,6 @@ export function ServiceForm({ onSubmit, onCancel, initialValues, submitLabel }: 
     if (form.recurrenceType === "ONE_OFF" || form.frequency === "ONCE") return 1;
     return form.monthsToGenerate ?? 12;
   }, [form.frequency, form.monthsToGenerate, form.recurrenceType]);
-
-  const emissionMode = form.emissionMode ?? "FIXED_DAY";
-  const lateFeeMode = form.lateFeeMode ?? "NONE";
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -314,323 +257,62 @@ export function ServiceForm({ onSubmit, onCancel, initialValues, submitLabel }: 
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <section className="grid gap-4 md:grid-cols-2">
-        <Input
-          label="Nombre"
-          value={form.name}
-          onChange={(event: ChangeEvent<HTMLInputElement>) => handleChange("name", event.target.value)}
-          required
-        />
-        <Input
-          label="Categoría"
-          value={form.category ?? ""}
-          onChange={(event: ChangeEvent<HTMLInputElement>) => handleChange("category", event.target.value)}
-          helper="Ej: Servicios básicos, Marketing, Arriendo"
-        />
-        <Input
-          label="Detalle"
-          type="textarea"
-          rows={3}
-          value={form.detail ?? ""}
-          onChange={(event: ChangeEvent<HTMLTextAreaElement>) => handleChange("detail", event.target.value)}
-          helper="Describe qué cubre el servicio o condiciones especiales"
-        />
-        <Input
-          label="Notas"
-          type="textarea"
-          rows={3}
-          value={form.notes ?? ""}
-          onChange={(event: ChangeEvent<HTMLTextAreaElement>) => handleChange("notes", event.target.value)}
-        />
-      </section>
+      <BasicInfoSection
+        name={form.name}
+        category={form.category}
+        detail={form.detail}
+        notes={form.notes}
+        onChange={handleChange}
+      />
 
-      <section className="grid gap-4 md:grid-cols-2">
-        <Input
-          label="Tipo"
-          type="select"
-          value={form.serviceType}
-          onChange={(event: ChangeEvent<HTMLSelectElement>) =>
-            handleChange("serviceType", event.target.value as ServiceType)
-          }
-        >
-          {SERVICE_TYPE_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </Input>
-        <Input
-          label="Propiedad"
-          type="select"
-          value={form.ownership}
-          onChange={(event: ChangeEvent<HTMLSelectElement>) =>
-            handleChange("ownership", event.target.value as ServiceOwnership)
-          }
-        >
-          {OWNERSHIP_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </Input>
-        <Input
-          label="Naturaleza"
-          type="select"
-          value={form.obligationType}
-          onChange={(event: ChangeEvent<HTMLSelectElement>) =>
-            handleChange("obligationType", event.target.value as ServiceObligationType)
-          }
-        >
-          {OBLIGATION_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </Input>
-        <Input
-          label="Recurrencia"
-          type="select"
-          value={form.recurrenceType}
-          onChange={(event: ChangeEvent<HTMLSelectElement>) =>
-            handleChange("recurrenceType", event.target.value as ServiceRecurrenceType)
-          }
-        >
-          {RECURRENCE_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </Input>
-      </section>
+      <ServiceClassificationSection
+        serviceType={form.serviceType}
+        ownership={form.ownership}
+        obligationType={form.obligationType}
+        recurrenceType={form.recurrenceType}
+        onChange={handleChange}
+      />
 
-      <section className="grid gap-4 md:grid-cols-2">
-        <Input
-          label="Empresa / contraparte"
-          type="select"
-          value={form.counterpartId ? String(form.counterpartId) : ""}
-          onChange={(event: ChangeEvent<HTMLSelectElement>) => handleCounterpartSelect(event.target.value)}
-          disabled={counterpartsLoading}
-          helper={counterpartsError ?? (counterpartsLoading ? "Cargando contrapartes..." : undefined)}
-        >
-          <option value="">Sin contraparte</option>
-          {counterparts.map((counterpart) => (
-            <option key={counterpart.id} value={counterpart.id}>
-              {counterpart.name}
-            </option>
-          ))}
-        </Input>
-        <Input
-          label="Cuenta asociada"
-          type="select"
-          value={form.counterpartAccountId ? String(form.counterpartAccountId) : ""}
-          onChange={(event: ChangeEvent<HTMLSelectElement>) =>
-            handleChange("counterpartAccountId", event.target.value ? Number(event.target.value) : null)
-          }
-          disabled={!form.counterpartId || accountsLoading}
-          helper={
-            counterpartsError
-              ? "No se pudo cargar las cuentas"
-              : counterpartsLoading
-                ? "Cargando opciones..."
-                : form.counterpartId && !accounts.length
-                  ? "Esta contraparte aún no tiene cuentas agregadas"
-                  : undefined
-          }
-        >
-          <option value="">Sin cuenta específica</option>
-          {accounts.map((account) => (
-            <option key={account.id} value={account.id}>
-              {account.account_identifier}
-              {account.bank_name ? ` · ${account.bank_name}` : ""}
-            </option>
-          ))}
-        </Input>
-        <Input
-          label="Referencia de cuenta"
-          value={form.accountReference ?? ""}
-          onChange={(event: ChangeEvent<HTMLInputElement>) => handleChange("accountReference", event.target.value)}
-          helper="Usa este campo si necesitas un alias o número distinto a las cuentas registradas"
-        />
-      </section>
+      <CounterpartSection
+        counterpartId={form.counterpartId}
+        counterpartAccountId={form.counterpartAccountId}
+        accountReference={form.accountReference}
+        counterparts={counterparts}
+        accounts={accounts}
+        counterpartsLoading={counterpartsLoading}
+        accountsLoading={accountsLoading}
+        counterpartsError={counterpartsError}
+        onCounterpartSelect={handleCounterpartSelect}
+        onChange={handleChange}
+      />
 
-      <section className="grid gap-4 md:grid-cols-2">
-        <Input
-          label="Frecuencia"
-          type="select"
-          value={form.frequency}
-          onChange={(event: ChangeEvent<HTMLSelectElement>) =>
-            handleChange("frequency", event.target.value as ServiceFrequency)
-          }
-        >
-          {FREQUENCY_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </Input>
-        <Input
-          label="Fecha de inicio"
-          type="date"
-          value={form.startDate}
-          onChange={(event: ChangeEvent<HTMLInputElement>) => handleChange("startDate", event.target.value)}
-          required
-        />
-        <Input
-          label="Meses a generar"
-          type="number"
-          value={effectiveMonths}
-          onChange={(event: ChangeEvent<HTMLInputElement>) =>
-            handleChange("monthsToGenerate", Number(event.target.value))
-          }
-          min={1}
-          max={60}
-          disabled={form.recurrenceType === "ONE_OFF" || form.frequency === "ONCE"}
-          helper={
-            form.recurrenceType === "ONE_OFF" || form.frequency === "ONCE"
-              ? "Para servicios puntuales se genera un único periodo"
-              : undefined
-          }
-        />
-        <Input
-          label="Día de vencimiento"
-          type="number"
-          value={form.dueDay ?? ""}
-          onChange={(event: ChangeEvent<HTMLInputElement>) =>
-            handleChange("dueDay", event.target.value ? Number(event.target.value) : null)
-          }
-          min={1}
-          max={31}
-        />
-      </section>
+      <SchedulingSection
+        frequency={form.frequency}
+        startDate={form.startDate}
+        monthsToGenerate={form.monthsToGenerate}
+        dueDay={form.dueDay}
+        recurrenceType={form.recurrenceType}
+        effectiveMonths={effectiveMonths}
+        onChange={handleChange}
+      />
 
-      <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <Input
-          label="Modo de emisión"
-          type="select"
-          value={emissionMode}
-          onChange={(event: ChangeEvent<HTMLSelectElement>) =>
-            handleChange("emissionMode", event.target.value as ServiceEmissionMode)
-          }
-        >
-          {EMISSION_MODE_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </Input>
-        {emissionMode === "FIXED_DAY" && (
-          <Input
-            label="Día emisión"
-            type="number"
-            value={form.emissionDay ?? ""}
-            onChange={(event: ChangeEvent<HTMLInputElement>) =>
-              handleChange("emissionDay", event.target.value ? Number(event.target.value) : null)
-            }
-            min={1}
-            max={31}
-          />
-        )}
-        {emissionMode === "DATE_RANGE" && (
-          <>
-            <Input
-              label="Día inicio emisión"
-              type="number"
-              value={form.emissionStartDay ?? ""}
-              onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                handleChange("emissionStartDay", event.target.value ? Number(event.target.value) : null)
-              }
-              min={1}
-              max={31}
-            />
-            <Input
-              label="Día término emisión"
-              type="number"
-              value={form.emissionEndDay ?? ""}
-              onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                handleChange("emissionEndDay", event.target.value ? Number(event.target.value) : null)
-              }
-              min={1}
-              max={31}
-            />
-          </>
-        )}
-        {emissionMode === "SPECIFIC_DATE" && (
-          <Input
-            label="Fecha emisión"
-            type="date"
-            value={form.emissionExactDate ?? ""}
-            onChange={(event: ChangeEvent<HTMLInputElement>) =>
-              handleChange("emissionExactDate", event.target.value || null)
-            }
-          />
-        )}
-      </section>
+      <EmissionSection
+        emissionMode={form.emissionMode}
+        emissionDay={form.emissionDay}
+        emissionStartDay={form.emissionStartDay}
+        emissionEndDay={form.emissionEndDay}
+        emissionExactDate={form.emissionExactDate}
+        onChange={handleChange}
+      />
 
-      <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <Input
-          label="Monto base"
-          type="number"
-          value={form.defaultAmount}
-          onChange={(event: ChangeEvent<HTMLInputElement>) =>
-            handleChange("defaultAmount", Number(event.target.value))
-          }
-          min={0}
-          step="0.01"
-          required
-        />
-        <Input
-          label="Modo de monto"
-          type="select"
-          value={form.amountIndexation ?? "NONE"}
-          onChange={(event: ChangeEvent<HTMLSelectElement>) =>
-            handleChange("amountIndexation", event.target.value as ServiceFormState["amountIndexation"])
-          }
-        >
-          {INDEXATION_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </Input>
-        <Input
-          label="Recargo por atraso"
-          type="select"
-          value={lateFeeMode}
-          onChange={(event: ChangeEvent<HTMLSelectElement>) =>
-            handleChange("lateFeeMode", event.target.value as ServiceLateFeeMode)
-          }
-        >
-          {LATE_FEE_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </Input>
-        {lateFeeMode !== "NONE" && (
-          <>
-            <Input
-              label={lateFeeMode === "PERCENTAGE" ? "% recargo" : "Monto recargo"}
-              type="number"
-              value={form.lateFeeValue ?? ""}
-              onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                handleChange("lateFeeValue", Number(event.target.value))
-              }
-              min={0}
-              step="0.01"
-            />
-            <Input
-              label="Días de gracia"
-              type="number"
-              value={form.lateFeeGraceDays ?? ""}
-              onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                handleChange("lateFeeGraceDays", event.target.value ? Number(event.target.value) : null)
-              }
-              min={0}
-              max={31}
-            />
-          </>
-        )}
-      </section>
+      <FinancialSection
+        defaultAmount={form.defaultAmount}
+        amountIndexation={form.amountIndexation}
+        lateFeeMode={form.lateFeeMode}
+        lateFeeValue={form.lateFeeValue}
+        lateFeeGraceDays={form.lateFeeGraceDays}
+        onChange={handleChange}
+      />
 
       {error && <p className="rounded-lg bg-rose-100 px-4 py-2 text-sm text-rose-700">{error}</p>}
       <div className="flex justify-end gap-3">

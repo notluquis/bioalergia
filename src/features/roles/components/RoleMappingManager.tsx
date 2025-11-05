@@ -80,35 +80,31 @@ export default function RoleMappingManager() {
   };
 
   if (loading) {
-    return (
-      <div className="glass-card glass-underlay-gradient p-6 text-sm text-[var(--brand-primary)]">
-        Cargando configuración de roles...
-      </div>
-    );
+    return <div className="p-6 text-sm text-primary bg-base-100">Cargando configuración de roles...</div>;
   }
 
   return (
-    <section className="glass-card glass-underlay-gradient space-y-5 p-6">
+    <section className="space-y-5 p-6 bg-base-100">
       <div className="space-y-1">
-        <h2 className="text-lg font-semibold text-[var(--brand-primary)] drop-shadow-sm">Gobernanza de Roles</h2>
-        <p className="text-sm text-slate-600/90">
+        <h2 className="text-lg font-semibold text-primary drop-shadow-sm">Gobernanza de Roles</h2>
+        <p className="text-sm text-base-content/90">
           Asigna un rol de la aplicación a cada cargo de empleado para controlar los permisos de acceso.
         </p>
       </div>
 
-      {error && <p className="text-sm text-rose-600">{error}</p>}
+      {error && <p className="text-sm text-error">{error}</p>}
 
-      <div className="divide-y divide-white/45 rounded-2xl border border-white/55 bg-white/55">
+      <div className="divide-y divide-base-300 rounded-2xl border border-base-300 bg-base-200">
         {mappings.map((mapping) => (
           <div
             key={mapping.employee_role}
             className="grid gap-3 p-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,220px)] sm:items-center"
           >
-            <label className="font-medium text-slate-700">{mapping.employee_role}</label>
+            <label className="font-medium text-base-content">{mapping.employee_role}</label>
             <select
               value={mapping.app_role}
               onChange={(e) => handleRoleChange(mapping.employee_role, e.target.value as UserRole)}
-              className="glass-input text-sm"
+              className="select select-bordered text-sm"
             >
               {APP_ROLES.map((role) => (
                 <option key={role} value={role}>

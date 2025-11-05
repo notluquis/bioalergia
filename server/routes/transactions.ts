@@ -3,33 +3,15 @@ import multer from "multer";
 import Papa from "papaparse";
 import type { ParseError } from "papaparse";
 import type { ResultSetHeader, RowDataPacket } from "mysql2";
-import {
-  asyncHandler,
-  authenticate,
-  requireRole,
-} from "../lib/index.js";
+import { asyncHandler, authenticate, requireRole } from "../lib/index.js";
 import { logEvent, logWarn, requestContext } from "../lib/logger.js";
-import {
-  DEFAULT_SETTINGS,
-  getPool,
-  loadSettings,
-  upsertWithdrawals,
-} from "../db.js";
+import { DEFAULT_SETTINGS, getPool, loadSettings, upsertWithdrawals } from "../db.js";
 import { buildMovements, type CsvRow } from "../transform.js";
 import { buildPayouts, type PayoutCsvRow } from "../transformPayouts.js";
-import { buildTransactionsQuery, clampLimit, EFFECTIVE_TIMESTAMP_EXPR, } from "../lib/transactions.js";
-import {
-  formatLocalDateForMySQL,
-  normalizeDate,
-  normalizeTimestamp,
-  normalizeTimestampString,
-} from "../lib/time.js";
+import { buildTransactionsQuery, clampLimit, EFFECTIVE_TIMESTAMP_EXPR } from "../lib/transactions.js";
+import { formatLocalDateForMySQL, normalizeDate, normalizeTimestamp, normalizeTimestampString } from "../lib/time.js";
 import { roundCurrency } from "../../shared/currency.js";
-import {
-  transactionsQuerySchema,
-  statsQuerySchema,
-  participantLeaderboardQuerySchema,
-} from "../schemas.js";
+import { transactionsQuerySchema, statsQuerySchema, participantLeaderboardQuerySchema } from "../schemas.js";
 import type { AuthenticatedRequest } from "../types.js";
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 15 * 1024 * 1024 } });
@@ -45,10 +27,13 @@ export function registerTransactionRoutes(app: express.Express) {
         return res.status(400).json({ status: "error", message: "Selecciona un archivo CSV" });
       }
 
-      logEvent("transactions/upload:start", requestContext(req, {
-        file: req.file.originalname,
-        size: req.file.size,
-      }));
+      logEvent(
+        "transactions/upload:start",
+        requestContext(req, {
+          file: req.file.originalname,
+          size: req.file.size,
+        })
+      );
 
       const text = req.file.buffer.toString("utf-8");
       const parsed = Papa.parse<CsvRow>(text, {
@@ -76,9 +61,7 @@ export function registerTransactionRoutes(app: express.Express) {
       const movements = buildMovements(rows, accountName);
       if (!movements.length) {
         logWarn("transactions/upload:no-movements", requestContext(req, { file: req.file.originalname }));
-        return res
-          .status(400)
-          .json({ status: "error", message: "No se detectaron movimientos a partir del CSV" });
+        return res.status(400).json({ status: "error", message: "No se detectaron movimientos a partir del CSV" });
       }
 
       const pool = getPool();
@@ -102,12 +85,15 @@ export function registerTransactionRoutes(app: express.Express) {
         [values]
       );
 
-      logEvent("transactions/upload:complete", requestContext(req, {
-        file: req.file.originalname,
-        parsedRows: rows.length,
-        inserted: result.affectedRows,
-        skipped: movements.length - result.affectedRows,
-      }));
+      logEvent(
+        "transactions/upload:complete",
+        requestContext(req, {
+          file: req.file.originalname,
+          parsedRows: rows.length,
+          inserted: result.affectedRows,
+          skipped: movements.length - result.affectedRows,
+        })
+      );
       res.json({
         status: "ok",
         inserted: result.affectedRows,
@@ -117,20 +103,29 @@ export function registerTransactionRoutes(app: express.Express) {
     })
   );
 
+  // NOTE: legacy server-side CSV upload for withdrawals removed in favor of
+  // client-side parse + preview → import flow. Use:
+  // - POST /api/transactions/withdrawals/preview  (send { ids: string[] })
+  // - POST /api/transactions/withdrawals/import   (send { payouts: PayoutRecord[] })
+
+  // Compatibility wrapper: accept a file upload and perform the same import
+  // flow as the client-side import. This preserves backwards compatibility
+  // for external scripts that still POST files to the old endpoint.
   app.post(
     "/api/transactions/withdrawals/upload",
     authenticate,
     requireRole("GOD", "ADMIN", "ANALYST"),
     upload.single("file"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
-      if (!req.file) {
-        return res.status(400).json({ status: "error", message: "Selecciona un archivo CSV" });
-      }
+      if (!req.file) return res.status(400).json({ status: "error", message: "Selecciona un archivo CSV" });
 
-      logEvent("withdrawals/upload:start", requestContext(req, {
-        file: req.file.originalname,
-        size: req.file.size,
-      }));
+      logEvent(
+        "withdrawals/upload-compat:start",
+        requestContext(req, {
+          file: req.file.originalname,
+          size: req.file.size,
+        })
+      );
 
       const text = req.file.buffer.toString("utf-8");
       const parsed = Papa.parse<PayoutCsvRow>(text, {
@@ -148,32 +143,90 @@ export function registerTransactionRoutes(app: express.Express) {
         Object.values(row).some((value) => value != null && String(value).trim() !== "")
       );
 
-      if (!rows.length) {
-        logWarn("withdrawals/upload:empty", requestContext(req, { file: req.file.originalname }));
+      if (!rows.length)
         return res.status(400).json({ status: "error", message: "El archivo no contiene filas válidas" });
-      }
 
       const payouts = buildPayouts(rows);
-      if (!payouts.length) {
-        logWarn("withdrawals/upload:no-payouts", requestContext(req, { file: req.file.originalname }));
+      if (!payouts.length)
         return res.status(400).json({ status: "error", message: "No se detectaron retiros válidos en el CSV" });
-      }
 
       const result = await upsertWithdrawals(payouts);
 
-      logEvent("withdrawals/upload:complete", requestContext(req, {
-        file: req.file.originalname,
-        detected: payouts.length,
-        inserted: result.inserted,
-        updated: result.updated,
-      }));
+      logEvent(
+        "withdrawals/upload-compat:complete",
+        requestContext(req, {
+          file: req.file.originalname,
+          detected: payouts.length,
+          inserted: result.inserted,
+          updated: result.updated,
+          skipped: result.skipped ?? 0,
+        })
+      );
 
       res.json({
         status: "ok",
         inserted: result.inserted,
         updated: result.updated,
+        skipped: result.skipped ?? 0,
         total: payouts.length,
       });
+    })
+  );
+
+  // Preview existing withdrawals for a set of withdrawIds. The client should
+  // perform CSV parsing and send the extracted withdrawIds here to keep heavy
+  // parsing work on the client.
+  app.post(
+    "/api/transactions/withdrawals/preview",
+    authenticate,
+    requireRole("GOD", "ADMIN", "ANALYST"),
+    asyncHandler(async (req: AuthenticatedRequest, res) => {
+      const ids = Array.isArray(req.body?.ids) ? req.body.ids.map(String).filter(Boolean) : [];
+      if (!ids.length) return res.json({ status: "ok", existing: {} });
+
+      const pool = getPool();
+      const CHUNK = 500;
+      const existing: Record<string, string | null> = {};
+      for (let i = 0; i < ids.length; i += CHUNK) {
+        const chunk = ids.slice(i, i + CHUNK);
+        const placeholders = chunk.map(() => "?").join(",");
+        const [rows] = await pool.query<RowDataPacket[]>(
+          `SELECT withdraw_id, raw_json FROM mp_withdrawals WHERE withdraw_id IN (${placeholders})`,
+          chunk
+        );
+        for (const r of rows) {
+          existing[String(r.withdraw_id)] = r.raw_json == null ? null : String(r.raw_json);
+        }
+      }
+
+      res.json({ status: "ok", existing });
+    })
+  );
+
+  // Import payouts provided as JSON (client-side parsed). This avoids re-parsing
+  // the CSV on the server. The payload should be an array of payouts matching
+  // the PayoutRecord shape used by upsertWithdrawals.
+  app.post(
+    "/api/transactions/withdrawals/import",
+    authenticate,
+    requireRole("GOD", "ADMIN", "ANALYST"),
+    asyncHandler(async (req: AuthenticatedRequest, res) => {
+      const payouts = Array.isArray(req.body?.payouts) ? req.body.payouts : [];
+      if (!payouts.length) return res.status(400).json({ status: "error", message: "No hay retiros para importar" });
+
+      const result = await upsertWithdrawals(payouts);
+
+      logEvent(
+        "withdrawals/import:complete",
+        requestContext(req, {
+          imported: result.inserted,
+          updated: result.updated,
+          skipped: result.skipped ?? 0,
+          total: result.total ?? payouts.length,
+        })
+      );
+
+      res.json({ status: "ok", ...result, total: result.total ?? payouts.length });
     })
   );
 
@@ -188,29 +241,38 @@ export function registerTransactionRoutes(app: express.Express) {
       const page = parsed.page ?? 1;
       const pageSize = parsed.pageSize ?? limit;
 
-      logEvent("transactions/list", requestContext(req, {
-        limit,
-        includeAmounts,
-        filters: parsed,
-        page,
-        pageSize,
-      }));
-
-      const { sql, dataParams, countSql, countParams, page: finalPage, pageSize: finalPageSize } =
-        buildTransactionsQuery({
+      logEvent(
+        "transactions/list",
+        requestContext(req, {
           limit,
           includeAmounts,
-          from: parsed.from,
-          to: parsed.to,
-          description: parsed.description,
-          origin: parsed.origin,
-          destination: parsed.destination,
-          sourceId: parsed.sourceId,
-          direction: parsed.direction,
-          file: parsed.file,
+          filters: parsed,
           page,
           pageSize,
-        });
+        })
+      );
+
+      const {
+        sql,
+        dataParams,
+        countSql,
+        countParams,
+        page: finalPage,
+        pageSize: finalPageSize,
+      } = buildTransactionsQuery({
+        limit,
+        includeAmounts,
+        from: parsed.from,
+        to: parsed.to,
+        description: parsed.description,
+        origin: parsed.origin,
+        destination: parsed.destination,
+        sourceId: parsed.sourceId,
+        direction: parsed.direction,
+        file: parsed.file,
+        page,
+        pageSize,
+      });
 
       const pool = getPool();
       const [[totalRow]] = await pool.query<RowDataPacket[]>(countSql, countParams);
@@ -412,10 +474,7 @@ export function registerTransactionRoutes(app: express.Express) {
         ORDER BY outgoing_amount DESC, outgoing_count DESC, participant_key ASC
         LIMIT ?` as string;
 
-      logEvent(
-        "transactions/participants:leaderboard",
-        requestContext(req, { mode, limit, from, to })
-      );
+      logEvent("transactions/participants:leaderboard", requestContext(req, { mode, limit, from, to }));
 
       const pool = getPool();
       const [rows] = await pool.query<RowDataPacket[]>(leaderboardSql, [...params, limit]);
@@ -555,11 +614,12 @@ export function registerTransactionRoutes(app: express.Express) {
           const bankAccountType = row.payout_bank_account_type ? String(row.payout_bank_account_type) : null;
           const bankBranch = row.payout_bank_branch ? String(row.payout_bank_branch) : null;
           const identificationType = row.payout_identification_type ? String(row.payout_identification_type) : null;
-          const identificationNumber = row.payout_identification_number ? String(row.payout_identification_number) : null;
+          const identificationNumber = row.payout_identification_number
+            ? String(row.payout_identification_number)
+            : null;
           const withdrawId = row.payout_withdraw_id ? String(row.payout_withdraw_id) : null;
 
-          const counterpartLabel =
-            bankAccountHolder || bankName || counterpartId || withdrawId || "(sin información)";
+          const counterpartLabel = bankAccountHolder || bankName || counterpartId || withdrawId || "(sin información)";
           const counterpart = counterpartLabel.trim() || "(sin información)";
 
           return {

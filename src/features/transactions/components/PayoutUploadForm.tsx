@@ -21,12 +21,20 @@ export default function PayoutUploadForm() {
     validator: validateWithdrawFile,
     multiple: true,
     confirmOnValidationWarning: true,
+    invalidateKeys: [
+      ["dashboard", "stats"],
+      ["dashboard", "recentMovements"],
+      ["participants", "leaderboard"],
+      ["stats", "overview"],
+      ["balances", "report"],
+      ["transactions", "movements"],
+    ],
   });
 
   return (
-    <div className="mt-8 space-y-3 border-t border-slate-200 pt-6">
-      <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">Subir CSV de retiros</h2>
-      <p className="text-xs text-slate-500">
+    <div className="mt-8 space-y-3 border-t border-base-300 pt-6">
+      <h2 className="text-xs font-semibold uppercase tracking-wide text-base-content/60">Subir CSV de retiros</h2>
+      <p className="text-xs text-base-content/60">
         Complementa los retiros con los datos bancarios y del titular para que se reflejen junto a los movimientos
         existentes.
       </p>
@@ -40,7 +48,7 @@ export default function PayoutUploadForm() {
         {loading ? "Subiendo retiros..." : "Importar retiros"}
       </Button>
       {files.length > 0 && !loading && !error && (
-        <p className="text-xs text-slate-500">Archivos seleccionados: {files.map((f) => f.name).join(", ")}</p>
+        <p className="text-xs text-base-content/60">Archivos seleccionados: {files.map((f) => f.name).join(", ")}</p>
       )}
       {error && <Alert variant="error">{error}</Alert>}
       <UploadResults results={results} variant="secondary" />

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useAuth } from "../../../context/auth-context";
+import { useAuth } from "../../../context/AuthContext";
 import { createEmployee, updateEmployee } from "../api";
 import type { Employee } from "../types";
 import Button from "../../../components/Button";
@@ -97,7 +97,7 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
   return (
     <form
       onSubmit={handleSubmit}
-      className="space-y-4 rounded-2xl border border-[var(--brand-primary)]/15 bg-white p-6 text-sm shadow-sm"
+      className="space-y-4 rounded-2xl border border-primary/15 bg-base-100 p-6 text-sm shadow-sm"
     >
       <div className="grid gap-4 md:grid-cols-3">
         <div className="col-span-3">

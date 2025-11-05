@@ -12,7 +12,7 @@ export default function StatCard({ title, value, accent }: StatCardProps) {
       ? "bg-emerald-100 text-emerald-700"
       : accent === "rose"
         ? "bg-rose-100 text-rose-700"
-        : "bg-slate-100 text-slate-700";
+        : "bg-base-200 text-base-content";
 
   return (
     <div className={`rounded-2xl p-6 shadow-sm ${colorClass}`}>

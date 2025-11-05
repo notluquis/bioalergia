@@ -15,13 +15,13 @@ function statusBadge(status: LoanSchedule["status"], dueDate: string) {
   const isPastDue = due.isBefore(today) && (status === "PENDING" || status === "PARTIAL");
   switch (status) {
     case "PAID":
-      return "bg-emerald-100 text-emerald-700";
+      return "bg-success/20 text-success";
     case "PARTIAL":
-      return "bg-amber-100 text-amber-700";
+      return "bg-warning/20 text-warning";
     case "OVERDUE":
-      return "bg-rose-100 text-rose-700";
+      return "bg-error/20 text-error";
     default:
-      return isPastDue ? "bg-rose-100 text-rose-700" : "bg-slate-100 text-slate-600";
+      return isPastDue ? "bg-error/20 text-error" : "bg-base-200 text-base-content/60";
   }
 }
 
@@ -32,10 +32,10 @@ export function LoanScheduleTable({
   canManage,
 }: LoanScheduleTableProps) {
   return (
-    <div className="glass-card glass-underlay-gradient overflow-hidden">
+    <div className="overflow-hidden bg-base-100">
       <div className="overflow-x-auto muted-scrollbar">
-        <table className="min-w-full text-sm text-slate-600">
-          <thead className="bg-white/60 text-[var(--brand-primary)]">
+        <table className="min-w-full text-sm text-base-content">
+          <thead className="bg-base-100/60 text-primary">
             <tr>
               <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide whitespace-nowrap">
                 Cuota
@@ -66,14 +66,14 @@ export function LoanScheduleTable({
               return (
                 <tr
                   key={schedule.id}
-                  className="border-b border-white/45 bg-white/45 last:border-none even:bg-white/35"
+                  className="border-b border-base-300 bg-base-200 last:border-none even:bg-base-300"
                 >
-                  <td className="px-4 py-3 font-semibold text-slate-700">#{schedule.installment_number}</td>
-                  <td className="px-4 py-3 text-slate-600">{dayjs(schedule.due_date).format("DD MMM YYYY")}</td>
-                  <td className="px-4 py-3 text-slate-600">${schedule.expected_amount.toLocaleString("es-CL")}</td>
+                  <td className="px-4 py-3 font-semibold text-base-content">#{schedule.installment_number}</td>
+                  <td className="px-4 py-3 text-base-content">{dayjs(schedule.due_date).format("DD MMM YYYY")}</td>
+                  <td className="px-4 py-3 text-base-content">${schedule.expected_amount.toLocaleString("es-CL")}</td>
                   <td className="px-4 py-3">
                     <span
-                      className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wide ${badgeClass}`}
+                      className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${badgeClass}`}
                     >
                       {schedule.status === "PENDING"
                         ? "Pendiente"
@@ -84,26 +84,26 @@ export function LoanScheduleTable({
                             : "Vencido"}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-slate-600">
+                  <td className="px-4 py-3 text-base-content">
                     <div className="space-y-1">
                       <div>{paidInfo}</div>
-                      <div className="text-[11px] text-slate-400">{paidDate}</div>
+                      <div className="text-xs text-base-content/50">{paidDate}</div>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-slate-600">
+                  <td className="px-4 py-3 text-base-content">
                     {schedule.transaction ? (
                       <div className="space-y-1">
                         <div className="font-medium">ID #{schedule.transaction.id}</div>
-                        <div className="text-[11px] text-slate-400">
+                        <div className="text-xs text-base-content/50">
                           {schedule.transaction.description ?? "(sin descripción)"}
                         </div>
                       </div>
                     ) : (
-                      <span className="text-slate-400">Sin vincular</span>
+                      <span className="text-base-content/50">Sin vincular</span>
                     )}
                   </td>
                   {canManage && (
-                    <td className="px-4 py-3 text-slate-600">
+                    <td className="px-4 py-3 text-base-content">
                       <div className="flex flex-wrap gap-2">
                         {(schedule.status === "PENDING" ||
                           schedule.status === "PARTIAL" ||
@@ -125,7 +125,7 @@ export function LoanScheduleTable({
             })}
             {!schedules.length && (
               <tr>
-                <td colSpan={canManage ? 7 : 6} className="px-4 py-6 text-center text-slate-500">
+                <td colSpan={canManage ? 7 : 6} className="px-4 py-6 text-center text-base-content/60">
                   Este préstamo aún no tiene cronograma generado.
                 </td>
               </tr>

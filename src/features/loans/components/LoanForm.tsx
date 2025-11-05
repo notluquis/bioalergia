@@ -30,7 +30,6 @@ interface LoanFormProps {
   onCancel: () => void;
 }
 
-
 export function LoanForm({ onSubmit, onCancel }: LoanFormProps) {
   const form = useForm<LoanFormData>({
     initialValues: {
@@ -192,7 +191,7 @@ export function LoanForm({ onSubmit, onCancel }: LoanFormProps) {
           )}
         </div>
         <div>
-          <label className="flex items-center gap-2 text-xs text-slate-600">
+          <label className="flex items-center gap-2 text-xs text-base-content/60">
             <input
               type="checkbox"
               checked={form.values.generateSchedule}

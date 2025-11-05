@@ -37,8 +37,8 @@ export default function CalendarSyncHistoryPage() {
     <section className="space-y-4">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
-          <h1 className="text-2xl font-bold text-[var(--brand-primary)]">Historial de sincronizaciones</h1>
-          <p className="text-sm text-slate-600">
+          <h1 className="text-2xl font-bold text-primary">Historial de sincronizaciones</h1>
+          <p className="text-sm text-base-content/70">
             Consulta las sincronizaciones ejecutadas (manuales y programadas) y sus resultados.
           </p>
         </div>
@@ -49,9 +49,9 @@ export default function CalendarSyncHistoryPage() {
 
       {error && <Alert variant="error">{error}</Alert>}
 
-      <div className="glass-card glass-underlay-gradient overflow-hidden rounded-3xl border border-white/60">
-        <table className="w-full text-left text-xs text-slate-600">
-          <thead className="bg-white/70 uppercase tracking-wide text-slate-500">
+      <div className="bg-base-100 overflow-hidden rounded-3xl border border-base-300">
+        <table className="w-full text-left text-xs text-base-content">
+          <thead className="bg-base-200 uppercase tracking-wide text-base-content/80">
             <tr>
               <th className="px-4 py-3">Inicio</th>
               <th className="px-4 py-3">Estado</th>
@@ -66,7 +66,7 @@ export default function CalendarSyncHistoryPage() {
           <tbody>
             {logs.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-4 py-4 text-center text-slate-400">
+                <td colSpan={8} className="px-4 py-4 text-center text-base-content/50">
                   {loading ? "Cargando..." : "No hay ejecuciones registradas."}
                 </td>
               </tr>
@@ -76,14 +76,13 @@ export default function CalendarSyncHistoryPage() {
                 const finished = log.finishedAt ? dayjs(log.finishedAt) : null;
                 const duration = finished ? `${finished.diff(dayjs(log.startedAt), "second")}s` : "-";
                 const sourceLabel = log.triggerLabel ?? log.triggerSource;
-                const statusClass =
-                  log.status === "SUCCESS"
-                    ? "text-emerald-600"
-                    : "text-rose-600";
+                const statusClass = log.status === "SUCCESS" ? "text-success" : "text-error";
                 return (
-                  <tr key={log.id} className="border-t border-white/40 bg-white/60">
-                    <td className="px-4 py-3 font-medium text-slate-700">{started}</td>
-                    <td className={`px-4 py-3 font-semibold ${statusClass}`}>{log.status === "SUCCESS" ? "Éxito" : "Error"}</td>
+                  <tr key={log.id} className="border-t border-base-300 bg-base-200">
+                    <td className="px-4 py-3 font-medium text-base-content">{started}</td>
+                    <td className={`px-4 py-3 font-semibold ${statusClass}`}>
+                      {log.status === "SUCCESS" ? "Éxito" : "Error"}
+                    </td>
                     <td className="px-4 py-3">{numberFormatter.format(log.inserted)}</td>
                     <td className="px-4 py-3">{numberFormatter.format(log.updated)}</td>
                     <td className="px-4 py-3">{numberFormatter.format(log.skipped)}</td>
@@ -99,7 +98,7 @@ export default function CalendarSyncHistoryPage() {
       </div>
 
       {logs.some((log) => log.errorMessage) && (
-        <div className="glass-card glass-underlay-gradient space-y-2 rounded-3xl border border-rose-200/70 p-4 text-xs text-rose-700">
+        <div className="bg-base-100 space-y-2 rounded-3xl border border-error/20 p-4 text-xs text-error">
           <p className="font-semibold uppercase tracking-wide">Errores recientes</p>
           <ul className="space-y-1">
             {logs

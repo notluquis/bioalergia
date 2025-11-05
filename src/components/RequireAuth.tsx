@@ -1,5 +1,5 @@
 import { Navigate, useLocation } from "react-router-dom";
-import { useAuth } from "../context/auth-context";
+import { useAuth } from "../context/AuthContext";
 
 export default function RequireAuth({ children }: { children: React.ReactNode }) {
   const { user, initializing } = useAuth();
@@ -7,7 +7,7 @@ export default function RequireAuth({ children }: { children: React.ReactNode })
 
   if (initializing) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#f6fbff] text-slate-600">
+      <div className="flex min-h-screen items-center justify-center bg-base-100 text-base-content">
         Comprobando sesión...
       </div>
     );

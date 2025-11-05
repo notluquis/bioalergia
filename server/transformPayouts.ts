@@ -22,10 +22,7 @@ export type PayoutRecord = {
   raw: PayoutCsvRow;
 };
 
-const NUMBER_FIELDS = new Set([
-  "amount",
-  "fee",
-]);
+const NUMBER_FIELDS = new Set(["amount", "fee"]);
 
 const DATE_FIELDS = new Set(["date_created"]);
 
@@ -120,7 +117,7 @@ function normalizeHeaderKey(header: string): string | null {
   if (!trimmed) return null;
 
   const parenMatch = trimmed.match(/\(([^)]+)\)/);
-  if (parenMatch) {
+  if (parenMatch && parenMatch[1]) {
     return parenMatch[1].trim().toLowerCase();
   }
 
@@ -160,6 +157,7 @@ function parseDate(value: string): string | null {
   if (parts.length !== 3) return null;
 
   let [day, month, year] = parts;
+  if (!day || !month || !year) return null;
 
   if (year.length === 2) {
     const numericYear = Number(year);

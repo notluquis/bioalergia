@@ -1,6 +1,10 @@
 import React from "react";
+import Button from "./Button";
 
-export class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean; error: unknown }> {
+export class ErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean; error: unknown }
+> {
   constructor(props: { children: React.ReactNode }) {
     super(props);
     this.state = { hasError: false, error: null };
@@ -10,29 +14,32 @@ export class ErrorBoundary extends React.Component<{ children: React.ReactNode }
     return { hasError: true, error };
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  componentDidCatch(_error: unknown, _errorInfo: unknown) {
+  componentDidCatch(error: unknown, errorInfo: unknown) {
     // Hook opcional para reportar a un sistema de errores.
+    console.error("ErrorBoundary caught an error:", error, errorInfo);
   }
 
   render() {
     if (this.state.hasError) {
       return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-white/80">
-          <img src="/logo.png" alt="Logo" className="h-16 mb-4" />
-          <h2 className="text-2xl font-bold text-[var(--brand-primary)] mb-2">¡Ups! Ocurrió un error inesperado</h2>
-          <p className="text-slate-600 mb-4">
-            Por favor, recarga la página o contacta al soporte si el problema persiste.
-          </p>
-          <pre className="bg-slate-100 rounded p-2 text-xs text-red-600 max-w-xl overflow-auto">
-            {String(this.state.error)}
-          </pre>
-          <button
-            className="mt-6 px-4 py-2 rounded bg-[var(--brand-primary)] text-white font-semibold"
-            onClick={() => window.location.reload()}
-          >
-            Recargar
-          </button>
+        <div className="min-h-screen flex items-center justify-center bg-base-200 p-6">
+          <div className="card w-full max-w-3xl bg-base-100 shadow-lg">
+            <div className="card-body">
+              <div className="flex items-center gap-4">
+                <img src="/logo.png" alt="Logo" className="h-12" />
+                <h2 className="card-title text-primary">¡Ups! Ocurrió un error inesperado</h2>
+              </div>
+              <p className="text-base-content">
+                Por favor, recarga la página o contacta al soporte si el problema persiste.
+              </p>
+              <pre className="bg-base-200 rounded p-2 text-xs text-red-600 max-w-full overflow-auto my-2">
+                {String(this.state.error)}
+              </pre>
+              <div className="card-actions justify-end">
+                <Button onClick={() => window.location.reload()}>Recargar</Button>
+              </div>
+            </div>
+          </div>
         </div>
       );
     }

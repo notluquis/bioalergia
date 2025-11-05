@@ -11,10 +11,7 @@ import {
   updateService as updateServiceRequest,
   regenerateServiceSchedules,
 } from "../features/services/api";
-import type {
-  CreateServicePayload,
-  ServiceDetailResponse,
-} from "../features/services/types";
+import type { CreateServicePayload, ServiceDetailResponse } from "../features/services/types";
 
 function mapServiceToForm(service: ServiceDetailResponse["service"]): Partial<CreateServicePayload> {
   return {
@@ -176,7 +173,7 @@ export default function ServiceEditPage() {
   }
 
   if (loading) {
-    return <p className="text-sm text-slate-500">Cargando servicio…</p>;
+    return <p className="text-sm text-base-content/60">Cargando servicio…</p>;
   }
 
   if (error && !detail) {
@@ -190,10 +187,8 @@ export default function ServiceEditPage() {
     <section className="flex flex-col gap-6">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-[var(--brand-primary)]">Editar servicio</h1>
-          {service && (
-            <p className="text-sm text-slate-500">{service.name}</p>
-          )}
+          <h1 className="text-2xl font-bold text-primary">Editar servicio</h1>
+          {service && <p className="text-sm text-base-content/60">{service.name}</p>}
         </div>
         <div className="flex gap-2">
           <Button variant="secondary" onClick={() => navigate(-1)}>
@@ -207,25 +202,25 @@ export default function ServiceEditPage() {
 
       {service && (
         <div className="grid gap-6 lg:grid-cols-[320px,minmax(0,1fr)]">
-          <aside className="glass-card glass-underlay-gradient space-y-4 border border-white/40 p-4 text-sm text-slate-600">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Resumen</h2>
+          <aside className="bg-base-100 space-y-4 border border-base-300 p-4 text-sm text-base-content">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-base-content/80">Resumen</h2>
             <div className="space-y-3">
               {summaryCards.map((card) => (
-                <div key={card.label} className="rounded-2xl border border-white/45 bg-white/70 p-3">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{card.label}</p>
-                  <p className="mt-1 text-lg font-semibold text-slate-800">{card.value}</p>
-                  {card.helper && <p className="text-[11px] text-slate-400">{card.helper}</p>}
+                <div key={card.label} className="rounded-2xl border border-base-300 bg-base-200 p-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-base-content/80">{card.label}</p>
+                  <p className="mt-1 text-lg font-semibold text-base-content">{card.value}</p>
+                  {card.helper && <p className="text-xs text-base-content/50">{card.helper}</p>}
                 </div>
               ))}
             </div>
             <div className="space-y-2">
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">Historial</h3>
-              <ol className="space-y-2 text-xs text-slate-500">
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-base-content/80">Historial</h3>
+              <ol className="space-y-2 text-xs text-base-content/60">
                 {historyItems.map((item) => (
-                  <li key={item.title} className="rounded-xl border border-white/45 bg-white/70 p-3">
-                    <p className="font-semibold text-slate-700">{item.title}</p>
-                    {item.description && <p className="text-[11px] text-slate-400">{item.description}</p>}
-                    <p className="text-[10px] uppercase tracking-wide text-slate-300">{item.date}</p>
+                  <li key={item.title} className="rounded-xl border border-base-300 bg-base-200 p-3">
+                    <p className="font-semibold text-base-content">{item.title}</p>
+                    {item.description && <p className="text-xs text-base-content/50">{item.description}</p>}
+                    <p className="text-xs uppercase tracking-wide text-base-content/40">{item.date}</p>
                   </li>
                 ))}
               </ol>
@@ -233,8 +228,8 @@ export default function ServiceEditPage() {
           </aside>
 
           <div className="space-y-6">
-            <section className="glass-card glass-underlay-gradient border border-white/40 p-6">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Datos generales</h2>
+            <section className="bg-base-100 border border-base-300 p-6">
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-base-content/80">Datos generales</h2>
               {initialValues && (
                 <ServiceForm
                   onSubmit={handleSubmit}
@@ -262,7 +257,9 @@ export default function ServiceEditPage() {
               <div className="flex justify-end">
                 <Button
                   variant="secondary"
-                  onClick={() => handleRegenerate({ months: service.next_generation_months, startDate: service.start_date })}
+                  onClick={() =>
+                    handleRegenerate({ months: service.next_generation_months, startDate: service.start_date })
+                  }
                   disabled={saving}
                 >
                   Regenerar cronograma

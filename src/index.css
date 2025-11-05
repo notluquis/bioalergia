@@ -1,36 +1,31 @@
+/* Use Tailwind's legacy import form used by this project's PostCSS pipeline */
 @import "tailwindcss";
-@import "flowbite";
 
-/* Tema opcional */
+/* Preline runtime removed: project no longer imports Preline styles or runtime helpers */
+
+/* Plugins */
+@plugin "@tailwindcss/forms";
+
+/* daisyUI plugin enabled: provides component styles (btn, card, alert, etc.).
+  Theme is declared in `tailwind.config.cjs`. */
+@plugin "daisyui";
+
+/* NOTE: daisyUI theme is defined in `tailwind.config.cjs` to avoid import resolution issues
+   (we map daisyUI semantic colors to our CSS variables there). */
 @theme {
   --radius-xl: 1rem;
   --radius-2xl: 1.25rem;
 }
 
-:root {
-  --brand-primary: #0e64b7;
-  --brand-secondary: #f1a722;
-  --brand-primary-rgb: 14 100 183;
-  --brand-secondary-rgb: 241 167 34;
-  --fetch-timeout-seconds: 8s;
-  --surface-ambient: #ecf4fc;
-  --glass-surface: rgba(255, 255, 255, 0.78);
-  --glass-elevated: rgba(255, 255, 255, 0.88);
-  --glass-border: rgba(255, 255, 255, 0.45);
-  --glass-shadow: 0 16px 48px -28px rgba(16, 37, 66, 0.38);
-  --glass-shadow-soft: 0 10px 32px -24px rgba(16, 37, 66, 0.3);
-  --glass-blur: 12px;
-  color-scheme: light;
-}
+/* Theme tokens are provided by daisyUI themes (declared in tailwind.config.cjs).
+   This avoids duplicating tokens in :root and keeps the theme source of truth
+   in the daisyUI configuration. */
 
 body {
   margin: 0;
   min-height: 100vh;
-  background:
-    radial-gradient(circle at top right, rgba(var(--brand-primary-rgb) / 0.32), transparent 55%),
-    radial-gradient(circle at bottom left, rgba(var(--brand-secondary-rgb) / 0.32), transparent 55%),
-    linear-gradient(135deg, #f8fbff 0%, var(--surface-ambient) 48%, #ffffff 100%);
-  color: #102542;
+  background: oklch(var(--b1));
+  color: oklch(var(--bc));
   font-family:
     "Inter",
     system-ui,
@@ -41,15 +36,9 @@ body {
   position: relative;
 }
 
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(135deg, rgba(var(--brand-primary-rgb) / 0.08), rgba(var(--brand-secondary-rgb) / 0.08));
-  mix-blend-mode: screen;
-  opacity: 0.35;
-  z-index: -1;
+html.dark body {
+  background: oklch(var(--b1));
+  color: oklch(var(--bc));
 }
 
 ::selection {
@@ -58,80 +47,11 @@ body::before {
 }
 
 /* Tailwind component helpers: prefer utilities via @apply, keep custom visuals here */
-@layer components {
-  .glass-panel,
-  .glass-card {
-    /* structural utilities */
-    @apply border rounded-2xl;
-    /* preserve visual specifics that rely on CSS variables */
-    border-color: var(--glass-border);
-    background: linear-gradient(135deg, var(--glass-elevated), rgba(255, 255, 255, 0.65));
-    box-shadow: var(--glass-shadow);
-    backdrop-filter: blur(var(--glass-blur));
-    -webkit-backdrop-filter: blur(var(--glass-blur));
-  }
 
-  .glass-card {
-    @apply rounded-[1.25rem];
-    box-shadow: var(--glass-shadow-soft);
-  }
-}
-
-.glass-panel--tinted {
-  background: linear-gradient(145deg, rgba(var(--brand-primary-rgb) / 0.12), rgba(255, 255, 255, 0.82));
-}
-
-.glass-input {
-  /* Use Tailwind utilities for spacing/rounded where possible */
-  @apply rounded-lg px-4 py-2 min-h-[3rem] text-slate-900;
-  /* keep visual effects that rely on variables and gradients */
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.6));
-  color: #102542;
-  transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease,
-    background 0.2s ease;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
-  backdrop-filter: blur(calc(var(--glass-blur) / 2.5));
-  -webkit-backdrop-filter: blur(calc(var(--glass-blur) / 2.5));
-}
-
-.glass-input:focus {
-  outline: none;
-  border-color: rgba(var(--brand-primary-rgb) / 0.45);
-  box-shadow: 0 0 0 4px rgba(var(--brand-primary-rgb) / 0.12);
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.86), rgba(255, 255, 255, 0.66));
-}
-
-.glass-input::placeholder {
-  color: rgba(16, 37, 66, 0.55);
-}
-
-.glass-toggle {
-  accent-color: rgba(var(--brand-primary-rgb) / 0.85);
-}
-
-.glass-divider {
-  border-color: rgba(255, 255, 255, 0.55);
-}
-
-.glass-underlay-gradient {
-  position: relative;
-  isolation: isolate;
-}
-
-.glass-underlay-gradient::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  border-radius: inherit;
-  background:
-    radial-gradient(circle at top, rgba(var(--brand-primary-rgb) / 0.18), transparent 60%),
-    radial-gradient(circle at bottom, rgba(var(--brand-secondary-rgb) / 0.18), transparent 55%);
-  opacity: 0.55;
-}
+/* Glass-morphism utilities have been removed. Use DaisyUI tokens and utilities instead
+  (for example: `card`, `bg-base-100`, `input input-bordered`, `btn`). Do NOT reintroduce
+  legacy `.glass-*` helpers; prefer DaisyUI component utilities or `bg-base-100 rounded-2xl shadow`.
+*/
 
 /* === LAYOUT UTILITIES === */
 .layout-container {
@@ -183,18 +103,26 @@ body::before {
   background-color: rgba(148, 163, 184, 0.06);
 }
 
-.table-row-glass {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.45);
-  background-color: rgba(255, 255, 255, 0.45);
+/* === ANIMATIONS === */
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
-.table-row-glass:nth-child(even) {
-  background-color: rgba(255, 255, 255, 0.35);
+.animate-slide-in-right {
+  animation: slide-in-right 0.25s ease-out;
 }
 
-.table-row-glass:last-child {
-  border-bottom: none;
+/* === PWA SAFE AREA === */
+/* Support for iOS notches/home indicator */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .pb-safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
 }
-
-/* Plugins v4 opcionales */
-/* @plugin "@tailwindcss/forms"; */

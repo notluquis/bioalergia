@@ -2,6 +2,7 @@ import React from "react";
 import { fmtCLP } from "../../../lib/format";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
+import Button from "../../../components/Button";
 import { useSettings } from "../../../context/settings-context";
 import type { Employee } from "../../employees/types";
 import type { BulkRow, TimesheetSummaryRow } from "../types";
@@ -242,7 +243,11 @@ export default function TimesheetExportPDF({
 
       function timeToMinutes(t?: string): number | null {
         if (!t || !/^\d{1,2}:\d{2}$/.test(t)) return null;
-        const [h, m] = t.split(":").map(Number);
+        const parts = t.split(":").map(Number);
+
+        const [h, m] = parts;
+
+        if (h === undefined || m === undefined) return null;
         if (h < 0 || h > 23 || m < 0 || m >= 60) return null;
         return h * 60 + m;
       }
@@ -252,7 +257,9 @@ export default function TimesheetExportPDF({
         if (s == null || e == null) return "";
         let diff = e - s;
         if (diff < 0) diff += 24 * 60;
-        const hh = String(Math.floor(diff / 60)).padStart(2, "0");
+        const hh = String(Math.floor(diff / 60))
+          .toString()
+          .padStart(2, "0");
         const mm = String(diff % 60).padStart(2, "0");
         return `${hh}:${mm}`;
       }
@@ -336,26 +343,29 @@ export default function TimesheetExportPDF({
   return (
     <div className="flex items-center gap-2">
       <div className="relative inline-block">
-        <button
+        <Button
           type="button"
-          className="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-[var(--brand-primary)] hover:bg-[var(--brand-primary)]/85 shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgba(14,100,183,0.35)]"
+          variant="primary"
+          className="px-4 py-2 rounded-xl text-sm font-semibold text-primary-content bg-primary hover:bg-primary/85 shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgba(14,100,183,0.35)]"
           onClick={() => handleExport(true)}
         >
           Exportar PDF
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
-          className="ml-1 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/60 bg-white text-[var(--brand-primary)] shadow hover:bg-white/90"
+          size="sm"
+          variant="secondary"
+          className="ml-1 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-base-300 bg-base-100 text-primary shadow hover:bg-base-100/90"
           title="Opciones"
           onClick={() => setShowOptions((v) => !v)}
         >
           ⋯
-        </button>
+        </Button>
         {showOptions && (
-          <div className="absolute right-0 z-20 mt-2 w-56 rounded-xl bg-white p-3 shadow-xl ring-1 ring-black/5">
-            <p className="mb-2 text-xs font-semibold text-slate-500">Columnas del detalle</p>
+          <div className="absolute right-0 z-20 mt-2 w-56 rounded-xl bg-base-100 p-3 shadow-xl ring-1 ring-black/5">
+            <p className="mb-2 text-xs font-semibold text-base-content/80">Columnas del detalle</p>
             {Array.from(defaultCols).map((key) => (
-              <label key={key} className="mb-1 flex items-center gap-2 text-sm text-slate-700">
+              <label key={key} className="mb-1 flex items-center gap-2 text-sm text-base-content">
                 <input
                   type="checkbox"
                   checked={selectedCols.includes(key)}
@@ -380,26 +390,34 @@ export default function TimesheetExportPDF({
               </label>
             ))}
             <div className="mt-3 flex justify-end gap-2">
-              <button className="text-xs text-slate-500 hover:text-slate-700" onClick={() => setShowOptions(false)}>
+              <Button
+                size="sm"
+                variant="secondary"
+                className="text-xs text-base-content/60 hover:text-base-content"
+                onClick={() => setShowOptions(false)}
+              >
                 Cerrar
-              </button>
-              <button
-                className="text-xs text-[var(--brand-primary)] hover:underline"
+              </Button>
+              <Button
+                size="sm"
+                variant="secondary"
+                className="text-xs text-primary hover:underline"
                 onClick={() => handleExport(true)}
               >
                 Vista previa
-              </button>
-              <button
-                className="text-xs text-[var(--brand-primary)] hover:underline"
+              </Button>
+              <Button
+                size="sm"
+                variant="secondary"
+                className="text-xs text-primary hover:underline"
                 onClick={() => handleExport(false)}
               >
                 Descargar
-              </button>
+              </Button>
             </div>
           </div>
         )}
       </div>
-
     </div>
   );
 }

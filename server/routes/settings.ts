@@ -3,6 +3,7 @@ import multer from "multer";
 import { asyncHandler, authenticate, requireRole } from "../lib/http.js";
 import { logEvent, logWarn, requestContext } from "../lib/logger.js";
 import { DEFAULT_SETTINGS, loadSettings, saveSettings, type AppSettings } from "../db.js";
+import { getInternalConfig, setInternalConfig } from "../db.js";
 import type { AuthenticatedRequest } from "../types.js";
 import { settingsSchema } from "../schemas.js";
 import {
@@ -48,6 +49,40 @@ export function registerSettingsRoutes(app: express.Express) {
       const settings = await loadSettings();
       logEvent("settings:get", requestContext(req));
       res.json({ status: "ok", settings });
+    })
+  );
+
+  // Internal settings (admin only) — use prefix 'bioalergia_x.' for keys
+  app.get(
+    "/api/settings/internal",
+    authenticate,
+    requireRole("GOD", "ADMIN"),
+    asyncHandler(async (req: AuthenticatedRequest, res) => {
+      const upsertChunk = await getInternalConfig("bioalergia_x.upsert_chunk_size");
+      // Expose both DB value and effective value (env var overrides DB). Do not expose other secrets.
+      const envVal = process.env.BIOALERGIA_X_UPSERT_CHUNK_SIZE ?? null;
+      const effective = envVal ?? upsertChunk ?? null;
+      res.json({ status: "ok", internal: { upsertChunkSize: upsertChunk, envUpsertChunkSize: envVal, effectiveUpsertChunkSize: effective } });
+    })
+  );
+
+  app.put(
+    "/api/settings/internal",
+    authenticate,
+    requireRole("GOD", "ADMIN"),
+    asyncHandler(async (req: AuthenticatedRequest, res) => {
+      const { upsertChunkSize } = req.body ?? {};
+      if (upsertChunkSize == null) {
+        // remove key
+        await setInternalConfig("bioalergia_x.upsert_chunk_size", null);
+        return res.json({ status: "ok", message: "Internal setting removed" });
+      }
+      const parsed = Number(upsertChunkSize);
+      if (Number.isNaN(parsed) || parsed <= 0 || parsed > 5000) {
+        return res.status(400).json({ status: "error", message: "Valor inválido para upsertChunkSize (1-5000)" });
+      }
+      await setInternalConfig("bioalergia_x.upsert_chunk_size", String(Math.max(50, Math.min(parsed, 5000))));
+      res.json({ status: "ok" });
     })
   );
 

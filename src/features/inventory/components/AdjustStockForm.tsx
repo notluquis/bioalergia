@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { InventoryItem, InventoryMovement } from "../types";
+import Button from "../../../components/Button";
 
 interface AdjustStockFormProps {
   item: InventoryItem;
@@ -25,10 +26,10 @@ export default function AdjustStockForm({ item, onSave, onCancel, saving }: Adju
     <form onSubmit={handleSubmit} className="space-y-4 text-sm">
       <div>
         <h3 className="font-bold text-lg">{item.name}</h3>
-        <p className="text-slate-500">Stock actual: {item.current_stock}</p>
+        <p className="text-base-content/60">Stock actual: {item.current_stock}</p>
       </div>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
+        <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-wide text-base-content/60">
           Cantidad a agregar/quitar
           <input
             type="number"
@@ -39,7 +40,7 @@ export default function AdjustStockForm({ item, onSave, onCancel, saving }: Adju
             placeholder="Ej: 20 (agrega) o -15 (quita)"
           />
         </label>
-        <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
+        <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-wide text-base-content/60">
           Razón del ajuste
           <input
             type="text"
@@ -52,20 +53,12 @@ export default function AdjustStockForm({ item, onSave, onCancel, saving }: Adju
         </label>
       </div>
       <div className="flex items-center justify-end gap-3 pt-4">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="text-xs font-semibold uppercase tracking-wide text-slate-500"
-        >
+        <Button type="button" variant="secondary" onClick={onCancel}>
           Cancelar
-        </button>
-        <button
-          type="submit"
-          disabled={saving}
-          className="rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow disabled:cursor-not-allowed"
-        >
+        </Button>
+        <Button type="submit" variant="primary" disabled={saving}>
           {saving ? "Guardando..." : "Ajustar Stock"}
-        </button>
+        </Button>
       </div>
     </form>
   );

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ChangeEvent } from "react";
 import dayjs from "dayjs";
-import { useAuth } from "../context/auth-context";
+import { useAuth } from "../context/AuthContext";
 import { logger } from "../lib/logger";
 import Alert from "../components/Alert";
 import Modal from "../components/Modal";
@@ -58,11 +58,13 @@ export default function LoansPage() {
       const response = await fetchLoans();
       setLoans(response.loans);
       if (!selectedId && response.loans.length) {
-        setSelectedId(response.loans[0].public_id);
+        const firstLoan = response.loans[0];
+        if (firstLoan) setSelectedId(firstLoan.public_id);
       } else if (selectedId) {
         const stillExists = response.loans.some((loan) => loan.public_id === selectedId);
         if (!stillExists && response.loans.length) {
-          setSelectedId(response.loans[0].public_id);
+          const firstLoan = response.loans[0];
+          if (firstLoan) setSelectedId(firstLoan.public_id);
         }
       }
     } catch (error) {
@@ -153,7 +155,7 @@ export default function LoansPage() {
       if (!Number.isFinite(paidAmount) || paidAmount < 0) {
         throw new Error("Ingresa un monto válido");
       }
-      const response = await registerLoanPayment(paymentSchedule.id, {
+      const response = await registerLoanPayment(paymentSchedule.id!, {
         transactionId,
         paidAmount,
         paidDate: paymentForm.paidDate,
@@ -162,7 +164,7 @@ export default function LoansPage() {
         setDetail({
           ...detail,
           schedules: detail.schedules.map((schedule) =>
-            schedule.id === response.schedule.id ? response.schedule : schedule
+            schedule.id! === response.schedule.id ? response.schedule : schedule
           ),
         });
       }
@@ -201,7 +203,7 @@ export default function LoansPage() {
   if (!canView) {
     return (
       <section className="space-y-4">
-        <h1 className="text-2xl font-bold text-[var(--brand-primary)]">Préstamos y créditos</h1>
+        <h1 className="text-2xl font-bold text-primary">Préstamos y créditos</h1>
         <Alert variant="error">No tienes permisos para ver los préstamos registrados.</Alert>
       </section>
     );
@@ -210,15 +212,15 @@ export default function LoansPage() {
   return (
     <section className="flex h-full flex-col gap-4">
       <header className="flex flex-col gap-2">
-        <h1 className="text-2xl font-bold text-[var(--brand-primary)]">Préstamos y créditos</h1>
-        <p className="text-sm text-slate-600/90">
+        <h1 className="text-2xl font-bold text-primary">Préstamos y créditos</h1>
+        <p className="text-sm text-base-content/90">
           Gestiona préstamos internos, cronogramas de pago y vincula cada cuota con las transacciones reales.
         </p>
       </header>
 
       {globalError && <Alert variant="error">{globalError}</Alert>}
 
-      {loadingList && <p className="text-xs text-slate-400">Actualizando listado de préstamos...</p>}
+      {loadingList && <p className="text-xs text-base-content/50">Actualizando listado de préstamos...</p>}
 
       <div className="grid gap-4 lg:grid-cols-[300px,1fr]">
         <div className="min-h-[70vh]">

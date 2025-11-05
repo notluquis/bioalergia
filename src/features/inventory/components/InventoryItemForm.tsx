@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { InventoryCategory, InventoryItem } from "../types";
+import Button from "../../../components/Button";
 import { getInventoryCategories } from "../api";
 
 interface InventoryItemFormProps {
@@ -29,7 +30,7 @@ export default function InventoryItemForm({ item, onSave, onCancel, saving }: In
   return (
     <form onSubmit={handleSubmit} className="space-y-4 text-sm">
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
+        <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-wide text-base-content/60">
           Nombre del Item
           <input
             type="text"
@@ -39,7 +40,7 @@ export default function InventoryItemForm({ item, onSave, onCancel, saving }: In
             className="rounded border px-3 py-2"
           />
         </label>
-        <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
+        <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-wide text-base-content/60">
           Categoría
           <select
             value={form.category_id ?? ""}
@@ -55,7 +56,7 @@ export default function InventoryItemForm({ item, onSave, onCancel, saving }: In
           </select>
         </label>
       </div>
-      <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
+      <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-wide text-base-content/60">
         Descripción
         <textarea
           value={form.description ?? ""}
@@ -64,7 +65,7 @@ export default function InventoryItemForm({ item, onSave, onCancel, saving }: In
           rows={3}
         />
       </label>
-      <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
+      <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-wide text-base-content/60">
         Stock Inicial
         <input
           type="number"
@@ -76,20 +77,12 @@ export default function InventoryItemForm({ item, onSave, onCancel, saving }: In
         />
       </label>
       <div className="flex items-center justify-end gap-3 pt-4">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="text-xs font-semibold uppercase tracking-wide text-slate-500"
-        >
+        <Button type="button" variant="secondary" onClick={onCancel}>
           Cancelar
-        </button>
-        <button
-          type="submit"
-          disabled={saving}
-          className="rounded-full bg-[var(--brand-primary)] px-4 py-2 text-sm font-semibold text-white shadow disabled:cursor-not-allowed"
-        >
+        </Button>
+        <Button type="submit" variant="primary" disabled={saving}>
           {saving ? "Guardando..." : "Guardar Item"}
-        </button>
+        </Button>
       </div>
     </form>
   );

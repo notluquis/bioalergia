@@ -4,6 +4,7 @@ import type { UserRole } from "../db.js";
 import { isRoleAtLeast } from "../db.js";
 import { JWT_SECRET, sessionCookieName, sessionCookieOptions } from "../config.js";
 import type { AuthenticatedRequest, AuthSession } from "../types.js";
+import { getRequestLogger } from "./logger.js";
 
 export type AsyncHandler = (
   req: AuthenticatedRequest,
@@ -45,19 +46,17 @@ export function authenticate(
   res: express.Response,
   next: express.NextFunction
 ) {
-  console.info("[steps][server/auth] Step 1: authenticate", {
-    url: req.originalUrl,
-    method: req.method,
-  });
+  const requestLogger = getRequestLogger(req);
+  requestLogger.info({ event: "auth:authenticate", url: req.originalUrl });
   const token = req.cookies?.[sessionCookieName];
   if (!token) {
-    console.warn("[steps][server/auth] Step 2: sin cookie de sesión");
+    requestLogger.warn({ event: "auth:no-cookie" });
     return res.status(401).json({ status: "error", message: "No autorizado" });
   }
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as jwt.JwtPayload;
-    console.info("[steps][server/auth] Step 3: token verificado");
+    requestLogger.info({ event: "auth:token-verified" });
     if (!decoded || typeof decoded.sub !== "string") {
       throw new Error("Token inválido");
     }
@@ -67,10 +66,10 @@ export function authenticate(
       email: String(decoded.email),
       role: (decoded.role as UserRole) ?? "VIEWER",
     };
-    console.info("[steps][server/auth] Step 4: req.auth establecido", req.auth);
+    requestLogger.info({ event: "auth:session-set", auth: req.auth });
     next();
   } catch (error) {
-    console.error("[steps][server/auth] Step error: token inválido", error);
+    requestLogger.error({ event: "auth:error", error }, "Token inválido o expirado");
     res.clearCookie(sessionCookieName, { ...sessionCookieOptions, maxAge: undefined });
     return res.status(401).json({ status: "error", message: "Sesión expirada" });
   }

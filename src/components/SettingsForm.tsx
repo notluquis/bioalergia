@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { useSettings, type AppSettings } from "../context/settings-context";
+import { useSettings, type AppSettings } from "../context/SettingsContext";
+import { useAuth } from "../context/AuthContext";
 import Button from "./Button";
+import Alert from "./Alert";
 
 const FALLBACK_LOGO_PATH = "/logo192.png";
 const FALLBACK_FAVICON_PATH = "/logo_bimi.svg";
@@ -42,9 +44,14 @@ function isUploadResponse(value: unknown): value is UploadResponse {
 
 export default function SettingsForm() {
   const { settings, updateSettings } = useSettings();
+  const { hasRole } = useAuth();
   const [form, setForm] = useState<AppSettings>(settings);
   const [status, setStatus] = useState<"idle" | "saving" | "success" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
+  const [internalLoading, setInternalLoading] = useState(false);
+  const [internalError, setInternalError] = useState<string | null>(null);
+  const [upsertChunkSize, setUpsertChunkSize] = useState<number | string>("");
+  const [envUpsertChunkSize, setEnvUpsertChunkSize] = useState<string | null>(null);
   const [logoMode, setLogoMode] = useState<"url" | "upload">(determineLogoMode(settings.logoUrl));
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
@@ -53,6 +60,8 @@ export default function SettingsForm() {
   const [faviconFile, setFaviconFile] = useState<File | null>(null);
   const [faviconPreview, setFaviconPreview] = useState<string | null>(null);
   const faviconPreviewRef = useRef<string | null>(null);
+  const logoInputRef = useRef<HTMLInputElement | null>(null);
+  const faviconInputRef = useRef<HTMLInputElement | null>(null);
 
   const resetLogoSelection = useCallback(() => {
     if (logoPreviewRef.current) {
@@ -76,10 +85,50 @@ export default function SettingsForm() {
     setForm(settings);
     setLogoMode(determineLogoMode(settings.logoUrl));
     setFaviconMode(determineFaviconMode(settings.faviconUrl));
-    resetLogoSelection();
-    resetFaviconSelection();
-  }, [settings, resetLogoSelection, resetFaviconSelection]);
+    if (logoPreviewRef.current) {
+      URL.revokeObjectURL(logoPreviewRef.current);
+      logoPreviewRef.current = null;
+    }
+    if (faviconPreviewRef.current) {
+      URL.revokeObjectURL(faviconPreviewRef.current);
+      faviconPreviewRef.current = null;
+    }
+    setLogoPreview(null);
+    setLogoFile(null);
+    setFaviconPreview(null);
+    setFaviconFile(null);
 
+    // load internal setting if user can edit (with AbortController for cleanup)
+    if (!hasRole("GOD", "ADMIN")) return;
+
+    const controller = new AbortController();
+
+    (async () => {
+      try {
+        setInternalLoading(true);
+        const res = await fetch("/api/settings/internal", {
+          credentials: "include",
+          signal: controller.signal,
+        });
+        if (!res.ok) throw new Error("No se pudo cargar la configuración interna");
+        const payload = await res.json();
+        if (!controller.signal.aborted) {
+          setUpsertChunkSize(payload?.internal?.upsertChunkSize ?? "");
+          setEnvUpsertChunkSize(payload?.internal?.envUpsertChunkSize ?? null);
+        }
+      } catch {
+        // Silently ignore aborted requests and errors loading internal settings
+      } finally {
+        if (!controller.signal.aborted) {
+          setInternalLoading(false);
+        }
+      }
+    })();
+
+    return () => {
+      controller.abort();
+    };
+  }, [settings, hasRole]);
   useEffect(() => {
     return () => {
       if (logoPreviewRef.current) {
@@ -234,180 +283,276 @@ export default function SettingsForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="glass-card glass-underlay-gradient space-y-6 p-6">
+    <form onSubmit={handleSubmit} className="bg-base-100 space-y-6 p-6">
       <div className="space-y-1">
-        <h2 className="text-lg font-semibold text-[var(--brand-primary)] drop-shadow-sm">Configuración General</h2>
-        <p className="text-sm text-slate-600/90">Personaliza la identidad visual y la información de contacto.</p>
+        <h2 className="text-lg font-semibold text-primary drop-shadow-sm">Configuración General</h2>
+        <p className="text-sm text-base-content/70">Personaliza la identidad visual y la información de contacto.</p>
       </div>
       <div className="grid gap-4 md:grid-cols-2">
         {fields.map(({ key, label, type, helper }) => (
-          <label key={key} className="flex flex-col gap-2 text-sm text-slate-600">
-            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</span>
+          <label key={key} className="flex flex-col gap-2 text-sm text-base-content">
+            <span className="text-xs font-semibold uppercase tracking-wide text-base-content/80">{label}</span>
             {type === "color" ? (
               <input
                 type="color"
                 value={form[key]}
                 onChange={(event) => handleChange(key, event.target.value)}
-                className="glass-input h-12 w-20 cursor-pointer px-0"
+                className="h-12 w-20 cursor-pointer px-0"
               />
             ) : (
               <input
                 type="text"
                 value={form[key]}
                 onChange={(event) => handleChange(key, event.target.value)}
-                className="glass-input"
+                className="input input-bordered"
                 placeholder={label}
               />
             )}
-            {helper && <span className="text-xs text-slate-400">{helper}</span>}
+            {helper && <span className="text-xs text-base-content/60">{helper}</span>}
           </label>
         ))}
-        <div className="col-span-full space-y-3 rounded-2xl border border-white/40 bg-white/70 p-4">
+        <div className="col-span-full space-y-3 rounded-2xl border border-base-300 bg-base-200 p-4">
           <div className="flex items-center justify-between gap-2">
-            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Logo institucional</span>
-            <div className="inline-flex overflow-hidden rounded-full border border-slate-200 bg-white text-xs font-semibold uppercase tracking-wide">
-              <button
+            <span className="text-xs font-semibold uppercase tracking-wide text-base-content/80">
+              Logo institucional
+            </span>
+            <div className="btn-group">
+              <Button
                 type="button"
-                className={`px-3 py-1 ${logoMode === "url" ? "bg-[var(--brand-primary)] text-white" : "text-slate-600"}`}
+                size="sm"
+                variant={logoMode === "url" ? "primary" : "secondary"}
                 onClick={() => handleLogoModeChange("url")}
               >
                 Usar URL
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
-                className={`px-3 py-1 ${logoMode === "upload" ? "bg-[var(--brand-primary)] text-white" : "text-slate-600"}`}
+                size="sm"
+                variant={logoMode === "upload" ? "primary" : "secondary"}
                 onClick={() => handleLogoModeChange("upload")}
               >
                 Subir archivo
-              </button>
+              </Button>
             </div>
           </div>
           {logoMode === "url" ? (
-            <label className="flex flex-col gap-2 text-sm text-slate-600">
+            <label className="flex flex-col gap-2 text-sm text-base-content">
               <span className="sr-only">URL del logo</span>
               <input
                 type="text"
                 value={form.logoUrl}
                 onChange={(event) => handleChange("logoUrl", event.target.value)}
-                className="glass-input"
+                className="input input-bordered"
                 placeholder="https://..."
               />
-              <span className="text-xs text-slate-400">
-                Puedes usar una URL pública (https://) o una ruta interna generada tras subir un archivo
-                (ej: /uploads/branding/logo.png).
+              <span className="text-xs text-base-content/60">
+                Puedes usar una URL pública (https://) o una ruta interna generada tras subir un archivo (ej:
+                /uploads/branding/logo.png).
               </span>
             </label>
           ) : (
-            <div className="space-y-3 text-sm text-slate-600">
-              <label className="glass-button inline-flex cursor-pointer items-center gap-2 px-4 py-2 text-xs font-semibold uppercase tracking-wide">
+            <div className="space-y-3 text-sm text-base-content">
+              <div>
                 <input
+                  ref={logoInputRef}
                   type="file"
                   accept="image/png,image/jpeg,image/webp,image/svg+xml,image/gif"
                   className="hidden"
                   onChange={handleLogoFileChange}
                 />
-                Seleccionar archivo
-              </label>
+                <Button type="button" size="sm" variant="secondary" onClick={() => logoInputRef.current?.click()}>
+                  Seleccionar archivo
+                </Button>
+              </div>
               <div className="flex flex-wrap items-center gap-4">
-                <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-xl border border-white/60 bg-white/80 p-2">
-                  <img
-                    src={displayedLogo}
-                    alt="Vista previa del logo"
-                    className="h-full w-full object-contain"
-                  />
+                <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-xl border border-base-300 bg-base-100 p-2">
+                  <img src={displayedLogo} alt="Vista previa del logo" className="h-full w-full object-contain" />
                 </div>
-                <div className="text-xs text-slate-500">
+                <div className="text-xs text-base-content/70">
                   <p>{logoPreview ? "Vista previa sin guardar" : "Logo actual"}</p>
-                  <p className="mt-1 break-all text-slate-400">{form.logoUrl}</p>
+                  <p className="mt-1 break-all text-base-content/60">{form.logoUrl}</p>
                 </div>
               </div>
-              <span className="text-xs text-slate-400">
-                Tamaño máximo 12&nbsp;MB. Los archivos subidos se guardan en <code className="font-mono">/uploads/branding</code>.
+              <span className="text-xs text-base-content/60">
+                Tamaño máximo 12&nbsp;MB. Los archivos subidos se guardan en{" "}
+                <code className="font-mono">/uploads/branding</code>.
               </span>
             </div>
           )}
         </div>
-        <div className="col-span-full space-y-3 rounded-2xl border border-white/40 bg-white/70 p-4">
+        <div className="col-span-full space-y-3 rounded-2xl border border-base-300 bg-base-200 p-4">
           <div className="flex items-center justify-between gap-2">
-            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Favicon del sitio</span>
-            <div className="inline-flex overflow-hidden rounded-full border border-slate-200 bg-white text-xs font-semibold uppercase tracking-wide">
-              <button
+            <span className="text-xs font-semibold uppercase tracking-wide text-base-content/80">
+              Favicon del sitio
+            </span>
+            <div className="btn-group">
+              <Button
                 type="button"
-                className={`px-3 py-1 ${faviconMode === "url" ? "bg-[var(--brand-primary)] text-white" : "text-slate-600"}`}
+                size="sm"
+                variant={faviconMode === "url" ? "primary" : "secondary"}
                 onClick={() => handleFaviconModeChange("url")}
               >
                 Usar URL
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
-                className={`px-3 py-1 ${faviconMode === "upload" ? "bg-[var(--brand-primary)] text-white" : "text-slate-600"}`}
+                size="sm"
+                variant={faviconMode === "upload" ? "primary" : "secondary"}
                 onClick={() => handleFaviconModeChange("upload")}
               >
                 Subir archivo
-              </button>
+              </Button>
             </div>
           </div>
           {faviconMode === "url" ? (
-            <label className="flex flex-col gap-2 text-sm text-slate-600">
+            <label className="flex flex-col gap-2 text-sm text-base-content">
               <span className="sr-only">URL del favicon</span>
               <input
                 type="text"
                 value={form.faviconUrl}
                 onChange={(event) => handleChange("faviconUrl", event.target.value)}
-                className="glass-input"
+                className="input input-bordered"
                 placeholder="https://..."
               />
-              <span className="text-xs text-slate-400">
-                Puedes usar una URL pública (https://) o una ruta interna generada tras subir un archivo
-                (ej: /uploads/branding/favicon.png).
+              <span className="text-xs text-base-content/60">
+                Puedes usar una URL pública (https://) o una ruta interna generada tras subir un archivo (ej:
+                /uploads/branding/favicon.png).
               </span>
             </label>
           ) : (
-            <div className="space-y-3 text-sm text-slate-600">
-              <label className="glass-button inline-flex cursor-pointer items-center gap-2 px-4 py-2 text-xs font-semibold uppercase tracking-wide">
+            <div className="space-y-3 text-sm text-base-content">
+              <div>
                 <input
+                  ref={faviconInputRef}
                   type="file"
                   accept="image/png,image/jpeg,image/webp,image/svg+xml,image/gif,image/x-icon,image/vnd.microsoft.icon"
                   className="hidden"
                   onChange={handleFaviconFileChange}
                 />
-                Seleccionar archivo
-              </label>
+                <Button type="button" size="sm" variant="secondary" onClick={() => faviconInputRef.current?.click()}>
+                  Seleccionar archivo
+                </Button>
+              </div>
               <div className="flex flex-wrap items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl border border-white/60 bg-white/80 p-2">
-                  <img
-                    src={displayedFavicon}
-                    alt="Vista previa del favicon"
-                    className="h-full w-full object-contain"
-                  />
+                <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl border border-base-300 bg-base-100 p-2">
+                  <img src={displayedFavicon} alt="Vista previa del favicon" className="h-full w-full object-contain" />
                 </div>
-                <div className="text-xs text-slate-500">
+                <div className="text-xs text-base-content/70">
                   <p>{faviconPreview ? "Vista previa sin guardar" : "Favicon actual"}</p>
-                  <p className="mt-1 break-all text-slate-400">{form.faviconUrl}</p>
+                  <p className="mt-1 break-all text-base-content/60">{form.faviconUrl}</p>
                 </div>
               </div>
-              <span className="text-xs text-slate-400">
-                Usa imágenes cuadradas (ideal 512&nbsp;px) con fondo transparente cuando sea posible. Tamaño máximo 12&nbsp;MB.
+              <span className="text-xs text-base-content/60">
+                Usa imágenes cuadradas (ideal 512&nbsp;px) con fondo transparente cuando sea posible. Tamaño máximo
+                12&nbsp;MB.
               </span>
             </div>
           )}
         </div>
       </div>
       {error && (
-        <p className="glass-card border-l-4 border-rose-300/80 bg-gradient-to-r from-rose-50/65 via-white/70 to-white/55 px-4 py-3 text-sm text-rose-700">
-          {error}
-        </p>
+        <div className="col-span-full">
+          <Alert variant="error">{error}</Alert>
+        </div>
       )}
       {status === "success" && !error && (
-        <p className="glass-card border-l-4 border-emerald-300/80 bg-gradient-to-r from-emerald-50/70 via-white/70 to-white/55 px-4 py-3 text-sm text-emerald-700">
-          La configuración se ha guardado correctamente.
-        </p>
+        <div className="col-span-full">
+          <Alert variant="success">La configuración se ha guardado correctamente.</Alert>
+        </div>
       )}
       <div className="flex justify-end">
         <Button type="submit" disabled={status === "saving"}>
           {status === "saving" ? "Guardando..." : "Guardar cambios"}
         </Button>
       </div>
+      {hasRole() && (
+        <div className="mt-6 rounded-lg border border-base-300 bg-base-200 p-4">
+          <h3 className="text-sm font-semibold">Ajustes internos (avanzado)</h3>
+          <p className="text-xs text-base-content/70">
+            Variables internas editables (prefijo BIOALERGIA_X_). Solo administradores.
+          </p>
+          <div className="mt-3 grid gap-3 md:grid-cols-3">
+            <label className="flex flex-col gap-2 text-sm text-base-content">
+              <span className="text-xs font-semibold uppercase tracking-wide text-base-content/80">
+                Tamaño de chunk para retiros
+              </span>
+              <input
+                type="number"
+                min={50}
+                max={5000}
+                value={String(upsertChunkSize ?? "")}
+                onChange={(e) => setUpsertChunkSize(e.target.value)}
+                className="input input-bordered"
+              />
+              <span className="text-xs text-base-content/60">
+                Env var: <code>{envUpsertChunkSize ?? "(no definido)"}</code>
+              </span>
+            </label>
+            <div className="flex items-end gap-2 md:col-span-2">
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={internalLoading}
+                onClick={async () => {
+                  setInternalError(null);
+                  setInternalLoading(true);
+                  try {
+                    const body = upsertChunkSize === "" ? {} : { upsertChunkSize: Number(upsertChunkSize) };
+                    const res = await fetch("/api/settings/internal", {
+                      method: "PUT",
+                      credentials: "include",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify(body),
+                    });
+                    const payload = await res.json();
+                    if (!res.ok || payload?.status !== "ok") {
+                      throw new Error(payload?.message || "No se pudo actualizar la configuración interna");
+                    }
+                    setInternalError(null);
+                    // refresh env info
+                    const r2 = await fetch("/api/settings/internal", { credentials: "include" });
+                    const p2 = await r2.json();
+                    setUpsertChunkSize(p2?.internal?.upsertChunkSize ?? "");
+                    setEnvUpsertChunkSize(p2?.internal?.envUpsertChunkSize ?? null);
+                  } catch (err) {
+                    setInternalError(err instanceof Error ? err.message : String(err));
+                  } finally {
+                    setInternalLoading(false);
+                  }
+                }}
+              >
+                {internalLoading ? "Guardando..." : "Guardar ajuste interno"}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={async () => {
+                  setInternalError(null);
+                  setInternalLoading(true);
+                  try {
+                    const res = await fetch("/api/settings/internal", {
+                      method: "PUT",
+                      credentials: "include",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({}),
+                    });
+                    if (!res.ok) throw new Error("No se pudo eliminar la configuración");
+                    setUpsertChunkSize("");
+                    setEnvUpsertChunkSize(null);
+                  } catch (err) {
+                    setInternalError(err instanceof Error ? err.message : String(err));
+                  } finally {
+                    setInternalLoading(false);
+                  }
+                }}
+              >
+                Eliminar ajuste
+              </Button>
+            </div>
+          </div>
+          {internalError && <div className="mt-3 text-xs text-error">{internalError}</div>}
+        </div>
+      )}
     </form>
   );
 }

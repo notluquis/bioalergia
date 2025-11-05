@@ -118,7 +118,7 @@ export function ScheduleCalendar({ events, loading = false }: ScheduleCalendarPr
   }, [events]);
 
   return (
-    <div className="rounded-2xl border border-white/50 bg-white/90 p-4 shadow-sm">
+    <div className="rounded-2xl border border-base-300 bg-base-200 p-4 shadow-sm">
       <FullCalendar
         plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
         initialView="timeGridWeek"
@@ -153,14 +153,14 @@ export function ScheduleCalendar({ events, loading = false }: ScheduleCalendarPr
             lines.push(`Dosis ${props.dosage}`);
           }
           return (
-            <div className="flex flex-col gap-[2px] text-[11px] leading-tight">
-              <span className="font-semibold text-slate-800">{formatTitle(arg.event.title)}</span>
+            <div className="flex flex-col gap-0.5 text-xs leading-tight">
+              <span className="font-semibold text-base-content">{formatTitle(arg.event.title)}</span>
               {lines.slice(0, MAX_DETAIL_LINES).map((line, index) => (
-                <span key={index} className="text-slate-600">
+                <span key={index} className="text-base-content">
                   {line}
                 </span>
               ))}
-              {lines.length > MAX_DETAIL_LINES ? <span className="text-[10px] text-slate-400">…</span> : null}
+              {lines.length > MAX_DETAIL_LINES ? <span className="text-xs text-base-content/50">…</span> : null}
             </div>
           );
         }}
@@ -191,7 +191,7 @@ export function ScheduleCalendar({ events, loading = false }: ScheduleCalendarPr
           }
         }}
       />
-      {loading && <p className="mt-2 text-xs text-slate-500">Actualizando eventos…</p>}
+      {loading && <p className="mt-2 text-xs text-base-content/60">Actualizando eventos…</p>}
     </div>
   );
 }

@@ -1,12 +1,5 @@
 import dayjs from "dayjs";
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type ChangeEvent,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { useAuth } from "../../../context/auth-context";
 import { logger } from "../../../lib/logger";
 import type {
@@ -108,55 +101,80 @@ export function useServicesOverview() {
     selectedIdRef.current = selectedId;
   }, [selectedId]);
 
+  // Consolidated effect: load services list, then load all details
   useEffect(() => {
-    loadServices().catch((error) => logger.error("[services] list:effect", error));
-  }, [loadServices]);
+    if (!canView) return;
 
-  useEffect(() => {
-    if (!services.length) {
-      setAllDetails({});
-      return;
-    }
     let cancelled = false;
-    setAggregatedLoading(true);
-    setAggregatedError(null);
-    Promise.all(
-      services.map((service) =>
-        fetchServiceDetail(service.public_id)
-          .then((detailResponse) => ({ id: service.public_id, detail: detailResponse }))
-          .catch((error) => {
-            logger.error("[services] aggregated:error", error);
-            throw error;
-          })
-      )
-    )
-      .then((results) => {
+
+    async function loadAll() {
+      // First, load services list
+      setLoadingList(true);
+      setGlobalError(null);
+      try {
+        const response = await fetchServices();
         if (cancelled) return;
+        setServices(response.services);
+
+        // Then load all details for those services
+        if (response.services.length === 0) {
+          setAllDetails({});
+          setLoadingList(false);
+          return;
+        }
+
+        setAggregatedLoading(true);
+        setAggregatedError(null);
+
+        const results = await Promise.all(
+          response.services.map((service) =>
+            fetchServiceDetail(service.public_id)
+              .then((detailResponse) => ({ id: service.public_id, detail: detailResponse }))
+              .catch((error) => {
+                logger.error("[services] aggregated:error", error);
+                throw error;
+              })
+          )
+        );
+
+        if (cancelled) return;
+
         const next: Record<string, ServiceDetailResponse> = {};
         results.forEach(({ id, detail: detailResponse }) => {
           next[id] = detailResponse;
         });
         setAllDetails(next);
+
+        // Auto-select first service if none selected
         if (!selectedIdRef.current && results.length) {
-          selectedIdRef.current = results[0].id;
-          setSelectedId(results[0].id);
-          setDetail(results[0].detail);
+          const firstResult = results[0];
+          if (firstResult) {
+            selectedIdRef.current = firstResult.id;
+            setSelectedId(firstResult.id);
+            setDetail(firstResult.detail);
+          }
         }
-      })
-      .catch((error) => {
+      } catch (error) {
         if (cancelled) return;
-        const message = error instanceof Error ? error.message : "No se pudo cargar el detalle global";
-        setAggregatedError(message);
-      })
-      .finally(() => {
-        if (!cancelled) setAggregatedLoading(false);
-      });
+        const message = error instanceof Error ? error.message : "No se pudo cargar la lista de servicios";
+        setGlobalError(message);
+        logger.error("[services] list:error", message);
+      } finally {
+        if (!cancelled) {
+          setLoadingList(false);
+          setAggregatedLoading(false);
+        }
+      }
+    }
+
+    loadAll();
 
     return () => {
       cancelled = true;
     };
-  }, [services]);
+  }, [canView]);
 
+  // Separate effect for selected detail (only runs when selection changes)
   useEffect(() => {
     if (!selectedId) {
       setDetail(null);
@@ -209,7 +227,7 @@ export function useServicesOverview() {
   const openPaymentModal = useCallback((schedule: ServiceSchedule) => {
     setPaymentSchedule(schedule);
     setPaymentForm({
-      transactionId: schedule.transaction_id ? String(schedule.transaction_id) : "",
+      transactionId: schedule.transaction!.id ? String(schedule.transaction!.id) : "",
       paidAmount: schedule.paid_amount != null ? String(schedule.paid_amount) : String(schedule.effective_amount),
       paidDate: schedule.paid_date ?? dayjs().format("YYYY-MM-DD"),
       note: schedule.note ?? "",
@@ -217,12 +235,9 @@ export function useServicesOverview() {
     setPaymentError(null);
   }, []);
 
-  const handlePaymentFormChange = useCallback(
-    (key: keyof typeof paymentForm, value: string) => {
-      setPaymentForm((prev) => ({ ...prev, [key]: value }));
-    },
-    []
-  );
+  const handlePaymentFormChange = useCallback((key: keyof typeof paymentForm, value: string) => {
+    setPaymentForm((prev) => ({ ...prev, [key]: value }));
+  }, []);
 
   const closePaymentModal = useCallback(() => {
     setPaymentSchedule(null);
@@ -301,9 +316,7 @@ export function useServicesOverview() {
       const matchesType = filters.types.size === 0 || filters.types.has(service.service_type);
       const matchesSearch =
         !searchTerm ||
-        `${service.name} ${service.detail ?? ""} ${service.counterpart_name ?? ""}`
-          .toLowerCase()
-          .includes(searchTerm);
+        `${service.name} ${service.detail ?? ""} ${service.counterpart_name ?? ""}`.toLowerCase().includes(searchTerm);
       return matchesStatus && matchesType && matchesSearch;
     });
   }, [services, filters]);
@@ -314,9 +327,10 @@ export function useServicesOverview() {
       return;
     }
     if (!selectedId || !filteredServices.some((service) => service.public_id === selectedId)) {
-      setSelectedId(filteredServices[0].public_id);
+      const firstService = filteredServices[0];
+      if (firstService) setSelectedId(firstService.public_id);
     }
-  }, [filteredServices, selectedId]);
+  }, [filteredServices]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const summaryTotals: SummaryTotals = useMemo(() => {
     if (!filteredServices.length) {
@@ -347,8 +361,7 @@ export function useServicesOverview() {
     );
   }, [filteredServices]);
 
-  const collectionRate =
-    summaryTotals.totalExpected > 0 ? summaryTotals.totalPaid / summaryTotals.totalExpected : 0;
+  const collectionRate = summaryTotals.totalExpected > 0 ? summaryTotals.totalPaid / summaryTotals.totalExpected : 0;
 
   const unifiedAgendaItems = useMemo(
     () =>
@@ -411,7 +424,10 @@ export function useServicesOverview() {
   );
 
   const handlePaymentFieldChange = useCallback(
-    (field: "transactionId" | "paidAmount" | "paidDate" | "note", event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    (
+      field: "transactionId" | "paidAmount" | "paidDate" | "note",
+      event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    ) => {
       handlePaymentFormChange(field, event.target.value);
     },
     [handlePaymentFormChange]

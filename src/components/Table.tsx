@@ -41,15 +41,9 @@ interface TableBodyProps {
 }
 
 const TABLE_VARIANTS = {
-  default: "overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm",
-  glass: "glass-card glass-underlay-gradient overflow-hidden",
-  minimal: "overflow-hidden rounded-lg border border-gray-200 bg-white",
-};
-
-const HEADER_VARIANTS = {
-  default: "bg-slate-50 text-slate-700",
-  glass: "bg-white/55 text-[var(--brand-primary)] backdrop-blur-md",
-  minimal: "bg-gray-50 text-gray-700",
+  default: "overflow-hidden rounded-2xl border border-base-300 bg-base-100 shadow-sm",
+  glass: "overflow-hidden bg-base-100",
+  minimal: "overflow-hidden rounded-lg border border-base-300 bg-base-100",
 };
 
 function TableHeader<T extends string>({ columns, sortState, onSort, visibleColumns }: TableHeaderProps<T>) {
@@ -72,7 +66,7 @@ function TableHeader<T extends string>({ columns, sortState, onSort, visibleColu
               key={column.key}
               className={`
                 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide whitespace-nowrap
-                ${column.sortable && onSort ? "cursor-pointer hover:bg-black/5" : ""}
+                ${column.sortable && onSort ? "cursor-pointer hover:bg-base-200" : ""}
                 ${column.align === "center" ? "text-center" : ""}
                 ${column.align === "right" ? "text-right" : ""}
               `}
@@ -99,13 +93,13 @@ function TableBody({
     <tbody>
       {loading ? (
         <tr>
-          <td colSpan={columnsCount} className="px-4 py-8 text-center text-[var(--brand-primary)]">
+          <td colSpan={columnsCount} className="px-4 py-8 text-center text-primary">
             {loadingMessage}
           </td>
         </tr>
       ) : React.Children.count(children) === 0 ? (
         <tr>
-          <td colSpan={columnsCount} className="px-4 py-8 text-center text-slate-500">
+          <td colSpan={columnsCount} className="px-4 py-8 text-center text-base-content/60">
             {emptyMessage}
           </td>
         </tr>
@@ -127,13 +121,13 @@ export function Table<T extends string>({
   ...props
 }: TableProps<T>) {
   const containerClasses = `${TABLE_VARIANTS[variant]} ${className}`;
-  const headerClasses = HEADER_VARIANTS[variant];
+
+  // Use daisyUI table classes where appropriate; keep existing variants for glass/minimal
+  const tableClass = `table w-full text-sm ${variant === "glass" ? "table-zebra" : ""}`.trim();
 
   const tableContent = (
-    <table className="min-w-full text-sm text-slate-600" {...props}>
-      <div className={headerClasses}>
-        <TableHeader columns={columns} sortState={sortState} onSort={onSort} />
-      </div>
+    <table className={tableClass} {...props}>
+      <TableHeader columns={columns} sortState={sortState} onSort={onSort} />
       {children}
     </table>
   );

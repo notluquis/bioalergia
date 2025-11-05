@@ -39,7 +39,9 @@ export function parseDelimited(text: string): MPReportRow[] {
 
   if (!lines.length) return [];
 
-  const headerLine = stripBom(lines[0]);
+  const firstLine = lines[0];
+  if (!firstLine) return [];
+  const headerLine = stripBom(firstLine);
   const delimiter = detectDelimiter(headerLine);
   const headers = splitLine(headerLine, delimiter);
 

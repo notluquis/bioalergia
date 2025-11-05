@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { z } from "zod";
 import { formatRut, normalizeRut } from "../../../lib";
@@ -66,12 +66,12 @@ export default function CounterpartForm({ counterpart, onSave, error, saving }: 
   }, [counterpart, form]);
 
   return (
-    <section className="glass-card glass-underlay-gradient space-y-5 p-6">
+    <section className="space-y-5 p-6 bg-base-100">
       <div className="flex flex-col gap-1">
-        <h1 className="text-xl font-semibold text-[var(--brand-primary)] drop-shadow-sm">
+        <h1 className="text-xl font-semibold text-primary drop-shadow-sm">
           {counterpart ? "Editar contraparte" : "Nueva contraparte"}
         </h1>
-        <p className="text-xs text-slate-600/90">
+        <p className="text-xs text-base-content/90">
           Completa los datos principales para sincronizar la información de pagos y retiros.
         </p>
       </div>
@@ -84,11 +84,11 @@ export default function CounterpartForm({ counterpart, onSave, error, saving }: 
             placeholder="12.345.678-9"
             helper={form.values.rut ? formatRut(form.values.rut) : undefined}
           />
-          {form.getFieldError("rut") && <p className="mt-1 text-xs text-red-600">{form.getFieldError("rut")}</p>}
+          {form.getFieldError("rut") && <p className="mt-1 text-xs text-error">{form.getFieldError("rut")}</p>}
         </div>
         <div>
           <Input label="Nombre" type="text" {...form.getFieldProps("name")} placeholder="Allos Chile Spa" required />
-          {form.getFieldError("name") && <p className="mt-1 text-xs text-red-600">{form.getFieldError("name")}</p>}
+          {form.getFieldError("name") && <p className="mt-1 text-xs text-error">{form.getFieldError("name")}</p>}
         </div>
         <div>
           <Input label="Tipo de persona" type="select" {...form.getFieldProps("personType")}>
@@ -97,7 +97,7 @@ export default function CounterpartForm({ counterpart, onSave, error, saving }: 
             <option value="OTHER">Otra</option>
           </Input>
           {form.getFieldError("personType") && (
-            <p className="mt-1 text-xs text-red-600">{form.getFieldError("personType")}</p>
+            <p className="mt-1 text-xs text-error">{form.getFieldError("personType")}</p>
           )}
         </div>
         <div>
@@ -109,11 +109,11 @@ export default function CounterpartForm({ counterpart, onSave, error, saving }: 
             ))}
           </Input>
           {form.getFieldError("category") && (
-            <p className="mt-1 text-xs text-red-600">{form.getFieldError("category")}</p>
+            <p className="mt-1 text-xs text-error">{form.getFieldError("category")}</p>
           )}
         </div>
         {form.values.category === "EMPLOYEE" && (
-          <p className="md:col-span-2 text-[11px] text-slate-500/80">
+          <p className="md:col-span-2 text-xs text-base-content/80">
             Se vinculará como empleado utilizando el correo electrónico ingresado.
           </p>
         )}
@@ -124,7 +124,7 @@ export default function CounterpartForm({ counterpart, onSave, error, saving }: 
             {...form.getFieldProps("email")}
             placeholder="contacto@empresa.cl"
           />
-          {form.getFieldError("email") && <p className="mt-1 text-xs text-red-600">{form.getFieldError("email")}</p>}
+          {form.getFieldError("email") && <p className="mt-1 text-xs text-error">{form.getFieldError("email")}</p>}
         </div>
         <div className="md:col-span-2">
           <Input
@@ -134,12 +134,12 @@ export default function CounterpartForm({ counterpart, onSave, error, saving }: 
             {...form.getFieldProps("notes")}
             placeholder="Información adicional, persona de contacto, etc."
           />
-          {form.getFieldError("notes") && <p className="mt-1 text-xs text-red-600">{form.getFieldError("notes")}</p>}
+          {form.getFieldError("notes") && <p className="mt-1 text-xs text-error">{form.getFieldError("notes")}</p>}
         </div>
         {counterpart?.employeeId && (
-          <p className="md:col-span-2 text-xs text-slate-500/80">
+          <p className="md:col-span-2 text-xs text-base-content/80">
             Empleado vinculado (ID #{counterpart.employeeId}).{" "}
-            <Link to="/employees" className="font-semibold text-[var(--brand-primary)]">
+            <Link to="/employees" className="font-semibold text-primary">
               Ver empleados
             </Link>
           </p>

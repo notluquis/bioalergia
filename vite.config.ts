@@ -1,10 +1,26 @@
 import { fileURLToPath, URL } from "node:url";
 import { defineConfig } from "vite";
+import { configDefaults } from "vitest/config";
 import react from "@vitejs/plugin-react-swc";
 import tailwindcss from "@tailwindcss/vite";
+import { visualizer } from "rollup-plugin-visualizer";
 
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [
+    react(),
+    tailwindcss(),
+    visualizer({
+      filename: "dist/stats.html",
+      open: false,
+      gzipSize: true,
+      brotliSize: true,
+    }),
+  ],
+  // Ensure process.env.NODE_ENV is available inside the client bundle.
+  // Vite sets NODE_ENV based on the current mode (development/production).
+  define: {
+    "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV || "development"),
+  },
   build: {
     modulePreload: false,
     outDir: "dist/client",
@@ -33,6 +49,16 @@ export default defineConfig({
         target: "http://localhost:4000",
         changeOrigin: true,
       },
+    },
+  },
+  test: {
+    environment: "jsdom",
+    globals: true,
+    setupFiles: "./test/setup.ts",
+    exclude: [...configDefaults.exclude, "test/employees.integration.test.ts"],
+    coverage: {
+      reporter: ["text", "lcov"],
+      exclude: [...configDefaults.coverage.exclude, "test/setup.ts"],
     },
   },
 });

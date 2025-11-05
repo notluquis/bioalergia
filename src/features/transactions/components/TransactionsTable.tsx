@@ -1,7 +1,8 @@
 import dayjs from "dayjs";
-import { useMemo } from "react";
+import { memo, useMemo } from "react";
 import { useTable } from "../../../hooks";
 import Button from "../../../components/Button";
+import Checkbox from "../../../components/Checkbox";
 import { fmtCLP } from "../../../lib/format";
 import { COLUMN_DEFS, type ColumnKey } from "../constants";
 import type { LedgerRow } from "../types";
@@ -17,7 +18,7 @@ type Props = {
   onPageSizeChange?: (size: number) => void;
 };
 
-export function TransactionsTable({
+export const TransactionsTable = memo(function TransactionsTable({
   rows,
   loading,
   hasAmounts,
@@ -36,8 +37,14 @@ export function TransactionsTable({
     initialSortDirection: "desc",
   });
 
-  const { sortState, pageSizeOptions: tablePageSizeOptions, toggleColumn, getSortProps, getSortIcon, isColumnVisible } =
-    table;
+  const {
+    sortState,
+    pageSizeOptions: tablePageSizeOptions,
+    toggleColumn,
+    getSortProps,
+    getSortIcon,
+    isColumnVisible,
+  } = table;
 
   const visibleColumns = useMemo(() => {
     return COLUMN_DEFS.filter((column) => isColumnVisible(column.key));
@@ -110,29 +117,27 @@ export function TransactionsTable({
     <div className="space-y-4">
       {/* Column visibility controls */}
       <div className="flex flex-wrap gap-2">
-        <span className="text-xs font-semibold text-slate-600">Mostrar columnas:</span>
+        <span className="text-xs font-semibold text-base-content">Mostrar columnas:</span>
         {COLUMN_DEFS.map((column) => (
-          <label key={column.key} className="flex items-center gap-1 text-xs">
-            <input
-              type="checkbox"
-              checked={isColumnVisible(column.key)}
-              onChange={() => toggleColumn(column.key)}
-              className="rounded"
-            />
-            <span className="text-slate-600">{column.label}</span>
-          </label>
+          <Checkbox
+            key={column.key}
+            checked={isColumnVisible(column.key)}
+            onChange={() => toggleColumn(column.key)}
+            className="text-xs"
+            label={column.label}
+          />
         ))}
       </div>
 
-      <div className="glass-card glass-underlay-gradient overflow-hidden">
+      <div className="overflow-hidden bg-base-100">
         <div className="overflow-x-auto muted-scrollbar">
-          <table className="min-w-full text-sm text-slate-600">
-            <thead className="bg-white/55 text-[var(--brand-primary)] backdrop-blur-md">
+          <table className="min-w-full text-sm text-base-content">
+            <thead className="bg-base-100/55 text-primary backdrop-blur-md">
               <tr>
                 {visibleColumns.map((column) => (
                   <th
                     key={column.key}
-                    className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide cursor-pointer hover:bg-white/70 whitespace-nowrap"
+                    className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide cursor-pointer hover:bg-base-100/70 whitespace-nowrap"
                     {...getSortProps(column.key)}
                   >
                     {column.label} {getSortIcon(column.key)}
@@ -144,7 +149,7 @@ export function TransactionsTable({
               {displayedRows.map((row) => (
                 <tr
                   key={row.id}
-                  className="border-b border-white/40 bg-white/40 text-slate-700 transition-colors last:border-none even:bg-white/25 hover:bg-[var(--brand-primary)]/10"
+                  className="border-b border-base-300 bg-base-200 text-base-content transition-colors last:border-none even:bg-base-300 hover:bg-primary/10"
                 >
                   {visibleColumns.map((column) => (
                     <td key={column.key} className="px-4 py-3">
@@ -155,14 +160,14 @@ export function TransactionsTable({
               ))}
               {!rows.length && !loading && (
                 <tr>
-                  <td colSpan={visibleColumns.length} className="px-4 py-6 text-center text-slate-500">
+                  <td colSpan={visibleColumns.length} className="px-4 py-6 text-center text-base-content/60">
                     No hay resultados con los filtros actuales.
                   </td>
                 </tr>
               )}
               {loading && (
                 <tr>
-                  <td colSpan={visibleColumns.length} className="px-4 py-6 text-center text-[var(--brand-primary)]">
+                  <td colSpan={visibleColumns.length} className="px-4 py-6 text-center text-primary">
                     Cargando movimientos...
                   </td>
                 </tr>
@@ -172,8 +177,8 @@ export function TransactionsTable({
         </div>
 
         {/* Pagination */}
-        <div className="flex flex-wrap items-center justify-between gap-4 border-t border-white/40 bg-white/45 px-4 py-3 text-xs text-slate-600">
-          <div className="font-semibold text-slate-600/90">
+        <div className="flex flex-wrap items-center justify-between gap-4 border-t border-base-300 bg-base-200 px-4 py-3 text-xs text-base-content">
+          <div className="font-semibold text-base-content/90">
             Página {pageInfo.start} - {pageInfo.end} de {pageInfo.total} movimientos
           </div>
           <div className="flex flex-wrap items-center gap-3">
@@ -185,7 +190,7 @@ export function TransactionsTable({
                   const newSize = Number(event.target.value);
                   handlePageSizeChange(newSize);
                 }}
-                className="glass-input py-1 text-xs"
+                className="select select-bordered py-1 text-xs"
               >
                 {tablePageSizeOptions.map((size) => (
                   <option key={size} value={size}>
@@ -219,7 +224,7 @@ export function TransactionsTable({
       </div>
     </div>
   );
-}
+});
 
 function renderCell(key: ColumnKey, row: LedgerRow, hasAmounts: boolean) {
   switch (key) {
@@ -252,10 +257,10 @@ function renderCell(key: ColumnKey, row: LedgerRow, hasAmounts: boolean) {
         <span
           className={`inline-block rounded px-2 py-1 text-xs font-semibold ${
             row.direction === "IN"
-              ? "bg-emerald-100 text-emerald-700"
+              ? "bg-success/20 text-success"
               : row.direction === "OUT"
-                ? "bg-rose-100 text-rose-700"
-                : "bg-gray-100 text-gray-700"
+                ? "bg-error/20 text-error"
+                : "bg-base-200 text-base-content/60"
           }`}
         >
           {row.direction === "IN" ? "Entrada" : row.direction === "OUT" ? "Salida" : "Neutro"}
@@ -263,12 +268,10 @@ function renderCell(key: ColumnKey, row: LedgerRow, hasAmounts: boolean) {
       );
     case "amount":
       if (!hasAmounts) return "—";
-      return (
-        <span className={row.direction === "IN" ? "text-emerald-600" : "text-rose-600"}>{fmtCLP(row.amount || 0)}</span>
-      );
+      return <span className={row.direction === "IN" ? "text-success" : "text-error"}>{fmtCLP(row.amount || 0)}</span>;
     case "runningBalance":
       if (!hasAmounts || !row.runningBalance) return "—";
-      return <span className="font-medium text-slate-700">{fmtCLP(row.runningBalance)}</span>;
+      return <span className="font-medium text-base-content">{fmtCLP(row.runningBalance)}</span>;
     default:
       return "—";
   }

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
-import { useAuth } from "../../../context/auth-context";
+import { useAuth } from "../../../context/AuthContext";
 import { logger } from "../../../lib/logger";
 import type {
   CreateMonthlyExpensePayload,
@@ -52,16 +52,27 @@ export function useMonthlyExpenses() {
 
   const selectedIdRef = useRef<string | null>(null);
 
+  // Memoize filter signature to prevent unnecessary callback recreation
+  // Convert Set to sorted array to ensure stable reference
+  const filterSignature = useMemo(
+    () => ({
+      from: filters.from,
+      to: filters.to,
+      status: Array.from(filters.status).sort().join(","),
+      category: filters.category,
+    }),
+    [filters.from, filters.to, filters.status, filters.category]
+  );
+
   const loadExpenses = useCallback(async () => {
     if (!canView) return;
     setLoadingList(true);
     setError(null);
     try {
-      const statusParam = filters.status.size ? Array.from(filters.status).join(",") : undefined;
       const response = await fetchMonthlyExpenses({
         from: filters.from,
         to: filters.to,
-        status: statusParam,
+        status: filterSignature.status || undefined,
       });
       const normalized = response.expenses.map((item) => normalizeExpense(item));
       setExpenses(normalized);
@@ -72,22 +83,7 @@ export function useMonthlyExpenses() {
     } finally {
       setLoadingList(false);
     }
-  }, [canView, filters.from, filters.status, filters.to]);
-
-  const loadDetail = useCallback(async (publicId: string) => {
-    setLoadingDetail(true);
-    setError(null);
-    try {
-      const response = await fetchMonthlyExpenseDetail(publicId);
-      setDetail(normalizeExpenseDetail(response.expense));
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "No se pudo obtener el detalle";
-      setError(message);
-      logger.error("[expenses] detail:error", message);
-    } finally {
-      setLoadingDetail(false);
-    }
-  }, []);
+  }, [canView, filters.from, filters.to, filterSignature.status]);
 
   const loadStats = useCallback(async () => {
     if (!canView) return;
@@ -106,6 +102,21 @@ export function useMonthlyExpenses() {
       setStatsLoading(false);
     }
   }, [canView, filters.from, filters.to, filters.category]);
+
+  const loadDetail = useCallback(async (publicId: string) => {
+    setLoadingDetail(true);
+    setError(null);
+    try {
+      const response = await fetchMonthlyExpenseDetail(publicId);
+      setDetail(normalizeExpenseDetail(response.expense));
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "No se pudo obtener el detalle";
+      setError(message);
+      logger.error("[expenses] detail:error", message);
+    } finally {
+      setLoadingDetail(false);
+    }
+  }, []);
 
   useEffect(() => {
     selectedIdRef.current = selectedId;

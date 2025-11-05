@@ -1,6 +1,5 @@
-import React from "react";
 import type { ChangeEvent } from "react";
-import { useAuth } from "../../../context/auth-context";
+import { useAuth } from "../../../context/AuthContext";
 import type { SupplyRequest } from "../types";
 import { translateStatus } from "../utils";
 import Input from "../../../components/Input";
@@ -15,7 +14,7 @@ export default function SupplyRequestsTable({ requests, onStatusChange }: Supply
   const isAdmin = user?.role === "ADMIN" || user?.role === "GOD";
 
   return (
-    <div className="p-6 bg-white shadow-md rounded-lg">
+    <div className="p-6 bg-base-100 shadow-md rounded-lg">
       <h2 className="text-xl font-semibold mb-4">{isAdmin ? "Todas las Solicitudes" : "Solicitudes Activas"}</h2>
       {requests.length === 0 ? (
         <p>No se encontraron solicitudes de insumos.</p>
@@ -92,7 +91,7 @@ export default function SupplyRequestsTable({ requests, onStatusChange }: Supply
                 )}
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-base-100 divide-y divide-gray-200">
               {requests.map((request) => (
                 <tr key={request.id}>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{request.id}</td>

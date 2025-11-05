@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { ChangeEvent } from "react";
 import dayjs from "dayjs";
-import { useAuth } from "../context/auth-context";
-import { useSettings } from "../context/settings-context";
+import { useAuth } from "../context/AuthContext";
+import { useSettings } from "../context/SettingsContext";
 import { logger } from "../lib/logger";
 import { TransactionsFilters } from "../features/transactions/components/TransactionsFilters";
 import { TransactionsColumnToggles } from "../features/transactions/components/TransactionsColumnToggles";
@@ -14,18 +13,20 @@ import type { BalancesApiResponse, BalanceDraft } from "../features/balances/typ
 import { deriveInitialBalance, formatBalanceInput } from "../features/balances/utils";
 import { useQuickDateRange } from "../features/balances/hooks/useQuickDateRange";
 import { useDailyBalanceManagement } from "../features/balances/hooks/useDailyBalanceManagement";
-import { useTransactionData } from "../features/transactions/hooks/useTransactionData";
 import { useLedger } from "../features/transactions/hooks/useLedger";
 import Alert from "../components/Alert";
 import Input from "../components/Input";
 import Button from "../components/Button";
 import Checkbox from "../components/Checkbox";
 import { fetchBalances } from "../features/balances/api";
+import { useTransactionsQuery } from "../features/transactions/hooks/useTransactionsQuery";
+
+const DEFAULT_PAGE_SIZE = 50;
 
 export default function Data() {
   const [initialBalance, setInitialBalance] = useState<string>("0");
   const [initialBalanceEdited, setInitialBalanceEdited] = useState(false);
-  const [filters, setFilters] = useState<Filters>({
+  const [draftFilters, setDraftFilters] = useState<Filters>({
     from: dayjs().subtract(10, "day").format("YYYY-MM-DD"),
     to: dayjs().format("YYYY-MM-DD"),
     description: "",
@@ -35,18 +36,23 @@ export default function Data() {
     direction: "",
     includeAmounts: false,
   });
+  const [appliedFilters, setAppliedFilters] = useState<Filters>(draftFilters);
   const [balancesReport, setBalancesReport] = useState<BalancesApiResponse | null>(null);
   const [balancesLoading, setBalancesLoading] = useState(false);
   const [visibleColumns, setVisibleColumns] = useState<Set<ColumnKey>>(
     () => new Set(COLUMN_DEFS.map((column) => column.key))
   );
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
 
   const { quickMonths } = useQuickDateRange();
 
   const quickRange = useMemo(() => {
-    const match = quickMonths.find(({ from: start, to: end }) => start === filters.from && end === filters.to);
+    const match = quickMonths.find(
+      ({ from: start, to: end }) => start === draftFilters.from && end === draftFilters.to
+    );
     return match ? match.value : "custom";
-  }, [quickMonths, filters.from, filters.to]);
+  }, [quickMonths, draftFilters.from, draftFilters.to]);
 
   const { hasRole } = useAuth();
   const { settings } = useSettings();
@@ -65,7 +71,7 @@ export default function Data() {
       setBalancesReport(payload);
     } catch (err) {
       const message = err instanceof Error ? err.message : "No se pudieron obtener los saldos diarios";
-      logger.warn("balances:load:error", message);
+      logger.error("[data] balances:error", message);
       setBalancesReport(null);
     } finally {
       setBalancesLoading(false);
@@ -80,16 +86,18 @@ export default function Data() {
     handleSave: handleBalanceSave,
     setDrafts: setBalancesDrafts,
   } = useDailyBalanceManagement({
-    from: filters.from,
-    to: filters.to,
+    from: appliedFilters.from,
+    to: appliedFilters.to,
     loadBalances,
   });
 
-  const { rows, setRows, loading, error, hasAmounts, page, pageSize, total, refresh, setPageSize, setPage } =
-    useTransactionData({
-      canView,
-      loadBalances,
-    });
+  const transactionsQuery = useTransactionsQuery({ filters: appliedFilters, page, pageSize }, canView);
+
+  const rows = transactionsQuery.data?.data ?? [];
+  const hasAmounts = Boolean(transactionsQuery.data?.hasAmounts);
+  const total = transactionsQuery.data?.total ?? rows.length;
+  const loading = transactionsQuery.isPending || transactionsQuery.isFetching;
+  const error = transactionsQuery.error?.message ?? null;
 
   const ledger = useLedger({
     rows,
@@ -97,14 +105,20 @@ export default function Data() {
     hasAmounts,
   });
 
+  // Consolidated effect: load balances and update drafts when filters change
   useEffect(() => {
-    if (canView) {
-      refresh(filters, 1, pageSize);
-    } else {
-      setRows([]);
+    if (!canView) {
+      return;
     }
-  }, [canView, filters, pageSize, refresh, setRows]);
 
+    async function loadAndUpdateDrafts() {
+      await loadBalances(appliedFilters.from, appliedFilters.to);
+    }
+
+    loadAndUpdateDrafts();
+  }, [appliedFilters.from, appliedFilters.to, canView, loadBalances]);
+
+  // Update drafts when balances report changes
   useEffect(() => {
     if (!balancesReport) {
       setBalancesDrafts({});
@@ -119,33 +133,35 @@ export default function Data() {
       };
     }
     setBalancesDrafts(drafts);
-  }, [balancesReport, setBalancesDrafts]);
 
-  useEffect(() => {
-    if (!balancesReport || initialBalanceEdited) {
-      return;
-    }
-
-    const derived = deriveInitialBalance(balancesReport);
-    if (derived == null) {
-      const hasRecorded = balancesReport.days.some((day) => day.recordedBalance != null);
-      if (!balancesReport.previous && !hasRecorded && initialBalance !== "0") {
-        setInitialBalance("0");
+    // Derive initial balance if not manually edited
+    if (!initialBalanceEdited) {
+      const derived = deriveInitialBalance(balancesReport);
+      if (derived == null) {
+        const hasRecorded = balancesReport.days.some((day) => day.recordedBalance != null);
+        if (!balancesReport.previous && !hasRecorded && initialBalance !== "0") {
+          setInitialBalance("0");
+        }
+        return;
       }
-      return;
-    }
 
-    const formatted = formatBalanceInput(derived);
-    if (formatted !== initialBalance) {
-      setInitialBalance(formatted);
+      const formatted = formatBalanceInput(derived);
+      if (formatted !== initialBalance) {
+        setInitialBalance(formatted);
+      }
     }
-  }, [balancesReport, initialBalance, initialBalanceEdited]);
+  }, [balancesReport, setBalancesDrafts, initialBalance, initialBalanceEdited]);
 
   const handleFilterChange = (update: Partial<Filters>) => {
-    setFilters((prev) => ({ ...prev, ...update }));
+    setDraftFilters((prev) => ({ ...prev, ...update }));
     if (Object.prototype.hasOwnProperty.call(update, "from") || Object.prototype.hasOwnProperty.call(update, "to")) {
       setInitialBalanceEdited(false);
     }
+  };
+
+  const handleApplyFilters = () => {
+    setPage(1);
+    setAppliedFilters({ ...draftFilters });
   };
 
   const handleResetInitialBalance = useCallback(() => {
@@ -164,13 +180,10 @@ export default function Data() {
       ) : (
         <>
           <TransactionsFilters
-            filters={filters}
+            filters={draftFilters}
             loading={loading}
             onChange={handleFilterChange}
-            onSubmit={() => {
-              setPage(1);
-              refresh(filters, 1, pageSize);
-            }}
+            onSubmit={handleApplyFilters}
           />
 
           <TransactionsColumnToggles
@@ -187,80 +200,86 @@ export default function Data() {
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div className="space-y-2">
-              <h1 className="text-2xl font-bold text-[var(--brand-primary)]">Movimientos en la base</h1>
-              <p className="max-w-2xl text-sm text-slate-600">
-                Los datos provienen de la tabla <code>mp_transactions</code>. Ajusta el saldo inicial para recalcular el
-                saldo acumulado. Para consultas o soporte, escribe a<strong> {settings.supportEmail}</strong>.
+              <h1 className="text-2xl font-bold text-primary">Movimientos en la base</h1>
+              <p className="max-w-2xl text-sm text-base-content">
+                Saldos ajustados + balance manual para cuadrar con contabilidad. Ajusta el saldo inicial para recalcular
+                el saldo acumulado, registra los saldos diarios y, ante dudas, contacta a{" "}
+                <strong>{settings.supportEmail}</strong>.
               </p>
             </div>
             <div className="flex flex-wrap items-end gap-3">
-              <Input
-                label="Saldo inicial (CLP)"
-                type="text"
-                value={initialBalance}
-                onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                  setInitialBalanceEdited(true);
-                  setInitialBalance(event.target.value);
-                }}
-                placeholder="0"
-                className="w-fit"
-              />
+              <div className="flex flex-col gap-2 text-xs font-semibold uppercase tracking-wide text-base-content">
+                <label htmlFor="balance-day" className="text-base-content/60">
+                  Saldo inicial (CLP)
+                </label>
+                <div className="flex items-center gap-3">
+                  <Input
+                    id="balance-day"
+                    type="text"
+                    value={initialBalance}
+                    onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                      setInitialBalance(event.target.value);
+                      setInitialBalanceEdited(true);
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="xs"
+                    onClick={handleResetInitialBalance}
+                    disabled={!balancesReport}
+                  >
+                    Restablecer
+                  </Button>
+                </div>
+              </div>
+              <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-wide text-base-content">
+                Mes rápido
+                <select
+                  value={quickRange}
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    if (value === "custom") return;
+                    const match = quickMonths.find((month) => month.value === value);
+                    if (!match) return;
+                    const nextFilters = { ...draftFilters, from: match.from, to: match.to };
+                    setDraftFilters(nextFilters);
+                    setInitialBalanceEdited(false);
+                    setPage(1);
+                    setAppliedFilters(nextFilters);
+                  }}
+                  className="select select-bordered"
+                >
+                  <option value="custom">Personalizado</option>
+                  {quickMonths.map((month) => (
+                    <option key={month.value} value={month.value}>
+                      {month.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
               <Button
+                type="button"
+                onClick={() => transactionsQuery.refetch()}
+                disabled={loading}
                 variant="secondary"
-                onClick={handleResetInitialBalance}
-                disabled={!balancesReport || balancesLoading}
+                size="sm"
               >
-                Usar saldo diario
-              </Button>
-              <Input
-                label="Mes rápido"
-                type="select"
-                value={quickRange}
-                onChange={(event: ChangeEvent<HTMLSelectElement>) => {
-                  const value = event.target.value;
-                  if (value === "custom") return;
-                  const match = quickMonths.find((month) => month.value === value);
-                  if (!match) return;
-                  const nextFilters = { ...filters, from: match.from, to: match.to };
-                  setFilters(nextFilters);
-                  setInitialBalanceEdited(false);
-                  setPage(1);
-                  refresh(nextFilters, 1, pageSize);
-                }}
-                className="w-fit"
-              >
-                <option value="custom">Personalizado</option>
-                {quickMonths.map((month) => (
-                  <option key={month.value} value={month.value}>
-                    {month.label}
-                  </option>
-                ))}
-              </Input>
-              <Button onClick={() => refresh(filters, page, pageSize)} disabled={loading}>
                 {loading ? "Actualizando..." : "Actualizar"}
               </Button>
               <Checkbox
                 label="Mostrar montos"
-                checked={filters.includeAmounts}
-                onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                  const nextFilters = { ...filters, includeAmounts: event.target.checked };
-                  setFilters(nextFilters);
+                checked={draftFilters.includeAmounts}
+                onChange={(event) => {
+                  const nextFilters = { ...draftFilters, includeAmounts: event.target.checked };
+                  setDraftFilters(nextFilters);
                   logger.info("[data] toggle includeAmounts", nextFilters.includeAmounts);
-                  refresh(nextFilters, page, pageSize);
+                  setPage(1);
+                  setAppliedFilters(nextFilters);
                 }}
               />
             </div>
           </div>
-
-          <DailyBalancesPanel
-            report={balancesReport}
-            drafts={balancesDrafts}
-            onDraftChange={handleBalanceDraftChange}
-            onSave={handleBalanceSave}
-            saving={balancesSaving}
-            loading={balancesLoading}
-            error={balancesError}
-          />
 
           {error && <Alert variant="error">{error}</Alert>}
 
@@ -271,15 +290,23 @@ export default function Data() {
             total={total}
             page={page}
             pageSize={pageSize}
-            onPageChange={(nextPage: number) => {
+            onPageChange={(nextPage) => {
               setPage(nextPage);
-              refresh(filters, nextPage, pageSize);
             }}
-            onPageSizeChange={(nextPageSize: number) => {
+            onPageSizeChange={(nextPageSize) => {
               setPageSize(nextPageSize);
               setPage(1);
-              refresh(filters, 1, nextPageSize);
             }}
+          />
+
+          <DailyBalancesPanel
+            report={balancesReport}
+            drafts={balancesDrafts}
+            onDraftChange={handleBalanceDraftChange}
+            onSave={handleBalanceSave}
+            saving={balancesSaving}
+            loading={balancesLoading}
+            error={balancesError}
           />
         </>
       )}
