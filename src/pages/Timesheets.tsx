@@ -79,12 +79,12 @@ export default function TimesheetsPage() {
     loadEmployees();
   }, [loadEmployees]);
 
-  // Set initial month when months list is loaded
+  // Set initial month when months list is loaded (previous month)
   useEffect(() => {
     if (months.length && !monthRef.current) {
-      // Seleccionar el penúltimo mes (mes anterior) si existe, sino el primero
-      const previousMonth = months.length > 1 ? months[months.length - 2] : months[0];
-      if (previousMonth) setMonth(previousMonth);
+      const previousMonth = dayjs().subtract(1, "month").format("YYYY-MM");
+      const hasPreviousMonth = months.includes(previousMonth);
+      setMonth(hasPreviousMonth ? previousMonth : (months[0] ?? ""));
     }
   }, [months]);
 
@@ -103,20 +103,10 @@ export default function TimesheetsPage() {
       setInfo(null);
       try {
         const formattedMonth = formatMonthString(monthRef.current);
-        const data = await fetchTimesheetSummary(formattedMonth);
+        // Pasar selectedEmployeeId para mostrar solo ese empleado si está seleccionado
+        const data = await fetchTimesheetSummary(formattedMonth, selectedEmployeeIdRef.current);
         setSummary({ employees: data.employees, totals: data.totals });
-        const hasDataIds = new Set(data.employees.map((e) => e.employeeId));
-        if (!selectedEmployeeIdRef.current && data.employees.length) {
-          const firstEmployee = data.employees[0];
-          if (firstEmployee) setSelectedEmployeeId(firstEmployee.employeeId);
-        } else if (
-          selectedEmployeeIdRef.current &&
-          !hasDataIds.has(selectedEmployeeIdRef.current) &&
-          data.employees.length
-        ) {
-          const firstEmployee = data.employees[0];
-          if (firstEmployee) setSelectedEmployeeId(firstEmployee.employeeId);
-        }
+        // No auto-seleccionar empleado - dejar que el usuario elija
       } catch (err) {
         const message = err instanceof Error ? err.message : "No se pudo obtener el resumen";
         setError(message);
@@ -176,20 +166,10 @@ export default function TimesheetsPage() {
     setInfo(null);
     try {
       const formattedMonth = formatMonthString(monthRef.current);
-      const data = await fetchTimesheetSummary(formattedMonth);
+      // Pasar selectedEmployeeId para filtrar si hay uno seleccionado
+      const data = await fetchTimesheetSummary(formattedMonth, selectedEmployeeIdRef.current);
       setSummary({ employees: data.employees, totals: data.totals });
-      const hasDataIds = new Set(data.employees.map((e) => e.employeeId));
-      if (!selectedEmployeeIdRef.current && data.employees.length) {
-        const firstEmployee = data.employees[0];
-        if (firstEmployee) setSelectedEmployeeId(firstEmployee.employeeId);
-      } else if (
-        selectedEmployeeIdRef.current &&
-        !hasDataIds.has(selectedEmployeeIdRef.current) &&
-        data.employees.length
-      ) {
-        const firstEmployee = data.employees[0];
-        if (firstEmployee) setSelectedEmployeeId(firstEmployee.employeeId);
-      }
+      // No auto-seleccionar empleado en loadSummary
     } catch (err) {
       const message = err instanceof Error ? err.message : "No se pudo obtener el resumen";
       setError(message);
@@ -457,21 +437,23 @@ export default function TimesheetsPage() {
         onSelectEmployee={setSelectedEmployeeId}
       />
 
-      <TimesheetDetailTable
-        bulkRows={bulkRows}
-        initialRows={initialRows}
-        loadingDetail={loadingDetail}
-        selectedEmployee={selectedEmployee}
-        onRowChange={handleRowChange}
-        onResetRow={handleResetRow}
-        onRemoveEntry={handleRemoveEntry}
-        onBulkSave={handleBulkSave}
-        saving={saving}
-        pendingCount={pendingCount}
-        modifiedCount={modifiedCount}
-        monthLabel={monthLabel}
-        employeeOptions={employeeOptions}
-      />
+      {selectedEmployee && (
+        <TimesheetDetailTable
+          bulkRows={bulkRows}
+          initialRows={initialRows}
+          loadingDetail={loadingDetail}
+          selectedEmployee={selectedEmployee}
+          onRowChange={handleRowChange}
+          onResetRow={handleResetRow}
+          onRemoveEntry={handleRemoveEntry}
+          onBulkSave={handleBulkSave}
+          saving={saving}
+          pendingCount={pendingCount}
+          modifiedCount={modifiedCount}
+          monthLabel={monthLabel}
+          employeeOptions={employeeOptions}
+        />
+      )}
     </section>
   );
 }

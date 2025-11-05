@@ -6,6 +6,8 @@ import {
   getCounterpartById,
   createCounterpart,
   updateCounterpart,
+} from "../repositories/counterparts.js";
+import {
   upsertCounterpartAccount,
   updateCounterpartAccount,
   listAccountSuggestions,
@@ -38,7 +40,9 @@ export function registerCounterpartRoutes(app: express.Express) {
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       const parsed = counterpartPayloadSchema.safeParse(req.body);
       if (!parsed.success) {
-        return res.status(400).json({ status: "error", message: "Los datos no son válidos", issues: parsed.error.issues });
+        return res
+          .status(400)
+          .json({ status: "error", message: "Los datos no son válidos", issues: parsed.error.issues });
       }
       const payload = parsed.data;
       const id = await createCounterpart({
@@ -68,7 +72,9 @@ export function registerCounterpartRoutes(app: express.Express) {
       }
       const parsed = counterpartPayloadSchema.partial().safeParse(req.body);
       if (!parsed.success) {
-        return res.status(400).json({ status: "error", message: "Los datos no son válidos", issues: parsed.error.issues });
+        return res
+          .status(400)
+          .json({ status: "error", message: "Los datos no son válidos", issues: parsed.error.issues });
       }
       await updateCounterpart(counterpartId, {
         rut: parsed.data.rut,
@@ -116,7 +122,9 @@ export function registerCounterpartRoutes(app: express.Express) {
       }
       const parsed = counterpartAccountPayloadSchema.safeParse(req.body);
       if (!parsed.success) {
-        return res.status(400).json({ status: "error", message: "Los datos no son válidos", issues: parsed.error.issues });
+        return res
+          .status(400)
+          .json({ status: "error", message: "Los datos no son válidos", issues: parsed.error.issues });
       }
       const accountId = await upsertCounterpartAccount(counterpartId, parsed.data);
       const detail = await getCounterpartById(counterpartId);
@@ -155,7 +163,9 @@ export function registerCounterpartRoutes(app: express.Express) {
       }
       const parsed = counterpartAccountUpdateSchema.safeParse(req.body);
       if (!parsed.success) {
-        return res.status(400).json({ status: "error", message: "Los datos no son válidos", issues: parsed.error.issues });
+        return res
+          .status(400)
+          .json({ status: "error", message: "Los datos no son válidos", issues: parsed.error.issues });
       }
       await updateCounterpartAccount(accountId, parsed.data);
       res.json({ status: "ok" });

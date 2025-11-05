@@ -7,6 +7,7 @@ import Alert from "../components/Alert";
 import Modal from "../components/Modal";
 import Input from "../components/Input";
 import Button from "../components/Button";
+import { Card, PageHeader, Stack } from "../components/Layout";
 import LoanList from "../features/loans/components/LoanList";
 import LoanDetail from "../features/loans/components/LoanDetail";
 import LoanForm from "../features/loans/components/LoanForm";
@@ -202,28 +203,26 @@ export default function LoansPage() {
 
   if (!canView) {
     return (
-      <section className="space-y-4">
-        <h1 className="text-2xl font-bold text-primary">Préstamos y créditos</h1>
+      <Stack spacing="md">
+        <PageHeader title="Préstamos y créditos" />
         <Alert variant="error">No tienes permisos para ver los préstamos registrados.</Alert>
-      </section>
+      </Stack>
     );
   }
 
   return (
-    <section className="flex h-full flex-col gap-4">
-      <header className="flex flex-col gap-2">
-        <h1 className="text-2xl font-bold text-primary">Préstamos y créditos</h1>
-        <p className="text-sm text-base-content/90">
-          Gestiona préstamos internos, cronogramas de pago y vincula cada cuota con las transacciones reales.
-        </p>
-      </header>
+    <Stack spacing="lg">
+      <PageHeader
+        title="Préstamos y créditos"
+        description="Gestiona préstamos internos, cronogramas de pago y vincula cada cuota con las transacciones reales."
+      />
 
       {globalError && <Alert variant="error">{globalError}</Alert>}
 
       {loadingList && <p className="text-xs text-base-content/50">Actualizando listado de préstamos...</p>}
 
       <div className="grid gap-4 lg:grid-cols-[300px,1fr]">
-        <div className="min-h-[70vh]">
+        <Card padding="default" className="min-h-[70vh]">
           <LoanList
             loans={loans}
             selectedId={selectedId}
@@ -234,8 +233,8 @@ export default function LoansPage() {
             }}
             canManage={canManage}
           />
-        </div>
-        <div className="min-h-[70vh]">
+        </Card>
+        <Card padding="default" className="min-h-[70vh]">
           <LoanDetail
             loan={selectedLoan}
             schedules={schedules}
@@ -246,7 +245,7 @@ export default function LoansPage() {
             onRegisterPayment={openPaymentModal}
             onUnlinkPayment={handleUnlink}
           />
-        </div>
+        </Card>
       </div>
 
       <Modal isOpen={createOpen} onClose={() => setCreateOpen(false)} title="Nuevo préstamo">
@@ -312,6 +311,6 @@ export default function LoansPage() {
           </form>
         )}
       </Modal>
-    </section>
+    </Stack>
   );
 }

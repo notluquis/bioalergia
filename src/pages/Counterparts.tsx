@@ -17,9 +17,8 @@ import MonthlySummaryChart from "../features/counterparts/components/MonthlySumm
 import ConceptList from "../features/counterparts/components/ConceptList";
 import Input from "../components/Input";
 import Button from "../components/Button";
+import { Card, PageHeader, Stack, Inline } from "../components/Layout";
 import { SUMMARY_RANGE_MONTHS } from "../features/counterparts/constants";
-
-// Removed unused helper normalizeExternalUrl and various unused constants/imports during cleanup.
 
 export default function CounterpartsPage() {
   const [counterparts, setCounterparts] = useState<Counterpart[]>([]);
@@ -157,76 +156,93 @@ export default function CounterpartsPage() {
   }, [summary]);
 
   return (
-    <section className="flex flex-col gap-6 xl:flex-row xl:items-start">
-      <div className="xl:w-72 xl:shrink-0">
-        <CounterpartList counterparts={counterparts} selectedId={selectedId} onSelectCounterpart={selectCounterpart} />
-      </div>
+    <Stack spacing="lg">
+      <PageHeader
+        title="Contrapartes"
+        description="Gestión de proveedores, prestamistas y otras contrapartes con sus cuentas asociadas y movimientos históricos."
+      />
 
-      <div className="flex-1 space-y-6">
-        <CounterpartForm
-          counterpart={detail?.counterpart}
-          onSave={handleSaveCounterpart}
-          error={error}
-          saving={formStatus === "saving"}
-        />
-
-        {selectedId && detail && (
-          <AssociatedAccounts
+      <Inline spacing="lg" align="start" className="flex-col xl:flex-row">
+        <div className="xl:w-72 xl:shrink-0">
+          <CounterpartList
+            counterparts={counterparts}
             selectedId={selectedId}
-            detail={detail}
-            summary={summary}
-            summaryRange={summaryRange}
-            onLoadSummary={loadSummary}
+            onSelectCounterpart={selectCounterpart}
           />
-        )}
-        {selectedId && (
-          <section className="bg-base-100 space-y-5 p-6">
-            <header className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-              <div className="space-y-1">
-                <h2 className="text-lg font-semibold text-primary drop-shadow-sm">Resumen mensual</h2>
-                <p className="text-xs text-base-content/90">Transferencias de egreso asociadas a esta contraparte.</p>
-              </div>
-              <div className="flex flex-wrap items-end gap-3 text-xs">
-                <Input
-                  label="Desde"
-                  type="date"
-                  value={summaryRange.from}
-                  onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                    setSummaryRange((prev) => ({ ...prev, from: event.target.value }))
-                  }
-                  className="w-40"
-                />
-                <Input
-                  label="Hasta"
-                  type="date"
-                  value={summaryRange.to}
-                  onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                    setSummaryRange((prev) => ({ ...prev, to: event.target.value }))
-                  }
-                  className="w-40"
-                />
-                <Button
-                  size="sm"
-                  onClick={() => selectedId && loadSummary(selectedId, summaryRange.from, summaryRange.to)}
-                  disabled={summaryLoading}
-                >
-                  {summaryLoading ? "Calculando..." : "Actualizar"}
-                </Button>
-              </div>
-            </header>
-            {summaryLoading ? (
-              <p className="text-xs text-base-content">Calculando resumen...</p>
-            ) : summary ? (
-              <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
-                <MonthlySummaryChart data={summary.monthly} />
-                <ConceptList concepts={summaryConcepts} />
-              </div>
-            ) : (
-              <p className="text-xs text-base-content">No hay datos disponibles.</p>
-            )}
-          </section>
-        )}
-      </div>
-    </section>
+        </div>
+
+        <Stack spacing="lg" className="flex-1">
+          <CounterpartForm
+            counterpart={detail?.counterpart}
+            onSave={handleSaveCounterpart}
+            error={error}
+            saving={formStatus === "saving"}
+          />
+
+          {selectedId && detail && (
+            <AssociatedAccounts
+              selectedId={selectedId}
+              detail={detail}
+              summary={summary}
+              summaryRange={summaryRange}
+              onLoadSummary={loadSummary}
+            />
+          )}
+
+          {selectedId && (
+            <Card padding="default">
+              <Stack spacing="md">
+                <Inline justify="between" align="end" className="flex-col lg:flex-row">
+                  <div className="space-y-1">
+                    <h2 className="text-lg font-semibold text-primary drop-shadow-sm">Resumen mensual</h2>
+                    <p className="text-xs text-base-content/90">
+                      Transferencias de egreso asociadas a esta contraparte.
+                    </p>
+                  </div>
+                  <Inline spacing="sm" align="end" wrap className="text-xs">
+                    <Input
+                      label="Desde"
+                      type="date"
+                      value={summaryRange.from}
+                      onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                        setSummaryRange((prev) => ({ ...prev, from: event.target.value }))
+                      }
+                      className="w-40"
+                    />
+                    <Input
+                      label="Hasta"
+                      type="date"
+                      value={summaryRange.to}
+                      onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                        setSummaryRange((prev) => ({ ...prev, to: event.target.value }))
+                      }
+                      className="w-40"
+                    />
+                    <Button
+                      size="sm"
+                      onClick={() => selectedId && loadSummary(selectedId, summaryRange.from, summaryRange.to)}
+                      disabled={summaryLoading}
+                    >
+                      {summaryLoading ? "Calculando..." : "Actualizar"}
+                    </Button>
+                  </Inline>
+                </Inline>
+
+                {summaryLoading ? (
+                  <p className="text-xs text-base-content">Calculando resumen...</p>
+                ) : summary ? (
+                  <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
+                    <MonthlySummaryChart data={summary.monthly} />
+                    <ConceptList concepts={summaryConcepts} />
+                  </div>
+                ) : (
+                  <p className="text-xs text-base-content">No hay datos disponibles.</p>
+                )}
+              </Stack>
+            </Card>
+          )}
+        </Stack>
+      </Inline>
+    </Stack>
   );
 }

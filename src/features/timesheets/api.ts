@@ -8,8 +8,11 @@ async function handleResponse<T>(res: Response) {
   return data as { status: "ok" } & T;
 }
 
-export async function fetchTimesheetSummary(month: string) {
+export async function fetchTimesheetSummary(month: string, employeeId?: number | null) {
   const params = new URLSearchParams({ month });
+  if (employeeId) {
+    params.set("employeeId", String(employeeId));
+  }
   const res = await fetch(`/api/timesheets/summary?${params.toString()}`, {
     credentials: "include",
   });

@@ -7,7 +7,7 @@ interface TimesheetSummaryTableProps {
   summary: { employees: TimesheetSummaryRow[]; totals: SummaryTotals } | null;
   loading: boolean;
   selectedEmployeeId: number | null;
-  onSelectEmployee: (id: number) => void;
+  onSelectEmployee: (id: number | null) => void;
 }
 
 type SummaryTotals = {
@@ -60,11 +60,14 @@ const TimesheetSummaryTable = memo(function TimesheetSummaryTable({
                   className={`cursor-pointer odd:bg-base-200/60 hover:bg-primary/5 transition-colors will-change-auto ${
                     row.employeeId === selectedEmployeeId ? "bg-primary/10 outline-2 outline-primary/30" : ""
                   }`}
-                  onClick={() => onSelectEmployee(row.employeeId)}
+                  onClick={() => {
+                    // Si ya está seleccionado, deseleccionar; si no, seleccionar
+                    onSelectEmployee(row.employeeId === selectedEmployeeId ? null : row.employeeId);
+                  }}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
-                      onSelectEmployee(row.employeeId);
+                      onSelectEmployee(row.employeeId === selectedEmployeeId ? null : row.employeeId);
                     }
                   }}
                 >

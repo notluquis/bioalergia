@@ -1,16 +1,7 @@
 import express from "express";
-import {
-  asyncHandler,
-  authenticate,
-  requireRole,
-} from "../lib/http.js";
+import { asyncHandler, authenticate, requireRole } from "../lib/http.js";
 import { logEvent, logWarn, requestContext } from "../lib/logger.js";
-import {
-  listEmployees,
-  createEmployee,
-  updateEmployee,
-  deactivateEmployee,
-} from "../db.js";
+import { listEmployees, createEmployee, updateEmployee, deactivateEmployee } from "../repositories/employees.js";
 import { employeeSchema, employeeUpdateSchema } from "../schemas.js";
 import type { AuthenticatedRequest } from "../types.js";
 
@@ -34,7 +25,9 @@ export function registerEmployeeRoutes(app: express.Express) {
       const parsed = employeeSchema.safeParse(req.body);
       if (!parsed.success) {
         logWarn("employees:create:invalid", requestContext(req, { issues: parsed.error.issues }));
-        return res.status(400).json({ status: "error", message: "Los datos no son válidos", issues: parsed.error.issues });
+        return res
+          .status(400)
+          .json({ status: "error", message: "Los datos no son válidos", issues: parsed.error.issues });
       }
 
       const employee = await createEmployee(parsed.data);
