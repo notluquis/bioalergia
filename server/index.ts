@@ -116,9 +116,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Carpeta con el build del cliente (Vite)
-// En producción: /app/dist/server -> ../../client = /app/dist/client
+// En producción: /app/dist/server -> ../client = /app/dist/client
 // En desarrollo: server/ -> ../dist/client
-const clientDir = path.resolve(__dirname, "../../client");
+const clientDir = path.resolve(__dirname, "../client");
 
 // Debug: Log client directory path and existence
 logger.info(`📁 Client directory: ${clientDir}`);
