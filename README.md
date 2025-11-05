@@ -8,7 +8,7 @@ React + Vite + TypeScript + **Tailwind v4**. Sistema completo de gestión financ
 # Desarrollo
 npm run dev:full      # Frontend + Backend en paralelo (recomendado)
 npm run dev           # Solo frontend (Vite)
-npm run server        # Solo backend (Express)
+npm run server        # Solo backend (Express) - logs formateados automáticamente
 
 # Producción
 npm run prod          # Build completo + start
@@ -65,6 +65,7 @@ npx lint-staged
 - En el primer arranque, si la tabla `users` está vacía y `ADMIN_EMAIL`/`ADMIN_PASSWORD` están definidos, se crea automáticamente un usuario con rol **GOD**.
 - Ejecuta `npm run server` para levantar la API (por defecto en `http://localhost:4000`).
 - Ejecuta `npm run dev` para levantar el front; `/api` se proxyea automáticamente al servidor Express.
+- **Logging**: Los logs se formatean automáticamente en desarrollo con colores y timestamps legibles usando `pino-pretty`. En producción se mantiene formato JSON estructurado.
 - Endpoints principales:
   - `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me` → manejo de sesión vía cookie HTTP-only.
   - `GET /api/settings`, `PUT /api/settings` → lectura y actualización de la configuración de marca (requiere rol `ADMIN` o `GOD`).

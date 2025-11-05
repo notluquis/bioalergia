@@ -3,21 +3,14 @@ import dayjs from "dayjs";
 import { useAuth } from "../context/AuthContext";
 import { useSettings } from "../context/SettingsContext";
 import { logger } from "../lib/logger";
-import {
-  TransactionsFilters,
-} from "../features/transactions/components/TransactionsFilters";
-import {
-  TransactionsColumnToggles,
-} from "../features/transactions/components/TransactionsColumnToggles";
+import { TransactionsFilters } from "../features/transactions/components/TransactionsFilters";
+import { TransactionsColumnToggles } from "../features/transactions/components/TransactionsColumnToggles";
 import { TransactionsTable } from "../features/transactions/components/TransactionsTable";
 import { DailyBalancesPanel } from "../features/balances/components/DailyBalancesPanel";
 import { COLUMN_DEFS, type ColumnKey } from "../features/transactions/constants";
-import type { Filters, LedgerRow } from "../features/transactions/types";
+import type { Filters } from "../features/transactions/types";
 import type { BalancesApiResponse, BalanceDraft } from "../features/balances/types";
-import {
-  deriveInitialBalance,
-  formatBalanceInput,
-} from "../features/balances/utils";
+import { deriveInitialBalance, formatBalanceInput } from "../features/balances/utils";
 import { useQuickDateRange } from "../features/balances/hooks/useQuickDateRange";
 import { useDailyBalanceManagement } from "../features/balances/hooks/useDailyBalanceManagement";
 import { useLedger } from "../features/transactions/hooks/useLedger";
@@ -66,38 +59,39 @@ export default function Data() {
 
   const canView = hasRole("GOD", "ADMIN", "ANALYST", "VIEWER");
 
-  const loadBalances = useCallback(
-    async (fromValue: string, toValue: string) => {
-      if (!fromValue || !toValue) {
-        setBalancesReport(null);
-        return;
-      }
+  const loadBalances = useCallback(async (fromValue: string, toValue: string) => {
+    if (!fromValue || !toValue) {
+      setBalancesReport(null);
+      return;
+    }
 
-      setBalancesLoading(true);
-      try {
-        const payload = await fetchBalances(fromValue, toValue);
-        setBalancesReport(payload);
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "No se pudieron obtener los saldos diarios";
-        logger.error("[data] balances:error", message);
-        setBalancesReport(null);
-      } finally {
-        setBalancesLoading(false);
-      }
-    },
-    []
-  );
+    setBalancesLoading(true);
+    try {
+      const payload = await fetchBalances(fromValue, toValue);
+      setBalancesReport(payload);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "No se pudieron obtener los saldos diarios";
+      logger.error("[data] balances:error", message);
+      setBalancesReport(null);
+    } finally {
+      setBalancesLoading(false);
+    }
+  }, []);
 
-  const { drafts: balancesDrafts, saving: balancesSaving, error: balancesError, handleDraftChange: handleBalanceDraftChange, handleSave: handleBalanceSave, setDrafts: setBalancesDrafts } = useDailyBalanceManagement({
+  const {
+    drafts: balancesDrafts,
+    saving: balancesSaving,
+    error: balancesError,
+    handleDraftChange: handleBalanceDraftChange,
+    handleSave: handleBalanceSave,
+    setDrafts: setBalancesDrafts,
+  } = useDailyBalanceManagement({
     from: appliedFilters.from,
     to: appliedFilters.to,
     loadBalances,
   });
 
-  const transactionsQuery = useTransactionsQuery(
-    { filters: appliedFilters, page, pageSize },
-    canView
-  );
+  const transactionsQuery = useTransactionsQuery({ filters: appliedFilters, page, pageSize }, canView);
 
   const rows = transactionsQuery.data?.data ?? [];
   const hasAmounts = Boolean(transactionsQuery.data?.hasAmounts);
@@ -111,13 +105,20 @@ export default function Data() {
     hasAmounts,
   });
 
+  // Consolidated effect: load balances and update drafts when filters change
   useEffect(() => {
     if (!canView) {
       return;
     }
-    loadBalances(appliedFilters.from, appliedFilters.to);
+
+    async function loadAndUpdateDrafts() {
+      await loadBalances(appliedFilters.from, appliedFilters.to);
+    }
+
+    loadAndUpdateDrafts();
   }, [appliedFilters.from, appliedFilters.to, canView, loadBalances]);
 
+  // Update drafts when balances report changes
   useEffect(() => {
     if (!balancesReport) {
       setBalancesDrafts({});
@@ -132,27 +133,24 @@ export default function Data() {
       };
     }
     setBalancesDrafts(drafts);
-  }, [balancesReport, setBalancesDrafts]);
 
-  useEffect(() => {
-    if (!balancesReport || initialBalanceEdited) {
-      return;
-    }
-
-    const derived = deriveInitialBalance(balancesReport);
-    if (derived == null) {
-      const hasRecorded = balancesReport.days.some((day) => day.recordedBalance != null);
-      if (!balancesReport.previous && !hasRecorded && initialBalance !== "0") {
-        setInitialBalance("0");
+    // Derive initial balance if not manually edited
+    if (!initialBalanceEdited) {
+      const derived = deriveInitialBalance(balancesReport);
+      if (derived == null) {
+        const hasRecorded = balancesReport.days.some((day) => day.recordedBalance != null);
+        if (!balancesReport.previous && !hasRecorded && initialBalance !== "0") {
+          setInitialBalance("0");
+        }
+        return;
       }
-      return;
-    }
 
-    const formatted = formatBalanceInput(derived);
-    if (formatted !== initialBalance) {
-      setInitialBalance(formatted);
+      const formatted = formatBalanceInput(derived);
+      if (formatted !== initialBalance) {
+        setInitialBalance(formatted);
+      }
     }
-  }, [balancesReport, initialBalance, initialBalanceEdited]);
+  }, [balancesReport, setBalancesDrafts, initialBalance, initialBalanceEdited]);
 
   const handleFilterChange = (update: Partial<Filters>) => {
     setDraftFilters((prev) => ({ ...prev, ...update }));
@@ -178,9 +176,7 @@ export default function Data() {
   return (
     <section className="space-y-6">
       {!canView ? (
-        <Alert variant="error">
-          No tienes permisos para ver los movimientos almacenados.
-        </Alert>
+        <Alert variant="error">No tienes permisos para ver los movimientos almacenados.</Alert>
       ) : (
         <>
           <TransactionsFilters
@@ -204,16 +200,16 @@ export default function Data() {
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div className="space-y-2">
-              <h1 className="text-2xl font-bold text-[var(--brand-primary)]">Movimientos en la base</h1>
-              <p className="max-w-2xl text-sm text-slate-600">
-                Saldos ajustados + balance manual para cuadrar con contabilidad. Ajusta el saldo inicial
-                para recalcular el saldo acumulado, registra los saldos diarios y, ante dudas, contacta a{" "}
+              <h1 className="text-2xl font-bold text-primary">Movimientos en la base</h1>
+              <p className="max-w-2xl text-sm text-base-content">
+                Saldos ajustados + balance manual para cuadrar con contabilidad. Ajusta el saldo inicial para recalcular
+                el saldo acumulado, registra los saldos diarios y, ante dudas, contacta a{" "}
                 <strong>{settings.supportEmail}</strong>.
               </p>
             </div>
             <div className="flex flex-wrap items-end gap-3">
-              <div className="flex flex-col gap-2 text-xs font-semibold uppercase tracking-wide text-slate-600">
-                <label htmlFor="balance-day" className="text-slate-500">
+              <div className="flex flex-col gap-2 text-xs font-semibold uppercase tracking-wide text-base-content">
+                <label htmlFor="balance-day" className="text-base-content/60">
                   Saldo inicial (CLP)
                 </label>
                 <div className="flex items-center gap-3">
@@ -237,7 +233,7 @@ export default function Data() {
                   </Button>
                 </div>
               </div>
-              <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-wide text-slate-600">
+              <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-wide text-base-content">
                 Mes rápido
                 <select
                   value={quickRange}
@@ -252,7 +248,7 @@ export default function Data() {
                     setPage(1);
                     setAppliedFilters(nextFilters);
                   }}
-                  className="glass-input"
+                  className="select select-bordered"
                 >
                   <option value="custom">Personalizado</option>
                   {quickMonths.map((month) => (

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 import dayjs from "dayjs";
 import {
@@ -34,27 +34,10 @@ export default function CounterpartsPage() {
   }));
   const [summary, setSummary] = useState<CounterpartSummary | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
-  useEffect(() => {
-    async function load() {
-      const list = await fetchCounterparts();
-      setCounterparts(list);
-      if (list.length) {
-        selectCounterpart(list[0].id);
-      }
-    }
-    load().catch((err) => setError(err instanceof Error ? err.message : String(err)));
-  }, []);
-
-  useEffect(() => {
-    if (selectedId) {
-      loadSummary(selectedId, summaryRange.from, summaryRange.to).catch((err) =>
-        setError(err instanceof Error ? err.message : String(err))
-      );
-    }
-  }, [selectedId, summaryRange.from, summaryRange.to]);
-
-  async function selectCounterpart(id: number | null) {
+  // Define selectCounterpart first (before any useEffect that depends on it)
+  const selectCounterpart = useCallback(async (id: number | null) => {
     setError(null);
     setSummary(null);
     setDetail(null);
@@ -68,7 +51,69 @@ export default function CounterpartsPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     }
-  }
+  }, []);
+
+  const loadSummary = useCallback(async (counterpartId: number, from: string, to: string) => {
+    // Cancel previous request if any
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    setSummaryLoading(true);
+    try {
+      const data = await fetchCounterpartSummary(counterpartId, { from, to });
+      if (!controller.signal.aborted) {
+        setSummary(data);
+      }
+    } catch (err) {
+      if (!controller.signal.aborted) {
+        setError(err instanceof Error ? err.message : String(err));
+      }
+    } finally {
+      if (!controller.signal.aborted) {
+        setSummaryLoading(false);
+      }
+    }
+  }, []);
+
+  // Load initial list of counterparts
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      const list = await fetchCounterparts();
+      if (cancelled) return;
+      setCounterparts(list);
+      if (list.length) {
+        const firstCounterpart = list[0];
+        if (firstCounterpart?.id) selectCounterpart(firstCounterpart.id);
+      }
+    }
+    load().catch((err) => {
+      if (!cancelled) setError(err instanceof Error ? err.message : String(err));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectCounterpart]);
+
+  // Load summary when selectedId or range changes
+  useEffect(() => {
+    if (selectedId) {
+      loadSummary(selectedId, summaryRange.from, summaryRange.to).catch((err) => {
+        setError(err instanceof Error ? err.message : String(err));
+      });
+    }
+    return () => {
+      // Cleanup: cancel any pending summary request
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
+    };
+  }, [selectedId, summaryRange.from, summaryRange.to, loadSummary]);
 
   async function handleSaveCounterpart(payload: CounterpartUpsertPayload) {
     setFormStatus("saving");
@@ -81,7 +126,7 @@ export default function CounterpartsPage() {
       if (id) {
         const data = await updateCounterpart(id, payload);
         setDetail(data);
-        id = data.counterpart.id;
+        id = data.counterpart.id!;
         setCounterparts((prev) =>
           prev.map((item) => (item.id === id ? data.counterpart : item)).sort((a, b) => a.name.localeCompare(b.name))
         );
@@ -99,18 +144,6 @@ export default function CounterpartsPage() {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
       setFormStatus("idle");
-    }
-  }
-
-  async function loadSummary(counterpartId: number, from: string, to: string) {
-    setSummaryLoading(true);
-    try {
-      const data = await fetchCounterpartSummary(counterpartId, { from, to });
-      setSummary(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setSummaryLoading(false);
     }
   }
 
@@ -150,8 +183,8 @@ export default function CounterpartsPage() {
           <section className="bg-base-100 space-y-5 p-6">
             <header className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
               <div className="space-y-1">
-                <h2 className="text-lg font-semibold text-(--brand-primary) drop-shadow-sm">Resumen mensual</h2>
-                <p className="text-xs text-slate-600/90">Transferencias de egreso asociadas a esta contraparte.</p>
+                <h2 className="text-lg font-semibold text-primary drop-shadow-sm">Resumen mensual</h2>
+                <p className="text-xs text-base-content/90">Transferencias de egreso asociadas a esta contraparte.</p>
               </div>
               <div className="flex flex-wrap items-end gap-3 text-xs">
                 <Input
@@ -182,14 +215,14 @@ export default function CounterpartsPage() {
               </div>
             </header>
             {summaryLoading ? (
-              <p className="text-xs text-slate-600">Calculando resumen...</p>
+              <p className="text-xs text-base-content">Calculando resumen...</p>
             ) : summary ? (
               <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
                 <MonthlySummaryChart data={summary.monthly} />
                 <ConceptList concepts={summaryConcepts} />
               </div>
             ) : (
-              <p className="text-xs text-slate-600">No hay datos disponibles.</p>
+              <p className="text-xs text-base-content">No hay datos disponibles.</p>
             )}
           </section>
         )}

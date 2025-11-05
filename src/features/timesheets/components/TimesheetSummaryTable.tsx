@@ -1,4 +1,5 @@
 import dayjs from "dayjs";
+import { memo } from "react";
 import { fmtCLP } from "../../../lib/format";
 import type { TimesheetSummaryRow } from "../types";
 
@@ -18,17 +19,17 @@ type SummaryTotals = {
   net: number;
 };
 
-export default function TimesheetSummaryTable({
+const TimesheetSummaryTable = memo(function TimesheetSummaryTable({
   summary,
   loading,
   selectedEmployeeId,
   onSelectEmployee,
 }: TimesheetSummaryTableProps) {
   return (
-    <div className="overflow-hidden rounded-2xl border border-(--brand-primary)/15 bg-base-100 shadow-sm">
+    <div className="overflow-hidden rounded-2xl border border-primary/15 bg-base-100 shadow-sm">
       <div className="overflow-x-auto muted-scrollbar">
         <table className="min-w-full text-sm">
-          <thead className="bg-(--brand-primary)/10 text-(--brand-primary)">
+          <thead className="bg-primary/10 text-primary">
             <tr>
               <th className="px-4 py-3 text-left font-semibold whitespace-nowrap">Trabajador</th>
               <th className="px-4 py-3 text-left font-semibold whitespace-nowrap">Función</th>
@@ -45,7 +46,7 @@ export default function TimesheetSummaryTable({
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={10} className="px-4 py-6 text-center text-(--brand-primary)">
+                <td colSpan={10} className="px-4 py-6 text-center text-primary">
                   Cargando resumen...
                 </td>
               </tr>
@@ -56,10 +57,8 @@ export default function TimesheetSummaryTable({
                   key={row.employeeId}
                   role="button"
                   tabIndex={0}
-                  className={`cursor-pointer odd:bg-slate-50/60 hover:bg-(--brand-primary)/5 transition-colors will-change-auto ${
-                    row.employeeId === selectedEmployeeId
-                      ? "bg-(--brand-primary)/10 outline-2 outline-(--brand-primary)/30"
-                      : ""
+                  className={`cursor-pointer odd:bg-base-200/60 hover:bg-primary/5 transition-colors will-change-auto ${
+                    row.employeeId === selectedEmployeeId ? "bg-primary/10 outline-2 outline-primary/30" : ""
                   }`}
                   onClick={() => onSelectEmployee(row.employeeId)}
                   onKeyDown={(e) => {
@@ -69,28 +68,28 @@ export default function TimesheetSummaryTable({
                     }
                   }}
                 >
-                  <td className="px-4 py-3 font-medium text-slate-700">{row.fullName}</td>
-                  <td className="px-4 py-3 text-slate-500">{row.role}</td>
-                  <td className="px-4 py-3 text-slate-600">{row.hoursFormatted}</td>
-                  <td className="px-4 py-3 text-slate-600">{fmtCLP(row.hourlyRate)}</td>
+                  <td className="px-4 py-3 font-medium text-base-content">{row.fullName}</td>
+                  <td className="px-4 py-3 text-base-content/60">{row.role}</td>
+                  <td className="px-4 py-3 text-base-content">{row.hoursFormatted}</td>
+                  <td className="px-4 py-3 text-base-content">{fmtCLP(row.hourlyRate)}</td>
                   {/* Extras deben venir del detalle (overtime) */}
-                  <td className="px-4 py-3 text-slate-600">{row.overtimeFormatted}</td>
-                  <td className="px-4 py-3 text-slate-600">{fmtCLP(row.subtotal)}</td>
-                  <td className="px-4 py-3 text-slate-600">{fmtCLP(row.retention)}</td>
-                  <td className="px-4 py-3 text-slate-600">{fmtCLP(row.net)}</td>
-                  <td className="px-4 py-3 text-slate-600">{dayjs(row.payDate).format("DD-MM-YYYY")}</td>
+                  <td className="px-4 py-3 text-base-content">{row.overtimeFormatted}</td>
+                  <td className="px-4 py-3 text-base-content">{fmtCLP(row.subtotal)}</td>
+                  <td className="px-4 py-3 text-base-content">{fmtCLP(row.retention)}</td>
+                  <td className="px-4 py-3 text-base-content">{fmtCLP(row.net)}</td>
+                  <td className="px-4 py-3 text-base-content">{dayjs(row.payDate).format("DD-MM-YYYY")}</td>
                 </tr>
               ))}
             {!loading && summary?.employees.length === 0 && (
               <tr>
-                <td colSpan={10} className="px-4 py-6 text-center text-slate-500">
+                <td colSpan={10} className="px-4 py-6 text-center text-base-content/60">
                   Aún no registras horas en este periodo.
                 </td>
               </tr>
             )}
           </tbody>
           {summary && (
-            <tfoot className="bg-slate-100 text-slate-700">
+            <tfoot className="bg-base-200 text-base-content">
               <tr>
                 <td className="px-4 py-3 font-semibold" colSpan={2}>
                   TOTAL
@@ -110,4 +109,6 @@ export default function TimesheetSummaryTable({
       </div>
     </div>
   );
-}
+});
+
+export default TimesheetSummaryTable;

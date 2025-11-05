@@ -19,10 +19,7 @@ export default function Home() {
   const statsParams = useMemo(() => ({ from, to }), [from, to]);
   const statsQuery = useDashboardStats(statsParams);
 
-  const leaderboardParams = useMemo(
-    () => ({ from, to, limit: 5, mode: "outgoing" as const }),
-    [from, to]
-  );
+  const leaderboardParams = useMemo(() => ({ from, to, limit: 5, mode: "outgoing" as const }), [from, to]);
   const participantsQuery = useParticipantLeaderboardQuery(leaderboardParams, {
     enabled: Boolean(from && to),
   });
@@ -35,8 +32,7 @@ export default function Home() {
 
   const topParticipants = participantsQuery.data ?? [];
   const participantsLoading = participantsQuery.isPending || participantsQuery.isFetching;
-  const participantsError =
-    participantsQuery.error instanceof Error ? participantsQuery.error.message : null;
+  const participantsError = participantsQuery.error instanceof Error ? participantsQuery.error.message : null;
 
   const recentMovements = recentMovementsQuery.data ?? [];
 
@@ -53,9 +49,9 @@ export default function Home() {
 
   return (
     <section className="space-y-6">
-      <header className="glass-card glass-underlay-gradient space-y-2 p-6">
-        <h1 className="text-2xl font-bold text-[var(--brand-primary)] drop-shadow-sm">Panel financiero</h1>
-        <p className="text-sm text-slate-600/90">
+      <header className="card bg-base-100 shadow-lg space-y-2 p-6">
+        <h1 className="text-2xl font-bold text-primary drop-shadow-sm">Panel financiero</h1>
+        <p className="text-sm text-base-content/70">
           Resumen rápido de los últimos {RANGE_DAYS} días con accesos directos a tus vistas principales.
         </p>
       </header>
@@ -63,7 +59,12 @@ export default function Home() {
       <section className="grid gap-4 md:grid-cols-3">
         <MetricCard title="Ingresos" value={totals.in} accent="emerald" loading={statsLoading} />
         <MetricCard title="Egresos" value={totals.out} accent="rose" loading={statsLoading} />
-        <MetricCard title="Neto" value={totals.net} accent={totals.net >= 0 ? "emerald" : "rose"} loading={statsLoading} />
+        <MetricCard
+          title="Neto"
+          value={totals.net}
+          accent={totals.net >= 0 ? "emerald" : "rose"}
+          loading={statsLoading}
+        />
       </section>
 
       {statsError && <Alert variant="error">{statsError}</Alert>}
@@ -74,11 +75,7 @@ export default function Home() {
           <QuickActions />
         </div>
         <aside className="space-y-6 min-w-0">
-          <TopParticipantsWidget
-            data={topParticipants}
-            loading={participantsLoading}
-            error={participantsError}
-          />
+          <TopParticipantsWidget data={topParticipants} loading={participantsLoading} error={participantsError} />
           <RecentMovementsWidget rows={recentMovements} />
         </aside>
       </section>

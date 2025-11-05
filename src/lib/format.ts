@@ -34,6 +34,7 @@ export function formatRut(value: string | null | undefined): string {
   const normalized = normalizeRut(value);
   if (!normalized) return "";
   const [body, dv] = normalized.split("-");
+  if (!body || !dv) return "";
   const formattedBody = body.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
   return `${formattedBody}-${dv}`;
 }
@@ -80,12 +81,7 @@ export function formatRelativeDate(date: string | Date): string {
 
 // === DURATION FORMATTING ===
 
-export {
-  durationToMinutes,
-  minutesToDuration,
-  parseTimeToMinutes,
-  minutesToTime,
-} from "~/shared/time";
+export { durationToMinutes, minutesToDuration, parseTimeToMinutes, minutesToTime } from "~/shared/time";
 
 // === NUMERIC FORMATTING ===
 

@@ -10,7 +10,7 @@ export default function RecentMovementsWidget({ rows }: { rows: DbMovement[] }) 
         <h3 className="text-base font-semibold text-base-content drop-shadow-sm">Últimos movimientos</h3>
         <Link
           to="/transactions/movements"
-          className="inline-flex items-center rounded-full border border-(--brand-primary)/45 bg-(--brand-primary)/15 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-(--brand-primary)"
+          className="inline-flex items-center rounded-full border border-primary/45 bg-primary/15 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-primary"
         >
           Ver más
         </Link>
@@ -20,7 +20,7 @@ export default function RecentMovementsWidget({ rows }: { rows: DbMovement[] }) 
           {rows.map((row) => (
             <li
               key={row.id}
-              className="flex items-start justify-between gap-3 rounded-2xl border border-white/55 bg-base-100/55 px-4 py-3 shadow-[0_10px_24px_-16px_rgba(16,37,66,0.4)]"
+              className="flex items-start justify-between gap-3 rounded-2xl border border-base-300 bg-base-200 px-4 py-3 shadow-[0_10px_24px_-16px_rgba(16,37,66,0.4)]"
             >
               <div>
                 <p className="font-medium text-base-content">

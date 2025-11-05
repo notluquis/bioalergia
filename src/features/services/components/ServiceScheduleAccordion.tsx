@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
 import type { ServiceSchedule, ServiceSummary } from "../types";
 import Button from "../../../components/Button";
@@ -29,7 +29,7 @@ const currencyFormatter = new Intl.NumberFormat("es-CL", {
   maximumFractionDigits: 0,
 });
 
-export default function ServiceScheduleAccordion({
+const ServiceScheduleAccordion = memo(function ServiceScheduleAccordion({
   service,
   schedules,
   canManage,
@@ -91,20 +91,20 @@ export default function ServiceScheduleAccordion({
 
   if (!groups.length) {
     return (
-      <section className="space-y-3 rounded-2xl border border-white/55 bg-base-100/55 p-4 text-sm text-slate-600">
+      <section className="space-y-3 rounded-2xl border border-base-300 bg-base-200 p-4 text-sm text-base-content">
         <header className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Agenda de vencimientos</h2>
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-base-content/60">Agenda de vencimientos</h2>
         </header>
-        <p className="text-xs text-slate-500">No hay cuotas generadas para este servicio.</p>
+        <p className="text-xs text-base-content/60">No hay cuotas generadas para este servicio.</p>
       </section>
     );
   }
 
   return (
-    <section className="space-y-3 rounded-2xl border border-white/55 bg-base-100/55 p-4 text-sm text-slate-600">
+    <section className="space-y-3 rounded-2xl border border-base-300 bg-base-200 p-4 text-sm text-base-content">
       <header className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Agenda de vencimientos</h2>
-        <span className="text-xs text-slate-400">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-base-content/60">Agenda de vencimientos</h2>
+        <span className="text-xs text-base-content/50">
           {service.pending_count + service.overdue_count} pendientes totales
         </span>
       </header>
@@ -112,49 +112,51 @@ export default function ServiceScheduleAccordion({
         {groups.map((group) => {
           const isExpanded = expanded[group.dateKey] ?? false;
           return (
-            <article key={group.dateKey} className="rounded-xl border border-white/50 bg-base-100/65 shadow-sm">
+            <article key={group.dateKey} className="rounded-xl border border-base-300 bg-base-200 shadow-sm">
               <button
                 type="button"
                 onClick={() => toggleGroup(group.dateKey)}
-                className="flex w-full items-center justify-between gap-4 px-4 py-3 text-left transition-colors hover:bg-base-100/70"
+                className="flex w-full items-center justify-between gap-4 px-4 py-3 text-left transition-colors hover:bg-base-200"
               >
                 <div>
-                  <p className="text-sm font-semibold text-slate-700 capitalize">{group.label}</p>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-sm font-semibold text-base-content capitalize">{group.label}</p>
+                  <p className="text-xs text-base-content/50">
                     {group.items.length} {group.items.length === 1 ? "cuota" : "cuotas"}
                   </p>
                 </div>
                 <span
-                  className={`inline-flex h-7 w-7 items-center justify-center rounded-full border border-white/60 bg-base-100/70 text-xs font-semibold text-slate-500 transition-transform ${
+                  className={`inline-flex h-7 w-7 items-center justify-center rounded-full border border-base-300 bg-base-200 text-xs font-semibold text-base-content/60 transition-transform ${
                     isExpanded ? "rotate-180" : ""
                   }`}
                 >
                   ⌃
                 </span>
               </button>
-              <div className={`${isExpanded ? "space-y-2 border-t border-white/60 px-4 py-3" : "hidden"}`}>
+              <div className={`${isExpanded ? "space-y-2 border-t border-base-300 px-4 py-3" : "hidden"}`}>
                 {group.items.map((item) => {
                   const dueDate = dayjs(item.due_date);
                   const diffDays = dueDate.startOf("day").diff(dayjs().startOf("day"), "day");
                   const isOverdue = item.status === "PENDING" && diffDays < 0;
                   const statusClasses = {
-                    PENDING: "bg-amber-100 text-amber-700",
-                    PARTIAL: "bg-amber-100 text-amber-700",
-                    PAID: "bg-emerald-100 text-emerald-700",
-                    SKIPPED: "bg-slate-100 text-slate-600",
+                    PENDING: "bg-warning/20 text-warning",
+                    PARTIAL: "bg-warning/20 text-warning",
+                    PAID: "bg-success/20 text-success",
+                    SKIPPED: "bg-base-200 text-base-content/60",
                   } as const;
 
                   return (
                     <div
                       key={item.id}
-                      className="rounded-xl border border-white/50 bg-base-100/80 p-3 shadow-inner transition hover:border-(--brand-primary)/40"
+                      className="rounded-xl border border-base-300 bg-base-200 p-3 shadow-inner transition hover:border-primary/40"
                     >
                       <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
-                          <p className="text-sm font-semibold text-slate-700">
+                          <p className="text-sm font-semibold text-base-content">
                             {currencyFormatter.format(item.expected_amount)}
                           </p>
-                          <p className="text-xs text-slate-400">Vence el {dateFormatter.format(dueDate.toDate())}</p>
+                          <p className="text-xs text-base-content/50">
+                            Vence el {dateFormatter.format(dueDate.toDate())}
+                          </p>
                         </div>
                         <span
                           className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${
@@ -164,13 +166,13 @@ export default function ServiceScheduleAccordion({
                           {item.status === "PENDING" && isOverdue ? "Pendiente · Vencido" : item.status}
                         </span>
                       </div>
-                      <div className="mt-2 flex flex-wrap items-center gap-4 text-xs text-slate-500">
+                      <div className="mt-2 flex flex-wrap items-center gap-4 text-xs text-base-content/60">
                         <span>
                           Periodo {dayjs(item.period_start).format("DD MMM")} –{" "}
                           {dayjs(item.period_end).format("DD MMM YYYY")}
                         </span>
                         {item.transaction && (
-                          <span className="text-emerald-600">
+                          <span className="text-success">
                             Pago {currencyFormatter.format(item.transaction.amount ?? 0)} ·{" "}
                             {dayjs(item.transaction.timestamp).format("DD MMM")}
                           </span>
@@ -200,7 +202,9 @@ export default function ServiceScheduleAccordion({
       </div>
     </section>
   );
-}
+});
+
+export default ServiceScheduleAccordion;
 
 function capitalize(value: string) {
   if (!value.length) return value;

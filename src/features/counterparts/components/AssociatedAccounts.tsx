@@ -80,18 +80,32 @@ export default function AssociatedAccounts({
       return;
     }
     const controller = new AbortController();
-    const id = window.setTimeout(() => {
+    let timeoutId: number | null = null;
+
+    timeoutId = window.setTimeout(() => {
+      if (controller.signal.aborted) return;
       setSuggestionsLoading(true);
       fetchAccountSuggestions(suggestionQuery)
-        .then(setAccountSuggestions)
-        .catch(() => undefined)
+        .then((suggestions) => {
+          if (!controller.signal.aborted) {
+            setAccountSuggestions(suggestions);
+          }
+        })
+        .catch(() => {
+          // Silently ignore errors on aborted requests
+        })
         .finally(() => {
-          if (!controller.signal.aborted) setSuggestionsLoading(false);
+          if (!controller.signal.aborted) {
+            setSuggestionsLoading(false);
+          }
         });
     }, 200);
+
     return () => {
       controller.abort();
-      window.clearTimeout(id);
+      if (timeoutId !== null) {
+        window.clearTimeout(timeoutId);
+      }
     };
   }, [suggestionQuery]);
 
@@ -376,16 +390,16 @@ export default function AssociatedAccounts({
     <section className="space-y-5 p-6 bg-base-100">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div className="space-y-1">
-          <h2 className="text-lg font-semibold text-(--brand-primary) drop-shadow-sm">Cuentas asociadas</h2>
-          <p className="text-xs text-slate-600/90">
+          <h2 className="text-lg font-semibold text-primary drop-shadow-sm">Cuentas asociadas</h2>
+          <p className="text-xs text-base-content/90">
             Identificadores detectados en los movimientos y asignados a esta contraparte.
           </p>
         </div>
       </header>
       {error && <Alert variant="error">{error}</Alert>}
       <div className="overflow-x-auto">
-        <table className="min-w-full text-sm text-slate-600">
-          <thead className="bg-base-100/60 text-(--brand-primary)">
+        <table className="min-w-full text-sm text-base-content">
+          <thead className="bg-base-100/60 text-primary">
             <tr>
               <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide">Cuenta</th>
               <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide">Banco</th>
@@ -400,17 +414,17 @@ export default function AssociatedAccounts({
               const state = accountDetails[group.key];
               return (
                 <Fragment key={group.key}>
-                  <tr className="border-b border-white/45 bg-base-100/45 last:border-none even:bg-base-100/35">
-                    <td className="px-3 py-3 text-slate-600">
-                      <div className="font-mono text-xs text-slate-600">{group.label}</div>
+                  <tr className="border-b border-base-300 bg-base-200 last:border-none even:bg-base-300">
+                    <td className="px-3 py-3 text-base-content">
+                      <div className="font-mono text-xs text-base-content">{group.label}</div>
                       {group.accounts.length > 1 && (
-                        <div className="text-xs text-slate-400/90">
+                        <div className="text-xs text-base-content/90">
                           {group.accounts.length} identificadores vinculados
                         </div>
                       )}
                     </td>
-                    <td className="px-3 py-3 text-slate-600">{group.bankName ?? "-"}</td>
-                    <td className="px-3 py-3 text-slate-600">{group.holder ?? "-"}</td>
+                    <td className="px-3 py-3 text-base-content">{group.bankName ?? "-"}</td>
+                    <td className="px-3 py-3 text-base-content">{group.holder ?? "-"}</td>
                     <td className="px-3 py-3">
                       <Input
                         type="text"
@@ -422,12 +436,12 @@ export default function AssociatedAccounts({
                         placeholder="Concepto (ej. Compra de vacunas)"
                       />
                     </td>
-                    <td className="px-3 py-3 text-slate-600">
+                    <td className="px-3 py-3 text-base-content">
                       <div className="flex flex-col gap-2 text-xs">
                         <Button variant="secondary" onClick={() => toggleAccountDetails(group)} className="self-start">
                           {state?.expanded ? "Ocultar movimientos" : "Ver movimientos"}
                         </Button>
-                        <div className="text-xs text-slate-500">
+                        <div className="text-xs text-base-content/60">
                           {state?.loading
                             ? "Cargando movimientos..."
                             : summaryInfo
@@ -446,15 +460,15 @@ export default function AssociatedAccounts({
                     <tr className="bg-base-100/65">
                       <td colSpan={5} className="px-3 pb-4 pt-2">
                         {state.loading ? (
-                          <p className="text-xs text-slate-500">Cargando movimientos...</p>
+                          <p className="text-xs text-base-content/60">Cargando movimientos...</p>
                         ) : state.error ? (
                           <Alert variant="error" className="text-xs">
                             {state.error}
                           </Alert>
                         ) : state.rows.length ? (
                           <div className="overflow-x-auto">
-                            <table className="min-w-full text-xs text-slate-600">
-                              <thead className="bg-base-100/60 text-(--brand-primary)">
+                            <table className="min-w-full text-xs text-base-content">
+                              <thead className="bg-base-100/60 text-primary">
                                 <tr>
                                   <th className="px-2 py-2 text-left text-xs font-semibold uppercase tracking-wide">
                                     Fecha
@@ -475,16 +489,16 @@ export default function AssociatedAccounts({
                               </thead>
                               <tbody>
                                 {state.rows.map((movement) => (
-                                  <tr key={movement.id} className="border-t border-white/45">
-                                    <td className="px-2 py-2 text-slate-600">
+                                  <tr key={movement.id} className="border-t border-base-300">
+                                    <td className="px-2 py-2 text-base-content">
                                       {dayjs(movement.timestamp).format("DD MMM YYYY HH:mm")}
                                     </td>
-                                    <td className="px-2 py-2 text-slate-600">
+                                    <td className="px-2 py-2 text-base-content">
                                       {movement.description ?? "(sin descripción)"}
                                     </td>
-                                    <td className="px-2 py-2 text-slate-600">{movement.origin ?? "-"}</td>
-                                    <td className="px-2 py-2 text-slate-600">{movement.destination ?? "-"}</td>
-                                    <td className="px-2 py-2 text-right font-medium text-slate-700">
+                                    <td className="px-2 py-2 text-base-content">{movement.origin ?? "-"}</td>
+                                    <td className="px-2 py-2 text-base-content">{movement.destination ?? "-"}</td>
+                                    <td className="px-2 py-2 text-right font-medium text-base-content">
                                       {movement.amount != null ? fmtCLP(movement.amount) : "-"}
                                     </td>
                                   </tr>
@@ -493,7 +507,7 @@ export default function AssociatedAccounts({
                             </table>
                           </div>
                         ) : (
-                          <p className="text-xs text-slate-500">
+                          <p className="text-xs text-base-content/60">
                             No se encontraron movimientos para esta cuenta en el rango seleccionado.
                           </p>
                         )}
@@ -505,7 +519,7 @@ export default function AssociatedAccounts({
             })}
             {!accountGroups.length && (
               <tr>
-                <td colSpan={5} className="px-3 py-4 text-center text-xs text-slate-500">
+                <td colSpan={5} className="px-3 py-4 text-center text-xs text-base-content/60">
                   Sin cuentas asociadas.
                 </td>
               </tr>
@@ -514,8 +528,8 @@ export default function AssociatedAccounts({
         </table>
       </div>
 
-      <div className="border border-white/55 bg-base-100 p-5">
-        <h3 className="text-sm font-semibold text-(--brand-primary) drop-shadow-sm">Agregar cuenta</h3>
+      <div className="border border-base-300 bg-base-100 p-5">
+        <h3 className="text-sm font-semibold text-primary drop-shadow-sm">Agregar cuenta</h3>
         <div className="mt-3 grid gap-3 md:grid-cols-2">
           <Input
             label="Identificador / Cuenta"
@@ -525,21 +539,23 @@ export default function AssociatedAccounts({
             placeholder="Ej. 124282432930"
           />
           {suggestionsLoading ? (
-            <span className="text-xs text-slate-500">Buscando sugerencias...</span>
+            <span className="text-xs text-base-content/60">Buscando sugerencias...</span>
           ) : accountSuggestions.length ? (
-            <div className="max-h-60 overflow-y-auto border border-white/55 bg-base-100">
+            <div className="max-h-60 overflow-y-auto border border-base-300 bg-base-100">
               {accountSuggestions.map((suggestion) => (
                 <div
                   key={suggestion.accountIdentifier}
-                  className="flex flex-col gap-1 border-b border-white/45 px-3 py-2 text-xs last:border-b-0"
+                  className="flex flex-col gap-1 border-b border-base-300 px-3 py-2 text-xs last:border-b-0"
                 >
-                  <span className="font-semibold text-slate-600">{suggestion.accountIdentifier}</span>
-                  <span className="text-slate-500/90">{suggestion.holder ?? "(sin titular)"}</span>
+                  <span className="font-semibold text-base-content">{suggestion.accountIdentifier}</span>
+                  <span className="text-base-content/90">{suggestion.holder ?? "(sin titular)"}</span>
                   {suggestion.bankAccountNumber && (
-                    <span className="text-xs text-slate-400/90">Cuenta {suggestion.bankAccountNumber}</span>
+                    <span className="text-xs text-base-content/90">Cuenta {suggestion.bankAccountNumber}</span>
                   )}
-                  {suggestion.rut && <span className="text-xs text-slate-400/90">RUT {formatRut(suggestion.rut)}</span>}
-                  <span className="text-xs text-slate-400/90">
+                  {suggestion.rut && (
+                    <span className="text-xs text-base-content/90">RUT {formatRut(suggestion.rut)}</span>
+                  )}
+                  <span className="text-xs text-base-content/90">
                     {suggestion.movements} mov. · {fmtCLP(suggestion.totalAmount)}
                   </span>
                   <div className="flex flex-wrap gap-2 pt-1">
@@ -587,8 +603,8 @@ export default function AssociatedAccounts({
             onChange={updateAccountForm("holder")}
             placeholder="Titular de la cuenta"
           />
-          <label className="flex flex-col gap-1 text-sm text-slate-600">
-            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Tipo / Concepto</span>
+          <label className="flex flex-col gap-1 text-sm text-base-content">
+            <span className="text-xs font-semibold uppercase tracking-wide text-base-content/60">Tipo / Concepto</span>
             <div className="flex gap-2">
               <Input
                 type="text"

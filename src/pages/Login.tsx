@@ -1,8 +1,8 @@
 import { useState } from "react";
 import type { ChangeEvent } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useAuth } from "../context/auth-context";
-import { useSettings } from "../context/settings-context";
+import { useAuth } from "../context/AuthContext";
+import { useSettings } from "../context/SettingsContext";
 import { logger } from "../lib/logger";
 import Button from "../components/Button";
 import Input from "../components/Input";
@@ -56,10 +56,8 @@ export default function Login() {
         </div>
         <div className="flex flex-col items-center gap-3 text-center">
           <img src={settings.logoUrl} alt={settings.orgName} className="max-h-20 object-contain" />
-          <h1 className="text-xl font-semibold text-(--brand-primary) drop-shadow-sm">
-            Inicia sesión en {settings.orgName}
-          </h1>
-          <p className="text-sm text-slate-600/90">Usa tu correo corporativo para continuar.</p>
+          <h1 className="text-xl font-semibold text-primary drop-shadow-sm">Inicia sesión en {settings.orgName}</h1>
+          <p className="text-sm text-base-content/90">Usa tu correo corporativo para continuar.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
@@ -87,7 +85,7 @@ export default function Login() {
           </Button>
         </form>
 
-        <p className="mt-6 text-center text-xs text-slate-600/90">
+        <p className="mt-6 text-center text-xs text-base-content/90">
           ¿Olvidaste tu contraseña? Contacta a <strong>{settings.supportEmail}</strong>
         </p>
       </div>

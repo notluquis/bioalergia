@@ -123,12 +123,12 @@ function CalendarDailyPage() {
   const renderDay = (entry: CalendarDayEvents, defaultOpen = false) => (
     <details
       key={entry.date}
-      className="rounded-2xl border border-white/60 bg-base-100/85 p-4 text-sm text-slate-700 shadow-sm"
+      className="rounded-2xl border border-base-300 bg-base-100 p-4 text-sm text-base-content shadow-sm"
       open={defaultOpen}
     >
-      <summary className="flex cursor-pointer flex-wrap items-center justify-between gap-3 font-semibold text-(--brand-primary)">
+      <summary className="flex cursor-pointer flex-wrap items-center justify-between gap-3 font-semibold text-primary">
         <span>{dayjs(entry.date).format("dddd DD MMM YYYY")}</span>
-        <span className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+        <span className="flex flex-wrap items-center gap-2 text-xs text-base-content/60">
           <span>
             {numberFormatter.format(entry.total)} evento{entry.total === 1 ? "" : "s"}
           </span>
@@ -179,77 +179,72 @@ function CalendarDailyPage() {
           return (
             <article
               key={event.eventId}
-              className="rounded-2xl border border-white/50 bg-base-100/95 p-4 text-sm text-slate-700 shadow-inner"
+              className="rounded-2xl border border-base-300 bg-base-100 p-4 text-sm text-base-content shadow-inner"
             >
               <header className="flex flex-wrap items-start justify-between gap-3">
                 <div className="flex flex-col gap-1">
-                  <h3 className="text-base font-semibold text-slate-800">{event.summary?.trim() || "(Sin título)"}</h3>
-                  <span className="text-xs font-semibold uppercase tracking-wide text-(--brand-secondary)/70">
+                  <h3 className="text-base font-semibold text-base-content">
+                    {event.summary?.trim() || "(Sin título)"}
+                  </h3>
+                  <span className="text-xs font-semibold uppercase tracking-wide text-secondary/70">
                     {formatEventTime(event)}
                   </span>
                 </div>
-                <div className="flex flex-col items-end gap-1 text-xs text-slate-500">
-                  <span className="rounded-full bg-slate-100 px-2 py-1 font-semibold text-slate-600">
+                <div className="flex flex-col items-end gap-1 text-xs text-base-content/60">
+                  <span className="rounded-full bg-base-200 px-2 py-1 font-semibold text-base-content">
                     {event.calendarId}
                   </span>
                   {event.category && (
-                    <span className="rounded-full bg-(--brand-secondary)/15 px-2 py-1 font-semibold text-(--brand-secondary)">
+                    <span className="rounded-full bg-secondary/15 px-2 py-1 font-semibold text-secondary">
                       {event.category}
                     </span>
                   )}
                   {isSubcutaneous && event.treatmentStage && (
-                    <span className="rounded-full bg-(--brand-primary)/10 px-2 py-1 font-semibold text-(--brand-primary)">
+                    <span className="rounded-full bg-primary/10 px-2 py-1 font-semibold text-primary">
                       {event.treatmentStage}
                     </span>
                   )}
                   {event.eventType && (
-                    <span className="rounded-full bg-slate-100 px-2 py-1 font-semibold text-slate-500">
+                    <span className="rounded-full bg-base-200 px-2 py-1 font-semibold text-base-content/80">
                       {event.eventType}
                     </span>
                   )}
                 </div>
               </header>
 
-              <dl className="mt-3 grid gap-2 text-xs text-slate-500 sm:grid-cols-2">
+              <dl className="mt-3 grid gap-2 text-xs text-base-content/60 sm:grid-cols-2">
                 {detailEntries
                   .filter((entry) => entry.value)
                   .map((entry) => (
                     <div key={entry.label} className="flex flex-col">
-                      <dt className="font-semibold text-slate-600">{entry.label}</dt>
-                      <dd className="text-slate-500">{entry.value}</dd>
+                      <dt className="font-semibold text-base-content">{entry.label}</dt>
+                      <dd className="text-base-content/80">{entry.value}</dd>
                     </div>
                   ))}
               </dl>
 
               {event.location && (
-                <p className="mt-3 text-xs text-slate-500">
-                  <span className="font-semibold text-slate-600">Ubicación:</span> {event.location}
+                <p className="mt-3 text-xs text-base-content/60">
+                  <span className="font-semibold text-base-content">Ubicación:</span> {event.location}
                 </p>
               )}
 
               {event.hangoutLink && (
                 <p className="mt-2 text-xs">
-                  <a
-                    href={event.hangoutLink}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-(--brand-primary) underline"
-                  >
+                  <a href={event.hangoutLink} target="_blank" rel="noreferrer" className="text-primary underline">
                     Enlace de videollamada
                   </a>
                 </p>
               )}
 
               {event.description && (
-                <p className="mt-3 whitespace-pre-wrap text-sm text-slate-600">{event.description}</p>
+                <p className="mt-3 whitespace-pre-wrap text-sm text-base-content">{event.description}</p>
               )}
 
               {event.rawEvent != null && (
-                <details className="mt-3 text-xs text-slate-500">
-                  <summary className="cursor-pointer font-semibold text-(--brand-primary)">
-                    Ver payload completo
-                  </summary>
-                  <pre className="mt-2 max-h-64 overflow-x-auto rounded-lg bg-slate-900/90 p-3 text-xs text-white">
+                <details className="mt-3 text-xs text-base-content/60">
+                  <summary className="cursor-pointer font-semibold text-primary">Ver payload completo</summary>
+                  <pre className="mt-2 max-h-64 overflow-x-auto rounded-lg bg-base-300 p-3 text-xs text-base-content">
                     {JSON.stringify(event.rawEvent, null, 2)}
                   </pre>
                 </details>
@@ -282,15 +277,15 @@ function CalendarDailyPage() {
   return (
     <section className="space-y-6">
       <header className="space-y-2">
-        <h1 className="text-2xl font-bold text-(--brand-primary)">Detalle diario de eventos</h1>
-        <p className="text-sm text-slate-600">
+        <h1 className="text-2xl font-bold text-primary">Detalle diario de eventos</h1>
+        <p className="text-sm text-base-content/70">
           Revisa el detalle de cada jornada con los eventos sincronizados. Los días aparecen colapsados para que puedas
           expandir solo los que te interesen.
         </p>
       </header>
 
       <form
-        className="grid gap-4 rounded-2xl border border-(--brand-primary)/15 bg-base-100 p-6 text-xs text-slate-600 shadow-sm md:grid-cols-6"
+        className="grid gap-4 rounded-2xl border border-primary/15 bg-base-100 p-6 text-xs text-base-content shadow-sm md:grid-cols-6"
         onSubmit={(event) => {
           event.preventDefault();
           applyFilters();
@@ -356,29 +351,25 @@ function CalendarDailyPage() {
       {error && <Alert variant="error">{error}</Alert>}
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <div className="rounded-2xl border border-white/60 bg-base-100 p-4 text-sm shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Días listados</p>
-          <p className="mt-2 text-2xl font-semibold text-(--brand-primary)">{numberFormatter.format(totals.days)}</p>
+        <div className="rounded-2xl border border-base-300 bg-base-100 p-4 text-sm shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-wide text-base-content/80">Días listados</p>
+          <p className="mt-2 text-2xl font-semibold text-primary">{numberFormatter.format(totals.days)}</p>
         </div>
-        <div className="rounded-2xl border border-white/60 bg-base-100 p-4 text-sm shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Eventos listados</p>
-          <p className="mt-2 text-2xl font-semibold text-(--brand-primary)">{numberFormatter.format(totals.events)}</p>
+        <div className="rounded-2xl border border-base-300 bg-base-100 p-4 text-sm shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-wide text-base-content/80">Eventos listados</p>
+          <p className="mt-2 text-2xl font-semibold text-primary">{numberFormatter.format(totals.events)}</p>
         </div>
-        <div className="rounded-2xl border border-white/60 bg-base-100 p-4 text-sm shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Monto esperado</p>
-          <p className="mt-2 text-2xl font-semibold text-(--brand-primary)">
-            {currencyFormatter.format(totals.amountExpected)}
-          </p>
+        <div className="rounded-2xl border border-base-300 bg-base-100 p-4 text-sm shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-wide text-base-content/80">Monto esperado</p>
+          <p className="mt-2 text-2xl font-semibold text-primary">{currencyFormatter.format(totals.amountExpected)}</p>
         </div>
-        <div className="rounded-2xl border border-white/60 bg-base-100 p-4 text-sm shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Monto pagado</p>
-          <p className="mt-2 text-2xl font-semibold text-(--brand-primary)">
-            {currencyFormatter.format(totals.amountPaid)}
-          </p>
+        <div className="rounded-2xl border border-base-300 bg-base-100 p-4 text-sm shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-wide text-base-content/80">Monto pagado</p>
+          <p className="mt-2 text-2xl font-semibold text-primary">{currencyFormatter.format(totals.amountPaid)}</p>
         </div>
       </section>
 
-      {loading && <p className="text-sm text-slate-500">Cargando eventos...</p>}
+      {loading && <p className="text-sm text-base-content/60">Cargando eventos...</p>}
       {!loading && daily && daily.days.length === 0 && (
         <Alert variant="warning">No se encontraron eventos con los filtros seleccionados.</Alert>
       )}
@@ -386,28 +377,28 @@ function CalendarDailyPage() {
       <div className="space-y-5">
         {todayEntry && (
           <section className="space-y-2">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Hoy</h2>
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-base-content/80">Hoy</h2>
             {renderDay(todayEntry, true)}
           </section>
         )}
 
         {tomorrowEntry && (
           <section className="space-y-2">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Mañana</h2>
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-base-content/80">Mañana</h2>
             {renderDay(tomorrowEntry)}
           </section>
         )}
 
         {futureBeyond.length > 0 && (
           <section className="space-y-2">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Próximos días</h2>
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-base-content/80">Próximos días</h2>
             <div className="space-y-3">{futureBeyond.map((entry) => renderDay(entry))}</div>
           </section>
         )}
 
         {pastDays.length > 0 && (
           <section className="space-y-2">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Días anteriores</h2>
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-base-content/80">Días anteriores</h2>
             <div className="space-y-3">{pastDays.map((entry) => renderDay(entry))}</div>
           </section>
         )}

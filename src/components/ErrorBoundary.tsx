@@ -14,9 +14,9 @@ export class ErrorBoundary extends React.Component<
     return { hasError: true, error };
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  componentDidCatch(_error: unknown, _errorInfo: unknown) {
+  componentDidCatch(error: unknown, errorInfo: unknown) {
     // Hook opcional para reportar a un sistema de errores.
+    console.error("ErrorBoundary caught an error:", error, errorInfo);
   }
 
   render() {
@@ -27,7 +27,7 @@ export class ErrorBoundary extends React.Component<
             <div className="card-body">
               <div className="flex items-center gap-4">
                 <img src="/logo.png" alt="Logo" className="h-12" />
-                <h2 className="card-title text-(--brand-primary)">¡Ups! Ocurrió un error inesperado</h2>
+                <h2 className="card-title text-primary">¡Ups! Ocurrió un error inesperado</h2>
               </div>
               <p className="text-base-content">
                 Por favor, recarga la página o contacta al soporte si el problema persiste.

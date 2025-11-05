@@ -111,7 +111,8 @@ export function useFileUpload({
       }
     }
 
-    setFiles(multiple ? selected : [selected[0]]);
+    const firstFile = selected[0];
+    setFiles(multiple ? selected : firstFile ? [firstFile] : []);
   };
 
   const reset = () => {

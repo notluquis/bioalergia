@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import type { ChangeEvent } from "react";
-import { useAuth } from "../context/auth-context";
+import { useAuth } from "../context/AuthContext";
 import { BalanceSummary } from "../features/balances/components/BalanceSummary";
 import { useStatsData } from "../features/stats/hooks/useStatsData";
 import StatCard from "../features/stats/components/StatCard";
@@ -49,7 +49,7 @@ export default function Stats() {
   if (!canView) {
     return (
       <section className="space-y-4">
-        <h1 className="text-2xl font-bold text-(--brand-primary)">Estadísticas</h1>
+        <h1 className="text-2xl font-bold text-primary">Estadísticas</h1>
         <Alert variant="error">No tienes permisos para ver las estadísticas.</Alert>
       </section>
     );
@@ -58,8 +58,8 @@ export default function Stats() {
   return (
     <section className="space-y-6">
       <div className="space-y-2">
-        <h1 className="text-2xl font-bold text-(--brand-primary)">Estadísticas financieras</h1>
-        <p className="text-sm text-slate-600">
+        <h1 className="text-2xl font-bold text-primary">Estadísticas financieras</h1>
+        <p className="text-sm text-base-content/70">
           Resumen contable por mes, tipo de movimiento y direcciones. Ajusta el rango de fechas para analizar
           tendencias.
         </p>
@@ -70,7 +70,7 @@ export default function Stats() {
           event.preventDefault();
           fetchStats();
         }}
-        className="grid gap-4 rounded-2xl border border-(--brand-primary)/10 bg-base-100 p-6 text-xs text-slate-600 shadow-sm sm:grid-cols-5"
+        className="grid gap-4 rounded-2xl border border-primary/10 bg-base-100 p-6 text-xs text-base-content/80 shadow-sm sm:grid-cols-5"
       >
         <Input
           label="Desde"
@@ -127,7 +127,7 @@ export default function Stats() {
           <BalanceSummary report={balancesReport} loading={balancesLoading} error={balancesError} />
 
           <section className="space-y-3 bg-base-100 p-6">
-            <h2 className="text-lg font-semibold text-(--brand-secondary)">Por tipo de movimiento</h2>
+            <h2 className="text-lg font-semibold text-secondary">Por tipo de movimiento</h2>
             <MovementTypeList data={data.byType} />
           </section>
 

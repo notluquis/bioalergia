@@ -6,12 +6,8 @@ interface CheckboxProps extends React.InputHTMLAttributes<HTMLInputElement> {
 
 export default function Checkbox({ label, className = "", ...props }: CheckboxProps) {
   return (
-    <label className={`flex items-center gap-3 text-xs font-medium text-slate-600/90 ${className}`.trim()}>
-      <input
-        type="checkbox"
-        className="checkbox checkbox-primary"
-        {...props}
-      />
+    <label className={`flex items-center gap-3 text-xs font-medium text-base-content/70 ${className}`.trim()}>
+      <input type="checkbox" className="checkbox checkbox-primary" {...props} />
       {label}
     </label>
   );

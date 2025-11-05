@@ -98,22 +98,24 @@ const SERVICE_TEMPLATES: ServiceTemplate[] = [
 
 export default function ServiceTemplateGallery({ onApply }: ServiceTemplateGalleryProps) {
   return (
-    <section className="space-y-4 border border-white/40 p-4 text-sm text-slate-600 bg-base-100">
+    <section className="space-y-4 border border-base-300 p-4 text-sm text-base-content bg-base-100">
       <div className="flex flex-col gap-1">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Plantillas rápidas</h2>
-        <p className="text-xs text-slate-400">Usa plantillas predefinidas para acelerar la creación de servicios.</p>
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-base-content/60">Plantillas rápidas</h2>
+        <p className="text-xs text-base-content/50">
+          Usa plantillas predefinidas para acelerar la creación de servicios.
+        </p>
       </div>
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         {SERVICE_TEMPLATES.map((template) => (
           <article
             key={template.id}
-            className="flex h-full flex-col justify-between rounded-2xl border border-white/45 bg-base-100/70 p-4 shadow-sm transition hover:border-(--brand-primary)/45 hover:shadow-md"
+            className="flex h-full flex-col justify-between rounded-2xl border border-base-300 bg-base-200 p-4 shadow-sm transition hover:border-primary/45 hover:shadow-md"
           >
             <div className="space-y-2">
-              <p className="text-sm font-semibold text-slate-700">{template.name}</p>
-              <p className="text-xs text-slate-500">{template.description}</p>
+              <p className="text-sm font-semibold text-base-content">{template.name}</p>
+              <p className="text-xs text-base-content/60">{template.description}</p>
               {template.category && (
-                <span className="inline-flex items-center rounded-full border border-white/60 bg-base-100/75 px-2 py-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <span className="inline-flex items-center rounded-full border border-base-300 bg-base-200 px-2 py-1 text-xs font-semibold uppercase tracking-wide text-base-content/60">
                   {template.category}
                 </span>
               )}

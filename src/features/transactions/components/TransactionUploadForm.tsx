@@ -23,7 +23,7 @@ export default function TransactionUploadForm() {
   });
 
   return (
-    <div className="space-y-4 rounded-2xl border border-(--brand-primary)/15 bg-base-100 p-6 text-sm shadow-sm">
+    <div className="space-y-4 rounded-2xl border border-primary/15 bg-base-100 p-6 text-sm shadow-sm">
       <FileInput
         label="Selecciona uno o varios archivos CSV de Mercado Pago"
         accept=".csv,.txt"
@@ -33,12 +33,12 @@ export default function TransactionUploadForm() {
       <Button onClick={handleUpload} disabled={loading}>
         {loading ? "Subiendo..." : "Subir a la base de datos"}
       </Button>
-      <ul className="list-disc space-y-1 pl-5 text-xs text-slate-500">
+      <ul className="list-disc space-y-1 pl-5 text-xs text-base-content/60">
         <li>El archivo no debe superar los 15&nbsp;MB.</li>
         <li>Los movimientos duplicados se ignoran automáticamente.</li>
       </ul>
       {files.length > 0 && !loading && !error && (
-        <p className="text-xs text-slate-500">Archivos seleccionados: {files.map((f) => f.name).join(", ")}</p>
+        <p className="text-xs text-base-content/60">Archivos seleccionados: {files.map((f) => f.name).join(", ")}</p>
       )}
       {error && <Alert variant="error">{error}</Alert>}
       <UploadResults results={results} />

@@ -36,14 +36,14 @@ export default function ParticipantInsightsPage() {
   return (
     <section className="space-y-6">
       <div className="bg-base-100 space-y-2 p-6">
-        <h1 className="text-2xl font-bold text-(--brand-primary) drop-shadow-sm">Participantes en transacciones</h1>
-        <p className="max-w-2xl text-sm text-slate-600/90">
+        <h1 className="text-2xl font-bold text-primary drop-shadow-sm">Participantes en transacciones</h1>
+        <p className="max-w-2xl text-sm text-base-content/70">
           Revisa la actividad de un identificador en los campos <strong>Desde</strong> y <strong>Hacia</strong>, con un
           resumen mensual y las contrapartes más frecuentes.
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="bg-base-100 grid gap-4 p-6 text-sm text-slate-600 lg:grid-cols-4">
+      <form onSubmit={handleSubmit} className="bg-base-100 grid gap-4 p-6 text-sm text-base-content lg:grid-cols-4">
         <Input
           label="ID participante"
           type="text"
@@ -87,7 +87,7 @@ export default function ParticipantInsightsPage() {
       <section className="space-y-4 bg-base-100 p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="space-y-1">
-            <h2 className="text-lg font-semibold text-(--brand-secondary)">Ranking de retiros</h2>
+            <h2 className="text-lg font-semibold text-secondary">Ranking de retiros</h2>
             <p className="text-sm text-base-content">
               Contrapartes con mayores egresos en el rango seleccionado, agrupadas por RUT y cuenta.
             </p>
@@ -128,7 +128,7 @@ export default function ParticipantInsightsPage() {
 
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm text-base-content">
-            <thead className="bg-base-100/60 text-(--brand-secondary)">
+            <thead className="bg-base-200 text-secondary">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide">Titular</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide">RUT</th>
@@ -152,8 +152,8 @@ export default function ParticipantInsightsPage() {
                   return (
                     <tr
                       key={row.key}
-                      className={`border-b border-white/45 bg-base-100/45 transition-colors last:border-none even:bg-base-100/35 ${
-                        isActive ? "bg-(--brand-secondary)/15" : ""
+                      className={`border-b border-base-300 bg-base-200 transition-colors last:border-none even:bg-base-300 ${
+                        isActive ? "bg-secondary/15" : ""
                       }`}
                     >
                       <td className="px-4 py-3 font-medium text-base-content">{row.displayName}</td>
@@ -200,10 +200,10 @@ export default function ParticipantInsightsPage() {
       ) : (
         <div className="space-y-6">
           <section className="space-y-3 bg-base-100 p-6">
-            <h2 className="text-lg font-semibold text-(--brand-primary)">Resumen mensual</h2>
+            <h2 className="text-lg font-semibold text-primary">Resumen mensual</h2>
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm text-base-content">
-                <thead className="bg-base-100/60 text-(--brand-primary)">
+                <thead className="bg-base-200 text-primary">
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide">Mes</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide">
@@ -218,7 +218,7 @@ export default function ParticipantInsightsPage() {
                   {monthly.map((row) => (
                     <tr
                       key={row.month}
-                      className="border-b border-white/45 bg-base-100/45 last:border-none even:bg-base-100/35"
+                      className="border-b border-base-300 bg-base-200 last:border-none even:bg-base-300"
                     >
                       <td className="px-4 py-3 font-medium text-base-content">
                         {dayjs(row.month).format("MMMM YYYY")}
@@ -240,10 +240,10 @@ export default function ParticipantInsightsPage() {
           </section>
 
           <section className="space-y-3 bg-base-100 p-6">
-            <h2 className="text-lg font-semibold text-(--brand-secondary)">Contrapartes</h2>
+            <h2 className="text-lg font-semibold text-secondary">Contrapartes</h2>
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm text-base-content">
-                <thead className="bg-base-100/60 text-(--brand-secondary)">
+                <thead className="bg-base-200 text-secondary">
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide">Titular</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide">RUT</th>
@@ -283,10 +283,7 @@ export default function ParticipantInsightsPage() {
                     const metadata = metadataParts.join(" · ");
 
                     return (
-                      <tr
-                        key={key}
-                        className="border-b border-white/45 bg-base-100/45 last:border-none even:bg-base-100/35"
-                      >
+                      <tr key={key} className="border-b border-base-300 bg-base-200 last:border-none even:bg-base-300">
                         <td className="px-4 py-3 text-base-content">
                           <div className="font-medium">
                             {row.bankAccountHolder || row.counterpart || "(desconocido)"}

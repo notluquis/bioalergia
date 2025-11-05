@@ -26,10 +26,10 @@ export default function AdjustStockForm({ item, onSave, onCancel, saving }: Adju
     <form onSubmit={handleSubmit} className="space-y-4 text-sm">
       <div>
         <h3 className="font-bold text-lg">{item.name}</h3>
-        <p className="text-slate-500">Stock actual: {item.current_stock}</p>
+        <p className="text-base-content/60">Stock actual: {item.current_stock}</p>
       </div>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
+        <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-wide text-base-content/60">
           Cantidad a agregar/quitar
           <input
             type="number"
@@ -40,7 +40,7 @@ export default function AdjustStockForm({ item, onSave, onCancel, saving }: Adju
             placeholder="Ej: 20 (agrega) o -15 (quita)"
           />
         </label>
-        <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
+        <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-wide text-base-content/60">
           Razón del ajuste
           <input
             type="text"

@@ -13,11 +13,13 @@ export default function CollapsibleNavSection({ title, children }: CollapsibleNa
 
   return (
     <div className="space-y-2">
-      <div className={`collapse ${isOpen ? 'collapse-open' : ''} rounded-xl border border-white/40 bg-base-100/40 shadow-inner`}>
+      <div
+        className={`collapse ${isOpen ? "collapse-open" : ""} rounded-xl border border-base-300 bg-base-100 shadow-inner`}
+      >
         <Button
           type="button"
           variant="secondary"
-          className={`collapse-title flex items-center justify-between gap-2 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600/90`}
+          className={`collapse-title flex items-center justify-between gap-2 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-base-content/70`}
           onClick={() => setIsOpen(!isOpen)}
         >
           <span className="font-semibold">{title}</span>

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Papa from "papaparse";
 import Button from "../../../components/Button";
 import Alert from "../../../components/Alert";
@@ -51,8 +51,9 @@ function normalizeHeaderKey(header: string): string | null {
   if (!trimmed) return null;
 
   const parenMatch = trimmed.match(/\(([^)]+)\)/);
-  if (parenMatch) {
-    return parenMatch[1].trim().toLowerCase();
+  const extractedText = parenMatch?.[1];
+  if (extractedText) {
+    return extractedText.trim().toLowerCase();
   }
 
   return trimmed
@@ -222,7 +223,11 @@ export default function PayoutPreviewUpload() {
         }
       }
 
-      setPreview({ payouts, counts: { insert, update, skip, total: payouts.length }, samples: { insert: insertSamples, update: updateSamples } });
+      setPreview({
+        payouts,
+        counts: { insert, update, skip, total: payouts.length },
+        samples: { insert: insertSamples, update: updateSamples },
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -262,9 +267,14 @@ export default function PayoutPreviewUpload() {
   }, [preview]);
 
   return (
-    <div className="mt-8 space-y-3 border-t border-slate-200 pt-6">
-      <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">Subir CSV de retiros (previsualizar)</h2>
-      <p className="text-xs text-slate-500">Analiza localmente el CSV, muestra cuántos registros se insertarían/actualizarían/ignorarían y te permite confirmar la importación.</p>
+    <div className="mt-8 space-y-3 border-t border-base-300 pt-6">
+      <h2 className="text-xs font-semibold uppercase tracking-wide text-base-content/60">
+        Subir CSV de retiros (previsualizar)
+      </h2>
+      <p className="text-xs text-base-content/60">
+        Analiza localmente el CSV, muestra cuántos registros se insertarían/actualizarían/ignorarían y te permite
+        confirmar la importación.
+      </p>
 
       <div>
         <input
@@ -277,15 +287,15 @@ export default function PayoutPreviewUpload() {
 
       {error && <Alert variant="error">{error}</Alert>}
 
-      {loadingPreview && <div className="text-sm text-slate-500">Generando previsualización...</div>}
+      {loadingPreview && <div className="text-sm text-base-content/60">Generando previsualización...</div>}
 
       {preview && preview.counts && (
         <div className="space-y-2">
-          <div className="text-sm text-slate-600">Total filas detectadas: {preview.counts.total}</div>
+          <div className="text-sm text-base-content">Total filas detectadas: {preview.counts.total}</div>
           <div className="flex gap-4 text-sm">
             <div className="text-green-600">Insertar: {preview.counts.insert}</div>
             <div className="text-yellow-600">Actualizar: {preview.counts.update}</div>
-            <div className="text-slate-500">Ignorar: {preview.counts.skip}</div>
+            <div className="text-base-content/60">Ignorar: {preview.counts.skip}</div>
           </div>
 
           {sampleRows && sampleRows.length > 0 && (
@@ -301,7 +311,14 @@ export default function PayoutPreviewUpload() {
             <Button variant="primary" onClick={handleConfirm} disabled={importing}>
               {importing ? "Importando..." : "Confirmar importación"}
             </Button>
-            <Button variant="ghost" onClick={() => { setPreview(null); setFile(null); setError(null); }}>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setPreview(null);
+                setFile(null);
+                setError(null);
+              }}
+            >
               Cancelar
             </Button>
           </div>

@@ -1,4 +1,3 @@
-import React from "react";
 import SupplyRequestForm from "../features/supplies/components/SupplyRequestForm";
 import SupplyRequestsTable from "../features/supplies/components/SupplyRequestsTable";
 import { useSupplyManagement } from "../features/supplies/hooks/useSupplyManagement";

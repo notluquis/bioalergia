@@ -1,10 +1,6 @@
 import express from "express";
 import { z } from "zod";
-import {
-  asyncHandler,
-  authenticate,
-  requireRole,
-} from "../lib/http.js";
+import { asyncHandler, authenticate, requireRole } from "../lib/http.js";
 import { logEvent, logWarn, requestContext } from "../lib/logger.js";
 import {
   listEmployees,
@@ -14,11 +10,7 @@ import {
   updateTimesheetEntry,
   deleteTimesheetEntry,
 } from "../db.js";
-import {
-  timesheetPayloadSchema,
-  timesheetUpdateSchema,
-  timesheetBulkSchema,
-} from "../schemas.js";
+import { timesheetPayloadSchema, timesheetUpdateSchema, timesheetBulkSchema } from "../schemas.js";
 import type { AuthenticatedRequest } from "../types.js";
 import { durationToMinutes, minutesToDuration } from "../../shared/time.js";
 import { getPool } from "../db.js";
@@ -35,26 +27,31 @@ const monthParamSchema = z.object({
 
 export function registerTimesheetRoutes(app: express.Express) {
   // Endpoint para obtener meses registrados
-  app.get("/api/timesheets/months", asyncHandler(async (_req, res) => {
-    const pool = getPool();
-    // Nota: la tabla correcta es employee_timesheets
-    const [rows] = await pool.query<RowDataPacket[]>(
-      `SELECT DISTINCT DATE_FORMAT(work_date, '%Y-%m') as month FROM employee_timesheets ORDER BY month DESC`
-    );
-    let months = rows.map(r => r.month as string).filter(Boolean);
-
-    // Fallback: si no hay datos aún, devolver últimos 6 meses incluyendo el actual
-    if (!months.length) {
+  app.get(
+    "/api/timesheets/months",
+    asyncHandler(async (_req, res) => {
+      const pool = getPool();
+      // Generar lista de meses disponibles: 6 meses atrás hasta 3 meses adelante
       const now = new Date();
       const pad = (n: number) => String(n).padStart(2, "0");
-      months = Array.from({ length: 6 }).map((_, i) => {
-        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const availableMonths = Array.from({ length: 10 }).map((_, i) => {
+        const d = new Date(now.getFullYear(), now.getMonth() - 6 + i, 1);
         return `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
       });
-    }
 
-    res.json({ status: "ok", months });
-  }));
+      // Consultar qué meses tienen datos reales
+      const [rows] = await pool.query<RowDataPacket[]>(
+        `SELECT DISTINCT DATE_FORMAT(work_date, '%Y-%m') as month FROM employee_timesheets ORDER BY month DESC`
+      );
+      const monthsWithData = new Set(rows.map((r) => r.month as string).filter(Boolean));
+
+      res.json({
+        status: "ok",
+        months: availableMonths,
+        monthsWithData: Array.from(monthsWithData),
+      });
+    })
+  );
   app.get(
     "/api/timesheets",
     authenticate,
@@ -90,7 +87,10 @@ export function registerTimesheetRoutes(app: express.Express) {
 
       const payload = normalizeTimesheetPayload(parsed.data);
       const entry = await upsertTimesheetEntry(payload);
-      logEvent("timesheets:upsert", requestContext(req, { employeeId: payload.employee_id, workDate: payload.work_date }));
+      logEvent(
+        "timesheets:upsert",
+        requestContext(req, { employeeId: payload.employee_id, workDate: payload.work_date })
+      );
       res.status(201).json({ status: "ok", entry });
     })
   );
@@ -116,11 +116,7 @@ export function registerTimesheetRoutes(app: express.Express) {
       }
 
       let workedMinutes = parsed.data.worked_minutes;
-      if (
-        workedMinutes == null &&
-        parsed.data.start_time != null &&
-        parsed.data.end_time != null
-      ) {
+      if (workedMinutes == null && parsed.data.start_time != null && parsed.data.end_time != null) {
         const start = durationToMinutes(parsed.data.start_time);
         const end = durationToMinutes(parsed.data.end_time);
         workedMinutes = Math.max(end - start, 0);
@@ -185,11 +181,14 @@ export function registerTimesheetRoutes(app: express.Express) {
         }
       }
 
-      logEvent("timesheets:bulk", requestContext(req, {
-        employeeId: parsed.employee_id,
-        entries: parsed.entries.length,
-        removed: parsed.remove_ids?.length ?? 0,
-      }));
+      logEvent(
+        "timesheets:bulk",
+        requestContext(req, {
+          employeeId: parsed.employee_id,
+          entries: parsed.entries.length,
+          removed: parsed.remove_ids?.length ?? 0,
+        })
+      );
 
       res.json({
         status: "ok",

@@ -48,13 +48,15 @@ export default function InventoryCategoryManager() {
   return (
     <section className="space-y-5 p-6 bg-base-100">
       <div className="space-y-1">
-        <h2 className="text-lg font-semibold text-(--brand-secondary) drop-shadow-sm">Categorías de Inventario</h2>
-        <p className="text-sm text-slate-600/90">Administra las categorías para organizar los items del inventario.</p>
+        <h2 className="text-lg font-semibold text-secondary drop-shadow-sm">Categorías de Inventario</h2>
+        <p className="text-sm text-base-content/70">
+          Administra las categorías para organizar los items del inventario.
+        </p>
       </div>
 
       <form onSubmit={handleAddCategory} className="flex flex-col gap-3 sm:flex-row sm:items-end">
         <label className="flex-1">
-          <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Nueva Categoría</span>
+          <span className="text-xs font-semibold uppercase tracking-wide text-base-content/60">Nueva Categoría</span>
           <input
             type="text"
             value={newCategoryName}
@@ -76,16 +78,16 @@ export default function InventoryCategoryManager() {
         </Button>
       </form>
 
-      {error && <p className="text-sm text-rose-600">{error}</p>}
+      {error && <p className="text-sm text-error">{error}</p>}
 
-      <div className="max-h-60 overflow-y-auto border border-white/55 bg-base-100 p-3">
-        {loading && <p className="text-sm text-slate-600">Cargando categorías...</p>}
-        {!loading && !categories.length && <p className="text-sm text-slate-600">No hay categorías definidas.</p>}
+      <div className="max-h-60 overflow-y-auto border border-base-300 bg-base-100 p-3">
+        {loading && <p className="text-sm text-base-content">Cargando categorías...</p>}
+        {!loading && !categories.length && <p className="text-sm text-base-content">No hay categorías definidas.</p>}
         <ul className="space-y-2">
           {categories.map((cat) => (
             <li
               key={cat.id}
-              className="rounded-xl border border-white/55 bg-base-100/70 px-3 py-2 text-sm font-medium text-slate-700 shadow-[0_10px_24px_-16px_rgba(16,37,66,0.4)]"
+              className="rounded-xl border border-base-300 bg-base-200 px-3 py-2 text-sm font-medium text-base-content shadow-[0_10px_24px_-16px_rgba(16,37,66,0.4)]"
             >
               {cat.name}
             </li>

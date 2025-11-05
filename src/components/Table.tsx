@@ -41,9 +41,9 @@ interface TableBodyProps {
 }
 
 const TABLE_VARIANTS = {
-  default: "overflow-hidden rounded-2xl border border-slate-200 bg-base-100 shadow-sm",
+  default: "overflow-hidden rounded-2xl border border-base-300 bg-base-100 shadow-sm",
   glass: "overflow-hidden bg-base-100",
-  minimal: "overflow-hidden rounded-lg border border-gray-200 bg-base-100",
+  minimal: "overflow-hidden rounded-lg border border-base-300 bg-base-100",
 };
 
 function TableHeader<T extends string>({ columns, sortState, onSort, visibleColumns }: TableHeaderProps<T>) {
@@ -66,7 +66,7 @@ function TableHeader<T extends string>({ columns, sortState, onSort, visibleColu
               key={column.key}
               className={`
                 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide whitespace-nowrap
-                ${column.sortable && onSort ? "cursor-pointer hover:bg-black/5" : ""}
+                ${column.sortable && onSort ? "cursor-pointer hover:bg-base-200" : ""}
                 ${column.align === "center" ? "text-center" : ""}
                 ${column.align === "right" ? "text-right" : ""}
               `}
@@ -93,13 +93,13 @@ function TableBody({
     <tbody>
       {loading ? (
         <tr>
-          <td colSpan={columnsCount} className="px-4 py-8 text-center text-(--brand-primary)">
+          <td colSpan={columnsCount} className="px-4 py-8 text-center text-primary">
             {loadingMessage}
           </td>
         </tr>
       ) : React.Children.count(children) === 0 ? (
         <tr>
-          <td colSpan={columnsCount} className="px-4 py-8 text-center text-slate-500">
+          <td colSpan={columnsCount} className="px-4 py-8 text-center text-base-content/60">
             {emptyMessage}
           </td>
         </tr>

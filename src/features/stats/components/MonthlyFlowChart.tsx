@@ -11,8 +11,8 @@ export default function MonthlyFlowChart({ data }: MonthlyFlowChartProps) {
   return (
     <section className="space-y-3 bg-base-100 p-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-lg font-semibold text-(--brand-primary)">Flujo mensual</h2>
-        <p className="text-xs text-slate-500">Ingresos vs egresos por mes</p>
+        <h2 className="text-lg font-semibold text-primary">Flujo mensual</h2>
+        <p className="text-xs text-base-content/60">Ingresos vs egresos por mes</p>
       </div>
       <div className="flex items-end gap-4 overflow-x-auto pb-2">
         {data.map((row) => {
@@ -32,7 +32,9 @@ export default function MonthlyFlowChart({ data }: MonthlyFlowChartProps) {
                   style={{ height: `${outHeight}px` }}
                 />
               </div>
-              <div className="text-center text-xs font-medium text-slate-600">{dayjs(row.month).format("MMM YY")}</div>
+              <div className="text-center text-xs font-medium text-base-content">
+                {dayjs(row.month).format("MMM YY")}
+              </div>
               <div className={`text-xs font-semibold ${row.net >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
                 {row.net >= 0 ? fmtCLP(row.net) : `-${fmtCLP(Math.abs(row.net))}`}
               </div>

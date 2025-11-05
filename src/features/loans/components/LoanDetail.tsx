@@ -70,7 +70,7 @@ export function LoanDetail({
 
   if (!loan) {
     return (
-      <section className="flex h-full flex-col items-center justify-center rounded-3xl p-10 text-sm text-slate-500 bg-base-100">
+      <section className="flex h-full flex-col items-center justify-center rounded-3xl p-10 text-sm text-base-content/60 bg-base-100">
         <p>Selecciona un préstamo para ver el detalle.</p>
       </section>
     );
@@ -80,11 +80,11 @@ export function LoanDetail({
     <section className="relative flex h-full flex-col gap-6 rounded-3xl p-6 bg-base-100">
       <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="space-y-1">
-          <h1 className="text-2xl font-bold text-(--brand-primary) drop-shadow-sm">{loan.title}</h1>
-          <p className="text-sm text-slate-600/90">
+          <h1 className="text-2xl font-bold text-primary drop-shadow-sm">{loan.title}</h1>
+          <p className="text-sm text-base-content/90">
             {loan.borrower_name} · {loan.borrower_type === "PERSON" ? "Persona natural" : "Empresa"}
           </p>
-          <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
+          <div className="flex flex-wrap items-center gap-3 text-xs text-base-content/60">
             <span>Inicio {dayjs(loan.start_date).format("DD MMM YYYY")}</span>
             <span>
               {loan.total_installments} cuotas ·{" "}
@@ -107,26 +107,24 @@ export function LoanDetail({
         </div>
       </header>
 
-      <section className="grid gap-4 rounded-2xl border border-white/55 bg-base-100/55 p-4 text-sm text-slate-600 sm:grid-cols-4">
+      <section className="grid gap-4 rounded-2xl border border-base-300 bg-base-200 p-4 text-sm text-base-content sm:grid-cols-4">
         <div>
-          <p className="text-xs uppercase tracking-wide text-slate-400">Capital</p>
-          <p className="text-lg font-semibold text-slate-800">${loan.principal_amount.toLocaleString("es-CL")}</p>
+          <p className="text-xs uppercase tracking-wide text-base-content/50">Capital</p>
+          <p className="text-lg font-semibold text-base-content">${loan.principal_amount.toLocaleString("es-CL")}</p>
         </div>
         <div>
-          <p className="text-xs uppercase tracking-wide text-slate-400">Total esperado</p>
-          <p className="text-lg font-semibold text-slate-800">
+          <p className="text-xs uppercase tracking-wide text-base-content/50">Total esperado</p>
+          <p className="text-lg font-semibold text-base-content">
             ${(summary?.total_expected ?? 0).toLocaleString("es-CL")}
           </p>
         </div>
         <div>
-          <p className="text-xs uppercase tracking-wide text-slate-400">Pagado</p>
-          <p className="text-lg font-semibold text-emerald-600">
-            ${(summary?.total_paid ?? 0).toLocaleString("es-CL")}
-          </p>
+          <p className="text-xs uppercase tracking-wide text-base-content/50">Pagado</p>
+          <p className="text-lg font-semibold text-success">${(summary?.total_paid ?? 0).toLocaleString("es-CL")}</p>
         </div>
         <div>
-          <p className="text-xs uppercase tracking-wide text-slate-400">Saldo</p>
-          <p className="text-lg font-semibold text-rose-600">
+          <p className="text-xs uppercase tracking-wide text-base-content/50">Saldo</p>
+          <p className="text-lg font-semibold text-error">
             ${(summary?.remaining_amount ?? 0).toLocaleString("es-CL")}
           </p>
         </div>
@@ -140,8 +138,8 @@ export function LoanDetail({
       />
 
       {loan.notes && (
-        <div className="rounded-2xl border border-white/55 bg-base-100/55 p-4 text-sm text-slate-600">
-          <p className="text-xs uppercase tracking-wide text-slate-400">Notas</p>
+        <div className="rounded-2xl border border-base-300 bg-base-200 p-4 text-sm text-base-content">
+          <p className="text-xs uppercase tracking-wide text-base-content/50">Notas</p>
           <p>{loan.notes}</p>
         </div>
       )}
@@ -207,7 +205,7 @@ export function LoanDetail({
 
       {loading && (
         <div className="absolute inset-0 z-30 flex items-center justify-center bg-base-100/40 backdrop-blur-sm">
-          <p className="rounded-full bg-base-100 px-4 py-2 text-sm font-semibold text-(--brand-primary) shadow">
+          <p className="rounded-full bg-base-100 px-4 py-2 text-sm font-semibold text-primary shadow">
             Cargando préstamo...
           </p>
         </div>

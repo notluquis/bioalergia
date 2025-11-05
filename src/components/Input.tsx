@@ -17,9 +17,9 @@ export default function Input(props: InputProps) {
   // combine daisyUI input classes with existing glass styles to preserve branding
   const sharedClasses = `input input-bordered w-full ${className}`.trim();
 
-  const labelClasses = "form-control text-sm text-slate-600";
-  const labelTextClasses = "label-text text-xs font-semibold uppercase tracking-wide text-slate-600/90";
-  const helperClasses = "text-xs text-slate-500/80 mt-1";
+  const labelClasses = "form-control text-sm text-base-content";
+  const labelTextClasses = "label-text text-xs font-semibold uppercase tracking-wide text-base-content/70";
+  const helperClasses = "text-xs text-base-content/60 mt-1";
 
   let control: React.ReactNode;
 
@@ -33,7 +33,10 @@ export default function Input(props: InputProps) {
     );
   } else if (type === "select") {
     control = (
-      <select {...(rest as React.SelectHTMLAttributes<HTMLSelectElement>)} className={`select select-bordered w-full ${className}`}>
+      <select
+        {...(rest as React.SelectHTMLAttributes<HTMLSelectElement>)}
+        className={`select select-bordered w-full ${className}`}
+      >
         {children}
       </select>
     );

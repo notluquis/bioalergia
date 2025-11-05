@@ -25,7 +25,15 @@ type WeekRow = {
 
 const weekdayLabels = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
 
-const colorPalette = ["#F1F5F9", "#DBEAFE", "#BFDBFE", "#93C5FD", "#60A5FA", "#3B82F6", "#1D4ED8"];
+const colorPalette = [
+  "oklch(var(--b2))",
+  "oklch(var(--p) / 0.2)",
+  "oklch(var(--p) / 0.4)",
+  "oklch(var(--p) / 0.6)",
+  "oklch(var(--p) / 0.8)",
+  "oklch(var(--p))",
+  "oklch(var(--p) / 1.2)",
+];
 
 function buildWeeks(
   month: Dayjs,

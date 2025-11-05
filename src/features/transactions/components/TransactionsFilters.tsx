@@ -15,10 +15,10 @@ export function TransactionsFilters({ filters, loading, onChange, onSubmit }: Tr
         event.preventDefault();
         onSubmit();
       }}
-      className="grid gap-4 p-6 text-xs text-slate-600 lg:grid-cols-4 bg-base-100"
+      className="grid gap-4 p-6 text-xs text-base-content lg:grid-cols-4 bg-base-100"
     >
       <label className="flex flex-col gap-2">
-        <span className="font-semibold uppercase tracking-wide text-slate-500">Fecha desde</span>
+        <span className="font-semibold uppercase tracking-wide text-base-content/60">Fecha desde</span>
         <input
           type="date"
           value={filters.from}
@@ -27,7 +27,7 @@ export function TransactionsFilters({ filters, loading, onChange, onSubmit }: Tr
         />
       </label>
       <label className="flex flex-col gap-2">
-        <span className="font-semibold uppercase tracking-wide text-slate-500">Fecha hasta</span>
+        <span className="font-semibold uppercase tracking-wide text-base-content/60">Fecha hasta</span>
         <input
           type="date"
           value={filters.to}
@@ -36,7 +36,7 @@ export function TransactionsFilters({ filters, loading, onChange, onSubmit }: Tr
         />
       </label>
       <label className="flex flex-col gap-2">
-        <span className="font-semibold uppercase tracking-wide text-slate-500">Descripción</span>
+        <span className="font-semibold uppercase tracking-wide text-base-content/60">Descripción</span>
         <input
           type="text"
           value={filters.description}
@@ -46,7 +46,7 @@ export function TransactionsFilters({ filters, loading, onChange, onSubmit }: Tr
         />
       </label>
       <label className="flex flex-col gap-2">
-        <span className="font-semibold uppercase tracking-wide text-slate-500">ID transacción</span>
+        <span className="font-semibold uppercase tracking-wide text-base-content/60">ID transacción</span>
         <input
           type="text"
           value={filters.sourceId}
@@ -56,7 +56,7 @@ export function TransactionsFilters({ filters, loading, onChange, onSubmit }: Tr
         />
       </label>
       <label className="flex flex-col gap-2">
-        <span className="font-semibold uppercase tracking-wide text-slate-500">Desde</span>
+        <span className="font-semibold uppercase tracking-wide text-base-content/60">Desde</span>
         <input
           type="text"
           value={filters.origin}
@@ -66,7 +66,7 @@ export function TransactionsFilters({ filters, loading, onChange, onSubmit }: Tr
         />
       </label>
       <label className="flex flex-col gap-2">
-        <span className="font-semibold uppercase tracking-wide text-slate-500">Hacia</span>
+        <span className="font-semibold uppercase tracking-wide text-base-content/60">Hacia</span>
         <input
           type="text"
           value={filters.destination}
@@ -76,7 +76,7 @@ export function TransactionsFilters({ filters, loading, onChange, onSubmit }: Tr
         />
       </label>
       <label className="flex flex-col gap-2">
-        <span className="font-semibold uppercase tracking-wide text-slate-500">Tipo</span>
+        <span className="font-semibold uppercase tracking-wide text-base-content/60">Tipo</span>
         <select
           value={filters.direction}
           onChange={(event) => onChange({ direction: event.target.value as Filters["direction"] })}

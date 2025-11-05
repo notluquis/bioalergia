@@ -1,7 +1,7 @@
 import { promises as fs } from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import type { Pool } from "mysql2/promise";
+import type { Pool, RowDataPacket } from "mysql2/promise";
 import { getPool } from "./db.js";
 import { logger } from "./lib/logger.js";
 
@@ -21,17 +21,15 @@ async function ensureMigrationsTable(pool: Pool) {
 }
 
 async function hasMigration(pool: Pool, filename: string) {
-  const [rows] = await pool.query<{ count: number }[]>(
+  const [rows] = await pool.query<RowDataPacket[]>(
     "SELECT COUNT(*) as count FROM schema_migrations WHERE filename = ?",
     [filename]
   );
-  return rows[0]?.count > 0;
+  return (rows[0] as { count: number }).count > 0;
 }
 
 function splitStatements(sql: string) {
-  const cleaned = sql
-    .replace(/--.*$/gm, "")
-    .replace(/\/\*[\s\S]*?\*\//g, "");
+  const cleaned = sql.replace(/--.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "");
   return cleaned
     .split(/;\s*(?:\r?\n|$)/)
     .map((statement) => statement.trim())

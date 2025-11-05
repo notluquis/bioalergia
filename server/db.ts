@@ -14,13 +14,42 @@ import { formatLocalDateForMySQL } from "./lib/time.js";
 import { InventoryCategory, InventoryItem, InventoryMovement } from "./types.js";
 import { roundCurrency } from "../shared/currency.js";
 import { SQLBuilder, selectMany } from "./lib/database.js";
-import type {
-  Counterpart as CounterpartRecord,
-  CounterpartAccount as CounterpartAccountRecord,
-  CounterpartAccountMetadata,
-  CounterpartPersonType,
-} from "../src/features/counterparts/types.js";
 dotenv.config();
+
+// Counterpart types needed by server
+export type CounterpartPersonType = "PERSON" | "COMPANY" | "OTHER";
+export type CounterpartCategory = "SUPPLIER" | "PATIENT" | "EMPLOYEE" | "PARTNER" | "RELATED" | "OTHER";
+
+export type CounterpartAccountMetadata = {
+  bankAccountNumber?: string | null;
+  withdrawId?: string | null;
+};
+
+export type CounterpartRecord = {
+  id: number;
+  rut: string | null;
+  name: string;
+  personType: CounterpartPersonType;
+  category: CounterpartCategory;
+  employeeId: number | null;
+  email: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CounterpartAccountRecord = {
+  id: number;
+  counterpart_id: number;
+  account_identifier: string;
+  bank_name: string | null;
+  account_type: string | null;
+  holder: string | null;
+  concept: string | null;
+  metadata: CounterpartAccountMetadata | null;
+  created_at: string;
+  updated_at: string;
+};
 
 type Pool = mysql.Pool;
 export type UserRole = "GOD" | "ADMIN" | "ANALYST" | "VIEWER";
@@ -336,7 +365,8 @@ export function getPool(): Pool {
     database: process.env.DB_NAME,
     waitForConnections: true,
     connectionLimit: 8,
-    connectTimeout: Number(process.env.DB_CONNECT_TIMEOUT ?? 5000),
+    connectTimeout: Number(process.env.DB_CONNECT_TIMEOUT ?? 30000), // Increased for serverless
+    enableKeepAlive: true, // Enable TCP keepalive
     namedPlaceholders: false,
     dateStrings: true,
   });
@@ -1065,7 +1095,10 @@ export async function createLoan(payload: CreateLoanPayload): Promise<LoanRecord
   );
 
   const [rows] = await pool.query<RowDataPacket[]>(`SELECT * FROM loans WHERE id = ? LIMIT 1`, [result.insertId]);
-  return mapLoanRow(rows[0]);
+  const row = rows[0];
+  if (!row) throw new Error("Record not found");
+  if (!row) throw new Error("Record not found");
+  return mapLoanRow(row);
 }
 
 export async function listLoansWithSummary(): Promise<LoanWithSummary[]> {
@@ -1112,7 +1145,9 @@ export async function getLoanDetail(publicId: string): Promise<{
   const [loanRows] = await pool.query<RowDataPacket[]>(`SELECT * FROM loans WHERE public_id = ? LIMIT 1`, [publicId]);
 
   if (!loanRows.length) return null;
-  const loan = mapLoanRow(loanRows[0]);
+  const row = loanRows[0];
+  if (!row) throw new Error("Record not found");
+  const loan = mapLoanRow(row);
 
   const [scheduleRows] = await pool.query<RowDataPacket[]>(
     `SELECT ls.*, t.description AS transaction_description, t.timestamp AS transaction_timestamp, t.amount AS transaction_amount
@@ -1202,7 +1237,9 @@ export async function regenerateLoanSchedule(
     if (!loanRows.length) {
       throw new Error("Préstamo no encontrado");
     }
-    const loan = mapLoanRow(loanRows[0]);
+    const row = loanRows[0];
+    if (!row) throw new Error("Record not found");
+    const loan = mapLoanRow(row);
 
     const schedule = computeLoanSchedule(loan, options);
     await connection.query(`DELETE FROM loan_schedules WHERE loan_id = ?`, [loan.id]);
@@ -1235,7 +1272,9 @@ export async function markLoanSchedulePayment(payload: {
     if (!scheduleRows.length) {
       throw new Error("Cuota no encontrada");
     }
-    const schedule = mapLoanScheduleRow(scheduleRows[0]);
+    const row = scheduleRows[0];
+    if (!row) throw new Error("Record not found");
+    const schedule = mapLoanScheduleRow(row);
 
     const [transactionRows] = await connection.query<RowDataPacket[]>(
       `SELECT id, amount, timestamp FROM mp_transactions WHERE id = ? LIMIT 1`,
@@ -1272,6 +1311,7 @@ export async function markLoanSchedulePayment(payload: {
       throw new Error("No se pudo recuperar la cuota actualizada");
     }
     const updatedRow = updatedRows[0];
+    if (!updatedRow) throw new Error("Record not found");
     const mapped = mapLoanScheduleRow(updatedRow);
     const transaction = updatedRow.transaction_id
       ? {
@@ -1307,7 +1347,11 @@ export async function unlinkLoanSchedulePayment(scheduleId: number): Promise<Loa
     if (!rows.length) {
       throw new Error("Cuota no encontrada");
     }
-    const loanId = Number(rows[0].loan_id);
+    const row = rows[0];
+    if (!row) throw new Error("Record not found");
+    const fetchedRow2 = rows[0];
+    if (!fetchedRow2) throw new Error("Record not found");
+    const loanId = Number(row.loan_id);
     await connection.query(
       `UPDATE loan_schedules
           SET transaction_id = NULL, paid_amount = NULL, paid_date = NULL, status = 'PENDING', updated_at = NOW()
@@ -1329,7 +1373,9 @@ export async function unlinkLoanSchedulePayment(scheduleId: number): Promise<Loa
     if (!updatedRows.length) {
       throw new Error("No se pudo recuperar la cuota actualizada");
     }
-    const mapped = mapLoanScheduleRow(updatedRows[0]);
+    const row2 = updatedRows[0];
+    if (!row2) throw new Error("Record not found");
+    const mapped = mapLoanScheduleRow(row);
     return { ...mapped, transaction: null } satisfies LoanScheduleWithTransaction;
   } catch (error) {
     await connection.rollback();
@@ -1565,7 +1611,10 @@ export async function createService(payload: CreateServicePayload): Promise<Serv
      LIMIT 1`,
     [result.insertId]
   );
-  return mapServiceRow(rows[0]);
+  const row = rows[0];
+  if (!row) throw new Error("Record not found");
+  if (!row) throw new Error("Record not found");
+  return mapServiceRow(row);
 }
 
 export async function updateService(publicId: string, payload: CreateServicePayload): Promise<ServiceRecord> {
@@ -1574,7 +1623,9 @@ export async function updateService(publicId: string, payload: CreateServicePayl
   if (!rows.length) {
     throw new Error("Servicio no encontrado");
   }
-  const current = mapServiceRow(rows[0]);
+  const row = rows[0];
+  if (!row) throw new Error("Record not found");
+  const current = mapServiceRow(row);
 
   const nextGenerationMonths = payload.monthsToGenerate ?? current.next_generation_months;
 
@@ -1644,7 +1695,9 @@ export async function updateService(publicId: string, payload: CreateServicePayl
   if (!updatedRows.length) {
     throw new Error("Servicio no encontrado");
   }
-  return mapServiceRow(updatedRows[0]);
+  const updatedRow = updatedRows[0];
+  if (!updatedRow) throw new Error("Service not found");
+  return mapServiceRow(updatedRow);
 }
 
 export async function listServicesWithSummary(): Promise<ServiceWithSummary[]> {
@@ -1704,7 +1757,9 @@ export async function getServiceDetail(publicId: string): Promise<{
     [publicId]
   );
   if (!serviceRows.length) return null;
-  const service = mapServiceRow(serviceRows[0]);
+  const row = serviceRows[0];
+  if (!row) throw new Error("Record not found");
+  const service = mapServiceRow(row);
 
   const [scheduleRows] = await pool.query<RowDataPacket[]>(
     `SELECT ss.*, t.description AS transaction_description, t.timestamp AS transaction_timestamp, t.amount AS transaction_amount
@@ -1788,7 +1843,9 @@ export async function regenerateServiceSchedule(
     if (!serviceRows.length) {
       throw new Error("Servicio no encontrado");
     }
-    const service = mapServiceRow(serviceRows[0]);
+    const row = serviceRows[0];
+    if (!row) throw new Error("Record not found");
+    const service = mapServiceRow(row);
     const schedule = computeServiceSchedule(service, overrides);
     await connection.query(`DELETE FROM service_schedules WHERE service_id = ?`, [service.id]);
     await insertServiceScheduleEntries(connection, service.id, schedule);
@@ -1817,7 +1874,9 @@ export async function markServicePayment(payload: {
       payload.scheduleId,
     ]);
     if (!rows.length) throw new Error("Periodo no encontrado");
-    const schedule = mapServiceScheduleRow(rows[0]);
+    const row = rows[0];
+    if (!row) throw new Error("Record not found");
+    const schedule = mapServiceScheduleRow(row);
     const service = await fetchServiceRecordById(connection, schedule.service_id);
     const derivedBefore = applyDerivedScheduleAmounts(service, { ...schedule, transaction: null });
 
@@ -1850,19 +1909,23 @@ export async function markServicePayment(payload: {
 
     await connection.commit();
     if (!updatedRows.length) throw new Error("No se pudo recuperar el periodo");
-    const mapped = mapServiceScheduleRow(updatedRows[0]);
-    const transaction = updatedRows[0].transaction_id
+    const updatedScheduleRow = updatedRows[0];
+    if (!updatedScheduleRow) throw new Error("Record not found");
+    const mapped = mapServiceScheduleRow(updatedScheduleRow);
+    const transaction = updatedScheduleRow.transaction_id
       ? {
-          id: Number(updatedRows[0].transaction_id),
+          id: Number(updatedScheduleRow.transaction_id),
           description:
-            updatedRows[0].transaction_description != null ? String(updatedRows[0].transaction_description) : null,
+            updatedScheduleRow.transaction_description != null
+              ? String(updatedScheduleRow.transaction_description)
+              : null,
           timestamp:
-            updatedRows[0].transaction_timestamp instanceof Date
-              ? updatedRows[0].transaction_timestamp.toISOString()
-              : updatedRows[0].transaction_timestamp
-                ? String(updatedRows[0].transaction_timestamp)
+            updatedScheduleRow.transaction_timestamp instanceof Date
+              ? updatedScheduleRow.transaction_timestamp.toISOString()
+              : updatedScheduleRow.transaction_timestamp
+                ? String(updatedScheduleRow.transaction_timestamp)
                 : "",
-          amount: updatedRows[0].transaction_amount != null ? Number(updatedRows[0].transaction_amount) : null,
+          amount: updatedScheduleRow.transaction_amount != null ? Number(updatedScheduleRow.transaction_amount) : null,
         }
       : null;
     return applyDerivedScheduleAmounts(service, { ...mapped, transaction });
@@ -1883,7 +1946,9 @@ export async function unlinkServicePayment(scheduleId: number): Promise<ServiceS
       scheduleId,
     ]);
     if (!rows.length) throw new Error("Periodo no encontrado");
-    const schedule = mapServiceScheduleRow(rows[0]);
+    const row = rows[0];
+    if (!row) throw new Error("Record not found");
+    const schedule = mapServiceScheduleRow(row);
     const service = await fetchServiceRecordById(connection, schedule.service_id);
 
     await connection.query(
@@ -1903,7 +1968,9 @@ export async function unlinkServicePayment(scheduleId: number): Promise<ServiceS
     );
     await connection.commit();
     if (!updatedRows.length) throw new Error("No se pudo recuperar el periodo");
-    const mapped = mapServiceScheduleRow(updatedRows[0]);
+    const updatedRow = updatedRows[0];
+    if (!updatedRow) throw new Error("Record not found");
+    const mapped = mapServiceScheduleRow(updatedRow);
     return applyDerivedScheduleAmounts(service, { ...mapped, transaction: null });
   } catch (error) {
     await connection.rollback();
@@ -1965,7 +2032,9 @@ export async function getMonthlyExpenseDetail(publicId: string): Promise<Monthly
     [publicId]
   );
   if (!rows.length) return null;
-  const expense = mapMonthlyExpenseRow(rows[0]);
+  const row = rows[0];
+  if (!row) throw new Error("Record not found");
+  const expense = mapMonthlyExpenseRow(row);
   const [transactions] = await pool.query<RowDataPacket[]>(
     `SELECT met.transaction_id, met.amount, t.timestamp, t.description, t.direction
        FROM monthly_expense_transactions met
@@ -2067,13 +2136,17 @@ export async function linkMonthlyExpenseTransaction(
     publicId,
   ]);
   if (!rows.length) throw new Error("Gasto mensual no encontrado");
-  const expenseId = Number(rows[0].id);
+  const rowData = rows[0];
+  if (!rowData) throw new Error("Record not found");
+  const expenseId = Number(rowData.id);
 
   const [txRows] = await pool.query<RowDataPacket[]>(`SELECT amount FROM mp_transactions WHERE id = ? LIMIT 1`, [
     payload.transactionId,
   ]);
   if (!txRows.length) throw new Error("Transacción no encontrada");
-  const txAmount = Number(txRows[0].amount ?? 0);
+  const txRow = txRows[0];
+  if (!txRow) throw new Error("Transaction not found");
+  const txAmount = Number(txRow.amount ?? 0);
   const amount = payload.amount != null ? payload.amount : Math.abs(txAmount);
 
   await pool.query(
@@ -2097,7 +2170,9 @@ export async function unlinkMonthlyExpenseTransaction(
     publicId,
   ]);
   if (!rows.length) throw new Error("Gasto mensual no encontrado");
-  const expenseId = Number(rows[0].id);
+  const rowData = rows[0];
+  if (!rowData) throw new Error("Record not found");
+  const expenseId = Number(rowData.id);
 
   await pool.query(
     `DELETE FROM monthly_expense_transactions WHERE monthly_expense_id = ? AND transaction_id = ? LIMIT 1` as string,
@@ -2222,7 +2297,10 @@ async function fetchServiceRecordById(connection: mysql.PoolConnection | Pool, i
   if (!rows.length) {
     throw new Error("Servicio no encontrado");
   }
-  return mapServiceRow(rows[0]);
+  const row = rows[0];
+  if (!row) throw new Error("Record not found");
+  if (!row) throw new Error("Record not found");
+  return mapServiceRow(row);
 }
 
 function parseTags(value: unknown): string[] {
@@ -2356,6 +2434,7 @@ export async function getPreviousDailyBalance(date: string) {
   );
 
   const row = rows[0];
+  if (!row) throw new Error("Record not found");
   if (!row) return null;
   return {
     date: toDateOnly(row.balance_date),
@@ -2429,6 +2508,7 @@ export async function getEmployeeById(id: number) {
     [id]
   );
   const row = rows[0];
+  if (!row) throw new Error("Record not found");
   return row ? mapEmployeeRow(row) : null;
 }
 
@@ -2442,6 +2522,7 @@ export async function findEmployeeByEmail(email: string) {
     [email]
   );
   const row = rows[0];
+  if (!row) throw new Error("Record not found");
   return row ? mapEmployeeRow(row) : null;
 }
 
@@ -2640,7 +2721,9 @@ export type TimesheetEntry = {
 // Helper function to convert HH:MM to minutes
 function timeToMinutes(time: string): number | null {
   if (!/^[0-9]{1,2}:[0-9]{2}(:[0-9]{2})?$/.test(time)) return null;
-  const [hours, minutes] = time.split(":").map(Number);
+  const parts = time.split(":").map(Number);
+  const [hours, minutes] = parts;
+  if (hours === undefined || minutes === undefined) return null;
   if (hours < 0 || hours > 23 || minutes < 0 || minutes >= 60) return null;
   return hours * 60 + minutes;
 }
@@ -2789,6 +2872,7 @@ export async function getTimesheetEntryByEmployeeAndDate(employeeId: number, wor
     [employeeId, workDate]
   );
   const row = rows[0];
+  if (!row) throw new Error("Record not found");
   return row ? mapTimesheetRow(row) : null;
 }
 
@@ -2802,6 +2886,7 @@ export async function getTimesheetEntryById(id: number) {
     [id]
   );
   const row = rows[0];
+  if (!row) throw new Error("Record not found");
   return row ? mapTimesheetRow(row) : null;
 }
 
@@ -2834,7 +2919,9 @@ async function seedDefaultSettings(pool: Pool) {
 
 async function seedDefaultAdmin(pool: Pool) {
   const [rows] = await pool.query<RowDataPacket[]>(`SELECT COUNT(*) AS total FROM users`);
-  const total = rows.length ? Number(rows[0].total ?? 0) : 0;
+  const row2 = rows[0];
+  if (!row2) throw new Error("Record not found");
+  const total = rows.length ? Number(row2.total) : 0;
   if (total > 0) return;
 
   const email = process.env.ADMIN_EMAIL;
@@ -3171,9 +3258,9 @@ export async function upsertWithdrawals(payouts: PayoutRecord[]) {
           // existingRaw may be stored with arbitrary ordering; canonicalize before compare
           let existingCanon: string;
           try {
-            existingCanon = canonicalize(JSON.parse(existingRaw));
+            existingCanon = canonicalize(JSON.parse(existingRaw ?? "null"));
           } catch {
-            existingCanon = String(existingRaw);
+            existingCanon = String(existingRaw ?? "");
           }
           if (existingCanon !== rawCanonical) changedCount += 1;
         }
@@ -3545,6 +3632,7 @@ export async function upsertCounterpartAccount(
   );
   if (existingRows.length) {
     const existing = existingRows[0];
+    if (!existing) throw new Error("Record not found");
     let metadataValue = existing.metadata as string | null;
     if (payload.metadata !== undefined) {
       metadataValue = metadataJson;
@@ -3772,6 +3860,7 @@ export async function findUserByEmail(email: string): Promise<UserRecord | null>
 
   if (!rows.length) return null;
   const row = rows[0];
+  if (!row) throw new Error("Record not found");
   return {
     id: Number(row.id),
     email: String(row.email),
@@ -3793,6 +3882,7 @@ export async function findUserById(id: number): Promise<UserRecord | null> {
 
   if (!rows.length) return null;
   const row = rows[0];
+  if (!row) throw new Error("Record not found");
   return {
     id: Number(row.id),
     email: String(row.email),
@@ -3921,3 +4011,6 @@ export async function createInventoryMovement(movement: Omit<InventoryMovement, 
     connection.release();
   }
 }
+
+// Export seed functions for use in seed.ts
+export { seedDefaultSettings, seedDefaultAdmin };

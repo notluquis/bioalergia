@@ -1,6 +1,5 @@
-import React from "react";
 import type { ChangeEvent } from "react";
-import { useAuth } from "../../../context/auth-context";
+import { useAuth } from "../../../context/AuthContext";
 import type { SupplyRequest } from "../types";
 import { translateStatus } from "../utils";
 import Input from "../../../components/Input";

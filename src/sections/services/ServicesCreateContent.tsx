@@ -41,7 +41,7 @@ export default function ServicesCreateContent() {
           </Button>
         }
       >
-        <p className="text-xs text-slate-400">Completa manualmente si ninguna plantilla aplica.</p>
+        <p className="text-xs text-base-content/50">Completa manualmente si ninguna plantilla aplica.</p>
       </CollapsibleSection>
 
       <Modal isOpen={createOpen} onClose={closeCreateModal} title="Nuevo servicio">

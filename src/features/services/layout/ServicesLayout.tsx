@@ -58,11 +58,11 @@ export default function ServicesLayout() {
 
   return (
     <section className="flex h-full flex-col gap-6">
-      <header className="border border-white/40 bg-base-100 px-6 py-5 shadow-sm">
+      <header className="border border-base-300 bg-base-100 px-6 py-5 shadow-sm">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="space-y-1">
-            <h1 className="text-2xl font-bold text-(--brand-primary) drop-shadow-sm">Servicios</h1>
-            <p className="text-sm text-slate-600/90">Gestiona contratos, vencimientos y plantillas de tus servicios.</p>
+            <h1 className="text-2xl font-bold text-primary drop-shadow-sm">Servicios</h1>
+            <p className="text-sm text-base-content">Gestiona contratos, vencimientos y plantillas de tus servicios.</p>
           </div>
           <Button type="button" variant="primary" onClick={() => navigate("/services/create")}>
             Nuevo servicio
@@ -81,7 +81,7 @@ export default function ServicesLayout() {
         />
       </div>
 
-      <nav className="flex flex-wrap gap-2 border border-white/40 p-3 text-sm text-slate-600 bg-base-100">
+      <nav className="flex flex-wrap gap-2 border border-base-300 p-3 text-sm text-base-content bg-base-100">
         {NAV_ITEMS.map((item) => (
           <NavLink
             key={item.to}
@@ -90,8 +90,8 @@ export default function ServicesLayout() {
             className={({ isActive }) =>
               `rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide transition-all ${
                 isActive
-                  ? "bg-(--brand-primary)/15 text-(--brand-primary) shadow-inner"
-                  : "border border-white/50 bg-base-100/70 text-slate-500 hover:border-(--brand-primary)/35 hover:text-(--brand-primary)"
+                  ? "bg-primary/15 text-primary shadow-inner"
+                  : "border border-base-300 bg-base-200 text-base-content/60 hover:border-primary/35 hover:text-primary"
               }`
             }
           >
@@ -116,12 +116,12 @@ function MetricCard({ title, value, helper, accent = "default" }: MetricCardProp
   const accentClasses =
     accent === "warning"
       ? "border-amber-300/70 bg-amber-50/60 text-amber-700"
-      : "border-white/45 bg-base-100/70 text-slate-600";
+      : "border-base-300 bg-base-200 text-base-content";
   return (
     <article className={`rounded-2xl border p-4 shadow-sm ${accentClasses}`}>
-      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{title}</p>
-      <p className="mt-2 text-2xl font-semibold text-slate-800">{value}</p>
-      {helper && <p className="mt-1 text-xs text-slate-400">{helper}</p>}
+      <p className="text-xs font-semibold uppercase tracking-wide text-base-content/60">{title}</p>
+      <p className="mt-2 text-2xl font-semibold text-base-content">{value}</p>
+      {helper && <p className="mt-1 text-xs text-base-content/50">{helper}</p>}
     </article>
   );
 }

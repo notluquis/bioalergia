@@ -154,6 +154,8 @@ async function fetchCalendarEventsForId(
   const events: CalendarEventRecord[] = [];
   const excluded: Array<{ calendarId: string; eventId: string }> = [];
   let pageToken: string | undefined;
+  const MAX_PAGES = 100; // Safety guard to prevent infinite loop
+  let pageCount = 0;
 
   do {
     const response = await client.events.list({
@@ -213,6 +215,17 @@ async function fetchCalendarEventsForId(
     }
 
     pageToken = response.data.nextPageToken ?? undefined;
+    pageCount++;
+
+    // Safety guard: prevent infinite loop if API returns same pageToken
+    if (pageCount >= MAX_PAGES) {
+      logWarn("googleCalendar.fetch.maxPages", {
+        calendarId,
+        pageCount,
+        message: "Reached maximum page limit, stopping pagination",
+      });
+      break;
+    }
   } while (pageToken);
 
   return { events, excluded };

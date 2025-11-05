@@ -43,10 +43,10 @@ function computeLabel(dueDate: dayjs.Dayjs) {
 }
 
 const statusClasses: Record<ServiceSchedule["status"], string> = {
-  PENDING: "bg-amber-100 text-amber-700",
-  PARTIAL: "bg-amber-100 text-amber-700",
-  PAID: "bg-emerald-100 text-emerald-700",
-  SKIPPED: "bg-slate-100 text-slate-600",
+  PENDING: "bg-warning/20 text-warning",
+  PARTIAL: "bg-warning/20 text-warning",
+  PAID: "bg-success/20 text-success",
+  SKIPPED: "bg-base-200 text-base-content/60",
 };
 
 export default function ServicesUnifiedAgenda({
@@ -116,32 +116,34 @@ export default function ServicesUnifiedAgenda({
 
   return (
     <section className="space-y-4">
-      <header className="grid gap-4 border border-white/40 p-4 text-sm text-slate-600 sm:grid-cols-3 bg-base-100">
+      <header className="grid gap-4 border border-base-300 p-4 text-sm text-base-content/60 sm:grid-cols-3 bg-base-100">
         <div>
-          <p className="text-xs uppercase tracking-wide text-slate-500">Pagos hoy</p>
-          <p className="text-xl font-semibold text-slate-800">{currencyFormatter.format(totals.day)}</p>
+          <p className="text-xs uppercase tracking-wide text-base-content/50">Pagos hoy</p>
+          <p className="text-xl font-semibold text-base-content">{currencyFormatter.format(totals.day)}</p>
         </div>
         <div>
-          <p className="text-xs uppercase tracking-wide text-slate-500">Semana en curso</p>
-          <p className="text-xl font-semibold text-slate-800">{currencyFormatter.format(totals.week)}</p>
+          <p className="text-xs uppercase tracking-wide text-base-content/50">Semana en curso</p>
+          <p className="text-xl font-semibold text-base-content">{currencyFormatter.format(totals.week)}</p>
         </div>
         <div>
-          <p className="text-xs uppercase tracking-wide text-slate-500">Mes en curso</p>
-          <p className="text-xl font-semibold text-slate-800">{currencyFormatter.format(totals.month)}</p>
+          <p className="text-xs uppercase tracking-wide text-base-content/50">Mes en curso</p>
+          <p className="text-xl font-semibold text-base-content">{currencyFormatter.format(totals.month)}</p>
         </div>
       </header>
 
-      <div className="space-y-3 border border-white/40 p-4 text-sm text-slate-600 bg-base-100">
+      <div className="space-y-3 border border-base-300 p-4 text-sm text-base-content/60 bg-base-100">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Agenda unificada</h2>
-            <p className="text-xs text-slate-400">Visualiza todos los pagos programados por fecha de vencimiento.</p>
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-base-content/50">Agenda unificada</h2>
+            <p className="text-xs text-base-content/40">
+              Visualiza todos los pagos programados por fecha de vencimiento.
+            </p>
           </div>
-          {loading && <span className="text-xs text-slate-400">Actualizando agenda…</span>}
+          {loading && <span className="text-xs text-base-content/40">Actualizando agenda…</span>}
         </div>
-        {error && <p className="text-xs text-rose-500">{error}</p>}
+        {error && <p className="text-xs text-error">{error}</p>}
         {!groups.length && !loading && !error && (
-          <p className="text-xs text-slate-400">No hay cuotas programadas en el periodo consultado.</p>
+          <p className="text-xs text-base-content/40">No hay cuotas programadas en el periodo consultado.</p>
         )}
         <div className="muted-scrollbar max-h-128 space-y-2 overflow-y-auto pr-1">
           {groups.map((group) => {
@@ -149,7 +151,7 @@ export default function ServicesUnifiedAgenda({
             return (
               <article
                 key={group.dateKey}
-                className="rounded-2xl border border-white/45 bg-base-100/70 shadow-sm transition hover:border-(--brand-primary)/35"
+                className="rounded-2xl border border-base-300 bg-base-100/70 shadow-sm transition hover:border-primary/35"
               >
                 <Button
                   type="button"
@@ -158,17 +160,17 @@ export default function ServicesUnifiedAgenda({
                   onClick={() => toggle(group.dateKey)}
                 >
                   <div>
-                    <p className="text-sm font-semibold text-slate-700 capitalize">{group.label}</p>
-                    <p className="text-xs text-slate-400">
+                    <p className="text-sm font-semibold text-base-content capitalize">{group.label}</p>
+                    <p className="text-xs text-base-content/40">
                       {group.entries.length} {group.entries.length === 1 ? "servicio" : "servicios"}
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="text-sm font-semibold text-slate-700">
+                    <span className="text-sm font-semibold text-base-content">
                       {currencyFormatter.format(group.total)}
                     </span>
                     <span
-                      className={`inline-flex h-7 w-7 items-center justify-center rounded-full border border-white/60 bg-base-100/70 text-xs font-semibold text-slate-500 transition-transform ${
+                      className={`inline-flex h-7 w-7 items-center justify-center rounded-full border border-base-300 bg-base-100/70 text-xs font-semibold text-base-content/50 transition-transform ${
                         isExpanded ? "rotate-180" : ""
                       }`}
                     >
@@ -177,7 +179,7 @@ export default function ServicesUnifiedAgenda({
                   </div>
                 </Button>
                 {isExpanded && (
-                  <div className="space-y-2 border-t border-white/55 px-4 py-3">
+                  <div className="space-y-2 border-t border-base-300 px-4 py-3">
                     {group.entries.map(({ service, schedule }) => {
                       const dueDate = dayjs(schedule.due_date);
                       const diffDays = dueDate.startOf("day").diff(dayjs().startOf("day"), "day");
@@ -185,13 +187,13 @@ export default function ServicesUnifiedAgenda({
                       return (
                         <div
                           key={`${service.public_id}-${schedule.id}`}
-                          className="rounded-xl border border-white/50 bg-base-100/80 p-3 shadow-inner transition hover:border-(--brand-primary)/40"
+                          className="rounded-xl border border-base-300 bg-base-100/80 p-3 shadow-inner transition hover:border-primary/40"
                         >
                           <div className="flex flex-wrap items-center justify-between gap-3">
                             <div>
-                              <p className="text-sm font-semibold text-slate-700">{service.name}</p>
-                              {service.detail && <p className="text-xs text-slate-400">{service.detail}</p>}
-                              <p className="mt-1 text-xs text-slate-400">
+                              <p className="text-sm font-semibold text-base-content">{service.name}</p>
+                              {service.detail && <p className="text-xs text-base-content/40">{service.detail}</p>}
+                              <p className="mt-1 text-xs text-base-content/40">
                                 {currencyFormatter.format(schedule.expected_amount)} · Vence el{" "}
                                 {dateFormatter.format(dueDate.toDate())}
                               </p>

@@ -21,7 +21,7 @@ export default function MonthlyExpenseDetail({
   onUnlinkTransaction,
 }: MonthlyExpenseDetailProps) {
   if (loading) {
-    return <p className="text-xs text-slate-500">Cargando gasto…</p>;
+    return <p className="text-xs text-base-content/60">Cargando gasto…</p>;
   }
 
   if (!expense) {
@@ -29,11 +29,11 @@ export default function MonthlyExpenseDetail({
   }
 
   return (
-    <section className="space-y-4 border border-white/40 p-4 text-sm text-slate-600 bg-base-100">
+    <section className="space-y-4 border border-base-300 p-4 text-sm text-base-content bg-base-100">
       <header className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h2 className="text-xl font-semibold text-(--brand-primary)">{expense.name}</h2>
-          <p className="text-xs text-slate-400">
+          <h2 className="text-xl font-semibold text-primary">{expense.name}</h2>
+          <p className="text-xs text-base-content/50">
             {expense.category || "Sin categoría"} · {dayjs(expense.expenseDate).format("DD MMM YYYY")}
           </p>
         </div>
@@ -62,24 +62,21 @@ export default function MonthlyExpenseDetail({
         />
       </div>
 
-      {expense.notes && <p className="rounded-xl bg-base-100/60 p-3 text-xs text-slate-500">{expense.notes}</p>}
+      {expense.notes && <p className="rounded-xl bg-base-100/60 p-3 text-xs text-base-content/60">{expense.notes}</p>}
 
       <section className="space-y-2">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">Transacciones</h3>
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-base-content/60">Transacciones</h3>
         <div className="muted-scrollbar max-h-72 space-y-2 overflow-y-auto pr-1">
           {expense.transactions.map((tx) => (
-            <article
-              key={tx.transactionId}
-              className="rounded-xl border border-white/50 bg-base-100/80 p-3 shadow-inner"
-            >
+            <article key={tx.transactionId} className="rounded-xl border border-base-300 bg-base-200 p-3 shadow-inner">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <p className="text-sm font-semibold text-slate-700">ID #{tx.transactionId}</p>
-                  <p className="text-xs text-slate-400">{tx.description ?? "(sin descripción)"}</p>
+                  <p className="text-sm font-semibold text-base-content">ID #{tx.transactionId}</p>
+                  <p className="text-xs text-base-content/50">{tx.description ?? "(sin descripción)"}</p>
                 </div>
-                <span className="text-sm font-semibold text-slate-600">${tx.amount.toLocaleString("es-CL")}</span>
+                <span className="text-sm font-semibold text-base-content">${tx.amount.toLocaleString("es-CL")}</span>
               </div>
-              <div className="mt-1 text-xs text-slate-400">
+              <div className="mt-1 text-xs text-base-content/50">
                 {dayjs(tx.timestamp).format("DD MMM YYYY HH:mm")} · {tx.direction}
               </div>
               {canManage && (
@@ -92,7 +89,7 @@ export default function MonthlyExpenseDetail({
             </article>
           ))}
           {!expense.transactions.length && (
-            <p className="rounded-xl border border-dashed border-white/50 bg-base-100/60 p-3 text-xs text-slate-500">
+            <p className="rounded-xl border border-dashed border-base-300 bg-base-200 p-3 text-xs text-base-content/60">
               Aún no se han vinculado transacciones a este gasto.
             </p>
           )}
@@ -104,10 +101,10 @@ export default function MonthlyExpenseDetail({
 
 function DetailCard({ title, value, helper }: { title: string; value: string; helper?: string }) {
   return (
-    <article className="rounded-xl border border-white/45 bg-base-100/70 p-3 shadow-sm">
-      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{title}</p>
-      <p className="mt-1 text-lg font-semibold text-slate-800">{value}</p>
-      {helper && <p className="text-xs text-slate-400">{helper}</p>}
+    <article className="rounded-xl border border-base-300 bg-base-200 p-3 shadow-sm">
+      <p className="text-xs font-semibold uppercase tracking-wide text-base-content/60">{title}</p>
+      <p className="mt-1 text-lg font-semibold text-base-content">{value}</p>
+      {helper && <p className="text-xs text-base-content/50">{helper}</p>}
     </article>
   );
 }

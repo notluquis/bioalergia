@@ -1,5 +1,3 @@
-import React from "react";
-
 type UploadSummary = {
   status: string;
   inserted: number;
@@ -24,20 +22,17 @@ export default function UploadResults({ results, variant = "primary" }: UploadRe
     return null;
   }
 
-  const colorClass =
-    variant === "primary"
-      ? "bg-(--brand-primary)/10 text-(--brand-primary)"
-      : "bg-(--brand-secondary)/10 text-(--brand-secondary)";
+  const colorClass = variant === "primary" ? "bg-primary/10 text-primary" : "bg-secondary/10 text-secondary";
   return (
     <div className={`card bg-base-100 p-4 text-xs shadow-sm ${colorClass}`}>
       <div className="card-body p-0">
         <p className="font-semibold mb-2">Resultados</p>
-        <ul className="space-y-2 text-slate-600">
+        <ul className="space-y-2 text-base-content">
           {results.map((result) => (
             <li key={result.file} className="flex flex-wrap items-center justify-between gap-2 rounded-lg p-2">
               <span className="font-medium">{result.file}</span>
               {result.summary ? (
-                <div className="text-xs text-slate-600">
+                <div className="text-xs text-base-content/80">
                   <span className="mr-2">Inserted: {result.summary.inserted}</span>
                   {typeof result.summary.updated === "number" ? (
                     <span className="mr-2">Updated: {result.summary.updated}</span>
@@ -47,7 +42,7 @@ export default function UploadResults({ results, variant = "primary" }: UploadRe
                   <span>Total: {result.summary.total}</span>
                 </div>
               ) : (
-                <span className="text-rose-600">{result.error}</span>
+                <span className="text-error">Error: {result.error}</span>
               )}
             </li>
           ))}

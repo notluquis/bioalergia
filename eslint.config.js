@@ -48,8 +48,8 @@ export default [
     },
     rules: {
       "@typescript-eslint/no-unused-vars": "warn",
-      // Re-enabled (gradual enforcement) - switch to 'error' once remaining anys addressed
-      "@typescript-eslint/no-explicit-any": "warn",
+      // Strict enforcement: catch any types to improve type safety
+      "@typescript-eslint/no-explicit-any": "error",
       // Disable core rules that conflict with TS awareness
       "no-unused-vars": "off",
       "no-undef": "off",
@@ -65,12 +65,12 @@ export default [
     plugins: { "react-hooks": reactHooks, "react-refresh": reactRefresh },
     rules: {
       // Re-enabled for safer component export patterns (warn for now)
-      "react-refresh/only-export-components": "warn",
+      "react-refresh/only-export-components": "off", // Allow hooks to be exported from context files
       "react/prop-types": "off",
       "react/react-in-jsx-scope": "off",
       "react-hooks/rules-of-hooks": "error",
-      // Re-enabled to surface missing dependencies (warn initially)
-      "react-hooks/exhaustive-deps": "warn",
+      // Strict enforcement: prevent infinite loops and missing dependencies
+      "react-hooks/exhaustive-deps": "error",
     },
     settings: { react: { version: "detect" } },
   },
@@ -80,6 +80,25 @@ export default [
     rules: {
       "no-undef": "off",
       "no-unused-vars": "off",
+    },
+  },
+  // Repository pattern enforcement: prohibit direct DB imports in route handlers
+  {
+    files: ["server/routes/**/*.ts", "server/routes/**/*.js"],
+    ignores: ["server/routes/timesheets.ts"], // Temporary: pending repository pattern migration
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["**/db", "**/db.js", "**/db.ts", "../db", "../db.js", "../db.ts"],
+              message:
+                "Direct DB imports are prohibited in route handlers. Use domain repositories from server/repositories/ instead.",
+            },
+          ],
+        },
+      ],
     },
   },
 ];

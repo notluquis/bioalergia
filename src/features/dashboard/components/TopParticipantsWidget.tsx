@@ -15,10 +15,10 @@ export default function TopParticipantsWidget({
   return (
     <article className="space-y-4 p-6 bg-base-100">
       <div className="flex items-center justify-between">
-        <h3 className="text-base font-semibold text-(--brand-secondary) drop-shadow-sm">Retiros destacados</h3>
+        <h3 className="text-base font-semibold text-secondary drop-shadow-sm">Retiros destacados</h3>
         <Link
           to="/transactions/participants"
-          className="inline-flex items-center rounded-full border border-(--brand-secondary)/40 bg-(--brand-secondary)/15 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-(--brand-secondary)"
+          className="inline-flex items-center rounded-full border border-secondary/40 bg-secondary/15 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-secondary"
         >
           Ver todos
         </Link>
@@ -35,7 +35,7 @@ export default function TopParticipantsWidget({
             return (
               <li
                 key={`${item.participant}-${item.withdrawId ?? ""}`}
-                className="flex items-center justify-between gap-3 rounded-2xl border border-white/55 bg-base-100/50 px-4 py-3 shadow-[0_10px_24px_-16px_rgba(16,37,66,0.4)]"
+                className="flex items-center justify-between gap-3 rounded-2xl border border-base-300 bg-base-200 px-4 py-3 shadow-[0_10px_24px_-16px_rgba(16,37,66,0.4)]"
               >
                 <div>
                   <p className="font-medium text-base-content">{displayName}</p>

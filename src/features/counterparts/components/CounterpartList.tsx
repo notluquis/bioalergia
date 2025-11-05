@@ -24,9 +24,9 @@ const CATEGORY_LABELS = CATEGORY_OPTIONS.reduce<Record<string, string>>((acc, it
 
 export default function CounterpartList({ counterparts, selectedId, onSelectCounterpart }: CounterpartListProps) {
   return (
-    <aside className="flex h-full flex-col gap-4 p-5 text-sm text-slate-600 bg-base-100">
+    <aside className="flex h-full flex-col gap-4 p-5 text-sm text-base-content bg-base-100">
       <header className="flex items-center justify-between gap-3">
-        <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500/90">Contrapartes</h2>
+        <h2 className="text-xs font-semibold uppercase tracking-wide text-base-content/90">Contrapartes</h2>
         <Button size="xs" onClick={() => onSelectCounterpart(null)}>
           Nueva
         </Button>
@@ -36,33 +36,32 @@ export default function CounterpartList({ counterparts, selectedId, onSelectCoun
           const isActive = selectedId === item.id;
           return (
             <li key={item.id}>
-              <Button
+              <button
                 type="button"
-                variant={isActive ? "primary" : "secondary"}
                 onClick={() => onSelectCounterpart(item.id)}
                 className={`group w-full rounded-2xl border px-3 py-2 text-left transition-all ${
                   isActive
-                    ? "border-white/70 bg-(--brand-primary)/18 text-(--brand-primary) shadow-[0_14px_28px_-22px_rgba(14,100,183,0.8)]"
-                    : "border-transparent bg-base-100/35 text-slate-600 hover:border-white/60 hover:bg-base-100/55"
+                    ? "border-base-300 bg-primary/18 text-primary shadow-[0_14px_28px_-22px_rgba(14,100,183,0.8)]"
+                    : "border-transparent bg-base-200 text-base-content hover:border-base-300 hover:bg-base-300"
                 }`}
               >
                 <span className="flex items-center justify-between gap-2">
                   <span className="block font-medium tracking-tight">{item.name}</span>
                   <span
                     className={`rounded-full px-2 py-0.5 text-xs font-semibold uppercase tracking-wide ${
-                      isActive ? "bg-base-100/70 text-(--brand-primary)" : "bg-base-100/55 text-slate-500"
+                      isActive ? "bg-base-200 text-primary" : "bg-base-300 text-base-content/60"
                     }`}
                   >
                     {CATEGORY_LABELS[item.category] ?? item.category}
                   </span>
                 </span>
-                {item.rut && <span className="mt-1 block text-xs text-slate-500/90">RUT {formatRut(item.rut)}</span>}
-              </Button>
+                {item.rut && <span className="mt-1 block text-xs text-base-content/90">RUT {formatRut(item.rut)}</span>}
+              </button>
             </li>
           );
         })}
         {!counterparts.length && (
-          <li className="rounded-xl border border-white/55 bg-base-100/60 px-3 py-2 text-xs text-slate-500">
+          <li className="rounded-xl border border-base-300 bg-base-200 px-3 py-2 text-xs text-base-content/60">
             No hay registros aún.
           </li>
         )}

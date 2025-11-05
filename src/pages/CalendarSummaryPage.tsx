@@ -35,26 +35,26 @@ type AggregationRow = {
 
 function AggregationCard({ title, rows }: { title: string; rows: AggregationRow[] }) {
   return (
-    <section className="space-y-3 rounded-2xl border border-white/60 p-5 text-sm shadow-sm bg-base-100">
+    <section className="space-y-3 rounded-2xl border border-base-300 p-5 text-sm shadow-sm bg-base-100">
       <header className="flex items-center justify-between gap-2">
-        <h3 className="text-base font-semibold text-(--brand-secondary)">{title}</h3>
-        <span className="rounded-full bg-base-100/70 px-3 py-1 text-xs font-semibold text-slate-500">
+        <h3 className="text-base font-semibold text-secondary">{title}</h3>
+        <span className="rounded-full bg-base-200 px-3 py-1 text-xs font-semibold text-base-content/80">
           {rows.length}
         </span>
       </header>
       {rows.length === 0 ? (
-        <p className="text-xs text-slate-500">Sin datos para los filtros aplicados.</p>
+        <p className="text-xs text-base-content/60">Sin datos para los filtros aplicados.</p>
       ) : (
         <ul className="space-y-2">
           {rows.map((row) => (
             <li key={`${row.label}-${row.hint ?? ""}`} className="flex items-baseline justify-between gap-3">
               <div className="flex flex-col">
-                <span className="text-sm font-medium text-slate-700">{row.label}</span>
-                {row.hint && <span className="text-xs text-slate-400">{row.hint}</span>}
+                <span className="text-sm font-medium text-base-content">{row.label}</span>
+                {row.hint && <span className="text-xs text-base-content/50">{row.hint}</span>}
               </div>
-              <span className="text-sm font-semibold text-(--brand-primary)">{numberFormatter.format(row.value)}</span>
+              <span className="text-sm font-semibold text-primary">{numberFormatter.format(row.value)}</span>
               {(row.amountExpected != null || row.amountPaid != null) && (
-                <span className="text-xs text-slate-500">
+                <span className="text-xs text-base-content/60">
                   {row.amountExpected != null ? `Esperado ${currencyFormatter.format(row.amountExpected)}` : ""}
                   {row.amountExpected != null && row.amountPaid != null ? " · " : ""}
                   {row.amountPaid != null ? `Pagado ${currencyFormatter.format(row.amountPaid)}` : ""}
@@ -263,8 +263,8 @@ function CalendarSummaryPage() {
     <section className="space-y-6">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-2">
-          <h1 className="text-2xl font-bold text-(--brand-primary)">Eventos de Calendario</h1>
-          <p className="text-sm text-slate-600">
+          <h1 className="text-2xl font-bold text-primary">Eventos de Calendario</h1>
+          <p className="text-sm text-base-content/70">
             Visualiza los eventos sincronizados desde Google Calendar y analiza su distribución por periodos.
           </p>
         </div>
@@ -274,7 +274,7 @@ function CalendarSummaryPage() {
           </Button>
           <Link
             to="/calendar/classify"
-            className="text-xs font-semibold uppercase tracking-wide text-(--brand-secondary) underline"
+            className="text-xs font-semibold uppercase tracking-wide text-secondary underline"
           >
             Clasificar pendientes
           </Link>
@@ -282,7 +282,7 @@ function CalendarSummaryPage() {
       </header>
 
       <form
-        className="grid gap-4 rounded-2xl border border-(--brand-primary)/15 bg-base-100 p-6 text-xs text-slate-600 shadow-sm md:grid-cols-6"
+        className="grid gap-4 rounded-2xl border border-primary/15 bg-base-100 p-6 text-xs text-base-content shadow-sm md:grid-cols-6"
         onSubmit={(event) => {
           event.preventDefault();
           applyFilters();
@@ -367,10 +367,10 @@ function CalendarSummaryPage() {
         };
 
         const statusClassMap: Record<string, string> = {
-          pending: "text-slate-400",
-          in_progress: "text-(--brand-primary)",
-          completed: "text-(--brand-secondary)",
-          error: "text-red-500",
+          pending: "text-base-content/50",
+          in_progress: "text-primary",
+          completed: "text-secondary",
+          error: "text-error",
         };
 
         const detailLabels: Record<string, string> = {
@@ -411,34 +411,34 @@ function CalendarSummaryPage() {
           <Alert variant={variant}>
             <div className="flex flex-col gap-3">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="font-semibold text-slate-700">{title}</span>
+                <span className="font-semibold text-base-content">{title}</span>
                 {!syncing && syncDurationMs != null && !syncError && (
-                  <span className="rounded-full bg-base-100/60 px-2 py-1 text-xs text-slate-500">
+                  <span className="rounded-full bg-base-200 px-2 py-1 text-xs text-base-content/60">
                     Duración total: {formatDuration(syncDurationMs)}
                   </span>
                 )}
               </div>
 
               {lastSyncInfo && !syncing && !syncError && (
-                <div className="space-y-1 text-xs text-slate-600">
+                <div className="space-y-1 text-xs text-base-content">
                   <p>
-                    <span className="font-semibold text-slate-700">Nuevas:</span>{" "}
+                    <span className="font-semibold text-base-content">Nuevas:</span>{" "}
                     {numberFormatter.format(lastSyncInfo.inserted)} eventos que no existían y se agregaron.
                   </p>
                   <p>
-                    <span className="font-semibold text-slate-700">Actualizadas:</span>{" "}
+                    <span className="font-semibold text-base-content">Actualizadas:</span>{" "}
                     {numberFormatter.format(lastSyncInfo.updated)} eventos existentes que tenían cambios.
                   </p>
                   <p>
-                    <span className="font-semibold text-slate-700">Omitidas:</span>{" "}
+                    <span className="font-semibold text-base-content">Omitidas:</span>{" "}
                     {numberFormatter.format(lastSyncInfo.skipped)} eventos sin cambios desde la última sincronización.
                   </p>
                   <p>
-                    <span className="font-semibold text-slate-700">Filtradas:</span>{" "}
+                    <span className="font-semibold text-base-content">Filtradas:</span>{" "}
                     {numberFormatter.format(lastSyncInfo.excluded)} eventos descartados por coincidencias con las reglas
                     de exclusión (palabras clave configuradas).
                   </p>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-base-content/60">
                     Ejecutado: {dayjs(lastSyncInfo.fetchedAt).format("DD MMM YYYY HH:mm")}
                     {lastSyncInfo.logId ? (
                       <>
@@ -458,17 +458,17 @@ function CalendarSummaryPage() {
                 <ul className="space-y-2">
                   {syncProgress.map((step) => {
                     const status = statusLabelMap[step.status] ?? step.status;
-                    const statusClass = statusClassMap[step.status] ?? "text-slate-500";
+                    const statusClass = statusClassMap[step.status] ?? "text-base-content/60";
                     const details = formatDetails(step.details);
                     const duration = formatDuration(step.durationMs);
                     return (
-                      <li key={step.id} className="rounded-xl bg-base-100/65 px-3 py-2 shadow-inner">
-                        <div className="flex items-center justify-between gap-3 text-xs font-semibold text-slate-700">
+                      <li key={step.id} className="rounded-xl bg-base-200 px-3 py-2 shadow-inner">
+                        <div className="flex items-center justify-between gap-3 text-xs font-semibold text-base-content">
                           <span>{step.label}</span>
                           <span className={statusClass}>{status}</span>
                         </div>
                         {(details || duration) && (
-                          <p className="mt-1 text-xs text-slate-500">
+                          <p className="mt-1 text-xs text-base-content/60">
                             {details}
                             {details && duration ? " · " : ""}
                             {duration ? `Tiempo: ${duration}` : ""}
@@ -485,25 +485,21 @@ function CalendarSummaryPage() {
       })()}
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-2xl border border-white/60 p-4 text-sm shadow-sm bg-base-100">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Eventos en el rango</p>
-          <p className="mt-2 text-2xl font-semibold text-(--brand-primary)">{numberFormatter.format(totals.events)}</p>
+        <div className="rounded-2xl border border-base-300 p-4 text-sm shadow-sm bg-base-100">
+          <p className="text-xs font-semibold uppercase tracking-wide text-base-content/80">Eventos en el rango</p>
+          <p className="mt-2 text-2xl font-semibold text-primary">{numberFormatter.format(totals.events)}</p>
         </div>
-        <div className="rounded-2xl border border-white/60 p-4 text-sm shadow-sm bg-base-100">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Días con eventos</p>
-          <p className="mt-2 text-2xl font-semibold text-(--brand-primary)">{numberFormatter.format(totals.days)}</p>
+        <div className="rounded-2xl border border-base-300 p-4 text-sm shadow-sm bg-base-100">
+          <p className="text-xs font-semibold uppercase tracking-wide text-base-content/80">Días con eventos</p>
+          <p className="mt-2 text-2xl font-semibold text-primary">{numberFormatter.format(totals.days)}</p>
         </div>
-        <div className="rounded-2xl border border-white/60 p-4 text-sm shadow-sm bg-base-100">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Monto esperado</p>
-          <p className="mt-2 text-2xl font-semibold text-(--brand-primary)">
-            {currencyFormatter.format(totals.amountExpected)}
-          </p>
+        <div className="rounded-2xl border border-base-300 p-4 text-sm shadow-sm bg-base-100">
+          <p className="text-xs font-semibold uppercase tracking-wide text-base-content/80">Monto esperado</p>
+          <p className="mt-2 text-2xl font-semibold text-primary">{currencyFormatter.format(totals.amountExpected)}</p>
         </div>
-        <div className="rounded-2xl border border-white/60 p-4 text-sm shadow-sm bg-base-100">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Monto pagado</p>
-          <p className="mt-2 text-2xl font-semibold text-(--brand-primary)">
-            {currencyFormatter.format(totals.amountPaid)}
-          </p>
+        <div className="rounded-2xl border border-base-300 p-4 text-sm shadow-sm bg-base-100">
+          <p className="text-xs font-semibold uppercase tracking-wide text-base-content/80">Monto pagado</p>
+          <p className="mt-2 text-2xl font-semibold text-primary">{currencyFormatter.format(totals.amountPaid)}</p>
         </div>
       </section>
 

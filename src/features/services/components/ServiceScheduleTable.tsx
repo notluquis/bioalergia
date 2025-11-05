@@ -14,8 +14,8 @@ function statusBadge(status: ServiceSchedule["status"], dueDate: string) {
   const due = dayjs(dueDate);
   if (status === "PAID") return "bg-emerald-100 text-emerald-700";
   if (status === "PARTIAL") return "bg-amber-100 text-amber-700";
-  if (status === "SKIPPED") return "bg-slate-100 text-slate-500";
-  return due.isBefore(today) ? "bg-rose-100 text-rose-700" : "bg-slate-100 text-slate-600";
+  if (status === "SKIPPED") return "bg-base-200 text-base-content";
+  return due.isBefore(today) ? "bg-rose-100 text-rose-700" : "bg-base-200 text-base-content";
 }
 
 export function ServiceScheduleTable({
@@ -26,8 +26,8 @@ export function ServiceScheduleTable({
 }: ServiceScheduleTableProps) {
   return (
     <div className="overflow-hidden bg-base-100">
-      <table className="min-w-full text-sm text-slate-600">
-        <thead className="bg-base-100/60 text-(--brand-primary)">
+      <table className="min-w-full text-sm text-base-content">
+        <thead className="bg-base-200 text-primary">
           <tr>
             <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide">Periodo</th>
             <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide">Vencimiento</th>
@@ -44,16 +44,13 @@ export function ServiceScheduleTable({
           {schedules.map((schedule) => {
             const badgeClass = statusBadge(schedule.status, schedule.due_date);
             return (
-              <tr
-                key={schedule.id}
-                className="border-b border-white/45 bg-base-100/45 last:border-none even:bg-base-100/35"
-              >
-                <td className="px-4 py-3 font-semibold text-slate-700">
+              <tr key={schedule.id} className="border-b border-base-300 bg-base-200 last:border-none even:bg-base-300">
+                <td className="px-4 py-3 font-semibold text-base-content">
                   {dayjs(schedule.period_start).format("MMM YYYY")}
                 </td>
-                <td className="px-4 py-3 text-slate-600">{dayjs(schedule.due_date).format("DD MMM YYYY")}</td>
-                <td className="px-4 py-3 text-slate-600">
-                  <div className="font-semibold text-slate-700">
+                <td className="px-4 py-3 text-base-content">{dayjs(schedule.due_date).format("DD MMM YYYY")}</td>
+                <td className="px-4 py-3 text-base-content">
+                  <div className="font-semibold text-base-content">
                     ${schedule.effective_amount.toLocaleString("es-CL")}
                   </div>
                   {schedule.late_fee_amount > 0 && (
@@ -62,13 +59,13 @@ export function ServiceScheduleTable({
                     </div>
                   )}
                   {schedule.late_fee_amount === 0 && schedule.expected_amount !== schedule.effective_amount && (
-                    <div className="text-xs text-slate-400">Monto ajustado</div>
+                    <div className="text-xs text-base-content/50">Monto ajustado</div>
                   )}
                   {schedule.overdue_days > 0 && schedule.status === "PENDING" && (
                     <div className="text-xs text-rose-400">{schedule.overdue_days} días de atraso</div>
                   )}
                   {schedule.late_fee_amount > 0 && (
-                    <div className="text-xs text-slate-400">
+                    <div className="text-xs text-base-content/50">
                       Base ${schedule.expected_amount.toLocaleString("es-CL")}
                     </div>
                   )}
@@ -86,24 +83,24 @@ export function ServiceScheduleTable({
                           : "Pendiente"}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-slate-600">
+                <td className="px-4 py-3 text-base-content">
                   <div className="space-y-1">
                     <div>{schedule.paid_amount != null ? `$${schedule.paid_amount.toLocaleString("es-CL")}` : "—"}</div>
-                    <div className="text-xs text-slate-400">
+                    <div className="text-xs text-base-content/50">
                       {schedule.paid_date ? dayjs(schedule.paid_date).format("DD MMM YYYY") : "—"}
                     </div>
                   </div>
                 </td>
-                <td className="px-4 py-3 text-slate-600">
+                <td className="px-4 py-3 text-base-content">
                   {schedule.transaction ? (
                     <div className="space-y-1">
                       <div className="font-medium">ID #{schedule.transaction.id}</div>
-                      <div className="text-xs text-slate-400">
+                      <div className="text-xs text-base-content/50">
                         {schedule.transaction.description ?? "(sin descripción)"}
                       </div>
                     </div>
                   ) : (
-                    <span className="text-slate-400">Sin vincular</span>
+                    <span className="text-base-content/50">Sin vincular</span>
                   )}
                 </td>
                 {canManage && (
@@ -127,7 +124,7 @@ export function ServiceScheduleTable({
           })}
           {!schedules.length && (
             <tr>
-              <td colSpan={canManage ? 7 : 6} className="px-4 py-6 text-center text-slate-500">
+              <td colSpan={canManage ? 7 : 6} className="px-4 py-6 text-center text-base-content/60">
                 No hay periodos generados aún.
               </td>
             </tr>

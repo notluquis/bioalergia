@@ -15,14 +15,7 @@ async function validateWithdrawFile(file: File) {
 }
 
 export default function PayoutUploadForm() {
-  const {
-    files,
-    loading,
-    error,
-    results,
-    handleUpload,
-    handleFileChange,
-  } = useFileUpload({
+  const { files, loading, error, results, handleUpload, handleFileChange } = useFileUpload({
     endpoint: "/api/transactions/withdrawals/upload",
     logContext: "[withdrawals]",
     validator: validateWithdrawFile,
@@ -39,12 +32,11 @@ export default function PayoutUploadForm() {
   });
 
   return (
-    <div className="mt-8 space-y-3 border-t border-slate-200 pt-6">
-      <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-        Subir CSV de retiros
-      </h2>
-      <p className="text-xs text-slate-500">
-        Complementa los retiros con los datos bancarios y del titular para que se reflejen junto a los movimientos existentes.
+    <div className="mt-8 space-y-3 border-t border-base-300 pt-6">
+      <h2 className="text-xs font-semibold uppercase tracking-wide text-base-content/60">Subir CSV de retiros</h2>
+      <p className="text-xs text-base-content/60">
+        Complementa los retiros con los datos bancarios y del titular para que se reflejen junto a los movimientos
+        existentes.
       </p>
       <FileInput
         label="Selecciona los archivos CSV de retiros"
@@ -52,17 +44,11 @@ export default function PayoutUploadForm() {
         onChange={handleFileChange}
         multiple
       />
-      <Button
-        variant="secondary"
-        onClick={handleUpload}
-        disabled={loading}
-      >
+      <Button variant="secondary" onClick={handleUpload} disabled={loading}>
         {loading ? "Subiendo retiros..." : "Importar retiros"}
       </Button>
       {files.length > 0 && !loading && !error && (
-        <p className="text-xs text-slate-500">
-          Archivos seleccionados: {files.map((f) => f.name).join(", ")}
-        </p>
+        <p className="text-xs text-base-content/60">Archivos seleccionados: {files.map((f) => f.name).join(", ")}</p>
       )}
       {error && <Alert variant="error">{error}</Alert>}
       <UploadResults results={results} variant="secondary" />

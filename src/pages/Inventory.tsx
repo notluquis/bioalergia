@@ -20,7 +20,12 @@ import { useToast } from "../context/ToastContext";
 export default function InventoryPage() {
   const queryClient = useQueryClient();
   const { success: toastSuccess, error: toastError } = useToast();
-  const { data: itemsData, isPending, isFetching, error: itemsError } = useQuery<InventoryItem[], Error>({
+  const {
+    data: itemsData,
+    isPending,
+    isFetching,
+    error: itemsError,
+  } = useQuery<InventoryItem[], Error>({
     queryKey: queryKeys.inventory.items(),
     queryFn: getInventoryItems,
     staleTime: 2 * 60 * 1000,
@@ -126,12 +131,7 @@ export default function InventoryPage() {
     },
   });
 
-  const adjustStockMutation = useMutation<
-    void,
-    Error,
-    InventoryMovement,
-    { previousItems?: InventoryItem[] }
-  >({
+  const adjustStockMutation = useMutation<void, Error, InventoryMovement, { previousItems?: InventoryItem[] }>({
     mutationFn: createInventoryMovement,
     onMutate: async (movement) => {
       setError(null);
@@ -162,8 +162,7 @@ export default function InventoryPage() {
     },
   });
 
-  const saving =
-    createItemMutation.isPending || updateItemMutation.isPending || adjustStockMutation.isPending;
+  const saving = createItemMutation.isPending || updateItemMutation.isPending || adjustStockMutation.isPending;
 
   async function handleSaveItem(itemData: Omit<InventoryItem, "id">) {
     try {
@@ -193,8 +192,8 @@ export default function InventoryPage() {
     <section className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-2">
-          <h1 className="text-2xl font-bold text-(--brand-primary)">Inventario</h1>
-          <p className="max-w-2xl text-sm text-slate-600">Gestiona los insumos, materiales y stock de la clínica.</p>
+          <h1 className="text-2xl font-bold text-primary">Inventario</h1>
+          <p className="max-w-2xl text-sm text-base-content">Gestiona los insumos, materiales y stock de la clínica.</p>
         </div>
         <Button onClick={openCreateModal}>
           <PlusCircle size={16} />

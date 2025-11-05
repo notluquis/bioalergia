@@ -12,6 +12,7 @@ export function validateRut(value: string | null | undefined): boolean {
   const normalized = normalizeRut(value);
   if (!normalized) return false;
   const [bodyStr, dvRaw] = normalized.split("-");
+  if (!bodyStr || !dvRaw) return false; // Add null check
   const body = Number(bodyStr);
   if (!Number.isFinite(body)) return false;
   const digits = bodyStr.replace(/\D/g, "");
@@ -34,6 +35,7 @@ export function formatRut(value: string | null | undefined): string {
   const normalized = normalizeRut(value);
   if (!normalized) return "";
   const [body, dv] = normalized.split("-");
+  if (!body || !dv) return ""; // Add null check
   const formattedBody = body.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
   return `${formattedBody}-${dv}`;
 }

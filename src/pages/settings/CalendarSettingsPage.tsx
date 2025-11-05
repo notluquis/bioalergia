@@ -61,16 +61,16 @@ export default function CalendarSettingsPage() {
   return (
     <form onSubmit={handleSubmit} className="bg-base-100 space-y-5 p-6">
       <div className="space-y-1">
-        <h2 className="text-lg font-semibold text-(--brand-primary) drop-shadow-sm">Sincronización de Calendario</h2>
-        <p className="text-sm text-slate-600/90">
+        <h2 className="text-lg font-semibold text-primary drop-shadow-sm">Sincronización de Calendario</h2>
+        <p className="text-sm text-base-content/70">
           Controla los parámetros que usamos para sincronizar eventos desde Google Calendar y la forma en que se
           muestran en el panel interno.
         </p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <label className="flex flex-col gap-2 text-sm text-slate-600">
-          <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Zona horaria</span>
+        <label className="flex flex-col gap-2 text-sm text-base-content/70">
+          <span className="text-xs font-semibold uppercase tracking-wide text-base-content/60">Zona horaria</span>
           <input
             type="text"
             value={form.calendarTimeZone}
@@ -78,22 +78,24 @@ export default function CalendarSettingsPage() {
             className="input input-bordered"
             placeholder="America/Santiago"
           />
-          <span className="text-xs text-slate-400">Se utiliza para cron y conversión de fechas.</span>
+          <span className="text-xs text-base-content/50">Se utiliza para cron y conversión de fechas.</span>
         </label>
 
-        <label className="flex flex-col gap-2 text-sm text-slate-600">
-          <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Fecha inicial</span>
+        <label className="flex flex-col gap-2 text-sm text-base-content/70">
+          <span className="text-xs font-semibold uppercase tracking-wide text-base-content/60">Fecha inicial</span>
           <input
             type="date"
             value={form.calendarSyncStart}
             onChange={(event) => handleChange("calendarSyncStart", event.target.value)}
             className="input input-bordered"
           />
-          <span className="text-xs text-slate-400">Primer día que se sincroniza desde Google Calendar.</span>
+          <span className="text-xs text-base-content/50">Primer día que se sincroniza desde Google Calendar.</span>
         </label>
 
-        <label className="flex flex-col gap-2 text-sm text-slate-600">
-          <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Días hacia adelante</span>
+        <label className="flex flex-col gap-2 text-sm text-base-content/70">
+          <span className="text-xs font-semibold uppercase tracking-wide text-base-content/60">
+            Días hacia adelante
+          </span>
           <input
             type="number"
             min={1}
@@ -102,11 +104,13 @@ export default function CalendarSettingsPage() {
             onChange={(event) => handleChange("calendarSyncLookaheadDays", event.target.value)}
             className="input input-bordered"
           />
-          <span className="text-xs text-slate-400">Cuántos días futuros se sincronizan (máximo 1095).</span>
+          <span className="text-xs text-base-content/50">Cuántos días futuros se sincronizan (máximo 1095).</span>
         </label>
 
-        <label className="flex flex-col gap-2 text-sm text-slate-600">
-          <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Días en vista diaria</span>
+        <label className="flex flex-col gap-2 text-sm text-base-content/70">
+          <span className="text-xs font-semibold uppercase tracking-wide text-base-content/60">
+            Días en vista diaria
+          </span>
           <input
             type="number"
             min={1}
@@ -115,12 +119,14 @@ export default function CalendarSettingsPage() {
             onChange={(event) => handleChange("calendarDailyMaxDays", event.target.value)}
             className="input input-bordered"
           />
-          <span className="text-xs text-slate-400">Número máximo de días listados en la vista “Detalle diario”.</span>
+          <span className="text-xs text-base-content/50">
+            Número máximo de días listados en la vista &quot;Detalle diario&quot;.
+          </span>
         </label>
       </div>
 
-      <label className="flex flex-col gap-2 text-sm text-slate-600">
-        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+      <label className="flex flex-col gap-2 text-sm text-base-content/70">
+        <span className="text-xs font-semibold uppercase tracking-wide text-base-content/60">
           Excluir eventos que contengan
         </span>
         <textarea
@@ -130,18 +136,19 @@ export default function CalendarSettingsPage() {
           className="textarea textarea-bordered"
           placeholder={DEFAULT_EXCLUDE}
         />
-        <span className="text-xs text-slate-400">
-          Patrones separados por coma (match insensible a mayúsculas). Por ejemplo: <em>No Disponible,Vacaciones</em>.
+        <span className="text-xs text-base-content/50">
+          Patrones separados por coma (match insensible a mayúsculas). Por ejemplo:{" "}
+          <em>&quot;No Disponible,Vacaciones&quot;</em>.
         </span>
       </label>
 
       {error && (
-        <p className="border-l-4 border-rose-300/80 bg-linear-to-r from-rose-50/65 via-white/70 to-white/55 px-4 py-3 text-sm text-rose-700">
+        <p className="border-l-4 border-error/70 bg-linear-to-r from-error/10 via-base-100/70 to-base-100/55 px-4 py-3 text-sm text-error">
           {error}
         </p>
       )}
       {status === "success" && !error && (
-        <p className="border-l-4 border-emerald-300/80 bg-linear-to-r from-emerald-50/70 via-white/70 to-white/55 px-4 py-3 text-sm text-emerald-700">
+        <p className="border-l-4 border-success/70 bg-linear-to-r from-success/10 via-base-100/70 to-base-100/55 px-4 py-3 text-sm text-success">
           Configuración de calendario actualizada correctamente.
         </p>
       )}
@@ -149,7 +156,7 @@ export default function CalendarSettingsPage() {
       <div className="flex items-center justify-between">
         <button
           type="button"
-          className="text-xs font-semibold text-(--brand-secondary) underline"
+          className="text-xs font-semibold text-secondary underline"
           onClick={() =>
             setForm((prev) => ({
               ...prev,

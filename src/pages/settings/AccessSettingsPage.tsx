@@ -78,8 +78,8 @@ export default function AccessSettingsPage() {
     <div className="space-y-6">
       <section className="bg-base-100 space-y-4 p-6">
         <div className="space-y-1">
-          <h2 className="text-lg font-semibold text-(--brand-primary) drop-shadow-sm">Accesos rápidos</h2>
-          <p className="text-sm text-slate-600/90">
+          <h2 className="text-lg font-semibold text-primary drop-shadow-sm">Accesos rápidos</h2>
+          <p className="text-sm text-base-content/70">
             Lanza los paneles que usas con frecuencia y mantén visible la información clave de la base de datos.
           </p>
         </div>
@@ -89,10 +89,10 @@ export default function AccessSettingsPage() {
               key={link.label}
               onClick={() => link.href && window.open(link.href, "_blank", "noopener,noreferrer")}
               disabled={!link.href}
-              className="flex flex-col rounded-2xl border border-white/45 bg-base-100/70 px-4 py-3 text-left text-sm text-slate-600 transition hover:border-(--brand-primary)/35 hover:bg-(--brand-primary)/10 hover:text-(--brand-primary) disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex flex-col rounded-2xl border border-base-300 bg-base-100 px-4 py-3 text-left text-sm text-base-content/70 transition hover:border-primary/35 hover:bg-primary/10 hover:text-primary disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <span className="font-semibold text-slate-700">{link.label}</span>
-              <span className="text-xs text-slate-500">{link.description}</span>
+              <span className="font-semibold text-base-content">{link.label}</span>
+              <span className="text-xs text-base-content/60">{link.description}</span>
             </button>
           ))}
         </div>
@@ -100,15 +100,15 @@ export default function AccessSettingsPage() {
 
       <form onSubmit={handleSubmit} className="bg-base-100 space-y-5 p-6">
         <div className="space-y-1">
-          <h2 className="text-lg font-semibold text-(--brand-secondary) drop-shadow-sm">Detalle de conexiones</h2>
-          <p className="text-sm text-slate-600/90">
+          <h2 className="text-lg font-semibold text-secondary drop-shadow-sm">Detalle de conexiones</h2>
+          <p className="text-sm text-base-content/70">
             Documenta cómo acceder a los paneles y la base de datos para el equipo técnico.
           </p>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">
-          <label className="flex flex-col gap-2 text-sm text-slate-600">
-            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Servidor visible</span>
+          <label className="flex flex-col gap-2 text-sm text-base-content/70">
+            <span className="text-xs font-semibold uppercase tracking-wide text-base-content/60">Servidor visible</span>
             <input
               type="text"
               value={form.dbDisplayHost}
@@ -117,8 +117,10 @@ export default function AccessSettingsPage() {
               placeholder="Ej: db.bioalergia.cl"
             />
           </label>
-          <label className="flex flex-col gap-2 text-sm text-slate-600">
-            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Nombre de la base</span>
+          <label className="flex flex-col gap-2 text-sm text-base-content/70">
+            <span className="text-xs font-semibold uppercase tracking-wide text-base-content/60">
+              Nombre de la base
+            </span>
             <input
               type="text"
               value={form.dbDisplayName}
@@ -127,8 +129,10 @@ export default function AccessSettingsPage() {
               placeholder="Ej: bio_finanzas"
             />
           </label>
-          <label className="md:col-span-2 flex flex-col gap-2 text-sm text-slate-600">
-            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">URL consola DB (https)</span>
+          <label className="md:col-span-2 flex flex-col gap-2 text-sm text-base-content/70">
+            <span className="text-xs font-semibold uppercase tracking-wide text-base-content/60">
+              URL consola DB (https)
+            </span>
             <input
               type="url"
               value={form.dbConsoleUrl}
@@ -136,10 +140,12 @@ export default function AccessSettingsPage() {
               className="input input-bordered"
               placeholder="https://"
             />
-            <span className="text-xs text-slate-400">Se normaliza automáticamente para incluir https://</span>
+            <span className="text-xs text-base-content/50">Se normaliza automáticamente para incluir https://</span>
           </label>
-          <label className="md:col-span-2 flex flex-col gap-2 text-sm text-slate-600">
-            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">URL cPanel (https)</span>
+          <label className="md:col-span-2 flex flex-col gap-2 text-sm text-base-content/70">
+            <span className="text-xs font-semibold uppercase tracking-wide text-base-content/60">
+              URL cPanel (https)
+            </span>
             <input
               type="url"
               value={form.cpanelUrl}
@@ -151,12 +157,12 @@ export default function AccessSettingsPage() {
         </div>
 
         {error && (
-          <p className="border-l-4 border-rose-300/80 bg-linear-to-r from-rose-50/65 via-white/70 to-white/55 px-4 py-3 text-sm text-rose-700">
+          <p className="border-l-4 border-error/70 bg-linear-to-r from-error/10 via-base-100/70 to-base-100/55 px-4 py-3 text-sm text-error">
             {error}
           </p>
         )}
         {status === "success" && !error && (
-          <p className="border-l-4 border-emerald-300/80 bg-linear-to-r from-emerald-50/70 via-white/70 to-white/55 px-4 py-3 text-sm text-emerald-700">
+          <p className="border-l-4 border-success/70 bg-linear-to-r from-success/10 via-base-100/70 to-base-100/55 px-4 py-3 text-sm text-success">
             Accesos actualizados correctamente.
           </p>
         )}

@@ -17,18 +17,18 @@ export default function CollapsibleSection({
 }: CollapsibleSectionProps) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="collapse collapse-plus border border-white/40 p-0 text-sm text-slate-600 bg-base-100">
+    <div className="collapse collapse-plus border border-base-300 p-0 text-sm text-base-content bg-base-100">
       <input type="checkbox" className="hidden" checked={open} readOnly />
       <div
         className="collapse-title flex w-full items-center justify-between gap-3 px-4 py-3"
         onClick={() => setOpen((v) => !v)}
       >
         <div>
-          <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">{title}</p>
-          {description && <p className="text-xs text-slate-400">{description}</p>}
+          <p className="text-sm font-semibold uppercase tracking-wide text-base-content/80">{title}</p>
+          {description && <p className="text-xs text-base-content/60">{description}</p>}
         </div>
         <span
-          className={`inline-flex h-7 w-7 items-center justify-center rounded-full border border-white/60 bg-base-100/70 text-xs font-semibold text-slate-500 transition-transform ${open ? "rotate-180" : ""}`}
+          className={`inline-flex h-7 w-7 items-center justify-center rounded-full border border-base-300 bg-base-100 text-xs font-semibold text-base-content/80 transition-transform ${open ? "rotate-180" : ""}`}
         >
           <span className="text-xs">⌃</span>
         </span>

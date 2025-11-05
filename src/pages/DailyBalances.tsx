@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 import dayjs from "dayjs";
-import { useAuth } from "../context/auth-context";
-import { useSettings } from "../context/settings-context";
+import { useAuth } from "../context/AuthContext";
+import { useSettings } from "../context/SettingsContext";
 import { logger } from "../lib/logger";
 import { DailyBalancesPanel } from "../features/balances/components/DailyBalancesPanel";
 import { BalanceSummary } from "../features/balances/components/BalanceSummary";
@@ -92,13 +92,13 @@ export default function DailyBalances() {
         <>
           <div className="bg-base-100 flex flex-col gap-4 p-6 sm:flex-row sm:items-end sm:justify-between">
             <div className="space-y-2">
-              <h1 className="text-2xl font-bold text-(--brand-primary) drop-shadow-sm">Saldos diarios</h1>
-              <p className="max-w-2xl text-sm text-slate-600/90">
+              <h1 className="text-2xl font-bold text-primary drop-shadow-sm">Saldos diarios</h1>
+              <p className="max-w-2xl text-sm text-base-content/70">
                 Registra el saldo de la cuenta a las 23:59 de cada día para conciliar los movimientos almacenados en{" "}
                 <code>mp_transactions</code>. Para consultas, escribe a<strong> {settings.supportEmail}</strong>.
               </p>
               {derivedInitial != null && (
-                <p className="text-xs text-slate-500/80">
+                <p className="text-xs text-base-content/60">
                   Saldo anterior calculado: <strong>{formatBalanceInput(derivedInitial)}</strong>
                 </p>
               )}

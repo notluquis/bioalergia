@@ -1,8 +1,10 @@
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import React from "react";
+import { useDebounce } from "use-debounce";
 import Button from "./components/Button";
 import ThemeToggle from "./components/ThemeToggle";
-import { useAuth } from "./context/auth-context";
+import { BottomNav } from "./components/Navigation/BottomNav";
+import { useAuth } from "./context/AuthContext";
 import { useSettings } from "./context/settings-context";
 import Clock from "./components/Clock";
 import ConnectionIndicator from "./components/ConnectionIndicator";
@@ -130,21 +132,30 @@ export default function App() {
   };
 
   const displayName = user?.name || (user?.email?.split("@")[0] ?? "");
-  const capitalizedName =
-    displayName.split(" ")[0].charAt(0).toUpperCase() + displayName.split(" ")[0].slice(1).toLowerCase();
+  const firstWord = displayName.split(" ")[0];
+  const capitalizedName = firstWord ? firstWord.charAt(0).toUpperCase() + firstWord.slice(1).toLowerCase() : "";
 
   // Sidebar state: visible/hidden
   const [sidebarOpen, setSidebarOpen] = React.useState(true);
 
   // Detect if mobile/tablet (md breakpoint)
-  const [isMobile, setIsMobile] = React.useState(false);
+  const [isMobile, setIsMobile] = React.useState(!window.matchMedia("(min-width: 768px)").matches);
+  const [debouncedIsMobile] = useDebounce(isMobile, 150);
 
   React.useEffect(() => {
     const checkMobile = () => setIsMobile(!window.matchMedia("(min-width: 768px)").matches);
-    checkMobile();
     window.addEventListener("resize", checkMobile);
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
+
+  // Use debounced value for sidebar control to prevent jank
+  React.useEffect(() => {
+    if (debouncedIsMobile) {
+      setSidebarOpen(false);
+    } else {
+      setSidebarOpen(true);
+    }
+  }, [debouncedIsMobile, location.pathname]);
 
   const buildLabel = React.useMemo(() => {
     if (!BUILD_TIMESTAMP) return "Desconocido";
@@ -155,22 +166,13 @@ export default function App() {
     return parsed.toLocaleString("es-CL", { dateStyle: "short", timeStyle: "short" });
   }, []);
 
-  // Close sidebar on mobile/tablet or route change
-  React.useEffect(() => {
-    if (isMobile) {
-      setSidebarOpen(false);
-    } else {
-      setSidebarOpen(true);
-    }
-  }, [isMobile, location.pathname]);
-
   // Toggle sidebar (hamburguesa)
   const toggleSidebar = () => setSidebarOpen((open) => !open);
 
   // Preline runtime removed: we avoid optional runtime helpers and rely on Tailwind + DaisyUI utilities
 
   return (
-    <div className="layout-container relative mx-auto flex min-h-screen max-w-[1440px] gap-6 px-4 py-6 text-slate-900 sm:px-6 lg:px-10">
+    <div className="layout-container relative mx-auto flex min-h-screen max-w-[1440px] gap-6 px-4 py-6 text-base-content bg-base-100 sm:px-6 lg:px-10">
       {/* Hamburger button: always visible */}
       <Button
         variant="secondary"
@@ -179,11 +181,23 @@ export default function App() {
         aria-label={sidebarOpen ? "Cerrar menú" : "Abrir menú"}
       >
         {sidebarOpen ? (
-          <svg className="h-6 w-6 text-slate-700" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <svg
+            className="h-6 w-6 text-base-content"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            viewBox="0 0 24 24"
+          >
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
           </svg>
         ) : (
-          <svg className="h-6 w-6 text-slate-700" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <svg
+            className="h-6 w-6 text-base-content"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            viewBox="0 0 24 24"
+          >
             <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         )}
@@ -206,7 +220,7 @@ export default function App() {
           ${!sidebarOpen && !isMobile ? "hidden" : ""}`}
         style={{ maxWidth: "100vw" }}
       >
-        <div className="flex h-16 items-center justify-center rounded-2xl border border-white/40 bg-base-100/60 px-3 shadow-inner">
+        <div className="flex h-16 items-center justify-center rounded-2xl border border-base-300 bg-base-200 px-3 shadow-inner">
           <img src={settings.logoUrl || "/logo_sin_eslogan.png"} alt="Logo" className="h-10" />
         </div>
         <nav className="muted-scrollbar mt-4 flex-1 overflow-y-auto pr-2">
@@ -220,7 +234,7 @@ export default function App() {
                       to={item.to}
                       className={({ isActive }) =>
                         `flex items-center rounded-xl px-3 py-2 text-sm font-semibold transition-all ${
-                          isActive ? "active text-(--brand-primary)" : "text-base-content hover:text-(--brand-primary)"
+                          isActive ? "active text-primary" : "text-base-content hover:text-primary"
                         }`
                       }
                       onClick={() => {
@@ -235,7 +249,7 @@ export default function App() {
             </div>
           ))}
         </nav>
-        <div className="mt-6 space-y-1 rounded-2xl border border-white/40 bg-base-100/70 p-3 text-xs text-base-content/70 shadow-inner">
+        <div className="mt-6 space-y-1 rounded-2xl border border-base-300 bg-base-200 p-3 text-xs text-base-content/70 shadow-inner">
           <p className="text-xs font-semibold uppercase tracking-wide text-base-content">Versión</p>
           <p className="font-semibold text-base-content">{APP_VERSION}</p>
           <p className="text-xs text-base-content/50">Build: {buildLabel}</p>
@@ -243,8 +257,8 @@ export default function App() {
       </aside>
 
       {/* Main content */}
-      <div className="layout-container flex flex-1 flex-col gap-6 min-w-0">
-        {/* min-w-0 permite que se encoja */}
+      <div className="layout-container flex flex-1 flex-col gap-6 min-w-0 pb-20 md:pb-0">
+        {/* min-w-0 permite que se encoja, pb-20 en mobile para el bottom nav */}
         <header className="flex items-center justify-between rounded-3xl px-6 py-4 bg-base-100">
           <h1 className="text-xl font-semibold text-base-content drop-shadow-sm">{title}</h1>
           <div className="flex items-center gap-4">
@@ -274,11 +288,14 @@ export default function App() {
           </div>
         </main>
 
-        <footer className="flex items-center justify-between rounded-3xl px-6 py-3 text-sm text-base-content bg-base-100">
+        <footer className="hidden md:flex items-center justify-between rounded-3xl px-6 py-3 text-sm text-base-content bg-base-100">
           <span className="font-medium text-base-content/70">Bioalergia Finanzas</span>
           <Clock />
         </footer>
       </div>
+
+      {/* Mobile bottom navigation */}
+      <BottomNav />
     </div>
   );
 }

@@ -1,11 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { SupplyRequest, CommonSupply, StructuredSupplies } from "../types";
-import {
-  getCommonSupplies,
-  getSupplyRequests,
-  updateSupplyRequestStatus,
-} from "../api";
+import { getCommonSupplies, getSupplyRequests, updateSupplyRequestStatus } from "../api";
 import { queryKeys } from "../../../lib/queryKeys";
 import { useToast } from "../../../context/ToastContext";
 
@@ -47,12 +43,12 @@ export function useSupplyManagement(): UseSupplyManagementResult {
       if (!acc[supply.name]) {
         acc[supply.name] = {};
       }
-      const brand = supply.brand || 'N/A';
-      if (!acc[supply.name][brand]) {
-        acc[supply.name][brand] = [];
+      const brand = supply.brand || "N/A";
+      if (!acc[supply.name]![brand]) {
+        acc[supply.name]![brand] = [];
       }
       if (supply.model) {
-        acc[supply.name][brand].push(supply.model);
+        acc[supply.name]![brand]!.push(supply.model);
       }
       return acc;
     }, {});
@@ -60,10 +56,7 @@ export function useSupplyManagement(): UseSupplyManagementResult {
 
   const fetchData = useCallback(async () => {
     setError(null);
-    await Promise.all([
-      requestsQuery.refetch(),
-      commonSuppliesQuery.refetch(),
-    ]);
+    await Promise.all([requestsQuery.refetch(), commonSuppliesQuery.refetch()]);
   }, [requestsQuery, commonSuppliesQuery]);
 
   const updateStatusMutation = useMutation<
@@ -79,11 +72,7 @@ export function useSupplyManagement(): UseSupplyManagementResult {
       await queryClient.cancelQueries({ queryKey: queryKeys.supplies.requests() });
       const previousRequests = queryClient.getQueryData<SupplyRequest[]>(queryKeys.supplies.requests());
       queryClient.setQueryData<SupplyRequest[]>(queryKeys.supplies.requests(), (old = []) =>
-        old.map((request) =>
-          request.id === requestId
-            ? { ...request, status }
-            : request
-        )
+        old.map((request) => (request.id === requestId ? { ...request, status } : request))
       );
       return { previousRequests };
     },

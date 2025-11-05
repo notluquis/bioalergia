@@ -5,12 +5,8 @@ import { useAuth } from "../context/AuthContext";
 import { useSettings } from "../context/SettingsContext";
 import { logger } from "../lib/logger";
 import { isCashbackCandidate } from "../../shared/cashback";
-import {
-  TransactionsFilters,
-} from "../features/transactions/components/TransactionsFilters";
-import {
-  TransactionsColumnToggles,
-} from "../features/transactions/components/TransactionsColumnToggles";
+import { TransactionsFilters } from "../features/transactions/components/TransactionsFilters";
+import { TransactionsColumnToggles } from "../features/transactions/components/TransactionsColumnToggles";
 import { TransactionsTable } from "../features/transactions/components/TransactionsTable";
 import { COLUMN_DEFS, type ColumnKey } from "../features/transactions/constants";
 import type { Filters, LedgerRow } from "../features/transactions/types";
@@ -61,10 +57,7 @@ export default function TransactionsMovements() {
 
   const canView = hasRole("GOD", "ADMIN", "ANALYST", "VIEWER");
 
-  const initialBalanceNumber = useMemo(
-    () => coerceAmount(initialBalance),
-    [initialBalance]
-  );
+  const initialBalanceNumber = useMemo(() => coerceAmount(initialBalance), [initialBalance]);
 
   const queryParams = useMemo(
     () => ({
@@ -77,7 +70,7 @@ export default function TransactionsMovements() {
 
   const transactionsQuery = useTransactionsQuery(queryParams, canView);
 
-  const rows = transactionsQuery.data?.data ?? [];
+  const rows = useMemo(() => transactionsQuery.data?.data ?? [], [transactionsQuery.data?.data]);
   const hasAmounts = Boolean(transactionsQuery.data?.hasAmounts);
   const total = transactionsQuery.data?.total ?? rows.length;
   const loading = transactionsQuery.isPending || transactionsQuery.isFetching;
@@ -117,7 +110,7 @@ export default function TransactionsMovements() {
   return (
     <section className="space-y-6">
       {!canView ? (
-        <div className="rounded-2xl border border-rose-200 bg-white p-6 text-sm text-rose-600 shadow-sm">
+        <div className="card bg-base-100 border border-error/20 p-6 text-sm text-error shadow-sm">
           No tienes permisos para ver los movimientos almacenados.
         </div>
       ) : (
@@ -146,15 +139,14 @@ export default function TransactionsMovements() {
 
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div className="space-y-2">
-              <h1 className="text-2xl font-bold text-[var(--brand-primary)]">Movimientos en base</h1>
-              <p className="max-w-2xl text-sm text-slate-600">
-                Los datos provienen de la tabla <code>mp_transactions</code>. Ajusta el saldo inicial
-                para recalcular el saldo acumulado. Para consultas o soporte escribe a
-                <strong> {settings.supportEmail}</strong>.
+              <h1 className="text-2xl font-bold text-primary">Movimientos en base</h1>
+              <p className="max-w-2xl text-sm text-base-content">
+                Los datos provienen de la tabla <code>mp_transactions</code>. Ajusta el saldo inicial para recalcular el
+                saldo acumulado. Para consultas o soporte escribe a<strong> {settings.supportEmail}</strong>.
               </p>
             </div>
             <div className="flex flex-wrap items-end gap-3">
-              <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-wide text-slate-600">
+              <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-wide text-base-content">
                 Saldo inicial (CLP)
                 <input
                   type="text"
@@ -164,24 +156,24 @@ export default function TransactionsMovements() {
                   placeholder="0"
                 />
               </label>
-              <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-wide text-slate-600">
+              <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-wide text-base-content">
                 Mes rápido
                 <select
                   value={quickRange}
                   onChange={(event) => {
-                const value = event.target.value;
-                if (value === "custom") return;
-                const match = quickMonths.find((month) => month.value === value);
-                if (!match) return;
-                const nextFilters = { ...draftFilters, from: match.from, to: match.to };
-                setDraftFilters(nextFilters);
-                setPage(1);
-                setAppliedFilters(nextFilters);
-              }}
-              className="rounded border px-2 py-1"
-            >
-              <option value="custom">Personalizado</option>
-              {quickMonths.map((month) => (
+                    const value = event.target.value;
+                    if (value === "custom") return;
+                    const match = quickMonths.find((month) => month.value === value);
+                    if (!match) return;
+                    const nextFilters = { ...draftFilters, from: match.from, to: match.to };
+                    setDraftFilters(nextFilters);
+                    setPage(1);
+                    setAppliedFilters(nextFilters);
+                  }}
+                  className="rounded border px-2 py-1"
+                >
+                  <option value="custom">Personalizado</option>
+                  {quickMonths.map((month) => (
                     <option key={month.value} value={month.value}>
                       {month.label}
                     </option>
@@ -192,12 +184,11 @@ export default function TransactionsMovements() {
                 type="button"
                 onClick={() => transactionsQuery.refetch()}
                 disabled={loading}
-                className="inline-flex items-center justify-center rounded-full px-4 py-2 text-sm font-semibold text-white shadow disabled:cursor-not-allowed"
-                style={{ backgroundColor: "var(--brand-primary)", opacity: loading ? 0.6 : 1 }}
+                className="inline-flex items-center justify-center rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white shadow disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {loading ? "Actualizando..." : "Actualizar"}
               </button>
-              <label className="flex items-center gap-2 text-xs text-slate-600">
+              <label className="flex items-center gap-2 text-xs text-base-content">
                 <input
                   type="checkbox"
                   checked={draftFilters.includeAmounts}
