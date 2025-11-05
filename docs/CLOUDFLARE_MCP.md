@@ -35,7 +35,11 @@ npm install -g mcp-remote
 
 ## 📊 Servidores MCP disponibles
 
-Ya configurados en `.vscode/settings.json`:
+Configurados en tu `mcp.json` global:
+
+## 📊 Servidores MCP disponibles
+
+Configurados en tu `mcp.json` global:
 
 1. **Cloudflare Observability** (`cloudflare-observability`)
    - Consulta logs de aplicaciones
