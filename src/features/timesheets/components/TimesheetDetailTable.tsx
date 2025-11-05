@@ -52,11 +52,11 @@ export default function TimesheetDetailTable({
     el.classList.toggle("hidden");
   };
 
-  // Función para autocompletar hora (ej: "10" -> "10:00", "930" -> "09:30")
+  // Función para autocompletar hora (ej: "10" -> "10:00", "930" -> "09:30", "1930" -> "19:30")
   const formatTimeInput = (value: string) => {
     if (!value.trim()) return "";
 
-    // Si ya está en formato HH:MM, validar y devolver
+    // Si ya está en formato HH:MM válido, normalizar a 2 dígitos
     if (/^[0-9]{1,2}:[0-9]{2}$/.test(value)) {
       const parts = value.split(":").map(Number);
       const [hours, minutes] = parts;
@@ -67,23 +67,30 @@ export default function TimesheetDetailTable({
       return value;
     }
 
-    // Autocompletar números (ej: "10" -> "10:00", "930" -> "09:30")
+    // Autocompletar números sin separadores
     const cleaned = value.replace(/[^0-9]/g, "");
     if (cleaned.length === 0) return "";
 
+    // 1 o 2 dígitos: interpretar como hora completa (ej: "9" -> "09:00", "19" -> "19:00")
     if (cleaned.length === 1 || cleaned.length === 2) {
       const hours = parseInt(cleaned, 10);
       if (hours >= 0 && hours <= 23) {
         return `${hours.toString().padStart(2, "0")}:00`;
       }
-    } else if (cleaned.length === 3 || cleaned.length === 4) {
+      return value;
+    }
+
+    // 3 o 4 dígitos: interpretar últimos 2 como minutos (ej: "930" -> "09:30", "1930" -> "19:30")
+    if (cleaned.length === 3 || cleaned.length === 4) {
       const hours = parseInt(cleaned.slice(0, -2), 10);
       const minutes = parseInt(cleaned.slice(-2), 10);
       if (hours >= 0 && hours <= 23 && minutes >= 0 && minutes < 60) {
         return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
       }
+      return value;
     }
 
+    // Más de 4 dígitos: devolver sin cambios
     return value;
   };
 
