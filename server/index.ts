@@ -27,7 +27,7 @@ const app = express();
 // Security headers including CSP
 app.use((req, res, next) => {
   res.setHeader(
-    "Content-Security-Policy",
+    "Content-Security-Policy-Report-Only",
     [
       "default-src 'self'",
       // Allow scripts from self, Cloudflare CDN, and insights
