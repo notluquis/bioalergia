@@ -120,6 +120,21 @@ const __dirname = path.dirname(__filename);
 // En desarrollo: server/ -> ../dist/client
 const clientDir = path.resolve(__dirname, "../../client");
 
+// Debug: Log client directory path and existence
+logger.info(`📁 Client directory: ${clientDir}`);
+logger.info(`📁 __dirname: ${__dirname}`);
+try {
+  const fs = await import("fs");
+  const exists = fs.existsSync(clientDir);
+  logger.info(`📁 Client directory exists: ${exists}`);
+  if (exists) {
+    const files = fs.readdirSync(clientDir);
+    logger.info(`📁 Client directory files: ${files.join(", ")}`);
+  }
+} catch (err) {
+  logger.error({ err }, "Failed to check client directory");
+}
+
 // Archivos estáticos de la SPA en la raíz
 app.use(express.static(clientDir, { index: false }));
 
