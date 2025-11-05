@@ -92,6 +92,10 @@ export default function TimesheetsPage() {
   useEffect(() => {
     if (!monthRef.current) return;
 
+    // Limpiar datos inmediatamente al cambiar de empleado o mes para evitar confusión
+    setBulkRows([]);
+    setInitialRows([]);
+
     async function loadData() {
       // Load summary
       setLoadingSummary(true);

@@ -375,6 +375,16 @@ export default function TimesheetDetailTable({
                 </tr>
               );
             })}
+            {loadingDetail && (
+              <tr>
+                <td colSpan={7} className="px-4 py-6 text-center text-base-content/60">
+                  <div className="flex items-center justify-center gap-2">
+                    <span className="loading loading-spinner loading-sm"></span>
+                    <span>Cargando datos...</span>
+                  </div>
+                </td>
+              </tr>
+            )}
             {!loadingDetail && !bulkRows.length && (
               <tr>
                 <td colSpan={7} className="px-4 py-6 text-center text-base-content/60">
