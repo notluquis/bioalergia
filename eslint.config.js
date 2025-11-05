@@ -85,8 +85,24 @@ export default [
   // Repository pattern enforcement: prohibit direct DB imports in route handlers
   {
     files: ["server/routes/**/*.ts", "server/routes/**/*.js"],
-    // Temporary: pending repository pattern migration for all routes
-    ignores: [
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["**/db", "**/db.js", "**/db.ts", "../db", "../db.js", "../db.ts"],
+              message:
+                "Direct DB imports are prohibited in route handlers. Use domain repositories from server/repositories/ instead.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  // Temporary exemptions for routes pending repository pattern migration
+  {
+    files: [
       "server/routes/timesheets.ts",
       "server/routes/auth.ts",
       "server/routes/balances.ts",
@@ -102,18 +118,7 @@ export default [
       "server/routes/transactions.ts",
     ],
     rules: {
-      "no-restricted-imports": [
-        "error",
-        {
-          patterns: [
-            {
-              group: ["**/db", "**/db.js", "**/db.ts", "../db", "../db.js", "../db.ts"],
-              message:
-                "Direct DB imports are prohibited in route handlers. Use domain repositories from server/repositories/ instead.",
-            },
-          ],
-        },
-      ],
+      "no-restricted-imports": "off",
     },
   },
 ];
