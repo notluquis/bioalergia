@@ -79,12 +79,12 @@ export default function TimesheetsPage() {
     loadEmployees();
   }, [loadEmployees]);
 
-  // Set initial month when months list is loaded (current month)
+  // Set initial month when months list is loaded (previous month)
   useEffect(() => {
     if (months.length && !monthRef.current) {
-      const currentMonth = dayjs().format("YYYY-MM");
-      const hasCurrentMonth = months.includes(currentMonth);
-      setMonth(hasCurrentMonth ? currentMonth : (months[0] ?? ""));
+      const previousMonth = dayjs().subtract(1, "month").format("YYYY-MM");
+      const hasPreviousMonth = months.includes(previousMonth);
+      setMonth(hasPreviousMonth ? previousMonth : (months[0] ?? ""));
     }
   }, [months]);
 
