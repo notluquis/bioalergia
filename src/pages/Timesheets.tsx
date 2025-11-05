@@ -103,7 +103,8 @@ export default function TimesheetsPage() {
       setInfo(null);
       try {
         const formattedMonth = formatMonthString(monthRef.current);
-        const data = await fetchTimesheetSummary(formattedMonth);
+        // Pasar selectedEmployeeId para mostrar solo ese empleado si está seleccionado
+        const data = await fetchTimesheetSummary(formattedMonth, selectedEmployeeIdRef.current);
         setSummary({ employees: data.employees, totals: data.totals });
         // No auto-seleccionar empleado - dejar que el usuario elija
       } catch (err) {
@@ -165,7 +166,8 @@ export default function TimesheetsPage() {
     setInfo(null);
     try {
       const formattedMonth = formatMonthString(monthRef.current);
-      const data = await fetchTimesheetSummary(formattedMonth);
+      // Pasar selectedEmployeeId para filtrar si hay uno seleccionado
+      const data = await fetchTimesheetSummary(formattedMonth, selectedEmployeeIdRef.current);
       setSummary({ employees: data.employees, totals: data.totals });
       // No auto-seleccionar empleado en loadSummary
     } catch (err) {

@@ -202,9 +202,10 @@ export function registerTimesheetRoutes(app: express.Express) {
     authenticate,
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       const { month } = monthParamSchema.parse(req.query);
+      const employeeId = req.query.employeeId ? Number(req.query.employeeId) : undefined;
       const { from, to } = getMonthRange(month);
-      const summary = await buildMonthlySummary(from, to);
-      logEvent("timesheets:summary", requestContext(req, { month, employees: summary.employees.length }));
+      const summary = await buildMonthlySummary(from, to, employeeId);
+      logEvent("timesheets:summary", requestContext(req, { month, employeeId, employees: summary.employees.length }));
       res.json({ status: "ok", month, from, to, ...summary });
     })
   );
@@ -255,20 +256,28 @@ function normalizeTimesheetPayload(data: {
   };
 }
 
-async function buildMonthlySummary(from: string, to: string) {
+async function buildMonthlySummary(from: string, to: string, employeeId?: number) {
   const employees = await listEmployees();
   const employeeMap = new Map(employees.map((employee) => [employee.id, employee]));
 
   const pool = getPool();
+  const conditions = ["work_date BETWEEN ? AND ?"];
+  const params: Array<string | number> = [from, to];
+
+  if (employeeId) {
+    conditions.push("employee_id = ?");
+    params.push(employeeId);
+  }
+
   const [rows] = await pool.query<RowDataPacket[]>(
     `SELECT employee_id,
             SUM(worked_minutes) AS worked_minutes,
             SUM(overtime_minutes) AS overtime_minutes,
             SUM(extra_amount) AS extra_amount
        FROM employee_timesheets
-       WHERE work_date BETWEEN ? AND ?
+       WHERE ${conditions.join(" AND ")}
        GROUP BY employee_id`,
-    [from, to]
+    params
   );
 
   const results: Array<ReturnType<typeof buildEmployeeSummary>> = [];
@@ -297,6 +306,20 @@ async function buildMonthlySummary(from: string, to: string) {
     totals.subtotal += summary.subtotal;
     totals.retention += summary.retention;
     totals.net += summary.net;
+  }
+
+  // Si se filtró por empleado específico pero no tiene datos, incluirlo con 0s
+  if (employeeId && results.length === 0) {
+    const employee = employeeMap.get(employeeId);
+    if (employee) {
+      const summary = buildEmployeeSummary(employee, {
+        workedMinutes: 0,
+        overtimeMinutes: 0,
+        extraAmount: 0,
+        periodStart: from,
+      });
+      results.push(summary);
+    }
   }
 
   results.sort((a, b) => a.fullName.localeCompare(b.fullName));
