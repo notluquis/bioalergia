@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
 import { useAuth } from "../context/AuthContext";
 import Button from "../components/Button";
@@ -51,9 +51,6 @@ export default function TimesheetsPage() {
   const [info, setInfo] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const selectedEmployeeIdRef = useRef<number | null>(null);
-  const monthRef = useRef<string>("");
-
   const loadEmployees = useCallback(async () => {
     try {
       const data = await fetchEmployees(false);
@@ -64,16 +61,6 @@ export default function TimesheetsPage() {
     }
   }, []);
 
-  // Update ref when selectedEmployeeId changes
-  useEffect(() => {
-    selectedEmployeeIdRef.current = selectedEmployeeId;
-  }, [selectedEmployeeId]);
-
-  // Update month ref when month changes
-  useEffect(() => {
-    monthRef.current = month;
-  }, [month]);
-
   // Load employees on mount
   useEffect(() => {
     loadEmployees();
@@ -81,16 +68,16 @@ export default function TimesheetsPage() {
 
   // Set initial month when months list is loaded (previous month)
   useEffect(() => {
-    if (months.length && !monthRef.current) {
+    if (months.length && !month) {
       const previousMonth = dayjs().subtract(1, "month").format("YYYY-MM");
       const hasPreviousMonth = months.includes(previousMonth);
       setMonth(hasPreviousMonth ? previousMonth : (months[0] ?? ""));
     }
-  }, [months]);
+  }, [months, month]);
 
   // Consolidated effect: load summary and detail when month or selectedEmployeeId changes
   useEffect(() => {
-    if (!monthRef.current) return;
+    if (!month) return;
 
     // Limpiar datos inmediatamente al cambiar de empleado o mes para evitar confusión
     setBulkRows([]);
@@ -102,9 +89,9 @@ export default function TimesheetsPage() {
       setError(null);
       setInfo(null);
       try {
-        const formattedMonth = formatMonthString(monthRef.current);
+        const formattedMonth = formatMonthString(month);
         // Pasar selectedEmployeeId para mostrar solo ese empleado si está seleccionado
-        const data = await fetchTimesheetSummary(formattedMonth, selectedEmployeeIdRef.current);
+        const data = await fetchTimesheetSummary(formattedMonth, selectedEmployeeId);
         setSummary({ employees: data.employees, totals: data.totals });
         // No auto-seleccionar empleado - dejar que el usuario elija
       } catch (err) {
@@ -116,12 +103,12 @@ export default function TimesheetsPage() {
       }
 
       // Load detail if employee selected
-      if (selectedEmployeeIdRef.current) {
+      if (selectedEmployeeId) {
         setLoadingDetail(true);
         setError(null);
         try {
-          const formattedMonth = formatMonthString(monthRef.current);
-          const data = await fetchTimesheetDetail(selectedEmployeeIdRef.current, formattedMonth);
+          const formattedMonth = formatMonthString(month);
+          const data = await fetchTimesheetDetail(selectedEmployeeId, formattedMonth);
           const rows = buildBulkRows(formattedMonth, data.entries);
           setBulkRows(rows);
           setInitialRows(rows);
@@ -160,14 +147,14 @@ export default function TimesheetsPage() {
   }, [summary, selectedEmployee]);
 
   const loadSummary = useCallback(async () => {
-    if (!monthRef.current) return;
+    if (!month) return;
     setLoadingSummary(true);
     setError(null);
     setInfo(null);
     try {
-      const formattedMonth = formatMonthString(monthRef.current);
+      const formattedMonth = formatMonthString(month);
       // Pasar selectedEmployeeId para filtrar si hay uno seleccionado
-      const data = await fetchTimesheetSummary(formattedMonth, selectedEmployeeIdRef.current);
+      const data = await fetchTimesheetSummary(formattedMonth, selectedEmployeeId);
       setSummary({ employees: data.employees, totals: data.totals });
       // No auto-seleccionar empleado en loadSummary
     } catch (err) {
@@ -177,14 +164,14 @@ export default function TimesheetsPage() {
     } finally {
       setLoadingSummary(false);
     }
-  }, []);
+  }, [month, selectedEmployeeId]);
 
   const loadDetail = useCallback(async (employeeId: number) => {
-    if (!monthRef.current) return;
+    if (!month) return;
     setLoadingDetail(true);
     setError(null);
     try {
-      const formattedMonth = formatMonthString(monthRef.current);
+      const formattedMonth = formatMonthString(month);
       const data = await fetchTimesheetDetail(employeeId, formattedMonth);
       const rows = buildBulkRows(formattedMonth, data.entries);
       setBulkRows(rows);
@@ -197,7 +184,7 @@ export default function TimesheetsPage() {
     } finally {
       setLoadingDetail(false);
     }
-  }, []);
+  }, [month]);
 
   const pendingCount = useMemo(() => bulkRows.filter((row) => !row.entryId && hasRowData(row)).length, [bulkRows]);
 
