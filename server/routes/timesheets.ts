@@ -2,14 +2,13 @@ import express from "express";
 import { z } from "zod";
 import { asyncHandler, authenticate, requireRole } from "../lib/http.js";
 import { logEvent, logWarn, requestContext } from "../lib/logger.js";
+import { listEmployees, getEmployeeById } from "../repositories/employees.js";
 import {
-  listEmployees,
-  getEmployeeById,
   listTimesheetEntries,
   upsertTimesheetEntry,
   updateTimesheetEntry,
   deleteTimesheetEntry,
-} from "../db.js";
+} from "../repositories/timesheets.js";
 import { timesheetPayloadSchema, timesheetUpdateSchema, timesheetBulkSchema } from "../schemas.js";
 import type { AuthenticatedRequest } from "../types.js";
 import { durationToMinutes, minutesToDuration } from "../../shared/time.js";
@@ -43,7 +42,7 @@ export function registerTimesheetRoutes(app: express.Express) {
       const [rows] = await pool.query<RowDataPacket[]>(
         `SELECT DISTINCT DATE_FORMAT(work_date, '%Y-%m') as month FROM employee_timesheets ORDER BY month DESC`
       );
-      const monthsWithData = new Set(rows.map((r) => r.month as string).filter(Boolean));
+      const monthsWithData = new Set(rows.map((r: RowDataPacket) => r.month as string).filter(Boolean));
 
       res.json({
         status: "ok",
