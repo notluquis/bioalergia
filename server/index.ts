@@ -116,7 +116,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Carpeta con el build del cliente (Vite)
-const clientDir = path.resolve(__dirname, "../dist/client");
+// En producción: /app/dist/server -> ../../client = /app/dist/client
+// En desarrollo: server/ -> ../dist/client
+const clientDir = path.resolve(__dirname, "../../client");
 
 // Archivos estáticos de la SPA en la raíz
 app.use(express.static(clientDir, { index: false }));
