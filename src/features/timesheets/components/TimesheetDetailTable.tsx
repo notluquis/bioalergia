@@ -54,52 +54,70 @@ export default function TimesheetDetailTable({
 
   // Función para autocompletar hora (ej: "10" -> "10:00", "930" -> "09:30", "1930" -> "19:30")
   const formatTimeInput = (value: string) => {
-    if (!value.trim()) return "";
+    const trimmed = value.trim();
+    if (!trimmed) return "";
 
-    // Si ya está en formato HH:MM válido, normalizar a 2 dígitos
-    if (/^[0-9]{1,2}:[0-9]{1,2}$/.test(value)) {
-      const parts = value.split(":");
-      const hours = parseInt(parts[0] || "0", 10);
-      const minutes = parseInt(parts[1] || "0", 10);
+    // Limpiar cualquier carácter que no sea dígito o dos puntos
+    const cleaned = trimmed.replace(/[^0-9:]/g, "");
+
+    // Si hay más de un ":", es inválido
+    if ((cleaned.match(/:/g) || []).length > 1) {
+      return cleaned.slice(0, cleaned.lastIndexOf(":"));
+    }
+
+    // Si ya está en formato HH:MM (1-2 dígitos : 1-2 dígitos)
+    const timeMatch = cleaned.match(/^([0-9]{1,2}):([0-9]{1,2})$/);
+    if (timeMatch) {
+      const hours = parseInt(timeMatch[1] || "0", 10);
+      const minutes = parseInt(timeMatch[2] || "0", 10);
 
       // Validar rangos
       if (hours >= 0 && hours <= 23 && minutes >= 0 && minutes < 60) {
         return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
       }
-      // Si es inválido, permitir edición (no formatear)
-      return value;
+      // Si es inválido, devolver para que el usuario corrija
+      return cleaned;
     }
 
-    // Si contiene ":" pero no coincide con el patrón, devolver sin cambios (permite editar)
-    if (value.includes(":")) {
-      return value;
+    // Si contiene ":" pero no está completo (ej: "16:" o "16:3"), permitir edición
+    if (cleaned.includes(":")) {
+      return cleaned;
     }
 
-    // Autocompletar números sin separadores
-    const cleaned = value.replace(/[^0-9]/g, "");
-    if (cleaned.length === 0) return "";
+    // Autocompletar números sin separadores (solo dígitos)
+    const digitsOnly = cleaned.replace(/:/g, "");
+    if (digitsOnly.length === 0) return "";
 
     // 1 o 2 dígitos: interpretar como hora completa (ej: "9" -> "09:00", "19" -> "19:00")
-    if (cleaned.length === 1 || cleaned.length === 2) {
-      const hours = parseInt(cleaned, 10);
+    if (digitsOnly.length === 1 || digitsOnly.length === 2) {
+      const hours = parseInt(digitsOnly, 10);
       if (hours >= 0 && hours <= 23) {
         return `${hours.toString().padStart(2, "0")}:00`;
       }
-      return value;
+      return cleaned;
     }
 
     // 3 o 4 dígitos: interpretar últimos 2 como minutos (ej: "930" -> "09:30", "1930" -> "19:30")
-    if (cleaned.length === 3 || cleaned.length === 4) {
-      const hours = parseInt(cleaned.slice(0, -2), 10);
-      const minutes = parseInt(cleaned.slice(-2), 10);
+    if (digitsOnly.length === 3 || digitsOnly.length === 4) {
+      const hours = parseInt(digitsOnly.slice(0, -2), 10);
+      const minutes = parseInt(digitsOnly.slice(-2), 10);
       if (hours >= 0 && hours <= 23 && minutes >= 0 && minutes < 60) {
         return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
       }
-      return value;
+      return cleaned;
     }
 
-    // Más de 4 dígitos: devolver sin cambios
-    return value;
+    // Más de 4 dígitos: truncar a 4 (tomar solo los primeros 4)
+    if (digitsOnly.length > 4) {
+      const truncated = digitsOnly.slice(0, 4);
+      const hours = parseInt(truncated.slice(0, -2), 10);
+      const minutes = parseInt(truncated.slice(-2), 10);
+      if (hours >= 0 && hours <= 23 && minutes >= 0 && minutes < 60) {
+        return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
+      }
+    }
+
+    return cleaned;
   };
 
   // Función para calcular horas trabajadas entre entrada y salida
