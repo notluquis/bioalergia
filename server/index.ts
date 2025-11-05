@@ -30,15 +30,17 @@ app.use((req, res, next) => {
     "Content-Security-Policy",
     [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://static.cloudflareinsights.com https://intranet.bioalergia.cl/cdn-cgi/",
-      "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: https:",
-      "font-src 'self' data:",
-      "connect-src 'self' https://api.mercadopago.com",
+      // Allow scripts from self, Cloudflare CDN, and insights
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://static.cloudflareinsights.com https://intranet.bioalergia.cl https://*.cloudflare.com https://*.cloudflareinsights.com",
+      "style-src 'self' 'unsafe-inline' https:",
+      "img-src 'self' data: https: blob:",
+      "font-src 'self' data: https:",
+      "connect-src 'self' https://api.mercadopago.com https://*.cloudflare.com wss:",
       "worker-src 'self' blob:",
       "frame-src 'none'",
       "base-uri 'self'",
       "form-action 'self'",
+      "object-src 'none'",
     ].join("; ")
   );
   res.setHeader("X-Content-Type-Options", "nosniff");
