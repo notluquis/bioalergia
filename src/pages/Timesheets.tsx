@@ -146,15 +146,15 @@ export default function TimesheetsPage() {
     return summary.employees.find((e) => e.employeeId === selectedEmployee.id) ?? null;
   }, [summary, selectedEmployee]);
 
-  const loadSummary = useCallback(async () => {
-    if (!month) return;
+  const loadSummary = useCallback(async (monthParam: string, employeeId: number | null) => {
+    if (!monthParam) return;
     setLoadingSummary(true);
     setError(null);
     setInfo(null);
     try {
-      const formattedMonth = formatMonthString(month);
-      // Pasar selectedEmployeeId para filtrar si hay uno seleccionado
-      const data = await fetchTimesheetSummary(formattedMonth, selectedEmployeeId);
+      const formattedMonth = formatMonthString(monthParam);
+      // Pasar employeeId para filtrar si hay uno seleccionado
+      const data = await fetchTimesheetSummary(formattedMonth, employeeId);
       setSummary({ employees: data.employees, totals: data.totals });
       // No auto-seleccionar empleado en loadSummary
     } catch (err) {
@@ -164,14 +164,14 @@ export default function TimesheetsPage() {
     } finally {
       setLoadingSummary(false);
     }
-  }, [month, selectedEmployeeId]);
+  }, []);
 
-  const loadDetail = useCallback(async (employeeId: number) => {
-    if (!month) return;
+  const loadDetail = useCallback(async (employeeId: number, monthParam: string) => {
+    if (!monthParam) return;
     setLoadingDetail(true);
     setError(null);
     try {
-      const formattedMonth = formatMonthString(month);
+      const formattedMonth = formatMonthString(monthParam);
       const data = await fetchTimesheetDetail(employeeId, formattedMonth);
       const rows = buildBulkRows(formattedMonth, data.entries);
       setBulkRows(rows);
@@ -184,7 +184,7 @@ export default function TimesheetsPage() {
     } finally {
       setLoadingDetail(false);
     }
-  }, [month]);
+  }, []);
 
   const pendingCount = useMemo(() => bulkRows.filter((row) => !row.entryId && hasRowData(row)).length, [bulkRows]);
 
@@ -220,9 +220,9 @@ export default function TimesheetsPage() {
     setError(null);
     try {
       await deleteTimesheet(row.entryId);
-      if (selectedEmployeeId) {
-        await loadSummary();
-        await loadDetail(selectedEmployeeId);
+      if (selectedEmployeeId && month) {
+        await loadSummary(month, selectedEmployeeId);
+        await loadDetail(selectedEmployeeId, month);
       }
       setInfo("Registro eliminado");
     } catch (err) {
@@ -304,8 +304,10 @@ export default function TimesheetsPage() {
     setSaving(true);
     try {
       await bulkUpsertTimesheets(selectedEmployeeId, entries, removeIds);
-      await loadSummary();
-      await loadDetail(selectedEmployeeId);
+      if (month) {
+        await loadSummary(month, selectedEmployeeId);
+        await loadDetail(selectedEmployeeId, month);
+      }
       setInfo("Cambios guardados correctamente");
     } catch (err) {
       const message = err instanceof Error ? err.message : "No se pudieron guardar los cambios";
