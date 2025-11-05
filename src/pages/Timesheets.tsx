@@ -82,8 +82,9 @@ export default function TimesheetsPage() {
   // Set initial month when months list is loaded
   useEffect(() => {
     if (months.length && !monthRef.current) {
-      const firstMonth = months[0];
-      if (firstMonth) setMonth(firstMonth);
+      // Seleccionar el penúltimo mes (mes anterior) si existe, sino el primero
+      const previousMonth = months.length > 1 ? months[months.length - 2] : months[0];
+      if (previousMonth) setMonth(previousMonth);
     }
   }, [months]);
 

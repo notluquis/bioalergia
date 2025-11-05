@@ -33,8 +33,8 @@ export default function TimeInput({ value, onChange, placeholder, className, dis
       placeholder={placeholder || "HH:MM"}
       className={`input input-bordered input-sm ${className || ""}`}
       disabled={disabled}
-      lazy={false}
-      autofix={true}
+      lazy={true}
+      autofix={false}
     />
   );
 }
