@@ -57,13 +57,21 @@ export default function TimesheetDetailTable({
     if (!value.trim()) return "";
 
     // Si ya está en formato HH:MM válido, normalizar a 2 dígitos
-    if (/^[0-9]{1,2}:[0-9]{2}$/.test(value)) {
-      const parts = value.split(":").map(Number);
-      const [hours, minutes] = parts;
-      if (hours === undefined || minutes === undefined) return value;
+    if (/^[0-9]{1,2}:[0-9]{1,2}$/.test(value)) {
+      const parts = value.split(":");
+      const hours = parseInt(parts[0] || "0", 10);
+      const minutes = parseInt(parts[1] || "0", 10);
+
+      // Validar rangos
       if (hours >= 0 && hours <= 23 && minutes >= 0 && minutes < 60) {
         return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
       }
+      // Si es inválido, permitir edición (no formatear)
+      return value;
+    }
+
+    // Si contiene ":" pero no coincide con el patrón, devolver sin cambios (permite editar)
+    if (value.includes(":")) {
       return value;
     }
 
