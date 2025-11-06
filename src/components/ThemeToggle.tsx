@@ -10,7 +10,7 @@ function getPreferredThemeFromSystem(): "light" | "dark" {
 
 function applyTheme(theme: "light" | "dark") {
   const html = document.documentElement;
-  // Use daisyUI named themes we declared in tailwind.config.cjs
+  // Apply both DaisyUI data-theme and Tailwind dark class for full compatibility
   if (theme === "dark") {
     html.setAttribute("data-theme", "bioalergia-dark");
     html.classList.add("dark");

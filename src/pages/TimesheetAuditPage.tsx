@@ -97,7 +97,7 @@ export default function TimesheetAuditPage() {
 
   // Set default week to first week of month
   useEffect(() => {
-    if (weeksInMonth.length > 0 && selectedWeek === null && weeksInMonth[0]) {
+    if (selectedWeek === null && weeksInMonth.length > 0 && weeksInMonth[0]) {
       setSelectedWeek(weeksInMonth[0].number);
     }
   }, [weeksInMonth, selectedWeek]);
