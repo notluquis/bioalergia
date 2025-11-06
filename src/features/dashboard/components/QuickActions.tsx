@@ -4,7 +4,7 @@ function QuickAction({ title, description, to }: { title: string; description: s
   return (
     <Link
       to={to}
-      className="flex h-full flex-col justify-between rounded-2xl border border-base-300 bg-base-100 p-4 text-sm text-base-content transition-all hover:-translate-y-0.5 hover:border-base-300 hover:bg-base-200"
+      className="surface-recessed flex h-full flex-col justify-between border border-base-300/70 p-4 text-sm text-base-content transition-all hover:-translate-y-0.5 hover:border-primary/35"
     >
       <div>
         <p className="text-sm font-semibold text-base-content drop-shadow-sm">{title}</p>
@@ -19,7 +19,7 @@ function QuickAction({ title, description, to }: { title: string; description: s
 
 export default function QuickActions() {
   return (
-    <article className="grid gap-4 p-6 sm:grid-cols-3 bg-base-100">
+    <article className="surface-recessed grid gap-4 p-6 sm:grid-cols-3">
       <QuickAction title="Subir CSV" description="Pasa nuevos movimientos a la base" to="/upload" />
       <QuickAction title="Registrar saldo" description="Actualiza saldos diarios" to="/transactions/balances" />
       <QuickAction title="Retiros" description="Consulta participantes y retiros" to="/transactions/participants" />

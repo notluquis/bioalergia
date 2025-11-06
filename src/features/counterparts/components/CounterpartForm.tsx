@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { z } from "zod";
 import { formatRut, normalizeRut } from "../../../lib";
@@ -31,9 +31,10 @@ interface CounterpartFormProps {
   onSave: (payload: CounterpartUpsertPayload) => Promise<void>;
   error: string | null;
   saving: boolean;
+  loading?: boolean;
 }
 
-export default function CounterpartForm({ counterpart, onSave, error, saving }: CounterpartFormProps) {
+export default function CounterpartForm({ counterpart, onSave, error, saving, loading = false }: CounterpartFormProps) {
   const form = useForm({
     initialValues: EMPTY_FORM,
     validationSchema: counterpartFormSchema,
@@ -52,106 +53,118 @@ export default function CounterpartForm({ counterpart, onSave, error, saving }: 
     validateOnBlur: true,
   });
 
+  const { getFieldProps, getFieldError, handleSubmit, isSubmitting, values, reset } = form;
+
+  const counterpartSnapshot = useMemo(() => {
+    if (!counterpart) return null;
+    return {
+      rut: counterpart.rut ?? "",
+      name: counterpart.name,
+      personType: counterpart.personType,
+      category: counterpart.category,
+      email: counterpart.email ?? "",
+      notes: counterpart.notes ?? "",
+    };
+  }, [counterpart]);
+
   useEffect(() => {
-    if (counterpart) {
-      form.setValue("rut", counterpart.rut ?? "");
-      form.setValue("name", counterpart.name);
-      form.setValue("personType", counterpart.personType);
-      form.setValue("category", counterpart.category);
-      form.setValue("email", counterpart.email ?? "");
-      form.setValue("notes", counterpart.notes ?? "");
+    if (counterpartSnapshot) {
+      reset(counterpartSnapshot);
     } else {
-      form.reset();
+      reset();
     }
-  }, [counterpart, form]);
+  }, [counterpartSnapshot, reset]);
+
+  const busy = loading || saving || isSubmitting;
 
   return (
-    <section className="space-y-5 p-6 bg-base-100">
+    <section className="surface-recessed relative space-y-5 p-6" aria-busy={busy}>
+      {loading && (
+        <div className="absolute inset-0 z-10 rounded-2xl bg-base-100/60 backdrop-blur-sm flex items-center justify-center">
+          <span className="loading loading-spinner loading-lg text-primary" aria-hidden="true" />
+        </div>
+      )}
       <div className="flex flex-col gap-1">
-        <h1 className="text-xl font-semibold text-primary drop-shadow-sm">
-          {counterpart ? "Editar contraparte" : "Nueva contraparte"}
-        </h1>
-        <p className="text-xs text-base-content/90">
+        <h1 className="typ-title text-base-content">{counterpart ? "Editar contraparte" : "Nueva contraparte"}</h1>
+        <p className="text-sm text-base-content/70">
           Completa los datos principales para sincronizar la información de pagos y retiros.
         </p>
       </div>
-      <form onSubmit={form.handleSubmit} className="grid gap-4 md:grid-cols-2">
-        <div>
-          <Input
-            label="RUT"
-            type="text"
-            {...form.getFieldProps("rut")}
-            placeholder="12.345.678-9"
-            helper={form.values.rut ? formatRut(form.values.rut) : undefined}
-          />
-          {form.getFieldError("rut") && <p className="mt-1 text-xs text-error">{form.getFieldError("rut")}</p>}
-        </div>
-        <div>
-          <Input label="Nombre" type="text" {...form.getFieldProps("name")} placeholder="Allos Chile Spa" required />
-          {form.getFieldError("name") && <p className="mt-1 text-xs text-error">{form.getFieldError("name")}</p>}
-        </div>
-        <div>
-          <Input label="Tipo de persona" type="select" {...form.getFieldProps("personType")}>
-            <option value="PERSON">Persona natural</option>
-            <option value="COMPANY">Empresa</option>
-            <option value="OTHER">Otra</option>
-          </Input>
-          {form.getFieldError("personType") && (
-            <p className="mt-1 text-xs text-error">{form.getFieldError("personType")}</p>
-          )}
-        </div>
-        <div>
-          <Input label="Clasificación" type="select" {...form.getFieldProps("category")}>
-            {CATEGORY_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </Input>
-          {form.getFieldError("category") && (
-            <p className="mt-1 text-xs text-error">{form.getFieldError("category")}</p>
-          )}
-        </div>
-        {form.values.category === "EMPLOYEE" && (
-          <p className="md:col-span-2 text-xs text-base-content/80">
-            Se vinculará como empleado utilizando el correo electrónico ingresado.
-          </p>
-        )}
-        <div>
-          <Input
-            label="Correo electrónico"
-            type="email"
-            {...form.getFieldProps("email")}
-            placeholder="contacto@empresa.cl"
-          />
-          {form.getFieldError("email") && <p className="mt-1 text-xs text-error">{form.getFieldError("email")}</p>}
-        </div>
-        <div className="md:col-span-2">
-          <Input
-            label="Notas"
-            type="textarea"
-            rows={4}
-            {...form.getFieldProps("notes")}
-            placeholder="Información adicional, persona de contacto, etc."
-          />
-          {form.getFieldError("notes") && <p className="mt-1 text-xs text-error">{form.getFieldError("notes")}</p>}
-        </div>
-        {counterpart?.employeeId && (
-          <p className="md:col-span-2 text-xs text-base-content/80">
-            Empleado vinculado (ID #{counterpart.employeeId}).{" "}
-            <Link to="/employees" className="font-semibold text-primary">
-              Ver empleados
-            </Link>
-          </p>
-        )}
-        <div className="md:col-span-2 flex flex-col gap-3">
-          {error && <Alert variant="error">{error}</Alert>}
-          <div className="flex flex-wrap justify-end gap-2">
-            <Button type="submit" disabled={saving || form.isSubmitting}>
-              {saving || form.isSubmitting ? "Guardando..." : "Guardar"}
-            </Button>
+      <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-2">
+        <fieldset className="contents" disabled={busy}>
+          <div>
+            <Input
+              label="RUT"
+              type="text"
+              {...getFieldProps("rut")}
+              placeholder="12.345.678-9"
+              helper={values.rut ? formatRut(values.rut) : undefined}
+            />
+            {getFieldError("rut") && <p className="mt-1 text-xs text-error">{getFieldError("rut")}</p>}
           </div>
-        </div>
+          <div>
+            <Input label="Nombre" type="text" {...getFieldProps("name")} placeholder="Allos Chile Spa" required />
+            {getFieldError("name") && <p className="mt-1 text-xs text-error">{getFieldError("name")}</p>}
+          </div>
+          <div>
+            <Input label="Tipo de persona" type="select" {...getFieldProps("personType")}>
+              <option value="PERSON">Persona natural</option>
+              <option value="COMPANY">Empresa</option>
+              <option value="OTHER">Otra</option>
+            </Input>
+            {getFieldError("personType") && <p className="mt-1 text-xs text-error">{getFieldError("personType")}</p>}
+          </div>
+          <div>
+            <Input label="Clasificación" type="select" {...getFieldProps("category")}>
+              {CATEGORY_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </Input>
+            {getFieldError("category") && <p className="mt-1 text-xs text-error">{getFieldError("category")}</p>}
+          </div>
+          {values.category === "EMPLOYEE" && (
+            <p className="md:col-span-2 text-xs text-base-content/80">
+              Se vinculará como empleado utilizando el correo electrónico ingresado.
+            </p>
+          )}
+          <div>
+            <Input
+              label="Correo electrónico"
+              type="email"
+              {...getFieldProps("email")}
+              placeholder="contacto@empresa.cl"
+            />
+            {getFieldError("email") && <p className="mt-1 text-xs text-error">{getFieldError("email")}</p>}
+          </div>
+          <div className="md:col-span-2">
+            <Input
+              label="Notas"
+              type="textarea"
+              rows={4}
+              {...getFieldProps("notes")}
+              placeholder="Información adicional, persona de contacto, etc."
+            />
+            {getFieldError("notes") && <p className="mt-1 text-xs text-error">{getFieldError("notes")}</p>}
+          </div>
+          {counterpart?.employeeId && (
+            <p className="md:col-span-2 text-xs text-base-content/80">
+              Empleado vinculado (ID #{counterpart.employeeId}).{" "}
+              <Link to="/employees" className="font-semibold text-primary">
+                Ver empleados
+              </Link>
+            </p>
+          )}
+          <div className="md:col-span-2 flex flex-col gap-3">
+            {error && <Alert variant="error">{error}</Alert>}
+            <div className="flex flex-wrap justify-end gap-2">
+              <Button type="submit" disabled={busy}>
+                {busy ? "Guardando..." : "Guardar"}
+              </Button>
+            </div>
+          </div>
+        </fieldset>
       </form>
     </section>
   );

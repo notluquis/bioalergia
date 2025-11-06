@@ -14,6 +14,7 @@ import { formatLocalDateForMySQL } from "./lib/time.js";
 import { InventoryCategory, InventoryItem, InventoryMovement } from "./types.js";
 import { roundCurrency } from "../shared/currency.js";
 import { SQLBuilder, selectMany } from "./lib/database.js";
+import { logger } from "./lib/logger.js";
 dotenv.config();
 
 // Counterpart types needed by server
@@ -327,6 +328,29 @@ const REQUIRED_ENV = ["DB_HOST", "DB_USER", "DB_PASSWORD", "DB_NAME"] as const;
 
 let pool: Pool | null = null;
 
+function isTransientConnectionError(error: unknown) {
+  const code = (error as { code?: string } | undefined)?.code;
+  return (
+    code === "PROTOCOL_CONNECTION_LOST" ||
+    code === "ECONNRESET" ||
+    code === "ECONNREFUSED" ||
+    code === "ENETUNREACH" ||
+    code === "ETIMEDOUT"
+  );
+}
+
+function destroyPool() {
+  if (!pool) return;
+  pool
+    .end()
+    .catch((error) => {
+      logger.warn({ error }, "[db] Failed to end pool during destroy");
+    })
+    .finally(() => {
+      pool = null;
+    });
+}
+
 function isDuplicateColumnError(error: unknown): boolean {
   return error instanceof Error && /Duplicate column name/i.test(error.message);
 }
@@ -371,7 +395,66 @@ export function getPool(): Pool {
     dateStrings: true,
   });
 
+  const eventedPool = pool as unknown as { on?: (event: string, listener: (err: unknown) => void) => void };
+  if (typeof eventedPool.on === "function") {
+    eventedPool.on("error", (error: unknown) => {
+      if (isTransientConnectionError(error)) {
+        logger.warn({ error }, "[db] Connection error detected, recycling pool");
+        destroyPool();
+        return;
+      }
+      logger.error({ error }, "[db] Non-recoverable database error");
+    });
+  }
+
   return pool;
+}
+
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+type EnsureConnectionOptions = {
+  retries?: number;
+  initialDelayMs?: number;
+  backoffFactor?: number;
+};
+
+export async function ensureDatabaseConnection(options: EnsureConnectionOptions = {}): Promise<void> {
+  const { retries = Number(process.env.DB_CONN_RETRIES ?? 5), initialDelayMs = 2000, backoffFactor = 1.5 } = options;
+  let attempt = 0;
+  let lastError: unknown;
+
+  while (attempt <= retries) {
+    try {
+      const currentPool = getPool();
+      await currentPool.query("SELECT 1");
+      if (attempt > 0) {
+        logger.info("[db] Connection re-established after transient failure");
+      }
+      return;
+    } catch (error) {
+      lastError = error;
+      if (!isTransientConnectionError(error)) {
+        logger.error({ error }, "[db] Non-transient error while validating connection");
+        throw error;
+      }
+      destroyPool();
+      const waitMs = Math.round(initialDelayMs * Math.pow(backoffFactor, attempt));
+      logger.warn(
+        {
+          attempt: attempt + 1,
+          retries,
+          waitMs,
+          error: error instanceof Error ? { message: error.message, code: (error as { code?: string }).code } : error,
+        },
+        "[db] Database not reachable, retrying handshake"
+      );
+      await delay(waitMs);
+      attempt += 1;
+    }
+  }
+
+  logger.error({ error: lastError }, "[db] Exhausted retries waiting for database");
+  throw lastError instanceof Error ? lastError : new Error("Database not reachable");
 }
 
 export async function ensureSchema() {

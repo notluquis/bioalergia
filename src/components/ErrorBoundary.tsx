@@ -22,22 +22,20 @@ export class ErrorBoundary extends React.Component<
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen flex items-center justify-center bg-base-200 p-6">
-          <div className="card w-full max-w-3xl bg-base-100 shadow-lg">
-            <div className="card-body">
-              <div className="flex items-center gap-4">
-                <img src="/logo.png" alt="Logo" className="h-12" />
-                <h2 className="card-title text-primary">¡Ups! Ocurrió un error inesperado</h2>
-              </div>
-              <p className="text-base-content">
-                Por favor, recarga la página o contacta al soporte si el problema persiste.
-              </p>
-              <pre className="bg-base-200 rounded p-2 text-xs text-red-600 max-w-full overflow-auto my-2">
-                {String(this.state.error)}
-              </pre>
-              <div className="card-actions justify-end">
-                <Button onClick={() => window.location.reload()}>Recargar</Button>
-              </div>
+        <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-base-200/60 via-base-100 to-base-100 p-6">
+          <div className="surface-elevated w-full max-w-3xl p-8">
+            <div className="flex items-center gap-4">
+              <img src="/logo.png" alt="Logo" className="brand-logo" />
+              <h2 className="text-2xl font-semibold text-primary drop-shadow-sm">¡Ups! Ocurrió un error inesperado</h2>
+            </div>
+            <p className="mt-4 text-sm text-base-content">
+              Por favor, recarga la página o contacta al soporte si el problema persiste.
+            </p>
+            <pre className="mt-4 max-h-48 overflow-auto rounded-2xl bg-base-200/80 p-3 text-xs text-error">
+              {String(this.state.error)}
+            </pre>
+            <div className="mt-6 flex justify-end">
+              <Button onClick={() => window.location.reload()}>Recargar</Button>
             </div>
           </div>
         </div>

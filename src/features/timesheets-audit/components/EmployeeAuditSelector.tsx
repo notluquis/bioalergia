@@ -76,7 +76,7 @@ export default function EmployeeAuditSelector({
 
       {/* Dropdown */}
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 z-50 mt-2 rounded-2xl border border-base-300 bg-base-200 shadow-lg">
+        <div className="surface-recessed absolute top-full left-0 right-0 z-50 mt-2 shadow-lg">
           <div className="max-h-80 overflow-y-auto p-3 space-y-2">
             {activeEmployees.length === 0 ? (
               <p className="text-xs text-base-content/50 p-2">Sin empleados disponibles</p>
@@ -89,7 +89,7 @@ export default function EmployeeAuditSelector({
                   <label
                     key={emp.id}
                     className={`flex items-center gap-3 p-2 rounded text-sm cursor-pointer transition-colors ${
-                      isDisabled ? "opacity-50 cursor-not-allowed" : "hover:bg-base-300"
+                      isDisabled ? "opacity-50 cursor-not-allowed" : "hover:bg-base-100/60"
                     }`}
                   >
                     <input

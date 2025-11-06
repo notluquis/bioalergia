@@ -28,6 +28,7 @@ export function registerTimesheetRoutes(app: express.Express) {
   // Endpoint para obtener meses registrados
   app.get(
     "/api/timesheets/months",
+    authenticate,
     asyncHandler(async (_req, res) => {
       const pool = getPool();
       // Generar lista de meses disponibles: 6 meses atrás hasta 3 meses adelante
@@ -259,7 +260,8 @@ export function registerTimesheetRoutes(app: express.Express) {
 
       const pool = getPool();
       const employees = await listEmployees();
-      const employeeMap = new Map(employees.map((emp) => [emp.id, emp.full_name]));
+      const employeeNameMap = new Map(employees.map((emp) => [emp.id, emp.full_name]));
+      const employeeRoleMap = new Map(employees.map((emp) => [emp.id, emp.role ?? null]));
 
       // Query entries with start_time AND end_time only
       const placeholders = employeeIds.map(() => "?").join(",");
@@ -285,7 +287,8 @@ export function registerTimesheetRoutes(app: express.Express) {
       const entries = rows.map((row: RowDataPacket) => ({
         id: row.id,
         employee_id: row.employee_id,
-        employee_name: employeeMap.get(row.employee_id) || `Employee #${row.employee_id}`,
+        employee_name: employeeNameMap.get(row.employee_id) || `Employee #${row.employee_id}`,
+        employee_role: employeeRoleMap.get(row.employee_id) ?? null,
         work_date: row.work_date,
         start_time: row.start_time,
         end_time: row.end_time,

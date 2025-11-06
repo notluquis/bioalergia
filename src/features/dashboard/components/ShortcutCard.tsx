@@ -15,7 +15,7 @@ export default function ShortcutCard({
   const accentClass = accent === "primary" ? "text-primary" : "text-secondary";
 
   return (
-    <article className="flex flex-col justify-between p-6 bg-base-100">
+    <article className="surface-recessed flex flex-col justify-between p-6">
       <div>
         <h2 className={`text-lg font-semibold ${accentClass}`}>{title}</h2>
         <p className="mt-2 text-sm text-base-content/90">{description}</p>

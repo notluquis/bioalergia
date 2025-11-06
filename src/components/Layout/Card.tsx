@@ -47,8 +47,8 @@ export default function Card({
   className = "",
   ...props
 }: CardProps) {
-  const baseClasses = "bg-base-100 rounded-2xl";
-  const borderClasses = bordered ? "border border-base-300" : "";
+  const baseClasses = "surface-recessed";
+  const borderClasses = bordered ? "border border-base-300" : "border border-transparent";
   const paddingClass = paddingClasses[padding];
   const shadowClass = shadowClasses[shadow];
 

@@ -116,7 +116,7 @@ export default function ServicesUnifiedAgenda({
 
   return (
     <section className="space-y-4">
-      <header className="grid gap-4 border border-base-300 p-4 text-sm text-base-content/60 sm:grid-cols-3 bg-base-100">
+      <header className="surface-muted grid gap-4 p-4 text-sm text-base-content/70 sm:grid-cols-3">
         <div>
           <p className="text-xs uppercase tracking-wide text-base-content/50">Pagos hoy</p>
           <p className="text-xl font-semibold text-base-content">{currencyFormatter.format(totals.day)}</p>
@@ -131,7 +131,7 @@ export default function ServicesUnifiedAgenda({
         </div>
       </header>
 
-      <div className="space-y-3 border border-base-300 p-4 text-sm text-base-content/60 bg-base-100">
+      <div className="surface-recessed space-y-3 p-4 text-sm text-base-content/70">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <h2 className="text-sm font-semibold uppercase tracking-wide text-base-content/50">Agenda unificada</h2>
@@ -149,10 +149,7 @@ export default function ServicesUnifiedAgenda({
           {groups.map((group) => {
             const isExpanded = expanded[group.dateKey] ?? false;
             return (
-              <article
-                key={group.dateKey}
-                className="rounded-2xl border border-base-300 bg-base-100/70 shadow-sm transition hover:border-primary/35"
-              >
+              <article key={group.dateKey} className="surface-muted transition hover:border-primary/35 hover:shadow-lg">
                 <Button
                   type="button"
                   variant="secondary"
@@ -179,7 +176,7 @@ export default function ServicesUnifiedAgenda({
                   </div>
                 </Button>
                 {isExpanded && (
-                  <div className="space-y-2 border-t border-base-300 px-4 py-3">
+                  <div className="space-y-2 border-t border-base-300/70 px-4 py-3">
                     {group.entries.map(({ service, schedule }) => {
                       const dueDate = dayjs(schedule.due_date);
                       const diffDays = dueDate.startOf("day").diff(dayjs().startOf("day"), "day");
@@ -187,7 +184,7 @@ export default function ServicesUnifiedAgenda({
                       return (
                         <div
                           key={`${service.public_id}-${schedule.id}`}
-                          className="rounded-xl border border-base-300 bg-base-100/80 p-3 shadow-inner transition hover:border-primary/40"
+                          className="surface-recessed p-3 transition hover:border-primary/40"
                         >
                           <div className="flex flex-wrap items-center justify-between gap-3">
                             <div>

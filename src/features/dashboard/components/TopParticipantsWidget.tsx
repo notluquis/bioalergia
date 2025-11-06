@@ -13,7 +13,7 @@ export default function TopParticipantsWidget({
   error: string | null;
 }) {
   return (
-    <article className="space-y-4 p-6 bg-base-100">
+    <article className="surface-recessed space-y-4 p-6">
       <div className="flex items-center justify-between">
         <h3 className="text-base font-semibold text-secondary drop-shadow-sm">Retiros destacados</h3>
         <Link

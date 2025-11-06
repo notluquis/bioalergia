@@ -65,9 +65,9 @@ type MetricCardProps = {
 
 function MetricCard({ title, value }: MetricCardProps) {
   return (
-    <article className="rounded-2xl border border-base-300 bg-base-100/70 p-4 shadow-sm">
-      <p className="text-xs font-semibold uppercase tracking-wide text-base-content/80">{title}</p>
-      <p className="mt-2 text-2xl font-semibold text-base-content">{value}</p>
+    <article className="surface-muted p-4">
+      <p className="typ-caption text-base-content/70">{title}</p>
+      <p className="mt-2 typ-subtitle text-base-content">{value}</p>
     </article>
   );
 }

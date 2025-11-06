@@ -6,7 +6,7 @@ export default function GeneralSettingsPage() {
 
   return (
     <div className="space-y-6">
-      <section className="relative overflow-hidden rounded-3xl border border-base-300 bg-base-200 p-6">
+      <section className="surface-elevated relative overflow-hidden p-6">
         <div className="relative flex flex-col gap-6 md:flex-row md:items-center">
           <div className="flex flex-1 flex-col gap-3">
             <div className="inline-flex items-center gap-3 rounded-full bg-base-200 px-4 py-2 text-xs font-semibold tracking-wide text-primary">
@@ -36,9 +36,9 @@ export default function GeneralSettingsPage() {
               </div>
             </dl>
           </div>
-          <div className="flex w-full max-w-60 flex-col items-center gap-4 rounded-2xl border border-base-300 bg-base-200 p-4 text-center shadow-inner">
+          <div className="surface-recessed flex w-full max-w-60 flex-col items-center gap-4 p-4 text-center">
             <div className="aspect-square w-24 overflow-hidden rounded-2xl border border-base-300 bg-base-200 p-2">
-              <img src={settings.logoUrl} alt="Logo actual" className="h-full w-full object-contain" />
+              <img src={settings.logoUrl} alt="Logo actual" className="brand-logo--settings" />
             </div>
             <div className="flex items-center gap-3 text-xs font-semibold uppercase tracking-wide text-base-content/60">
               <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-base-300 shadow bg-primary" />

@@ -6,18 +6,24 @@ import { useCallback, useEffect, useState } from "react";
 import { fetchMultiEmployeeTimesheets } from "../api";
 import type { TimesheetEntryWithEmployee } from "../types";
 
+export type AuditDateRange = { start: string; end: string };
+
 interface UseTimesheetAuditOptions {
-  month: string;
+  ranges: AuditDateRange[];
   employeeIds: number[];
 }
 
-export function useTimesheetAudit({ month, employeeIds }: UseTimesheetAuditOptions) {
+function isWithinRange(date: string, range: AuditDateRange) {
+  return date >= range.start && date <= range.end;
+}
+
+export function useTimesheetAudit({ ranges, employeeIds }: UseTimesheetAuditOptions) {
   const [entries, setEntries] = useState<TimesheetEntryWithEmployee[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const loadEntries = useCallback(async () => {
-    if (!month || employeeIds.length === 0) {
+    if (!employeeIds.length || !ranges.length) {
       setEntries([]);
       return;
     }
@@ -26,12 +32,18 @@ export function useTimesheetAudit({ month, employeeIds }: UseTimesheetAuditOptio
     setError(null);
 
     try {
-      const [year, monthNum] = month.split("-");
-      const firstDay = `${year}-${monthNum}-01`;
-      const lastDay = `${year}-${monthNum}-31`; // MySQL handles overage dates
+      const sortedRanges = [...ranges].sort((a, b) => a.start.localeCompare(b.start));
+      const firstDay = sortedRanges[0]?.start;
+      const lastDay = sortedRanges[sortedRanges.length - 1]?.end;
+
+      if (!firstDay || !lastDay) {
+        setEntries([]);
+        return;
+      }
 
       const data = await fetchMultiEmployeeTimesheets(employeeIds, firstDay, lastDay);
-      setEntries(data);
+      const filtered = data.filter((entry) => sortedRanges.some((range) => isWithinRange(entry.work_date, range)));
+      setEntries(filtered);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Error cargando datos de auditoría";
       setError(message);
@@ -39,7 +51,7 @@ export function useTimesheetAudit({ month, employeeIds }: UseTimesheetAuditOptio
     } finally {
       setLoading(false);
     }
-  }, [month, employeeIds]);
+  }, [ranges, employeeIds]);
 
   useEffect(() => {
     loadEntries();

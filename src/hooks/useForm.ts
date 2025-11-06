@@ -164,15 +164,19 @@ export function useForm<T extends Record<string, unknown>>({
     [onSubmit, validateAllFields, state.values]
   );
 
-  const reset = useCallback(() => {
-    setState({
-      values: { ...initialValues },
-      errors: {},
-      isSubmitting: false,
-      isValid: true,
-      touched: {},
-    });
-  }, [initialValues]);
+  const reset = useCallback(
+    (nextValues?: Partial<T>) => {
+      const mergedValues = nextValues ? ({ ...initialValues, ...nextValues } as T) : { ...initialValues };
+      setState({
+        values: mergedValues,
+        errors: {},
+        isSubmitting: false,
+        isValid: true,
+        touched: {},
+      });
+    },
+    [initialValues]
+  );
 
   const setErrors = useCallback((errors: Partial<Record<keyof T, string>>) => {
     setState((prev) => ({

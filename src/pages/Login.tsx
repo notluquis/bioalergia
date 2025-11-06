@@ -46,13 +46,13 @@ export default function Login() {
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center px-6 py-12">
-      <div className="bg-base-100 relative z-10 w-full max-w-md p-10">
+    <div className="relative flex min-h-screen items-center justify-center bg-gradient-to-br from-base-200/60 via-base-100 to-base-100 px-6 py-12">
+      <div className="surface-elevated relative z-10 w-full max-w-md px-10 py-12">
         <div className="mb-6 flex justify-end">
           <ConnectionIndicator />
         </div>
         <div className="flex flex-col items-center gap-3 text-center">
-          <img src={settings.logoUrl} alt={settings.orgName} className="max-h-20 object-contain" />
+          <img src={settings.logoUrl} alt={settings.orgName} className="brand-logo" />
           <h1 className="text-xl font-semibold text-primary drop-shadow-sm">Inicia sesión en {settings.orgName}</h1>
           <p className="text-sm text-base-content/90">Usa tu correo corporativo para continuar.</p>
         </div>

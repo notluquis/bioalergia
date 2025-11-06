@@ -5,7 +5,7 @@ import type { DbMovement } from "../../transactions/types";
 
 export default function RecentMovementsWidget({ rows }: { rows: DbMovement[] }) {
   return (
-    <article className="space-y-4 p-6 bg-base-100">
+    <article className="surface-recessed space-y-4 p-6">
       <div className="flex items-center justify-between">
         <h3 className="text-base font-semibold text-base-content drop-shadow-sm">Últimos movimientos</h3>
         <Link

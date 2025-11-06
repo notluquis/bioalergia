@@ -174,13 +174,15 @@ export default function App() {
   // Preline runtime removed: we avoid optional runtime helpers and rely on Tailwind + DaisyUI utilities
 
   return (
-    <div className="layout-container relative mx-auto flex min-h-screen max-w-[1440px] gap-6 px-4 py-6 text-base-content sm:px-6 lg:px-10">
+    <div className="layout-container relative flex min-h-screen w-full gap-6 px-4 py-6 text-base-content sm:px-6 lg:px-10 bg-gradient-to-br from-base-200/55 via-base-100 to-base-100 dark:from-neutral-950/95 dark:via-neutral-950 dark:to-neutral-900 transition-colors duration-300">
       {/* Hamburger button: always visible */}
-      <Button
-        variant="secondary"
-        className={`fixed left-4 top-6 z-40 btn-circle bg-base-100`}
+      <button
+        type="button"
+        className={`apple-nav-toggle fixed left-4 top-6 z-40`}
         onClick={toggleSidebar}
         aria-label={sidebarOpen ? "Cerrar menú" : "Abrir menú"}
+        aria-expanded={sidebarOpen}
+        aria-controls="app-sidebar"
       >
         {sidebarOpen ? (
           <svg
@@ -203,7 +205,7 @@ export default function App() {
             <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         )}
-      </Button>
+      </button>
 
       {/* Overlay for mobile/tablet when sidebar is open */}
       {isMobile && sidebarOpen && (
@@ -215,24 +217,25 @@ export default function App() {
 
       {/* Sidebar: animated, overlay on mobile, collapsible on desktop */}
       <aside
-        className={`flex w-64 shrink-0 flex-col overflow-hidden rounded-3xl p-5 text-sm text-base-content shadow-xl bg-base-100
+        id="app-sidebar"
+        className={`surface-elevated flex h-full w-[min(280px,90vw)] shrink-0 flex-col overflow-y-auto p-5 text-sm text-base-content shadow-xl
           fixed inset-y-0 left-0 z-50 transition-transform duration-300
           ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
-          md:static md:translate-x-0 md:z-auto md:rounded-3xl md:p-5 md:shadow-xl
+          md:static md:h-[calc(100vh-6rem)] md:translate-x-0 md:z-auto md:rounded-3xl md:p-5 md:shadow-xl md:sticky md:top-6
           ${!sidebarOpen && !isMobile ? "hidden" : ""}`}
         style={{ maxWidth: "100vw" }}
       >
-        <div className="flex h-16 items-center justify-center rounded-2xl border border-base-300 bg-base-200 px-3 shadow-inner">
+        <div className="surface-recessed flex h-16 items-center justify-center px-3 shadow-inner">
           <img
             src={settings.logoUrl || "/public/logo_sin_eslogan.png"}
             alt="Logo"
-            className="h-10"
+            className="brand-logo"
             onError={(e) => {
               e.currentTarget.src = "/public/logo_sin_eslogan.png";
             }}
           />
         </div>
-        <nav className="muted-scrollbar mt-4 flex-1 overflow-y-auto pr-2">
+        <nav className="muted-scrollbar mt-4 flex-1 overflow-y-auto pr-2 pb-4">
           {navigation.map((section) => (
             <div key={section.title} className="mb-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-base-content/70 mb-2">{section.title}</p>
@@ -242,8 +245,10 @@ export default function App() {
                     <NavLink
                       to={item.to}
                       className={({ isActive }) =>
-                        `flex items-center rounded-xl px-3 py-2 text-sm font-semibold transition-all ${
-                          isActive ? "active text-primary" : "text-base-content hover:text-primary"
+                        `flex w-full items-center justify-between rounded-xl px-3 py-2 text-sm font-semibold transition-all ${
+                          isActive
+                            ? "active text-primary bg-primary/10"
+                            : "text-base-content hover:text-primary hover:bg-primary/5"
                         }`
                       }
                       onClick={() => {
@@ -258,7 +263,7 @@ export default function App() {
             </div>
           ))}
         </nav>
-        <div className="mt-6 space-y-1 rounded-2xl border border-base-300 bg-base-200 p-3 text-xs text-base-content/70 shadow-inner">
+        <div className="surface-recessed mt-6 space-y-1 p-3 text-xs text-base-content/70 shadow-inner">
           <p className="text-xs font-semibold uppercase tracking-wide text-base-content">Versión</p>
           <p className="font-semibold text-base-content">{APP_VERSION}</p>
           <p className="text-xs text-base-content/50">Build: {buildLabel}</p>
@@ -268,7 +273,7 @@ export default function App() {
       {/* Main content */}
       <div className="layout-container flex flex-1 flex-col gap-6 min-w-0 pb-20 md:pb-0">
         {/* min-w-0 permite que se encoja, pb-20 en mobile para el bottom nav */}
-        <header className="flex items-center justify-between rounded-3xl px-6 py-4 bg-base-100">
+        <header className="surface-elevated flex items-center justify-between px-6 py-4">
           <h1 className="text-xl font-semibold text-base-content drop-shadow-sm">{title}</h1>
           <div className="flex items-center gap-4">
             <ThemeToggle />
@@ -290,14 +295,14 @@ export default function App() {
         </header>
 
         <main className="flex-1 rounded-3xl">
-          <div className="h-full px-6 py-6 bg-base-100">
+          <div className="surface-recessed h-full px-6 py-6">
             <div className="muted-scrollbar h-full overflow-auto">
               <Outlet />
             </div>
           </div>
         </main>
 
-        <footer className="hidden md:flex items-center justify-between rounded-3xl px-6 py-3 text-sm text-base-content bg-base-100">
+        <footer className="surface-elevated hidden md:flex items-center justify-between px-6 py-3 text-sm text-base-content">
           <span className="font-medium text-base-content/70">Bioalergia Finanzas</span>
           <Clock />
         </footer>

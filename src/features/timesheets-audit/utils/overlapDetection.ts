@@ -5,6 +5,41 @@
 
 import type { TimesheetEntryWithEmployee, OverlapInfo } from "../types";
 
+function normalizeRole(role: string | null | undefined): string {
+  return role
+    ? role
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .replace(/[^a-z0-9\s]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+    : "";
+}
+
+function isNurseRole(role: string | null | undefined): boolean {
+  const normalized = normalizeRole(role);
+  if (!normalized) return false;
+  return normalized.includes("enfermer") && normalized.includes("universitar");
+}
+
+function isTensRole(role: string | null | undefined): boolean {
+  const normalized = normalizeRole(role);
+  if (!normalized) return false;
+  if (normalized.includes("tens")) return true;
+  if (normalized.includes("tecnico") && normalized.includes("enfermer")) return true;
+  if (normalized.includes("tecnica") && normalized.includes("enfermer")) return true;
+  return false;
+}
+
+function rolesAreCompatibleForOverlap(roleA: string | null | undefined, roleB: string | null | undefined): boolean {
+  const nurseA = isNurseRole(roleA);
+  const nurseB = isNurseRole(roleB);
+  const tensA = isTensRole(roleA);
+  const tensB = isTensRole(roleB);
+  return (nurseA && tensB) || (nurseB && tensA);
+}
+
 /**
  * Convert time string (HH:MM) to minutes since midnight
  */
@@ -75,7 +110,10 @@ export function detectOverlapsForDate(
       const e2 = dateEntries[j];
       if (!e2) continue;
 
-      if (isTimeRangeOverlapping(e1.start_time, e1.end_time, e2.start_time, e2.end_time)) {
+      if (
+        isTimeRangeOverlapping(e1.start_time, e1.end_time, e2.start_time, e2.end_time) &&
+        !rolesAreCompatibleForOverlap(e1.employee_role, e2.employee_role)
+      ) {
         overlaps.push({
           pair: [e1.employee_id, e2.employee_id],
           names: [e1.employee_name, e2.employee_name],
@@ -128,7 +166,10 @@ export function getOverlappingEmployeesForDate(entries: TimesheetEntryWithEmploy
       const e2 = dateEntries[j];
       if (!e2) continue;
 
-      if (isTimeRangeOverlapping(e1.start_time, e1.end_time, e2.start_time, e2.end_time)) {
+      if (
+        isTimeRangeOverlapping(e1.start_time, e1.end_time, e2.start_time, e2.end_time) &&
+        !rolesAreCompatibleForOverlap(e1.employee_role, e2.employee_role)
+      ) {
         overlappingIds.add(e1.employee_id);
         overlappingIds.add(e2.employee_id);
       }

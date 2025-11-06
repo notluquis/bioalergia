@@ -4,7 +4,7 @@ import cookieParser from "cookie-parser";
 import path from "path";
 import { fileURLToPath } from "url";
 
-import { getPool } from "./db.js";
+import { ensureDatabaseConnection, getPool } from "./db.js";
 import { bindRequestLogger, getRequestLogger, logger } from "./lib/logger.js";
 import { runMigrations } from "./migrationRunner.js";
 import { PORT } from "./config.js";
@@ -155,8 +155,10 @@ app.use((err: Error & { statusCode?: number }, req: express.Request, res: expres
   });
 });
 
-runMigrations()
-  .then(() => {
+async function bootstrap() {
+  try {
+    await ensureDatabaseConnection();
+    await runMigrations();
     app.listen(PORT, () => {
       logger.info("🚀 ===== SERVIDOR FINANZAS APP =====");
       logger.info(`📡 API: http://localhost:${PORT}/api/health`);
@@ -164,10 +166,12 @@ runMigrations()
       logger.info("⚡ Estado: Servidor iniciado y listo");
       logger.info("=====================================");
     });
-  })
-  .catch((error) => {
+  } catch (error) {
     logger.error({ error }, "❌ ===== ERROR DE INICIALIZACIÓN =====");
     logger.error("💾 No se pudo inicializar la base de datos");
     logger.error("=====================================");
     process.exit(1);
-  });
+  }
+}
+
+bootstrap();

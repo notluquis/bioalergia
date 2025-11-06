@@ -6,6 +6,7 @@ import { formatRut } from "../../../lib/rut";
 import Button from "../../../components/Button";
 import Input from "../../../components/Input";
 import Alert from "../../../components/Alert";
+import { useToast } from "../../../context/ToastContext";
 import type { Counterpart, CounterpartAccount, CounterpartAccountSuggestion, CounterpartSummary } from "../types";
 import type { DbMovement } from "../../transactions/types";
 import { addCounterpartAccount, attachCounterpartRut, fetchAccountSuggestions, updateCounterpartAccount } from "../api";
@@ -73,6 +74,7 @@ export default function AssociatedAccounts({
   const [attachLoading, setAttachLoading] = useState(false);
   const [accountDetails, setAccountDetails] = useState<Record<string, AccountTransactionsState>>({});
   const [error, setError] = useState<string | null>(null);
+  const { success: toastSuccess, error: toastError } = useToast();
 
   useEffect(() => {
     if (!suggestionQuery.trim()) {
@@ -116,10 +118,12 @@ export default function AssociatedAccounts({
   async function handleAddAccount() {
     if (!selectedId) {
       setError("Guarda la contraparte antes de agregar cuentas");
+      toastError("Guarda la contraparte antes de agregar cuentas");
       return;
     }
     if (!accountForm.accountIdentifier.trim()) {
       setError("Ingresa un identificador de cuenta");
+      toastError("Ingresa un identificador de cuenta");
       return;
     }
     setAccountStatus("saving");
@@ -141,8 +145,10 @@ export default function AssociatedAccounts({
       setAccountSuggestions([]);
       setSuggestionQuery("");
       await onLoadSummary(selectedId, summaryRange.from, summaryRange.to);
+      toastSuccess("Cuenta asociada agregada");
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
+      toastError(err instanceof Error ? err.message : "No se pudo agregar la cuenta");
     } finally {
       setAccountStatus("idle");
     }
@@ -170,8 +176,10 @@ export default function AssociatedAccounts({
       if (selectedId) {
         await onLoadSummary(selectedId, summaryRange.from, summaryRange.to);
       }
+      toastSuccess("Concepto actualizado");
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
+      toastError(err instanceof Error ? err.message : "No se pudo actualizar el concepto");
     }
   }
 
@@ -215,10 +223,12 @@ export default function AssociatedAccounts({
   async function handleAttachRut(rut: string | null | undefined) {
     if (!selectedId) {
       setError("Selecciona una contraparte para vincular");
+      toastError("Selecciona una contraparte antes de vincular un RUT");
       return;
     }
     if (!rut) {
       setError("La sugerencia no contiene un RUT válido");
+      toastError("La sugerencia no contiene un RUT válido");
       return;
     }
     setAttachLoading(true);
@@ -242,8 +252,10 @@ export default function AssociatedAccounts({
       //   notes: updated.counterpart.notes ?? "",
       // });
       await onLoadSummary(selectedId, summaryRange.from, summaryRange.to);
+      toastSuccess("RUT vinculado correctamente");
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
+      toastError(err instanceof Error ? err.message : "No se pudo vincular el RUT");
     } finally {
       setAttachLoading(false);
     }
@@ -382,12 +394,13 @@ export default function AssociatedAccounts({
             rows: [],
           },
         }));
+        toastError(err instanceof Error ? err.message : "No se pudieron obtener los movimientos");
       }
     }
   }
 
   return (
-    <section className="space-y-5 p-6 bg-base-100">
+    <section className="surface-recessed space-y-5 p-6">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div className="space-y-1">
           <h2 className="text-lg font-semibold text-primary drop-shadow-sm">Cuentas asociadas</h2>
@@ -528,7 +541,7 @@ export default function AssociatedAccounts({
         </table>
       </div>
 
-      <div className="border border-base-300 bg-base-100 p-5">
+      <div className="surface-recessed border border-base-300/70 p-5">
         <h3 className="text-sm font-semibold text-primary drop-shadow-sm">Agregar cuenta</h3>
         <div className="mt-3 grid gap-3 md:grid-cols-2">
           <Input

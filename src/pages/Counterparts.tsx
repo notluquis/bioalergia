@@ -19,6 +19,7 @@ import Input from "../components/Input";
 import Button from "../components/Button";
 import { Card, PageHeader, Stack, Inline } from "../components/Layout";
 import { SUMMARY_RANGE_MONTHS } from "../features/counterparts/constants";
+import { useToast } from "../context/ToastContext";
 
 export default function CounterpartsPage() {
   const [counterparts, setCounterparts] = useState<Counterpart[]>([]);
@@ -33,50 +34,65 @@ export default function CounterpartsPage() {
   }));
   const [summary, setSummary] = useState<CounterpartSummary | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
+  const [detailLoading, setDetailLoading] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const { success: toastSuccess, error: toastError } = useToast();
 
   // Define selectCounterpart first (before any useEffect that depends on it)
-  const selectCounterpart = useCallback(async (id: number | null) => {
-    setError(null);
-    setSummary(null);
-    setDetail(null);
-    setSelectedId(id);
-    if (!id) {
-      return;
-    }
-    try {
-      const data = await fetchCounterpart(id);
-      setDetail(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    }
-  }, []);
-
-  const loadSummary = useCallback(async (counterpartId: number, from: string, to: string) => {
-    // Cancel previous request if any
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-
-    const controller = new AbortController();
-    abortControllerRef.current = controller;
-
-    setSummaryLoading(true);
-    try {
-      const data = await fetchCounterpartSummary(counterpartId, { from, to });
-      if (!controller.signal.aborted) {
-        setSummary(data);
+  const selectCounterpart = useCallback(
+    async (id: number | null) => {
+      setError(null);
+      setSelectedId(id);
+      if (!id) {
+        setDetail(null);
+        setSummary(null);
+        setDetailLoading(false);
+        return;
       }
-    } catch (err) {
-      if (!controller.signal.aborted) {
+      setSummary(null);
+      setDetailLoading(true);
+      try {
+        const data = await fetchCounterpart(id);
+        setDetail(data);
+      } catch (err) {
         setError(err instanceof Error ? err.message : String(err));
+        toastError(err instanceof Error ? err.message : "No se pudo cargar la contraparte");
+      } finally {
+        setDetailLoading(false);
       }
-    } finally {
-      if (!controller.signal.aborted) {
-        setSummaryLoading(false);
+    },
+    [toastError]
+  );
+
+  const loadSummary = useCallback(
+    async (counterpartId: number, from: string, to: string) => {
+      // Cancel previous request if any
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
       }
-    }
-  }, []);
+
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+
+      setSummaryLoading(true);
+      try {
+        const data = await fetchCounterpartSummary(counterpartId, { from, to });
+        if (!controller.signal.aborted) {
+          setSummary(data);
+        }
+      } catch (err) {
+        if (!controller.signal.aborted) {
+          setError(err instanceof Error ? err.message : String(err));
+          toastError("No se pudo calcular el resumen mensual");
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setSummaryLoading(false);
+        }
+      }
+    },
+    [toastError]
+  );
 
   // Load initial list of counterparts
   useEffect(() => {
@@ -129,11 +145,13 @@ export default function CounterpartsPage() {
         setCounterparts((prev) =>
           prev.map((item) => (item.id === id ? data.counterpart : item)).sort((a, b) => a.name.localeCompare(b.name))
         );
+        toastSuccess("Contraparte actualizada correctamente");
       } else {
         const data = await createCounterpart(payload);
         setDetail(data);
         id = data.counterpart.id;
         setCounterparts((prev) => [...prev, data.counterpart].sort((a, b) => a.name.localeCompare(b.name)));
+        toastSuccess("Contraparte creada correctamente");
       }
       setSelectedId(id);
       if (id) {
@@ -141,6 +159,7 @@ export default function CounterpartsPage() {
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
+      toastError(err instanceof Error ? err.message : "No se pudo guardar la contraparte");
     } finally {
       setFormStatus("idle");
     }
@@ -177,9 +196,10 @@ export default function CounterpartsPage() {
             onSave={handleSaveCounterpart}
             error={error}
             saving={formStatus === "saving"}
+            loading={detailLoading}
           />
 
-          {selectedId && detail && (
+          {selectedId && detail && !detailLoading && (
             <AssociatedAccounts
               selectedId={selectedId}
               detail={detail}

@@ -25,20 +25,25 @@ export function BottomNav() {
   };
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-base-100 border-t border-base-300 pb-safe-bottom flex flex-row items-stretch">
-      {NAV_ITEMS.map(({ path, icon: Icon, label }) => (
-        <button
-          key={path}
-          type="button"
-          onClick={() => navigate(path)}
-          className={`flex-1 flex flex-col items-center justify-center gap-1 px-2 py-2 min-h-11 transition-colors ${
-            isActive(path) ? "text-primary" : "text-base-content/60 active:text-base-content"
-          }`}
-        >
-          <Icon className="w-6 h-6" strokeWidth={isActive(path) ? 2.5 : 2} />
-          <span className="text-[10px] font-medium">{label}</span>
-        </button>
-      ))}
+    <nav className="md:hidden fixed bottom-5 left-1/2 z-50 w-[calc(100%-2.5rem)] max-w-lg -translate-x-1/2 px-2 pb-safe-bottom">
+      <div className="bottom-bar-glass flex items-stretch gap-1 px-4 py-2">
+        {NAV_ITEMS.map(({ path, icon: Icon, label }) => {
+          const active = isActive(path);
+          return (
+            <button
+              key={path}
+              type="button"
+              onClick={() => navigate(path)}
+              className={`flex flex-1 select-none flex-col items-center justify-center gap-1 rounded-full px-3 py-2 text-[10px] font-semibold transition-all ${
+                active ? "nav-item-active scale-105" : "nav-item-inactive"
+              }`}
+            >
+              <Icon className="h-5 w-5" strokeWidth={active ? 2.6 : 2} />
+              <span>{label}</span>
+            </button>
+          );
+        })}
+      </div>
     </nav>
   );
 }

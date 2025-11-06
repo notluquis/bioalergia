@@ -6,6 +6,7 @@ export interface TimesheetEntryWithEmployee {
   id: number;
   employee_id: number;
   employee_name: string;
+  employee_role: string | null;
   work_date: string;
   start_time: string; // HH:MM format
   end_time: string; // HH:MM format
@@ -25,6 +26,7 @@ export interface CalendarEventData {
   id: string;
   employeeId: number;
   employee_name: string;
+  employee_role: string | null;
   work_date: string;
   start_time: string;
   end_time: string;

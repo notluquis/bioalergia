@@ -10,22 +10,20 @@ export default function DashboardChart({
   loading: boolean;
 }) {
   if (loading) {
-    return <div className="p-6 text-sm text-base-content bg-base-100">Cargando actividad...</div>;
+    return <div className="surface-recessed p-6 text-sm text-base-content">Cargando actividad...</div>;
   }
 
   if (!data.length) {
-    return <div className="p-6 text-sm text-base-content bg-base-100">No se registran movimientos recientes.</div>;
+    return <div className="surface-recessed p-6 text-sm text-base-content">No se registran movimientos recientes.</div>;
   }
 
   const maxValue = Math.max(...data.map((row) => Math.max(row.in, row.out)));
 
   return (
-    <article className="space-y-4 p-6 bg-base-100">
+    <article className="surface-recessed space-y-4 p-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-lg font-semibold text-primary drop-shadow-sm">
-          Actividad de los últimos {RANGE_DAYS} días
-        </h2>
-        <span className="rounded-full border border-base-300 bg-base-200 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-base-content/70">
+        <h2 className="typ-subtitle text-base-content">Actividad de los últimos {RANGE_DAYS} días</h2>
+        <span className="typ-caption rounded-full border border-base-300 bg-base-200 px-3 py-1 text-base-content/70">
           Ingresos vs egresos
         </span>
       </div>

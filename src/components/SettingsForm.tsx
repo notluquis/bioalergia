@@ -366,7 +366,7 @@ export default function SettingsForm() {
               </div>
               <div className="flex flex-wrap items-center gap-4">
                 <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-xl border border-base-300 bg-base-100 p-2">
-                  <img src={displayedLogo} alt="Vista previa del logo" className="h-full w-full object-contain" />
+                  <img src={displayedLogo} alt="Vista previa del logo" className="brand-logo--settings" />
                 </div>
                 <div className="text-xs text-base-content/70">
                   <p>{logoPreview ? "Vista previa sin guardar" : "Logo actual"}</p>
