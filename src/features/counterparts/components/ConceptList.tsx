@@ -20,10 +20,7 @@ export default function ConceptList({ concepts }: ConceptListProps) {
               <span className="font-semibold text-primary">{fmtCLP(value)}</span>
             </div>
             <div className="h-2 overflow-hidden rounded-full border border-base-300 bg-base-200">
-              <div
-                className="h-full rounded-full bg-primary/70 shadow-[0_6px_16px_-12px_rgba(16,37,66,0.45)]"
-                style={{ width: `${width}%` }}
-              />
+              <div className="h-full rounded-full bg-primary/70 shadow-sm" style={{ width: `${width}%` }} />
             </div>
           </div>
         );

@@ -20,7 +20,7 @@ export default function RecentMovementsWidget({ rows }: { rows: DbMovement[] }) 
           {rows.map((row) => (
             <li
               key={row.id}
-              className="flex items-start justify-between gap-3 rounded-2xl border border-base-300 bg-base-200 px-4 py-3 shadow-[0_10px_24px_-16px_rgba(16,37,66,0.4)]"
+              className="flex items-start justify-between gap-3 rounded-2xl border border-base-300 bg-base-200 px-4 py-3 shadow-sm"
             >
               <div>
                 <p className="font-medium text-base-content">

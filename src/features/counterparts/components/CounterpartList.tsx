@@ -41,7 +41,7 @@ export default function CounterpartList({ counterparts, selectedId, onSelectCoun
                 onClick={() => onSelectCounterpart(item.id)}
                 className={`group w-full rounded-2xl border px-3 py-2 text-left transition-all ${
                   isActive
-                    ? "border-base-300 bg-primary/18 text-primary shadow-[0_14px_28px_-22px_rgba(14,100,183,0.8)]"
+                    ? "border-base-300 bg-primary/10 text-primary shadow-sm"
                     : "border-transparent bg-base-200 text-base-content hover:border-base-300 hover:bg-base-300"
                 }`}
               >

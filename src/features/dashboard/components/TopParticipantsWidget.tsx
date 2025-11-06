@@ -35,7 +35,7 @@ export default function TopParticipantsWidget({
             return (
               <li
                 key={`${item.participant}-${item.withdrawId ?? ""}`}
-                className="flex items-center justify-between gap-3 rounded-2xl border border-base-300 bg-base-200 px-4 py-3 shadow-[0_10px_24px_-16px_rgba(16,37,66,0.4)]"
+                className="flex items-center justify-between gap-3 rounded-2xl border border-base-300 bg-base-200 px-4 py-3 shadow-sm"
               >
                 <div>
                   <p className="font-medium text-base-content">{displayName}</p>

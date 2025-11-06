@@ -166,10 +166,11 @@ function applyBranding(next: AppSettings) {
 
 function colorToRgb(color: string) {
   // If it's a CSS variable or CSS function, return as-is for CSS to handle
+  // eslint-disable-next-line no-restricted-syntax
   if (color.includes("var(") || color.includes("oklch(") || color.includes("hsl(") || color.includes("rgb(")) {
     return color;
   }
-  // Otherwise, convert hex to rgb as before
+  // Otherwise, convert hex to rgb
   const hex = color.replace("#", "");
   const bigint = parseInt(hex.length === 3 ? hex.repeat(2) : hex, 16);
   const r = (bigint >> 16) & 255;

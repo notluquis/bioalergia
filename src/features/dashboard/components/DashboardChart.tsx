@@ -36,14 +36,8 @@ export default function DashboardChart({
           return (
             <div key={row.month} className="flex min-w-20 flex-col items-center gap-2">
               <div className="flex h-40 w-full items-end gap-2 rounded-xl border border-base-300 bg-base-200 p-2">
-                <div
-                  className="flex-1 rounded-full bg-emerald-500/80 shadow-[0_12px_24px_-15px_rgba(16,37,66,0.35)]"
-                  style={{ height: `${inHeight}px` }}
-                />
-                <div
-                  className="flex-1 rounded-full bg-rose-500/80 shadow-[0_12px_24px_-15px_rgba(16,37,66,0.35)]"
-                  style={{ height: `${outHeight}px` }}
-                />
+                <div className="flex-1 rounded-full bg-success/80 shadow-sm" style={{ height: `${inHeight}px` }} />
+                <div className="flex-1 rounded-full bg-error/80 shadow-sm" style={{ height: `${outHeight}px` }} />
               </div>
               <span className="text-xs font-medium text-base-content">{dayjs(row.month).format("MMM YY")}</span>
             </div>

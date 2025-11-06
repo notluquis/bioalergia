@@ -7,7 +7,6 @@ export default function GeneralSettingsPage() {
   return (
     <div className="space-y-6">
       <section className="relative overflow-hidden rounded-3xl border border-base-300 bg-base-200 p-6">
-
         <div className="relative flex flex-col gap-6 md:flex-row md:items-center">
           <div className="flex flex-1 flex-col gap-3">
             <div className="inline-flex items-center gap-3 rounded-full bg-base-200 px-4 py-2 text-xs font-semibold tracking-wide text-primary">

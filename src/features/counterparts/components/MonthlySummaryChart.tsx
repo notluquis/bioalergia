@@ -25,10 +25,7 @@ export default function MonthlySummaryChart({ data }: MonthlySummaryChartProps) 
             return (
               <div key={month} className="flex min-w-[72px] flex-col items-center gap-2">
                 <div className="flex h-40 w-full items-end rounded-2xl border border-base-300 bg-base-200 p-1">
-                  <div
-                    className="w-full rounded-full bg-primary/70 shadow-[0_12px_24px_-18px_rgba(16,37,66,0.4)]"
-                    style={{ height: `${height}px` }}
-                  />
+                  <div className="w-full rounded-full bg-primary/70 shadow-sm" style={{ height: `${height}px` }} />
                 </div>
                 <span className="text-xs font-medium text-base-content">{dayjs(month).format("MMM YY")}</span>
                 <span className="text-xs font-semibold text-primary">{fmtCLP(total)}</span>

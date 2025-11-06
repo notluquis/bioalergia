@@ -38,11 +38,7 @@ export function BalanceSummary({ report, loading, error }: BalanceSummaryProps) 
   return (
     <section className="space-y-4 p-6 bg-base-100">
       <h2 className="text-lg font-semibold text-primary drop-shadow-sm">Conciliación de saldo</h2>
-      {error && (
-        <p className="border-l-4 border-rose-300/80 bg-base-100 px-4 py-2 text-xs text-rose-700">
-          {error}
-        </p>
-      )}
+      {error && <p className="border-l-4 border-rose-300/80 bg-base-100 px-4 py-2 text-xs text-rose-700">{error}</p>}
       {loading ? (
         <p className="text-sm text-primary">Cargando conciliación...</p>
       ) : !report ? (

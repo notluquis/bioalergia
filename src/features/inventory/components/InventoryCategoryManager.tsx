@@ -87,7 +87,7 @@ export default function InventoryCategoryManager() {
           {categories.map((cat) => (
             <li
               key={cat.id}
-              className="rounded-xl border border-base-300 bg-base-200 px-3 py-2 text-sm font-medium text-base-content shadow-[0_10px_24px_-16px_rgba(16,37,66,0.4)]"
+              className="rounded-xl border border-base-300 bg-base-200 px-3 py-2 text-sm font-medium text-base-content shadow-sm"
             >
               {cat.name}
             </li>

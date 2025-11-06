@@ -346,7 +346,7 @@ export default function TimesheetExportPDF({
         <Button
           type="button"
           variant="primary"
-          className="px-4 py-2 rounded-xl text-sm font-semibold text-primary-content bg-primary hover:bg-primary/85 shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgba(14,100,183,0.35)]"
+          className="px-4 py-2 rounded-xl text-sm font-semibold text-primary-content bg-primary hover:bg-primary/85 shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary/35"
           onClick={() => handleExport(true)}
         >
           Exportar PDF
