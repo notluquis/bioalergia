@@ -3,8 +3,9 @@
  * Dedicated page for auditing employee work schedules and detecting overlaps
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
+import isoWeek from "dayjs/plugin/isoWeek";
 import "dayjs/locale/es";
 
 import { useAuth } from "../context/AuthContext";
@@ -16,6 +17,7 @@ import { useTimesheetAudit } from "../features/timesheets-audit/hooks/useTimeshe
 import { detectAllOverlaps } from "../features/timesheets-audit/utils/overlapDetection";
 import { useMonths } from "../features/timesheets/hooks/useMonths";
 
+dayjs.extend(isoWeek);
 dayjs.locale("es");
 
 export default function TimesheetAuditPage() {
@@ -23,6 +25,7 @@ export default function TimesheetAuditPage() {
 
   const { months, loading: loadingMonths } = useMonths();
   const [month, setMonth] = useState<string>("");
+  const [selectedWeek, setSelectedWeek] = useState<number | null>(null);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<number[]>([]);
   const [loadingEmployees, setLoadingEmployees] = useState(true);
@@ -61,7 +64,46 @@ export default function TimesheetAuditPage() {
     }
   }, [months, month]);
 
+  // Calculate available weeks for the selected month
+  const weeksInMonth = useMemo(() => {
+    if (!month) return [];
+
+    const [year, monthNum] = month.split("-");
+    const firstDay = dayjs(`${year}-${monthNum}-01`);
+    const lastDay = firstDay.endOf("month");
+
+    const weeks: Array<{ number: number; startDate: string; endDate: string }> = [];
+    let currentDay = firstDay;
+
+    while (currentDay.isBefore(lastDay) || currentDay.isSame(lastDay, "day")) {
+      const weekNumber = currentDay.isoWeek();
+      const weekStart = currentDay.startOf("isoWeek");
+      const weekEnd = currentDay.endOf("isoWeek");
+
+      // Only add weeks that have days in the current month
+      if (!weeks.some((w) => w.number === weekNumber)) {
+        weeks.push({
+          number: weekNumber,
+          startDate: weekStart.format("YYYY-MM-DD"),
+          endDate: weekEnd.format("YYYY-MM-DD"),
+        });
+      }
+
+      currentDay = currentDay.add(1, "day");
+    }
+
+    return weeks;
+  }, [month]);
+
+  // Set default week to first week of month
+  useEffect(() => {
+    if (weeksInMonth.length > 0 && selectedWeek === null && weeksInMonth[0]) {
+      setSelectedWeek(weeksInMonth[0].number);
+    }
+  }, [weeksInMonth, selectedWeek]);
+
   const monthLabel = month ? dayjs(month + "-01").format("MMMM YYYY") : "";
+  const selectedWeekInfo = weeksInMonth.find((w) => w.number === selectedWeek);
 
   // Detect overlaps for display
   const overlapsByDate = detectAllOverlaps(entries);
@@ -82,15 +124,17 @@ export default function TimesheetAuditPage() {
         </p>
       </div>
 
-      {/* Controls */}
-      <div className="grid gap-4 rounded-2xl border border-primary/15 bg-base-100 p-6 shadow-sm md:grid-cols-2 lg:grid-cols-3">
-        {/* Period Selector */}
+      {/* Period and Week Selection */}
+      <div className="grid gap-4 rounded-2xl border border-base-300 bg-base-100 p-6 shadow-sm md:grid-cols-2">
         <div className="flex flex-col gap-2">
-          <label className="text-xs font-semibold uppercase tracking-wide text-base-content/80">Período</label>
+          <label className="text-xs font-semibold uppercase tracking-wide text-base-content/80">Mes</label>
           <select
             value={month}
-            onChange={(e) => setMonth(e.target.value)}
-            className="select select-bordered select-sm"
+            onChange={(e) => {
+              setMonth(e.target.value);
+              setSelectedWeek(null);
+            }}
+            className="select select-bordered select-sm text-sm"
             disabled={loadingMonths}
           >
             {months.map((m) => (
@@ -101,18 +145,38 @@ export default function TimesheetAuditPage() {
           </select>
         </div>
 
-        {/* Employee Selector */}
-        <div className="md:col-span-2 lg:col-span-2">
-          {!loadingEmployees && (
-            <EmployeeAuditSelector
-              employees={employees}
-              selectedIds={selectedEmployeeIds}
-              onSelectionChange={setSelectedEmployeeIds}
-              loading={loadingEntries}
-            />
-          )}
+        <div className="flex flex-col gap-2">
+          <label className="text-xs font-semibold uppercase tracking-wide text-base-content/80">Semana</label>
+          <select
+            value={selectedWeek || ""}
+            onChange={(e) => setSelectedWeek(Number(e.target.value))}
+            className="select select-bordered select-sm text-sm"
+            disabled={weeksInMonth.length === 0}
+          >
+            {weeksInMonth.map((week) => {
+              const startDate = dayjs(week.startDate).format("D MMM");
+              const endDate = dayjs(week.endDate).format("D MMM");
+              return (
+                <option key={week.number} value={week.number}>
+                  Semana {week.number} ({startDate} - {endDate})
+                </option>
+              );
+            })}
+          </select>
         </div>
       </div>
+
+      {/* Employee Selection */}
+      {!loadingEmployees && (
+        <div className="rounded-2xl border border-base-300 bg-base-100 p-6 shadow-sm">
+          <EmployeeAuditSelector
+            employees={employees}
+            selectedIds={selectedEmployeeIds}
+            onSelectionChange={setSelectedEmployeeIds}
+            loading={loadingEntries}
+          />
+        </div>
+      )}
 
       {/* Statistics */}
       {selectedEmployeeIds.length > 0 && entries.length > 0 && (
@@ -151,7 +215,21 @@ export default function TimesheetAuditPage() {
 
       {/* Calendar */}
       {selectedEmployeeIds.length > 0 && (
-        <TimesheetAuditCalendar entries={entries} loading={loadingEntries} selectedEmployeeIds={selectedEmployeeIds} />
+        <>
+          {selectedWeekInfo && (
+            <div className="rounded-2xl border border-base-300 bg-base-100 p-4 shadow-sm">
+              <p className="text-sm font-medium text-base-content">
+                Semana {selectedWeekInfo.number}: {dayjs(selectedWeekInfo.startDate).format("D MMMM")} -{" "}
+                {dayjs(selectedWeekInfo.endDate).format("D MMMM YYYY")}
+              </p>
+            </div>
+          )}
+          <TimesheetAuditCalendar
+            entries={entries}
+            loading={loadingEntries}
+            selectedEmployeeIds={selectedEmployeeIds}
+          />
+        </>
       )}
 
       {/* Legend */}
