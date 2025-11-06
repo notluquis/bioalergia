@@ -20,6 +20,7 @@ import { registerInventoryRoutes } from "./routes/inventory.js";
 import { registerRoleRoutes } from "./routes/roles.js";
 import { registerLoanRoutes } from "./routes/loans.js";
 import { registerServiceRoutes } from "./routes/services.js";
+import { registerCalendarEventRoutes } from "./routes/calendar-events.js";
 import { registerAssetRoutes } from "./routes/assets.js";
 
 const app = express();
@@ -100,6 +101,7 @@ registerInventoryRoutes(app);
 registerRoleRoutes(app);
 registerLoanRoutes(app);
 registerServiceRoutes(app);
+registerCalendarEventRoutes(app);
 app.use("/api/supplies", suppliesRouter);
 registerAssetRoutes(app);
 
@@ -167,26 +169,34 @@ app.get(/^(?!\/api).*$/, (_req, res) => {
 });
 // --- End Production Frontend Serving ---
 
-app.use((err: Error & { statusCode?: number; code?: string }, req: express.Request, res: express.Response) => {
-  if (isTransientConnectionError(err)) {
-    const requestLogger = getRequestLogger(req);
-    requestLogger.warn({ err }, "Transient database error detected");
-    ensureDatabaseConnection().catch((reconnectError) =>
-      logger.error({ reconnectError }, "[db] Failed to recover connection after transient error")
-    );
-    return res.status(503).json({
+app.use(
+  (
+    err: Error & { statusCode?: number; code?: string },
+    req: express.Request,
+    res: express.Response,
+    _next: express.NextFunction
+  ) => {
+    void _next;
+    if (isTransientConnectionError(err)) {
+      const requestLogger = getRequestLogger(req);
+      requestLogger.warn({ err }, "Transient database error detected");
+      ensureDatabaseConnection().catch((reconnectError) =>
+        logger.error({ reconnectError }, "[db] Failed to recover connection after transient error")
+      );
+      return res.status(503).json({
+        status: "error",
+        message: "Estamos reanudando la conexión a la base de datos. Intenta nuevamente en unos segundos.",
+      });
+    }
+
+    getRequestLogger(req).error({ err }, "Unhandled server error");
+    const status = typeof err.statusCode === "number" ? err.statusCode : 500;
+    res.status(status).json({
       status: "error",
-      message: "Estamos reanudando la conexión a la base de datos. Intenta nuevamente en unos segundos.",
+      message: err.message || "Error inesperado en el servidor",
     });
   }
-
-  getRequestLogger(req).error({ err }, "Unhandled server error");
-  const status = typeof err.statusCode === "number" ? err.statusCode : 500;
-  res.status(status).json({
-    status: "error",
-    message: err.message || "Error inesperado en el servidor",
-  });
-});
+);
 
 let serverStarted = false;
 

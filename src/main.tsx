@@ -33,6 +33,12 @@ const ServicesPage = lazy(() => import("./pages/ServicesOverviewPage"));
 const ServicesAgendaPage = lazy(() => import("./pages/ServicesAgendaPage"));
 const ServicesCreatePage = lazy(() => import("./pages/ServicesCreatePage"));
 const ServicesTemplatesPage = lazy(() => import("./pages/ServicesTemplatesPage"));
+const CalendarSummaryPage = lazy(() => import("./pages/CalendarSummaryPage"));
+const CalendarSchedulePage = lazy(() => import("./pages/CalendarSchedulePage"));
+const CalendarDailyPage = lazy(() => import("./pages/CalendarDailyPage"));
+const CalendarHeatmapPage = lazy(() => import("./pages/CalendarHeatmapPage"));
+const CalendarClassificationPage = lazy(() => import("./pages/CalendarClassificationPage"));
+const CalendarSyncHistoryPage = lazy(() => import("./pages/CalendarSyncHistoryPage"));
 
 const SuppliesPage = lazy(() => import("./pages/Supplies"));
 const InventoryPage = lazy(() => import("./pages/Inventory"));
@@ -341,9 +347,3 @@ if ("serviceWorker" in navigator && import.meta.env.PROD) {
       });
   });
 }
-const CalendarSummaryPage = lazy(() => import("./pages/CalendarSummaryPage"));
-const CalendarSchedulePage = lazy(() => import("./pages/CalendarSchedulePage"));
-const CalendarDailyPage = lazy(() => import("./pages/CalendarDailyPage"));
-const CalendarHeatmapPage = lazy(() => import("./pages/CalendarHeatmapPage"));
-const CalendarClassificationPage = lazy(() => import("./pages/CalendarClassificationPage"));
-const CalendarSyncHistoryPage = lazy(() => import("./pages/CalendarSyncHistoryPage"));
