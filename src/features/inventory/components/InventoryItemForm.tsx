@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { InventoryCategory, InventoryItem } from "../types";
 import Button from "../../../components/Button";
+import Input from "../../../components/Input";
 import { getInventoryCategories } from "../api";
 
 interface InventoryItemFormProps {
@@ -15,6 +16,7 @@ export default function InventoryItemForm({ item, onSave, onCancel, saving }: In
     ...item,
     category_id: item?.category_id ?? null,
     description: item?.description ?? "",
+    current_stock: item?.current_stock ?? 0,
   });
   const [categories, setCategories] = useState<InventoryCategory[]>([]);
 
@@ -30,52 +32,48 @@ export default function InventoryItemForm({ item, onSave, onCancel, saving }: In
   return (
     <form onSubmit={handleSubmit} className="space-y-4 text-sm">
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-wide text-base-content/60">
-          Nombre del Item
-          <input
-            type="text"
-            value={form.name ?? ""}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
-            required
-            className="rounded border px-3 py-2"
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-wide text-base-content/60">
-          Categoría
-          <select
-            value={form.category_id ?? ""}
-            onChange={(e) => setForm({ ...form, category_id: e.target.value ? Number(e.target.value) : null })}
-            className="rounded border px-3 py-2"
-          >
-            <option value="">Sin categoría</option>
-            {categories.map((cat) => (
-              <option key={cat.id} value={cat.id}>
-                {cat.name}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
-      <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-wide text-base-content/60">
-        Descripción
-        <textarea
-          value={form.description ?? ""}
-          onChange={(e) => setForm({ ...form, description: e.target.value })}
-          className="rounded border px-3 py-2"
-          rows={3}
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-wide text-base-content/60">
-        Stock Inicial
-        <input
-          type="number"
-          value={form.current_stock ?? 0}
-          onChange={(e) => setForm({ ...form, current_stock: Number(e.target.value) })}
+        <Input
+          label="Nombre del item"
+          type="text"
+          value={form.name ?? ""}
+          onChange={(event: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, name: event.target.value })}
           required
-          className="rounded border px-3 py-2"
-          disabled={!!item} // Disable if editing
         />
-      </label>
+        <Input
+          label="Categoría"
+          type="select"
+          value={form.category_id != null ? String(form.category_id) : ""}
+          onChange={(event: React.ChangeEvent<HTMLSelectElement>) =>
+            setForm({ ...form, category_id: event.target.value ? Number(event.target.value) : null })
+          }
+        >
+          <option value="">Sin categoría</option>
+          {categories.map((cat) => (
+            <option key={cat.id} value={cat.id}>
+              {cat.name}
+            </option>
+          ))}
+        </Input>
+      </div>
+      <Input
+        label="Descripción"
+        type="textarea"
+        rows={3}
+        value={form.description ?? ""}
+        onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) =>
+          setForm({ ...form, description: event.target.value })
+        }
+      />
+      <Input
+        label="Stock inicial"
+        type="number"
+        value={form.current_stock ?? 0}
+        onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+          setForm({ ...form, current_stock: Number(event.target.value) })
+        }
+        required
+        disabled={!!item} // Disable if editing
+      />
       <div className="flex items-center justify-end gap-3 pt-4">
         <Button type="button" variant="secondary" onClick={onCancel}>
           Cancelar

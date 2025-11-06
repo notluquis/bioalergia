@@ -30,6 +30,9 @@ const TimesheetAuditPage = lazy(() => import("./pages/TimesheetAuditPage"));
 const CounterpartsPage = lazy(() => import("./pages/Counterparts"));
 const LoansPage = lazy(() => import("./pages/Loans"));
 const ServicesPage = lazy(() => import("./pages/ServicesOverviewPage"));
+const ServicesAgendaPage = lazy(() => import("./pages/ServicesAgendaPage"));
+const ServicesCreatePage = lazy(() => import("./pages/ServicesCreatePage"));
+const ServicesTemplatesPage = lazy(() => import("./pages/ServicesTemplatesPage"));
 
 const SuppliesPage = lazy(() => import("./pages/Supplies"));
 const InventoryPage = lazy(() => import("./pages/Inventory"));
@@ -136,6 +139,30 @@ const router = createBrowserRouter([
         ),
       },
       {
+        path: "/services/agenda",
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <ServicesAgendaPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: "/services/create",
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <ServicesCreatePage />
+          </Suspense>
+        ),
+      },
+      {
+        path: "/services/templates",
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <ServicesTemplatesPage />
+          </Suspense>
+        ),
+      },
+      {
         path: "/timesheets",
         element: (
           <Suspense fallback={<PageLoader />}>
@@ -219,6 +246,54 @@ const router = createBrowserRouter([
           </Suspense>
         ),
       },
+      {
+        path: "/calendar/summary",
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <CalendarSummaryPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: "/calendar/schedule",
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <CalendarSchedulePage />
+          </Suspense>
+        ),
+      },
+      {
+        path: "/calendar/daily",
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <CalendarDailyPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: "/calendar/heatmap",
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <CalendarHeatmapPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: "/calendar/classify",
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <CalendarClassificationPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: "/calendar/history",
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <CalendarSyncHistoryPage />
+          </Suspense>
+        ),
+      },
     ],
   },
   { path: "*", element: <Navigate to="/" replace /> },
@@ -266,3 +341,9 @@ if ("serviceWorker" in navigator && import.meta.env.PROD) {
       });
   });
 }
+const CalendarSummaryPage = lazy(() => import("./pages/CalendarSummaryPage"));
+const CalendarSchedulePage = lazy(() => import("./pages/CalendarSchedulePage"));
+const CalendarDailyPage = lazy(() => import("./pages/CalendarDailyPage"));
+const CalendarHeatmapPage = lazy(() => import("./pages/CalendarHeatmapPage"));
+const CalendarClassificationPage = lazy(() => import("./pages/CalendarClassificationPage"));
+const CalendarSyncHistoryPage = lazy(() => import("./pages/CalendarSyncHistoryPage"));

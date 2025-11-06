@@ -5,6 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import { useSettings } from "../context/SettingsContext";
 import { logger } from "../lib/logger";
 import { isCashbackCandidate } from "../../shared/cashback";
+import Button from "../components/Button";
 import { TransactionsFilters } from "../features/transactions/components/TransactionsFilters";
 import { TransactionsColumnToggles } from "../features/transactions/components/TransactionsColumnToggles";
 import { TransactionsTable } from "../features/transactions/components/TransactionsTable";
@@ -139,8 +140,8 @@ export default function TransactionsMovements() {
 
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div className="space-y-2">
-              <h1 className="text-2xl font-bold text-primary">Movimientos en base</h1>
-              <p className="max-w-2xl text-sm text-base-content">
+              <h1 className="typ-title text-base-content">Movimientos en base</h1>
+              <p className="max-w-2xl typ-body text-base-content/70">
                 Los datos provienen de la tabla <code>mp_transactions</code>. Ajusta el saldo inicial para recalcular el
                 saldo acumulado. Para consultas o soporte escribe a<strong> {settings.supportEmail}</strong>.
               </p>
@@ -152,7 +153,7 @@ export default function TransactionsMovements() {
                   type="text"
                   value={initialBalance}
                   onChange={(event) => setInitialBalance(event.target.value)}
-                  className="rounded border px-3 py-2 text-sm"
+                  className="input input-bordered input-sm bg-base-100/90 text-base-content"
                   placeholder="0"
                 />
               </label>
@@ -170,7 +171,7 @@ export default function TransactionsMovements() {
                     setPage(1);
                     setAppliedFilters(nextFilters);
                   }}
-                  className="rounded border px-2 py-1"
+                  className="select select-bordered select-sm bg-base-100/90 text-base-content"
                 >
                   <option value="custom">Personalizado</option>
                   {quickMonths.map((month) => (
@@ -180,14 +181,15 @@ export default function TransactionsMovements() {
                   ))}
                 </select>
               </label>
-              <button
+              <Button
                 type="button"
+                variant="primary"
                 onClick={() => transactionsQuery.refetch()}
                 disabled={loading}
-                className="inline-flex items-center justify-center rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white shadow disabled:cursor-not-allowed disabled:opacity-60"
+                className="btn-sm"
               >
                 {loading ? "Actualizando..." : "Actualizar"}
-              </button>
+              </Button>
               <label className="flex items-center gap-2 text-xs text-base-content">
                 <input
                   type="checkbox"
@@ -199,6 +201,7 @@ export default function TransactionsMovements() {
                     setPage(1);
                     setAppliedFilters(nextFilters);
                   }}
+                  className="checkbox checkbox-primary checkbox-sm"
                 />
                 Mostrar montos
               </label>

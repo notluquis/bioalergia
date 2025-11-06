@@ -69,10 +69,34 @@ export function useToast() {
 
   const { showToast } = context;
 
-  return {
-    showToast,
-    success: (message: string, title = "Éxito") => showToast({ message, title, variant: "success" }),
-    error: (message: string, title = "Error") => showToast({ message, title, variant: "error" }),
-    info: (message: string, title = "Información") => showToast({ message, title, variant: "info" }),
-  };
+  const success = useCallback(
+    (message: string, title = "Éxito") => {
+      showToast({ message, title, variant: "success" });
+    },
+    [showToast]
+  );
+
+  const error = useCallback(
+    (message: string, title = "Error") => {
+      showToast({ message, title, variant: "error" });
+    },
+    [showToast]
+  );
+
+  const info = useCallback(
+    (message: string, title = "Información") => {
+      showToast({ message, title, variant: "info" });
+    },
+    [showToast]
+  );
+
+  return useMemo(
+    () => ({
+      showToast,
+      success,
+      error,
+      info,
+    }),
+    [showToast, success, error, info]
+  );
 }

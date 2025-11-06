@@ -101,58 +101,94 @@ export function useServicesOverview() {
     selectedIdRef.current = selectedId;
   }, [selectedId]);
 
-  // Consolidated effect: load services list, then load all details
+  // Consolidated effect: load services list, then load all details with graceful degradation
   useEffect(() => {
     if (!canView) return;
 
     let cancelled = false;
 
     async function loadAll() {
-      // First, load services list
       setLoadingList(true);
       setGlobalError(null);
+      setAggregatedError(null);
+
       try {
         const response = await fetchServices();
         if (cancelled) return;
+
         setServices(response.services);
 
-        // Then load all details for those services
         if (response.services.length === 0) {
           setAllDetails({});
-          setLoadingList(false);
+          selectedIdRef.current = null;
+          setSelectedId(null);
+          setDetail(null);
           return;
         }
 
         setAggregatedLoading(true);
-        setAggregatedError(null);
 
-        const results = await Promise.all(
+        const detailResults = await Promise.allSettled(
           response.services.map((service) =>
-            fetchServiceDetail(service.public_id)
-              .then((detailResponse) => ({ id: service.public_id, detail: detailResponse }))
-              .catch((error) => {
-                logger.error("[services] aggregated:error", error);
-                throw error;
-              })
+            fetchServiceDetail(service.public_id).then((detailResponse) => ({
+              id: service.public_id,
+              detail: detailResponse,
+            }))
           )
         );
 
         if (cancelled) return;
 
         const next: Record<string, ServiceDetailResponse> = {};
-        results.forEach(({ id, detail: detailResponse }) => {
-          next[id] = detailResponse;
+        const failures: Array<{ id: string; reason: unknown }> = [];
+
+        detailResults.forEach((result, index) => {
+          if (result.status === "fulfilled") {
+            next[result.value.id] = result.value.detail;
+          } else {
+            const failedService = response.services[index];
+            failures.push({ id: failedService.public_id, reason: result.reason });
+            logger.error("[services] aggregated:error", {
+              serviceId: failedService.public_id,
+              error: result.reason,
+            });
+          }
         });
+
         setAllDetails(next);
 
-        // Auto-select first service if none selected
-        if (!selectedIdRef.current && results.length) {
-          const firstResult = results[0];
-          if (firstResult) {
-            selectedIdRef.current = firstResult.id;
-            setSelectedId(firstResult.id);
-            setDetail(firstResult.detail);
+        if (failures.length) {
+          setAggregatedError(
+            failures.length === response.services.length
+              ? "No se pudo cargar el detalle de los servicios. Intenta refrescar la vista."
+              : `No se pudo cargar el detalle de ${failures.length} servicio(s).`
+          );
+        }
+
+        const currentSelection = selectedIdRef.current;
+        const hasCurrentDetail = currentSelection ? Boolean(next[currentSelection]) : false;
+
+        if (hasCurrentDetail) {
+          setDetail(next[currentSelection!]);
+          return;
+        }
+
+        const firstWithDetail = response.services.find((service) => next[service.public_id]);
+        const fallbackService = firstWithDetail ?? response.services[0];
+
+        if (fallbackService) {
+          selectedIdRef.current = fallbackService.public_id;
+          setSelectedId(fallbackService.public_id);
+          const detailCandidate = next[fallbackService.public_id];
+          if (detailCandidate) {
+            setDetail(detailCandidate);
+          } else if (!cancelled) {
+            await loadDetail(fallbackService.public_id);
           }
+        } else {
+          selectedIdRef.current = null;
+          setSelectedId(null);
+          setDetail(null);
         }
       } catch (error) {
         if (cancelled) return;
@@ -172,7 +208,7 @@ export function useServicesOverview() {
     return () => {
       cancelled = true;
     };
-  }, [canView]);
+  }, [canView, loadDetail]);
 
   // Separate effect for selected detail (only runs when selection changes)
   useEffect(() => {

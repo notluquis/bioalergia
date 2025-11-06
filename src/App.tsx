@@ -174,15 +174,15 @@ export default function App() {
   // Preline runtime removed: we avoid optional runtime helpers and rely on Tailwind + DaisyUI utilities
 
   return (
-    <div className="layout-container relative flex min-h-screen w-full gap-6 px-4 py-6 text-base-content sm:px-6 lg:px-10 bg-gradient-to-br from-base-200/55 via-base-100 to-base-100 dark:from-neutral-950/95 dark:via-neutral-950 dark:to-neutral-900 transition-colors duration-300">
+    <div className="layout-shell relative mx-auto flex min-h-screen w-full max-w-[1600px] gap-6 px-4 py-6 text-base-content transition-colors duration-300 sm:px-6 lg:px-10">
       {/* Hamburger button: always visible */}
       <button
         type="button"
-        className={`apple-nav-toggle fixed left-4 top-6 z-40`}
+        className="apple-nav-toggle fixed left-4 top-[clamp(1rem,env(safe-area-inset-top,0px)+1rem,2.75rem)] z-40 md:hidden"
         onClick={toggleSidebar}
         aria-label={sidebarOpen ? "Cerrar menú" : "Abrir menú"}
         aria-expanded={sidebarOpen}
-        aria-controls="app-sidebar"
+        aria-controls={sidebarOpen || !isMobile ? "app-sidebar" : undefined}
       >
         {sidebarOpen ? (
           <svg
@@ -216,64 +216,68 @@ export default function App() {
       )}
 
       {/* Sidebar: animated, overlay on mobile, collapsible on desktop */}
-      <aside
-        id="app-sidebar"
-        className={`surface-elevated flex h-full w-[min(280px,90vw)] shrink-0 flex-col overflow-y-auto p-5 text-sm text-base-content shadow-xl
-          fixed inset-y-0 left-0 z-50 transition-transform duration-300
-          ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
-          md:static md:h-[calc(100vh-6rem)] md:translate-x-0 md:z-auto md:rounded-3xl md:p-5 md:shadow-xl md:sticky md:top-6
-          ${!sidebarOpen && !isMobile ? "hidden" : ""}`}
-        style={{ maxWidth: "100vw" }}
-      >
-        <div className="surface-recessed flex h-16 items-center justify-center px-3 shadow-inner">
-          <img
-            src={settings.logoUrl || "/public/logo_sin_eslogan.png"}
-            alt="Logo"
-            className="brand-logo"
-            onError={(e) => {
-              e.currentTarget.src = "/public/logo_sin_eslogan.png";
-            }}
-          />
-        </div>
-        <nav className="muted-scrollbar mt-4 flex-1 overflow-y-auto pr-2 pb-4">
-          {navigation.map((section) => (
-            <div key={section.title} className="mb-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-base-content/70 mb-2">{section.title}</p>
-              <ul className="menu menu-compact bg-transparent p-0">
-                {section.items.map((item) => (
-                  <li key={item.to}>
-                    <NavLink
-                      to={item.to}
-                      className={({ isActive }) =>
-                        `flex w-full items-center justify-between rounded-xl px-3 py-2 text-sm font-semibold transition-all ${
-                          isActive
-                            ? "active text-primary bg-primary/10"
-                            : "text-base-content hover:text-primary hover:bg-primary/5"
-                        }`
-                      }
-                      onClick={() => {
-                        if (isMobile) setSidebarOpen(false);
-                      }}
-                    >
-                      {item.label}
-                    </NavLink>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </nav>
-        <div className="surface-recessed mt-6 space-y-1 p-3 text-xs text-base-content/70 shadow-inner">
-          <p className="text-xs font-semibold uppercase tracking-wide text-base-content">Versión</p>
-          <p className="font-semibold text-base-content">{APP_VERSION}</p>
-          <p className="text-xs text-base-content/50">Build: {buildLabel}</p>
-        </div>
-      </aside>
+      {(sidebarOpen || !isMobile) && (
+        <aside
+          id="app-sidebar"
+          className={`surface-elevated backdrop-blur-xl flex h-full w-[min(280px,92vw)] shrink-0 flex-col overflow-y-auto rounded-3xl border border-base-300/40 p-5 text-sm text-base-content shadow-xl
+            fixed inset-y-0 left-0 z-50 transition-transform duration-300
+            ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
+            md:static md:top-6 md:z-auto md:h-[calc(100vh-6rem)] md:translate-x-0 md:shadow-lg
+            ${!sidebarOpen && !isMobile ? "hidden" : ""}`}
+          style={{ maxWidth: "100vw" }}
+        >
+          <div className="surface-recessed flex h-16 items-center justify-center px-3 shadow-inner">
+            <img
+              src={settings.logoUrl || "/public/logo_sin_eslogan.png"}
+              alt="Logo"
+              className="brand-logo"
+              onError={(e) => {
+                e.currentTarget.src = "/public/logo_sin_eslogan.png";
+              }}
+            />
+          </div>
+          <nav className="muted-scrollbar mt-4 flex-1 overflow-y-auto pr-2 pb-4">
+            {navigation.map((section) => (
+              <div key={section.title} className="mb-3">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-base-content/70">
+                  {section.title}
+                </p>
+                <ul className="menu menu-compact bg-transparent p-0">
+                  {section.items.map((item) => (
+                    <li key={item.to}>
+                      <NavLink
+                        to={item.to}
+                        className={({ isActive }) =>
+                          `flex w-full items-center justify-between rounded-xl px-3 py-2 text-sm font-semibold transition-all ${
+                            isActive
+                              ? "active text-primary bg-primary/10"
+                              : "text-base-content hover:text-primary hover:bg-primary/5"
+                          }`
+                        }
+                        onClick={() => {
+                          if (isMobile) setSidebarOpen(false);
+                        }}
+                      >
+                        {item.label}
+                      </NavLink>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </nav>
+          <div className="surface-recessed mt-6 space-y-1 p-3 text-xs text-base-content/70 shadow-inner">
+            <p className="text-xs font-semibold uppercase tracking-wide text-base-content">Versión</p>
+            <p className="font-semibold text-base-content">{APP_VERSION}</p>
+            <p className="text-xs text-base-content/50">Build: {buildLabel}</p>
+          </div>
+        </aside>
+      )}
 
       {/* Main content */}
-      <div className="layout-container flex flex-1 flex-col gap-6 min-w-0 pb-20 md:pb-0">
+      <div className="layout-container flex min-w-0 flex-1 flex-col gap-6 pb-[110px] md:pb-0">
         {/* min-w-0 permite que se encoja, pb-20 en mobile para el bottom nav */}
-        <header className="surface-elevated flex items-center justify-between px-6 py-4">
+        <header className="surface-elevated flex items-center justify-between rounded-3xl px-6 py-4 shadow-md">
           <h1 className="text-xl font-semibold text-base-content drop-shadow-sm">{title}</h1>
           <div className="flex items-center gap-4">
             <ThemeToggle />
@@ -294,8 +298,8 @@ export default function App() {
           </div>
         </header>
 
-        <main className="flex-1 rounded-3xl">
-          <div className="surface-recessed h-full px-6 py-6">
+        <main className="flex-1 rounded-[2.25rem]">
+          <div className="surface-recessed h-full rounded-[2.25rem] px-4 py-6 shadow-inner sm:px-6">
             <div className="muted-scrollbar h-full overflow-auto">
               <Outlet />
             </div>

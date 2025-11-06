@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 import dayjs from "dayjs";
 import {
+  attachCounterpartRut,
   createCounterpart,
   fetchCounterpart,
   fetchCounterpartSummary,
@@ -20,8 +21,12 @@ import Button from "../components/Button";
 import { Card, PageHeader, Stack, Inline } from "../components/Layout";
 import { SUMMARY_RANGE_MONTHS } from "../features/counterparts/constants";
 import { useToast } from "../context/ToastContext";
+import { normalizeRut } from "../lib";
 
 export default function CounterpartsPage() {
+  const pendingDetailRequestRef = useRef(0);
+  const currentDetailRef = useRef<Counterpart | null>(null);
+  const selectedIdRef = useRef<number | null>(null);
   const [counterparts, setCounterparts] = useState<Counterpart[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [detail, setDetail] = useState<{ counterpart: Counterpart; accounts: CounterpartAccount[] } | null>(null);
@@ -36,29 +41,54 @@ export default function CounterpartsPage() {
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
-  const { success: toastSuccess, error: toastError } = useToast();
+  const { success: toastSuccess, error: toastError, info: toastInfo } = useToast();
+
+  useEffect(() => {
+    currentDetailRef.current = detail?.counterpart ?? null;
+  }, [detail]);
+
+  useEffect(() => {
+    selectedIdRef.current = selectedId;
+  }, [selectedId]);
 
   // Define selectCounterpart first (before any useEffect that depends on it)
   const selectCounterpart = useCallback(
-    async (id: number | null) => {
+    async (id: number | null, options: { force?: boolean } = {}) => {
       setError(null);
       setSelectedId(id);
       if (!id) {
+        pendingDetailRequestRef.current += 1;
+        currentDetailRef.current = null;
+        selectedIdRef.current = null;
         setDetail(null);
         setSummary(null);
         setDetailLoading(false);
         return;
       }
-      setSummary(null);
+
+      const currentDetail = currentDetailRef.current;
+      if (!options.force && currentDetail && currentDetail.id === id && selectedIdRef.current === id) {
+        return;
+      }
+
+      const requestId = pendingDetailRequestRef.current + 1;
+      pendingDetailRequestRef.current = requestId;
       setDetailLoading(true);
       try {
         const data = await fetchCounterpart(id);
-        setDetail(data);
+        if (pendingDetailRequestRef.current === requestId) {
+          setDetail(data);
+        }
       } catch (err) {
-        setError(err instanceof Error ? err.message : String(err));
-        toastError(err instanceof Error ? err.message : "No se pudo cargar la contraparte");
+        if (pendingDetailRequestRef.current === requestId) {
+          const message = err instanceof Error ? err.message : String(err);
+          setError(message);
+          toastError(message || "No se pudo cargar la contraparte");
+        }
       } finally {
-        setDetailLoading(false);
+        if (pendingDetailRequestRef.current === requestId) {
+          setDetailLoading(false);
+        }
       }
     },
     [toastError]
@@ -101,16 +131,13 @@ export default function CounterpartsPage() {
       const list = await fetchCounterparts();
       if (cancelled) return;
       setCounterparts(list);
-      if (list.length) {
-        const firstCounterpart = list[0];
-        if (firstCounterpart?.id) selectCounterpart(firstCounterpart.id);
-      }
     }
     load().catch((err) => {
       if (!cancelled) setError(err instanceof Error ? err.message : String(err));
     });
     return () => {
       cancelled = true;
+      pendingDetailRequestRef.current += 1;
     };
   }, [selectCounterpart]);
 
@@ -133,11 +160,15 @@ export default function CounterpartsPage() {
   async function handleSaveCounterpart(payload: CounterpartUpsertPayload) {
     setFormStatus("saving");
     setError(null);
+    const normalizedRut = normalizeRut(payload.rut ?? null);
+    const previousRut = normalizeRut(detail?.counterpart?.rut ?? null);
+    const previousSelectedId = selectedIdRef.current;
     try {
       if (!payload.name) {
         throw new Error("El nombre es obligatorio");
       }
       let id = selectedId;
+      let created = false;
       if (id) {
         const data = await updateCounterpart(id, payload);
         setDetail(data);
@@ -150,12 +181,27 @@ export default function CounterpartsPage() {
         const data = await createCounterpart(payload);
         setDetail(data);
         id = data.counterpart.id;
+        created = true;
         setCounterparts((prev) => [...prev, data.counterpart].sort((a, b) => a.name.localeCompare(b.name)));
         toastSuccess("Contraparte creada correctamente");
       }
-      setSelectedId(id);
+
       if (id) {
-        await loadSummary(id, summaryRange.from, summaryRange.to);
+        const shouldAttachByRut = normalizedRut && (created || normalizedRut !== previousRut);
+        if (shouldAttachByRut) {
+          try {
+            await attachCounterpartRut(id, normalizedRut);
+            toastInfo("Cuentas detectadas vinculadas automáticamente");
+          } catch (attachError) {
+            const message =
+              attachError instanceof Error ? attachError.message : "No se pudieron vincular las cuentas detectadas";
+            toastError(message);
+          }
+        }
+        await selectCounterpart(id, { force: true });
+        if (previousSelectedId === id) {
+          await loadSummary(id, summaryRange.from, summaryRange.to);
+        }
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -174,6 +220,13 @@ export default function CounterpartsPage() {
     return Array.from(map.entries()).sort((a, b) => b[1] - a[1]);
   }, [summary]);
 
+  const handleSelectCounterpart = useCallback(
+    (id: number | null) => {
+      void selectCounterpart(id);
+    },
+    [selectCounterpart]
+  );
+
   return (
     <Stack spacing="lg">
       <PageHeader
@@ -186,7 +239,7 @@ export default function CounterpartsPage() {
           <CounterpartList
             counterparts={counterparts}
             selectedId={selectedId}
-            onSelectCounterpart={selectCounterpart}
+            onSelectCounterpart={handleSelectCounterpart}
           />
         </div>
 
@@ -205,6 +258,7 @@ export default function CounterpartsPage() {
               detail={detail}
               summary={summary}
               summaryRange={summaryRange}
+              summaryLoading={summaryLoading}
               onLoadSummary={loadSummary}
             />
           )}

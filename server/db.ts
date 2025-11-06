@@ -328,7 +328,7 @@ const REQUIRED_ENV = ["DB_HOST", "DB_USER", "DB_PASSWORD", "DB_NAME"] as const;
 
 let pool: Pool | null = null;
 
-function isTransientConnectionError(error: unknown) {
+export function isTransientConnectionError(error: unknown) {
   const code = (error as { code?: string } | undefined)?.code;
   return (
     code === "PROTOCOL_CONNECTION_LOST" ||

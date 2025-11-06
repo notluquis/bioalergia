@@ -48,15 +48,15 @@ export default function Home() {
   }, [stats]);
 
   return (
-    <section className="space-y-6">
-      <header className="surface-elevated space-y-2 p-6">
+    <section className="flex flex-col gap-6">
+      <header className="surface-elevated space-y-2 rounded-3xl p-6 shadow-lg">
         <h1 className="typ-title text-base-content">Panel financiero</h1>
         <p className="typ-body text-base-content/70">
           Resumen rápido de los últimos {RANGE_DAYS} días con accesos directos a tus vistas principales.
         </p>
       </header>
 
-      <section className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
+      <section className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-4">
         <MetricCard title="Ingresos" value={totals.in} accent="emerald" loading={statsLoading} />
         <MetricCard title="Egresos" value={totals.out} accent="rose" loading={statsLoading} />
         <MetricCard
@@ -69,7 +69,7 @@ export default function Home() {
 
       {statsError && <Alert variant="error">{statsError}</Alert>}
 
-      <section className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] auto-rows-fr">
+      <section className="grid auto-rows-min gap-6 lg:grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)]">
         <div className="space-y-6 min-w-0">
           <DashboardChart data={stats?.monthly ?? []} loading={statsLoading} />
           <QuickActions />
@@ -80,7 +80,7 @@ export default function Home() {
         </aside>
       </section>
 
-      <section className="grid gap-6 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
+      <section className="grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-6">
         <ShortcutCard
           title="Subir movimientos"
           description="Carga los nuevos CSV de Mercado Pago y sincronízalos con la base de datos."

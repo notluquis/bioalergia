@@ -1,7 +1,8 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState, type ChangeEvent } from "react";
 import dayjs from "dayjs";
 import { useAuth } from "../context/AuthContext";
 import Button from "../components/Button";
+import Input from "../components/Input";
 import { fetchEmployees } from "../features/employees/api";
 import type { Employee } from "../features/employees/types";
 import {
@@ -327,19 +328,20 @@ export default function TimesheetsPage() {
             completa la tabla diaria sin volver a guardar cada fila.
           </p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row">
           {/* Selector de Trabajador */}
-          <div className="flex flex-col gap-2 min-w-[200px]">
-            <label className="text-xs font-semibold text-base-content/80">Trabajador</label>
-            <select
+          <div className="min-w-[200px]">
+            <Input
+              label="Trabajador"
+              type="select"
               value={selectedEmployeeId ?? ""}
-              onChange={(e) => {
-                const value = e.target.value;
+              onChange={(event: ChangeEvent<HTMLSelectElement>) => {
+                const value = event.target.value;
                 setSelectedEmployeeId(value ? Number(value) : null);
                 setInfo(null);
               }}
-              className="rounded border px-3 py-2 text-sm bg-base-100"
               disabled={!employeeOptions.length}
+              className="bg-base-100"
             >
               <option value="">Seleccionar...</option>
               {employeeOptions.map((emp) => (
@@ -347,19 +349,20 @@ export default function TimesheetsPage() {
                   {emp.full_name}
                 </option>
               ))}
-            </select>
+            </Input>
           </div>
           {/* Selector de Periodo */}
-          <div className="flex flex-col gap-2 min-w-[180px]">
-            <label className="text-xs font-semibold text-base-content/80">Periodo</label>
-            <select
+          <div className="min-w-[180px]">
+            <Input
+              label="Periodo"
+              type="select"
               value={month}
-              onChange={(e) => {
-                setMonth(e.target.value);
+              onChange={(event: ChangeEvent<HTMLSelectElement>) => {
+                setMonth(event.target.value);
                 setInfo(null);
               }}
-              className="rounded border px-3 py-2 text-sm bg-base-100"
               disabled={loadingMonths}
+              className="bg-base-100"
             >
               {months.slice(0, visibleCount).map((m) => {
                 const hasData = monthsWithData.has(m);
@@ -370,7 +373,7 @@ export default function TimesheetsPage() {
                   </option>
                 );
               })}
-            </select>
+            </Input>
             {months.length > visibleCount && (
               <Button
                 type="button"

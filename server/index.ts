@@ -4,7 +4,7 @@ import cookieParser from "cookie-parser";
 import path from "path";
 import { fileURLToPath } from "url";
 
-import { ensureDatabaseConnection, getPool } from "./db.js";
+import { ensureDatabaseConnection, getPool, isTransientConnectionError } from "./db.js";
 import { bindRequestLogger, getRequestLogger, logger } from "./lib/logger.js";
 import { runMigrations } from "./migrationRunner.js";
 import { PORT } from "./config.js";
@@ -23,6 +23,8 @@ import { registerServiceRoutes } from "./routes/services.js";
 import { registerAssetRoutes } from "./routes/assets.js";
 
 const app = express();
+app.disable("etag");
+app.disable("x-powered-by");
 
 // Security headers including CSP
 app.use((req, res, next) => {
@@ -65,6 +67,25 @@ app.use((req, res, next) => {
     requestLogger.info({ event: "request:complete", statusCode: res.statusCode });
   });
   next();
+});
+
+app.use("/api", async (req, res, next) => {
+  try {
+    await ensureDatabaseConnection({ retries: 4, initialDelayMs: 800, backoffFactor: 1.8 });
+    next();
+  } catch (error) {
+    const requestLogger = getRequestLogger(req);
+    requestLogger.error({ event: "db:unavailable", error }, "Base de datos no disponible; reintentando");
+    setTimeout(() => {
+      ensureDatabaseConnection().catch((err) =>
+        logger.error({ err }, "[db] Failed to re-establish connection after transient error")
+      );
+    }, 0);
+    return res.status(503).json({
+      status: "error",
+      message: "La base de datos se está reactivando. Intenta nuevamente en unos segundos.",
+    });
+  }
 });
 
 // API Routes
@@ -146,7 +167,19 @@ app.get(/^(?!\/api).*$/, (_req, res) => {
 });
 // --- End Production Frontend Serving ---
 
-app.use((err: Error & { statusCode?: number }, req: express.Request, res: express.Response) => {
+app.use((err: Error & { statusCode?: number; code?: string }, req: express.Request, res: express.Response) => {
+  if (isTransientConnectionError(err)) {
+    const requestLogger = getRequestLogger(req);
+    requestLogger.warn({ err }, "Transient database error detected");
+    ensureDatabaseConnection().catch((reconnectError) =>
+      logger.error({ reconnectError }, "[db] Failed to recover connection after transient error")
+    );
+    return res.status(503).json({
+      status: "error",
+      message: "Estamos reanudando la conexión a la base de datos. Intenta nuevamente en unos segundos.",
+    });
+  }
+
   getRequestLogger(req).error({ err }, "Unhandled server error");
   const status = typeof err.statusCode === "number" ? err.statusCode : 500;
   res.status(status).json({
@@ -155,23 +188,34 @@ app.use((err: Error & { statusCode?: number }, req: express.Request, res: expres
   });
 });
 
-async function bootstrap() {
+let serverStarted = false;
+
+function startHttpServer() {
+  if (serverStarted) return;
+  app.listen(PORT, () => {
+    serverStarted = true;
+    logger.info("🚀 ===== SERVIDOR FINANZAS APP =====");
+    logger.info(`📡 API: http://localhost:${PORT}/api/health`);
+    logger.info(`🌐 Frontend: http://localhost:${PORT}/`);
+    logger.info("⚡ Estado: Servidor iniciado y listo");
+    logger.info("=====================================");
+  });
+}
+
+async function bootstrap(attempt = 0) {
   try {
     await ensureDatabaseConnection();
     await runMigrations();
-    app.listen(PORT, () => {
-      logger.info("🚀 ===== SERVIDOR FINANZAS APP =====");
-      logger.info(`📡 API: http://localhost:${PORT}/api/health`);
-      logger.info(`🌐 Frontend: http://localhost:${PORT}/`);
-      logger.info("⚡ Estado: Servidor iniciado y listo");
-      logger.info("=====================================");
-    });
+    startHttpServer();
   } catch (error) {
-    logger.error({ error }, "❌ ===== ERROR DE INICIALIZACIÓN =====");
+    const delay = Math.min(60000, Math.round(3000 * Math.pow(1.5, attempt)));
+    logger.error({ error, attempt, delay }, "❌ ===== ERROR DE INICIALIZACIÓN =====");
     logger.error("💾 No se pudo inicializar la base de datos");
-    logger.error("=====================================");
-    process.exit(1);
+    logger.error(`⏳ Reintentando en ${delay} ms`);
+    setTimeout(() => {
+      bootstrap(attempt + 1).catch((err) => logger.error({ err }, "Bootstrap retry encountered an unexpected error"));
+    }, delay);
   }
 }
 
-bootstrap();
+bootstrap().catch((err) => logger.error({ err }, "Bootstrap failed unexpectedly"));

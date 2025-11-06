@@ -119,6 +119,25 @@ html[data-theme="bioalergia"] body {
   color: hsl(var(--bc));
 }
 
+.layout-shell {
+  background: radial-gradient(
+    140% 120% at 30% 20%,
+    color-mix(in oklab, var(--surface-recessed-bg) 92%, transparent) 0%,
+    color-mix(in oklab, var(--surface-muted-bg) 88%, transparent) 48%,
+    color-mix(in oklab, var(--surface-recessed-bg) 98%, transparent) 100%
+  );
+}
+
+html.dark .layout-shell,
+html[data-theme="bioalergia-dark"] .layout-shell {
+  background: radial-gradient(
+    140% 120% at 30% 20%,
+    color-mix(in srgb, var(--surface-recessed-bg) 96%, transparent) 0%,
+    color-mix(in srgb, var(--surface-muted-bg) 90%, transparent) 55%,
+    color-mix(in srgb, var(--surface-recessed-bg) 99%, transparent) 100%
+  );
+}
+
 ::selection {
   background-color: rgba(var(--brand-primary-rgb) / 0.8);
   color: white;

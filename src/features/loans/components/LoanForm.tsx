@@ -196,7 +196,7 @@ export function LoanForm({ onSubmit, onCancel }: LoanFormProps) {
               type="checkbox"
               checked={form.values.generateSchedule}
               onChange={(e) => form.setValue("generateSchedule", e.target.checked)}
-              className="rounded border-gray-300"
+              className="checkbox checkbox-primary checkbox-sm"
             />
             Generar cronograma automáticamente
           </label>

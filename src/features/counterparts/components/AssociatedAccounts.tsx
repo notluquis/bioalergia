@@ -16,6 +16,7 @@ interface AssociatedAccountsProps {
   detail: { counterpart: Counterpart; accounts: CounterpartAccount[] } | null;
   summary: CounterpartSummary | null;
   summaryRange: { from: string; to: string };
+  summaryLoading: boolean;
   onLoadSummary: (counterpartId: number, from: string, to: string) => Promise<void>;
 }
 
@@ -64,6 +65,7 @@ export default function AssociatedAccounts({
   detail,
   summary,
   summaryRange,
+  summaryLoading,
   onLoadSummary,
 }: AssociatedAccountsProps) {
   const [accountForm, setAccountForm] = useState<AccountForm>(ACCOUNT_FORM_DEFAULT);
@@ -400,7 +402,12 @@ export default function AssociatedAccounts({
   }
 
   return (
-    <section className="surface-recessed space-y-5 p-6">
+    <section className="surface-recessed relative space-y-5 p-6" aria-busy={summaryLoading}>
+      {summaryLoading && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-base-100/60 backdrop-blur-sm">
+          <span className="loading loading-spinner loading-lg text-primary" aria-hidden="true" />
+        </div>
+      )}
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div className="space-y-1">
           <h2 className="text-lg font-semibold text-primary drop-shadow-sm">Cuentas asociadas</h2>

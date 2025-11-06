@@ -16,9 +16,13 @@ const brandAssetUrlSchema = z
   .string()
   .trim()
   .min(1)
-  .refine((value) => value.startsWith("https://") || value.startsWith("/uploads/"), {
-    message: "Debe comenzar con https:// o /uploads/",
-  });
+  .refine(
+    (value) =>
+      value.startsWith("https://") || value.startsWith("/uploads/") || (value.startsWith("/") && value.length > 1),
+    {
+      message: "Debe comenzar con https:// o una ruta interna que inicie con /",
+    }
+  );
 
 const serviceFrequencyEnum = z.enum([
   "WEEKLY",

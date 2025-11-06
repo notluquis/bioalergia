@@ -1,5 +1,40 @@
 import { fmtCLP } from "@/lib/format";
 
+type Accent = "emerald" | "rose" | "primary";
+
+const ACCENT_THEME: Record<
+  Accent,
+  {
+    gradient: string;
+    ring: string;
+    value: string;
+    badge: string;
+    badgeLabel: string;
+  }
+> = {
+  emerald: {
+    gradient: "from-emerald-400/30 via-emerald-400/15 to-transparent",
+    ring: "ring-emerald-400/25",
+    value: "text-emerald-500 dark:text-emerald-300",
+    badge: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-300",
+    badgeLabel: "Ingresos",
+  },
+  rose: {
+    gradient: "from-rose-400/30 via-rose-400/15 to-transparent",
+    ring: "ring-rose-400/25",
+    value: "text-rose-500 dark:text-rose-300",
+    badge: "bg-rose-500/15 text-rose-600 dark:text-rose-300",
+    badgeLabel: "Egresos",
+  },
+  primary: {
+    gradient: "from-primary/30 via-primary/15 to-transparent",
+    ring: "ring-primary/25",
+    value: "text-primary",
+    badge: "bg-primary/15 text-primary",
+    badgeLabel: "Resultado",
+  },
+};
+
 export default function MetricCard({
   title,
   value,
@@ -8,25 +43,30 @@ export default function MetricCard({
 }: {
   title: string;
   value: number;
-  accent: "emerald" | "rose" | "primary";
+  accent: Accent;
   loading: boolean;
 }) {
-  const accentStyles =
-    accent === "emerald"
-      ? { border: "border-l-4 border-success/60", text: "text-success", chip: "bg-success/15 text-success" }
-      : accent === "rose"
-        ? { border: "border-l-4 border-error/60", text: "text-error", chip: "bg-error/15 text-error" }
-        : { border: "border-l-4 border-primary/60", text: "text-primary", chip: "bg-primary/15 text-primary" };
+  const theme = ACCENT_THEME[accent];
 
   return (
-    <article className={`surface-recessed relative overflow-hidden p-6 text-base-content ${accentStyles.border}`}>
-      <h2 className="typ-caption text-base-content/70">{title}</h2>
-      <p className={`mt-3 typ-subtitle ${accentStyles.text}`}>{loading ? "—" : fmtCLP(value)}</p>
-      <span
-        className={`absolute inset-y-4 right-5 hidden rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wide ${accentStyles.chip} lg:inline-flex`}
-      >
-        {accent === "emerald" ? "Ingresos" : accent === "rose" ? "Egresos" : "Resultado"}
-      </span>
+    <article
+      className={`relative overflow-hidden rounded-3xl border border-base-300/60 bg-base-100/80 p-6 shadow-sm ring-1 ring-inset ${theme.ring}`}
+    >
+      <div
+        className={`pointer-events-none absolute inset-0 rounded-3xl bg-gradient-to-br ${theme.gradient}`}
+        aria-hidden="true"
+      />
+      <div className="relative flex flex-col gap-3">
+        <div className="flex items-baseline justify-between gap-3">
+          <h2 className="typ-caption text-base-content/70">{title}</h2>
+          <span
+            className={`hidden rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wide lg:inline-flex ${theme.badge}`}
+          >
+            {theme.badgeLabel}
+          </span>
+        </div>
+        <p className={`typ-subtitle ${theme.value}`}>{loading ? "—" : fmtCLP(value)}</p>
+      </div>
     </article>
   );
 }

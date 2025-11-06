@@ -101,16 +101,18 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
       className="space-y-4 rounded-2xl border border-primary/15 bg-base-100 p-6 text-sm shadow-sm"
     >
       <div className="grid gap-4 md:grid-cols-3">
-        <div className="col-span-3">
-          <label className="block text-xs font-semibold mb-1">Tipo de salario</label>
-          <select
-            className="w-full border rounded px-2 py-1 text-sm"
+        <div className="md:col-span-3">
+          <Input
+            label="Tipo de salario"
+            type="select"
             value={form.salary_type}
-            onChange={(e) => setForm((prev) => ({ ...prev, salary_type: e.target.value }))}
+            onChange={(event: React.ChangeEvent<HTMLSelectElement>) =>
+              setForm((prev) => ({ ...prev, salary_type: event.target.value }))
+            }
           >
             <option value="hourly">Por hora</option>
             <option value="fixed">Sueldo fijo mensual</option>
-          </select>
+          </Input>
         </div>
         <Input
           label="Nombre completo"

@@ -1,6 +1,7 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { InventoryItem, InventoryMovement } from "../types";
 import Button from "../../../components/Button";
+import Input from "../../../components/Input";
 
 interface AdjustStockFormProps {
   item: InventoryItem;
@@ -29,28 +30,22 @@ export default function AdjustStockForm({ item, onSave, onCancel, saving }: Adju
         <p className="text-base-content/60">Stock actual: {item.current_stock}</p>
       </div>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-wide text-base-content/60">
-          Cantidad a agregar/quitar
-          <input
-            type="number"
-            value={quantityChange}
-            onChange={(e) => setQuantityChange(e.target.value)}
-            required
-            className="rounded border px-3 py-2"
-            placeholder="Ej: 20 (agrega) o -15 (quita)"
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-wide text-base-content/60">
-          Razón del ajuste
-          <input
-            type="text"
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            required
-            className="rounded border px-3 py-2"
-            placeholder="Ej: Compra inicial, uso en procedimiento"
-          />
-        </label>
+        <Input
+          label="Cantidad a agregar/quitar"
+          type="number"
+          value={quantityChange}
+          onChange={(event: React.ChangeEvent<HTMLInputElement>) => setQuantityChange(event.target.value)}
+          required
+          placeholder="Ej: 20 (agrega) o -15 (quita)"
+        />
+        <Input
+          label="Razón del ajuste"
+          type="text"
+          value={reason}
+          onChange={(event: React.ChangeEvent<HTMLInputElement>) => setReason(event.target.value)}
+          required
+          placeholder="Ej: Compra inicial, uso en procedimiento"
+        />
       </div>
       <div className="flex items-center justify-end gap-3 pt-4">
         <Button type="button" variant="secondary" onClick={onCancel}>

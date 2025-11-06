@@ -57,9 +57,13 @@ export async function uploadFiles(files: File[], endpoint: string, logContext: s
 
 // --- New apiClient implementation ---
 
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 interface RequestOptions extends Omit<RequestInit, "body"> {
   body?: object; // Allow object for JSON body
   query?: Record<string, unknown>;
+  retry?: number;
+  retryDelayMs?: number;
 }
 
 function buildUrlWithQuery(url: string, query?: Record<string, unknown>) {
@@ -84,17 +88,67 @@ function buildUrlWithQuery(url: string, query?: Record<string, unknown>) {
   return url.includes("?") ? `${url}&${queryString}` : `${url}?${queryString}`;
 }
 
+async function parseResponse<T>(response: Response, method: string, url: string): Promise<T> {
+  const status = response.status;
+  const hasBody = status !== 204 && status !== 205 && status !== 304 && response.headers.get("content-length") !== "0";
+  const rawBody = hasBody ? await response.text() : "";
+
+  if (!response.ok) {
+    let errorData: unknown = null;
+    if (rawBody) {
+      try {
+        errorData = JSON.parse(rawBody);
+      } catch {
+        errorData = { message: rawBody };
+      }
+    }
+
+    const serverMessage =
+      (errorData && typeof errorData === "object" && typeof (errorData as { message?: string }).message === "string"
+        ? (errorData as { message?: string }).message
+        : undefined) ||
+      (errorData && typeof errorData === "object" && typeof (errorData as { error?: string }).error === "string"
+        ? (errorData as { error?: string }).error
+        : undefined) ||
+      response.statusText;
+    const details =
+      errorData && typeof errorData === "object" && "details" in errorData
+        ? JSON.stringify((errorData as { details?: unknown }).details)
+        : undefined;
+
+    throw new Error(details ? `${serverMessage}: ${details}` : serverMessage || "Ocurrió un error inesperado.");
+  }
+
+  let data: unknown = null;
+  if (rawBody) {
+    const contentType = response.headers.get("content-type") ?? "";
+    data = contentType.includes("application/json") ? JSON.parse(rawBody) : rawBody;
+  }
+
+  try {
+    window.dispatchEvent(new CustomEvent("api-success", { detail: { method, url, status: response.status } }));
+  } catch {
+    // noop (SSR o ambientes sin window)
+  }
+
+  return data as T;
+}
+
 async function request<T>(method: string, url: string, options?: RequestOptions): Promise<T> {
-  const { body, query, ...restOptions } = options || {};
-  const headers = {
+  const { body, query, retry = 2, retryDelayMs = 350, ...restOptions } = options || {};
+  const { headers: optionHeaders, ...fetchOverrides } = restOptions;
+  const headers: HeadersInit = {
     "Content-Type": "application/json",
-    ...restOptions?.headers,
+    "Cache-Control": "no-cache",
+    Pragma: "no-cache",
+    ...(optionHeaders ?? {}),
   };
 
   const config: RequestInit = {
     method,
     credentials: "include",
-    ...restOptions,
+    cache: "no-store",
+    ...fetchOverrides,
     headers,
   };
 
@@ -103,31 +157,18 @@ async function request<T>(method: string, url: string, options?: RequestOptions)
   }
 
   const finalUrl = buildUrlWithQuery(url, query);
-  const response = await fetch(finalUrl, config);
 
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ message: response.statusText }));
-    const serverMessage =
-      typeof errorData?.message === "string"
-        ? errorData.message
-        : typeof errorData?.error === "string"
-          ? errorData.error
-          : response.statusText;
-    const details =
-      errorData && typeof errorData === "object" && "details" in errorData
-        ? JSON.stringify(errorData.details)
-        : undefined;
-    throw new Error(details ? `${serverMessage}: ${details}` : serverMessage || "Ocurrió un error inesperado.");
+  for (let attempt = 0; attempt <= retry; attempt++) {
+    const response = await fetch(finalUrl, config);
+    if (response.status === 503 && attempt < retry) {
+      const waitMs = retryDelayMs * Math.pow(2, attempt);
+      await sleep(waitMs);
+      continue;
+    }
+    return parseResponse<T>(response, method, url);
   }
 
-  const data = await response.json();
-  try {
-    // Disparar evento global para que ConnectionIndicator reinicie su temporizador
-    window.dispatchEvent(new CustomEvent("api-success", { detail: { method, url, status: response.status } }));
-  } catch {
-    // noop (SSR o ambientes sin window)
-  }
-  return data;
+  throw new Error("No se pudo completar la solicitud después de reintentos.");
 }
 
 export const apiClient = {
