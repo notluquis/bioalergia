@@ -100,6 +100,20 @@ export default [
       ],
     },
   },
+  // Design system enforcement: prohibit hard-coded colors in JSX className strings
+  {
+    files: ["src/**/*.tsx"],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "Literal[value=/#[0-9a-fA-F]{3,6}|rgba?\\(/]",
+          message:
+            "Hard-coded hex/rgb colors forbidden. Use DaisyUI tokens (primary, success, error, etc.) or CSS variables instead.",
+        },
+      ],
+    },
+  },
   // Temporary exemptions for routes pending repository pattern migration
   {
     files: [

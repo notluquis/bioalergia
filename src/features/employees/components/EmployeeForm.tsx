@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../../../context/AuthContext";
+import { useToast } from "../../../context/ToastContext";
 import { createEmployee, updateEmployee } from "../api";
 import type { Employee } from "../types";
 import Button from "../../../components/Button";
 import Input from "../../../components/Input";
-import Alert from "../../../components/Alert";
 import { formatRut, normalizeRut } from "../../../lib/rut";
 
 const EMPTY_FORM = {
@@ -30,12 +30,12 @@ interface EmployeeFormProps {
 
 export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFormProps) {
   const { hasRole } = useAuth();
+  const { error: toastError, success: toastSuccess } = useToast();
   const canEdit = hasRole("GOD", "ADMIN");
 
   const [form, setForm] = useState(EMPTY_FORM);
   // no-op
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (employee) {
@@ -77,18 +77,19 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
       retention_rate: Number(form.retention_rate || 0),
     };
     setSaving(true);
-    setError(null);
     try {
       if (employee?.id) {
         await updateEmployee(employee.id, payload);
+        toastSuccess("Empleado actualizado");
       } else {
         await createEmployee(payload);
+        toastSuccess("Empleado creado");
       }
       onSave();
       onCancel();
     } catch (err) {
       const message = err instanceof Error ? err.message : "No se pudo guardar el empleado";
-      setError(message);
+      toastError(message);
     } finally {
       setSaving(false);
     }
@@ -233,7 +234,6 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
           helper="Ej: 0.145 para 14.5%"
         />
       </div>
-      {error && <Alert variant="error">{error}</Alert>}
       <div className="flex items-center gap-3">
         <Button type="submit" disabled={saving}>
           {saving ? "Guardando..." : employee?.id ? "Actualizar" : "Agregar"}

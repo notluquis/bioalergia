@@ -23,8 +23,11 @@ export default function Modal({ isOpen, onClose, title, children }: ModalProps) 
   if (!isOpen) return null;
 
   return (
-    <div className="modal modal-open" role="dialog" aria-modal="true" aria-label={title}>
-      <div className="modal-box relative w-full max-w-2xl rounded-2xl p-6" tabIndex={-1}>
+    <div className="modal modal-open animate-fade-in" role="dialog" aria-modal="true" aria-label={title}>
+      <div
+        className="modal-box relative w-full max-w-2xl rounded-2xl p-6 animate-scale-in shadow-lg transition-all duration-[var(--duration-standard)]"
+        tabIndex={-1}
+      >
         <div className="flex items-start justify-between">
           <h2 className="text-xl font-bold text-primary">{title}</h2>
           <Button variant="secondary" size="sm" onClick={onClose} aria-label="Cerrar modal">

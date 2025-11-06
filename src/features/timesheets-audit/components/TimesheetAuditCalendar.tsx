@@ -79,8 +79,8 @@ function toFullCalendarEvents(calendarEvents: CalendarEventData[]): Array<{
         duration_hours: event.duration_hours,
         has_overlap: event.has_overlap,
       },
-      backgroundColor: event.has_overlap ? "#f87272" : "#0ea5a4",
-      borderColor: event.has_overlap ? "#fb7185" : "#06b6d4",
+      backgroundColor: event.has_overlap ? "var(--color-error)" : "var(--color-accent)",
+      borderColor: event.has_overlap ? "var(--color-error)" : "var(--color-accent)",
     };
   });
 }

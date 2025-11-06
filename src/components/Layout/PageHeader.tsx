@@ -31,8 +31,8 @@ export default function PageHeader({ title, description, actions, breadcrumbs }:
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-2">
-          <h1 className="text-2xl font-bold text-primary leading-8">{title}</h1>
-          {description && <p className="max-w-2xl text-sm text-base-content/70 leading-6">{description}</p>}
+          <h1 className="h2-apple text-primary">{title}</h1>
+          {description && <p className="max-w-2xl caption-apple text-base-content/70">{description}</p>}
         </div>
 
         {actions && <div className="flex flex-wrap gap-2 sm:gap-4">{actions}</div>}

@@ -6,17 +6,17 @@ import { useSettings } from "../context/SettingsContext";
 import { logger } from "../lib/logger";
 import Button from "../components/Button";
 import Input from "../components/Input";
-import Alert from "../components/Alert";
 import ConnectionIndicator from "../components/ConnectionIndicator";
+import { useToast } from "../context/ToastContext";
 
 export default function Login() {
   const { login } = useAuth();
   const { settings } = useSettings();
   const navigate = useNavigate();
   const location = useLocation();
+  const { error: toastError } = useToast();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const from = (location.state as { from?: string } | null)?.from ?? "/";
@@ -24,7 +24,6 @@ export default function Login() {
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setLoading(true);
-    setError(null);
     try {
       const timeoutSeconds = Number(import.meta.env?.VITE_AUTH_TIMEOUT ?? 8);
       console.debug("[steps][login] Step 1: preparando envío de credenciales", email);
@@ -37,7 +36,7 @@ export default function Login() {
       navigate(from, { replace: true });
     } catch (err) {
       const message = err instanceof Error ? err.message : "No se pudo iniciar sesión";
-      setError(message);
+      toastError(message);
       logger.error("[login-page] login error", { email, message });
       console.error("[steps][login] Step error: fallo al iniciar sesión", message);
     } finally {
@@ -48,8 +47,9 @@ export default function Login() {
 
   return (
     <div className="relative flex min-h-screen items-center justify-center px-6 py-12">
-      <div className="absolute inset-x-0 top-0 h-1/3 max-h-[220px] rounded-b-[50%] bg-[radial-gradient(circle_at_top,rgba(14,100,183,0.18),transparent_70%)]" />
-      <div className="absolute inset-x-0 bottom-0 h-1/3 max-h-[220px] rounded-t-[55%] bg-[radial-gradient(circle_at_bottom,rgba(241,167,34,0.22),transparent_72%)]" />
+      {/* Gradient backgrounds using semantic theme colors */}
+      <div className="absolute inset-x-0 top-0 h-1/3 max-h-[220px] rounded-b-[50%] bg-gradient-to-b from-primary/10 via-primary/5 to-transparent" />
+      <div className="absolute inset-x-0 bottom-0 h-1/3 max-h-[220px] rounded-t-[55%] bg-gradient-to-t from-secondary/10 via-secondary/5 to-transparent" />
       <div className="bg-base-100 relative z-10 w-full max-w-md p-10">
         <div className="mb-6 flex justify-end">
           <ConnectionIndicator />
@@ -79,7 +79,6 @@ export default function Login() {
             autoComplete="current-password"
             required
           />
-          {error && <Alert variant="error">{error}</Alert>}
           <Button type="submit" disabled={loading} className="w-full">
             {loading ? "Ingresando..." : "Ingresar"}
           </Button>

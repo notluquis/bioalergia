@@ -15,6 +15,7 @@ interface ButtonProps extends React.HTMLAttributes<HTMLElement> {
  * Polymorphic project Button primitive.
  * - `as` allows rendering as 'a', 'label', etc.
  * - `href` is forwarded when rendering anchors.
+ * - Apple-like smooth transitions and subtle scale effects
  * Keeps variant/size API and preserves existing className overrides.
  */
 export default function Button({ variant, size = "md", className = "", as, href, children, ...props }: ButtonProps) {
@@ -33,7 +34,11 @@ export default function Button({ variant, size = "md", className = "", as, href,
     lg: "btn-lg",
   };
 
-  const mergedClassName = `${variantClasses[v]} ${sizeClasses[size]} ${className}`.trim();
+  // Apple-like transitions: smooth scale on hover/active, shadow lift
+  const appleTransitions =
+    "transition-all duration-[var(--duration-quick)] ease-[var(--ease-apple)] hover:scale-[1.02] active:scale-[0.98]";
+
+  const mergedClassName = `${variantClasses[v]} ${sizeClasses[size]} ${appleTransitions} ${className}`.trim();
 
   const Component: AsElement = (as as AsElement) ?? (href ? "a" : "button");
 

@@ -61,7 +61,7 @@ export default function SettingsLayout() {
             className={({ isActive }) =>
               `bg-base-100 flex flex-col gap-1 rounded-2xl border px-5 py-4 transition ${
                 isActive
-                  ? "border-primary/50 bg-primary/15 text-primary shadow-[0_16px_32px_-20px_rgba(14,100,183,0.6)]"
+                  ? "border-primary/50 bg-primary/15 text-primary shadow-lg"
                   : "border-base-300 bg-base-200 text-base-content hover:border-primary/35 hover:bg-primary/8 hover:text-primary"
               }`
             }

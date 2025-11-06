@@ -10,11 +10,9 @@ interface UseSupplyManagementResult {
   commonSupplies: CommonSupply[];
   loading: boolean;
   error: string | null;
-  successMessage: string | null;
   structuredSupplies: StructuredSupplies;
   fetchData: () => Promise<void>;
   handleStatusChange: (requestId: number, newStatus: SupplyRequest["status"]) => Promise<void>;
-  setSuccessMessage: (message: string | null) => void;
   setError: (error: string | null) => void;
 }
 
@@ -22,7 +20,6 @@ export function useSupplyManagement(): UseSupplyManagementResult {
   const queryClient = useQueryClient();
   const { success: toastSuccess, error: toastError } = useToast();
   const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const requestsQuery = useQuery<SupplyRequest[], Error>({
     queryKey: queryKeys.supplies.requests(),
@@ -68,7 +65,6 @@ export function useSupplyManagement(): UseSupplyManagementResult {
     mutationFn: ({ requestId, status }) => updateSupplyRequestStatus(requestId, status),
     onMutate: async ({ requestId, status }) => {
       setError(null);
-      setSuccessMessage(null);
       await queryClient.cancelQueries({ queryKey: queryKeys.supplies.requests() });
       const previousRequests = queryClient.getQueryData<SupplyRequest[]>(queryKeys.supplies.requests());
       queryClient.setQueryData<SupplyRequest[]>(queryKeys.supplies.requests(), (old = []) =>
@@ -85,7 +81,6 @@ export function useSupplyManagement(): UseSupplyManagementResult {
       }
     },
     onSuccess: () => {
-      setSuccessMessage("¡Estado de la solicitud actualizado con éxito!");
       toastSuccess("Estado de solicitud actualizado");
     },
     onSettled: () => {
@@ -120,11 +115,9 @@ export function useSupplyManagement(): UseSupplyManagementResult {
     commonSupplies: commonSuppliesQuery.data ?? [],
     loading,
     error: combinedError,
-    successMessage,
     structuredSupplies,
     fetchData,
     handleStatusChange,
-    setSuccessMessage,
     setError,
   };
 }

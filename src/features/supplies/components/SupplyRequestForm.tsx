@@ -1,10 +1,9 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { useForm } from "../../../hooks";
 import Button from "../../../components/Button";
 import Input from "../../../components/Input";
-import Alert from "../../../components/Alert";
 import type { CommonSupply, StructuredSupplies } from "../types";
 import { createSupplyRequest, type SupplyRequestPayload } from "../api";
 import { queryKeys } from "../../../lib/queryKeys";
@@ -24,8 +23,6 @@ interface SupplyRequestFormProps {
 }
 
 export default function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyRequestFormProps) {
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const { success: toastSuccess, error: toastError } = useToast();
 
@@ -46,8 +43,6 @@ export default function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyR
     },
     validationSchema: supplyRequestSchema,
     onSubmit: async (values) => {
-      setErrorMessage(null);
-      setSuccessMessage(null);
       try {
         await createRequestMutation.mutateAsync({
           supplyName: values.selectedSupply,
@@ -56,13 +51,11 @@ export default function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyR
           model: values.selectedModel === "N/A" || !values.selectedModel ? undefined : values.selectedModel,
           notes: values.notes || undefined,
         });
-        setSuccessMessage("¡Solicitud de insumo enviada con éxito!");
         toastSuccess("Solicitud de insumo enviada");
         form.reset();
         onSuccess();
       } catch (err) {
         const message = err instanceof Error ? err.message : "Error al enviar la solicitud";
-        setErrorMessage(message);
         toastError(message);
       }
     },
@@ -101,8 +94,6 @@ export default function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyR
   return (
     <div className="card bg-base-100 shadow-lg p-6 mb-8">
       <h2 className="text-xl font-semibold mb-4">Solicitar Nuevo Insumo</h2>
-      {successMessage && <Alert variant="success">{successMessage}</Alert>}
-      {errorMessage && <Alert variant="error">{errorMessage}</Alert>}
       <form onSubmit={form.handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <Input

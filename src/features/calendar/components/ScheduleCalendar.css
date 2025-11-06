@@ -1,22 +1,22 @@
 .fc {
-  --calendar-event-bg-default: rgba(148, 163, 184, 0.18);
-  --calendar-event-bg-subcutaneous: rgba(30, 64, 175, 0.18);
-  --calendar-event-bg-test: rgba(244, 114, 182, 0.18);
+  --calendar-event-bg-default: oklch(var(--b2) / 0.6);
+  --calendar-event-bg-subcutaneous: oklch(var(--p) / 0.12);
+  --calendar-event-bg-test: oklch(var(--er) / 0.12);
 }
 
 .calendar-event--default {
   background-color: var(--calendar-event-bg-default) !important;
-  border-color: rgba(148, 163, 184, 0.4) !important;
+  border-color: oklch(var(--b3)) !important;
 }
 
 .calendar-event--subcutaneous {
   background-color: var(--calendar-event-bg-subcutaneous) !important;
-  border-color: rgba(30, 64, 175, 0.4) !important;
+  border-color: oklch(var(--p) / 0.3) !important;
 }
 
 .calendar-event--test {
-  background-color: rgba(244, 114, 182, 0.18) !important;
-  border-color: rgba(244, 114, 182, 0.45) !important;
+  background-color: var(--calendar-event-bg-test) !important;
+  border-color: oklch(var(--er) / 0.4) !important;
 }
 
 .fc-timegrid-event {
@@ -50,7 +50,7 @@
 }
 
 .fc-timegrid-event:hover {
-  box-shadow: 0 12px 28px -24px rgba(15, 23, 42, 0.5);
+  box-shadow: 0 12px 28px -24px oklch(var(--bc) / 0.4);
 }
 
 .calendar-loading {
