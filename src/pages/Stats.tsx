@@ -117,9 +117,9 @@ export default function Stats() {
       {data && (
         <div className="space-y-6">
           <section className="grid gap-4 sm:grid-cols-3">
-            <StatCard title="Ingresos" value={totals.in} accent="emerald" />
-            <StatCard title="Egresos" value={totals.out} accent="rose" />
-            <StatCard title="Resultado neto" value={totals.net} accent={totals.net >= 0 ? "emerald" : "rose"} />
+            <StatCard title="Ingresos" value={totals.in} accent="success" />
+            <StatCard title="Egresos" value={totals.out} accent="error" />
+            <StatCard title="Resultado neto" value={totals.net} accent={totals.net >= 0 ? "success" : "error"} />
           </section>
 
           <MonthlyFlowChart data={data.monthly} />
