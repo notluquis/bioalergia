@@ -40,11 +40,33 @@
   --duration-quick: 150ms;
   --duration-standard: 300ms;
   --duration-emphasis: 500ms;
+
+  /* DaisyUI color tokens fallback for light theme */
+  color-scheme: light;
+  --b1: 0 0% 100%; /* white */
+  --bc: 0 0% 0%; /* black */
+}
+
+html.dark,
+html[data-theme="bioalergia-dark"] {
+  /* DaisyUI color tokens fallback for dark theme */
+  color-scheme: dark;
+  --b1: 0 0% 0%; /* black */
+  --bc: 0 0% 100%; /* white */
 }
 
 /* Theme tokens are provided by daisyUI themes (declared in tailwind.config.cjs).
    This avoids duplicating tokens in :root and keeps the theme source of truth
    in the daisyUI configuration. */
+
+/* Root element - ensure correct theme colors */
+#root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: oklch(var(--b1));
+  color: oklch(var(--bc));
+}
 
 body {
   margin: 0;
@@ -61,7 +83,13 @@ body {
   position: relative;
 }
 
+html[data-theme="bioalergia-dark"] body,
 html.dark body {
+  background: oklch(var(--b1));
+  color: oklch(var(--bc));
+}
+
+html[data-theme="bioalergia"] body {
   background: oklch(var(--b1));
   color: oklch(var(--bc));
 }

@@ -174,7 +174,7 @@ export default function App() {
   // Preline runtime removed: we avoid optional runtime helpers and rely on Tailwind + DaisyUI utilities
 
   return (
-    <div className="layout-container relative mx-auto flex min-h-screen max-w-[1440px] gap-6 px-4 py-6 text-base-content bg-base-100 sm:px-6 lg:px-10">
+    <div className="layout-container relative mx-auto flex min-h-screen max-w-[1440px] gap-6 px-4 py-6 text-base-content sm:px-6 lg:px-10">
       {/* Hamburger button: always visible */}
       <Button
         variant="secondary"
@@ -223,7 +223,14 @@ export default function App() {
         style={{ maxWidth: "100vw" }}
       >
         <div className="flex h-16 items-center justify-center rounded-2xl border border-base-300 bg-base-200 px-3 shadow-inner">
-          <img src={settings.logoUrl || "/logo_sin_eslogan.png"} alt="Logo" className="h-10" />
+          <img
+            src={settings.logoUrl || "/public/logo_sin_eslogan.png"}
+            alt="Logo"
+            className="h-10"
+            onError={(e) => {
+              e.currentTarget.src = "/public/logo_sin_eslogan.png";
+            }}
+          />
         </div>
         <nav className="muted-scrollbar mt-4 flex-1 overflow-y-auto pr-2">
           {navigation.map((section) => (
@@ -282,8 +289,8 @@ export default function App() {
           </div>
         </header>
 
-        <main className="flex-1 rounded-3xl bg-base-100">
-          <div className="h-full px-6 py-6">
+        <main className="flex-1 rounded-3xl">
+          <div className="h-full px-6 py-6 bg-base-100">
             <div className="muted-scrollbar h-full overflow-auto">
               <Outlet />
             </div>
