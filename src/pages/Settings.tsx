@@ -37,7 +37,7 @@ export default function SettingsLayout() {
     return (
       <section className="space-y-4">
         <h1 className="text-2xl font-bold text-primary">Configuración</h1>
-        <p className="border-l-4 border-amber-300/80 bg-linear-to-r from-amber-50/75 via-white/70 to-white/55 p-6 text-sm text-amber-700">
+        <p className="border-l-4 border-amber-300/80 bg-base-100 p-6 text-sm text-amber-700">
           Necesitas permisos de administrador para ver la configuración.
         </p>
       </section>

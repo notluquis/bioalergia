@@ -13,10 +13,10 @@ export default function MetricCard({
 }) {
   const colorClass =
     accent === "emerald"
-      ? "border-l-4 border-success/70 text-success bg-gradient-to-br from-success/10 via-base-100/70 to-base-100/55"
+      ? "border-l-4 border-success/70 text-success"
       : accent === "rose"
-        ? "border-l-4 border-error/70 text-error bg-gradient-to-br from-error/10 via-base-100/70 to-base-100/55"
-        : "border-l-4 border-primary/70 text-primary bg-gradient-to-br from-primary/10 via-base-100/70 to-base-100/55";
+        ? "border-l-4 border-error/70 text-error"
+        : "border-l-4 border-primary/70 text-primary";
 
   return (
     <article className={`p-6 text-base-content bg-base-100 ${colorClass}`}>

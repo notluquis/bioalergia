@@ -47,9 +47,6 @@ export default function Login() {
 
   return (
     <div className="relative flex min-h-screen items-center justify-center px-6 py-12">
-      {/* Gradient backgrounds using semantic theme colors */}
-      <div className="absolute inset-x-0 top-0 h-1/3 max-h-[220px] rounded-b-[50%] bg-gradient-to-b from-primary/10 via-primary/5 to-transparent" />
-      <div className="absolute inset-x-0 bottom-0 h-1/3 max-h-[220px] rounded-t-[55%] bg-gradient-to-t from-secondary/10 via-secondary/5 to-transparent" />
       <div className="bg-base-100 relative z-10 w-full max-w-md p-10">
         <div className="mb-6 flex justify-end">
           <ConnectionIndicator />
