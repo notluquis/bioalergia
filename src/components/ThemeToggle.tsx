@@ -4,7 +4,7 @@ const THEME_KEY = "bioalergia:theme";
 type Theme = "light" | "dark" | "system";
 
 function getPreferredThemeFromSystem(): "light" | "dark" {
-  if (typeof window === "undefined" || !window.matchMedia) return "light";
+  if (typeof window === "undefined" || !window.matchMedia) return "dark";
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
