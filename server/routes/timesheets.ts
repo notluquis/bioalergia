@@ -222,6 +222,91 @@ export function registerTimesheetRoutes(app: express.Express) {
       res.json({ status: "ok", month, from, to, entries });
     })
   );
+
+  // Multi-employee endpoint for audit calendar
+  // Only returns entries with both start_time and end_time
+  app.get(
+    "/api/timesheets/multi-detail",
+    authenticate,
+    asyncHandler(async (req: AuthenticatedRequest, res) => {
+      const employeeIdsParam = req.query.employeeIds as string;
+      const from = req.query.from as string;
+      const to = req.query.to as string;
+
+      if (!employeeIdsParam || !from || !to) {
+        return res.status(400).json({
+          status: "error",
+          message: "Missing required parameters: employeeIds, from, to",
+        });
+      }
+
+      const employeeIds = employeeIdsParam
+        .split(",")
+        .map((id) => Number(id))
+        .filter((id) => !Number.isNaN(id));
+
+      if (employeeIds.length === 0) {
+        return res.json({ status: "ok", entries: [] });
+      }
+
+      // Limit to 5 employees for performance
+      if (employeeIds.length > 5) {
+        return res.status(400).json({
+          status: "error",
+          message: "Maximum 5 employees can be audited at once",
+        });
+      }
+
+      const pool = getPool();
+      const employees = await listEmployees();
+      const employeeMap = new Map(employees.map((emp) => [emp.id, emp.full_name]));
+
+      // Query entries with start_time AND end_time only
+      const placeholders = employeeIds.map(() => "?").join(",");
+      const [rows] = await pool.query<RowDataPacket[]>(
+        `SELECT 
+           id, 
+           employee_id, 
+           work_date, 
+           start_time, 
+           end_time, 
+           worked_minutes, 
+           overtime_minutes, 
+           comment
+         FROM employee_timesheets
+         WHERE employee_id IN (${placeholders})
+           AND work_date BETWEEN ? AND ?
+           AND start_time IS NOT NULL
+           AND end_time IS NOT NULL
+         ORDER BY work_date ASC, employee_id ASC`,
+        [...employeeIds, from, to]
+      );
+
+      const entries = rows.map((row: RowDataPacket) => ({
+        id: row.id,
+        employee_id: row.employee_id,
+        employee_name: employeeMap.get(row.employee_id) || `Employee #${row.employee_id}`,
+        work_date: row.work_date,
+        start_time: row.start_time,
+        end_time: row.end_time,
+        worked_minutes: row.worked_minutes,
+        overtime_minutes: row.overtime_minutes,
+        comment: row.comment,
+      }));
+
+      logEvent(
+        "timesheets:multi-detail",
+        requestContext(req, {
+          employeeIds,
+          from,
+          to,
+          entries_count: entries.length,
+        })
+      );
+
+      res.json({ status: "ok", entries });
+    })
+  );
 }
 
 function normalizeTimesheetPayload(data: {

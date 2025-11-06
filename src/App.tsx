@@ -66,6 +66,7 @@ const NAV_SECTIONS: NavSection[] = [
       { to: "/supplies", label: "Solicitud de Insumos", roles: ["GOD", "ADMIN", "ANALYST", "VIEWER"] },
       { to: "/employees", label: "Trabajadores", roles: ["GOD", "ADMIN"] },
       { to: "/timesheets", label: "Horas y pagos", roles: ["GOD", "ADMIN", "ANALYST"] },
+      { to: "/timesheets-audit", label: "Auditoría de horarios", roles: ["GOD", "ADMIN", "ANALYST"] },
     ],
   },
   {
@@ -99,6 +100,7 @@ const TITLES: Record<string, string> = {
   "/calendar/daily": "Detalle diario",
   "/calendar/heatmap": "Mapa de calor",
   "/calendar/classify": "Clasificar eventos",
+  "/timesheets-audit": "Auditoría de horarios",
   "/data": "Movimientos registrados",
   "/stats": "Estadísticas",
   "/settings": "Configuración",

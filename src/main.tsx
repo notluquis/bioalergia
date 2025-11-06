@@ -25,6 +25,7 @@ const Stats = lazy(() => import("./pages/Stats"));
 
 const EmployeesPage = lazy(() => import("./pages/Employees"));
 const TimesheetsPage = lazy(() => import("./pages/Timesheets"));
+const TimesheetAuditPage = lazy(() => import("./pages/TimesheetAuditPage"));
 
 const CounterpartsPage = lazy(() => import("./pages/Counterparts"));
 const LoansPage = lazy(() => import("./pages/Loans"));
@@ -139,6 +140,14 @@ const router = createBrowserRouter([
         element: (
           <Suspense fallback={<PageLoader />}>
             <TimesheetsPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: "/timesheets-audit",
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <TimesheetAuditPage />
           </Suspense>
         ),
       },
