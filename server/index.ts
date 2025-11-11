@@ -69,7 +69,7 @@ registerAssetRoutes(app);
 app.use("/api/supplies", suppliesRouter);
 
 app.get("/api/health", async (_req, res) => {
-  const checks = { db: { status: "ok" as const, latency: null as number | null } };
+  const checks = { db: { status: "ok" as "ok" | "error", latency: null as number | null } };
   try {
     const start = Date.now();
     const pool = getPool();
