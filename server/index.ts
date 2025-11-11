@@ -51,6 +51,7 @@ const CSP_HEADER_VALUE = [
   ["connect-src", "'self'", "https://intranet.bioalergia.cl", "https://static.cloudflareinsights.com"].join(" "),
   "img-src 'self' data:",
   "style-src 'self' 'unsafe-inline'",
+  "font-src 'self' data:",
   "base-uri 'self'",
   "frame-ancestors 'self'",
 ].join("; ");
