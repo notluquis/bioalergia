@@ -35,6 +35,30 @@ app.use(
 );
 app.use(express.json());
 app.use(cookieParser());
+const CSP_HEADER_VALUE = [
+  "default-src 'self'",
+  [
+    "script-src",
+    "'self'",
+    "https://intranet.bioalergia.cl",
+    "https://intranet.bioalergia.cl/assets/",
+    "https://intranet.bioalergia.cl/cdn-cgi/scripts/7d0fa10a/cloudflare-static/",
+    "https://intranet.bioalergia.cl/cdn-cgi/rum",
+    "https://static.cloudflareinsights.com",
+    "'unsafe-inline'",
+  ].join(" "),
+  ["worker-src", "'self'", "https://intranet.bioalergia.cl"].join(" "),
+  ["connect-src", "'self'", "https://intranet.bioalergia.cl", "https://static.cloudflareinsights.com"].join(" "),
+  "img-src 'self' data:",
+  "style-src 'self' 'unsafe-inline'",
+  "base-uri 'self'",
+  "frame-ancestors 'self'",
+].join("; ");
+
+app.use((_req: Request, res: Response, next: NextFunction) => {
+  res.setHeader("Content-Security-Policy", CSP_HEADER_VALUE);
+  next();
+});
 app.use((req: Request, res: Response, next: NextFunction) => {
   const requestLogger = bindRequestLogger(req, res);
   requestLogger.info({ event: "request:start" });
