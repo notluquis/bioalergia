@@ -29,20 +29,20 @@ app.disable("x-powered-by");
 
 // Security headers including CSP
 app.use((req, res, next) => {
-  const cspDirectives = [
+  const selfCsp = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://static.cloudflareinsights.com https://intranet.bioalergia.cl https://*.cloudflare.com https://*.cloudflareinsights.com",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://static.cloudflareinsights.com https://intranet.bioalergia.cl https://*.cloudflare.com https://*.cloudflareinsights.com https://intranet.bioalergia.cl/cdn-cgi/scripts/7d0fa10a/cloudflare-static",
     "style-src 'self' 'unsafe-inline' https:",
     "img-src 'self' data: https: blob:",
     "font-src 'self' data: https:",
     "connect-src 'self' https://api.mercadopago.com https://*.cloudflare.com wss:",
-    "worker-src 'self' blob:",
+    "worker-src 'self' blob: https://intranet.bioalergia.cl/sw.js",
     "frame-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
     "object-src 'none'",
   ].join("; ");
-  res.setHeader("Content-Security-Policy", cspDirectives);
+  res.setHeader("Content-Security-Policy", selfCsp);
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("X-Frame-Options", "DENY");
   res.setHeader("X-XSS-Protection", "1; mode=block");

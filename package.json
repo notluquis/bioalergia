@@ -12,7 +12,7 @@
     "server": "npx @dotenvx/dotenvx run -- tsx watch --tsconfig tsconfig.server.json server/index.ts",
     "predev:full": "node scripts/reset-dev.mjs",
     "dev:full": "concurrently \"npm:dev\" \"npm:server\"",
-    "start": "npm_config_production=false node dist/server/index.js",
+    "start": "node dist/server/index.js",
     "build:prod": "rm -rf dist && npm run prisma:generate && npm run build:server && npm run copy:generated && npm run build:client",
     "copy:generated": "mkdir -p dist/generated && cp -R generated/prisma dist/generated/prisma",
     "deploy": "npm run build:prod",
