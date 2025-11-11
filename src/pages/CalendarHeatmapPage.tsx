@@ -235,6 +235,8 @@ function CalendarHeatmapPage() {
   const rangeStartLabel = heatmapMonths[0]?.format("MMM YYYY") ?? "—";
   const rangeEndLabel = heatmapMonths[heatmapMonths.length - 1]?.format("MMM YYYY") ?? "—";
 
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
   return (
     <section className="space-y-6">
       <header className="space-y-2">
@@ -243,7 +245,7 @@ function CalendarHeatmapPage() {
       </header>
 
       <form
-        className="grid gap-4 rounded-2xl border border-primary/15 bg-base-100 p-6 text-xs text-base-content/80 shadow-sm md:grid-cols-6"
+        className="space-y-4 rounded-2xl border border-primary/15 bg-base-100 p-6 text-xs text-base-content/80 shadow-sm"
         onSubmit={(event) => {
           event.preventDefault();
           handleApply().catch(() => {
@@ -251,52 +253,60 @@ function CalendarHeatmapPage() {
           });
         }}
       >
-        <Input
-          label={tc("filters.from")}
-          type="date"
-          value={filters.from}
-          onChange={(event: ChangeEvent<HTMLInputElement>) =>
-            setFilters((prev) => ({ ...prev, from: event.target.value }))
-          }
-        />
-        <Input
-          label={tc("filters.to")}
-          type="date"
-          value={filters.to}
-          onChange={(event: ChangeEvent<HTMLInputElement>) =>
-            setFilters((prev) => ({ ...prev, to: event.target.value }))
-          }
-        />
-        <MultiSelectFilter
-          label={tc("filters.calendars")}
-          options={availableCalendars}
-          selected={filters.calendarIds}
-          onToggle={(value) => handleToggle("calendarIds", value)}
-          placeholder={tc("filters.all")}
-        />
-        <MultiSelectFilter
-          label={tc("filters.eventTypes")}
-          options={availableEventTypes}
-          selected={filters.eventTypes}
-          onToggle={(value) => handleToggle("eventTypes", value)}
-          placeholder={tc("filters.all")}
-        />
-        <MultiSelectFilter
-          label={tc("filters.categories")}
-          options={availableCategories}
-          selected={filters.categories}
-          onToggle={(value) => handleToggle("categories", value)}
-          placeholder={tc("filters.allCategories")}
-        />
-        <Input
-          label={tc("filters.search")}
-          placeholder={tc("searchPlaceholder")}
-          value={filters.search}
-          onChange={(event: ChangeEvent<HTMLInputElement>) =>
-            setFilters((prev) => ({ ...prev, search: event.target.value }))
-          }
-        />
-        <div className="flex items-end gap-2 md:col-span-2">
+        <div className="grid gap-4 md:grid-cols-3">
+          <Input
+            label={tc("filters.from")}
+            type="date"
+            value={filters.from}
+            onChange={(event: ChangeEvent<HTMLInputElement>) =>
+              setFilters((prev) => ({ ...prev, from: event.target.value }))
+            }
+          />
+          <Input
+            label={tc("filters.to")}
+            type="date"
+            value={filters.to}
+            onChange={(event: ChangeEvent<HTMLInputElement>) =>
+              setFilters((prev) => ({ ...prev, to: event.target.value }))
+            }
+          />
+          <MultiSelectFilter
+            label={tc("filters.calendars")}
+            options={availableCalendars}
+            selected={filters.calendarIds}
+            onToggle={(value) => handleToggle("calendarIds", value)}
+            placeholder={tc("filters.all")}
+          />
+        </div>
+
+        {showAdvanced && (
+          <div className="grid gap-4 md:grid-cols-3">
+            <MultiSelectFilter
+              label={tc("filters.eventTypes")}
+              options={availableEventTypes}
+              selected={filters.eventTypes}
+              onToggle={(value) => handleToggle("eventTypes", value)}
+              placeholder={tc("filters.all")}
+            />
+            <MultiSelectFilter
+              label={tc("filters.categories")}
+              options={availableCategories}
+              selected={filters.categories}
+              onToggle={(value) => handleToggle("categories", value)}
+              placeholder={tc("filters.allCategories")}
+            />
+            <Input
+              label={tc("filters.search")}
+              placeholder={tc("searchPlaceholder")}
+              value={filters.search}
+              onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                setFilters((prev) => ({ ...prev, search: event.target.value }))
+              }
+            />
+          </div>
+        )}
+
+        <div className="flex flex-wrap items-center gap-2">
           <Button type="submit" size="lg" disabled={busy}>
             {loading ? tc("loading") : tc("applyFilters")}
           </Button>
@@ -312,6 +322,9 @@ function CalendarHeatmapPage() {
             }}
           >
             {tc("resetFilters")}
+          </Button>
+          <Button type="button" variant="ghost" size="sm" onClick={() => setShowAdvanced((prev) => !prev)}>
+            {showAdvanced ? "Ocultar filtros avanzados" : "Más filtros"}
           </Button>
         </div>
       </form>

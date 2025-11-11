@@ -4,7 +4,16 @@ import { normalizeRut, validateRut } from "../lib/rut.js";
 import { createEmployee, findEmployeeByEmail } from "./employees.js";
 
 export type CounterpartPersonType = "PERSON" | "COMPANY" | "OTHER";
-export type CounterpartCategory = "SUPPLIER" | "PATIENT" | "EMPLOYEE" | "PARTNER" | "RELATED" | "OTHER";
+export type CounterpartCategory =
+  | "SUPPLIER"
+  | "PATIENT"
+  | "EMPLOYEE"
+  | "PARTNER"
+  | "RELATED"
+  | "OTHER"
+  | "CLIENT"
+  | "LENDER"
+  | "OCCASIONAL";
 
 export type CounterpartAccountMetadata = {
   bankAccountNumber?: string | null;

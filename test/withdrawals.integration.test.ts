@@ -1,5 +1,5 @@
-import assert from "node:assert/strict";
 import http from "node:http";
+import { describe, it, expect } from "vitest";
 
 // Minimal integration test for preview -> import flow
 // Run with: RUN_WITHDRAWALS_IT=1 TEST_COOKIE="mp_session=..." node test/withdrawals.integration.test.ts
@@ -55,66 +55,54 @@ function request<TResponse = unknown>(
   });
 }
 
-async function run() {
-  if (process.env.RUN_WITHDRAWALS_IT !== "1") {
-    console.log("Skipping withdrawals integration tests. Set RUN_WITHDRAWALS_IT=1 to run.");
-    return;
-  }
+const runWithdrawalsIntegrationTests = process.env.RUN_WITHDRAWALS_IT === "1";
 
-  // Use a unique withdrawId to avoid collisions
-  const uniqueId = `test-withdraw-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+describe.runIf(runWithdrawalsIntegrationTests)("withdrawals integration tests", () => {
+  it("allows preview/import with idempotent results", async () => {
+    const uniqueId = `test-withdraw-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+    const previewBefore = await request("POST", "/api/transactions/withdrawals/preview", { ids: [uniqueId] });
+    expect(previewBefore.status).toBe(200);
+    const existing = (previewBefore.json as { existing?: Record<string, unknown> })?.existing ?? {};
+    expect(existing[uniqueId]).toBeUndefined();
 
-  // Preview: should be empty
-  const previewBefore = await request("POST", "/api/transactions/withdrawals/preview", { ids: [uniqueId] });
-  assert.equal(previewBefore.status, 200);
+    const payout = {
+      withdrawId: uniqueId,
+      dateCreated: new Date().toISOString(),
+      status: "PAID",
+      statusDetail: null,
+      amount: 1000,
+      fee: 10,
+      activityUrl: null,
+      payoutDesc: "Integration test payout",
+      bankAccountHolder: "Test User",
+      identificationType: null,
+      identificationNumber: null,
+      bankId: null,
+      bankName: "Banco de Prueba",
+      bankBranch: null,
+      bankAccountType: "RUT",
+      bankAccountNumber: "11111111",
+      raw: { test: "data" },
+    };
 
-  const existing = (previewBefore.json as { existing?: Record<string, unknown> })?.existing ?? {};
-  assert.ok(existing[uniqueId] === undefined || existing[uniqueId] === null);
+    const importResp = await request("POST", "/api/transactions/withdrawals/import", { payouts: [payout] });
+    expect(importResp.status).toBe(200);
+    const summary1 = importResp.json as {
+      status?: string;
+      total?: number;
+      inserted?: number;
+      updated?: number;
+      skipped?: number;
+    };
+    expect(summary1.status).toBe("ok");
+    expect(summary1.total).toBe(1);
+    expect(summary1.inserted! + (summary1.updated ?? 0) + (summary1.skipped ?? 0)).toBe(1);
 
-  // Import: create one payout
-  const payout = {
-    withdrawId: uniqueId,
-    dateCreated: new Date().toISOString(),
-    status: "PAID",
-    statusDetail: null,
-    amount: 1000,
-    fee: 10,
-    activityUrl: null,
-    payoutDesc: "Integration test payout",
-    bankAccountHolder: "Test User",
-    identificationType: null,
-    identificationNumber: null,
-    bankId: null,
-    bankName: "Banco de Prueba",
-    bankBranch: null,
-    bankAccountType: "RUT",
-    bankAccountNumber: "11111111",
-    raw: { test: "data" },
-  };
-
-  const importResp = await request("POST", "/api/transactions/withdrawals/import", { payouts: [payout] });
-  assert.equal(importResp.status, 200);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  assert.equal((importResp.json as any)?.status, "ok");
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const summary1 = importResp.json as any;
-  assert.equal(summary1.total, 1);
-  assert.equal(summary1.inserted + summary1.updated + (summary1.skipped ?? 0), 1);
-
-  // Re-import identical payload: should not insert again; check that totals still add up
-  const importResp2 = await request("POST", "/api/transactions/withdrawals/import", { payouts: [payout] });
-  assert.equal(importResp2.status, 200);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const summary2 = importResp2.json as any;
-  assert.equal(summary2.total, 1);
-  // inserted should be <= previous inserted
-  assert.ok(summary2.inserted <= (summary1.inserted ?? 1));
-  assert.equal(summary2.inserted + summary2.updated + (summary2.skipped ?? 0), 1);
-
-  console.log("Preview->Import integration test completed successfully");
-}
-
-run().catch((err) => {
-  console.error(err);
-  process.exit(1);
+    const importResp2 = await request("POST", "/api/transactions/withdrawals/import", { payouts: [payout] });
+    expect(importResp2.status).toBe(200);
+    const summary2 = importResp2.json as typeof summary1;
+    expect(summary2.total).toBe(1);
+    expect(summary2.inserted! <= (summary1.inserted ?? 1)).toBe(true);
+    expect(summary2.inserted! + (summary2.updated ?? 0) + (summary2.skipped ?? 0)).toBe(1);
+  });
 });

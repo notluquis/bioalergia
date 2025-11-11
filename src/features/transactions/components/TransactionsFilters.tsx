@@ -56,6 +56,16 @@ export function TransactionsFilters({ filters, loading, onChange, onSubmit }: Tr
         />
       </label>
       <label className="flex flex-col gap-2">
+        <span className="font-semibold uppercase tracking-wide text-base-content/60">Cuenta asociada</span>
+        <input
+          type="text"
+          value={filters.bankAccountNumber}
+          onChange={(event) => onChange({ bankAccountNumber: event.target.value })}
+          className="input input-bordered"
+          placeholder="Número de cuenta"
+        />
+      </label>
+      <label className="flex flex-col gap-2">
         <span className="font-semibold uppercase tracking-wide text-base-content/60">Desde</span>
         <input
           type="text"

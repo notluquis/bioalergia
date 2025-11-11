@@ -1,4 +1,4 @@
-import { Fragment, useState, useMemo, useEffect } from "react";
+import { Fragment, useState, useMemo, useEffect, useCallback } from "react";
 import type { ChangeEvent, FocusEvent } from "react";
 import dayjs from "dayjs";
 import { fmtCLP } from "../../../lib/format";
@@ -6,6 +6,7 @@ import { formatRut } from "../../../lib/rut";
 import Button from "../../../components/Button";
 import Input from "../../../components/Input";
 import Alert from "../../../components/Alert";
+import Modal from "../../../components/Modal";
 import { useToast } from "../../../context/ToastContext";
 import type { Counterpart, CounterpartAccount, CounterpartAccountSuggestion, CounterpartSummary } from "../types";
 import type { DbMovement } from "../../transactions/types";
@@ -18,6 +19,7 @@ interface AssociatedAccountsProps {
   summaryRange: { from: string; to: string };
   summaryLoading: boolean;
   onLoadSummary: (counterpartId: number, from: string, to: string) => Promise<void>;
+  onSummaryRangeChange: (update: Partial<DateRange>) => void;
 }
 
 type AccountForm = {
@@ -38,11 +40,13 @@ const ACCOUNT_FORM_DEFAULT: AccountForm = {
   bankAccountNumber: "",
 };
 
+type DateRange = { from: string; to: string };
+
 type AccountTransactionsState = {
-  expanded: boolean;
   loading: boolean;
   error: string | null;
   rows: DbMovement[];
+  range: DateRange;
 };
 
 type TransactionsApiResponse = {
@@ -60,6 +64,28 @@ type AccountGroup = {
   accounts: CounterpartAccount[];
 };
 
+type AccountTransactionFilter = {
+  sourceId?: string;
+  bankAccountNumber?: string;
+};
+
+function buildAccountTransactionFilter(account: CounterpartAccount): AccountTransactionFilter {
+  const withdrawId = account.metadata?.withdrawId?.trim();
+  const bankAccountNumber = account.metadata?.bankAccountNumber?.trim() || account.account_identifier.trim();
+  const filter: AccountTransactionFilter = {};
+  if (withdrawId) {
+    filter.sourceId = withdrawId;
+  }
+  if (bankAccountNumber) {
+    filter.bankAccountNumber = bankAccountNumber;
+  }
+  return filter;
+}
+
+function accountFilterKey(filter: AccountTransactionFilter) {
+  return `${filter.sourceId ?? ""}|${filter.bankAccountNumber ?? ""}`;
+}
+
 export default function AssociatedAccounts({
   selectedId,
   detail,
@@ -67,6 +93,7 @@ export default function AssociatedAccounts({
   summaryRange,
   summaryLoading,
   onLoadSummary,
+  onSummaryRangeChange,
 }: AssociatedAccountsProps) {
   const [accountForm, setAccountForm] = useState<AccountForm>(ACCOUNT_FORM_DEFAULT);
   const [accountStatus, setAccountStatus] = useState<"idle" | "saving">("idle");
@@ -75,8 +102,17 @@ export default function AssociatedAccounts({
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
   const [attachLoading, setAttachLoading] = useState(false);
   const [accountDetails, setAccountDetails] = useState<Record<string, AccountTransactionsState>>({});
+  const [quickViewGroup, setQuickViewGroup] = useState<AccountGroup | null>(null);
+  const [isAddAccountModalOpen, setIsAddAccountModalOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { success: toastSuccess, error: toastError } = useToast();
+  const fallbackRange = useMemo<DateRange>(
+    () => ({
+      from: dayjs().startOf("year").format("YYYY-MM-DD"),
+      to: dayjs().format("YYYY-MM-DD"),
+    }),
+    []
+  );
 
   useEffect(() => {
     if (!suggestionQuery.trim()) {
@@ -117,6 +153,12 @@ export default function AssociatedAccounts({
     setAccountDetails({});
   }, [selectedId, summaryRange.from, summaryRange.to]);
 
+  useEffect(() => {
+    if (quickViewGroup) {
+      void loadTransactionsForGroup(quickViewGroup);
+    }
+  }, [quickViewGroup, loadTransactionsForGroup, summaryRange]);
+
   async function handleAddAccount() {
     if (!selectedId) {
       setError("Guarda la contraparte antes de agregar cuentas");
@@ -146,6 +188,7 @@ export default function AssociatedAccounts({
       setAccountForm(ACCOUNT_FORM_DEFAULT);
       setAccountSuggestions([]);
       setSuggestionQuery("");
+      setIsAddAccountModalOpen(false);
       await onLoadSummary(selectedId, summaryRange.from, summaryRange.to);
       toastSuccess("Cuenta asociada agregada");
     } catch (err) {
@@ -313,10 +356,6 @@ export default function AssociatedAccounts({
     return map;
   }, [summary, identifierToGroupKey]);
 
-  function resolveSourceId(account: CounterpartAccount) {
-    return account.metadata?.withdrawId?.trim() || account.account_identifier;
-  }
-
   const updateAccountForm =
     <K extends keyof AccountForm>(key: K) =>
     (event: ChangeEvent<HTMLInputElement>) => {
@@ -330,15 +369,20 @@ export default function AssociatedAccounts({
     setSuggestionQuery(value);
   };
 
-  async function fetchTransactionsBySourceId(sourceId: string) {
+  const fetchTransactionsByFilter = useCallback(async (filter: AccountTransactionFilter, range: DateRange) => {
+    if (!filter.sourceId && !filter.bankAccountNumber) {
+      return [];
+    }
     const params = new URLSearchParams();
-    params.set("sourceId", sourceId);
+    if (filter.bankAccountNumber) {
+      params.set("bankAccountNumber", filter.bankAccountNumber);
+    }
     params.set("direction", "OUT");
     params.set("includeAmounts", "true");
     params.set("page", "1");
     params.set("pageSize", "200");
-    if (summaryRange.from) params.set("from", summaryRange.from);
-    if (summaryRange.to) params.set("to", summaryRange.to);
+    if (range.from) params.set("from", range.from);
+    if (range.to) params.set("to", range.to);
 
     const res = await fetch(`/api/transactions?${params.toString()}`, { credentials: "include" });
     const payload = (await res.json()) as TransactionsApiResponse;
@@ -346,60 +390,98 @@ export default function AssociatedAccounts({
       throw new Error(payload.message || "No se pudieron obtener los movimientos");
     }
     return payload.data;
-  }
+  }, []);
 
-  async function fetchGroupTransactions(group: AccountGroup) {
-    const uniqueSourceIds = Array.from(new Set(group.accounts.map((account) => resolveSourceId(account))));
-    const results = await Promise.all(uniqueSourceIds.map((sourceId) => fetchTransactionsBySourceId(sourceId)));
-    const merged = results.flat();
-    const dedup = new Map<number, DbMovement>();
-    merged.forEach((movement) => {
-      if (!dedup.has(movement.id)) {
-        dedup.set(movement.id, movement);
-      }
-    });
-    return Array.from(dedup.values()).sort((a, b) => dayjs(b.timestamp).valueOf() - dayjs(a.timestamp).valueOf());
-  }
+  const fetchGroupTransactions = useCallback(
+    async (group: AccountGroup, range: DateRange) => {
+      const filters = group.accounts.map((account) => buildAccountTransactionFilter(account));
+      const normalized: Record<string, AccountTransactionFilter> = {};
+      filters.forEach((filter) => {
+        if (filter.sourceId || filter.bankAccountNumber) {
+          normalized[accountFilterKey(filter)] = filter;
+        }
+      });
+      const uniqueFilters = Object.values(normalized);
+      const results = await Promise.all(uniqueFilters.map((filter) => fetchTransactionsByFilter(filter, range)));
+      const merged = results.flat();
+      const dedup = new Map<number, DbMovement>();
+      merged.forEach((movement) => {
+        if (!dedup.has(movement.id)) {
+          dedup.set(movement.id, movement);
+        }
+      });
+      return Array.from(dedup.values()).sort((a, b) => dayjs(b.timestamp).valueOf() - dayjs(a.timestamp).valueOf());
+    },
+    [fetchTransactionsByFilter]
+  );
 
-  async function toggleAccountDetails(group: AccountGroup) {
-    const identifier = group.key;
-    const current = accountDetails[identifier];
-    const nextExpanded = !current?.expanded;
-    setAccountDetails((prev) => ({
-      ...prev,
-      [identifier]: {
-        expanded: nextExpanded,
-        loading: nextExpanded && !current?.rows?.length,
-        error: null,
-        rows: current?.rows ?? [],
-      },
-    }));
-    if (nextExpanded && (!current || current.rows.length === 0)) {
+  const loadTransactionsForGroup = useCallback(
+    async (group: AccountGroup, range?: DateRange) => {
+      const appliedRange = range ?? summaryRange;
+      const identifier = group.key;
+      setAccountDetails((prev) => ({
+        ...prev,
+        [identifier]: {
+          loading: true,
+          error: null,
+          rows: prev[identifier]?.rows ?? [],
+          range: appliedRange,
+        },
+      }));
+
       try {
-        const rows = await fetchGroupTransactions(group);
+        const rows = await fetchGroupTransactions(group, appliedRange);
         setAccountDetails((prev) => ({
           ...prev,
           [identifier]: {
-            expanded: true,
             loading: false,
             error: null,
             rows,
+            range: appliedRange,
           },
         }));
+        if (!rows.length && (appliedRange.from !== fallbackRange.from || appliedRange.to !== fallbackRange.to)) {
+          const fallbackRows = await fetchGroupTransactions(group, fallbackRange);
+          setAccountDetails((prev) => ({
+            ...prev,
+            [identifier]: {
+              loading: false,
+              error: null,
+              rows: fallbackRows,
+              range: fallbackRange,
+            },
+          }));
+        }
       } catch (err) {
         setAccountDetails((prev) => ({
           ...prev,
           [identifier]: {
-            expanded: true,
             loading: false,
             error: err instanceof Error ? err.message : String(err),
-            rows: [],
+            rows: prev[identifier]?.rows ?? [],
+            range: appliedRange,
           },
         }));
-        toastError(err instanceof Error ? err.message : "No se pudieron obtener los movimientos");
       }
+    },
+    [fetchGroupTransactions, fallbackRange, summaryRange]
+  );
+
+  const handleQuickView = (group: AccountGroup) => {
+    setQuickViewGroup(group);
+    if (!accountDetails[group.key]?.rows?.length) {
+      void loadTransactionsForGroup(group);
     }
-  }
+  };
+  const quickViewDetails = quickViewGroup ? accountDetails[quickViewGroup.key] : undefined;
+  const quickStats = useMemo(() => {
+    const rows = quickViewDetails?.rows ?? [];
+    return {
+      count: rows.length,
+      total: rows.reduce((sum, row) => sum + (row.amount ?? 0), 0),
+    };
+  }, [quickViewDetails?.rows]);
+  const activeRange = quickViewDetails?.range ?? summaryRange;
 
   return (
     <section className="surface-recessed relative space-y-5 p-6" aria-busy={summaryLoading}>
@@ -415,6 +497,9 @@ export default function AssociatedAccounts({
             Identificadores detectados en los movimientos y asignados a esta contraparte.
           </p>
         </div>
+        <Button size="sm" variant="secondary" onClick={() => setIsAddAccountModalOpen(true)}>
+          + Agregar cuenta
+        </Button>
       </header>
       {error && <Alert variant="error">{error}</Alert>}
       <div className="overflow-x-auto">
@@ -437,6 +522,11 @@ export default function AssociatedAccounts({
                   <tr className="border-b border-base-300 bg-base-200 last:border-none even:bg-base-300">
                     <td className="px-3 py-3 text-base-content">
                       <div className="font-mono text-xs text-base-content">{group.label}</div>
+                      {summaryInfo && summaryInfo.count > 0 && (
+                        <span className="mt-1 inline-flex rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-primary">
+                          Cuenta reconocida
+                        </span>
+                      )}
                       {group.accounts.length > 1 && (
                         <div className="text-xs text-base-content/90">
                           {group.accounts.length} identificadores vinculados
@@ -446,27 +536,29 @@ export default function AssociatedAccounts({
                     <td className="px-3 py-3 text-base-content">{group.bankName ?? "-"}</td>
                     <td className="px-3 py-3 text-base-content">{group.holder ?? "-"}</td>
                     <td className="px-3 py-3">
-                      <Input
-                        type="text"
-                        defaultValue={group.concept}
-                        onBlur={(event: FocusEvent<HTMLInputElement>) =>
-                          handleGroupConceptChange(group, event.target.value)
-                        }
-                        className="w-full"
-                        placeholder="Concepto (ej. Compra de vacunas)"
-                      />
+                      {summaryInfo && summaryInfo.count > 0 ? (
+                        <Input
+                          type="text"
+                          defaultValue={group.concept}
+                          onBlur={(event: FocusEvent<HTMLInputElement>) =>
+                            handleGroupConceptChange(group, event.target.value)
+                          }
+                          className="w-full"
+                          placeholder="Concepto (ej. Compra de vacunas)"
+                        />
+                      ) : (
+                        <span className="text-xs italic text-base-content/60">Sin movimientos</span>
+                      )}
                     </td>
                     <td className="px-3 py-3 text-base-content">
                       <div className="flex flex-col gap-2 text-xs">
-                        <Button variant="secondary" onClick={() => toggleAccountDetails(group)} className="self-start">
-                          {state?.expanded ? "Ocultar movimientos" : "Ver movimientos"}
+                        <Button variant="secondary" onClick={() => handleQuickView(group)} className="self-start">
+                          Ver movimientos
                         </Button>
                         <div className="text-xs text-base-content/60">
-                          {state?.loading
-                            ? "Cargando movimientos..."
-                            : summaryInfo
-                              ? `${summaryInfo.count} mov. · ${fmtCLP(summaryInfo.total)}`
-                              : "Sin movimientos en el rango"}
+                          {summaryInfo
+                            ? `${summaryInfo.count} mov. · ${fmtCLP(summaryInfo.total)}`
+                            : "Sin movimientos en el rango"}
                         </div>
                         {state?.error && (
                           <Alert variant="error" className="text-xs">
@@ -476,64 +568,6 @@ export default function AssociatedAccounts({
                       </div>
                     </td>
                   </tr>
-                  {state?.expanded && (
-                    <tr className="bg-base-100/65">
-                      <td colSpan={5} className="px-3 pb-4 pt-2">
-                        {state.loading ? (
-                          <p className="text-xs text-base-content/60">Cargando movimientos...</p>
-                        ) : state.error ? (
-                          <Alert variant="error" className="text-xs">
-                            {state.error}
-                          </Alert>
-                        ) : state.rows.length ? (
-                          <div className="overflow-x-auto">
-                            <table className="min-w-full text-xs text-base-content">
-                              <thead className="bg-base-100/60 text-primary">
-                                <tr>
-                                  <th className="px-2 py-2 text-left text-xs font-semibold uppercase tracking-wide">
-                                    Fecha
-                                  </th>
-                                  <th className="px-2 py-2 text-left text-xs font-semibold uppercase tracking-wide">
-                                    Descripción
-                                  </th>
-                                  <th className="px-2 py-2 text-left text-xs font-semibold uppercase tracking-wide">
-                                    Origen
-                                  </th>
-                                  <th className="px-2 py-2 text-left text-xs font-semibold uppercase tracking-wide">
-                                    Destino
-                                  </th>
-                                  <th className="px-2 py-2 text-right text-xs font-semibold uppercase tracking-wide">
-                                    Monto
-                                  </th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {state.rows.map((movement) => (
-                                  <tr key={movement.id} className="border-t border-base-300">
-                                    <td className="px-2 py-2 text-base-content">
-                                      {dayjs(movement.timestamp).format("DD MMM YYYY HH:mm")}
-                                    </td>
-                                    <td className="px-2 py-2 text-base-content">
-                                      {movement.description ?? "(sin descripción)"}
-                                    </td>
-                                    <td className="px-2 py-2 text-base-content">{movement.origin ?? "-"}</td>
-                                    <td className="px-2 py-2 text-base-content">{movement.destination ?? "-"}</td>
-                                    <td className="px-2 py-2 text-right font-medium text-base-content">
-                                      {movement.amount != null ? fmtCLP(movement.amount) : "-"}
-                                    </td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-                        ) : (
-                          <p className="text-xs text-base-content/60">
-                            No se encontraron movimientos para esta cuenta en el rango seleccionado.
-                          </p>
-                        )}
-                      </td>
-                    </tr>
-                  )}
                 </Fragment>
               );
             })}
@@ -547,10 +581,105 @@ export default function AssociatedAccounts({
           </tbody>
         </table>
       </div>
+      <div className="space-y-4">
+        {quickViewGroup ? (
+          <div className="space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-xs uppercase tracking-[0.3em] text-base-content/60">Resumen mensual</p>
+                <h3 className="text-lg font-semibold text-base-content">Transferencias</h3>
+                <p className="text-xs text-base-content/60">{quickViewGroup.label}</p>
+                <p className="text-[11px] text-base-content/50">
+                  {activeRange.from} – {activeRange.to}
+                </p>
+              </div>
+              <div className="flex gap-4">
+                <div className="rounded-2xl border border-base-300/60 bg-base-100/60 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-base-content/70">
+                  Movimientos {quickStats.count}
+                </div>
+                <div className="rounded-2xl border border-base-300/60 bg-base-100/60 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-base-content/70">
+                  Total {fmtCLP(quickStats.total)}
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-end gap-3 text-xs text-base-content/70">
+              <Input
+                label="Desde"
+                type="date"
+                value={summaryRange.from}
+                onChange={(event) => onSummaryRangeChange({ from: event.target.value })}
+                className="w-36"
+              />
+              <Input
+                label="Hasta"
+                type="date"
+                value={summaryRange.to}
+                onChange={(event) => onSummaryRangeChange({ to: event.target.value })}
+                className="w-36"
+              />
+              <Button
+                size="xs"
+                variant="ghost"
+                onClick={() => onSummaryRangeChange({ from: fallbackRange.from, to: fallbackRange.to })}
+              >
+                Año en curso
+              </Button>
+            </div>
+            <div className="surface-recessed border border-base-300/70 p-4">
+              {quickViewDetails?.loading ? (
+                <div className="flex items-center gap-2 text-xs text-base-content/70">
+                  <span className="loading loading-spinner loading-xs text-primary" />
+                  Cargando movimientos…
+                </div>
+              ) : quickViewDetails?.error ? (
+                <Alert variant="error" className="text-xs">
+                  {quickViewDetails.error}
+                </Alert>
+              ) : quickViewDetails?.rows?.length ? (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full text-xs text-base-content">
+                    <thead className="bg-base-100/60 text-primary">
+                      <tr>
+                        <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide">Fecha</th>
+                        <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide">
+                          Descripción
+                        </th>
+                        <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide">Origen</th>
+                        <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide">Destino</th>
+                        <th className="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wide">Monto</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {quickViewDetails.rows.map((movement) => (
+                        <tr key={movement.id} className="border-t border-base-200">
+                          <td className="px-3 py-2 text-base-content">
+                            {dayjs(movement.timestamp).format("DD MMM YYYY HH:mm")}
+                          </td>
+                          <td className="px-3 py-2 text-base-content">{movement.description ?? "-"}</td>
+                          <td className="px-3 py-2 text-base-content">{movement.origin ?? "-"}</td>
+                          <td className="px-3 py-2 text-base-content">{movement.destination ?? "-"}</td>
+                          <td className="px-3 py-2 text-right text-base-content">
+                            {movement.amount != null ? fmtCLP(movement.amount) : "-"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className="text-xs text-base-content/60">Sin movimientos dentro del rango seleccionado.</p>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-[28px] border border-dashed border-base-300/70 bg-base-100/40 p-8 text-center text-sm text-base-content/60">
+            Selecciona una cuenta en la tabla superior para ver su resumen y movimientos históricos.
+          </div>
+        )}
+      </div>
 
-      <div className="surface-recessed border border-base-300/70 p-5">
-        <h3 className="text-sm font-semibold text-primary drop-shadow-sm">Agregar cuenta</h3>
-        <div className="mt-3 grid gap-3 md:grid-cols-2">
+      <Modal isOpen={isAddAccountModalOpen} onClose={() => setIsAddAccountModalOpen(false)} title="Agregar cuenta">
+        <div className="space-y-4 text-sm">
           <Input
             label="Identificador / Cuenta"
             type="text"
@@ -561,7 +690,7 @@ export default function AssociatedAccounts({
           {suggestionsLoading ? (
             <span className="text-xs text-base-content/60">Buscando sugerencias...</span>
           ) : accountSuggestions.length ? (
-            <div className="max-h-60 overflow-y-auto border border-base-300 bg-base-100">
+            <div className="max-h-48 overflow-y-auto rounded-xl border border-base-300 bg-base-100">
               {accountSuggestions.map((suggestion) => (
                 <div
                   key={suggestion.accountIdentifier}
@@ -602,53 +731,53 @@ export default function AssociatedAccounts({
               ))}
             </div>
           ) : null}
-          <Input
-            label="Banco"
-            type="text"
-            value={accountForm.bankName}
-            onChange={updateAccountForm("bankName")}
-            placeholder="Banco"
-          />
-          <Input
-            label="Número de cuenta"
-            type="text"
-            value={accountForm.bankAccountNumber}
-            onChange={updateAccountForm("bankAccountNumber")}
-            placeholder="Ej. 00123456789"
-          />
-          <Input
-            label="Titular"
-            type="text"
-            value={accountForm.holder}
-            onChange={updateAccountForm("holder")}
-            placeholder="Titular de la cuenta"
-          />
-          <label className="flex flex-col gap-1 text-sm text-base-content">
-            <span className="text-xs font-semibold uppercase tracking-wide text-base-content/60">Tipo / Concepto</span>
-            <div className="flex gap-2">
-              <Input
-                type="text"
-                value={accountForm.accountType}
-                onChange={updateAccountForm("accountType")}
-                className="w-1/2"
-                placeholder="Cuenta corriente"
-              />
-              <Input
-                type="text"
-                value={accountForm.concept}
-                onChange={updateAccountForm("concept")}
-                className="w-1/2"
-                placeholder="Concepto"
-              />
-            </div>
-          </label>
+          <div className="grid gap-3 md:grid-cols-2">
+            <Input
+              label="Banco"
+              type="text"
+              value={accountForm.bankName}
+              onChange={updateAccountForm("bankName")}
+              placeholder="Banco"
+            />
+            <Input
+              label="Número de cuenta"
+              type="text"
+              value={accountForm.bankAccountNumber}
+              onChange={updateAccountForm("bankAccountNumber")}
+              placeholder="Ej. 00123456789"
+            />
+            <Input
+              label="Titular"
+              type="text"
+              value={accountForm.holder}
+              onChange={updateAccountForm("holder")}
+              placeholder="Titular de la cuenta"
+            />
+            <Input
+              label="Concepto"
+              type="text"
+              value={accountForm.concept}
+              onChange={updateAccountForm("concept")}
+              placeholder="Ej. Pago proveedor"
+            />
+            <Input
+              label="Tipo de cuenta"
+              type="text"
+              value={accountForm.accountType}
+              onChange={updateAccountForm("accountType")}
+              placeholder="Cuenta corriente"
+            />
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" onClick={() => setIsAddAccountModalOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={() => void handleAddAccount()} disabled={accountStatus === "saving"}>
+              {accountStatus === "saving" ? "Guardando..." : "Agregar cuenta"}
+            </Button>
+          </div>
         </div>
-        <div className="mt-3 flex justify-end">
-          <Button onClick={handleAddAccount} disabled={accountStatus === "saving"} variant="secondary">
-            {accountStatus === "saving" ? "Guardando..." : "Agregar"}
-          </Button>
-        </div>
-      </div>
+      </Modal>
     </section>
   );
 }

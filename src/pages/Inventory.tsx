@@ -16,6 +16,8 @@ import Alert from "../components/Alert";
 import Button from "../components/Button";
 import { queryKeys } from "../lib/queryKeys";
 import { useToast } from "../context/ToastContext";
+import { ServicesHero, ServicesSurface } from "../features/services/components/ServicesShell";
+import AllergyInventoryView from "../features/inventory/components/AllergyInventoryView";
 
 export default function InventoryPage() {
   const queryClient = useQueryClient();
@@ -189,33 +191,37 @@ export default function InventoryPage() {
   const combinedError = error || (itemsError ? itemsError.message : null);
 
   return (
-    <section className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div className="space-y-2">
-          <h1 className="text-2xl font-bold text-primary">Inventario</h1>
-          <p className="max-w-2xl text-sm text-base-content">Gestiona los insumos, materiales y stock de la clínica.</p>
-        </div>
-        <Button onClick={openCreateModal}>
-          <PlusCircle size={16} />
-          Agregar Item
-        </Button>
-      </div>
+    <section className="space-y-8">
+      <ServicesHero
+        title="Inventario"
+        description="Gestiona insumos, materiales y stock del centro con controles rápidos para crear y ajustar."
+        actions={
+          <Button onClick={openCreateModal}>
+            <PlusCircle size={16} />
+            Agregar item
+          </Button>
+        }
+      />
 
       {combinedError && <Alert variant="error">{combinedError}</Alert>}
 
-      <InventoryTable
-        items={items}
-        loading={loading}
-        openAdjustStockModal={openAdjustStockModal}
-        openEditModal={openEditModal}
-      />
+      <ServicesSurface>
+        <InventoryTable
+          items={items}
+          loading={loading}
+          openAdjustStockModal={openAdjustStockModal}
+          openEditModal={openEditModal}
+        />
+      </ServicesSurface>
 
-      <Modal isOpen={isItemModalOpen} onClose={closeModal} title={editingItem ? "Editar Item" : "Agregar Nuevo Item"}>
+      <AllergyInventoryView />
+
+      <Modal isOpen={isItemModalOpen} onClose={closeModal} title={editingItem ? "Editar item" : "Agregar nuevo item"}>
         <InventoryItemForm item={editingItem} onSave={handleSaveItem} onCancel={closeModal} saving={saving} />
       </Modal>
 
       {itemForStockAdjust && (
-        <Modal isOpen={isAdjustStockModalOpen} onClose={closeModal} title="Ajustar Stock">
+        <Modal isOpen={isAdjustStockModalOpen} onClose={closeModal} title="Ajustar stock">
           <AdjustStockForm item={itemForStockAdjust} onSave={handleAdjustStock} onCancel={closeModal} saving={saving} />
         </Modal>
       )}

@@ -5,15 +5,9 @@ import { z } from "zod";
 export const IdSchema = z.number().int().positive();
 export const OptionalIdSchema = IdSchema.optional();
 
-export const EmailSchema = z
-  .string()
-  .trim()
-  .email("Debe ser un email válido")
-  .toLowerCase();
+export const EmailSchema = z.string().trim().email("Debe ser un email válido").toLowerCase();
 
-export const DateSchema = z
-  .string()
-  .regex(/^\d{4}-\d{2}-\d{2}$/, "Debe ser una fecha válida (YYYY-MM-DD)");
+export const DateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Debe ser una fecha válida (YYYY-MM-DD)");
 
 export const OptionalDateSchema = DateSchema.optional();
 
@@ -24,9 +18,7 @@ export const RutSchema = z
 
 export const OptionalRutSchema = z.union([z.literal(""), RutSchema]).optional();
 
-export const ColorSchema = z
-  .string()
-  .regex(/^#(?:[0-9a-fA-F]{3}){1,2}$/, "Debe ser un color hexadecimal válido");
+export const ColorSchema = z.string().regex(/^#(?:[0-9a-fA-F]{3}){1,2}$/, "Debe ser un color hexadecimal válido");
 
 export const HttpsUrlSchema = z
   .string()
@@ -55,11 +47,14 @@ export const CounterpartPersonTypeSchema = z.enum(["PERSON", "COMPANY", "OTHER"]
 
 export const CounterpartCategorySchema = z.enum([
   "SUPPLIER",
-  "PATIENT", 
+  "PATIENT",
   "EMPLOYEE",
   "PARTNER",
   "RELATED",
-  "OTHER"
+  "OTHER",
+  "CLIENT",
+  "LENDER",
+  "OCCASIONAL",
 ]);
 
 export const DirectionSchema = z.enum(["IN", "OUT"]);
@@ -72,13 +67,13 @@ export const LoanStatusSchema = z.enum(["ACTIVE", "COMPLETED", "DEFAULTED"]);
 
 export const ServiceFrequencySchema = z.enum([
   "WEEKLY",
-  "BIWEEKLY", 
+  "BIWEEKLY",
   "MONTHLY",
   "BIMONTHLY",
   "QUARTERLY",
   "SEMIANNUAL",
   "ANNUAL",
-  "ONCE"
+  "ONCE",
 ]);
 
 export const ServiceOwnershipSchema = z.enum(["COMPANY", "OWNER", "MIXED", "THIRD_PARTY"]);
@@ -148,7 +143,7 @@ export const UpdateCounterpartSchema = CounterpartBaseSchema.partial();
 export const CounterpartAccountSchema = z.object({
   accountIdentifier: z.string().trim().min(1, "El identificador es requerido"),
   bankName: z.string().trim().optional(),
-  accountType: z.string().trim().optional(), 
+  accountType: z.string().trim().optional(),
   holder: z.string().trim().optional(),
   concept: z.string().trim().optional(),
   metadata: z.record(z.string(), z.any()).optional(),
@@ -156,17 +151,19 @@ export const CounterpartAccountSchema = z.object({
 
 // === TRANSACTION SCHEMAS ===
 
-export const TransactionQuerySchema = z.object({
-  from: OptionalDateSchema,
-  to: OptionalDateSchema,
-  description: z.string().trim().optional(),
-  origin: z.string().trim().optional(),
-  destination: z.string().trim().optional(),
-  sourceId: z.string().trim().optional(),
-  direction: DirectionSchema.optional(),
-  file: z.string().trim().optional(),
-  includeAmounts: z.coerce.boolean().default(false),
-}).merge(PaginationSchema);
+export const TransactionQuerySchema = z
+  .object({
+    from: OptionalDateSchema,
+    to: OptionalDateSchema,
+    description: z.string().trim().optional(),
+    origin: z.string().trim().optional(),
+    destination: z.string().trim().optional(),
+    sourceId: z.string().trim().optional(),
+    direction: DirectionSchema.optional(),
+    file: z.string().trim().optional(),
+    includeAmounts: z.coerce.boolean().default(false),
+  })
+  .merge(PaginationSchema);
 
 // === EMPLOYEE SCHEMAS ===
 

@@ -15,15 +15,30 @@ const counterpartFormSchema = z.object({
     .string()
     .trim()
     .optional()
+    .transform((value) => value ?? "")
     .refine((value) => {
       if (!value) return true;
       return normalizeRut(value) !== null;
     }, "RUT inválido"),
   name: z.string().trim().min(1, "El nombre es requerido"),
   personType: z.enum(["PERSON", "COMPANY", "OTHER"]),
-  category: z.enum(["SUPPLIER", "PATIENT", "EMPLOYEE", "PARTNER", "RELATED", "OTHER"]),
-  email: z.string().trim().email("Email inválido").optional().or(z.literal("")),
-  notes: z.string().trim().optional(),
+  category: z.enum([
+    "SUPPLIER",
+    "PATIENT",
+    "EMPLOYEE",
+    "PARTNER",
+    "RELATED",
+    "OTHER",
+    "CLIENT",
+    "LENDER",
+    "OCCASIONAL",
+  ]),
+  email: z.string().trim().email("Email inválido").or(z.literal("")),
+  notes: z
+    .string()
+    .trim()
+    .optional()
+    .transform((value) => value ?? ""),
 });
 
 interface CounterpartFormProps {
@@ -58,7 +73,7 @@ export default function CounterpartForm({ counterpart, onSave, error, saving, lo
   const counterpartSnapshot = useMemo(() => {
     if (!counterpart) return null;
     return {
-      rut: counterpart.rut ?? "",
+      rut: formatRut(counterpart.rut ?? ""),
       name: counterpart.name,
       personType: counterpart.personType,
       category: counterpart.category,
@@ -138,16 +153,18 @@ export default function CounterpartForm({ counterpart, onSave, error, saving, lo
             />
             {getFieldError("email") && <p className="mt-1 text-xs text-error">{getFieldError("email")}</p>}
           </div>
-          <div className="md:col-span-2">
-            <Input
-              label="Notas"
-              type="textarea"
-              rows={4}
-              {...getFieldProps("notes")}
-              placeholder="Información adicional, persona de contacto, etc."
-            />
-            {getFieldError("notes") && <p className="mt-1 text-xs text-error">{getFieldError("notes")}</p>}
-          </div>
+          {!counterpart && (
+            <div className="md:col-span-2">
+              <Input
+                label="Notas"
+                type="textarea"
+                rows={4}
+                {...getFieldProps("notes")}
+                placeholder="Información adicional, persona de contacto, etc."
+              />
+              {getFieldError("notes") && <p className="mt-1 text-xs text-error">{getFieldError("notes")}</p>}
+            </div>
+          )}
           {counterpart?.employeeId && (
             <p className="md:col-span-2 text-xs text-base-content/80">
               Empleado vinculado (ID #{counterpart.employeeId}).{" "}

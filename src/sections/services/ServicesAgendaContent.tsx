@@ -1,7 +1,9 @@
 import dayjs from "dayjs";
-import CollapsibleSection from "../../components/CollapsibleSection";
 import ServicesUnifiedAgenda from "../../features/services/components/ServicesUnifiedAgenda";
+import Button from "../../components/Button";
 import { useServicesOverview } from "../../features/services/hooks/useServicesOverview";
+import { ServicesHero, ServicesSurface, ServicesStatCard } from "../../features/services/components/ServicesShell";
+import { Link } from "react-router-dom";
 
 const currencyFormatter = new Intl.NumberFormat("es-CL", {
   style: "currency",
@@ -31,20 +33,25 @@ export default function ServicesAgendaContent() {
   );
 
   return (
-    <section className="flex flex-col gap-6">
-      <CollapsibleSection title="Totales de agenda" defaultOpen={false}>
-        <div className="grid gap-4 sm:grid-cols-3">
-          <MetricCard title="Pagos hoy" value={currencyFormatter.format(totals.day)} />
-          <MetricCard title="Semana en curso" value={currencyFormatter.format(totals.week)} />
-          <MetricCard title="Mes en curso" value={currencyFormatter.format(totals.month)} />
-        </div>
-      </CollapsibleSection>
+    <section className="space-y-8">
+      <ServicesHero
+        title="Agenda de servicios"
+        description="Visualiza los pagos programados, sus estados y registra conciliaciones rápidamente."
+        breadcrumbs={[{ label: "Servicios", to: "/services" }, { label: "Agenda" }]}
+        actions={
+          <Link to="/services">
+            <Button variant="ghost">Volver al panel</Button>
+          </Link>
+        }
+      />
 
-      <CollapsibleSection
-        title="Agenda por día"
-        defaultOpen
-        description="Visualiza todos los pagos programados agrupados por fecha"
-      >
+      <ServicesSurface>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <ServicesStatCard label="Pagos hoy" value={currencyFormatter.format(totals.day)} />
+          <ServicesStatCard label="Semana en curso" value={currencyFormatter.format(totals.week)} />
+          <ServicesStatCard label="Mes en curso" value={currencyFormatter.format(totals.month)} />
+        </div>
+
         <ServicesUnifiedAgenda
           items={unifiedAgendaItems}
           loading={aggregatedLoading}
@@ -53,21 +60,7 @@ export default function ServicesAgendaContent() {
           onRegisterPayment={handleAgendaRegisterPayment}
           onUnlinkPayment={handleAgendaUnlinkPayment}
         />
-      </CollapsibleSection>
+      </ServicesSurface>
     </section>
-  );
-}
-
-type MetricCardProps = {
-  title: string;
-  value: string;
-};
-
-function MetricCard({ title, value }: MetricCardProps) {
-  return (
-    <article className="surface-muted p-4">
-      <p className="typ-caption text-base-content/70">{title}</p>
-      <p className="mt-2 typ-subtitle text-base-content">{value}</p>
-    </article>
   );
 }

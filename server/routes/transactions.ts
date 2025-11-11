@@ -268,6 +268,7 @@ export function registerTransactionRoutes(app: express.Express) {
         origin: parsed.origin,
         destination: parsed.destination,
         sourceId: parsed.sourceId,
+        bankAccountNumber: parsed.bankAccountNumber,
         direction: parsed.direction,
         file: parsed.file,
         page,

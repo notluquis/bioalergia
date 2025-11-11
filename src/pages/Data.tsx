@@ -27,7 +27,7 @@ export default function Data() {
   const [initialBalance, setInitialBalance] = useState<string>("0");
   const [initialBalanceEdited, setInitialBalanceEdited] = useState(false);
   const [draftFilters, setDraftFilters] = useState<Filters>({
-    from: dayjs().subtract(10, "day").format("YYYY-MM-DD"),
+    from: dayjs().startOf("year").format("YYYY-MM-DD"),
     to: dayjs().format("YYYY-MM-DD"),
     description: "",
     sourceId: "",
@@ -35,6 +35,7 @@ export default function Data() {
     destination: "",
     direction: "",
     includeAmounts: false,
+    bankAccountNumber: "",
   });
   const [appliedFilters, setAppliedFilters] = useState<Filters>(draftFilters);
   const [balancesReport, setBalancesReport] = useState<BalancesApiResponse | null>(null);

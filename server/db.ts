@@ -19,11 +19,48 @@ dotenv.config();
 
 // Counterpart types needed by server
 export type CounterpartPersonType = "PERSON" | "COMPANY" | "OTHER";
-export type CounterpartCategory = "SUPPLIER" | "PATIENT" | "EMPLOYEE" | "PARTNER" | "RELATED" | "OTHER";
+export type CounterpartCategory =
+  | "SUPPLIER"
+  | "PATIENT"
+  | "EMPLOYEE"
+  | "PARTNER"
+  | "RELATED"
+  | "OTHER"
+  | "CLIENT"
+  | "LENDER"
+  | "OCCASIONAL";
 
 export type CounterpartAccountMetadata = {
   bankAccountNumber?: string | null;
   withdrawId?: string | null;
+};
+
+export type AllergyTypeLevel = "type" | "category" | "subtype";
+
+export type AllergyTypeRecord = {
+  id: number;
+  parent_id: number | null;
+  name: string;
+  slug: string;
+  description: string | null;
+  level: AllergyTypeLevel;
+  created_at: string;
+  updated_at: string;
+};
+
+export type InventoryProviderRecord = {
+  id: number;
+  rut: string;
+  name: string;
+  contact_info: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ProviderAccountRecord = {
+  id: number;
+  provider_id: number;
+  account_identifier: string;
 };
 
 export type CounterpartRecord = {
@@ -511,7 +548,8 @@ export async function ensureSchema() {
       rut VARCHAR(64) NULL,
       name VARCHAR(191) NOT NULL,
       person_type ENUM('PERSON','COMPANY','OTHER') NOT NULL DEFAULT 'OTHER',
-      category ENUM('SUPPLIER','PATIENT','EMPLOYEE','PARTNER','RELATED','OTHER') NOT NULL DEFAULT 'SUPPLIER',
+      category ENUM('SUPPLIER','PATIENT','EMPLOYEE','PARTNER','RELATED','OTHER','CLIENT','LENDER')
+        NOT NULL DEFAULT 'SUPPLIER',
       employee_id INT UNSIGNED NULL,
       email VARCHAR(191) NULL,
       notes TEXT NULL,
@@ -3306,6 +3344,7 @@ export async function upsertWithdrawals(payouts: PayoutRecord[]) {
   for (let offset = 0; offset < payouts.length; offset += CHUNK_SIZE) {
     const chunk = payouts.slice(offset, offset + CHUNK_SIZE);
     const ids = chunk.map((p) => p.withdrawId).filter(Boolean);
+    const identificationCandidates: IdentificationSeed[] = [];
 
     const existingMap: Record<string, string | null> = {};
     if (ids.length) {
@@ -3368,6 +3407,17 @@ export async function upsertWithdrawals(payouts: PayoutRecord[]) {
         p.bankAccountNumber,
         rawForStore,
       ]);
+
+      if (p.identificationNumber) {
+        const normalizedRut = normalizeRut(p.identificationNumber);
+        if (normalizedRut && validateRut(normalizedRut)) {
+          identificationCandidates.push({
+            normalizedRut,
+            displayRut: p.identificationNumber,
+            holderName: p.bankAccountHolder ?? null,
+          });
+        }
+      }
     }
 
     // Execute chunked upsert
@@ -3411,6 +3461,10 @@ export async function upsertWithdrawals(payouts: PayoutRecord[]) {
             raw_json = VALUES(raw_json)` as string,
         [values]
       );
+    }
+
+    if (identificationCandidates.length) {
+      await ensureCounterpartsForIdentificationSeeds(identificationCandidates);
     }
 
     totalInserted += newCount;
@@ -3692,6 +3746,87 @@ async function attachAccountsByRut(counterpartId: number, rut: string) {
       },
     });
   }
+}
+
+type IdentificationSeed = {
+  normalizedRut: string;
+  displayRut: string;
+  holderName: string | null;
+};
+
+async function ensureCounterpartsForIdentificationSeeds(seeds: IdentificationSeed[]) {
+  if (!seeds.length) return;
+
+  const prioritized = new Map<string, IdentificationSeed>();
+  for (const seed of seeds) {
+    if (!seed.normalizedRut || !validateRut(seed.normalizedRut)) continue;
+    const existing = prioritized.get(seed.normalizedRut);
+    if (!existing || (!existing.holderName && seed.holderName)) {
+      prioritized.set(seed.normalizedRut, seed);
+    }
+  }
+
+  if (!prioritized.size) return;
+
+  const pool = getPool();
+  const normalizedList = Array.from(prioritized.keys());
+  const existing = new Set<string>();
+  const chunkSize = 200;
+  for (let i = 0; i < normalizedList.length; i += chunkSize) {
+    const chunk = normalizedList.slice(i, i + chunkSize);
+    const placeholders = chunk.map(() => "?").join(",");
+    const [rows] = await pool.query<RowDataPacket[]>(
+      `SELECT rut FROM mp_counterparts WHERE rut IN (${placeholders})`,
+      chunk
+    );
+    rows.forEach((row) => existing.add(String(row.rut)));
+  }
+
+  for (const [rut, info] of prioritized.entries()) {
+    if (existing.has(rut)) continue;
+    try {
+      await createCounterpart({
+        rut,
+        name: info.holderName?.trim() || info.displayRut || rut,
+        personType: "PERSON",
+        category: "SUPPLIER",
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "";
+      if (message.includes("ER_DUP_ENTRY")) {
+        continue;
+      }
+      throw error;
+    }
+  }
+}
+
+export async function backfillCounterpartsFromWithdrawals(): Promise<{ candidates: number }> {
+  const pool = getPool();
+  const [rows] = await pool.query<RowDataPacket[]>(
+    `SELECT
+        identification_number,
+        MAX(bank_account_holder) AS holder_name
+     FROM mp_withdrawals
+     WHERE identification_number IS NOT NULL
+     GROUP BY identification_number` as string
+  );
+
+  const seeds: IdentificationSeed[] = [];
+  for (const row of rows) {
+    const display = row.identification_number ? String(row.identification_number) : "";
+    if (!display) continue;
+    const normalized = normalizeRut(display);
+    if (!normalized || !validateRut(normalized)) continue;
+    seeds.push({
+      normalizedRut: normalized,
+      displayRut: display,
+      holderName: row.holder_name ? String(row.holder_name) : null,
+    });
+  }
+
+  await ensureCounterpartsForIdentificationSeeds(seeds);
+  return { candidates: seeds.length };
 }
 
 export async function upsertCounterpartAccount(

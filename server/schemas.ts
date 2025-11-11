@@ -89,6 +89,7 @@ export const transactionsQuerySchema = z.object({
   origin: z.string().optional(),
   destination: z.string().optional(),
   sourceId: z.string().optional(),
+  bankAccountNumber: z.string().optional(),
   direction: z.enum(["IN", "OUT", "NEUTRO"]).optional(),
   file: z.string().optional(),
   includeAmounts: z.enum(["true", "false"]).optional(),
@@ -112,7 +113,10 @@ export const counterpartPayloadSchema = z.object({
   rut: z.string().trim().max(64).optional().nullable(),
   name: z.string().min(1).max(191),
   personType: z.enum(["PERSON", "COMPANY", "OTHER"]).default("OTHER"),
-  category: z.enum(["SUPPLIER", "PATIENT", "EMPLOYEE", "PARTNER", "RELATED", "OTHER"]).optional().default("SUPPLIER"),
+  category: z
+    .enum(["SUPPLIER", "PATIENT", "EMPLOYEE", "PARTNER", "RELATED", "OTHER", "CLIENT", "LENDER", "OCCASIONAL"])
+    .optional()
+    .default("SUPPLIER"),
   email: z.string().email().optional().nullable(),
   employeeEmail: z.string().email().optional().nullable(),
   employeeId: z.coerce.number().int().positive().optional().nullable(),

@@ -16,7 +16,7 @@ type ServiceTemplateGalleryProps = {
 
 const TODAY = dayjs().format("YYYY-MM-DD");
 
-const SERVICE_TEMPLATES: ServiceTemplate[] = [
+export const SERVICE_TEMPLATES: ServiceTemplate[] = [
   {
     id: "utilities",
     name: "Servicios básicos",

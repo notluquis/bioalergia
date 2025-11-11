@@ -33,6 +33,7 @@
     "seed": "tsx server/seed.ts",
     "prisma:generate": "prisma generate",
     "postinstall": "npm run prisma:generate",
+    "counterparts:backfill": "tsx scripts/backfill-counterparts.ts",
     "prepare": "husky"
   },
   "dependencies": {

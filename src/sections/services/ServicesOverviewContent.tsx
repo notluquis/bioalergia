@@ -2,16 +2,21 @@ import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
 import Alert from "../../components/Alert";
 import Button from "../../components/Button";
-import CollapsibleSection from "../../components/CollapsibleSection";
 import Input from "../../components/Input";
 import Modal from "../../components/Modal";
 import ServiceDetail from "../../features/services/components/ServiceDetail";
 import ServiceForm from "../../features/services/components/ServiceForm";
 import ServiceList from "../../features/services/components/ServiceList";
 import ServicesFilterPanel from "../../features/services/components/ServicesFilterPanel";
-import ServiceTemplateGallery from "../../features/services/components/ServiceTemplateGallery";
 import ServicesUnifiedAgenda from "../../features/services/components/ServicesUnifiedAgenda";
+import {
+  ServicesHero,
+  ServicesSurface,
+  ServicesStatCard,
+  ServicesGrid,
+} from "../../features/services/components/ServicesShell";
 import { useServicesOverview } from "../../features/services/hooks/useServicesOverview";
+import { Link } from "react-router-dom";
 
 const formatCurrency = new Intl.NumberFormat("es-CL", {
   style: "currency",
@@ -44,7 +49,6 @@ export default function ServicesOverviewContent() {
     openCreateModal,
     closeCreateModal,
     selectedTemplate,
-    applyTemplate,
     paymentSchedule,
     paymentForm,
     handlePaymentFieldChange,
@@ -62,58 +66,84 @@ export default function ServicesOverviewContent() {
     handleAgendaUnlinkPayment,
   } = overview;
 
+  const stats = [
+    {
+      title: "Servicios activos",
+      value: `${formatNumber.format(summaryTotals.activeCount)} / ${formatNumber.format(filteredServices.length)}`,
+      helper: `Vista filtrada: ${filteredServices.length} de ${services.length}`,
+    },
+    {
+      title: "Monto esperado",
+      value: formatCurrency.format(summaryTotals.totalExpected),
+      helper: "Periodo actual",
+    },
+    {
+      title: "Pagos conciliados",
+      value: formatCurrency.format(summaryTotals.totalPaid),
+      helper: `Cobertura ${collectionRate ? `${Math.round(collectionRate * 100)}%` : "0%"}`,
+    },
+    {
+      title: "Pendientes / vencidos",
+      value: `${formatNumber.format(summaryTotals.pendingCount)} / ${formatNumber.format(summaryTotals.overdueCount)}`,
+      helper: "Cuotas con seguimiento",
+    },
+  ];
+
+  const activeFiltersCount = (filters.search.trim() ? 1 : 0) + filters.statuses.size + filters.types.size;
+
   return (
-    <section className="flex flex-col gap-6">
+    <section className="space-y-8">
       {globalError && <Alert variant="error">{globalError}</Alert>}
 
-      <CollapsibleSection title="Resumen general" defaultOpen={false}>
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <MetricCard
-            title="Servicios activos"
-            value={`${formatNumber.format(summaryTotals.activeCount)} / ${formatNumber.format(filteredServices.length)}`}
-            helper={`Vista filtrada: ${filteredServices.length} de ${services.length}`}
-          />
-          <MetricCard
-            title="Monto esperado"
-            value={formatCurrency.format(summaryTotals.totalExpected)}
-            helper="Periodo actual"
-          />
-          <MetricCard
-            title="Pagos conciliados"
-            value={formatCurrency.format(summaryTotals.totalPaid)}
-            helper={`Cobertura ${collectionRate ? `${Math.round(collectionRate * 100)}%` : "0%"}`}
-          />
-          <MetricCard
-            title="Pendientes / vencidos"
-            value={`${formatNumber.format(summaryTotals.pendingCount)} / ${formatNumber.format(summaryTotals.overdueCount)}`}
-            helper="Cuotas con seguimiento"
-          />
-        </div>
-      </CollapsibleSection>
-
-      <CollapsibleSection title="Filtros" defaultOpen={false}>
-        <ServicesFilterPanel services={services} filters={filters} onChange={handleFilterChange} />
-      </CollapsibleSection>
-
-      <CollapsibleSection title="Plantillas" defaultOpen={false}>
-        <ServiceTemplateGallery onApply={applyTemplate} />
-      </CollapsibleSection>
-
-      <CollapsibleSection
-        title="Servicios registrados"
-        defaultOpen={false}
-        description="Selecciona un servicio para ver su cronograma y acciones disponibles"
+      <ServicesHero
+        title="Servicios recurrentes"
+        description="Supervisa tus servicios, cronogramas y pagos pendientes con una vista única optimizada para la operación diaria."
         actions={
-          canManage && (
-            <Button variant="primary" onClick={openCreateModal}>
-              Nuevo servicio
-            </Button>
-          )
+          <>
+            {activeFiltersCount > 0 && (
+              <span className="rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+                {activeFiltersCount} filtros activos
+              </span>
+            )}
+            <Link to="/services/templates">
+              <Button variant="ghost">Plantillas</Button>
+            </Link>
+            {canManage && (
+              <Button variant="primary" onClick={openCreateModal}>
+                Nuevo servicio
+              </Button>
+            )}
+          </>
         }
-      >
-        {loadingList && <p className="text-xs text-base-content/50">Actualizando listado de servicios...</p>}
-        <div className="grid gap-6 xl:grid-cols-[320px,minmax(0,1fr)]">
-          <div className="h-full">
+      />
+
+      <ServicesSurface>
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {stats.map((stat) => (
+            <ServicesStatCard key={stat.title} label={stat.title} value={stat.value} helper={stat.helper} />
+          ))}
+        </div>
+
+        <div className="rounded-2xl border border-base-300/60 bg-base-100/70 p-5 shadow-inner">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold text-base-content">Filtros inteligentes</p>
+              <p className="text-xs text-base-content/60">
+                Aplica criterios combinados para acotar la lista antes de seleccionar un servicio.
+              </p>
+            </div>
+            <Button variant="secondary" size="sm" onClick={() => handleFilterChange(filters)}>
+              Refrescar filtros
+            </Button>
+          </div>
+          <div className="mt-4">
+            <ServicesFilterPanel services={services} filters={filters} onChange={handleFilterChange} />
+          </div>
+        </div>
+
+        <ServicesGrid>
+          <div className="space-y-6">
+            {loadingList && <p className="text-xs text-base-content/50">Actualizando listado de servicios...</p>}
             <ServiceList
               services={filteredServices}
               selectedId={selectedId}
@@ -121,8 +151,23 @@ export default function ServicesOverviewContent() {
               onCreateRequest={openCreateModal}
               canManage={canManage}
             />
+            <div className="rounded-2xl border border-base-300/60 bg-base-200/70 p-4 shadow-inner">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-base-content">Plantillas guardadas</p>
+                  <p className="text-xs text-base-content/60">
+                    Aplica una configuración predefinida para acelerar la carga.
+                  </p>
+                </div>
+                <Link to="/services/templates">
+                  <Button variant="ghost" size="sm">
+                    Ver plantillas
+                  </Button>
+                </Link>
+              </div>
+            </div>
           </div>
-          <div className="h-full">
+          <div className="space-y-6">
             <ServiceDetail
               service={selectedService}
               schedules={schedules}
@@ -133,14 +178,21 @@ export default function ServicesOverviewContent() {
               onUnlinkPayment={handleUnlink}
             />
           </div>
-        </div>
-      </CollapsibleSection>
+        </ServicesGrid>
+      </ServicesSurface>
 
-      <CollapsibleSection
-        title="Agenda unificada"
-        defaultOpen={false}
-        description="Pagos programados consolidados por fecha de vencimiento"
-      >
+      <ServicesSurface>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-semibold text-base-content">Agenda unificada</p>
+            <p className="text-xs text-base-content/60">Pagos programados consolidados por fecha de vencimiento.</p>
+          </div>
+          <Link to="/services/agenda">
+            <Button variant="ghost" size="sm">
+              Abrir agenda
+            </Button>
+          </Link>
+        </div>
         <ServicesUnifiedAgenda
           items={unifiedAgendaItems}
           loading={aggregatedLoading}
@@ -149,7 +201,7 @@ export default function ServicesOverviewContent() {
           onRegisterPayment={handleAgendaRegisterPayment}
           onUnlinkPayment={handleAgendaUnlinkPayment}
         />
-      </CollapsibleSection>
+      </ServicesSurface>
 
       <Modal isOpen={createOpen} onClose={closeCreateModal} title="Nuevo servicio">
         <ServiceForm
@@ -217,21 +269,5 @@ export default function ServicesOverviewContent() {
         )}
       </Modal>
     </section>
-  );
-}
-
-type MetricCardProps = {
-  title: string;
-  value: string;
-  helper?: string;
-};
-
-function MetricCard({ title, value, helper }: MetricCardProps) {
-  return (
-    <article className="rounded-2xl border border-base-300 bg-base-100/70 p-4 shadow-sm">
-      <p className="text-xs font-semibold uppercase tracking-wide text-base-content/80">{title}</p>
-      <p className="mt-2 text-2xl font-semibold text-base-content">{value}</p>
-      {helper && <p className="mt-1 text-xs text-base-content/50">{helper}</p>}
-    </article>
   );
 }

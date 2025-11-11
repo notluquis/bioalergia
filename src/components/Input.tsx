@@ -14,8 +14,10 @@ type InputProps =
 
 export default function Input(props: InputProps) {
   const { label, helper, type = "text", rows = 3, className = "", children, ...rest } = props;
-  // combine daisyUI input classes with existing glass styles to preserve branding
-  const sharedClasses = `input input-bordered w-full ${className}`.trim();
+  const toneClasses =
+    "bg-base-100/95 text-base-content placeholder:text-base-content/60 focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:border-primary/40 focus-visible:outline-none transition-colors duration-200";
+  // combine daisyUI input classes with tone styling
+  const sharedClasses = `input input-bordered w-full ${toneClasses} ${className}`.trim();
 
   const labelClasses = "form-control text-sm text-base-content";
   const labelTextClasses = "label-text text-xs font-semibold uppercase tracking-wide text-base-content/70";
@@ -28,14 +30,14 @@ export default function Input(props: InputProps) {
       <textarea
         rows={rows}
         {...(rest as React.TextareaHTMLAttributes<HTMLTextAreaElement>)}
-        className={`textarea textarea-bordered w-full ${className}`}
+        className={`textarea textarea-bordered w-full ${toneClasses} ${className}`.trim()}
       />
     );
   } else if (type === "select") {
     control = (
       <select
         {...(rest as React.SelectHTMLAttributes<HTMLSelectElement>)}
-        className={`select select-bordered w-full ${className}`}
+        className={`select select-bordered w-full ${toneClasses} ${className}`.trim()}
       >
         {children}
       </select>

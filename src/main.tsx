@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "./index.css";
+import "./i18n";
 import App from "./App";
 import RequireAuth from "./components/RequireAuth";
 import { AuthProvider } from "./context/AuthContext";
@@ -29,6 +30,7 @@ const TimesheetAuditPage = lazy(() => import("./pages/TimesheetAuditPage"));
 
 const CounterpartsPage = lazy(() => import("./pages/Counterparts"));
 const LoansPage = lazy(() => import("./pages/Loans"));
+const ServicesLayout = lazy(() => import("./pages/services/ServicesLayout"));
 const ServicesPage = lazy(() => import("./pages/ServicesOverviewPage"));
 const ServicesAgendaPage = lazy(() => import("./pages/ServicesAgendaPage"));
 const ServicesCreatePage = lazy(() => import("./pages/ServicesCreatePage"));
@@ -140,33 +142,43 @@ const router = createBrowserRouter([
         path: "/services",
         element: (
           <Suspense fallback={<PageLoader />}>
-            <ServicesPage />
+            <ServicesLayout />
           </Suspense>
         ),
-      },
-      {
-        path: "/services/agenda",
-        element: (
-          <Suspense fallback={<PageLoader />}>
-            <ServicesAgendaPage />
-          </Suspense>
-        ),
-      },
-      {
-        path: "/services/create",
-        element: (
-          <Suspense fallback={<PageLoader />}>
-            <ServicesCreatePage />
-          </Suspense>
-        ),
-      },
-      {
-        path: "/services/templates",
-        element: (
-          <Suspense fallback={<PageLoader />}>
-            <ServicesTemplatesPage />
-          </Suspense>
-        ),
+        children: [
+          {
+            index: true,
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <ServicesPage />
+              </Suspense>
+            ),
+          },
+          {
+            path: "agenda",
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <ServicesAgendaPage />
+              </Suspense>
+            ),
+          },
+          {
+            path: "create",
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <ServicesCreatePage />
+              </Suspense>
+            ),
+          },
+          {
+            path: "templates",
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <ServicesTemplatesPage />
+              </Suspense>
+            ),
+          },
+        ],
       },
       {
         path: "/timesheets",

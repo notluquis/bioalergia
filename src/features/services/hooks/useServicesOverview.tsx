@@ -1,5 +1,15 @@
 import dayjs from "dayjs";
-import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+  createContext,
+  useContext,
+  type ReactNode,
+} from "react";
 import { useAuth } from "../../../context/auth-context";
 import { logger } from "../../../lib/logger";
 import type {
@@ -28,7 +38,7 @@ type SummaryTotals = {
   activeCount: number;
 };
 
-export function useServicesOverview() {
+function useServicesController() {
   const { hasRole } = useAuth();
   const canManage = useMemo(() => hasRole("GOD", "ADMIN"), [hasRole]);
   const canView = useMemo(() => hasRole("GOD", "ADMIN", "ANALYST", "VIEWER"), [hasRole]);
@@ -145,14 +155,16 @@ export function useServicesOverview() {
         detailResults.forEach((result, index) => {
           if (result.status === "fulfilled") {
             next[result.value.id] = result.value.detail;
-          } else {
-            const failedService = response.services[index];
-            failures.push({ id: failedService.public_id, reason: result.reason });
-            logger.error("[services] aggregated:error", {
-              serviceId: failedService.public_id,
-              error: result.reason,
-            });
+            return;
           }
+
+          const failedService = response.services[index];
+          const serviceId = failedService?.public_id ?? `unknown-${index}`;
+          failures.push({ id: serviceId, reason: result.reason });
+          logger.error("[services] aggregated:error", {
+            serviceId,
+            error: result.reason,
+          });
         });
 
         setAllDetails(next);
@@ -166,11 +178,12 @@ export function useServicesOverview() {
         }
 
         const currentSelection = selectedIdRef.current;
-        const hasCurrentDetail = currentSelection ? Boolean(next[currentSelection]) : false;
-
-        if (hasCurrentDetail) {
-          setDetail(next[currentSelection!]);
-          return;
+        if (currentSelection) {
+          const selectedDetail = next[currentSelection];
+          if (selectedDetail) {
+            setDetail(selectedDetail);
+            return;
+          }
         }
 
         const firstWithDetail = response.services.find((service) => next[service.public_id]);
@@ -508,4 +521,21 @@ export function useServicesOverview() {
     handleAgendaRegisterPayment,
     handleAgendaUnlinkPayment,
   };
+}
+
+type ServicesContextValue = ReturnType<typeof useServicesController>;
+
+const ServicesContext = createContext<ServicesContextValue | null>(null);
+
+export function ServicesProvider({ children }: { children: ReactNode }) {
+  const value = useServicesController();
+  return <ServicesContext.Provider value={value}>{children}</ServicesContext.Provider>;
+}
+
+export function useServicesOverview() {
+  const ctx = useContext(ServicesContext);
+  if (!ctx) {
+    throw new Error("useServicesOverview debe usarse dentro de un ServicesProvider");
+  }
+  return ctx;
 }

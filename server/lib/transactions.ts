@@ -13,6 +13,7 @@ export type TransactionsQueryOptions = {
   destination?: string;
   sourceId?: string;
   direction?: "IN" | "OUT" | "NEUTRO";
+  bankAccountNumber?: string;
   file?: string;
   page: number;
   pageSize: number;
@@ -117,6 +118,12 @@ export function buildTransactionsQuery(options: TransactionsQueryOptions) {
   if (options.direction) {
     conditions.push("t.direction = ?");
     params.push(options.direction);
+  }
+
+  if (options.bankAccountNumber) {
+    const normalizedBankAccountNumber = options.bankAccountNumber.replace(/^0+/, "") || options.bankAccountNumber;
+    conditions.push("(mw.bank_account_number = ? OR TRIM(LEADING '0' FROM mw.bank_account_number) = ?)");
+    params.push(options.bankAccountNumber, normalizedBankAccountNumber);
   }
 
   if (options.file) {

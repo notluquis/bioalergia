@@ -1,24 +1,33 @@
-import CollapsibleSection from "../../components/CollapsibleSection";
 import ServiceTemplateGallery from "../../features/services/components/ServiceTemplateGallery";
 import Alert from "../../components/Alert";
 import { useServicesOverview } from "../../features/services/hooks/useServicesOverview";
+import { ServicesHero, ServicesSurface } from "../../features/services/components/ServicesShell";
+import Button from "../../components/Button";
+import { Link } from "react-router-dom";
 
 export default function ServicesTemplatesContent() {
   const { canManage, applyTemplate } = useServicesOverview();
 
   return (
-    <section className="flex flex-col gap-6">
+    <section className="space-y-8">
       {!canManage && (
         <Alert variant="warning">Solo administradores pueden crear o editar servicios mediante plantillas.</Alert>
       )}
 
-      <CollapsibleSection
-        title="Plantillas disponibles"
-        defaultOpen
-        description="Selecciona una plantilla y serás redirigido al editor con los datos precargados"
-      >
+      <ServicesHero
+        title="Plantillas de servicios"
+        description="Reutiliza configuraciones predefinidas para acelerar la creación de servicios recurrentes."
+        breadcrumbs={[{ label: "Servicios", to: "/services" }, { label: "Plantillas" }]}
+        actions={
+          <Link to="/services/create">
+            <Button variant="ghost">Ir a crear</Button>
+          </Link>
+        }
+      />
+
+      <ServicesSurface>
         <ServiceTemplateGallery onApply={applyTemplate} />
-      </CollapsibleSection>
+      </ServicesSurface>
     </section>
   );
 }

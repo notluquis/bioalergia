@@ -18,7 +18,7 @@ const DEFAULT_PAGE_SIZE = 50;
 export default function TransactionsMovements() {
   const [initialBalance, setInitialBalance] = useState<string>("0");
   const [draftFilters, setDraftFilters] = useState<Filters>({
-    from: dayjs().subtract(10, "day").format("YYYY-MM-DD"),
+    from: dayjs().startOf("year").format("YYYY-MM-DD"),
     to: dayjs().format("YYYY-MM-DD"),
     description: "",
     sourceId: "",
@@ -26,6 +26,7 @@ export default function TransactionsMovements() {
     destination: "",
     direction: "",
     includeAmounts: false,
+    bankAccountNumber: "",
   });
   const [appliedFilters, setAppliedFilters] = useState<Filters>(draftFilters);
   const [visibleColumns, setVisibleColumns] = useState<Set<ColumnKey>>(

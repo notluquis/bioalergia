@@ -18,12 +18,17 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const fallbackLogo = "/logo_sin_eslogan.png";
+  const logoSrc = settings.logoUrl?.trim() || fallbackLogo;
+  const supportEmail = "lpulgar@bioalergia.cl";
 
   const from = (location.state as { from?: string } | null)?.from ?? "/";
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setLoading(true);
+    setFormError(null);
     try {
       const timeoutSeconds = Number(import.meta.env?.VITE_AUTH_TIMEOUT ?? 8);
       console.debug("[steps][login] Step 1: preparando envío de credenciales", email);
@@ -37,6 +42,7 @@ export default function Login() {
     } catch (err) {
       const message = err instanceof Error ? err.message : "No se pudo iniciar sesión";
       toastError(message);
+      setFormError(message);
       logger.error("[login-page] login error", { email, message });
       console.error("[steps][login] Step error: fallo al iniciar sesión", message);
     } finally {
@@ -46,23 +52,35 @@ export default function Login() {
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-gradient-to-br from-base-200/60 via-base-100 to-base-100 px-6 py-12">
-      <div className="surface-elevated relative z-10 w-full max-w-md px-10 py-12">
+    <div className="relative flex min-h-screen items-center justify-center bg-linear-to-br from-base-200/60 via-base-100 to-base-100 px-6 py-12">
+      <div className="surface-elevated relative z-10 w-full max-w-md rounded-4xl px-10 py-12 shadow-2xl">
         <div className="mb-6 flex justify-end">
           <ConnectionIndicator />
         </div>
         <div className="flex flex-col items-center gap-3 text-center">
-          <img src={settings.logoUrl} alt={settings.orgName} className="brand-logo" />
+          <img
+            src={logoSrc}
+            alt={settings.orgName || "Bioalergia"}
+            className="brand-logo"
+            onError={(event) => {
+              if (event.currentTarget.src !== fallbackLogo) {
+                event.currentTarget.src = fallbackLogo;
+              }
+            }}
+          />
           <h1 className="text-xl font-semibold text-primary drop-shadow-sm">Inicia sesión en {settings.orgName}</h1>
           <p className="text-sm text-base-content/90">Usa tu correo corporativo para continuar.</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+        <form onSubmit={handleSubmit} className="mt-8 space-y-5">
           <Input
             label="Correo electrónico"
             type="email"
             value={email}
-            onChange={(event: ChangeEvent<HTMLInputElement>) => setEmail(event.target.value)}
+            onChange={(event: ChangeEvent<HTMLInputElement>) => {
+              setEmail(event.target.value);
+              if (formError) setFormError(null);
+            }}
             placeholder="usuario@bioalergia.cl"
             autoComplete="email"
             required
@@ -71,18 +89,27 @@ export default function Login() {
             label="Contraseña"
             type="password"
             value={password}
-            onChange={(event: ChangeEvent<HTMLInputElement>) => setPassword(event.target.value)}
+            onChange={(event: ChangeEvent<HTMLInputElement>) => {
+              setPassword(event.target.value);
+              if (formError) setFormError(null);
+            }}
             placeholder="••••••••"
             autoComplete="current-password"
             required
           />
-          <Button type="submit" disabled={loading} className="w-full">
-            {loading ? "Ingresando..." : "Ingresar"}
-          </Button>
+          <div className="flex flex-col gap-3 pt-4">
+            <Button type="submit" disabled={loading} className="w-full">
+              {loading ? "Ingresando..." : "Ingresar"}
+            </Button>
+            {formError && <p className="text-xs text-rose-500">{formError}</p>}
+          </div>
         </form>
 
-        <p className="mt-6 text-center text-xs text-base-content/90">
-          ¿Olvidaste tu contraseña? Contacta a <strong>{settings.supportEmail}</strong>
+        <p className="mt-8 text-center text-xs text-base-content/90">
+          ¿Olvidaste tu contraseña?{" "}
+          <a href={`mailto:${supportEmail}`} className="font-semibold text-primary underline">
+            Contacta al administrador
+          </a>
         </p>
       </div>
     </div>

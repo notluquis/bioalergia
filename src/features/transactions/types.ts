@@ -55,6 +55,7 @@ export type Filters = {
   origin: string;
   destination: string;
   sourceId: string;
+  bankAccountNumber: string;
   direction: "" | "IN" | "OUT" | "NEUTRO";
   includeAmounts: boolean;
 };

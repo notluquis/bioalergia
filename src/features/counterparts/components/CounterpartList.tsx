@@ -6,6 +6,7 @@ interface CounterpartListProps {
   counterparts: Counterpart[];
   selectedId: number | null;
   onSelectCounterpart: (id: number | null) => void;
+  className?: string;
 }
 
 const CATEGORY_OPTIONS: Array<{ value: CounterpartCategory; label: string }> = [
@@ -22,9 +23,16 @@ const CATEGORY_LABELS = CATEGORY_OPTIONS.reduce<Record<string, string>>((acc, it
   return acc;
 }, {});
 
-export default function CounterpartList({ counterparts, selectedId, onSelectCounterpart }: CounterpartListProps) {
+export default function CounterpartList({
+  counterparts,
+  selectedId,
+  onSelectCounterpart,
+  className,
+}: CounterpartListProps) {
   return (
-    <aside className="surface-recessed flex h-full flex-col gap-4 p-5 text-sm text-base-content">
+    <aside
+      className={`surface-recessed flex h-full min-h-0 flex-col gap-4 overflow-hidden p-5 text-sm text-base-content ${className ?? ""}`}
+    >
       <header className="flex items-center justify-between gap-3">
         <h2 className="typ-caption text-base-content/80">Contrapartes</h2>
         <Button size="xs" onClick={() => onSelectCounterpart(null)}>

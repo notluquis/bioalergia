@@ -1,13 +1,12 @@
 import { useMemo } from "react";
+import { Link } from "react-router-dom";
 import dayjs from "dayjs";
 import { useDashboardStats, useRecentMovements } from "../features/dashboard/hooks";
 import { useParticipantLeaderboardQuery } from "../features/participants/hooks";
 import MetricCard from "../features/dashboard/components/MetricCard";
 import DashboardChart from "../features/dashboard/components/DashboardChart";
-import QuickActions from "../features/dashboard/components/QuickActions";
 import TopParticipantsWidget from "../features/dashboard/components/TopParticipantsWidget";
 import RecentMovementsWidget from "../features/dashboard/components/RecentMovementsWidget";
-import ShortcutCard from "../features/dashboard/components/ShortcutCard";
 import Alert from "../components/Alert";
 
 const RANGE_DAYS = 30;
@@ -72,34 +71,74 @@ export default function Home() {
       <section className="grid auto-rows-min gap-6 lg:grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)]">
         <div className="space-y-6 min-w-0">
           <DashboardChart data={stats?.monthly ?? []} loading={statsLoading} />
-          <QuickActions />
+          <QuickLinksSection />
         </div>
         <aside className="space-y-6 min-w-0">
           <TopParticipantsWidget data={topParticipants} loading={participantsLoading} error={participantsError} />
           <RecentMovementsWidget rows={recentMovements} />
         </aside>
       </section>
-
-      <section className="grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-6">
-        <ShortcutCard
-          title="Subir movimientos"
-          description="Carga los nuevos CSV de Mercado Pago y sincronízalos con la base de datos."
-          to="/upload"
-          accent="secondary"
-        />
-        <ShortcutCard
-          title="Ver movimientos"
-          description="Filtra y audita los movimientos guardados con el saldo calculado."
-          to="/transactions/movements"
-          accent="primary"
-        />
-        <ShortcutCard
-          title="Panel de estadísticas"
-          description="Explora tendencias, proporciones y retiros destacados con mayor detalle."
-          to="/stats"
-          accent="primary"
-        />
-      </section>
     </section>
+  );
+}
+
+const QUICK_LINKS = [
+  {
+    title: "Subir movimientos",
+    description: "Carga los nuevos CSV de Mercado Pago y sincronízalos con la base.",
+    to: "/upload",
+  },
+  {
+    title: "Registrar saldo",
+    description: "Actualiza saldos diarios con conciliaciones manuales.",
+    to: "/transactions/balances",
+  },
+  {
+    title: "Ver movimientos",
+    description: "Filtra y audita los movimientos guardados con el saldo calculado.",
+    to: "/transactions/movements",
+  },
+  {
+    title: "Panel de estadísticas",
+    description: "Explora tendencias, proporciones y retiros destacados.",
+    to: "/stats",
+  },
+  {
+    title: "Participantes",
+    description: "Consulta retiros y aportes por contraparte.",
+    to: "/transactions/participants",
+  },
+  {
+    title: "Servicios",
+    description: "Gestiona servicios recurrentes y su agenda.",
+    to: "/services",
+  },
+];
+
+function QuickLinksSection() {
+  return (
+    <article className="surface-elevated space-y-4 rounded-3xl p-6 shadow-lg">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold text-base-content">Accesos rápidos</p>
+          <p className="text-xs text-base-content/60">Accede a tus vistas más usadas en un solo lugar.</p>
+        </div>
+      </div>
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {QUICK_LINKS.map((link) => (
+          <Link
+            key={link.to}
+            to={link.to}
+            className="rounded-2xl border border-base-300 bg-base-100/80 p-4 text-sm text-base-content shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg"
+          >
+            <p className="text-sm font-semibold text-base-content">{link.title}</p>
+            <p className="mt-1 text-xs text-base-content/70">{link.description}</p>
+            <span className="mt-3 inline-flex w-fit items-center gap-1 rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-primary">
+              Abrir
+            </span>
+          </Link>
+        ))}
+      </div>
+    </article>
   );
 }

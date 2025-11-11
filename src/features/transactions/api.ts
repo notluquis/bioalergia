@@ -25,6 +25,7 @@ export async function fetchTransactions({ filters, page, pageSize }: Transaction
   if (filters.to) params.set("to", filters.to);
   if (filters.description) params.set("description", filters.description);
   if (filters.sourceId) params.set("sourceId", filters.sourceId);
+  if (filters.bankAccountNumber) params.set("bankAccountNumber", filters.bankAccountNumber);
   if (filters.origin) params.set("origin", filters.origin);
   if (filters.destination) params.set("destination", filters.destination);
   if (filters.direction) params.set("direction", filters.direction);

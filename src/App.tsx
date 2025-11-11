@@ -14,23 +14,31 @@ type NavItem = {
   to: string;
   label: string;
   roles?: Array<"GOD" | "ADMIN" | "ANALYST" | "VIEWER">;
+  exact?: boolean;
 };
+
+type NavCategory = "Resumen" | "Finanzas" | "Servicios" | "Calendario";
 
 type NavSection = {
   title: string;
+  category: NavCategory;
   items: NavItem[];
 };
+
+const NAV_CATEGORY_ORDER: NavCategory[] = ["Resumen", "Finanzas", "Servicios", "Calendario"];
 
 const NAV_SECTIONS: NavSection[] = [
   {
     title: "Resumen",
+    category: "Resumen",
     items: [
-      { to: "/", label: "Panel" },
+      { to: "/", label: "Panel", exact: true },
       { to: "/stats", label: "Estadísticas", roles: ["GOD", "ADMIN", "ANALYST", "VIEWER"] },
     ],
   },
   {
     title: "Finanzas",
+    category: "Finanzas",
     items: [
       { to: "/transactions/movements", label: "Movimientos", roles: ["GOD", "ADMIN", "ANALYST", "VIEWER"] },
       { to: "/transactions/balances", label: "Saldos diarios", roles: ["GOD", "ADMIN", "ANALYST", "VIEWER"] },
@@ -41,8 +49,9 @@ const NAV_SECTIONS: NavSection[] = [
   },
   {
     title: "Servicios",
+    category: "Servicios",
     items: [
-      { to: "/services", label: "Panel", roles: ["GOD", "ADMIN", "ANALYST", "VIEWER"] },
+      { to: "/services", label: "Panel", roles: ["GOD", "ADMIN", "ANALYST", "VIEWER"], exact: true },
       { to: "/services/agenda", label: "Agenda", roles: ["GOD", "ADMIN", "ANALYST"] },
       { to: "/services/create", label: "Crear servicio", roles: ["GOD", "ADMIN"] },
       { to: "/services/templates", label: "Plantillas", roles: ["GOD", "ADMIN"] },
@@ -50,6 +59,7 @@ const NAV_SECTIONS: NavSection[] = [
   },
   {
     title: "Calendario",
+    category: "Calendario",
     items: [
       { to: "/calendar/summary", label: "Resumen", roles: ["GOD", "ADMIN", "ANALYST", "VIEWER"] },
       { to: "/calendar/schedule", label: "Calendario", roles: ["GOD", "ADMIN", "ANALYST", "VIEWER"] },
@@ -61,6 +71,7 @@ const NAV_SECTIONS: NavSection[] = [
   },
   {
     title: "Gestión",
+    category: "Finanzas",
     items: [
       { to: "/inventory", label: "Inventario", roles: ["GOD", "ADMIN", "ANALYST"] },
       { to: "/supplies", label: "Solicitud de Insumos", roles: ["GOD", "ADMIN", "ANALYST", "VIEWER"] },
@@ -71,6 +82,7 @@ const NAV_SECTIONS: NavSection[] = [
   },
   {
     title: "Administración",
+    category: "Finanzas",
     items: [
       { to: "/upload", label: "Subir CSV", roles: ["GOD", "ADMIN", "ANALYST"] },
       { to: "/settings/general", label: "Config. general", roles: ["GOD", "ADMIN"] },
@@ -111,6 +123,21 @@ const TITLES: Record<string, string> = {
   "/inventory": "Gestión de Inventario",
 };
 
+const resolveCategoryForPath = (pathname: string): NavCategory => {
+  for (const section of NAV_SECTIONS) {
+    for (const item of section.items) {
+      if (item.exact) {
+        if (item.to === pathname) return section.category;
+      } else if (pathname.startsWith(item.to)) {
+        return section.category;
+      }
+    }
+  }
+  if (pathname.startsWith("/services")) return "Servicios";
+  if (pathname.startsWith("/calendar")) return "Calendario";
+  return "Finanzas";
+};
+
 export default function App() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -125,8 +152,12 @@ export default function App() {
 
   const navigation = NAV_SECTIONS.map((section) => ({
     title: section.title,
+    category: section.category,
     items: section.items.filter((item) => !item.roles || hasRole(...item.roles)),
   })).filter((section) => section.items.length);
+
+  const resolvedCategory = React.useMemo(() => resolveCategoryForPath(location.pathname), [location.pathname]);
+  const [activeNavCategory, setActiveNavCategory] = React.useState<NavCategory>(resolvedCategory);
 
   const handleLogout = async () => {
     await logout();
@@ -158,6 +189,12 @@ export default function App() {
       setSidebarOpen(true);
     }
   }, [debouncedIsMobile, location.pathname]);
+
+  React.useEffect(() => {
+    setActiveNavCategory(resolvedCategory);
+  }, [resolvedCategory]);
+
+  const navigationByCategory = navigation.filter((section) => section.category === activeNavCategory);
 
   const buildLabel = React.useMemo(() => {
     if (!BUILD_TIMESTAMP) return "Desconocido";
@@ -237,34 +274,55 @@ export default function App() {
             />
           </div>
           <nav className="muted-scrollbar mt-4 flex-1 overflow-y-auto pr-2 pb-4">
-            {navigation.map((section) => (
-              <div key={section.title} className="mb-3">
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-base-content/70">
-                  {section.title}
-                </p>
-                <ul className="menu menu-compact bg-transparent p-0">
-                  {section.items.map((item) => (
-                    <li key={item.to}>
-                      <NavLink
-                        to={item.to}
-                        className={({ isActive }) =>
-                          `flex w-full items-center justify-between rounded-xl px-3 py-2 text-sm font-semibold transition-all ${
-                            isActive
-                              ? "active text-primary bg-primary/10"
-                              : "text-base-content hover:text-primary hover:bg-primary/5"
-                          }`
-                        }
-                        onClick={() => {
-                          if (isMobile) setSidebarOpen(false);
-                        }}
-                      >
-                        {item.label}
-                      </NavLink>
-                    </li>
-                  ))}
-                </ul>
+            <div className="mb-3">
+              <div className="flex flex-wrap gap-2">
+                {NAV_CATEGORY_ORDER.map((category) => (
+                  <Button
+                    key={category}
+                    size="xs"
+                    variant={activeNavCategory === category ? "primary" : "ghost"}
+                    onClick={() => setActiveNavCategory(category)}
+                  >
+                    {category}
+                  </Button>
+                ))}
               </div>
-            ))}
+            </div>
+            {navigationByCategory.length ? (
+              navigationByCategory.map((section) => (
+                <div key={section.title} className="mb-3">
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-base-content/70">
+                    {section.title}
+                  </p>
+                  <ul className="menu menu-compact bg-transparent p-0">
+                    {section.items.map((item) => (
+                      <li key={item.to}>
+                        <NavLink
+                          to={item.to}
+                          end={item.exact}
+                          className={({ isActive }) =>
+                            `flex w-full items-center justify-between rounded-xl px-3 py-2 text-sm font-semibold transition-all ${
+                              isActive
+                                ? "active text-primary bg-primary/10"
+                                : "text-base-content hover:text-primary hover:bg-primary/5"
+                            }`
+                          }
+                          onClick={() => {
+                            if (isMobile) setSidebarOpen(false);
+                          }}
+                        >
+                          {item.label}
+                        </NavLink>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))
+            ) : (
+              <div className="rounded-2xl border border-base-300/40 bg-base-200/70 p-3 text-xs text-base-content/70">
+                No hay secciones visibles para esta categoría y rol.
+              </div>
+            )}
           </nav>
           <div className="surface-recessed mt-6 space-y-1 p-3 text-xs text-base-content/70 shadow-inner">
             <p className="text-xs font-semibold uppercase tracking-wide text-base-content">Versión</p>

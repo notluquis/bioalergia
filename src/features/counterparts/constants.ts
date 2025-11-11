@@ -24,6 +24,9 @@ export const CATEGORY_OPTIONS: Array<{ value: CounterpartCategory; label: string
   { value: "EMPLOYEE", label: "Empleado" },
   { value: "PARTNER", label: "Socio" },
   { value: "RELATED", label: "Relacionado a socio" },
+  { value: "CLIENT", label: "Cliente" },
+  { value: "LENDER", label: "Prestamista" },
+  { value: "OCCASIONAL", label: "Ocasional" },
   { value: "OTHER", label: "Otro" },
 ];
 
