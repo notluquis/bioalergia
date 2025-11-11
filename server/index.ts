@@ -68,8 +68,11 @@ registerCalendarEventRoutes(app);
 registerAssetRoutes(app);
 app.use("/api/supplies", suppliesRouter);
 
+type HealthStatus = "ok" | "error";
+type HealthChecks = { db: { status: HealthStatus; latency: number | null } };
+
 app.get("/api/health", async (_req, res) => {
-  const checks = { db: { status: "ok" as "ok" | "error", latency: null as number | null } };
+  const checks: HealthChecks = { db: { status: "ok", latency: null } };
   try {
     const start = Date.now();
     const pool = getPool();
