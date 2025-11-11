@@ -5,7 +5,6 @@ import Button from "./components/Button";
 import ThemeToggle from "./components/ThemeToggle";
 import { BottomNav } from "./components/Navigation/BottomNav";
 import { useAuth } from "./context/AuthContext";
-import { useSettings } from "./context/settings-context";
 import Clock from "./components/Clock";
 import ConnectionIndicator from "./components/ConnectionIndicator";
 import { APP_VERSION, BUILD_TIMESTAMP } from "./version";
@@ -148,7 +147,6 @@ export default function App() {
     return TITLES[location.pathname] ?? "Bioalergia Finanzas";
   }, [location.pathname]);
   const { user, logout, hasRole } = useAuth();
-  const { settings } = useSettings();
 
   const navigation = NAV_SECTIONS.map((section) => ({
     title: section.title,
@@ -247,7 +245,7 @@ export default function App() {
       {/* Overlay for mobile/tablet when sidebar is open */}
       {isMobile && sidebarOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/40 transition-opacity duration-300"
+          className="fixed inset-0 z-40 bg-base-content/20 transition-opacity duration-300"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -256,31 +254,38 @@ export default function App() {
       {(sidebarOpen || !isMobile) && (
         <aside
           id="app-sidebar"
-          className={`surface-elevated backdrop-blur-xl flex h-full w-[min(280px,92vw)] shrink-0 flex-col overflow-y-auto rounded-3xl border border-base-300/40 p-5 text-sm text-base-content shadow-xl
-            fixed inset-y-0 left-0 z-50 transition-transform duration-300
+          className={`fixed inset-y-0 left-0 z-50 flex h-full w-[min(320px,90vw)] shrink-0 flex-col rounded-4xl border border-base-300/60 bg-base-200/70 p-4 text-sm text-base-content shadow-2xl backdrop-blur-3xl transition-transform duration-300 md:static md:h-[calc(100vh-5rem)] md:translate-x-0
             ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
-            md:static md:top-6 md:z-auto md:h-[calc(100vh-6rem)] md:translate-x-0 md:shadow-lg
             ${!sidebarOpen && !isMobile ? "hidden" : ""}`}
-          style={{ maxWidth: "100vw" }}
         >
-          <div className="surface-recessed flex h-16 items-center justify-center px-3 shadow-inner">
-            <img
-              src={settings.logoUrl || "/public/logo_sin_eslogan.png"}
-              alt="Logo"
-              className="brand-logo"
-              onError={(e) => {
-                e.currentTarget.src = "/public/logo_sin_eslogan.png";
-              }}
-            />
-          </div>
-          <nav className="muted-scrollbar mt-4 flex-1 overflow-y-auto pr-2 pb-4">
-            <div className="mb-3">
+          <div className="flex h-full flex-col gap-6 overflow-hidden">
+            <div className="flex items-center justify-between rounded-3xl bg-base-100/10 p-4 shadow-inner">
+              <div className="flex items-center gap-3">
+                <div className="grid h-12 w-12 place-items-center rounded-2xl bg-linear-to-br from-primary/70 via-primary/30 to-secondary/20 text-2xl font-semibold text-white shadow-inner">
+                  <span>✦</span>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-[0.4em] text-base-content/50">Bioalergia</p>
+                  <p className="text-base font-semibold">{capitalizedName || "Equipo"}</p>
+                </div>
+              </div>
+              <Button size="xs" variant="ghost" onClick={() => setSidebarOpen(false)} aria-label="Cerrar barra lateral">
+                <span className="text-lg">✕</span>
+              </Button>
+            </div>
+            <div className="space-y-3">
+              <p className="text-[10px] uppercase tracking-[0.5em] text-base-content/60">Categorías</p>
               <div className="flex flex-wrap gap-2">
                 {NAV_CATEGORY_ORDER.map((category) => (
                   <Button
                     key={category}
-                    size="xs"
+                    size="sm"
                     variant={activeNavCategory === category ? "primary" : "ghost"}
+                    className={`rounded-[999px] px-4 py-1 text-[11px] tracking-wide ${
+                      activeNavCategory === category
+                        ? "shadow-lg text-white"
+                        : "text-base-content/70 hover:text-base-content"
+                    }`}
                     onClick={() => setActiveNavCategory(category)}
                   >
                     {category}
@@ -288,46 +293,53 @@ export default function App() {
                 ))}
               </div>
             </div>
-            {navigationByCategory.length ? (
-              navigationByCategory.map((section) => (
-                <div key={section.title} className="mb-3">
-                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-base-content/70">
-                    {section.title}
-                  </p>
-                  <ul className="menu menu-compact bg-transparent p-0">
-                    {section.items.map((item) => (
-                      <li key={item.to}>
-                        <NavLink
-                          to={item.to}
-                          end={item.exact}
-                          className={({ isActive }) =>
-                            `flex w-full items-center justify-between rounded-xl px-3 py-2 text-sm font-semibold transition-all ${
-                              isActive
-                                ? "active text-primary bg-primary/10"
-                                : "text-base-content hover:text-primary hover:bg-primary/5"
-                            }`
-                          }
-                          onClick={() => {
-                            if (isMobile) setSidebarOpen(false);
-                          }}
-                        >
-                          {item.label}
-                        </NavLink>
-                      </li>
-                    ))}
-                  </ul>
+            <nav className="flex-1 overflow-y-auto pr-1">
+              {navigationByCategory.length ? (
+                <div className="space-y-5">
+                  {navigationByCategory.map((section) => (
+                    <section
+                      key={section.title}
+                      className="space-y-2 rounded-3xl border border-base-300/20 bg-base-200/40 p-3 shadow-inner"
+                    >
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.4em] text-base-content/50">
+                        {section.title}
+                      </p>
+                      <div className="space-y-2">
+                        {section.items.map((item) => (
+                          <NavLink
+                            key={item.to}
+                            to={item.to}
+                            end={item.exact}
+                            className={({ isActive }) =>
+                              `group flex w-full items-center justify-between rounded-2xl border border-base-300/20 px-4 py-3 text-sm font-semibold transition-all duration-200 ${
+                                isActive
+                                  ? "bg-linear-to-r from-primary/90 via-secondary/70 to-accent/70 text-white shadow-2xl"
+                                  : "bg-transparent text-base-content/70 hover:text-base-content hover:bg-base-100/40"
+                              }`
+                            }
+                            onClick={() => {
+                              if (isMobile) setSidebarOpen(false);
+                            }}
+                          >
+                            <span>{item.label}</span>
+                            <span className="text-xs text-white/60">{item.to === location.pathname ? "·" : "›"}</span>
+                          </NavLink>
+                        ))}
+                      </div>
+                    </section>
+                  ))}
                 </div>
-              ))
-            ) : (
-              <div className="rounded-2xl border border-base-300/40 bg-base-200/70 p-3 text-xs text-base-content/70">
-                No hay secciones visibles para esta categoría y rol.
-              </div>
-            )}
-          </nav>
-          <div className="surface-recessed mt-6 space-y-1 p-3 text-xs text-base-content/70 shadow-inner">
-            <p className="text-xs font-semibold uppercase tracking-wide text-base-content">Versión</p>
-            <p className="font-semibold text-base-content">{APP_VERSION}</p>
-            <p className="text-xs text-base-content/50">Build: {buildLabel}</p>
+              ) : (
+                <div className="rounded-3xl border border-white/10 bg-white/5 p-4 text-xs text-base-content/70">
+                  No hay secciones visibles para esta categoría y rol.
+                </div>
+              )}
+            </nav>
+            <div className="space-y-1 rounded-2xl border border-white/10 bg-black/40 p-3 text-[11px] text-base-content/60 shadow-inner">
+              <p className="font-semibold text-base-content">Versión</p>
+              <p>{APP_VERSION}</p>
+              <p className="text-xs">Build: {buildLabel}</p>
+            </div>
           </div>
         </aside>
       )}
