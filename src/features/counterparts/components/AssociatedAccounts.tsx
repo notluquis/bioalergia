@@ -153,12 +153,6 @@ export default function AssociatedAccounts({
     setAccountDetails({});
   }, [selectedId, summaryRange.from, summaryRange.to]);
 
-  useEffect(() => {
-    if (quickViewGroup) {
-      void loadTransactionsForGroup(quickViewGroup);
-    }
-  }, [quickViewGroup, loadTransactionsForGroup, summaryRange]);
-
   async function handleAddAccount() {
     if (!selectedId) {
       setError("Guarda la contraparte antes de agregar cuentas");
@@ -473,6 +467,11 @@ export default function AssociatedAccounts({
       void loadTransactionsForGroup(group);
     }
   };
+  useEffect(() => {
+    if (quickViewGroup) {
+      void loadTransactionsForGroup(quickViewGroup);
+    }
+  }, [quickViewGroup, loadTransactionsForGroup, summaryRange]);
   const quickViewDetails = quickViewGroup ? accountDetails[quickViewGroup.key] : undefined;
   const quickStats = useMemo(() => {
     const rows = quickViewDetails?.rows ?? [];
@@ -607,14 +606,14 @@ export default function AssociatedAccounts({
                 label="Desde"
                 type="date"
                 value={summaryRange.from}
-                onChange={(event) => onSummaryRangeChange({ from: event.target.value })}
+                onChange={(event: ChangeEvent<HTMLInputElement>) => onSummaryRangeChange({ from: event.target.value })}
                 className="w-36"
               />
               <Input
                 label="Hasta"
                 type="date"
                 value={summaryRange.to}
-                onChange={(event) => onSummaryRangeChange({ to: event.target.value })}
+                onChange={(event: ChangeEvent<HTMLInputElement>) => onSummaryRangeChange({ to: event.target.value })}
                 className="w-36"
               />
               <Button

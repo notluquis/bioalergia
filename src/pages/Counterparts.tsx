@@ -368,7 +368,7 @@ export default function CounterpartsPage() {
               </div>
               <Button
                 size="sm"
-                variant="outline"
+                variant="ghost"
                 disabled={!detail}
                 onClick={() => detail && openFormModal(detail.counterpart)}
               >
