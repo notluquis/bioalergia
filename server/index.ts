@@ -21,6 +21,7 @@ import { registerServiceRoutes } from "./routes/services.js";
 import { registerCalendarEventRoutes } from "./routes/calendar-events.js";
 import { registerAssetRoutes } from "./routes/assets.js";
 import suppliesRouter from "./routes/supplies.js";
+import { getUploadsRootDir } from "./lib/uploads.js";
 
 const app = express();
 
@@ -85,8 +86,10 @@ app.get("/api/health", async (_req, res) => {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const clientDir = path.resolve(__dirname, "../client");
+const uploadsDir = getUploadsRootDir();
 
 app.use(express.static(clientDir, { index: false }));
+app.use("/uploads", express.static(uploadsDir));
 app.get(/^(?!\/api).*$/, (_req, res) => {
   res.sendFile(path.join(clientDir, "index.html"));
 });
