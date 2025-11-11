@@ -1,4 +1,5 @@
 import express from "express";
+import type { NextFunction, Request, Response } from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import path from "path";
@@ -34,7 +35,7 @@ app.use(
 );
 app.use(express.json());
 app.use(cookieParser());
-app.use((req, res, next) => {
+app.use((req: Request, res: Response, next: NextFunction) => {
   const requestLogger = bindRequestLogger(req, res);
   requestLogger.info({ event: "request:start" });
   res.on("finish", () => {
@@ -43,7 +44,7 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use("/api", async (_req, res, next) => {
+app.use("/api", async (_req: Request, res: Response, next: NextFunction) => {
   try {
     await ensureDatabaseConnection();
     next();
@@ -71,7 +72,7 @@ app.use("/api/supplies", suppliesRouter);
 type HealthStatus = "ok" | "error";
 type HealthChecks = { db: { status: HealthStatus; latency: number | null } };
 
-app.get("/api/health", async (_req, res) => {
+app.get("/api/health", async (_req: Request, res: Response) => {
   const checks: HealthChecks = { db: { status: "ok", latency: null } };
   try {
     const start = Date.now();
@@ -93,7 +94,7 @@ const uploadsDir = getUploadsRootDir();
 
 app.use(express.static(clientDir, { index: false }));
 app.use("/uploads", express.static(uploadsDir));
-app.get(/^(?!\/api).*$/, (_req, res) => {
+app.get(/^(?!\/api).*$/, (_req: Request, res: Response) => {
   res.sendFile(path.join(clientDir, "index.html"));
 });
 
