@@ -4,10 +4,9 @@ import cookieParser from "cookie-parser";
 import path from "path";
 import { fileURLToPath } from "url";
 
-import { ensureDatabaseConnection, getPool, isTransientConnectionError } from "./db.js";
-import { bindRequestLogger, getRequestLogger, logger } from "./lib/logger.js";
-import { runMigrations } from "./migrationRunner.js";
 import { PORT } from "./config.js";
+import { ensureDatabaseConnection, getPool } from "./db.js";
+import { logger, bindRequestLogger, getRequestLogger } from "./lib/logger.js";
 import { registerAuthRoutes } from "./routes/auth.js";
 import { registerSettingsRoutes } from "./routes/settings.js";
 import { registerTransactionRoutes } from "./routes/transactions.js";
@@ -15,41 +14,17 @@ import { registerBalanceRoutes } from "./routes/balances.js";
 import { registerEmployeeRoutes } from "./routes/employees.js";
 import { registerTimesheetRoutes } from "./routes/timesheets.js";
 import { registerCounterpartRoutes } from "./routes/counterparts.js";
-import suppliesRouter from "./routes/supplies.js";
 import { registerInventoryRoutes } from "./routes/inventory.js";
 import { registerRoleRoutes } from "./routes/roles.js";
 import { registerLoanRoutes } from "./routes/loans.js";
 import { registerServiceRoutes } from "./routes/services.js";
 import { registerCalendarEventRoutes } from "./routes/calendar-events.js";
 import { registerAssetRoutes } from "./routes/assets.js";
+import suppliesRouter from "./routes/supplies.js";
 
 const app = express();
-app.disable("etag");
+
 app.disable("x-powered-by");
-
-// Security headers including CSP
-app.use((req, res, next) => {
-  const selfCsp = [
-    "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://static.cloudflareinsights.com https://intranet.bioalergia.cl https://*.cloudflare.com https://*.cloudflareinsights.com https://intranet.bioalergia.cl/cdn-cgi/scripts/7d0fa10a/cloudflare-static",
-    "style-src 'self' 'unsafe-inline' https:",
-    "img-src 'self' data: https: blob:",
-    "font-src 'self' data: https:",
-    "connect-src 'self' https://api.mercadopago.com https://*.cloudflare.com wss:",
-    "worker-src 'self' blob: https://intranet.bioalergia.cl/sw.js",
-    "frame-src 'none'",
-    "base-uri 'self'",
-    "form-action 'self'",
-    "object-src 'none'",
-  ].join("; ");
-  res.setHeader("Content-Security-Policy", selfCsp);
-  res.setHeader("X-Content-Type-Options", "nosniff");
-  res.setHeader("X-Frame-Options", "DENY");
-  res.setHeader("X-XSS-Protection", "1; mode=block");
-  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
-  next();
-});
-
 app.use(
   cors({
     origin: true,
@@ -67,26 +42,16 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use("/api", async (req, res, next) => {
+app.use("/api", async (_req, res, next) => {
   try {
-    await ensureDatabaseConnection({ retries: 4, initialDelayMs: 800, backoffFactor: 1.8 });
+    await ensureDatabaseConnection();
     next();
   } catch (error) {
-    const requestLogger = getRequestLogger(req);
-    requestLogger.error({ event: "db:unavailable", error }, "Base de datos no disponible; reintentando");
-    setTimeout(() => {
-      ensureDatabaseConnection().catch((err) =>
-        logger.error({ err }, "[db] Failed to re-establish connection after transient error")
-      );
-    }, 0);
-    return res.status(503).json({
-      status: "error",
-      message: "La base de datos se está reactivando. Intenta nuevamente en unos segundos.",
-    });
+    getRequestLogger(_req).error({ error }, "Database unavailable");
+    res.status(503).json({ status: "error", message: "Base de datos no disponible en este momento" });
   }
 });
 
-// API Routes
 registerAuthRoutes(app);
 registerSettingsRoutes(app);
 registerTransactionRoutes(app);
@@ -99,130 +64,34 @@ registerRoleRoutes(app);
 registerLoanRoutes(app);
 registerServiceRoutes(app);
 registerCalendarEventRoutes(app);
-app.use("/api/supplies", suppliesRouter);
 registerAssetRoutes(app);
+app.use("/api/supplies", suppliesRouter);
 
 app.get("/api/health", async (_req, res) => {
-  const requestLogger = getRequestLogger(_req);
-  requestLogger.info({ event: "health:start" });
-  const checks: {
-    db: { status: "ok" | "error"; latency: number | null; message?: string };
-  } = {
-    db: { status: "ok", latency: null },
-  };
-
-  let status: "ok" | "degraded" | "error" = "ok";
-
-  const start = Date.now();
+  const checks = { db: { status: "ok" as const, latency: null as number | null } };
   try {
+    const start = Date.now();
     const pool = getPool();
     await pool.execute("SELECT 1");
     checks.db.latency = Date.now() - start;
   } catch (error) {
     checks.db.status = "error";
-    checks.db.message = error instanceof Error ? error.message : "Error desconocido";
-    status = "degraded";
-    requestLogger.error({ event: "health:error", error }, "Fallo al consultar la base de datos");
+    checks.db.latency = null;
+    getRequestLogger(_req).error({ error }, "Health check failed");
   }
-
-  res.json({
-    status,
-    timestamp: new Date().toISOString(),
-    checks,
-  });
-  requestLogger.info({ event: "health:complete", status });
+  res.json({ status: checks.db.status === "ok" ? "ok" : "degraded", timestamp: new Date().toISOString(), checks });
 });
 
-// --- Production Frontend Serving ---
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-// Carpeta con el build del cliente (Vite)
-// En producción: /app/dist/server -> ../client = /app/dist/client
-// En desarrollo: server/ -> ../dist/client
 const clientDir = path.resolve(__dirname, "../client");
 
-// Debug: Log client directory path and existence
-logger.info(`📁 Client directory: ${clientDir}`);
-logger.info(`📁 __dirname: ${__dirname}`);
-try {
-  const fs = await import("fs");
-  const exists = fs.existsSync(clientDir);
-  logger.info(`📁 Client directory exists: ${exists}`);
-  if (exists) {
-    const files = fs.readdirSync(clientDir);
-    logger.info(`📁 Client directory files: ${files.join(", ")}`);
-  }
-} catch (err) {
-  logger.error({ err }, "Failed to check client directory");
-}
-
-// Archivos estáticos de la SPA en la raíz
 app.use(express.static(clientDir, { index: false }));
-
-// Cualquier ruta que no sea /api responde index.html para que React Router se encargue
 app.get(/^(?!\/api).*$/, (_req, res) => {
   res.sendFile(path.join(clientDir, "index.html"));
 });
-// --- End Production Frontend Serving ---
 
-app.use(
-  (
-    err: Error & { statusCode?: number; code?: string },
-    req: express.Request,
-    res: express.Response,
-    _next: express.NextFunction
-  ) => {
-    void _next;
-    if (isTransientConnectionError(err)) {
-      const requestLogger = getRequestLogger(req);
-      requestLogger.warn({ err }, "Transient database error detected");
-      ensureDatabaseConnection().catch((reconnectError) =>
-        logger.error({ reconnectError }, "[db] Failed to recover connection after transient error")
-      );
-      return res.status(503).json({
-        status: "error",
-        message: "Estamos reanudando la conexión a la base de datos. Intenta nuevamente en unos segundos.",
-      });
-    }
-
-    getRequestLogger(req).error({ err }, "Unhandled server error");
-    const status = typeof err.statusCode === "number" ? err.statusCode : 500;
-    res.status(status).json({
-      status: "error",
-      message: err.message || "Error inesperado en el servidor",
-    });
-  }
-);
-
-let serverStarted = false;
-
-function startHttpServer() {
-  if (serverStarted) return;
-  app.listen(PORT, () => {
-    serverStarted = true;
-    logger.info("🚀 ===== SERVIDOR FINANZAS APP =====");
-    logger.info(`📡 API: http://localhost:${PORT}/api/health`);
-    logger.info(`🌐 Frontend: http://localhost:${PORT}/`);
-    logger.info("⚡ Estado: Servidor iniciado y listo");
-    logger.info("=====================================");
-  });
-}
-
-async function bootstrap(attempt = 0) {
-  try {
-    await ensureDatabaseConnection();
-    await runMigrations();
-    startHttpServer();
-  } catch (error) {
-    const delay = Math.min(60000, Math.round(3000 * Math.pow(1.5, attempt)));
-    logger.error({ error, attempt, delay }, "❌ ===== ERROR DE INICIALIZACIÓN =====");
-    logger.error("💾 No se pudo inicializar la base de datos");
-    logger.error(`⏳ Reintentando en ${delay} ms`);
-    setTimeout(() => {
-      bootstrap(attempt + 1).catch((err) => logger.error({ err }, "Bootstrap retry encountered an unexpected error"));
-    }, delay);
-  }
-}
-
-bootstrap().catch((err) => logger.error({ err }, "Bootstrap failed unexpectedly"));
+const port = Number(PORT) || 4000;
+app.listen(port, () => {
+  logger.info(`Servidor listo en http://localhost:${port}`);
+});
