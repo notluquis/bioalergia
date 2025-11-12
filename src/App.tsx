@@ -16,7 +16,7 @@ type NavItem = {
   exact?: boolean;
 };
 
-type NavCategory = "Resumen" | "Finanzas" | "Servicios" | "Calendario";
+type NavCategory = "Resumen" | "Finanzas" | "Gestión" | "Servicios" | "Calendario";
 
 type NavSection = {
   title: string;
@@ -24,7 +24,7 @@ type NavSection = {
   items: NavItem[];
 };
 
-const NAV_CATEGORY_ORDER: NavCategory[] = ["Resumen", "Finanzas", "Servicios", "Calendario"];
+const NAV_CATEGORY_ORDER: NavCategory[] = ["Resumen", "Finanzas", "Gestión", "Servicios", "Calendario"];
 
 const NAV_SECTIONS: NavSection[] = [
   {
@@ -70,7 +70,7 @@ const NAV_SECTIONS: NavSection[] = [
   },
   {
     title: "Gestión",
-    category: "Finanzas",
+    category: "Gestión",
     items: [
       { to: "/inventory", label: "Inventario", roles: ["GOD", "ADMIN", "ANALYST"] },
       { to: "/supplies", label: "Solicitud de Insumos", roles: ["GOD", "ADMIN", "ANALYST", "VIEWER"] },
