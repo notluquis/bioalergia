@@ -1,12 +1,13 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ChangeEvent } from "react";
 import dayjs from "dayjs";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../context/AuthContext";
 import { useSettings } from "../context/SettingsContext";
 import { logger } from "../lib/logger";
 import { DailyBalancesPanel } from "../features/balances/components/DailyBalancesPanel";
 import { BalanceSummary } from "../features/balances/components/BalanceSummary";
-import type { BalancesApiResponse, BalanceDraft } from "../features/balances/types";
+import type { BalanceDraft } from "../features/balances/types";
 import { deriveInitialBalance, formatBalanceInput } from "../features/balances/utils";
 import { useQuickDateRange } from "../features/balances/hooks/useQuickDateRange";
 import { useDailyBalanceManagement } from "../features/balances/hooks/useDailyBalanceManagement";
@@ -22,11 +23,6 @@ export default function DailyBalances() {
 
   const [from, setFrom] = useState(dayjs().subtract(10, "day").format("YYYY-MM-DD"));
   const [to, setTo] = useState(dayjs().format("YYYY-MM-DD"));
-  const [report, setReport] = useState<BalancesApiResponse | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [summaryError, setSummaryError] = useState<string | null>(null);
-  const [summaryLoading, setSummaryLoading] = useState(false);
-
   const { quickMonths } = useQuickDateRange();
 
   const quickRange = useMemo(() => {
@@ -34,53 +30,49 @@ export default function DailyBalances() {
     return match ? match.value : "custom";
   }, [quickMonths, from, to]);
 
-  const loadBalancesRef = useRef<(fromValue: string, toValue: string) => Promise<void>>(async () => {});
-
-  const { drafts, saving, error, handleDraftChange, handleSave, setDrafts } = useDailyBalanceManagement({
-    from,
-    to,
-    loadBalances: (fromValue: string, toValue: string) => loadBalancesRef.current(fromValue, toValue),
+  const {
+    data,
+    isFetching,
+    isLoading,
+    error: balancesQueryError,
+    refetch: refetchBalances,
+  } = useQuery({
+    queryKey: ["daily-balances", from, to],
+    queryFn: async () => {
+      logger.info("[balances] fetch:start", { from, to });
+      const payload = await fetchBalances(from, to);
+      logger.info("[balances] fetch:success", { days: payload.days.length });
+      return payload;
+    },
+    keepPreviousData: true,
   });
 
-  const loadBalances = useCallback(
-    async (fromValue: string, toValue: string) => {
-      setLoading(true);
-      setSummaryLoading(true);
-      setSummaryError(null);
-      try {
-        logger.info("[balances] fetch:start", { from: fromValue, to: toValue });
-        const payload = await fetchBalances(fromValue, toValue);
-        setReport(payload);
-        const drafts: Record<string, BalanceDraft> = {};
-        for (const day of payload.days) {
-          drafts[day.date] = {
-            value: day.recordedBalance != null ? formatBalanceInput(day.recordedBalance) : "",
-            note: day.note ?? "",
-          };
-        }
-        setDrafts(drafts);
-        logger.info("[balances] fetch:success", { days: payload.days.length });
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "No se pudieron obtener los saldos diarios";
-        setSummaryError(message);
-        setReport(null);
-        setDrafts({});
-        logger.error("[balances] fetch:error", message);
-      } finally {
-        setLoading(false);
-        setSummaryLoading(false);
-      }
-    },
-    [setDrafts]
-  );
+  const report = data ?? null;
+  const isInitialLoading = isLoading && !report;
+  const balancesError = balancesQueryError instanceof Error ? balancesQueryError.message : null;
+
+  const reloadBalances = useCallback(async () => {
+    await refetchBalances();
+  }, [refetchBalances]);
+
+  const { drafts, saving, error, handleDraftChange, handleSave, setDrafts } = useDailyBalanceManagement({
+    loadBalances: reloadBalances,
+  });
 
   useEffect(() => {
-    loadBalancesRef.current = loadBalances;
-  }, [loadBalances]);
-
-  useEffect(() => {
-    loadBalances(from, to);
-  }, [from, to, loadBalances]);
+    if (!report) {
+      setDrafts({});
+      return;
+    }
+    const nextDrafts: Record<string, BalanceDraft> = {};
+    for (const day of report.days) {
+      nextDrafts[day.date] = {
+        value: day.recordedBalance != null ? formatBalanceInput(day.recordedBalance) : "",
+        note: day.note ?? "",
+      };
+    }
+    setDrafts(nextDrafts);
+  }, [report, setDrafts]);
 
   const derivedInitial = useMemo(() => (report ? deriveInitialBalance(report) : null), [report]);
 
@@ -129,7 +121,6 @@ export default function DailyBalances() {
                   if (!match) return;
                   setFrom(match.from);
                   setTo(match.to);
-                  loadBalances(match.from, match.to);
                 }}
                 className="w-fit"
               >
@@ -140,13 +131,13 @@ export default function DailyBalances() {
                   </option>
                 ))}
               </Input>
-              <Button onClick={() => loadBalances(from, to)} disabled={loading} size="sm">
-                {loading ? "Actualizando..." : "Actualizar"}
+              <Button onClick={() => refetchBalances()} disabled={isFetching} size="sm">
+                {isFetching ? "Actualizando..." : "Actualizar"}
               </Button>
             </div>
           </div>
 
-          <BalanceSummary report={report} loading={summaryLoading} error={summaryError} />
+          <BalanceSummary report={report} loading={isFetching} error={balancesError} />
 
           <DailyBalancesPanel
             report={report}
@@ -154,7 +145,7 @@ export default function DailyBalances() {
             onDraftChange={handleDraftChange}
             onSave={handleSave}
             saving={saving}
-            loading={loading}
+            loading={isInitialLoading}
             error={error}
           />
         </>

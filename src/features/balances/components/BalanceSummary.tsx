@@ -40,7 +40,16 @@ export function BalanceSummary({ report, loading, error }: BalanceSummaryProps) 
       <h2 className="text-lg font-semibold text-primary drop-shadow-sm">Conciliación de saldo</h2>
       {error && <p className="border-l-4 border-rose-300/80 bg-base-100 px-4 py-2 text-xs text-rose-700">{error}</p>}
       {loading ? (
-        <p className="text-sm text-primary">Cargando conciliación...</p>
+        <div className="space-y-3">
+          <div className="skeleton-card space-y-2">
+            <span className="skeleton-line w-1/2" />
+            <span className="skeleton-line w-1/3" />
+          </div>
+          <div className="skeleton-card space-y-2">
+            <span className="skeleton-line w-1/4" />
+            <span className="skeleton-line w-2/3" />
+          </div>
+        </div>
       ) : !report ? (
         <p className="text-sm text-base-content">Selecciona un rango para revisar los saldos de cierre registrados.</p>
       ) : !hasRecordedBalances ? (

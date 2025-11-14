@@ -10,6 +10,7 @@ import { AuthProvider } from "./context/AuthContext";
 import { SettingsProvider } from "./context/SettingsContext";
 import { ToastProvider } from "./context/ToastContext";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { BUILD_ID } from "./version";
 
 // Lazy loading de componentes principales
 const Home = lazy(() => import("./pages/Home"));
@@ -348,11 +349,38 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
 
 // Register service worker for PWA support
 if ("serviceWorker" in navigator && import.meta.env.PROD) {
+  let refreshing = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (refreshing) return;
+    refreshing = true;
+    window.location.reload();
+  });
+
   window.addEventListener("load", () => {
+    const swUrl = `/sw.js?build=${encodeURIComponent(BUILD_ID)}`;
     navigator.serviceWorker
-      .register("/sw.js")
+      .register(swUrl, { updateViaCache: "none" })
       .then((registration) => {
         console.log("SW registered:", registration);
+
+        const requestSkipWaiting = () => {
+          if (registration.waiting) {
+            registration.waiting.postMessage({ type: "SKIP_WAITING" });
+          }
+        };
+
+        requestSkipWaiting();
+
+        registration.addEventListener("updatefound", () => {
+          const newWorker = registration.installing;
+          newWorker?.addEventListener("statechange", () => {
+            if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
+              newWorker.postMessage({ type: "SKIP_WAITING" });
+            }
+          });
+        });
+
+        registration.update();
       })
       .catch((error) => {
         console.error("SW registration failed:", error);

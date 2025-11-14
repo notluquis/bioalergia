@@ -6,12 +6,10 @@ import { saveBalance } from "../api";
 import type { BalanceDraft } from "../types";
 
 interface UseDailyBalanceManagementProps {
-  from: string;
-  to: string;
-  loadBalances: (from: string, to: string) => Promise<void>;
+  loadBalances: () => Promise<void>;
 }
 
-export function useDailyBalanceManagement({ from, to, loadBalances }: UseDailyBalanceManagementProps) {
+export function useDailyBalanceManagement({ loadBalances }: UseDailyBalanceManagementProps) {
   const { hasRole } = useAuth();
   const canEdit = hasRole("GOD", "ADMIN", "ANALYST");
 
@@ -48,7 +46,7 @@ export function useDailyBalanceManagement({ from, to, loadBalances }: UseDailyBa
       setError(null);
       try {
         await saveBalance(date, parsedValue, draft.note);
-        await loadBalances(from, to);
+        await loadBalances();
         logger.info("[balances] save:success", { date, balance: parsedValue });
       } catch (err) {
         const message = err instanceof Error ? err.message : "No se pudo guardar el saldo diario";
@@ -58,7 +56,7 @@ export function useDailyBalanceManagement({ from, to, loadBalances }: UseDailyBa
         setSaving((prev) => ({ ...prev, [date]: false }));
       }
     },
-    [canEdit, drafts, from, to, loadBalances]
+    [canEdit, drafts, loadBalances]
   );
 
   return { drafts, saving, error, handleDraftChange, handleSave, setError, setDrafts };

@@ -1,4 +1,6 @@
-const CACHE_NAME = "finanzas-v1";
+const swUrl = new URL(self.location.href);
+const BUILD_ID = swUrl.searchParams.get("build") ?? "dev";
+const CACHE_NAME = `finanzas-${BUILD_ID}`;
 const STATIC_ASSETS = ["/", "/index.html", "/manifest.json", "/icons/icon-192.png", "/icons/icon-512.png"];
 
 // Network-first routes (always try network first for these)
@@ -16,6 +18,12 @@ self.addEventListener("activate", (event) => {
     caches.keys().then((keys) => Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))))
   );
   self.clients.claim();
+});
+
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
 });
 
 // Fetch strategy router

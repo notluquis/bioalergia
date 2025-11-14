@@ -49,7 +49,20 @@ export const DailyBalancesPanel = memo(function DailyBalancesPanel({
       )}
 
       {loading ? (
-        <p className="px-4 py-3 text-sm text-primary">Cargando saldos diarios...</p>
+        <div className="space-y-2">
+          {Array.from({ length: 6 }).map((_, idx) => (
+            <div
+              key={`skeleton-balance-${idx}`}
+              className="flex flex-wrap items-center gap-3 rounded-2xl border border-base-300 bg-base-200/60 px-4 py-3"
+            >
+              <span className="skeleton-line w-24" />
+              <span className="skeleton-line w-16" />
+              <span className="skeleton-line w-24" />
+              <span className="skeleton-line flex-1 min-w-[120px]" />
+              <span className="skeleton-line w-16" />
+            </div>
+          ))}
+        </div>
       ) : !report ? (
         <p className="px-4 py-3 text-sm text-base-content">
           Selecciona un rango con movimientos para conciliar los saldos diarios.

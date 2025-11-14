@@ -5,6 +5,16 @@ import react from "@vitejs/plugin-react-swc";
 import tailwindcss from "@tailwindcss/vite";
 import { visualizer } from "rollup-plugin-visualizer";
 
+const computedBuildId =
+  process.env.VITE_APP_BUILD_ID ||
+  process.env.RAILWAY_GIT_COMMIT_SHA ||
+  process.env.VERCEL_GIT_COMMIT_SHA ||
+  process.env.GITHUB_SHA ||
+  `${Date.now()}`;
+
+process.env.VITE_APP_BUILD_ID = computedBuildId;
+process.env.VITE_APP_BUILD_TIMESTAMP = process.env.VITE_APP_BUILD_TIMESTAMP || new Date().toISOString();
+
 export default defineConfig({
   plugins: [
     react(),
