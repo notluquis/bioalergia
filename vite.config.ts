@@ -68,7 +68,7 @@ export default defineConfig({
     exclude: [...configDefaults.exclude, "test/employees.integration.test.ts"],
     coverage: {
       reporter: ["text", "lcov"],
-      exclude: [...configDefaults.coverage.exclude, "test/setup.ts"],
+      exclude: [...(configDefaults.coverage?.exclude ?? []), "test/setup.ts"],
     },
   },
 });

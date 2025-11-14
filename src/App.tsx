@@ -214,7 +214,7 @@ export default function App() {
   return (
     <>
       {isNavigating && (
-        <div className="fixed left-0 right-0 top-0 z-[60] h-1 overflow-hidden bg-base-200 shadow-lg">
+        <div className="fixed left-0 right-0 top-0 z-60 h-1 overflow-hidden bg-base-200 shadow-lg">
           <div className="nav-progress__indicator" />
         </div>
       )}
