@@ -312,7 +312,7 @@ export default function App() {
             <div className="flex h-full flex-col gap-6 overflow-hidden">
               <div className="rounded-3xl border border-white/10 bg-linear-to-br from-base-100/30 via-base-200/30 to-base-100/10 p-4 shadow-inner">
                 <div className="flex items-center gap-3">
-                  <div className="rounded-2xl bg-white/90 p-2 shadow-inner">
+                  <div className="rounded-2xl border border-white/20 bg-transparent p-1 shadow-inner">
                     <img
                       src="/logo_sin_eslogan.png"
                       alt="Bioalergia"
@@ -447,13 +447,9 @@ export default function App() {
                 </span>
               )}
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <ThemeToggle />
               <ConnectionIndicator />
-              <div className="text-right">
-                <p className="font-semibold text-base-content">{capitalizedName}</p>
-                <p className="text-xs text-base-content/70">{user?.email}</p>
-              </div>
               <Button
                 variant="ghost"
                 className="btn-circle border border-base-300/60 text-base-content hover:border-primary/60 hover:text-primary"
