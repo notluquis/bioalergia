@@ -349,7 +349,7 @@ export default function App() {
                         aria-pressed={active}
                         className={`flex items-center gap-3 rounded-2xl border border-base-300/30 px-4 py-3 text-left transition-all ${
                           active
-                            ? `bg-gradient-to-r ${meta.accent} text-white shadow-lg`
+                            ? `bg-linear-to-r ${meta.accent} text-white shadow-lg`
                             : "bg-base-100/40 text-base-content/80 hover:border-primary/40 hover:text-primary"
                         } ${categoriesExpanded ? "flex-col items-start" : ""}`}
                       >
