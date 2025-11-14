@@ -8,7 +8,7 @@ import { useAuth } from "./context/AuthContext";
 import Clock from "./components/Clock";
 import ConnectionIndicator from "./components/ConnectionIndicator";
 import { APP_VERSION, BUILD_TIMESTAMP } from "./version";
-import { CalendarDays, LayoutDashboard, Briefcase, PiggyBank, Users2, LogOut } from "lucide-react";
+import { CalendarDays, LayoutDashboard, Briefcase, PiggyBank, Users2, LogOut, Loader2 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 type NavItem = {
@@ -177,6 +177,7 @@ export default function App() {
   const location = useLocation();
   const navigate = useNavigate();
   const navigationState = useNavigation();
+  const pendingPath = navigationState.location?.pathname ?? null;
   const title = React.useMemo(() => {
     if (/^\/services\/.+\/edit$/.test(location.pathname)) {
       return "Editar servicio";
@@ -191,8 +192,12 @@ export default function App() {
     items: section.items.filter((item) => !item.roles || hasRole(...item.roles)),
   })).filter((section) => section.items.length);
 
-  const resolvedCategory = React.useMemo(() => resolveCategoryForPath(location.pathname), [location.pathname]);
+  const derivedPath = pendingPath ?? location.pathname;
+  const resolvedCategory = React.useMemo(() => resolveCategoryForPath(derivedPath), [derivedPath]);
   const [activeNavCategory, setActiveNavCategory] = React.useState<NavCategory>(resolvedCategory);
+  React.useEffect(() => {
+    setActiveNavCategory(resolvedCategory);
+  }, [resolvedCategory]);
 
   const handleLogout = async () => {
     await logout();
@@ -386,8 +391,10 @@ export default function App() {
                               key={item.to}
                               to={item.to}
                               end={item.exact}
-                              className={({ isActive, isPending }) => {
-                                const active = isActive || isPending;
+                              className={({ isActive }) => {
+                                const pendingMatch =
+                                  pendingPath && (pendingPath === item.to || pendingPath.startsWith(`${item.to}/`));
+                                const active = isActive || Boolean(pendingMatch);
                                 return `group flex w-full items-center justify-between rounded-2xl border border-base-300/20 px-4 py-3 text-sm font-semibold transition-all duration-200 ${
                                   active
                                     ? "bg-linear-to-r from-primary/90 via-secondary/70 to-accent/70 text-white shadow-2xl"
@@ -399,7 +406,13 @@ export default function App() {
                               }}
                             >
                               <span>{item.label}</span>
-                              <span className="text-xs text-white/60">{item.to === location.pathname ? "·" : "›"}</span>
+                              <span className="text-xs text-white/70">
+                                {pendingPath && (pendingPath === item.to || pendingPath.startsWith(`${item.to}/`))
+                                  ? "…"
+                                  : location.pathname === item.to
+                                    ? "·"
+                                    : "›"}
+                              </span>
                             </NavLink>
                           ))}
                         </div>
@@ -425,7 +438,15 @@ export default function App() {
         <div className="layout-container flex min-w-0 flex-1 flex-col gap-6 pb-[110px] md:pb-0">
           {/* min-w-0 permite que se encoja, pb-20 en mobile para el bottom nav */}
           <header className="surface-elevated flex items-center justify-between rounded-3xl px-6 py-4 shadow-md">
-            <h1 className="text-xl font-semibold text-base-content drop-shadow-sm">{title}</h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-xl font-semibold text-base-content drop-shadow-sm">{title}</h1>
+              {isNavigating && (
+                <span className="flex items-center gap-1 text-xs font-semibold text-primary">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  Cargando...
+                </span>
+              )}
+            </div>
             <div className="flex items-center gap-4">
               <ThemeToggle />
               <ConnectionIndicator />

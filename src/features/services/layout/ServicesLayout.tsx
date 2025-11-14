@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useNavigate, useNavigation } from "react-router-dom";
 import Button from "../../../components/Button";
 import { fetchServices } from "../../services/api";
 import type { ServiceSummary } from "../../services/types";
@@ -12,6 +12,8 @@ const NAV_ITEMS = [
 
 export default function ServicesLayout() {
   const navigate = useNavigate();
+  const navigation = useNavigation();
+  const pendingPath = navigation.location?.pathname;
   const [services, setServices] = useState<ServiceSummary[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -87,13 +89,15 @@ export default function ServicesLayout() {
             key={item.to}
             to={item.to}
             end
-            className={({ isActive, isPending }) =>
-              `rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide transition-all ${
-                isActive || isPending
+            className={({ isActive }) => {
+              const pendingMatch = pendingPath && pendingPath.startsWith(item.to);
+              const active = isActive || Boolean(pendingMatch);
+              return `rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide transition-all ${
+                active
                   ? "bg-primary/15 text-primary shadow-inner"
                   : "border border-base-300 bg-base-200 text-base-content/60 hover:border-primary/35 hover:text-primary"
-              }`
-            }
+              }`;
+            }}
           >
             {item.label}
           </NavLink>
