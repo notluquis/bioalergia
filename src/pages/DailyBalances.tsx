@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ChangeEvent } from "react";
 import dayjs from "dayjs";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { useAuth } from "../context/AuthContext";
 import { useSettings } from "../context/SettingsContext";
 import { logger } from "../lib/logger";
 import { DailyBalancesPanel } from "../features/balances/components/DailyBalancesPanel";
 import { BalanceSummary } from "../features/balances/components/BalanceSummary";
-import type { BalanceDraft } from "../features/balances/types";
+import type { BalanceDraft, BalancesApiResponse } from "../features/balances/types";
 import { deriveInitialBalance, formatBalanceInput } from "../features/balances/utils";
 import { useQuickDateRange } from "../features/balances/hooks/useQuickDateRange";
 import { useDailyBalanceManagement } from "../features/balances/hooks/useDailyBalanceManagement";
@@ -30,13 +30,7 @@ export default function DailyBalances() {
     return match ? match.value : "custom";
   }, [quickMonths, from, to]);
 
-  const {
-    data,
-    isFetching,
-    isLoading,
-    error: balancesQueryError,
-    refetch: refetchBalances,
-  } = useQuery({
+  const balancesQuery = useQuery<BalancesApiResponse, Error>({
     queryKey: ["daily-balances", from, to],
     queryFn: async () => {
       logger.info("[balances] fetch:start", { from, to });
@@ -44,16 +38,17 @@ export default function DailyBalances() {
       logger.info("[balances] fetch:success", { days: payload.days.length });
       return payload;
     },
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
   });
 
+  const { data, isFetching, isLoading, error: balancesQueryError, refetch } = balancesQuery;
   const report = data ?? null;
   const isInitialLoading = isLoading && !report;
   const balancesError = balancesQueryError instanceof Error ? balancesQueryError.message : null;
 
   const reloadBalances = useCallback(async () => {
-    await refetchBalances();
-  }, [refetchBalances]);
+    await refetch();
+  }, [refetch]);
 
   const { drafts, saving, error, handleDraftChange, handleSave, setDrafts } = useDailyBalanceManagement({
     loadBalances: reloadBalances,
@@ -131,7 +126,7 @@ export default function DailyBalances() {
                   </option>
                 ))}
               </Input>
-              <Button onClick={() => refetchBalances()} disabled={isFetching} size="sm">
+              <Button onClick={() => refetch()} disabled={isFetching} size="sm">
                 {isFetching ? "Actualizando..." : "Actualizar"}
               </Button>
             </div>

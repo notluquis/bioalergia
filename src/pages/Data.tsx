@@ -87,9 +87,9 @@ export default function Data() {
     handleSave: handleBalanceSave,
     setDrafts: setBalancesDrafts,
   } = useDailyBalanceManagement({
-    from: appliedFilters.from,
-    to: appliedFilters.to,
-    loadBalances,
+    loadBalances: async () => {
+      await loadBalances(appliedFilters.from, appliedFilters.to);
+    },
   });
 
   const transactionsQuery = useTransactionsQuery({ filters: appliedFilters, page, pageSize }, canView);
