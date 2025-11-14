@@ -8,6 +8,8 @@ import { useAuth } from "./context/AuthContext";
 import Clock from "./components/Clock";
 import ConnectionIndicator from "./components/ConnectionIndicator";
 import { APP_VERSION, BUILD_TIMESTAMP } from "./version";
+import { CalendarDays, LayoutDashboard, Briefcase, PiggyBank, Users2, LogOut } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 type NavItem = {
   to: string;
@@ -18,6 +20,12 @@ type NavItem = {
 
 type NavCategory = "Resumen" | "Finanzas" | "Gestión" | "Servicios" | "Calendario";
 
+type NavCategoryMeta = {
+  description: string;
+  icon: LucideIcon;
+  accent: string;
+};
+
 type NavSection = {
   title: string;
   category: NavCategory;
@@ -25,6 +33,34 @@ type NavSection = {
 };
 
 const NAV_CATEGORY_ORDER: NavCategory[] = ["Resumen", "Finanzas", "Gestión", "Servicios", "Calendario"];
+
+const NAV_CATEGORY_META: Record<NavCategory, NavCategoryMeta> = {
+  Resumen: {
+    description: "Panel general y estadísticas clave.",
+    icon: LayoutDashboard,
+    accent: "from-sky-500/80 via-indigo-500/80 to-fuchsia-500/80",
+  },
+  Finanzas: {
+    description: "Movimientos, saldos y contrapartes.",
+    icon: PiggyBank,
+    accent: "from-emerald-500/80 via-teal-500/70 to-cyan-500/80",
+  },
+  Gestión: {
+    description: "RRHH, inventario y operaciones internas.",
+    icon: Users2,
+    accent: "from-rose-500/70 via-pink-500/80 to-orange-500/80",
+  },
+  Servicios: {
+    description: "Plantillas, agenda y creación de servicios.",
+    icon: Briefcase,
+    accent: "from-purple-500/80 via-violet-500/70 to-indigo-500/70",
+  },
+  Calendario: {
+    description: "Eventos, sincronizaciones y visualizaciones.",
+    icon: CalendarDays,
+    accent: "from-amber-500/80 via-orange-500/70 to-red-500/70",
+  },
+};
 
 const NAV_SECTIONS: NavSection[] = [
   {
@@ -173,6 +209,7 @@ export default function App() {
   // Detect if mobile/tablet (md breakpoint)
   const [isMobile, setIsMobile] = React.useState(!window.matchMedia("(min-width: 768px)").matches);
   const [debouncedIsMobile] = useDebounce(isMobile, 150);
+  const [categoriesExpanded, setCategoriesExpanded] = React.useState(false);
 
   React.useEffect(() => {
     const checkMobile = () => setIsMobile(!window.matchMedia("(min-width: 768px)").matches);
@@ -268,43 +305,68 @@ export default function App() {
             ${!sidebarOpen && !isMobile ? "hidden" : ""}`}
           >
             <div className="flex h-full flex-col gap-6 overflow-hidden">
-              <div className="flex items-center justify-between rounded-3xl bg-base-100/10 p-4 shadow-inner">
+              <div className="rounded-3xl border border-white/10 bg-linear-to-br from-base-100/30 via-base-200/30 to-base-100/10 p-4 shadow-inner">
                 <div className="flex items-center gap-3">
-                  <div className="grid h-12 w-12 place-items-center rounded-2xl bg-linear-to-br from-primary/70 via-primary/30 to-secondary/20 text-2xl font-semibold text-white shadow-inner">
-                    <span>✦</span>
+                  <div className="rounded-2xl bg-white/90 p-2 shadow-inner">
+                    <img
+                      src="/logo_sin_eslogan.png"
+                      alt="Bioalergia"
+                      className="h-10 w-10 object-contain"
+                      loading="lazy"
+                    />
                   </div>
                   <div>
-                    <p className="text-xs uppercase tracking-[0.4em] text-base-content/50">Bioalergia</p>
-                    <p className="text-base font-semibold">{capitalizedName || "Equipo"}</p>
+                    <p className="text-xs uppercase tracking-[0.4em] text-base-content/60">Bioalergia</p>
+                    <p className="text-base font-semibold text-base-content">{capitalizedName || "Equipo"}</p>
                   </div>
                 </div>
-                <Button
-                  size="xs"
-                  variant="ghost"
-                  onClick={() => setSidebarOpen(false)}
-                  aria-label="Cerrar barra lateral"
-                >
-                  <span className="text-lg">✕</span>
-                </Button>
+                <p className="mt-3 text-xs text-base-content/60 truncate">{user?.email}</p>
               </div>
               <div className="space-y-3">
-                <p className="text-[10px] uppercase tracking-[0.5em] text-base-content/60">Categorías</p>
-                <div className="flex flex-wrap gap-2">
-                  {NAV_CATEGORY_ORDER.map((category) => (
-                    <Button
-                      key={category}
-                      size="sm"
-                      variant={activeNavCategory === category ? "primary" : "ghost"}
-                      className={`rounded-[999px] px-4 py-1 text-[11px] tracking-wide ${
-                        activeNavCategory === category
-                          ? "shadow-lg text-white"
-                          : "text-base-content/70 hover:text-base-content"
-                      }`}
-                      onClick={() => setActiveNavCategory(category)}
-                    >
-                      {category}
-                    </Button>
-                  ))}
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] uppercase tracking-[0.5em] text-base-content/60">Categorías</p>
+                  <button
+                    type="button"
+                    className="text-[11px] font-semibold text-base-content/60 hover:text-primary"
+                    onClick={() => setCategoriesExpanded((prev) => !prev)}
+                  >
+                    {categoriesExpanded ? "Contraer" : "Expandir"}
+                  </button>
+                </div>
+                <div
+                  className={`grid gap-2 transition-all duration-300 ${
+                    categoriesExpanded ? "grid-cols-2" : "grid-cols-1"
+                  }`}
+                >
+                  {NAV_CATEGORY_ORDER.map((category) => {
+                    const meta = NAV_CATEGORY_META[category];
+                    const active = activeNavCategory === category;
+                    return (
+                      <button
+                        key={category}
+                        type="button"
+                        onClick={() => setActiveNavCategory(category)}
+                        aria-pressed={active}
+                        className={`flex items-center gap-3 rounded-2xl border border-base-300/30 px-4 py-3 text-left transition-all ${
+                          active
+                            ? `bg-gradient-to-r ${meta.accent} text-white shadow-lg`
+                            : "bg-base-100/40 text-base-content/80 hover:border-primary/40 hover:text-primary"
+                        } ${categoriesExpanded ? "flex-col items-start" : ""}`}
+                      >
+                        <span
+                          className={`rounded-xl border px-2 py-1 ${
+                            active ? "border-white/60 bg-white/20" : "border-base-300/60 bg-base-100/80"
+                          }`}
+                        >
+                          <meta.icon className="h-4 w-4" />
+                        </span>
+                        <div>
+                          <p className="text-sm font-semibold">{category}</p>
+                          {categoriesExpanded && <p className="text-[11px] text-base-content/70">{meta.description}</p>}
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
               <nav className="flex-1 overflow-y-auto pr-1">
@@ -324,13 +386,14 @@ export default function App() {
                               key={item.to}
                               to={item.to}
                               end={item.exact}
-                              className={({ isActive }) =>
-                                `group flex w-full items-center justify-between rounded-2xl border border-base-300/20 px-4 py-3 text-sm font-semibold transition-all duration-200 ${
-                                  isActive
+                              className={({ isActive, isPending }) => {
+                                const active = isActive || isPending;
+                                return `group flex w-full items-center justify-between rounded-2xl border border-base-300/20 px-4 py-3 text-sm font-semibold transition-all duration-200 ${
+                                  active
                                     ? "bg-linear-to-r from-primary/90 via-secondary/70 to-accent/70 text-white shadow-2xl"
                                     : "bg-transparent text-base-content/70 hover:text-base-content hover:bg-base-100/40"
-                                }`
-                              }
+                                }`;
+                              }}
                               onClick={() => {
                                 if (isMobile) setSidebarOpen(false);
                               }}
@@ -370,14 +433,13 @@ export default function App() {
                 <p className="font-semibold text-base-content">{capitalizedName}</p>
                 <p className="text-xs text-base-content/70">{user?.email}</p>
               </div>
-              <Button variant="secondary" className="btn-circle" onClick={handleLogout} aria-label="Cerrar sesión">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path
-                    fillRule="evenodd"
-                    d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V5h10a1 1 0 100-2H3zm12.293 4.293a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 01-1.414-1.414L16.586 13H9a1 1 0 110-2h7.586l-1.293-1.293a1 1 0 010-1.414z"
-                    clipRule="evenodd"
-                  />
-                </svg>
+              <Button
+                variant="ghost"
+                className="btn-circle border border-base-300/60 text-base-content hover:border-primary/60 hover:text-primary"
+                onClick={handleLogout}
+                aria-label="Cerrar sesión"
+              >
+                <LogOut className="h-4 w-4" />
               </Button>
             </div>
           </header>

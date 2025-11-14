@@ -87,9 +87,9 @@ export default function ServicesLayout() {
             key={item.to}
             to={item.to}
             end
-            className={({ isActive }) =>
+            className={({ isActive, isPending }) =>
               `rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide transition-all ${
-                isActive
+                isActive || isPending
                   ? "bg-primary/15 text-primary shadow-inner"
                   : "border border-base-300 bg-base-200 text-base-content/60 hover:border-primary/35 hover:text-primary"
               }`

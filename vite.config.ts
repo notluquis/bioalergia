@@ -1,4 +1,6 @@
 import { fileURLToPath, URL } from "node:url";
+import path from "node:path";
+import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { defineConfig } from "vite";
 import { configDefaults } from "vitest/config";
 import react from "@vitejs/plugin-react-swc";
@@ -15,6 +17,27 @@ const computedBuildId =
 process.env.VITE_APP_BUILD_ID = computedBuildId;
 process.env.VITE_APP_BUILD_TIMESTAMP = process.env.VITE_APP_BUILD_TIMESTAMP || new Date().toISOString();
 
+const ROOT_DIR = fileURLToPath(new URL(".", import.meta.url));
+
+function buildServiceWorkerPlugin(buildId: string) {
+  return {
+    name: "build-service-worker",
+    apply: "build",
+    async closeBundle() {
+      const templatePath = path.resolve(ROOT_DIR, "sw/sw-template.js");
+      const outputPath = path.resolve(ROOT_DIR, "dist/client/sw.js");
+      try {
+        const template = await readFile(templatePath, "utf-8");
+        const content = template.replace(/__BUILD_ID__/g, buildId);
+        await mkdir(path.dirname(outputPath), { recursive: true });
+        await writeFile(outputPath, content, "utf-8");
+      } catch (error) {
+        console.warn("[build-service-worker]", "Skipping service worker generation:", error);
+      }
+    },
+  };
+}
+
 export default defineConfig({
   plugins: [
     react(),
@@ -25,6 +48,7 @@ export default defineConfig({
       gzipSize: true,
       brotliSize: true,
     }),
+    buildServiceWorkerPlugin(computedBuildId),
   ],
   // Ensure process.env.NODE_ENV is available inside the client bundle.
   // Vite sets NODE_ENV based on the current mode (development/production).

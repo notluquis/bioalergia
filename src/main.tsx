@@ -357,11 +357,10 @@ if ("serviceWorker" in navigator && import.meta.env.PROD) {
   });
 
   window.addEventListener("load", () => {
-    const swUrl = `/sw.js?build=${encodeURIComponent(BUILD_ID)}`;
     navigator.serviceWorker
-      .register(swUrl, { updateViaCache: "none" })
+      .register("/sw.js", { updateViaCache: "none" })
       .then((registration) => {
-        console.log("SW registered:", registration);
+        console.log("SW registered:", { registration, buildId: BUILD_ID });
 
         const requestSkipWaiting = () => {
           if (registration.waiting) {
