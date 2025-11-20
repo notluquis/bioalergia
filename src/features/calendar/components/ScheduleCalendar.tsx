@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
@@ -28,6 +28,7 @@ type CalendarEventInput = {
     amountPaid: number | null | undefined;
     treatmentStage: string | null | undefined;
     dosage: string | null | undefined;
+    fullTitle: string;
   };
 };
 
@@ -94,6 +95,7 @@ function asFullCalendarEvents(source: CalendarEventDetail[]): CalendarEventInput
         amountPaid: event.amountPaid,
         treatmentStage: event.treatmentStage,
         dosage: event.dosage,
+        fullTitle: event.summary?.trim() || "(Sin título)",
       },
     };
   });
@@ -101,6 +103,7 @@ function asFullCalendarEvents(source: CalendarEventDetail[]): CalendarEventInput
 
 export function ScheduleCalendar({ events, loading = false }: ScheduleCalendarProps) {
   const calendarEvents = useMemo(() => asFullCalendarEvents(events), [events]);
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEventInput | null>(null);
 
   const timeBounds = useMemo(() => {
     if (!events.length) {
@@ -162,6 +165,9 @@ export function ScheduleCalendar({ events, loading = false }: ScheduleCalendarPr
           right: "dayGridMonth,timeGridWeek,timeGridDay",
         }}
         height="auto"
+        dayMaxEventRows={4}
+        dayMaxEvents
+        moreLinkClick="popover"
         events={calendarEvents}
         eventTimeFormat={{ hour: "2-digit", minute: "2-digit", hour12: false }}
         slotLabelFormat={{ hour: "2-digit", minute: "2-digit", hour12: false }}
@@ -208,6 +214,18 @@ export function ScheduleCalendar({ events, loading = false }: ScheduleCalendarPr
           if (props.dosage) details.push(`Dosis: ${props.dosage}`);
           info.el.setAttribute("title", details.join("\n"));
         }}
+        eventClick={(info) => {
+          info.jsEvent.preventDefault();
+          const props = info.event.extendedProps as CalendarEventInput["extendedProps"];
+          setSelectedEvent({
+            id: info.event.id,
+            title: info.event.title,
+            start: info.event.startStr,
+            end: info.event.endStr ?? undefined,
+            allDay: info.event.allDay,
+            extendedProps: props,
+          });
+        }}
         nowIndicator
         editable={false}
         selectable={false}
@@ -226,6 +244,69 @@ export function ScheduleCalendar({ events, loading = false }: ScheduleCalendarPr
         }}
       />
       {loading && <p className="mt-2 text-xs text-base-content/60">Actualizando eventos…</p>}
+      {selectedEvent && (
+        <div className="mt-4 rounded-xl border border-base-300 bg-base-100/70 p-4 shadow-sm text-sm text-base-content">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-xs uppercase tracking-wide text-base-content/60">Evento seleccionado</p>
+              <p className="text-lg font-semibold text-base-content">{selectedEvent.extendedProps.fullTitle}</p>
+            </div>
+            <button
+              type="button"
+              className="text-xs font-semibold text-primary hover:underline"
+              onClick={() => setSelectedEvent(null)}
+            >
+              Cerrar
+            </button>
+          </div>
+          <dl className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <div>
+              <dt className="text-xs text-base-content/60">Inicio</dt>
+              <dd className="font-medium">
+                {selectedEvent.start ? dayjs(selectedEvent.start).format("DD MMM YYYY HH:mm") : "—"}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs text-base-content/60">Fin</dt>
+              <dd className="font-medium">
+                {selectedEvent.end ? dayjs(selectedEvent.end).format("DD MMM YYYY HH:mm") : "—"}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs text-base-content/60">Calendario</dt>
+              <dd className="font-medium">{selectedEvent.extendedProps.calendarId}</dd>
+            </div>
+            <div>
+              <dt className="text-xs text-base-content/60">Categoría</dt>
+              <dd className="font-medium">{selectedEvent.extendedProps.category ?? "—"}</dd>
+            </div>
+            <div>
+              <dt className="text-xs text-base-content/60">Monto esperado</dt>
+              <dd className="font-medium">
+                {selectedEvent.extendedProps.amountExpected != null
+                  ? currencyFormatter.format(selectedEvent.extendedProps.amountExpected)
+                  : "—"}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs text-base-content/60">Monto pagado</dt>
+              <dd className="font-medium">
+                {selectedEvent.extendedProps.amountPaid != null
+                  ? currencyFormatter.format(selectedEvent.extendedProps.amountPaid)
+                  : "—"}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs text-base-content/60">Etapa</dt>
+              <dd className="font-medium">{selectedEvent.extendedProps.treatmentStage ?? "—"}</dd>
+            </div>
+            <div>
+              <dt className="text-xs text-base-content/60">Dosis</dt>
+              <dd className="font-medium">{selectedEvent.extendedProps.dosage ?? "—"}</dd>
+            </div>
+          </dl>
+        </div>
+      )}
     </div>
   );
 }

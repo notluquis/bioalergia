@@ -3,7 +3,7 @@ import dayjs from "dayjs";
 
 import Button from "../components/Button";
 import Alert from "../components/Alert";
-import { fetchCalendarSyncLogs } from "../features/calendar/api";
+import { fetchCalendarSyncLogs, syncCalendarEvents } from "../features/calendar/api";
 import type { CalendarSyncLog } from "../features/calendar/types";
 
 const numberFormatter = new Intl.NumberFormat("es-CL");
@@ -11,7 +11,9 @@ const numberFormatter = new Intl.NumberFormat("es-CL");
 export default function CalendarSyncHistoryPage() {
   const [logs, setLogs] = useState<CalendarSyncLog[]>([]);
   const [loading, setLoading] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [syncMessage, setSyncMessage] = useState<string | null>(null);
 
   const loadLogs = async () => {
     setLoading(true);
@@ -33,6 +35,24 @@ export default function CalendarSyncHistoryPage() {
     });
   }, []);
 
+  const handleSync = async () => {
+    setSyncMessage(null);
+    setError(null);
+    setSyncing(true);
+    try {
+      const result = await syncCalendarEvents();
+      setSyncMessage(
+        `Sincronización completada. Nuevos: ${numberFormatter.format(result.inserted)}, actualizados: ${numberFormatter.format(result.updated)}, omitidos: ${numberFormatter.format(result.skipped)}.`
+      );
+      await loadLogs();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "No se pudo ejecutar la sincronización";
+      setError(message);
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   return (
     <section className="space-y-4">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -42,12 +62,18 @@ export default function CalendarSyncHistoryPage() {
             Consulta las sincronizaciones ejecutadas (manuales y programadas) y sus resultados.
           </p>
         </div>
-        <Button onClick={loadLogs} disabled={loading}>
-          {loading ? "Actualizando..." : "Actualizar"}
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="secondary" onClick={loadLogs} disabled={loading || syncing}>
+            {loading ? "Actualizando..." : "Actualizar"}
+          </Button>
+          <Button onClick={handleSync} disabled={syncing || loading}>
+            {syncing ? "Sincronizando..." : "Sincronizar ahora"}
+          </Button>
+        </div>
       </header>
 
       {error && <Alert variant="error">{error}</Alert>}
+      {syncMessage && <Alert variant="success">{syncMessage}</Alert>}
 
       <div className="bg-base-100 overflow-hidden rounded-3xl border border-base-300">
         <table className="w-full text-left text-xs text-base-content">

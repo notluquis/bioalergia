@@ -19,6 +19,17 @@
   border-color: oklch(var(--er) / 0.4) !important;
 }
 
+.fc-daygrid-event {
+  white-space: normal !important;
+  line-height: 1.2 !important;
+  font-size: 11px !important;
+}
+
+.fc-daygrid-event .fc-event-title,
+.fc-daygrid-event .fc-event-time {
+  white-space: normal !important;
+}
+
 .fc-timegrid-event {
   border-radius: 14px !important;
   padding: 0 !important;

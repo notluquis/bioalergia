@@ -117,7 +117,7 @@ function CalendarDailyPage() {
       updateFilters("maxDays", 1);
       return;
     }
-    const bounded = Math.min(Math.max(parsed, 1), 120);
+    const bounded = Math.min(Math.max(parsed, 1), 365);
     updateFilters("maxDays", bounded);
   };
   const renderDay = (entry: CalendarDayEvents, defaultOpen = false) => (

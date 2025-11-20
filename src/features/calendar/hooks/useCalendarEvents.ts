@@ -60,14 +60,16 @@ export function useCalendarEvents() {
     const lookaheadRaw = Number(settings.calendarSyncLookaheadDays ?? "365");
     const lookahead =
       Number.isFinite(lookaheadRaw) && lookaheadRaw > 0 ? Math.min(Math.floor(lookaheadRaw), 1095) : 365;
-    const defaultMax = Number(settings.calendarDailyMaxDays ?? "31");
-    const maxDays = Number.isFinite(defaultMax) && defaultMax > 0 ? Math.min(Math.floor(defaultMax), 120) : 31;
+    const defaultMax = Number(settings.calendarDailyMaxDays ?? "365");
+    const configuredMax = Number.isFinite(defaultMax) && defaultMax > 0 ? Math.min(Math.floor(defaultMax), 365) : 365;
     const defaultFrom = dayjs().startOf("month").subtract(2, "month");
     const defaultTo = dayjs().endOf("month").add(2, "month");
     const startDate = dayjs(syncStart);
     const from = startDate.isValid() && startDate.isAfter(defaultFrom) ? startDate : defaultFrom;
     const maxForward = dayjs().add(lookahead, "day");
     const toCandidate = defaultTo.isAfter(maxForward) ? maxForward : defaultTo;
+    const spanDays = Math.max(1, toCandidate.diff(from, "day") + 1);
+    const maxDays = Math.min(Math.max(spanDays, configuredMax), 365);
     return {
       from: from.format("YYYY-MM-DD"),
       to: toCandidate.format("YYYY-MM-DD"),
@@ -133,8 +135,13 @@ export function useCalendarEvents() {
   );
 
   const applyFilters = useCallback(() => {
-    setAppliedFilters(normalizedDraft);
-    setFilters(normalizedDraft);
+    const fromDate = dayjs(normalizedDraft.from);
+    const toDate = dayjs(normalizedDraft.to);
+    const spanDays = fromDate.isValid() && toDate.isValid() ? Math.max(1, toDate.diff(fromDate, "day") + 1) : 1;
+    const resolvedMaxDays = Math.min(Math.max(spanDays, normalizedDraft.maxDays, 1), 365);
+    const next = { ...normalizedDraft, maxDays: resolvedMaxDays };
+    setAppliedFilters(next);
+    setFilters(next);
   }, [normalizedDraft, setFilters]);
 
   const resetFilters = useCallback(() => {

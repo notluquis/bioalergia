@@ -255,7 +255,7 @@ export default function App() {
           <div className="nav-progress__indicator" />
         </div>
       )}
-      <div className="layout-shell relative mx-auto flex min-h-screen w-full max-w-[1600px] gap-6 px-4 py-6 text-base-content transition-colors duration-300 sm:px-6 lg:px-10">
+      <div className="layout-shell relative mx-auto flex min-h-screen w-full gap-6 px-2 py-6 text-base-content transition-colors duration-300 sm:px-4 lg:px-6">
         {/* Hamburger button: accessible, compact, always visible on mobile */}
         <button
           type="button"
