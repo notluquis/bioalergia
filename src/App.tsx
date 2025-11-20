@@ -300,13 +300,13 @@ export default function App() {
         {(sidebarOpen || !isMobile) && (
           <aside
             id="app-sidebar"
-            className={`fixed inset-y-0 left-0 z-50 flex h-full w-[min(300px,88vw)] shrink-0 flex-col rounded-[1.5rem] border border-base-300/50 bg-base-200/80 p-3 text-sm text-base-content shadow-2xl backdrop-blur-3xl transition-transform duration-300 md:static md:h-[calc(100vh-5rem)] md:translate-x-0
+            className={`fixed inset-y-0 left-0 z-50 flex h-full w-[min(300px,88vw)] shrink-0 flex-col rounded-3xl border border-base-300/50 bg-base-200/80 p-3 text-sm text-base-content shadow-2xl backdrop-blur-3xl transition-transform duration-300 md:static md:h-[calc(100vh-5rem)] md:translate-x-0
             ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
             ${!sidebarOpen && !isMobile ? "hidden" : ""}`}
             aria-label="Navegación principal"
           >
             <div className="flex h-full flex-col gap-4 overflow-hidden">
-              <div className="rounded-2xl border border-base-300/40 bg-gradient-to-br from-base-100/85 via-base-200/70 to-base-100/50 p-3 shadow-inner">
+              <div className="rounded-2xl border border-base-300/40 bg-linear-to-brrom-base-100/85 via-base-200/70 to-base-100/50 p-3 shadow-inner">
                 <div className="flex items-center gap-3">
                   <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-white/20 bg-base-100/80 shadow-sm">
                     <img
@@ -349,7 +349,7 @@ export default function App() {
                         aria-pressed={active}
                         className={`group relative flex min-w-[140px] items-center gap-3 rounded-xl px-3 py-2 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-base-100 ${
                           active
-                            ? `border border-white/40 bg-gradient-to-r ${meta.accent} text-white shadow-lg shadow-primary/20`
+                            ? `border border-white/40 bg-linear-to-r ${meta.accent} text-white shadow-lg shadow-primary/20`
                             : "border border-base-300/50 bg-base-100/80 text-base-content/80 hover:border-primary/40 hover:text-primary"
                         }`}
                       >
@@ -396,7 +396,7 @@ export default function App() {
                             {section.items.length === 1 ? "1 opción" : `${section.items.length} opciones`}
                           </span>
                         </div>
-                        <div className="mt-2 space-y-[6px]">
+                        <div className="mt-2 space-y-1.5">
                           {section.items.map((item) => (
                             <NavLink
                               key={item.to}
@@ -418,7 +418,7 @@ export default function App() {
                             >
                               <div className="flex items-center gap-3 overflow-hidden">
                                 <span
-                                  className="h-2.5 w-2.5 rounded-full bg-gradient-to-br from-primary/80 via-secondary/70 to-accent/70 opacity-50 transition-opacity group-hover:opacity-100"
+                                  className="h-2.5 w-2.5 rounded-full bg-linear-to-br from-primary/80 via-secondary/70 to-accent/70 opacity-50 transition-opacity group-hover:opacity-100"
                                   aria-hidden="true"
                                 />
                                 <span className="truncate">{item.label}</span>
