@@ -3,6 +3,7 @@ import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
+import esLocale from "@fullcalendar/core/locales/es";
 import dayjs from "dayjs";
 
 import type { CalendarEventDetail } from "../types";
@@ -51,12 +52,28 @@ const currencyFormatter = new Intl.NumberFormat("es-CL", {
 });
 const TITLE_MAX_LENGTH = 42;
 const MAX_DETAIL_LINES = 2;
+const MINUTES_BUFFER = 30;
+const SECONDS_IN_DAY = 24 * 60 * 60 - 1; // 23:59:59
 
 function formatTitle(value: string | null | undefined) {
   if (!value) return "(Sin título)";
   const trimmed = value.trim();
   if (trimmed.length <= TITLE_MAX_LENGTH) return trimmed;
   return `${trimmed.slice(0, TITLE_MAX_LENGTH - 1)}…`;
+}
+
+function clampSeconds(value: number) {
+  if (!Number.isFinite(value)) return 0;
+  const clamped = Math.min(SECONDS_IN_DAY, Math.max(0, Math.floor(value)));
+  return clamped;
+}
+
+function secondsToTime(value: number) {
+  const clamped = clampSeconds(value);
+  const hours = Math.floor(clamped / 3600);
+  const minutes = Math.floor((clamped % 3600) / 60);
+  const seconds = clamped % 60;
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
 function asFullCalendarEvents(source: CalendarEventDetail[]): CalendarEventInput[] {
@@ -111,8 +128,23 @@ export function ScheduleCalendar({ events, loading = false }: ScheduleCalendarPr
       }
     }
 
-    const slotMinTime = minStart ? minStart.subtract(30, "minute").format("HH:mm:ss") : "06:00:00";
-    const slotMaxTime = maxEnd ? maxEnd.add(30, "minute").format("HH:mm:ss") : "20:00:00";
+    const startCandidate = minStart ? minStart.subtract(MINUTES_BUFFER, "minute") : null;
+    const endCandidate = maxEnd ? maxEnd.add(MINUTES_BUFFER, "minute") : null;
+
+    let minSeconds = startCandidate ? startCandidate.hour() * 3600 + startCandidate.minute() * 60 : 6 * 3600;
+    let maxSeconds = endCandidate ? endCandidate.hour() * 3600 + endCandidate.minute() * 60 : 20 * 3600;
+
+    minSeconds = clampSeconds(minSeconds);
+    maxSeconds = clampSeconds(maxSeconds);
+
+    // ensure we leave breathing room even for very tight schedules
+    const minimumWindow = minSeconds + 60 * MINUTES_BUFFER;
+    if (maxSeconds < minimumWindow) {
+      maxSeconds = Math.min(SECONDS_IN_DAY, minimumWindow);
+    }
+
+    const slotMinTime = secondsToTime(minSeconds);
+    const slotMaxTime = secondsToTime(maxSeconds);
 
     return { slotMinTime, slotMaxTime };
   }, [events]);
@@ -122,6 +154,8 @@ export function ScheduleCalendar({ events, loading = false }: ScheduleCalendarPr
       <FullCalendar
         plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
         initialView="timeGridWeek"
+        locale={esLocale}
+        locales={[esLocale]}
         headerToolbar={{
           left: "prev,next today",
           center: "title",

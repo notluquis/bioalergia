@@ -19,7 +19,7 @@ export default function Button({ variant, size = "md", className = "", as, href,
   const v = variant ?? "primary";
   const variantClasses: Record<string, string> = {
     primary:
-      "inline-flex items-center justify-center rounded-full bg-linear-to-r from-primary via-primary/80 to-secondary/90 px-5 py-2 text-sm font-semibold tracking-wide text-white shadow-2xl border border-transparent",
+      "inline-flex items-center justify-center rounded-full bg-gradient-to-r from-primary via-primary/80 to-secondary/90 px-5 py-2 text-sm font-semibold tracking-wide text-white shadow-2xl border border-transparent",
     secondary:
       "inline-flex items-center justify-center rounded-2xl border border-base-200/60 bg-base-200/40 px-4 py-2 text-sm font-semibold tracking-wide text-base-content shadow-sm backdrop-blur-sm hover:border-base-200 hover:bg-base-100/60",
     ghost:

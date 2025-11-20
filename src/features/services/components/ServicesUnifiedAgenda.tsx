@@ -57,6 +57,7 @@ export default function ServicesUnifiedAgenda({
   onRegisterPayment,
   onUnlinkPayment,
 }: ServicesUnifiedAgendaProps) {
+  const skeletons = Array.from({ length: 4 }, (_, index) => index);
   const groups = useMemo<AgendaGroup[]>(() => {
     if (!items.length) return [];
     const map = new Map<string, AgendaGroup>();
@@ -139,11 +140,32 @@ export default function ServicesUnifiedAgenda({
               Visualiza todos los pagos programados por fecha de vencimiento.
             </p>
           </div>
-          {loading && <span className="text-xs text-base-content/40">Actualizando agenda…</span>}
+          {loading && (
+            <div className="flex items-center gap-2 text-xs text-base-content/40">
+              <span className="loading loading-spinner loading-xs text-primary" aria-hidden="true" />
+              <span>Actualizando agenda…</span>
+            </div>
+          )}
         </div>
         {error && <p className="text-xs text-error">{error}</p>}
         {!groups.length && !loading && !error && (
           <p className="text-xs text-base-content/40">No hay cuotas programadas en el periodo consultado.</p>
+        )}
+        {loading && groups.length === 0 && (
+          <div className="space-y-2">
+            {skeletons.map((value) => (
+              <div key={value} className="rounded-2xl border border-base-300/60 bg-base-200/60 p-4 shadow-inner">
+                <div className="flex items-center justify-between">
+                  <span className="skeleton-line w-24" />
+                  <span className="skeleton-line w-16" />
+                </div>
+                <div className="mt-3 space-y-2">
+                  <span className="skeleton-line block w-full" />
+                  <span className="skeleton-line block w-4/5" />
+                </div>
+              </div>
+            ))}
+          </div>
         )}
         <div className="muted-scrollbar max-h-128 space-y-2 overflow-y-auto pr-1">
           {groups.map((group) => {

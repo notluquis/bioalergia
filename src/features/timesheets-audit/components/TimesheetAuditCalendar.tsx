@@ -9,6 +9,7 @@ import FullCalendar from "@fullcalendar/react";
 import type { CalendarApi } from "@fullcalendar/core";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
+import esLocale from "@fullcalendar/core/locales/es";
 
 import type { TimesheetEntryWithEmployee, CalendarEventData } from "../types";
 import { calculateDurationHours, formatDuration, getOverlappingEmployeesForDate } from "../utils/overlapDetection";
@@ -22,6 +23,9 @@ interface TimesheetAuditCalendarProps {
   focusDate?: string | null;
   visibleDateRanges?: Array<{ start: string; end: string }> | null;
 }
+
+const SECONDS_IN_DAY = 24 * 60 * 60 - 1; // 23:59:59
+const SLOT_BUFFER_SECONDS = 60 * 30;
 
 function normalizeTimeComponent(time: string | null | undefined) {
   if (!time) return null;
@@ -119,6 +123,27 @@ function toFullCalendarEvents(calendarEvents: CalendarEventData[]): Array<{
     .filter((value): value is NonNullable<typeof value> => value != null);
 }
 
+function timeStringToSeconds(value: string) {
+  const [hoursRaw = "0", minutesRaw = "0", secondsRaw = "0"] = value.split(":");
+  const hours = Number.parseInt(hoursRaw, 10) || 0;
+  const minutes = Number.parseInt(minutesRaw, 10) || 0;
+  const seconds = Number.parseInt(secondsRaw, 10) || 0;
+  return hours * 3600 + minutes * 60 + seconds;
+}
+
+function clampSeconds(value: number) {
+  if (!Number.isFinite(value)) return 0;
+  return Math.min(SECONDS_IN_DAY, Math.max(0, Math.floor(value)));
+}
+
+function secondsToTime(value: number) {
+  const clamped = clampSeconds(value);
+  const hours = Math.floor(clamped / 3600);
+  const minutes = Math.floor((clamped % 3600) / 60);
+  const seconds = clamped % 60;
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
+
 export default function TimesheetAuditCalendar({
   entries,
   loading = false,
@@ -173,23 +198,31 @@ export default function TimesheetAuditCalendar({
       };
     }
 
-    let minTime = "23:59:00";
-    let maxTime = "00:00:00";
+    let minSeconds = 23 * 3600 + 59 * 60; // 23:59:00
+    let maxSeconds = 0;
 
     for (const entry of rangeFilteredEntries) {
       const normalizedStart = normalizeTimeComponent(entry.start_time);
       const normalizedEnd = normalizeTimeComponent(entry.end_time);
-      if (normalizedStart && normalizedStart < minTime) minTime = normalizedStart;
-      if (normalizedEnd && normalizedEnd > maxTime) maxTime = normalizedEnd;
+      if (normalizedStart) {
+        minSeconds = Math.min(minSeconds, timeStringToSeconds(normalizedStart) - SLOT_BUFFER_SECONDS);
+      }
+      if (normalizedEnd) {
+        maxSeconds = Math.max(maxSeconds, timeStringToSeconds(normalizedEnd) + SLOT_BUFFER_SECONDS);
+      }
     }
 
-    // Expand bounds by 1 hour for readability
-    const minHour = Math.max(0, Number(minTime.split(":")[0]) - 1);
-    const maxHour = Math.min(23, Number(maxTime.split(":")[0]) + 1);
+    minSeconds = clampSeconds(minSeconds);
+    maxSeconds = clampSeconds(maxSeconds);
+
+    const minReadableWindow = minSeconds + SLOT_BUFFER_SECONDS;
+    if (maxSeconds < minReadableWindow) {
+      maxSeconds = Math.min(SECONDS_IN_DAY, minReadableWindow);
+    }
 
     return {
-      slotMinTime: `${String(minHour).padStart(2, "0")}:00:00`,
-      slotMaxTime: `${String(maxHour + 1).padStart(2, "0")}:00:00`,
+      slotMinTime: secondsToTime(minSeconds),
+      slotMaxTime: secondsToTime(maxSeconds),
     };
   }, [rangeFilteredEntries]);
 
@@ -242,6 +275,8 @@ export default function TimesheetAuditCalendar({
           height="auto"
           contentHeight="auto"
           events={fullCalendarEvents}
+          locales={[esLocale]}
+          locale={esLocale}
           eventTimeFormat={{
             hour: "2-digit",
             minute: "2-digit",
@@ -265,7 +300,6 @@ export default function TimesheetAuditCalendar({
           selectable={false}
           dayMaxEvents={false}
           eventDisplay="block"
-          locale="es"
         />
       </div>
 

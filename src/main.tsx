@@ -36,6 +36,7 @@ const ServicesPage = lazy(() => import("./pages/ServicesOverviewPage"));
 const ServicesAgendaPage = lazy(() => import("./pages/ServicesAgendaPage"));
 const ServicesCreatePage = lazy(() => import("./pages/ServicesCreatePage"));
 const ServicesTemplatesPage = lazy(() => import("./pages/ServicesTemplatesPage"));
+const ServiceEditPage = lazy(() => import("./pages/ServiceEditPage"));
 const CalendarSummaryPage = lazy(() => import("./pages/CalendarSummaryPage"));
 const CalendarSchedulePage = lazy(() => import("./pages/CalendarSchedulePage"));
 const CalendarDailyPage = lazy(() => import("./pages/CalendarDailyPage"));
@@ -168,6 +169,14 @@ const router = createBrowserRouter([
             element: (
               <Suspense fallback={<PageLoader />}>
                 <ServicesCreatePage />
+              </Suspense>
+            ),
+          },
+          {
+            path: ":id/edit",
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <ServiceEditPage />
               </Suspense>
             ),
           },

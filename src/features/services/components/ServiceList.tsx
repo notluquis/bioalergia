@@ -8,12 +8,22 @@ interface ServiceListProps {
   onSelect: (publicId: string) => void;
   onCreateRequest: () => void;
   canManage: boolean;
+  loading?: boolean;
 }
 
-export function ServiceList({ services, selectedId, onSelect, onCreateRequest, canManage }: ServiceListProps) {
+export function ServiceList({
+  services,
+  selectedId,
+  onSelect,
+  onCreateRequest,
+  canManage,
+  loading = false,
+}: ServiceListProps) {
+  const skeletons = Array.from({ length: 5 }, (_, index) => index);
+
   return (
-    <aside className="flex h-full flex-col gap-4 p-6 text-sm text-base-content bg-base-100">
-      <header className="flex items-center justify-between">
+    <aside className="flex h-full min-h-[320px] flex-col gap-4 rounded-2xl border border-base-300/60 bg-base-100/80 p-5 text-sm text-base-content shadow-inner">
+      <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-xs font-semibold uppercase tracking-wide text-base-content/60">Servicios</h2>
           <p className="text-xs text-base-content/60">Suscripciones y gastos recurrentes.</p>
@@ -25,6 +35,17 @@ export function ServiceList({ services, selectedId, onSelect, onCreateRequest, c
         )}
       </header>
       <div className="muted-scrollbar flex-1 space-y-3 overflow-y-auto pr-2">
+        {loading &&
+          !services.length &&
+          skeletons.map((value) => (
+            <div key={value} className="rounded-2xl border border-base-300/60 bg-base-200/60 p-4 shadow-sm">
+              <div className="skeleton-line mb-3 w-3/4" />
+              <div className="flex gap-2 text-xs text-base-content/50">
+                <span className="skeleton-line w-20" />
+                <span className="skeleton-line w-16" />
+              </div>
+            </div>
+          ))}
         {services.map((service) => {
           const isActive = service.public_id === selectedId;
           const overdue = service.overdue_count > 0;

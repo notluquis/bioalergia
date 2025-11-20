@@ -157,12 +157,12 @@ export default function AccessSettingsPage() {
         </div>
 
         {error && (
-          <p className="border-l-4 border-error/70 bg-linear-to-r from-error/10 via-base-100/70 to-base-100/55 px-4 py-3 text-sm text-error">
+          <p className="border-l-4 border-error/70 bg-gradient-to-r from-error/10 via-base-100/70 to-base-100/55 px-4 py-3 text-sm text-error">
             {error}
           </p>
         )}
         {status === "success" && !error && (
-          <p className="border-l-4 border-success/70 bg-linear-to-r from-success/10 via-base-100/70 to-base-100/55 px-4 py-3 text-sm text-success">
+          <p className="border-l-4 border-success/70 bg-gradient-to-r from-success/10 via-base-100/70 to-base-100/55 px-4 py-3 text-sm text-success">
             Accesos actualizados correctamente.
           </p>
         )}

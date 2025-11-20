@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import dayjs from "dayjs";
 import Button from "../components/Button";
 import Alert from "../components/Alert";
+import { ServicesHero, ServicesSurface } from "../features/services/components/ServicesShell";
 import ServiceForm from "../features/services/components/ServiceForm";
 import ServiceScheduleAccordion from "../features/services/components/ServiceScheduleAccordion";
 import ServiceScheduleTable from "../features/services/components/ServiceScheduleTable";
@@ -172,8 +173,30 @@ export default function ServiceEditPage() {
     return <Alert variant="error">Identificador de servicio no válido.</Alert>;
   }
 
-  if (loading) {
-    return <p className="text-sm text-base-content/60">Cargando servicio…</p>;
+  const isInitialLoading = loading && !detail;
+
+  if (isInitialLoading) {
+    return (
+      <section className="space-y-6">
+        <ServicesHero
+          title="Editar servicio"
+          description="Cargando información del servicio seleccionado."
+          breadcrumbs={[{ label: "Servicios", to: "/services" }, { label: "Editar" }]}
+          actions={
+            <Button variant="ghost" onClick={() => navigate(-1)}>
+              Volver
+            </Button>
+          }
+        />
+
+        <ServicesSurface className="flex min-h-[260px] items-center justify-center">
+          <div className="flex items-center gap-3 text-sm text-base-content/70">
+            <span className="loading loading-spinner loading-md text-primary" aria-hidden="true" />
+            <span>Preparando datos del servicio...</span>
+          </div>
+        </ServicesSurface>
+      </section>
+    );
   }
 
   if (error && !detail) {
@@ -184,90 +207,91 @@ export default function ServiceEditPage() {
   const schedules = detail?.schedules ?? [];
 
   return (
-    <section className="flex flex-col gap-6">
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-primary">Editar servicio</h1>
-          {service && <p className="text-sm text-base-content/60">{service.name}</p>}
-        </div>
-        <div className="flex gap-2">
-          <Button variant="secondary" onClick={() => navigate(-1)}>
+    <section className="space-y-6">
+      <ServicesHero
+        title="Editar servicio"
+        description={service ? service.name : "Ajusta los datos y cronogramas del servicio seleccionado."}
+        breadcrumbs={[{ label: "Servicios", to: "/services" }, { label: "Editar" }]}
+        actions={
+          <Button variant="ghost" onClick={() => navigate(-1)}>
             Volver
           </Button>
-        </div>
-      </div>
+        }
+      />
 
       {error && <Alert variant="error">{error}</Alert>}
       {saveMessage && <Alert variant="success">{saveMessage}</Alert>}
 
       {service && (
-        <div className="grid gap-6 lg:grid-cols-[320px,minmax(0,1fr)]">
-          <aside className="bg-base-100 space-y-4 border border-base-300 p-4 text-sm text-base-content">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-base-content/80">Resumen</h2>
-            <div className="space-y-3">
-              {summaryCards.map((card) => (
-                <div key={card.label} className="rounded-2xl border border-base-300 bg-base-200 p-3">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-base-content/80">{card.label}</p>
-                  <p className="mt-1 text-lg font-semibold text-base-content">{card.value}</p>
-                  {card.helper && <p className="text-xs text-base-content/50">{card.helper}</p>}
-                </div>
-              ))}
-            </div>
-            <div className="space-y-2">
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-base-content/80">Historial</h3>
-              <ol className="space-y-2 text-xs text-base-content/60">
-                {historyItems.map((item) => (
-                  <li key={item.title} className="rounded-xl border border-base-300 bg-base-200 p-3">
-                    <p className="font-semibold text-base-content">{item.title}</p>
-                    {item.description && <p className="text-xs text-base-content/50">{item.description}</p>}
-                    <p className="text-xs uppercase tracking-wide text-base-content/40">{item.date}</p>
-                  </li>
+        <ServicesSurface className="space-y-6">
+          <div className="grid gap-6 lg:grid-cols-[320px,minmax(0,1fr)] lg:items-start">
+            <aside className="space-y-4 rounded-2xl border border-base-300/60 bg-base-100/80 p-4 text-sm text-base-content shadow-inner">
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-base-content/80">Resumen</h2>
+              <div className="space-y-3">
+                {summaryCards.map((card) => (
+                  <div key={card.label} className="rounded-2xl border border-base-300 bg-base-200 p-3">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-base-content/80">{card.label}</p>
+                    <p className="mt-1 text-lg font-semibold text-base-content">{card.value}</p>
+                    {card.helper && <p className="text-xs text-base-content/50">{card.helper}</p>}
+                  </div>
                 ))}
-              </ol>
-            </div>
-          </aside>
-
-          <div className="space-y-6">
-            <section className="bg-base-100 border border-base-300 p-6">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-base-content/80">Datos generales</h2>
-              {initialValues && (
-                <ServiceForm
-                  onSubmit={handleSubmit}
-                  onCancel={() => navigate(-1)}
-                  initialValues={initialValues}
-                  submitLabel="Actualizar servicio"
-                />
-              )}
-            </section>
-
-            <section className="space-y-4">
-              <ServiceScheduleAccordion
-                service={service}
-                schedules={schedules}
-                canManage={false}
-                onRegisterPayment={() => undefined}
-                onUnlinkPayment={() => undefined}
-              />
-              <ServiceScheduleTable
-                schedules={schedules}
-                canManage={false}
-                onRegisterPayment={() => undefined}
-                onUnlinkPayment={() => undefined}
-              />
-              <div className="flex justify-end">
-                <Button
-                  variant="secondary"
-                  onClick={() =>
-                    handleRegenerate({ months: service.next_generation_months, startDate: service.start_date })
-                  }
-                  disabled={saving}
-                >
-                  Regenerar cronograma
-                </Button>
               </div>
-            </section>
+              <div className="space-y-2">
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-base-content/80">Historial</h3>
+                <ol className="space-y-2 text-xs text-base-content/60">
+                  {historyItems.map((item) => (
+                    <li key={item.title} className="rounded-xl border border-base-300 bg-base-200 p-3">
+                      <p className="font-semibold text-base-content">{item.title}</p>
+                      {item.description && <p className="text-xs text-base-content/50">{item.description}</p>}
+                      <p className="text-xs uppercase tracking-wide text-base-content/40">{item.date}</p>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            </aside>
+
+            <div className="space-y-6">
+              <section className="rounded-2xl border border-base-300 bg-base-100 p-6 shadow-sm">
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-base-content/80">Datos generales</h2>
+                {initialValues && (
+                  <ServiceForm
+                    onSubmit={handleSubmit}
+                    onCancel={() => navigate(-1)}
+                    initialValues={initialValues}
+                    submitLabel="Actualizar servicio"
+                  />
+                )}
+              </section>
+
+              <section className="space-y-4">
+                <ServiceScheduleAccordion
+                  service={service}
+                  schedules={schedules}
+                  canManage={false}
+                  onRegisterPayment={() => undefined}
+                  onUnlinkPayment={() => undefined}
+                />
+                <ServiceScheduleTable
+                  schedules={schedules}
+                  canManage={false}
+                  onRegisterPayment={() => undefined}
+                  onUnlinkPayment={() => undefined}
+                />
+                <div className="flex justify-end">
+                  <Button
+                    variant="secondary"
+                    onClick={() =>
+                      handleRegenerate({ months: service.next_generation_months, startDate: service.start_date })
+                    }
+                    disabled={saving}
+                  >
+                    Regenerar cronograma
+                  </Button>
+                </div>
+              </section>
+            </div>
           </div>
-        </div>
+        </ServicesSurface>
       )}
     </section>
   );

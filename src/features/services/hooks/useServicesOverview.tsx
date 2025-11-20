@@ -19,6 +19,8 @@ import type {
   ServiceSchedule,
   ServiceSummary,
 } from "../types";
+import type { DbMovement } from "../../transactions/types";
+import { fetchTransactions } from "../../transactions/api";
 import {
   createService,
   fetchServiceDetail,
@@ -63,6 +65,9 @@ function useServicesController() {
   });
   const [processingPayment, setProcessingPayment] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [suggestedTransactions, setSuggestedTransactions] = useState<DbMovement[]>([]);
+  const [suggestedLoading, setSuggestedLoading] = useState(false);
+  const [suggestedError, setSuggestedError] = useState<string | null>(null);
 
   const [filters, setFilters] = useState<ServicesFilterState>({
     search: "",
@@ -74,6 +79,7 @@ function useServicesController() {
   const [aggregatedLoading, setAggregatedLoading] = useState(false);
   const [aggregatedError, setAggregatedError] = useState<string | null>(null);
   const selectedIdRef = useRef<string | null>(null);
+  const paymentSuggestionsRequestIdRef = useRef(0);
 
   const loadServices = useCallback(async () => {
     if (!canView) return;
@@ -274,6 +280,8 @@ function useServicesController() {
   );
 
   const openPaymentModal = useCallback((schedule: ServiceSchedule) => {
+    const requestId = paymentSuggestionsRequestIdRef.current + 1;
+    paymentSuggestionsRequestIdRef.current = requestId;
     setPaymentSchedule(schedule);
     setPaymentForm({
       transactionId: schedule.transaction!.id ? String(schedule.transaction!.id) : "",
@@ -282,6 +290,56 @@ function useServicesController() {
       note: schedule.note ?? "",
     });
     setPaymentError(null);
+    setSuggestedError(null);
+    setSuggestedTransactions([]);
+
+    const dueDate = schedule.due_date ? dayjs(schedule.due_date) : dayjs();
+    const from = dueDate.clone().subtract(45, "day").format("YYYY-MM-DD");
+    const to = dueDate.clone().add(45, "day").format("YYYY-MM-DD");
+
+    setSuggestedLoading(true);
+
+    fetchTransactions({
+      filters: {
+        from,
+        to,
+        description: "",
+        origin: "",
+        destination: "",
+        sourceId: "",
+        bankAccountNumber: "",
+        direction: "OUT",
+        includeAmounts: true,
+      },
+      page: 1,
+      pageSize: 50,
+    })
+      .then((payload) => {
+        if (paymentSuggestionsRequestIdRef.current !== requestId) return;
+        const tolerance = Math.max(100, Math.round(schedule.expected_amount * 0.01));
+        const matches = payload.data
+          .filter(
+            (tx) => typeof tx.amount === "number" && Math.abs((tx.amount ?? 0) - schedule.expected_amount) <= tolerance
+          )
+          .sort((a, b) => {
+            const diffA = Math.abs((a.amount ?? 0) - schedule.expected_amount);
+            const diffB = Math.abs((b.amount ?? 0) - schedule.expected_amount);
+            if (diffA !== diffB) return diffA - diffB;
+            return dayjs(b.timestamp).valueOf() - dayjs(a.timestamp).valueOf();
+          })
+          .slice(0, 8);
+        setSuggestedTransactions(matches);
+      })
+      .catch((err) => {
+        if (paymentSuggestionsRequestIdRef.current !== requestId) return;
+        const message = err instanceof Error ? err.message : "No se pudieron cargar sugerencias de transacciones";
+        setSuggestedError(message);
+        logger.error("[services] payment:suggestions:error", message);
+      })
+      .finally(() => {
+        if (paymentSuggestionsRequestIdRef.current !== requestId) return;
+        setSuggestedLoading(false);
+      });
   }, []);
 
   const handlePaymentFormChange = useCallback((key: keyof typeof paymentForm, value: string) => {
@@ -290,6 +348,8 @@ function useServicesController() {
 
   const closePaymentModal = useCallback(() => {
     setPaymentSchedule(null);
+    setSuggestedTransactions([]);
+    setSuggestedError(null);
   }, []);
 
   const handlePaymentSubmit = useCallback(
@@ -335,6 +395,16 @@ function useServicesController() {
     },
     [detail, loadServices, paymentForm, paymentSchedule]
   );
+
+  const applySuggestedTransaction = useCallback((tx: DbMovement) => {
+    if (!tx.amount) return;
+    setPaymentForm((prev) => ({
+      ...prev,
+      transactionId: String(tx.id),
+      paidAmount: String(tx.amount),
+      paidDate: tx.timestamp ? dayjs(tx.timestamp).format("YYYY-MM-DD") : prev.paidDate,
+    }));
+  }, []);
 
   const handleUnlink = useCallback(
     async (schedule: ServiceSchedule) => {
@@ -508,6 +578,10 @@ function useServicesController() {
     handlePaymentFieldChange,
     paymentError,
     processingPayment,
+    suggestedTransactions,
+    suggestedLoading,
+    suggestedError,
+    applySuggestedTransaction,
     filters,
     setFilters,
     handleCreateService,

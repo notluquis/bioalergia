@@ -32,6 +32,30 @@ export default function ServicesAgendaContent() {
     { day: 0, week: 0, month: 0 }
   );
 
+  if (aggregatedLoading && unifiedAgendaItems.length === 0) {
+    return (
+      <section className="space-y-8">
+        <ServicesHero
+          title="Agenda de servicios"
+          description="Visualiza los pagos programados, sus estados y registra conciliaciones rápidamente."
+          breadcrumbs={[{ label: "Servicios", to: "/services" }, { label: "Agenda" }]}
+          actions={
+            <Link to="/services">
+              <Button variant="ghost">Volver al panel</Button>
+            </Link>
+          }
+        />
+
+        <ServicesSurface className="flex min-h-[260px] items-center justify-center">
+          <div className="flex items-center gap-3 text-sm text-base-content/70">
+            <span className="loading loading-spinner loading-md text-primary" aria-hidden="true" />
+            <span>Cargando agenda consolidada...</span>
+          </div>
+        </ServicesSurface>
+      </section>
+    );
+  }
+
   return (
     <section className="space-y-8">
       <ServicesHero

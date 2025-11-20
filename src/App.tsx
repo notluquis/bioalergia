@@ -198,7 +198,6 @@ export default function App() {
   React.useEffect(() => {
     setActiveNavCategory(resolvedCategory);
   }, [resolvedCategory]);
-
   const handleLogout = async () => {
     await logout();
     navigate("/login", { replace: true });
@@ -231,10 +230,6 @@ export default function App() {
     }
   }, [debouncedIsMobile, location.pathname]);
 
-  React.useEffect(() => {
-    setActiveNavCategory(resolvedCategory);
-  }, [resolvedCategory]);
-
   const navigationByCategory = navigationSections.filter((section) => section.category === activeNavCategory);
 
   const buildLabel = React.useMemo(() => {
@@ -256,47 +251,47 @@ export default function App() {
   return (
     <>
       {isNavigating && (
-        <div className="fixed left-0 right-0 top-0 z-60 h-1 overflow-hidden bg-base-200 shadow-lg">
+        <div className="fixed left-0 right-0 top-0 z-50 h-1 overflow-hidden bg-base-200 shadow-lg">
           <div className="nav-progress__indicator" />
         </div>
       )}
       <div className="layout-shell relative mx-auto flex min-h-screen w-full max-w-[1600px] gap-6 px-4 py-6 text-base-content transition-colors duration-300 sm:px-6 lg:px-10">
-        {/* Hamburger button: always visible */}
+        {/* Hamburger button: accessible, compact, always visible on mobile */}
         <button
           type="button"
-          className="apple-nav-toggle fixed left-4 top-[clamp(1rem,env(safe-area-inset-top,0px)+1rem,2.75rem)] z-40 md:hidden"
+          className="fixed left-4 top-[clamp(0.9rem,env(safe-area-inset-top,0px)+0.9rem,2.5rem)] z-40 inline-flex items-center gap-2 rounded-full border border-base-300/70 bg-base-100/85 px-3 py-2 text-sm font-semibold text-base-content shadow-lg backdrop-blur-md transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-1 md:hidden"
           onClick={toggleSidebar}
-          aria-label={sidebarOpen ? "Cerrar menú" : "Abrir menú"}
+          aria-label={sidebarOpen ? "Cerrar menú principal" : "Abrir menú principal"}
           aria-expanded={sidebarOpen}
-          aria-controls={sidebarOpen || !isMobile ? "app-sidebar" : undefined}
+          aria-controls="app-sidebar"
+          aria-pressed={sidebarOpen}
         >
-          {sidebarOpen ? (
-            <svg
-              className="h-6 w-6 text-base-content"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          ) : (
-            <svg
-              className="h-6 w-6 text-base-content"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          )}
+          <span
+            className={`relative flex h-6 w-6 items-center justify-center rounded-full transition-colors ${
+              sidebarOpen ? "bg-primary/10 text-primary" : "bg-base-200 text-base-content"
+            }`}
+            aria-hidden="true"
+          >
+            <span
+              className={`block h-[1.5px] w-3 rounded-full transition-all duration-200 ${
+                sidebarOpen ? "translate-y-[3px] rotate-45 bg-primary" : "-translate-y-1 bg-base-content"
+              }`}
+            />
+            <span
+              className={`block h-[1.5px] w-3 rounded-full transition-all duration-200 ${
+                sidebarOpen ? "-translate-y-[3px] -rotate-45 bg-primary" : "translate-y-1 bg-base-content"
+              }`}
+            />
+          </span>
+          <span className="text-xs uppercase tracking-wide">{sidebarOpen ? "Cerrar" : "Menú"}</span>
         </button>
 
         {/* Overlay for mobile/tablet when sidebar is open */}
         {isMobile && sidebarOpen && (
           <div
-            className="fixed inset-0 z-40 bg-base-content/20 transition-opacity duration-300"
+            className="fixed inset-0 z-30 bg-base-content/30 backdrop-blur-[1px] transition-opacity duration-300"
+            role="presentation"
+            aria-hidden="true"
             onClick={() => setSidebarOpen(false)}
           />
         )}
@@ -305,9 +300,10 @@ export default function App() {
         {(sidebarOpen || !isMobile) && (
           <aside
             id="app-sidebar"
-            className={`fixed inset-y-0 left-0 z-50 flex h-full w-[min(320px,90vw)] shrink-0 flex-col rounded-4xl border border-base-300/60 bg-base-200/70 p-4 text-sm text-base-content shadow-2xl backdrop-blur-3xl transition-transform duration-300 md:static md:h-[calc(100vh-5rem)] md:translate-x-0
+            className={`fixed inset-y-0 left-0 z-50 flex h-full w-[min(320px,90vw)] shrink-0 flex-col rounded-[1.75rem] border border-base-300/60 bg-base-200/75 p-4 text-sm text-base-content shadow-2xl backdrop-blur-3xl transition-transform duration-300 md:static md:h-[calc(100vh-5rem)] md:translate-x-0
             ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
             ${!sidebarOpen && !isMobile ? "hidden" : ""}`}
+            aria-label="Navegación principal"
           >
             <div className="flex h-full flex-col gap-6 overflow-hidden">
               <div className="rounded-3xl border border-white/10 bg-linear-to-br from-base-100/30 via-base-200/30 to-base-100/10 p-4 shadow-inner">

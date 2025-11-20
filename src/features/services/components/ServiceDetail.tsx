@@ -167,7 +167,7 @@ export function ServiceDetail({
   }
 
   return (
-    <section className="relative flex h-full flex-col gap-6 rounded-3xl p-6 bg-base-100">
+    <section className="relative flex h-full min-w-0 flex-col gap-6 rounded-3xl bg-base-100 p-6">
       <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="space-y-1">
           <h1 className="text-2xl font-bold text-primary drop-shadow-sm">{service.name}</h1>
@@ -181,7 +181,7 @@ export function ServiceDetail({
             <span>{recurrenceLabel}</span>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
           <span
             className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${statusBadge.className}`}
           >

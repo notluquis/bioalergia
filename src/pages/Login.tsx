@@ -53,7 +53,7 @@ export default function Login() {
 
   return (
     <div className="relative flex min-h-screen items-center justify-center bg-linear-to-br from-base-200/60 via-base-100 to-base-100 px-6 py-12">
-      <div className="surface-elevated relative z-10 w-full max-w-md rounded-4xl px-10 py-12 shadow-2xl">
+      <div className="surface-elevated relative z-10 w-full max-w-md rounded-[1.75rem] px-10 py-12 shadow-2xl">
         <div className="mb-6 flex justify-end">
           <ConnectionIndicator />
         </div>

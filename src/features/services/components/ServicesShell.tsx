@@ -68,5 +68,7 @@ export function ServicesStatCard({ label, value, helper }: StatCardProps) {
 }
 
 export function ServicesGrid({ children }: { children: ReactNode }) {
-  return <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">{children}</div>;
+  return (
+    <div className="grid min-h-0 items-start gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">{children}</div>
+  );
 }

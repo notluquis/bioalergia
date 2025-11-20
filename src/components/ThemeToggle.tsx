@@ -83,8 +83,8 @@ export default function ThemeToggle() {
       <span
         className={`flex h-6 w-6 items-center justify-center rounded-full transition-all duration-300 ${
           isDark
-            ? "bg-linear-to-r from-slate-800 to-indigo-700 text-amber-100"
-            : "bg-linear-to-r from-amber-200 to-rose-200 text-slate-800"
+            ? "bg-gradient-to-r from-slate-800 to-indigo-700 text-amber-100"
+            : "bg-gradient-to-r from-amber-200 to-rose-200 text-slate-800"
         }`}
       >
         {icon}

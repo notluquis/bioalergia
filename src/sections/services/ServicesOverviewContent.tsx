@@ -54,6 +54,10 @@ export default function ServicesOverviewContent() {
     handlePaymentFieldChange,
     paymentError,
     processingPayment,
+    suggestedTransactions,
+    suggestedLoading,
+    suggestedError,
+    applySuggestedTransaction,
     filters,
     handleCreateService,
     handleRegenerate,
@@ -90,6 +94,21 @@ export default function ServicesOverviewContent() {
   ];
 
   const activeFiltersCount = (filters.search.trim() ? 1 : 0) + filters.statuses.size + filters.types.size;
+  const showInitialLoading = aggregatedLoading && services.length === 0;
+
+  if (showInitialLoading) {
+    return (
+      <section className="space-y-8">
+        <ServicesHero title="Servicios recurrentes" description="Cargando datos de servicios y cronogramas..." />
+        <ServicesSurface className="flex min-h-80 items-center justify-center">
+          <div className="flex items-center gap-3 text-sm text-base-content/70">
+            <span className="loading loading-spinner loading-md text-primary" aria-hidden="true" />
+            <span>Preparando panel de servicios...</span>
+          </div>
+        </ServicesSurface>
+      </section>
+    );
+  }
 
   return (
     <section className="space-y-8">
@@ -143,13 +162,13 @@ export default function ServicesOverviewContent() {
 
         <ServicesGrid>
           <div className="space-y-6">
-            {loadingList && <p className="text-xs text-base-content/50">Actualizando listado de servicios...</p>}
             <ServiceList
               services={filteredServices}
               selectedId={selectedId}
               onSelect={setSelectedId}
               onCreateRequest={openCreateModal}
               canManage={canManage}
+              loading={loadingList}
             />
             <div className="rounded-2xl border border-base-300/60 bg-base-200/70 p-4 shadow-inner">
               <div className="flex items-center justify-between">
@@ -226,6 +245,54 @@ export default function ServicesOverviewContent() {
       >
         {paymentSchedule && (
           <form onSubmit={handlePaymentSubmit} className="space-y-4">
+            <div className="rounded-2xl border border-base-300/60 bg-base-200/60 p-3 text-xs text-base-content/70">
+              <p className="font-semibold text-base-content">Sugerencias por monto</p>
+              {suggestedLoading && (
+                <div className="mt-2 flex items-center gap-2">
+                  <span className="loading loading-spinner loading-xs text-primary" aria-hidden="true" />
+                  <span>
+                    Buscando movimientos cercanos a {formatCurrency.format(paymentSchedule.expected_amount)}...
+                  </span>
+                </div>
+              )}
+              {suggestedError && <p className="mt-2 text-error">{suggestedError}</p>}
+              {!suggestedLoading && !suggestedError && suggestedTransactions.length === 0 && (
+                <p className="mt-2">
+                  No encontramos movimientos con ese monto en un rango cercano. Usa ID o ajusta manualmente.
+                </p>
+              )}
+              {!suggestedLoading && suggestedTransactions.length > 0 && (
+                <ul className="mt-2 space-y-2">
+                  {suggestedTransactions.map((tx) => (
+                    <li
+                      key={tx.id}
+                      className="rounded-xl border border-base-300 bg-base-100/80 p-3 shadow-sm transition hover:border-primary/40"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                          <p className="text-sm font-semibold text-base-content">
+                            {formatCurrency.format(tx.amount ?? 0)}
+                          </p>
+                          <p className="text-xs text-base-content/50">
+                            {dayjs(tx.timestamp).format("DD MMM YYYY")} · ID #{tx.id}
+                          </p>
+                          {tx.description && <p className="text-xs text-base-content/60">{tx.description}</p>}
+                        </div>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => applySuggestedTransaction(tx)}
+                        >
+                          Usar
+                        </Button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
             <Input
               label="ID transacción"
               type="number"
