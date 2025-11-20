@@ -3,6 +3,7 @@ import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
+import type { EventClickArg } from "@fullcalendar/core";
 import esLocale from "@fullcalendar/core/locales/es";
 import dayjs from "dayjs";
 
@@ -214,7 +215,7 @@ export function ScheduleCalendar({ events, loading = false }: ScheduleCalendarPr
           if (props.dosage) details.push(`Dosis: ${props.dosage}`);
           info.el.setAttribute("title", details.join("\n"));
         }}
-        eventClick={(info) => {
+        eventClick={(info: EventClickArg) => {
           info.jsEvent.preventDefault();
           const props = info.event.extendedProps as CalendarEventInput["extendedProps"];
           setSelectedEvent({
