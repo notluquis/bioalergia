@@ -300,45 +300,44 @@ export default function App() {
         {(sidebarOpen || !isMobile) && (
           <aside
             id="app-sidebar"
-            className={`fixed inset-y-0 left-0 z-50 flex h-full w-[min(320px,90vw)] shrink-0 flex-col rounded-[1.75rem] border border-base-300/60 bg-base-200/75 p-4 text-sm text-base-content shadow-2xl backdrop-blur-3xl transition-transform duration-300 md:static md:h-[calc(100vh-5rem)] md:translate-x-0
+            className={`fixed inset-y-0 left-0 z-50 flex h-full w-[min(300px,88vw)] shrink-0 flex-col rounded-[1.5rem] border border-base-300/50 bg-base-200/80 p-3 text-sm text-base-content shadow-2xl backdrop-blur-3xl transition-transform duration-300 md:static md:h-[calc(100vh-5rem)] md:translate-x-0
             ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
             ${!sidebarOpen && !isMobile ? "hidden" : ""}`}
             aria-label="Navegación principal"
           >
-            <div className="flex h-full flex-col gap-6 overflow-hidden">
-              <div className="rounded-3xl border border-white/10 bg-linear-to-br from-base-100/30 via-base-200/30 to-base-100/10 p-4 shadow-inner">
+            <div className="flex h-full flex-col gap-4 overflow-hidden">
+              <div className="rounded-2xl border border-base-300/40 bg-gradient-to-br from-base-100/85 via-base-200/70 to-base-100/50 p-3 shadow-inner">
                 <div className="flex items-center gap-3">
-                  <div className="rounded-2xl border border-white/20 bg-transparent p-1 shadow-inner">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-white/20 bg-base-100/80 shadow-sm">
                     <img
                       src="/logo_sin_eslogan.png"
                       alt="Bioalergia"
-                      className="h-10 w-10 object-contain"
+                      className="h-9 w-9 object-contain"
                       loading="lazy"
                     />
                   </div>
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.4em] text-base-content/60">Bioalergia</p>
-                    <p className="text-base font-semibold text-base-content">{capitalizedName || "Equipo"}</p>
+                  <div className="min-w-0">
+                    <p className="text-[10px] uppercase tracking-[0.4em] text-base-content/60">Bioalergia</p>
+                    <p className="truncate text-lg font-semibold leading-tight text-base-content">
+                      {capitalizedName || "Equipo"}
+                    </p>
+                    <p className="truncate text-[11px] text-base-content/60">{user?.email}</p>
                   </div>
                 </div>
-                <p className="mt-3 text-xs text-base-content/60 truncate">{user?.email}</p>
               </div>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <p className="text-[10px] uppercase tracking-[0.5em] text-base-content/60">Categorías</p>
+
+              <div className="rounded-2xl border border-base-300/30 bg-base-100/35 p-3 shadow-inner">
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <p className="text-[11px] uppercase tracking-[0.45em] text-base-content/65">Secciones</p>
                   <button
                     type="button"
-                    className="text-[11px] font-semibold text-base-content/60 hover:text-primary"
+                    className="rounded-lg px-2 py-1 text-[11px] font-semibold text-base-content/70 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-base-100"
                     onClick={() => setCategoriesExpanded((prev) => !prev)}
                   >
-                    {categoriesExpanded ? "Contraer" : "Expandir"}
+                    {categoriesExpanded ? "Vista compacta" : "Ver detalle"}
                   </button>
                 </div>
-                <div
-                  className={`grid gap-2 transition-all duration-300 ${
-                    categoriesExpanded ? "grid-cols-2" : "grid-cols-1"
-                  }`}
-                >
+                <div className="muted-scrollbar flex gap-2 overflow-x-auto pb-1 pr-1">
                   {NAV_CATEGORY_ORDER.map((category) => {
                     const meta = NAV_CATEGORY_META[category];
                     const active = activeNavCategory === category;
@@ -348,40 +347,56 @@ export default function App() {
                         type="button"
                         onClick={() => setActiveNavCategory(category)}
                         aria-pressed={active}
-                        className={`flex items-center gap-3 rounded-2xl border border-base-300/30 px-4 py-3 text-left transition-all ${
+                        className={`group relative flex min-w-[140px] items-center gap-3 rounded-xl px-3 py-2 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-base-100 ${
                           active
-                            ? `bg-linear-to-r ${meta.accent} text-white shadow-lg`
-                            : "bg-base-100/40 text-base-content/80 hover:border-primary/40 hover:text-primary"
-                        } ${categoriesExpanded ? "flex-col items-start" : ""}`}
+                            ? `border border-white/40 bg-gradient-to-r ${meta.accent} text-white shadow-lg shadow-primary/20`
+                            : "border border-base-300/50 bg-base-100/80 text-base-content/80 hover:border-primary/40 hover:text-primary"
+                        }`}
                       >
                         <span
-                          className={`rounded-xl border px-2 py-1 ${
-                            active ? "border-white/60 bg-white/20" : "border-base-300/60 bg-base-100/80"
+                          className={`flex h-9 w-9 items-center justify-center rounded-lg border text-sm transition-colors ${
+                            active
+                              ? "border-white/60 bg-white/10 text-white"
+                              : "border-base-300/70 bg-base-100/70 text-base-content"
                           }`}
                         >
-                          <meta.icon className="h-4 w-4" />
+                          <meta.icon className="h-4 w-4" aria-hidden="true" />
                         </span>
-                        <div>
-                          <p className="text-sm font-semibold">{category}</p>
-                          {categoriesExpanded && <p className="text-[11px] text-base-content/70">{meta.description}</p>}
+                        <div className="min-w-0">
+                          <p className={`text-sm font-semibold ${active ? "text-white" : "text-base-content"}`}>
+                            {category}
+                          </p>
+                          {categoriesExpanded && (
+                            <p
+                              className={`text-[11px] leading-snug ${active ? "text-white/80" : "text-base-content/65"}`}
+                            >
+                              {meta.description}
+                            </p>
+                          )}
                         </div>
                       </button>
                     );
                   })}
                 </div>
               </div>
+
               <nav className="flex-1 overflow-y-auto pr-1">
                 {navigationByCategory.length ? (
-                  <div className="space-y-5">
+                  <div className="space-y-3">
                     {navigationByCategory.map((section) => (
                       <section
                         key={section.title}
-                        className="space-y-2 rounded-3xl border border-base-300/20 bg-base-200/40 p-3 shadow-inner"
+                        className="rounded-2xl border border-base-300/25 bg-base-100/30 p-3 shadow-inner"
                       >
-                        <p className="text-[10px] font-semibold uppercase tracking-[0.4em] text-base-content/50">
-                          {section.title}
-                        </p>
-                        <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <p className="text-[11px] uppercase tracking-[0.35em] text-base-content/60">
+                            {section.title}
+                          </p>
+                          <span className="text-[10px] text-base-content/50">
+                            {section.items.length === 1 ? "1 opción" : `${section.items.length} opciones`}
+                          </span>
+                        </div>
+                        <div className="mt-2 space-y-[6px]">
                           {section.items.map((item) => (
                             <NavLink
                               key={item.to}
@@ -391,23 +406,33 @@ export default function App() {
                                 const pendingMatch =
                                   pendingPath && (pendingPath === item.to || pendingPath.startsWith(`${item.to}/`));
                                 const active = isActive || Boolean(pendingMatch);
-                                return `group flex w-full items-center justify-between rounded-2xl border border-base-300/20 px-4 py-3 text-sm font-semibold transition-all duration-200 ${
+                                return `group relative flex items-center justify-between rounded-xl border px-3 py-2.5 text-sm font-semibold transition-all duration-200 ${
                                   active
-                                    ? "bg-linear-to-r from-primary/90 via-secondary/70 to-accent/70 text-white shadow-2xl"
-                                    : "bg-transparent text-base-content/70 hover:text-base-content hover:bg-base-100/40"
+                                    ? "border-primary/60 bg-base-100/90 text-base-content shadow-lg shadow-primary/10"
+                                    : "border-base-300/30 bg-transparent text-base-content/75 hover:border-primary/40 hover:bg-base-100/60 hover:text-base-content"
                                 }`;
                               }}
                               onClick={() => {
                                 if (isMobile) setSidebarOpen(false);
                               }}
                             >
-                              <span>{item.label}</span>
-                              <span className="text-xs text-white/70">
+                              <div className="flex items-center gap-3 overflow-hidden">
+                                <span
+                                  className="h-2.5 w-2.5 rounded-full bg-gradient-to-br from-primary/80 via-secondary/70 to-accent/70 opacity-50 transition-opacity group-hover:opacity-100"
+                                  aria-hidden="true"
+                                />
+                                <span className="truncate">{item.label}</span>
+                              </div>
+                              <span
+                                className={`text-xs font-medium ${
+                                  pendingPath && (pendingPath === item.to || pendingPath.startsWith(`${item.to}/`))
+                                    ? "text-primary"
+                                    : "text-base-content/50 group-hover:text-primary"
+                                }`}
+                              >
                                 {pendingPath && (pendingPath === item.to || pendingPath.startsWith(`${item.to}/`))
                                   ? "…"
-                                  : location.pathname === item.to
-                                    ? "·"
-                                    : "›"}
+                                  : "›"}
                               </span>
                             </NavLink>
                           ))}
@@ -421,7 +446,8 @@ export default function App() {
                   </div>
                 )}
               </nav>
-              <div className="space-y-1 rounded-2xl border border-white/10 bg-black/40 p-3 text-[11px] text-base-content/60 shadow-inner">
+
+              <div className="rounded-2xl border border-base-300/30 bg-base-100/30 p-3 text-[11px] text-base-content/60 shadow-inner">
                 <p className="font-semibold text-base-content">Versión</p>
                 <p>{APP_VERSION}</p>
                 <p className="text-xs">Build: {buildLabel}</p>
