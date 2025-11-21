@@ -22,7 +22,6 @@ const ROOT_DIR = fileURLToPath(new URL(".", import.meta.url));
 function buildServiceWorkerPlugin(buildId: string) {
   return {
     name: "build-service-worker",
-    apply: "build",
     async closeBundle() {
       const templatePath = path.resolve(ROOT_DIR, "sw/sw-template.js");
       const outputPath = path.resolve(ROOT_DIR, "dist/client/sw.js");
