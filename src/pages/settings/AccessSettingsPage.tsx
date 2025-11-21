@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import Button from "../../components/Button";
+import Button from "../../components/ui/Button";
+import Input from "../../components/ui/Input";
 import { useSettings, type AppSettings } from "../../context/settings-context";
 
 function normalizeExternalUrl(value: string) {
@@ -109,11 +110,10 @@ export default function AccessSettingsPage() {
         <div className="grid gap-4 md:grid-cols-2">
           <label className="flex flex-col gap-2 text-sm text-base-content/70">
             <span className="text-xs font-semibold uppercase tracking-wide text-base-content/60">Servidor visible</span>
-            <input
+            <Input
               type="text"
               value={form.dbDisplayHost}
               onChange={(event) => handleChange("dbDisplayHost", event.target.value)}
-              className="input input-bordered"
               placeholder="Ej: db.bioalergia.cl"
             />
           </label>
@@ -121,11 +121,10 @@ export default function AccessSettingsPage() {
             <span className="text-xs font-semibold uppercase tracking-wide text-base-content/60">
               Nombre de la base
             </span>
-            <input
+            <Input
               type="text"
               value={form.dbDisplayName}
               onChange={(event) => handleChange("dbDisplayName", event.target.value)}
-              className="input input-bordered"
               placeholder="Ej: bio_finanzas"
             />
           </label>
@@ -133,11 +132,10 @@ export default function AccessSettingsPage() {
             <span className="text-xs font-semibold uppercase tracking-wide text-base-content/60">
               URL consola DB (https)
             </span>
-            <input
+            <Input
               type="url"
               value={form.dbConsoleUrl}
               onChange={(event) => handleChange("dbConsoleUrl", event.target.value)}
-              className="input input-bordered"
               placeholder="https://"
             />
             <span className="text-xs text-base-content/50">Se normaliza automáticamente para incluir https://</span>
@@ -146,11 +144,10 @@ export default function AccessSettingsPage() {
             <span className="text-xs font-semibold uppercase tracking-wide text-base-content/60">
               URL cPanel (https)
             </span>
-            <input
+            <Input
               type="url"
               value={form.cpanelUrl}
               onChange={(event) => handleChange("cpanelUrl", event.target.value)}
-              className="input input-bordered"
               placeholder="https://"
             />
           </label>

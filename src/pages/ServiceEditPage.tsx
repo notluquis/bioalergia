@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import dayjs from "dayjs";
-import Button from "../components/Button";
-import Alert from "../components/Alert";
+import Button from "../components/ui/Button";
+import Alert from "../components/ui/Alert";
 import { ServicesHero, ServicesSurface } from "../features/services/components/ServicesShell";
 import ServiceForm from "../features/services/components/ServiceForm";
 import ServiceScheduleAccordion from "../features/services/components/ServiceScheduleAccordion";

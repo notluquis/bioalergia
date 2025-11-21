@@ -1,7 +1,7 @@
 import { useMemo, type ChangeEvent } from "react";
 import type { ServiceSummary, ServiceType } from "../types";
-import Input from "../../../components/Input";
-import Button from "../../../components/Button";
+import Input from "../../../components/ui/Input";
+import Button from "../../../components/ui/Button";
 
 export type ServicesFilterState = {
   search: string;

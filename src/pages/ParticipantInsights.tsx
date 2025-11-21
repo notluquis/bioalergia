@@ -2,9 +2,9 @@ import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
 import { fmtCLP } from "../lib/format";
 import { useParticipantInsightsData } from "../features/participants/hooks/useParticipantInsightsData";
-import Alert from "../components/Alert";
-import Input from "../components/Input";
-import Button from "../components/Button";
+import Alert from "../components/ui/Alert";
+import Input from "../components/ui/Input";
+import Button from "../components/ui/Button";
 
 export default function ParticipantInsightsPage() {
   const {
@@ -50,10 +50,12 @@ export default function ParticipantInsightsPage() {
           value={participantId}
           onChange={(event: ChangeEvent<HTMLInputElement>) => setParticipantId(event.target.value)}
           placeholder="123861706983"
+          inputMode="numeric"
+          enterKeyHint="search"
         />
         <Input
           label="Rango rápido"
-          type="select"
+          as="select"
           value={quickMonth}
           onChange={(event: ChangeEvent<HTMLSelectElement>) => setQuickMonth(event.target.value)}
         >
@@ -95,7 +97,7 @@ export default function ParticipantInsightsPage() {
           <div className="flex flex-wrap gap-4 text-xs font-semibold uppercase tracking-wide text-base-content/70">
             <Input
               label="Mostrar top"
-              type="select"
+              as="select"
               value={leaderboardLimit}
               onChange={(event: ChangeEvent<HTMLSelectElement>) => {
                 const value = Number(event.target.value);
@@ -111,7 +113,7 @@ export default function ParticipantInsightsPage() {
             </Input>
             <Input
               label="Agrupar por"
-              type="select"
+              as="select"
               value={leaderboardGrouping}
               onChange={(event: ChangeEvent<HTMLSelectElement>) =>
                 setLeaderboardGrouping(event.target.value as "account" | "rut")

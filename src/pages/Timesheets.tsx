@@ -1,8 +1,8 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState, type ChangeEvent } from "react";
 import dayjs from "dayjs";
 import { useAuth } from "../context/AuthContext";
-import Button from "../components/Button";
-import Input from "../components/Input";
+import Button from "../components/ui/Button";
+import Input from "../components/ui/Input";
 import { fetchEmployees } from "../features/employees/api";
 import type { Employee } from "../features/employees/types";
 import {
@@ -15,7 +15,7 @@ import type { BulkRow, TimesheetSummaryRow, TimesheetSummaryResponse } from "../
 import { buildBulkRows, hasRowData, isRowDirty, parseDuration, formatDateLabel } from "../features/timesheets/utils";
 import TimesheetSummaryTable from "../features/timesheets/components/TimesheetSummaryTable";
 import TimesheetDetailTable from "../features/timesheets/components/TimesheetDetailTable";
-import Alert from "../components/Alert";
+import Alert from "../components/ui/Alert";
 // Removed unused Input component after cleanup
 import { useMonths } from "../features/timesheets/hooks/useMonths";
 
@@ -333,7 +333,7 @@ export default function TimesheetsPage() {
           <div className="min-w-[200px]">
             <Input
               label="Trabajador"
-              type="select"
+              as="select"
               value={selectedEmployeeId ?? ""}
               onChange={(event: ChangeEvent<HTMLSelectElement>) => {
                 const value = event.target.value;
@@ -355,7 +355,7 @@ export default function TimesheetsPage() {
           <div className="min-w-[180px]">
             <Input
               label="Periodo"
-              type="select"
+              as="select"
               value={month}
               onChange={(event: ChangeEvent<HTMLSelectElement>) => {
                 setMonth(event.target.value);

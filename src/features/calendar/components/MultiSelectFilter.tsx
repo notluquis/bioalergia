@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef } from "react";
 
 import { useDisclosure } from "../../../hooks/useDisclosure";
 import { useOutsideClick } from "../../../hooks/useOutsideClick";
+import Checkbox from "../../../components/ui/Checkbox";
 
 type Option = { value: string; label: string };
 
@@ -105,24 +106,24 @@ export function MultiSelectFilter({
               const [namePart = "", metaPart] = option.label.split(" · ");
               const truncatedName = truncateLabel(namePart);
               return (
-                <label key={option.value} className="flex items-center gap-3 text-xs text-base-content">
-                  <input
-                    type="checkbox"
-                    className="checkbox checkbox-primary"
-                    checked={selected.includes(option.value)}
-                    onChange={() => onToggle(option.value)}
-                  />
-                  <span className="flex flex-col text-left">
-                    <span className="truncate font-medium text-base-content" title={namePart}>
-                      {truncatedName || placeholder}
-                    </span>
-                    {metaPart && (
-                      <span className="text-xs text-base-content/50" title={metaPart}>
-                        · {metaPart}
+                <Checkbox
+                  key={option.value}
+                  checked={selected.includes(option.value)}
+                  onChange={() => onToggle(option.value)}
+                  className="text-base-content"
+                  label={
+                    <span className="flex flex-col text-left">
+                      <span className="truncate font-medium text-base-content" title={namePart}>
+                        {truncatedName || placeholder}
                       </span>
-                    )}
-                  </span>
-                </label>
+                      {metaPart && (
+                        <span className="text-xs text-base-content/50" title={metaPart}>
+                          · {metaPart}
+                        </span>
+                      )}
+                    </span>
+                  }
+                />
               );
             })
           )}

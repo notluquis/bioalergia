@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
 import type { ChangeEvent } from "react";
 import dayjs from "dayjs";
-import Button from "../../../components/Button";
-import Modal from "../../../components/Modal";
-import Input from "../../../components/Input";
+import Button from "../../../components/ui/Button";
+import Modal from "../../../components/ui/Modal";
+import Input from "../../../components/ui/Input";
 import type { LoanSchedule, LoanSummary, RegenerateSchedulePayload } from "../types";
 import LoanScheduleTable from "./LoanScheduleTable";
 
@@ -176,7 +176,7 @@ export function LoanDetail({
           />
           <Input
             label="Frecuencia"
-            type="select"
+            as="select"
             value={regenerateForm.frequency ?? loan.frequency}
             onChange={(event: ChangeEvent<HTMLSelectElement>) =>
               setRegenerateForm((prev) => ({

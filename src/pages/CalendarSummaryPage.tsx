@@ -4,9 +4,9 @@ import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
 import "dayjs/locale/es";
 
-import Input from "../components/Input";
-import Button from "../components/Button";
-import Alert from "../components/Alert";
+import Input from "../components/ui/Input";
+import Button from "../components/ui/Button";
+import Alert from "../components/ui/Alert";
 import { MultiSelectFilter, type MultiSelectOption } from "../features/calendar/components/MultiSelectFilter";
 import { useCalendarEvents } from "../features/calendar/hooks/useCalendarEvents";
 import type { CalendarAggregateByDate } from "../features/calendar/types";

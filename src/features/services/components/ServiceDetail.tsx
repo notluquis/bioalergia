@@ -2,9 +2,9 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { ChangeEvent } from "react";
 import dayjs from "dayjs";
-import Button from "../../../components/Button";
-import Modal from "../../../components/Modal";
-import Input from "../../../components/Input";
+import Button from "../../../components/ui/Button";
+import Modal from "../../../components/ui/Modal";
+import Input from "../../../components/ui/Input";
 import type {
   RegenerateServicePayload,
   ServiceSchedule,
@@ -332,7 +332,7 @@ export function ServiceDetail({
           />
           <Input
             label="Frecuencia"
-            type="select"
+            as="select"
             value={regenerateForm.frequency ?? service.frequency}
             onChange={(event: ChangeEvent<HTMLSelectElement>) =>
               setRegenerateForm((prev) => ({

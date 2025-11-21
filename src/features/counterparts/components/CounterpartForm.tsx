@@ -3,9 +3,9 @@ import { Link } from "react-router-dom";
 import { z } from "zod";
 import { formatRut, normalizeRut } from "../../../lib";
 import { useForm } from "../../../hooks";
-import Button from "../../../components/Button";
-import Input from "../../../components/Input";
-import Alert from "../../../components/Alert";
+import Button from "../../../components/ui/Button";
+import Input from "../../../components/ui/Input";
+import Alert from "../../../components/ui/Alert";
 import type { Counterpart } from "../types";
 import { CATEGORY_OPTIONS, EMPTY_FORM } from "../constants";
 import type { CounterpartUpsertPayload } from "../api";
@@ -122,7 +122,7 @@ export default function CounterpartForm({ counterpart, onSave, error, saving, lo
             {getFieldError("name") && <p className="mt-1 text-xs text-error">{getFieldError("name")}</p>}
           </div>
           <div>
-            <Input label="Tipo de persona" type="select" {...getFieldProps("personType")}>
+            <Input label="Tipo de persona" as="select" {...getFieldProps("personType")}>
               <option value="PERSON">Persona natural</option>
               <option value="COMPANY">Empresa</option>
               <option value="OTHER">Otra</option>
@@ -130,7 +130,7 @@ export default function CounterpartForm({ counterpart, onSave, error, saving, lo
             {getFieldError("personType") && <p className="mt-1 text-xs text-error">{getFieldError("personType")}</p>}
           </div>
           <div>
-            <Input label="Clasificación" type="select" {...getFieldProps("category")}>
+            <Input label="Clasificación" as="select" {...getFieldProps("category")}>
               {CATEGORY_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
@@ -157,7 +157,7 @@ export default function CounterpartForm({ counterpart, onSave, error, saving, lo
             <div className="md:col-span-2">
               <Input
                 label="Notas"
-                type="textarea"
+                as="textarea"
                 rows={4}
                 {...getFieldProps("notes")}
                 placeholder="Información adicional, persona de contacto, etc."

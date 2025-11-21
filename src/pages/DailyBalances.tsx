@@ -12,9 +12,9 @@ import { deriveInitialBalance, formatBalanceInput } from "../features/balances/u
 import { useQuickDateRange } from "../features/balances/hooks/useQuickDateRange";
 import { useDailyBalanceManagement } from "../features/balances/hooks/useDailyBalanceManagement";
 import { fetchBalances } from "../features/balances/api";
-import Alert from "../components/Alert";
-import Input from "../components/Input";
-import Button from "../components/Button";
+import Alert from "../components/ui/Alert";
+import Input from "../components/ui/Input";
+import Button from "../components/ui/Button";
 
 export default function DailyBalances() {
   const { hasRole } = useAuth();
@@ -107,7 +107,7 @@ export default function DailyBalances() {
               />
               <Input
                 label="Mes rápido"
-                type="select"
+                as="select"
                 value={quickRange}
                 onChange={(event: ChangeEvent<HTMLSelectElement>) => {
                   const value = event.target.value;

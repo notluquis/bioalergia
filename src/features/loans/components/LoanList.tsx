@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 import type { LoanSummary } from "../types";
-import Button from "../../../components/Button";
+import Button from "../../../components/ui/Button";
 
 interface LoanListProps {
   loans: LoanSummary[];

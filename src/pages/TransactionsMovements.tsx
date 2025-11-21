@@ -5,7 +5,9 @@ import { useAuth } from "../context/AuthContext";
 import { useSettings } from "../context/SettingsContext";
 import { logger } from "../lib/logger";
 import { isCashbackCandidate } from "../../shared/cashback";
-import Button from "../components/Button";
+import Button from "../components/ui/Button";
+import Checkbox from "../components/ui/Checkbox";
+import Input from "../components/ui/Input";
 import { TransactionsFilters } from "../features/transactions/components/TransactionsFilters";
 import { TransactionsColumnToggles } from "../features/transactions/components/TransactionsColumnToggles";
 import { TransactionsTable } from "../features/transactions/components/TransactionsTable";
@@ -148,19 +150,23 @@ export default function TransactionsMovements() {
               </p>
             </div>
             <div className="flex flex-wrap items-end gap-3">
-              <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-wide text-base-content">
-                Saldo inicial (CLP)
-                <input
+              <div className="flex flex-col gap-1 w-32">
+                <span className="text-xs font-semibold uppercase tracking-wide text-base-content">
+                  Saldo inicial (CLP)
+                </span>
+                <Input
                   type="text"
                   value={initialBalance}
                   onChange={(event) => setInitialBalance(event.target.value)}
-                  className="input input-bordered input-sm bg-base-100/90 text-base-content"
+                  className="input-sm bg-base-100/90"
                   placeholder="0"
+                  inputMode="decimal"
                 />
-              </label>
-              <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-wide text-base-content">
-                Mes rápido
-                <select
+              </div>
+              <div className="flex flex-col gap-1 w-40">
+                <span className="text-xs font-semibold uppercase tracking-wide text-base-content">Mes rápido</span>
+                <Input
+                  as="select"
                   value={quickRange}
                   onChange={(event) => {
                     const value = event.target.value;
@@ -172,7 +178,7 @@ export default function TransactionsMovements() {
                     setPage(1);
                     setAppliedFilters(nextFilters);
                   }}
-                  className="select select-bordered select-sm bg-base-100/90 text-base-content"
+                  className="select-sm bg-base-100/90"
                 >
                   <option value="custom">Personalizado</option>
                   {quickMonths.map((month) => (
@@ -180,20 +186,20 @@ export default function TransactionsMovements() {
                       {month.label}
                     </option>
                   ))}
-                </select>
-              </label>
+                </Input>
+              </div>
               <Button
                 type="button"
                 variant="primary"
                 onClick={() => transactionsQuery.refetch()}
                 disabled={loading}
-                className="btn-sm"
+                size="sm"
               >
                 {loading ? "Actualizando..." : "Actualizar"}
               </Button>
-              <label className="flex items-center gap-2 text-xs text-base-content">
-                <input
-                  type="checkbox"
+              <div className="pb-1">
+                <Checkbox
+                  label="Mostrar montos"
                   checked={draftFilters.includeAmounts}
                   onChange={(event) => {
                     const nextFilters = { ...draftFilters, includeAmounts: event.target.checked };
@@ -202,10 +208,8 @@ export default function TransactionsMovements() {
                     setPage(1);
                     setAppliedFilters(nextFilters);
                   }}
-                  className="checkbox checkbox-primary checkbox-sm"
                 />
-                Mostrar montos
-              </label>
+              </div>
             </div>
           </div>
 

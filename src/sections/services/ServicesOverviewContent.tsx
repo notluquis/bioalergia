@@ -1,9 +1,9 @@
 import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
-import Alert from "../../components/Alert";
-import Button from "../../components/Button";
-import Input from "../../components/Input";
-import Modal from "../../components/Modal";
+import Alert from "../../components/ui/Alert";
+import Button from "../../components/ui/Button";
+import Input from "../../components/ui/Input";
+import Modal from "../../components/ui/Modal";
 import ServiceDetail from "../../features/services/components/ServiceDetail";
 import ServiceForm from "../../features/services/components/ServiceForm";
 import ServiceList from "../../features/services/components/ServiceList";
@@ -318,7 +318,7 @@ export default function ServicesOverviewContent() {
             />
             <Input
               label="Nota"
-              type="textarea"
+              as="textarea"
               rows={2}
               value={paymentForm.note}
               onChange={(event: ChangeEvent<HTMLTextAreaElement>) => handlePaymentFieldChange("note", event)}

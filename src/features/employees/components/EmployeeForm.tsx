@@ -3,8 +3,8 @@ import { useAuth } from "../../../context/AuthContext";
 import { useToast } from "../../../context/ToastContext";
 import { createEmployee, updateEmployee } from "../api";
 import type { Employee } from "../types";
-import Button from "../../../components/Button";
-import Input from "../../../components/Input";
+import Button from "../../../components/ui/Button";
+import Input from "../../../components/ui/Input";
 import { formatRut, normalizeRut } from "../../../lib/rut";
 
 const EMPTY_FORM = {
@@ -104,7 +104,7 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
         <div className="md:col-span-3">
           <Input
             label="Tipo de salario"
-            type="select"
+            as="select"
             value={form.salary_type}
             onChange={(event: React.ChangeEvent<HTMLSelectElement>) =>
               setForm((prev) => ({ ...prev, salary_type: event.target.value }))

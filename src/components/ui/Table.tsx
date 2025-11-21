@@ -1,5 +1,6 @@
 import React from "react";
 import { ChevronUp, ChevronDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface TableColumn<T extends string> {
   key: T;
@@ -41,35 +42,35 @@ interface TableBodyProps {
 }
 
 const TABLE_VARIANTS = {
-  default: "overflow-hidden rounded-2xl border border-base-300 bg-base-100 shadow-sm",
-  glass: "overflow-hidden bg-base-100",
-  minimal: "overflow-hidden rounded-lg border border-base-300 bg-base-100",
+  default: "overflow-hidden rounded-2xl border border-base-300/50 bg-base-100 shadow-sm",
+  glass: "overflow-hidden bg-base-100/50 backdrop-blur-sm",
+  minimal: "overflow-hidden rounded-lg border border-base-300/50 bg-base-100",
 };
 
 function TableHeader<T extends string>({ columns, sortState, onSort, visibleColumns }: TableHeaderProps<T>) {
   const getSortIcon = (column: T) => {
     if (!sortState || sortState.column !== column) return null;
     return sortState.direction === "asc" ? (
-      <ChevronUp className="ml-1 h-3 w-3 inline" />
+      <ChevronUp className="ml-1 h-3 w-3 inline text-primary" />
     ) : (
-      <ChevronDown className="ml-1 h-3 w-3 inline" />
+      <ChevronDown className="ml-1 h-3 w-3 inline text-primary" />
     );
   };
 
   return (
-    <thead className="bg-inherit">
+    <thead className="bg-base-200/50">
       <tr>
         {columns
           .filter((col) => !visibleColumns || visibleColumns.has(col.key))
           .map((column) => (
             <th
               key={column.key}
-              className={`
-                px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide whitespace-nowrap
-                ${column.sortable && onSort ? "cursor-pointer hover:bg-base-200" : ""}
-                ${column.align === "center" ? "text-center" : ""}
-                ${column.align === "right" ? "text-right" : ""}
-              `}
+              className={cn(
+                "px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide whitespace-nowrap text-base-content/70",
+                column.sortable && onSort && "cursor-pointer hover:bg-base-200 hover:text-primary transition-colors",
+                column.align === "center" && "text-center",
+                column.align === "right" && "text-right"
+              )}
               style={column.width ? { width: column.width } : undefined}
               onClick={column.sortable && onSort ? () => onSort(column.key) : undefined}
             >
@@ -93,13 +94,16 @@ function TableBody({
     <tbody>
       {loading ? (
         <tr>
-          <td colSpan={columnsCount} className="px-4 py-8 text-center text-primary">
-            {loadingMessage}
+          <td colSpan={columnsCount} className="px-4 py-12 text-center">
+            <div className="flex flex-col items-center justify-center gap-2">
+              <span className="loading loading-spinner loading-md text-primary"></span>
+              <span className="text-sm text-base-content/60">{loadingMessage}</span>
+            </div>
           </td>
         </tr>
       ) : React.Children.count(children) === 0 ? (
         <tr>
-          <td colSpan={columnsCount} className="px-4 py-8 text-center text-base-content/60">
+          <td colSpan={columnsCount} className="px-4 py-12 text-center text-base-content/60 italic">
             {emptyMessage}
           </td>
         </tr>
@@ -113,17 +117,15 @@ function TableBody({
 export function Table<T extends string>({
   columns,
   children,
-  className = "",
+  className,
   responsive = true,
   variant = "default",
   sortState,
   onSort,
   ...props
 }: TableProps<T>) {
-  const containerClasses = `${TABLE_VARIANTS[variant]} ${className}`;
-
-  // Use daisyUI table classes where appropriate; keep existing variants for glass/minimal
-  const tableClass = `table w-full text-sm ${variant === "glass" ? "table-zebra" : ""}`.trim();
+  const containerClasses = cn(TABLE_VARIANTS[variant], className);
+  const tableClass = cn("table w-full text-sm", variant === "glass" && "table-zebra");
 
   const tableContent = (
     <table className={tableClass} {...props}>
@@ -143,7 +145,6 @@ export function Table<T extends string>({
   return <div className={containerClasses}>{tableContent}</div>;
 }
 
-// Sub-componentes para usar con el Table
 Table.Header = TableHeader;
 Table.Body = TableBody;
 

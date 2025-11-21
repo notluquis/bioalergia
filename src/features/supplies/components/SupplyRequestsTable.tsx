@@ -2,7 +2,7 @@ import type { ChangeEvent } from "react";
 import { useAuth } from "../../../context/AuthContext";
 import type { SupplyRequest } from "../types";
 import { translateStatus } from "../utils";
-import Input from "../../../components/Input";
+import Input from "../../../components/ui/Input";
 
 interface SupplyRequestsTableProps {
   requests: SupplyRequest[];
@@ -118,7 +118,7 @@ export default function SupplyRequestsTable({ requests, onStatusChange }: Supply
                   {isAdmin && (
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <Input
-                        type="select"
+                        as="select"
                         value={request.status}
                         onChange={(event: ChangeEvent<HTMLSelectElement>) =>
                           onStatusChange(request.id, event.target.value as SupplyRequest["status"])

@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { useSettings, type AppSettings } from "../context/SettingsContext";
-import { useAuth } from "../context/AuthContext";
-import Button from "./Button";
-import Alert from "./Alert";
+import { useSettings, type AppSettings } from "../../context/SettingsContext";
+import { useAuth } from "../../context/AuthContext";
+import Button from "../ui/Button";
+import Alert from "../ui/Alert";
 
 const FALLBACK_LOGO_PATH = "/logo192.png";
 const FALLBACK_FAVICON_PATH = "/logo_bimi.svg";
@@ -306,6 +306,8 @@ export default function SettingsForm() {
                 onChange={(event) => handleChange(key, event.target.value)}
                 className="input input-bordered"
                 placeholder={label}
+                inputMode={key === "orgPhone" ? "tel" : key === "supportEmail" ? "email" : undefined}
+                autoComplete={key === "orgPhone" ? "tel" : key === "supportEmail" ? "email" : undefined}
               />
             )}
             {helper && <span className="text-xs text-base-content/60">{helper}</span>}
@@ -483,6 +485,7 @@ export default function SettingsForm() {
                 value={String(upsertChunkSize ?? "")}
                 onChange={(e) => setUpsertChunkSize(e.target.value)}
                 className="input input-bordered"
+                inputMode="numeric"
               />
               <span className="text-xs text-base-content/60">
                 Env var: <code>{envUpsertChunkSize ?? "(no definido)"}</code>

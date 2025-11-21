@@ -1,5 +1,6 @@
 import { IMaskInput } from "react-imask";
 import IMask from "imask";
+import { cn } from "@/lib/utils";
 
 interface TimeInputProps {
   value: string;
@@ -31,10 +32,11 @@ export default function TimeInput({ value, onChange, placeholder, className, dis
       unmask={false}
       onAccept={(value) => onChange(value)}
       placeholder={placeholder || "HH:MM"}
-      className={`input input-bordered input-sm ${className || ""}`}
+      className={cn("input input-bordered input-sm w-full font-mono text-center", className)}
       disabled={disabled}
       lazy={true}
       autofix={false}
+      inputMode="numeric"
     />
   );
 }

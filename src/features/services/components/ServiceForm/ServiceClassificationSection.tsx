@@ -1,5 +1,5 @@
 import type { ChangeEvent } from "react";
-import Input from "../../../../components/Input";
+import Input from "../../../../components/ui/Input";
 import type { ServiceType, ServiceOwnership, ServiceObligationType, ServiceRecurrenceType } from "../../types";
 import type { ServiceFormState } from "../ServiceForm";
 
@@ -52,7 +52,7 @@ export function ServiceClassificationSection({
     <section className="grid gap-4 md:grid-cols-2">
       <Input
         label="Tipo"
-        type="select"
+        as="select"
         value={serviceType ?? "BUSINESS"}
         onChange={(event: ChangeEvent<HTMLSelectElement>) => onChange("serviceType", event.target.value as ServiceType)}
       >
@@ -64,7 +64,7 @@ export function ServiceClassificationSection({
       </Input>
       <Input
         label="Propiedad"
-        type="select"
+        as="select"
         value={ownership ?? "COMPANY"}
         onChange={(event: ChangeEvent<HTMLSelectElement>) =>
           onChange("ownership", event.target.value as ServiceOwnership)
@@ -78,7 +78,7 @@ export function ServiceClassificationSection({
       </Input>
       <Input
         label="Naturaleza"
-        type="select"
+        as="select"
         value={obligationType ?? "SERVICE"}
         onChange={(event: ChangeEvent<HTMLSelectElement>) =>
           onChange("obligationType", event.target.value as ServiceObligationType)
@@ -92,7 +92,7 @@ export function ServiceClassificationSection({
       </Input>
       <Input
         label="Recurrencia"
-        type="select"
+        as="select"
         value={recurrenceType ?? "RECURRING"}
         onChange={(event: ChangeEvent<HTMLSelectElement>) =>
           onChange("recurrenceType", event.target.value as ServiceRecurrenceType)

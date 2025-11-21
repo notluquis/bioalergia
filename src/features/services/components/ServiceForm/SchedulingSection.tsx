@@ -1,5 +1,5 @@
 import type { ChangeEvent } from "react";
-import Input from "../../../../components/Input";
+import Input from "../../../../components/ui/Input";
 import type { ServiceFrequency, ServiceRecurrenceType } from "../../types";
 import type { ServiceFormState } from "../ServiceForm";
 
@@ -36,7 +36,7 @@ export function SchedulingSection({
     <section className="grid gap-4 md:grid-cols-2">
       <Input
         label="Frecuencia"
-        type="select"
+        as="select"
         value={frequency ?? "MONTHLY"}
         onChange={(event: ChangeEvent<HTMLSelectElement>) =>
           onChange("frequency", event.target.value as ServiceFrequency)

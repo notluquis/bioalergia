@@ -1,9 +1,9 @@
-import Alert from "../../components/Alert";
+import Alert from "../../components/ui/Alert";
 import ServiceForm from "../../features/services/components/ServiceForm";
 import { ServicesHero, ServicesSurface } from "../../features/services/components/ServicesShell";
 import { SERVICE_TEMPLATES } from "../../features/services/components/ServiceTemplateGallery";
 import { useServicesOverview } from "../../features/services/hooks/useServicesOverview";
-import Button from "../../components/Button";
+import Button from "../../components/ui/Button";
 import { Link } from "react-router-dom";
 
 export default function ServicesCreateContent() {

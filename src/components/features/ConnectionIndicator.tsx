@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import Button from "./Button";
+import Button from "../ui/Button";
 
 interface HealthResponse {
   status: "ok" | "degraded" | "error";

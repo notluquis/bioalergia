@@ -7,10 +7,10 @@ import { z } from "zod";
 import * as Tooltip from "@radix-ui/react-tooltip";
 import * as Toast from "@radix-ui/react-toast";
 
-import Alert from "../components/Alert";
-import Button from "../components/Button";
-import Input from "../components/Input";
-import Checkbox from "../components/Checkbox";
+import Alert from "../components/ui/Alert";
+import Button from "../components/ui/Button";
+import Input from "../components/ui/Input";
+import Checkbox from "../components/ui/Checkbox";
 import { classifyCalendarEvent, fetchUnclassifiedCalendarEvents } from "../features/calendar/api";
 import type { CalendarUnclassifiedEvent } from "../features/calendar/types";
 
@@ -324,7 +324,7 @@ function CalendarClassificationPage() {
                       render={({ field: formField }) => (
                         <Input
                           label="Clasificación"
-                          type="select"
+                          as="select"
                           value={formField.value ?? ""}
                           onChange={(event: ChangeEvent<HTMLSelectElement>) => formField.onChange(event.target.value)}
                         >
@@ -384,7 +384,7 @@ function CalendarClassificationPage() {
                         render={({ field: formField }) => (
                           <Input
                             label="Etapa tratamiento"
-                            type="select"
+                            as="select"
                             value={formField.value ?? ""}
                             onChange={(event: ChangeEvent<HTMLSelectElement>) => formField.onChange(event.target.value)}
                           >

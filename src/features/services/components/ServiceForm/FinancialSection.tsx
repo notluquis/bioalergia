@@ -1,5 +1,5 @@
 import type { ChangeEvent } from "react";
-import Input from "../../../../components/Input";
+import Input from "../../../../components/ui/Input";
 import type { ServiceLateFeeMode, ServiceAmountIndexation } from "../../types";
 import type { ServiceFormState } from "../ServiceForm";
 
@@ -44,7 +44,7 @@ export function FinancialSection({
       />
       <Input
         label="Modo de monto"
-        type="select"
+        as="select"
         value={amountIndexation ?? "NONE"}
         onChange={(event: ChangeEvent<HTMLSelectElement>) =>
           onChange("amountIndexation", event.target.value as ServiceAmountIndexation)
@@ -58,7 +58,7 @@ export function FinancialSection({
       </Input>
       <Input
         label="Recargo por atraso"
-        type="select"
+        as="select"
         value={lateFeeMode ?? "NONE"}
         onChange={(event: ChangeEvent<HTMLSelectElement>) =>
           onChange("lateFeeMode", event.target.value as ServiceLateFeeMode)

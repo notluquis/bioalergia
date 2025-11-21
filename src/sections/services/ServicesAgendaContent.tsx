@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 import ServicesUnifiedAgenda from "../../features/services/components/ServicesUnifiedAgenda";
-import Button from "../../components/Button";
+import Button from "../../components/ui/Button";
 import { useServicesOverview } from "../../features/services/hooks/useServicesOverview";
 import { ServicesHero, ServicesSurface, ServicesStatCard } from "../../features/services/components/ServicesShell";
 import { Link } from "react-router-dom";

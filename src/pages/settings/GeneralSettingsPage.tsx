@@ -1,4 +1,4 @@
-import SettingsForm from "../../components/SettingsForm";
+import SettingsForm from "../../components/features/SettingsForm";
 import { useSettings } from "../../context/settings-context";
 
 export default function GeneralSettingsPage() {

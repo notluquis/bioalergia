@@ -9,7 +9,7 @@ import isoWeek from "dayjs/plugin/isoWeek";
 import "dayjs/locale/es";
 
 import { useAuth } from "../context/AuthContext";
-import Alert from "../components/Alert";
+import Alert from "../components/ui/Alert";
 import { fetchEmployees } from "../features/employees/api";
 import type { Employee } from "../features/employees/types";
 import { TimesheetAuditCalendar, EmployeeAuditSelector } from "../features/timesheets-audit/components";

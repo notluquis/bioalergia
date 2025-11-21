@@ -4,9 +4,9 @@ import dayjs from "dayjs";
 import "dayjs/locale/es";
 import { useTranslation } from "react-i18next";
 
-import Button from "../components/Button";
-import Input from "../components/Input";
-import Alert from "../components/Alert";
+import Button from "../components/ui/Button";
+import Input from "../components/ui/Input";
+import Alert from "../components/ui/Alert";
 import { MultiSelectFilter, type MultiSelectOption } from "../features/calendar/components/MultiSelectFilter";
 import { useCalendarEvents } from "../features/calendar/hooks/useCalendarEvents";
 import ScheduleCalendar from "../features/calendar/components/ScheduleCalendar";
@@ -186,6 +186,7 @@ function CalendarSchedulePage() {
               placeholder={tc("searchPlaceholder")}
               value={filters.search}
               onChange={(event: ChangeEvent<HTMLInputElement>) => updateFilters("search", event.target.value)}
+              enterKeyHint="search"
             />
           </div>
         )}

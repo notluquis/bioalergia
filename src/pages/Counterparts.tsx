@@ -19,12 +19,12 @@ import type {
 import CounterpartList from "../features/counterparts/components/CounterpartList";
 import CounterpartForm from "../features/counterparts/components/CounterpartForm";
 import AssociatedAccounts from "../features/counterparts/components/AssociatedAccounts";
-import Button from "../components/Button";
+import Button from "../components/ui/Button";
 import { ServicesHero, ServicesSurface, ServicesGrid } from "../features/services/components/ServicesShell";
 import { SUMMARY_RANGE_MONTHS } from "../features/counterparts/constants";
 import { useToast } from "../context/ToastContext";
 import { normalizeRut } from "../lib";
-import Modal from "../components/Modal";
+import Modal from "../components/ui/Modal";
 
 export default function CounterpartsPage() {
   const pendingDetailRequestRef = useRef(0);

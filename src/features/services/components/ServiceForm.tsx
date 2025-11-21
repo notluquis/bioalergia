@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
-import Button from "../../../components/Button";
+import Button from "../../../components/ui/Button";
 import type { CreateServicePayload } from "../types";
 import { fetchCounterparts, fetchCounterpart } from "../../counterparts/api";
 import type { Counterpart, CounterpartAccount } from "../../counterparts/types";

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import Button from "../../components/Button";
+import Button from "../../components/ui/Button";
+import Input from "../../components/ui/Input";
 import { useSettings, type AppSettings } from "../../context/settings-context";
 
 type CalendarForm = Pick<
@@ -71,11 +72,10 @@ export default function CalendarSettingsPage() {
       <div className="grid gap-4 md:grid-cols-2">
         <label className="flex flex-col gap-2 text-sm text-base-content/70">
           <span className="text-xs font-semibold uppercase tracking-wide text-base-content/60">Zona horaria</span>
-          <input
+          <Input
             type="text"
             value={form.calendarTimeZone}
             onChange={(event) => handleChange("calendarTimeZone", event.target.value)}
-            className="input input-bordered"
             placeholder="America/Santiago"
           />
           <span className="text-xs text-base-content/50">Se utiliza para cron y conversión de fechas.</span>
@@ -83,11 +83,10 @@ export default function CalendarSettingsPage() {
 
         <label className="flex flex-col gap-2 text-sm text-base-content/70">
           <span className="text-xs font-semibold uppercase tracking-wide text-base-content/60">Fecha inicial</span>
-          <input
+          <Input
             type="date"
             value={form.calendarSyncStart}
             onChange={(event) => handleChange("calendarSyncStart", event.target.value)}
-            className="input input-bordered"
           />
           <span className="text-xs text-base-content/50">Primer día que se sincroniza desde Google Calendar.</span>
         </label>
@@ -96,13 +95,12 @@ export default function CalendarSettingsPage() {
           <span className="text-xs font-semibold uppercase tracking-wide text-base-content/60">
             Días hacia adelante
           </span>
-          <input
+          <Input
             type="number"
             min={1}
             max={1095}
             value={form.calendarSyncLookaheadDays}
             onChange={(event) => handleChange("calendarSyncLookaheadDays", event.target.value)}
-            className="input input-bordered"
           />
           <span className="text-xs text-base-content/50">Cuántos días futuros se sincronizan (máximo 1095).</span>
         </label>
@@ -111,13 +109,12 @@ export default function CalendarSettingsPage() {
           <span className="text-xs font-semibold uppercase tracking-wide text-base-content/60">
             Días en vista diaria
           </span>
-          <input
+          <Input
             type="number"
             min={1}
             max={120}
             value={form.calendarDailyMaxDays}
             onChange={(event) => handleChange("calendarDailyMaxDays", event.target.value)}
-            className="input input-bordered"
           />
           <span className="text-xs text-base-content/50">
             Número máximo de días listados en la vista &quot;Detalle diario&quot;.
@@ -129,11 +126,11 @@ export default function CalendarSettingsPage() {
         <span className="text-xs font-semibold uppercase tracking-wide text-base-content/60">
           Excluir eventos que contengan
         </span>
-        <textarea
+        <Input
+          as="textarea"
           rows={3}
           value={form.calendarExcludeSummaries}
           onChange={(event) => handleChange("calendarExcludeSummaries", event.target.value)}
-          className="textarea textarea-bordered"
           placeholder={DEFAULT_EXCLUDE}
         />
         <span className="text-xs text-base-content/50">

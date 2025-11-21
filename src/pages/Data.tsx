@@ -14,10 +14,10 @@ import { deriveInitialBalance, formatBalanceInput } from "../features/balances/u
 import { useQuickDateRange } from "../features/balances/hooks/useQuickDateRange";
 import { useDailyBalanceManagement } from "../features/balances/hooks/useDailyBalanceManagement";
 import { useLedger } from "../features/transactions/hooks/useLedger";
-import Alert from "../components/Alert";
-import Input from "../components/Input";
-import Button from "../components/Button";
-import Checkbox from "../components/Checkbox";
+import Alert from "../components/ui/Alert";
+import Input from "../components/ui/Input";
+import Button from "../components/ui/Button";
+import Checkbox from "../components/ui/Checkbox";
 import { fetchBalances } from "../features/balances/api";
 import { useTransactionsQuery } from "../features/transactions/hooks/useTransactionsQuery";
 

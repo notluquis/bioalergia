@@ -2,7 +2,7 @@ import React from "react";
 import { fmtCLP } from "../../../lib/format";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
-import Button from "../../../components/Button";
+import Button from "../../../components/ui/Button";
 import { useSettings } from "../../../context/settings-context";
 import type { Employee } from "../../employees/types";
 import type { BulkRow, TimesheetSummaryRow } from "../types";

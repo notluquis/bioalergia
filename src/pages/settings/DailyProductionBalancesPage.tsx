@@ -2,9 +2,9 @@ import { useMemo, useState, useEffect } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 import dayjs from "dayjs";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import Input from "../../components/Input";
-import Button from "../../components/Button";
-import Alert from "../../components/Alert";
+import Input from "../../components/ui/Input";
+import Button from "../../components/ui/Button";
+import Alert from "../../components/ui/Alert";
 import { useToast } from "../../context/ToastContext";
 import { useSettings } from "../../context/SettingsContext";
 import {
@@ -331,7 +331,7 @@ export default function DailyProductionBalancesPage() {
           <form className="mt-4 space-y-4" onSubmit={handleSubmit}>
             <div className="grid gap-3 sm:grid-cols-2">
               <Input label="Fecha" type="date" value={form.date} onChange={handleChange("date")} required />
-              <Input label="Estado" type="select" value={form.status} onChange={handleChange("status")}>
+              <Input label="Estado" as="select" value={form.status} onChange={handleChange("status")}>
                 <option value="FINAL">Final</option>
                 <option value="DRAFT">Borrador</option>
               </Input>
@@ -418,7 +418,7 @@ export default function DailyProductionBalancesPage() {
             <div className="grid gap-3 sm:grid-cols-[1fr_1fr]">
               <Input
                 label="Comentarios"
-                type="textarea"
+                as="textarea"
                 rows={3}
                 value={form.comentarios}
                 onChange={handleChange("comentarios")}
@@ -426,7 +426,7 @@ export default function DailyProductionBalancesPage() {
               />
               <Input
                 label="Motivo del cambio"
-                type="textarea"
+                as="textarea"
                 rows={3}
                 value={form.reason}
                 onChange={handleChange("reason")}
@@ -444,8 +444,8 @@ export default function DailyProductionBalancesPage() {
                 <Button type="button" variant="ghost" onClick={handleReset}>
                   Limpiar
                 </Button>
-                <Button type="submit" disabled={mutation.isLoading}>
-                  {mutation.isLoading ? "Guardando..." : selectedId ? "Actualizar" : "Guardar"}
+                <Button type="submit" disabled={mutation.isPending}>
+                  {mutation.isPending ? "Guardando..." : selectedId ? "Actualizar" : "Guardar"}
                 </Button>
               </div>
             </div>

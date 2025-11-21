@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { InventoryCategory, InventoryItem } from "../types";
-import Button from "../../../components/Button";
-import Input from "../../../components/Input";
+import Button from "../../../components/ui/Button";
+import Input from "../../../components/ui/Input";
 import { getInventoryCategories } from "../api";
 
 interface InventoryItemFormProps {
@@ -41,7 +41,7 @@ export default function InventoryItemForm({ item, onSave, onCancel, saving }: In
         />
         <Input
           label="Categoría"
-          type="select"
+          as="select"
           value={form.category_id != null ? String(form.category_id) : ""}
           onChange={(event: React.ChangeEvent<HTMLSelectElement>) =>
             setForm({ ...form, category_id: event.target.value ? Number(event.target.value) : null })
@@ -57,7 +57,7 @@ export default function InventoryItemForm({ item, onSave, onCancel, saving }: In
       </div>
       <Input
         label="Descripción"
-        type="textarea"
+        as="textarea"
         rows={3}
         value={form.description ?? ""}
         onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) =>

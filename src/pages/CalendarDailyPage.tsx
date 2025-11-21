@@ -3,9 +3,9 @@ import type { ChangeEvent } from "react";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
 
-import Input from "../components/Input";
-import Button from "../components/Button";
-import Alert from "../components/Alert";
+import Input from "../components/ui/Input";
+import Button from "../components/ui/Button";
+import Alert from "../components/ui/Alert";
 import { MultiSelectFilter, type MultiSelectOption } from "../features/calendar/components/MultiSelectFilter";
 import { useCalendarEvents } from "../features/calendar/hooks/useCalendarEvents";
 import type { CalendarEventDetail, CalendarDayEvents } from "../features/calendar/types";
@@ -329,6 +329,7 @@ function CalendarDailyPage() {
           placeholder="Título o descripción"
           value={filters.search}
           onChange={(event: ChangeEvent<HTMLInputElement>) => updateFilters("search", event.target.value)}
+          enterKeyHint="search"
         />
         <Input
           label="Días a listar"
@@ -337,6 +338,7 @@ function CalendarDailyPage() {
           max={120}
           value={filters.maxDays}
           onChange={handleMaxDaysChange}
+          inputMode="numeric"
         />
         <div className="flex items-end gap-2 md:col-span-2">
           <Button type="submit" disabled={loading}>

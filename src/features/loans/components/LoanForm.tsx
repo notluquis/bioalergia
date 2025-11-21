@@ -1,9 +1,9 @@
 import dayjs from "dayjs";
 import { z } from "zod";
 import { useForm } from "../../../hooks";
-import Input from "../../../components/Input";
-import Button from "../../../components/Button";
-import Alert from "../../../components/Alert";
+import Input from "../../../components/ui/Input";
+import Button from "../../../components/ui/Button";
+import Alert from "../../../components/ui/Alert";
 import type { CreateLoanPayload } from "../types";
 
 const loanFormSchema = z.object({
@@ -82,7 +82,7 @@ export function LoanForm({ onSubmit, onCancel }: LoanFormProps) {
         <div>
           <Input
             label="Tipo"
-            type="select"
+            as="select"
             name="borrowerType"
             value={form.values.borrowerType}
             onChange={form.handleChange("borrowerType")}
@@ -130,7 +130,7 @@ export function LoanForm({ onSubmit, onCancel }: LoanFormProps) {
         <div>
           <Input
             label="Tipo interés"
-            type="select"
+            as="select"
             name="interestType"
             value={form.values.interestType}
             onChange={form.handleChange("interestType")}
@@ -146,7 +146,7 @@ export function LoanForm({ onSubmit, onCancel }: LoanFormProps) {
         <div>
           <Input
             label="Frecuencia de Pago"
-            type="select"
+            as="select"
             name="frequency"
             value={form.values.frequency}
             onChange={form.handleChange("frequency")}
@@ -208,7 +208,7 @@ export function LoanForm({ onSubmit, onCancel }: LoanFormProps) {
       <div>
         <Input
           label="Descripción"
-          type="textarea"
+          as="textarea"
           name="notes"
           value={form.values.notes || ""}
           onChange={form.handleChange("notes")}

@@ -1,5 +1,5 @@
 import type { ChangeEvent } from "react";
-import Input from "../../../../components/Input";
+import Input from "../../../../components/ui/Input";
 import type { ServiceFormState } from "../ServiceForm";
 
 interface BasicInfoSectionProps {
@@ -27,7 +27,7 @@ export function BasicInfoSection({ name, category, detail, notes, onChange }: Ba
       />
       <Input
         label="Detalle"
-        type="textarea"
+        as="textarea"
         rows={3}
         value={detail ?? ""}
         onChange={(event: ChangeEvent<HTMLTextAreaElement>) => onChange("detail", event.target.value)}
@@ -35,7 +35,7 @@ export function BasicInfoSection({ name, category, detail, notes, onChange }: Ba
       />
       <Input
         label="Notas"
-        type="textarea"
+        as="textarea"
         rows={3}
         value={notes ?? ""}
         onChange={(event: ChangeEvent<HTMLTextAreaElement>) => onChange("notes", event.target.value)}

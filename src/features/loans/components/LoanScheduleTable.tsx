@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import Button from "../../../components/Button";
+import Button from "../../../components/ui/Button";
 import type { LoanSchedule } from "../types";
 
 interface LoanScheduleTableProps {

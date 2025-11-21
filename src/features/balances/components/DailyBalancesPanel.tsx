@@ -1,7 +1,8 @@
 import dayjs from "dayjs";
 import { memo } from "react";
-import Alert from "../../../components/Alert";
-import Button from "../../../components/Button";
+import Alert from "../../../components/ui/Alert";
+import Button from "../../../components/ui/Button";
+import Input from "../../../components/ui/Input";
 import { fmtCLP } from "../../../lib/format";
 import type { BalanceDraft, BalancesApiResponse } from "../types";
 import { formatBalanceInput } from "../utils";
@@ -120,12 +121,13 @@ export const DailyBalancesPanel = memo(function DailyBalancesPanel({
                       {day.expectedBalance != null ? fmtCLP(day.expectedBalance) : "—"}
                     </td>
                     <td className="px-4 py-3">
-                      <input
+                      <Input
                         type="text"
                         value={draft.value}
                         onChange={(event) => onDraftChange(day.date, { value: event.target.value })}
-                        className="input input-bordered w-full text-sm"
+                        className="w-full text-sm"
                         placeholder="0"
+                        inputMode="decimal"
                       />
                     </td>
                     <td className={`px-4 py-3 font-semibold ${mismatch ? "text-error" : "text-base-content"}`}>
@@ -136,12 +138,14 @@ export const DailyBalancesPanel = memo(function DailyBalancesPanel({
                         : "—"}
                     </td>
                     <td className="px-4 py-3">
-                      <textarea
+                      <Input
+                        as="textarea"
                         rows={2}
                         value={draft.note}
                         onChange={(event) => onDraftChange(day.date, { note: event.target.value })}
-                        className="textarea textarea-bordered w-full text-xs"
+                        className="w-full text-xs"
                         placeholder="Comentario opcional"
+                        enterKeyHint="done"
                       />
                     </td>
                     <td className="px-4 py-3">

@@ -1,5 +1,5 @@
 import type { ChangeEvent } from "react";
-import Input from "../../../../components/Input";
+import Input from "../../../../components/ui/Input";
 import type { ServiceEmissionMode } from "../../types";
 import type { ServiceFormState } from "../ServiceForm";
 
@@ -30,7 +30,7 @@ export function EmissionSection({
     <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       <Input
         label="Modo de emisión"
-        type="select"
+        as="select"
         value={emissionMode ?? "FIXED_DAY"}
         onChange={(event: ChangeEvent<HTMLSelectElement>) =>
           onChange("emissionMode", event.target.value as ServiceEmissionMode)

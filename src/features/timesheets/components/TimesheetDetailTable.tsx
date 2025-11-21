@@ -1,9 +1,9 @@
 import dayjs from "dayjs";
 import { useAuth } from "../../../context/AuthContext";
 import { useEffect, useState } from "react";
-import Modal from "../../../components/Modal";
-import Button from "../../../components/Button";
-import TimeInput from "../../../components/TimeInput";
+import Modal from "../../../components/ui/Modal";
+import Button from "../../../components/ui/Button";
+import TimeInput from "../../../components/ui/TimeInput";
 import { computeStatus, isRowDirty, formatDateLabel } from "../utils";
 import type { BulkRow } from "../types";
 import type { Employee } from "../../employees/types";

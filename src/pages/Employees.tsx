@@ -5,9 +5,8 @@ import { fetchEmployees, deactivateEmployee, updateEmployee } from "../features/
 import type { Employee } from "../features/employees/types";
 import EmployeeForm from "../features/employees/components/EmployeeForm";
 import EmployeeTable from "../features/employees/components/EmployeeTable";
-import Alert from "../components/Alert";
-import Input from "../components/Input";
-import { Card, PageHeader, Stack } from "../components/Layout";
+import Alert from "../components/ui/Alert";
+import Checkbox from "../components/ui/Checkbox";
 
 export default function EmployeesPage() {
   const { hasRole } = useAuth();
@@ -68,30 +67,30 @@ export default function EmployeesPage() {
   }
 
   return (
-    <Stack spacing="lg">
-      <PageHeader
-        title="Equipo y tarifas"
-        description="Registra trabajadores, correos y tarifas para calcular automáticamente los totales mensuales."
-        actions={
-          <Input
-            type="checkbox"
-            checked={includeInactive}
-            onChange={(event: ChangeEvent<HTMLInputElement>) => setIncludeInactive(event.target.checked)}
-            label="Ver inactivos"
-            className="w-fit"
-          />
-        }
-      />
+    <section className="space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="space-y-2">
+          <h1 className="text-2xl font-bold text-primary">Equipo y tarifas</h1>
+          <p className="text-sm text-base-content/70">
+            Registra trabajadores, correos y tarifas para calcular automáticamente los totales mensuales.
+          </p>
+        </div>
+        <Checkbox
+          checked={includeInactive}
+          onChange={(event: ChangeEvent<HTMLInputElement>) => setIncludeInactive(event.target.checked)}
+          label="Ver inactivos"
+        />
+      </div>
 
       {error && <Alert variant="error">{error}</Alert>}
 
       {canEdit && (
-        <Card padding="default">
+        <div className="rounded-2xl border border-base-300 bg-base-100 p-6 shadow-sm">
           <EmployeeForm employee={editingEmployee} onSave={loadEmployees} onCancel={() => setEditingEmployee(null)} />
-        </Card>
+        </div>
       )}
 
-      <Card padding="default">
+      <div className="rounded-2xl border border-base-300 bg-base-100 p-6 shadow-sm">
         <EmployeeTable
           employees={employees}
           loading={loading}
@@ -99,7 +98,7 @@ export default function EmployeesPage() {
           onDeactivate={handleDeactivate}
           onActivate={handleActivate}
         />
-      </Card>
-    </Stack>
+      </div>
+    </section>
   );
 }

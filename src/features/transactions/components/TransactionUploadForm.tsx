@@ -1,9 +1,9 @@
 import { useFileUpload } from "../../../hooks";
 import { analyzeTransactionHeaders } from "../../../lib/csvUtils";
-import Button from "../../../components/Button";
-import FileInput from "../../../components/FileInput";
-import Alert from "../../../components/Alert";
-import UploadResults from "../../../components/UploadResults";
+import Button from "../../../components/ui/Button";
+import FileInput from "../../../components/ui/FileInput";
+import Alert from "../../../components/ui/Alert";
+import UploadResults from "../../../components/features/UploadResults";
 
 export default function TransactionUploadForm() {
   const { files, loading, error, results, handleUpload, handleFileChange } = useFileUpload({

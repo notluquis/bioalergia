@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import Button from "../../../components/Button";
+import Button from "../../../components/ui/Button";
 import type { ServiceSummary, ServiceFrequency, ServiceType } from "../types";
 
 interface ServiceListProps {

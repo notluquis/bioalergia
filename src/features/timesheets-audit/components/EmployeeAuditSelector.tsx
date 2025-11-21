@@ -5,6 +5,7 @@
 
 import { useMemo, useState } from "react";
 import type { Employee } from "../../employees/types";
+import Checkbox from "../../../components/ui/Checkbox";
 
 interface EmployeeAuditSelectorProps {
   employees: Employee[];
@@ -86,21 +87,16 @@ export default function EmployeeAuditSelector({
                 const isDisabled = isMaxed && !isSelected;
 
                 return (
-                  <label
+                  <Checkbox
                     key={emp.id}
-                    className={`flex items-center gap-3 p-2 rounded text-sm cursor-pointer transition-colors ${
+                    checked={isSelected}
+                    onChange={() => handleToggle(emp.id)}
+                    disabled={isDisabled}
+                    label={emp.full_name}
+                    className={`p-2 rounded text-sm transition-colors ${
                       isDisabled ? "opacity-50 cursor-not-allowed" : "hover:bg-base-100/60"
                     }`}
-                  >
-                    <input
-                      type="checkbox"
-                      className="checkbox checkbox-primary checkbox-sm"
-                      checked={isSelected}
-                      onChange={() => handleToggle(emp.id)}
-                      disabled={isDisabled}
-                    />
-                    <span className="text-base-content truncate">{emp.full_name}</span>
-                  </label>
+                  />
                 );
               })
             )}

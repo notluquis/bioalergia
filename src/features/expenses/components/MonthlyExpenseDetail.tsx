@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
-import Button from "../../../components/Button";
-import Alert from "../../../components/Alert";
+import Button from "../../../components/ui/Button";
+import Alert from "../../../components/ui/Alert";
 import type { MonthlyExpenseDetail as MonthlyExpenseDetailData } from "../types";
 
 interface MonthlyExpenseDetailProps {

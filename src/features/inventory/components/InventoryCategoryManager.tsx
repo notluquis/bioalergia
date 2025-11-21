@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { getInventoryCategories, createInventoryCategory } from "../api";
 import type { InventoryCategory } from "../types";
 import { PlusCircle } from "lucide-react";
-import Button from "../../../components/Button";
+import Button from "../../../components/ui/Button";
+import Input from "../../../components/ui/Input";
 
 export default function InventoryCategoryManager() {
   const [categories, setCategories] = useState<InventoryCategory[]>([]);
@@ -57,13 +58,14 @@ export default function InventoryCategoryManager() {
       <form onSubmit={handleAddCategory} className="flex flex-col gap-3 sm:flex-row sm:items-end">
         <label className="flex-1">
           <span className="text-xs font-semibold uppercase tracking-wide text-base-content/60">Nueva Categoría</span>
-          <input
+          <Input
             type="text"
             value={newCategoryName}
             onChange={(e) => setNewCategoryName(e.target.value)}
             placeholder="Ej: Insumos Médicos"
-            className="input input-bordered w-full"
+            className="w-full"
             disabled={saving}
+            enterKeyHint="done"
           />
         </label>
         <Button

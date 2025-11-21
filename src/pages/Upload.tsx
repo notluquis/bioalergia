@@ -1,7 +1,7 @@
 import { useAuth } from "../context/AuthContext";
 import TransactionUploadForm from "../features/transactions/components/TransactionUploadForm";
 import PayoutUploadForm from "../features/transactions/components/PayoutUploadForm";
-import Alert from "../components/Alert";
+import Alert from "../components/ui/Alert";
 
 export default function Upload() {
   const { hasRole } = useAuth();

@@ -1,5 +1,5 @@
 import type { ChangeEvent } from "react";
-import Input from "../../../../components/Input";
+import Input from "../../../../components/ui/Input";
 import type { Counterpart, CounterpartAccount } from "../../../counterparts/types";
 import type { ServiceFormState } from "../ServiceForm";
 
@@ -32,7 +32,7 @@ export function CounterpartSection({
     <section className="grid gap-4 md:grid-cols-2">
       <Input
         label="Empresa / contraparte"
-        type="select"
+        as="select"
         value={counterpartId ? String(counterpartId) : ""}
         onChange={(event: ChangeEvent<HTMLSelectElement>) => onCounterpartSelect(event.target.value)}
         disabled={counterpartsLoading}
@@ -47,7 +47,7 @@ export function CounterpartSection({
       </Input>
       <Input
         label="Cuenta asociada"
-        type="select"
+        as="select"
         value={counterpartAccountId ? String(counterpartAccountId) : ""}
         onChange={(event: ChangeEvent<HTMLSelectElement>) =>
           onChange("counterpartAccountId", event.target.value ? Number(event.target.value) : null)

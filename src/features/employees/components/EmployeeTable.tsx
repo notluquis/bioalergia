@@ -3,8 +3,8 @@ import { fmtCLP } from "../../../lib/format";
 import { useAuth } from "../../../context/AuthContext";
 import { useTable } from "../../../hooks";
 import type { Employee } from "../types";
-import Button from "../../../components/Button";
-import Alert from "../../../components/Alert";
+import Button from "../../../components/ui/Button";
+import Alert from "../../../components/ui/Alert";
 
 type EmployeeColumn =
   | "name"

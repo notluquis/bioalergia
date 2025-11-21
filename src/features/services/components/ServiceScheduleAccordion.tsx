@@ -1,7 +1,7 @@
 import { memo, useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
 import type { ServiceSchedule, ServiceSummary } from "../types";
-import Button from "../../../components/Button";
+import Button from "../../../components/ui/Button";
 
 type ServiceScheduleAccordionProps = {
   service: ServiceSummary;

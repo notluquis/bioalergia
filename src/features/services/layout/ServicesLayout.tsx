@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { NavLink, Outlet, useNavigate, useNavigation } from "react-router-dom";
-import Button from "../../../components/Button";
+import Button from "../../../components/ui/Button";
 import { fetchServices } from "../../services/api";
 import type { ServiceSummary } from "../../services/types";
 

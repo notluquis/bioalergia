@@ -2,8 +2,8 @@ import React, { useMemo } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { useForm } from "../../../hooks";
-import Button from "../../../components/Button";
-import Input from "../../../components/Input";
+import Button from "../../../components/ui/Button";
+import Input from "../../../components/ui/Input";
 import type { CommonSupply, StructuredSupplies } from "../types";
 import { createSupplyRequest, type SupplyRequestPayload } from "../api";
 import { queryKeys } from "../../../lib/queryKeys";
@@ -98,7 +98,7 @@ export default function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyR
         <div>
           <Input
             label="Nombre del Insumo"
-            type="select"
+            as="select"
             {...form.getFieldProps("selectedSupply")}
             onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
               form.setValue("selectedSupply", e.target.value);
@@ -119,7 +119,14 @@ export default function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyR
           )}
         </div>
         <div>
-          <Input label="Cantidad" type="number" {...form.getFieldProps("quantity")} min="1" required />
+          <Input
+            label="Cantidad"
+            type="number"
+            {...form.getFieldProps("quantity")}
+            min="1"
+            required
+            inputMode="numeric"
+          />
           {form.getFieldError("quantity") && (
             <p className="mt-1 text-xs text-red-600">{form.getFieldError("quantity")}</p>
           )}
@@ -127,7 +134,7 @@ export default function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyR
         <div>
           <Input
             label="Marca"
-            type="select"
+            as="select"
             {...form.getFieldProps("selectedBrand")}
             onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
               form.setValue("selectedBrand", e.target.value);
@@ -149,7 +156,7 @@ export default function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyR
         <div>
           <Input
             label="Modelo"
-            type="select"
+            as="select"
             {...form.getFieldProps("selectedModel")}
             disabled={!form.values.selectedBrand || availableModels!.length === 0}
           >
@@ -165,7 +172,7 @@ export default function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyR
           )}
         </div>
         <div className="md:col-span-2">
-          <Input label="Notas (Opcional)" type="textarea" rows={3} {...form.getFieldProps("notes")} />
+          <Input label="Notas (Opcional)" as="textarea" rows={3} {...form.getFieldProps("notes")} enterKeyHint="done" />
           {form.getFieldError("notes") && <p className="mt-1 text-xs text-red-600">{form.getFieldError("notes")}</p>}
         </div>
         <div className="md:col-span-2">

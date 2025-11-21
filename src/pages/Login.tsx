@@ -4,9 +4,9 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useSettings } from "../context/SettingsContext";
 import { logger } from "../lib/logger";
-import Button from "../components/Button";
-import Input from "../components/Input";
-import ConnectionIndicator from "../components/ConnectionIndicator";
+import Button from "../components/ui/Button";
+import Input from "../components/ui/Input";
+import ConnectionIndicator from "../components/features/ConnectionIndicator";
 import { useToast } from "../context/ToastContext";
 
 export default function Login() {
@@ -95,6 +95,7 @@ export default function Login() {
             }}
             placeholder="••••••••"
             autoComplete="current-password"
+            enterKeyHint="go"
             required
           />
           <div className="flex flex-col gap-3 pt-4">

@@ -1,5 +1,5 @@
 import React from "react";
-import Button from "./Button";
+import Button from "../ui/Button";
 
 export class ErrorBoundary extends React.Component<
   { children: React.ReactNode },

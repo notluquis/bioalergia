@@ -7,7 +7,7 @@ import MetricCard from "../features/dashboard/components/MetricCard";
 import DashboardChart from "../features/dashboard/components/DashboardChart";
 import TopParticipantsWidget from "../features/dashboard/components/TopParticipantsWidget";
 import RecentMovementsWidget from "../features/dashboard/components/RecentMovementsWidget";
-import Alert from "../components/Alert";
+import Alert from "../components/ui/Alert";
 
 const RANGE_DAYS = 30;
 

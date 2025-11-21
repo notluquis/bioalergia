@@ -1,8 +1,8 @@
 import { useMemo, useState } from "react";
 import Papa from "papaparse";
-import Button from "../../../components/Button";
-import Alert from "../../../components/Alert";
-import UploadResults from "../../../components/UploadResults";
+import Button from "../../../components/ui/Button";
+import Alert from "../../../components/ui/Alert";
+import UploadResults from "../../../components/features/UploadResults";
 import { fileHasWithdrawHeader } from "../../../lib/csvUtils";
 
 type RawRow = Record<string, string>;

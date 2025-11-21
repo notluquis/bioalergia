@@ -8,12 +8,12 @@ import {
 } from "../features/inventory/api";
 import type { InventoryItem, InventoryMovement } from "../features/inventory/types";
 import { PlusCircle } from "lucide-react";
-import Modal from "../components/Modal";
+import Modal from "../components/ui/Modal";
 import InventoryItemForm from "../features/inventory/components/InventoryItemForm";
 import AdjustStockForm from "../features/inventory/components/AdjustStockForm";
 import InventoryTable from "../features/inventory/components/InventoryTable";
-import Alert from "../components/Alert";
-import Button from "../components/Button";
+import Alert from "../components/ui/Alert";
+import Button from "../components/ui/Button";
 import { queryKeys } from "../lib/queryKeys";
 import { useToast } from "../context/ToastContext";
 import { ServicesHero, ServicesSurface } from "../features/services/components/ServicesShell";

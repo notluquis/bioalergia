@@ -5,11 +5,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "./index.css";
 import "./i18n";
 import App from "./App";
-import RequireAuth from "./components/RequireAuth";
+import RequireAuth from "./components/common/RequireAuth";
 import { AuthProvider } from "./context/AuthContext";
 import { SettingsProvider } from "./context/SettingsContext";
 import { ToastProvider } from "./context/ToastContext";
-import { ErrorBoundary } from "./components/ErrorBoundary";
+import { ErrorBoundary } from "./components/common/ErrorBoundary";
 import { BUILD_ID } from "./version";
 
 // Lazy loading de componentes principales

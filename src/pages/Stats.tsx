@@ -7,9 +7,9 @@ import StatCard from "../features/stats/components/StatCard";
 import MonthlyFlowChart from "../features/stats/components/MonthlyFlowChart";
 import MovementTypeList from "../features/stats/components/MovementTypeList";
 import TopParticipantsSection from "../features/stats/components/TopParticipantsSection";
-import Alert from "../components/Alert";
-import Input from "../components/Input";
-import Button from "../components/Button";
+import Alert from "../components/ui/Alert";
+import Input from "../components/ui/Input";
+import Button from "../components/ui/Button";
 
 export default function Stats() {
   const { hasRole } = useAuth();
@@ -86,7 +86,7 @@ export default function Stats() {
         />
         <Input
           label="Intervalo rápido"
-          type="select"
+          as="select"
           value={quickRange}
           onChange={(event: ChangeEvent<HTMLSelectElement>) => {
             const value = event.target.value;

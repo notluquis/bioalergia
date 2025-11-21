@@ -1,4 +1,4 @@
-import Checkbox from "../../../components/Checkbox";
+import Checkbox from "../../../components/ui/Checkbox";
 import type { ColumnKey } from "../constants";
 import { COLUMN_DEFS } from "../constants";
 

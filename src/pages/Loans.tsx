@@ -3,11 +3,10 @@ import type { ChangeEvent } from "react";
 import dayjs from "dayjs";
 import { useAuth } from "../context/AuthContext";
 import { logger } from "../lib/logger";
-import Alert from "../components/Alert";
-import Modal from "../components/Modal";
-import Input from "../components/Input";
-import Button from "../components/Button";
-import { Card, PageHeader, Stack } from "../components/Layout";
+import Alert from "../components/ui/Alert";
+import Modal from "../components/ui/Modal";
+import Input from "../components/ui/Input";
+import Button from "../components/ui/Button";
 import LoanList from "../features/loans/components/LoanList";
 import LoanDetail from "../features/loans/components/LoanDetail";
 import LoanForm from "../features/loans/components/LoanForm";
@@ -203,26 +202,30 @@ export default function LoansPage() {
 
   if (!canView) {
     return (
-      <Stack spacing="md">
-        <PageHeader title="Préstamos y créditos" />
+      <section className="space-y-6">
+        <div className="space-y-2">
+          <h1 className="text-2xl font-bold text-primary">Préstamos y créditos</h1>
+        </div>
         <Alert variant="error">No tienes permisos para ver los préstamos registrados.</Alert>
-      </Stack>
+      </section>
     );
   }
 
   return (
-    <Stack spacing="lg">
-      <PageHeader
-        title="Préstamos y créditos"
-        description="Gestiona préstamos internos, cronogramas de pago y vincula cada cuota con las transacciones reales."
-      />
+    <section className="space-y-6">
+      <div className="space-y-2">
+        <h1 className="text-2xl font-bold text-primary">Préstamos y créditos</h1>
+        <p className="text-sm text-base-content/70">
+          Gestiona préstamos internos, cronogramas de pago y vincula cada cuota con las transacciones reales.
+        </p>
+      </div>
 
       {globalError && <Alert variant="error">{globalError}</Alert>}
 
       {loadingList && <p className="text-xs text-base-content/50">Actualizando listado de préstamos...</p>}
 
       <div className="grid gap-4 lg:grid-cols-[300px,1fr]">
-        <Card padding="default" className="min-h-[70vh]">
+        <div className="rounded-2xl border border-base-300 bg-base-100 p-6 shadow-sm min-h-[70vh]">
           <LoanList
             loans={loans}
             selectedId={selectedId}
@@ -233,8 +236,8 @@ export default function LoansPage() {
             }}
             canManage={canManage}
           />
-        </Card>
-        <Card padding="default" className="min-h-[70vh]">
+        </div>
+        <div className="rounded-2xl border border-base-300 bg-base-100 p-6 shadow-sm min-h-[70vh]">
           <LoanDetail
             loan={selectedLoan}
             schedules={schedules}
@@ -245,7 +248,7 @@ export default function LoansPage() {
             onRegisterPayment={openPaymentModal}
             onUnlinkPayment={handleUnlink}
           />
-        </Card>
+        </div>
       </div>
 
       <Modal isOpen={createOpen} onClose={() => setCreateOpen(false)} title="Nuevo préstamo">
@@ -273,6 +276,7 @@ export default function LoansPage() {
                 setPaymentForm((prev) => ({ ...prev, transactionId: event.target.value }))
               }
               required
+              inputMode="numeric"
             />
             <Input
               label="Monto pagado"
@@ -284,6 +288,7 @@ export default function LoansPage() {
               min={0}
               step="0.01"
               required
+              inputMode="decimal"
             />
             <Input
               label="Fecha de pago"
@@ -311,6 +316,6 @@ export default function LoansPage() {
           </form>
         )}
       </Modal>
-    </Stack>
+    </section>
   );
 }

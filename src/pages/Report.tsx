@@ -3,9 +3,9 @@ import type { ChangeEvent } from "react";
 import { coerceAmount } from "../lib/format";
 import { useReportUpload } from "../features/reports/hooks/useReportUpload";
 import ReportTable from "../features/reports/components/ReportTable";
-import Input from "../components/Input";
-import FileInput from "../components/FileInput";
-import Alert from "../components/Alert";
+import Input from "../components/ui/Input";
+import FileInput from "../components/ui/FileInput";
+import Alert from "../components/ui/Alert";
 
 export default function Report() {
   const [initialBalance, setInitialBalance] = useState<string>("0");
@@ -47,6 +47,7 @@ export default function Report() {
             value={initialBalance}
             onChange={(event: ChangeEvent<HTMLInputElement>) => setInitialBalance(event.target.value)}
             placeholder="0"
+            inputMode="decimal"
           />
           <FileInput label="Archivo CSV" accept=".csv,.txt" onChange={onFile} />
         </div>

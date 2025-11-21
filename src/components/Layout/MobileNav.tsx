@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { Home, Users, Briefcase, BarChart3 } from "@/design-system/icons";
+import { Home, Users, Briefcase, BarChart3 } from "@/components/ui/icons";
 import type { LucideIcon } from "lucide-react";
 
 interface NavItem {
