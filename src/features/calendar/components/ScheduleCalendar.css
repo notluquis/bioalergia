@@ -1,7 +1,114 @@
-.fc {
+.schedule-calendar .fc {
   --calendar-event-bg-default: oklch(var(--b2) / 0.6);
   --calendar-event-bg-subcutaneous: oklch(var(--p) / 0.12);
   --calendar-event-bg-test: oklch(var(--er) / 0.12);
+  --fc-page-bg-color: oklch(var(--b1));
+  --fc-neutral-bg-color: oklch(var(--b1));
+  --fc-border-color: oklch(var(--b3) / 0.85);
+  --fc-button-text-color: #ffffff;
+  --fc-button-bg-color: oklch(var(--p));
+  --fc-button-border-color: oklch(var(--p));
+  --fc-button-hover-bg-color: color-mix(in oklch, oklch(var(--p)) 85%, oklch(var(--bc)) 15%);
+  --fc-button-hover-border-color: color-mix(in oklch, oklch(var(--p)) 85%, oklch(var(--bc)) 15%);
+  --fc-button-active-bg-color: color-mix(in oklch, oklch(var(--p)) 75%, oklch(var(--bc)) 25%);
+  --fc-button-active-border-color: color-mix(in oklch, oklch(var(--p)) 75%, oklch(var(--bc)) 25%);
+  --fc-today-bg-color: color-mix(in oklch, oklch(var(--p)) 16%, transparent);
+  --fc-now-indicator-color: oklch(var(--a));
+}
+
+.schedule-calendar .fc .fc-scrollgrid {
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.schedule-calendar .fc .fc-toolbar {
+  align-items: center;
+  gap: 12px;
+  padding: 4px 2px 10px;
+}
+
+.schedule-calendar .fc .fc-toolbar-title {
+  font-size: clamp(1rem, 2vw, 1.35rem);
+  font-weight: 700;
+}
+
+.schedule-calendar .fc .fc-view-harness {
+  background-color: oklch(var(--b1));
+  border-radius: 16px;
+  box-shadow: 0 16px 50px -35px oklch(var(--bc) / 0.5);
+}
+
+.schedule-calendar .fc .fc-button-primary {
+  text-transform: capitalize;
+  font-weight: 600;
+  border-radius: 12px;
+  padding: 8px 14px;
+}
+
+.schedule-calendar .fc .fc-button-group {
+  gap: 6px;
+}
+
+.schedule-calendar .fc .fc-col-header-cell {
+  background-color: oklch(var(--b2) / 0.65);
+  border-color: oklch(var(--b3));
+  padding: 10px 6px;
+  font-weight: 700;
+  color: oklch(var(--bc));
+}
+
+.schedule-calendar .fc .fc-col-header-cell a {
+  color: inherit;
+}
+
+.schedule-calendar .fc .fc-timegrid-axis {
+  background-color: oklch(var(--b2) / 0.5);
+  color: oklch(var(--bc));
+  font-weight: 600;
+}
+
+.schedule-calendar .fc .fc-timegrid-now-indicator-line {
+  border-color: oklch(var(--a));
+}
+
+.schedule-calendar .fc .fc-timegrid-slot {
+  height: 3rem;
+  border-color: oklch(var(--b3) / 0.9);
+}
+
+.schedule-calendar .fc .fc-timegrid-col {
+  background-color: oklch(var(--b1));
+}
+
+.schedule-calendar .fc .fc-timegrid-slot-label {
+  color: oklch(var(--bc) / 0.8);
+  font-weight: 600;
+}
+
+.schedule-calendar .fc .fc-timegrid-slot-minor {
+  border-top-style: dashed;
+}
+
+.schedule-calendar .fc .fc-daygrid-day,
+.schedule-calendar .fc .fc-timegrid-divider {
+  border-color: oklch(var(--b3));
+}
+
+.schedule-calendar .fc-theme-standard td,
+.schedule-calendar .fc-theme-standard th {
+  border-color: oklch(var(--b3));
+}
+
+.schedule-calendar .fc .fc-daygrid-day-frame {
+  background-color: oklch(var(--b1));
+}
+
+.schedule-calendar .fc .fc-day-today:not(.fc-col-header-cell) {
+  background: color-mix(in oklch, oklch(var(--p)) 10%, oklch(var(--b1)));
+}
+
+.schedule-calendar .fc a {
+  color: oklch(var(--bc));
 }
 
 .calendar-event--default {
@@ -34,6 +141,7 @@
   border-radius: 14px !important;
   padding: 0 !important;
   overflow: hidden !important;
+  border-width: 1px !important;
 }
 
 .fc-timegrid-event .fc-event-main {
