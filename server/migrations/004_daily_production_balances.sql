@@ -1,0 +1,42 @@
+CREATE TABLE IF NOT EXISTS mp_daily_production_balances (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  balance_date DATE NOT NULL,
+  ingreso_tarjetas INT NOT NULL DEFAULT 0,
+  ingreso_transferencias INT NOT NULL DEFAULT 0,
+  ingreso_efectivo INT NOT NULL DEFAULT 0,
+  subtotal_ingresos INT NOT NULL DEFAULT 0,
+  gastos_diarios INT NOT NULL DEFAULT 0,
+  total_ingresos INT NOT NULL DEFAULT 0,
+  consultas_count INT UNSIGNED NOT NULL DEFAULT 0,
+  controles_count INT UNSIGNED NOT NULL DEFAULT 0,
+  tests_count INT UNSIGNED NOT NULL DEFAULT 0,
+  vacunas_count INT UNSIGNED NOT NULL DEFAULT 0,
+  licencias_count INT UNSIGNED NOT NULL DEFAULT 0,
+  roxair_count INT UNSIGNED NOT NULL DEFAULT 0,
+  otros_abonos INT NOT NULL DEFAULT 0,
+  total INT NOT NULL DEFAULT 0,
+  comentarios TEXT NULL,
+  status ENUM('DRAFT','FINAL') NOT NULL DEFAULT 'DRAFT',
+  created_by INT UNSIGNED NOT NULL,
+  updated_by INT UNSIGNED NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  INDEX idx_daily_prod_balance_date (balance_date),
+  INDEX idx_daily_prod_balance_created_by (created_by),
+  CONSTRAINT fk_daily_prod_balance_created_by FOREIGN KEY (created_by) REFERENCES users(id),
+  CONSTRAINT fk_daily_prod_balance_updated_by FOREIGN KEY (updated_by) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS mp_daily_production_balance_history (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  balance_id BIGINT UNSIGNED NOT NULL,
+  snapshot JSON NOT NULL,
+  change_reason VARCHAR(255) NULL,
+  changed_by INT UNSIGNED NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  INDEX idx_daily_prod_history_balance (balance_id),
+  CONSTRAINT fk_daily_prod_history_balance FOREIGN KEY (balance_id) REFERENCES mp_daily_production_balances(id) ON DELETE CASCADE,
+  CONSTRAINT fk_daily_prod_history_changed_by FOREIGN KEY (changed_by) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

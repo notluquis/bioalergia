@@ -124,6 +124,11 @@ const NAV_SECTIONS: NavSection[] = [
       { to: "/settings/accesos", label: "Accesos y conexiones", roles: ["GOD", "ADMIN"] },
       { to: "/settings/inventario", label: "Config. inventario", roles: ["GOD", "ADMIN"] },
       { to: "/settings/roles", label: "Roles y permisos", roles: ["GOD", "ADMIN"] },
+      {
+        to: "/settings/balances-diarios",
+        label: "Balance diario prestaciones",
+        roles: ["GOD", "ADMIN", "ANALYST", "VIEWER"],
+      },
     ],
   },
 ];
@@ -155,6 +160,7 @@ const TITLES: Record<string, string> = {
   "/settings/accesos": "Accesos y conexiones",
   "/settings/inventario": "Parámetros de inventario",
   "/settings/roles": "Roles y permisos",
+  "/settings/balances-diarios": "Balance diario de prestaciones",
   "/inventory": "Gestión de Inventario",
 };
 

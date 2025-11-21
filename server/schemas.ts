@@ -154,6 +154,31 @@ export const balanceUpsertSchema = z.object({
   note: z.string().max(255).optional(),
 });
 
+const clpInt = z.coerce.number().int().safe().default(0);
+
+export const productionBalanceQuerySchema = z.object({
+  from: z.string().regex(dateRegex).optional(),
+  to: z.string().regex(dateRegex).optional(),
+});
+
+export const productionBalancePayloadSchema = z.object({
+  date: z.string().regex(dateRegex, "Fecha inválida"),
+  ingresoTarjetas: clpInt,
+  ingresoTransferencias: clpInt,
+  ingresoEfectivo: clpInt,
+  gastosDiarios: z.coerce.number().int().safe().default(0),
+  otrosAbonos: clpInt,
+  consultas: z.coerce.number().int().min(0).default(0),
+  controles: z.coerce.number().int().min(0).default(0),
+  tests: z.coerce.number().int().min(0).default(0),
+  vacunas: z.coerce.number().int().min(0).default(0),
+  licencias: z.coerce.number().int().min(0).default(0),
+  roxair: z.coerce.number().int().min(0).default(0),
+  comentarios: z.string().max(600).optional().nullable(),
+  status: z.enum(["DRAFT", "FINAL"]).optional().default("DRAFT"),
+  reason: z.string().max(255).optional().nullable(),
+});
+
 export const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),

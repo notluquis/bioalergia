@@ -23,6 +23,8 @@ import { registerCalendarEventRoutes } from "./routes/calendar-events.js";
 import { registerAssetRoutes } from "./routes/assets.js";
 import suppliesRouter from "./routes/supplies.js";
 import { getUploadsRootDir } from "./lib/uploads.js";
+import { registerDailyProductionBalanceRoutes } from "./routes/daily-production-balances.js";
+import { startDailyProductionReminderJob } from "./modules/dailyProductionReminders.js";
 
 const app = express();
 
@@ -92,7 +94,9 @@ registerLoanRoutes(app);
 registerServiceRoutes(app);
 registerCalendarEventRoutes(app);
 registerAssetRoutes(app);
+registerDailyProductionBalanceRoutes(app);
 app.use("/api/supplies", suppliesRouter);
+startDailyProductionReminderJob();
 
 type HealthStatus = "ok" | "error";
 type HealthChecks = { db: { status: HealthStatus; latency: number | null } };

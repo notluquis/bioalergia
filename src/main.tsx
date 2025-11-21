@@ -52,6 +52,7 @@ const GeneralSettingsPage = lazy(() => import("./pages/settings/GeneralSettingsP
 const AccessSettingsPage = lazy(() => import("./pages/settings/AccessSettingsPage"));
 const InventorySettingsPage = lazy(() => import("./pages/settings/InventorySettingsPage"));
 const RolesSettingsPage = lazy(() => import("./pages/settings/RolesSettingsPage"));
+const DailyProductionBalancesSettingsPage = lazy(() => import("./pages/settings/DailyProductionBalancesPage"));
 
 // Componente de loading
 const PageLoader = () => (
@@ -261,6 +262,14 @@ const router = createBrowserRouter([
             element: (
               <Suspense fallback={<PageLoader />}>
                 <RolesSettingsPage />
+              </Suspense>
+            ),
+          },
+          {
+            path: "balances-diarios",
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <DailyProductionBalancesSettingsPage />
               </Suspense>
             ),
           },

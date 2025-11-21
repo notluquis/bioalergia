@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from "react-router-dom";
-import { Settings as SettingsIcon, Calendar, Shield, ServerCog, Boxes } from "lucide-react";
+import { Settings as SettingsIcon, Calendar, Shield, ServerCog, Boxes, FileSpreadsheet } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
 const SETTINGS_PAGES = [
@@ -32,6 +32,12 @@ const SETTINGS_PAGES = [
     label: "Roles y permisos",
     description: "Mapeo entre roles operativos y la app.",
     icon: Shield,
+  },
+  {
+    to: "balances-diarios",
+    label: "Balance diario de prestaciones",
+    description: "Ingresos diarios en CLP con historial de cambios.",
+    icon: FileSpreadsheet,
   },
 ] as const;
 

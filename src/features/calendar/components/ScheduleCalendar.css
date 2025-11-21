@@ -4,7 +4,7 @@
   --calendar-event-bg-test: oklch(var(--er) / 0.12);
   --fc-page-bg-color: oklch(var(--b1));
   --fc-neutral-bg-color: oklch(var(--b1));
-  --fc-border-color: oklch(var(--b3) / 0.85);
+  --fc-border-color: oklch(var(--b3) / 0.55);
   --fc-button-text-color: #ffffff;
   --fc-button-bg-color: oklch(var(--p));
   --fc-button-border-color: oklch(var(--p));
@@ -14,6 +14,9 @@
   --fc-button-active-border-color: color-mix(in oklch, oklch(var(--p)) 75%, oklch(var(--bc)) 25%);
   --fc-today-bg-color: color-mix(in oklch, oklch(var(--p)) 16%, transparent);
   --fc-now-indicator-color: oklch(var(--a));
+  --fc-event-text-color: oklch(var(--bc));
+  --fc-event-bg-color: oklch(var(--b2) / 0.6);
+  --fc-event-border-color: oklch(var(--b3) / 0.8);
 }
 
 .schedule-calendar .fc .fc-scrollgrid {
@@ -33,9 +36,9 @@
 }
 
 .schedule-calendar .fc .fc-view-harness {
-  background-color: oklch(var(--b1));
+  background-color: transparent;
   border-radius: 16px;
-  box-shadow: 0 16px 50px -35px oklch(var(--bc) / 0.5);
+  box-shadow: 0 14px 40px -30px oklch(var(--bc) / 0.45);
 }
 
 .schedule-calendar .fc .fc-button-primary {
@@ -62,9 +65,13 @@
 }
 
 .schedule-calendar .fc .fc-timegrid-axis {
-  background-color: oklch(var(--b2) / 0.5);
+  background-color: oklch(var(--b2) / 0.55);
   color: oklch(var(--bc));
   font-weight: 600;
+}
+
+.schedule-calendar .fc .fc-timegrid-axis-cushion {
+  padding: 8px 6px;
 }
 
 .schedule-calendar .fc .fc-timegrid-now-indicator-line {
@@ -72,8 +79,8 @@
 }
 
 .schedule-calendar .fc .fc-timegrid-slot {
-  height: 3rem;
-  border-color: oklch(var(--b3) / 0.9);
+  height: 2.5rem;
+  border-color: oklch(var(--b3) / 0.65);
 }
 
 .schedule-calendar .fc .fc-timegrid-col {
@@ -94,12 +101,33 @@
   border-color: oklch(var(--b3));
 }
 
+.schedule-calendar .fc .fc-timegrid-bg,
+.schedule-calendar .fc .fc-timegrid-slots,
+.schedule-calendar .fc .fc-timegrid-cols,
+.schedule-calendar .fc .fc-scrollgrid-sync-table {
+  background-color: oklch(var(--b1));
+}
+
+.schedule-calendar .fc .fc-timegrid-slot-minor {
+  border-color: oklch(var(--b3) / 0.35);
+}
+
 .schedule-calendar .fc-theme-standard td,
 .schedule-calendar .fc-theme-standard th {
   border-color: oklch(var(--b3));
 }
 
 .schedule-calendar .fc .fc-daygrid-day-frame {
+  background-color: oklch(var(--b1));
+}
+
+.schedule-calendar .fc .fc-timegrid-divider,
+.schedule-calendar .fc .fc-timegrid-axis-frame {
+  background-color: oklch(var(--b2) / 0.45);
+}
+
+.schedule-calendar .fc .fc-timegrid-allday,
+.schedule-calendar .fc .fc-timegrid-cols .fc-day {
   background-color: oklch(var(--b1));
 }
 
@@ -142,6 +170,7 @@
   padding: 0 !important;
   overflow: hidden !important;
   border-width: 1px !important;
+  background: oklch(var(--b2) / 0.75) !important;
 }
 
 .fc-timegrid-event .fc-event-main {
@@ -169,7 +198,7 @@
 }
 
 .fc-timegrid-event:hover {
-  box-shadow: 0 12px 28px -24px oklch(var(--bc) / 0.4);
+  box-shadow: 0 12px 28px -20px oklch(var(--bc) / 0.4);
 }
 
 .calendar-loading {
