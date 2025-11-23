@@ -27,7 +27,7 @@ export function registerInventoryRoutes(app: express.Express) {
       const categories = await listInventoryCategories();
       res.json({
         status: "ok",
-        data: categories.map((c) => ({
+        data: categories.map((c: { id: number; name: string; createdAt: Date }) => ({
           id: c.id,
           name: c.name,
           created_at: c.createdAt.toISOString(),
@@ -62,16 +62,27 @@ export function registerInventoryRoutes(app: express.Express) {
       const items = await listInventoryItems();
       res.json({
         status: "ok",
-        data: items.map((i) => ({
-          id: i.id,
-          category_id: i.categoryId,
-          name: i.name,
-          description: i.description,
-          current_stock: i.currentStock,
-          created_at: i.createdAt.toISOString(),
-          updated_at: i.updatedAt.toISOString(),
-          category_name: i.category_name,
-        })),
+        data: items.map(
+          (i: {
+            id: number;
+            categoryId: number | null;
+            name: string;
+            description: string | null;
+            currentStock: number;
+            createdAt: Date;
+            updatedAt: Date;
+            category_name?: string | null;
+          }) => ({
+            id: i.id,
+            category_id: i.categoryId,
+            name: i.name,
+            description: i.description,
+            current_stock: i.currentStock,
+            created_at: i.createdAt.toISOString(),
+            updated_at: i.updatedAt.toISOString(),
+            category_name: i.category_name,
+          })
+        ),
       });
     })
   );

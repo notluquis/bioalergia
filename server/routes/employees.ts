@@ -1,7 +1,7 @@
 import express from "express";
 import { asyncHandler, authenticate, requireRole } from "../lib/http.js";
 import { logEvent, logWarn, requestContext } from "../lib/logger.js";
-import { listEmployees, createEmployee, updateEmployee, deactivateEmployee } from "../repositories/employees.js";
+import { listEmployees, createEmployee, updateEmployee, deactivateEmployee } from "../services/employees.js";
 import { employeeSchema, employeeUpdateSchema } from "../schemas.js";
 import type { AuthenticatedRequest } from "../types.js";
 

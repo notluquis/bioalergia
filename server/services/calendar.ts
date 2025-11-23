@@ -3,7 +3,7 @@ import { prisma } from "../prisma.js";
 export async function loadSettings() {
   const settings = await prisma.setting.findMany();
   return settings.reduce(
-    (acc, curr) => {
+    (acc: Record<string, string>, curr: { configKey: string; configValue: string | null }) => {
       acc[curr.configKey] = curr.configValue || "";
       return acc;
     },

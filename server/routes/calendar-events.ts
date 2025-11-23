@@ -18,6 +18,7 @@ import {
   listUnclassifiedCalendarEvents,
   updateCalendarEventClassification,
 } from "../services/calendar.js";
+import { Prisma } from "../../generated/prisma/client.js";
 import { googleCalendarConfig } from "../config.js";
 import { z } from "zod";
 
@@ -242,21 +243,37 @@ export function registerCalendarEventRoutes(app: express.Express) {
       const logs = await listCalendarSyncLogs(50);
       res.json({
         status: "ok",
-        logs: logs.map((log) => ({
-          id: Number(log.id),
-          triggerSource: log.triggerSource,
-          triggerUserId: log.triggerUserId != null ? Number(log.triggerUserId) : null,
-          triggerLabel: log.triggerLabel ?? null,
-          status: log.status,
-          startedAt: log.startedAt,
-          finishedAt: log.finishedAt,
-          fetchedAt: log.fetchedAt,
-          inserted: Number(log.inserted ?? 0),
-          updated: Number(log.updated ?? 0),
-          skipped: Number(log.skipped ?? 0),
-          excluded: Number(log.excluded ?? 0),
-          errorMessage: log.errorMessage ?? null,
-        })),
+        logs: logs.map(
+          (log: {
+            id: bigint;
+            triggerSource: string;
+            triggerUserId: bigint | null;
+            triggerLabel: string | null;
+            status: string;
+            startedAt: Date;
+            finishedAt: Date | null;
+            fetchedAt: Date | null;
+            inserted: number | null;
+            updated: number | null;
+            skipped: number | null;
+            excluded: number | null;
+            errorMessage: string | null;
+          }) => ({
+            id: Number(log.id),
+            triggerSource: log.triggerSource,
+            triggerUserId: log.triggerUserId != null ? Number(log.triggerUserId) : null,
+            triggerLabel: log.triggerLabel ?? null,
+            status: log.status,
+            startedAt: log.startedAt,
+            finishedAt: log.finishedAt,
+            fetchedAt: log.fetchedAt,
+            inserted: Number(log.inserted ?? 0),
+            updated: Number(log.updated ?? 0),
+            skipped: Number(log.skipped ?? 0),
+            excluded: Number(log.excluded ?? 0),
+            errorMessage: log.errorMessage ?? null,
+          })
+        ),
       });
     })
   );
@@ -272,7 +289,7 @@ export function registerCalendarEventRoutes(app: express.Express) {
       const rows = await listUnclassifiedCalendarEvents(limit);
       res.json({
         status: "ok",
-        events: rows.map((row) => ({
+        events: rows.map((row: Prisma.EventGetPayload<{ include: { calendar: true } }>) => ({
           calendarId: row.calendar.googleId,
           eventId: row.externalEventId,
           status: row.eventStatus ?? null,

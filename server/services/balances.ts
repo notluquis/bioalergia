@@ -23,7 +23,7 @@ export async function listDailyBalances(options: { from?: string; to?: string })
     orderBy: { balanceDate: "asc" },
   });
 
-  return balances.map((row) => ({
+  return balances.map((row: { balanceDate: Date; balance: number; note: string | null }) => ({
     date: formatDateOnly(row.balanceDate),
     balance: Number(row.balance),
     note: row.note,

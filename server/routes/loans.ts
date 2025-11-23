@@ -1,9 +1,5 @@
 import express from "express";
-import {
-  asyncHandler,
-  authenticate,
-  requireRole,
-} from "../lib/http.js";
+import { asyncHandler, authenticate, requireRole } from "../lib/http.js";
 import { logEvent, logWarn, requestContext } from "../lib/logger.js";
 import {
   createLoan,
@@ -12,12 +8,8 @@ import {
   markLoanSchedulePayment,
   regenerateLoanSchedule,
   unlinkLoanSchedulePayment,
-} from "../db.js";
-import {
-  loanCreateSchema,
-  loanPaymentSchema,
-  loanScheduleRegenerateSchema,
-} from "../schemas.js";
+} from "../services/loans.js";
+import { loanCreateSchema, loanPaymentSchema, loanScheduleRegenerateSchema } from "../schemas.js";
 import type { AuthenticatedRequest } from "../types.js";
 
 export function registerLoanRoutes(app: express.Express) {

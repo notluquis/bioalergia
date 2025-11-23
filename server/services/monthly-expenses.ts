@@ -1,5 +1,5 @@
 import { prisma } from "../prisma.js";
-import { Prisma } from "../../generated/prisma/client";
+import { Prisma } from "../../generated/prisma/client.js";
 import { randomUUID } from "node:crypto";
 
 export async function listMonthlyExpenses(filters?: {
@@ -38,8 +38,11 @@ export async function listMonthlyExpenses(filters?: {
     orderBy: [{ expenseDate: "desc" }, { id: "desc" }],
   });
 
-  return expenses.map((expense) => {
-    const amountApplied = expense.transactions.reduce((sum, t) => sum + Number(t.amount), 0);
+  return expenses.map((expense: Prisma.MonthlyExpenseGetPayload<{ include: { transactions: true } }>) => {
+    const amountApplied = expense.transactions.reduce(
+      (sum: number, t: { amount: number }) => sum + Number(t.amount),
+      0
+    );
     const transactionCount = expense.transactions.length;
 
     return {
@@ -69,19 +72,25 @@ export async function getMonthlyExpenseDetail(publicId: string) {
 
   if (!expense) return null;
 
-  const amountApplied = expense.transactions.reduce((sum, t) => sum + Number(t.amount), 0);
+  const amountApplied = expense.transactions.reduce((sum: number, t: { amount: number }) => sum + Number(t.amount), 0);
 
   return {
     ...expense,
     amountApplied,
     transactionCount: expense.transactions.length,
-    transactions: expense.transactions.map((met) => ({
-      transaction_id: met.transactionId,
-      amount: Number(met.amount),
-      timestamp: met.transaction.timestamp.toISOString(),
-      description: met.transaction.description,
-      direction: met.transaction.direction,
-    })),
+    transactions: expense.transactions.map(
+      (met: {
+        transactionId: bigint;
+        amount: number;
+        transaction: { timestamp: Date; description: string | null; direction: string };
+      }) => ({
+        transaction_id: met.transactionId,
+        amount: Number(met.amount),
+        timestamp: met.transaction.timestamp.toISOString(),
+        description: met.transaction.description,
+        direction: met.transaction.direction,
+      })
+    ),
   };
 }
 
@@ -300,10 +309,17 @@ export async function getMonthlyExpenseStats(options: {
     }>
   >(sql, ...params);
 
-  return rows.map((row) => ({
-    period: row.period_key != null ? String(row.period_key) : "",
-    total_expected: Number(row.total_expected ?? 0),
-    total_applied: Number(row.total_applied ?? 0),
-    expense_count: Number(row.expense_count ?? 0),
-  }));
+  return rows.map(
+    (row: {
+      period_key: string | null;
+      total_expected: number | null;
+      total_applied: number | null;
+      expense_count: number | null;
+    }) => ({
+      period: row.period_key ?? "unknown",
+      total_expected: Number(row.total_expected ?? 0),
+      total_applied: Number(row.total_applied ?? 0),
+      expense_count: Number(row.expense_count ?? 0),
+    })
+  );
 }

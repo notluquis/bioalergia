@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import { Prisma } from "../../generated/prisma/client";
+import { Prisma } from "../../generated/prisma/client.js";
 import { prisma } from "./prisma.js";
 
 import { googleCalendarConfig } from "../config.js";
@@ -324,12 +324,15 @@ export async function getCalendarAggregates(filters: CalendarEventFilters): Prom
       byDate: dateRows.map((row: DateAggregateRow) => ({ date: String(row.date), ...mapAggregateRow(row) })),
     },
     available: {
-      calendars: calendarRows.map((row) => ({ calendarId: String(row.calendarId), total: Number(row.total ?? 0) })),
-      eventTypes: eventTypeRows.map((row) => ({
+      calendars: calendarRows.map((row: { calendarId: string; total: bigint }) => ({
+        calendarId: String(row.calendarId),
+        total: Number(row.total ?? 0),
+      })),
+      eventTypes: eventTypeRows.map((row: { eventType: string | null; total: bigint }) => ({
         eventType: row.eventType != null ? String(row.eventType) : null,
         total: Number(row.total ?? 0),
       })),
-      categories: categoryRows.map((row) => ({
+      categories: categoryRows.map((row: { category: string | null; total: bigint }) => ({
         category: row.category != null ? String(row.category) : null,
         total: Number(row.total ?? 0),
       })),
@@ -370,7 +373,9 @@ export async function getCalendarEventsByDate(
     };
   }
 
-  const selectedDates = dateRows.map((row) => row.date);
+  const selectedDates = dateRows.map(
+    (row: { date: string; total: bigint; amountExpected: number | null; amountPaid: number | null }) => row.date
+  );
   const whereWithDates = buildWhereClause({ ...filters, dates: selectedDates });
 
   const eventRows = await prisma.$queryRaw<

@@ -1,5 +1,5 @@
 import { prisma } from "../prisma.js";
-import { Prisma } from "../../generated/prisma/client";
+import { Prisma } from "../../generated/prisma/client.js";
 
 export async function listEmployees(options?: { includeInactive?: boolean }) {
   const where: Prisma.EmployeeWhereInput = {};

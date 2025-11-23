@@ -62,11 +62,13 @@ export function registerBalanceRoutes(app: express.Express) {
       const [balances, previous, transactions] = await Promise.all([
         listDailyBalances({ from: fromDate, to: toDate }),
         getPreviousDailyBalance(fromDate),
-        listTransactions({
-          from: fromStart,
-          to: toEnd,
-          limit: 10000, // Sufficient for typical date ranges
-        }),
+        listTransactions(
+          {
+            from: new Date(fromStart),
+            to: new Date(toEnd),
+          },
+          10000
+        ),
       ]);
 
       const changeByDate = new Map<
@@ -74,7 +76,7 @@ export function registerBalanceRoutes(app: express.Express) {
         { totalIn: number; totalOut: number; netChange: number; hasCashback: boolean }
       >();
 
-      for (const tx of transactions) {
+      for (const tx of transactions.transactions) {
         const timestamp = tx.timestamp;
         const dateKey = timestamp.slice(0, 10);
         const amount = Number(tx.amount);

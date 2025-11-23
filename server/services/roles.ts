@@ -1,5 +1,5 @@
 import { prisma } from "../prisma.js";
-import { UserRole } from "../../generated/prisma/client";
+import { UserRole } from "../../generated/prisma/enums.js";
 
 export type RoleMapping = {
   employee_role: string;
@@ -8,7 +8,7 @@ export type RoleMapping = {
 
 export async function listRoleMappings(): Promise<RoleMapping[]> {
   const mappings = await prisma.roleMapping.findMany();
-  return mappings.map((m) => ({
+  return mappings.map((m: { employeeRole: string; appRole: UserRole }) => ({
     employee_role: m.employeeRole,
     app_role: m.appRole,
   }));

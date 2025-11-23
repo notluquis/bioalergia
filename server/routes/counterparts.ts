@@ -68,7 +68,7 @@ export function registerCounterpartRoutes(app: express.Express) {
       const counterparts = await listCounterparts();
       res.json({
         status: "ok",
-        counterparts: counterparts.map((c) => ({
+        counterparts: counterparts.map((c: CounterpartWithAccounts) => ({
           ...mapCounterpart(c),
           accounts: c.accounts ? c.accounts.map(mapCounterpartAccount) : [],
         })),

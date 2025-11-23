@@ -1,6 +1,7 @@
 import express from "express";
 import { z } from "zod";
 import { asyncHandler, authenticate, requireRole } from "../lib/http.js";
+import { Prisma } from "../../generated/prisma/client.js";
 import { logEvent, logWarn, requestContext } from "../lib/logger.js";
 import { listEmployees, getEmployeeById } from "../services/employees.js";
 import {
@@ -47,7 +48,7 @@ export function registerTimesheetRoutes(app: express.Express) {
 
       const monthsWithData = new Set(
         entries
-          .map((e) => formatDateOnly(e.workDate).slice(0, 7)) // YYYY-MM
+          .map((e: { workDate: Date }) => formatDateOnly(e.workDate).slice(0, 7)) // YYYY-MM
           .filter(Boolean)
       );
 
@@ -266,8 +267,10 @@ export function registerTimesheetRoutes(app: express.Express) {
       }
 
       const employees = await listEmployees();
-      const employeeNameMap = new Map(employees.map((emp) => [emp.id, emp.fullName]));
-      const employeeRoleMap = new Map(employees.map((emp) => [emp.id, emp.role ?? null]));
+      const employeeNameMap = new Map(employees.map((emp: { id: number; fullName: string }) => [emp.id, emp.fullName]));
+      const employeeRoleMap = new Map(
+        employees.map((emp: { id: number; role: string | null }) => [emp.id, emp.role ?? null])
+      );
 
       // Query entries with start_time AND end_time only using Prisma
       const rawEntries = await prisma.employeeTimesheet.findMany({
@@ -283,7 +286,7 @@ export function registerTimesheetRoutes(app: express.Express) {
         orderBy: [{ workDate: "asc" }, { employeeId: "asc" }],
       });
 
-      const entries = rawEntries.map((row) => ({
+      const entries = rawEntries.map((row: Prisma.EmployeeTimesheetGetPayload<{}>) => ({
         id: Number(row.id),
         employee_id: row.employeeId,
         employee_name: employeeNameMap.get(row.employeeId) || `Employee #${row.employeeId}`,
@@ -345,7 +348,18 @@ function normalizeTimesheetPayload(data: {
 
 async function buildMonthlySummary(from: string, to: string, employeeId?: number) {
   const employees = await listEmployees();
-  const employeeMap = new Map(employees.map((employee) => [employee.id, employee]));
+  const employeeMap = new Map(
+    employees.map(
+      (employee: {
+        id: number;
+        fullName: string;
+        hourlyRate: number | null;
+        role: string | null;
+        rut: string | null;
+        email: string | null;
+      }) => [employee.id, employee]
+    )
+  );
 
   // Use Prisma groupBy instead of MySQL
   const summaryData = await prisma.employeeTimesheet.groupBy({

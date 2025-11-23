@@ -1,6 +1,7 @@
 import express, { Router } from "express";
 import { z } from "zod";
 import { AuthenticatedRequest } from "../types.js";
+import { Prisma } from "../../generated/prisma/client.js";
 import { authenticate, asyncHandler, requireRole } from "../lib/http.js";
 import {
   createSupplyRequest,
@@ -67,10 +68,12 @@ router.get(
     const requests = await listSupplyRequests({ role });
 
     // Map to match the expected response format
-    const rows = requests.map((r) => ({
-      ...r,
-      user_email: r.user.email,
-    }));
+    const rows = requests.map(
+      (r: Prisma.SupplyRequestGetPayload<{ include: { user: { select: { email: true } } } }>) => ({
+        ...r,
+        user_email: r.user.email,
+      })
+    );
 
     res.json(rows);
   })
