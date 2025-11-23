@@ -8,33 +8,37 @@ import ConnectionIndicator from "../features/ConnectionIndicator";
 
 const TITLES: Record<string, string> = {
   "/": "Panel financiero",
-  "/upload": "Subir movimientos a la base",
-  "/transactions/movements": "Movimientos registrados",
-  "/counterparts": "Contrapartes",
-  "/transactions/participants": "Participantes",
-  "/timesheets": "Horas y pagos",
-  "/transactions/balances": "Saldos diarios",
-  "/employees": "Trabajadores",
-  "/supplies": "Solicitud de Insumos",
-  "/loans": "Préstamos y créditos",
+  // Finanzas
+  "/finanzas/movements": "Movimientos registrados",
+  "/finanzas/balances": "Saldos diarios",
+  "/finanzas/counterparts": "Contrapartes",
+  "/finanzas/participants": "Participantes",
+  "/finanzas/loans": "Préstamos y créditos",
+  // Servicios
   "/services": "Servicios recurrentes",
   "/services/agenda": "Agenda de servicios",
   "/services/create": "Crear servicio",
+  "/services/templates": "Plantillas de servicios",
+  // Calendario
   "/calendar/summary": "Eventos de calendario",
   "/calendar/schedule": "Calendario interactivo",
   "/calendar/daily": "Detalle diario",
   "/calendar/heatmap": "Mapa de calor",
   "/calendar/classify": "Clasificar eventos",
-  "/timesheets-audit": "Auditoría de horarios",
-  "/data": "Movimientos registrados",
-  "/stats": "Estadísticas",
+  "/calendar/history": "Historial de sincronización",
+  // Operaciones (Inventario + RRHH)
+  "/inventory/items": "Gestión de Inventario",
+  "/inventory/supplies": "Solicitud de Insumos",
+  "/hr/employees": "Trabajadores",
+  "/hr/timesheets": "Horas y pagos",
+  "/hr/audit": "Auditoría de horarios",
+  // Settings
   "/settings": "Configuración",
   "/settings/general": "Identidad y marca",
   "/settings/accesos": "Accesos y conexiones",
   "/settings/inventario": "Parámetros de inventario",
   "/settings/roles": "Roles y permisos",
   "/settings/balances-diarios": "Balance diario de prestaciones",
-  "/inventory": "Gestión de Inventario",
 };
 
 export default function Header() {

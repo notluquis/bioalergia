@@ -21,20 +21,25 @@ const TransactionsMovements = lazy(() => import("./pages/TransactionsMovements")
 const DailyBalances = lazy(() => import("./pages/DailyBalances"));
 const ParticipantInsightsPage = lazy(() => import("./pages/ParticipantInsights"));
 
-const Stats = lazy(() => import("./pages/Stats"));
-
 const EmployeesPage = lazy(() => import("./pages/Employees"));
 const TimesheetsPage = lazy(() => import("./pages/Timesheets"));
 const TimesheetAuditPage = lazy(() => import("./pages/TimesheetAuditPage"));
 
 const CounterpartsPage = lazy(() => import("./pages/Counterparts"));
 const LoansPage = lazy(() => import("./pages/Loans"));
-const ServicesLayout = lazy(() => import("./pages/services/ServicesLayout"));
+// Lazy loading de layouts
+const FinanceLayout = lazy(() => import("./components/Layout/FinanceLayout"));
+const CalendarLayout = lazy(() => import("./components/Layout/CalendarLayout"));
+const ServicesLayout = lazy(() => import("./components/Layout/ServicesLayout"));
+const InventoryLayout = lazy(() => import("./components/Layout/InventoryLayout"));
+const HRLayout = lazy(() => import("./components/Layout/HRLayout"));
+
 const ServicesPage = lazy(() => import("./pages/ServicesOverviewPage"));
 const ServicesAgendaPage = lazy(() => import("./pages/ServicesAgendaPage"));
 const ServicesCreatePage = lazy(() => import("./pages/ServicesCreatePage"));
 const ServicesTemplatesPage = lazy(() => import("./pages/ServicesTemplatesPage"));
 const ServiceEditPage = lazy(() => import("./pages/ServiceEditPage"));
+
 const CalendarSummaryPage = lazy(() => import("./pages/CalendarSummaryPage"));
 const CalendarSchedulePage = lazy(() => import("./pages/CalendarSchedulePage"));
 const CalendarDailyPage = lazy(() => import("./pages/CalendarDailyPage"));
@@ -83,54 +88,59 @@ const router = createBrowserRouter([
           </Suspense>
         ),
       },
+      // Finanzas Section
       {
-        path: "/employees",
+        path: "/finanzas",
         element: (
           <Suspense fallback={<PageLoader />}>
-            <EmployeesPage />
+            <FinanceLayout />
           </Suspense>
         ),
+        children: [
+          { index: true, element: <Navigate to="movements" replace /> },
+          {
+            path: "movements",
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <TransactionsMovements />
+              </Suspense>
+            ),
+          },
+          {
+            path: "balances",
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <DailyBalances />
+              </Suspense>
+            ),
+          },
+          {
+            path: "participants",
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <ParticipantInsightsPage />
+              </Suspense>
+            ),
+          },
+          {
+            path: "counterparts",
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <CounterpartsPage />
+              </Suspense>
+            ),
+          },
+          {
+            path: "loans",
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <LoansPage />
+              </Suspense>
+            ),
+          },
+        ],
       },
-      {
-        path: "/transactions/movements",
-        element: (
-          <Suspense fallback={<PageLoader />}>
-            <TransactionsMovements />
-          </Suspense>
-        ),
-      },
-      {
-        path: "/transactions/balances",
-        element: (
-          <Suspense fallback={<PageLoader />}>
-            <DailyBalances />
-          </Suspense>
-        ),
-      },
-      {
-        path: "/transactions/participants",
-        element: (
-          <Suspense fallback={<PageLoader />}>
-            <ParticipantInsightsPage />
-          </Suspense>
-        ),
-      },
-      {
-        path: "/counterparts",
-        element: (
-          <Suspense fallback={<PageLoader />}>
-            <CounterpartsPage />
-          </Suspense>
-        ),
-      },
-      {
-        path: "/loans",
-        element: (
-          <Suspense fallback={<PageLoader />}>
-            <LoansPage />
-          </Suspense>
-        ),
-      },
+      // Services Section
       {
         path: "/services",
         element: (
@@ -181,39 +191,131 @@ const router = createBrowserRouter([
           },
         ],
       },
+      // Calendar Section
       {
-        path: "/timesheets",
+        path: "/calendar",
         element: (
           <Suspense fallback={<PageLoader />}>
-            <TimesheetsPage />
+            <CalendarLayout />
           </Suspense>
         ),
+        children: [
+          { index: true, element: <Navigate to="summary" replace /> },
+          {
+            path: "summary",
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <CalendarSummaryPage />
+              </Suspense>
+            ),
+          },
+          {
+            path: "schedule",
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <CalendarSchedulePage />
+              </Suspense>
+            ),
+          },
+          {
+            path: "daily",
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <CalendarDailyPage />
+              </Suspense>
+            ),
+          },
+          {
+            path: "heatmap",
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <CalendarHeatmapPage />
+              </Suspense>
+            ),
+          },
+          {
+            path: "classify",
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <CalendarClassificationPage />
+              </Suspense>
+            ),
+          },
+          {
+            path: "history",
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <CalendarSyncHistoryPage />
+              </Suspense>
+            ),
+          },
+        ],
       },
+      // Inventory/Operations Section
       {
-        path: "/timesheets-audit",
+        path: "/inventory",
         element: (
           <Suspense fallback={<PageLoader />}>
-            <TimesheetAuditPage />
+            <InventoryLayout />
           </Suspense>
         ),
+        children: [
+          { index: true, element: <Navigate to="items" replace /> },
+          {
+            path: "items",
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <InventoryPage />
+              </Suspense>
+            ),
+          },
+          {
+            path: "supplies",
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <SuppliesPage />
+              </Suspense>
+            ),
+          },
+        ],
       },
+      // HR Section
       {
-        path: "/supplies",
+        path: "/hr",
         element: (
           <Suspense fallback={<PageLoader />}>
-            <SuppliesPage />
+            <HRLayout />
           </Suspense>
         ),
+        children: [
+          { index: true, element: <Navigate to="employees" replace /> },
+          {
+            path: "employees",
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <EmployeesPage />
+              </Suspense>
+            ),
+          },
+          {
+            path: "timesheets",
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <TimesheetsPage />
+              </Suspense>
+            ),
+          },
+          {
+            path: "audit",
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <TimesheetAuditPage />
+              </Suspense>
+            ),
+          },
+        ],
       },
-      { path: "/data", element: <Navigate to="/transactions/movements" replace /> },
-      {
-        path: "/stats",
-        element: (
-          <Suspense fallback={<PageLoader />}>
-            <Stats />
-          </Suspense>
-        ),
-      },
+      // Settings Section
       {
         path: "/settings",
         element: (
@@ -265,62 +367,15 @@ const router = createBrowserRouter([
           },
         ],
       },
-      {
-        path: "/inventory",
-        element: (
-          <Suspense fallback={<PageLoader />}>
-            <InventoryPage />
-          </Suspense>
-        ),
-      },
-      {
-        path: "/calendar/summary",
-        element: (
-          <Suspense fallback={<PageLoader />}>
-            <CalendarSummaryPage />
-          </Suspense>
-        ),
-      },
-      {
-        path: "/calendar/schedule",
-        element: (
-          <Suspense fallback={<PageLoader />}>
-            <CalendarSchedulePage />
-          </Suspense>
-        ),
-      },
-      {
-        path: "/calendar/daily",
-        element: (
-          <Suspense fallback={<PageLoader />}>
-            <CalendarDailyPage />
-          </Suspense>
-        ),
-      },
-      {
-        path: "/calendar/heatmap",
-        element: (
-          <Suspense fallback={<PageLoader />}>
-            <CalendarHeatmapPage />
-          </Suspense>
-        ),
-      },
-      {
-        path: "/calendar/classify",
-        element: (
-          <Suspense fallback={<PageLoader />}>
-            <CalendarClassificationPage />
-          </Suspense>
-        ),
-      },
-      {
-        path: "/calendar/history",
-        element: (
-          <Suspense fallback={<PageLoader />}>
-            <CalendarSyncHistoryPage />
-          </Suspense>
-        ),
-      },
+      // Legacy Redirects (Optional but good for UX)
+      { path: "/transactions/movements", element: <Navigate to="/finanzas/movements" replace /> },
+      { path: "/transactions/balances", element: <Navigate to="/finanzas/balances" replace /> },
+      { path: "/counterparts", element: <Navigate to="/finanzas/counterparts" replace /> },
+      { path: "/transactions/participants", element: <Navigate to="/finanzas/participants" replace /> },
+      { path: "/loans", element: <Navigate to="/finanzas/loans" replace /> },
+      { path: "/employees", element: <Navigate to="/hr/employees" replace /> },
+      { path: "/timesheets", element: <Navigate to="/hr/timesheets" replace /> },
+      { path: "/supplies", element: <Navigate to="/inventory/supplies" replace /> },
     ],
   },
   { path: "*", element: <Navigate to="/" replace /> },
