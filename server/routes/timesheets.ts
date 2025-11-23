@@ -1,7 +1,7 @@
 import express from "express";
 import { z } from "zod";
 import { asyncHandler, authenticate, requireRole } from "../lib/http.js";
-import { Prisma } from "../../generated/prisma/client.js";
+import { Prisma, Employee } from "../../generated/prisma/client.js";
 import { logEvent, logWarn, requestContext } from "../lib/logger.js";
 import { listEmployees, getEmployeeById } from "../services/employees.js";
 import {
@@ -348,7 +348,7 @@ function normalizeTimesheetPayload(data: {
 
 async function buildMonthlySummary(from: string, to: string, employeeId?: number) {
   const employees = await listEmployees();
-  const employeeMap = new Map(employees.map((employee) => [employee.id, employee]));
+  const employeeMap = new Map(employees.map((employee: Employee) => [employee.id, employee]));
 
   // Use Prisma groupBy instead of MySQL
   const summaryData = await prisma.employeeTimesheet.groupBy({
