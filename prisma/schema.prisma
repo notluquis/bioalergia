@@ -4,6 +4,7 @@ generator client {
   engineType     = "client"      // Rust-free client (smaller, faster)
   runtime        = "nodejs"       // Node.js runtime
   moduleFormat   = "esm"          // ESM-only output
+  previewFeatures = ["fullTextSearch", "driverAdapters"]
 }
 
 datasource db {
