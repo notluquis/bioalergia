@@ -60,70 +60,35 @@ export const NAV_SECTIONS: NavSection[] = [
   {
     title: "Resumen",
     category: "Resumen",
-    items: [
-      { to: "/", label: "Panel", exact: true },
-      { to: "/stats", label: "Estadísticas", roles: ["GOD", "ADMIN", "ANALYST", "VIEWER"] },
-    ],
+    items: [{ to: "/", label: "Panel", exact: true }],
   },
   {
     title: "Finanzas",
     category: "Finanzas",
-    items: [
-      { to: "/transactions/movements", label: "Movimientos", roles: ["GOD", "ADMIN", "ANALYST", "VIEWER"] },
-      { to: "/transactions/balances", label: "Saldos diarios", roles: ["GOD", "ADMIN", "ANALYST", "VIEWER"] },
-      { to: "/counterparts", label: "Contrapartes", roles: ["GOD", "ADMIN", "ANALYST", "VIEWER"] },
-      { to: "/transactions/participants", label: "Participantes", roles: ["GOD", "ADMIN", "ANALYST", "VIEWER"] },
-      { to: "/loans", label: "Préstamos", roles: ["GOD", "ADMIN", "ANALYST"] },
-    ],
+    items: [{ to: "/finanzas/movements", label: "Finanzas", roles: ["GOD", "ADMIN", "ANALYST", "VIEWER"] }],
   },
   {
     title: "Servicios",
     category: "Servicios",
-    items: [
-      { to: "/services", label: "Panel", roles: ["GOD", "ADMIN", "ANALYST", "VIEWER"], exact: true },
-      { to: "/services/agenda", label: "Agenda", roles: ["GOD", "ADMIN", "ANALYST"] },
-      { to: "/services/create", label: "Crear servicio", roles: ["GOD", "ADMIN"] },
-      { to: "/services/templates", label: "Plantillas", roles: ["GOD", "ADMIN"] },
-    ],
+    items: [{ to: "/services", label: "Servicios", roles: ["GOD", "ADMIN", "ANALYST", "VIEWER"] }],
   },
   {
     title: "Calendario",
     category: "Calendario",
-    items: [
-      { to: "/calendar/summary", label: "Resumen", roles: ["GOD", "ADMIN", "ANALYST", "VIEWER"] },
-      { to: "/calendar/schedule", label: "Calendario", roles: ["GOD", "ADMIN", "ANALYST", "VIEWER"] },
-      { to: "/calendar/daily", label: "Detalle diario", roles: ["GOD", "ADMIN", "ANALYST", "VIEWER"] },
-      { to: "/calendar/heatmap", label: "Mapa de calor", roles: ["GOD", "ADMIN", "ANALYST", "VIEWER"] },
-      { to: "/calendar/classify", label: "Clasificar pendientes", roles: ["GOD", "ADMIN", "ANALYST"] },
-      { to: "/calendar/history", label: "Historial de sync", roles: ["GOD", "ADMIN", "ANALYST", "VIEWER"] },
-    ],
+    items: [{ to: "/calendar/summary", label: "Calendario", roles: ["GOD", "ADMIN", "ANALYST", "VIEWER"] }],
   },
   {
-    title: "Gestión",
+    title: "Operaciones",
     category: "Gestión",
     items: [
-      { to: "/inventory", label: "Inventario", roles: ["GOD", "ADMIN", "ANALYST"] },
-      { to: "/supplies", label: "Solicitud de Insumos", roles: ["GOD", "ADMIN", "ANALYST", "VIEWER"] },
-      { to: "/employees", label: "Trabajadores", roles: ["GOD", "ADMIN"] },
-      { to: "/timesheets", label: "Horas y pagos", roles: ["GOD", "ADMIN", "ANALYST"] },
-      { to: "/timesheets-audit", label: "Auditoría de horarios", roles: ["GOD", "ADMIN", "ANALYST"] },
+      { to: "/inventory/items", label: "Inventario", roles: ["GOD", "ADMIN", "ANALYST"] },
+      { to: "/hr/employees", label: "RRHH", roles: ["GOD", "ADMIN"] },
     ],
   },
   {
     title: "Administración",
     category: "Finanzas",
-    items: [
-      { to: "/upload", label: "Subir CSV", roles: ["GOD", "ADMIN", "ANALYST"] },
-      { to: "/settings/general", label: "Config. general", roles: ["GOD", "ADMIN"] },
-      { to: "/settings/accesos", label: "Accesos y conexiones", roles: ["GOD", "ADMIN"] },
-      { to: "/settings/inventario", label: "Config. inventario", roles: ["GOD", "ADMIN"] },
-      { to: "/settings/roles", label: "Roles y permisos", roles: ["GOD", "ADMIN"] },
-      {
-        to: "/settings/balances-diarios",
-        label: "Balance diario prestaciones",
-        roles: ["GOD", "ADMIN", "ANALYST", "VIEWER"],
-      },
-    ],
+    items: [{ to: "/settings/general", label: "Ajustes", roles: ["GOD", "ADMIN"] }],
   },
 ];
 
@@ -195,7 +160,7 @@ export default function Sidebar({ isOpen, isMobile, onClose }: SidebarProps) {
     >
       <div className="flex h-full flex-col gap-4 overflow-hidden">
         {/* User Profile Card */}
-        <div className="rounded-2xl border border-base-300/40 bg-gradient-to-br from-base-100/85 via-base-200/70 to-base-100/50 p-3 shadow-inner">
+        <div className="rounded-2xl border border-base-300/40 bg-linear-to-br from-base-100/85 via-base-200/70 to-base-100/50 p-3 shadow-inner">
           <div className="flex items-center gap-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-white/20 bg-base-100/80 shadow-sm">
               <img src="/logo_sin_eslogan.png" alt="Bioalergia" className="h-9 w-9 object-contain" loading="lazy" />
@@ -235,7 +200,7 @@ export default function Sidebar({ isOpen, isMobile, onClose }: SidebarProps) {
                   className={cn(
                     "group relative flex min-w-[140px] items-center gap-3 rounded-xl px-3 py-2 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-base-100",
                     active
-                      ? `border border-white/40 bg-gradient-to-r ${meta.accent} text-white shadow-lg shadow-primary/20`
+                      ? `border border-white/40 bg-linear-to-r ${meta.accent} text-white shadow-lg shadow-primary/20`
                       : "border border-base-300/50 bg-base-100/80 text-base-content/80 hover:border-primary/40 hover:text-primary"
                   )}
                 >
@@ -301,7 +266,7 @@ export default function Sidebar({ isOpen, isMobile, onClose }: SidebarProps) {
                       >
                         <div className="flex items-center gap-3 overflow-hidden">
                           <span
-                            className="h-2.5 w-2.5 rounded-full bg-gradient-to-br from-primary/80 via-secondary/70 to-accent/70 opacity-50 transition-opacity group-hover:opacity-100"
+                            className="h-2.5 w-2.5 rounded-full bg-linear-to-br from-primary/80 via-secondary/70 to-accent/70 opacity-50 transition-opacity group-hover:opacity-100"
                             aria-hidden="true"
                           />
                           <span className="truncate">{item.label}</span>

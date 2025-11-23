@@ -83,11 +83,11 @@ export default function Home() {
 }
 
 const QUICK_LINKS = [
-  {
-    title: "Subir movimientos",
-    description: "Carga los nuevos CSV de Mercado Pago y sincronízalos con la base.",
-    to: "/upload",
-  },
+  // {
+  //   title: "Subir movimientos",
+  //   description: "Carga los nuevos CSV de Mercado Pago y sincronízalos con la base.",
+  //   to: "/upload",
+  // },
   {
     title: "Registrar saldo",
     description: "Actualiza saldos diarios con conciliaciones manuales.",
@@ -98,11 +98,11 @@ const QUICK_LINKS = [
     description: "Filtra y audita los movimientos guardados con el saldo calculado.",
     to: "/transactions/movements",
   },
-  {
-    title: "Panel de estadísticas",
-    description: "Explora tendencias, proporciones y retiros destacados.",
-    to: "/stats",
-  },
+  // {
+  //   title: "Panel de estadísticas",
+  //   description: "Explora tendencias, proporciones y retiros destacados.",
+  //   to: "/stats",
+  // },
   {
     title: "Participantes",
     description: "Consulta retiros y aportes por contraparte.",
