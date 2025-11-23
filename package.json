@@ -14,6 +14,8 @@
     "predev:full": "node scripts/reset-dev.mjs",
     "dev:full": "concurrently \"npm run dev:client\" \"npm run server\"",
     "start": "node dist/server/index.js",
+    "prisma:generate": "prisma generate",
+    "postinstall": "npm run prisma:generate",
     "build:prod": "rm -rf dist && npm run prisma:generate && npm run build:server && npm run copy:generated && npm run build:client",
     "copy:generated": "mkdir -p dist/generated && cp -R generated/prisma dist/generated/prisma",
     "deploy": "npm run build:prod && npm prune --omit=dev",
