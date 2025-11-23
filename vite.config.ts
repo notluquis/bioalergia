@@ -64,7 +64,7 @@ export default defineConfig({
           // Vendor chunks
           "react-vendor": ["react", "react-dom", "react-router-dom"],
           "ui-vendor": ["lucide-react"],
-          "data-vendor": ["dayjs", "zod", "papaparse"],
+          "data-vendor": ["dayjs", "zod"],
           "pdf-vendor": ["jspdf", "html2canvas"],
         },
       },

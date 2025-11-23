@@ -2,8 +2,8 @@ import express from "express";
 import multer from "multer";
 import { asyncHandler, authenticate, requireRole } from "../lib/http.js";
 import { logEvent, logWarn, requestContext } from "../lib/logger.js";
-import { DEFAULT_SETTINGS, loadSettings, saveSettings, type AppSettings } from "../db.js";
-import { getInternalConfig, setInternalConfig } from "../db.js";
+import { loadSettings, saveSettings, getInternalConfig, setInternalConfig } from "../services/settings.js";
+import { DEFAULT_SETTINGS, type AppSettings } from "../lib/settings.js";
 import type { AuthenticatedRequest } from "../types.js";
 import { settingsSchema } from "../schemas.js";
 import {
@@ -62,7 +62,10 @@ export function registerSettingsRoutes(app: express.Express) {
       // Expose both DB value and effective value (env var overrides DB). Do not expose other secrets.
       const envVal = process.env.BIOALERGIA_X_UPSERT_CHUNK_SIZE ?? null;
       const effective = envVal ?? upsertChunk ?? null;
-      res.json({ status: "ok", internal: { upsertChunkSize: upsertChunk, envUpsertChunkSize: envVal, effectiveUpsertChunkSize: effective } });
+      res.json({
+        status: "ok",
+        internal: { upsertChunkSize: upsertChunk, envUpsertChunkSize: envVal, effectiveUpsertChunkSize: effective },
+      });
     })
   );
 

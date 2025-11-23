@@ -1,14 +1,11 @@
 import express from "express";
 import bcrypt from "bcryptjs";
-import {
-  asyncHandler,
-  authenticate,
-  issueToken,
-  sanitizeUser,
-} from "../lib/http.js";
+import { asyncHandler, authenticate, issueToken, sanitizeUser } from "../lib/http.js";
 import { logEvent, logWarn, requestContext } from "../lib/logger.js";
 import { sessionCookieName, sessionCookieOptions } from "../config.js";
-import { findUserByEmail, findUserById, findEmployeeByEmail, listRoleMappings } from "../db.js";
+import { findUserByEmail, findUserById } from "../services/users.js";
+import { findEmployeeByEmail } from "../services/employees.js";
+import { listRoleMappings } from "../services/roles.js";
 import type { AuthenticatedRequest } from "../types.js";
 import { loginSchema } from "../schemas.js";
 
@@ -33,7 +30,7 @@ export function registerAuthRoutes(app: express.Express) {
         return res.status(401).json({ status: "error", message: "El correo o la contraseña no son correctos" });
       }
 
-      const valid = await bcrypt.compare(password, user.password_hash);
+      const valid = await bcrypt.compare(password, user.passwordHash);
       if (!valid) {
         logWarn("auth/login:bad-password", requestContext(req, { email }));
         return res.status(401).json({ status: "error", message: "El correo o la contraseña no son correctos" });
@@ -42,7 +39,7 @@ export function registerAuthRoutes(app: express.Express) {
       // --- Role Governance Logic ---
       const employee = await findEmployeeByEmail(user.email);
       const mappings = await listRoleMappings();
-      const mapping = employee ? mappings.find(m => m.employee_role === employee.role) : undefined;
+      const mapping = employee ? mappings.find((m) => m.employee_role === employee.role) : undefined;
       const effectiveRole = mapping ? mapping.app_role : user.role;
       // --- End Role Governance Logic ---
 
@@ -85,9 +82,9 @@ export function registerAuthRoutes(app: express.Express) {
       // --- Role Governance Logic ---
       const employee = await findEmployeeByEmail(user.email);
       const mappings = await listRoleMappings();
-      const mapping = employee ? mappings.find(m => m.employee_role === employee.role) : undefined;
+      const mapping = employee ? mappings.find((m) => m.employee_role === employee.role) : undefined;
       const effectiveRole = mapping ? mapping.app_role : user.role;
-      
+
       const finalUser = { ...sanitizeUser(user), role: effectiveRole };
       // --- End Role Governance Logic ---
 

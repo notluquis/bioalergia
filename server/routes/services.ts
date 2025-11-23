@@ -1,9 +1,6 @@
 import express from "express";
-import {
-  asyncHandler,
-  authenticate,
-  requireRole,
-} from "../lib/http.js";
+import { asyncHandler, authenticate, requireRole } from "../lib/http.js";
+import type { Prisma } from "../../generated/prisma/client.js";
 import { logEvent, logWarn, requestContext } from "../lib/logger.js";
 import {
   createService,
@@ -13,13 +10,53 @@ import {
   regenerateServiceSchedule,
   unlinkServicePayment,
   updateService,
-} from "../db.js";
+} from "../services/services.js";
 import type { AuthenticatedRequest } from "../types.js";
-import {
-  serviceCreateSchema,
-  servicePaymentSchema,
-  serviceRegenerateSchema,
-} from "../schemas.js";
+import { serviceCreateSchema, servicePaymentSchema, serviceRegenerateSchema } from "../schemas.js";
+
+function mapService(s: Prisma.ServiceGetPayload<{ include: { schedules: true } }>) {
+  return {
+    id: s.id,
+    public_id: s.publicId,
+    name: s.name,
+    detail: s.detail,
+    category: s.category,
+    service_type: s.serviceType,
+    ownership: s.ownership,
+    obligation_type: s.obligationType,
+    recurrence_type: s.recurrenceType,
+    frequency: s.frequency,
+    default_amount: s.defaultAmount,
+    amount_indexation: s.amountIndexation,
+    counterpart_id: s.counterpartId,
+    counterpart_account_id: s.counterpartAccountId,
+    account_reference: s.accountReference,
+    emission_day: s.emissionDay,
+    emission_mode: s.emissionMode,
+    emission_start_day: s.emissionStartDay,
+    emission_end_day: s.emissionEndDay,
+    emission_exact_date: s.emissionExactDate,
+    due_day: s.dueDay,
+    start_date: s.startDate,
+    next_generation_months: s.nextGenerationMonths,
+    late_fee_mode: s.lateFeeMode,
+    late_fee_value: s.lateFeeValue,
+    late_fee_grace_days: s.lateFeeGraceDays,
+    notes: s.notes,
+    status: s.status,
+    created_at: s.createdAt,
+    updated_at: s.updatedAt,
+    // Extra fields from summary/detail
+    counterpart_name: s.counterpartName,
+    counterpart_account_identifier: s.counterpartAccountIdentifier,
+    counterpart_account_bank_name: s.counterpartAccountBankName,
+    counterpart_account_type: s.counterpartAccountType,
+    total_expected: s.total_expected,
+    total_paid: s.total_paid,
+    pending_count: s.pending_count,
+    overdue_count: s.overdue_count,
+  };
+}
 
 export function registerServiceRoutes(app: express.Express) {
   const router = express.Router();
@@ -29,7 +66,13 @@ export function registerServiceRoutes(app: express.Express) {
     authenticate,
     asyncHandler(async (_req: AuthenticatedRequest, res) => {
       const services = await listServicesWithSummary();
-      res.json({ status: "ok", services });
+      res.json({
+        status: "ok",
+        services: services.map((s) => ({
+          ...mapService(s),
+          summary: s.summary,
+        })),
+      });
     })
   );
 
@@ -60,15 +103,15 @@ export function registerServiceRoutes(app: express.Express) {
         emissionEndDay: parsed.emissionEndDay ?? null,
         emissionExactDate: parsed.emissionExactDate ?? null,
         dueDay: parsed.dueDay ?? null,
-        startDate: parsed.startDate,
-        monthsToGenerate: parsed.monthsToGenerate ?? 12,
+        startDate: new Date(parsed.startDate),
+        nextGenerationMonths: parsed.monthsToGenerate ?? 12,
         lateFeeMode: parsed.lateFeeMode,
         lateFeeValue: parsed.lateFeeValue ?? null,
         lateFeeGraceDays: parsed.lateFeeGraceDays ?? null,
         notes: parsed.notes ?? null,
       });
 
-      await regenerateServiceSchedule(service.public_id, {
+      await regenerateServiceSchedule(service.publicId, {
         months: parsed.monthsToGenerate ?? 12,
         startDate: parsed.startDate,
         defaultAmount: parsed.defaultAmount,
@@ -77,8 +120,13 @@ export function registerServiceRoutes(app: express.Express) {
         emissionDay: parsed.emissionDay ?? null,
       });
 
-      const detail = await getServiceDetail(service.public_id);
-      res.json({ status: "ok", ...(detail ?? { service, schedules: [] }) });
+      const detail = await getServiceDetail(service.publicId);
+      // detail.service has summary merged
+      res.json({
+        status: "ok",
+        service: detail ? mapService(detail.service) : mapService(service),
+        schedules: detail?.schedules ?? [],
+      });
     })
   );
 
@@ -93,9 +141,13 @@ export function registerServiceRoutes(app: express.Express) {
       const service = await updateService(id, parsed);
       const detail = await getServiceDetail(id);
       if (!detail) {
-        return res.json({ status: "ok", service, schedules: [] });
+        return res.json({ status: "ok", service: mapService(service), schedules: [] });
       }
-      res.json({ status: "ok", ...detail });
+      res.json({
+        status: "ok",
+        service: mapService(detail.service),
+        schedules: detail.schedules,
+      });
     })
   );
 
@@ -108,7 +160,11 @@ export function registerServiceRoutes(app: express.Express) {
       if (!detail) {
         return res.status(404).json({ status: "error", message: "Servicio no encontrado" });
       }
-      res.json({ status: "ok", ...detail });
+      res.json({
+        status: "ok",
+        service: mapService(detail.service),
+        schedules: detail.schedules,
+      });
     })
   );
 
@@ -132,7 +188,11 @@ export function registerServiceRoutes(app: express.Express) {
       if (!detail) {
         return res.status(404).json({ status: "error", message: "Servicio no encontrado" });
       }
-      res.json({ status: "ok", ...detail });
+      res.json({
+        status: "ok",
+        service: mapService(detail.service),
+        schedules: detail.schedules,
+      });
     })
   );
 

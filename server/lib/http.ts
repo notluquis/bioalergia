@@ -1,7 +1,6 @@
 import type express from "express";
 import jwt from "jsonwebtoken";
-import type { UserRole } from "../db.js";
-import { isRoleAtLeast } from "../db.js";
+import { UserRole } from "../../generated/prisma/enums.js";
 import { JWT_SECRET, sessionCookieName, sessionCookieOptions } from "../config.js";
 import type { AuthenticatedRequest, AuthSession } from "../types.js";
 import { getRequestLogger } from "./logger.js";
@@ -18,6 +17,12 @@ export function asyncHandler(handler: AsyncHandler) {
   };
 }
 
+export function isRoleAtLeast(role: UserRole, expected: UserRole[]): boolean {
+  if (role === "GOD") return true;
+  if (expected.includes(role)) return true;
+  return false;
+}
+
 export function issueToken(session: AuthSession) {
   return jwt.sign(
     {
@@ -32,20 +37,15 @@ export function issueToken(session: AuthSession) {
   );
 }
 
-export function sanitizeUser(user: { id: number; email: string; role: UserRole; name: string | null }) {
+export function sanitizeUser(user: { id: number; email: string; role: UserRole }) {
   return {
     id: user.id,
     email: user.email,
     role: user.role,
-    name: user.name,
   };
 }
 
-export function authenticate(
-  req: AuthenticatedRequest,
-  res: express.Response,
-  next: express.NextFunction
-) {
+export function authenticate(req: AuthenticatedRequest, res: express.Response, next: express.NextFunction) {
   const requestLogger = getRequestLogger(req);
   requestLogger.info({ event: "auth:authenticate", url: req.originalUrl });
   const token = req.cookies?.[sessionCookieName];

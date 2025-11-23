@@ -17,7 +17,7 @@ import {
   listCalendarSyncLogs,
   listUnclassifiedCalendarEvents,
   updateCalendarEventClassification,
-} from "../db.js";
+} from "../services/calendar.js";
 import { googleCalendarConfig } from "../config.js";
 import { z } from "zod";
 
@@ -205,7 +205,7 @@ export function registerCalendarEventRoutes(app: express.Express) {
         ];
         await finalizeCalendarSyncLogEntry(logId, {
           status: "SUCCESS",
-          fetchedAt: result.payload.fetchedAt,
+          fetchedAt: new Date(result.payload.fetchedAt),
           inserted: result.upsertResult.inserted,
           updated: result.upsertResult.updated,
           skipped: result.upsertResult.skipped,
@@ -244,18 +244,18 @@ export function registerCalendarEventRoutes(app: express.Express) {
         status: "ok",
         logs: logs.map((log) => ({
           id: Number(log.id),
-          triggerSource: String(log.trigger_source),
-          triggerUserId: log.trigger_user_id != null ? Number(log.trigger_user_id) : null,
-          triggerLabel: log.trigger_label ? String(log.trigger_label) : null,
+          triggerSource: log.triggerSource,
+          triggerUserId: log.triggerUserId != null ? Number(log.triggerUserId) : null,
+          triggerLabel: log.triggerLabel ?? null,
           status: log.status,
-          startedAt: log.started_at,
-          finishedAt: log.finished_at,
-          fetchedAt: log.fetched_at,
+          startedAt: log.startedAt,
+          finishedAt: log.finishedAt,
+          fetchedAt: log.fetchedAt,
           inserted: Number(log.inserted ?? 0),
           updated: Number(log.updated ?? 0),
           skipped: Number(log.skipped ?? 0),
           excluded: Number(log.excluded ?? 0),
-          errorMessage: log.error_message ? String(log.error_message) : null,
+          errorMessage: log.errorMessage ?? null,
         })),
       });
     })
@@ -273,22 +273,22 @@ export function registerCalendarEventRoutes(app: express.Express) {
       res.json({
         status: "ok",
         events: rows.map((row) => ({
-          calendarId: String(row.calendar_id),
-          eventId: String(row.event_id),
-          status: row.event_status ? String(row.event_status) : null,
-          eventType: row.event_type ? String(row.event_type) : null,
-          summary: row.summary != null ? String(row.summary) : null,
-          description: row.description != null ? String(row.description) : null,
-          startDate: row.start_date != null ? String(row.start_date) : null,
-          startDateTime: row.start_date_time != null ? String(row.start_date_time) : null,
-          endDate: row.end_date != null ? String(row.end_date) : null,
-          endDateTime: row.end_date_time != null ? String(row.end_date_time) : null,
-          category: row.category != null && row.category !== "" ? String(row.category) : null,
-          amountExpected: row.amount_expected != null ? Number(row.amount_expected) : null,
-          amountPaid: row.amount_paid != null ? Number(row.amount_paid) : null,
-          attended: row.attended == null ? null : row.attended === 1,
-          dosage: row.dosage != null ? String(row.dosage) : null,
-          treatmentStage: row.treatment_stage != null ? String(row.treatment_stage) : null,
+          calendarId: row.calendar.googleId,
+          eventId: row.externalEventId,
+          status: row.eventStatus ?? null,
+          eventType: row.eventType ?? null,
+          summary: row.summary ?? null,
+          description: row.description ?? null,
+          startDate: row.startDate ? row.startDate.toISOString() : null,
+          startDateTime: row.startDateTime ? row.startDateTime.toISOString() : null,
+          endDate: row.endDate ? row.endDate.toISOString() : null,
+          endDateTime: row.endDateTime ? row.endDateTime.toISOString() : null,
+          category: row.category ?? null,
+          amountExpected: row.amountExpected ?? null,
+          amountPaid: row.amountPaid ?? null,
+          attended: row.attended ?? null,
+          dosage: row.dosage ?? null,
+          treatmentStage: row.treatmentStage ?? null,
         })),
       });
     })

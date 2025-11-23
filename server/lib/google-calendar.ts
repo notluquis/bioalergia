@@ -7,7 +7,7 @@ import dayjs from "dayjs";
 import { googleCalendarConfig, compileExcludePatterns } from "../config.js";
 import { logEvent, logWarn } from "./logger.js";
 import { upsertGoogleCalendarEvents, removeGoogleCalendarEvents } from "./google-calendar-store.js";
-import { loadSettings } from "../db.js";
+import { loadSettings } from "../services/settings.js";
 import { parseCalendarMetadata } from "../modules/calendar/parsers.js";
 
 const CALENDAR_SCOPES = ["https://www.googleapis.com/auth/calendar.readonly"];

@@ -1,28 +1,9 @@
 import express from "express";
-import type { RowDataPacket } from "mysql2";
-import {
-  asyncHandler,
-  authenticate,
-  requireRole,
-} from "../lib/http.js";
+import { asyncHandler, authenticate, requireRole } from "../lib/http.js";
 import { logEvent, requestContext } from "../lib/logger.js";
-import {
-  listDailyBalances,
-  getPreviousDailyBalance,
-  upsertDailyBalance,
-} from "../db.js";
-import { getPool } from "../db.js";
-import {
-  EFFECTIVE_TIMESTAMP_EXPR,
-} from "../lib/transactions.js";
-import {
-  coerceDateOnly,
-  formatDateOnly,
-  iterateDateRange,
-  normalizeDate,
-  normalizeTimestamp,
-  parseDateOnly,
-} from "../lib/time.js";
+import { listDailyBalances, getPreviousDailyBalance, upsertDailyBalance } from "../services/balances.js";
+import { listTransactions } from "../services/transactions.js";
+import { coerceDateOnly, formatDateOnly, iterateDateRange, normalizeDate, parseDateOnly } from "../lib/time.js";
 import { addCurrency, roundCurrency } from "../../shared/currency.js";
 import { isCashbackCandidate } from "../../shared/cashback.js";
 import { balancesQuerySchema, balanceUpsertSchema } from "../schemas.js";
@@ -78,31 +59,26 @@ export function registerBalanceRoutes(app: express.Express) {
         return res.status(400).json({ status: "error", message: "No se pudieron interpretar las fechas" });
       }
 
-      const [balances, previous] = await Promise.all([
+      const [balances, previous, transactions] = await Promise.all([
         listDailyBalances({ from: fromDate, to: toDate }),
         getPreviousDailyBalance(fromDate),
+        listTransactions({
+          from: fromStart,
+          to: toEnd,
+          limit: 10000, // Sufficient for typical date ranges
+        }),
       ]);
-
-      const pool = getPool();
-      const [movementRows] = await pool.query<RowDataPacket[]>(
-        `SELECT id, timestamp, timestamp_raw, direction, amount, description, origin, destination
-          FROM mp_transactions
-          WHERE ${EFFECTIVE_TIMESTAMP_EXPR} >= ? AND ${EFFECTIVE_TIMESTAMP_EXPR} <= ?
-          ORDER BY ${EFFECTIVE_TIMESTAMP_EXPR} ASC`,
-        [fromStart, toEnd]
-      );
 
       const changeByDate = new Map<
         string,
         { totalIn: number; totalOut: number; netChange: number; hasCashback: boolean }
       >();
 
-      for (const row of movementRows) {
-        const timestamp = normalizeTimestamp(row.timestamp as string | Date | null, row.timestamp_raw as string | null);
-        if (!timestamp) continue;
+      for (const tx of transactions) {
+        const timestamp = tx.timestamp;
         const dateKey = timestamp.slice(0, 10);
-        const amount = row.amount != null ? Number(row.amount) : 0;
-        const direction = row.direction as "IN" | "OUT" | "NEUTRO";
+        const amount = Number(tx.amount);
+        const direction = tx.direction;
 
         let entry = changeByDate.get(dateKey);
         if (!entry) {
@@ -117,9 +93,9 @@ export function registerBalanceRoutes(app: express.Express) {
         if (
           isCashbackCandidate({
             direction,
-            description: row.description as string | null,
-            origin: row.origin as string | null,
-            destination: row.destination as string | null,
+            description: tx.description,
+            origin: tx.origin,
+            destination: tx.destination,
           })
         ) {
           entry.hasCashback = true;
@@ -170,11 +146,14 @@ export function registerBalanceRoutes(app: express.Express) {
         }
       }
 
-      logEvent("balances/list", requestContext(req, {
-        from: fromDate,
-        to: toDate,
-        days: summaries.length,
-      }));
+      logEvent(
+        "balances/list",
+        requestContext(req, {
+          from: fromDate,
+          to: toDate,
+          days: summaries.length,
+        })
+      );
 
       res.json({
         status: "ok",
@@ -202,11 +181,14 @@ export function registerBalanceRoutes(app: express.Express) {
 
       await upsertDailyBalance({ date, balance, note });
 
-      logEvent("balances/upsert", requestContext(req, {
-        date,
-        balance,
-        note,
-      }));
+      logEvent(
+        "balances/upsert",
+        requestContext(req, {
+          date,
+          balance,
+          note,
+        })
+      );
 
       const [updated] = await listDailyBalances({ from: date, to: date });
 

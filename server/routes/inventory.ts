@@ -9,7 +9,7 @@ import {
   deleteInventoryItem,
   createInventoryMovement,
   listAllergyInventoryOverview,
-} from "../repositories/inventory.js";
+} from "../services/inventory.js";
 import {
   inventoryCategorySchema,
   inventoryItemSchema,
@@ -25,7 +25,14 @@ export function registerInventoryRoutes(app: express.Express) {
     "/categories",
     asyncHandler(async (_req, res) => {
       const categories = await listInventoryCategories();
-      res.json({ status: "ok", data: categories });
+      res.json({
+        status: "ok",
+        data: categories.map((c) => ({
+          id: c.id,
+          name: c.name,
+          created_at: c.createdAt.toISOString(),
+        })),
+      });
     })
   );
 
@@ -37,7 +44,14 @@ export function registerInventoryRoutes(app: express.Express) {
         return res.status(400).json({ status: "error", message: "Invalid data", issues: parsed.error.issues });
       }
       const category = await createInventoryCategory(parsed.data.name);
-      res.status(201).json({ status: "ok", data: category });
+      res.status(201).json({
+        status: "ok",
+        data: {
+          id: category.id,
+          name: category.name,
+          created_at: category.createdAt.toISOString(),
+        },
+      });
     })
   );
 
@@ -46,7 +60,19 @@ export function registerInventoryRoutes(app: express.Express) {
     "/items",
     asyncHandler(async (_req, res) => {
       const items = await listInventoryItems();
-      res.json({ status: "ok", data: items });
+      res.json({
+        status: "ok",
+        data: items.map((i) => ({
+          id: i.id,
+          category_id: i.categoryId,
+          name: i.name,
+          description: i.description,
+          current_stock: i.currentStock,
+          created_at: i.createdAt.toISOString(),
+          updated_at: i.updatedAt.toISOString(),
+          category_name: i.category_name,
+        })),
+      });
     })
   );
 
@@ -58,8 +84,25 @@ export function registerInventoryRoutes(app: express.Express) {
         return res.status(400).json({ status: "error", message: "Invalid data", issues: parsed.error.issues });
       }
       const data = parsed.data;
-      const item = await createInventoryItem({ ...data, description: data.description ?? null });
-      res.status(201).json({ status: "ok", data: item });
+      const item = await createInventoryItem({
+        name: data.name,
+        description: data.description ?? null,
+        currentStock: data.current_stock,
+        category: data.category_id ? { connect: { id: data.category_id } } : undefined,
+      });
+      res.status(201).json({
+        status: "ok",
+        data: {
+          id: item.id,
+          category_id: item.categoryId,
+          name: item.name,
+          description: item.description,
+          current_stock: item.currentStock,
+          created_at: item.createdAt.toISOString(),
+          updated_at: item.updatedAt.toISOString(),
+          category_name: item.category?.name,
+        },
+      });
     })
   );
 
@@ -71,8 +114,31 @@ export function registerInventoryRoutes(app: express.Express) {
       if (!parsed.success) {
         return res.status(400).json({ status: "error", message: "Invalid data", issues: parsed.error.issues });
       }
-      const item = await updateInventoryItem(id, parsed.data);
-      res.json({ status: "ok", data: item });
+      const data = parsed.data;
+      const item = await updateInventoryItem(id, {
+        name: data.name,
+        description: data.description,
+        currentStock: data.current_stock,
+        category:
+          data.category_id !== undefined
+            ? data.category_id
+              ? { connect: { id: data.category_id } }
+              : { disconnect: true }
+            : undefined,
+      });
+      res.json({
+        status: "ok",
+        data: {
+          id: item.id,
+          category_id: item.categoryId,
+          name: item.name,
+          description: item.description,
+          current_stock: item.currentStock,
+          created_at: item.createdAt.toISOString(),
+          updated_at: item.updatedAt.toISOString(),
+          category_name: item.category?.name,
+        },
+      });
     })
   );
 
@@ -93,7 +159,11 @@ export function registerInventoryRoutes(app: express.Express) {
       if (!parsed.success) {
         return res.status(400).json({ status: "error", message: "Invalid data", issues: parsed.error.issues });
       }
-      await createInventoryMovement(parsed.data);
+      await createInventoryMovement({
+        itemId: parsed.data.item_id,
+        quantityChange: parsed.data.quantity_change,
+        reason: parsed.data.reason,
+      });
       res.status(201).json({ status: "ok" });
     })
   );

@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { fetchEmployees, type Employee } from "../../employees/api";
 import { getRoleMappings, saveRoleMapping } from "../api";
-import type { RoleMapping, UserRole } from "../../../../server/db";
+import type { RoleMapping } from "../api";
+import type { UserRole } from "../../../../server/types";
 import Button from "../../../components/ui/Button";
 
 type ExtendedRoleMapping = RoleMapping & { isNew?: boolean; isModified?: boolean };

@@ -6,7 +6,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 import { PORT } from "./config.js";
-import { ensureDatabaseConnection, getPool } from "./db.js";
+import { prisma } from "./prisma.js";
 import { logger, bindRequestLogger, getRequestLogger } from "./lib/logger.js";
 import { registerAuthRoutes } from "./routes/auth.js";
 import { registerSettingsRoutes } from "./routes/settings.js";
@@ -72,13 +72,9 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 });
 
 app.use("/api", async (_req: Request, res: Response, next: NextFunction) => {
-  try {
-    await ensureDatabaseConnection();
-    next();
-  } catch (error) {
-    getRequestLogger(_req).error({ error }, "Database unavailable");
-    res.status(503).json({ status: "error", message: "Base de datos no disponible en este momento" });
-  }
+  // Prisma handles connection management automatically.
+  // We can add a simple check if needed, but usually it's not required per request.
+  next();
 });
 
 registerAuthRoutes(app);
@@ -105,8 +101,7 @@ app.get("/api/health", async (_req: Request, res: Response) => {
   const checks: HealthChecks = { db: { status: "ok", latency: null } };
   try {
     const start = Date.now();
-    const pool = getPool();
-    await pool.execute("SELECT 1");
+    await prisma.$queryRaw`SELECT 1`;
     checks.db.latency = Date.now() - start;
   } catch (error) {
     checks.db.status = "error";

@@ -1,6 +1,6 @@
 # 🏦 Finanzas App
 
-React + Vite + TypeScript + **Tailwind v4**. Sistema completo de gestión financiera para Bioalergia con Express + MySQL backend, autenticación con roles y panel moderno tematizable.
+React + Vite + TypeScript + **Tailwind v4**. Sistema completo de gestión financiera para Bioalergia con Express + **PostgreSQL** backend, autenticación con roles y panel moderno tematizable.
 
 ## 🚀 Scripts de Desarrollo
 
@@ -59,25 +59,37 @@ npx lint-staged
 - El flujo manual (`/report`) permite fijar el saldo inicial y revisar la tabla consolidada con columnas Fecha / Descripción / Desde / Hacia / Tipo / Monto / Saldo cuenta.
 - Los colores, logo, correos y metadatos de referencia se guardan en la tabla `settings` y se gestionan desde la página **Configuración** (`/settings`).
 
-## Backend (Express + MySQL)
+## Backend (Express + PostgreSQL + Prisma)
 
-- Variables de entorno en `.env` (ver `.env.example`): `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `PORT`, `JWT_SECRET`, `ADMIN_EMAIL` y `ADMIN_PASSWORD`.
+- **Base de datos**: PostgreSQL con **Prisma ORM 7.0**
+  - Rust-free client (90% bundle más pequeño, 3x más rápido)
+  - ESM-first, completamente tipado
+  - Configuración en `prisma.config.ts` y schema en `prisma/schema.prisma`
+- **Variables de entorno** en `.env` (ver `.env.example`):
+  - `DATABASE_URL` → Conexión PostgreSQL
+  - `PORT`, `JWT_SECRET` → API y autenticación
+  - `ADMIN_EMAIL`, `ADMIN_PASSWORD` → Usuario GOD inicial
 - En el primer arranque, si la tabla `users` está vacía y `ADMIN_EMAIL`/`ADMIN_PASSWORD` están definidos, se crea automáticamente un usuario con rol **GOD**.
+- **Comandos Prisma**:
+  - `npx prisma generate` → Regenerar cliente
+  - `npx prisma migrate dev` → Crear/aplicar migraciones
+  - `npx prisma studio` → Explorador visual de datos
 - Ejecuta `npm run server` para levantar la API (por defecto en `http://localhost:4000`).
 - Ejecuta `npm run dev` para levantar el front; `/api` se proxyea automáticamente al servidor Express.
 - **Logging**: Los logs se formatean automáticamente en desarrollo con colores y timestamps legibles usando `pino-pretty`. En producción se mantiene formato JSON estructurado.
 - Endpoints principales:
   - `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me` → manejo de sesión vía cookie HTTP-only.
   - `GET /api/settings`, `PUT /api/settings` → lectura y actualización de la configuración de marca (requiere rol `ADMIN` o `GOD`).
-  - `POST /api/transactions/upload` → recibe un CSV, lo parsea y lo inserta en la tabla `mp_transactions` (se crea automáticamente si no existe).
   - `GET /api/transactions` → devuelve los movimientos guardados (ordenados por fecha).
-- Para compilar el backend ejecuta `npm run build:server`; la salida queda en `dist/server` y se puede iniciar con `npm run start:server`.
+  - `GET /api/employees`, `POST /api/employees` → gestión de empleados.
+  - `GET /api/supplies`, `POST /api/supplies` → gestión de insumos.
+  - Y más endpoints para servicios, préstamos, contrapartes, balances, timesheets, etc.
+- Para compilar el backend ejecuta `npm run build:server`; la salida queda en `dist/server` y se puede iniciar con `npm run start`.
 
 ## Vistas
 
 - `/` → Resumen y accesos rápidos.
-- `/report` → Vista local para analizar CSV sin cargarlo a la base.
-- `/upload` → Subir CSV a la base de datos.
-- `/data` → Consultar los movimientos almacenados en MySQL con saldo acumulado configurable.
+- `/data` → Consultar los movimientos almacenados con saldo acumulado configurable.
 - `/settings` → Editar branding (colores, logo, tagline), datos de contacto y referencias de la base.
 - `/login` → Acceso con correo corporativo y contraseña; los roles controlan qué secciones están visibles (por ahora: `VIEWER`, `ANALYST`, `ADMIN`, `GOD`).
+- Otras vistas: `/employees`, `/services`, `/loans`, `/counterparts`, `/supplies`, `/timesheets`, `/balances`, `/calendar`, etc.

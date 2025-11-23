@@ -6,14 +6,21 @@ import {
   getCounterpartById,
   createCounterpart,
   updateCounterpart,
-} from "../repositories/counterparts.js";
-import {
   upsertCounterpartAccount,
   updateCounterpartAccount,
   listAccountSuggestions,
   counterpartSummary,
   assignAccountsToCounterpartByRut,
-} from "../db.js";
+} from "../services/counterparts.js";
+import { Prisma } from "../../generated/prisma/client.js";
+import { CounterpartPersonType, CounterpartCategory } from "../../generated/prisma/enums.js";
+
+type CounterpartWithAccounts = Prisma.CounterpartGetPayload<{
+  include: { accounts: true };
+}>;
+
+type CounterpartAccountType = Prisma.CounterpartAccountGetPayload<{}>;
+
 import {
   counterpartPayloadSchema,
   counterpartAccountPayloadSchema,
@@ -22,6 +29,36 @@ import {
 } from "../schemas.js";
 import type { AuthenticatedRequest } from "../types.js";
 
+function mapCounterpart(c: CounterpartWithAccounts) {
+  return {
+    id: c.id,
+    rut: c.rut,
+    name: c.name,
+    person_type: c.personType,
+    category: c.category,
+    email: c.email,
+    employee_id: c.employeeId,
+    notes: c.notes,
+    created_at: c.createdAt,
+    updated_at: c.updatedAt,
+  };
+}
+
+function mapCounterpartAccount(a: CounterpartAccountType) {
+  return {
+    id: a.id,
+    counterpart_id: a.counterpartId,
+    account_identifier: a.accountIdentifier,
+    bank_name: a.bankName,
+    account_type: a.accountType,
+    holder: a.holder,
+    concept: a.concept,
+    metadata: a.metadata,
+    created_at: a.createdAt,
+    updated_at: a.updatedAt,
+  };
+}
+
 export function registerCounterpartRoutes(app: express.Express) {
   app.get(
     "/api/counterparts",
@@ -29,7 +66,13 @@ export function registerCounterpartRoutes(app: express.Express) {
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       logEvent("counterparts:list", requestContext(req));
       const counterparts = await listCounterparts();
-      res.json({ status: "ok", counterparts });
+      res.json({
+        status: "ok",
+        counterparts: counterparts.map((c) => ({
+          ...mapCounterpart(c),
+          accounts: c.accounts ? c.accounts.map(mapCounterpartAccount) : [],
+        })),
+      });
     })
   );
 
@@ -45,19 +88,23 @@ export function registerCounterpartRoutes(app: express.Express) {
           .json({ status: "error", message: "Los datos no son válidos", issues: parsed.error.issues });
       }
       const payload = parsed.data;
-      const id = await createCounterpart({
+      const counterpart = await createCounterpart({
         rut: payload.rut,
         name: payload.name,
-        personType: payload.personType ?? "OTHER",
-        category: payload.category ?? "SUPPLIER",
+        personType: (payload.personType ?? "OTHER") as CounterpartPersonType,
+        category: (payload.category ?? "SUPPLIER") as CounterpartCategory,
         email: payload.email ?? null,
-        employeeEmail: payload.employeeEmail ?? payload.email ?? null,
         employeeId: payload.employeeId ?? null,
         notes: payload.notes ?? null,
       });
+      const id = counterpart.id;
       const detail = await getCounterpartById(id);
       logEvent("counterparts:create", requestContext(req, { id }));
-      res.status(201).json({ status: "ok", counterpart: detail?.counterpart, accounts: detail?.accounts ?? [] });
+      res.status(201).json({
+        status: "ok",
+        counterpart: detail ? mapCounterpart(detail.counterpart) : mapCounterpart(counterpart),
+        accounts: detail?.accounts ? detail.accounts.map(mapCounterpartAccount) : [],
+      });
     })
   );
 
@@ -79,10 +126,9 @@ export function registerCounterpartRoutes(app: express.Express) {
       await updateCounterpart(counterpartId, {
         rut: parsed.data.rut,
         name: parsed.data.name,
-        personType: parsed.data.personType,
-        category: parsed.data.category,
+        personType: parsed.data.personType as CounterpartPersonType,
+        category: parsed.data.category as CounterpartCategory,
         email: parsed.data.email,
-        employeeEmail: parsed.data.employeeEmail ?? parsed.data.email,
         employeeId: parsed.data.employeeId ?? null,
         notes: parsed.data.notes,
       });
@@ -91,7 +137,11 @@ export function registerCounterpartRoutes(app: express.Express) {
         return res.status(404).json({ status: "error", message: "No se ha encontrado la contraparte" });
       }
       logEvent("counterparts:update", requestContext(req, { id: counterpartId }));
-      res.json({ status: "ok", counterpart: detail.counterpart, accounts: detail.accounts });
+      res.json({
+        status: "ok",
+        counterpart: mapCounterpart(detail.counterpart),
+        accounts: detail.accounts.map(mapCounterpartAccount),
+      });
     })
   );
 
@@ -107,7 +157,11 @@ export function registerCounterpartRoutes(app: express.Express) {
       if (!detail) {
         return res.status(404).json({ status: "error", message: "No se ha encontrado la contraparte" });
       }
-      res.json({ status: "ok", counterpart: detail.counterpart, accounts: detail.accounts });
+      res.json({
+        status: "ok",
+        counterpart: mapCounterpart(detail.counterpart),
+        accounts: detail.accounts.map(mapCounterpartAccount),
+      });
     })
   );
 
@@ -126,10 +180,16 @@ export function registerCounterpartRoutes(app: express.Express) {
           .status(400)
           .json({ status: "error", message: "Los datos no son válidos", issues: parsed.error.issues });
       }
-      const accountId = await upsertCounterpartAccount(counterpartId, parsed.data);
+      const accountId = await upsertCounterpartAccount(counterpartId, {
+        ...parsed.data,
+        metadata: (parsed.data.metadata ?? Prisma.JsonNull) as Prisma.InputJsonValue,
+      });
       const detail = await getCounterpartById(counterpartId);
       logEvent("counterparts:account:upsert", requestContext(req, { counterpartId, accountId }));
-      res.status(201).json({ status: "ok", accounts: detail?.accounts ?? [] });
+      res.status(201).json({
+        status: "ok",
+        accounts: detail?.accounts ? detail.accounts.map(mapCounterpartAccount) : [],
+      });
     })
   );
 
@@ -148,7 +208,10 @@ export function registerCounterpartRoutes(app: express.Express) {
       }
       await assignAccountsToCounterpartByRut(counterpartId, rut);
       const detail = await getCounterpartById(counterpartId);
-      res.json({ status: "ok", accounts: detail?.accounts ?? [] });
+      res.json({
+        status: "ok",
+        accounts: detail?.accounts ? detail.accounts.map(mapCounterpartAccount) : [],
+      });
     })
   );
 
@@ -167,7 +230,10 @@ export function registerCounterpartRoutes(app: express.Express) {
           .status(400)
           .json({ status: "error", message: "Los datos no son válidos", issues: parsed.error.issues });
       }
-      await updateCounterpartAccount(accountId, parsed.data);
+      await updateCounterpartAccount(accountId, {
+        ...parsed.data,
+        metadata: (parsed.data.metadata ?? Prisma.JsonNull) as Prisma.InputJsonValue,
+      });
       res.json({ status: "ok" });
     })
   );

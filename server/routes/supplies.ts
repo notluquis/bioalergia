@@ -1,10 +1,16 @@
 import express, { Router } from "express";
 import { z } from "zod";
-import { getPool } from "../db.js";
-import { SQLBuilder } from "../lib/database.js";
 import { AuthenticatedRequest } from "../types.js";
 import { authenticate, asyncHandler, requireRole } from "../lib/http.js";
-import { ResultSetHeader, RowDataPacket } from "mysql2";
+import {
+  createSupplyRequest,
+  listSupplyRequests,
+  updateSupplyRequestStatus,
+  listCommonSupplies,
+  createCommonSupply,
+  updateCommonSupply,
+  deleteCommonSupply,
+} from "../services/supplies.js";
 
 const router = Router();
 
@@ -36,17 +42,19 @@ router.post(
   "/requests",
   authenticate,
   asyncHandler(async (req: AuthenticatedRequest, res: express.Response) => {
-    const db = getPool();
     const { userId } = req.auth!;
     const { supplyName, quantity, brand, model, notes } = supplyRequestSchema.parse(req.body);
 
-    const [result] = await db.execute<ResultSetHeader>(
-      `INSERT INTO supply_requests (user_id, supply_name, quantity, brand, model, notes)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [userId, supplyName, quantity, brand || null, model || null, notes || null]
-    );
+    const request = await createSupplyRequest({
+      userId,
+      supplyName,
+      quantity,
+      brand: brand || null,
+      model: model || null,
+      notes: notes || null,
+    });
 
-    res.status(201).json({ id: result.insertId, message: "Supply request created successfully" });
+    res.status(201).json({ id: request.id, message: "Supply request created successfully" });
   })
 );
 
@@ -55,21 +63,14 @@ router.get(
   "/requests",
   authenticate,
   asyncHandler(async (req: AuthenticatedRequest, res: express.Response) => {
-    const db = getPool();
     const { role } = req.auth!;
+    const requests = await listSupplyRequests({ role });
 
-    const builder = new SQLBuilder("supply_requests sr")
-      .select("sr.*", "u.email as user_email")
-      .join("users u", "sr.user_id = u.id");
-
-    if (role !== "ADMIN" && role !== "GOD") {
-      builder.where("sr.status IN ('pending', 'ordered', 'in_transit')");
-    }
-
-    builder.orderBy("sr.created_at", "DESC");
-
-    const { sql: query, params } = builder.build();
-    const [rows] = await db.execute<RowDataPacket[]>(query, params);
+    // Map to match the expected response format
+    const rows = requests.map((r) => ({
+      ...r,
+      user_email: r.user.email,
+    }));
 
     res.json(rows);
   })
@@ -81,20 +82,15 @@ router.put(
   authenticate,
   requireRole("ADMIN", "GOD"),
   asyncHandler(async (req: AuthenticatedRequest, res: express.Response) => {
-    const db = getPool();
     const { id } = req.params;
     const { status, adminNotes } = updateSupplyRequestStatusSchema.parse(req.body);
 
-    const [result] = await db.execute<ResultSetHeader>(
-      `UPDATE supply_requests SET status = ?, admin_notes = ? WHERE id = ?`,
-      [status, adminNotes || null, id]
-    );
-
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ message: "Supply request not found" });
+    try {
+      await updateSupplyRequestStatus(Number(id), status, adminNotes || null);
+      res.json({ message: "Supply request status updated successfully" });
+    } catch {
+      res.status(500).json({ status: "error", message: "Failed to update request status" });
     }
-
-    res.json({ message: "Supply request status updated successfully" });
   })
 );
 
@@ -103,9 +99,8 @@ router.get(
   "/common",
   authenticate,
   asyncHandler(async (req, res) => {
-    const db = getPool();
-    const [rows] = await db.execute<RowDataPacket[]>(`SELECT * FROM common_supplies ORDER BY name ASC`);
-    res.json(rows);
+    const supplies = await listCommonSupplies();
+    res.json(supplies);
   })
 );
 
@@ -115,16 +110,16 @@ router.post(
   authenticate,
   requireRole("ADMIN", "GOD"),
   asyncHandler(async (req, res) => {
-    const db = getPool();
     const { name, brand, model, description } = commonSupplySchema.parse(req.body);
 
-    const [result] = await db.execute<ResultSetHeader>(
-      `INSERT INTO common_supplies (name, brand, model, description)
-       VALUES (?, ?, ?, ?)`,
-      [name, brand || null, model || null, description || null]
-    );
+    const supply = await createCommonSupply({
+      name,
+      brand: brand || null,
+      model: model || null,
+      description: description || null,
+    });
 
-    res.status(201).json({ id: result.insertId, message: "Common supply added successfully" });
+    res.status(201).json({ id: supply.id, message: "Common supply added successfully" });
   })
 );
 
@@ -134,20 +129,20 @@ router.put(
   authenticate,
   requireRole("ADMIN", "GOD"),
   asyncHandler(async (req, res) => {
-    const db = getPool();
     const { id } = req.params;
     const { name, brand, model, description } = commonSupplySchema.parse(req.body);
 
-    const [result] = await db.execute<ResultSetHeader>(
-      `UPDATE common_supplies SET name = ?, brand = ?, model = ?, description = ? WHERE id = ?`,
-      [name, brand || null, model || null, description || null, id]
-    );
-
-    if (result.affectedRows === 0) {
+    try {
+      await updateCommonSupply(Number(id), {
+        name,
+        brand: brand || null,
+        model: model || null,
+        description: description || null,
+      });
+      res.json({ message: "Common supply updated successfully" });
+    } catch {
       return res.status(404).json({ message: "Common supply not found" });
     }
-
-    res.json({ message: "Common supply updated successfully" });
   })
 );
 
@@ -157,19 +152,14 @@ router.delete(
   authenticate,
   requireRole("ADMIN", "GOD"),
   asyncHandler(async (req, res) => {
-    const db = getPool();
     const { id } = req.params;
 
-    const [result] = await db.execute<ResultSetHeader>(
-      `DELETE FROM common_supplies WHERE id = ?`,
-      [id]
-    );
-
-    if (result.affectedRows === 0) {
+    try {
+      await deleteCommonSupply(Number(id));
+      res.json({ message: "El insumo común se ha eliminado correctamente" });
+    } catch {
       return res.status(404).json({ message: "Common supply not found" });
     }
-
-    res.json({ message: "El insumo común se ha eliminado correctamente" });
   })
 );
 

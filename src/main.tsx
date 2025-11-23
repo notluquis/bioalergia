@@ -10,7 +10,6 @@ import { AuthProvider } from "./context/AuthContext";
 import { SettingsProvider } from "./context/SettingsContext";
 import { ToastProvider } from "./context/ToastContext";
 import { ErrorBoundary } from "./components/common/ErrorBoundary";
-import { BUILD_ID } from "./version";
 
 // Lazy loading de componentes principales
 const Home = lazy(() => import("./pages/Home"));
@@ -22,7 +21,6 @@ const TransactionsMovements = lazy(() => import("./pages/TransactionsMovements")
 const DailyBalances = lazy(() => import("./pages/DailyBalances"));
 const ParticipantInsightsPage = lazy(() => import("./pages/ParticipantInsights"));
 
-const Upload = lazy(() => import("./pages/Upload"));
 const Stats = lazy(() => import("./pages/Stats"));
 
 const EmployeesPage = lazy(() => import("./pages/Employees"));
@@ -90,14 +88,6 @@ const router = createBrowserRouter([
         element: (
           <Suspense fallback={<PageLoader />}>
             <EmployeesPage />
-          </Suspense>
-        ),
-      },
-      {
-        path: "/upload",
-        element: (
-          <Suspense fallback={<PageLoader />}>
-            <Upload />
           </Suspense>
         ),
       },
@@ -378,8 +368,6 @@ if ("serviceWorker" in navigator && import.meta.env.PROD) {
     navigator.serviceWorker
       .register("/sw.js", { updateViaCache: "none" })
       .then((registration) => {
-        console.log("SW registered:", { registration, buildId: BUILD_ID });
-
         const requestSkipWaiting = () => {
           if (registration.waiting) {
             registration.waiting.postMessage({ type: "SKIP_WAITING" });

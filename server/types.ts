@@ -1,5 +1,7 @@
-import type express from "express";
-import type { UserRole } from "./db.js";
+import type { Request } from "express";
+import type { UserRole } from "../generated/prisma/client";
+
+export type { UserRole };
 
 export type AuthSession = {
   userId: number;
@@ -7,7 +9,7 @@ export type AuthSession = {
   role: UserRole;
 };
 
-export type AuthenticatedRequest = express.Request & { auth?: AuthSession };
+export type AuthenticatedRequest = Request & { auth?: AuthSession };
 
 export type InventoryCategory = {
   id: number;
