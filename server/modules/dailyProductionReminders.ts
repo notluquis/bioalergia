@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 import { logger } from "../lib/logger.js";
-import { hasBalanceForDate } from "../repositories/dailyProductionBalances.js";
+import { hasBalanceForDate } from "../services/daily-production-balances.js";
 
 const MIN_INTERVAL_MINUTES = 30;
 

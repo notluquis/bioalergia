@@ -68,10 +68,12 @@ export function registerServiceRoutes(app: express.Express) {
       const services = await listServicesWithSummary();
       res.json({
         status: "ok",
-        services: services.map((s) => ({
-          ...mapService(s),
-          summary: s.summary,
-        })),
+        services: services.map(
+          (s: Prisma.ServiceGetPayload<{ include: { schedules: true } }> & { summary: unknown }) => ({
+            ...mapService(s),
+            summary: s.summary,
+          })
+        ),
       });
     })
   );

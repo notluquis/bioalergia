@@ -1,5 +1,5 @@
 import { prisma } from "../prisma.js";
-import { Prisma } from "../../generated/prisma/client";
+import { Prisma } from "../../generated/prisma/client.js";
 
 export async function listInventoryCategories() {
   return await prisma.inventoryCategory.findMany({
@@ -22,7 +22,7 @@ export async function listInventoryItems() {
   });
   // Map to match the expected shape if needed, or just return items.
   // The route expects { ...item, category_name: string }
-  return items.map((item) => ({
+  return items.map((item: Prisma.InventoryItemGetPayload<{ include: { category: true } }>) => ({
     ...item,
     category_name: item.category?.name,
   }));
@@ -50,7 +50,7 @@ export async function deleteInventoryItem(id: number) {
 }
 
 export async function createInventoryMovement(data: { itemId: number; quantityChange: number; reason?: string }) {
-  return await prisma.$transaction(async (tx) => {
+  return await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     await tx.inventoryMovement.create({
       data: {
         itemId: data.itemId,
@@ -115,65 +115,94 @@ export async function listAllergyInventoryOverview() {
   });
 
   // Transform to match AllergyInventoryOverview type
-  const overview = items.map((item) => {
-    // Determine hierarchy
-    let subtype = item.allergyType;
-    let category = subtype?.parent;
-    let root = category?.parent;
+  const overview = items.map(
+    (
+      item: Prisma.InventoryItemGetPayload<{
+        include: {
+          category: true;
+          allergyType: { include: { parent: { include: { parent: true } } } };
+          itemProviders: { include: { provider: { include: { accounts: true } } } };
+        };
+      }>
+    ) => {
+      // Determine hierarchy
+      let subtype = item.allergyType;
+      let category = subtype?.parent;
+      let root = category?.parent;
 
-    // Handle cases where hierarchy might be shallower
-    // The schema defines parentId, so we traverse up.
-    // If item.allergyType has no parent, it might be a root or category itself depending on 'level'.
-    // But the original query assumes a 3-level hierarchy: root -> parent -> subtype.
-    // Let's trust the original query logic which joins subtype, parent, root.
+      // Handle cases where hierarchy might be shallower
+      // The schema defines parentId, so we traverse up.
+      // If item.allergyType has no parent, it might be a root or category itself depending on 'level'.
+      // But the original query assumes a 3-level hierarchy: root -> parent -> subtype.
+      // Let's trust the original query logic which joins subtype, parent, root.
 
-    // If the hierarchy is incomplete, we might need to adjust.
-    // For now, let's map what we have.
+      // If the hierarchy is incomplete, we might need to adjust.
+      // For now, let's map what we have.
 
-    const providers = item.itemProviders.map((ip) => ({
-      provider_id: ip.providerId,
-      provider_name: ip.provider.name,
-      provider_rut: ip.provider.rut,
-      current_price: ip.currentPrice ? Number(ip.currentPrice) : null,
-      last_stock_check: ip.lastStockCheck ? ip.lastStockCheck.toISOString() : null,
-      last_price_check: ip.lastPriceCheck ? ip.lastPriceCheck.toISOString() : null,
-      accounts: ip.provider.accounts.map((a) => a.accountIdentifier),
-    }));
+      const providers = item.itemProviders.map(
+        (ip: {
+          providerId: number;
+          provider: { name: string; rut: string; accounts: { accountIdentifier: string }[] };
+          currentPrice: number | null;
+          lastStockCheck: Date | null;
+          lastPriceCheck: Date | null;
+        }) => ({
+          provider_id: ip.providerId,
+          provider_name: ip.provider.name,
+          provider_rut: ip.provider.rut,
+          current_price: ip.currentPrice ? Number(ip.currentPrice) : null,
+          last_stock_check: ip.lastStockCheck ? ip.lastStockCheck.toISOString() : null,
+          last_price_check: ip.lastPriceCheck ? ip.lastPriceCheck.toISOString() : null,
+          accounts: ip.provider.accounts.map((a: { accountIdentifier: string }) => a.accountIdentifier),
+        })
+      );
 
-    return {
-      item_id: item.id,
-      name: item.name,
-      description: item.description,
-      current_stock: item.currentStock,
-      category: {
-        id: item.categoryId,
-        name: item.category?.name ?? null,
-      },
-      allergy_type: {
-        type: root ? { id: root.id, name: root.name } : undefined,
-        category: category ? { id: category.id, name: category.name } : undefined,
-        subtype: subtype ? { id: subtype.id, name: subtype.name } : undefined,
-      },
-      providers,
-    };
-  });
+      return {
+        item_id: item.id,
+        name: item.name,
+        description: item.description,
+        current_stock: item.currentStock,
+        category: {
+          id: item.categoryId,
+          name: item.category?.name ?? null,
+        },
+        allergy_type: {
+          type: root ? { id: root.id, name: root.name } : undefined,
+          category: category ? { id: category.id, name: category.name } : undefined,
+          subtype: subtype ? { id: subtype.id, name: subtype.name } : undefined,
+        },
+        providers,
+      };
+    }
+  );
 
   // Sort in JS: root.name, parent.name, subtype.name, item.name
-  overview.sort((a, b) => {
-    const rootA = a.allergy_type.type?.name || "";
-    const rootB = b.allergy_type.type?.name || "";
-    if (rootA !== rootB) return rootA.localeCompare(rootB);
+  overview.sort(
+    (
+      a: {
+        allergy_type: { type?: { name: string }; category?: { name: string }; subtype?: { name: string } };
+        name: string;
+      },
+      b: {
+        allergy_type: { type?: { name: string }; category?: { name: string }; subtype?: { name: string } };
+        name: string;
+      }
+    ) => {
+      const rootA = a.allergy_type.type?.name || "";
+      const rootB = b.allergy_type.type?.name || "";
+      if (rootA !== rootB) return rootA.localeCompare(rootB);
 
-    const catA = a.allergy_type.category?.name || "";
-    const catB = b.allergy_type.category?.name || "";
-    if (catA !== catB) return catA.localeCompare(catB);
+      const catA = a.allergy_type.category?.name || "";
+      const catB = b.allergy_type.category?.name || "";
+      if (catA !== catB) return catA.localeCompare(catB);
 
-    const subA = a.allergy_type.subtype?.name || "";
-    const subB = b.allergy_type.subtype?.name || "";
-    if (subA !== subB) return subA.localeCompare(subB);
+      const subA = a.allergy_type.subtype?.name || "";
+      const subB = b.allergy_type.subtype?.name || "";
+      if (subA !== subB) return subA.localeCompare(subB);
 
-    return a.name.localeCompare(b.name);
-  });
+      return a.name.localeCompare(b.name);
+    }
+  );
 
   return overview;
 }

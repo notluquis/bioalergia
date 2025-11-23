@@ -1,5 +1,5 @@
 import { prisma } from "../prisma.js";
-import { Prisma } from "../../generated/prisma/client";
+import { Prisma } from "../../generated/prisma/client.js";
 import dayjs from "dayjs";
 
 export type ProductionBalanceStatus = "DRAFT" | "FINAL";
@@ -203,7 +203,7 @@ export async function updateProductionBalance(
   const totals = computeTotals(payload);
 
   // Use a transaction to create history and update balance
-  const updated = await prisma.$transaction(async (tx) => {
+  const updated = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     // Create history entry
     await tx.dailyProductionBalanceHistory.create({
       data: {
@@ -259,13 +259,25 @@ export async function listProductionBalanceHistory(balanceId: number): Promise<P
     take: 50,
   });
 
-  return entries.map((entry) => ({
-    id: Number(entry.id),
-    balanceId: Number(entry.balanceId),
-    snapshot: entry.snapshot as unknown as ProductionBalanceRecord | null,
-    changeReason: entry.changeReason,
-    changedBy: entry.changedBy,
-    changedByEmail: entry.changer?.email ?? null,
-    createdAt: entry.createdAt.toISOString(),
-  }));
+  return entries.map(
+    (entry: Prisma.DailyProductionBalanceHistoryGetPayload<{ include: { changer: { select: { email: true } } } }>) => ({
+      id: Number(entry.id),
+      balanceId: Number(entry.balanceId),
+      snapshot: entry.snapshot as unknown as ProductionBalanceRecord | null,
+      changeReason: entry.changeReason,
+      changedBy: entry.changedBy,
+      changedByEmail: entry.changer?.email ?? null,
+      createdAt: entry.createdAt.toISOString(),
+    })
+  );
+}
+
+export async function hasBalanceForDate(date: Date | string): Promise<boolean> {
+  const d = new Date(date);
+  const count = await prisma.dailyProductionBalance.count({
+    where: {
+      balanceDate: d,
+    },
+  });
+  return count > 0;
 }
