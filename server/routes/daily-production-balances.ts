@@ -1,7 +1,7 @@
 import express from "express";
 import dayjs from "dayjs";
 import { asyncHandler, authenticate } from "../lib/http.js";
-import type { Prisma } from "../../generated/prisma/client.js";
+import type { AuthenticatedRequest } from "../types.js";
 import { logEvent, requestContext } from "../lib/logger.js";
 import { productionBalancePayloadSchema, productionBalanceQuerySchema } from "../schemas.js";
 import {
@@ -12,7 +12,6 @@ import {
   updateProductionBalance,
   type ProductionBalancePayload,
 } from "../services/daily-production-balances.js";
-import type { AuthenticatedRequest } from "../types.js";
 
 function sanitizePayload(
   parsed: ReturnType<(typeof productionBalancePayloadSchema)["parse"]>
@@ -36,7 +35,8 @@ function sanitizePayload(
   };
 }
 
-function mapProductionBalance(p: Prisma.DailyProductionBalanceGetPayload<{}>) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapProductionBalance(p: any) {
   return {
     id: p.id,
     balance_date: p.balanceDate,
@@ -81,7 +81,8 @@ export function registerDailyProductionBalanceRoutes(app: express.Express) {
         })
       );
 
-      res.json({ status: "ok", from: fromDate, to: toDate, items: items.map(mapProductionBalance) });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      res.json({ status: "ok", from: fromDate, to: toDate, items: items.map((i) => mapProductionBalance(i as any)) });
     })
   );
 
@@ -98,7 +99,8 @@ export function registerDailyProductionBalanceRoutes(app: express.Express) {
 
       logEvent("daily-production-balances/create", requestContext(req, { id: created.id, date: created.balanceDate }));
 
-      res.json({ status: "ok", item: mapProductionBalance(created) });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      res.json({ status: "ok", item: mapProductionBalance(created as any) });
     })
   );
 
@@ -124,7 +126,8 @@ export function registerDailyProductionBalanceRoutes(app: express.Express) {
 
       logEvent("daily-production-balances/update", requestContext(req, { id, date: updated.balanceDate }));
 
-      res.json({ status: "ok", item: mapProductionBalance(updated) });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      res.json({ status: "ok", item: mapProductionBalance(updated as any) });
     })
   );
 
@@ -142,7 +145,8 @@ export function registerDailyProductionBalanceRoutes(app: express.Express) {
       }
 
       const entries = await listProductionBalanceHistory(id);
-      res.json({ status: "ok", items: entries.map(mapProductionBalance) });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      res.json({ status: "ok", items: entries.map((e) => mapProductionBalance(e as any)) });
     })
   );
 }

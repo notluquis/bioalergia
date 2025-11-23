@@ -2,7 +2,6 @@ import express from "express";
 import { authenticate, asyncHandler, requireRole } from "../lib/http.js";
 import { logEvent, logWarn, requestContext } from "../lib/logger.js";
 import type { AuthenticatedRequest } from "../types.js";
-import type { Prisma } from "../../generated/prisma/client.js";
 import {
   createMonthlyExpense,
   getMonthlyExpenseDetail,
@@ -14,7 +13,8 @@ import {
 } from "../services/monthly-expenses.js";
 import { monthlyExpenseSchema, monthlyExpenseLinkSchema, monthlyExpenseStatsSchema } from "../schemas.js";
 
-function mapExpense(e: Prisma.MonthlyExpenseGetPayload<{ include: { transactions: true } }>) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapExpense(e: any) {
   return {
     id: e.id,
     name: e.name,
@@ -28,6 +28,10 @@ function mapExpense(e: Prisma.MonthlyExpenseGetPayload<{ include: { transactions
     status: e.status,
     created_at: e.createdAt,
     updated_at: e.updatedAt,
+    public_id: e.publicId,
+    amount_applied: e.amountApplied,
+    transaction_count: e.transactionCount,
+    transactions: e.transactions,
   };
 }
 

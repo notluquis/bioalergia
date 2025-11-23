@@ -40,7 +40,7 @@ export async function listMonthlyExpenses(filters?: {
 
   return expenses.map((expense: Prisma.MonthlyExpenseGetPayload<{ include: { transactions: true } }>) => {
     const amountApplied = expense.transactions.reduce(
-      (sum: number, t: { amount: number }) => sum + Number(t.amount),
+      (sum: number, t: { amount: Prisma.Decimal }) => sum + Number(t.amount),
       0
     );
     const transactionCount = expense.transactions.length;
@@ -72,7 +72,10 @@ export async function getMonthlyExpenseDetail(publicId: string) {
 
   if (!expense) return null;
 
-  const amountApplied = expense.transactions.reduce((sum: number, t: { amount: number }) => sum + Number(t.amount), 0);
+  const amountApplied = expense.transactions.reduce(
+    (sum: number, t: { amount: Prisma.Decimal }) => sum + Number(t.amount),
+    0
+  );
 
   return {
     ...expense,
@@ -80,8 +83,8 @@ export async function getMonthlyExpenseDetail(publicId: string) {
     transactionCount: expense.transactions.length,
     transactions: expense.transactions.map(
       (met: {
-        transactionId: bigint;
-        amount: number;
+        transactionId: number;
+        amount: Prisma.Decimal;
         transaction: { timestamp: Date; description: string | null; direction: string };
       }) => ({
         transaction_id: met.transactionId,

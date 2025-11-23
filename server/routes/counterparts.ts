@@ -102,7 +102,8 @@ export function registerCounterpartRoutes(app: express.Express) {
       logEvent("counterparts:create", requestContext(req, { id }));
       res.status(201).json({
         status: "ok",
-        counterpart: detail ? mapCounterpart(detail.counterpart) : mapCounterpart(counterpart),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        counterpart: detail ? mapCounterpart(detail.counterpart as any) : mapCounterpart(counterpart as any),
         accounts: detail?.accounts ? detail.accounts.map(mapCounterpartAccount) : [],
       });
     })

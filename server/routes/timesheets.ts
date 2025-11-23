@@ -348,18 +348,7 @@ function normalizeTimesheetPayload(data: {
 
 async function buildMonthlySummary(from: string, to: string, employeeId?: number) {
   const employees = await listEmployees();
-  const employeeMap = new Map(
-    employees.map(
-      (employee: {
-        id: number;
-        fullName: string;
-        hourlyRate: number | null;
-        role: string | null;
-        rut: string | null;
-        email: string | null;
-      }) => [employee.id, employee]
-    )
-  );
+  const employeeMap = new Map(employees.map((employee) => [employee.id, employee]));
 
   // Use Prisma groupBy instead of MySQL
   const summaryData = await prisma.employeeTimesheet.groupBy({

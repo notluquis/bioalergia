@@ -43,10 +43,11 @@ export function registerLoanRoutes(app: express.Express) {
         totalInstallments: parsed.totalInstallments,
         startDate: parsed.startDate,
         notes: parsed.notes ?? null,
-      });
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any);
 
       if (parsed.generateSchedule) {
-        await regenerateLoanSchedule(loan.public_id, {
+        await regenerateLoanSchedule(loan.publicId, {
           totalInstallments: parsed.totalInstallments,
           startDate: parsed.startDate,
           interestRate: parsed.interestRate,
@@ -54,7 +55,7 @@ export function registerLoanRoutes(app: express.Express) {
         });
       }
 
-      const detail = await getLoanDetail(loan.public_id);
+      const detail = await getLoanDetail(loan.publicId);
       res.json({
         status: "ok",
         loan: detail?.loan ?? loan,
