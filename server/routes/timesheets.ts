@@ -2,19 +2,19 @@ import express from "express";
 import { z } from "zod";
 import { asyncHandler, authenticate, requireRole } from "../lib/http.js";
 import { logEvent, logWarn, requestContext } from "../lib/logger.js";
-import { listEmployees, getEmployeeById } from "../repositories/employees.js";
+import { listEmployees, getEmployeeById } from "../services/employees.js";
 import {
   listTimesheetEntries,
   upsertTimesheetEntry,
   updateTimesheetEntry,
   deleteTimesheetEntry,
-} from "../repositories/timesheets.js";
+} from "../services/timesheets.js";
 import { timesheetPayloadSchema, timesheetUpdateSchema, timesheetBulkSchema } from "../schemas.js";
 import type { AuthenticatedRequest } from "../types.js";
 import { durationToMinutes, minutesToDuration } from "../../shared/time.js";
-import { getPool } from "../db.js";
-import type { RowDataPacket } from "mysql2";
 import { roundCurrency } from "../../shared/currency.js";
+import { prisma } from "../prisma.js";
+import { formatDateOnly } from "../lib/time.js";
 
 const monthParamSchema = z.object({
   month: z
@@ -30,7 +30,6 @@ export function registerTimesheetRoutes(app: express.Express) {
     "/api/timesheets/months",
     authenticate,
     asyncHandler(async (_req, res) => {
-      const pool = getPool();
       // Generar lista de meses disponibles: 6 meses atrás hasta 3 meses adelante
       const now = new Date();
       const pad = (n: number) => String(n).padStart(2, "0");
@@ -39,11 +38,18 @@ export function registerTimesheetRoutes(app: express.Express) {
         return `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
       });
 
-      // Consultar qué meses tienen datos reales
-      const [rows] = await pool.query<RowDataPacket[]>(
-        `SELECT DISTINCT DATE_FORMAT(work_date, '%Y-%m') as month FROM employee_timesheets ORDER BY month DESC`
+      // Consultar qué meses tienen datos reales usando Prisma
+      const entries = await prisma.employeeTimesheet.findMany({
+        select: { workDate: true },
+        distinct: ["workDate"],
+        orderBy: { workDate: "desc" },
+      });
+
+      const monthsWithData = new Set(
+        entries
+          .map((e) => formatDateOnly(e.workDate).slice(0, 7)) // YYYY-MM
+          .filter(Boolean)
       );
-      const monthsWithData = new Set(rows.map((r: RowDataPacket) => r.month as string).filter(Boolean));
 
       res.json({
         status: "ok",
@@ -52,6 +58,7 @@ export function registerTimesheetRoutes(app: express.Express) {
       });
     })
   );
+
   app.get(
     "/api/timesheets",
     authenticate,
@@ -258,42 +265,34 @@ export function registerTimesheetRoutes(app: express.Express) {
         });
       }
 
-      const pool = getPool();
       const employees = await listEmployees();
-      const employeeNameMap = new Map(employees.map((emp) => [emp.id, emp.full_name]));
+      const employeeNameMap = new Map(employees.map((emp) => [emp.id, emp.fullName]));
       const employeeRoleMap = new Map(employees.map((emp) => [emp.id, emp.role ?? null]));
 
-      // Query entries with start_time AND end_time only
-      const placeholders = employeeIds.map(() => "?").join(",");
-      const [rows] = await pool.query<RowDataPacket[]>(
-        `SELECT 
-           id, 
-           employee_id, 
-           work_date, 
-           start_time, 
-           end_time, 
-           worked_minutes, 
-           overtime_minutes, 
-           comment
-         FROM employee_timesheets
-         WHERE employee_id IN (${placeholders})
-           AND work_date BETWEEN ? AND ?
-           AND start_time IS NOT NULL
-           AND end_time IS NOT NULL
-         ORDER BY work_date ASC, employee_id ASC`,
-        [...employeeIds, from, to]
-      );
+      // Query entries with start_time AND end_time only using Prisma
+      const rawEntries = await prisma.employeeTimesheet.findMany({
+        where: {
+          employeeId: { in: employeeIds },
+          workDate: {
+            gte: new Date(from),
+            lte: new Date(to),
+          },
+          startTime: { not: null },
+          endTime: { not: null },
+        },
+        orderBy: [{ workDate: "asc" }, { employeeId: "asc" }],
+      });
 
-      const entries = rows.map((row: RowDataPacket) => ({
-        id: row.id,
-        employee_id: row.employee_id,
-        employee_name: employeeNameMap.get(row.employee_id) || `Employee #${row.employee_id}`,
-        employee_role: employeeRoleMap.get(row.employee_id) ?? null,
-        work_date: row.work_date,
-        start_time: row.start_time,
-        end_time: row.end_time,
-        worked_minutes: row.worked_minutes,
-        overtime_minutes: row.overtime_minutes,
+      const entries = rawEntries.map((row) => ({
+        id: Number(row.id),
+        employee_id: row.employeeId,
+        employee_name: employeeNameMap.get(row.employeeId) || `Employee #${row.employeeId}`,
+        employee_role: employeeRoleMap.get(row.employeeId) ?? null,
+        work_date: formatDateOnly(row.workDate),
+        start_time: row.startTime ? String(row.startTime).slice(0, 5) : null,
+        end_time: row.endTime ? String(row.endTime).slice(0, 5) : null,
+        worked_minutes: row.workedMinutes,
+        overtime_minutes: row.overtimeMinutes,
         comment: row.comment,
       }));
 
@@ -348,25 +347,22 @@ async function buildMonthlySummary(from: string, to: string, employeeId?: number
   const employees = await listEmployees();
   const employeeMap = new Map(employees.map((employee) => [employee.id, employee]));
 
-  const pool = getPool();
-  const conditions = ["work_date BETWEEN ? AND ?"];
-  const params: Array<string | number> = [from, to];
-
-  if (employeeId) {
-    conditions.push("employee_id = ?");
-    params.push(employeeId);
-  }
-
-  const [rows] = await pool.query<RowDataPacket[]>(
-    `SELECT employee_id,
-            SUM(worked_minutes) AS worked_minutes,
-            SUM(overtime_minutes) AS overtime_minutes,
-            SUM(extra_amount) AS extra_amount
-       FROM employee_timesheets
-       WHERE ${conditions.join(" AND ")}
-       GROUP BY employee_id`,
-    params
-  );
+  // Use Prisma groupBy instead of MySQL
+  const summaryData = await prisma.employeeTimesheet.groupBy({
+    by: ["employeeId"],
+    where: {
+      workDate: {
+        gte: new Date(from),
+        lte: new Date(to),
+      },
+      ...(employeeId && { employeeId }),
+    },
+    _sum: {
+      workedMinutes: true,
+      overtimeMinutes: true,
+      extraAmount: true,
+    },
+  });
 
   const results: Array<ReturnType<typeof buildEmployeeSummary>> = [];
   let totals = {
@@ -378,13 +374,13 @@ async function buildMonthlySummary(from: string, to: string, employeeId?: number
     net: 0,
   };
 
-  for (const row of rows) {
-    const employee = employeeMap.get(Number(row.employee_id));
+  for (const row of summaryData) {
+    const employee = employeeMap.get(row.employeeId);
     if (!employee) continue;
     const summary = buildEmployeeSummary(employee, {
-      workedMinutes: Number(row.worked_minutes ?? 0),
-      overtimeMinutes: Number(row.overtime_minutes ?? 0),
-      extraAmount: Number(row.extra_amount ?? 0),
+      workedMinutes: Number(row._sum.workedMinutes ?? 0),
+      overtimeMinutes: Number(row._sum.overtimeMinutes ?? 0),
+      extraAmount: Number(row._sum.extraAmount ?? 0),
       periodStart: from,
     });
     results.push(summary);
@@ -434,9 +430,9 @@ function buildEmployeeSummary(
     periodStart: string;
   }
 ) {
-  const hourlyRate = employee?.hourly_rate ?? 0;
-  const overtimeRate = employee?.overtime_rate ?? 0;
-  const retentionRate = employee?.retention_rate ?? 0;
+  const hourlyRate = Number(employee?.hourlyRate ?? 0);
+  const overtimeRate = Number(employee?.overtimeRate ?? 0);
+  const retentionRate = Number(employee?.retentionRate ?? 0);
   const basePay = roundCurrency((data.workedMinutes / 60) * hourlyRate);
   const overtimePay = roundCurrency((data.overtimeMinutes / 60) * overtimeRate);
   const extras = roundCurrency(data.extraAmount);
@@ -447,7 +443,7 @@ function buildEmployeeSummary(
 
   return {
     employeeId: employee?.id ?? 0,
-    fullName: employee?.full_name ?? "",
+    fullName: employee?.fullName ?? "",
     role: employee?.role ?? "",
     email: employee?.email ?? null,
     workedMinutes: data.workedMinutes,

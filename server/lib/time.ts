@@ -1,4 +1,4 @@
-export function formatLocalDateForMySQL(date: Date) {
+export function formatDateForDB(date: Date) {
   const pad = (value: number) => value.toString().padStart(2, "0");
   const year = date.getFullYear();
   const month = pad(date.getMonth() + 1);
@@ -25,7 +25,7 @@ export function normalizeDate(input: string, boundary: "start" | "end") {
     boundary === "start" ? 0 : 59,
     boundary === "start" ? 0 : 999
   );
-  return formatLocalDateForMySQL(date);
+  return formatDateForDB(date);
 }
 
 export function normalizeTimestamp(primary: string | Date | null, fallback: string | null) {
@@ -35,7 +35,7 @@ export function normalizeTimestamp(primary: string | Date | null, fallback: stri
   }
 
   if (primary instanceof Date) {
-    return formatLocalDateForMySQL(primary).replace(" ", "T");
+    return formatDateForDB(primary).replace(" ", "T");
   }
 
   const normalizedPrimary = normalizeTimestampString(primary);
@@ -53,7 +53,7 @@ export function normalizeTimestampForDb(primary: string | null | undefined, fall
   }
 
   if (fallback instanceof Date) {
-    return formatLocalDateForMySQL(fallback);
+    return formatDateForDB(fallback);
   }
 
   return "";
@@ -65,7 +65,7 @@ export function normalizeTimestampString(value: string | Date | null) {
   }
 
   if (value instanceof Date) {
-    return formatLocalDateForMySQL(value).replace(" ", "T");
+    return formatDateForDB(value).replace(" ", "T");
   }
 
   const trimmed = value.trim();
@@ -73,7 +73,9 @@ export function normalizeTimestampString(value: string | Date | null) {
     return "";
   }
 
-  const isoMatch = trimmed.match(/^([0-9]{4}-[0-9]{2}-[0-9]{2})[T ]([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\.[0-9]+)?(?:Z|[+-][0-9]{2}:?[0-9]{2})?$/);
+  const isoMatch = trimmed.match(
+    /^([0-9]{4}-[0-9]{2}-[0-9]{2})[T ]([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\.[0-9]+)?(?:Z|[+-][0-9]{2}:?[0-9]{2})?$/
+  );
   if (isoMatch) {
     const [, datePart, timePart] = isoMatch;
     return `${datePart}T${timePart}`;
@@ -81,7 +83,7 @@ export function normalizeTimestampString(value: string | Date | null) {
 
   const parsed = new Date(trimmed);
   if (!Number.isNaN(parsed.getTime())) {
-    return formatLocalDateForMySQL(parsed).replace(" ", "T");
+    return formatDateForDB(parsed).replace(" ", "T");
   }
 
   return trimmed.replace(" ", "T");

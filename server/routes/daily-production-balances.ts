@@ -1,6 +1,7 @@
 import express from "express";
 import dayjs from "dayjs";
 import { asyncHandler, authenticate } from "../lib/http.js";
+import type { Prisma } from "../../generated/prisma/client.js";
 import { logEvent, requestContext } from "../lib/logger.js";
 import { productionBalancePayloadSchema, productionBalanceQuerySchema } from "../schemas.js";
 import {
@@ -10,7 +11,7 @@ import {
   listProductionBalances,
   updateProductionBalance,
   type ProductionBalancePayload,
-} from "../repositories/dailyProductionBalances.js";
+} from "../services/daily-production-balances.js";
 import type { AuthenticatedRequest } from "../types.js";
 
 function sanitizePayload(
@@ -35,6 +36,30 @@ function sanitizePayload(
   };
 }
 
+function mapProductionBalance(p: Prisma.DailyProductionBalanceGetPayload<{}>) {
+  return {
+    id: p.id,
+    balance_date: p.balanceDate,
+    ingreso_tarjetas: p.ingresoTarjetas,
+    ingreso_transferencias: p.ingresoTransferencias,
+    ingreso_efectivo: p.ingresoEfectivo,
+    gastos_diarios: p.gastosDiarios,
+    otros_abonos: p.otrosAbonos,
+    consultas_count: p.consultasCount,
+    controles_count: p.controlesCount,
+    tests_count: p.testsCount,
+    vacunas_count: p.vacunasCount,
+    licencias_count: p.licenciasCount,
+    roxair_count: p.roxairCount,
+    comentarios: p.comentarios,
+    status: p.status,
+    change_reason: p.changeReason,
+    created_by: p.createdBy,
+    created_at: p.createdAt,
+    updated_at: p.updatedAt,
+  };
+}
+
 export function registerDailyProductionBalanceRoutes(app: express.Express) {
   app.get(
     "/api/daily-production-balances",
@@ -56,7 +81,7 @@ export function registerDailyProductionBalanceRoutes(app: express.Express) {
         })
       );
 
-      res.json({ status: "ok", from: fromDate, to: toDate, items });
+      res.json({ status: "ok", from: fromDate, to: toDate, items: items.map(mapProductionBalance) });
     })
   );
 
@@ -73,7 +98,7 @@ export function registerDailyProductionBalanceRoutes(app: express.Express) {
 
       logEvent("daily-production-balances/create", requestContext(req, { id: created.id, date: created.balanceDate }));
 
-      res.json({ status: "ok", item: created });
+      res.json({ status: "ok", item: mapProductionBalance(created) });
     })
   );
 
@@ -99,7 +124,7 @@ export function registerDailyProductionBalanceRoutes(app: express.Express) {
 
       logEvent("daily-production-balances/update", requestContext(req, { id, date: updated.balanceDate }));
 
-      res.json({ status: "ok", item: updated });
+      res.json({ status: "ok", item: mapProductionBalance(updated) });
     })
   );
 
@@ -117,7 +142,7 @@ export function registerDailyProductionBalanceRoutes(app: express.Express) {
       }
 
       const entries = await listProductionBalanceHistory(id);
-      res.json({ status: "ok", items: entries });
+      res.json({ status: "ok", items: entries.map(mapProductionBalance) });
     })
   );
 }

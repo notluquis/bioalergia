@@ -2,6 +2,7 @@ import express from "express";
 import { authenticate, asyncHandler, requireRole } from "../lib/http.js";
 import { logEvent, logWarn, requestContext } from "../lib/logger.js";
 import type { AuthenticatedRequest } from "../types.js";
+import type { Prisma } from "../../generated/prisma/client.js";
 import {
   createMonthlyExpense,
   getMonthlyExpenseDetail,
@@ -10,8 +11,25 @@ import {
   listMonthlyExpenses,
   unlinkMonthlyExpenseTransaction,
   updateMonthlyExpense,
-} from "../db.js";
+} from "../services/monthly-expenses.js";
 import { monthlyExpenseSchema, monthlyExpenseLinkSchema, monthlyExpenseStatsSchema } from "../schemas.js";
+
+function mapExpense(e: Prisma.MonthlyExpenseGetPayload<{ include: { transactions: true } }>) {
+  return {
+    id: e.id,
+    name: e.name,
+    category: e.category,
+    amount_expected: e.amountExpected,
+    expense_date: e.expenseDate,
+    notes: e.notes,
+    source: e.source,
+    service_id: e.serviceId,
+    tags: e.tags,
+    status: e.status,
+    created_at: e.createdAt,
+    updated_at: e.updatedAt,
+  };
+}
 
 export function registerMonthlyExpenseRoutes(app: express.Express) {
   const router = express.Router();
@@ -24,17 +42,11 @@ export function registerMonthlyExpenseRoutes(app: express.Express) {
       const filters = {
         from: typeof from === "string" ? from : undefined,
         to: typeof to === "string" ? to : undefined,
-        status:
-          typeof status === "string" && status.length
-            ? (status.split(",") as ("OPEN" | "CLOSED")[])
-            : undefined,
-        serviceId:
-          typeof serviceId === "string" && serviceId.length
-            ? Number(serviceId)
-            : undefined,
+        status: typeof status === "string" && status.length ? (status.split(",") as ("OPEN" | "CLOSED")[]) : undefined,
+        serviceId: typeof serviceId === "string" && serviceId.length ? Number(serviceId) : undefined,
       };
       const expenses = await listMonthlyExpenses(filters);
-      res.json({ status: "ok", expenses });
+      res.json({ status: "ok", expenses: expenses.map(mapExpense) });
     })
   );
 
@@ -66,7 +78,7 @@ export function registerMonthlyExpenseRoutes(app: express.Express) {
         tags: parsed.tags ?? [],
         status: parsed.status ?? "OPEN",
       });
-      res.json({ status: "ok", expense });
+      res.json({ status: "ok", expense: mapExpense(expense) });
     })
   );
 
@@ -79,7 +91,7 @@ export function registerMonthlyExpenseRoutes(app: express.Express) {
       if (!detail) {
         return res.status(404).json({ status: "error", message: "Gasto no encontrado" });
       }
-      res.json({ status: "ok", expense: detail });
+      res.json({ status: "ok", expense: mapExpense(detail) });
     })
   );
 
@@ -102,7 +114,7 @@ export function registerMonthlyExpenseRoutes(app: express.Express) {
         tags: parsed.tags ?? [],
         status: parsed.status ?? "OPEN",
       });
-      res.json({ status: "ok", expense });
+      res.json({ status: "ok", expense: mapExpense(expense) });
     })
   );
 
@@ -115,7 +127,7 @@ export function registerMonthlyExpenseRoutes(app: express.Express) {
       const parsed = monthlyExpenseLinkSchema.parse(req.body);
       logEvent("expenses:link", requestContext(req, { id, payload: parsed }));
       const expense = await linkMonthlyExpenseTransaction(id, parsed);
-      res.json({ status: "ok", expense });
+      res.json({ status: "ok", expense: mapExpense(expense) });
     })
   );
 
@@ -128,7 +140,7 @@ export function registerMonthlyExpenseRoutes(app: express.Express) {
       const parsed = monthlyExpenseLinkSchema.parse(req.body);
       logWarn("expenses:unlink", requestContext(req, { id, payload: parsed }));
       const expense = await unlinkMonthlyExpenseTransaction(id, parsed.transactionId);
-      res.json({ status: "ok", expense });
+      res.json({ status: "ok", expense: mapExpense(expense) });
     })
   );
 

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { validateRut } from "./lib/rut.js";
 
 const colorRegex = /^(?:#(?:[0-9a-fA-F]{3}){1,2}|(?:oklch|hsl|rgb|var)\(.+\))$/;
 const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
@@ -95,6 +96,7 @@ export const transactionsQuerySchema = z.object({
   includeAmounts: z.enum(["true", "false"]).optional(),
   page: z.coerce.number().int().positive().optional(),
   pageSize: z.coerce.number().int().positive().max(500).optional(),
+  search: z.string().optional(),
 });
 
 export const statsQuerySchema = z.object({
@@ -110,7 +112,13 @@ export const participantLeaderboardQuerySchema = z.object({
 });
 
 export const counterpartPayloadSchema = z.object({
-  rut: z.string().trim().max(64).optional().nullable(),
+  rut: z
+    .string()
+    .trim()
+    .max(64)
+    .optional()
+    .nullable()
+    .refine((val) => !val || validateRut(val), { message: "RUT inválido" }),
   name: z.string().min(1).max(191),
   personType: z.enum(["PERSON", "COMPANY", "OTHER"]).default("OTHER"),
   category: z
@@ -188,7 +196,14 @@ export const employeeSchema = z.object({
   full_name: z.string().min(1).max(191),
   role: z.string().min(1).max(120),
   email: z.string().email().nullable().optional(),
-  rut: z.string().trim().min(3).max(20).nullable().optional(),
+  rut: z
+    .string()
+    .trim()
+    .min(3)
+    .max(20)
+    .nullable()
+    .optional()
+    .refine((val) => !val || validateRut(val), { message: "RUT inválido" }),
   bank_name: z.string().trim().max(120).nullable().optional(),
   bank_account_type: z.string().trim().max(32).nullable().optional(),
   bank_account_number: z.string().trim().max(64).nullable().optional(),

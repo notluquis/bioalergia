@@ -1,6 +1,6 @@
 import express from "express";
 import { asyncHandler, authenticate, requireRole } from "../lib/http.js";
-import { listRoleMappings, upsertRoleMapping } from "../db.js";
+import { listRoleMappings, upsertRoleMapping } from "../services/roles.js";
 import { z } from "zod";
 
 const roleMappingSchema = z.object({
