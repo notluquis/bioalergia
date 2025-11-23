@@ -52,6 +52,7 @@ This task focused on a deep audit of the codebase to improve efficiency, remove 
 - **Documentation**: Removed ALL obsolete documentation (`checklist-daisyui.md`, `docs/ROADMAP.md`, `docs/CLOUDFLARE_MCP.md`, etc.), leaving only `README.md`, `walkthrough.md`, and `docs/TECHNICAL_AUDIT.md`.
 - **Inlined Utilities**: Inlined `clampLimit` into `server/routes/transactions.ts` and deleted `server/lib/transactions.ts`.
 - **Shared Utilities**: Restored `server/lib/rut.ts` and added Zod validation to `server/schemas.ts` to enforce RUT validity for both Employees and Counterparts.
+- **Scripts**: Added missing `prisma:generate` and `postinstall` scripts to `package.json` to ensure Prisma client generation.
 - **Type Safety**: Resolved remaining implicit `any` types in `counterparts.ts` with explicit interface definitions.
 
 ## Conclusion
