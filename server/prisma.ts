@@ -1,3 +1,4 @@
 import { PrismaClient } from "../generated/prisma/client.js";
 
-export const prisma = new PrismaClient();
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const prisma = new PrismaClient({} as any);

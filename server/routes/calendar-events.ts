@@ -247,7 +247,7 @@ export function registerCalendarEventRoutes(app: express.Express) {
           (log: {
             id: bigint;
             triggerSource: string;
-            triggerUserId: bigint | null;
+            triggerUserId: number | null;
             triggerLabel: string | null;
             status: string;
             startedAt: Date;

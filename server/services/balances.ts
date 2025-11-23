@@ -1,4 +1,5 @@
 import { prisma } from "../prisma.js";
+import { Prisma } from "../../generated/prisma/client.js";
 import { formatDateOnly } from "../lib/time.js";
 
 type DailyBalance = {
@@ -23,7 +24,7 @@ export async function listDailyBalances(options: { from?: string; to?: string })
     orderBy: { balanceDate: "asc" },
   });
 
-  return balances.map((row: { balanceDate: Date; balance: number; note: string | null }) => ({
+  return balances.map((row: { balanceDate: Date; balance: Prisma.Decimal; note: string | null }) => ({
     date: formatDateOnly(row.balanceDate),
     balance: Number(row.balance),
     note: row.note,

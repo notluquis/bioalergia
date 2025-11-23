@@ -30,7 +30,8 @@ export function registerEmployeeRoutes(app: express.Express) {
           .json({ status: "error", message: "Los datos no son válidos", issues: parsed.error.issues });
       }
 
-      const employee = await createEmployee(parsed.data);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const employee = await createEmployee(parsed.data as any);
       logEvent("employees:create", requestContext(req, { employeeId: employee?.id }));
       res.status(201).json({ status: "ok", employee });
     })
@@ -48,7 +49,8 @@ export function registerEmployeeRoutes(app: express.Express) {
       }
 
       const employeeId = Number(req.params.id);
-      const employee = await updateEmployee(employeeId, parsed.data);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const employee = await updateEmployee(employeeId, parsed.data as any);
       logEvent("employees:update", requestContext(req, { employeeId }));
       res.json({ status: "ok", employee });
     })

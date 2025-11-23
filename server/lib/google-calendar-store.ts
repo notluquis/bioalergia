@@ -44,20 +44,22 @@ export async function upsertGoogleCalendarEvents(events: CalendarEventRecord[]) 
 
     const existing = await prisma.event.findFirst({
       where: {
-        calendarId: event.calendarId,
-        eventId: event.eventId,
+        calendarId: parseInt(event.calendarId),
+        externalEventId: event.eventId,
       },
     });
 
     if (existing) {
       await prisma.event.update({
         where: { id: existing.id },
-        data,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        data: data as any,
       });
       updated++;
     } else {
       await prisma.event.create({
-        data,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        data: data as any,
       });
       inserted++;
     }
@@ -72,8 +74,8 @@ export async function removeGoogleCalendarEvents(events: { calendarId: string; e
   for (const event of events) {
     await prisma.event.deleteMany({
       where: {
-        calendarId: event.calendarId,
-        eventId: event.eventId,
+        calendarId: parseInt(event.calendarId),
+        externalEventId: event.eventId,
       },
     });
   }

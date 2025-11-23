@@ -143,7 +143,7 @@ export async function listAllergyInventoryOverview() {
         (ip: {
           providerId: number;
           provider: { name: string; rut: string; accounts: { accountIdentifier: string }[] };
-          currentPrice: number | null;
+          currentPrice: Prisma.Decimal | null;
           lastStockCheck: Date | null;
           lastPriceCheck: Date | null;
         }) => ({

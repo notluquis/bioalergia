@@ -14,7 +14,18 @@ import {
 import type { AuthenticatedRequest } from "../types.js";
 import { serviceCreateSchema, servicePaymentSchema, serviceRegenerateSchema } from "../schemas.js";
 
-function mapService(s: Prisma.ServiceGetPayload<{ include: { schedules: true } }>) {
+function mapService(
+  s: Prisma.ServiceGetPayload<{ include: { schedules: true } }> & {
+    counterpartName?: string | null;
+    counterpartAccountIdentifier?: string | null;
+    counterpartAccountBankName?: string | null;
+    counterpartAccountType?: string | null;
+    total_expected?: number;
+    total_paid?: number;
+    pending_count?: number;
+    overdue_count?: number;
+  }
+) {
   return {
     id: s.id,
     public_id: s.publicId,
@@ -23,20 +34,13 @@ function mapService(s: Prisma.ServiceGetPayload<{ include: { schedules: true } }
     category: s.category,
     service_type: s.serviceType,
     ownership: s.ownership,
-    obligation_type: s.obligationType,
-    recurrence_type: s.recurrenceType,
-    frequency: s.frequency,
     default_amount: s.defaultAmount,
-    amount_indexation: s.amountIndexation,
     counterpart_id: s.counterpartId,
     counterpart_account_id: s.counterpartAccountId,
-    account_reference: s.accountReference,
-    emission_day: s.emissionDay,
-    emission_mode: s.emissionMode,
-    emission_start_day: s.emissionStartDay,
-    emission_end_day: s.emissionEndDay,
-    emission_exact_date: s.emissionExactDate,
+    frequency: s.frequency,
+    recurrence_type: s.recurrenceType,
     due_day: s.dueDay,
+    emission_day: s.emissionDay,
     start_date: s.startDate,
     next_generation_months: s.nextGenerationMonths,
     late_fee_mode: s.lateFeeMode,
@@ -68,12 +72,12 @@ export function registerServiceRoutes(app: express.Express) {
       const services = await listServicesWithSummary();
       res.json({
         status: "ok",
-        services: services.map(
-          (s: Prisma.ServiceGetPayload<{ include: { schedules: true } }> & { summary: unknown }) => ({
-            ...mapService(s),
-            summary: s.summary,
-          })
-        ),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        services: services.map((s: any) => ({
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ...mapService(s as any),
+          summary: s.summary,
+        })),
       });
     })
   );
@@ -126,7 +130,8 @@ export function registerServiceRoutes(app: express.Express) {
       // detail.service has summary merged
       res.json({
         status: "ok",
-        service: detail ? mapService(detail.service) : mapService(service),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        service: detail ? mapService(detail.service as any) : mapService(service as any),
         schedules: detail?.schedules ?? [],
       });
     })
@@ -143,7 +148,8 @@ export function registerServiceRoutes(app: express.Express) {
       const service = await updateService(id, parsed);
       const detail = await getServiceDetail(id);
       if (!detail) {
-        return res.json({ status: "ok", service: mapService(service), schedules: [] });
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return res.json({ status: "ok", service: mapService(service as any), schedules: [] });
       }
       res.json({
         status: "ok",

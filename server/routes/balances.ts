@@ -77,7 +77,7 @@ export function registerBalanceRoutes(app: express.Express) {
       >();
 
       for (const tx of transactions.transactions) {
-        const timestamp = tx.timestamp;
+        const timestamp = new Date(tx.timestamp).toISOString();
         const dateKey = timestamp.slice(0, 10);
         const amount = Number(tx.amount);
         const direction = tx.direction;
