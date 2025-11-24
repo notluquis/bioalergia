@@ -168,7 +168,7 @@ export function registerTransactionRoutes(app: express.Express) {
             : undefined,
       });
 
-      res.json({ status: "ok", data: participants });
+      res.json({ status: "ok", participants });
     })
   );
 

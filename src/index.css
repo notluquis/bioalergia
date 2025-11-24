@@ -624,6 +624,26 @@ button.btn-xs {
   animation:
     90ms cubic-bezier(0.4, 0, 1, 1) both fade-out,
     300ms cubic-bezier(0.4, 0, 0.2, 1) both slide-to-left;
+  --header-scroll-bg: rgba(255, 255, 255, 0.8);
+  --header-scroll-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+html.dark,
+html[data-theme="bioalergia-dark"] {
+  /* DaisyUI color tokens fallback for dark theme */
+  color-scheme: dark;
+  --b1: 0 0% 0%; /* black */
+  --b2: 0 0% 10%;
+  --b3: 0 0% 18%;
+  --bc: 0 0% 100%; /* white */
+  --surface-elevated-bg: color-mix(in srgb, #080808 88%, transparent);
+  --surface-elevated-border: color-mix(in srgb, #1a1a1a 55%, transparent);
+  --surface-recessed-bg: color-mix(in srgb, #050505 94%, transparent);
+  --surface-recessed-border: color-mix(in srgb, #1f1f1f 45%, transparent);
+  --surface-muted-bg: color-mix(in srgb, #0c0c0c 92%, transparent);
+
+  --header-scroll-bg: rgba(30, 30, 30, 0.8);
+  --header-scroll-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
 }
 
 ::view-transition-new(root) {
@@ -666,27 +686,11 @@ button.btn-xs {
     padding-bottom: 1rem;
   }
   to {
-    background-color: rgba(255, 255, 255, 0.8); /* Glass effect */
+    background-color: var(--header-scroll-bg);
     backdrop-filter: blur(12px);
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--header-scroll-shadow);
     padding-top: 0.75rem;
     padding-bottom: 0.75rem;
-  }
-}
-
-/* Dark mode variant */
-@media (prefers-color-scheme: dark) {
-  @keyframes header-scroll {
-    from {
-      background-color: transparent;
-      backdrop-filter: blur(0px);
-      box-shadow: none;
-    }
-    to {
-      background-color: rgba(30, 30, 30, 0.8);
-      backdrop-filter: blur(12px);
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
-    }
   }
 }
 
