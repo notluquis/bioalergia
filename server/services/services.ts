@@ -119,18 +119,31 @@ export async function listServicesWithSummary() {
     include: {
       counterpart: true,
       counterpartAccount: true,
-      schedules: true,
+      schedules: {
+        select: {
+          expectedAmount: true,
+          status: true,
+          paidAmount: true,
+          dueDate: true,
+        },
+      },
     },
   });
 
   return services.map(
     (
-      service: Prisma.ServiceGetPayload<{ include: { schedules: true; counterpart: true; counterpartAccount: true } }>
+      service: Prisma.ServiceGetPayload<{
+        include: {
+          counterpart: true;
+          counterpartAccount: true;
+          schedules: { select: { expectedAmount: true; status: true; paidAmount: true; dueDate: true } };
+        };
+      }>
     ) => {
       const summary = service.schedules.reduce(
         (
           acc: { total_expected: number; total_paid: number; pending_count: number; overdue_count: number },
-          s: Prisma.ServiceScheduleGetPayload<{}>
+          s: { expectedAmount: Prisma.Decimal; status: string; paidAmount: Prisma.Decimal | null; dueDate: Date }
         ) => {
           acc.total_expected += Number(s.expectedAmount);
           if (["PAID", "PARTIAL"].includes(s.status)) {

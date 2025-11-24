@@ -1,5 +1,5 @@
 import { prisma } from "../prisma.js";
-import { Prisma } from "../../generated/prisma/client.js";
+import { Prisma, TransactionDirection } from "../../generated/prisma/client.js";
 
 export type TransactionFilters = {
   from?: Date;
@@ -65,7 +65,18 @@ export async function listTransactions(filters: TransactionFilters, limit = 100,
       orderBy: { timestamp: "desc" },
       take: limit,
       skip: offset,
-      include: {
+      select: {
+        id: true,
+        timestampRaw: true,
+        timestamp: true,
+        description: true,
+        origin: true,
+        destination: true,
+        sourceId: true,
+        direction: true,
+        amount: true,
+        sourceFile: true,
+        createdAt: true,
         loanSchedules: {
           include: { loan: true },
         },
@@ -76,12 +87,21 @@ export async function listTransactions(filters: TransactionFilters, limit = 100,
     }),
   ]);
 
-  type TransactionWithRelations = Prisma.TransactionGetPayload<{
-    include: {
-      loanSchedules: { include: { loan: true } };
-      serviceSchedules: { include: { service: true } };
-    };
-  }>;
+  type TransactionWithRelations = {
+    id: number;
+    timestampRaw: string;
+    timestamp: Date;
+    description: string | null;
+    origin: string | null;
+    destination: string | null;
+    sourceId: string | null;
+    direction: TransactionDirection;
+    amount: Prisma.Decimal;
+    sourceFile: string | null;
+    createdAt: Date;
+    loanSchedules: { loan: Prisma.LoanGetPayload<{}> }[];
+    serviceSchedules: { service: Prisma.ServiceGetPayload<{}> }[];
+  };
 
   const typedTransactions = transactions as TransactionWithRelations[];
 
