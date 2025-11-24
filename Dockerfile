@@ -38,6 +38,7 @@ COPY --from=builder /app/generated ./generated
 
 # Copy necessary runtime files
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 
 # Remove dev dependencies to reduce size
 RUN npm prune --omit=dev
