@@ -58,7 +58,6 @@ src/
 server/
 scripts/
 prisma/migrations/
-public/
 
 # CI/CD
 .github/
