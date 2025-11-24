@@ -22,7 +22,10 @@ export function useWakeLock() {
             setIsLocked(false);
           });
         } catch (err) {
-          console.error(`[WakeLock] Failed to acquire wake lock: ${(err as Error).name}, ${(err as Error).message}`);
+          // Ignore NotAllowedError as it's expected if user denies permission or tab is hidden
+          if ((err as Error).name !== "NotAllowedError") {
+            console.error(`[WakeLock] Failed to acquire wake lock: ${(err as Error).name}, ${(err as Error).message}`);
+          }
         }
       }
     };

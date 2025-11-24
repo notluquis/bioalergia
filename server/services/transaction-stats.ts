@@ -55,7 +55,7 @@ export async function getTransactionStats(filters: TransactionStatsFilters): Pro
       direction,
       COUNT(*) as total,
       SUM(amount) as amount
-    FROM transactions
+    FROM mp_transactions
     WHERE ${fromDate ? Prisma.sql`timestamp >= ${fromDate}` : Prisma.sql`1=1`}
       AND ${toDate ? Prisma.sql`timestamp <= ${toDate}` : Prisma.sql`1=1`}
     GROUP BY TO_CHAR(timestamp, 'YYYY-MM'), direction
