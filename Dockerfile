@@ -28,8 +28,8 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install ONLY production dependencies
-RUN npm ci --omit=dev
+# Copy node_modules from builder (faster than npm ci)
+COPY --from=builder /app/node_modules ./node_modules
 
 # Copy built application from builder
 COPY --from=builder /app/dist ./dist
@@ -37,6 +37,9 @@ COPY --from=builder /app/generated ./generated
 
 # Copy necessary runtime files
 COPY --from=builder /app/prisma ./prisma
+
+# Remove dev dependencies to reduce size
+RUN npm prune --omit=dev
 
 # Expose port
 EXPOSE 3000
