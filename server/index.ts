@@ -155,8 +155,8 @@ app.use(express.static(clientDir, { index: false }));
 app.use("/uploads", express.static(uploadsDir));
 
 // SPA fallback - serve index.html para rutas no encontradas
-// SPA fallback - serve index.html for all other routes
-app.get("*", (_req, res) => {
+// Express 5: wildcards must have names (/*path instead of just *)
+app.get("/*path", (_req, res) => {
   res.sendFile(path.join(process.cwd(), "dist/client/index.html"));
 });
 
