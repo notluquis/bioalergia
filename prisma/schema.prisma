@@ -186,8 +186,21 @@ model User {
   dailyProductionBalancesUpdated DailyProductionBalance[]        @relation("UpdatedBy")
   dailyProductionBalanceHistory  DailyProductionBalanceHistory[] @relation("ChangedBy")
   supplyRequests                 SupplyRequest[]
+  pushSubscriptions              PushSubscription[]
 
   @@map("users")
+}
+
+model PushSubscription {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  endpoint  String   @unique
+  keys      Json     // Stores { p256dh, auth }
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("push_subscriptions")
 }
 
 model Setting {

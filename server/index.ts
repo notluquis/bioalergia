@@ -25,6 +25,8 @@ import suppliesRouter from "./routes/supplies.js";
 import { getUploadsRootDir } from "./lib/uploads.js";
 import { registerDailyProductionBalanceRoutes } from "./routes/daily-production-balances.js";
 import { startDailyProductionReminderJob } from "./modules/dailyProductionReminders.js";
+import shareTargetRouter from "./routes/share-target.js";
+import notificationsRouter from "./routes/notifications.js";
 
 const app = express();
 
@@ -91,6 +93,8 @@ registerServiceRoutes(app);
 registerCalendarEventRoutes(app);
 registerAssetRoutes(app);
 registerDailyProductionBalanceRoutes(app);
+app.use("/share-target", shareTargetRouter);
+app.use("/api/notifications", notificationsRouter);
 app.use("/api/supplies", suppliesRouter);
 startDailyProductionReminderJob();
 
@@ -152,7 +156,7 @@ app.use("/uploads", express.static(uploadsDir));
 
 // SPA fallback - serve index.html para rutas no encontradas
 // SPA fallback - serve index.html para rutas no encontradas
-app.get("(.*)", (_req: Request, res: Response) => {
+app.get("/:pathMatch(.*)", (_req: Request, res: Response) => {
   res.sendFile(path.join(clientDir, "index.html"));
 });
 

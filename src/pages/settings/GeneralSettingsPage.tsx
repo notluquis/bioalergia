@@ -1,8 +1,10 @@
 import SettingsForm from "../../components/features/SettingsForm";
 import { useSettings } from "../../context/settings-context";
+import { usePushNotifications } from "../../hooks/usePushNotifications";
 
 export default function GeneralSettingsPage() {
   const { settings } = useSettings();
+  const { isSubscribed, permission, toggleSubscription, sendTestNotification } = usePushNotifications();
 
   return (
     <div className="space-y-6">
@@ -45,6 +47,38 @@ export default function GeneralSettingsPage() {
               <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-base-300 shadow bg-secondary" />
             </div>
             <p className="text-xs text-base-content/60">Visualiza cómo se combinan los colores y el logo.</p>
+          </div>
+        </div>
+      </section>
+
+      <section className="surface-elevated p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-bold">Notificaciones Push</h3>
+            <p className="text-sm text-base-content/70">
+              Recibe alertas sobre nuevos documentos y actualizaciones importantes.
+            </p>
+            <p className="mt-1 text-xs text-base-content/50">
+              Estado:{" "}
+              {permission === "granted"
+                ? isSubscribed
+                  ? "Activadas"
+                  : "Permiso concedido, no suscrito"
+                : "Desactivadas"}
+            </p>
+          </div>
+          <div className="flex gap-2">
+            {isSubscribed && (
+              <button onClick={sendTestNotification} className="btn btn-ghost btn-sm">
+                Probar
+              </button>
+            )}
+            <button
+              onClick={toggleSubscription}
+              className={`btn btn-sm ${isSubscribed ? "btn-error btn-outline" : "btn-primary"}`}
+            >
+              {isSubscribed ? "Desactivar" : "Activar"}
+            </button>
           </div>
         </div>
       </section>
