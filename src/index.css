@@ -98,6 +98,15 @@ html[data-theme="bioalergia-dark"] {
   --surface-muted-bg: color-mix(in srgb, #0c0c0c 92%, transparent);
 }
 
+/* iOS Safe Area Support */
+.pb-safe-bottom {
+  padding-bottom: max(1.25rem, env(safe-area-inset-bottom));
+}
+
+.pt-safe-top {
+  padding-top: max(1rem, env(safe-area-inset-top));
+}
+
 /* Theme tokens are provided by daisyUI themes (declared in tailwind.config.cjs).
    This avoids duplicating tokens in :root and keeps the theme source of truth
    in the daisyUI configuration. */

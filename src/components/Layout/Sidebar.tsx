@@ -11,8 +11,8 @@ import {
   CalendarDays,
   Box,
   Settings,
-  ChevronLeft,
-  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
 } from "@/components/ui/icons";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/Tooltip";
 
@@ -251,7 +251,7 @@ export default function Sidebar({ isOpen, isMobile, onClose, isCollapsed = false
           {/* Footer Info / Collapse Toggle */}
           <div
             className={cn(
-              "rounded-2xl border border-base-300/30 bg-base-100/30 shadow-inner mt-auto",
+              "rounded-2xl border border-base-300/20 bg-base-100/20 backdrop-blur-sm mt-auto",
               isCollapsed ? "p-2" : "p-3"
             )}
           >
@@ -259,12 +259,16 @@ export default function Sidebar({ isOpen, isMobile, onClose, isCollapsed = false
               <button
                 onClick={toggleCollapse}
                 className={cn(
-                  "flex w-full items-center justify-center rounded-xl border border-transparent py-2 text-base-content/60 hover:bg-base-100 hover:text-primary active:scale-95 transition-all",
-                  !isCollapsed && "mb-2 border-base-300/30"
+                  "group flex w-full items-center justify-center rounded-lg py-2 text-base-content/40 hover:text-base-content/70 hover:bg-base-300/20 active:scale-95 transition-all duration-200",
+                  !isCollapsed && "mb-2"
                 )}
                 aria-label={isCollapsed ? "Expandir menú" : "Colapsar menú"}
               >
-                {isCollapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
+                {isCollapsed ? (
+                  <ChevronsRight className="h-4 w-4 group-hover:scale-110 transition-transform" />
+                ) : (
+                  <ChevronsLeft className="h-4 w-4 group-hover:scale-110 transition-transform" />
+                )}
               </button>
             )}
 
