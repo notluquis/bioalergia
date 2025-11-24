@@ -8,13 +8,13 @@ WORKDIR /app
 COPY package*.json ./
 COPY prisma ./prisma/
 
+# Copy source code (needed for build and scripts for prisma generate)
+COPY . .
+
 # Install ALL dependencies (needed for build)
 RUN npm ci
 
-# Copy source code
-COPY . .
-
-# Generate Prisma Client
+# Generate Prisma Client (runs during postinstall but ensuring it's done)
 RUN npm run prisma:generate
 
 # Build the application
