@@ -28,7 +28,7 @@ export type AppSettings = {
 
 export const DEFAULT_SETTINGS: AppSettings = {
   orgName: "Bioalergia",
-  tagline: "Gestión integral de finanzas",
+  tagline: "Suite integral de administración",
   primaryColor: "oklch(var(--p))",
   secondaryColor: "oklch(var(--s))",
   logoUrl: "",
@@ -41,7 +41,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   orgPhone: "",
   primaryCurrency: "CLP",
   supportEmail: "soporte@bioalergia.cl",
-  pageTitle: "Bioalergia · Finanzas",
+  pageTitle: "Bioalergia Suite",
   calendarTimeZone: "America/Santiago",
   calendarSyncStart: "2000-01-01",
   calendarSyncLookaheadDays: "365",
