@@ -14,7 +14,8 @@ COPY . .
 # Install ALL dependencies (needed for build)
 RUN npm ci
 
-# Generate Prisma Client (runs during postinstall but ensuring it's done)
+# Generate Prisma Client (needs DATABASE_URL for type generation, not connection)
+ENV DATABASE_URL="postgresql://dummy:dummy@dummy:5432/dummy"
 RUN npm run prisma:generate
 
 # Build the application
