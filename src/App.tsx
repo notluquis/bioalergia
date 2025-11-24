@@ -35,6 +35,10 @@ export default function App() {
   const toggleSidebar = () => setSidebarOpen((open) => !open);
   const closeSidebar = () => setSidebarOpen(false);
 
+  // Desktop Sidebar Collapse State
+  const [isCollapsed, setIsCollapsed] = React.useState(false);
+  const toggleCollapse = () => setIsCollapsed((prev) => !prev);
+
   const isNavigating = navigationState.state === "loading";
 
   return (
@@ -86,7 +90,13 @@ export default function App() {
         )}
 
         {/* Sidebar */}
-        <Sidebar isOpen={sidebarOpen} isMobile={isMobile} onClose={closeSidebar} />
+        <Sidebar
+          isOpen={sidebarOpen}
+          isMobile={isMobile}
+          onClose={closeSidebar}
+          isCollapsed={isCollapsed}
+          toggleCollapse={toggleCollapse}
+        />
 
         {/* Main content */}
         <div className="layout-container flex min-w-0 flex-1 flex-col gap-6 pb-[110px] md:pb-0">

@@ -51,18 +51,16 @@ const SuppliesPage = lazy(() => import("./pages/Supplies"));
 const InventoryPage = lazy(() => import("./pages/Inventory"));
 
 // Settings pages
+const SettingsOverviewPage = lazy(() => import("./pages/settings/SettingsOverviewPage"));
 const GeneralSettingsPage = lazy(() => import("./pages/settings/GeneralSettingsPage"));
+const CalendarSettingsPage = lazy(() => import("./pages/settings/CalendarSettingsPage"));
 const AccessSettingsPage = lazy(() => import("./pages/settings/AccessSettingsPage"));
 const InventorySettingsPage = lazy(() => import("./pages/settings/InventorySettingsPage"));
 const RolesSettingsPage = lazy(() => import("./pages/settings/RolesSettingsPage"));
 const DailyProductionBalancesSettingsPage = lazy(() => import("./pages/settings/DailyProductionBalancesPage"));
 
 // Componente de loading
-const PageLoader = () => (
-  <div className="flex items-center justify-center min-h-[200px]">
-    <div className="text-primary font-medium">Cargando...</div>
-  </div>
-);
+import PageLoader from "./components/ui/PageLoader";
 
 const router = createBrowserRouter([
   {
@@ -324,12 +322,27 @@ const router = createBrowserRouter([
           </Suspense>
         ),
         children: [
-          { index: true, element: <Navigate to="general" replace /> },
+          {
+            index: true,
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <SettingsOverviewPage />
+              </Suspense>
+            ),
+          },
           {
             path: "general",
             element: (
               <Suspense fallback={<PageLoader />}>
                 <GeneralSettingsPage />
+              </Suspense>
+            ),
+          },
+          {
+            path: "calendar",
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <CalendarSettingsPage />
               </Suspense>
             ),
           },
