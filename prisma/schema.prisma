@@ -1,10 +1,7 @@
 generator client {
-  provider       = "prisma-client"
-  output         = "../generated/prisma"
-  engineType     = "client"      // Rust-free client (smaller, faster)
-  runtime        = "nodejs"       // Node.js runtime
-  moduleFormat   = "esm"          // ESM-only output
-  previewFeatures = ["fullTextSearch", "driverAdapters"]
+  provider        = "prisma-client-js"
+  output          = "../generated/prisma"
+  previewFeatures = ["fullTextSearchPostgres"]
 }
 
 datasource db {
