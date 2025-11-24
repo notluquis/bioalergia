@@ -1,8 +1,9 @@
 import express from "express";
 import webpush from "web-push";
-import { prisma } from "../prisma.js";
+import { prisma, Prisma } from "../prisma.js";
 import { logger } from "../lib/logger.js";
-import { PushSubscription as DbSubscription } from "@prisma/client";
+
+type DbSubscription = Prisma.PushSubscriptionGetPayload<{}>;
 
 const router = express.Router();
 
