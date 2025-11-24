@@ -1,4 +1,4 @@
-import React, { Suspense, lazy } from "react";
+import { Suspense, lazy } from "react";
 import ReactDOM from "react-dom/client";
 import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -395,55 +395,22 @@ const queryClient = new QueryClient({
 });
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
+  <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
-      <ToastProvider>
-        <AuthProvider>
-          <SettingsProvider>
-            <ErrorBoundary>
-              <RouterProvider router={router} />
-            </ErrorBoundary>
-          </SettingsProvider>
-        </AuthProvider>
-      </ToastProvider>
+      <AuthProvider>
+        <SettingsProvider>
+          <ToastProvider>
+            <RouterProvider router={router} />
+          </ToastProvider>
+        </SettingsProvider>
+      </AuthProvider>
     </QueryClientProvider>
-  </React.StrictMode>
+  </ErrorBoundary>
 );
 
-// Register service worker for PWA support
+// Service Worker Registration - with aggressive update strategy
 if ("serviceWorker" in navigator && import.meta.env.PROD) {
-  let refreshing = false;
-  navigator.serviceWorker.addEventListener("controllerchange", () => {
-    if (refreshing) return;
-    refreshing = true;
-    window.location.reload();
-  });
-
-  window.addEventListener("load", () => {
-    navigator.serviceWorker
-      .register("/sw.js", { updateViaCache: "none" })
-      .then((registration) => {
-        const requestSkipWaiting = () => {
-          if (registration.waiting) {
-            registration.waiting.postMessage({ type: "SKIP_WAITING" });
-          }
-        };
-
-        requestSkipWaiting();
-
-        registration.addEventListener("updatefound", () => {
-          const newWorker = registration.installing;
-          newWorker?.addEventListener("statechange", () => {
-            if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
-              newWorker.postMessage({ type: "SKIP_WAITING" });
-            }
-          });
-        });
-
-        registration.update();
-      })
-      .catch((error) => {
-        console.error("SW registration failed:", error);
-      });
+  import("./lib/serviceWorker").then(({ registerServiceWorker }) => {
+    registerServiceWorker();
   });
 }

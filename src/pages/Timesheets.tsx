@@ -18,12 +18,14 @@ import TimesheetDetailTable from "../features/timesheets/components/TimesheetDet
 import Alert from "../components/ui/Alert";
 // Removed unused Input component after cleanup
 import { useMonths } from "../features/timesheets/hooks/useMonths";
+import { useWakeLock } from "../hooks/useWakeLock";
 
 const TimesheetExportPDF = lazy(() => import("../features/timesheets/components/TimesheetExportPDF"));
 
 // Removed unused EMPTY_BULK_ROW and computeExtraAmount during cleanup.
 
 export default function TimesheetsPage() {
+  useWakeLock(); // Keep screen active during timesheet entry
   // Utility to ensure month is always YYYY-MM
   function formatMonthString(m: string): string {
     if (/^[0-9]{4}-[0-9]{2}$/.test(m)) return m;

@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import { Link } from "react-router-dom";
 import dayjs from "dayjs";
 import { useDashboardStats, useRecentMovements } from "../features/dashboard/hooks";
@@ -8,10 +8,20 @@ import DashboardChart from "../features/dashboard/components/DashboardChart";
 import TopParticipantsWidget from "../features/dashboard/components/TopParticipantsWidget";
 import RecentMovementsWidget from "../features/dashboard/components/RecentMovementsWidget";
 import Alert from "../components/ui/Alert";
+import { useWakeLock } from "../hooks/useWakeLock";
+import { useAppBadge } from "../hooks/useAppBadge";
 
 const RANGE_DAYS = 30;
 
 export default function Home() {
+  useWakeLock(); // Keep screen active on dashboard
+  const { clearBadge } = useAppBadge();
+
+  // Clear notification badge when user visits dashboard
+  useEffect(() => {
+    clearBadge();
+  }, [clearBadge]);
+
   const from = useMemo(() => dayjs().subtract(RANGE_DAYS, "day").format("YYYY-MM-DD"), []);
   const to = useMemo(() => dayjs().format("YYYY-MM-DD"), []);
 
