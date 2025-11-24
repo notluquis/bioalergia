@@ -1,3 +1,4 @@
+import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Home, Users, Briefcase, BarChart3 } from "@/components/ui/icons";
 import type { LucideIcon } from "lucide-react";
@@ -18,6 +19,11 @@ const NAV_ITEMS: NavItem[] = [
 export function BottomNav() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
+  const [pendingPath, setPendingPath] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    setPendingPath(null);
+  }, [pathname]);
 
   const isActive = (path: string) => {
     if (path === "/") return pathname === "/";
@@ -39,13 +45,24 @@ export function BottomNav() {
             <button
               key={path}
               type="button"
-              onClick={() => navigate(path)}
+              onClick={() => {
+                setPendingPath(path);
+                navigate(path);
+              }}
               className={`flex flex-1 select-none flex-col items-center justify-center gap-1 rounded-full px-3 py-2 text-[10px] font-semibold transition-all ${
-                active ? "nav-item-active scale-105" : "nav-item-inactive"
+                active || pendingPath === path ? "nav-item-active scale-105" : "nav-item-inactive"
               }`}
             >
-              <Icon className="h-5 w-5" strokeWidth={active ? 2.6 : 2} />
-              <span>{label}</span>
+              <span className="relative flex items-center justify-center">
+                <Icon className="h-5 w-5" strokeWidth={active || pendingPath === path ? 2.6 : 2} />
+                {pendingPath === path && (
+                  <span className="absolute -right-3 h-2 w-2 animate-ping rounded-full bg-primary/80" aria-hidden />
+                )}
+              </span>
+              <span className="flex items-center gap-1">
+                {label}
+                {pendingPath === path && <span className="h-1.5 w-1.5 rounded-full bg-primary/80" />}
+              </span>
             </button>
           );
         })}

@@ -54,7 +54,7 @@ export default function Header() {
     if (/^\/services\/.+\/edit$/.test(location.pathname)) {
       return "Editar servicio";
     }
-    return TITLES[location.pathname] ?? "Bioalergia Finanzas";
+    return TITLES[location.pathname] ?? "Bioalergia";
   }, [location.pathname]);
 
   const handleLogout = async () => {
@@ -79,7 +79,7 @@ export default function Header() {
         <ConnectionIndicator />
         <Button
           variant="ghost"
-          className="btn-circle border border-base-300/60 text-base-content hover:border-primary/60 hover:text-primary"
+          className="btn-circle border border-base-300/60 text-primary hover:border-primary/60 hover:bg-primary/10"
           onClick={handleLogout}
           aria-label="Cerrar sesión"
         >

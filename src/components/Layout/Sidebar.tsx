@@ -1,5 +1,5 @@
 import React from "react";
-import { NavLink, useNavigation } from "react-router-dom";
+import { NavLink, useLocation, useNavigation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
 import {
@@ -13,6 +13,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
 } from "@/components/ui/icons";
+import { Loader2 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/Tooltip";
 
 type NavItem = {
@@ -111,11 +112,17 @@ interface SidebarProps {
 export default function Sidebar({ isOpen, isMobile, onClose, isCollapsed = false, toggleCollapse }: SidebarProps) {
   const { user, hasRole } = useAuth();
   const navigation = useNavigation();
+  const location = useLocation();
   const [pendingPath, setPendingPath] = React.useState<string | null>(null);
 
   const displayName = user?.name || (user?.email?.split("@")[0] ?? "");
   const firstWord = displayName.split(" ")[0];
   const capitalizedName = firstWord ? firstWord.charAt(0).toUpperCase() + firstWord.slice(1).toLowerCase() : "";
+
+  React.useEffect(() => {
+    // Clear manual pending once the URL actually changed
+    setPendingPath(null);
+  }, [location.pathname]);
 
   return (
     <TooltipProvider delayDuration={0}>
@@ -172,7 +179,10 @@ export default function Sidebar({ isOpen, isMobile, onClose, isCollapsed = false
 
                     <div className="space-y-1">
                       {visibleItems.map((item) => {
-                        const isPending = navigation.state === "loading" && pendingPath === item.to;
+                        const isPending =
+                          pendingPath === item.to || (navigation.state === "loading" && pendingPath === item.to);
+                        const alreadyHere =
+                          location.pathname === item.to || location.pathname.startsWith(`${item.to}/`);
 
                         return (
                           <NavLink
@@ -180,7 +190,7 @@ export default function Sidebar({ isOpen, isMobile, onClose, isCollapsed = false
                             to={item.to}
                             end={item.exact}
                             onClick={() => {
-                              setPendingPath(item.to);
+                              if (!alreadyHere) setPendingPath(item.to);
                               if (isMobile && onClose) onClose();
                             }}
                             className={({ isActive }) => {
@@ -189,7 +199,7 @@ export default function Sidebar({ isOpen, isMobile, onClose, isCollapsed = false
                                 return cn(
                                   "flex h-10 w-full items-center justify-center rounded-xl active:scale-95",
                                   active || isPending
-                                    ? "bg-primary text-primary-content shadow-md shadow-primary/20"
+                                    ? "bg-primary text-primary-content shadow-md shadow-primary/20 ring-1 ring-primary/60"
                                     : "text-base-content/60 hover:bg-base-100 hover:text-base-content"
                                 );
                               }
@@ -225,6 +235,9 @@ export default function Sidebar({ isOpen, isMobile, onClose, isCollapsed = false
                                     )}
                                   />
                                   <span className="truncate">{item.label}</span>
+                                  {isPending && (
+                                    <Loader2 className="h-3 w-3 shrink-0 animate-spin text-primary-content/80" />
+                                  )}
                                 </>
                               );
                             }}

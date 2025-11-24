@@ -1,7 +1,7 @@
 {
-  "name": "Finanzas Bioalergia",
-  "short_name": "Finanzas",
-  "description": "Gestión integral de finanzas empresariales - Transacciones, Servicios, Calendario, RR.HH e Inventario",
+  "name": "Bioalergia Suite",
+  "short_name": "Bioalergia",
+  "description": "Suite integral de administración para todo Bioalergia: Finanzas, Servicios, Calendario, RR.HH e Inventario",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

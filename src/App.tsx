@@ -5,9 +5,11 @@ import Sidebar from "./components/Layout/Sidebar";
 import Header from "./components/Layout/Header";
 import { BottomNav } from "./components/Layout/MobileNav";
 import { APP_VERSION, BUILD_TIMESTAMP } from "./version";
+import { useSettings } from "./context/SettingsContext";
 
 export default function App() {
   const navigationState = useNavigation();
+  const { settings } = useSettings();
 
   // Sidebar state: visible/hidden
   const [sidebarOpen, setSidebarOpen] = React.useState(true);
@@ -46,6 +48,12 @@ export default function App() {
     if (Number.isNaN(parsed.getTime())) return BUILD_TIMESTAMP;
     return parsed.toLocaleString("es-CL", { dateStyle: "short", timeStyle: "short" });
   }, []);
+
+  React.useEffect(() => {
+    if (settings?.pageTitle) {
+      document.title = settings.pageTitle;
+    }
+  }, [settings?.pageTitle]);
 
   return (
     <>
@@ -126,7 +134,7 @@ export default function App() {
 
           <footer className="surface-elevated hidden md:flex items-center justify-between px-6 py-3 text-sm text-base-content">
             <div className="flex items-center gap-3">
-              <span className="font-semibold text-base-content">Bioalergia Finanzas</span>
+              <span className="font-semibold text-base-content">Bioalergia</span>
               <span className="text-xs text-base-content/60">v{APP_VERSION}</span>
             </div>
             <div className="flex items-center gap-2 text-xs text-base-content/70">
