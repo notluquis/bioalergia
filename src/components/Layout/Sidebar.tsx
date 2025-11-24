@@ -1,7 +1,6 @@
 import React from "react";
 import { NavLink, useNavigation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
-import { APP_VERSION, BUILD_TIMESTAMP } from "@/version";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
@@ -117,15 +116,6 @@ export default function Sidebar({ isOpen, isMobile, onClose, isCollapsed = false
   const displayName = user?.name || (user?.email?.split("@")[0] ?? "");
   const firstWord = displayName.split(" ")[0];
   const capitalizedName = firstWord ? firstWord.charAt(0).toUpperCase() + firstWord.slice(1).toLowerCase() : "";
-
-  const buildLabel = React.useMemo(() => {
-    if (!BUILD_TIMESTAMP) return "Desconocido";
-    const parsed = new Date(BUILD_TIMESTAMP);
-    if (Number.isNaN(parsed.getTime())) {
-      return BUILD_TIMESTAMP;
-    }
-    return parsed.toLocaleString("es-CL", { dateStyle: "short", timeStyle: "short" });
-  }, []);
 
   return (
     <TooltipProvider delayDuration={0}>
@@ -270,14 +260,6 @@ export default function Sidebar({ isOpen, isMobile, onClose, isCollapsed = false
                   <ChevronsLeft className="h-4 w-4 group-hover:scale-110 transition-transform" />
                 )}
               </button>
-            )}
-
-            {!isCollapsed && (
-              <div className="text-[11px] text-base-content/60">
-                <p className="font-semibold text-base-content">Versión</p>
-                <p>{APP_VERSION}</p>
-                <p className="text-xs">Build: {buildLabel}</p>
-              </div>
             )}
           </div>
         </div>

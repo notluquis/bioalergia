@@ -4,7 +4,7 @@ import { useDebounce } from "use-debounce";
 import Sidebar from "./components/Layout/Sidebar";
 import Header from "./components/Layout/Header";
 import { BottomNav } from "./components/Layout/MobileNav";
-import Clock from "./components/features/Clock";
+import { APP_VERSION, BUILD_TIMESTAMP } from "./version";
 
 export default function App() {
   const navigationState = useNavigation();
@@ -40,6 +40,12 @@ export default function App() {
   const toggleCollapse = () => setIsCollapsed((prev) => !prev);
 
   const isNavigating = navigationState.state === "loading";
+  const buildLabel = React.useMemo(() => {
+    if (!BUILD_TIMESTAMP) return "Desconocido";
+    const parsed = new Date(BUILD_TIMESTAMP);
+    if (Number.isNaN(parsed.getTime())) return BUILD_TIMESTAMP;
+    return parsed.toLocaleString("es-CL", { dateStyle: "short", timeStyle: "short" });
+  }, []);
 
   return (
     <>
@@ -117,8 +123,14 @@ export default function App() {
           </main>
 
           <footer className="surface-elevated hidden md:flex items-center justify-between px-6 py-3 text-sm text-base-content">
-            <span className="font-medium text-base-content/70">Bioalergia Finanzas</span>
-            <Clock />
+            <div className="flex items-center gap-3">
+              <span className="font-semibold text-base-content">Bioalergia Finanzas</span>
+              <span className="text-xs text-base-content/60">v{APP_VERSION}</span>
+            </div>
+            <div className="flex items-center gap-2 text-xs text-base-content/70">
+              <span className="inline-flex h-2 w-2 rounded-full bg-primary/70" aria-hidden="true" />
+              <span>Build: {buildLabel}</span>
+            </div>
           </footer>
         </div>
 
