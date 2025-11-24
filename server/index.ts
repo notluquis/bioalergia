@@ -151,7 +151,8 @@ app.use(express.static(clientDir, { index: false }));
 app.use("/uploads", express.static(uploadsDir));
 
 // SPA fallback - serve index.html para rutas no encontradas
-app.get("*", (_req: Request, res: Response) => {
+// SPA fallback - serve index.html para rutas no encontradas
+app.get("(.*)", (_req: Request, res: Response) => {
   res.sendFile(path.join(clientDir, "index.html"));
 });
 
