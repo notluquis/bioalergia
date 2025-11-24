@@ -1,74 +1,45 @@
-#!/usr/bin/env node
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 
-/**
- * Fix Prisma ESM imports by adding .js extensions
- *
- * Prisma's ESM generator doesn't add .js extensions to relative imports,
- * which causes Node.js ESM to fail with ERR_MODULE_NOT_FOUND in production.
- * This script post-processes the generated Prisma client to add the extensions.
- */
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const generatedDir = path.join(__dirname, "../generated/prisma");
 
-import { readdir, readFile, writeFile } from "fs/promises";
-import { join } from "path";
+console.log("🔧 Fixing Prisma ESM imports for Prisma 7...\n");
 
-const PRISMA_DIR = "generated/prisma";
+// Prisma 7 genera solo 3 archivos principales .d.ts
+const filesToFix = ["client.d.ts", "default.d.ts", "edge.d.ts"];
 
-async function fixFileImports(filePath) {
-  const content = await readFile(filePath, "utf-8");
+let fixedCount = 0;
 
-  // Replace relative imports without .js extension
-  // Matches: from "./something" or from '../something'
-  // But NOT: from "./something.js" or from "external-package"
-  const fixed = content.replace(
-    /from\s+(['"])(\.[^'"]+?)(?<!\.js)\1/g,
-    (match, quote, path) => {
-      // Add .js extension
-      return `from ${quote}${path}.js${quote}`;
-    }
-  );
+for (const file of filesToFix) {
+  const filePath = path.join(generatedDir, file);
 
-  if (fixed !== content) {
-    await writeFile(filePath, fixed, "utf-8");
-    console.log(`✓ Fixed: ${filePath}`);
-    return true;
+  if (!fs.existsSync(filePath)) {
+    continue;
   }
 
-  return false;
-}
+  let content = fs.readFileSync(filePath, "utf8");
+  const originalContent = content;
 
-async function processDirectory(dirPath) {
-  const entries = await readdir(dirPath, { withFileTypes: true });
-  let fixedCount = 0;
+  // Fix: Add .js extension to relative imports
+  content = content.replace(/from ['"](\.[^'"]+)(?<!\.js)['"]/g, (match, p1) => {
+    // Skip if already has .js
+    if (p1.endsWith(".js")) return match;
+    // Add .js extension
+    return `from '${p1}.js'`;
+  });
 
-  for (const entry of entries) {
-    const fullPath = join(dirPath, entry.name);
-
-    if (entry.isDirectory()) {
-      fixedCount += await processDirectory(fullPath);
-    } else if (entry.name.endsWith(".ts") || entry.name.endsWith(".js")) {
-      const wasFixed = await fixFileImports(fullPath);
-      if (wasFixed) fixedCount++;
-    }
-  }
-
-  return fixedCount;
-}
-
-async function main() {
-  console.log("🔧 Fixing Prisma ESM imports...\n");
-
-  try {
-    const fixedCount = await processDirectory(PRISMA_DIR);
-
-    if (fixedCount > 0) {
-      console.log(`\n✅ Fixed ${fixedCount} file(s)`);
-    } else {
-      console.log("\n✓ No fixes needed");
-    }
-  } catch (error) {
-    console.error("❌ Error:", error.message);
-    process.exit(1);
+  // Only write if changed
+  if (content !== originalContent) {
+    fs.writeFileSync(filePath, content, "utf8");
+    console.log(`✓ Fixed: ${file}`);
+    fixedCount++;
   }
 }
 
-main();
+if (fixedCount === 0) {
+  console.log("ℹ️  No fixes needed - Prisma 7 imports are already correct!");
+} else {
+  console.log(`\n✅ Fixed ${fixedCount} file(s)`);
+}
