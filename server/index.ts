@@ -157,7 +157,7 @@ app.use("/uploads", express.static(uploadsDir));
 // SPA fallback - serve index.html para rutas no encontradas
 // Express 5: need separate handlers for "/" and "/*path"
 const sendIndexHtml = (_req: Request, res: Response) => {
-  res.sendFile(path.join(process.cwd(), "dist/client/index.html"));
+  res.sendFile(path.join(clientDir, "index.html"));
 };
 
 app.get("/", sendIndexHtml);
