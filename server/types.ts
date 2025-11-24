@@ -1,5 +1,5 @@
 import type { Request } from "express";
-import type { UserRole } from "../generated/prisma/enums.js";
+import type { UserRole } from "../generated/prisma/client.js";
 
 export type { UserRole };
 

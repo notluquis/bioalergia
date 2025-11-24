@@ -12,8 +12,7 @@ import {
   counterpartSummary,
   assignAccountsToCounterpartByRut,
 } from "../services/counterparts.js";
-import { Prisma } from "../../generated/prisma/client.js";
-import { CounterpartPersonType, CounterpartCategory } from "../../generated/prisma/enums.js";
+import { Prisma, CounterpartPersonType, CounterpartCategory } from "../../generated/prisma/client.js";
 
 type CounterpartWithAccounts = Prisma.CounterpartGetPayload<{
   include: { accounts: true };
