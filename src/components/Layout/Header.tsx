@@ -5,6 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import Button from "@/components/ui/Button";
 import ThemeToggle from "../ui/ThemeToggle";
 import ConnectionIndicator from "../features/ConnectionIndicator";
+import Clock from "../features/Clock";
 
 const TITLES: Record<string, string> = {
   "/": "Panel financiero",
@@ -72,7 +73,8 @@ export default function Header() {
           </span>
         )}
       </div>
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 md:gap-3">
+        <Clock />
         <ThemeToggle />
         <ConnectionIndicator />
         <Button

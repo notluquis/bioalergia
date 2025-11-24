@@ -19,11 +19,14 @@ export default function Clock() {
   }, []);
 
   return (
-    <div className="badge badge-ghost text-sm font-mono">
-      {time.toLocaleTimeString("es-CL", {
-        hour: "2-digit",
-        minute: "2-digit",
-      })}
+    <div className="inline-flex items-center gap-2 rounded-full border border-base-300/60 bg-base-100/80 px-3 py-1 text-xs font-mono text-base-content shadow-sm backdrop-blur">
+      <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary/70" aria-hidden="true" />
+      <span>
+        {time.toLocaleTimeString("es-CL", {
+          hour: "2-digit",
+          minute: "2-digit",
+        })}
+      </span>
     </div>
   );
 }

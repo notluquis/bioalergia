@@ -75,16 +75,16 @@ export default function ThemeToggle() {
     <button
       type="button"
       onClick={toggleTheme}
-      className={`btn btn-circle border border-base-300/60 bg-base-100/70 text-base-content shadow-sm transition-all duration-300 ${
-        isDark ? "hover:bg-base-200/50" : "hover:bg-base-200"
+      className={`btn btn-circle border border-base-300/70 bg-base-100/80 text-base-content shadow-sm transition-all duration-300 ${
+        isDark ? "hover:bg-base-200/40 hover:border-primary/60" : "hover:bg-base-200/70 hover:border-primary/60"
       }`}
       aria-label={label}
     >
       <span
         className={`flex h-6 w-6 items-center justify-center rounded-full transition-all duration-300 ${
           isDark
-            ? "bg-gradient-to-r from-slate-800 to-indigo-700 text-amber-100"
-            : "bg-gradient-to-r from-amber-200 to-rose-200 text-slate-800"
+            ? "bg-linear-to-br from-base-200 via-primary/40 to-primary text-primary-content shadow-inner shadow-primary/20"
+            : "bg-linear-to-br from-base-100 via-primary/10 to-primary/70 text-primary shadow-inner shadow-primary/10"
         }`}
       >
         {icon}

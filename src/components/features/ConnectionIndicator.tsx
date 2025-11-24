@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import Button from "../ui/Button";
+import { cn } from "@/lib/utils";
 
 interface HealthResponse {
   status: "ok" | "degraded" | "error";
@@ -42,11 +42,27 @@ const STATUS_COPY: Record<IndicatorLevel, { label: string; description: string }
   },
 };
 
-const INDICATOR_COLORS: Record<IndicatorLevel, string> = {
-  online: "bg-emerald-400",
-  degraded: "bg-amber-400",
-  offline: "bg-rose-400",
-  starting: "bg-blue-400 animate-pulse",
+const INDICATOR_STYLES: Record<IndicatorLevel, { dot: string; chip: string; panel: string }> = {
+  online: {
+    dot: "bg-emerald-500 shadow-[0_0_0_3px] shadow-emerald-400/25",
+    chip: "bg-emerald-50 text-emerald-800 border border-emerald-200/80 shadow-sm dark:bg-emerald-900/40 dark:text-emerald-50 dark:border-emerald-700/60",
+    panel: "border-emerald-200/80 dark:border-emerald-700/60",
+  },
+  degraded: {
+    dot: "bg-amber-500 shadow-[0_0_0_3px] shadow-amber-400/30",
+    chip: "bg-amber-50 text-amber-900 border border-amber-200/80 shadow-sm dark:bg-amber-900/40 dark:text-amber-50 dark:border-amber-700/60",
+    panel: "border-amber-200/80 dark:border-amber-700/60",
+  },
+  offline: {
+    dot: "bg-rose-500 shadow-[0_0_0_3px] shadow-rose-400/30",
+    chip: "bg-rose-50 text-rose-900 border border-rose-200/80 shadow-sm dark:bg-rose-900/40 dark:text-rose-50 dark:border-rose-700/60",
+    panel: "border-rose-200/80 dark:border-rose-700/60",
+  },
+  starting: {
+    dot: "bg-blue-500 animate-pulse shadow-[0_0_0_3px] shadow-blue-400/30",
+    chip: "bg-blue-50 text-blue-900 border border-blue-200/80 shadow-sm dark:bg-blue-900/40 dark:text-blue-50 dark:border-blue-700/60",
+    panel: "border-blue-200/80 dark:border-blue-700/60",
+  },
 };
 
 export function ConnectionIndicator() {
@@ -180,34 +196,36 @@ export function ConnectionIndicator() {
   }, [open, state.level]);
 
   const statusCopy = useMemo(() => STATUS_COPY[state.level], [state.level]);
+  const styles = INDICATOR_STYLES[state.level];
 
   return (
     <div className="relative dropdown dropdown-end">
-      <Button
+      <button
         type="button"
-        size="xs"
-        variant="secondary"
         onClick={() => setOpen((prev) => !prev)}
-        className="flex items-center gap-2 rounded-full px-2 py-1 text-xs font-medium text-base-content transition bg-base-100"
+        className={cn(
+          "flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors backdrop-blur-sm",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary/70",
+          styles.chip
+        )}
         aria-pressed={open}
         aria-label={`Estado de la conexión: ${statusCopy.label}`}
       >
-        <span className={`h-2.5 w-2.5 rounded-full shadow-inner transition ${INDICATOR_COLORS[state.level]}`} />
+        <span className={cn("h-2.5 w-2.5 rounded-full shadow-inner transition", styles.dot)} />
         <span className="hidden sm:inline">{statusCopy.label}</span>
-      </Button>
+      </button>
 
       {open && (
         <div tabIndex={0} className="dropdown-content mt-2 w-72">
-          <div className="space-y-3 rounded-2xl p-4 shadow-xl border border-base-300 bg-base-100">
+          <div
+            className={cn("space-y-3 rounded-2xl border bg-base-100/95 p-4 shadow-xl backdrop-blur-md", styles.panel)}
+          >
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-semibold text-base-content">{statusCopy.label}</p>
                 <p className="text-xs text-base-content/70">{state.message}</p>
               </div>
-              <span
-                className={`h-3 w-3 rounded-full ${INDICATOR_COLORS[state.level]} shadow-inner`}
-                aria-hidden="true"
-              />
+              <span className={cn("h-3 w-3 rounded-full shadow-inner", styles.dot)} aria-hidden="true" />
             </div>
             {state.details.length > 0 && (
               <ul className="space-y-1 text-xs text-base-content/60">
