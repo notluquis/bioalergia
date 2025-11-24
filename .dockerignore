@@ -56,7 +56,6 @@ postcss.config.*
 # Source files (already built)
 src/
 server/
-scripts/
 prisma/migrations/
 
 # CI/CD
