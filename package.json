@@ -3,6 +3,9 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
+  "overrides": {
+    "hono": "^4.10.3"
+  },
   "scripts": {
     "dev": "npm run dev:full",
     "dev:client": "vite",
