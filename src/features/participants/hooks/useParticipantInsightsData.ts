@@ -209,7 +209,7 @@ export function useParticipantInsightsData() {
         });
 
         if (!cancelled) {
-          setLeaderboard(data.participants);
+          setLeaderboard(data.participants || []);
         }
       } catch (err) {
         if (!cancelled) {

@@ -62,9 +62,9 @@ export default function Header() {
   };
 
   return (
-    <header className="scroll-header-animation surface-elevated flex items-center justify-between rounded-3xl px-6 py-4 shadow-md transition-all duration-300">
+    <header className="scroll-header-animation flex items-center justify-between rounded-3xl px-6 py-4 transition-all duration-300">
       <div className="flex items-center gap-3">
-        <h1 className="text-xl font-semibold text-base-content drop-shadow-sm">{title}</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-base-content">{title}</h1>
         {isNavigating && (
           <span className="flex items-center gap-1 text-xs font-semibold text-primary">
             <Loader2 className="h-3 w-3 animate-spin" />
