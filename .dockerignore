@@ -1,9 +1,5 @@
-# Dependencies
+# Dependencies (will be installed fresh)
 node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
 
 # Testing
 coverage/
@@ -14,12 +10,12 @@ test/
 *.spec.ts
 *.spec.tsx
 
-# Build artifacts (local)
+# Build artifacts (local dev only)
 dist/client/
 .vite/
 .turbo/
 
-# Development
+# Development tools
 .vscode/
 .idea/
 *.swp
@@ -27,7 +23,8 @@ dist/client/
 *~
 .DS_Store
 
-# Environment
+# Environment (will use Railway's)
+.env
 .env.local
 .env.*.local
 .env.keys
@@ -37,23 +34,22 @@ dist/client/
 .gitignore
 .gitattributes
 
-# Docs & Config (not needed in production)
+# Docs
 README.md
-*.md
+CHANGELOG.md
+CONTRIBUTING.md
+LICENSE
+
+# Linting/Formatting (not needed for build)
 .prettierrc*
 .eslintrc*
-tsconfig.json
-tsconfig.*.json
-vite.config.ts
-vitest.config.ts
-tailwind.config.*
-postcss.config.*
+.eslintignore
+.prettierignore
 
 # Husky & Git hooks
 .husky/
-.git
 
-# Source artifacts (not needed)
+# Prisma artifacts (not migrations themselves)
 prisma/migrations/
 
 # CI/CD
@@ -63,3 +59,11 @@ prisma/migrations/
 # Logs
 logs/
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Misc
+.dockerignore
+Dockerfile
