@@ -217,7 +217,7 @@ export default function ParticipantInsightsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {monthly.map((row) => (
+                  {monthly?.map((row) => (
                     <tr
                       key={row.month}
                       className="border-b border-base-300 bg-base-200 last:border-none even:bg-base-300"
@@ -229,7 +229,7 @@ export default function ParticipantInsightsPage() {
                       <td className="px-4 py-3 text-base-content">{fmtCLP(row.outgoingAmount)}</td>
                     </tr>
                   ))}
-                  {!monthly.length && (
+                  {!monthly?.length && (
                     <tr>
                       <td colSpan={3} className="px-4 py-6 text-center text-base-content/70">
                         Sin movimientos en el rango seleccionado.
@@ -259,7 +259,7 @@ export default function ParticipantInsightsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {counterparts.map((row) => {
+                  {counterparts?.map((row) => {
                     const key = row.withdrawId || row.counterpartId || row.counterpart;
                     const bankParts: string[] = [];
                     if (row.bankName) bankParts.push(row.bankName);
