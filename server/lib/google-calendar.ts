@@ -1,7 +1,8 @@
 import { promises as fs } from "fs";
 import path from "path";
 import { performance } from "node:perf_hooks";
-import { google, calendar_v3 } from "googleapis";
+import { calendar, calendar_v3 } from "@googleapis/calendar";
+import { JWT } from "google-auth-library";
 import dayjs from "dayjs";
 
 import { googleCalendarConfig, compileExcludePatterns } from "../config.js";
@@ -83,7 +84,7 @@ async function getCalendarClient(): Promise<CalendarClient> {
     return cachedClient;
   }
 
-  const auth = new google.auth.JWT({
+  const auth = new JWT({
     email: googleCalendarConfig.serviceAccountEmail,
     key: googleCalendarConfig.privateKey,
     scopes: CALENDAR_SCOPES,
@@ -91,7 +92,7 @@ async function getCalendarClient(): Promise<CalendarClient> {
   });
 
   await auth.authorize();
-  cachedClient = google.calendar({ version: "v3", auth });
+  cachedClient = calendar({ version: "v3", auth });
   return cachedClient;
 }
 
