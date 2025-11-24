@@ -48,7 +48,13 @@ export default function App() {
           <div className="nav-progress__indicator" />
         </div>
       )}
-      <div className="layout-shell relative mx-auto flex min-h-screen w-full gap-6 px-2 py-6 text-base-content transition-colors duration-300 sm:px-4 lg:px-6">
+      <div
+        className="layout-shell relative mx-auto flex min-h-screen w-full gap-6 px-2 py-6 text-base-content transition-colors duration-300 sm:px-4 lg:px-6"
+        style={{
+          paddingTop: "max(1.5rem, env(safe-area-inset-top))",
+          paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))",
+        }}
+      >
         {/* Hamburger button: accessible, compact, always visible on mobile */}
         <button
           type="button"
@@ -99,7 +105,7 @@ export default function App() {
         />
 
         {/* Main content */}
-        <div className="layout-container flex min-w-0 flex-1 flex-col gap-6 pb-[110px] md:pb-0">
+        <div className="layout-container flex min-w-0 flex-1 flex-col gap-6 pb-[calc(110px+env(safe-area-inset-bottom))] md:pb-0">
           <Header />
 
           <main className="flex-1 rounded-[2.25rem]">
