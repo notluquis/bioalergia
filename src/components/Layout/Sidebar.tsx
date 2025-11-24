@@ -1,5 +1,5 @@
 import React from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { APP_VERSION, BUILD_TIMESTAMP } from "@/version";
 import { cn } from "@/lib/utils";
@@ -111,6 +111,8 @@ interface SidebarProps {
 
 export default function Sidebar({ isOpen, isMobile, onClose, isCollapsed = false, toggleCollapse }: SidebarProps) {
   const { user, hasRole } = useAuth();
+  const navigation = useNavigation();
+  const [pendingPath, setPendingPath] = React.useState<string | null>(null);
 
   const displayName = user?.name || (user?.email?.split("@")[0] ?? "");
   const firstWord = displayName.split(" ")[0];
@@ -179,59 +181,66 @@ export default function Sidebar({ isOpen, isMobile, onClose, isCollapsed = false
                     )}
 
                     <div className="space-y-1">
-                      {visibleItems.map((item) => (
-                        <NavLink
-                          key={item.to}
-                          to={item.to}
-                          end={item.exact}
-                          className={({ isActive }) => {
-                            const active = isActive;
-                            if (isCollapsed) {
+                      {visibleItems.map((item) => {
+                        const isPending = navigation.state === "loading" && pendingPath === item.to;
+
+                        return (
+                          <NavLink
+                            key={item.to}
+                            to={item.to}
+                            end={item.exact}
+                            onClick={() => {
+                              setPendingPath(item.to);
+                              if (isMobile && onClose) onClose();
+                            }}
+                            className={({ isActive }) => {
+                              const active = isActive;
+                              if (isCollapsed) {
+                                return cn(
+                                  "flex h-10 w-full items-center justify-center rounded-xl active:scale-95",
+                                  active || isPending
+                                    ? "bg-primary text-primary-content shadow-md shadow-primary/20"
+                                    : "text-base-content/60 hover:bg-base-100 hover:text-base-content"
+                                );
+                              }
                               return cn(
-                                "flex h-10 w-full items-center justify-center rounded-xl transition-all duration-200",
-                                active
+                                "group relative flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium active:scale-[0.98]",
+                                active || isPending
                                   ? "bg-primary text-primary-content shadow-md shadow-primary/20"
-                                  : "text-base-content/60 hover:bg-base-100 hover:text-base-content"
+                                  : "text-base-content/70 hover:bg-base-100 hover:text-base-content"
                               );
-                            }
-                            return cn(
-                              "group relative flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-all duration-200",
-                              active
-                                ? "bg-primary text-primary-content shadow-md shadow-primary/20"
-                                : "text-base-content/70 hover:bg-base-100 hover:text-base-content"
-                            );
-                          }}
-                          onClick={() => {
-                            if (isMobile && onClose) onClose();
-                          }}
-                        >
-                          {({ isActive }) => {
-                            if (isCollapsed) {
+                            }}
+                          >
+                            {({ isActive }) => {
+                              const active = isActive || isPending;
+
+                              if (isCollapsed) {
+                                return (
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <span className="flex h-full w-full items-center justify-center">
+                                        <item.icon className="h-5 w-5" />
+                                      </span>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="right">{item.label}</TooltipContent>
+                                  </Tooltip>
+                                );
+                              }
                               return (
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <span className="flex h-full w-full items-center justify-center">
-                                      <item.icon className="h-5 w-5" />
-                                    </span>
-                                  </TooltipTrigger>
-                                  <TooltipContent side="right">{item.label}</TooltipContent>
-                                </Tooltip>
+                                <>
+                                  <item.icon
+                                    className={cn(
+                                      "h-4 w-4 shrink-0",
+                                      active ? "text-primary-content" : "text-base-content/50 group-hover:text-primary"
+                                    )}
+                                  />
+                                  <span className="truncate">{item.label}</span>
+                                </>
                               );
-                            }
-                            return (
-                              <>
-                                <item.icon
-                                  className={cn(
-                                    "h-4 w-4 shrink-0 transition-colors",
-                                    isActive ? "text-primary-content" : "text-base-content/50 group-hover:text-primary"
-                                  )}
-                                />
-                                <span className="truncate">{item.label}</span>
-                              </>
-                            );
-                          }}
-                        </NavLink>
-                      ))}
+                            }}
+                          </NavLink>
+                        );
+                      })}
                     </div>
                   </section>
                 );
