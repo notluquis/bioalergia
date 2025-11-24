@@ -1,6 +1,5 @@
 import { prisma } from "../prisma.js";
-import { Prisma } from "../../generated/prisma/client.js";
-import { SupplyRequestStatus } from "../../generated/prisma/enums.js";
+import { Prisma, SupplyRequestStatus } from "../../generated/prisma/client.js";
 
 // Supply Requests
 

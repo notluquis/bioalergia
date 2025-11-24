@@ -1,5 +1,5 @@
 import { prisma } from "../prisma.js";
-import { UserRole } from "../../generated/prisma/enums.js";
+import { UserRole } from "../../generated/prisma/client.js";
 
 export type RoleMapping = {
   employee_role: string;
