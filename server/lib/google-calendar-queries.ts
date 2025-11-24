@@ -91,8 +91,8 @@ export type CalendarEventsByDateResult = {
 const NULL_EVENT_TYPE_TOKEN = "__NULL__";
 const NULL_CATEGORY_TOKEN = "__NULL_CATEGORY__";
 
-const EVENT_DATETIME = Prisma.sql`COALESCE(events.start_date_time, STR_TO_DATE(CONCAT(events.start_date, ' 00:00:00'), '%Y-%m-%d %H:%i:%s'))`;
-const EVENT_DATE = Prisma.sql`COALESCE(events.start_date, DATE(events.start_date_time))`;
+const EVENT_DATETIME = Prisma.sql`COALESCE(events.start_date_time, (events.start_date || ' 00:00:00')::timestamp)`;
+const EVENT_DATE = Prisma.sql`COALESCE(events.start_date, events.start_date_time::date)`;
 
 function buildWhereClause(filters: CalendarEventFilters) {
   const conditions: Prisma.Sql[] = [Prisma.sql`${EVENT_DATETIME} IS NOT NULL`];
@@ -194,35 +194,35 @@ export async function getCalendarAggregates(filters: CalendarEventFilters): Prom
   const yearRows = await prisma.$queryRaw<
     Array<{ year: number; total: bigint; amountExpected: number | null; amountPaid: number | null }>
   >(Prisma.sql`
-    SELECT YEAR(${EVENT_DATETIME}) AS year,
+    SELECT EXTRACT(YEAR FROM ${EVENT_DATETIME})::INTEGER AS year,
            COUNT(*) AS total,
            SUM(events.amount_expected) AS amountExpected,
            SUM(events.amount_paid) AS amountPaid
       FROM google_calendar_events events
       ${where}
-     GROUP BY YEAR(${EVENT_DATETIME})
-     ORDER BY YEAR(${EVENT_DATETIME})
+     GROUP BY EXTRACT(YEAR FROM ${EVENT_DATETIME})
+     ORDER BY EXTRACT(YEAR FROM ${EVENT_DATETIME})
   `);
 
   const monthRows = await prisma.$queryRaw<
     Array<{ year: number; month: number; total: bigint; amountExpected: number | null; amountPaid: number | null }>
   >(Prisma.sql`
-    SELECT YEAR(${EVENT_DATETIME}) AS year,
-           MONTH(${EVENT_DATETIME}) AS month,
+    SELECT EXTRACT(YEAR FROM ${EVENT_DATETIME})::INTEGER AS year,
+           EXTRACT(MONTH FROM ${EVENT_DATETIME})::INTEGER AS month,
            COUNT(*) AS total,
            SUM(events.amount_expected) AS amountExpected,
            SUM(events.amount_paid) AS amountPaid
       FROM google_calendar_events events
       ${where}
-     GROUP BY YEAR(${EVENT_DATETIME}), MONTH(${EVENT_DATETIME})
-     ORDER BY YEAR(${EVENT_DATETIME}), MONTH(${EVENT_DATETIME})
+     GROUP BY EXTRACT(YEAR FROM ${EVENT_DATETIME}), EXTRACT(MONTH FROM ${EVENT_DATETIME})
+     ORDER BY EXTRACT(YEAR FROM ${EVENT_DATETIME}), EXTRACT(MONTH FROM ${EVENT_DATETIME})
   `);
 
   const weekRows = await prisma.$queryRaw<
     Array<{ isoYear: number; isoWeek: number; total: bigint; amountExpected: number | null; amountPaid: number | null }>
   >(Prisma.sql`
-    SELECT CAST(DATE_FORMAT(${EVENT_DATETIME}, '%x') AS UNSIGNED) AS isoYear,
-           CAST(DATE_FORMAT(${EVENT_DATETIME}, '%v') AS UNSIGNED) AS isoWeek,
+    SELECT EXTRACT(ISOYEAR FROM ${EVENT_DATETIME})::INTEGER AS isoYear,
+           EXTRACT(WEEK FROM ${EVENT_DATETIME})::INTEGER AS isoWeek,
            COUNT(*) AS total,
            SUM(events.amount_expected) AS amountExpected,
            SUM(events.amount_paid) AS amountPaid
@@ -235,14 +235,14 @@ export async function getCalendarAggregates(filters: CalendarEventFilters): Prom
   const weekdayRows = await prisma.$queryRaw<
     Array<{ weekday: number; total: bigint; amountExpected: number | null; amountPaid: number | null }>
   >(Prisma.sql`
-    SELECT WEEKDAY(${EVENT_DATETIME}) AS weekday,
+    SELECT EXTRACT(DOW FROM ${EVENT_DATETIME})::INTEGER AS weekday,
            COUNT(*) AS total,
            SUM(events.amount_expected) AS amountExpected,
            SUM(events.amount_paid) AS amountPaid
       FROM google_calendar_events events
       ${where}
-     GROUP BY WEEKDAY(${EVENT_DATETIME})
-     ORDER BY WEEKDAY(${EVENT_DATETIME})
+     GROUP BY EXTRACT(DOW FROM ${EVENT_DATETIME})
+     ORDER BY EXTRACT(DOW FROM ${EVENT_DATETIME})
   `);
 
   const dateRows = await prisma.$queryRaw<
@@ -358,7 +358,7 @@ export async function getCalendarEventsByDate(
       ${where}
      GROUP BY date
      ORDER BY date DESC
-     LIMIT ${maxDays}
+     LIMIT ${Prisma.raw(String(maxDays))}
   `);
 
   if (!dateRows.length) {
