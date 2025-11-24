@@ -61,11 +61,20 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          // Vendor chunks
+          // Vendor chunks (only for commonly used libraries)
           "react-vendor": ["react", "react-dom", "react-router-dom"],
+          "query-vendor": ["@tanstack/react-query"],
           "ui-vendor": ["lucide-react"],
           "data-vendor": ["dayjs", "zod"],
-          "pdf-vendor": ["jspdf", "html2canvas"],
+          "calendar-vendor": [
+            "@fullcalendar/core",
+            "@fullcalendar/react",
+            "@fullcalendar/daygrid",
+            "@fullcalendar/timegrid",
+            "@fullcalendar/interaction",
+          ],
+          // Note: PDF libs (jspdf, html2canvas) are intentionally NOT here
+          // They're lazy-loaded in TimesheetExportPDF component
         },
       },
     },
