@@ -1,13 +1,15 @@
 {
   "name": "Finanzas Bioalergia",
   "short_name": "Finanzas",
-  "description": "Gestión integral de finanzas empresariales",
+  "description": "Gestión integral de finanzas empresariales - Transacciones, Servicios, Calendario, RR.HH e Inventario",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
+  "background_color": "#000000",
   "theme_color": "#0e64b7",
-  "orientation": "portrait-primary",
+  "orientation": "any",
+  "lang": "es-CL",
+  "dir": "ltr",
   "icons": [
     {
       "src": "/icons/icon-72.png",
@@ -61,16 +63,52 @@
   "categories": ["finance", "business", "productivity"],
   "shortcuts": [
     {
-      "name": "Nuevo gasto",
-      "short_name": "Gasto",
-      "url": "/transactions/new",
+      "name": "Calendario",
+      "short_name": "Calendar",
+      "description": "Ver eventos y agenda",
+      "url": "/calendar",
       "icons": [{ "src": "/icons/icon-96.png", "sizes": "96x96" }]
     },
     {
-      "name": "Ver reportes",
-      "short_name": "Reportes",
-      "url": "/reports",
+      "name": "Servicios",
+      "short_name": "Services",
+      "description": "Gestionar servicios recurrentes",
+      "url": "/services",
+      "icons": [{ "src": "/icons/icon-96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Transacciones",
+      "short_name": "Money",
+      "description": "Ver movimientos financieros",
+      "url": "/finance",
+      "icons": [{ "src": "/icons/icon-96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Empleados",
+      "short_name": "Team",
+      "description": "Gestión de recursos humanos",
+      "url": "/hr/employees",
       "icons": [{ "src": "/icons/icon-96.png", "sizes": "96x96" }]
     }
-  ]
+  ],
+  "display_override": ["window-controls-overlay", "standalone"],
+  "share_target": {
+    "action": "/share-target",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url",
+      "files": [
+        {
+          "name": "media",
+          "accept": ["image/*", "application/pdf"]
+        }
+      ]
+    }
+  },
+  "screenshots": [],
+  "related_applications": [],
+  "prefer_related_applications": false
 }

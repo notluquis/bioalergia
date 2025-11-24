@@ -62,7 +62,7 @@ export default function Header() {
   };
 
   return (
-    <header className="surface-elevated flex items-center justify-between rounded-3xl px-6 py-4 shadow-md">
+    <header className="scroll-header-animation surface-elevated flex items-center justify-between rounded-3xl px-6 py-4 shadow-md transition-all duration-300">
       <div className="flex items-center gap-3">
         <h1 className="text-xl font-semibold text-base-content drop-shadow-sm">{title}</h1>
         {isNavigating && (
