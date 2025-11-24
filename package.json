@@ -76,6 +76,7 @@
     "react-router-dom": "^7.9.3",
     "sharp": "^0.34.4",
     "use-debounce": "^10.0.6",
+    "web-push": "^3.6.7",
     "zod": "^4.1.12",
     "zustand": "^5.0.8"
   },
@@ -95,6 +96,7 @@
     "@types/qs": "^6.14.0",
     "@types/react": "^19.2.1",
     "@types/react-dom": "^19.2.0",
+    "@types/web-push": "^3.6.4",
     "@typescript-eslint/eslint-plugin": "^8.46.0",
     "@typescript-eslint/parser": "^8.46.0",
     "@vitejs/plugin-react-swc": "^4.1.0",
