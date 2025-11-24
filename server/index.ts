@@ -116,7 +116,7 @@ app.get("/api/health", async (_req: Request, res: Response) => {
 });
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const clientDir = path.join(__dirname, "../dist/client");
+const clientDir = path.join(__dirname, "../client");
 const uploadsDir = getUploadsRootDir();
 
 // ============= CACHE CONTROL =============
