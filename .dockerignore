@@ -53,9 +53,7 @@ postcss.config.*
 .husky/
 .git
 
-# Source files (already built)
-src/
-server/
+# Source artifacts (not needed)
 prisma/migrations/
 
 # CI/CD
