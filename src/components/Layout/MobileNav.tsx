@@ -25,7 +25,13 @@ export function BottomNav() {
   };
 
   return (
-    <nav className="md:hidden fixed bottom-5 left-1/2 z-50 w-[calc(100%-2.5rem)] max-w-lg -translate-x-1/2 px-2 pb-safe-bottom">
+    <nav
+      className="md:hidden fixed bottom-5 left-1/2 z-50 w-[calc(100%-2.5rem)] max-w-lg -translate-x-1/2 px-2 pb-safe-bottom"
+      style={{
+        paddingLeft: "max(0.5rem, env(safe-area-inset-left))",
+        paddingRight: "max(0.5rem, env(safe-area-inset-right))",
+      }}
+    >
       <div className="bottom-bar-glass flex items-stretch gap-1 px-4 py-2">
         {NAV_ITEMS.map(({ path, icon: Icon, label }) => {
           const active = isActive(path);

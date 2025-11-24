@@ -59,6 +59,8 @@ export default function App() {
         style={{
           paddingTop: "max(1.5rem, env(safe-area-inset-top))",
           paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))",
+          paddingLeft: "max(0.75rem, env(safe-area-inset-left))",
+          paddingRight: "max(0.75rem, env(safe-area-inset-right))",
         }}
       >
         {/* Hamburger button: accessible, compact, always visible on mobile */}
