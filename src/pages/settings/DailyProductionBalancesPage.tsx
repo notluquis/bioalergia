@@ -96,7 +96,12 @@ function StatusBadge({ status }: { status: ProductionBalanceStatus }) {
   );
 }
 
+import { useAuth } from "../../context/AuthContext";
+
 export default function DailyProductionBalancesPage() {
+  const { hasRole } = useAuth();
+  const canEdit = hasRole("GOD", "ADMIN", "ANALYST");
+
   const queryClient = useQueryClient();
   const { success: toastSuccess, error: toastError } = useToast();
   const { settings } = useSettings();
@@ -203,7 +208,7 @@ export default function DailyProductionBalancesPage() {
   return (
     <section className="space-y-6">
       <div className="flex flex-col gap-2">
-        <p className="text-xs font-semibold uppercase tracking-wide text-primary">Configuración · Finanzas</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-primary">Finanzas · Prestaciones</p>
         <h1 className="text-3xl font-semibold text-base-content drop-shadow-sm">Balance diario de prestaciones</h1>
         <p className="max-w-3xl text-sm text-base-content/70">
           Registra los ingresos diarios por forma de pago y el detalle de prestaciones (consultas, controles, test,
@@ -243,7 +248,7 @@ export default function DailyProductionBalancesPage() {
         </Button>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+      <div className={`grid gap-4 ${canEdit ? "lg:grid-cols-[1.1fr_0.9fr]" : "lg:grid-cols-1"}`}>
         <div className="rounded-3xl border border-base-300/50 bg-base-200/60 p-4 shadow-inner">
           <div className="flex items-center justify-between gap-2">
             <div>
@@ -313,144 +318,146 @@ export default function DailyProductionBalancesPage() {
           )}
         </div>
 
-        <div className="rounded-3xl border border-primary/20 bg-base-100/80 p-5 shadow-lg">
-          <div className="flex items-center justify-between gap-2">
-            <div>
-              <p className="text-xs uppercase tracking-wide text-base-content/60">
-                {selectedId ? "Editar balance" : "Nuevo balance"}
-              </p>
-              <h2 className="text-xl font-semibold text-base-content">
-                {selectedId ? `Registro #${selectedId}` : "Registrar día"}
-              </h2>
+        {canEdit && (
+          <div className="rounded-3xl border border-primary/20 bg-base-100/80 p-5 shadow-lg">
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <p className="text-xs uppercase tracking-wide text-base-content/60">
+                  {selectedId ? "Editar balance" : "Nuevo balance"}
+                </p>
+                <h2 className="text-xl font-semibold text-base-content">
+                  {selectedId ? `Registro #${selectedId}` : "Registrar día"}
+                </h2>
+              </div>
+              <Button variant="ghost" size="sm" onClick={handleReset}>
+                Nuevo
+              </Button>
             </div>
-            <Button variant="ghost" size="sm" onClick={handleReset}>
-              Nuevo
-            </Button>
+
+            <form className="mt-4 space-y-4" onSubmit={handleSubmit}>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Input label="Fecha" type="date" value={form.date} onChange={handleChange("date")} required />
+                <Input label="Estado" as="select" value={form.status} onChange={handleChange("status")}>
+                  <option value="FINAL">Final</option>
+                  <option value="DRAFT">Borrador</option>
+                </Input>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-3">
+                <Input
+                  label="Ingreso tarjetas"
+                  type="number"
+                  value={form.ingresoTarjetas}
+                  onChange={handleChange("ingresoTarjetas")}
+                  min="0"
+                />
+                <Input
+                  label="Ingreso transferencias"
+                  type="number"
+                  value={form.ingresoTransferencias}
+                  onChange={handleChange("ingresoTransferencias")}
+                  min="0"
+                />
+                <Input
+                  label="Ingreso efectivo"
+                  type="number"
+                  value={form.ingresoEfectivo}
+                  onChange={handleChange("ingresoEfectivo")}
+                  min="0"
+                />
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-3">
+                <Input
+                  label="Gastos diarios"
+                  type="number"
+                  value={form.gastosDiarios}
+                  onChange={handleChange("gastosDiarios")}
+                  helper="Combustible, insumos, etc."
+                />
+                <Input
+                  label="Otros abonos"
+                  type="number"
+                  value={form.otrosAbonos}
+                  onChange={handleChange("otrosAbonos")}
+                  helper="Devoluciones, ajustes o abonos extra"
+                />
+                <div className="rounded-2xl border border-base-300/60 bg-base-200/60 p-3 text-sm">
+                  <p className="text-xs uppercase tracking-wide text-base-content/60">Totales (previo a guardar)</p>
+                  <p className="font-semibold text-base-content">
+                    Subtotal: {currencyFormatter.format(derived.subtotal)}
+                  </p>
+                  <p className="text-base-content/80">
+                    Ingresos - gastos: {currencyFormatter.format(derived.totalIngresos)}
+                  </p>
+                  <p className="text-base-content/80">Total día: {currencyFormatter.format(derived.total)}</p>
+                </div>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-3">
+                <Input
+                  label="Consultas"
+                  type="number"
+                  min="0"
+                  value={form.consultas}
+                  onChange={handleChange("consultas")}
+                />
+                <Input
+                  label="Controles"
+                  type="number"
+                  min="0"
+                  value={form.controles}
+                  onChange={handleChange("controles")}
+                />
+                <Input label="Test" type="number" min="0" value={form.tests} onChange={handleChange("tests")} />
+                <Input label="Vacunas" type="number" min="0" value={form.vacunas} onChange={handleChange("vacunas")} />
+                <Input
+                  label="Licencias"
+                  type="number"
+                  min="0"
+                  value={form.licencias}
+                  onChange={handleChange("licencias")}
+                />
+                <Input label="Roxair" type="number" min="0" value={form.roxair} onChange={handleChange("roxair")} />
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-[1fr_1fr]">
+                <Input
+                  label="Comentarios"
+                  as="textarea"
+                  rows={3}
+                  value={form.comentarios}
+                  onChange={handleChange("comentarios")}
+                  helper="Notas internas sobre el día"
+                />
+                <Input
+                  label="Motivo del cambio"
+                  as="textarea"
+                  rows={3}
+                  value={form.reason}
+                  onChange={handleChange("reason")}
+                  helper="Opcional, se guarda en el historial"
+                />
+              </div>
+
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="rounded-2xl border border-base-300/50 bg-base-200/60 px-4 py-3 text-sm text-base-content/70">
+                  <p className="font-semibold text-base-content">Resumen rápido</p>
+                  <p>Atenciones: {activitiesTotal}</p>
+                  <p>Total día: {currencyFormatter.format(derived.total)}</p>
+                </div>
+                <div className="flex gap-2">
+                  <Button type="button" variant="ghost" onClick={handleReset}>
+                    Limpiar
+                  </Button>
+                  <Button type="submit" disabled={mutation.isPending}>
+                    {mutation.isPending ? "Guardando..." : selectedId ? "Actualizar" : "Guardar"}
+                  </Button>
+                </div>
+              </div>
+            </form>
           </div>
-
-          <form className="mt-4 space-y-4" onSubmit={handleSubmit}>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Input label="Fecha" type="date" value={form.date} onChange={handleChange("date")} required />
-              <Input label="Estado" as="select" value={form.status} onChange={handleChange("status")}>
-                <option value="FINAL">Final</option>
-                <option value="DRAFT">Borrador</option>
-              </Input>
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-3">
-              <Input
-                label="Ingreso tarjetas"
-                type="number"
-                value={form.ingresoTarjetas}
-                onChange={handleChange("ingresoTarjetas")}
-                min="0"
-              />
-              <Input
-                label="Ingreso transferencias"
-                type="number"
-                value={form.ingresoTransferencias}
-                onChange={handleChange("ingresoTransferencias")}
-                min="0"
-              />
-              <Input
-                label="Ingreso efectivo"
-                type="number"
-                value={form.ingresoEfectivo}
-                onChange={handleChange("ingresoEfectivo")}
-                min="0"
-              />
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-3">
-              <Input
-                label="Gastos diarios"
-                type="number"
-                value={form.gastosDiarios}
-                onChange={handleChange("gastosDiarios")}
-                helper="Combustible, insumos, etc."
-              />
-              <Input
-                label="Otros abonos"
-                type="number"
-                value={form.otrosAbonos}
-                onChange={handleChange("otrosAbonos")}
-                helper="Devoluciones, ajustes o abonos extra"
-              />
-              <div className="rounded-2xl border border-base-300/60 bg-base-200/60 p-3 text-sm">
-                <p className="text-xs uppercase tracking-wide text-base-content/60">Totales (previo a guardar)</p>
-                <p className="font-semibold text-base-content">
-                  Subtotal: {currencyFormatter.format(derived.subtotal)}
-                </p>
-                <p className="text-base-content/80">
-                  Ingresos - gastos: {currencyFormatter.format(derived.totalIngresos)}
-                </p>
-                <p className="text-base-content/80">Total día: {currencyFormatter.format(derived.total)}</p>
-              </div>
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-3">
-              <Input
-                label="Consultas"
-                type="number"
-                min="0"
-                value={form.consultas}
-                onChange={handleChange("consultas")}
-              />
-              <Input
-                label="Controles"
-                type="number"
-                min="0"
-                value={form.controles}
-                onChange={handleChange("controles")}
-              />
-              <Input label="Test" type="number" min="0" value={form.tests} onChange={handleChange("tests")} />
-              <Input label="Vacunas" type="number" min="0" value={form.vacunas} onChange={handleChange("vacunas")} />
-              <Input
-                label="Licencias"
-                type="number"
-                min="0"
-                value={form.licencias}
-                onChange={handleChange("licencias")}
-              />
-              <Input label="Roxair" type="number" min="0" value={form.roxair} onChange={handleChange("roxair")} />
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-[1fr_1fr]">
-              <Input
-                label="Comentarios"
-                as="textarea"
-                rows={3}
-                value={form.comentarios}
-                onChange={handleChange("comentarios")}
-                helper="Notas internas sobre el día"
-              />
-              <Input
-                label="Motivo del cambio"
-                as="textarea"
-                rows={3}
-                value={form.reason}
-                onChange={handleChange("reason")}
-                helper="Opcional, se guarda en el historial"
-              />
-            </div>
-
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="rounded-2xl border border-base-300/50 bg-base-200/60 px-4 py-3 text-sm text-base-content/70">
-                <p className="font-semibold text-base-content">Resumen rápido</p>
-                <p>Atenciones: {activitiesTotal}</p>
-                <p>Total día: {currencyFormatter.format(derived.total)}</p>
-              </div>
-              <div className="flex gap-2">
-                <Button type="button" variant="ghost" onClick={handleReset}>
-                  Limpiar
-                </Button>
-                <Button type="submit" disabled={mutation.isPending}>
-                  {mutation.isPending ? "Guardando..." : selectedId ? "Actualizar" : "Guardar"}
-                </Button>
-              </div>
-            </div>
-          </form>
-        </div>
+        )}
       </div>
 
       {selectedId && (

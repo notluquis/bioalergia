@@ -8,7 +8,11 @@ type InputBaseProps = {
   containerClassName?: string;
 };
 
-type InputProps = InputBaseProps & React.InputHTMLAttributes<HTMLInputElement>;
+type InputProps = InputBaseProps &
+  React.InputHTMLAttributes<HTMLInputElement> & {
+    inputMode?: "none" | "text" | "decimal" | "numeric" | "tel" | "search" | "email" | "url";
+    enterKeyHint?: "enter" | "done" | "go" | "next" | "previous" | "search" | "send";
+  };
 type TextareaProps = InputBaseProps & React.TextareaHTMLAttributes<HTMLTextAreaElement>;
 type SelectProps = InputBaseProps & React.SelectHTMLAttributes<HTMLSelectElement>;
 

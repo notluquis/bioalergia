@@ -1,7 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { ShieldCheck, Loader2 } from "lucide-react";
 import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
 import { useSettings, type AppSettings } from "../../context/settings-context";
+import { useAuth } from "../../context/AuthContext";
+import { useToast } from "../../context/ToastContext";
 
 function normalizeExternalUrl(value: string) {
   const trimmed = value.trim();
@@ -14,6 +18,12 @@ type AccessForm = Pick<AppSettings, "dbDisplayHost" | "dbDisplayName" | "dbConso
 
 export default function AccessSettingsPage() {
   const { settings, updateSettings } = useSettings();
+  const { hasRole } = useAuth();
+  const { success, error: toastError } = useToast();
+  const queryClient = useQueryClient();
+  const isAdmin = hasRole("GOD", "ADMIN");
+
+  // --- Settings Form State ---
   const [form, setForm] = useState<AccessForm>(() => ({
     dbDisplayHost: settings.dbDisplayHost,
     dbDisplayName: settings.dbDisplayName,
@@ -32,24 +42,38 @@ export default function AccessSettingsPage() {
     });
   }, [settings]);
 
-  const quickLinks = useMemo(
-    () => [
-      {
-        label: "Abrir cPanel",
-        href: normalizeExternalUrl(settings.cpanelUrl),
-        description: settings.cpanelUrl ? settings.cpanelUrl : "Configura el enlace directo al cPanel.",
-      },
-      {
-        label: "Abrir consola DB",
-        href: normalizeExternalUrl(settings.dbConsoleUrl),
-        description: settings.dbConsoleUrl
-          ? settings.dbConsoleUrl
-          : "Configura el acceso a la consola de la base de datos.",
-      },
-    ],
-    [settings.cpanelUrl, settings.dbConsoleUrl]
-  );
+  // --- Users Query (for Admin MFA Control) ---
+  const { data: usersData, isLoading: isLoadingUsers } = useQuery({
+    queryKey: ["users", "admin-list"],
+    queryFn: async () => {
+      const res = await fetch("/api/users");
+      if (!res.ok) throw new Error("Error cargando usuarios");
+      return res.json();
+    },
+    enabled: isAdmin,
+  });
 
+  const toggleMfaMutation = useMutation({
+    mutationFn: async ({ userId, enabled }: { userId: number; enabled: boolean }) => {
+      const res = await fetch(`/api/users/${userId}/mfa/toggle`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled }),
+      });
+      const data = await res.json();
+      if (data.status !== "ok") throw new Error(data.message || "Error al cambiar estado MFA");
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["users", "admin-list"] });
+      success("Estado MFA actualizado");
+    },
+    onError: (err) => {
+      toastError(err instanceof Error ? err.message : "Error desconocido");
+    },
+  });
+
+  // --- Handlers ---
   const handleChange = (key: keyof AccessForm, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));
     setStatus("idle");
@@ -75,8 +99,108 @@ export default function AccessSettingsPage() {
     }
   };
 
+  const quickLinks = useMemo(
+    () => [
+      {
+        label: "Abrir cPanel",
+        href: normalizeExternalUrl(settings.cpanelUrl),
+        description: settings.cpanelUrl ? settings.cpanelUrl : "Configura el enlace directo al cPanel.",
+      },
+      {
+        label: "Abrir consola DB",
+        href: normalizeExternalUrl(settings.dbConsoleUrl),
+        description: settings.dbConsoleUrl
+          ? settings.dbConsoleUrl
+          : "Configura el acceso a la consola de la base de datos.",
+      },
+    ],
+    [settings.cpanelUrl, settings.dbConsoleUrl]
+  );
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
+      {/* Admin User Management Section */}
+      {isAdmin && (
+        <section className="bg-base-100 space-y-4 p-6">
+          <div className="space-y-1">
+            <h2 className="text-lg font-semibold text-primary drop-shadow-sm">Gestión de Usuarios y Seguridad</h2>
+            <p className="text-sm text-base-content/70">
+              Controla el acceso y la autenticación de dos factores (MFA) para los usuarios.
+            </p>
+          </div>
+
+          <div className="overflow-x-auto rounded-lg border border-base-300">
+            <table className="table w-full">
+              <thead>
+                <tr className="bg-base-200/50 text-left text-xs uppercase text-base-content/60">
+                  <th className="px-4 py-3">Usuario</th>
+                  <th className="px-4 py-3">Rol</th>
+                  <th className="px-4 py-3 text-center">MFA</th>
+                  <th className="px-4 py-3 text-center">Passkey</th>
+                  <th className="px-4 py-3 text-right">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {isLoadingUsers ? (
+                  <tr>
+                    <td colSpan={5} className="py-8 text-center text-base-content/50">
+                      <Loader2 className="mx-auto size-6 animate-spin" />
+                    </td>
+                  </tr>
+                ) : (
+                  usersData?.users?.map(
+                    (u: {
+                      id: number;
+                      email: string;
+                      role: string;
+                      mfaEnabled: boolean;
+                      passkeysCount: number;
+                      hasPasskey: boolean;
+                    }) => (
+                      <tr key={u.id} className="border-b border-base-200 last:border-0 hover:bg-base-200/30">
+                        <td className="px-4 py-3 font-medium">{u.email}</td>
+                        <td className="px-4 py-3 text-xs opacity-70">{u.role}</td>
+                        <td className="px-4 py-3 text-center">
+                          {u.mfaEnabled ? (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-success/10 px-2 py-1 text-xs font-medium text-success">
+                              <ShieldCheck className="size-3" /> Activo
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-base-300/50 px-2 py-1 text-xs font-medium text-base-content/50">
+                              Inactivo
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          {u.hasPasskey ? (
+                            <span className="text-xs text-success">Sí</span>
+                          ) : (
+                            <span className="text-xs text-base-content/30">-</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className={
+                              u.mfaEnabled ? "text-error hover:bg-error/10" : "text-primary hover:bg-primary/10"
+                            }
+                            onClick={() => toggleMfaMutation.mutate({ userId: u.id, enabled: !u.mfaEnabled })}
+                            disabled={toggleMfaMutation.isPending}
+                          >
+                            {u.mfaEnabled ? "Desactivar MFA" : "Activar MFA"}
+                          </Button>
+                        </td>
+                      </tr>
+                    )
+                  )
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+
       <section className="bg-base-100 space-y-4 p-6">
         <div className="space-y-1">
           <h2 className="text-lg font-semibold text-primary drop-shadow-sm">Accesos rápidos</h2>
@@ -154,12 +278,12 @@ export default function AccessSettingsPage() {
         </div>
 
         {error && (
-          <p className="border-l-4 border-error/70 bg-gradient-to-r from-error/10 via-base-100/70 to-base-100/55 px-4 py-3 text-sm text-error">
+          <p className="border-l-4 border-error/70 bg-linear-to-r from-error/10 via-base-100/70 to-base-100/55 px-4 py-3 text-sm text-error">
             {error}
           </p>
         )}
         {status === "success" && !error && (
-          <p className="border-l-4 border-success/70 bg-gradient-to-r from-success/10 via-base-100/70 to-base-100/55 px-4 py-3 text-sm text-success">
+          <p className="border-l-4 border-success/70 bg-linear-to-r from-success/10 via-base-100/70 to-base-100/55 px-4 py-3 text-sm text-success">
             Accesos actualizados correctamente.
           </p>
         )}

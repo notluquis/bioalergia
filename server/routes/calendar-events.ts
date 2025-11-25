@@ -19,7 +19,13 @@ import {
   updateCalendarEventClassification,
   type UnclassifiedEvent,
 } from "../services/calendar.js";
-import { ensureArray, normalizeSearch, coercePositiveInteger, type QueryValue } from "../lib/query-helpers.js";
+import {
+  ensureArray,
+  normalizeSearch,
+  coercePositiveInteger,
+  normalizeDate,
+  type QueryValue,
+} from "../lib/query-helpers.js";
 import { googleCalendarConfig } from "../config.js";
 import { updateClassificationSchema } from "../schemas.js";
 

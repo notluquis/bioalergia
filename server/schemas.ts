@@ -442,7 +442,7 @@ export const supplyRequestSchema = z.object({
 });
 
 export const updateSupplyRequestStatusSchema = z.object({
-  status: z.enum(["pending", "approved", "rejected", "fulfilled"]),
+  status: z.enum(["pending", "ordered", "in_transit", "delivered", "rejected"]),
   adminNotes: z.string().max(500).optional().nullable(),
 });
 
@@ -511,4 +511,9 @@ export const updateClassificationSchema = z.object({
     .transform((value) => (value && value.length ? value : null)),
   classification: z.enum(["personal", "business", "mixed", "other"]).optional(),
   notes: z.string().max(500).optional().nullable(),
+});
+
+export const mfaVerifySchema = z.object({
+  token: z.string().length(6, "El código debe tener 6 dígitos"),
+  userId: z.coerce.number().int().positive().optional(),
 });

@@ -58,6 +58,7 @@ const AccessSettingsPage = lazy(() => import("./pages/settings/AccessSettingsPag
 const InventorySettingsPage = lazy(() => import("./pages/settings/InventorySettingsPage"));
 const RolesSettingsPage = lazy(() => import("./pages/settings/RolesSettingsPage"));
 const DailyProductionBalancesSettingsPage = lazy(() => import("./pages/settings/DailyProductionBalancesPage"));
+const SecuritySettingsPage = lazy(() => import("./pages/settings/SecuritySettingsPage"));
 
 // Componente de loading
 import PageLoader from "./components/ui/PageLoader";
@@ -133,6 +134,14 @@ const router = createBrowserRouter([
             element: (
               <Suspense fallback={<PageLoader />}>
                 <LoansPage />
+              </Suspense>
+            ),
+          },
+          {
+            path: "production-balances",
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <DailyProductionBalancesSettingsPage />
               </Suspense>
             ),
           },
@@ -347,6 +356,14 @@ const router = createBrowserRouter([
             ),
           },
           {
+            path: "security",
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <SecuritySettingsPage />
+              </Suspense>
+            ),
+          },
+          {
             path: "accesos",
             element: (
               <Suspense fallback={<PageLoader />}>
@@ -370,14 +387,6 @@ const router = createBrowserRouter([
               </Suspense>
             ),
           },
-          {
-            path: "balances-diarios",
-            element: (
-              <Suspense fallback={<PageLoader />}>
-                <DailyProductionBalancesSettingsPage />
-              </Suspense>
-            ),
-          },
         ],
       },
       // Legacy Redirects (Optional but good for UX)
@@ -393,6 +402,11 @@ const router = createBrowserRouter([
   },
   { path: "*", element: <Navigate to="/" replace /> },
 ]);
+
+import { initPerformanceMonitoring } from "./lib/performance";
+
+// Initialize performance mode (Low vs High end)
+initPerformanceMonitoring();
 
 const queryClient = new QueryClient({
   defaultOptions: {

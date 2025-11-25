@@ -9,12 +9,17 @@ export type AuthUser = {
   email: string;
   role: UserRole;
   name: string | null;
+  mfaEnabled: boolean;
 };
+
+export type LoginResult = { status: "ok"; user: AuthUser } | { status: "mfa_required"; userId: number };
 
 export type AuthContextType = {
   user: AuthUser | null;
   initializing: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<LoginResult>;
+  loginWithMfa: (userId: number, token: string) => Promise<void>;
+  loginWithPasskey: (authResponse: unknown, challenge: string) => Promise<void>;
   logout: () => Promise<void>;
   hasRole: (...roles: UserRole[]) => boolean;
 };
@@ -46,19 +51,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
 
         if (res.status === 401) {
-          logger.warn("[auth] bootstrap: sin sesión", { status: res.status });
           return null;
         }
 
         if (!res.ok) {
-          const message = `${res.status} ${res.statusText}`;
-          logger.warn("[auth] bootstrap: error de respuesta", { message });
-          throw new Error(message);
+          throw new Error(`${res.status} ${res.statusText}`);
         }
 
         const payload = (await res.json()) as { status: string; user?: AuthUser };
         if (payload.status === "ok" && payload.user) {
-          logger.info("[auth] bootstrap: sesión válida", payload.user);
           return payload.user;
         }
 
@@ -78,13 +79,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
+    retry: false,
   });
 
   const user = sessionQuery.data ?? null;
   const initializing = sessionQuery.isPending;
 
   const login = useCallback(
-    async (email: string, password: string) => {
+    async (email: string, password: string): Promise<LoginResult> => {
       logger.info("[auth] login:start", { email });
       const res = await fetch("/api/auth/login", {
         method: "POST",
@@ -93,14 +95,68 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ email, password }),
       });
 
-      const payload = (await res.json()) as { status: string; user?: AuthUser; message?: string };
-      if (!res.ok || payload.status !== "ok" || !payload.user) {
-        logger.warn("[auth] login:error", { email, status: res.status, message: payload.message });
+      const payload = await res.json();
+
+      if (!res.ok) {
         throw new Error(payload.message || "No se pudo iniciar sesión");
       }
 
+      if (payload.status === "mfa_required") {
+        logger.info("[auth] login:mfa_required", { userId: payload.userId });
+        return { status: "mfa_required", userId: payload.userId };
+      }
+
+      if (payload.status === "ok" && payload.user) {
+        queryClient.setQueryData(["auth", "session"], payload.user);
+        logger.info("[auth] login:success", payload.user);
+        return { status: "ok", user: payload.user };
+      }
+
+      throw new Error("Respuesta inesperada del servidor");
+    },
+    [queryClient]
+  );
+
+  const loginWithMfa = useCallback(
+    async (userId: number, token: string) => {
+      logger.info("[auth] mfa:start", { userId });
+      const res = await fetch("/api/auth/login/mfa", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ userId, token }),
+      });
+
+      const payload = await res.json();
+
+      if (!res.ok || payload.status !== "ok" || !payload.user) {
+        throw new Error(payload.message || "Código MFA inválido");
+      }
+
       queryClient.setQueryData(["auth", "session"], payload.user);
-      logger.info("[auth] login:success", payload.user);
+      logger.info("[auth] mfa:success", payload.user);
+    },
+    [queryClient]
+  );
+
+  const loginWithPasskey = useCallback(
+    async (authResponse: unknown, challenge: string) => {
+      logger.info("[auth] passkey:start");
+      const res = await fetch("/api/auth/passkey/login/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ body: authResponse, challenge }),
+      });
+
+      const payload = await res.json();
+
+      if (!res.ok || payload.status !== "ok" || !payload.user) {
+        throw new Error(payload.message || "Error validando Passkey");
+      }
+
+      queryClient.setQueryData(["auth", "session"], payload.user);
+      logger.info("[auth] passkey:success", payload.user);
     },
     [queryClient]
   );
@@ -127,8 +183,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const value = useMemo<AuthContextType>(
-    () => ({ user, initializing, login, logout, hasRole }),
-    [user, initializing, login, logout, hasRole]
+    () => ({ user, initializing, login, loginWithMfa, loginWithPasskey, logout, hasRole }),
+    [user, initializing, login, loginWithMfa, loginWithPasskey, logout, hasRole]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

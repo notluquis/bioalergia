@@ -13,7 +13,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
 } from "@/components/ui/icons";
-import { Loader2 } from "lucide-react";
+import { Loader2, FileSpreadsheet } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/Tooltip";
 
 type NavItem = {
@@ -64,6 +64,12 @@ export const NAV_SECTIONS: NavSection[] = [
         to: "/finanzas/participants",
         label: "Participantes",
         icon: Users2,
+        roles: ["GOD", "ADMIN", "ANALYST", "VIEWER"],
+      },
+      {
+        to: "/finanzas/production-balances",
+        label: "Prestaciones",
+        icon: FileSpreadsheet,
         roles: ["GOD", "ADMIN", "ANALYST", "VIEWER"],
       },
       { to: "/finanzas/loans", label: "Préstamos", icon: PiggyBank, roles: ["GOD", "ADMIN", "ANALYST", "VIEWER"] },
