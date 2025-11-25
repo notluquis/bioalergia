@@ -6,6 +6,7 @@ import Header from "./components/Layout/Header";
 import { BottomNav } from "./components/Layout/MobileNav";
 import { APP_VERSION, BUILD_TIMESTAMP } from "./version";
 import { useSettings } from "./context/SettingsContext";
+import { UpdateNotification } from "./components/features/UpdateNotification";
 
 export default function App() {
   const navigationState = useNavigation();
@@ -189,6 +190,9 @@ export default function App() {
 
         {/* Mobile bottom navigation */}
         <BottomNav />
+
+        {/* Update notification popup */}
+        <UpdateNotification />
       </div>
     </>
   );

@@ -37,16 +37,21 @@ function buildServiceWorkerPlugin(buildId: string) {
   };
 }
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     tailwindcss(),
-    visualizer({
-      filename: "dist/stats.html",
-      open: false,
-      gzipSize: true,
-      brotliSize: true,
-    }),
+    // Only generate bundle stats in development
+    ...(mode === "development"
+      ? [
+          visualizer({
+            filename: "dist/stats.html",
+            open: false,
+            gzipSize: true,
+            brotliSize: true,
+          }),
+        ]
+      : []),
     buildServiceWorkerPlugin(computedBuildId),
   ],
   // Ensure process.env.NODE_ENV is available inside the client bundle.
@@ -58,6 +63,8 @@ export default defineConfig({
     modulePreload: false,
     outDir: "dist/client",
     chunkSizeWarningLimit: 1000,
+    sourcemap: false, // Disable sourcemaps for faster builds
+    minify: "esbuild", // esbuild is faster than terser
     rollupOptions: {
       output: {
         manualChunks: {
@@ -103,4 +110,4 @@ export default defineConfig({
       exclude: [...(configDefaults.coverage?.exclude ?? []), "test/setup.ts"],
     },
   },
-});
+}));
