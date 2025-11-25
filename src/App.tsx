@@ -7,6 +7,8 @@ import { BottomNav } from "./components/Layout/MobileNav";
 import { APP_VERSION, BUILD_TIMESTAMP } from "./version";
 import { useSettings } from "./context/SettingsContext";
 import { UpdateNotification } from "./components/features/UpdateNotification";
+import { PerformanceIndicator } from "./components/features/PerformanceIndicator";
+import { checkForUpdates } from "./lib/serviceWorker";
 
 export default function App() {
   const navigationState = useNavigation();
@@ -177,13 +179,38 @@ export default function App() {
           </main>
 
           <footer className="surface-elevated hidden md:flex items-center justify-between px-6 py-3 text-sm text-base-content">
-            <div className="flex items-center gap-3">
-              <span className="font-semibold text-base-content">Bioalergia</span>
-              <span className="text-xs text-base-content/60">v{APP_VERSION}</span>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-base-content">Bioalergia</span>
+                <span className="text-xs text-base-content/60">v{APP_VERSION}</span>
+              </div>
+
+              {/* Performance Mode Indicator */}
+              <PerformanceIndicator />
             </div>
-            <div className="flex items-center gap-2 text-xs text-base-content/70">
-              <span className="inline-flex h-2 w-2 rounded-full bg-primary/70" aria-hidden="true" />
-              <span>Build: {buildLabel}</span>
+
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 text-xs text-base-content/70">
+                <span className="inline-flex h-2 w-2 rounded-full bg-primary/70" aria-hidden="true" />
+                <span>Build: {buildLabel}</span>
+              </div>
+
+              {/* Manual Update Button */}
+              <button
+                onClick={() => checkForUpdates()}
+                className="flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs text-base-content/60 hover:bg-base-300/40 hover:text-base-content transition-colors"
+                title="Buscar actualizaciones"
+              >
+                <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                  />
+                </svg>
+                Buscar actualización
+              </button>
             </div>
           </footer>
         </div>
