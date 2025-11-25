@@ -1,6 +1,7 @@
 import { useMemo, useEffect } from "react";
 import { Link } from "react-router-dom";
 import dayjs from "dayjs";
+import { Wallet, ArrowRightLeft, Users, CalendarDays, ArrowUpRight } from "lucide-react";
 import { useDashboardStats, useRecentMovements } from "../features/dashboard/hooks";
 import { useParticipantLeaderboardQuery } from "../features/participants/hooks";
 import MetricCard from "../features/dashboard/components/MetricCard";
@@ -58,11 +59,15 @@ export default function Home() {
 
   return (
     <section className="flex flex-col gap-6">
-      <header className="surface-elevated space-y-2 rounded-3xl p-6 shadow-lg">
-        <h1 className="typ-title text-base-content">Panel financiero</h1>
-        <p className="typ-body text-base-content/70">
-          Resumen rápido de los últimos {RANGE_DAYS} días con accesos directos a tus vistas principales.
-        </p>
+      <header className="relative overflow-hidden rounded-3xl bg-linear-to-br from-base-100 via-base-100 to-primary/5 p-8 shadow-lg ring-1 ring-base-content/5">
+        <div className="relative z-10 space-y-2">
+          <h1 className="text-3xl font-bold tracking-tight text-base-content">Panel financiero</h1>
+          <p className="text-base font-medium text-base-content/60 max-w-2xl">
+            Resumen de actividad de los últimos {RANGE_DAYS} días y accesos directos a tus operaciones frecuentes.
+          </p>
+        </div>
+        <div className="absolute -right-10 -top-10 h-64 w-64 rounded-full bg-primary/5 blur-3xl" />
+        <div className="absolute -bottom-10 right-20 h-40 w-40 rounded-full bg-secondary/5 blur-2xl" />
       </header>
 
       <section className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-4">
@@ -93,59 +98,69 @@ export default function Home() {
 }
 
 const QUICK_LINKS = [
-  // {
-  //   title: "Subir movimientos",
-  //   description: "Carga los nuevos CSV de Mercado Pago y sincronízalos con la base.",
-  //   to: "/upload",
-  // },
   {
     title: "Registrar saldo",
-    description: "Actualiza saldos diarios con conciliaciones manuales.",
+    description: "Actualiza saldos diarios y conciliaciones.",
     to: "/transactions/balances",
+    icon: Wallet,
+    color: "text-emerald-500",
+    bg: "bg-emerald-500/10",
   },
   {
     title: "Ver movimientos",
-    description: "Filtra y audita los movimientos guardados con el saldo calculado.",
+    description: "Audita los movimientos y flujos de caja.",
     to: "/transactions/movements",
+    icon: ArrowRightLeft,
+    color: "text-blue-500",
+    bg: "bg-blue-500/10",
   },
-  // {
-  //   title: "Panel de estadísticas",
-  //   description: "Explora tendencias, proporciones y retiros destacados.",
-  //   to: "/stats",
-  // },
   {
     title: "Participantes",
-    description: "Consulta retiros y aportes por contraparte.",
+    description: "Gestiona contrapartes y sus historiales.",
     to: "/transactions/participants",
+    icon: Users,
+    color: "text-violet-500",
+    bg: "bg-violet-500/10",
   },
   {
     title: "Servicios",
-    description: "Gestiona servicios recurrentes y su agenda.",
+    description: "Administra servicios recurrentes y agenda.",
     to: "/services",
+    icon: CalendarDays,
+    color: "text-amber-500",
+    bg: "bg-amber-500/10",
   },
 ];
 
 function QuickLinksSection() {
   return (
-    <article className="surface-elevated space-y-4 rounded-3xl p-6 shadow-lg">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <p className="text-sm font-semibold text-base-content">Accesos rápidos</p>
-          <p className="text-xs text-base-content/60">Accede a tus vistas más usadas en un solo lugar.</p>
-        </div>
+    <article className="space-y-4">
+      <div className="flex items-center justify-between px-1">
+        <h3 className="text-lg font-semibold text-base-content">Accesos rápidos</h3>
       </div>
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2">
         {QUICK_LINKS.map((link) => (
           <Link
             key={link.to}
             to={link.to}
-            className="rounded-2xl border border-base-300 bg-base-100/80 p-4 text-sm text-base-content shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg"
+            className="group relative overflow-hidden rounded-2xl border border-base-200 bg-base-100 p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/20 hover:shadow-md"
           >
-            <p className="text-sm font-semibold text-base-content">{link.title}</p>
-            <p className="mt-1 text-xs text-base-content/70">{link.description}</p>
-            <span className="mt-3 inline-flex w-fit items-center gap-1 rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-primary">
-              Abrir
-            </span>
+            <div className="flex items-start gap-4">
+              <div
+                className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${link.bg} ${link.color} transition-transform duration-300 group-hover:scale-110`}
+              >
+                <link.icon className="h-6 w-6" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h4 className="font-semibold text-base-content group-hover:text-primary transition-colors">
+                  {link.title}
+                </h4>
+                <p className="mt-1 text-sm text-base-content/60 line-clamp-2">{link.description}</p>
+              </div>
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-base-content/30 opacity-0 transition-all duration-300 group-hover:translate-x-1 group-hover:opacity-100 group-hover:text-primary">
+                <ArrowUpRight className="h-5 w-5" />
+              </div>
+            </div>
           </Link>
         ))}
       </div>

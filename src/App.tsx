@@ -197,7 +197,19 @@ export default function App() {
 
               {/* Manual Update Button */}
               <button
-                onClick={() => checkForUpdates()}
+                onClick={async () => {
+                  const found = await checkForUpdates();
+                  if (!found) {
+                    // Simple alert for now, or use a toast if available in context
+                    // Since we don't have the toast hook here easily without refactoring App to be a child of ToastProvider
+                    // We'll use a native alert or just rely on the console for now?
+                    // User asked for "mini notificacion".
+                    // Let's try to use the ToastContext if possible, but App is the root.
+                    // Actually, App is likely wrapped in Providers in main.tsx. Let's check.
+                    // Assuming App is inside ToastProvider, we can use useToast.
+                    alert("No se encontraron actualizaciones nuevas.");
+                  }
+                }}
                 className="flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs text-base-content/60 hover:bg-base-300/40 hover:text-base-content transition-colors"
                 title="Buscar actualizaciones"
               >

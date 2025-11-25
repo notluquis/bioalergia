@@ -18,7 +18,7 @@ export const sessionCookieOptions: CookieOptions = {
   httpOnly: true,
   secure: isProduction,
   sameSite: isProduction ? "lax" : "lax",
-  maxAge: 2 * 24 * 60 * 60 * 1000,
+  maxAge: 3 * 60 * 60 * 1000, // 3 hours
   path: "/",
 };
 
@@ -74,9 +74,7 @@ if (!googleServiceAccountEmail) {
   googleCalendarEnvMissing.push("GOOGLE_SERVICE_ACCOUNT_EMAIL");
 }
 
-const googleServiceAccountPrivateKey = normalizePrivateKey(
-  process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY
-);
+const googleServiceAccountPrivateKey = normalizePrivateKey(process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY);
 if (!googleServiceAccountPrivateKey) {
   googleCalendarEnvMissing.push("GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY");
 }
@@ -88,9 +86,8 @@ if (!googleCalendarIds) {
 
 const syncStartDate = process.env.GOOGLE_CALENDAR_SYNC_START ?? "2000-01-01";
 const syncLookAheadDaysParsed = Number(process.env.GOOGLE_CALENDAR_SYNC_LOOKAHEAD_DAYS ?? "365");
-const syncLookAheadDays = Number.isFinite(syncLookAheadDaysParsed) && syncLookAheadDaysParsed > 0
-  ? Math.floor(syncLookAheadDaysParsed)
-  : 365;
+const syncLookAheadDays =
+  Number.isFinite(syncLookAheadDaysParsed) && syncLookAheadDaysParsed > 0 ? Math.floor(syncLookAheadDaysParsed) : 365;
 
 const excludePatternsSources = parseExcludePatterns(process.env.GOOGLE_CALENDAR_EXCLUDE_SUMMARIES ?? null);
 

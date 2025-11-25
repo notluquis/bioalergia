@@ -2,7 +2,6 @@ import React from "react";
 import { useLocation, useNavigation, useNavigate } from "react-router-dom";
 import { Loader2, LogOut } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import Button from "@/components/ui/Button";
 import ThemeToggle from "../ui/ThemeToggle";
 import ConnectionIndicator from "../features/ConnectionIndicator";
 import Clock from "../features/Clock";
@@ -77,14 +76,17 @@ export default function Header() {
         <Clock />
         <ThemeToggle />
         <ConnectionIndicator />
-        <Button
-          variant="ghost"
-          className="btn-circle border border-base-300/60 text-primary hover:border-primary/60 hover:bg-primary/10"
+        <button
+          type="button"
           onClick={handleLogout}
+          className="btn btn-circle border border-base-300/70 bg-base-100/80 text-base-content shadow-sm transition-all duration-300 hover:bg-error/10 hover:border-error/40 hover:text-error"
           aria-label="Cerrar sesión"
+          title="Cerrar sesión"
         >
-          <LogOut className="h-4 w-4" />
-        </Button>
+          <span className="flex h-6 w-6 items-center justify-center rounded-full transition-all duration-300 bg-base-200/50 shadow-inner">
+            <LogOut className="h-4 w-4" />
+          </span>
+        </button>
       </div>
     </header>
   );

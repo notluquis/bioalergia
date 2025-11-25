@@ -10,6 +10,7 @@ export type AuthUser = {
   role: UserRole;
   name: string | null;
   mfaEnabled: boolean;
+  status: string;
 };
 
 export type LoginResult = { status: "ok"; user: AuthUser } | { status: "mfa_required"; userId: number };
@@ -22,6 +23,7 @@ export type AuthContextType = {
   loginWithPasskey: (authResponse: unknown, challenge: string) => Promise<void>;
   logout: () => Promise<void>;
   hasRole: (...roles: UserRole[]) => boolean;
+  refreshSession: () => Promise<void>;
 };
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -182,9 +184,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [user]
   );
 
+  const refreshSession = useCallback(async () => {
+    await sessionQuery.refetch();
+  }, [sessionQuery]);
+
   const value = useMemo<AuthContextType>(
-    () => ({ user, initializing, login, loginWithMfa, loginWithPasskey, logout, hasRole }),
-    [user, initializing, login, loginWithMfa, loginWithPasskey, logout, hasRole]
+    () => ({ user, initializing, login, loginWithMfa, loginWithPasskey, logout, hasRole, refreshSession }),
+    [user, initializing, login, loginWithMfa, loginWithPasskey, logout, hasRole, refreshSession]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

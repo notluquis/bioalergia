@@ -1,89 +1,75 @@
-import SettingsForm from "../../components/features/SettingsForm";
-import { useSettings } from "../../context/settings-context";
-import { usePushNotifications } from "../../hooks/usePushNotifications";
+import { Building2, Info } from "lucide-react";
 
 export default function GeneralSettingsPage() {
-  const { settings } = useSettings();
-  const { isSubscribed, permission, toggleSubscription, sendTestNotification } = usePushNotifications();
-
   return (
     <div className="space-y-6">
-      <section className="surface-elevated relative overflow-hidden p-6">
-        <div className="relative flex flex-col gap-6 md:flex-row md:items-center">
-          <div className="flex flex-1 flex-col gap-3">
-            <div className="inline-flex items-center gap-3 rounded-full bg-base-200 px-4 py-2 text-xs font-semibold tracking-wide text-primary">
-              Marca activa
+      <div>
+        <h1 className="text-2xl font-bold text-base-content">Configuración General</h1>
+        <p className="text-sm text-base-content/60">Información de la empresa y estado del sistema.</p>
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-2">
+        {/* Company Info Card */}
+        <div className="surface-elevated rounded-2xl p-6 space-y-4">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+              <Building2 size={20} />
             </div>
             <div>
-              <p className="text-xs uppercase tracking-[0.35em] text-base-content/60">Organización</p>
-              <h2 className="text-2xl font-bold text-base-content drop-shadow-sm">{settings.orgName}</h2>
-              {settings.tagline && <p className="text-sm text-base-content/70">{settings.tagline}</p>}
+              <h2 className="font-bold text-lg">Empresa</h2>
+              <p className="text-xs text-base-content/60">Datos de la organización</p>
             </div>
-            <dl className="grid gap-4 text-xs text-base-content/70 sm:grid-cols-2">
-              <div>
-                <dt className="font-semibold uppercase tracking-wide text-base-content/60">Correo de soporte</dt>
-                <dd className="text-base-content">{settings.supportEmail || "No definido"}</dd>
-              </div>
-              <div>
-                <dt className="font-semibold uppercase tracking-wide text-base-content/60">Teléfono</dt>
-                <dd className="text-base-content">{settings.orgPhone || "No definido"}</dd>
-              </div>
-              <div>
-                <dt className="font-semibold uppercase tracking-wide text-base-content/60">Dirección</dt>
-                <dd className="text-base-content">{settings.orgAddress || "No registrada"}</dd>
-              </div>
-              <div>
-                <dt className="font-semibold uppercase tracking-wide text-base-content/60">Moneda base</dt>
-                <dd className="text-base-content">{settings.primaryCurrency || "Sin configurar"}</dd>
-              </div>
-            </dl>
           </div>
-          <div className="surface-recessed flex w-full max-w-60 flex-col items-center gap-4 p-4 text-center">
-            <div className="aspect-square w-24 overflow-hidden rounded-2xl border border-base-300 bg-base-200 p-2">
-              <img src={settings.logoUrl} alt="Logo actual" className="brand-logo--settings" />
-            </div>
-            <div className="flex items-center gap-3 text-xs font-semibold uppercase tracking-wide text-base-content/60">
-              <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-base-300 shadow bg-primary" />
-              <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-base-300 shadow bg-secondary" />
-            </div>
-            <p className="text-xs text-base-content/60">Visualiza cómo se combinan los colores y el logo.</p>
+
+          <div className="form-control">
+            <label className="label">
+              <span className="label-text">Nombre de la Empresa</span>
+            </label>
+            <input type="text" className="input input-bordered" defaultValue="Bioalergia" disabled />
+            <label className="label">
+              <span className="label-text-alt text-warning">Contactar a soporte para cambiar</span>
+            </label>
+          </div>
+
+          <div className="form-control">
+            <label className="label">
+              <span className="label-text">RUT Empresa</span>
+            </label>
+            <input type="text" className="input input-bordered" defaultValue="76.123.456-7" disabled />
           </div>
         </div>
-      </section>
 
-      <section className="surface-elevated p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-lg font-bold">Notificaciones Push</h3>
-            <p className="text-sm text-base-content/70">
-              Recibe alertas sobre nuevos documentos y actualizaciones importantes.
-            </p>
-            <p className="mt-1 text-xs text-base-content/50">
-              Estado:{" "}
-              {permission === "granted"
-                ? isSubscribed
-                  ? "Activadas"
-                  : "Permiso concedido, no suscrito"
-                : "Desactivadas"}
-            </p>
+        {/* System Info Card */}
+        <div className="surface-elevated rounded-2xl p-6 space-y-4">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-full bg-info/10 flex items-center justify-center text-info">
+              <Info size={20} />
+            </div>
+            <div>
+              <h2 className="font-bold text-lg">Sistema</h2>
+              <p className="text-xs text-base-content/60">Información técnica</p>
+            </div>
           </div>
-          <div className="flex gap-2">
-            {isSubscribed && (
-              <button onClick={sendTestNotification} className="btn btn-ghost btn-sm">
-                Probar
-              </button>
-            )}
-            <button
-              onClick={toggleSubscription}
-              className={`btn btn-sm ${isSubscribed ? "btn-error btn-outline" : "btn-primary"}`}
-            >
-              {isSubscribed ? "Desactivar" : "Activar"}
-            </button>
+
+          <div className="space-y-3">
+            <div className="flex justify-between items-center p-3 bg-base-200/50 rounded-lg">
+              <span className="text-sm font-medium">Versión</span>
+              <span className="badge badge-ghost">v0.1.0</span>
+            </div>
+            <div className="flex justify-between items-center p-3 bg-base-200/50 rounded-lg">
+              <span className="text-sm font-medium">Entorno</span>
+              <span className="badge badge-success gap-1">
+                <div className="w-1.5 h-1.5 rounded-full bg-current" />
+                Producción
+              </span>
+            </div>
+            <div className="flex justify-between items-center p-3 bg-base-200/50 rounded-lg">
+              <span className="text-sm font-medium">Estado API</span>
+              <span className="text-success text-sm font-bold">Online</span>
+            </div>
           </div>
         </div>
-      </section>
-
-      <SettingsForm />
+      </div>
     </div>
   );
 }
