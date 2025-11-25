@@ -26,3 +26,12 @@ export async function upsertRoleMapping(employee_role: string, app_role: UserRol
     },
   });
 }
+
+import { findEmployeeByEmail } from "./employees.js";
+
+export async function resolveUserRole(user: { email: string; role: UserRole }): Promise<UserRole> {
+  const employee = await findEmployeeByEmail(user.email);
+  const mappings = await listRoleMappings();
+  const mapping = employee ? mappings.find((m) => m.employee_role === employee.role) : undefined;
+  return mapping ? mapping.app_role : user.role;
+}

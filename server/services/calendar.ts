@@ -1,4 +1,5 @@
 import { prisma } from "../prisma.js";
+import { Prisma } from "../../generated/prisma/client.js";
 
 export async function loadSettings() {
   const settings = await prisma.setting.findMany();
@@ -68,6 +69,28 @@ export async function listCalendarSyncLogs(limit: number) {
   // We should return the Prisma objects and update the route to use camelCase properties.
   return logs;
 }
+
+export type UnclassifiedEvent = Prisma.EventGetPayload<{
+  select: {
+    id: true;
+    calendar: { select: { googleId: true } };
+    externalEventId: true;
+    eventStatus: true;
+    eventType: true;
+    summary: true;
+    description: true;
+    startDate: true;
+    startDateTime: true;
+    endDate: true;
+    endDateTime: true;
+    category: true;
+    amountExpected: true;
+    amountPaid: true;
+    attended: true;
+    dosage: true;
+    treatmentStage: true;
+  };
+}>;
 
 export async function listUnclassifiedCalendarEvents(limit: number) {
   // Unclassified: category is null or empty

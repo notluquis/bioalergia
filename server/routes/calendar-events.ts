@@ -9,7 +9,7 @@ import {
   type CalendarEventFilters,
 } from "../lib/google-calendar-queries.js";
 import { syncGoogleCalendarOnce } from "../lib/google-calendar.js";
-import { formatDateOnly, parseDateOnly } from "../lib/time.js";
+
 import {
   loadSettings,
   createCalendarSyncLogEntry,
@@ -17,54 +17,14 @@ import {
   listCalendarSyncLogs,
   listUnclassifiedCalendarEvents,
   updateCalendarEventClassification,
+  type UnclassifiedEvent,
 } from "../services/calendar.js";
-import { Prisma } from "../../generated/prisma/client.js";
+import { ensureArray, normalizeSearch, coercePositiveInteger, type QueryValue } from "../lib/query-helpers.js";
 import { googleCalendarConfig } from "../config.js";
-import { z } from "zod";
-
-type QueryValue = string | ParsedQs | (string | ParsedQs)[] | undefined;
-
-function toStringValues(value: QueryValue): string[] {
-  if (typeof value === "string") {
-    return [value];
-  }
-  if (Array.isArray(value)) {
-    return value.filter((item): item is string => typeof item === "string");
-  }
-  return [];
-}
-
-function ensureArray(value: QueryValue): string[] | undefined {
-  const values = toStringValues(value);
-  if (!values.length) return undefined;
-  const result = values
-    .flatMap((item) => item.split(","))
-    .map((item) => item.trim())
-    .filter(Boolean);
-  return result.length ? result : undefined;
-}
-
-function normalizeDate(value: QueryValue): string | undefined {
-  const [raw] = toStringValues(value);
-  if (!raw) return undefined;
-  const parsed = parseDateOnly(raw);
-  return parsed ? formatDateOnly(parsed) : undefined;
-}
-
-function normalizeSearch(value: QueryValue): string | undefined {
-  const [raw] = toStringValues(value);
-  if (!raw) return undefined;
-  const trimmed = raw.trim();
-  if (!trimmed) return undefined;
-  return trimmed.slice(0, 200);
-}
+import { updateClassificationSchema } from "../schemas.js";
 
 function coerceMaxDays(value: QueryValue): number | undefined {
-  const [raw] = toStringValues(value);
-  if (!raw) return undefined;
-  const parsed = Number.parseInt(raw, 10);
-  if (Number.isNaN(parsed) || parsed <= 0) return undefined;
-  return parsed;
+  return coercePositiveInteger(value);
 }
 
 async function buildFilters(query: ParsedQs) {
@@ -289,7 +249,7 @@ export function registerCalendarEventRoutes(app: express.Express) {
       const rows = await listUnclassifiedCalendarEvents(limit);
       res.json({
         status: "ok",
-        events: rows.map((row: Prisma.EventGetPayload<{ include: { calendar: true } }>) => ({
+        events: rows.map((row: UnclassifiedEvent) => ({
           calendarId: row.calendar.googleId,
           eventId: row.externalEventId,
           status: row.eventStatus ?? null,
@@ -310,60 +270,6 @@ export function registerCalendarEventRoutes(app: express.Express) {
       });
     })
   );
-
-  const amountSchema = z
-    .union([z.number(), z.string(), z.null()])
-    .transform((value) => {
-      if (value == null) return null;
-      if (typeof value === "number") {
-        if (!Number.isFinite(value)) return Number.NaN;
-        return Math.trunc(value);
-      }
-      const trimmed = value.trim();
-      if (!trimmed) return null;
-      const parsed = Number.parseInt(trimmed, 10);
-      if (Number.isNaN(parsed)) {
-        return Number.NaN;
-      }
-      return parsed;
-    })
-    .refine((value) => value == null || (Number.isInteger(value) && value >= 0 && value <= 100_000_000), {
-      message: "Monto inválido",
-    })
-    .optional();
-
-  const updateClassificationSchema = z.object({
-    calendarId: z.string().min(1).max(200),
-    eventId: z.string().min(1).max(200),
-    category: z
-      .string()
-      .trim()
-      .min(1)
-      .max(120)
-      .or(z.literal(""))
-      .nullable()
-      .optional()
-      .transform((value) => {
-        if (value == null) return null;
-        const trimmed = value.trim();
-        return trimmed.length ? trimmed : null;
-      }),
-    amountExpected: amountSchema,
-    amountPaid: amountSchema,
-    attended: z.boolean().nullable().optional(),
-    dosage: z
-      .string()
-      .trim()
-      .max(64)
-      .nullish()
-      .transform((value) => (value && value.length ? value : null)),
-    treatmentStage: z
-      .string()
-      .trim()
-      .max(64)
-      .nullish()
-      .transform((value) => (value && value.length ? value : null)),
-  });
 
   app.post(
     "/api/calendar/events/classify",

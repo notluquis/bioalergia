@@ -10,20 +10,12 @@ import {
   updateTimesheetEntry,
   deleteTimesheetEntry,
 } from "../services/timesheets.js";
-import { timesheetPayloadSchema, timesheetUpdateSchema, timesheetBulkSchema } from "../schemas.js";
+import { timesheetPayloadSchema, timesheetUpdateSchema, timesheetBulkSchema, monthParamSchema } from "../schemas.js";
 import type { AuthenticatedRequest } from "../types.js";
 import { durationToMinutes, minutesToDuration } from "../../shared/time.js";
 import { roundCurrency } from "../../shared/currency.js";
 import { prisma } from "../prisma.js";
-import { formatDateOnly } from "../lib/time.js";
-
-const monthParamSchema = z.object({
-  month: z
-    .string()
-    .regex(/^[0-9]{4}-[0-9]{2}$/)
-    .optional()
-    .transform((value) => value ?? formatMonth(new Date())),
-});
+import { formatDateOnly, getNthBusinessDay, getMonthRange } from "../lib/time.js";
 
 export function registerTimesheetRoutes(app: express.Express) {
   // Endpoint para obtener meses registrados
@@ -469,45 +461,8 @@ function computePayDate(role: string, periodStart: string) {
   const nextMonthFirstDay = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 1);
   if (role.toUpperCase().includes("ENFER")) {
     // Enfermeros: 5to día hábil del mes siguiente
-    return formatDate(getNthBusinessDay(nextMonthFirstDay, 5));
+    return formatDateOnly(getNthBusinessDay(nextMonthFirstDay, 5));
   }
   // Otros: día 5 calendario del mes siguiente
-  return formatDate(new Date(nextMonthFirstDay.getFullYear(), nextMonthFirstDay.getMonth(), 5));
-}
-
-function getNthBusinessDay(base: Date, n: number) {
-  const date = new Date(base);
-  let count = 0;
-  while (count < n) {
-    const day = date.getDay();
-    if (day !== 0 && day !== 6) {
-      count += 1;
-      if (count === n) break;
-    }
-    date.setDate(date.getDate() + 1);
-  }
-  return date;
-}
-
-function formatDate(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-function getMonthRange(month: string) {
-  const [yearStr, monthStr] = month.split("-");
-  const year = Number(yearStr);
-  const monthIndex = Number(monthStr) - 1;
-  const fromDate = new Date(year, monthIndex, 1);
-  const toDate = new Date(year, monthIndex + 1, 0);
-  return {
-    from: formatDate(fromDate),
-    to: formatDate(toDate),
-  };
-}
-
-function formatMonth(date: Date) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+  return formatDateOnly(new Date(nextMonthFirstDay.getFullYear(), nextMonthFirstDay.getMonth(), 5));
 }

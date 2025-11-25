@@ -1,12 +1,8 @@
 import express from "express";
 import { asyncHandler, authenticate, requireRole } from "../lib/http.js";
 import { listRoleMappings, upsertRoleMapping } from "../services/roles.js";
-import { z } from "zod";
 
-const roleMappingSchema = z.object({
-  employee_role: z.string().min(1).max(120),
-  app_role: z.enum(["GOD", "ADMIN", "ANALYST", "VIEWER"]),
-});
+import { roleMappingSchema } from "../schemas.js";
 
 export function registerRoleRoutes(app: express.Express) {
   const router = express.Router();
