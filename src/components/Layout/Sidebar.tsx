@@ -138,7 +138,8 @@ export default function Sidebar({ isOpen, isMobile, onClose, isCollapsed = false
           "fixed inset-y-0 left-0 z-50 flex h-full shrink-0 flex-col rounded-3xl border border-base-300/50 bg-base-200/80 text-sm text-base-content shadow-2xl backdrop-blur-3xl transition-all duration-300 md:static md:h-[calc(100vh-5rem)] md:translate-x-0",
           isOpen ? "translate-x-0" : "-translate-x-full",
           !isOpen && !isMobile && "hidden",
-          isCollapsed ? "w-20 px-2" : "w-[min(300px,88vw)] p-3"
+          isCollapsed ? "w-20 px-2" : "w-[min(300px,88vw)] p-3",
+          "overflow-x-hidden" // Prevent horizontal scroll
         )}
         aria-label="Navegación principal"
       >
@@ -156,7 +157,7 @@ export default function Sidebar({ isOpen, isMobile, onClose, isCollapsed = false
               </div>
               {!isCollapsed && (
                 <div className="min-w-0 overflow-hidden transition-all duration-300">
-                  <p className="text-[10px] uppercase tracking-[0.4em] text-base-content/60">Bioalergia</p>
+                  <p className="text-[10px] uppercase tracking-[0.2em] text-base-content/60">Bioalergia</p>
                   <p className="truncate text-lg font-semibold leading-tight text-base-content">
                     {capitalizedName || "Equipo"}
                   </p>

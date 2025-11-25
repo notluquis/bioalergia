@@ -1,22 +1,29 @@
-# Multi-stage Dockerfile for optimal image size
+# syntax=docker/dockerfile:1.4
+# Multi-stage Dockerfile optimized for Railway Metal builders
 # Stage 1: Build
 FROM node:22-alpine AS builder
 
+# Update npm to latest version
+RUN npm install -g npm@11.6.3
+
 WORKDIR /app
-
-# Copy package files
-COPY package*.json ./
-COPY prisma ./prisma/
-
-# Copy source code (needed for build and scripts for prisma generate)
-COPY . .
 
 # Set DATABASE_URL for Prisma (needed during npm ci postinstall)
 ENV DATABASE_URL="postgresql://dummy:dummy@dummy:5432/dummy"
 
-# Install ALL dependencies (needed for build)
-# This will run postinstall -> prisma:generate
-RUN npm ci
+# Copy package files first (changes less often = better cache)
+COPY package*.json ./
+
+# Copy Prisma schema (needed for prisma generate during postinstall)
+COPY prisma ./prisma/
+
+# Install ALL dependencies with cache mount (persists npm cache across builds)
+# This layer will be cached if package.json and prisma schema haven't changed
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci
+
+# Copy source code LAST (changes most often)
+COPY . .
 
 # Build the application
 RUN npm run build:prod
@@ -40,8 +47,9 @@ COPY --from=builder /app/generated ./generated
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 
-# Remove dev dependencies to reduce size
-RUN npm prune --omit=dev
+# Remove dev dependencies with cache mount
+RUN --mount=type=cache,target=/root/.npm \
+    npm prune --omit=dev
 
 # Expose port
 EXPOSE 3000
