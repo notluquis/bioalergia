@@ -6,9 +6,83 @@ import { sessionCookieName, sessionCookieOptions } from "../config.js";
 import { findUserByEmail, findUserById } from "../services/users.js";
 import { resolveUserRole } from "../services/roles.js";
 import type { AuthenticatedRequest } from "../types.js";
-import { loginSchema } from "../schemas.js";
+import { loginSchema, mfaVerifySchema } from "../schemas.js";
+import { generateMfaSecret, verifyMfaToken } from "../services/mfa.js";
+import { updateUserMfa } from "../services/users.js";
+import {
+  generatePasskeyRegistrationOptions,
+  verifyPasskeyRegistration,
+  generatePasskeyLoginOptions,
+  verifyPasskeyLogin,
+} from "../services/passkeys.js";
 
 export function registerAuthRoutes(app: express.Express) {
+  // --- Passkey Registration ---
+  app.get(
+    "/api/auth/passkey/register/options",
+    authenticate,
+    asyncHandler(async (req: AuthenticatedRequest, res) => {
+      if (!req.auth) return res.status(401).json({ status: "error" });
+      const options = await generatePasskeyRegistrationOptions({ id: req.auth.userId, email: req.auth.email });
+      // Store challenge in session/cookie if needed, or rely on client signing it back.
+      // For this implementation, we send it to client.
+      res.json(options);
+    })
+  );
+
+  app.post(
+    "/api/auth/passkey/register/verify",
+    authenticate,
+    asyncHandler(async (req: AuthenticatedRequest, res) => {
+      if (!req.auth) return res.status(401).json({ status: "error" });
+      const { body, challenge } = req.body; // Client must send back the challenge they received
+
+      const success = await verifyPasskeyRegistration(req.auth.userId, body, challenge);
+      if (success) {
+        res.json({ status: "ok" });
+      } else {
+        res.status(400).json({ status: "error", message: "Falló la verificación del Passkey" });
+      }
+    })
+  );
+
+  // --- Passkey Login ---
+  app.get(
+    "/api/auth/passkey/login/options",
+    asyncHandler(async (req, res) => {
+      const options = await generatePasskeyLoginOptions();
+      res.json(options);
+    })
+  );
+
+  app.post(
+    "/api/auth/passkey/login/verify",
+    asyncHandler(async (req, res) => {
+      const { body, challenge } = req.body;
+
+      try {
+        const user = await verifyPasskeyLogin(body, challenge);
+
+        // --- Role Governance Logic ---
+        const effectiveRole = await resolveUserRole(user);
+        // --- End Role Governance Logic ---
+
+        // Passkey login bypasses MFA because it is MFA (Something you have + Something you are)
+        const token = issueToken({ userId: user.id, email: user.email, role: effectiveRole });
+        res.cookie(sessionCookieName, token, sessionCookieOptions);
+
+        logEvent("auth/login:passkey-success", { userId: user.id });
+        res.json({
+          status: "ok",
+          user: { ...sanitizeUser(user), role: effectiveRole, mfaEnabled: user.mfaEnabled },
+        });
+      } catch (err) {
+        logWarn("auth/login:passkey-failed", { error: String(err) });
+        res.status(400).json({ status: "error", message: "No se pudo validar el acceso biométrico" });
+      }
+    })
+  );
+
   app.post(
     "/api/auth/login",
     asyncHandler(async (req: AuthenticatedRequest, res) => {
@@ -39,6 +113,11 @@ export function registerAuthRoutes(app: express.Express) {
       const effectiveRole = await resolveUserRole(user);
       // --- End Role Governance Logic ---
 
+      if (user.mfaEnabled) {
+        logEvent("auth/login:mfa-required", requestContext(req, { userId: user.id }));
+        return res.json({ status: "mfa_required", userId: user.id });
+      }
+
       const token = issueToken({ userId: user.id, email: user.email, role: effectiveRole });
       res.cookie(sessionCookieName, token, sessionCookieOptions);
 
@@ -47,6 +126,91 @@ export function registerAuthRoutes(app: express.Express) {
         status: "ok",
         user: { ...sanitizeUser(user), role: effectiveRole },
       });
+    })
+  );
+
+  app.post(
+    "/api/auth/login/mfa",
+    asyncHandler(async (req, res) => {
+      const parsed = mfaVerifySchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ status: "error", message: "Código inválido" });
+      }
+
+      const { userId, token } = parsed.data;
+      if (!userId) {
+        return res.status(400).json({ status: "error", message: "Falta userId" });
+      }
+
+      const user = await findUserById(userId);
+      if (!user || !user.mfaEnabled || !user.mfaSecret) {
+        return res.status(400).json({ status: "error", message: "MFA no configurado o usuario inválido" });
+      }
+
+      const isValid = verifyMfaToken(token, user.mfaSecret);
+      if (!isValid) {
+        logWarn("auth/login:mfa-invalid", { userId });
+        return res.status(401).json({ status: "error", message: "Código incorrecto" });
+      }
+
+      const effectiveRole = await resolveUserRole(user);
+      const sessionToken = issueToken({ userId: user.id, email: user.email, role: effectiveRole });
+      res.cookie(sessionCookieName, sessionToken, sessionCookieOptions);
+
+      logEvent("auth/login:mfa-success", { userId });
+      res.json({
+        status: "ok",
+        user: { ...sanitizeUser(user), role: effectiveRole },
+      });
+    })
+  );
+
+  app.post(
+    "/api/auth/mfa/setup",
+    authenticate,
+    asyncHandler(async (req: AuthenticatedRequest, res) => {
+      if (!req.auth) return res.status(401).json({ status: "error" });
+      const { secret, qrCodeUrl } = await generateMfaSecret(req.auth.email);
+
+      // Store secret temporarily (disabled) until verified
+      await updateUserMfa(req.auth.userId, secret, false);
+
+      res.json({ status: "ok", secret, qrCodeUrl });
+    })
+  );
+
+  app.post(
+    "/api/auth/mfa/enable",
+    authenticate,
+    asyncHandler(async (req: AuthenticatedRequest, res) => {
+      if (!req.auth) return res.status(401).json({ status: "error" });
+      const parsed = mfaVerifySchema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ status: "error" });
+
+      const user = await findUserById(req.auth.userId);
+      if (!user || !user.mfaSecret) {
+        return res.status(400).json({ status: "error", message: "Setup no iniciado" });
+      }
+
+      const isValid = verifyMfaToken(parsed.data.token, user.mfaSecret);
+      if (!isValid) {
+        return res.status(400).json({ status: "error", message: "Código incorrecto" });
+      }
+
+      await updateUserMfa(req.auth.userId, user.mfaSecret, true);
+      logEvent("auth/mfa:enabled", { userId: req.auth.userId });
+      res.json({ status: "ok" });
+    })
+  );
+
+  app.post(
+    "/api/auth/mfa/disable",
+    authenticate,
+    asyncHandler(async (req: AuthenticatedRequest, res) => {
+      if (!req.auth) return res.status(401).json({ status: "error" });
+      await updateUserMfa(req.auth.userId, null, false);
+      logEvent("auth/mfa:disabled", { userId: req.auth.userId });
+      res.json({ status: "ok" });
     })
   );
 
@@ -77,7 +241,7 @@ export function registerAuthRoutes(app: express.Express) {
 
       // --- Role Governance Logic ---
       const effectiveRole = await resolveUserRole(user);
-      const finalUser = { ...sanitizeUser(user), role: effectiveRole };
+      const finalUser = { ...sanitizeUser(user), role: effectiveRole, mfaEnabled: user.mfaEnabled };
       // --- End Role Governance Logic ---
 
       res.json({ status: "ok", user: finalUser });

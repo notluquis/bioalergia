@@ -11,3 +11,13 @@ export async function findUserById(id: number) {
     where: { id },
   });
 }
+
+export async function updateUserMfa(userId: number, secret: string | null, enabled: boolean) {
+  return await prisma.user.update({
+    where: { id: userId },
+    data: {
+      mfaSecret: secret,
+      mfaEnabled: enabled,
+    },
+  });
+}

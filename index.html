@@ -37,7 +37,9 @@
     <link rel="manifest" href="/manifest.json" />
 
     <!-- Theme color -->
-    <meta name="theme-color" content="#0e64b7" />
+    <!-- Theme color (Dynamic for iOS/macOS) -->
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)" />
 
     <!-- iOS Meta Tags -->
     <meta name="apple-mobile-web-app-capable" content="yes" />

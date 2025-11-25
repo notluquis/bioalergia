@@ -55,6 +55,49 @@ export default function App() {
     }
   }, [settings?.pageTitle]);
 
+  // Handle PWA File Launch (macOS/Windows "Open With")
+  React.useEffect(() => {
+    if ("launchQueue" in window) {
+      interface LaunchParams {
+        files: FileSystemFileHandle[];
+      }
+      interface LaunchQueue {
+        setConsumer(callback: (launchParams: LaunchParams) => Promise<void>): void;
+      }
+      const launchQueue = (window as unknown as { launchQueue: LaunchQueue }).launchQueue;
+
+      launchQueue.setConsumer(async (launchParams) => {
+        if (!launchParams.files.length) return;
+
+        const fileHandle = launchParams.files[0];
+        if (!fileHandle) return;
+        const file = await fileHandle.getFile();
+
+        // Store file in a global state or navigate with it
+        // For now, we'll log it and maybe show a toast or redirect
+        console.log("File opened via OS:", file.name);
+
+        // In a real implementation, we would upload this file or open the transaction modal
+        // Since we can't easily pass the File object via URL params, we might need a context
+        // For this prototype, we'll just acknowledge it
+      });
+    }
+  }, []);
+
+  // Windows 11 / macOS App Badging
+  React.useEffect(() => {
+    if (!("setAppBadge" in navigator)) return;
+
+    // Example: Set badge if there are pending items (mocked for now)
+    // In production, connect this to your notification/inbox context
+    // navigator.setAppBadge(3);
+
+    // Clear badge on focus
+    const clearBadge = () => navigator.clearAppBadge();
+    window.addEventListener("focus", clearBadge);
+    return () => window.removeEventListener("focus", clearBadge);
+  }, []);
+
   return (
     <>
       {isNavigating && (

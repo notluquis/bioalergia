@@ -108,6 +108,30 @@
       ]
     }
   },
+  "file_handlers": [
+    {
+      "action": "/finanzas/movements",
+      "accept": {
+        "image/jpeg": [".jpg", ".jpeg"],
+        "image/png": [".png"],
+        "image/webp": [".webp"],
+        "application/pdf": [".pdf"]
+      },
+      "icons": [
+        {
+          "src": "/icons/icon-512.png",
+          "sizes": "512x512",
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
+  "protocol_handlers": [
+    {
+      "protocol": "web+bioalergia",
+      "url": "/?start_url=%s"
+    }
+  ],
   "screenshots": [],
   "related_applications": [],
   "prefer_related_applications": false

@@ -1,4 +1,4 @@
-import { Settings as SettingsIcon, Calendar, Shield, ServerCog, Boxes, FileSpreadsheet } from "lucide-react";
+import { Settings as SettingsIcon, KeyRound, Calendar, Shield, Boxes } from "lucide-react";
 
 export const SETTINGS_PAGES = [
   {
@@ -14,10 +14,16 @@ export const SETTINGS_PAGES = [
     icon: Calendar,
   },
   {
-    to: "accesos",
-    label: "Accesos y conexiones",
-    description: "URLs de cPanel, base de datos y credenciales visibles.",
-    icon: ServerCog,
+    to: "security",
+    label: "Seguridad",
+    icon: Shield,
+    description: "Configura MFA y Passkeys",
+  },
+  {
+    to: "access",
+    label: "Accesos",
+    icon: KeyRound,
+    description: "Accesos rápidos y configuración de DB",
   },
   {
     to: "inventario",
@@ -30,11 +36,5 @@ export const SETTINGS_PAGES = [
     label: "Roles y permisos",
     description: "Mapeo entre roles operativos y la app.",
     icon: Shield,
-  },
-  {
-    to: "balances-diarios",
-    label: "Balance diario de prestaciones",
-    description: "Ingresos diarios en CLP con historial de cambios.",
-    icon: FileSpreadsheet,
   },
 ] as const;

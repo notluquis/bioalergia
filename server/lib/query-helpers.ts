@@ -43,3 +43,12 @@ export function coerceLimit(value: unknown, defaultLimit = 50, maxLimit = 2000):
   if (!Number.isFinite(num) || num <= 0) return defaultLimit;
   return Math.min(Math.floor(num), maxLimit);
 }
+
+export function normalizeDate(value: QueryValue): string | undefined {
+  const [raw] = toStringValues(value);
+  if (!raw) return undefined;
+  const trimmed = raw.trim();
+  // Basic YYYY-MM-DD validation could go here, but for now just trim
+  if (!trimmed) return undefined;
+  return trimmed;
+}
