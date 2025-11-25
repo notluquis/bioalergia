@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ShieldCheck, Loader2 } from "lucide-react";
+import { ShieldCheck, Loader2, Server, Globe, Database } from "lucide-react";
 import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
 import { useSettings, type AppSettings } from "../../context/settings-context";
@@ -105,6 +105,7 @@ export default function AccessSettingsPage() {
         label: "Abrir cPanel",
         href: normalizeExternalUrl(settings.cpanelUrl),
         description: settings.cpanelUrl ? settings.cpanelUrl : "Configura el enlace directo al cPanel.",
+        icon: Server,
       },
       {
         label: "Abrir consola DB",
@@ -112,32 +113,41 @@ export default function AccessSettingsPage() {
         description: settings.dbConsoleUrl
           ? settings.dbConsoleUrl
           : "Configura el acceso a la consola de la base de datos.",
+        icon: Database,
       },
     ],
     [settings.cpanelUrl, settings.dbConsoleUrl]
   );
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-base-content">Accesos y Seguridad</h1>
+        <p className="text-sm text-base-content/60">Gestiona accesos técnicos y seguridad de usuarios.</p>
+      </div>
+
       {/* Admin User Management Section */}
       {isAdmin && (
-        <section className="bg-base-100 space-y-4 p-6">
-          <div className="space-y-1">
-            <h2 className="text-lg font-semibold text-primary drop-shadow-sm">Gestión de Usuarios y Seguridad</h2>
-            <p className="text-sm text-base-content/70">
-              Controla el acceso y la autenticación de dos factores (MFA) para los usuarios.
-            </p>
+        <div className="surface-elevated rounded-2xl p-6 space-y-4">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-full bg-warning/10 flex items-center justify-center text-warning">
+              <ShieldCheck size={20} />
+            </div>
+            <div>
+              <h2 className="font-bold text-lg">Seguridad de Usuarios</h2>
+              <p className="text-xs text-base-content/60">Control de MFA y accesos.</p>
+            </div>
           </div>
 
-          <div className="overflow-x-auto rounded-lg border border-base-300">
+          <div className="overflow-x-auto">
             <table className="table w-full">
               <thead>
-                <tr className="bg-base-200/50 text-left text-xs uppercase text-base-content/60">
-                  <th className="px-4 py-3">Usuario</th>
-                  <th className="px-4 py-3">Rol</th>
-                  <th className="px-4 py-3 text-center">MFA</th>
-                  <th className="px-4 py-3 text-center">Passkey</th>
-                  <th className="px-4 py-3 text-right">Acciones</th>
+                <tr>
+                  <th>Usuario</th>
+                  <th>Rol</th>
+                  <th className="text-center">MFA</th>
+                  <th className="text-center">Passkey</th>
+                  <th className="text-right">Acciones</th>
                 </tr>
               </thead>
               <tbody>
@@ -157,28 +167,26 @@ export default function AccessSettingsPage() {
                       passkeysCount: number;
                       hasPasskey: boolean;
                     }) => (
-                      <tr key={u.id} className="border-b border-base-200 last:border-0 hover:bg-base-200/30">
-                        <td className="px-4 py-3 font-medium">{u.email}</td>
-                        <td className="px-4 py-3 text-xs opacity-70">{u.role}</td>
-                        <td className="px-4 py-3 text-center">
+                      <tr key={u.id} className="hover:bg-base-200/50">
+                        <td className="font-medium">{u.email}</td>
+                        <td className="text-xs opacity-70">{u.role}</td>
+                        <td className="text-center">
                           {u.mfaEnabled ? (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-success/10 px-2 py-1 text-xs font-medium text-success">
+                            <span className="badge badge-success badge-sm gap-1">
                               <ShieldCheck className="size-3" /> Activo
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-base-300/50 px-2 py-1 text-xs font-medium text-base-content/50">
-                              Inactivo
-                            </span>
+                            <span className="badge badge-ghost badge-sm">Inactivo</span>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-center">
+                        <td className="text-center">
                           {u.hasPasskey ? (
                             <span className="text-xs text-success">Sí</span>
                           ) : (
                             <span className="text-xs text-base-content/30">-</span>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-right">
+                        <td className="text-right">
                           <Button
                             size="sm"
                             variant="ghost"
@@ -198,101 +206,106 @@ export default function AccessSettingsPage() {
               </tbody>
             </table>
           </div>
-        </section>
+        </div>
       )}
 
-      <section className="bg-base-100 space-y-4 p-6">
-        <div className="space-y-1">
-          <h2 className="text-lg font-semibold text-primary drop-shadow-sm">Accesos rápidos</h2>
-          <p className="text-sm text-base-content/70">
-            Lanza los paneles que usas con frecuencia y mantén visible la información clave de la base de datos.
-          </p>
-        </div>
-        <div className="grid gap-3 md:grid-cols-2">
-          {quickLinks.map((link) => (
-            <button
-              key={link.label}
-              onClick={() => link.href && window.open(link.href, "_blank", "noopener,noreferrer")}
-              disabled={!link.href}
-              className="flex flex-col rounded-2xl border border-base-300 bg-base-100 px-4 py-3 text-left text-sm text-base-content/70 transition hover:border-primary/35 hover:bg-primary/10 hover:text-primary disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <span className="font-semibold text-base-content">{link.label}</span>
-              <span className="text-xs text-base-content/60">{link.description}</span>
-            </button>
-          ))}
-        </div>
-      </section>
-
-      <form onSubmit={handleSubmit} className="bg-base-100 space-y-5 p-6">
-        <div className="space-y-1">
-          <h2 className="text-lg font-semibold text-secondary drop-shadow-sm">Detalle de conexiones</h2>
-          <p className="text-sm text-base-content/70">
-            Documenta cómo acceder a los paneles y la base de datos para el equipo técnico.
-          </p>
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-2">
-          <label className="flex flex-col gap-2 text-sm text-base-content/70">
-            <span className="text-xs font-semibold uppercase tracking-wide text-base-content/60">Servidor visible</span>
-            <Input
-              type="text"
-              value={form.dbDisplayHost}
-              onChange={(event) => handleChange("dbDisplayHost", event.target.value)}
-              placeholder="Ej: db.bioalergia.cl"
-            />
-          </label>
-          <label className="flex flex-col gap-2 text-sm text-base-content/70">
-            <span className="text-xs font-semibold uppercase tracking-wide text-base-content/60">
-              Nombre de la base
-            </span>
-            <Input
-              type="text"
-              value={form.dbDisplayName}
-              onChange={(event) => handleChange("dbDisplayName", event.target.value)}
-              placeholder="Ej: bio_finanzas"
-            />
-          </label>
-          <label className="md:col-span-2 flex flex-col gap-2 text-sm text-base-content/70">
-            <span className="text-xs font-semibold uppercase tracking-wide text-base-content/60">
-              URL consola DB (https)
-            </span>
-            <Input
-              type="url"
-              value={form.dbConsoleUrl}
-              onChange={(event) => handleChange("dbConsoleUrl", event.target.value)}
-              placeholder="https://"
-            />
-            <span className="text-xs text-base-content/50">Se normaliza automáticamente para incluir https://</span>
-          </label>
-          <label className="md:col-span-2 flex flex-col gap-2 text-sm text-base-content/70">
-            <span className="text-xs font-semibold uppercase tracking-wide text-base-content/60">
-              URL cPanel (https)
-            </span>
-            <Input
-              type="url"
-              value={form.cpanelUrl}
-              onChange={(event) => handleChange("cpanelUrl", event.target.value)}
-              placeholder="https://"
-            />
-          </label>
+      <div className="grid gap-6 md:grid-cols-2">
+        {/* Quick Links */}
+        <div className="surface-elevated rounded-2xl p-6 space-y-4">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-full bg-info/10 flex items-center justify-center text-info">
+              <Globe size={20} />
+            </div>
+            <div>
+              <h2 className="font-bold text-lg">Accesos Rápidos</h2>
+              <p className="text-xs text-base-content/60">Enlaces a paneles externos.</p>
+            </div>
+          </div>
+          <div className="space-y-3">
+            {quickLinks.map((link) => (
+              <button
+                key={link.label}
+                onClick={() => link.href && window.open(link.href, "_blank", "noopener,noreferrer")}
+                disabled={!link.href}
+                className="flex items-center gap-3 w-full p-3 rounded-xl border border-base-200 hover:border-primary/50 hover:bg-primary/5 transition-all text-left group"
+              >
+                <div className="w-8 h-8 rounded-lg bg-base-200 flex items-center justify-center group-hover:bg-primary/20 group-hover:text-primary transition-colors">
+                  <link.icon size={16} />
+                </div>
+                <div>
+                  <div className="font-medium text-sm">{link.label}</div>
+                  <div className="text-xs text-base-content/50 truncate max-w-[200px]">{link.description}</div>
+                </div>
+              </button>
+            ))}
+          </div>
         </div>
 
-        {error && (
-          <p className="border-l-4 border-error/70 bg-linear-to-r from-error/10 via-base-100/70 to-base-100/55 px-4 py-3 text-sm text-error">
-            {error}
-          </p>
-        )}
-        {status === "success" && !error && (
-          <p className="border-l-4 border-success/70 bg-linear-to-r from-success/10 via-base-100/70 to-base-100/55 px-4 py-3 text-sm text-success">
-            Accesos actualizados correctamente.
-          </p>
-        )}
-        <div className="flex justify-end">
-          <Button type="submit" disabled={status === "saving"}>
-            {status === "saving" ? "Guardando..." : "Guardar"}
-          </Button>
+        {/* Connection Details Form */}
+        <div className="surface-elevated rounded-2xl p-6 space-y-4">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-full bg-secondary/10 flex items-center justify-center text-secondary">
+              <Database size={20} />
+            </div>
+            <div>
+              <h2 className="font-bold text-lg">Conexiones</h2>
+              <p className="text-xs text-base-content/60">Configuración de acceso a DB.</p>
+            </div>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text">Servidor Visible</span>
+              </label>
+              <Input
+                value={form.dbDisplayHost}
+                onChange={(e) => handleChange("dbDisplayHost", e.target.value)}
+                placeholder="Ej: db.bioalergia.cl"
+              />
+            </div>
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text">Nombre Base de Datos</span>
+              </label>
+              <Input
+                value={form.dbDisplayName}
+                onChange={(e) => handleChange("dbDisplayName", e.target.value)}
+                placeholder="Ej: bio_finanzas"
+              />
+            </div>
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text">URL Consola DB</span>
+              </label>
+              <Input
+                value={form.dbConsoleUrl}
+                onChange={(e) => handleChange("dbConsoleUrl", e.target.value)}
+                placeholder="https://"
+              />
+            </div>
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text">URL cPanel</span>
+              </label>
+              <Input
+                value={form.cpanelUrl}
+                onChange={(e) => handleChange("cpanelUrl", e.target.value)}
+                placeholder="https://"
+              />
+            </div>
+
+            {error && <div className="text-error text-sm">{error}</div>}
+            {status === "success" && <div className="text-success text-sm">Guardado correctamente</div>}
+
+            <div className="flex justify-end pt-2">
+              <Button type="submit" disabled={status === "saving"}>
+                {status === "saving" ? "Guardando..." : "Guardar Cambios"}
+              </Button>
+            </div>
+          </form>
         </div>
-      </form>
+      </div>
     </div>
   );
 }

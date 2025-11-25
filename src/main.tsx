@@ -1,12 +1,12 @@
-import { Suspense, lazy } from "react";
+import { Suspense, lazy, ReactNode } from "react";
 import ReactDOM from "react-dom/client";
-import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom";
+import { createBrowserRouter, RouterProvider, Navigate, useLocation } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "./index.css";
 import "./i18n";
 import App from "./App";
-import RequireAuth from "./components/common/RequireAuth";
-import { AuthProvider } from "./context/AuthContext";
+// RequireAuth is defined locally
+import { AuthProvider, useAuth } from "./context/AuthContext";
 import { SettingsProvider } from "./context/SettingsContext";
 import { ToastProvider } from "./context/ToastContext";
 import { ErrorBoundary } from "./components/common/ErrorBoundary";
@@ -14,7 +14,7 @@ import { ErrorBoundary } from "./components/common/ErrorBoundary";
 // Lazy loading de componentes principales
 const Home = lazy(() => import("./pages/Home"));
 const Login = lazy(() => import("./pages/Login"));
-const Settings = lazy(() => import("./pages/Settings"));
+const SettingsLayout = lazy(() => import("./components/Layout/SettingsLayout"));
 
 // Lazy loading por features
 const TransactionsMovements = lazy(() => import("./pages/TransactionsMovements"));
@@ -52,6 +52,8 @@ const InventoryPage = lazy(() => import("./pages/Inventory"));
 
 // Settings pages
 const SettingsOverviewPage = lazy(() => import("./pages/settings/SettingsOverviewPage"));
+const UserManagementPage = lazy(() => import("./pages/settings/UserManagementPage"));
+const PersonManagementPage = lazy(() => import("./pages/settings/PersonManagementPage"));
 const GeneralSettingsPage = lazy(() => import("./pages/settings/GeneralSettingsPage"));
 const CalendarSettingsPage = lazy(() => import("./pages/settings/CalendarSettingsPage"));
 const AccessSettingsPage = lazy(() => import("./pages/settings/AccessSettingsPage"));
@@ -59,9 +61,36 @@ const InventorySettingsPage = lazy(() => import("./pages/settings/InventorySetti
 const RolesSettingsPage = lazy(() => import("./pages/settings/RolesSettingsPage"));
 const DailyProductionBalancesSettingsPage = lazy(() => import("./pages/settings/DailyProductionBalancesPage"));
 const SecuritySettingsPage = lazy(() => import("./pages/settings/SecuritySettingsPage"));
+const OnboardingWizard = lazy(() => import("./pages/onboarding/OnboardingWizard"));
 
 // Componente de loading
 import PageLoader from "./components/ui/PageLoader";
+
+// Wrapper to protect routes and handle onboarding redirect
+function RequireAuth({ children }: { children: ReactNode }) {
+  const { user, initializing } = useAuth();
+  const location = useLocation();
+
+  if (initializing) {
+    return <PageLoader />;
+  }
+
+  if (!user) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  // Redirect to onboarding if pending setup
+  if (user.status === "PENDING_SETUP" && location.pathname !== "/onboarding") {
+    return <Navigate to="/onboarding" replace />;
+  }
+
+  // Prevent access to onboarding if already active
+  if (user.status === "ACTIVE" && location.pathname === "/onboarding") {
+    return <Navigate to="/" replace />;
+  }
+
+  return children;
+}
 
 const router = createBrowserRouter([
   {
@@ -73,14 +102,30 @@ const router = createBrowserRouter([
     ),
   },
   {
+    path: "/onboarding",
+    element: (
+      <RequireAuth>
+        <Suspense fallback={<PageLoader />}>
+          <OnboardingWizard />
+        </Suspense>
+      </RequireAuth>
+    ),
+  },
+  {
+    path: "/",
     element: (
       <RequireAuth>
         <App />
       </RequireAuth>
     ),
+    errorElement: (
+      <ErrorBoundary>
+        <div>Error loading app</div>
+      </ErrorBoundary>
+    ),
     children: [
       {
-        path: "/",
+        index: true,
         element: (
           <Suspense fallback={<PageLoader />}>
             <Home />
@@ -327,7 +372,7 @@ const router = createBrowserRouter([
         path: "/settings",
         element: (
           <Suspense fallback={<PageLoader />}>
-            <Settings />
+            <SettingsLayout />
           </Suspense>
         ),
         children: [
@@ -336,6 +381,22 @@ const router = createBrowserRouter([
             element: (
               <Suspense fallback={<PageLoader />}>
                 <SettingsOverviewPage />
+              </Suspense>
+            ),
+          },
+          {
+            path: "users",
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <UserManagementPage />
+              </Suspense>
+            ),
+          },
+          {
+            path: "people",
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <PersonManagementPage />
               </Suspense>
             ),
           },

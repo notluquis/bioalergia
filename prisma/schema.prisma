@@ -8,7 +8,8 @@ datasource db {
   provider = "postgresql"
 }
 
-// Enums
+// --- Enums ---
+
 enum UserRole {
   GOD
   ADMIN
@@ -16,10 +17,9 @@ enum UserRole {
   VIEWER
 }
 
-enum CounterpartPersonType {
-  PERSON
-  COMPANY
-  OTHER
+enum PersonType {
+  NATURAL
+  JURIDICAL
 }
 
 enum CounterpartCategory {
@@ -34,15 +34,49 @@ enum CounterpartCategory {
   OCCASIONAL
 }
 
-enum LoanInterestType {
-  SIMPLE
-  COMPOUND
+enum EmployeeStatus {
+  ACTIVE
+  INACTIVE
+  TERMINATED
 }
 
-enum LoanFrequency {
+enum EmployeeSalaryType {
+  HOURLY
+  FIXED
+}
+
+enum TransactionDirection {
+  IN
+  OUT
+  NEUTRO
+}
+
+enum ServiceType {
+  BUSINESS
+  PERSONAL
+  SUPPLIER
+  TAX
+  UTILITY
+  LEASE
+  SOFTWARE
+  OTHER
+}
+
+enum ServiceFrequency {
   WEEKLY
   BIWEEKLY
   MONTHLY
+  BIMONTHLY
+  QUARTERLY
+  SEMIANNUAL
+  ANNUAL
+  ONCE
+}
+
+enum ServiceStatus {
+  ACTIVE
+  INACTIVE
+  ARCHIVED
 }
 
 enum LoanStatus {
@@ -58,186 +92,129 @@ enum LoanScheduleStatus {
   OVERDUE
 }
 
-enum ServiceType {
-  BUSINESS
-  PERSONAL
-  SUPPLIER
-  TAX
-  UTILITY
-  LEASE
-  SOFTWARE
-  OTHER
-}
-
-enum ServiceOwnership {
-  COMPANY
-  OWNER
-  MIXED
-  THIRD_PARTY
-}
-
-enum ServiceObligationType {
-  SERVICE
-  DEBT
-  LOAN
-  OTHER
-}
-
-enum ServiceRecurrenceType {
-  RECURRING
-  ONE_OFF
-}
-
-enum ServiceFrequency {
-  WEEKLY
-  BIWEEKLY
-  MONTHLY
-  BIMONTHLY
-  QUARTERLY
-  SEMIANNUAL
-  ANNUAL
-  ONCE
-}
-
-enum ServiceAmountIndexation {
-  NONE
-  UF
-}
-
-enum ServiceEmissionMode {
-  FIXED_DAY
-  DATE_RANGE
-  SPECIFIC_DATE
-}
-
-enum ServiceLateFeeMode {
-  NONE
-  FIXED
-  PERCENTAGE
-}
-
-enum ServiceStatus {
+enum UserStatus {
+  PENDING_SETUP
   ACTIVE
-  INACTIVE
-  ARCHIVED
+  SUSPENDED
 }
 
-enum ServiceScheduleStatus {
-  PENDING
-  PAID
-  PARTIAL
-  SKIPPED
-}
+// --- Core Models ---
 
-enum MonthlyExpenseSource {
-  MANUAL
-  TRANSACTION
-  SERVICE
-}
+model Person {
+  id          Int        @id @default(autoincrement())
+  rut         String     @unique @db.VarChar(20) // Unique Identifier
+  names       String
+  fatherName  String?    @map("father_name")
+  motherName  String?    @map("mother_name")
+  email       String?
+  phone       String?
+  address     String?
+  personType  PersonType @default(NATURAL) @map("person_type")
+  
+  // Roles linked to this person
+  user        User?
+  employee    Employee?
+  counterpart Counterpart?
 
-enum MonthlyExpenseStatus {
-  OPEN
-  CLOSED
-}
+  // Relations
+  transactions Transaction[] // Transactions directly linked to this person
+  
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @default(now()) @updatedAt @map("updated_at")
 
-enum TransactionDirection {
-  IN
-  OUT
-  NEUTRO
+  @@map("people")
 }
-
-enum SyncStatus {
-  SUCCESS
-  ERROR
-}
-
-enum EmployeeSalaryType {
-  hourly
-  fixed
-}
-
-enum EmployeeStatus {
-  ACTIVE
-  INACTIVE
-}
-
-enum SupplyRequestStatus {
-  pending
-  ordered
-  in_transit
-  delivered
-  rejected
-}
-
-// Models
 
 model User {
-  id           Int      @id @default(autoincrement())
-  email        String   @unique
-  passwordHash String   @map("password_hash")
-  role         UserRole @default(VIEWER)
-  createdAt    DateTime @default(now()) @map("created_at")
+  id                  Int      @id @default(autoincrement())
+  personId            Int      @unique @map("person_id")
+  email               String   @unique
+  passwordHash        String   @map("password_hash")
+  role                UserRole @default(VIEWER)
+  status              UserStatus @default(PENDING_SETUP)
+  
+  // Security
   mfaSecret           String?  @map("mfa_secret")
   mfaEnabled          Boolean  @default(false) @map("mfa_enabled")
+  
+  // Passkey / WebAuthn
   passkeyCredentialID String?  @unique @map("passkey_credential_id")
   passkeyPublicKey    Bytes?   @map("passkey_public_key")
   passkeyCounter      BigInt   @default(0) @map("passkey_counter")
   passkeyTransports   Json?    @map("passkey_transports")
 
   // Relations
-  dailyProductionBalancesCreated DailyProductionBalance[]        @relation("CreatedBy")
-  dailyProductionBalancesUpdated DailyProductionBalance[]        @relation("UpdatedBy")
-  dailyProductionBalanceHistory  DailyProductionBalanceHistory[] @relation("ChangedBy")
-  supplyRequests                 SupplyRequest[]
-  pushSubscriptions              PushSubscription[]
+  person              Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
+  pushSubscriptions   PushSubscription[]
+  auditLogs           AuditLog[]
+  dailyProductionBalances DailyProductionBalance[]
+
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @default(now()) @updatedAt @map("updated_at")
 
   @@map("users")
 }
 
-model PushSubscription {
-  id        Int      @id @default(autoincrement())
-  userId    Int      @map("user_id")
-  endpoint  String   @unique
-  keys      Json     // Stores { p256dh, auth }
-  createdAt DateTime @default(now()) @map("created_at")
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("push_subscriptions")
-}
-
-model Setting {
-  configKey   String   @id @map("config_key") @db.VarChar(128)
-  configValue String?  @map("config_value") @db.Text
-  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
-
-  @@map("settings")
-}
-
 model Employee {
   id                Int                @id @default(autoincrement())
-  fullName          String             @map("full_name")
-  role              String
-  email             String?
-  rut               String?            @db.VarChar(20)
+  personId          Int                @unique @map("person_id")
+  
+  // Job Details
+  position          String
+  department        String?
+  startDate         DateTime           @map("start_date") @db.Date
+  endDate           DateTime?          @map("end_date") @db.Date
+  status            EmployeeStatus     @default(ACTIVE)
+  
+  // Financial
+  salaryType        EmployeeSalaryType @default(FIXED) @map("salary_type")
+  baseSalary        Decimal            @default(0) @map("base_salary") @db.Decimal(12, 2)
+  hourlyRate        Decimal?           @map("hourly_rate") @db.Decimal(10, 2)
+  
+  // Bank Details (Specific to Employee payments)
   bankName          String?            @map("bank_name")
   bankAccountType   String?            @map("bank_account_type")
   bankAccountNumber String?            @map("bank_account_number")
-  salaryType        EmployeeSalaryType @default(hourly) @map("salary_type")
-  hourlyRate        Decimal            @default(0) @map("hourly_rate") @db.Decimal(10, 2)
-  fixedSalary       Decimal?           @map("fixed_salary") @db.Decimal(12, 2)
-  overtimeRate      Decimal?           @map("overtime_rate") @db.Decimal(10, 2)
-  retentionRate     Decimal            @default(0.0000) @map("retention_rate") @db.Decimal(5, 4)
-  status            EmployeeStatus     @default(ACTIVE)
-  metadata          Json?
+
+  // Relations
+  person            Person             @relation(fields: [personId], references: [id], onDelete: Cascade)
+  timesheets        EmployeeTimesheet[]
+
   createdAt         DateTime           @default(now()) @map("created_at")
   updatedAt         DateTime           @default(now()) @updatedAt @map("updated_at")
 
-  // Relations
-  counterparts Counterpart[]
-  timesheets   EmployeeTimesheet[]
-
   @@map("employees")
+}
+
+model Counterpart {
+  id          Int                 @id @default(autoincrement())
+  personId    Int                 @unique @map("person_id")
+  category    CounterpartCategory @default(SUPPLIER)
+  notes       String?             @db.Text
+  
+  // Relations
+  person      Person              @relation(fields: [personId], references: [id], onDelete: Cascade)
+  services    Service[]
+  accounts    CounterpartAccount[]
+
+  createdAt   DateTime            @default(now()) @map("created_at")
+  updatedAt   DateTime            @default(now()) @updatedAt @map("updated_at")
+
+  @@map("counterparts")
+}
+
+// --- Supporting Models ---
+
+model CounterpartAccount {
+  id                Int         @id @default(autoincrement())
+  counterpartId     Int         @map("counterpart_id")
+  bankName          String?     @map("bank_name")
+  accountType       String?     @map("account_type")
+  accountNumber     String      @map("account_number")
+  
+  counterpart       Counterpart @relation(fields: [counterpartId], references: [id], onDelete: Cascade)
+
+  @@map("counterpart_accounts")
 }
 
 model EmployeeTimesheet {
@@ -248,174 +225,65 @@ model EmployeeTimesheet {
   endTime         DateTime? @map("end_time") @db.Time
   workedMinutes   Int      @map("worked_minutes")
   overtimeMinutes Int      @default(0) @map("overtime_minutes")
-  extraAmount     Decimal  @default(0) @map("extra_amount") @db.Decimal(10, 2)
   comment         String?
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at")
+  
+  employee        Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
-  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-
-  @@unique([employeeId, workDate], map: "uniq_employee_day")
+  @@unique([employeeId, workDate])
   @@map("employee_timesheets")
-}
-
-model Counterpart {
-  id         Int                   @id @default(autoincrement())
-  rut        String?               @unique
-  name       String
-  personType CounterpartPersonType @default(OTHER) @map("person_type")
-  category   CounterpartCategory   @default(SUPPLIER)
-  employeeId Int?                  @map("employee_id")
-  email      String?
-  notes      String?               @db.Text
-  createdAt  DateTime              @default(now()) @map("created_at")
-  updatedAt  DateTime              @default(now()) @updatedAt @map("updated_at")
-
-  employee Employee?            @relation(fields: [employeeId], references: [id])
-  accounts CounterpartAccount[]
-  services Service[]
-
-  @@map("mp_counterparts")
-}
-
-model CounterpartAccount {
-  id                Int      @id @default(autoincrement())
-  counterpartId     Int      @map("counterpart_id")
-  accountIdentifier String   @unique @map("account_identifier")
-  bankName          String?  @map("bank_name")
-  accountType       String?  @map("account_type")
-  holder            String?
-  concept           String?
-  metadata          Json?
-  createdAt         DateTime @default(now()) @map("created_at")
-  updatedAt         DateTime @default(now()) @updatedAt @map("updated_at")
-
-  counterpart Counterpart @relation(fields: [counterpartId], references: [id], onDelete: Cascade)
-  services    Service[]
-
-  @@map("mp_counterpart_accounts")
 }
 
 model Transaction {
   id           Int                  @id @default(autoincrement())
-  timestampRaw String               @map("timestamp_raw")
   timestamp    DateTime
   description  String?
+  amount       Decimal              @db.Decimal(15, 2)
+  direction    TransactionDirection
+  
+  // Linking
+  personId     Int?                 @map("person_id")
+  person       Person?              @relation(fields: [personId], references: [id])
+  
+  // Metadata
   origin       String?
   destination  String?
-  sourceId     String?              @map("source_id")
-  direction    TransactionDirection
-  amount       Decimal              @db.Decimal(15, 2)
-  rawJson      String?              @map("raw_json") @db.Text
   sourceFile   String?              @map("source_file")
+  rawJson      String?              @map("raw_json") @db.Text
+
   createdAt    DateTime             @default(now()) @map("created_at")
 
-  // Relations
-  loanSchedules               LoanSchedule[]
-  serviceSchedules            ServiceSchedule[]
-  monthlyExpenseTransactions  MonthlyExpenseTransaction[]
-  inventoryChecks             InventoryProviderCheck[]
-
-  @@unique([timestampRaw, direction, amount, origin, destination, sourceFile], map: "uniq_movement")
-  @@map("mp_transactions")
+  @@map("transactions")
 }
 
-model Withdrawal {
-  withdrawId          String   @id @map("withdraw_id")
-  dateCreated         DateTime? @map("date_created")
-  status              String?
-  statusDetail        String?  @map("status_detail")
-  amount              Decimal? @db.Decimal(15, 2)
-  fee                 Decimal? @db.Decimal(15, 2)
-  activityUrl         String?  @map("activity_url") @db.Text
-  payoutDesc          String?  @map("payout_desc")
-  bankAccountHolder   String?  @map("bank_account_holder")
-  identificationType  String?  @map("identification_type")
-  identificationNumber String? @map("identification_number")
-  bankId              String?  @map("bank_id")
-  bankName            String?  @map("bank_name")
-  bankBranch          String?  @map("bank_branch")
-  bankAccountType     String?  @map("bank_account_type")
-  bankAccountNumber   String?  @map("bank_account_number")
-  rawJson             Json?    @map("raw_json")
-  updatedAt           DateTime @default(now()) @updatedAt @map("updated_at")
+model Service {
+  id             Int              @id @default(autoincrement())
+  name           String
+  counterpartId  Int?             @map("counterpart_id")
+  type           ServiceType      @default(BUSINESS)
+  frequency      ServiceFrequency @default(MONTHLY)
+  defaultAmount  Decimal          @default(0) @map("default_amount") @db.Decimal(15, 2)
+  status         ServiceStatus    @default(ACTIVE)
+  
+  counterpart    Counterpart?     @relation(fields: [counterpartId], references: [id])
+  
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @default(now()) @updatedAt @map("updated_at")
 
-  @@map("mp_withdrawals")
-}
-
-model DailyBalance {
-  balanceDate DateTime @id @map("balance_date") @db.Date
-  balance     Decimal  @db.Decimal(15, 2)
-  note        String?
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
-
-  @@map("mp_daily_balances")
-}
-
-model DailyProductionBalance {
-  id                    BigInt   @id @default(autoincrement())
-  balanceDate           DateTime @map("balance_date") @db.Date
-  ingresoTarjetas       Int      @default(0) @map("ingreso_tarjetas")
-  ingresoTransferencias Int      @default(0) @map("ingreso_transferencias")
-  ingresoEfectivo       Int      @default(0) @map("ingreso_efectivo")
-  subtotalIngresos      Int      @default(0) @map("subtotal_ingresos")
-  gastosDiarios         Int      @default(0) @map("gastos_diarios")
-  totalIngresos         Int      @default(0) @map("total_ingresos")
-  consultasCount        Int      @default(0) @map("consultas_count")
-  controlesCount        Int      @default(0) @map("controles_count")
-  testsCount            Int      @default(0) @map("tests_count")
-  vacunasCount          Int      @default(0) @map("vacunas_count")
-  licenciasCount        Int      @default(0) @map("licencias_count")
-  roxairCount           Int      @default(0) @map("roxair_count")
-  otrosAbonos           Int      @default(0) @map("otros_abonos")
-  total                 Int      @default(0)
-  comentarios           String?  @db.Text
-  status                String   @default("DRAFT") // Enum DRAFT, FINAL
-  createdBy             Int      @map("created_by")
-  updatedBy             Int?     @map("updated_by")
-  createdAt             DateTime @default(now()) @map("created_at")
-  updatedAt             DateTime @default(now()) @updatedAt @map("updated_at")
-
-  creator User  @relation("CreatedBy", fields: [createdBy], references: [id])
-  updater User? @relation("UpdatedBy", fields: [updatedBy], references: [id])
-  history DailyProductionBalanceHistory[]
-
-  @@map("mp_daily_production_balances")
-}
-
-model DailyProductionBalanceHistory {
-  id           BigInt   @id @default(autoincrement())
-  balanceId    BigInt   @map("balance_id")
-  snapshot     Json
-  changeReason String?  @map("change_reason")
-  changedBy    Int?     @map("changed_by")
-  createdAt    DateTime @default(now()) @map("created_at")
-
-  balance DailyProductionBalance @relation(fields: [balanceId], references: [id], onDelete: Cascade)
-  changer User?                  @relation("ChangedBy", fields: [changedBy], references: [id])
-
-  @@map("mp_daily_production_balance_history")
+  @@map("services")
 }
 
 model Loan {
   id                Int              @id @default(autoincrement())
-  publicId          String           @unique @map("public_id")
   title             String
-  borrowerName      String           @map("borrower_name")
-  borrowerType      String           @default("PERSON") @map("borrower_type") // Enum PERSON, COMPANY
   principalAmount   Decimal          @map("principal_amount") @db.Decimal(15, 2)
   interestRate      Decimal          @map("interest_rate") @db.Decimal(9, 6)
-  interestType      LoanInterestType @default(SIMPLE) @map("interest_type")
-  frequency         LoanFrequency
-  totalInstallments Int              @map("total_installments")
   startDate         DateTime         @map("start_date") @db.Date
   status            LoanStatus       @default(ACTIVE)
-  notes             String?          @db.Text
+  
+  schedules         LoanSchedule[]
+
   createdAt         DateTime         @default(now()) @map("created_at")
   updatedAt         DateTime         @default(now()) @updatedAt @map("updated_at")
-
-  schedules LoanSchedule[]
 
   @@map("loans")
 }
@@ -426,157 +294,51 @@ model LoanSchedule {
   installmentNumber Int                @map("installment_number")
   dueDate           DateTime           @map("due_date") @db.Date
   expectedAmount    Decimal            @map("expected_amount") @db.Decimal(15, 2)
-  expectedPrincipal Decimal            @map("expected_principal") @db.Decimal(15, 2)
-  expectedInterest  Decimal            @map("expected_interest") @db.Decimal(15, 2)
   status            LoanScheduleStatus @default(PENDING)
-  transactionId     Int?               @map("transaction_id")
-  paidAmount        Decimal?           @map("paid_amount") @db.Decimal(15, 2)
-  paidDate          DateTime?          @map("paid_date") @db.Date
-  createdAt         DateTime           @default(now()) @map("created_at")
-  updatedAt         DateTime           @default(now()) @updatedAt @map("updated_at")
+  
+  loan              Loan               @relation(fields: [loanId], references: [id], onDelete: Cascade)
 
-  loan        Loan         @relation(fields: [loanId], references: [id], onDelete: Cascade)
-  transaction Transaction? @relation(fields: [transactionId], references: [id])
-
-  @@unique([loanId, installmentNumber], map: "uniq_schedule_installment")
   @@map("loan_schedules")
 }
 
-model Service {
-  id                   Int                     @id @default(autoincrement())
-  publicId             String                  @unique @map("public_id")
-  name                 String
-  detail               String?
-  category             String?
-  serviceType          ServiceType             @default(BUSINESS) @map("service_type")
-  ownership            ServiceOwnership        @default(COMPANY)
-  obligationType       ServiceObligationType   @default(SERVICE) @map("obligation_type")
-  recurrenceType       ServiceRecurrenceType   @default(RECURRING) @map("recurrence_type")
-  frequency            ServiceFrequency        @default(MONTHLY)
-  defaultAmount        Decimal                 @default(0) @map("default_amount") @db.Decimal(15, 2)
-  amountIndexation     ServiceAmountIndexation @default(NONE) @map("amount_indexation")
-  counterpartId        Int?                    @map("counterpart_id")
-  counterpartAccountId Int?                    @map("counterpart_account_id")
-  accountReference     String?                 @map("account_reference")
-  emissionDay          Int?                    @map("emission_day") @db.SmallInt
-  emissionMode         ServiceEmissionMode     @default(FIXED_DAY) @map("emission_mode")
-  emissionStartDay     Int?                    @map("emission_start_day") @db.SmallInt
-  emissionEndDay       Int?                    @map("emission_end_day") @db.SmallInt
-  emissionExactDate    DateTime?               @map("emission_exact_date") @db.Date
-  dueDay               Int?                    @map("due_day") @db.SmallInt
-  startDate            DateTime                @default(dbgenerated("'1970-01-01'")) @map("start_date") @db.Date
-  nextGenerationMonths Int                     @default(12) @map("next_generation_months")
-  lateFeeMode          ServiceLateFeeMode      @default(NONE) @map("late_fee_mode")
-  lateFeeValue         Decimal?                @map("late_fee_value") @db.Decimal(15, 2)
-  lateFeeGraceDays     Int?                    @map("late_fee_grace_days") @db.SmallInt
-  status               ServiceStatus           @default(ACTIVE)
-  notes                String?                 @db.Text
-  createdAt            DateTime                @default(now()) @map("created_at")
-  updatedAt            DateTime                @default(now()) @updatedAt @map("updated_at")
+// --- System & Audit ---
 
-  counterpart        Counterpart?        @relation(fields: [counterpartId], references: [id])
-  counterpartAccount CounterpartAccount? @relation(fields: [counterpartAccountId], references: [id])
-  schedules          ServiceSchedule[]
-  monthlyExpenses    MonthlyExpense[]
+model AuditLog {
+  id        BigInt   @id @default(autoincrement())
+  userId    Int?     @map("user_id")
+  action    String
+  entity    String
+  entityId  String?  @map("entity_id")
+  details   Json?
+  ipAddress String?  @map("ip_address")
+  createdAt DateTime @default(now()) @map("created_at")
 
-  @@map("services")
+  user      User?    @relation(fields: [userId], references: [id])
+
+  @@map("audit_logs")
 }
 
-model ServiceSchedule {
-  id             Int                   @id @default(autoincrement())
-  serviceId      Int                   @map("service_id")
-  periodStart    DateTime              @map("period_start") @db.Date
-  periodEnd      DateTime              @map("period_end") @db.Date
-  dueDate        DateTime              @map("due_date") @db.Date
-  expectedAmount Decimal               @map("expected_amount") @db.Decimal(15, 2)
-  status         ServiceScheduleStatus @default(PENDING)
-  transactionId  Int?                  @map("transaction_id")
-  paidAmount     Decimal?              @map("paid_amount") @db.Decimal(15, 2)
-  paidDate       DateTime?             @map("paid_date") @db.Date
-  note           String?
-  createdAt      DateTime              @default(now()) @map("created_at")
-  updatedAt      DateTime              @default(now()) @updatedAt @map("updated_at")
+model Setting {
+  key       String   @id
+  value     String?  @db.Text
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
 
-  service     Service      @relation(fields: [serviceId], references: [id], onDelete: Cascade)
-  transaction Transaction? @relation(fields: [transactionId], references: [id])
-
-  @@unique([serviceId, periodStart], map: "uniq_service_period")
-  @@map("service_schedules")
+  @@map("settings")
 }
 
-model MonthlyExpense {
-  id             Int                  @id @default(autoincrement())
-  publicId       String               @unique @map("public_id")
-  name           String
-  category       String?
-  amountExpected Decimal              @default(0) @map("amount_expected") @db.Decimal(15, 2)
-  expenseDate    DateTime             @map("expense_date") @db.Date
-  notes          String?              @db.Text
-  source         MonthlyExpenseSource @default(MANUAL)
-  serviceId      Int?                 @map("service_id")
-  tags           Json?
-  status         MonthlyExpenseStatus @default(OPEN)
-  createdAt      DateTime             @default(now()) @map("created_at")
-  updatedAt      DateTime             @default(now()) @updatedAt @map("updated_at")
+model PushSubscription {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  endpoint  String   @unique
+  keys      Json
+  createdAt DateTime @default(now()) @map("created_at")
 
-  service      Service?                    @relation(fields: [serviceId], references: [id])
-  transactions MonthlyExpenseTransaction[]
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@map("monthly_expenses")
+  @@map("push_subscriptions")
 }
 
-model MonthlyExpenseTransaction {
-  id               Int      @id @default(autoincrement())
-  monthlyExpenseId Int      @map("monthly_expense_id")
-  transactionId    Int      @map("transaction_id")
-  amount           Decimal  @db.Decimal(15, 2)
-  createdAt        DateTime @default(now()) @map("created_at")
-
-  monthlyExpense MonthlyExpense @relation(fields: [monthlyExpenseId], references: [id], onDelete: Cascade)
-  transaction    Transaction    @relation(fields: [transactionId], references: [id], onDelete: Cascade)
-
-  @@unique([monthlyExpenseId, transactionId], map: "uniq_expense_transaction")
-  @@map("monthly_expense_transactions")
-}
-
-model RoleMapping {
-  employeeRole String   @id @map("employee_role")
-  appRole      UserRole @map("app_role")
-
-  @@map("role_mappings")
-}
-
-model CommonSupply {
-  id          Int      @id @default(autoincrement())
-  name        String   @unique
-  brand       String?
-  model       String?
-  description String?  @db.Text
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
-
-  @@map("common_supplies")
-}
-
-model SupplyRequest {
-  id         Int                 @id @default(autoincrement())
-  userId     Int                 @map("user_id")
-  supplyName String              @map("supply_name")
-  quantity   Int
-  brand      String?
-  model      String?
-  notes      String?             @db.Text
-  status     SupplyRequestStatus @default(pending)
-  adminNotes String?             @map("admin_notes") @db.Text
-  createdAt  DateTime            @default(now()) @map("created_at")
-  updatedAt  DateTime            @default(now()) @updatedAt @map("updated_at")
-
-  user User @relation(fields: [userId], references: [id])
-
-  @@map("supply_requests")
-}
-
-// Calendar Models
+// --- Calendar Models ---
 
 model Calendar {
   id        Int      @id @default(autoincrement())
@@ -631,7 +393,7 @@ model SyncLog {
   triggerSource String     @map("trigger_source")
   triggerUserId Int?       @map("trigger_user_id")
   triggerLabel  String?    @map("trigger_label")
-  status        SyncStatus @default(SUCCESS)
+  status        String     @default("SUCCESS") // Simplified from Enum for now
   startedAt     DateTime   @map("started_at")
   finishedAt    DateTime?  @map("finished_at")
   fetchedAt     DateTime?  @map("fetched_at")
@@ -643,122 +405,79 @@ model SyncLog {
 
   @@map("sync_logs")
 }
-// Inventory Models
+
+// --- Inventory Models ---
 
 model InventoryCategory {
   id        Int      @id @default(autoincrement())
-  name      String
+  name      String   @unique
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
 
-  items InventoryItem[]
+  items     InventoryItem[]
 
   @@map("inventory_categories")
 }
 
-model InventoryAllergyType {
-  id          Int      @id @default(autoincrement())
-  parentId    Int?     @map("parent_id")
-  name        String
-  slug        String
-  description String?
-  level       String // type, category, subtype
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
-
-  parent   InventoryAllergyType?  @relation("AllergyHierarchy", fields: [parentId], references: [id])
-  children InventoryAllergyType[] @relation("AllergyHierarchy")
-  items    InventoryItem[]
-
-  @@map("inventory_allergy_types")
-}
-
 model InventoryItem {
-  id            Int      @id @default(autoincrement())
-  categoryId    Int?     @map("category_id")
-  allergyTypeId Int?     @map("allergy_type_id")
-  name          String
-  description   String?
-  currentStock  Int      @default(0) @map("current_stock")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at")
+  id           Int                @id @default(autoincrement())
+  categoryId   Int?               @map("category_id")
+  name         String
+  description  String?
+  currentStock Int                @default(0) @map("current_stock")
+  createdAt    DateTime           @default(now()) @map("created_at")
+  updatedAt    DateTime           @default(now()) @updatedAt @map("updated_at")
 
-  category      InventoryCategory?      @relation(fields: [categoryId], references: [id])
-  allergyType   InventoryAllergyType?   @relation(fields: [allergyTypeId], references: [id])
-  movements     InventoryMovement[]
-  itemProviders InventoryItemProvider[]
+  category     InventoryCategory? @relation(fields: [categoryId], references: [id])
+  movements    InventoryMovement[]
 
   @@map("inventory_items")
 }
 
 model InventoryMovement {
-  id             Int      @id @default(autoincrement())
-  itemId         Int      @map("item_id")
-  quantityChange Int      @map("quantity_change")
+  id             Int           @id @default(autoincrement())
+  itemId         Int           @map("item_id")
+  quantityChange Int           @map("quantity_change")
   reason         String?
-  createdAt      DateTime @default(now()) @map("created_at")
+  createdAt      DateTime      @default(now()) @map("created_at")
 
-  item InventoryItem @relation(fields: [itemId], references: [id])
+  item           InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
 
   @@map("inventory_movements")
 }
 
-model InventoryProvider {
-  id          Int      @id @default(autoincrement())
-  rut         String   @db.VarChar(20)
-  name        String
-  contactInfo String?  @map("contact_info")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+// --- Daily Production Models ---
 
-  itemProviders InventoryItemProvider[]
-  accounts      ProviderAccount[]
+model DailyProductionBalance {
+  id                    Int      @id @default(autoincrement())
+  balanceDate           DateTime @map("balance_date") @db.Date
+  
+  // Financials
+  ingresoTarjetas       Int      @default(0) @map("ingreso_tarjetas")
+  ingresoTransferencias Int      @default(0) @map("ingreso_transferencias")
+  ingresoEfectivo       Int      @default(0) @map("ingreso_efectivo")
+  gastosDiarios         Int      @default(0) @map("gastos_diarios")
+  otrosAbonos           Int      @default(0) @map("otros_abonos")
+  
+  // Counts
+  consultasCount        Int      @default(0) @map("consultas_count")
+  controlesCount        Int      @default(0) @map("controles_count")
+  testsCount            Int      @default(0) @map("tests_count")
+  vacunasCount          Int      @default(0) @map("vacunas_count")
+  licenciasCount        Int      @default(0) @map("licencias_count")
+  roxairCount           Int      @default(0) @map("roxair_count")
+  
+  // Metadata
+  comentarios           String?  @db.Text
+  status                String   @default("DRAFT") // DRAFT, FINALIZED
+  changeReason          String?  @map("change_reason")
+  
+  createdBy             Int      @map("created_by")
+  user                  User     @relation(fields: [createdBy], references: [id])
 
-  @@map("inventory_providers")
-}
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @default(now()) @updatedAt @map("updated_at")
 
-model InventoryItemProvider {
-  id             Int       @id @default(autoincrement())
-  itemId         Int       @map("item_id")
-  providerId     Int       @map("provider_id")
-  currentPrice   Decimal?  @map("current_price") @db.Decimal(10, 2)
-  lastStockCheck DateTime? @map("last_stock_check")
-  lastPriceCheck DateTime? @map("last_price_check")
-  createdAt      DateTime  @default(now()) @map("created_at")
-  updatedAt      DateTime  @default(now()) @updatedAt @map("updated_at")
-
-  item     InventoryItem            @relation(fields: [itemId], references: [id])
-  provider InventoryProvider        @relation(fields: [providerId], references: [id])
-  checks   InventoryProviderCheck[]
-
-  @@map("inventory_item_providers")
-}
-
-model InventoryProviderCheck {
-  id             Int      @id @default(autoincrement())
-  itemProviderId Int      @map("item_provider_id")
-  checkType      String   @map("check_type") // stock, price, request
-  quantity       Int?
-  price          Decimal? @db.Decimal(10, 2)
-  notes          String?
-  transactionId  Int?     @map("transaction_id")
-  createdAt      DateTime @default(now()) @map("created_at")
-
-  itemProvider InventoryItemProvider @relation(fields: [itemProviderId], references: [id])
-  transaction  Transaction?          @relation(fields: [transactionId], references: [id])
-
-  @@map("inventory_provider_checks")
-}
-
-model ProviderAccount {
-  id                Int      @id @default(autoincrement())
-  providerId        Int      @map("provider_id")
-  accountIdentifier String   @map("account_identifier")
-  details           String?
-  createdAt         DateTime @default(now()) @map("created_at")
-  updatedAt         DateTime @default(now()) @updatedAt @map("updated_at")
-
-  provider InventoryProvider @relation(fields: [providerId], references: [id])
-
-  @@map("provider_accounts")
+  @@unique([balanceDate])
+  @@map("daily_production_balances")
 }

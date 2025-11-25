@@ -126,13 +126,23 @@ export async function clearAllCaches() {
 }
 
 // Manual update check (for button)
-export async function checkForUpdates() {
+export async function checkForUpdates(): Promise<boolean> {
   console.log("[SW] 🔍 Manual update check requested");
   if ("serviceWorker" in navigator) {
     const registration = await navigator.serviceWorker.getRegistration();
     if (registration) {
-      await registration.update();
-      console.log("[SW] ✅ Manual update check complete");
+      try {
+        await registration.update();
+        // Check if there's a new worker installing or waiting
+        if (registration.installing || registration.waiting) {
+          console.log("[SW] ✅ Update found!");
+          return true;
+        }
+      } catch (e) {
+        console.error("[SW] Update check failed:", e);
+      }
     }
   }
+  console.log("[SW] No update found");
+  return false;
 }

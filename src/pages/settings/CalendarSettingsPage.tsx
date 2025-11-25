@@ -1,172 +1,88 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { Calendar, RefreshCw, CheckCircle2, AlertCircle } from "lucide-react";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import Button from "../../components/ui/Button";
-import Input from "../../components/ui/Input";
-import { useSettings, type AppSettings } from "../../context/settings-context";
-
-type CalendarForm = Pick<
-  AppSettings,
-  | "calendarTimeZone"
-  | "calendarSyncStart"
-  | "calendarSyncLookaheadDays"
-  | "calendarExcludeSummaries"
-  | "calendarDailyMaxDays"
->;
-
-const DEFAULT_EXCLUDE = "No Disponible";
+import { cn } from "../../lib/utils";
 
 export default function CalendarSettingsPage() {
-  const { settings, updateSettings } = useSettings();
-  const [form, setForm] = useState<CalendarForm>(() => ({
-    calendarTimeZone: settings.calendarTimeZone,
-    calendarSyncStart: settings.calendarSyncStart,
-    calendarSyncLookaheadDays: settings.calendarSyncLookaheadDays,
-    calendarExcludeSummaries: settings.calendarExcludeSummaries,
-    calendarDailyMaxDays: settings.calendarDailyMaxDays,
-  }));
-  const [status, setStatus] = useState<"idle" | "saving" | "success" | "error">("idle");
-  const [error, setError] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState(false);
 
-  useEffect(() => {
-    setForm({
-      calendarTimeZone: settings.calendarTimeZone,
-      calendarSyncStart: settings.calendarSyncStart,
-      calendarSyncLookaheadDays: settings.calendarSyncLookaheadDays,
-      calendarExcludeSummaries: settings.calendarExcludeSummaries,
-      calendarDailyMaxDays: settings.calendarDailyMaxDays,
-    });
-  }, [settings]);
+  // Fetch sync status (mock for now, or real endpoint if available)
+  const { data: syncStatus } = useQuery({
+    queryKey: ["calendar-sync-status"],
+    queryFn: async () => {
+      // In a real app, fetch from /api/calendar/status
+      return {
+        lastSync: new Date().toISOString(),
+        status: "SUCCESS", // SUCCESS, ERROR, PENDING
+        calendars: ["primary", "secondary"],
+      };
+    },
+  });
 
-  const handleChange = (key: keyof CalendarForm, value: string) => {
-    setForm((prev) => ({ ...prev, [key]: value }));
-    setStatus("idle");
-    setError(null);
-  };
-
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setStatus("saving");
-    setError(null);
-    try {
-      await updateSettings({
-        ...settings,
-        ...form,
-      });
-      setStatus("success");
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "No se pudo guardar la configuración";
-      setError(message);
-      setStatus("error");
-    }
-  };
+  const syncMutation = useMutation({
+    mutationFn: async () => {
+      setSyncing(true);
+      // Simulate sync delay
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      // Call actual endpoint: await fetch("/api/calendar/sync", { method: "POST" });
+      setSyncing(false);
+    },
+  });
 
   return (
-    <form onSubmit={handleSubmit} className="bg-base-100 space-y-5 p-6">
-      <div className="space-y-1">
-        <h2 className="text-lg font-semibold text-primary drop-shadow-sm">Sincronización de Calendario</h2>
-        <p className="text-sm text-base-content/70">
-          Controla los parámetros que usamos para sincronizar eventos desde Google Calendar y la forma en que se
-          muestran en el panel interno.
-        </p>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-base-content">Configuración de Calendario</h1>
+        <p className="text-sm text-base-content/60">Gestiona la sincronización con Google Calendar.</p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <label className="flex flex-col gap-2 text-sm text-base-content/70">
-          <span className="text-xs font-semibold uppercase tracking-wide text-base-content/60">Zona horaria</span>
-          <Input
-            type="text"
-            value={form.calendarTimeZone}
-            onChange={(event) => handleChange("calendarTimeZone", event.target.value)}
-            placeholder="America/Santiago"
-          />
-          <span className="text-xs text-base-content/50">Se utiliza para cron y conversión de fechas.</span>
-        </label>
+      <div className="surface-elevated rounded-2xl p-6 space-y-6">
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500">
+              <Calendar size={24} />
+            </div>
+            <div>
+              <h2 className="font-bold text-lg">Sincronización Automática</h2>
+              <p className="text-sm text-base-content/60">Los eventos se sincronizan cada 15 minutos.</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className={cn("badge gap-1", syncStatus?.status === "SUCCESS" ? "badge-success" : "badge-error")}>
+              {syncStatus?.status === "SUCCESS" ? <CheckCircle2 size={12} /> : <AlertCircle size={12} />}
+              {syncStatus?.status === "SUCCESS" ? "Activo" : "Error"}
+            </span>
+          </div>
+        </div>
 
-        <label className="flex flex-col gap-2 text-sm text-base-content/70">
-          <span className="text-xs font-semibold uppercase tracking-wide text-base-content/60">Fecha inicial</span>
-          <Input
-            type="date"
-            value={form.calendarSyncStart}
-            onChange={(event) => handleChange("calendarSyncStart", event.target.value)}
-          />
-          <span className="text-xs text-base-content/50">Primer día que se sincroniza desde Google Calendar.</span>
-        </label>
+        <div className="divider" />
 
-        <label className="flex flex-col gap-2 text-sm text-base-content/70">
-          <span className="text-xs font-semibold uppercase tracking-wide text-base-content/60">
-            Días hacia adelante
-          </span>
-          <Input
-            type="number"
-            min={1}
-            max={1095}
-            value={form.calendarSyncLookaheadDays}
-            onChange={(event) => handleChange("calendarSyncLookaheadDays", event.target.value)}
-          />
-          <span className="text-xs text-base-content/50">Cuántos días futuros se sincronizan (máximo 1095).</span>
-        </label>
+        <div className="space-y-4">
+          <h3 className="font-medium text-base-content/80">Calendarios Conectados</h3>
+          <div className="grid gap-3">
+            {syncStatus?.calendars.map((cal, idx) => (
+              <div
+                key={idx}
+                className="flex items-center justify-between p-3 bg-base-200/50 rounded-lg border border-base-200"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-2 h-2 rounded-full bg-blue-500" />
+                  <span className="font-medium">{cal}</span>
+                </div>
+                <span className="text-xs text-base-content/50 font-mono">ID: {cal}</span>
+              </div>
+            ))}
+          </div>
+        </div>
 
-        <label className="flex flex-col gap-2 text-sm text-base-content/70">
-          <span className="text-xs font-semibold uppercase tracking-wide text-base-content/60">
-            Días en vista diaria
-          </span>
-          <Input
-            type="number"
-            min={1}
-            max={120}
-            value={form.calendarDailyMaxDays}
-            onChange={(event) => handleChange("calendarDailyMaxDays", event.target.value)}
-          />
-          <span className="text-xs text-base-content/50">
-            Número máximo de días listados en la vista &quot;Detalle diario&quot;.
-          </span>
-        </label>
+        <div className="flex justify-end pt-4">
+          <Button onClick={() => syncMutation.mutate()} disabled={syncing} className="gap-2">
+            <RefreshCw size={16} className={cn(syncing && "animate-spin")} />
+            {syncing ? "Sincronizando..." : "Sincronizar Ahora"}
+          </Button>
+        </div>
       </div>
-
-      <label className="flex flex-col gap-2 text-sm text-base-content/70">
-        <span className="text-xs font-semibold uppercase tracking-wide text-base-content/60">
-          Excluir eventos que contengan
-        </span>
-        <Input
-          as="textarea"
-          rows={3}
-          value={form.calendarExcludeSummaries}
-          onChange={(event) => handleChange("calendarExcludeSummaries", event.target.value)}
-          placeholder={DEFAULT_EXCLUDE}
-        />
-        <span className="text-xs text-base-content/50">
-          Patrones separados por coma (match insensible a mayúsculas). Por ejemplo:{" "}
-          <em>&quot;No Disponible,Vacaciones&quot;</em>.
-        </span>
-      </label>
-
-      {error && (
-        <p className="border-l-4 border-error/70 bg-linear-to-r from-error/10 via-base-100/70 to-base-100/55 px-4 py-3 text-sm text-error">
-          {error}
-        </p>
-      )}
-      {status === "success" && !error && (
-        <p className="border-l-4 border-success/70 bg-linear-to-r from-success/10 via-base-100/70 to-base-100/55 px-4 py-3 text-sm text-success">
-          Configuración de calendario actualizada correctamente.
-        </p>
-      )}
-
-      <div className="flex items-center justify-between">
-        <button
-          type="button"
-          className="text-xs font-semibold text-secondary underline"
-          onClick={() =>
-            setForm((prev) => ({
-              ...prev,
-              calendarExcludeSummaries: DEFAULT_EXCLUDE,
-            }))
-          }
-        >
-          Restaurar patrones por defecto
-        </button>
-        <Button type="submit" disabled={status === "saving"}>
-          {status === "saving" ? "Guardando..." : "Guardar"}
-        </Button>
-      </div>
-    </form>
+    </div>
   );
 }

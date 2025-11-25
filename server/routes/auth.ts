@@ -103,10 +103,31 @@ export function registerAuthRoutes(app: express.Express) {
         return res.status(401).json({ status: "error", message: "El correo o la contraseña no son correctos" });
       }
 
-      const valid = await bcrypt.compare(password, user.passwordHash);
-      if (!valid) {
-        logWarn("auth/login:bad-password", requestContext(req, { email }));
-        return res.status(401).json({ status: "error", message: "El correo o la contraseña no son correctos" });
+      // Special case: Allow login with empty password if user is in PENDING_SETUP status
+      if (user.status === "PENDING_SETUP") {
+        // If password is provided, try to validate it (optional, but good for security if they already set one)
+        // But if they are PENDING_SETUP, we assume they might not have one or we allow the bypass.
+        // For strictness: If they send empty password AND are PENDING_SETUP, we allow.
+        if (!password) {
+          // Allow proceed
+        } else {
+          // If they provided a password, check it. If it fails, but they are PENDING_SETUP,
+          // we might still want to allow? No, if they try a password it should be correct.
+          // BUT, the requirement is "inicio sesion con solo correo y sin clave".
+          // So if password is empty string, we skip bcrypt check.
+          const valid = await bcrypt.compare(password, user.passwordHash);
+          if (!valid) {
+            logWarn("auth/login:bad-password", requestContext(req, { email }));
+            return res.status(401).json({ status: "error", message: "El correo o la contraseña no son correctos" });
+          }
+        }
+      } else {
+        // Normal flow for ACTIVE users
+        const valid = await bcrypt.compare(password, user.passwordHash);
+        if (!valid) {
+          logWarn("auth/login:bad-password", requestContext(req, { email }));
+          return res.status(401).json({ status: "error", message: "El correo o la contraseña no son correctos" });
+        }
       }
 
       // --- Role Governance Logic ---

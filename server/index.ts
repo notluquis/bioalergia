@@ -89,6 +89,13 @@ registerTimesheetRoutes(app);
 registerCounterpartRoutes(app);
 registerInventoryRoutes(app);
 registerRoleRoutes(app);
+import personRouter from "./routes/person.routes.js";
+import userManagementRouter from "./routes/user-management.js";
+
+// ... existing imports ...
+
+app.use("/api/people", personRouter);
+app.use("/api/users", userManagementRouter);
 registerUserRoutes(app);
 registerLoanRoutes(app);
 registerServiceRoutes(app);
