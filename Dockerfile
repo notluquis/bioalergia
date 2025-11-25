@@ -17,10 +17,9 @@ COPY package*.json ./
 # Copy Prisma schema (needed for prisma generate during postinstall)
 COPY prisma ./prisma/
 
-# Install ALL dependencies with cache mount (persists npm cache across builds)
-# This layer will be cached if package.json and prisma schema haven't changed
-RUN --mount=type=cache,target=/root/.npm \
-    npm ci
+# Install ALL dependencies
+# We removed cache mounts due to Railway BuildKit compatibility issues
+RUN npm ci
 
 # Copy source code LAST (changes most often)
 COPY . .
@@ -47,9 +46,8 @@ COPY --from=builder /app/generated ./generated
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 
-# Remove dev dependencies with cache mount
-RUN --mount=type=cache,target=/root/.npm \
-    npm prune --omit=dev
+# Remove dev dependencies
+RUN npm prune --omit=dev
 
 # Expose port
 EXPOSE 3000
