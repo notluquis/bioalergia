@@ -50,7 +50,7 @@ LICENSE
 .husky/
 
 # Prisma artifacts (not migrations themselves)
-prisma/migrations/
+# prisma/migrations/
 
 # CI/CD
 .github/

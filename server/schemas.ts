@@ -427,3 +427,88 @@ export const monthlyExpenseStatsSchema = z.object({
   groupBy: z.enum(["day", "week", "month", "quarter", "year"]).optional(),
   category: z.string().optional().nullable(),
 });
+
+export const roleMappingSchema = z.object({
+  employee_role: z.string().min(1).max(120),
+  app_role: z.enum(["GOD", "ADMIN", "ANALYST", "VIEWER"]),
+});
+
+export const supplyRequestSchema = z.object({
+  supplyName: z.string().min(1).max(191),
+  quantity: z.coerce.number().int().positive(),
+  brand: z.string().max(100).optional().nullable(),
+  model: z.string().max(100).optional().nullable(),
+  notes: z.string().max(500).optional().nullable(),
+});
+
+export const updateSupplyRequestStatusSchema = z.object({
+  status: z.enum(["pending", "approved", "rejected", "fulfilled"]),
+  adminNotes: z.string().max(500).optional().nullable(),
+});
+
+export const commonSupplySchema = z.object({
+  name: z.string().min(1).max(191),
+  brand: z.string().max(100).optional().nullable(),
+  model: z.string().max(100).optional().nullable(),
+  description: z.string().max(500).optional().nullable(),
+});
+
+export const monthParamSchema = z.object({
+  month: z.string().regex(/^\d{4}-\d{2}$/, "Formato debe ser YYYY-MM"),
+});
+
+export const amountSchema = z
+  .union([z.number(), z.string(), z.null()])
+  .transform((value) => {
+    if (value == null) return null;
+    if (typeof value === "number") {
+      if (!Number.isFinite(value)) return Number.NaN;
+      return Math.trunc(value);
+    }
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    const parsed = Number.parseInt(trimmed, 10);
+    if (Number.isNaN(parsed)) {
+      return Number.NaN;
+    }
+    return parsed;
+  })
+  .refine((value) => value == null || (Number.isInteger(value) && value >= 0 && value <= 100_000_000), {
+    message: "Monto inválido",
+  })
+  .optional();
+
+export const updateClassificationSchema = z.object({
+  calendarId: z.string().min(1).max(200),
+  eventId: z.string().min(1).max(200),
+  category: z
+    .string()
+    .trim()
+    .min(1)
+    .max(120)
+    .or(z.literal(""))
+    .nullable()
+    .optional()
+    .transform((value) => {
+      if (value == null) return null;
+      const trimmed = value.trim();
+      return trimmed.length ? trimmed : null;
+    }),
+  amountExpected: amountSchema,
+  amountPaid: amountSchema,
+  attended: z.boolean().nullable().optional(),
+  dosage: z
+    .string()
+    .trim()
+    .max(64)
+    .nullish()
+    .transform((value) => (value && value.length ? value : null)),
+  treatmentStage: z
+    .string()
+    .trim()
+    .max(64)
+    .nullish()
+    .transform((value) => (value && value.length ? value : null)),
+  classification: z.enum(["personal", "business", "mixed", "other"]).optional(),
+  notes: z.string().max(500).optional().nullable(),
+});

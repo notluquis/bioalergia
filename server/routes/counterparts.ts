@@ -14,12 +14,6 @@ import {
 } from "../services/counterparts.js";
 import { Prisma, CounterpartPersonType, CounterpartCategory } from "../../generated/prisma/client.js";
 
-type CounterpartWithAccounts = Prisma.CounterpartGetPayload<{
-  include: { accounts: true };
-}>;
-
-type CounterpartAccountType = Prisma.CounterpartAccountGetPayload<{}>;
-
 import {
   counterpartPayloadSchema,
   counterpartAccountPayloadSchema,
@@ -28,35 +22,7 @@ import {
 } from "../schemas.js";
 import type { AuthenticatedRequest } from "../types.js";
 
-function mapCounterpart(c: CounterpartWithAccounts) {
-  return {
-    id: c.id,
-    rut: c.rut,
-    name: c.name,
-    person_type: c.personType,
-    category: c.category,
-    email: c.email,
-    employee_id: c.employeeId,
-    notes: c.notes,
-    created_at: c.createdAt,
-    updated_at: c.updatedAt,
-  };
-}
-
-function mapCounterpartAccount(a: CounterpartAccountType) {
-  return {
-    id: a.id,
-    counterpart_id: a.counterpartId,
-    account_identifier: a.accountIdentifier,
-    bank_name: a.bankName,
-    account_type: a.accountType,
-    holder: a.holder,
-    concept: a.concept,
-    metadata: a.metadata,
-    created_at: a.createdAt,
-    updated_at: a.updatedAt,
-  };
-}
+import { mapCounterpart, mapCounterpartAccount, type CounterpartWithAccounts } from "../lib/mappers.js";
 
 export function registerCounterpartRoutes(app: express.Express) {
   app.get(

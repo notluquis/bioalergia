@@ -1,5 +1,5 @@
 import express, { Router } from "express";
-import { z } from "zod";
+
 import { AuthenticatedRequest } from "../types.js";
 import { Prisma } from "../../generated/prisma/client.js";
 import { authenticate, asyncHandler, requireRole } from "../lib/http.js";
@@ -16,25 +16,7 @@ import {
 const router = Router();
 
 // Schemas
-const supplyRequestSchema = z.object({
-  supplyName: z.string().min(1, "Supply name is required"),
-  quantity: z.number().int().positive("Quantity must be a positive integer"),
-  brand: z.string().optional(),
-  model: z.string().optional(),
-  notes: z.string().optional(),
-});
-
-const updateSupplyRequestStatusSchema = z.object({
-  status: z.enum(["pending", "ordered", "in_transit", "delivered", "rejected"]),
-  adminNotes: z.string().optional(),
-});
-
-const commonSupplySchema = z.object({
-  name: z.string().min(1, "Common supply name is required"),
-  brand: z.string().optional(),
-  model: z.string().optional(),
-  description: z.string().optional(),
-});
+import { supplyRequestSchema, updateSupplyRequestStatusSchema, commonSupplySchema } from "../schemas.js";
 
 // API Endpoints
 

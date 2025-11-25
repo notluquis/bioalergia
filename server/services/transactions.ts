@@ -15,6 +15,28 @@ export type TransactionFilters = {
   bankAccountNumber?: string;
 };
 
+export type TransactionWithRelations = {
+  id: number;
+  timestampRaw: string;
+  timestamp: Date;
+  description: string | null;
+  origin: string | null;
+  destination: string | null;
+  sourceId: string | null;
+  direction: TransactionDirection;
+  amount: Prisma.Decimal;
+  sourceFile: string | null;
+  createdAt: Date;
+  loanSchedules: Prisma.LoanScheduleGetPayload<{ include: { loan: true } }>[];
+  serviceSchedules: Prisma.ServiceScheduleGetPayload<{ include: { service: true } }>[];
+};
+
+export type EnrichedTransaction = TransactionWithRelations & {
+  payout: Prisma.WithdrawalGetPayload<{}> | null;
+  loanSchedule: Prisma.LoanScheduleGetPayload<{ include: { loan: true } }> | null;
+  serviceSchedule: Prisma.ServiceScheduleGetPayload<{ include: { service: true } }> | null;
+};
+
 export async function listTransactions(filters: TransactionFilters, limit = 100, offset = 0) {
   const where: Prisma.TransactionWhereInput = {};
 
@@ -87,22 +109,6 @@ export async function listTransactions(filters: TransactionFilters, limit = 100,
     }),
   ]);
 
-  type TransactionWithRelations = {
-    id: number;
-    timestampRaw: string;
-    timestamp: Date;
-    description: string | null;
-    origin: string | null;
-    destination: string | null;
-    sourceId: string | null;
-    direction: TransactionDirection;
-    amount: Prisma.Decimal;
-    sourceFile: string | null;
-    createdAt: Date;
-    loanSchedules: { loan: Prisma.LoanGetPayload<{}> }[];
-    serviceSchedules: { service: Prisma.ServiceGetPayload<{}> }[];
-  };
-
   const typedTransactions = transactions as TransactionWithRelations[];
 
   // Manually fetch withdrawals for OUT transactions with sourceId
@@ -126,7 +132,7 @@ export async function listTransactions(filters: TransactionFilters, limit = 100,
   }
 
   // Merge data
-  const enriched = typedTransactions.map((t) => {
+  const enriched: EnrichedTransaction[] = typedTransactions.map((t) => {
     const payout = (t.direction === "OUT" && t.sourceId && withdrawals[t.sourceId]) || null;
     return {
       ...t,

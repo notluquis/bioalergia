@@ -4,8 +4,7 @@ import { asyncHandler, authenticate, issueToken, sanitizeUser } from "../lib/htt
 import { logEvent, logWarn, requestContext } from "../lib/logger.js";
 import { sessionCookieName, sessionCookieOptions } from "../config.js";
 import { findUserByEmail, findUserById } from "../services/users.js";
-import { findEmployeeByEmail } from "../services/employees.js";
-import { listRoleMappings } from "../services/roles.js";
+import { resolveUserRole } from "../services/roles.js";
 import type { AuthenticatedRequest } from "../types.js";
 import { loginSchema } from "../schemas.js";
 
@@ -37,10 +36,7 @@ export function registerAuthRoutes(app: express.Express) {
       }
 
       // --- Role Governance Logic ---
-      const employee = await findEmployeeByEmail(user.email);
-      const mappings = await listRoleMappings();
-      const mapping = employee ? mappings.find((m) => m.employee_role === employee.role) : undefined;
-      const effectiveRole = mapping ? mapping.app_role : user.role;
+      const effectiveRole = await resolveUserRole(user);
       // --- End Role Governance Logic ---
 
       const token = issueToken({ userId: user.id, email: user.email, role: effectiveRole });
@@ -80,11 +76,7 @@ export function registerAuthRoutes(app: express.Express) {
       }
 
       // --- Role Governance Logic ---
-      const employee = await findEmployeeByEmail(user.email);
-      const mappings = await listRoleMappings();
-      const mapping = employee ? mappings.find((m) => m.employee_role === employee.role) : undefined;
-      const effectiveRole = mapping ? mapping.app_role : user.role;
-
+      const effectiveRole = await resolveUserRole(user);
       const finalUser = { ...sanitizeUser(user), role: effectiveRole };
       // --- End Role Governance Logic ---
 

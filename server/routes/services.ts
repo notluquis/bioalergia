@@ -1,6 +1,6 @@
 import express from "express";
 import { asyncHandler, authenticate, requireRole } from "../lib/http.js";
-import type { Prisma } from "../../generated/prisma/client.js";
+
 import { logEvent, logWarn, requestContext } from "../lib/logger.js";
 import {
   createService,
@@ -14,53 +14,7 @@ import {
 import type { AuthenticatedRequest } from "../types.js";
 import { serviceCreateSchema, servicePaymentSchema, serviceRegenerateSchema } from "../schemas.js";
 
-function mapService(
-  s: Prisma.ServiceGetPayload<{ include: { schedules: true } }> & {
-    counterpartName?: string | null;
-    counterpartAccountIdentifier?: string | null;
-    counterpartAccountBankName?: string | null;
-    counterpartAccountType?: string | null;
-    total_expected?: number;
-    total_paid?: number;
-    pending_count?: number;
-    overdue_count?: number;
-  }
-) {
-  return {
-    id: s.id,
-    public_id: s.publicId,
-    name: s.name,
-    detail: s.detail,
-    category: s.category,
-    service_type: s.serviceType,
-    ownership: s.ownership,
-    default_amount: s.defaultAmount,
-    counterpart_id: s.counterpartId,
-    counterpart_account_id: s.counterpartAccountId,
-    frequency: s.frequency,
-    recurrence_type: s.recurrenceType,
-    due_day: s.dueDay,
-    emission_day: s.emissionDay,
-    start_date: s.startDate,
-    next_generation_months: s.nextGenerationMonths,
-    late_fee_mode: s.lateFeeMode,
-    late_fee_value: s.lateFeeValue,
-    late_fee_grace_days: s.lateFeeGraceDays,
-    notes: s.notes,
-    status: s.status,
-    created_at: s.createdAt,
-    updated_at: s.updatedAt,
-    // Extra fields from summary/detail
-    counterpart_name: s.counterpartName,
-    counterpart_account_identifier: s.counterpartAccountIdentifier,
-    counterpart_account_bank_name: s.counterpartAccountBankName,
-    counterpart_account_type: s.counterpartAccountType,
-    total_expected: s.total_expected,
-    total_paid: s.total_paid,
-    pending_count: s.pending_count,
-    overdue_count: s.overdue_count,
-  };
-}
+import { mapService } from "../lib/mappers.js";
 
 export function registerServiceRoutes(app: express.Express) {
   const router = express.Router();

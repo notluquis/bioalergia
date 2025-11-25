@@ -132,3 +132,29 @@ export function coerceDateOnly(value: string) {
   const parsed = parseDateOnly(value);
   return parsed ? formatDateOnly(parsed) : null;
 }
+
+export function getNthBusinessDay(base: Date, n: number) {
+  const date = new Date(base);
+  let count = 0;
+  while (count < n) {
+    const day = date.getDay();
+    if (day !== 0 && day !== 6) {
+      count += 1;
+      if (count === n) break;
+    }
+    date.setDate(date.getDate() + 1);
+  }
+  return date;
+}
+
+export function getMonthRange(month: string) {
+  const [yearStr, monthStr] = month.split("-");
+  const year = Number(yearStr);
+  const monthIndex = Number(monthStr) - 1;
+  const fromDate = new Date(year, monthIndex, 1);
+  const toDate = new Date(year, monthIndex + 1, 0);
+  return {
+    from: formatDateOnly(fromDate),
+    to: formatDateOnly(toDate),
+  };
+}
