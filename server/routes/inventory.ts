@@ -8,7 +8,6 @@ import {
   updateInventoryItem,
   deleteInventoryItem,
   createInventoryMovement,
-  listAllergyInventoryOverview,
 } from "../services/inventory.js";
 import {
   inventoryCategorySchema,
@@ -99,16 +98,16 @@ export function registerInventoryRoutes(app: express.Express) {
         name: data.name,
         description: data.description ?? null,
         currentStock: data.current_stock,
-        category: data.category_id ? { connect: { id: data.category_id } } : undefined,
+        categoryId: data.category_id ?? null,
       });
       res.status(201).json({
         status: "ok",
         data: {
           id: item.id,
-          category_id: item.categoryId,
+          categoryId: item.categoryId,
           name: item.name,
           description: item.description,
-          current_stock: item.currentStock,
+          currentStock: item.currentStock,
           created_at: item.createdAt.toISOString(),
           updated_at: item.updatedAt.toISOString(),
           category_name: item.category?.name,
@@ -130,21 +129,16 @@ export function registerInventoryRoutes(app: express.Express) {
         name: data.name,
         description: data.description,
         currentStock: data.current_stock,
-        category:
-          data.category_id !== undefined
-            ? data.category_id
-              ? { connect: { id: data.category_id } }
-              : { disconnect: true }
-            : undefined,
+        categoryId: data.category_id,
       });
       res.json({
         status: "ok",
         data: {
           id: item.id,
-          category_id: item.categoryId,
+          categoryId: item.categoryId,
           name: item.name,
           description: item.description,
-          current_stock: item.currentStock,
+          currentStock: item.currentStock,
           created_at: item.createdAt.toISOString(),
           updated_at: item.updatedAt.toISOString(),
           category_name: item.category?.name,
@@ -176,14 +170,6 @@ export function registerInventoryRoutes(app: express.Express) {
         reason: parsed.data.reason,
       });
       res.status(201).json({ status: "ok" });
-    })
-  );
-
-  router.get(
-    "/allergy-overview",
-    asyncHandler(async (_req, res) => {
-      const overview = await listAllergyInventoryOverview();
-      res.json({ status: "ok", data: overview });
     })
   );
 
