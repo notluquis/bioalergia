@@ -1,5 +1,5 @@
 import { prisma } from "../prisma.js";
-import { Prisma, TransactionDirection } from "../../generated/prisma/client.js";
+import { Prisma } from "../../generated/prisma/client.js";
 
 export type TransactionFilters = {
   from?: Date;
@@ -11,31 +11,13 @@ export type TransactionFilters = {
   description?: string;
   origin?: string;
   destination?: string;
-  sourceId?: string;
-  bankAccountNumber?: string;
 };
 
-export type TransactionWithRelations = {
-  id: number;
-  timestampRaw: string;
-  timestamp: Date;
-  description: string | null;
-  origin: string | null;
-  destination: string | null;
-  sourceId: string | null;
-  direction: TransactionDirection;
-  amount: Prisma.Decimal;
-  sourceFile: string | null;
-  createdAt: Date;
-  loanSchedules: Prisma.LoanScheduleGetPayload<{ include: { loan: true } }>[];
-  serviceSchedules: Prisma.ServiceScheduleGetPayload<{ include: { service: true } }>[];
-};
-
-export type EnrichedTransaction = TransactionWithRelations & {
-  payout: Prisma.WithdrawalGetPayload<{}> | null;
-  loanSchedule: Prisma.LoanScheduleGetPayload<{ include: { loan: true } }> | null;
-  serviceSchedule: Prisma.ServiceScheduleGetPayload<{ include: { service: true } }> | null;
-};
+export type EnrichedTransaction = Prisma.TransactionGetPayload<{
+  include: {
+    person: true;
+  };
+}>;
 
 export async function listTransactions(filters: TransactionFilters, limit = 100, offset = 0) {
   const where: Prisma.TransactionWhereInput = {};
@@ -68,10 +50,6 @@ export async function listTransactions(filters: TransactionFilters, limit = 100,
     where.destination = { contains: filters.destination, mode: "insensitive" };
   }
 
-  if (filters.sourceId) {
-    where.sourceId = filters.sourceId;
-  }
-
   if (filters.search) {
     where.OR = [
       { description: { contains: filters.search, mode: "insensitive" } },
@@ -87,62 +65,13 @@ export async function listTransactions(filters: TransactionFilters, limit = 100,
       orderBy: { timestamp: "desc" },
       take: limit,
       skip: offset,
-      select: {
-        id: true,
-        timestampRaw: true,
-        timestamp: true,
-        description: true,
-        origin: true,
-        destination: true,
-        sourceId: true,
-        direction: true,
-        amount: true,
-        sourceFile: true,
-        createdAt: true,
-        loanSchedules: {
-          include: { loan: true },
-        },
-        serviceSchedules: {
-          include: { service: true },
-        },
+      include: {
+        person: true,
       },
     }),
   ]);
 
-  const typedTransactions = transactions as TransactionWithRelations[];
-
-  // Manually fetch withdrawals for OUT transactions with sourceId
-  // This mimics the LEFT JOIN mp_withdrawals
-  const withdrawIds = typedTransactions
-    .filter((t) => t.direction === "OUT" && t.sourceId)
-    .map((t) => t.sourceId as string);
-
-  let withdrawals: Record<string, Prisma.WithdrawalGetPayload<{}>> = {};
-  if (withdrawIds.length > 0) {
-    const wRows = await prisma.withdrawal.findMany({
-      where: { withdrawId: { in: withdrawIds } },
-    });
-    withdrawals = wRows.reduce(
-      (acc: Record<string, Prisma.WithdrawalGetPayload<{}>>, curr: Prisma.WithdrawalGetPayload<{}>) => {
-        acc[curr.withdrawId] = curr;
-        return acc;
-      },
-      {} as Record<string, Prisma.WithdrawalGetPayload<{}>>
-    );
-  }
-
-  // Merge data
-  const enriched: EnrichedTransaction[] = typedTransactions.map((t) => {
-    const payout = (t.direction === "OUT" && t.sourceId && withdrawals[t.sourceId]) || null;
-    return {
-      ...t,
-      payout,
-      loanSchedule: t.loanSchedules[0] || null, // Assuming 1-1 for now based on legacy logic
-      serviceSchedule: t.serviceSchedules[0] || null,
-    };
-  });
-
-  return { total, transactions: enriched };
+  return { total, transactions };
 }
 
 export async function getTransactionById(id: number) {
@@ -151,7 +80,7 @@ export async function getTransactionById(id: number) {
   });
 }
 
-export async function createTransaction(data: Prisma.TransactionCreateInput) {
+export async function createTransaction(data: Prisma.TransactionUncheckedCreateInput) {
   return await prisma.transaction.create({
     data,
   });

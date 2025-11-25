@@ -1,15 +1,8 @@
 import express from "express";
 import { asyncHandler, authenticate, requireRole } from "../lib/http.js";
-import { logEvent, logWarn, requestContext } from "../lib/logger.js";
-import {
-  createLoan,
-  getLoanDetail,
-  listLoansWithSummary,
-  markLoanSchedulePayment,
-  regenerateLoanSchedule,
-  unlinkLoanSchedulePayment,
-} from "../services/loans.js";
-import { loanCreateSchema, loanPaymentSchema, loanScheduleRegenerateSchema } from "../schemas.js";
+import { logEvent, requestContext } from "../lib/logger.js";
+import { createLoan, getLoanById, listLoans, updateLoan, deleteLoan } from "../services/loans.js";
+import { loanCreateSchema } from "../schemas.js";
 import type { AuthenticatedRequest } from "../types.js";
 
 export function registerLoanRoutes(app: express.Express) {
@@ -19,7 +12,7 @@ export function registerLoanRoutes(app: express.Express) {
     "/",
     authenticate,
     asyncHandler(async (req: AuthenticatedRequest, res) => {
-      const loans = await listLoansWithSummary();
+      const loans = await listLoans();
       res.json({ status: "ok", loans });
     })
   );
@@ -29,38 +22,23 @@ export function registerLoanRoutes(app: express.Express) {
     authenticate,
     requireRole("GOD", "ADMIN"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
-      const parsed = loanCreateSchema.parse(req.body);
-      logEvent("loans:create", requestContext(req, parsed));
+      const parsed = loanCreateSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ status: "error", message: "Datos inválidos", issues: parsed.error.issues });
+      }
+      logEvent("loans:create", requestContext(req, parsed.data));
 
       const loan = await createLoan({
-        title: parsed.title,
-        borrowerName: parsed.borrowerName,
-        borrowerType: parsed.borrowerType,
-        principalAmount: parsed.principalAmount,
-        interestRate: parsed.interestRate,
-        interestType: parsed.interestType ?? "SIMPLE",
-        frequency: parsed.frequency,
-        totalInstallments: parsed.totalInstallments,
-        startDate: parsed.startDate,
-        notes: parsed.notes ?? null,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } as any);
+        title: parsed.data.title,
+        principalAmount: parsed.data.principalAmount,
+        interestRate: parsed.data.interestRate,
+        startDate: new Date(parsed.data.startDate),
+        status: "ACTIVE",
+      });
 
-      if (parsed.generateSchedule) {
-        await regenerateLoanSchedule(loan.publicId, {
-          totalInstallments: parsed.totalInstallments,
-          startDate: parsed.startDate,
-          interestRate: parsed.interestRate,
-          frequency: parsed.frequency,
-        });
-      }
-
-      const detail = await getLoanDetail(loan.publicId);
       res.json({
         status: "ok",
-        loan: detail?.loan ?? loan,
-        schedules: detail?.schedules ?? [],
-        summary: detail?.summary,
+        loan,
       });
     })
   );
@@ -69,65 +47,54 @@ export function registerLoanRoutes(app: express.Express) {
     "/:id",
     authenticate,
     asyncHandler(async (req: AuthenticatedRequest, res) => {
-      const { id } = req.params;
-      const detail = await getLoanDetail(id);
-      if (!detail) {
+      const id = Number(req.params.id);
+      if (!Number.isFinite(id)) {
+        return res.status(400).json({ status: "error", message: "ID inválido" });
+      }
+      const loan = await getLoanById(id);
+      if (!loan) {
         return res.status(404).json({ status: "error", message: "Préstamo no encontrado" });
       }
-      res.json({ status: "ok", ...detail });
+      res.json({ status: "ok", loan });
     })
   );
 
-  router.post(
-    "/:id/schedules",
+  router.put(
+    "/:id",
     authenticate,
     requireRole("GOD", "ADMIN"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
-      const { id } = req.params;
-      const parsed = loanScheduleRegenerateSchema.parse(req.body ?? {});
-      logEvent("loans:schedule:regenerate", requestContext(req, { id, overrides: parsed }));
-      await regenerateLoanSchedule(id, parsed);
-      const detail = await getLoanDetail(id);
-      if (!detail) {
-        return res.status(404).json({ status: "error", message: "Préstamo no encontrado" });
+      const id = Number(req.params.id);
+      if (!Number.isFinite(id)) {
+        return res.status(400).json({ status: "error", message: "ID inválido" });
       }
-      res.json({ status: "ok", ...detail });
-    })
-  );
+      const parsed = loanCreateSchema.partial().safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ status: "error", message: "Datos inválidos", issues: parsed.error.issues });
+      }
 
-  app.post(
-    "/api/loan-schedules/:id/pay",
-    authenticate,
-    requireRole("GOD", "ADMIN", "ANALYST"),
-    asyncHandler(async (req: AuthenticatedRequest, res) => {
-      const scheduleId = Number(req.params.id);
-      if (!Number.isFinite(scheduleId)) {
-        return res.status(400).json({ status: "error", message: "Identificador inválido" });
-      }
-      const parsed = loanPaymentSchema.parse(req.body);
-      logEvent("loans:schedule:pay", requestContext(req, { scheduleId, parsed }));
-      const schedule = await markLoanSchedulePayment({
-        scheduleId,
-        transactionId: parsed.transactionId,
-        paidAmount: parsed.paidAmount,
-        paidDate: parsed.paidDate,
+      const loan = await updateLoan(id, {
+        title: parsed.data.title,
+        principalAmount: parsed.data.principalAmount,
+        interestRate: parsed.data.interestRate,
+        startDate: parsed.data.startDate ? new Date(parsed.data.startDate) : undefined,
       });
-      res.json({ status: "ok", schedule });
+
+      res.json({ status: "ok", loan });
     })
   );
 
-  app.post(
-    "/api/loan-schedules/:id/unlink",
+  router.delete(
+    "/:id",
     authenticate,
     requireRole("GOD", "ADMIN"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
-      const scheduleId = Number(req.params.id);
-      if (!Number.isFinite(scheduleId)) {
-        return res.status(400).json({ status: "error", message: "Identificador inválido" });
+      const id = Number(req.params.id);
+      if (!Number.isFinite(id)) {
+        return res.status(400).json({ status: "error", message: "ID inválido" });
       }
-      logWarn("loans:schedule:unlink", requestContext(req, { scheduleId }));
-      const schedule = await unlinkLoanSchedulePayment(scheduleId);
-      res.json({ status: "ok", schedule });
+      await deleteLoan(id);
+      res.json({ status: "ok" });
     })
   );
 

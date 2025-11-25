@@ -2,6 +2,8 @@ import { Router } from "express";
 import { prisma } from "../prisma.js";
 import { z } from "zod";
 import { authenticate as requireAuth, requireRole } from "../lib/http.js";
+import type { AuthenticatedRequest } from "../types.js";
+import { logAudit } from "../lib/audit.js";
 
 const router = Router();
 
@@ -58,12 +60,23 @@ router.get("/:id", requireAuth, async (req, res) => {
 router.post("/", requireAuth, requireRole("ADMIN", "GOD"), async (req, res) => {
   try {
     const data = personSchema.parse(req.body);
+    const authReq = req as AuthenticatedRequest;
 
     // Check for existing RUT
     const existing = await prisma.person.findUnique({ where: { rut: data.rut } });
     if (existing) return res.status(400).json({ error: "RUT already exists" });
 
     const person = await prisma.person.create({ data });
+
+    await logAudit(
+      authReq.auth!.userId,
+      "PERSON_CREATE",
+      "Person",
+      String(person.id),
+      { rut: data.rut, names: data.names },
+      req.ip
+    );
+
     res.json(person);
   } catch (error) {
     if (error instanceof z.ZodError) return res.status(400).json({ error: error.issues });
@@ -75,10 +88,16 @@ router.post("/", requireAuth, requireRole("ADMIN", "GOD"), async (req, res) => {
 router.put("/:id", requireAuth, requireRole("ADMIN", "GOD"), async (req, res) => {
   try {
     const data = personSchema.partial().parse(req.body);
+    const authReq = req as AuthenticatedRequest;
+    const targetPersonId = Number(req.params.id);
+
     const person = await prisma.person.update({
-      where: { id: Number(req.params.id) },
+      where: { id: targetPersonId },
       data,
     });
+
+    await logAudit(authReq.auth!.userId, "PERSON_UPDATE", "Person", String(targetPersonId), data, req.ip);
+
     res.json(person);
   } catch {
     res.status(500).json({ error: "Failed to update person" });

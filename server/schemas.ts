@@ -234,7 +234,6 @@ export const timesheetPayloadSchema = z.object({
     .optional(),
   worked_minutes: z.coerce.number().int().min(0),
   overtime_minutes: z.coerce.number().int().min(0).default(0),
-  extra_amount: z.coerce.number().min(0).default(0),
   comment: z.string().max(255).nullable().optional(),
 });
 
@@ -256,8 +255,8 @@ export const timesheetBulkSchema = z.object({
           .regex(/^\d{2}:\d{2}$/)
           .nullable()
           .optional(),
+        worked_minutes: z.coerce.number().int().min(0).optional(),
         overtime_minutes: z.coerce.number().int().min(0).default(0),
-        extra_amount: z.coerce.number().min(0).default(0),
         comment: z.string().max(255).nullable().optional(),
       })
     )
