@@ -19,7 +19,7 @@ COPY prisma ./prisma/
 
 # Install ALL dependencies with cache mount (persists npm cache across builds)
 # This layer will be cached if package.json and prisma schema haven't changed
-RUN --mount=type=cache,id=npm,target=/root/.npm \
+RUN --mount=type=cache,target=/root/.npm \
     npm ci
 
 # Copy source code LAST (changes most often)
@@ -48,7 +48,7 @@ COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 
 # Remove dev dependencies with cache mount
-RUN --mount=type=cache,id=npm,target=/root/.npm \
+RUN --mount=type=cache,target=/root/.npm \
     npm prune --omit=dev
 
 # Expose port
