@@ -9,11 +9,6 @@ import { coerceLimit } from "../lib/query-helpers.js";
 import { transactionsQuerySchema } from "../schemas.js";
 import type { AuthenticatedRequest } from "../types.js";
 import { listTransactions, type TransactionFilters } from "../services/transactions.js";
-import {
-  getTransactionStats,
-  getParticipantLeaderboard,
-  getParticipantInsight,
-} from "../services/transaction-stats.js";
 
 export function registerTransactionRoutes(app: express.Express) {
   app.get(
@@ -45,8 +40,6 @@ export function registerTransactionRoutes(app: express.Express) {
         description: parsed.description,
         origin: parsed.origin,
         destination: parsed.destination,
-        sourceId: parsed.sourceId,
-        bankAccountNumber: parsed.bankAccountNumber,
         direction: parsed.direction,
         search: parsed.search,
       };
@@ -56,66 +49,6 @@ export function registerTransactionRoutes(app: express.Express) {
       const data = transactions.map(mapTransaction);
 
       res.json({ status: "ok", data, hasAmounts: includeAmounts, total, page, pageSize });
-    })
-  );
-
-  // Transaction statistics endpoint
-  app.get(
-    "/api/transactions/stats",
-    authenticate,
-    asyncHandler(async (req: AuthenticatedRequest, res) => {
-      const { from, to } = req.query;
-
-      logEvent("transactions/stats", requestContext(req, { from, to }));
-
-      const stats = await getTransactionStats({
-        from: typeof from === "string" ? from : undefined,
-        to: typeof to === "string" ? to : undefined,
-      });
-
-      res.json({ status: "ok", ...stats });
-    })
-  );
-
-  // Participants leaderboard endpoint
-  app.get(
-    "/api/transactions/participants",
-    authenticate,
-    asyncHandler(async (req: AuthenticatedRequest, res) => {
-      const { from, to, limit, mode } = req.query;
-
-      logEvent("transactions/participants", requestContext(req, { from, to, limit, mode }));
-
-      const participants = await getParticipantLeaderboard({
-        from: typeof from === "string" ? from : undefined,
-        to: typeof to === "string" ? to : undefined,
-        limit: typeof limit === "string" ? parseInt(limit, 10) : undefined,
-        mode:
-          typeof mode === "string" && ["combined", "incoming", "outgoing"].includes(mode)
-            ? (mode as "combined" | "incoming" | "outgoing")
-            : undefined,
-      });
-
-      res.json({ status: "ok", participants });
-    })
-  );
-
-  // Participant detail endpoint
-  app.get(
-    "/api/transactions/participants/:id",
-    authenticate,
-    asyncHandler(async (req: AuthenticatedRequest, res) => {
-      const participantId = req.params.id;
-      const { from, to } = req.query;
-
-      logEvent("transactions/participant-detail", requestContext(req, { participantId, from, to }));
-
-      const insight = await getParticipantInsight(participantId, {
-        from: typeof from === "string" ? from : undefined,
-        to: typeof to === "string" ? to : undefined,
-      });
-
-      res.json({ status: "ok", ...insight });
     })
   );
 }

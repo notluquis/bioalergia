@@ -7,7 +7,6 @@ import { productionBalancePayloadSchema, productionBalanceQuerySchema } from "..
 import {
   createProductionBalance,
   getProductionBalanceById,
-  listProductionBalanceHistory,
   listProductionBalances,
   updateProductionBalance,
   type ProductionBalancePayload,
@@ -122,31 +121,12 @@ export function registerDailyProductionBalanceRoutes(app: express.Express) {
       const parsed = productionBalancePayloadSchema.parse(req.body ?? {});
       const payload = sanitizePayload(parsed);
 
-      const updated = await updateProductionBalance(id, payload, req.auth.userId);
+      const updated = await updateProductionBalance(id, payload);
 
       logEvent("daily-production-balances/update", requestContext(req, { id, date: updated.balanceDate }));
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       res.json({ status: "ok", item: mapProductionBalance(updated as any) });
-    })
-  );
-
-  app.get(
-    "/api/daily-production-balances/:id/history",
-    authenticate,
-    asyncHandler(async (req: AuthenticatedRequest, res) => {
-      const id = Number(req.params.id);
-      if (!Number.isFinite(id)) {
-        return res.status(400).json({ status: "error", message: "ID inválido" });
-      }
-      const existing = await getProductionBalanceById(id);
-      if (!existing) {
-        return res.status(404).json({ status: "error", message: "Registro no encontrado" });
-      }
-
-      const entries = await listProductionBalanceHistory(id);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      res.json({ status: "ok", items: entries.map((e) => mapProductionBalance(e as any)) });
     })
   );
 }

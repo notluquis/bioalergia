@@ -8,17 +8,13 @@ import {
   updateCounterpart,
   upsertCounterpartAccount,
   updateCounterpartAccount,
-  listAccountSuggestions,
-  counterpartSummary,
-  assignAccountsToCounterpartByRut,
 } from "../services/counterparts.js";
-import { Prisma, CounterpartPersonType, CounterpartCategory } from "../../generated/prisma/client.js";
+import { PersonType, CounterpartCategory } from "../../generated/prisma/client.js";
 
 import {
   counterpartPayloadSchema,
   counterpartAccountPayloadSchema,
   counterpartAccountUpdateSchema,
-  statsQuerySchema,
 } from "../schemas.js";
 import type { AuthenticatedRequest } from "../types.js";
 
@@ -53,10 +49,13 @@ export function registerCounterpartRoutes(app: express.Express) {
           .json({ status: "error", message: "Los datos no son válidos", issues: parsed.error.issues });
       }
       const payload = parsed.data;
+      if (!payload.rut) {
+        return res.status(400).json({ status: "error", message: "El RUT es obligatorio" });
+      }
       const counterpart = await createCounterpart({
         rut: payload.rut,
         name: payload.name,
-        personType: (payload.personType ?? "OTHER") as CounterpartPersonType,
+        personType: (payload.personType ?? "NATURAL") as PersonType,
         category: (payload.category ?? "SUPPLIER") as CounterpartCategory,
         email: payload.email ?? null,
         employeeId: payload.employeeId ?? null,
@@ -90,10 +89,10 @@ export function registerCounterpartRoutes(app: express.Express) {
           .json({ status: "error", message: "Los datos no son válidos", issues: parsed.error.issues });
       }
       await updateCounterpart(counterpartId, {
-        rut: parsed.data.rut,
+        rut: parsed.data.rut ?? undefined,
         name: parsed.data.name,
-        personType: parsed.data.personType as CounterpartPersonType,
-        category: parsed.data.category as CounterpartCategory,
+        personType: parsed.data.personType as PersonType | undefined,
+        category: parsed.data.category as CounterpartCategory | undefined,
         email: parsed.data.email,
         employeeId: parsed.data.employeeId ?? null,
         notes: parsed.data.notes,
@@ -147,34 +146,14 @@ export function registerCounterpartRoutes(app: express.Express) {
           .json({ status: "error", message: "Los datos no son válidos", issues: parsed.error.issues });
       }
       const accountId = await upsertCounterpartAccount(counterpartId, {
-        ...parsed.data,
-        metadata: (parsed.data.metadata ?? Prisma.JsonNull) as Prisma.InputJsonValue,
+        accountNumber: parsed.data.accountIdentifier,
+        bankName: parsed.data.bankName,
+        accountType: parsed.data.accountType,
       });
       const detail = await getCounterpartById(counterpartId);
       logEvent("counterparts:account:upsert", requestContext(req, { counterpartId, accountId }));
-      res.status(201).json({
-        status: "ok",
-        accounts: detail?.accounts ? detail.accounts.map(mapCounterpartAccount) : [],
-      });
-    })
-  );
 
-  app.post(
-    "/api/counterparts/:id/attach-rut",
-    authenticate,
-    requireRole("GOD", "ADMIN", "ANALYST"),
-    asyncHandler(async (req: AuthenticatedRequest, res) => {
-      const counterpartId = Number(req.params.id);
-      if (!Number.isFinite(counterpartId)) {
-        return res.status(400).json({ status: "error", message: "El ID no es válido" });
-      }
-      const rut = typeof req.body?.rut === "string" ? req.body.rut : "";
-      if (!rut.trim()) {
-        return res.status(400).json({ status: "error", message: "El RUT es obligatorio" });
-      }
-      await assignAccountsToCounterpartByRut(counterpartId, rut);
-      const detail = await getCounterpartById(counterpartId);
-      res.json({
+      res.status(201).json({
         status: "ok",
         accounts: detail?.accounts ? detail.accounts.map(mapCounterpartAccount) : [],
       });
@@ -198,37 +177,8 @@ export function registerCounterpartRoutes(app: express.Express) {
       }
       await updateCounterpartAccount(accountId, {
         ...parsed.data,
-        metadata: (parsed.data.metadata ?? Prisma.JsonNull) as Prisma.InputJsonValue,
       });
       res.json({ status: "ok" });
-    })
-  );
-
-  app.get(
-    "/api/counterparts/suggestions",
-    authenticate,
-    asyncHandler(async (req: AuthenticatedRequest, res) => {
-      const query = typeof req.query.q === "string" ? req.query.q : "";
-      const limit = Math.max(1, Math.min(50, Number(req.query.limit ?? 10)));
-      const suggestions = await listAccountSuggestions(query, limit);
-      res.json({ status: "ok", suggestions });
-    })
-  );
-
-  app.get(
-    "/api/counterparts/:id/summary",
-    authenticate,
-    asyncHandler(async (req: AuthenticatedRequest, res) => {
-      const counterpartId = Number(req.params.id);
-      if (!Number.isFinite(counterpartId)) {
-        return res.status(400).json({ status: "error", message: "El ID no es válido" });
-      }
-      const parsed = statsQuerySchema.safeParse(req.query);
-      if (!parsed.success) {
-        return res.status(400).json({ status: "error", message: "Parámetros inválidos", issues: parsed.error.issues });
-      }
-      const summary = await counterpartSummary(counterpartId, parsed.data);
-      res.json({ status: "ok", summary });
     })
   );
 }

@@ -6,9 +6,9 @@ export async function loadSettings(): Promise<AppSettings> {
   const result: AppSettings = { ...DEFAULT_SETTINGS };
 
   for (const setting of settings) {
-    const appKey = dbKeyToSettingsKey(setting.configKey);
+    const appKey = dbKeyToSettingsKey(setting.key);
     if (appKey) {
-      result[appKey] = setting.configValue || "";
+      result[appKey] = setting.value || "";
     }
   }
 
@@ -18,9 +18,9 @@ export async function loadSettings(): Promise<AppSettings> {
 export async function saveSettings(settings: AppSettings) {
   const promises = (Object.keys(settings) as Array<keyof AppSettings>).map((key) =>
     prisma.setting.upsert({
-      where: { configKey: settingsKeyToDbKey(key) },
-      update: { configValue: settings[key] },
-      create: { configKey: settingsKeyToDbKey(key), configValue: settings[key] },
+      where: { key: settingsKeyToDbKey(key) },
+      update: { value: settings[key] },
+      create: { key: settingsKeyToDbKey(key), value: settings[key] },
     })
   );
   await Promise.all(promises);
@@ -28,21 +28,21 @@ export async function saveSettings(settings: AppSettings) {
 
 export async function getInternalConfig(key: string): Promise<string | null> {
   const setting = await prisma.setting.findUnique({
-    where: { configKey: key },
+    where: { key: key },
   });
-  return setting?.configValue ?? null;
+  return setting?.value ?? null;
 }
 
 export async function setInternalConfig(key: string, value: string | null) {
   if (value === null) {
     await prisma.setting.delete({
-      where: { configKey: key },
+      where: { key: key },
     });
   } else {
     await prisma.setting.upsert({
-      where: { configKey: key },
-      update: { configValue: value },
-      create: { configKey: key, configValue: value },
+      where: { key: key },
+      update: { value: value },
+      create: { key: key, value: value },
     });
   }
 }

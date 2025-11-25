@@ -4,8 +4,8 @@ import { Prisma } from "../../generated/prisma/client.js";
 export async function loadSettings() {
   const settings = await prisma.setting.findMany();
   return settings.reduce(
-    (acc: Record<string, string>, curr: { configKey: string; configValue: string | null }) => {
-      acc[curr.configKey] = curr.configValue || "";
+    (acc: Record<string, string>, curr: { key: string; value: string | null }) => {
+      acc[curr.key] = curr.value || "";
       return acc;
     },
     {} as Record<string, string>
@@ -61,34 +61,12 @@ export async function listCalendarSyncLogs(limit: number) {
     take: limit,
     orderBy: { startedAt: "desc" },
   });
-
-  // Map BigInt to number/string for JSON serialization if needed,
-  // but Prisma Client usually handles this or we map in the route.
-  // The route expects specific fields (snake_case in the old version, but we should check).
-  // The route maps them manually: log.trigger_source -> triggerSource.
-  // We should return the Prisma objects and update the route to use camelCase properties.
   return logs;
 }
 
 export type UnclassifiedEvent = Prisma.EventGetPayload<{
-  select: {
-    id: true;
-    calendar: { select: { googleId: true } };
-    externalEventId: true;
-    eventStatus: true;
-    eventType: true;
-    summary: true;
-    description: true;
-    startDate: true;
-    startDateTime: true;
-    endDate: true;
-    endDateTime: true;
-    category: true;
-    amountExpected: true;
-    amountPaid: true;
-    attended: true;
-    dosage: true;
-    treatmentStage: true;
+  include: {
+    calendar: true;
   };
 }>;
 
@@ -100,34 +78,7 @@ export async function listUnclassifiedCalendarEvents(limit: number) {
     },
     take: limit,
     orderBy: { startDateTime: "desc" },
-    select: {
-      id: true,
-      calendarId: true,
-      externalEventId: true,
-      eventStatus: true,
-      eventType: true,
-      summary: true,
-      description: true,
-      startDate: true,
-      startDateTime: true,
-      startTimeZone: true,
-      endDate: true,
-      endDateTime: true,
-      endTimeZone: true,
-      eventCreatedAt: true,
-      eventUpdatedAt: true,
-      colorId: true,
-      location: true,
-      transparency: true,
-      visibility: true,
-      hangoutLink: true,
-      category: true,
-      amountExpected: true,
-      amountPaid: true,
-      attended: true,
-      dosage: true,
-      treatmentStage: true,
-      lastSyncedAt: true,
+    include: {
       calendar: true,
     },
   });

@@ -1,20 +1,13 @@
 import express from "express";
 import { asyncHandler, authenticate, requireRole } from "../lib/http.js";
 
-import { logEvent, logWarn, requestContext } from "../lib/logger.js";
-import {
-  createService,
-  getServiceDetail,
-  listServicesWithSummary,
-  markServicePayment,
-  regenerateServiceSchedule,
-  unlinkServicePayment,
-  updateService,
-} from "../services/services.js";
+import { logEvent, requestContext } from "../lib/logger.js";
+import { createService, getServiceById, listServices, updateService, deleteService } from "../services/services.js";
 import type { AuthenticatedRequest } from "../types.js";
-import { serviceCreateSchema, servicePaymentSchema, serviceRegenerateSchema } from "../schemas.js";
+import { serviceCreateSchema } from "../schemas.js";
 
 import { mapService } from "../lib/mappers.js";
+import { ServiceType, ServiceFrequency } from "../../generated/prisma/client.js";
 
 export function registerServiceRoutes(app: express.Express) {
   const router = express.Router();
@@ -23,14 +16,13 @@ export function registerServiceRoutes(app: express.Express) {
     "/",
     authenticate,
     asyncHandler(async (_req: AuthenticatedRequest, res) => {
-      const services = await listServicesWithSummary();
+      const services = await listServices();
       res.json({
         status: "ok",
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         services: services.map((s: any) => ({
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           ...mapService(s as any),
-          summary: s.summary,
         })),
       });
     })
@@ -41,52 +33,24 @@ export function registerServiceRoutes(app: express.Express) {
     authenticate,
     requireRole("GOD", "ADMIN"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
-      const parsed = serviceCreateSchema.parse(req.body);
-      logEvent("services:create", requestContext(req, parsed));
+      const parsed = serviceCreateSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ status: "error", message: "Datos inválidos", issues: parsed.error.issues });
+      }
+      logEvent("services:create", requestContext(req, parsed.data));
       const service = await createService({
-        name: parsed.name,
-        detail: parsed.detail ?? null,
-        category: parsed.category ?? null,
-        serviceType: parsed.serviceType,
-        ownership: parsed.ownership,
-        obligationType: parsed.obligationType,
-        recurrenceType: parsed.recurrenceType,
-        frequency: parsed.frequency,
-        defaultAmount: parsed.defaultAmount,
-        amountIndexation: parsed.amountIndexation,
-        counterpartId: parsed.counterpartId ?? null,
-        counterpartAccountId: parsed.counterpartAccountId ?? null,
-        accountReference: parsed.accountReference ?? null,
-        emissionDay: parsed.emissionDay ?? null,
-        emissionMode: parsed.emissionMode,
-        emissionStartDay: parsed.emissionStartDay ?? null,
-        emissionEndDay: parsed.emissionEndDay ?? null,
-        emissionExactDate: parsed.emissionExactDate ?? null,
-        dueDay: parsed.dueDay ?? null,
-        startDate: new Date(parsed.startDate),
-        nextGenerationMonths: parsed.monthsToGenerate ?? 12,
-        lateFeeMode: parsed.lateFeeMode,
-        lateFeeValue: parsed.lateFeeValue ?? null,
-        lateFeeGraceDays: parsed.lateFeeGraceDays ?? null,
-        notes: parsed.notes ?? null,
+        name: parsed.data.name,
+        type: parsed.data.serviceType as ServiceType,
+        frequency: parsed.data.frequency as ServiceFrequency,
+        defaultAmount: parsed.data.defaultAmount,
+        counterpartId: parsed.data.counterpartId ?? null,
+        status: "ACTIVE",
       });
 
-      await regenerateServiceSchedule(service.publicId, {
-        months: parsed.monthsToGenerate ?? 12,
-        startDate: parsed.startDate,
-        defaultAmount: parsed.defaultAmount,
-        dueDay: parsed.dueDay ?? null,
-        frequency: parsed.frequency,
-        emissionDay: parsed.emissionDay ?? null,
-      });
-
-      const detail = await getServiceDetail(service.publicId);
-      // detail.service has summary merged
       res.json({
         status: "ok",
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        service: detail ? mapService(detail.service as any) : mapService(service as any),
-        schedules: detail?.schedules ?? [],
+        service: mapService(service as any),
       });
     })
   );
@@ -96,19 +60,28 @@ export function registerServiceRoutes(app: express.Express) {
     authenticate,
     requireRole("GOD", "ADMIN"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
-      const { id } = req.params;
-      const parsed = serviceCreateSchema.parse(req.body);
-      logEvent("services:update", requestContext(req, { id, body: parsed }));
-      const service = await updateService(id, parsed);
-      const detail = await getServiceDetail(id);
-      if (!detail) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return res.json({ status: "ok", service: mapService(service as any), schedules: [] });
+      const id = Number(req.params.id);
+      if (!Number.isFinite(id)) {
+        return res.status(400).json({ status: "error", message: "ID inválido" });
       }
+      const parsed = serviceCreateSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ status: "error", message: "Datos inválidos", issues: parsed.error.issues });
+      }
+      logEvent("services:update", requestContext(req, { id, body: parsed.data }));
+
+      const service = await updateService(id, {
+        name: parsed.data.name,
+        type: parsed.data.serviceType as ServiceType,
+        frequency: parsed.data.frequency as ServiceFrequency,
+        defaultAmount: parsed.data.defaultAmount,
+        counterpartId: parsed.data.counterpartId ?? null,
+      });
+
       res.json({
         status: "ok",
-        service: mapService(detail.service),
-        schedules: detail.schedules,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        service: mapService(service as any),
       });
     })
   );
@@ -117,81 +90,33 @@ export function registerServiceRoutes(app: express.Express) {
     "/:id",
     authenticate,
     asyncHandler(async (req: AuthenticatedRequest, res) => {
-      const { id } = req.params;
-      const detail = await getServiceDetail(id);
-      if (!detail) {
+      const id = Number(req.params.id);
+      if (!Number.isFinite(id)) {
+        return res.status(400).json({ status: "error", message: "ID inválido" });
+      }
+      const service = await getServiceById(id);
+      if (!service) {
         return res.status(404).json({ status: "error", message: "Servicio no encontrado" });
       }
       res.json({
         status: "ok",
-        service: mapService(detail.service),
-        schedules: detail.schedules,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        service: mapService(service as any),
       });
     })
   );
 
-  router.post(
-    "/:id/schedules",
+  router.delete(
+    "/:id",
     authenticate,
     requireRole("GOD", "ADMIN"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
-      const { id } = req.params;
-      const parsed = serviceRegenerateSchema.parse(req.body ?? {});
-      logEvent("services:schedule:regenerate", requestContext(req, { id, overrides: parsed }));
-      await regenerateServiceSchedule(id, {
-        months: parsed.months,
-        startDate: parsed.startDate,
-        defaultAmount: parsed.defaultAmount,
-        dueDay: parsed.dueDay,
-        frequency: parsed.frequency,
-        emissionDay: parsed.emissionDay ?? null,
-      });
-      const detail = await getServiceDetail(id);
-      if (!detail) {
-        return res.status(404).json({ status: "error", message: "Servicio no encontrado" });
+      const id = Number(req.params.id);
+      if (!Number.isFinite(id)) {
+        return res.status(400).json({ status: "error", message: "ID inválido" });
       }
-      res.json({
-        status: "ok",
-        service: mapService(detail.service),
-        schedules: detail.schedules,
-      });
-    })
-  );
-
-  router.post(
-    "/schedules/:id/pay",
-    authenticate,
-    requireRole("GOD", "ADMIN", "ANALYST"),
-    asyncHandler(async (req: AuthenticatedRequest, res) => {
-      const scheduleId = Number(req.params.id);
-      if (!Number.isFinite(scheduleId)) {
-        return res.status(400).json({ status: "error", message: "Identificador inválido" });
-      }
-      const parsed = servicePaymentSchema.parse(req.body);
-      logEvent("services:schedule:pay", requestContext(req, { scheduleId, parsed }));
-      const schedule = await markServicePayment({
-        scheduleId,
-        transactionId: parsed.transactionId,
-        paidAmount: parsed.paidAmount,
-        paidDate: parsed.paidDate,
-        note: parsed.note ?? null,
-      });
-      res.json({ status: "ok", schedule });
-    })
-  );
-
-  router.post(
-    "/schedules/:id/unlink",
-    authenticate,
-    requireRole("GOD", "ADMIN"),
-    asyncHandler(async (req: AuthenticatedRequest, res) => {
-      const scheduleId = Number(req.params.id);
-      if (!Number.isFinite(scheduleId)) {
-        return res.status(400).json({ status: "error", message: "Identificador inválido" });
-      }
-      logWarn("services:schedule:unlink", requestContext(req, { scheduleId }));
-      const schedule = await unlinkServicePayment(scheduleId);
-      res.json({ status: "ok", schedule });
+      await deleteService(id);
+      res.json({ status: "ok" });
     })
   );
 

@@ -70,37 +70,27 @@ const asInt = (value: unknown, fallback = 0): number => {
   return Math.round(num);
 };
 
-function computeTotals(payload: ProductionBalancePayload) {
-  const subtotalIngresos =
-    asInt(payload.ingresoTarjetas) + asInt(payload.ingresoTransferencias) + asInt(payload.ingresoEfectivo);
-  const totalIngresos = subtotalIngresos - asInt(payload.gastosDiarios);
-  const total = totalIngresos + asInt(payload.otrosAbonos);
-
-  return {
-    subtotalIngresos,
-    totalIngresos,
-    total,
-  };
-}
-
 // Define the Prisma payload type with relations included
 type BalanceWithRelations = Prisma.DailyProductionBalanceGetPayload<{
   include: {
-    creator: { select: { email: true } };
-    updater: { select: { email: true } };
+    user: { select: { email: true } };
   };
 }>;
 
 function mapBalanceRecord(balance: BalanceWithRelations): ProductionBalanceRecord {
+  const subtotalIngresos = balance.ingresoTarjetas + balance.ingresoTransferencias + balance.ingresoEfectivo;
+  const totalIngresos = subtotalIngresos - balance.gastosDiarios;
+  const total = totalIngresos + balance.otrosAbonos;
+
   return {
     id: Number(balance.id),
     balanceDate: dayjs(balance.balanceDate).format("YYYY-MM-DD"),
     ingresoTarjetas: balance.ingresoTarjetas,
     ingresoTransferencias: balance.ingresoTransferencias,
     ingresoEfectivo: balance.ingresoEfectivo,
-    subtotalIngresos: balance.subtotalIngresos,
+    subtotalIngresos,
     gastosDiarios: balance.gastosDiarios,
-    totalIngresos: balance.totalIngresos,
+    totalIngresos,
     consultasCount: balance.consultasCount,
     controlesCount: balance.controlesCount,
     testsCount: balance.testsCount,
@@ -108,13 +98,13 @@ function mapBalanceRecord(balance: BalanceWithRelations): ProductionBalanceRecor
     licenciasCount: balance.licenciasCount,
     roxairCount: balance.roxairCount,
     otrosAbonos: balance.otrosAbonos,
-    total: balance.total,
+    total,
     comentarios: balance.comentarios,
     status: balance.status as ProductionBalanceStatus,
     createdBy: balance.createdBy,
-    updatedBy: balance.updatedBy,
-    createdByEmail: balance.creator?.email ?? null,
-    updatedByEmail: balance.updater?.email ?? null,
+    updatedBy: null, // Not tracked in new schema
+    createdByEmail: balance.user?.email ?? null,
+    updatedByEmail: null, // Not tracked in new schema
     createdAt: balance.createdAt.toISOString(),
     updatedAt: balance.updatedAt.toISOString(),
   };
@@ -131,8 +121,7 @@ export async function listProductionBalances(
       },
     },
     include: {
-      creator: { select: { email: true } },
-      updater: { select: { email: true } },
+      user: { select: { email: true } },
     },
     orderBy: [{ balanceDate: "desc" }, { id: "desc" }],
     take: 500,
@@ -143,10 +132,9 @@ export async function listProductionBalances(
 
 export async function getProductionBalanceById(id: number): Promise<ProductionBalanceRecord | null> {
   const balance = await prisma.dailyProductionBalance.findUnique({
-    where: { id: BigInt(id) },
+    where: { id },
     include: {
-      creator: { select: { email: true } },
-      updater: { select: { email: true } },
+      user: { select: { email: true } },
     },
   });
 
@@ -157,17 +145,13 @@ export async function createProductionBalance(
   payload: ProductionBalancePayload,
   userId: number
 ): Promise<ProductionBalanceRecord> {
-  const totals = computeTotals(payload);
-
   const balance = await prisma.dailyProductionBalance.create({
     data: {
       balanceDate: new Date(payload.balanceDate),
       ingresoTarjetas: asInt(payload.ingresoTarjetas),
       ingresoTransferencias: asInt(payload.ingresoTransferencias),
       ingresoEfectivo: asInt(payload.ingresoEfectivo),
-      subtotalIngresos: totals.subtotalIngresos,
       gastosDiarios: asInt(payload.gastosDiarios),
-      totalIngresos: totals.totalIngresos,
       consultasCount: asInt(payload.consultasCount),
       controlesCount: asInt(payload.controlesCount),
       testsCount: asInt(payload.testsCount),
@@ -175,15 +159,13 @@ export async function createProductionBalance(
       licenciasCount: asInt(payload.licenciasCount),
       roxairCount: asInt(payload.roxairCount),
       otrosAbonos: asInt(payload.otrosAbonos),
-      total: totals.total,
       comentarios: payload.comentarios,
       status: payload.status,
+      changeReason: payload.changeReason,
       createdBy: userId,
-      updatedBy: userId,
     },
     include: {
-      creator: { select: { email: true } },
-      updater: { select: { email: true } },
+      user: { select: { email: true } },
     },
   });
 
@@ -192,84 +174,42 @@ export async function createProductionBalance(
 
 export async function updateProductionBalance(
   id: number,
-  payload: ProductionBalancePayload,
-  userId: number
+  payload: ProductionBalancePayload
 ): Promise<ProductionBalanceRecord> {
   const existing = await getProductionBalanceById(id);
   if (!existing) {
     throw new Error("Balance no encontrado");
   }
 
-  const totals = computeTotals(payload);
+  // Note: History tracking removed as table is missing in new schema.
+  // Also updatedBy is removed.
 
-  // Use a transaction to create history and update balance
-  const updated = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-    // Create history entry
-    await tx.dailyProductionBalanceHistory.create({
-      data: {
-        balanceId: BigInt(id),
-        snapshot: existing as unknown as Prisma.InputJsonValue,
-        changeReason: payload.changeReason ?? null,
-        changedBy: userId,
-      },
-    });
-
-    // Update balance
-    const balance = await tx.dailyProductionBalance.update({
-      where: { id: BigInt(id) },
-      data: {
-        balanceDate: new Date(payload.balanceDate),
-        ingresoTarjetas: asInt(payload.ingresoTarjetas),
-        ingresoTransferencias: asInt(payload.ingresoTransferencias),
-        ingresoEfectivo: asInt(payload.ingresoEfectivo),
-        subtotalIngresos: totals.subtotalIngresos,
-        gastosDiarios: asInt(payload.gastosDiarios),
-        totalIngresos: totals.totalIngresos,
-        consultasCount: asInt(payload.consultasCount),
-        controlesCount: asInt(payload.controlesCount),
-        testsCount: asInt(payload.testsCount),
-        vacunasCount: asInt(payload.vacunasCount),
-        licenciasCount: asInt(payload.licenciasCount),
-        roxairCount: asInt(payload.roxairCount),
-        otrosAbonos: asInt(payload.otrosAbonos),
-        total: totals.total,
-        comentarios: payload.comentarios,
-        status: payload.status,
-        updatedBy: userId,
-      },
-      include: {
-        creator: { select: { email: true } },
-        updater: { select: { email: true } },
-      },
-    });
-
-    return balance;
-  });
-
-  return mapBalanceRecord(updated);
-}
-
-export async function listProductionBalanceHistory(balanceId: number): Promise<ProductionBalanceHistoryEntry[]> {
-  const entries = await prisma.dailyProductionBalanceHistory.findMany({
-    where: { balanceId: BigInt(balanceId) },
-    include: {
-      changer: { select: { email: true } },
+  const balance = await prisma.dailyProductionBalance.update({
+    where: { id },
+    data: {
+      balanceDate: new Date(payload.balanceDate),
+      ingresoTarjetas: asInt(payload.ingresoTarjetas),
+      ingresoTransferencias: asInt(payload.ingresoTransferencias),
+      ingresoEfectivo: asInt(payload.ingresoEfectivo),
+      gastosDiarios: asInt(payload.gastosDiarios),
+      consultasCount: asInt(payload.consultasCount),
+      controlesCount: asInt(payload.controlesCount),
+      testsCount: asInt(payload.testsCount),
+      vacunasCount: asInt(payload.vacunasCount),
+      licenciasCount: asInt(payload.licenciasCount),
+      roxairCount: asInt(payload.roxairCount),
+      otrosAbonos: asInt(payload.otrosAbonos),
+      comentarios: payload.comentarios,
+      status: payload.status,
+      changeReason: payload.changeReason,
+      // updatedBy: userId, // Removed
     },
-    orderBy: { createdAt: "desc" },
-    take: 50,
+    include: {
+      user: { select: { email: true } },
+    },
   });
 
-  return entries.map(
-    (entry: Prisma.DailyProductionBalanceHistoryGetPayload<{ include: { changer: { select: { email: true } } } }>) => ({
-      id: Number(entry.id),
-      balanceId: Number(entry.balanceId),
-      snapshot: entry.snapshot as unknown as ProductionBalanceRecord | null,
-      changeReason: entry.changeReason,
-      changedBy: entry.changedBy,
-      changedByEmail: entry.changer?.email ?? null,
-      createdAt: entry.createdAt.toISOString(),
-    })
-  );
+  return mapBalanceRecord(balance);
 }
 
 export async function hasBalanceForDate(date: Date | string): Promise<boolean> {

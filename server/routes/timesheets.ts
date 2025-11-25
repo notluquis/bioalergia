@@ -1,7 +1,7 @@
 import express from "express";
 import { z } from "zod";
 import { asyncHandler, authenticate, requireRole } from "../lib/http.js";
-import { Prisma, Employee } from "../../generated/prisma/client.js";
+import { Prisma } from "../../generated/prisma/client.js";
 import { logEvent, logWarn, requestContext } from "../lib/logger.js";
 import { listEmployees, getEmployeeById } from "../services/employees.js";
 import {
@@ -127,9 +127,6 @@ export function registerTimesheetRoutes(app: express.Express) {
       if (parsed.data.overtime_minutes != null) {
         updatePayload.overtime_minutes = parsed.data.overtime_minutes;
       }
-      if (parsed.data.extra_amount != null) {
-        updatePayload.extra_amount = parsed.data.extra_amount;
-      }
       if (parsed.data.comment !== undefined) {
         updatePayload.comment = parsed.data.comment;
       }
@@ -169,8 +166,8 @@ export function registerTimesheetRoutes(app: express.Express) {
           work_date: entry.work_date,
           start_time: entry.start_time ?? null,
           end_time: entry.end_time ?? null,
+          worked_minutes: entry.worked_minutes ?? 0,
           overtime_minutes: entry.overtime_minutes ?? 0,
-          extra_amount: entry.extra_amount ?? 0,
           comment: entry.comment ?? null,
         });
       }
@@ -259,10 +256,9 @@ export function registerTimesheetRoutes(app: express.Express) {
       }
 
       const employees = await listEmployees();
-      const employeeNameMap = new Map(employees.map((emp: { id: number; fullName: string }) => [emp.id, emp.fullName]));
-      const employeeRoleMap = new Map(
-        employees.map((emp: { id: number; role: string | null }) => [emp.id, emp.role ?? null])
-      );
+      // Map using person.names
+      const employeeNameMap = new Map(employees.map((emp) => [emp.id, emp.person.names]));
+      const employeeRoleMap = new Map(employees.map((emp) => [emp.id, emp.position]));
 
       // Query entries with start_time AND end_time only using Prisma
       const rawEntries = await prisma.employeeTimesheet.findMany({
@@ -313,12 +309,10 @@ function normalizeTimesheetPayload(data: {
   end_time?: string | null;
   worked_minutes?: number;
   overtime_minutes?: number;
-  extra_amount?: number;
   comment?: string | null;
 }) {
   let workedMinutes = data.worked_minutes ?? 0;
   const overtimeMinutes = data.overtime_minutes ?? 0;
-  const extraAmount = data.extra_amount ?? 0;
 
   if (!workedMinutes && data.start_time && data.end_time) {
     const start = durationToMinutes(data.start_time);
@@ -333,14 +327,14 @@ function normalizeTimesheetPayload(data: {
     end_time: data.end_time ?? null,
     worked_minutes: workedMinutes,
     overtime_minutes: overtimeMinutes,
-    extra_amount: extraAmount,
     comment: data.comment ?? null,
   };
 }
 
 async function buildMonthlySummary(from: string, to: string, employeeId?: number) {
   const employees = await listEmployees();
-  const employeeMap = new Map(employees.map((employee: Employee) => [employee.id, employee]));
+  // Map using ID to Employee object (which includes person)
+  const employeeMap = new Map(employees.map((employee) => [employee.id, employee]));
 
   // Use Prisma groupBy instead of MySQL
   const summaryData = await prisma.employeeTimesheet.groupBy({
@@ -355,7 +349,6 @@ async function buildMonthlySummary(from: string, to: string, employeeId?: number
     _sum: {
       workedMinutes: true,
       overtimeMinutes: true,
-      extraAmount: true,
     },
   });
 
@@ -363,7 +356,6 @@ async function buildMonthlySummary(from: string, to: string, employeeId?: number
   let totals = {
     workedMinutes: 0,
     overtimeMinutes: 0,
-    extraAmount: 0,
     subtotal: 0,
     retention: 0,
     net: 0,
@@ -375,13 +367,11 @@ async function buildMonthlySummary(from: string, to: string, employeeId?: number
     const summary = buildEmployeeSummary(employee, {
       workedMinutes: Number(row._sum.workedMinutes ?? 0),
       overtimeMinutes: Number(row._sum.overtimeMinutes ?? 0),
-      extraAmount: Number(row._sum.extraAmount ?? 0),
       periodStart: from,
     });
     results.push(summary);
     totals.workedMinutes += summary.workedMinutes;
     totals.overtimeMinutes += summary.overtimeMinutes;
-    totals.extraAmount += summary.extraAmount;
     totals.subtotal += summary.subtotal;
     totals.retention += summary.retention;
     totals.net += summary.net;
@@ -394,7 +384,6 @@ async function buildMonthlySummary(from: string, to: string, employeeId?: number
       const summary = buildEmployeeSummary(employee, {
         workedMinutes: 0,
         overtimeMinutes: 0,
-        extraAmount: 0,
         periodStart: from,
       });
       results.push(summary);
@@ -408,7 +397,6 @@ async function buildMonthlySummary(from: string, to: string, employeeId?: number
     totals: {
       hours: minutesToDuration(totals.workedMinutes),
       overtime: minutesToDuration(totals.overtimeMinutes),
-      extraAmount: roundCurrency(totals.extraAmount),
       subtotal: roundCurrency(totals.subtotal),
       retention: roundCurrency(totals.retention),
       net: roundCurrency(totals.net),
@@ -421,29 +409,47 @@ function buildEmployeeSummary(
   data: {
     workedMinutes: number;
     overtimeMinutes: number;
-    extraAmount: number;
     periodStart: string;
   }
 ) {
-  const hourlyRate = Number(employee?.hourlyRate ?? 0);
-  const overtimeRate = Number(employee?.overtimeRate ?? 0);
-  const retentionRate = Number(employee?.retentionRate ?? 0);
+  if (!employee) {
+    // Should not happen if filtered correctly, but for safety
+    return {
+      employeeId: 0,
+      fullName: "Unknown",
+      role: "",
+      email: null,
+      workedMinutes: 0,
+      overtimeMinutes: 0,
+      hourlyRate: 0,
+      overtimeRate: 0,
+      retentionRate: 0,
+      subtotal: 0,
+      retention: 0,
+      net: 0,
+      payDate: "",
+      hoursFormatted: "00:00",
+      overtimeFormatted: "00:00",
+    };
+  }
+
+  const hourlyRate = Number(employee.hourlyRate ?? 0);
+  const overtimeRate = hourlyRate * 1.5; // Assumption: 1.5x
+  const retentionRate = 0; // Assumption: 0% if not in schema
   const basePay = roundCurrency((data.workedMinutes / 60) * hourlyRate);
   const overtimePay = roundCurrency((data.overtimeMinutes / 60) * overtimeRate);
-  const extras = roundCurrency(data.extraAmount);
-  const subtotal = roundCurrency(basePay + overtimePay + extras);
+  const subtotal = roundCurrency(basePay + overtimePay);
   const retention = roundCurrency(subtotal * retentionRate);
   const net = roundCurrency(subtotal - retention);
-  const payDate = computePayDate(employee?.role ?? "", data.periodStart);
+  const payDate = computePayDate(employee.position, data.periodStart);
 
   return {
-    employeeId: employee?.id ?? 0,
-    fullName: employee?.fullName ?? "",
-    role: employee?.role ?? "",
-    email: employee?.email ?? null,
+    employeeId: employee.id,
+    fullName: employee.person.names,
+    role: employee.position,
+    email: employee.person.email ?? null,
     workedMinutes: data.workedMinutes,
     overtimeMinutes: data.overtimeMinutes,
-    extraAmount: extras,
     hourlyRate,
     overtimeRate,
     retentionRate,
