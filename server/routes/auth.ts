@@ -284,7 +284,12 @@ export function registerAuthRoutes(app: express.Express) {
 
       // --- Role Governance Logic ---
       const effectiveRole = await resolveUserRole(user);
-      const finalUser = { ...sanitizeUser(user), role: effectiveRole, mfaEnabled: user.mfaEnabled };
+      const finalUser = {
+        ...sanitizeUser(user),
+        role: effectiveRole,
+        mfaEnabled: user.mfaEnabled,
+        mfaEnforced: user.mfaEnforced,
+      };
       // --- End Role Governance Logic ---
 
       res.json({ status: "ok", user: finalUser });

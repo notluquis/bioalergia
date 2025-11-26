@@ -15,13 +15,13 @@ export default function SecuritySettingsPage() {
   const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
   const [mfaToken, setMfaToken] = useState("");
   const [loadingMfa, setLoadingMfa] = useState(false);
-  const [isMfaEnabled, setIsMfaEnabled] = useState(user?.mfaEnabled || false);
+  const [isMfaEnabled, setIsMfaEnabled] = useState(user?.mfaEnabled ?? false);
 
   // Passkey State
   const [loadingPasskey, setLoadingPasskey] = useState(false);
 
   useEffect(() => {
-    if (user) setIsMfaEnabled(user.mfaEnabled);
+    if (user) setIsMfaEnabled(user.mfaEnabled ?? false);
   }, [user]);
 
   // --- MFA Handlers ---

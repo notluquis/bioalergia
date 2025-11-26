@@ -9,6 +9,10 @@ import { useSettings } from "./context/SettingsContext";
 import { UpdateNotification } from "./components/features/UpdateNotification";
 import { PerformanceIndicator } from "./components/features/PerformanceIndicator";
 import { checkForUpdates } from "./lib/serviceWorker";
+import AddUserPage from "./pages/admin/AddUserPage";
+import UserOnboardingWizard from "./features/onboarding/UserOnboardingWizard";
+import { useAuth } from "./context/AuthContext";
+import { useNavigate, useLocation, Route } from "react-router-dom";
 
 export default function App() {
   const navigationState = useNavigation();
@@ -43,6 +47,17 @@ export default function App() {
   // Desktop Sidebar Collapse State
   const [isCollapsed, setIsCollapsed] = React.useState(false);
   const toggleCollapse = () => setIsCollapsed((prev) => !prev);
+
+  // Onboarding Redirection Logic
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  React.useEffect(() => {
+    if (user?.status === "PENDING_SETUP" && location.pathname !== "/onboarding") {
+      navigate("/onboarding");
+    }
+  }, [user, location.pathname, navigate]);
 
   const isNavigating = navigationState.state === "loading";
   const buildLabel = React.useMemo(() => {
@@ -173,6 +188,8 @@ export default function App() {
           <main className="flex-1 rounded-[2.25rem]">
             <div className="surface-recessed h-full rounded-[2.25rem] px-4 py-6 shadow-inner sm:px-6">
               <div className="muted-scrollbar h-full overflow-auto">
+                <Route path="admin/users/add" element={<AddUserPage />} />
+                <Route path="onboarding" element={<UserOnboardingWizard />} />
                 <Outlet />
               </div>
             </div>

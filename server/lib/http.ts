@@ -43,6 +43,8 @@ export function sanitizeUser(user: {
   role: UserRole;
   status: string;
   passkeyCredentialID?: string | null;
+  mfaEnabled?: boolean;
+  mfaEnforced?: boolean;
 }) {
   return {
     id: user.id,
@@ -50,6 +52,8 @@ export function sanitizeUser(user: {
     role: user.role,
     status: user.status,
     hasPasskey: !!user.passkeyCredentialID,
+    mfaEnabled: user.mfaEnabled ?? false,
+    mfaEnforced: user.mfaEnforced ?? true,
   };
 }
 

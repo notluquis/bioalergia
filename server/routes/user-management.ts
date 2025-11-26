@@ -8,47 +8,83 @@ import { logAudit } from "../services/audit.js";
 
 const router = Router();
 
-// Schema for inviting a user
+// Schema for inviting a user (Simplified Creation)
 const inviteUserSchema = z.object({
-  personId: z.number(),
   email: z.string().email(),
   role: z.enum(["GOD", "ADMIN", "ANALYST", "VIEWER"]),
+  position: z.string().min(1).default("Por definir"),
+  mfaEnforced: z.boolean().default(true),
 });
 
-// POST /api/users/invite - Create a user for an existing person
+// POST /api/users/invite - Create a user for an existing person OR create new person+user
 router.post("/invite", requireAuth, requireRole("ADMIN", "GOD"), async (req, res) => {
   try {
-    const { personId, email, role } = inviteUserSchema.parse(req.body);
+    const { email, role, position, mfaEnforced } = inviteUserSchema.parse(req.body);
     const authReq = req as AuthenticatedRequest;
 
-    // Check if person already has a user
-    const existingUser = await prisma.user.findUnique({ where: { personId } });
-    if (existingUser) return res.status(400).json({ error: "Person is already a user" });
+    // Check if user already exists
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+    if (existingUser) return res.status(400).json({ error: "User with this email already exists" });
 
-    // Generate temporary password (or handle via email link in production)
-    // For now, we set a default temp password "Temp1234!" that must be changed
+    // Generate temporary password
     const tempPassword = await bcrypt.hash("Temp1234!", 10);
 
-    const user = await prisma.user.create({
-      data: {
-        personId,
-        email,
-        role,
-        passwordHash: tempPassword,
-        status: "PENDING_SETUP",
-      },
+    // Transaction to create Person, User, and Employee
+    const result = await prisma.$transaction(async (tx) => {
+      // 1. Create Person (or find if exists by email? For now, assume new person for simplicity or check email)
+      // Actually, let's check if person exists by email to avoid duplicates
+      let person = await tx.person.findFirst({ where: { email } });
+
+      if (!person) {
+        // Create new person with placeholder name
+        person = await tx.person.create({
+          data: {
+            names: "Nuevo Usuario", // Placeholder, will be updated in onboarding
+            email,
+            rut: `TEMP-${Date.now()}`, // Temporary RUT, will be updated
+          },
+        });
+      }
+
+      // 2. Create User
+      const user = await tx.user.create({
+        data: {
+          personId: person.id,
+          email,
+          role,
+          passwordHash: tempPassword,
+          status: "PENDING_SETUP",
+          mfaEnforced,
+        },
+      });
+
+      // 3. Create Employee
+      await tx.employee.upsert({
+        where: { personId: person.id },
+        create: {
+          personId: person.id,
+          position,
+          startDate: new Date(),
+          status: "ACTIVE",
+        },
+        update: {
+          position, // Update position if re-inviting or linking
+        },
+      });
+
+      return user;
     });
 
     await logAudit({
       userId: authReq.auth!.userId,
       action: "USER_INVITE",
       entity: "User",
-      entityId: user.id,
-      details: { email, role, personId },
+      entityId: result.id,
+      details: { email, role, position, mfaEnforced },
       ipAddress: req.ip,
     });
 
-    res.json({ message: "User invited successfully", userId: user.id });
+    res.json({ message: "User created successfully", userId: result.id });
   } catch (error) {
     console.error("Invite error:", error);
     res.status(500).json({ error: "Failed to invite user" });
