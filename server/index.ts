@@ -25,7 +25,7 @@ import { startDailyProductionReminderJob } from "./modules/dailyProductionRemind
 import shareTargetRouter from "./routes/share-target.js";
 import notificationsRouter from "./routes/notifications.js";
 
-const app = express();
+export const app = express();
 
 app.disable("x-powered-by");
 app.use(
