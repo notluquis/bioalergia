@@ -19,6 +19,9 @@ const ORIGIN = process.env.ORIGIN || "https://intranet.bioalergia.cl";
  */
 export async function generatePasskeyRegistrationOptions(user: { id: number; email: string }) {
   // Check if user already has a passkey (limit 1 per user)
+  // We allow overwriting, so we don't throw error here anymore.
+  // The user will be prompted by the browser if they want to create a new one.
+  /*
   const existingUser = await prisma.user.findUnique({
     where: { id: user.id },
     select: { passkeyCredentialID: true },
@@ -27,6 +30,7 @@ export async function generatePasskeyRegistrationOptions(user: { id: number; ema
   if (existingUser?.passkeyCredentialID) {
     throw new Error("Usuario ya tiene un Passkey registrado. Elimínalo primero.");
   }
+  */
 
   const options = await generateRegistrationOptions({
     rpName: RP_NAME,

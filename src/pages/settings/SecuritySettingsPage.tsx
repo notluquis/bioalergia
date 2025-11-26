@@ -94,7 +94,12 @@ export default function SecuritySettingsPage() {
     setLoadingPasskey(true);
     try {
       // 1. Get options
+      // 1. Get options
       const res = await fetch("/api/auth/passkey/register/options");
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || errData.message || "Error al obtener opciones de registro");
+      }
       const options = await res.json();
       console.log("[Passkey] Registration Options:", options);
 
