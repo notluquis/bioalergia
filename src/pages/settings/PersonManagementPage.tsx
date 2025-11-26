@@ -4,7 +4,10 @@ import { Plus, Search, User, Briefcase, Building } from "lucide-react";
 
 import type { Person } from "@/types/schema";
 
+import { useNavigate } from "react-router-dom";
+
 export default function PersonManagementPage() {
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
 
   const { data: people, isLoading } = useQuery<Person[]>({
@@ -99,7 +102,9 @@ export default function PersonManagementPage() {
                 </div>
 
                 <div className="mt-4 pt-4 border-t border-base-200 flex justify-end">
-                  <button className="btn btn-xs btn-ghost">Ver Detalles</button>
+                  <button className="btn btn-xs btn-ghost" onClick={() => navigate(`/settings/people/${person.id}`)}>
+                    Ver Detalles
+                  </button>
                 </div>
               </div>
             </div>

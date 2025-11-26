@@ -94,6 +94,7 @@ export default function SecuritySettingsPage() {
       // 1. Get options
       const res = await fetch("/api/auth/passkey/register/options");
       const options = await res.json();
+      console.log("[Passkey] Registration Options:", options);
 
       if (options.status === "error") throw new Error(options.message);
 
