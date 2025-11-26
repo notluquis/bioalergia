@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Plus, Search, Shield, MoreVertical, Key, Lock } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Plus, Search, Shield, MoreVertical, Key, Lock, Fingerprint, Trash2 } from "lucide-react";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
 import relativeTime from "dayjs/plugin/relativeTime";
 
 import { useAuth } from "../../context/AuthContext";
+import { useToast } from "../../context/ToastContext";
 import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
 import { cn } from "../../lib/utils";
@@ -19,6 +20,7 @@ type User = {
   role: "GOD" | "ADMIN" | "ANALYST" | "VIEWER";
   status: "ACTIVE" | "INACTIVE" | "PENDING_SETUP" | "SUSPENDED";
   createdAt: string;
+  hasPasskey: boolean;
   person: {
     names: string;
     fatherName: string | null;
@@ -28,6 +30,8 @@ type User = {
 
 export default function UserManagementPage() {
   useAuth();
+  const { success, error } = useToast();
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("ALL");
 
@@ -40,6 +44,27 @@ export default function UserManagementPage() {
       return (payload.users || []) as User[];
     },
   });
+
+  const deletePasskeyMutation = useMutation({
+    mutationFn: async (userId: number) => {
+      const res = await fetch(`/api/users/${userId}/passkey`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to delete passkey");
+      return res.json();
+    },
+    onSuccess: () => {
+      success("Passkey eliminado");
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+    },
+    onError: () => {
+      error("Error al eliminar Passkey");
+    },
+  });
+
+  const handleDeletePasskey = (userId: number) => {
+    if (confirm("¿Estás seguro de eliminar el Passkey de este usuario?")) {
+      deletePasskeyMutation.mutate(userId);
+    }
+  };
 
   const filteredUsers = users?.filter((user) => {
     const matchesSearch =
@@ -106,6 +131,7 @@ export default function UserManagementPage() {
                 <th>Usuario</th>
                 <th>Rol</th>
                 <th>Estado</th>
+                <th>Seguridad</th>
                 <th>Creado</th>
                 <th className="w-10"></th>
               </tr>
@@ -113,13 +139,13 @@ export default function UserManagementPage() {
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={5} className="text-center py-8 text-base-content/60">
+                  <td colSpan={6} className="text-center py-8 text-base-content/60">
                     Cargando usuarios...
                   </td>
                 </tr>
               ) : filteredUsers?.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="text-center py-8 text-base-content/60">
+                  <td colSpan={6} className="text-center py-8 text-base-content/60">
                     No se encontraron usuarios
                   </td>
                 </tr>
@@ -153,6 +179,15 @@ export default function UserManagementPage() {
                         {user.status}
                       </div>
                     </td>
+                    <td>
+                      <div className="flex gap-2">
+                        {user.hasPasskey && (
+                          <div className="tooltip" data-tip="Passkey Configurado">
+                            <Fingerprint size={16} className="text-success" />
+                          </div>
+                        )}
+                      </div>
+                    </td>
                     <td className="text-sm text-base-content/70">{dayjs(user.createdAt).format("DD MMM YYYY")}</td>
                     <td>
                       <div className="dropdown dropdown-left dropdown-end">
@@ -169,6 +204,14 @@ export default function UserManagementPage() {
                               Resetear Contraseña
                             </a>
                           </li>
+                          {user.hasPasskey && (
+                            <li>
+                              <a onClick={() => handleDeletePasskey(user.id)} className="text-warning">
+                                <Trash2 size={14} />
+                                Eliminar Passkey
+                              </a>
+                            </li>
+                          )}
                           {user.status !== "SUSPENDED" ? (
                             <li>
                               <a className="text-error">

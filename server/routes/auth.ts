@@ -8,6 +8,7 @@ import type { AuthenticatedRequest } from "../types.js";
 import { loginSchema, mfaVerifySchema } from "../schemas.js";
 import { generateMfaSecret, verifyMfaToken } from "../services/mfa.js";
 import { updateUserMfa } from "../services/users.js";
+import { prisma } from "../prisma.js";
 import {
   generatePasskeyRegistrationOptions,
   verifyPasskeyRegistration,
@@ -42,6 +43,28 @@ export function registerAuthRoutes(app: express.Express) {
       } else {
         res.status(400).json({ status: "error", message: "Falló la verificación del Passkey" });
       }
+    })
+  );
+
+  app.delete(
+    "/api/auth/passkey/remove",
+    authenticate,
+    asyncHandler(async (req: AuthenticatedRequest, res) => {
+      if (!req.auth) return res.status(401).json({ status: "error" });
+
+      await prisma.user.update({
+        where: { id: req.auth.userId },
+        data: {
+          passkeyCredentialID: null,
+          passkeyPublicKey: null,
+          passkeyCounter: 0,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          passkeyTransports: null as any,
+        },
+      });
+
+      logEvent("auth/passkey:removed", { userId: req.auth.userId });
+      res.json({ status: "ok", message: "Passkey eliminado" });
     })
   );
 

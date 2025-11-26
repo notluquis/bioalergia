@@ -8,7 +8,8 @@ export type AuditAction =
   | "USER_MFA_RESET"
   | "PERSON_CREATE"
   | "PERSON_UPDATE"
-  | "SETTINGS_UPDATE";
+  | "SETTINGS_UPDATE"
+  | "USER_PASSKEY_DELETE";
 
 interface LogAuditParams {
   userId?: number;

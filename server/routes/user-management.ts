@@ -280,4 +280,37 @@ router.post("/:id/mfa/toggle", requireAuth, requireRole("ADMIN", "GOD"), async (
   }
 });
 
+// DELETE /api/users/:id/passkey - Admin remove passkey
+router.delete("/:id/passkey", requireAuth, requireRole("ADMIN", "GOD"), async (req, res) => {
+  try {
+    const authReq = req as AuthenticatedRequest;
+    const targetUserId = Number(req.params.id);
+
+    await prisma.user.update({
+      where: { id: targetUserId },
+      data: {
+        passkeyCredentialID: null,
+        passkeyPublicKey: null,
+        passkeyCounter: 0,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        passkeyTransports: null as any,
+      },
+    });
+
+    await logAudit({
+      userId: authReq.auth!.userId,
+      action: "USER_PASSKEY_DELETE",
+      entity: "User",
+      entityId: targetUserId,
+      details: { adminDelete: true },
+      ipAddress: req.ip,
+    });
+
+    res.json({ status: "ok", message: "Passkey removed" });
+  } catch (error) {
+    console.error("Passkey delete error:", error);
+    res.status(500).json({ status: "error", message: "Failed to remove Passkey" });
+  }
+});
+
 export default router;

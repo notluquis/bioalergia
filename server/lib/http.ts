@@ -37,12 +37,19 @@ export function issueToken(session: AuthSession) {
   );
 }
 
-export function sanitizeUser(user: { id: number; email: string; role: UserRole; status: string }) {
+export function sanitizeUser(user: {
+  id: number;
+  email: string;
+  role: UserRole;
+  status: string;
+  passkeyCredentialID?: string | null;
+}) {
   return {
     id: user.id,
     email: user.email,
     role: user.role,
     status: user.status,
+    hasPasskey: !!user.passkeyCredentialID,
   };
 }
 
