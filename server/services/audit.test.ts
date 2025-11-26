@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { logAudit } from "./audit.js";
 import { prisma } from "../prisma.js";
 
-// Mock prisma
 vi.mock("../prisma.js", () => ({
   prisma: {
     auditLog: {
@@ -40,7 +39,7 @@ describe("Audit Service", () => {
     });
   });
 
-  it("should create an audit log entry with minimal fields", async () => {
+  it("should handle missing optional fields", async () => {
     const params = {
       action: "SETTINGS_UPDATE" as const,
       entity: "Settings",
@@ -60,11 +59,11 @@ describe("Audit Service", () => {
     });
   });
 
-  it("should handle errors gracefully", async () => {
+  it("should log error but not throw if database fails", async () => {
     const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-    vi.mocked(prisma.auditLog.create).mockRejectedValue(new Error("DB Error"));
+    vi.mocked(prisma.auditLog.create).mockRejectedValueOnce(new Error("DB Error"));
 
-    await logAudit({ action: "USER_INVITE", entity: "User" });
+    await expect(logAudit({ action: "USER_SETUP", entity: "User" })).resolves.not.toThrow();
 
     expect(consoleSpy).toHaveBeenCalledWith("Failed to create audit log:", expect.any(Error));
     consoleSpy.mockRestore();

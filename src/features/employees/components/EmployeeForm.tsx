@@ -3,24 +3,10 @@ import { useAuth } from "../../../context/AuthContext";
 import { useToast } from "../../../context/ToastContext";
 import { createEmployee, updateEmployee } from "../api";
 import type { Employee } from "../types";
+import type { EmployeeSalaryType } from "@/types/schema";
 import Button from "../../../components/ui/Button";
 import Input from "../../../components/ui/Input";
 import { formatRut, normalizeRut } from "../../../lib/rut";
-
-const EMPTY_FORM = {
-  full_name: "",
-  role: "",
-  email: "",
-  rut: "",
-  bank_name: "",
-  bank_account_type: "",
-  bank_account_number: "",
-  salary_type: "hourly",
-  hourly_rate: "0",
-  fixed_salary: "",
-  overtime_rate: "",
-  retention_rate: "0.145",
-};
 
 interface EmployeeFormProps {
   employee?: Employee | null;
@@ -33,28 +19,54 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
   const { error: toastError, success: toastSuccess } = useToast();
   const canEdit = hasRole("GOD", "ADMIN");
 
-  const [form, setForm] = useState(EMPTY_FORM);
+  const [form, setForm] = useState({
+    fullName: "",
+    role: "",
+    email: "",
+    rut: "",
+    bankName: "",
+    bankAccountType: "",
+    bankAccountNumber: "",
+    salaryType: "HOURLY",
+    hourlyRate: "0",
+    fixedSalary: "",
+    overtimeRate: "",
+    retentionRate: "0.145",
+  });
   // no-op
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (employee) {
       setForm({
-        full_name: employee.full_name,
-        role: employee.role,
-        email: employee.email ?? "",
-        rut: employee.rut ?? "",
-        bank_name: employee.bank_name ?? "",
-        bank_account_type: employee.bank_account_type ?? "",
-        bank_account_number: employee.bank_account_number ?? "",
-        salary_type: employee.salary_type ?? "hourly",
-        hourly_rate: String(employee.hourly_rate ?? "0"),
-        fixed_salary: employee.fixed_salary != null ? String(employee.fixed_salary) : "",
-        overtime_rate: employee.overtime_rate != null ? String(employee.overtime_rate) : "",
-        retention_rate: String(employee.retention_rate),
+        fullName: employee.full_name,
+        role: employee.position,
+        email: employee.person?.email ?? "",
+        rut: employee.person?.rut ?? "",
+        bankName: employee.bankName ?? "",
+        bankAccountType: employee.bankAccountType ?? "",
+        bankAccountNumber: employee.bankAccountNumber ?? "",
+        salaryType: employee.salaryType ?? "HOURLY",
+        hourlyRate: String(employee.hourlyRate ?? "0"),
+        fixedSalary: employee.baseSalary != null ? String(employee.baseSalary) : "",
+        overtimeRate: "", // Not in schema?
+        retentionRate: "0.145", // Not in schema?
       });
     } else {
-      setForm(EMPTY_FORM);
+      setForm({
+        fullName: "",
+        role: "",
+        email: "",
+        rut: "",
+        bankName: "",
+        bankAccountType: "",
+        bankAccountNumber: "",
+        salaryType: "HOURLY",
+        hourlyRate: "0",
+        fixedSalary: "",
+        overtimeRate: "",
+        retentionRate: "0.145",
+      });
     }
   }, [employee]);
 
@@ -63,18 +75,18 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
     if (!canEdit) return;
 
     const payload = {
-      full_name: form.full_name.trim(),
+      full_name: form.fullName.trim(),
       role: form.role.trim(),
       email: form.email.trim() || null,
       rut: form.rut.trim() || null,
-      bank_name: form.bank_name.trim() || null,
-      bank_account_type: form.bank_account_type.trim() || null,
-      bank_account_number: form.bank_account_number.trim() || null,
-      salary_type: form.salary_type === "fixed" ? "fixed" : ("hourly" as "hourly" | "fixed"),
-      hourly_rate: form.salary_type === "hourly" ? Number(form.hourly_rate || 0) : undefined,
-      fixed_salary: form.salary_type === "fixed" ? Number(form.fixed_salary || 0) : undefined,
-      overtime_rate: form.overtime_rate ? Number(form.overtime_rate) : null,
-      retention_rate: Number(form.retention_rate || 0),
+      bank_name: form.bankName.trim() || null,
+      bank_account_type: form.bankAccountType.trim() || null,
+      bank_account_number: form.bankAccountNumber.trim() || null,
+      salary_type: form.salaryType as EmployeeSalaryType,
+      hourly_rate: form.salaryType === "HOURLY" ? Number(form.hourlyRate || 0) : undefined,
+      fixed_salary: form.salaryType === "FIXED" ? Number(form.fixedSalary || 0) : undefined,
+      overtime_rate: form.overtimeRate ? Number(form.overtimeRate) : null,
+      retention_rate: Number(form.retentionRate || 0),
     };
     setSaving(true);
     try {
@@ -105,21 +117,21 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
           <Input
             label="Tipo de salario"
             as="select"
-            value={form.salary_type}
+            value={form.salaryType}
             onChange={(event: React.ChangeEvent<HTMLSelectElement>) =>
-              setForm((prev) => ({ ...prev, salary_type: event.target.value }))
+              setForm((prev) => ({ ...prev, salaryType: event.target.value }))
             }
           >
-            <option value="hourly">Por hora</option>
-            <option value="fixed">Sueldo fijo mensual</option>
+            <option value="HOURLY">Por hora</option>
+            <option value="FIXED">Sueldo fijo mensual</option>
           </Input>
         </div>
         <Input
           label="Nombre completo"
           type="text"
-          value={form.full_name}
+          value={form.fullName}
           onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
-            setForm((prev) => ({ ...prev, full_name: event.target.value }))
+            setForm((prev) => ({ ...prev, fullName: event.target.value }))
           }
           required
         />
@@ -157,9 +169,9 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
         <Input
           label="Banco"
           type="text"
-          value={form.bank_name}
+          value={form.bankName}
           onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
-            setForm((prev) => ({ ...prev, bank_name: event.target.value }))
+            setForm((prev) => ({ ...prev, bankName: event.target.value }))
           }
           placeholder="BancoEstado"
         />
@@ -167,10 +179,10 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
         <Input
           label="Tipo de cuenta"
           type="text"
-          value={form.bank_account_type}
+          value={form.bankAccountType}
           list="bank-account-type-options"
           onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
-            setForm((prev) => ({ ...prev, bank_account_type: event.target.value }))
+            setForm((prev) => ({ ...prev, bankAccountType: event.target.value }))
           }
           placeholder="RUT / VISTA / CORRIENTE / AHORRO"
         />
@@ -183,9 +195,9 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
         <Input
           label="N° de cuenta"
           type="text"
-          value={form.bank_account_number}
+          value={form.bankAccountNumber}
           onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
-            setForm((prev) => ({ ...prev, bank_account_number: event.target.value }))
+            setForm((prev) => ({ ...prev, bankAccountNumber: event.target.value }))
           }
           placeholder="12345678"
         />
@@ -193,21 +205,21 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
           label="Valor hora (CLP)"
           type="number"
           min="0"
-          value={form.hourly_rate}
+          value={form.hourlyRate}
           onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
-            setForm((prev) => ({ ...prev, hourly_rate: event.target.value }))
+            setForm((prev) => ({ ...prev, hourlyRate: event.target.value }))
           }
-          required={form.salary_type === "hourly"}
-          disabled={form.salary_type !== "hourly"}
+          required={form.salaryType === "HOURLY"}
+          disabled={form.salaryType !== "HOURLY"}
         />
-        {form.salary_type === "fixed" && (
+        {form.salaryType === "FIXED" && (
           <Input
             label="Sueldo fijo mensual (CLP)"
             type="number"
             min="0"
-            value={form.fixed_salary}
+            value={form.fixedSalary}
             onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
-              setForm((prev) => ({ ...prev, fixed_salary: event.target.value }))
+              setForm((prev) => ({ ...prev, fixedSalary: event.target.value }))
             }
             required
           />
@@ -216,9 +228,9 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
           label="Valor hora extra (CLP)"
           type="number"
           min="0"
-          value={form.overtime_rate}
+          value={form.overtimeRate}
           onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
-            setForm((prev) => ({ ...prev, overtime_rate: event.target.value }))
+            setForm((prev) => ({ ...prev, overtimeRate: event.target.value }))
           }
           placeholder="Opcional - dejar vacío si no aplica"
         />
@@ -228,9 +240,9 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
           min="0"
           max="1"
           step="0.001"
-          value={form.retention_rate}
+          value={form.retentionRate}
           onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
-            setForm((prev) => ({ ...prev, retention_rate: event.target.value }))
+            setForm((prev) => ({ ...prev, retentionRate: event.target.value }))
           }
           required
           helper="Ej: 0.145 para 14.5%"

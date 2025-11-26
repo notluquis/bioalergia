@@ -1,6 +1,7 @@
 import dayjs from "dayjs";
 import { z } from "zod";
-import { useForm } from "../../../hooks";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import Input from "../../../components/ui/Input";
 import Button from "../../../components/ui/Button";
 import Alert from "../../../components/ui/Alert";
@@ -31,8 +32,15 @@ interface LoanFormProps {
 }
 
 export function LoanForm({ onSubmit, onCancel }: LoanFormProps) {
-  const form = useForm<LoanFormData>({
-    initialValues: {
+  const {
+    register,
+    handleSubmit,
+    control,
+    formState: { errors, isSubmitting, isValid },
+  } = useForm<LoanFormData>({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    resolver: zodResolver(loanFormSchema) as any,
+    defaultValues: {
       title: "",
       borrowerName: "",
       borrowerType: "PERSON",
@@ -45,189 +53,118 @@ export function LoanForm({ onSubmit, onCancel }: LoanFormProps) {
       notes: "",
       generateSchedule: true,
     },
-    validationSchema: loanFormSchema,
-    onSubmit: async (values) => {
-      await onSubmit(values as CreateLoanPayload);
-    },
-    validateOnBlur: true,
+    mode: "onBlur",
   });
 
+  const onFormSubmit = async (values: LoanFormData) => {
+    await onSubmit(values as CreateLoanPayload);
+  };
+
   return (
-    <form onSubmit={form.handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
       <div className="grid gap-4 md:grid-cols-2">
         <div>
-          <Input
-            label="Título"
-            name="title"
-            value={form.values.title}
-            onChange={form.handleChange("title")}
-            onBlur={form.handleBlur("title")}
-            required
-          />
-          {form.getFieldError("title") && <p className="mt-1 text-xs text-red-600">{form.getFieldError("title")}</p>}
+          <Input label="Título" {...register("title")} required />
+          {errors.title && <p className="mt-1 text-xs text-red-600">{errors.title.message}</p>}
         </div>
         <div>
-          <Input
-            label="Beneficiario"
-            name="borrowerName"
-            value={form.values.borrowerName}
-            onChange={form.handleChange("borrowerName")}
-            onBlur={form.handleBlur("borrowerName")}
-            required
-          />
-          {form.getFieldError("borrowerName") && (
-            <p className="mt-1 text-xs text-red-600">{form.getFieldError("borrowerName")}</p>
-          )}
+          <Input label="Beneficiario" {...register("borrowerName")} required />
+          {errors.borrowerName && <p className="mt-1 text-xs text-red-600">{errors.borrowerName.message}</p>}
         </div>
         <div>
-          <Input
-            label="Tipo"
-            as="select"
-            name="borrowerType"
-            value={form.values.borrowerType}
-            onChange={form.handleChange("borrowerType")}
-            onBlur={form.handleBlur("borrowerType")}
-          >
+          <Input label="Tipo" as="select" {...register("borrowerType")}>
             <option value="PERSON">Persona natural</option>
             <option value="COMPANY">Empresa</option>
           </Input>
-          {form.getFieldError("borrowerType") && (
-            <p className="mt-1 text-xs text-red-600">{form.getFieldError("borrowerType")}</p>
-          )}
+          {errors.borrowerType && <p className="mt-1 text-xs text-red-600">{errors.borrowerType.message}</p>}
         </div>
         <div>
           <Input
             label="Monto Principal"
             type="number"
-            name="principalAmount"
-            value={form.values.principalAmount.toString()}
-            onChange={form.handleChange("principalAmount")}
-            onBlur={form.handleBlur("principalAmount")}
+            {...register("principalAmount", { valueAsNumber: true })}
             min={0}
             step="0.01"
             required
           />
-          {form.getFieldError("principalAmount") && (
-            <p className="mt-1 text-xs text-red-600">{form.getFieldError("principalAmount")}</p>
-          )}
+          {errors.principalAmount && <p className="mt-1 text-xs text-red-600">{errors.principalAmount.message}</p>}
         </div>
         <div>
           <Input
             label="Tasa de Interés Anual (%)"
             type="number"
-            name="interestRate"
-            value={form.values.interestRate.toString()}
-            onChange={form.handleChange("interestRate")}
-            onBlur={form.handleBlur("interestRate")}
+            {...register("interestRate", { valueAsNumber: true })}
             min={0}
             step="0.01"
             required
           />
-          {form.getFieldError("interestRate") && (
-            <p className="mt-1 text-xs text-red-600">{form.getFieldError("interestRate")}</p>
-          )}
+          {errors.interestRate && <p className="mt-1 text-xs text-red-600">{errors.interestRate.message}</p>}
         </div>
         <div>
-          <Input
-            label="Tipo interés"
-            as="select"
-            name="interestType"
-            value={form.values.interestType}
-            onChange={form.handleChange("interestType")}
-            onBlur={form.handleBlur("interestType")}
-          >
+          <Input label="Tipo interés" as="select" {...register("interestType")}>
             <option value="SIMPLE">Simple</option>
             <option value="COMPOUND">Compuesto</option>
           </Input>
-          {form.getFieldError("interestType") && (
-            <p className="mt-1 text-xs text-red-600">{form.getFieldError("interestType")}</p>
-          )}
+          {errors.interestType && <p className="mt-1 text-xs text-red-600">{errors.interestType.message}</p>}
         </div>
         <div>
-          <Input
-            label="Frecuencia de Pago"
-            as="select"
-            name="frequency"
-            value={form.values.frequency}
-            onChange={form.handleChange("frequency")}
-            onBlur={form.handleBlur("frequency")}
-          >
+          <Input label="Frecuencia de Pago" as="select" {...register("frequency")}>
             <option value="WEEKLY">Semanal</option>
             <option value="BIWEEKLY">Quincenal</option>
             <option value="MONTHLY">Mensual</option>
           </Input>
-          {form.getFieldError("frequency") && (
-            <p className="mt-1 text-xs text-red-600">{form.getFieldError("frequency")}</p>
-          )}
+          {errors.frequency && <p className="mt-1 text-xs text-red-600">{errors.frequency.message}</p>}
         </div>
         <div>
           <Input
             label="Número de Términos"
             type="number"
-            name="totalInstallments"
-            value={form.values.totalInstallments.toString()}
-            onChange={form.handleChange("totalInstallments")}
-            onBlur={form.handleBlur("totalInstallments")}
+            {...register("totalInstallments", { valueAsNumber: true })}
             min={1}
             max={360}
             required
           />
-          {form.getFieldError("totalInstallments") && (
-            <p className="mt-1 text-xs text-red-600">{form.getFieldError("totalInstallments")}</p>
-          )}
+          {errors.totalInstallments && <p className="mt-1 text-xs text-red-600">{errors.totalInstallments.message}</p>}
         </div>
         <div>
-          <Input
-            label="Fecha de Inicio"
-            type="date"
-            name="startDate"
-            value={form.values.startDate}
-            onChange={form.handleChange("startDate")}
-            onBlur={form.handleBlur("startDate")}
-            required
+          <Input label="Fecha de Inicio" type="date" {...register("startDate")} required />
+          {errors.startDate && <p className="mt-1 text-xs text-red-600">{errors.startDate.message}</p>}
+        </div>
+        <div>
+          <Controller
+            control={control}
+            name="generateSchedule"
+            render={({ field: { value, onChange, ...field } }) => (
+              <label className="flex items-center gap-2 text-xs text-base-content/60">
+                <input
+                  type="checkbox"
+                  checked={value}
+                  onChange={onChange}
+                  className="checkbox checkbox-primary checkbox-sm"
+                  {...field}
+                />
+                Generar cronograma automáticamente
+              </label>
+            )}
           />
-          {form.getFieldError("startDate") && (
-            <p className="mt-1 text-xs text-red-600">{form.getFieldError("startDate")}</p>
-          )}
-        </div>
-        <div>
-          <label className="flex items-center gap-2 text-xs text-base-content/60">
-            <input
-              type="checkbox"
-              checked={form.values.generateSchedule}
-              onChange={(e) => form.setValue("generateSchedule", e.target.checked)}
-              className="checkbox checkbox-primary checkbox-sm"
-            />
-            Generar cronograma automáticamente
-          </label>
-          {form.getFieldError("generateSchedule") && (
-            <p className="mt-1 text-xs text-red-600">{form.getFieldError("generateSchedule")}</p>
-          )}
+          {errors.generateSchedule && <p className="mt-1 text-xs text-red-600">{errors.generateSchedule.message}</p>}
         </div>
       </div>
       <div>
-        <Input
-          label="Descripción"
-          as="textarea"
-          name="notes"
-          value={form.values.notes || ""}
-          onChange={form.handleChange("notes")}
-          onBlur={form.handleBlur("notes")}
-          rows={3}
-        />
-        {form.getFieldError("notes") && <p className="mt-1 text-xs text-red-600">{form.getFieldError("notes")}</p>}
+        <Input label="Descripción" as="textarea" {...register("notes")} rows={3} />
+        {errors.notes && <p className="mt-1 text-xs text-red-600">{errors.notes.message}</p>}
       </div>
 
-      {Object.keys(form.errors).length > 0 && (
+      {Object.keys(errors).length > 0 && (
         <Alert variant="error">Por favor corrige los errores en el formulario antes de continuar.</Alert>
       )}
 
       <div className="flex justify-end gap-3">
-        <Button type="button" variant="secondary" onClick={onCancel} disabled={form.isSubmitting}>
+        <Button type="button" variant="secondary" onClick={onCancel} disabled={isSubmitting}>
           Cancelar
         </Button>
-        <Button type="submit" disabled={form.isSubmitting || !form.isValid}>
-          {form.isSubmitting ? "Creando..." : "Crear préstamo"}
+        <Button type="submit" disabled={isSubmitting || !isValid}>
+          {isSubmitting ? "Creando..." : "Crear préstamo"}
         </Button>
       </div>
     </form>

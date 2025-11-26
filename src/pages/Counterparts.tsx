@@ -250,9 +250,8 @@ export default function CounterpartsPage() {
 
   const PERSON_FILTERS: Array<{ label: string; value: CounterpartPersonType | "ALL" }> = [
     { label: "Todas las personas", value: "ALL" },
-    { label: "Persona natural", value: "PERSON" },
-    { label: "Empresa", value: "COMPANY" },
-    { label: "Otros", value: "OTHER" },
+    { label: "Persona natural", value: "NATURAL" },
+    { label: "Empresa", value: "JURIDICAL" },
   ];
   const CATEGORY_FILTERS: Array<{ label: string; value: CounterpartCategory | "ALL" }> = [
     { label: "Todos los tipos", value: "ALL" },

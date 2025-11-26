@@ -177,11 +177,11 @@ export default function TimesheetExportPDF({
       const periodEs = dayjs(monthLabel, "MMMM YYYY").isValid()
         ? dayjs(monthLabel, "MMMM YYYY").locale("es").format("MMMM YYYY")
         : monthLabel;
-      const localPayDate = computeLocalPayDate(employee?.role || "", monthRaw);
+      const localPayDate = computeLocalPayDate(employee?.position || "", monthRaw);
       const infoStartY = Math.max(logoBottomY, rightY) + 6;
       doc.setFontSize(10);
       doc.text(`Prestador: ${employee?.full_name || "-"}`, margin, infoStartY);
-      doc.text(`RUT: ${employee?.rut || "-"}`, margin, infoStartY + 6);
+      doc.text(`RUT: ${employee?.person?.rut || "-"}`, margin, infoStartY + 6);
       doc.text(`Periodo: ${periodEs}`, pageWidth - margin, infoStartY, { align: "right" });
       if (localPayDate) {
         doc.text(`Fecha de pago: ${dayjs(localPayDate).format("DD-MM-YYYY")}`, pageWidth - margin, infoStartY + 6, {
