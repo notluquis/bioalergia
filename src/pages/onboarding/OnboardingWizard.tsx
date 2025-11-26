@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { Shield, Key, Check, ArrowRight, User, CreditCard, Smartphone, Loader2 } from "lucide-react";
 import { cn } from "../../lib/utils";
+import { formatRut, validateRut } from "../../lib/rut";
 
 const STEPS = [
   { id: "welcome", title: "Bienvenida" },
@@ -88,6 +89,10 @@ export default function OnboardingWizard() {
     e.preventDefault();
     if (!profile.names || !profile.rut) {
       setError("Nombres y RUT son obligatorios");
+      return;
+    }
+    if (!validateRut(profile.rut)) {
+      setError("El RUT ingresado no es válido");
       return;
     }
     handleNext();
@@ -188,31 +193,37 @@ export default function OnboardingWizard() {
     <div className="min-h-screen flex items-center justify-center bg-base-200 p-4">
       <div className="w-full max-w-2xl bg-base-100 rounded-3xl shadow-xl overflow-hidden flex flex-col max-h-[90vh]">
         {/* Progress Bar */}
-        <div className="bg-base-200/50 p-4 overflow-x-auto">
-          <div className="flex justify-between items-center min-w-[300px] px-4 relative">
+        <div className="bg-base-200/50 p-4">
+          <div className="relative flex justify-between items-center max-w-4xl mx-auto px-4">
             {/* Connecting Line */}
-            <div className="absolute top-6 left-4 right-4 h-0.5 bg-base-300 z-0" />
+            <div className="absolute top-1/2 left-0 w-full h-0.5 bg-base-300 z-0 -translate-y-1/2" />
             <div
-              className="absolute top-6 left-4 h-0.5 bg-primary transition-all duration-500 z-0"
+              className="absolute top-1/2 left-0 h-0.5 bg-primary transition-all duration-500 z-0 -translate-y-1/2"
               style={{ width: `${(currentStep / (STEPS.length - 1)) * 100}%` }}
             />
 
             {STEPS.map((step, idx) => (
-              <div key={step.id} className="flex flex-col items-center gap-2 z-10 relative">
+              <div key={step.id} className="relative z-10 flex flex-col items-center gap-2 bg-base-200/50 px-1">
                 <div
                   className={cn(
-                    "w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 border-2",
+                    "w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold transition-all duration-300 border-4 border-base-100",
                     idx <= currentStep
-                      ? "bg-primary text-primary-content border-primary shadow-lg shadow-primary/30"
-                      : "bg-base-100 text-base-content/30 border-base-300"
+                      ? "bg-primary text-primary-content border-primary shadow-lg shadow-primary/30 scale-110"
+                      : "bg-base-100 text-base-content/30 border-base-200"
                   )}
                 >
-                  {idx < currentStep ? <Check size={14} /> : idx + 1}
+                  {idx < currentStep ? <Check size={14} strokeWidth={3} /> : idx + 1}
                 </div>
                 <span
                   className={cn(
-                    "text-[10px] font-medium uppercase tracking-wider transition-colors hidden sm:block",
-                    idx <= currentStep ? "text-primary" : "text-base-content/30"
+                    "absolute top-full mt-2 text-[10px] font-medium uppercase tracking-wider transition-colors whitespace-nowrap",
+                    idx <= currentStep ? "text-primary" : "text-base-content/30",
+                    // Show all labels on sm+ screens, smart hiding on very small screens
+                    "hidden sm:block",
+                    // Always show current step label even on mobile
+                    idx === currentStep && "block",
+                    // Center the text
+                    "left-1/2 -translate-x-1/2"
                   )}
                 >
                   {step.title}
@@ -222,7 +233,7 @@ export default function OnboardingWizard() {
           </div>
         </div>
 
-        <div className="p-8 overflow-y-auto flex-1">
+        <div className="p-6 sm:p-8 overflow-y-auto flex-1">
           {error && (
             <div className="alert alert-error text-sm py-2 mb-6">
               <span>{error}</span>
@@ -235,7 +246,7 @@ export default function OnboardingWizard() {
                 <Shield size={40} />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-base-content">Hola, {user?.email}</h1>
+                <h1 className="text-2xl sm:text-3xl font-bold text-base-content break-all">Hola, {user?.email}</h1>
                 <p className="text-base-content/60 mt-2 max-w-md mx-auto">
                   Bienvenido a Finanzas App. Antes de comenzar, necesitamos completar tu perfil y asegurar tu cuenta.
                 </p>
@@ -281,16 +292,37 @@ export default function OnboardingWizard() {
                   </label>
                   <input
                     type="text"
-                    className="input input-bordered"
+                    className={cn("input input-bordered", error && error.includes("RUT") && "input-error")}
                     value={profile.rut}
-                    onChange={(e) => setProfile({ ...profile, rut: e.target.value })}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      // Allow typing freely, but maybe restrict chars?
+                      // Better to just update state and format on blur or as they type if we want
+                      // Let's format as they type but be careful not to block editing
+                      // Actually user asked for "formateen automaticamente".
+                      // A common pattern is to format on change if it's valid-ish, or just on blur.
+                      // Let's try formatting on change but keeping cursor position is hard without a library.
+                      // Safest is format on blur or use a controlled input that formats raw input.
+                      // For now, let's just update raw value and format on blur, OR format if it looks like a full RUT.
+                      // Let's stick to simple: update value, format on blur.
+                      setProfile({ ...profile, rut: val });
+                    }}
+                    onBlur={() => {
+                      const formatted = formatRut(profile.rut);
+                      setProfile({ ...profile, rut: formatted });
+                      if (formatted && !validateRut(formatted)) {
+                        setError("RUT inválido");
+                      } else {
+                        setError(null);
+                      }
+                    }}
                     required
                     placeholder="12.345.678-9"
                   />
                 </div>
                 <div className="form-control">
                   <label className="label">
-                    <span className="label-text">Apellido Paterno</span>
+                    <span className="label-text">Primer Apellido</span>
                   </label>
                   <input
                     type="text"
@@ -301,7 +333,7 @@ export default function OnboardingWizard() {
                 </div>
                 <div className="form-control">
                   <label className="label">
-                    <span className="label-text">Apellido Materno</span>
+                    <span className="label-text">Segundo Apellido</span>
                   </label>
                   <input
                     type="text"
@@ -334,9 +366,11 @@ export default function OnboardingWizard() {
                 </div>
               </div>
 
-              <button type="submit" className="btn btn-primary w-full mt-6">
-                Siguiente
-              </button>
+              <div className="flex justify-end mt-6">
+                <button type="submit" className="btn btn-primary w-full sm:w-auto px-8">
+                  Siguiente
+                </button>
+              </div>
             </form>
           )}
 
@@ -396,11 +430,11 @@ export default function OnboardingWizard() {
                 </div>
               </div>
 
-              <div className="flex gap-3 mt-6">
+              <div className="flex justify-end gap-3 mt-6">
                 <button type="button" onClick={() => setCurrentStep((prev) => prev - 1)} className="btn btn-ghost">
                   Atrás
                 </button>
-                <button type="submit" className="btn btn-primary flex-1">
+                <button type="submit" className="btn btn-primary w-full sm:w-auto px-8">
                   Siguiente
                 </button>
               </div>
@@ -449,11 +483,11 @@ export default function OnboardingWizard() {
                 </div>
               </div>
 
-              <div className="flex gap-3 mt-6">
+              <div className="flex justify-end gap-3 mt-6">
                 <button type="button" onClick={() => setCurrentStep((prev) => prev - 1)} className="btn btn-ghost">
                   Atrás
                 </button>
-                <button type="submit" className="btn btn-primary flex-1">
+                <button type="submit" className="btn btn-primary w-full sm:w-auto px-8">
                   Siguiente
                 </button>
               </div>
