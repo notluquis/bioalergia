@@ -170,4 +170,35 @@ const server = app.listen(PORT, () => {
   logger.info(`📤 Uploads directory: ${uploadsDir}`);
 });
 
+// Graceful Shutdown
+const shutdown = async (signal: string) => {
+  logger.info({ event: "shutdown:start", signal });
+
+  // 1. Stop accepting new requests
+  server.close(async () => {
+    logger.info({ event: "shutdown:server_closed" });
+
+    try {
+      // 2. Disconnect Database
+      await prisma.$disconnect();
+      logger.info({ event: "shutdown:db_disconnected" });
+
+      // 3. Exit
+      process.exit(0);
+    } catch (err) {
+      logger.error({ event: "shutdown:error", error: err });
+      process.exit(1);
+    }
+  });
+
+  // Force exit if graceful shutdown takes too long (e.g. 10s)
+  setTimeout(() => {
+    logger.error({ event: "shutdown:timeout" });
+    process.exit(1);
+  }, 10000);
+};
+
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT", () => shutdown("SIGINT"));
+
 export default server;
