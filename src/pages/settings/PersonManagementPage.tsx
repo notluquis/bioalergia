@@ -67,7 +67,7 @@ export default function PersonManagementPage() {
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
                     <div className="avatar placeholder">
-                      <div className="w-10 rounded-full bg-base-200 text-base-content/60">
+                      <div className="w-10 rounded-full bg-base-200 text-base-content/60 flex items-center justify-center">
                         <span className="text-xs font-bold">{person.names.substring(0, 2).toUpperCase()}</span>
                       </div>
                     </div>

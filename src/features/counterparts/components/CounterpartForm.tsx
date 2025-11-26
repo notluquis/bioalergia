@@ -183,7 +183,7 @@ export default function CounterpartForm({ counterpart, onSave, error, saving, lo
           {counterpart?.employeeId && (
             <p className="text-xs text-base-content/80 md:col-span-2">
               Empleado vinculado (ID #{counterpart.employeeId}).{" "}
-              <Link to="/employees" className="font-semibold text-primary">
+              <Link to="/hr/employees" className="font-semibold text-primary">
                 Ver empleados
               </Link>
             </p>
