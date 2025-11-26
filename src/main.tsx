@@ -54,6 +54,7 @@ const InventoryPage = lazy(() => import("./pages/Inventory"));
 const SettingsOverviewPage = lazy(() => import("./pages/settings/SettingsOverviewPage"));
 const UserManagementPage = lazy(() => import("./pages/settings/UserManagementPage"));
 const PersonManagementPage = lazy(() => import("./pages/settings/PersonManagementPage"));
+const PersonDetailsPage = lazy(() => import("./pages/settings/PersonDetailsPage"));
 const GeneralSettingsPage = lazy(() => import("./pages/settings/GeneralSettingsPage"));
 const CalendarSettingsPage = lazy(() => import("./pages/settings/CalendarSettingsPage"));
 const AccessSettingsPage = lazy(() => import("./pages/settings/AccessSettingsPage"));
@@ -64,7 +65,9 @@ const SecuritySettingsPage = lazy(() => import("./pages/settings/SecuritySetting
 const OnboardingWizard = lazy(() => import("./pages/onboarding/OnboardingWizard"));
 
 // Componente de loading
+// Componente de loading
 import PageLoader from "./components/ui/PageLoader";
+import NotFoundPage from "./pages/NotFoundPage";
 
 // Wrapper to protect routes and handle onboarding redirect
 function RequireAuth({ children }: { children: ReactNode }) {
@@ -401,6 +404,14 @@ const router = createBrowserRouter([
             ),
           },
           {
+            path: "people/:id",
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <PersonDetailsPage />
+              </Suspense>
+            ),
+          },
+          {
             path: "general",
             element: (
               <Suspense fallback={<PageLoader />}>
@@ -461,7 +472,7 @@ const router = createBrowserRouter([
       { path: "/supplies", element: <Navigate to="/inventory/supplies" replace /> },
     ],
   },
-  { path: "*", element: <Navigate to="/" replace /> },
+  { path: "*", element: <NotFoundPage /> },
 ]);
 
 import { initPerformanceMonitoring } from "./lib/performance";
