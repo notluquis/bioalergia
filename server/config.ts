@@ -12,7 +12,7 @@ if (!rawJwtSecret) {
 }
 
 export const JWT_SECRET = rawJwtSecret;
-export const PORT = Number(process.env.PORT ?? 4000);
+export const PORT = Number(process.env.PORT ?? 3000);
 export const sessionCookieName = "mp_session";
 export const sessionCookieOptions: CookieOptions = {
   httpOnly: true,
