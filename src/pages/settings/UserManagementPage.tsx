@@ -124,7 +124,7 @@ export default function UserManagementPage() {
           </select>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto min-h-[400px] pb-32">
           <table className="table w-full">
             <thead>
               <tr>
