@@ -61,6 +61,7 @@ const InventorySettingsPage = lazy(() => import("./pages/settings/InventorySetti
 const RolesSettingsPage = lazy(() => import("./pages/settings/RolesSettingsPage"));
 const DailyProductionBalancesSettingsPage = lazy(() => import("./pages/settings/DailyProductionBalancesPage"));
 const SecuritySettingsPage = lazy(() => import("./pages/settings/SecuritySettingsPage"));
+const AddUserPage = lazy(() => import("./pages/admin/AddUserPage"));
 const OnboardingWizard = lazy(() => import("./pages/onboarding/OnboardingWizard"));
 
 // Componente de loading
@@ -387,6 +388,14 @@ const router = createBrowserRouter([
             element: (
               <Suspense fallback={<PageLoader />}>
                 <UserManagementPage />
+              </Suspense>
+            ),
+          },
+          {
+            path: "users/add",
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <AddUserPage />
               </Suspense>
             ),
           },

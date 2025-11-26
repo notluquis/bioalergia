@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import request from "supertest";
 import express from "express";
 import { registerSettingsRoutes } from "../server/routes/settings.js";
-import { authenticate } from "../server/lib/http.js";
 
 // Mock Services
 vi.mock("../server/services/settings.js", () => ({
@@ -19,11 +18,13 @@ vi.mock("../server/lib/http.js", async () => {
   const actual = await vi.importActual("../server/lib/http.js");
   return {
     ...actual,
-    authenticate: vi.fn((req, res, next) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    authenticate: vi.fn((req: any, res: any, next: any) => {
       req.auth = { userId: 1, email: "admin@example.com", role: "GOD" };
       next();
     }),
-    requireRole: () => (req, res, next) => next(),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    requireRole: () => (req: any, res: any, next: any) => next(),
   };
 });
 
