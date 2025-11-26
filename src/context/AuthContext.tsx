@@ -9,8 +9,10 @@ export type AuthUser = {
   email: string;
   role: UserRole;
   name: string | null;
-  mfaEnabled: boolean;
+  mfaEnabled?: boolean;
   status: string;
+  hasPasskey?: boolean;
+  mfaEnforced?: boolean;
 };
 
 export type LoginResult = { status: "ok"; user: AuthUser } | { status: "mfa_required"; userId: number };

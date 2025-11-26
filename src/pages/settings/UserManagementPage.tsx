@@ -1,13 +1,13 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Search, Shield, MoreVertical, Key, Lock, Fingerprint, Trash2 } from "lucide-react";
+import { Search, Shield, MoreVertical, Key, Lock, Fingerprint, Trash2, UserPlus } from "lucide-react";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
 import relativeTime from "dayjs/plugin/relativeTime";
 
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
-import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
 import { cn } from "../../lib/utils";
 
@@ -95,10 +95,10 @@ export default function UserManagementPage() {
           <h1 className="text-2xl font-bold text-base-content">Usuarios</h1>
           <p className="text-sm text-base-content/60">Gestiona el acceso y roles del sistema.</p>
         </div>
-        <Button className="gap-2">
-          <Plus size={16} />
-          Invitar Usuario
-        </Button>
+        <Link to="/admin/users/add" className="btn btn-primary gap-2">
+          <UserPlus size={20} />
+          Agregar Usuario
+        </Link>
       </div>
 
       <div className="surface-elevated rounded-2xl p-4">

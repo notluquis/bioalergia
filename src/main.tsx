@@ -51,7 +51,6 @@ const SuppliesPage = lazy(() => import("./pages/Supplies"));
 const InventoryPage = lazy(() => import("./pages/Inventory"));
 
 // Settings pages
-const SettingsOverviewPage = lazy(() => import("./pages/settings/SettingsOverviewPage"));
 const UserManagementPage = lazy(() => import("./pages/settings/UserManagementPage"));
 const PersonManagementPage = lazy(() => import("./pages/settings/PersonManagementPage"));
 const PersonDetailsPage = lazy(() => import("./pages/settings/PersonDetailsPage"));
@@ -381,11 +380,7 @@ const router = createBrowserRouter([
         children: [
           {
             index: true,
-            element: (
-              <Suspense fallback={<PageLoader />}>
-                <SettingsOverviewPage />
-              </Suspense>
-            ),
+            element: <Navigate to="users" replace />,
           },
           {
             path: "users",

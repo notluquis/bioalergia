@@ -2,29 +2,32 @@ import express from "express";
 import webpush from "web-push";
 import { prisma, Prisma } from "../prisma.js";
 import { logger } from "../lib/logger.js";
+import { authenticate } from "../lib/http.js";
+import type { AuthenticatedRequest } from "../types.js";
 
 type DbSubscription = Prisma.PushSubscriptionGetPayload<{}>;
 
 const router = express.Router();
 
-// Configure web-push
-const publicVapidKey = process.env.VAPID_PUBLIC_KEY;
-const privateVapidKey = process.env.VAPID_PRIVATE_KEY;
-const vapidSubject = process.env.VAPID_SUBJECT || "mailto:admin@bioalergia.cl";
+// Apply authentication to all routes in this router
+router.use(authenticate);
 
-if (!publicVapidKey || !privateVapidKey) {
-  logger.warn("VAPID keys are missing. Push notifications will not work.");
-} else {
-  webpush.setVapidDetails(vapidSubject, publicVapidKey, privateVapidKey);
-}
+// ... vapid config
 
 // Subscribe endpoint
-router.post("/subscribe", async (req, res) => {
+router.post("/subscribe", async (req: express.Request, res: express.Response) => {
+  const authReq = req as AuthenticatedRequest;
   try {
-    const { subscription, userId } = req.body;
+    const { subscription } = req.body;
+    const userId = authReq.auth?.userId;
 
-    if (!subscription || !userId) {
-      res.status(400).json({ error: "Missing subscription or userId" });
+    if (!userId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    if (!subscription) {
+      res.status(400).json({ error: "Missing subscription" });
       return;
     }
 
@@ -33,10 +36,10 @@ router.post("/subscribe", async (req, res) => {
       where: { endpoint: subscription.endpoint },
       update: {
         keys: subscription.keys,
-        userId: Number(userId),
+        userId: userId,
       },
       create: {
-        userId: Number(userId),
+        userId: userId,
         endpoint: subscription.endpoint,
         keys: subscription.keys,
       },
@@ -50,16 +53,18 @@ router.post("/subscribe", async (req, res) => {
 });
 
 // Send test notification
-router.post("/send-test", async (req, res) => {
+router.post("/send-test", async (req: express.Request, res: express.Response) => {
+  const authReq = req as AuthenticatedRequest;
   try {
-    const { userId } = req.body;
+    // Send to self
+    const userId = authReq.auth?.userId;
     if (!userId) {
-      res.status(400).json({ error: "Missing userId" });
+      res.status(401).json({ error: "Unauthorized" });
       return;
     }
 
     const subscriptions = await prisma.pushSubscription.findMany({
-      where: { userId: Number(userId) },
+      where: { userId: userId },
     });
 
     if (subscriptions.length === 0) {

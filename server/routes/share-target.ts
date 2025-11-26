@@ -1,7 +1,9 @@
-import express, { Request, Response } from "express";
+import express from "express";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import { authenticate } from "../lib/http.js";
+import type { AuthenticatedRequest } from "../types.js";
 
 const router = express.Router();
 
@@ -32,10 +34,18 @@ const upload = multer({
   },
 });
 
+// Apply authentication
+router.use(authenticate);
+
 // POST /share-target
-// Handles files shared from other apps via PWA Share Target API
-router.post("/", upload.array("media"), (req: Request, res: Response) => {
+router.post("/", upload.array("media"), (req: express.Request, res: express.Response) => {
+  const authReq = req as AuthenticatedRequest;
   try {
+    // Verify user is authenticated
+    if (!authReq.auth?.userId) {
+      return res.status(401).send("Unauthorized");
+    }
+
     const files = req.files as Express.Multer.File[];
     const { title, text, url } = req.body;
 

@@ -136,6 +136,7 @@ model User {
   // Security
   mfaSecret           String?  @map("mfa_secret")
   mfaEnabled          Boolean  @default(false) @map("mfa_enabled")
+  mfaEnforced         Boolean  @default(true) @map("mfa_enforced")
   
   // Passkey / WebAuthn
   passkeyCredentialID String?  @unique @map("passkey_credential_id")
