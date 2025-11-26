@@ -118,6 +118,7 @@ export default function SecuritySettingsPage() {
       const verifyData = await verifyRes.json();
       if (verifyData.status === "ok") {
         success("Passkey registrado exitosamente");
+        await refreshSession();
       } else {
         error(verifyData.message || "Error al verificar Passkey");
       }
