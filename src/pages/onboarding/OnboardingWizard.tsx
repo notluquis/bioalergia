@@ -1,9 +1,22 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import { Shield, Key, Check, ArrowRight, User, CreditCard, Smartphone, Loader2 } from "lucide-react";
+import {
+  Shield,
+  Key,
+  Check,
+  ArrowRight,
+  User,
+  CreditCard,
+  Smartphone,
+  Loader2,
+  Eye,
+  EyeOff,
+  Fingerprint,
+} from "lucide-react";
 import { cn } from "../../lib/utils";
 import { formatRut, validateRut } from "../../lib/rut";
+import Input from "../../components/ui/Input";
 
 const STEPS = [
   { id: "welcome", title: "Bienvenida" },
@@ -47,6 +60,8 @@ export default function OnboardingWizard() {
   });
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // MFA State
   const [mfaSecret, setMfaSecret] = useState<{ secret: string; qrCodeUrl: string } | null>(null);
@@ -119,7 +134,7 @@ export default function OnboardingWizard() {
   const generateMfa = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/auth/mfa/generate", { method: "POST" });
+      const res = await fetch("/api/auth/mfa/setup", { method: "POST" });
       const data = await res.json();
       if (res.ok) {
         setMfaSecret(data);
@@ -151,6 +166,45 @@ export default function OnboardingWizard() {
       }
     } catch {
       setError("Error al verificar MFA");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePasskeyRegister = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      // 1. Get options
+      const res = await fetch("/api/auth/passkey/register/options");
+      if (!res.ok) throw new Error("Error al iniciar registro de Passkey");
+      const options = await res.json();
+
+      // 2. Create credentials
+      const { startRegistration } = await import("@simplewebauthn/browser");
+      const attResp = await startRegistration(options);
+
+      // 3. Verify
+      const verifyRes = await fetch("/api/auth/passkey/register/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ body: attResp, challenge: options.challenge }),
+      });
+
+      if (verifyRes.ok) {
+        // Passkey registered successfully
+        // We can consider this as "MFA" step done or just an extra
+        // For now, let's just notify success and maybe allow moving next if they want
+        // But typically MFA step implies TOTP for password flow.
+        // Let's just show a success message.
+        setMfaEnabled(true); // Treat as enabled so they can skip/next
+        handleNext();
+      } else {
+        throw new Error("Error al verificar Passkey");
+      }
+    } catch (err) {
+      console.error(err);
+      setError("No se pudo registrar el Passkey. Intenta nuevamente o usa la App Autenticadora.");
     } finally {
       setLoading(false);
     }
@@ -193,7 +247,7 @@ export default function OnboardingWizard() {
     <div className="min-h-screen flex items-center justify-center bg-base-200 p-4">
       <div className="w-full max-w-2xl bg-base-100 rounded-3xl shadow-xl overflow-hidden flex flex-col max-h-[90vh]">
         {/* Progress Bar */}
-        <div className="bg-base-200/50 p-4">
+        <div className="p-4 mb-4">
           <div className="relative flex justify-between items-center max-w-4xl mx-auto px-4">
             {/* Connecting Line */}
             <div className="absolute top-1/2 left-0 w-full h-0.5 bg-base-300 z-0 -translate-y-1/2" />
@@ -459,26 +513,42 @@ export default function OnboardingWizard() {
                   <label className="label">
                     <span className="label-text">Nueva Contraseña</span>
                   </label>
-                  <input
-                    type="password"
-                    className="input input-bordered w-full"
+                  <Input
+                    type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     minLength={8}
+                    rightElement={
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="focus:outline-none"
+                      >
+                        {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                      </button>
+                    }
                   />
                 </div>
                 <div className="form-control">
                   <label className="label">
                     <span className="label-text">Confirmar Contraseña</span>
                   </label>
-                  <input
-                    type="password"
-                    className="input input-bordered w-full"
+                  <Input
+                    type={showConfirmPassword ? "text" : "password"}
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     required
                     minLength={8}
+                    rightElement={
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="focus:outline-none"
+                      >
+                        {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                      </button>
+                    }
                   />
                 </div>
               </div>
@@ -502,7 +572,8 @@ export default function OnboardingWizard() {
                 </div>
                 <h2 className="text-2xl font-bold">Configurar MFA</h2>
                 <p className="text-sm text-base-content/60">
-                  Escanea el código con tu app de autenticación (Google Auth, Authy).
+                  Escanea el código con tu app de autenticación (Google Authenticator, Microsoft Authenticator, Apple
+                  Passwords, etc).
                 </p>
               </div>
 
@@ -539,9 +610,21 @@ export default function OnboardingWizard() {
                   >
                     {loading ? <Loader2 className="animate-spin" /> : "Verificar y Activar"}
                   </button>
+
+                  <div className="divider text-xs text-base-content/40">O usa biometría</div>
+
+                  <button
+                    onClick={handlePasskeyRegister}
+                    className="btn btn-outline w-full max-w-xs gap-2"
+                    disabled={loading}
+                  >
+                    <Fingerprint size={20} />
+                    Registrar Passkey (Huella/FaceID)
+                  </button>
+
                   <button
                     onClick={handleNext}
-                    className="btn btn-ghost btn-sm text-base-content/50 hover:text-base-content"
+                    className="btn btn-ghost btn-sm text-base-content/50 hover:text-base-content mt-2"
                     disabled={loading}
                   >
                     Omitir por ahora
