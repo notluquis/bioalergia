@@ -3,7 +3,7 @@ import { prisma } from "../prisma.js";
 import { z } from "zod";
 import { authenticate as requireAuth, requireRole } from "../lib/http.js";
 import type { AuthenticatedRequest } from "../types.js";
-import { logAudit } from "../lib/audit.js";
+import { logAudit } from "../services/audit.js";
 
 const router = Router();
 
@@ -68,14 +68,14 @@ router.post("/", requireAuth, requireRole("ADMIN", "GOD"), async (req, res) => {
 
     const person = await prisma.person.create({ data });
 
-    await logAudit(
-      authReq.auth!.userId,
-      "PERSON_CREATE",
-      "Person",
-      String(person.id),
-      { rut: data.rut, names: data.names },
-      req.ip
-    );
+    await logAudit({
+      userId: authReq.auth!.userId,
+      action: "PERSON_CREATE",
+      entity: "Person",
+      entityId: person.id,
+      details: { rut: data.rut, names: data.names },
+      ipAddress: req.ip,
+    });
 
     res.json(person);
   } catch (error) {
@@ -96,7 +96,14 @@ router.put("/:id", requireAuth, requireRole("ADMIN", "GOD"), async (req, res) =>
       data,
     });
 
-    await logAudit(authReq.auth!.userId, "PERSON_UPDATE", "Person", String(targetPersonId), data, req.ip);
+    await logAudit({
+      userId: authReq.auth!.userId,
+      action: "PERSON_UPDATE",
+      entity: "Person",
+      entityId: targetPersonId,
+      details: data,
+      ipAddress: req.ip,
+    });
 
     res.json(person);
   } catch {

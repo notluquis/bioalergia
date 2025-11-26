@@ -4,7 +4,7 @@ import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { authenticate as requireAuth, requireRole } from "../lib/http.js";
 import type { AuthenticatedRequest } from "../types.js";
-import { logAudit } from "../lib/audit.js";
+import { logAudit } from "../services/audit.js";
 
 const router = Router();
 
@@ -39,7 +39,14 @@ router.post("/invite", requireAuth, requireRole("ADMIN", "GOD"), async (req, res
       },
     });
 
-    await logAudit(authReq.auth!.userId, "USER_INVITE", "User", String(user.id), { email, role, personId }, req.ip);
+    await logAudit({
+      userId: authReq.auth!.userId,
+      action: "USER_INVITE",
+      entity: "User",
+      entityId: user.id,
+      details: { email, role, personId },
+      ipAddress: req.ip,
+    });
 
     res.json({ message: "User invited successfully", userId: user.id });
   } catch (error) {
@@ -61,14 +68,14 @@ router.post("/:id/reset-password", requireAuth, requireRole("ADMIN", "GOD"), asy
       data: { passwordHash: hash, status: "PENDING_SETUP" }, // Force setup again? Or just active?
     });
 
-    await logAudit(
-      authReq.auth!.userId,
-      "USER_PASSWORD_RESET",
-      "User",
-      String(targetUserId),
-      { status: "PENDING_SETUP" },
-      req.ip
-    );
+    await logAudit({
+      userId: authReq.auth!.userId,
+      action: "USER_PASSWORD_RESET",
+      entity: "User",
+      entityId: targetUserId,
+      details: { status: "PENDING_SETUP" },
+      ipAddress: req.ip,
+    });
 
     res.json({ message: "Password reset successfully" });
   } catch {
@@ -193,7 +200,14 @@ router.post("/setup", requireAuth, async (req, res) => {
       });
     });
 
-    await logAudit(userId, "USER_SETUP", "User", String(userId), { status: "ACTIVE" }, req.ip);
+    await logAudit({
+      userId,
+      action: "USER_SETUP",
+      entity: "User",
+      entityId: userId,
+      details: { status: "ACTIVE" },
+      ipAddress: req.ip,
+    });
 
     res.json({ message: "Setup complete" });
   } catch (error) {
@@ -213,7 +227,13 @@ router.delete("/:id/mfa", requireAuth, requireRole("ADMIN", "GOD"), async (req, 
       data: { mfaEnabled: false, mfaSecret: null },
     });
 
-    await logAudit(authReq.auth!.userId, "USER_MFA_DISABLE", "User", String(targetUserId), undefined, req.ip);
+    await logAudit({
+      userId: authReq.auth!.userId,
+      action: "USER_MFA_RESET",
+      entity: "User",
+      entityId: targetUserId,
+      ipAddress: req.ip,
+    });
 
     res.json({ message: "MFA disabled for user" });
   } catch {
@@ -244,14 +264,14 @@ router.post("/:id/mfa/toggle", requireAuth, requireRole("ADMIN", "GOD"), async (
       data: { mfaEnabled: enabled },
     });
 
-    await logAudit(
-      authReq.auth!.userId,
-      enabled ? "USER_MFA_ENABLE" : "USER_MFA_DISABLE",
-      "User",
-      String(targetUserId),
-      { adminToggle: true },
-      req.ip
-    );
+    await logAudit({
+      userId: authReq.auth!.userId,
+      action: "USER_MFA_RESET", // Using RESET for toggle as per available actions
+      entity: "User",
+      entityId: targetUserId,
+      details: { adminToggle: true, enabled },
+      ipAddress: req.ip,
+    });
 
     res.json({ status: "ok", message: `MFA ${enabled ? "enabled" : "disabled"}` });
   } catch (error) {

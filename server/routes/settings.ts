@@ -12,6 +12,7 @@ import {
   saveBrandingLogoFile,
   saveBrandingFaviconFile,
 } from "../lib/uploads.js";
+import { logAudit } from "../services/audit.js";
 
 const logoUpload = multer({
   storage: multer.memoryStorage(),
@@ -110,6 +111,15 @@ export function registerSettingsRoutes(app: express.Express) {
       await saveSettings(payload);
       const settings = await loadSettings();
       logEvent("settings:update:success", requestContext(req));
+
+      await logAudit({
+        userId: req.auth!.userId,
+        action: "SETTINGS_UPDATE",
+        entity: "Settings",
+        details: payload,
+        ipAddress: req.ip,
+      });
+
       res.json({ status: "ok", settings });
     })
   );
