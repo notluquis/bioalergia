@@ -31,7 +31,7 @@ export async function generatePasskeyRegistrationOptions(user: { id: number; ema
   const options = await generateRegistrationOptions({
     rpName: RP_NAME,
     rpID: RP_ID,
-    userID: Buffer.from(String(user.id)).toString("base64url"),
+    userID: new Uint8Array(Buffer.from(String(user.id))),
     userName: user.email,
     attestationType: "none",
     authenticatorSelection: {
@@ -41,16 +41,12 @@ export async function generatePasskeyRegistrationOptions(user: { id: number; ema
     },
   });
 
-  // Save challenge temporarily (in a real app, use Redis or session)
-  // For simplicity here, we'll return it and expect client to send it back signed,
-  // but ideally we should store it server-side to prevent replay.
-  // We will store it in a temporary cache or just rely on the stateless verification if possible.
-  // NOTE: SimpleWebAuthn recommends storing the challenge.
-  // Since we don't have a session store for unauthenticated users (for login),
-  // we will use a simple in-memory map for this prototype or rely on the stateless verification if possible.
-  // However, verifyRegistrationResponse REQUIRES the expectedChallenge.
-  // We will store it in the user's record temporarily or use a dedicated table if needed.
-  // For now, let's assume we pass it back and forth signed or store it in a cookie.
+  // Ensure user.id is a string (base64url) for the client
+  // The library should return JSON, but we enforce it to be safe against serialization issues
+  if (typeof options.user.id !== "string") {
+    // @ts-ignore - Handle potential type mismatch if library returns Buffer
+    options.user.id = Buffer.from(options.user.id).toString("base64url");
+  }
 
   return options;
 }
