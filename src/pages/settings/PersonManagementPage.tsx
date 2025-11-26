@@ -17,7 +17,9 @@ export default function PersonManagementPage() {
   });
 
   const filteredPeople =
-    people?.filter((p) => p.names.toLowerCase().includes(search.toLowerCase()) || p.rut.includes(search)) || [];
+    people?.filter(
+      (p) => (p.names?.toLowerCase() ?? "").includes(search.toLowerCase()) || (p.rut ?? "").includes(search)
+    ) || [];
 
   return (
     <div className="space-y-6">

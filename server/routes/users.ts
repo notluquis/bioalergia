@@ -78,8 +78,16 @@ export function registerUserRoutes(app: express.Express) {
           email: true,
           role: true,
           mfaEnabled: true,
-          passkeyCredentialID: true, // To show if they have passkey
+          passkeyCredentialID: true,
           createdAt: true,
+          status: true,
+          person: {
+            select: {
+              names: true,
+              fatherName: true,
+              rut: true,
+            },
+          },
         },
         orderBy: { email: "asc" },
       });

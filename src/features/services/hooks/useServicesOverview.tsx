@@ -435,7 +435,9 @@ function useServicesController() {
       const matchesType = filters.types.size === 0 || filters.types.has(service.service_type);
       const matchesSearch =
         !searchTerm ||
-        `${service.name} ${service.detail ?? ""} ${service.counterpart_name ?? ""}`.toLowerCase().includes(searchTerm);
+        `${service.name ?? ""} ${service.detail ?? ""} ${service.counterpart_name ?? ""}`
+          .toLowerCase()
+          .includes(searchTerm);
       return matchesStatus && matchesType && matchesSearch;
     });
   }, [services, filters]);

@@ -505,6 +505,13 @@ export default function OnboardingWizard() {
                   >
                     {loading ? <Loader2 className="animate-spin" /> : "Verificar y Activar"}
                   </button>
+                  <button
+                    onClick={handleNext}
+                    className="btn btn-ghost btn-sm text-base-content/50 hover:text-base-content"
+                    disabled={loading}
+                  >
+                    Omitir por ahora
+                  </button>
                 </div>
               ) : (
                 <div className="text-center text-error">No se pudo cargar el código QR.</div>
