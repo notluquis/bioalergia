@@ -6,7 +6,7 @@ import type { Employee } from "../types";
 import type { EmployeeSalaryType } from "@/types/schema";
 import Button from "../../../components/ui/Button";
 import Input from "../../../components/ui/Input";
-import { formatRut, normalizeRut } from "../../../lib/rut";
+import { formatRut, normalizeRut, validateRut } from "../../../lib/rut";
 
 interface EmployeeFormProps {
   employee?: Employee | null;
@@ -163,7 +163,7 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
           onBlur={() => setForm((prev) => ({ ...prev, rut: formatRut(normalizeRut(prev.rut) ?? prev.rut) }))}
           placeholder="12.345.678-9"
         />
-        {form.rut && normalizeRut(form.rut) === null && (
+        {form.rut && !validateRut(form.rut) && (
           <span className="text-xs text-red-600">RUT inválido (se formatea al salir del campo)</span>
         )}
         <Input
@@ -248,15 +248,15 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
           helper="Ej: 0.145 para 14.5%"
         />
       </div>
-      <div className="flex items-center gap-3">
-        <Button type="submit" disabled={saving}>
-          {saving ? "Guardando..." : employee?.id ? "Actualizar" : "Agregar"}
-        </Button>
+      <div className="flex items-center justify-end gap-3">
         {employee?.id && (
           <Button type="button" variant="secondary" onClick={onCancel}>
             Cancelar edición
           </Button>
         )}
+        <Button type="submit" disabled={saving}>
+          {saving ? "Guardando..." : employee?.id ? "Actualizar" : "Agregar"}
+        </Button>
       </div>
     </form>
   );

@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { formatRut, normalizeRut } from "../../../lib";
+import { formatRut, validateRut } from "../../../lib";
 import Button from "../../../components/ui/Button";
 import Input from "../../../components/ui/Input";
 import Alert from "../../../components/ui/Alert";
@@ -20,7 +20,7 @@ const counterpartFormSchema = z.object({
     .transform((value) => value ?? "")
     .refine((value) => {
       if (!value) return true;
-      return normalizeRut(value) !== null;
+      return validateRut(value);
     }, "RUT inválido"),
   name: z.string().trim().min(1, "El nombre es requerido"),
   personType: z.enum(["NATURAL", "JURIDICAL"] as const),
