@@ -11,8 +11,8 @@ import { prisma } from "../prisma.js";
 import { logEvent } from "../lib/logger.js";
 
 const RP_NAME = "Finanzas App";
-const RP_ID = process.env.RP_ID || "localhost";
-const ORIGIN = process.env.ORIGIN || "http://localhost:5173";
+const RP_ID = process.env.RP_ID || "intranet.bioalergia.cl";
+const ORIGIN = process.env.ORIGIN || "https://intranet.bioalergia.cl";
 
 /**
  * Generate options for registering a new passkey.

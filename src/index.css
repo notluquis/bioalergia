@@ -169,7 +169,7 @@ html[data-theme="bioalergia-dark"] .layout-shell {
 }
 
 ::selection {
-  background-color: rgba(var(--brand-primary-rgb) / 0.8);
+  background-color: oklch(var(--p) / 0.8);
   color: white;
 }
 

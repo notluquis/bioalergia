@@ -83,6 +83,11 @@ export default function Login() {
       // 1. Get options from server
       const resp = await fetch("/api/auth/passkey/login/options");
       const options = await resp.json();
+      console.log("[Login] Passkey options:", options);
+
+      if (!resp.ok || !options.challenge) {
+        throw new Error("Error al obtener opciones de biometría");
+      }
 
       // 2. Browser native auth
       const authResp = await startAuthentication(options);

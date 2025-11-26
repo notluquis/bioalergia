@@ -1,19 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import {
-  Shield,
-  Key,
-  Check,
-  ArrowRight,
-  User,
-  CreditCard,
-  Smartphone,
-  Loader2,
-  Eye,
-  EyeOff,
-  Fingerprint,
-} from "lucide-react";
+import { Shield, Key, Check, ArrowRight, User, CreditCard, Smartphone, Loader2, Fingerprint } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { formatRut, validateRut } from "../../lib/rut";
 import Input from "../../components/ui/Input";
@@ -60,8 +48,6 @@ export default function OnboardingWizard() {
   });
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // MFA State
   const [mfaSecret, setMfaSecret] = useState<{ secret: string; qrCodeUrl: string } | null>(null);
@@ -510,45 +496,23 @@ export default function OnboardingWizard() {
 
               <div className="space-y-4">
                 <div className="form-control">
-                  <label className="label">
-                    <span className="label-text">Nueva Contraseña</span>
-                  </label>
                   <Input
-                    type={showPassword ? "text" : "password"}
+                    label="Nueva Contraseña"
+                    type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     minLength={8}
-                    rightElement={
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="focus:outline-none"
-                      >
-                        {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                      </button>
-                    }
                   />
                 </div>
                 <div className="form-control">
-                  <label className="label">
-                    <span className="label-text">Confirmar Contraseña</span>
-                  </label>
                   <Input
-                    type={showConfirmPassword ? "text" : "password"}
+                    label="Confirmar Contraseña"
+                    type="password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     required
                     minLength={8}
-                    rightElement={
-                      <button
-                        type="button"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="focus:outline-none"
-                      >
-                        {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                      </button>
-                    }
                   />
                 </div>
               </div>
