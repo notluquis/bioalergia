@@ -31,7 +31,7 @@ export async function generatePasskeyRegistrationOptions(user: { id: number; ema
   const options = await generateRegistrationOptions({
     rpName: RP_NAME,
     rpID: RP_ID,
-    userID: new Uint8Array(Buffer.from(String(user.id))),
+    userID: Buffer.from(String(user.id)).toString("base64url"),
     userName: user.email,
     attestationType: "none",
     authenticatorSelection: {

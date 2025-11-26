@@ -7,7 +7,7 @@ import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
 
 export default function SecuritySettingsPage() {
-  const { user } = useAuth();
+  const { user, refreshSession } = useAuth();
   const { success, error } = useToast();
 
   // MFA State
@@ -57,6 +57,7 @@ export default function SecuritySettingsPage() {
         setIsMfaEnabled(true);
         setMfaSecret(null);
         setQrCodeUrl(null);
+        await refreshSession();
       } else {
         error(data.message || "Código incorrecto");
       }
@@ -77,6 +78,7 @@ export default function SecuritySettingsPage() {
       if (data.status === "ok") {
         success("MFA desactivado");
         setIsMfaEnabled(false);
+        await refreshSession();
       } else {
         error("No se pudo desactivar MFA");
       }
