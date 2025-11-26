@@ -6,6 +6,7 @@ type InputBaseProps = {
   helper?: string;
   error?: string;
   containerClassName?: string;
+  rightElement?: React.ReactNode;
 };
 
 type InputProps = InputBaseProps &
@@ -71,7 +72,16 @@ export default function Input(props: Props) {
           <span className={labelTextClasses}>{label}</span>
         </label>
       )}
-      {control}
+      {props.rightElement ? (
+        <div className="relative">
+          {control}
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 text-base-content/50 hover:text-base-content transition-colors">
+            {props.rightElement}
+          </div>
+        </div>
+      ) : (
+        control
+      )}
       {(helper || error) && (
         <div className="label pb-0 pt-0">
           <span className={helperClasses}>{error || helper}</span>
