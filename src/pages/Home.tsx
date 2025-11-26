@@ -61,7 +61,7 @@ export default function Home() {
     <section className="flex flex-col gap-6">
       <header className="relative overflow-hidden rounded-3xl bg-linear-to-br from-base-100 via-base-100 to-primary/5 p-8 shadow-lg ring-1 ring-base-content/5">
         <div className="relative z-10 space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight text-base-content">Panel financiero</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-base-content break-all">Panel financiero</h1>
           <p className="text-base font-medium text-base-content/60 max-w-2xl">
             Resumen de actividad de los últimos {RANGE_DAYS} días y accesos directos a tus operaciones frecuentes.
           </p>

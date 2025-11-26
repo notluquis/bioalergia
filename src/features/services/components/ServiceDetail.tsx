@@ -170,7 +170,7 @@ export function ServiceDetail({
     <section className="relative flex h-full min-w-0 flex-col gap-6 rounded-3xl bg-base-100 p-6">
       <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="space-y-1">
-          <h1 className="text-2xl font-bold text-primary drop-shadow-sm">{service.name}</h1>
+          <h1 className="text-2xl font-bold text-primary drop-shadow-sm break-all">{service.name}</h1>
           <p className="text-sm text-base-content">
             {service.detail || "Gasto"} · {serviceTypeLabel} · {ownershipLabel}
           </p>

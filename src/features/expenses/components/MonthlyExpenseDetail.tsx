@@ -32,7 +32,7 @@ export default function MonthlyExpenseDetail({
     <section className="space-y-4 border border-base-300 p-4 text-sm text-base-content bg-base-100">
       <header className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h2 className="text-xl font-semibold text-primary">{expense.name}</h2>
+          <h2 className="text-xl font-semibold text-primary break-all">{expense.name}</h2>
           <p className="text-xs text-base-content/50">
             {expense.category || "Sin categoría"} · {dayjs(expense.expenseDate).format("DD MMM YYYY")}
           </p>

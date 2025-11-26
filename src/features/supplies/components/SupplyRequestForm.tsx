@@ -175,7 +175,7 @@ export default function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyR
           <Input label="Notas (Opcional)" as="textarea" rows={3} {...register("notes")} enterKeyHint="done" />
           {errors.notes && <p className="mt-1 text-xs text-red-600">{errors.notes.message}</p>}
         </div>
-        <div className="md:col-span-2">
+        <div className="md:col-span-2 flex justify-end">
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting ? "Enviando..." : "Enviar Solicitud"}
           </Button>

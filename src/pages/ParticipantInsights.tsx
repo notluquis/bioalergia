@@ -36,7 +36,7 @@ export default function ParticipantInsightsPage() {
   return (
     <section className="space-y-6">
       <div className="bg-base-100 space-y-2 p-6">
-        <h1 className="text-2xl font-bold text-primary drop-shadow-sm">Participantes en transacciones</h1>
+        <h1 className="text-2xl font-bold text-primary drop-shadow-sm break-all">Participantes en transacciones</h1>
         <p className="max-w-2xl text-sm text-base-content/70">
           Revisa la actividad de un identificador en los campos <strong>Desde</strong> y <strong>Hacia</strong>, con un
           resumen mensual y las contrapartes más frecuentes.

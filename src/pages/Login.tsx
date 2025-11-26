@@ -117,7 +117,7 @@ export default function Login() {
               }
             }}
           />
-          <h1 className="text-xl font-semibold text-primary drop-shadow-sm">
+          <h1 className="text-xl font-semibold text-primary drop-shadow-sm break-all">
             {step === "mfa" ? "Verificación de seguridad" : `Inicia sesión en ${settings.orgName}`}
           </h1>
           <p className="text-sm text-base-content/90">
