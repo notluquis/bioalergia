@@ -40,8 +40,11 @@ router.get("/", requireAuth, async (req, res) => {
 // GET /api/people/:id - Get single person details
 router.get("/:id", requireAuth, async (req, res) => {
   try {
+    const id = Number(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ error: "Invalid ID" });
+
     const person = await prisma.person.findUnique({
-      where: { id: Number(req.params.id) },
+      where: { id },
       include: {
         user: true,
         employee: true,
