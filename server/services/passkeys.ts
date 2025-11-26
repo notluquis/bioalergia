@@ -78,7 +78,7 @@ export async function verifyPasskeyRegistration(
     await prisma.user.update({
       where: { id: userId },
       data: {
-        passkeyCredentialID: Buffer.from(credentialID).toString("base64"),
+        passkeyCredentialID: Buffer.from(credentialID).toString("base64url"),
         passkeyPublicKey: Buffer.from(credentialPublicKey),
         passkeyCounter: BigInt(counter),
         passkeyTransports: body.response.transports || [],
@@ -116,6 +116,7 @@ export async function verifyPasskeyLogin(body: AuthenticationResponseJSON, expec
   });
 
   if (!user || !user.passkeyPublicKey) {
+    console.error("[Passkey] Login failed: User not found or no public key", { credentialID });
     throw new Error("Passkey no encontrado");
   }
 
