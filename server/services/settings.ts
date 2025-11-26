@@ -1,5 +1,5 @@
 import { prisma } from "../prisma.js";
-import { type AppSettings, DEFAULT_SETTINGS, settingsKeyToDbKey, dbKeyToSettingsKey } from "../lib/settings.js";
+import { type AppSettings, DEFAULT_SETTINGS, dbKeyToSettingsKey } from "../lib/settings.js";
 
 export async function loadSettings(): Promise<AppSettings> {
   const settings = await prisma.setting.findMany();
@@ -15,34 +15,45 @@ export async function loadSettings(): Promise<AppSettings> {
   return result;
 }
 
-export async function saveSettings(settings: AppSettings) {
-  const promises = (Object.keys(settings) as Array<keyof AppSettings>).map((key) =>
-    prisma.setting.upsert({
-      where: { key: settingsKeyToDbKey(key) },
-      update: { value: settings[key] },
-      create: { key: settingsKeyToDbKey(key), value: settings[key] },
-    })
+export async function getSettings() {
+  const settings = await prisma.setting.findMany();
+  return settings.reduce(
+    (acc, curr) => {
+      acc[curr.key] = curr.value ?? "";
+      return acc;
+    },
+    {} as Record<string, string>
   );
-  await Promise.all(promises);
 }
 
-export async function getInternalConfig(key: string): Promise<string | null> {
+export async function getSetting(key: string) {
   const setting = await prisma.setting.findUnique({
-    where: { key: key },
+    where: { key },
   });
   return setting?.value ?? null;
 }
 
-export async function setInternalConfig(key: string, value: string | null) {
-  if (value === null) {
-    await prisma.setting.delete({
-      where: { key: key },
-    });
-  } else {
-    await prisma.setting.upsert({
-      where: { key: key },
-      update: { value: value },
-      create: { key: key, value: value },
-    });
-  }
+export async function updateSetting(key: string, value: string) {
+  return await prisma.setting.upsert({
+    where: { key },
+    update: { value },
+    create: { key, value },
+  });
+}
+
+export async function deleteSetting(key: string) {
+  return await prisma.setting.delete({
+    where: { key },
+  });
+}
+
+export async function updateSettings(settings: Record<string, string>) {
+  const updates = Object.entries(settings).map(([key, value]) =>
+    prisma.setting.upsert({
+      where: { key },
+      update: { value },
+      create: { key, value },
+    })
+  );
+  return await prisma.$transaction(updates);
 }

@@ -19,10 +19,8 @@ export function registerServiceRoutes(app: express.Express) {
       const services = await listServices();
       res.json({
         status: "ok",
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        services: services.map((s: any) => ({
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          ...mapService(s as any),
+        services: services.map((s) => ({
+          ...mapService(s),
         })),
       });
     })
@@ -49,8 +47,7 @@ export function registerServiceRoutes(app: express.Express) {
 
       res.json({
         status: "ok",
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        service: mapService(service as any),
+        service: mapService(service),
       });
     })
   );
@@ -80,8 +77,7 @@ export function registerServiceRoutes(app: express.Express) {
 
       res.json({
         status: "ok",
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        service: mapService(service as any),
+        service: mapService(service),
       });
     })
   );
@@ -100,8 +96,7 @@ export function registerServiceRoutes(app: express.Express) {
       }
       res.json({
         status: "ok",
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        service: mapService(service as any),
+        service: mapService(service),
       });
     })
   );

@@ -2,7 +2,7 @@ import express from "express";
 import multer from "multer";
 import { asyncHandler, authenticate, requireRole } from "../lib/http.js";
 import { logEvent, logWarn, requestContext } from "../lib/logger.js";
-import { loadSettings, saveSettings, getInternalConfig, setInternalConfig } from "../services/settings.js";
+import { getSettings, updateSettings, getSetting, updateSetting, deleteSetting } from "../services/settings.js";
 import { DEFAULT_SETTINGS, type AppSettings } from "../lib/settings.js";
 import type { AuthenticatedRequest } from "../types.js";
 import { settingsSchema } from "../schemas.js";
@@ -47,7 +47,7 @@ export function registerSettingsRoutes(app: express.Express) {
     "/api/settings",
     authenticate,
     asyncHandler(async (req: AuthenticatedRequest, res) => {
-      const settings = await loadSettings();
+      const settings = await getSettings();
       logEvent("settings:get", requestContext(req));
       res.json({ status: "ok", settings });
     })
@@ -59,7 +59,7 @@ export function registerSettingsRoutes(app: express.Express) {
     authenticate,
     requireRole("GOD", "ADMIN"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
-      const upsertChunk = await getInternalConfig("bioalergia_x.upsert_chunk_size");
+      const upsertChunk = await getSetting("bioalergia_x.upsert_chunk_size");
       // Expose both DB value and effective value (env var overrides DB). Do not expose other secrets.
       const envVal = process.env.BIOALERGIA_X_UPSERT_CHUNK_SIZE ?? null;
       const effective = envVal ?? upsertChunk ?? null;
@@ -78,14 +78,14 @@ export function registerSettingsRoutes(app: express.Express) {
       const { upsertChunkSize } = req.body ?? {};
       if (upsertChunkSize == null) {
         // remove key
-        await setInternalConfig("bioalergia_x.upsert_chunk_size", null);
+        await deleteSetting("bioalergia_x.upsert_chunk_size");
         return res.json({ status: "ok", message: "Internal setting removed" });
       }
       const parsed = Number(upsertChunkSize);
       if (Number.isNaN(parsed) || parsed <= 0 || parsed > 5000) {
         return res.status(400).json({ status: "error", message: "Valor inválido para upsertChunkSize (1-5000)" });
       }
-      await setInternalConfig("bioalergia_x.upsert_chunk_size", String(Math.max(50, Math.min(parsed, 5000))));
+      await updateSetting("bioalergia_x.upsert_chunk_size", String(Math.max(50, Math.min(parsed, 5000))));
       res.json({ status: "ok" });
     })
   );
@@ -108,8 +108,8 @@ export function registerSettingsRoutes(app: express.Express) {
         ...DEFAULT_SETTINGS,
         ...parsed.data,
       };
-      await saveSettings(payload);
-      const settings = await loadSettings();
+      await updateSettings(payload);
+      const settings = await getSettings();
       logEvent("settings:update:success", requestContext(req));
 
       await logAudit({
