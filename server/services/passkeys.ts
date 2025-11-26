@@ -41,11 +41,12 @@ export async function generatePasskeyRegistrationOptions(user: { id: number; ema
     },
   });
 
-  // Ensure user.id is a string (base64url) for the client
+  // Ensure user.id is a string (base64) for the client
   // The library should return JSON, but we enforce it to be safe against serialization issues
+  // We use standard 'base64' because some client-side decoders (like atob) fail with 'base64url' (no padding, -_)
   if (typeof options.user.id !== "string") {
     // @ts-ignore - Handle potential type mismatch if library returns Buffer
-    options.user.id = Buffer.from(options.user.id).toString("base64url");
+    options.user.id = Buffer.from(options.user.id).toString("base64");
   }
 
   return options;
