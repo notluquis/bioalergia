@@ -203,13 +203,13 @@ export default function OnboardingWizard() {
             />
 
             {STEPS.map((step, idx) => (
-              <div key={step.id} className="relative z-10 flex flex-col items-center gap-2 bg-base-200/50 px-1">
+              <div key={step.id} className="relative z-10 flex flex-col items-center gap-2 px-1">
                 <div
                   className={cn(
-                    "w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold transition-all duration-300 border-4 border-base-100",
+                    "w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold transition-all duration-300 border-4",
                     idx <= currentStep
                       ? "bg-primary text-primary-content border-primary shadow-lg shadow-primary/30 scale-110"
-                      : "bg-base-100 text-base-content/30 border-base-200"
+                      : "bg-base-100 text-base-content/50 border-base-200"
                   )}
                 >
                   {idx < currentStep ? <Check size={14} strokeWidth={3} /> : idx + 1}
@@ -217,7 +217,7 @@ export default function OnboardingWizard() {
                 <span
                   className={cn(
                     "absolute top-full mt-2 text-[10px] font-medium uppercase tracking-wider transition-colors whitespace-nowrap",
-                    idx <= currentStep ? "text-primary" : "text-base-content/30",
+                    idx <= currentStep ? "text-primary" : "text-base-content/60",
                     // Show all labels on sm+ screens, smart hiding on very small screens
                     "hidden sm:block",
                     // Always show current step label even on mobile
@@ -280,7 +280,7 @@ export default function OnboardingWizard() {
                   </label>
                   <input
                     type="text"
-                    className="input input-bordered"
+                    className="input input-bordered w-full"
                     value={profile.names}
                     onChange={(e) => setProfile({ ...profile, names: e.target.value })}
                     required
@@ -292,7 +292,7 @@ export default function OnboardingWizard() {
                   </label>
                   <input
                     type="text"
-                    className={cn("input input-bordered", error && error.includes("RUT") && "input-error")}
+                    className={cn("input input-bordered w-full", error && error.includes("RUT") && "input-error")}
                     value={profile.rut}
                     onChange={(e) => {
                       const val = e.target.value;
@@ -326,7 +326,7 @@ export default function OnboardingWizard() {
                   </label>
                   <input
                     type="text"
-                    className="input input-bordered"
+                    className="input input-bordered w-full"
                     value={profile.fatherName}
                     onChange={(e) => setProfile({ ...profile, fatherName: e.target.value })}
                   />
@@ -337,7 +337,7 @@ export default function OnboardingWizard() {
                   </label>
                   <input
                     type="text"
-                    className="input input-bordered"
+                    className="input input-bordered w-full"
                     value={profile.motherName}
                     onChange={(e) => setProfile({ ...profile, motherName: e.target.value })}
                   />
@@ -348,7 +348,7 @@ export default function OnboardingWizard() {
                   </label>
                   <input
                     type="tel"
-                    className="input input-bordered"
+                    className="input input-bordered w-full"
                     value={profile.phone}
                     onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
                   />
@@ -359,7 +359,7 @@ export default function OnboardingWizard() {
                   </label>
                   <input
                     type="text"
-                    className="input input-bordered"
+                    className="input input-bordered w-full"
                     value={profile.address}
                     onChange={(e) => setProfile({ ...profile, address: e.target.value })}
                   />
@@ -394,7 +394,7 @@ export default function OnboardingWizard() {
                   </label>
                   <input
                     type="text"
-                    className="input input-bordered"
+                    className="input input-bordered w-full"
                     value={profile.bankName}
                     onChange={(e) => setProfile({ ...profile, bankName: e.target.value })}
                     placeholder="Ej: Banco de Chile"
@@ -406,7 +406,7 @@ export default function OnboardingWizard() {
                       <span className="label-text">Tipo de Cuenta</span>
                     </label>
                     <select
-                      className="select select-bordered"
+                      className="select select-bordered w-full"
                       value={profile.bankAccountType}
                       onChange={(e) => setProfile({ ...profile, bankAccountType: e.target.value })}
                     >
@@ -422,7 +422,7 @@ export default function OnboardingWizard() {
                     </label>
                     <input
                       type="text"
-                      className="input input-bordered"
+                      className="input input-bordered w-full"
                       value={profile.bankAccountNumber}
                       onChange={(e) => setProfile({ ...profile, bankAccountNumber: e.target.value })}
                     />
@@ -461,7 +461,7 @@ export default function OnboardingWizard() {
                   </label>
                   <input
                     type="password"
-                    className="input input-bordered"
+                    className="input input-bordered w-full"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
@@ -474,7 +474,7 @@ export default function OnboardingWizard() {
                   </label>
                   <input
                     type="password"
-                    className="input input-bordered"
+                    className="input input-bordered w-full"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     required
