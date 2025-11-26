@@ -129,8 +129,8 @@ export default function UserManagementPage() {
                     <td>
                       <div className="flex items-center gap-3">
                         <div className="avatar placeholder">
-                          <div className="w-10 rounded-full bg-neutral text-neutral-content">
-                            <span>{user.person.names[0]}</span>
+                          <div className="w-10 rounded-full bg-neutral text-neutral-content flex items-center justify-center">
+                            <span className="text-xs font-bold">{user.person.names[0]}</span>
                           </div>
                         </div>
                         <div>
@@ -155,11 +155,14 @@ export default function UserManagementPage() {
                     </td>
                     <td className="text-sm text-base-content/70">{dayjs(user.createdAt).format("DD MMM YYYY")}</td>
                     <td>
-                      <div className="dropdown dropdown-end">
+                      <div className="dropdown dropdown-left dropdown-end">
                         <div tabIndex={0} role="button" className="btn btn-ghost btn-xs">
                           <MoreVertical size={16} />
                         </div>
-                        <ul tabIndex={0} className="dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow">
+                        <ul
+                          tabIndex={0}
+                          className="dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow border border-base-200"
+                        >
                           <li>
                             <a>
                               <Key size={14} />
