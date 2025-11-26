@@ -90,7 +90,7 @@ export default function Login() {
       }
 
       // 2. Browser native auth
-      const authResp = await startAuthentication(options);
+      const authResp = await startAuthentication({ optionsJSON: options });
 
       // 3. Verify with server
       await loginWithPasskey(authResp, options.challenge);

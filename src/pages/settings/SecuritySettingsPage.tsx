@@ -106,7 +106,7 @@ export default function SecuritySettingsPage() {
       if (options.status === "error") throw new Error(options.message);
 
       // 2. Create credential
-      const attResp = await startRegistration(options);
+      const attResp = await startRegistration({ optionsJSON: options });
 
       // 3. Verify
       const verifyRes = await fetch("/api/auth/passkey/register/verify", {
@@ -124,6 +124,26 @@ export default function SecuritySettingsPage() {
     } catch (err) {
       console.error(err);
       error(err instanceof Error ? err.message : "Error al registrar Passkey");
+    } finally {
+      setLoadingPasskey(false);
+    }
+  };
+
+  const handleDeletePasskey = async () => {
+    if (!confirm("¿Estás seguro de eliminar tu Passkey? Tendrás que usar tu contraseña para iniciar sesión.")) return;
+
+    setLoadingPasskey(true);
+    try {
+      const res = await fetch("/api/auth/passkey/remove", { method: "DELETE" });
+      const data = await res.json();
+      if (data.status === "ok") {
+        success("Passkey eliminado");
+        await refreshSession();
+      } else {
+        error(data.message || "Error al eliminar Passkey");
+      }
+    } catch {
+      error("Error de conexión");
     } finally {
       setLoadingPasskey(false);
     }
@@ -230,16 +250,38 @@ export default function SecuritySettingsPage() {
               </p>
             </div>
 
-            <div className="flex items-center gap-4">
-              <Button onClick={handleRegisterPasskey} disabled={loadingPasskey} variant="outline">
-                {loadingPasskey ? (
-                  <Loader2 className="mr-2 size-4 animate-spin" />
-                ) : (
-                  <Fingerprint className="mr-2 size-4" />
-                )}
-                Registrar nuevo Passkey
-              </Button>
-            </div>
+            {(user as unknown as { hasPasskey: boolean })?.hasPasskey ? (
+              <div className="flex items-center gap-2 rounded-lg bg-success/10 px-4 py-3 text-sm text-success-content">
+                <Check className="size-4" />
+                <span className="font-medium">Passkey configurado.</span>
+                <div className="ml-auto flex gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-error hover:bg-error/10"
+                    onClick={handleDeletePasskey}
+                    disabled={loadingPasskey}
+                  >
+                    Eliminar
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={handleRegisterPasskey} disabled={loadingPasskey}>
+                    Reemplazar
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-4">
+                <Button onClick={handleRegisterPasskey} disabled={loadingPasskey} variant="outline">
+                  {loadingPasskey ? (
+                    <Loader2 className="mr-2 size-4 animate-spin" />
+                  ) : (
+                    <Fingerprint className="mr-2 size-4" />
+                  )}
+                  Registrar nuevo Passkey
+                </Button>
+              </div>
+            )}
+
             <p className="text-xs text-base-content/50">
               Nota: Solo puedes tener un Passkey activo por usuario. Registrar uno nuevo reemplazará el anterior.
             </p>

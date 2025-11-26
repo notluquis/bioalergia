@@ -39,7 +39,7 @@ export async function generatePasskeyRegistrationOptions(user: { id: number; ema
     userName: user.email,
     attestationType: "none",
     authenticatorSelection: {
-      residentKey: "preferred",
+      residentKey: "required", // Force discoverable credential (Passkey)
       userVerification: "preferred",
       authenticatorAttachment: "platform", // Prefer built-in (TouchID/FaceID)
     },
@@ -69,6 +69,7 @@ export async function verifyPasskeyRegistration(
     expectedChallenge,
     expectedOrigin: ORIGIN,
     expectedRPID: RP_ID,
+    requireUserVerification: false, // Allow if UV was skipped (since we used 'preferred')
   });
 
   if (verification.verified && verification.registrationInfo) {
@@ -99,6 +100,7 @@ export async function generatePasskeyLoginOptions() {
   const options = await generateAuthenticationOptions({
     rpID: RP_ID,
     userVerification: "preferred",
+    allowCredentials: [], // Allow any discoverable credential (usernameless)
   });
 
   return options;
@@ -125,6 +127,7 @@ export async function verifyPasskeyLogin(body: AuthenticationResponseJSON, expec
     expectedChallenge,
     expectedOrigin: ORIGIN,
     expectedRPID: RP_ID,
+    requireUserVerification: false, // Allow if UV was skipped
     credential: {
       id: user.passkeyCredentialID!,
       publicKey: new Uint8Array(user.passkeyPublicKey),
