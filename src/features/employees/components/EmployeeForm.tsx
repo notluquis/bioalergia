@@ -83,10 +83,10 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
       bank_account_type: form.bankAccountType.trim() || null,
       bank_account_number: form.bankAccountNumber.trim() || null,
       salary_type: form.salaryType as EmployeeSalaryType,
-      hourly_rate: form.salaryType === "HOURLY" ? Number(form.hourlyRate || 0) : undefined,
-      fixed_salary: form.salaryType === "FIXED" ? Number(form.fixedSalary || 0) : undefined,
+      hourly_rate: form.salaryType === "HOURLY" && form.hourlyRate ? Number(form.hourlyRate) : undefined,
+      fixed_salary: form.salaryType === "FIXED" && form.fixedSalary ? Number(form.fixedSalary) : undefined,
       overtime_rate: form.overtimeRate ? Number(form.overtimeRate) : null,
-      retention_rate: Number(form.retentionRate || 0),
+      retention_rate: form.retentionRate ? Number(form.retentionRate) : 0,
     };
     setSaving(true);
     try {
@@ -211,6 +211,7 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
           }
           required={form.salaryType === "HOURLY"}
           disabled={form.salaryType !== "HOURLY"}
+          placeholder="$ 0"
         />
         {form.salaryType === "FIXED" && (
           <Input
@@ -222,6 +223,7 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
               setForm((prev) => ({ ...prev, fixedSalary: event.target.value }))
             }
             required
+            placeholder="$ 0"
           />
         )}
         <Input

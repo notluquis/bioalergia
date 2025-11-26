@@ -622,7 +622,7 @@ html[data-theme="bioalergia-dark"] {
 /* Optimize heavy components */
 .surface-elevated {
   /* Isolate layout/paint for performance */
-  contain: layout paint;
+  /* contain: layout paint; - Removed to allow dropdown overflow */
 }
 
 .brand-logo {

@@ -1,12 +1,6 @@
-import { Settings as SettingsIcon, KeyRound, Calendar, Shield, Boxes } from "lucide-react";
+import { KeyRound, Calendar, Shield, Boxes } from "lucide-react";
 
 export const SETTINGS_PAGES = [
-  {
-    to: "general",
-    label: "Identidad y marca",
-    description: "Colores, logo y metadatos públicos.",
-    icon: SettingsIcon,
-  },
   {
     to: "calendar",
     label: "Calendario",

@@ -44,13 +44,7 @@ export default function SettingsOverviewPage() {
               }
             >
               <div className="flex items-center gap-3">
-                <span
-                  className={`rounded-2xl border px-3 py-2 ${
-                    page.to === "general"
-                      ? "border-primary/40 bg-primary/15 text-primary"
-                      : "border-base-300 text-base-content/80"
-                  }`}
-                >
+                <span className={`rounded-2xl border px-3 py-2 border-base-300 text-base-content/80`}>
                   <Icon size={18} />
                 </span>
                 <span className="text-sm font-semibold uppercase tracking-wide">{page.label}</span>
