@@ -2,17 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Plus, Search, User, Briefcase, Building } from "lucide-react";
 
-interface Person {
-  id: number;
-  rut: string;
-  names: string;
-  fatherName?: string;
-  email?: string;
-  personType: string;
-  user?: { id: number; role: string };
-  employee?: { id: number; position: string };
-  counterpart?: { id: number; category: string };
-}
+import type { Person } from "@/types/schema";
 
 export default function PersonManagementPage() {
   const [search, setSearch] = useState("");

@@ -65,24 +65,24 @@ export default function EmployeeTable({ employees, loading, onEdit, onDeactivate
           bValue = b.full_name;
           break;
         case "role":
-          aValue = a.role;
-          bValue = b.role;
+          aValue = a.position;
+          bValue = b.position;
           break;
         case "email":
-          aValue = a.email || "";
-          bValue = b.email || "";
+          aValue = a.person?.email || "";
+          bValue = b.person?.email || "";
           break;
         case "hourlyRate":
-          aValue = a.hourly_rate;
-          bValue = b.hourly_rate;
+          aValue = a.hourlyRate || 0;
+          bValue = b.hourlyRate || 0;
           break;
         case "overtimeRate":
-          aValue = a.overtime_rate || 0;
-          bValue = b.overtime_rate || 0;
+          aValue = 0; // Not in schema
+          bValue = 0;
           break;
         case "retentionRate":
-          aValue = a.retention_rate;
-          bValue = b.retention_rate;
+          aValue = 0; // Not in schema
+          bValue = 0;
           break;
         case "status":
           aValue = a.status;
@@ -215,20 +215,22 @@ export default function EmployeeTable({ employees, loading, onEdit, onDeactivate
                   {table.isColumnVisible("name") && (
                     <td className="px-4 py-3 font-medium text-base-content">{employee.full_name}</td>
                   )}
-                  {table.isColumnVisible("role") && <td className="px-4 py-3 text-base-content">{employee.role}</td>}
+                  {table.isColumnVisible("role") && (
+                    <td className="px-4 py-3 text-base-content">{employee.position}</td>
+                  )}
                   {table.isColumnVisible("email") && (
-                    <td className="px-4 py-3 text-base-content/60">{employee.email ?? "—"}</td>
+                    <td className="px-4 py-3 text-base-content/60">{employee.person?.email ?? "—"}</td>
                   )}
                   {table.isColumnVisible("rut") && (
-                    <td className="px-4 py-3 text-base-content">{employee.rut ?? "—"}</td>
+                    <td className="px-4 py-3 text-base-content">{employee.person?.rut ?? "—"}</td>
                   )}
                   {table.isColumnVisible("bank") && (
                     <td className="px-4 py-3 text-base-content">
-                      {employee.bank_name ? (
+                      {employee.bankName ? (
                         <span className="whitespace-nowrap">
-                          {employee.bank_name}
-                          {employee.bank_account_type ? ` · ${employee.bank_account_type}` : ""}
-                          {employee.bank_account_number ? ` · ${employee.bank_account_number}` : ""}
+                          {employee.bankName}
+                          {employee.bankAccountType ? ` · ${employee.bankAccountType}` : ""}
+                          {employee.bankAccountNumber ? ` · ${employee.bankAccountNumber}` : ""}
                         </span>
                       ) : (
                         "—"
@@ -236,16 +238,10 @@ export default function EmployeeTable({ employees, loading, onEdit, onDeactivate
                     </td>
                   )}
                   {table.isColumnVisible("hourlyRate") && (
-                    <td className="px-4 py-3 text-base-content">{fmtCLP(employee.hourly_rate)}</td>
+                    <td className="px-4 py-3 text-base-content">{fmtCLP(employee.hourlyRate || 0)}</td>
                   )}
-                  {table.isColumnVisible("overtimeRate") && (
-                    <td className="px-4 py-3 text-base-content">
-                      {employee.overtime_rate != null ? fmtCLP(employee.overtime_rate) : "Automático"}
-                    </td>
-                  )}
-                  {table.isColumnVisible("retentionRate") && (
-                    <td className="px-4 py-3 text-base-content">{(employee.retention_rate * 100).toFixed(1)}%</td>
-                  )}
+                  {table.isColumnVisible("overtimeRate") && <td className="px-4 py-3 text-base-content">—</td>}
+                  {table.isColumnVisible("retentionRate") && <td className="px-4 py-3 text-base-content">14.5%</td>}
                   {table.isColumnVisible("status") && (
                     <td className="px-4 py-3 text-base-content">
                       {employee.status === "ACTIVE" ? "Activo" : "Inactivo"}

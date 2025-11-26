@@ -24,7 +24,7 @@ export default function RoleMappingManager() {
         const [employees, dbMappings] = await Promise.all([fetchEmployees(true), getRoleMappings()]);
 
         const dbMappingsMap = new Map(dbMappings.map((m: RoleMapping) => [m.employee_role, m]));
-        const uniqueRoles = [...new Set(employees.map((e: Employee) => e.role))].sort();
+        const uniqueRoles = [...new Set(employees.map((e: Employee) => e.position))].sort();
         setJobTitles(uniqueRoles);
 
         const allRoles = uniqueRoles.map((role: string) => {

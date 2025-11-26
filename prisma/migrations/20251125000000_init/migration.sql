@@ -421,4 +421,3 @@ ALTER TABLE "inventory_movements" ADD CONSTRAINT "inventory_movements_item_id_fk
 
 -- AddForeignKey
 ALTER TABLE "daily_production_balances" ADD CONSTRAINT "daily_production_balances_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-

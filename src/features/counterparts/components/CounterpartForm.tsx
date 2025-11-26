@@ -1,14 +1,16 @@
 import { useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { formatRut, normalizeRut } from "../../../lib";
-import { useForm } from "../../../hooks";
 import Button from "../../../components/ui/Button";
 import Input from "../../../components/ui/Input";
 import Alert from "../../../components/ui/Alert";
 import type { Counterpart } from "../types";
 import { CATEGORY_OPTIONS, EMPTY_FORM } from "../constants";
 import type { CounterpartUpsertPayload } from "../api";
+import type { PersonType, CounterpartCategory } from "@/types/schema";
 
 const counterpartFormSchema = z.object({
   rut: z
@@ -21,7 +23,7 @@ const counterpartFormSchema = z.object({
       return normalizeRut(value) !== null;
     }, "RUT inválido"),
   name: z.string().trim().min(1, "El nombre es requerido"),
-  personType: z.enum(["PERSON", "COMPANY", "OTHER"]),
+  personType: z.enum(["NATURAL", "JURIDICAL"] as const),
   category: z.enum([
     "SUPPLIER",
     "PATIENT",
@@ -32,7 +34,7 @@ const counterpartFormSchema = z.object({
     "CLIENT",
     "LENDER",
     "OCCASIONAL",
-  ]),
+  ] as const),
   email: z.string().trim().email("Email inválido").or(z.literal("")),
   notes: z
     .string()
@@ -40,6 +42,8 @@ const counterpartFormSchema = z.object({
     .optional()
     .transform((value) => value ?? ""),
 });
+
+type CounterpartFormValues = z.infer<typeof counterpartFormSchema>;
 
 interface CounterpartFormProps {
   counterpart?: Counterpart | null;
@@ -50,33 +54,34 @@ interface CounterpartFormProps {
 }
 
 export default function CounterpartForm({ counterpart, onSave, error, saving, loading = false }: CounterpartFormProps) {
-  const form = useForm({
-    initialValues: EMPTY_FORM,
-    validationSchema: counterpartFormSchema,
-    onSubmit: async (values) => {
-      const payload = {
-        rut: values.rut || null,
-        name: values.name,
-        personType: values.personType,
-        category: values.category,
-        email: values.email || null,
-        employeeEmail: values.email || null,
-        notes: values.notes || null,
-      };
-      await onSave(payload);
+  const {
+    register,
+    handleSubmit,
+    reset,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm<CounterpartFormValues>({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    resolver: zodResolver(counterpartFormSchema) as any,
+    defaultValues: {
+      rut: "",
+      name: "",
+      personType: "NATURAL",
+      category: "OTHER",
+      email: "",
+      notes: "",
     },
-    validateOnBlur: true,
   });
 
-  const { getFieldProps, getFieldError, handleSubmit, isSubmitting, values, reset } = form;
+  const values = watch();
 
   const counterpartSnapshot = useMemo(() => {
     if (!counterpart) return null;
     return {
       rut: formatRut(counterpart.rut ?? ""),
       name: counterpart.name,
-      personType: counterpart.personType,
-      category: counterpart.category,
+      personType: counterpart.personType as PersonType,
+      category: counterpart.category as CounterpartCategory,
       email: counterpart.email ?? "",
       notes: counterpart.notes ?? "",
     };
@@ -86,16 +91,32 @@ export default function CounterpartForm({ counterpart, onSave, error, saving, lo
     if (counterpartSnapshot) {
       reset(counterpartSnapshot);
     } else {
-      reset();
+      reset({
+        ...EMPTY_FORM,
+        personType: "NATURAL",
+      });
     }
   }, [counterpartSnapshot, reset]);
+
+  const onSubmit = async (values: CounterpartFormValues) => {
+    const payload: CounterpartUpsertPayload = {
+      rut: values.rut || null,
+      name: values.name,
+      personType: values.personType,
+      category: values.category,
+      email: values.email || null,
+      employeeEmail: values.email || null,
+      notes: values.notes || null,
+    };
+    await onSave(payload);
+  };
 
   const busy = loading || saving || isSubmitting;
 
   return (
     <section className="surface-recessed relative space-y-5 p-6" aria-busy={busy}>
       {loading && (
-        <div className="absolute inset-0 z-10 rounded-2xl bg-base-100/60 backdrop-blur-sm flex items-center justify-center">
+        <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-base-100/60 backdrop-blur-sm">
           <span className="loading loading-spinner loading-lg text-primary" aria-hidden="true" />
         </div>
       )}
@@ -105,53 +126,47 @@ export default function CounterpartForm({ counterpart, onSave, error, saving, lo
           Completa los datos principales para sincronizar la información de pagos y retiros.
         </p>
       </div>
-      <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-2">
+      <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4 md:grid-cols-2">
         <fieldset className="contents" disabled={busy}>
           <div>
             <Input
               label="RUT"
               type="text"
-              {...getFieldProps("rut")}
+              {...register("rut")}
               placeholder="12.345.678-9"
               helper={values.rut ? formatRut(values.rut) : undefined}
             />
-            {getFieldError("rut") && <p className="mt-1 text-xs text-error">{getFieldError("rut")}</p>}
+            {errors.rut && <p className="mt-1 text-xs text-error">{errors.rut.message}</p>}
           </div>
           <div>
-            <Input label="Nombre" type="text" {...getFieldProps("name")} placeholder="Allos Chile Spa" required />
-            {getFieldError("name") && <p className="mt-1 text-xs text-error">{getFieldError("name")}</p>}
+            <Input label="Nombre" type="text" {...register("name")} placeholder="Allos Chile Spa" required />
+            {errors.name && <p className="mt-1 text-xs text-error">{errors.name.message}</p>}
           </div>
           <div>
-            <Input label="Tipo de persona" as="select" {...getFieldProps("personType")}>
-              <option value="PERSON">Persona natural</option>
-              <option value="COMPANY">Empresa</option>
-              <option value="OTHER">Otra</option>
+            <Input label="Tipo de persona" as="select" {...register("personType")}>
+              <option value="NATURAL">Persona natural</option>
+              <option value="JURIDICAL">Empresa</option>
             </Input>
-            {getFieldError("personType") && <p className="mt-1 text-xs text-error">{getFieldError("personType")}</p>}
+            {errors.personType && <p className="mt-1 text-xs text-error">{errors.personType.message}</p>}
           </div>
           <div>
-            <Input label="Clasificación" as="select" {...getFieldProps("category")}>
+            <Input label="Clasificación" as="select" {...register("category")}>
               {CATEGORY_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
               ))}
             </Input>
-            {getFieldError("category") && <p className="mt-1 text-xs text-error">{getFieldError("category")}</p>}
+            {errors.category && <p className="mt-1 text-xs text-error">{errors.category.message}</p>}
           </div>
           {values.category === "EMPLOYEE" && (
-            <p className="md:col-span-2 text-xs text-base-content/80">
+            <p className="text-xs text-base-content/80 md:col-span-2">
               Se vinculará como empleado utilizando el correo electrónico ingresado.
             </p>
           )}
           <div>
-            <Input
-              label="Correo electrónico"
-              type="email"
-              {...getFieldProps("email")}
-              placeholder="contacto@empresa.cl"
-            />
-            {getFieldError("email") && <p className="mt-1 text-xs text-error">{getFieldError("email")}</p>}
+            <Input label="Correo electrónico" type="email" {...register("email")} placeholder="contacto@empresa.cl" />
+            {errors.email && <p className="mt-1 text-xs text-error">{errors.email.message}</p>}
           </div>
           {!counterpart && (
             <div className="md:col-span-2">
@@ -159,21 +174,21 @@ export default function CounterpartForm({ counterpart, onSave, error, saving, lo
                 label="Notas"
                 as="textarea"
                 rows={4}
-                {...getFieldProps("notes")}
+                {...register("notes")}
                 placeholder="Información adicional, persona de contacto, etc."
               />
-              {getFieldError("notes") && <p className="mt-1 text-xs text-error">{getFieldError("notes")}</p>}
+              {errors.notes && <p className="mt-1 text-xs text-error">{errors.notes.message}</p>}
             </div>
           )}
           {counterpart?.employeeId && (
-            <p className="md:col-span-2 text-xs text-base-content/80">
+            <p className="text-xs text-base-content/80 md:col-span-2">
               Empleado vinculado (ID #{counterpart.employeeId}).{" "}
               <Link to="/employees" className="font-semibold text-primary">
                 Ver empleados
               </Link>
             </p>
           )}
-          <div className="md:col-span-2 flex flex-col gap-3">
+          <div className="flex flex-col gap-3 md:col-span-2">
             {error && <Alert variant="error">{error}</Alert>}
             <div className="flex flex-wrap justify-end gap-2">
               <Button type="submit" disabled={busy}>

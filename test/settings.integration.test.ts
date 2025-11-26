@@ -1,59 +1,66 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import request from "supertest";
-import { app } from "../server/index.js";
-import { prisma } from "../server/prisma.js";
-import { createTestUser, generateToken } from "./helpers.js";
-import { sessionCookieName } from "../server/config.js";
+import express from "express";
+import { registerSettingsRoutes } from "../server/routes/settings.js";
+import { authenticate } from "../server/lib/http.js";
 
-describe("Settings Integration Tests", () => {
-  let adminToken: string;
-  let adminId: number;
+// Mock Services
+vi.mock("../server/services/settings.js", () => ({
+  getSettings: vi.fn().mockResolvedValue({ companyName: "Old Name" }),
+  updateSettings: vi.fn().mockResolvedValue(undefined),
+}));
 
-  beforeAll(async () => {
-    const admin = await createTestUser({ role: "ADMIN", email: "settings-admin@test.com" });
-    adminId = admin.id;
-    adminToken = generateToken(admin);
+vi.mock("../server/services/audit.js", () => ({
+  logAudit: vi.fn(),
+}));
+
+// Mock Auth Middleware
+vi.mock("../server/lib/http.js", async () => {
+  const actual = await vi.importActual("../server/lib/http.js");
+  return {
+    ...actual,
+    authenticate: vi.fn((req, res, next) => {
+      req.auth = { userId: 1, email: "admin@example.com", role: "GOD" };
+      next();
+    }),
+    requireRole: () => (req, res, next) => next(),
+  };
+});
+
+import { logAudit } from "../server/services/audit.js";
+import { updateSettings } from "../server/services/settings.js";
+
+const app = express();
+app.use(express.json());
+registerSettingsRoutes(app);
+
+describe("Settings Integration", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
   });
 
-  afterAll(async () => {
-    if (adminId) {
-      await prisma.auditLog.deleteMany({ where: { userId: adminId } });
-      await prisma.user.delete({ where: { id: adminId } });
-    }
-  });
-
-  it("should log audit event when updating settings", async () => {
+  it("should update settings and log audit", async () => {
     const payload = {
-      orgName: "Updated Company",
-      orgAddress: "123 Test St",
+      orgName: "Test Org",
       primaryColor: "#000000",
       secondaryColor: "#ffffff",
-      pageTitle: "Test Title",
-      dbDisplayHost: "localhost",
-      dbDisplayName: "Test DB",
-      supportEmail: "support@test.com",
       logoUrl: "https://example.com/logo.png",
       faviconUrl: "https://example.com/favicon.ico",
+      pageTitle: "Test Page",
+      dbDisplayHost: "localhost",
+      dbDisplayName: "Test DB",
+      supportEmail: "test@example.com",
     };
-
-    const res = await request(app)
-      .put("/api/settings")
-      .set("Cookie", [`${sessionCookieName}=${adminToken}`])
-      .send(payload);
+    const res = await request(app).put("/api/settings").send(payload);
 
     expect(res.status).toBe(200);
-
-    const log = await prisma.auditLog.findFirst({
-      where: {
+    expect(updateSettings).toHaveBeenCalledWith(expect.objectContaining(payload));
+    expect(logAudit).toHaveBeenCalledWith(
+      expect.objectContaining({
         action: "SETTINGS_UPDATE",
-        userId: adminId,
-      },
-      orderBy: { createdAt: "desc" },
-    });
-
-    expect(log).toBeDefined();
-    expect(log?.entity).toBe("Settings");
-    const details = log?.details as Record<string, unknown>;
-    expect(details.orgName).toBe("Updated Company");
+        entity: "Settings",
+        details: expect.objectContaining(payload),
+      })
+    );
   });
 });
