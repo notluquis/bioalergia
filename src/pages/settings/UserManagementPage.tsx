@@ -18,7 +18,7 @@ type User = {
   email: string;
   role: "GOD" | "ADMIN" | "ANALYST" | "VIEWER";
   status: "ACTIVE" | "INACTIVE" | "PENDING_SETUP" | "SUSPENDED";
-  lastLoginAt: string | null;
+  createdAt: string;
   person: {
     names: string;
     fatherName: string | null;
@@ -36,15 +36,16 @@ export default function UserManagementPage() {
     queryFn: async () => {
       const res = await fetch("/api/users");
       if (!res.ok) throw new Error("Failed to fetch users");
-      return res.json() as Promise<User[]>;
+      const payload = await res.json();
+      return (payload.users || []) as User[];
     },
   });
 
   const filteredUsers = users?.filter((user) => {
     const matchesSearch =
       user.email.toLowerCase().includes(search.toLowerCase()) ||
-      user.person.names.toLowerCase().includes(search.toLowerCase()) ||
-      user.person.rut.includes(search);
+      (user.person?.names?.toLowerCase() ?? "").includes(search.toLowerCase()) ||
+      (user.person?.rut ?? "").includes(search);
     const matchesRole = roleFilter === "ALL" || user.role === roleFilter;
     return matchesSearch && matchesRole;
   });
@@ -105,7 +106,7 @@ export default function UserManagementPage() {
                 <th>Usuario</th>
                 <th>Rol</th>
                 <th>Estado</th>
-                <th>Último Acceso</th>
+                <th>Creado</th>
                 <th className="w-10"></th>
               </tr>
             </thead>
@@ -152,9 +153,7 @@ export default function UserManagementPage() {
                         {user.status}
                       </div>
                     </td>
-                    <td className="text-sm text-base-content/70">
-                      {user.lastLoginAt ? dayjs(user.lastLoginAt).fromNow() : "Nunca"}
-                    </td>
+                    <td className="text-sm text-base-content/70">{dayjs(user.createdAt).format("DD MMM YYYY")}</td>
                     <td>
                       <div className="dropdown dropdown-end">
                         <div tabIndex={0} role="button" className="btn btn-ghost btn-xs">

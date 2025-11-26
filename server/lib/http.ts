@@ -37,11 +37,12 @@ export function issueToken(session: AuthSession) {
   );
 }
 
-export function sanitizeUser(user: { id: number; email: string; role: UserRole }) {
+export function sanitizeUser(user: { id: number; email: string; role: UserRole; status: string }) {
   return {
     id: user.id,
     email: user.email,
     role: user.role,
+    status: user.status,
   };
 }
 
