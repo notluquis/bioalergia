@@ -13,7 +13,9 @@ import {
   saveProductionBalance,
 } from "../../features/dailyProductionBalances/api";
 import type { ProductionBalancePayload, ProductionBalanceStatus } from "../../features/dailyProductionBalances/types";
-import { deriveTotals, formatActivityTotal } from "../../features/dailyProductionBalances/utils";
+import { deriveTotals } from "../../features/dailyProductionBalances/utils";
+import WeekView from "../../features/dailyProductionBalances/components/WeekView";
+import { useAuth } from "../../context/AuthContext";
 
 type FormState = {
   date: string;
@@ -33,8 +35,8 @@ type FormState = {
   reason: string;
 };
 
-const makeDefaultForm = (): FormState => ({
-  date: dayjs().format("YYYY-MM-DD"),
+const makeDefaultForm = (date?: string): FormState => ({
+  date: date || dayjs().format("YYYY-MM-DD"),
   status: "FINAL",
   ingresoTarjetas: "0",
   ingresoTransferencias: "0",
@@ -77,27 +79,6 @@ function toPayload(form: FormState): ProductionBalancePayload {
   };
 }
 
-function formatStatus(status: ProductionBalanceStatus) {
-  return status === "FINAL" ? "Final" : "Borrador";
-}
-
-function StatusBadge({ status }: { status: ProductionBalanceStatus }) {
-  const palette =
-    status === "FINAL"
-      ? "bg-success/15 text-success border-success/40"
-      : "bg-warning/10 text-warning border-warning/40";
-  return (
-    <span
-      className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-[11px] font-semibold ${palette}`}
-    >
-      <span className="h-2 w-2 rounded-full bg-current" aria-hidden="true" />
-      {formatStatus(status)}
-    </span>
-  );
-}
-
-import { useAuth } from "../../context/AuthContext";
-
 export default function DailyProductionBalancesPage() {
   const { hasRole } = useAuth();
   const canEdit = hasRole("GOD", "ADMIN", "ANALYST");
@@ -116,9 +97,17 @@ export default function DailyProductionBalancesPage() {
     [settings.primaryCurrency]
   );
 
-  const [from, setFrom] = useState(dayjs().subtract(14, "day").format("YYYY-MM-DD"));
-  const [to, setTo] = useState(dayjs().format("YYYY-MM-DD"));
-  const [form, setForm] = useState<FormState>(makeDefaultForm);
+  // State for WeekView
+  const [currentDate, setCurrentDate] = useState(dayjs());
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+
+  // Calculate range for the current week view
+  const startOfWeek = currentDate.startOf("week").add(1, "day");
+  const endOfWeek = startOfWeek.add(6, "day");
+  const from = startOfWeek.format("YYYY-MM-DD");
+  const to = endOfWeek.format("YYYY-MM-DD");
+
+  const [form, setForm] = useState<FormState>(() => makeDefaultForm());
   const [selectedId, setSelectedId] = useState<number | null>(null);
 
   const balancesQuery = useQuery({
@@ -151,28 +140,39 @@ export default function DailyProductionBalancesPage() {
   });
 
   const balances = useMemo(() => balancesQuery.data ?? [], [balancesQuery.data]);
-  const selected = useMemo(() => balances.find((item) => item.id === selectedId) ?? null, [balances, selectedId]);
 
+  // When a date is selected, find the balance for that date or reset form
   useEffect(() => {
-    if (!selected) return;
-    setForm({
-      date: selected.date,
-      status: selected.status,
-      ingresoTarjetas: String(selected.ingresoTarjetas),
-      ingresoTransferencias: String(selected.ingresoTransferencias),
-      ingresoEfectivo: String(selected.ingresoEfectivo),
-      gastosDiarios: String(selected.gastosDiarios),
-      otrosAbonos: String(selected.otrosAbonos),
-      consultas: String(selected.consultas),
-      controles: String(selected.controles),
-      tests: String(selected.tests),
-      vacunas: String(selected.vacunas),
-      licencias: String(selected.licencias),
-      roxair: String(selected.roxair),
-      comentarios: selected.comentarios ?? "",
-      reason: "",
-    });
-  }, [selected]);
+    if (!selectedDate) {
+      setSelectedId(null);
+      return;
+    }
+
+    const balance = balances.find((b) => b.date === selectedDate);
+    if (balance) {
+      setSelectedId(balance.id);
+      setForm({
+        date: balance.date,
+        status: balance.status,
+        ingresoTarjetas: String(balance.ingresoTarjetas),
+        ingresoTransferencias: String(balance.ingresoTransferencias),
+        ingresoEfectivo: String(balance.ingresoEfectivo),
+        gastosDiarios: String(balance.gastosDiarios),
+        otrosAbonos: String(balance.otrosAbonos),
+        consultas: String(balance.consultas),
+        controles: String(balance.controles),
+        tests: String(balance.tests),
+        vacunas: String(balance.vacunas),
+        licencias: String(balance.licencias),
+        roxair: String(balance.roxair),
+        comentarios: balance.comentarios ?? "",
+        reason: "",
+      });
+    } else {
+      setSelectedId(null);
+      setForm(makeDefaultForm(selectedDate));
+    }
+  }, [selectedDate, balances]);
 
   const derived = deriveTotals({
     ingresoTarjetas: parseNumber(form.ingresoTarjetas),
@@ -181,14 +181,6 @@ export default function DailyProductionBalancesPage() {
     gastosDiarios: parseNumber(form.gastosDiarios),
     otrosAbonos: parseNumber(form.otrosAbonos),
   });
-
-  const activitiesTotal =
-    parseNumber(form.consultas) +
-    parseNumber(form.controles) +
-    parseNumber(form.tests) +
-    parseNumber(form.vacunas) +
-    parseNumber(form.licencias) +
-    parseNumber(form.roxair);
 
   const handleChange =
     (key: keyof FormState) => (event: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -200,311 +192,246 @@ export default function DailyProductionBalancesPage() {
     mutation.mutate();
   };
 
-  const handleReset = () => {
-    setSelectedId(null);
-    setForm(makeDefaultForm());
-  };
-
   return (
-    <section className="space-y-6">
+    <section className="space-y-8">
       <div className="flex flex-col gap-2">
         <p className="text-xs font-semibold uppercase tracking-wide text-primary">Finanzas · Prestaciones</p>
         <h1 className="text-3xl font-semibold text-base-content drop-shadow-sm">Balance diario de prestaciones</h1>
         <p className="max-w-3xl text-sm text-base-content/70">
-          Registra los ingresos diarios por forma de pago y el detalle de prestaciones (consultas, controles, test,
-          vacunas, licencias, Roxair). Todos los montos se guardan en {settings.primaryCurrency || "CLP"} y cada edición
-          genera historial para auditoría.
+          Gestiona los ingresos y prestaciones diarias. Selecciona un día de la semana para registrar o editar su
+          balance.
         </p>
       </div>
 
-      <div className="flex flex-wrap items-end gap-3 rounded-2xl border border-base-300/40 bg-base-100/70 p-4">
-        <Input
-          label="Desde"
-          type="date"
-          value={from}
-          onChange={(event) => setFrom(event.target.value)}
-          className="max-w-[200px]"
-        />
-        <Input
-          label="Hasta"
-          type="date"
-          value={to}
-          onChange={(event) => setTo(event.target.value)}
-          className="max-w-[200px]"
-        />
-        <Button onClick={() => balancesQuery.refetch()} disabled={balancesQuery.isFetching} size="sm">
-          {balancesQuery.isFetching ? "Actualizando..." : "Actualizar rango"}
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => {
-            const today = dayjs();
-            setTo(today.format("YYYY-MM-DD"));
-            setFrom(today.subtract(14, "day").format("YYYY-MM-DD"));
-          }}
+      <WeekView
+        currentDate={currentDate}
+        onDateChange={setCurrentDate}
+        balances={balances}
+        onSelectDay={setSelectedDate}
+        selectedDate={selectedDate}
+      />
+
+      {selectedDate && (
+        <div
+          className={`grid gap-6 ${canEdit ? "lg:grid-cols-[1.2fr_0.8fr]" : "lg:grid-cols-1"} animate-in fade-in slide-in-from-bottom-4 duration-500`}
         >
-          Últimos 15 días
-        </Button>
-      </div>
-
-      <div className={`grid gap-4 ${canEdit ? "lg:grid-cols-[1.1fr_0.9fr]" : "lg:grid-cols-1"}`}>
-        <div className="rounded-3xl border border-base-300/50 bg-base-200/60 p-4 shadow-inner">
-          <div className="flex items-center justify-between gap-2">
-            <div>
-              <p className="text-xs uppercase tracking-wide text-base-content/60">Registros</p>
-              <h2 className="text-xl font-semibold text-base-content">Historial reciente</h2>
-            </div>
-            <span className="text-xs text-base-content/60">{balances.length} registros</span>
-          </div>
-
-          {balancesQuery.isLoading ? (
-            <div className="mt-4 text-sm text-base-content/60">Cargando balances...</div>
-          ) : balancesQuery.error ? (
-            <Alert variant="error">No se pudieron cargar los balances.</Alert>
-          ) : !balances.length ? (
-            <div className="mt-4 rounded-2xl border border-dashed border-base-300/80 p-6 text-sm text-base-content/60">
-              Aún no hay balances registrados en el rango seleccionado.
-            </div>
-          ) : (
-            <div className="mt-4 overflow-hidden rounded-2xl border border-base-300/70">
-              <table className="min-w-full text-sm">
-                <thead className="bg-base-300/40 text-xs uppercase tracking-wide text-base-content/70">
-                  <tr>
-                    <th className="px-3 py-2 text-left">Fecha</th>
-                    <th className="px-3 py-2 text-left">Total ingresos</th>
-                    <th className="px-3 py-2 text-left">Gastos</th>
-                    <th className="px-3 py-2 text-left">Total día</th>
-                    <th className="px-3 py-2 text-left">Atenciones</th>
-                    <th className="px-3 py-2 text-left">Estado</th>
-                    <th className="px-3 py-2 text-left">Actualizado</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {balances.map((row) => {
-                    const isActive = row.id === selectedId;
-                    return (
-                      <tr
-                        key={row.id}
-                        className={`cursor-pointer transition-colors ${isActive ? "bg-primary/10" : "hover:bg-base-100/80"}`}
-                        onClick={() => setSelectedId(row.id)}
-                      >
-                        <td className="px-3 py-2 font-semibold text-base-content">
-                          {dayjs(row.date).format("DD MMM")}
-                        </td>
-                        <td className="px-3 py-2 text-base-content/80">
-                          {currencyFormatter.format(row.subtotalIngresos)}
-                        </td>
-                        <td className="px-3 py-2 text-base-content/70">
-                          {currencyFormatter.format(row.gastosDiarios)}
-                        </td>
-                        <td className="px-3 py-2 font-semibold text-base-content">
-                          {currencyFormatter.format(row.total)}
-                        </td>
-                        <td className="px-3 py-2 text-base-content/70">{formatActivityTotal(row)}</td>
-                        <td className="px-3 py-2">
-                          <StatusBadge status={row.status} />
-                        </td>
-                        <td className="px-3 py-2 text-xs text-base-content/60">
-                          {row.updatedByEmail ?? row.createdByEmail ?? "—"}
-                          <div>{dayjs(row.updatedAt).format("DD MMM HH:mm")}</div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-
-        {canEdit && (
-          <div className="rounded-3xl border border-primary/20 bg-base-100/80 p-5 shadow-lg">
-            <div className="flex items-center justify-between gap-2">
-              <div>
-                <p className="text-xs uppercase tracking-wide text-base-content/60">
-                  {selectedId ? "Editar balance" : "Nuevo balance"}
-                </p>
-                <h2 className="text-xl font-semibold text-base-content">
-                  {selectedId ? `Registro #${selectedId}` : "Registrar día"}
-                </h2>
-              </div>
-              <Button variant="ghost" size="sm" onClick={handleReset}>
-                Nuevo
-              </Button>
-            </div>
-
-            <form className="mt-4 space-y-4" onSubmit={handleSubmit}>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <Input label="Fecha" type="date" value={form.date} onChange={handleChange("date")} required />
-                <Input label="Estado" as="select" value={form.status} onChange={handleChange("status")}>
-                  <option value="FINAL">Final</option>
-                  <option value="DRAFT">Borrador</option>
-                </Input>
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-3">
-                <Input
-                  label="Ingreso tarjetas"
-                  type="number"
-                  value={form.ingresoTarjetas}
-                  onChange={handleChange("ingresoTarjetas")}
-                  min="0"
-                />
-                <Input
-                  label="Ingreso transferencias"
-                  type="number"
-                  value={form.ingresoTransferencias}
-                  onChange={handleChange("ingresoTransferencias")}
-                  min="0"
-                />
-                <Input
-                  label="Ingreso efectivo"
-                  type="number"
-                  value={form.ingresoEfectivo}
-                  onChange={handleChange("ingresoEfectivo")}
-                  min="0"
-                />
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-3">
-                <Input
-                  label="Gastos diarios"
-                  type="number"
-                  value={form.gastosDiarios}
-                  onChange={handleChange("gastosDiarios")}
-                  helper="Combustible, insumos, etc."
-                />
-                <Input
-                  label="Otros abonos"
-                  type="number"
-                  value={form.otrosAbonos}
-                  onChange={handleChange("otrosAbonos")}
-                  helper="Devoluciones, ajustes o abonos extra"
-                />
-                <div className="rounded-2xl border border-base-300/60 bg-base-200/60 p-3 text-sm">
-                  <p className="text-xs uppercase tracking-wide text-base-content/60">Totales (previo a guardar)</p>
-                  <p className="font-semibold text-base-content">
-                    Subtotal: {currencyFormatter.format(derived.subtotal)}
+          {canEdit && (
+            <div className="rounded-3xl border border-primary/20 bg-base-100/80 p-6 shadow-lg">
+              <div className="flex items-center justify-between gap-2 mb-6">
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-base-content/60">
+                    {selectedId ? "Editar balance" : "Nuevo balance"}
                   </p>
-                  <p className="text-base-content/80">
-                    Ingresos - gastos: {currencyFormatter.format(derived.totalIngresos)}
-                  </p>
-                  <p className="text-base-content/80">Total día: {currencyFormatter.format(derived.total)}</p>
-                </div>
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-3">
-                <Input
-                  label="Consultas"
-                  type="number"
-                  min="0"
-                  value={form.consultas}
-                  onChange={handleChange("consultas")}
-                />
-                <Input
-                  label="Controles"
-                  type="number"
-                  min="0"
-                  value={form.controles}
-                  onChange={handleChange("controles")}
-                />
-                <Input label="Test" type="number" min="0" value={form.tests} onChange={handleChange("tests")} />
-                <Input label="Vacunas" type="number" min="0" value={form.vacunas} onChange={handleChange("vacunas")} />
-                <Input
-                  label="Licencias"
-                  type="number"
-                  min="0"
-                  value={form.licencias}
-                  onChange={handleChange("licencias")}
-                />
-                <Input label="Roxair" type="number" min="0" value={form.roxair} onChange={handleChange("roxair")} />
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-[1fr_1fr]">
-                <Input
-                  label="Comentarios"
-                  as="textarea"
-                  rows={3}
-                  value={form.comentarios}
-                  onChange={handleChange("comentarios")}
-                  helper="Notas internas sobre el día"
-                />
-                <Input
-                  label="Motivo del cambio"
-                  as="textarea"
-                  rows={3}
-                  value={form.reason}
-                  onChange={handleChange("reason")}
-                  helper="Opcional, se guarda en el historial"
-                />
-              </div>
-
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="rounded-2xl border border-base-300/50 bg-base-200/60 px-4 py-3 text-sm text-base-content/70">
-                  <p className="font-semibold text-base-content">Resumen rápido</p>
-                  <p>Atenciones: {activitiesTotal}</p>
-                  <p>Total día: {currencyFormatter.format(derived.total)}</p>
+                  <h2 className="text-2xl font-semibold text-base-content">
+                    {dayjs(selectedDate).format("dddd D [de] MMMM")}
+                  </h2>
                 </div>
                 <div className="flex gap-2">
-                  <Button type="button" variant="ghost" onClick={handleReset}>
-                    Limpiar
-                  </Button>
-                  <Button type="submit" disabled={mutation.isPending}>
-                    {mutation.isPending ? "Guardando..." : selectedId ? "Actualizar" : "Guardar"}
+                  <Button type="button" variant="ghost" onClick={() => setSelectedDate(null)}>
+                    Cerrar
                   </Button>
                 </div>
               </div>
-            </form>
-          </div>
-        )}
-      </div>
 
-      {selectedId && (
-        <div className="rounded-3xl border border-base-300/40 bg-base-100/80 p-5 shadow-inner">
-          <div className="flex items-center justify-between gap-2">
-            <div>
-              <p className="text-xs uppercase tracking-wide text-base-content/60">Historial</p>
-              <h3 className="text-lg font-semibold text-base-content">Cambios del registro #{selectedId}</h3>
-            </div>
-            <Button variant="ghost" size="sm" onClick={() => historyQuery.refetch()} disabled={historyQuery.isFetching}>
-              {historyQuery.isFetching ? "Actualizando..." : "Refrescar"}
-            </Button>
-          </div>
-          {historyQuery.isLoading ? (
-            <div className="mt-3 text-sm text-base-content/60">Cargando historial...</div>
-          ) : historyQuery.error ? (
-            <Alert variant="error">No se pudo cargar el historial.</Alert>
-          ) : !historyQuery.data?.length ? (
-            <p className="mt-3 text-sm text-base-content/60">Aún no hay cambios registrados.</p>
-          ) : (
-            <ul className="mt-3 space-y-3">
-              {historyQuery.data.map((entry) => (
-                <li
-                  key={entry.id}
-                  className="rounded-2xl border border-base-300/50 bg-base-200/60 p-3 text-sm text-base-content/80"
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <span className="h-2.5 w-2.5 rounded-full bg-primary" aria-hidden="true" />
-                      <p className="font-semibold text-base-content">{entry.changedByEmail ?? "Sin autor"}</p>
-                    </div>
-                    <span className="text-xs text-base-content/60">
-                      {dayjs(entry.createdAt).format("DD MMM HH:mm")}
-                    </span>
+              <form className="space-y-6" onSubmit={handleSubmit}>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Input label="Fecha" type="date" value={form.date} disabled className="opacity-70" />
+                  <Input label="Estado" as="select" value={form.status} onChange={handleChange("status")}>
+                    <option value="FINAL">Final (Cerrado)</option>
+                    <option value="DRAFT">Borrador (Pendiente)</option>
+                  </Input>
+                </div>
+
+                <div className="divider text-xs font-bold uppercase text-base-content/40">Finanzas</div>
+
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <Input
+                    label="Ingreso tarjetas"
+                    type="number"
+                    value={form.ingresoTarjetas}
+                    onChange={handleChange("ingresoTarjetas")}
+                    min="0"
+                  />
+                  <Input
+                    label="Ingreso transferencias"
+                    type="number"
+                    value={form.ingresoTransferencias}
+                    onChange={handleChange("ingresoTransferencias")}
+                    min="0"
+                  />
+                  <Input
+                    label="Ingreso efectivo"
+                    type="number"
+                    value={form.ingresoEfectivo}
+                    onChange={handleChange("ingresoEfectivo")}
+                    min="0"
+                  />
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Input
+                    label="Gastos diarios"
+                    type="number"
+                    value={form.gastosDiarios}
+                    onChange={handleChange("gastosDiarios")}
+                    helper="Combustible, insumos, etc."
+                  />
+                  <Input
+                    label="Otros abonos"
+                    type="number"
+                    value={form.otrosAbonos}
+                    onChange={handleChange("otrosAbonos")}
+                    helper="Devoluciones, ajustes o abonos extra"
+                  />
+                </div>
+
+                <div className="rounded-2xl border border-base-300/60 bg-base-200/60 p-4 text-sm">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-xs uppercase tracking-wide text-base-content/60">Resumen Financiero</span>
                   </div>
-                  {entry.changeReason && (
-                    <p className="mt-1 text-sm text-base-content/70">Motivo: {entry.changeReason}</p>
+                  <div className="grid grid-cols-3 gap-4 text-center">
+                    <div>
+                      <p className="text-xs text-base-content/60">Subtotal Ingresos</p>
+                      <p className="font-semibold text-base-content text-lg">
+                        {currencyFormatter.format(derived.subtotal)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-base-content/60">Ingresos - Gastos</p>
+                      <p className="font-semibold text-base-content text-lg">
+                        {currencyFormatter.format(derived.totalIngresos)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-base-content/60">Total Final</p>
+                      <p className="font-bold text-primary text-lg">{currencyFormatter.format(derived.total)}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="divider text-xs font-bold uppercase text-base-content/40">Prestaciones</div>
+
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <Input
+                    label="Consultas"
+                    type="number"
+                    min="0"
+                    value={form.consultas}
+                    onChange={handleChange("consultas")}
+                  />
+                  <Input
+                    label="Controles"
+                    type="number"
+                    min="0"
+                    value={form.controles}
+                    onChange={handleChange("controles")}
+                  />
+                  <Input label="Test" type="number" min="0" value={form.tests} onChange={handleChange("tests")} />
+                  <Input
+                    label="Vacunas"
+                    type="number"
+                    min="0"
+                    value={form.vacunas}
+                    onChange={handleChange("vacunas")}
+                  />
+                  <Input
+                    label="Licencias"
+                    type="number"
+                    min="0"
+                    value={form.licencias}
+                    onChange={handleChange("licencias")}
+                  />
+                  <Input label="Roxair" type="number" min="0" value={form.roxair} onChange={handleChange("roxair")} />
+                </div>
+
+                <div className="divider text-xs font-bold uppercase text-base-content/40">Notas</div>
+
+                <div className="grid gap-4">
+                  <Input
+                    label="Comentarios"
+                    as="textarea"
+                    rows={3}
+                    value={form.comentarios}
+                    onChange={handleChange("comentarios")}
+                    helper="Notas internas sobre el día"
+                  />
+                  {selectedId && (
+                    <Input
+                      label="Motivo del cambio"
+                      as="textarea"
+                      rows={2}
+                      value={form.reason}
+                      onChange={handleChange("reason")}
+                      helper="Requerido para auditoría al editar un registro existente"
+                    />
                   )}
-                  {entry.snapshot && (
-                    <p className="mt-1 text-sm text-base-content/70">
-                      Total del snapshot: {currencyFormatter.format(entry.snapshot.total)} · Atenciones:{" "}
-                      {formatActivityTotal(entry.snapshot)}
-                    </p>
-                  )}
-                </li>
-              ))}
-            </ul>
+                </div>
+
+                <div className="flex items-center justify-end gap-3 pt-4">
+                  <Button type="submit" disabled={mutation.isPending} size="lg" className="w-full sm:w-auto">
+                    {mutation.isPending ? "Guardando..." : selectedId ? "Actualizar Balance" : "Registrar Balance"}
+                  </Button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {selectedId && (
+            <div className="space-y-6">
+              <div className="rounded-3xl border border-base-300/40 bg-base-100/80 p-6 shadow-inner h-fit">
+                <div className="flex items-center justify-between gap-2 mb-4">
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-base-content/60">Auditoría</p>
+                    <h3 className="text-lg font-semibold text-base-content">Historial de cambios</h3>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => historyQuery.refetch()}
+                    disabled={historyQuery.isFetching}
+                  >
+                    Refrescar
+                  </Button>
+                </div>
+                {historyQuery.isLoading ? (
+                  <div className="text-sm text-base-content/60">Cargando historial...</div>
+                ) : historyQuery.error ? (
+                  <Alert variant="error">No se pudo cargar el historial.</Alert>
+                ) : !historyQuery.data?.length ? (
+                  <p className="text-sm text-base-content/60">Este es el primer registro.</p>
+                ) : (
+                  <ul className="space-y-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+                    {historyQuery.data.map((entry) => (
+                      <li
+                        key={entry.id}
+                        className="rounded-2xl border border-base-300/50 bg-base-200/60 p-3 text-sm text-base-content/80"
+                      >
+                        <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                          <div className="flex items-center gap-2">
+                            <span className="h-2 w-2 rounded-full bg-primary/50" aria-hidden="true" />
+                            <p className="font-semibold text-base-content">{entry.changedByEmail ?? "Sin autor"}</p>
+                          </div>
+                          <span className="text-xs text-base-content/60">
+                            {dayjs(entry.createdAt).format("DD MMM HH:mm")}
+                          </span>
+                        </div>
+                        {entry.changeReason ? (
+                          <p className="text-sm text-base-content/70 italic">&quot;{entry.changeReason}&quot;</p>
+                        ) : (
+                          <p className="text-xs text-base-content/50 italic">Sin motivo registrado</p>
+                        )}
+                        {entry.snapshot && (
+                          <div className="mt-2 pt-2 border-t border-base-content/5 text-xs">
+                            <span className="font-medium">Snapshot:</span>{" "}
+                            {currencyFormatter.format(entry.snapshot.total)}
+                          </div>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
           )}
         </div>
       )}

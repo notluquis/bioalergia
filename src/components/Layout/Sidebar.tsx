@@ -96,7 +96,7 @@ export const NAV_SECTIONS: NavSection[] = [
     title: "Operaciones",
     category: "Gestión",
     items: [
-      { to: "/inventory/items", label: "Inventario", icon: Box, roles: ["GOD", "ADMIN", "ANALYST"] },
+      { to: "/operations/inventory", label: "Inventario", icon: Box, roles: ["GOD", "ADMIN", "ANALYST"] },
       { to: "/hr/employees", label: "RRHH", icon: Users2, roles: ["GOD", "ADMIN"] },
     ],
   },

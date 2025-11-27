@@ -55,7 +55,7 @@ const InventoryPage = lazy(() => import("@/features/operations/inventory/pages/I
 const UserManagementPage = lazy(() => import("@/features/users/pages/UserManagementPage"));
 const PersonManagementPage = lazy(() => import("@/features/users/pages/PersonManagementPage"));
 const PersonDetailsPage = lazy(() => import("./pages/settings/PersonDetailsPage"));
-const GeneralSettingsPage = lazy(() => import("./pages/settings/GeneralSettingsPage"));
+
 const CalendarSettingsPage = lazy(() => import("./pages/settings/CalendarSettingsPage"));
 const AccessSettingsPage = lazy(() => import("./pages/settings/AccessSettingsPage"));
 const InventorySettingsPage = lazy(() => import("./pages/settings/InventorySettingsPage"));
@@ -416,14 +416,7 @@ const router = createBrowserRouter([
               </Suspense>
             ),
           },
-          {
-            path: "general",
-            element: (
-              <Suspense fallback={<PageLoader />}>
-                <GeneralSettingsPage />
-              </Suspense>
-            ),
-          },
+
           {
             path: "calendar",
             element: (

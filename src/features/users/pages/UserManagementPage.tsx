@@ -57,9 +57,50 @@ export default function UserManagementPage() {
     },
   });
 
+  const resetPasswordMutation = useMutation({
+    mutationFn: async (userId: number) => {
+      return apiClient.post<{ tempPassword: string }>(`/api/users/${userId}/reset-password`, {});
+    },
+    onSuccess: (data) => {
+      success(`Contraseña reseteada. Temporal: ${data.tempPassword}`);
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      alert(`Contraseña temporal: ${data.tempPassword}\n\nPor favor compártela con el usuario de forma segura.`);
+    },
+    onError: (err: Error) => {
+      error(err.message || "Error al resetear contraseña");
+    },
+  });
+
+  const updateStatusMutation = useMutation({
+    mutationFn: async ({ userId, status }: { userId: number; status: "ACTIVE" | "SUSPENDED" }) => {
+      return apiClient.put(`/api/users/${userId}/status`, { status });
+    },
+    onSuccess: (_, variables) => {
+      success(`Usuario ${variables.status === "ACTIVE" ? "reactivado" : "suspendido"}`);
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+    },
+    onError: (err: Error) => {
+      error(err.message || "Error al actualizar estado");
+    },
+  });
+
   const handleDeletePasskey = (userId: number) => {
     if (confirm("¿Estás seguro de eliminar el Passkey de este usuario?")) {
-      deletePasskeyMutation.mutate(userId);
+      deletePasskeyMutation.mutate(userId, {});
+    }
+  };
+
+  const handleResetPassword = (userId: number) => {
+    if (confirm("¿Resetear contraseña? Esto generará una clave temporal y requerirá configuración nueva.")) {
+      resetPasswordMutation.mutate(userId);
+    }
+  };
+
+  const handleToggleStatus = (userId: number, currentStatus: string) => {
+    const newStatus = currentStatus === "SUSPENDED" ? "ACTIVE" : "SUSPENDED";
+    const action = newStatus === "ACTIVE" ? "reactivar" : "suspender";
+    if (confirm(`¿Estás seguro de ${action} a este usuario?`)) {
+      updateStatusMutation.mutate({ userId, status: newStatus });
     }
   };
 
@@ -92,7 +133,7 @@ export default function UserManagementPage() {
           <h1 className="text-2xl font-bold text-base-content">Usuarios</h1>
           <p className="text-sm text-base-content/60">Gestiona el acceso y roles del sistema.</p>
         </div>
-        <Link to="/admin/users/add" className="btn btn-primary gap-2">
+        <Link to="/settings/users/add" className="btn btn-primary gap-2">
           <UserPlus size={20} />
           Agregar Usuario
         </Link>
@@ -196,7 +237,7 @@ export default function UserManagementPage() {
                           className="dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow border border-base-200"
                         >
                           <li>
-                            <a>
+                            <a onClick={() => handleResetPassword(user.id)}>
                               <Key size={14} />
                               Resetear Contraseña
                             </a>
@@ -211,14 +252,14 @@ export default function UserManagementPage() {
                           )}
                           {user.status !== "SUSPENDED" ? (
                             <li>
-                              <a className="text-error">
+                              <a onClick={() => handleToggleStatus(user.id, user.status)} className="text-error">
                                 <Lock size={14} />
                                 Suspender Acceso
                               </a>
                             </li>
                           ) : (
                             <li>
-                              <a className="text-success">
+                              <a onClick={() => handleToggleStatus(user.id, user.status)} className="text-success">
                                 <Shield size={14} />
                                 Reactivar Acceso
                               </a>

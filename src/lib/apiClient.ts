@@ -124,9 +124,12 @@ async function parseResponse<T>(response: Response, method: string, url: string)
         : undefined) ||
       response.statusText;
     const details =
-      errorData && typeof errorData === "object" && "details" in errorData
+      (errorData && typeof errorData === "object" && "details" in errorData
         ? (errorData as { details?: unknown }).details
-        : undefined;
+        : undefined) ||
+      (errorData && typeof errorData === "object" && "issues" in errorData
+        ? (errorData as { issues?: unknown }).issues
+        : undefined);
 
     throw new ApiError(serverMessage || "Ocurrió un error inesperado.", status, details);
   }

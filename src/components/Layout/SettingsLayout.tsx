@@ -1,15 +1,12 @@
 import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { cn } from "../../lib/utils";
-import { Users, Shield, CreditCard, Calendar, Box, UserPlus, Building2 } from "lucide-react";
+import { Users, Shield, CreditCard, Calendar, Box, UserPlus } from "lucide-react";
 
 const SETTINGS_SECTIONS = [
   {
     title: "General",
-    items: [
-      { label: "Empresa", to: "/settings/general", icon: Building2 },
-      { label: "Seguridad", to: "/settings/security", icon: Shield },
-    ],
+    items: [{ label: "Seguridad", to: "/settings/security", icon: Shield }],
   },
   {
     title: "Organización",

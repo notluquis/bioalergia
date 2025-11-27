@@ -100,7 +100,18 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
       onSave();
       onCancel();
     } catch (err) {
-      const message = err instanceof Error ? err.message : "No se pudo guardar el empleado";
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const details = (err as any).details;
+      let message = err instanceof Error ? err.message : "No se pudo guardar el empleado";
+
+      if (Array.isArray(details)) {
+        // It's a Zod issue array
+        const issues = details
+          .map((i: { path: (string | number)[]; message: string }) => `${i.path.join(".")}: ${i.message}`)
+          .join("\n");
+        message = `Datos inválidos:\n${issues}`;
+      }
+
       toastError(message);
     } finally {
       setSaving(false);
