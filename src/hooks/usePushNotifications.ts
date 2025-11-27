@@ -73,7 +73,11 @@ export function usePushNotifications() {
       const subscription = await registration.pushManager.getSubscription();
       if (subscription) {
         await subscription.unsubscribe();
-        // TODO: Call API to remove from DB if needed (optional, as send will fail and cleanup)
+        await fetch("/api/notifications/unsubscribe", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ endpoint: subscription.endpoint }),
+        });
         setIsSubscribed(false);
       }
     } catch (error) {

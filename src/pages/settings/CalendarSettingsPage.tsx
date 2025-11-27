@@ -25,7 +25,7 @@ export default function CalendarSettingsPage() {
       setSyncing(true);
       // Simulate sync delay
       await new Promise((resolve) => setTimeout(resolve, 2000));
-      // Call actual endpoint: await fetch("/api/calendar/sync", { method: "POST" });
+      // Call actual endpoint: await apiClient.post("/api/calendar/sync", {});
       setSyncing(false);
     },
   });

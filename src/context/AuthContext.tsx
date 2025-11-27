@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useMemo, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { logger } from "../lib/logger";
+import { apiClient, ApiError } from "../lib/apiClient";
 
 export type UserRole = "GOD" | "ADMIN" | "ANALYST" | "VIEWER";
 
@@ -49,26 +50,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           : null;
 
       try {
-        const res = await fetch("/api/auth/me", {
-          credentials: "include",
+        const payload = await apiClient.get<{ status: string; user?: AuthUser }>("/api/auth/me", {
           signal: controller?.signal,
         });
 
-        if (res.status === 401) {
-          return null;
-        }
-
-        if (!res.ok) {
-          throw new Error(`${res.status} ${res.statusText}`);
-        }
-
-        const payload = (await res.json()) as { status: string; user?: AuthUser };
         if (payload.status === "ok" && payload.user) {
           return payload.user;
         }
 
         return null;
       } catch (error) {
+        if (error instanceof ApiError && error.status === 401) {
+          return null;
+        }
         if ((error as DOMException)?.name === "AbortError") {
           logger.warn("[auth] bootstrap: abortado por timeout");
           return null;
@@ -92,18 +86,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(
     async (email: string, password: string): Promise<LoginResult> => {
       logger.info("[auth] login:start", { email });
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ email, password }),
-      });
-
-      const payload = await res.json();
-
-      if (!res.ok) {
-        throw new Error(payload.message || "No se pudo iniciar sesión");
-      }
+      const payload = await apiClient.post<{ status: string; user?: AuthUser; userId: number; message?: string }>(
+        "/api/auth/login",
+        { email, password }
+      );
 
       if (payload.status === "mfa_required") {
         logger.info("[auth] login:mfa_required", { userId: payload.userId });
@@ -124,16 +110,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loginWithMfa = useCallback(
     async (userId: number, token: string) => {
       logger.info("[auth] mfa:start", { userId });
-      const res = await fetch("/api/auth/login/mfa", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ userId, token }),
-      });
+      const payload = await apiClient.post<{ status: string; user?: AuthUser; message?: string }>(
+        "/api/auth/login/mfa",
+        { userId, token }
+      );
 
-      const payload = await res.json();
-
-      if (!res.ok || payload.status !== "ok" || !payload.user) {
+      if (payload.status !== "ok" || !payload.user) {
         throw new Error(payload.message || "Código MFA inválido");
       }
 
@@ -146,16 +128,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loginWithPasskey = useCallback(
     async (authResponse: unknown, challenge: string) => {
       logger.info("[auth] passkey:start");
-      const res = await fetch("/api/auth/passkey/login/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ body: authResponse, challenge }),
-      });
+      const payload = await apiClient.post<{ status: string; user?: AuthUser; message?: string }>(
+        "/api/auth/passkey/login/verify",
+        { body: authResponse, challenge }
+      );
 
-      const payload = await res.json();
-
-      if (!res.ok || payload.status !== "ok" || !payload.user) {
+      if (payload.status !== "ok" || !payload.user) {
         throw new Error(payload.message || "Error validando Passkey");
       }
 
@@ -167,10 +145,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(async () => {
     logger.info("[auth] logout:start");
-    await fetch("/api/auth/logout", {
-      method: "POST",
-      credentials: "include",
-    });
+    await apiClient.post("/api/auth/logout", {});
     queryClient.setQueryData(["auth", "session"], null);
     await queryClient.invalidateQueries({ queryKey: ["settings"] });
     logger.info("[auth] logout:done");

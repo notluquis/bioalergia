@@ -9,36 +9,37 @@ import App from "./App";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { SettingsProvider } from "./context/SettingsContext";
 import { ToastProvider } from "./context/ToastContext";
-import { ErrorBoundary } from "./components/common/ErrorBoundary";
+
+import { GlobalError } from "./components/ui/GlobalError";
 
 // Lazy loading de componentes principales
 const Home = lazy(() => import("./pages/Home"));
-const Login = lazy(() => import("./pages/Login"));
+const Login = lazy(() => import("@/features/auth/pages/LoginPage"));
 const SettingsLayout = lazy(() => import("./components/Layout/SettingsLayout"));
 
-// Lazy loading por features
-const TransactionsMovements = lazy(() => import("./pages/TransactionsMovements"));
-const DailyBalances = lazy(() => import("./pages/DailyBalances"));
+// Finance pages
+const TransactionsMovements = lazy(() => import("@/features/finance/transactions/pages/TransactionsPage"));
+const DailyBalances = lazy(() => import("@/features/finance/balances/pages/DailyBalancesPage"));
+const LoansPage = lazy(() => import("@/features/finance/loans/pages/LoansPage"));
 const ParticipantInsightsPage = lazy(() => import("./pages/ParticipantInsights"));
 
-const EmployeesPage = lazy(() => import("./pages/Employees"));
-const TimesheetsPage = lazy(() => import("./pages/Timesheets"));
-const TimesheetAuditPage = lazy(() => import("./pages/TimesheetAuditPage"));
+const EmployeesPage = lazy(() => import("@/features/hr/employees/pages/EmployeesPage"));
+const TimesheetsPage = lazy(() => import("@/features/hr/timesheets/pages/TimesheetsPage"));
+const TimesheetAuditPage = lazy(() => import("@/features/hr/timesheets-audit/pages/TimesheetAuditPage"));
 
 const CounterpartsPage = lazy(() => import("./pages/Counterparts"));
-const LoansPage = lazy(() => import("./pages/Loans"));
 // Lazy loading de layouts
 const FinanceLayout = lazy(() => import("./components/Layout/FinanceLayout"));
 const CalendarLayout = lazy(() => import("./components/Layout/CalendarLayout"));
-const ServicesLayout = lazy(() => import("./components/Layout/ServicesLayout"));
-const InventoryLayout = lazy(() => import("./components/Layout/InventoryLayout"));
-const HRLayout = lazy(() => import("./components/Layout/HRLayout"));
+const ServicesLayout = lazy(() => import("@/features/services/layout/ServicesLayout"));
+const InventoryLayout = lazy(() => import("@/features/operations/layout/OperationsLayout"));
+const HRLayout = lazy(() => import("@/features/hr/layout/HRLayout"));
 
-const ServicesPage = lazy(() => import("./pages/ServicesOverviewPage"));
-const ServicesAgendaPage = lazy(() => import("./pages/ServicesAgendaPage"));
-const ServicesCreatePage = lazy(() => import("./pages/ServicesCreatePage"));
-const ServicesTemplatesPage = lazy(() => import("./pages/ServicesTemplatesPage"));
-const ServiceEditPage = lazy(() => import("./pages/ServiceEditPage"));
+const ServicesOverviewPage = lazy(() => import("@/features/services/pages/OverviewPage"));
+const ServicesAgendaPage = lazy(() => import("@/features/services/pages/AgendaPage"));
+const ServicesCreatePage = lazy(() => import("@/features/services/pages/CreateServicePage"));
+const ServicesTemplatesPage = lazy(() => import("@/features/services/pages/TemplatesPage"));
+const ServiceEditPage = lazy(() => import("@/features/services/pages/EditServicePage"));
 
 const CalendarSummaryPage = lazy(() => import("./pages/CalendarSummaryPage"));
 const CalendarSchedulePage = lazy(() => import("./pages/CalendarSchedulePage"));
@@ -47,12 +48,12 @@ const CalendarHeatmapPage = lazy(() => import("./pages/CalendarHeatmapPage"));
 const CalendarClassificationPage = lazy(() => import("./pages/CalendarClassificationPage"));
 const CalendarSyncHistoryPage = lazy(() => import("./pages/CalendarSyncHistoryPage"));
 
-const SuppliesPage = lazy(() => import("./pages/Supplies"));
-const InventoryPage = lazy(() => import("./pages/Inventory"));
+const SuppliesPage = lazy(() => import("@/features/operations/supplies/pages/SuppliesPage"));
+const InventoryPage = lazy(() => import("@/features/operations/inventory/pages/InventoryPage"));
 
 // Settings pages
-const UserManagementPage = lazy(() => import("./pages/settings/UserManagementPage"));
-const PersonManagementPage = lazy(() => import("./pages/settings/PersonManagementPage"));
+const UserManagementPage = lazy(() => import("@/features/users/pages/UserManagementPage"));
+const PersonManagementPage = lazy(() => import("@/features/users/pages/PersonManagementPage"));
 const PersonDetailsPage = lazy(() => import("./pages/settings/PersonDetailsPage"));
 const GeneralSettingsPage = lazy(() => import("./pages/settings/GeneralSettingsPage"));
 const CalendarSettingsPage = lazy(() => import("./pages/settings/CalendarSettingsPage"));
@@ -122,9 +123,9 @@ const router = createBrowserRouter([
       </RequireAuth>
     ),
     errorElement: (
-      <ErrorBoundary>
+      <GlobalError>
         <div>Error loading app</div>
-      </ErrorBoundary>
+      </GlobalError>
     ),
     children: [
       {
@@ -208,7 +209,7 @@ const router = createBrowserRouter([
             index: true,
             element: (
               <Suspense fallback={<PageLoader />}>
-                <ServicesPage />
+                <ServicesOverviewPage />
               </Suspense>
             ),
           },
@@ -306,18 +307,18 @@ const router = createBrowserRouter([
           },
         ],
       },
-      // Inventory/Operations Section
+      // Operations Section
       {
-        path: "/inventory",
+        path: "/operations",
         element: (
           <Suspense fallback={<PageLoader />}>
             <InventoryLayout />
           </Suspense>
         ),
         children: [
-          { index: true, element: <Navigate to="items" replace /> },
+          { index: true, element: <Navigate to="inventory" replace /> },
           {
-            path: "items",
+            path: "inventory",
             element: (
               <Suspense fallback={<PageLoader />}>
                 <InventoryPage />
@@ -473,7 +474,8 @@ const router = createBrowserRouter([
       { path: "/loans", element: <Navigate to="/finanzas/loans" replace /> },
       { path: "/employees", element: <Navigate to="/hr/employees" replace /> },
       { path: "/timesheets", element: <Navigate to="/hr/timesheets" replace /> },
-      { path: "/supplies", element: <Navigate to="/inventory/supplies" replace /> },
+      { path: "/inventory", element: <Navigate to="/operations/inventory" replace /> },
+      { path: "/supplies", element: <Navigate to="/operations/supplies" replace /> },
     ],
   },
   { path: "*", element: <NotFoundPage /> },
@@ -498,7 +500,7 @@ const queryClient = new QueryClient({
 });
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
-  <ErrorBoundary>
+  <GlobalError>
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <SettingsProvider>
@@ -508,7 +510,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         </SettingsProvider>
       </AuthProvider>
     </QueryClientProvider>
-  </ErrorBoundary>
+  </GlobalError>
 );
 
 // Service Worker Registration - with aggressive update strategy

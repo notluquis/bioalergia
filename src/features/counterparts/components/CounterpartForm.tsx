@@ -16,8 +16,7 @@ const counterpartFormSchema = z.object({
   rut: z
     .string()
     .trim()
-    .optional()
-    .transform((value) => value ?? "")
+    .default("")
     .refine((value) => {
       if (!value) return true;
       return validateRut(value);
@@ -36,11 +35,7 @@ const counterpartFormSchema = z.object({
     "OCCASIONAL",
   ] as const),
   email: z.string().trim().email("Email inválido").or(z.literal("")),
-  notes: z
-    .string()
-    .trim()
-    .optional()
-    .transform((value) => value ?? ""),
+  notes: z.string().trim().default(""),
 });
 
 type CounterpartFormValues = z.infer<typeof counterpartFormSchema>;
@@ -62,7 +57,7 @@ export default function CounterpartForm({ counterpart, onSave, error, saving, lo
     formState: { errors, isSubmitting },
   } = useForm<CounterpartFormValues>({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    resolver: zodResolver(counterpartFormSchema) as any,
+    resolver: zodResolver(counterpartFormSchema) as any, // Type mismatch between Zod output and RHF expectation
     defaultValues: {
       rut: "",
       name: "",

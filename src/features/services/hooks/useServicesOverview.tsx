@@ -10,8 +10,8 @@ import {
   useContext,
   type ReactNode,
 } from "react";
-import { useAuth } from "../../../context/auth-context";
-import { logger } from "../../../lib/logger";
+import { useAuth } from "@/context/AuthContext";
+import { logger } from "@/lib/logger";
 import type {
   CreateServicePayload,
   RegenerateServicePayload,
@@ -19,8 +19,8 @@ import type {
   ServiceSchedule,
   ServiceSummary,
 } from "../types";
-import type { DbMovement } from "../../transactions/types";
-import { fetchTransactions } from "../../transactions/api";
+import type { DbMovement } from "@/features/finance/transactions/types";
+import { fetchTransactions } from "@/features/finance/transactions/api";
 import {
   createService,
   fetchServiceDetail,

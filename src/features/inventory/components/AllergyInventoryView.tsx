@@ -62,7 +62,7 @@ function AllergyInventoryView() {
   }, [data]);
 
   return (
-    <section className="surface-recessed space-y-4 rounded-[28px] p-6 shadow-inner">
+    <section className="surface-recessed space-y-4 rounded-3xl p-6 shadow-inner">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-xs uppercase tracking-[0.3em] text-base-content/60">Insumos de alergia</p>
@@ -112,7 +112,7 @@ function AllergyInventoryView() {
                               >
                                 <div className="flex items-center justify-between">
                                   <span className="font-semibold">{provider.provider_name}</span>
-                                  <span className="text-[11px] uppercase tracking-wide text-base-content/50">
+                                  <span className="text-xs uppercase tracking-wide text-base-content/50">
                                     {provider.provider_rut}
                                   </span>
                                 </div>

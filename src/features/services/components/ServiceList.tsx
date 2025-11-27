@@ -22,7 +22,7 @@ export function ServiceList({
   const skeletons = Array.from({ length: 5 }, (_, index) => index);
 
   return (
-    <aside className="flex h-full min-h-[320px] flex-col gap-4 rounded-2xl border border-base-300/60 bg-base-100/80 p-5 text-sm text-base-content shadow-inner">
+    <aside className="flex h-full min-h-80 flex-col gap-4 rounded-2xl border border-base-300/60 bg-base-100/80 p-5 text-sm text-base-content shadow-inner">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-xs font-semibold uppercase tracking-wide text-base-content/60">Servicios</h2>
@@ -78,11 +78,10 @@ export function ServiceList({
           };
 
           return (
-            <button
+            <div
               key={service.public_id}
-              type="button"
               onClick={() => onSelect(service.public_id)}
-              className={`w-full rounded-2xl border px-4 py-3 text-left transition-all ${
+              className={`w-full cursor-pointer rounded-2xl border px-4 py-3 text-left transition-all ${
                 isActive
                   ? "border-base-300 bg-primary/20 text-primary"
                   : "border-transparent bg-base-100/45 text-base-content hover:border-base-300 hover:bg-base-100/65"
@@ -111,7 +110,7 @@ export function ServiceList({
               <div className="mt-2 text-xs text-base-content/50">
                 Pendientes {service.pending_count} · Vencidos {service.overdue_count}
               </div>
-            </button>
+            </div>
           );
         })}
         {!services.length && (

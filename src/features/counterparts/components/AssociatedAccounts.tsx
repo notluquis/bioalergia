@@ -1,15 +1,15 @@
 import { Fragment, useState, useMemo, useEffect, useCallback } from "react";
 import type { ChangeEvent, FocusEvent } from "react";
 import dayjs from "dayjs";
-import { fmtCLP } from "../../../lib/format";
-import { formatRut } from "../../../lib/rut";
-import Button from "../../../components/ui/Button";
-import Input from "../../../components/ui/Input";
-import Alert from "../../../components/ui/Alert";
-import Modal from "../../../components/ui/Modal";
-import { useToast } from "../../../context/ToastContext";
+import { fmtCLP } from "@/lib/format";
+import { formatRut } from "@/lib/rut";
+import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
+import Alert from "@/components/ui/Alert";
+import Modal from "@/components/ui/Modal";
+import { useToast } from "@/context/ToastContext";
 import type { Counterpart, CounterpartAccount, CounterpartAccountSuggestion, CounterpartSummary } from "../types";
-import type { DbMovement } from "../../transactions/types";
+import type { DbMovement } from "@/features/finance/transactions/types";
 import { addCounterpartAccount, attachCounterpartRut, fetchAccountSuggestions, updateCounterpartAccount } from "../api";
 
 interface AssociatedAccountsProps {
@@ -522,7 +522,7 @@ export default function AssociatedAccounts({
                     <td className="px-3 py-3 text-base-content">
                       <div className="font-mono text-xs text-base-content">{group.label}</div>
                       {summaryInfo && summaryInfo.count > 0 && (
-                        <span className="mt-1 inline-flex rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-primary">
+                        <span className="mt-1 inline-flex rounded-full bg-primary/15 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-primary">
                           Cuenta reconocida
                         </span>
                       )}
@@ -588,7 +588,7 @@ export default function AssociatedAccounts({
                 <p className="text-xs uppercase tracking-[0.3em] text-base-content/60">Resumen mensual</p>
                 <h3 className="text-lg font-semibold text-base-content">Transferencias</h3>
                 <p className="text-xs text-base-content/60">{quickViewGroup.label}</p>
-                <p className="text-[11px] text-base-content/50">
+                <p className="text-xs text-base-content/50">
                   {activeRange.from} – {activeRange.to}
                 </p>
               </div>

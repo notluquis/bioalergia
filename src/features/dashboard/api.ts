@@ -1,5 +1,5 @@
-import { apiClient } from "../../lib/apiClient";
-import type { DbMovement } from "../transactions/types";
+import { apiClient } from "@/lib/apiClient";
+import type { DbMovement } from "@/features/finance/transactions/types";
 
 export type StatsResponse = {
   status: "ok";

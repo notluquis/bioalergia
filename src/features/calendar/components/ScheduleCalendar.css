@@ -5,7 +5,7 @@
   --fc-page-bg-color: oklch(var(--b1));
   --fc-neutral-bg-color: oklch(var(--b1));
   --fc-border-color: oklch(var(--b3) / 0.55);
-  --fc-button-text-color: #ffffff;
+  --fc-button-text-color: oklch(var(--pc));
   --fc-button-bg-color: oklch(var(--p));
   --fc-button-border-color: oklch(var(--p));
   --fc-button-hover-bg-color: color-mix(in oklch, oklch(var(--p)) 85%, oklch(var(--bc)) 15%);
