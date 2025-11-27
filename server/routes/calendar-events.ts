@@ -132,72 +132,64 @@ export function registerCalendarEventRoutes(app: express.Express) {
         triggerLabel: req.auth?.email ?? null,
       });
 
-      try {
-        const result = await syncGoogleCalendarOnce();
-        const steps = [
-          {
-            id: "fetch",
-            label: "Consultando Google Calendar",
-            durationMs: Math.round(result.metrics.fetchDurationMs),
-            details: {
-              calendars: result.payload.calendars.length,
-              events: result.payload.events.length,
-            },
+      const result = await syncGoogleCalendarOnce();
+      const steps = [
+        {
+          id: "fetch",
+          label: "Consultando Google Calendar",
+          durationMs: Math.round(result.metrics.fetchDurationMs),
+          details: {
+            calendars: result.payload.calendars.length,
+            events: result.payload.events.length,
           },
-          {
-            id: "upsert",
-            label: "Actualizando base de datos",
-            durationMs: Math.round(result.metrics.upsertDurationMs),
-            details: {
-              inserted: result.upsertResult.inserted,
-              updated: result.upsertResult.updated,
-            },
+        },
+        {
+          id: "upsert",
+          label: "Actualizando base de datos",
+          durationMs: Math.round(result.metrics.upsertDurationMs),
+          details: {
+            inserted: result.upsertResult.inserted,
+            updated: result.upsertResult.updated,
           },
-          {
-            id: "exclude",
-            label: "Eliminando eventos excluidos",
-            durationMs: Math.round(result.metrics.removeDurationMs),
-            details: {
-              excluded: result.payload.excludedEvents.length,
-            },
+        },
+        {
+          id: "exclude",
+          label: "Eliminando eventos excluidos",
+          durationMs: Math.round(result.metrics.removeDurationMs),
+          details: {
+            excluded: result.payload.excludedEvents.length,
           },
-          {
-            id: "snapshot",
-            label: "Guardando snapshot",
-            durationMs: Math.round(result.metrics.snapshotDurationMs),
-            details: {
-              stored: true,
-            },
+        },
+        {
+          id: "snapshot",
+          label: "Guardando snapshot",
+          durationMs: Math.round(result.metrics.snapshotDurationMs),
+          details: {
+            stored: true,
           },
-        ];
-        await finalizeCalendarSyncLogEntry(logId, {
-          status: "SUCCESS",
-          fetchedAt: new Date(result.payload.fetchedAt),
-          inserted: result.upsertResult.inserted,
-          updated: result.upsertResult.updated,
-          skipped: result.upsertResult.skipped,
-          excluded: result.payload.excludedEvents.length,
-        });
+        },
+      ];
+      await finalizeCalendarSyncLogEntry(logId, {
+        status: "SUCCESS",
+        fetchedAt: new Date(result.payload.fetchedAt),
+        inserted: result.upsertResult.inserted,
+        updated: result.upsertResult.updated,
+        skipped: result.upsertResult.skipped,
+        excluded: result.payload.excludedEvents.length,
+      });
 
-        res.json({
-          status: "ok",
-          fetchedAt: result.payload.fetchedAt,
-          events: result.payload.events.length,
-          inserted: result.upsertResult.inserted,
-          updated: result.upsertResult.updated,
-          skipped: result.upsertResult.skipped,
-          excluded: result.payload.excludedEvents.length,
-          logId,
-          steps,
-          totalDurationMs: Math.round(result.metrics.totalDurationMs),
-        });
-      } catch (error) {
-        await finalizeCalendarSyncLogEntry(logId, {
-          status: "ERROR",
-          errorMessage: error instanceof Error ? error.message : String(error),
-        });
-        throw error;
-      }
+      res.json({
+        status: "ok",
+        fetchedAt: result.payload.fetchedAt,
+        events: result.payload.events.length,
+        inserted: result.upsertResult.inserted,
+        updated: result.upsertResult.updated,
+        skipped: result.upsertResult.skipped,
+        excluded: result.payload.excludedEvents.length,
+        logId,
+        steps,
+        totalDurationMs: Math.round(result.metrics.totalDurationMs),
+      });
     })
   );
 

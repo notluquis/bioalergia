@@ -150,6 +150,7 @@ model User {
   pushSubscriptions   PushSubscription[]
   auditLogs           AuditLog[]
   dailyProductionBalances DailyProductionBalance[]
+  supplyRequests      SupplyRequest[]
 
   createdAt           DateTime @default(now()) @map("created_at")
   updatedAt           DateTime @default(now()) @updatedAt @map("updated_at")
@@ -249,12 +250,23 @@ model Transaction {
   // Metadata
   origin       String?
   destination  String?
+  category     String?              // Added for categorization (e.g. CASHBACK)
   sourceFile   String?              @map("source_file")
   rawJson      String?              @map("raw_json") @db.Text
 
   createdAt    DateTime             @default(now()) @map("created_at")
 
   @@map("transactions")
+}
+
+model DailyBalance {
+  id        Int      @id @default(autoincrement())
+  date      DateTime @unique @db.Date
+  amount    Decimal  @db.Decimal(15, 2)
+  note      String?  @db.Text
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("daily_balances")
 }
 
 model Service {
@@ -482,4 +494,34 @@ model DailyProductionBalance {
 
   @@unique([balanceDate])
   @@map("daily_production_balances")
+}
+
+// --- Supplies Models ---
+
+model SupplyRequest {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  supplyName String  @map("supply_name")
+  quantity  Int
+  brand     String?
+  model     String?
+  notes     String?
+  status    String   @default("PENDING") // PENDING, APPROVED, REJECTED, FULFILLED
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@map("supply_requests")
+}
+
+model CommonSupply {
+  id        Int      @id @default(autoincrement())
+  name      String
+  brand     String?
+  model     String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([name, brand, model])
+  @@map("common_supplies")
 }

@@ -48,9 +48,14 @@ const PERMISSIONS = [
 export default function RolesSettingsPage() {
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-base-content">Roles y Permisos</h1>
-        <p className="text-sm text-base-content/60">Visualiza los niveles de acceso disponibles en el sistema.</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-base-content">Roles y Permisos</h1>
+          <p className="text-sm text-base-content/60">Visualiza los niveles de acceso disponibles en el sistema.</p>
+        </div>
+        <a href="/settings/users" className="btn btn-primary btn-sm gap-2">
+          Gestionar Usuarios
+        </a>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

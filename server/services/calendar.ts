@@ -17,12 +17,31 @@ export async function createCalendarSyncLogEntry(data: {
   triggerUserId?: number | null;
   triggerLabel?: string | null;
 }) {
+  // Check for existing running syncs
+  const running = await prisma.syncLog.findFirst({
+    where: { status: "RUNNING" },
+  });
+
+  if (running) {
+    // Check if it's stale (e.g. > 10 minutes old) to avoid permanent lock
+    const diff = new Date().getTime() - running.startedAt.getTime();
+    if (diff < 10 * 60 * 1000) {
+      throw new Error("Sincronización ya en curso");
+    }
+    // If stale, we could mark it as ERROR and proceed, or just proceed.
+    // Let's mark it as ERROR to clean up.
+    await prisma.syncLog.update({
+      where: { id: running.id },
+      data: { status: "ERROR", errorMessage: "Stale process detected and terminated" },
+    });
+  }
+
   const log = await prisma.syncLog.create({
     data: {
       triggerSource: data.triggerSource,
       triggerUserId: data.triggerUserId,
       triggerLabel: data.triggerLabel,
-      status: "SUCCESS", // Default, will be updated
+      status: "RUNNING",
       startedAt: new Date(),
     },
   });

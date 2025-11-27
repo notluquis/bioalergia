@@ -42,9 +42,15 @@ export async function upsertGoogleCalendarEvents(events: CalendarEventRecord[]) 
     // or just use deleteMany + create if we want to be lazy but safe (though less efficient).
     // Let's try findFirst then update/create to be safe against unknown unique constraints.
 
+    const calendarIdInt = parseInt(event.calendarId);
+    if (isNaN(calendarIdInt)) {
+      console.warn(`Skipping event ${event.eventId}: Invalid calendarId ${event.calendarId}`);
+      continue;
+    }
+
     const existing = await prisma.event.findFirst({
       where: {
-        calendarId: parseInt(event.calendarId),
+        calendarId: calendarIdInt,
         externalEventId: event.eventId,
       },
     });

@@ -1,13 +1,13 @@
 import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { cn } from "../../lib/utils";
-import { Users, Shield, Settings as SettingsIcon, CreditCard, Calendar, Box, UserPlus } from "lucide-react";
+import { Users, Shield, CreditCard, Calendar, Box, UserPlus, Building2 } from "lucide-react";
 
 const SETTINGS_SECTIONS = [
   {
     title: "General",
     items: [
-      { label: "Visión General", to: "/settings", icon: SettingsIcon, end: true },
+      { label: "Empresa", to: "/settings/general", icon: Building2 },
       { label: "Seguridad", to: "/settings/security", icon: Shield },
     ],
   },
@@ -52,7 +52,6 @@ export default function SettingsLayout() {
         <div className="sticky top-6 space-y-8">
           <div className="px-2">
             <h2 className="text-xl font-bold text-base-content">Configuración</h2>
-            <p className="text-xs font-medium text-base-content/50">Administración del sistema</p>
           </div>
 
           <nav className="space-y-6">
@@ -68,7 +67,7 @@ export default function SettingsLayout() {
                       <NavLink
                         key={item.to}
                         to={item.to}
-                        end={item.end}
+                        end={(item as { end?: boolean }).end}
                         className={({ isActive }) =>
                           cn(
                             "flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-200",
