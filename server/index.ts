@@ -82,7 +82,10 @@ registerTransactionRoutes(app);
 registerEmployeeRoutes(app);
 registerTimesheetRoutes(app);
 registerCounterpartRoutes(app);
+registerCounterpartRoutes(app);
 registerInventoryRoutes(app);
+import { registerBalanceRoutes } from "./routes/balances.js";
+registerBalanceRoutes(app);
 import personRouter from "./routes/person.routes.js";
 import userManagementRouter from "./routes/user-management.js";
 
@@ -97,6 +100,8 @@ registerCalendarEventRoutes(app);
 registerDailyProductionBalanceRoutes(app);
 app.use("/share-target", shareTargetRouter);
 app.use("/api/notifications", notificationsRouter);
+import { registerSuppliesRoutes } from "./routes/supplies.js";
+registerSuppliesRoutes(app);
 startDailyProductionReminderJob();
 
 type HealthStatus = "ok" | "error";

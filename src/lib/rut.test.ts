@@ -56,8 +56,11 @@ describe("RUT Utilities", () => {
     });
 
     it("should return true for valid RUT with K", () => {
-      // 17.497.895-K is a valid example
-      expect(validateRut("17.497.895-K")).toBe(true);
+      // 6-K and 40-K are valid examples where remainder is 10
+      expect(validateRut("6-K")).toBe(true);
+      expect(validateRut("40-K")).toBe(true);
+      // More realistic example: 10.222.333-K (Sum=66, Remainder=0 -> Wait, 10.222.333-0)
+      // Let's use a calculated one: Body 6 -> 6*2=12 -> 11-1=10 -> K. Correct.
     });
 
     it("should return false for invalid check digit", () => {
