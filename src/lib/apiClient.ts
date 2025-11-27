@@ -88,6 +88,18 @@ function buildUrlWithQuery(url: string, query?: Record<string, unknown>) {
   return url.includes("?") ? `${url}&${queryString}` : `${url}?${queryString}`;
 }
 
+export class ApiError extends Error {
+  status: number;
+  details?: unknown;
+
+  constructor(message: string, status: number, details?: unknown) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.details = details;
+  }
+}
+
 async function parseResponse<T>(response: Response, method: string, url: string): Promise<T> {
   const status = response.status;
   const hasBody = status !== 204 && status !== 205 && status !== 304 && response.headers.get("content-length") !== "0";
@@ -113,10 +125,10 @@ async function parseResponse<T>(response: Response, method: string, url: string)
       response.statusText;
     const details =
       errorData && typeof errorData === "object" && "details" in errorData
-        ? JSON.stringify((errorData as { details?: unknown }).details)
+        ? (errorData as { details?: unknown }).details
         : undefined;
 
-    throw new Error(details ? `${serverMessage}: ${details}` : serverMessage || "Ocurrió un error inesperado.");
+    throw new ApiError(serverMessage || "Ocurrió un error inesperado.", status, details);
   }
 
   let data: unknown = null;

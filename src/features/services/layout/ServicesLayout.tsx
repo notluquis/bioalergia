@@ -4,13 +4,15 @@ import Button from "../../../components/ui/Button";
 import { fetchServices } from "../../services/api";
 import type { ServiceSummary } from "../../services/types";
 
+import { ServicesProvider } from "../hooks/useServicesOverview";
+
 const NAV_ITEMS = [
   { to: "/services", label: "Resumen" },
   { to: "/services/agenda", label: "Agenda" },
   { to: "/services/create", label: "Crear" },
 ];
 
-export default function ServicesLayout() {
+function ServicesLayoutContent() {
   const navigate = useNavigate();
   const navigation = useNavigation();
   const pendingPath = navigation.location?.pathname;
@@ -106,6 +108,14 @@ export default function ServicesLayout() {
 
       <Outlet />
     </section>
+  );
+}
+
+export default function ServicesLayout() {
+  return (
+    <ServicesProvider>
+      <ServicesLayoutContent />
+    </ServicesProvider>
   );
 }
 

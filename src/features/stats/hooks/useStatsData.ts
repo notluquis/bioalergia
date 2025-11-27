@@ -1,15 +1,15 @@
 import { useCallback, useMemo, useState } from "react";
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import { useAuth } from "../../../context/AuthContext";
-import { fetchParticipantLeaderboard } from "../../participants/api";
-import type { ParticipantSummaryRow } from "../../participants/types";
-import type { BalancesApiResponse } from "../../balances/types";
-import { fetchBalances } from "../../balances/api";
-import { useQuickDateRange } from "../../balances/hooks/useQuickDateRange";
-import { apiClient } from "../../../lib/apiClient";
-import { queryKeys } from "../../../lib/queryKeys";
-import { useParticipantLeaderboardQuery } from "../../participants/hooks";
+import { useAuth } from "@/context/AuthContext";
+import { fetchParticipantLeaderboard } from "@/features/participants/api";
+import type { ParticipantSummaryRow } from "@/features/participants/types";
+import type { BalancesApiResponse } from "@/features/finance/balances/types";
+import { fetchBalances } from "@/features/finance/balances/api";
+import { useQuickDateRange } from "@/features/finance/balances/hooks/useQuickDateRange";
+import { apiClient } from "@/lib/apiClient";
+import { queryKeys } from "@/lib/queryKeys";
+import { useParticipantLeaderboardQuery } from "@/features/participants/hooks";
 
 type StatsResponse = {
   status: "ok";

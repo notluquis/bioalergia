@@ -1,0 +1,237 @@
+import { useMemo, useState } from "react";
+import dayjs from "dayjs";
+import { coerceAmount } from "@/lib/format";
+import { useAuth } from "@/context/AuthContext";
+import { useSettings } from "@/context/SettingsContext";
+import { logger } from "@/lib/logger";
+import { isCashbackCandidate } from "@/shared/cashback";
+import Button from "@/components/ui/Button";
+import Checkbox from "@/components/ui/Checkbox";
+import Input from "@/components/ui/Input";
+import { TransactionsFilters } from "@/features/finance/transactions/components/TransactionsFilters";
+import { TransactionsColumnToggles } from "@/features/finance/transactions/components/TransactionsColumnToggles";
+import { TransactionsTable } from "@/features/finance/transactions/components/TransactionsTable";
+import { COLUMN_DEFS, type ColumnKey } from "@/features/finance/transactions/constants";
+import type { Filters, LedgerRow } from "@/features/finance/transactions/types";
+import { useTransactionsQuery } from "@/features/finance/transactions/hooks/useTransactionsQuery";
+
+const DEFAULT_PAGE_SIZE = 50;
+
+export default function TransactionsMovements() {
+  const [initialBalance, setInitialBalance] = useState<string>("0");
+  const [draftFilters, setDraftFilters] = useState<Filters>({
+    from: dayjs().startOf("year").format("YYYY-MM-DD"),
+    to: dayjs().format("YYYY-MM-DD"),
+    description: "",
+    sourceId: "",
+    origin: "",
+    destination: "",
+    direction: "",
+    includeAmounts: false,
+    bankAccountNumber: "",
+  });
+  const [appliedFilters, setAppliedFilters] = useState<Filters>(draftFilters);
+  const [visibleColumns, setVisibleColumns] = useState<Set<ColumnKey>>(
+    () => new Set(COLUMN_DEFS.map((column) => column.key))
+  );
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+
+  const quickMonths = useMemo(() => {
+    const months: Array<{ value: string; label: string; from: string; to: string }> = [];
+    for (let i = 0; i < 12; i++) {
+      const date = dayjs().subtract(i, "month").startOf("month");
+      const label = date.format("MMMM YYYY");
+      const start = date.format("YYYY-MM-DD");
+      const end = date.endOf("month").format("YYYY-MM-DD");
+      months.push({ value: start, label, from: start, to: end });
+    }
+    return months;
+  }, []);
+
+  const quickRange = useMemo(() => {
+    const match = quickMonths.find(
+      ({ from: start, to: end }) => start === draftFilters.from && end === draftFilters.to
+    );
+    return match ? match.value : "custom";
+  }, [quickMonths, draftFilters.from, draftFilters.to]);
+
+  const { hasRole } = useAuth();
+  const { settings } = useSettings();
+
+  const canView = hasRole("GOD", "ADMIN", "ANALYST", "VIEWER");
+
+  const initialBalanceNumber = useMemo(() => coerceAmount(initialBalance), [initialBalance]);
+
+  const queryParams = useMemo(
+    () => ({
+      filters: appliedFilters,
+      page,
+      pageSize,
+    }),
+    [appliedFilters, page, pageSize]
+  );
+
+  const transactionsQuery = useTransactionsQuery(queryParams, canView);
+
+  const rows = useMemo(() => transactionsQuery.data?.data ?? [], [transactionsQuery.data?.data]);
+  const hasAmounts = Boolean(transactionsQuery.data?.hasAmounts);
+  const total = transactionsQuery.data?.total ?? rows.length;
+  const loading = transactionsQuery.isPending || transactionsQuery.isFetching;
+  const error = transactionsQuery.error?.message ?? null;
+
+  const ledger = useMemo<LedgerRow[]>(() => {
+    let balance = initialBalanceNumber;
+    const chronological = rows
+      .slice()
+      .sort((a, b) => (a.timestamp > b.timestamp ? 1 : -1))
+      .map((row) => {
+        const amount = row.amount ?? 0;
+        const delta = isCashbackCandidate(row)
+          ? 0
+          : row.direction === "IN"
+            ? amount
+            : row.direction === "OUT"
+              ? -amount
+              : 0;
+        if (hasAmounts) {
+          balance += delta;
+        }
+        return {
+          ...row,
+          runningBalance: hasAmounts ? balance : 0,
+          delta,
+        };
+      });
+
+    return chronological.reverse();
+  }, [rows, initialBalanceNumber, hasAmounts]);
+
+  const handleFilterChange = (update: Partial<Filters>) => {
+    setDraftFilters((prev) => ({ ...prev, ...update }));
+  };
+
+  return (
+    <section className="space-y-6">
+      {!canView ? (
+        <div className="card bg-base-100 border border-error/20 p-6 text-sm text-error shadow-sm">
+          No tienes permisos para ver los movimientos almacenados.
+        </div>
+      ) : (
+        <>
+          <TransactionsFilters
+            filters={draftFilters}
+            loading={loading}
+            onChange={handleFilterChange}
+            onSubmit={() => {
+              setPage(1);
+              setAppliedFilters({ ...draftFilters });
+            }}
+          />
+
+          <TransactionsColumnToggles
+            visibleColumns={visibleColumns}
+            onToggle={(column) => {
+              setVisibleColumns((prev) => {
+                const next = new Set(prev);
+                if (next.has(column)) next.delete(column);
+                else next.add(column);
+                return next;
+              });
+            }}
+          />
+
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div className="space-y-2">
+              <h1 className="typ-title text-base-content">Movimientos en base</h1>
+              <p className="max-w-2xl typ-body text-base-content/70">
+                Los datos provienen de la tabla <code>mp_transactions</code>. Ajusta el saldo inicial para recalcular el
+                saldo acumulado. Para consultas o soporte escribe a<strong> {settings.supportEmail}</strong>.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-end gap-3">
+              <div className="flex flex-col gap-1 w-32">
+                <span className="text-xs font-semibold uppercase tracking-wide text-base-content">
+                  Saldo inicial (CLP)
+                </span>
+                <Input
+                  type="text"
+                  value={initialBalance}
+                  onChange={(event) => setInitialBalance(event.target.value)}
+                  className="input-sm bg-base-100/90"
+                  placeholder="0"
+                  inputMode="decimal"
+                />
+              </div>
+              <div className="flex flex-col gap-1 w-40">
+                <span className="text-xs font-semibold uppercase tracking-wide text-base-content">Mes rápido</span>
+                <Input
+                  as="select"
+                  value={quickRange}
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    if (value === "custom") return;
+                    const match = quickMonths.find((month) => month.value === value);
+                    if (!match) return;
+                    const nextFilters = { ...draftFilters, from: match.from, to: match.to };
+                    setDraftFilters(nextFilters);
+                    setPage(1);
+                    setAppliedFilters(nextFilters);
+                  }}
+                  className="select-sm bg-base-100/90"
+                >
+                  <option value="custom">Personalizado</option>
+                  {quickMonths.map((month) => (
+                    <option key={month.value} value={month.value}>
+                      {month.label}
+                    </option>
+                  ))}
+                </Input>
+              </div>
+              <Button
+                type="button"
+                variant="primary"
+                onClick={() => transactionsQuery.refetch()}
+                disabled={loading}
+                size="sm"
+              >
+                {loading ? "Actualizando..." : "Actualizar"}
+              </Button>
+              <div className="pb-1">
+                <Checkbox
+                  label="Mostrar montos"
+                  checked={draftFilters.includeAmounts}
+                  onChange={(event) => {
+                    const nextFilters = { ...draftFilters, includeAmounts: event.target.checked };
+                    setDraftFilters(nextFilters);
+                    logger.info("[movements] toggle includeAmounts", nextFilters.includeAmounts);
+                    setPage(1);
+                    setAppliedFilters(nextFilters);
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {error && <p className="rounded-lg bg-rose-100 px-4 py-3 text-sm text-rose-700">{error}</p>}
+
+          <TransactionsTable
+            rows={ledger}
+            loading={loading}
+            hasAmounts={hasAmounts}
+            total={total}
+            page={page}
+            pageSize={pageSize}
+            onPageChange={(nextPage: number) => {
+              setPage(nextPage);
+            }}
+            onPageSizeChange={(nextPageSize: number) => {
+              setPageSize(nextPageSize);
+              setPage(1);
+            }}
+          />
+        </>
+      )}
+    </section>
+  );
+}

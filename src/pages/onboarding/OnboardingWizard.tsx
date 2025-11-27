@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import type { PublicKeyCredentialCreationOptionsJSON } from "@simplewebauthn/browser";
 import { useAuth } from "../../context/AuthContext";
 import { Shield, Key, Check, ArrowRight, User, CreditCard, Smartphone, Loader2, Fingerprint } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { formatRut, validateRut } from "../../lib/rut";
 import Input from "../../components/ui/Input";
+import { apiClient } from "../../lib/apiClient";
 
 const STEPS = [
   { id: "welcome", title: "Bienvenida" },
@@ -58,22 +60,19 @@ export default function OnboardingWizard() {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const res = await fetch("/api/users/profile");
-        if (res.ok) {
-          const { data } = await res.json();
-          setProfile((prev) => ({
-            ...prev,
-            names: data.names || "",
-            fatherName: data.fatherName || "",
-            motherName: data.motherName || "",
-            rut: data.rut || "",
-            phone: data.phone || "",
-            address: data.address || "",
-            bankName: data.bankName || "",
-            bankAccountType: data.bankAccountType || "",
-            bankAccountNumber: data.bankAccountNumber || "",
-          }));
-        }
+        const { data } = await apiClient.get<{ data: Partial<ProfileData> }>("/api/users/profile");
+        setProfile((prev) => ({
+          ...prev,
+          names: data.names || "",
+          fatherName: data.fatherName || "",
+          motherName: data.motherName || "",
+          rut: data.rut || "",
+          phone: data.phone || "",
+          address: data.address || "",
+          bankName: data.bankName || "",
+          bankAccountType: data.bankAccountType || "",
+          bankAccountNumber: data.bankAccountNumber || "",
+        }));
       } catch (err) {
         console.error("Error fetching profile", err);
       }
@@ -120,13 +119,8 @@ export default function OnboardingWizard() {
   const generateMfa = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/auth/mfa/setup", { method: "POST" });
-      const data = await res.json();
-      if (res.ok) {
-        setMfaSecret(data);
-      } else {
-        setError("Error al generar MFA");
-      }
+      const data = await apiClient.post<{ secret: string; qrCodeUrl: string }>("/api/auth/mfa/setup", {});
+      setMfaSecret(data);
     } catch {
       setError("Error de conexión");
     } finally {
@@ -138,20 +132,11 @@ export default function OnboardingWizard() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/auth/mfa/enable", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: mfaCode, secret: mfaSecret?.secret }),
-      });
-      if (res.ok) {
-        setMfaEnabled(true);
-        handleNext();
-      } else {
-        const data = await res.json();
-        setError(data.message || "Código incorrecto");
-      }
-    } catch {
-      setError("Error al verificar MFA");
+      await apiClient.post("/api/auth/mfa/enable", { token: mfaCode, secret: mfaSecret?.secret });
+      setMfaEnabled(true);
+      handleNext();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Código incorrecto");
     } finally {
       setLoading(false);
     }
@@ -162,32 +147,18 @@ export default function OnboardingWizard() {
     setError(null);
     try {
       // 1. Get options
-      const res = await fetch("/api/auth/passkey/register/options");
-      if (!res.ok) throw new Error("Error al iniciar registro de Passkey");
-      const options = await res.json();
+      const options = await apiClient.get<PublicKeyCredentialCreationOptionsJSON>("/api/auth/passkey/register/options");
 
       // 2. Create credentials
       const { startRegistration } = await import("@simplewebauthn/browser");
-      const attResp = await startRegistration(options);
+      const attResp = await startRegistration({ optionsJSON: options });
 
       // 3. Verify
-      const verifyRes = await fetch("/api/auth/passkey/register/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ body: attResp, challenge: options.challenge }),
-      });
+      await apiClient.post("/api/auth/passkey/register/verify", { body: attResp, challenge: options.challenge });
 
-      if (verifyRes.ok) {
-        // Passkey registered successfully
-        // We can consider this as "MFA" step done or just an extra
-        // For now, let's just notify success and maybe allow moving next if they want
-        // But typically MFA step implies TOTP for password flow.
-        // Let's just show a success message.
-        setMfaEnabled(true); // Treat as enabled so they can skip/next
-        handleNext();
-      } else {
-        throw new Error("Error al verificar Passkey");
-      }
+      // Passkey registered successfully
+      setMfaEnabled(true); // Treat as enabled so they can skip/next
+      handleNext();
     } catch (err) {
       console.error(err);
       setError("No se pudo registrar el Passkey. Intenta nuevamente o usa la App Autenticadora.");
@@ -209,16 +180,10 @@ export default function OnboardingWizard() {
 
     try {
       // 1. Save Profile & Password
-      const res = await fetch("/api/users/setup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...profile,
-          password,
-        }),
+      await apiClient.post("/api/users/setup", {
+        ...profile,
+        password,
       });
-
-      if (!res.ok) throw new Error("Error al guardar datos");
 
       // 2. Refresh Session & Redirect
       await refreshSession();

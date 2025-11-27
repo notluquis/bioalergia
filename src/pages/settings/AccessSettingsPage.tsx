@@ -6,6 +6,7 @@ import Input from "../../components/ui/Input";
 import { useSettings, type AppSettings } from "../../context/settings-context";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
+import { apiClient } from "../../lib/apiClient";
 
 function normalizeExternalUrl(value: string) {
   const trimmed = value.trim();
@@ -43,24 +44,28 @@ export default function AccessSettingsPage() {
   }, [settings]);
 
   // --- Users Query (for Admin MFA Control) ---
+  interface User {
+    id: number;
+    email: string;
+    role: string;
+    mfaEnabled: boolean;
+    passkeysCount: number;
+    hasPasskey: boolean;
+  }
+
   const { data: usersData, isLoading: isLoadingUsers } = useQuery({
     queryKey: ["users", "admin-list"],
     queryFn: async () => {
-      const res = await fetch("/api/users");
-      if (!res.ok) throw new Error("Error cargando usuarios");
-      return res.json();
+      return apiClient.get<{ users: User[] }>("/api/users");
     },
     enabled: isAdmin,
   });
 
   const toggleMfaMutation = useMutation({
     mutationFn: async ({ userId, enabled }: { userId: number; enabled: boolean }) => {
-      const res = await fetch(`/api/users/${userId}/mfa/toggle`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ enabled }),
+      const data = await apiClient.post<{ status: string; message?: string }>(`/api/users/${userId}/mfa/toggle`, {
+        enabled,
       });
-      const data = await res.json();
       if (data.status !== "ok") throw new Error(data.message || "Error al cambiar estado MFA");
       return data;
     },
@@ -158,50 +163,39 @@ export default function AccessSettingsPage() {
                     </td>
                   </tr>
                 ) : (
-                  usersData?.users?.map(
-                    (u: {
-                      id: number;
-                      email: string;
-                      role: string;
-                      mfaEnabled: boolean;
-                      passkeysCount: number;
-                      hasPasskey: boolean;
-                    }) => (
-                      <tr key={u.id} className="hover:bg-base-200/50">
-                        <td className="font-medium">{u.email}</td>
-                        <td className="text-xs opacity-70">{u.role}</td>
-                        <td className="text-center">
-                          {u.mfaEnabled ? (
-                            <span className="badge badge-success badge-sm gap-1">
-                              <ShieldCheck className="size-3" /> Activo
-                            </span>
-                          ) : (
-                            <span className="badge badge-ghost badge-sm">Inactivo</span>
-                          )}
-                        </td>
-                        <td className="text-center">
-                          {u.hasPasskey ? (
-                            <span className="text-xs text-success">Sí</span>
-                          ) : (
-                            <span className="text-xs text-base-content/30">-</span>
-                          )}
-                        </td>
-                        <td className="text-right">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className={
-                              u.mfaEnabled ? "text-error hover:bg-error/10" : "text-primary hover:bg-primary/10"
-                            }
-                            onClick={() => toggleMfaMutation.mutate({ userId: u.id, enabled: !u.mfaEnabled })}
-                            disabled={toggleMfaMutation.isPending}
-                          >
-                            {u.mfaEnabled ? "Desactivar MFA" : "Activar MFA"}
-                          </Button>
-                        </td>
-                      </tr>
-                    )
-                  )
+                  usersData?.users?.map((u: User) => (
+                    <tr key={u.id} className="hover:bg-base-200/50">
+                      <td className="font-medium">{u.email}</td>
+                      <td className="text-xs opacity-70">{u.role}</td>
+                      <td className="text-center">
+                        {u.mfaEnabled ? (
+                          <span className="badge badge-success badge-sm gap-1">
+                            <ShieldCheck className="size-3" /> Activo
+                          </span>
+                        ) : (
+                          <span className="badge badge-ghost badge-sm">Inactivo</span>
+                        )}
+                      </td>
+                      <td className="text-center">
+                        {u.hasPasskey ? (
+                          <span className="text-xs text-success">Sí</span>
+                        ) : (
+                          <span className="text-xs text-base-content/30">-</span>
+                        )}
+                      </td>
+                      <td className="text-right">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className={u.mfaEnabled ? "text-error hover:bg-error/10" : "text-primary hover:bg-primary/10"}
+                          onClick={() => toggleMfaMutation.mutate({ userId: u.id, enabled: !u.mfaEnabled })}
+                          disabled={toggleMfaMutation.isPending}
+                        >
+                          {u.mfaEnabled ? "Desactivar MFA" : "Activar MFA"}
+                        </Button>
+                      </td>
+                    </tr>
+                  ))
                 )}
               </tbody>
             </table>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { fetchEmployees, type Employee } from "../../employees/api";
+import { fetchEmployees, type Employee } from "@/features/hr/employees/api";
 import { getRoleMappings, saveRoleMapping } from "../api";
 import type { RoleMapping } from "../api";
 import type { UserRole } from "../../../../server/types";

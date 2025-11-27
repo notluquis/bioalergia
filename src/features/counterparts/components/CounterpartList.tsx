@@ -44,10 +44,9 @@ export default function CounterpartList({
           const isActive = selectedId === item.id;
           return (
             <li key={item.id}>
-              <button
-                type="button"
+              <div
                 onClick={() => onSelectCounterpart(item.id)}
-                className={`group w-full rounded-2xl border px-3 py-2 text-left transition-all ${
+                className={`group w-full cursor-pointer rounded-2xl border px-3 py-2 text-left transition-all ${
                   isActive
                     ? "border-primary/40 bg-primary/10 text-primary shadow-sm"
                     : "border-transparent bg-base-200/60 text-base-content hover:border-base-300 hover:bg-base-200"
@@ -64,7 +63,7 @@ export default function CounterpartList({
                   </span>
                 </span>
                 {item.rut && <span className="mt-1 block text-xs text-base-content/90">RUT {formatRut(item.rut)}</span>}
-              </button>
+              </div>
             </li>
           );
         })}

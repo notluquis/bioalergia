@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import { startRegistration } from "@simplewebauthn/browser";
+import type { PublicKeyCredentialCreationOptionsJSON } from "@simplewebauthn/types";
 import { Smartphone, Fingerprint, Check, Loader2 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
 import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
+import { apiClient } from "../../lib/apiClient";
 
 export default function SecuritySettingsPage() {
   const { user, refreshSession } = useAuth();
@@ -28,8 +30,10 @@ export default function SecuritySettingsPage() {
   const handleSetupMfa = async () => {
     setLoadingMfa(true);
     try {
-      const res = await fetch("/api/auth/mfa/setup", { method: "POST" });
-      const data = await res.json();
+      const data = await apiClient.post<{ status: string; secret: string; qrCodeUrl: string; message?: string }>(
+        "/api/auth/mfa/setup",
+        {}
+      );
       if (data.status === "ok") {
         setMfaSecret(data.secret);
         setQrCodeUrl(data.qrCodeUrl);
@@ -46,12 +50,11 @@ export default function SecuritySettingsPage() {
   const handleEnableMfa = async () => {
     setLoadingMfa(true);
     try {
-      const res = await fetch("/api/auth/mfa/enable", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: mfaToken, userId: user?.id }),
+      const data = await apiClient.post<{ status: string; message?: string }>("/api/auth/mfa/enable", {
+        token: mfaToken,
+        userId: user?.id,
       });
-      const data = await res.json();
+
       if (data.status === "ok") {
         success("MFA activado correctamente");
         setIsMfaEnabled(true);
@@ -73,8 +76,7 @@ export default function SecuritySettingsPage() {
 
     setLoadingMfa(true);
     try {
-      const res = await fetch("/api/auth/mfa/disable", { method: "POST" });
-      const data = await res.json();
+      const data = await apiClient.post<{ status: string }>("/api/auth/mfa/disable", {});
       if (data.status === "ok") {
         success("MFA desactivado");
         setIsMfaEnabled(false);
@@ -95,13 +97,13 @@ export default function SecuritySettingsPage() {
     try {
       // 1. Get options
       // 1. Get options
-      const res = await fetch("/api/auth/passkey/register/options");
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.error || errData.message || "Error al obtener opciones de registro");
-      }
-      const options = await res.json();
-      console.log("[Passkey] Registration Options:", options);
+      // 1. Get options
+      type PasskeyOptionsResponse = PublicKeyCredentialCreationOptionsJSON & {
+        status?: string;
+        message?: string;
+      };
+
+      const options = await apiClient.get<PasskeyOptionsResponse>("/api/auth/passkey/register/options");
 
       if (options.status === "error") throw new Error(options.message);
 
@@ -109,13 +111,10 @@ export default function SecuritySettingsPage() {
       const attResp = await startRegistration({ optionsJSON: options });
 
       // 3. Verify
-      const verifyRes = await fetch("/api/auth/passkey/register/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ body: attResp, challenge: options.challenge }),
-      });
-
-      const verifyData = await verifyRes.json();
+      const verifyData = await apiClient.post<{ status: string; message?: string }>(
+        "/api/auth/passkey/register/verify",
+        { body: attResp, challenge: options.challenge }
+      );
       if (verifyData.status === "ok") {
         success("Passkey registrado exitosamente");
         await refreshSession();
@@ -135,8 +134,7 @@ export default function SecuritySettingsPage() {
 
     setLoadingPasskey(true);
     try {
-      const res = await fetch("/api/auth/passkey/remove", { method: "DELETE" });
-      const data = await res.json();
+      const data = await apiClient.delete<{ status: string; message?: string }>("/api/auth/passkey/remove");
       if (data.status === "ok") {
         success("Passkey eliminado");
         await refreshSession();
