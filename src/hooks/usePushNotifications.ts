@@ -4,16 +4,21 @@ import { useAuth } from "../context/AuthContext";
 const VAPID_PUBLIC_KEY = "BIR7uwHD5foPZBVAKlBmngo2Ps1YTgsxJktvTmGeVq0bl7xZbQU76cpBXeVAEUzVX-OA0apUrovjSGrIeG9ggYI"; // Generated VAPID key
 
 function urlBase64ToUint8Array(base64String: string) {
-  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  try {
+    const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
 
-  const rawData = window.atob(base64);
-  const outputArray = new Uint8Array(rawData.length);
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
 
-  for (let i = 0; i < rawData.length; ++i) {
-    outputArray[i] = rawData.charCodeAt(i);
+    for (let i = 0; i < rawData.length; ++i) {
+      outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+  } catch (e) {
+    console.error("Error decoding VAPID key:", e);
+    return new Uint8Array(0);
   }
-  return outputArray;
 }
 
 export function usePushNotifications() {

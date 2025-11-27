@@ -2,6 +2,7 @@ import express from "express";
 import { asyncHandler, authenticate, requireRole } from "../lib/http.js";
 import { findUserById } from "../services/users.js";
 import { prisma } from "../prisma.js";
+import { Prisma } from "@prisma/client";
 import { logEvent } from "../lib/logger.js";
 import type { AuthenticatedRequest } from "../types.js";
 
@@ -100,6 +101,107 @@ export function registerUserRoutes(app: express.Express) {
       }));
 
       res.json({ status: "ok", users: safeUsers });
+    })
+  );
+  // Reset Password (Admin only)
+  app.post(
+    "/api/users/:id/reset-password",
+    authenticate,
+    requireRole("GOD", "ADMIN"),
+    asyncHandler(async (req: AuthenticatedRequest, res) => {
+      const targetUserId = Number(req.params.id);
+      if (isNaN(targetUserId)) {
+        return res.status(400).json({ status: "error", message: "ID de usuario inválido" });
+      }
+
+      const user = await findUserById(targetUserId);
+      if (!user) {
+        return res.status(404).json({ status: "error", message: "Usuario no encontrado" });
+      }
+
+      // Prevent resetting GOD users if not GOD
+      if (user.role === "GOD" && req.auth?.role !== "GOD") {
+        return res.status(403).json({ status: "error", message: "No tienes permisos para modificar a este usuario" });
+      }
+
+      // Generate temp password (fixed for now as requested in previous flows, or random)
+      // Let's use a standard temp password "temp1234" hash for simplicity in this "emergency fix" context,
+      // or better, use the same logic as the "ensure-admin" script but hardcoded hash for "temp1234".
+      // Hash for "temp1234" is $2b$10$l4zVKe6jibPP4dhwcTNi2OxqvABhDJtf87aX/edUIKXVoiHptwfN6 (from previous sql)
+      // OR we can import bcrypt. Let's import bcrypt to be safe and dynamic.
+      const bcrypt = await import("bcryptjs");
+      const tempPassword = "temp" + Math.floor(1000 + Math.random() * 9000); // temp1234 random
+      const salt = await bcrypt.genSalt(10);
+      const passwordHash = await bcrypt.hash(tempPassword, salt);
+
+      await prisma.user.update({
+        where: { id: targetUserId },
+        data: {
+          passwordHash,
+          status: "PENDING_SETUP", // Force them to go through onboarding/change password
+          mfaEnabled: false, // Reset MFA too so they can set it up again
+          mfaSecret: null,
+          passkeyCredentialID: null,
+          passkeyPublicKey: null,
+          passkeyCounter: 0,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          passkeyTransports: Prisma.DbNull as any,
+        },
+      });
+
+      logEvent("user:reset_password", {
+        adminId: req.auth?.userId,
+        targetUserId,
+      });
+
+      res.json({ status: "ok", message: "Contraseña reseteada", tempPassword });
+    })
+  );
+
+  // Update User Status (Suspend/Activate)
+  app.put(
+    "/api/users/:id/status",
+    authenticate,
+    requireRole("GOD", "ADMIN"),
+    asyncHandler(async (req: AuthenticatedRequest, res) => {
+      const targetUserId = Number(req.params.id);
+      const { status } = req.body;
+
+      if (isNaN(targetUserId)) {
+        return res.status(400).json({ status: "error", message: "ID de usuario inválido" });
+      }
+
+      if (!["ACTIVE", "SUSPENDED"].includes(status)) {
+        return res.status(400).json({ status: "error", message: "Estado inválido" });
+      }
+
+      const user = await findUserById(targetUserId);
+      if (!user) {
+        return res.status(404).json({ status: "error", message: "Usuario no encontrado" });
+      }
+
+      // Prevent suspending self
+      if (user.id === req.auth?.userId) {
+        return res.status(400).json({ status: "error", message: "No puedes suspender tu propia cuenta" });
+      }
+
+      // Prevent suspending GOD users if not GOD
+      if (user.role === "GOD" && req.auth?.role !== "GOD") {
+        return res.status(403).json({ status: "error", message: "No tienes permisos para modificar a este usuario" });
+      }
+
+      await prisma.user.update({
+        where: { id: targetUserId },
+        data: { status },
+      });
+
+      logEvent("user:status_update", {
+        adminId: req.auth?.userId,
+        targetUserId,
+        status,
+      });
+
+      res.json({ status: "ok", message: `Usuario ${status === "ACTIVE" ? "reactivado" : "suspendido"}` });
     })
   );
 }

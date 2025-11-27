@@ -102,7 +102,7 @@ function buildWhereClause(filters: CalendarEventFilters) {
   }
 
   if (filters.to) {
-    conditions.push(Prisma.sql`${EVENT_DATETIME} < DATE_ADD(${filters.to}, INTERVAL 1 DAY)`);
+    conditions.push(Prisma.sql`${EVENT_DATETIME} < ${filters.to}::date + INTERVAL '1 day'`);
   }
 
   if (filters.calendarIds?.length) {
