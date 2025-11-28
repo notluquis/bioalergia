@@ -17,8 +17,7 @@ COPY package*.json ./
 # Copy Prisma schema (needed for prisma generate during postinstall)
 COPY prisma ./prisma/
 
-# Copy scripts (needed for postinstall: fix-prisma-esm.mjs)
-COPY scripts ./scripts/
+
 
 # Install ALL dependencies
 # We removed cache mounts due to Railway BuildKit compatibility issues
@@ -43,7 +42,7 @@ COPY --from=builder /app/node_modules ./node_modules
 
 # Copy built application from builder
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/generated ./generated
+
 
 # Copy necessary runtime files
 COPY --from=builder /app/prisma ./prisma
