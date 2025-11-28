@@ -33,6 +33,9 @@ FROM node:22-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
+# Create necessary directories for uploads and storage with correct permissions
+RUN mkdir -p /app/uploads /app/storage && chown -R node:node /app/uploads /app/storage
+
 # Don't run as root
 USER node
 
