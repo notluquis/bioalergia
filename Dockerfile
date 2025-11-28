@@ -1,55 +1,52 @@
 # syntax=docker/dockerfile:1.4
 # Multi-stage Dockerfile optimized for Railway Metal builders
-# Stage 1: Build
-FROM node:22-alpine AS builder
 
-# Update npm to latest version
-RUN npm install -g npm@11.6.3
-
+# Stage 1: Base (Common files)
+FROM node:22-alpine AS base
 WORKDIR /app
-
-# Set DATABASE_URL for Prisma (needed during npm ci postinstall)
-ENV DATABASE_URL="postgresql://dummy:dummy@dummy:5432/dummy"
-
-# Copy package files first (changes less often = better cache)
 COPY package*.json ./
 
-# Copy Prisma schema (needed for prisma generate during postinstall)
+# Stage 2: Dependencies (Prod & Dev)
+FROM base AS deps
+# Update npm to latest version
+RUN npm install -g npm@11.6.3
+# Copy Prisma schema (needed for postinstall generate)
 COPY prisma ./prisma/
-
-
-
+# Set dummy DB URL for Prisma generation
+ENV DATABASE_URL="postgresql://dummy:dummy@dummy:5432/dummy"
 # Install ALL dependencies
-# We removed cache mounts due to Railway BuildKit compatibility issues
 RUN npm ci
 
-# Copy source code LAST (changes most often)
+# Stage 3: Builder
+FROM deps AS builder
 COPY . .
-
 # Build the application
 RUN npm run build:prod
 
-# Stage 2: Production
-FROM node:22-alpine
+# Stage 4: Production Dependencies (Clean install)
+FROM base AS prod-deps
+RUN npm install -g npm@11.6.3
+COPY prisma ./prisma/
+ENV DATABASE_URL="postgresql://dummy:dummy@dummy:5432/dummy"
+# Install ONLY production dependencies
+RUN npm ci --omit=dev
 
+# Stage 5: Runner (Production Image)
+FROM node:22-alpine AS runner
 WORKDIR /app
+ENV NODE_ENV=production
 
-# Copy package files
-COPY package*.json ./
+# Don't run as root
+USER node
 
-# Copy node_modules from builder (faster than npm ci)
-COPY --from=builder /app/node_modules ./node_modules
+# Copy prod deps from prod-deps stage
+COPY --from=prod-deps --chown=node:node /app/node_modules ./node_modules
+COPY --from=prod-deps --chown=node:node /app/prisma ./prisma
 
-# Copy built application from builder
-COPY --from=builder /app/dist ./dist
-
-
-# Copy necessary runtime files
-COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
-
-# Remove dev dependencies
-RUN npm prune --omit=dev
+# Copy built application from builder stage
+COPY --from=builder --chown=node:node /app/dist ./dist
+COPY --from=builder --chown=node:node /app/package.json ./package.json
+COPY --from=builder --chown=node:node /app/prisma.config.ts ./prisma.config.ts
 
 # Expose port
 EXPOSE 3000
