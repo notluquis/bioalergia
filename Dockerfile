@@ -23,13 +23,10 @@ COPY . .
 # Build the application
 RUN npm run build:prod
 
-# Stage 4: Production Dependencies (Clean install)
-FROM base AS prod-deps
-RUN npm install -g npm@11.6.3
-COPY prisma ./prisma/
-ENV DATABASE_URL="postgresql://dummy:dummy@dummy:5432/dummy"
-# Install ONLY production dependencies
-RUN npm ci --omit=dev
+# Stage 4: Production Dependencies (Prune from full deps)
+FROM deps AS prod-deps
+# Prune dev dependencies (this keeps the already generated Prisma client)
+RUN npm prune --omit=dev
 
 # Stage 5: Runner (Production Image)
 FROM node:22-alpine AS runner
