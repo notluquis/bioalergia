@@ -7,7 +7,7 @@ import type { AuthenticatedRequest } from "../types.js";
 import { serviceCreateSchema } from "../schemas.js";
 
 import { mapService } from "../lib/mappers.js";
-import { ServiceType, ServiceFrequency } from "../../generated/prisma/client.js";
+import { ServiceType, ServiceFrequency } from "@prisma/client";
 
 export function registerServiceRoutes(app: express.Express) {
   const router = express.Router();

@@ -11,5 +11,5 @@
     "incremental": true,
     "types": ["node"]
   },
-  "include": ["server/**/*.ts", "shared/**/*.ts", "generated/prisma/**/*.ts"]
+  "include": ["server/**/*.ts", "shared/**/*.ts"]
 }

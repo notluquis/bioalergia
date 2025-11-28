@@ -79,3 +79,4 @@ coverage/
 generated/
 test_output_2.txt
 test_output.txt
+.vscode/settings.json

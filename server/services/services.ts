@@ -1,5 +1,5 @@
 import { prisma } from "../prisma.js";
-import { Prisma } from "../../generated/prisma/client.js";
+import { Prisma } from "@prisma/client";
 
 export async function listServices() {
   return await prisma.service.findMany({

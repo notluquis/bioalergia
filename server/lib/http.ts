@@ -1,6 +1,6 @@
 import type express from "express";
 import jwt from "jsonwebtoken";
-import { UserRole } from "../../generated/prisma/client.js";
+import { UserRole } from "@prisma/client";
 import { JWT_SECRET, sessionCookieName, sessionCookieOptions } from "../config.js";
 import type { AuthenticatedRequest, AuthSession } from "../types.js";
 import { getRequestLogger } from "./logger.js";
