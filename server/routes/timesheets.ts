@@ -1,7 +1,7 @@
 import express from "express";
 import { z } from "zod";
 import { asyncHandler, authenticate, requireRole } from "../lib/http.js";
-import { Prisma } from "../../generated/prisma/client.js";
+import { Prisma } from "@prisma/client";
 import { logEvent, logWarn, requestContext } from "../lib/logger.js";
 import { listEmployees, getEmployeeById } from "../services/employees.js";
 import {

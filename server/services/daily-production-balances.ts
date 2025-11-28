@@ -1,5 +1,5 @@
 import { prisma } from "../prisma.js";
-import { Prisma } from "../../generated/prisma/client.js";
+import { Prisma } from "@prisma/client";
 import dayjs from "dayjs";
 
 export type ProductionBalanceStatus = "DRAFT" | "FINAL";

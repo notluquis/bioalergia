@@ -1,8 +1,7 @@
 import express from "express";
 import { asyncHandler, authenticate, requireRole } from "../lib/http.js";
 import { findUserById } from "../services/users.js";
-import { prisma } from "../prisma.js";
-import { Prisma } from "@prisma/client";
+import { prisma, Prisma } from "../prisma.js";
 import { logEvent } from "../lib/logger.js";
 import type { AuthenticatedRequest } from "../types.js";
 

@@ -9,7 +9,7 @@ import {
   upsertCounterpartAccount,
   updateCounterpartAccount,
 } from "../services/counterparts.js";
-import { PersonType, CounterpartCategory } from "../../generated/prisma/client.js";
+import { PersonType, CounterpartCategory } from "@prisma/client";
 
 import {
   counterpartPayloadSchema,

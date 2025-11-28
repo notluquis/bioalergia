@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import { Prisma } from "../../generated/prisma/client.js";
+import { Prisma } from "@prisma/client";
 import { prisma } from "./prisma.js";
 
 import { googleCalendarConfig } from "../config.js";

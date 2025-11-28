@@ -1,5 +1,5 @@
 import { prisma } from "../prisma.js";
-import { Prisma } from "../../generated/prisma/client.js";
+import { Prisma } from "@prisma/client";
 import { formatDateOnly } from "../lib/time.js";
 import dayjs from "dayjs";
 
