@@ -50,9 +50,5 @@ COPY --from=builder --chown=node:node /app/dist ./dist
 # Expose port
 EXPOSE 3000
 
-# Health check (optional - Railway has its own health checks)
-HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:'+(process.env.PORT||3000)+'/api/health',r=>{process.exit(r.statusCode===200?0:1)}).on('error',()=>process.exit(1))"
-
 # Start directly with node (faster than npm start - no npm overhead)
 CMD ["node", "dist/server/index.js"]
