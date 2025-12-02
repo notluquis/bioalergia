@@ -30,8 +30,16 @@ export function registerEmployeeRoutes(app: express.Express) {
           .json({ status: "error", message: "Los datos no son válidos", issues: parsed.error.issues });
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const employee = await createEmployee(parsed.data as any);
+      // Validate required fields for creation
+      if (!parsed.data.rut) {
+        return res.status(400).json({ status: "error", message: "El RUT es requerido para crear un empleado" });
+      }
+
+      const employee = await createEmployee({
+        ...parsed.data,
+        rut: parsed.data.rut,
+        full_name: parsed.data.full_name,
+      });
       logEvent("employees:create", requestContext(req, { employeeId: employee?.id }));
       res.status(201).json({ status: "ok", employee });
     })
@@ -49,8 +57,7 @@ export function registerEmployeeRoutes(app: express.Express) {
       }
 
       const employeeId = Number(req.params.id);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const employee = await updateEmployee(employeeId, parsed.data as any);
+      const employee = await updateEmployee(employeeId, parsed.data);
       logEvent("employees:update", requestContext(req, { employeeId }));
       res.json({ status: "ok", employee });
     })
