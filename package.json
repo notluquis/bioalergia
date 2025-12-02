@@ -17,7 +17,7 @@
     "server": "npx @dotenvx/dotenvx run -- tsx watch --tsconfig tsconfig.server.json server/index.ts",
     "predev:full": "lsof -ti:4000,5173,5174 | xargs kill -9 || true",
     "dev:full": "concurrently \"npm run dev:client\" \"npm run server\"",
-    "start": "npm run db:deploy && node dist/server/index.js",
+    "start": "node dist/server/index.js",
     "prisma:generate": "prisma generate",
     "postinstall": "npm run prisma:generate",
     "build:prod": "rm -rf dist && concurrently --kill-others-on-fail \"npm run build:server\" \"npm run build:client\"",
