@@ -8,14 +8,12 @@ COPY package*.json ./
 
 # Stage 2: Dependencies (Prod & Dev)
 FROM base AS deps
-# Update npm to latest version
-RUN npm install -g npm@11.6.3
 # Copy Prisma schema (needed for postinstall generate)
 COPY prisma ./prisma/
 # Set dummy DB URL for Prisma generation
 ENV DATABASE_URL="postgresql://dummy:dummy@dummy:5432/dummy"
-# Install ALL dependencies
-RUN npm ci
+# Install ALL dependencies with cache mount
+RUN --mount=type=cache,target=/root/.npm npm ci
 
 # Stage 3: Builder
 FROM deps AS builder
