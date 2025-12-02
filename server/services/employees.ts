@@ -1,5 +1,72 @@
 import { prisma } from "../prisma.js";
-import { Prisma } from "@prisma/client";
+import { Prisma, EmployeeSalaryType, EmployeeStatus } from "@prisma/client";
+
+// Type for the frontend payload (snake_case)
+interface EmployeePayload {
+  full_name?: string;
+  role?: string;
+  email?: string | null;
+  rut?: string | null;
+  bank_name?: string | null;
+  bank_account_type?: string | null;
+  bank_account_number?: string | null;
+  salary_type?: "HOURLY" | "FIXED";
+  hourly_rate?: number | null;
+  fixed_salary?: number | null;
+  overtime_rate?: number | null;
+  retention_rate?: number;
+  status?: "ACTIVE" | "INACTIVE";
+  metadata?: Record<string, unknown> | null;
+}
+
+// Map frontend payload to Prisma Employee update data
+function mapToEmployeeData(payload: EmployeePayload): Prisma.EmployeeUncheckedUpdateInput {
+  const data: Prisma.EmployeeUncheckedUpdateInput = {};
+
+  if (payload.role !== undefined) {
+    data.position = payload.role;
+  }
+  if (payload.bank_name !== undefined) {
+    data.bankName = payload.bank_name;
+  }
+  if (payload.bank_account_type !== undefined) {
+    data.bankAccountType = payload.bank_account_type;
+  }
+  if (payload.bank_account_number !== undefined) {
+    data.bankAccountNumber = payload.bank_account_number;
+  }
+  if (payload.salary_type !== undefined) {
+    data.salaryType = payload.salary_type as EmployeeSalaryType;
+  }
+  if (payload.hourly_rate !== undefined) {
+    data.hourlyRate = payload.hourly_rate;
+  }
+  if (payload.fixed_salary !== undefined) {
+    data.baseSalary = payload.fixed_salary ?? 0;
+  }
+  if (payload.status !== undefined) {
+    data.status = payload.status as EmployeeStatus;
+  }
+
+  return data;
+}
+
+// Map frontend payload to Prisma Person update data
+function mapToPersonData(payload: EmployeePayload): Prisma.PersonUpdateInput {
+  const data: Prisma.PersonUpdateInput = {};
+
+  if (payload.full_name !== undefined) {
+    data.names = payload.full_name;
+  }
+  if (payload.email !== undefined) {
+    data.email = payload.email;
+  }
+  if (payload.rut !== undefined) {
+    data.rut = payload.rut ?? undefined;
+  }
+
+  return data;
+}
 
 export async function listEmployees(options?: { includeInactive?: boolean }) {
   const where: Prisma.EmployeeWhereInput = {};
@@ -34,11 +101,36 @@ export async function createEmployee(data: Prisma.EmployeeUncheckedCreateInput) 
   });
 }
 
-export async function updateEmployee(id: number, data: Prisma.EmployeeUncheckedUpdateInput) {
-  return await prisma.employee.update({
+export async function updateEmployee(id: number, payload: EmployeePayload) {
+  // Get current employee to find personId
+  const currentEmployee = await prisma.employee.findUnique({
     where: { id },
-    data,
-    include: { person: true },
+    select: { personId: true },
+  });
+
+  if (!currentEmployee) {
+    throw new Error(`Employee with id ${id} not found`);
+  }
+
+  const employeeData = mapToEmployeeData(payload);
+  const personData = mapToPersonData(payload);
+
+  // Use transaction to update both Employee and Person atomically
+  return await prisma.$transaction(async (tx) => {
+    // Update Person if there's data to update
+    if (Object.keys(personData).length > 0) {
+      await tx.person.update({
+        where: { id: currentEmployee.personId },
+        data: personData,
+      });
+    }
+
+    // Update Employee
+    return await tx.employee.update({
+      where: { id },
+      data: employeeData,
+      include: { person: true },
+    });
   });
 }
 
