@@ -207,7 +207,7 @@ export const employeeSchema = z.object({
   bank_name: z.string().trim().max(120).nullable().optional(),
   bank_account_type: z.string().trim().max(32).nullable().optional(),
   bank_account_number: z.string().trim().max(64).nullable().optional(),
-  salary_type: z.enum(["hourly", "fixed"]).default("hourly"),
+  salary_type: z.enum(["HOURLY", "FIXED"]).default("HOURLY"),
   hourly_rate: z.coerce.number().min(0).optional(),
   fixed_salary: z.coerce.number().min(0).nullable().optional(),
   overtime_rate: z.coerce.number().min(0).nullable().optional(),
