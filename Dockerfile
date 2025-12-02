@@ -13,7 +13,7 @@ COPY prisma ./prisma/
 # Set dummy DB URL for Prisma generation
 ENV DATABASE_URL="postgresql://dummy:dummy@dummy:5432/dummy"
 # Install ALL dependencies with cache mount
-RUN --mount=type=cache,target=/root/.npm npm ci
+RUN --mount=type=cache,id=npm,target=/root/.npm npm ci
 
 # Stage 3: Builder
 FROM deps AS builder
