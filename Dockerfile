@@ -14,8 +14,8 @@ COPY prisma ./prisma/
 ENV DATABASE_URL="postgresql://dummy:dummy@dummy:5432/dummy"
 # Only generate Prisma binaries for Alpine Linux (musl) - reduces size significantly
 ENV PRISMA_CLI_BINARY_TARGETS="linux-musl-openssl-3.0.x"
-# Install ALL dependencies with cache mount
-RUN --mount=type=cache,id=npm,target=/root/.npm npm ci
+# Install ALL dependencies with Railway Metal cache mount
+RUN --mount=type=cache,id=s/cc493466-c691-4384-8199-99f757a14014-/root/.npm,target=/root/.npm npm ci
 
 # Stage 3: Builder
 FROM deps AS builder
