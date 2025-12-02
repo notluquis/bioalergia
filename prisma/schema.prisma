@@ -172,6 +172,9 @@ model Employee {
   salaryType        EmployeeSalaryType @default(FIXED) @map("salary_type")
   baseSalary        Decimal            @default(0) @map("base_salary") @db.Decimal(12, 2)
   hourlyRate        Decimal?           @map("hourly_rate") @db.Decimal(10, 2)
+  overtimeRate      Decimal?           @map("overtime_rate") @db.Decimal(10, 2)
+  retentionRate     Decimal            @default(0) @map("retention_rate") @db.Decimal(5, 4)
+  metadata          Json?
   
   // Bank Details (Specific to Employee payments)
   bankName          String?            @map("bank_name")

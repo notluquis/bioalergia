@@ -19,6 +19,15 @@ interface EmployeePayload {
   metadata?: Record<string, unknown> | null;
 }
 
+// Helper to convert metadata to Prisma-compatible JSON
+function toJsonValue(
+  value: Record<string, unknown> | null | undefined
+): Prisma.InputJsonValue | typeof Prisma.JsonNull | undefined {
+  if (value === undefined) return undefined;
+  if (value === null) return Prisma.JsonNull;
+  return value as Prisma.InputJsonValue;
+}
+
 // Map frontend payload to Prisma Employee update data
 function mapToEmployeeData(payload: EmployeePayload): Prisma.EmployeeUncheckedUpdateInput {
   const data: Prisma.EmployeeUncheckedUpdateInput = {};
@@ -43,6 +52,15 @@ function mapToEmployeeData(payload: EmployeePayload): Prisma.EmployeeUncheckedUp
   }
   if (payload.fixed_salary !== undefined) {
     data.baseSalary = payload.fixed_salary ?? 0;
+  }
+  if (payload.overtime_rate !== undefined) {
+    data.overtimeRate = payload.overtime_rate;
+  }
+  if (payload.retention_rate !== undefined) {
+    data.retentionRate = payload.retention_rate;
+  }
+  if (payload.metadata !== undefined) {
+    data.metadata = toJsonValue(payload.metadata);
   }
   if (payload.status !== undefined) {
     data.status = payload.status as EmployeeStatus;
@@ -94,10 +112,43 @@ export async function findEmployeeByEmail(email: string) {
   });
 }
 
-export async function createEmployee(data: Prisma.EmployeeUncheckedCreateInput) {
-  return await prisma.employee.create({
-    data,
-    include: { person: true },
+// Create employee from frontend payload - requires creating Person first
+export async function createEmployee(payload: EmployeePayload & { rut: string; full_name: string }) {
+  return await prisma.$transaction(async (tx) => {
+    // First create or find Person by RUT
+    const person = await tx.person.upsert({
+      where: { rut: payload.rut },
+      update: {
+        names: payload.full_name,
+        email: payload.email,
+      },
+      create: {
+        rut: payload.rut,
+        names: payload.full_name,
+        email: payload.email,
+        personType: "NATURAL",
+      },
+    });
+
+    // Then create Employee linked to Person
+    return await tx.employee.create({
+      data: {
+        personId: person.id,
+        position: payload.role || "Sin cargo",
+        salaryType: (payload.salary_type as EmployeeSalaryType) || "FIXED",
+        baseSalary: payload.fixed_salary ?? 0,
+        hourlyRate: payload.hourly_rate,
+        overtimeRate: payload.overtime_rate,
+        retentionRate: payload.retention_rate ?? 0,
+        metadata: toJsonValue(payload.metadata),
+        bankName: payload.bank_name,
+        bankAccountType: payload.bank_account_type,
+        bankAccountNumber: payload.bank_account_number,
+        startDate: new Date(),
+        status: "ACTIVE",
+      },
+      include: { person: true },
+    });
   });
 }
 
