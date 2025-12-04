@@ -10,5 +10,8 @@
   "eslint.validate": ["javascript", "javascriptreact", "typescript", "typescriptreact"],
   "[sql]": {
     "editor.defaultFormatter": "cweijan.vscode-database-client2"
+  },
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "prettier.prettier-vscode"
   }
 }
