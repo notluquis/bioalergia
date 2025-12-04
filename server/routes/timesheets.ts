@@ -10,6 +10,7 @@ import {
   updateTimesheetEntry,
   deleteTimesheetEntry,
 } from "../services/timesheets.js";
+import { sendTimesheetEmail, verifySmtpConnection } from "../services/email.js";
 import { timesheetPayloadSchema, timesheetUpdateSchema, timesheetBulkSchema, monthParamSchema } from "../schemas.js";
 import type { AuthenticatedRequest } from "../types.js";
 import { durationToMinutes, minutesToDuration } from "../../shared/time.js";
@@ -298,6 +299,94 @@ export function registerTimesheetRoutes(app: express.Express) {
       );
 
       res.json({ status: "ok", entries });
+    })
+  );
+
+  // Verificar estado de SMTP
+  app.get(
+    "/api/timesheets/email/status",
+    authenticate,
+    requireRole("GOD", "ADMIN"),
+    asyncHandler(async (_req, res) => {
+      const result = await verifySmtpConnection();
+      res.json({ status: "ok", smtp: result });
+    })
+  );
+
+  // Enviar boleta de honorarios por email
+  app.post(
+    "/api/timesheets/send-email",
+    authenticate,
+    requireRole("GOD", "ADMIN"),
+    asyncHandler(async (req: AuthenticatedRequest, res) => {
+      const schema = z.object({
+        employeeId: z.number().int().positive(),
+        month: z.string().regex(/^\d{4}-\d{2}$/), // YYYY-MM
+        monthLabel: z.string(), // "Diciembre 2025"
+        pdfBase64: z.string(), // PDF en base64
+      });
+
+      const parsed = schema.safeParse(req.body);
+      if (!parsed.success) {
+        logWarn("timesheets:send-email:invalid", requestContext(req, { issues: parsed.error.issues }));
+        return res.status(400).json({ status: "error", message: "Datos inválidos", issues: parsed.error.issues });
+      }
+
+      const { employeeId, month, monthLabel, pdfBase64 } = parsed.data;
+
+      // Obtener datos del empleado
+      const employee = await getEmployeeById(employeeId);
+      if (!employee) {
+        return res.status(404).json({ status: "error", message: "Empleado no encontrado" });
+      }
+
+      const employeeEmail = employee.person.email;
+      if (!employeeEmail) {
+        return res.status(400).json({ status: "error", message: "El empleado no tiene email registrado" });
+      }
+
+      // Obtener resumen del mes
+      const { from, to } = getMonthRange(month);
+      const summary = await buildMonthlySummary(from, to, employeeId);
+      const employeeSummary = summary.employees.find((e) => e.employeeId === employeeId);
+
+      if (!employeeSummary) {
+        return res.status(404).json({ status: "error", message: "No hay datos de timesheet para este periodo" });
+      }
+
+      // Convertir PDF de base64 a Buffer
+      const pdfBuffer = Buffer.from(pdfBase64, "base64");
+      const safeName = (employee.person.names || "Prestador").replace(/[^a-zA-Z0-9_\- ]/g, "");
+      const pdfFilename = `Honorarios_${safeName}_${monthLabel.replace(/\s+/g, "_")}.pdf`;
+
+      // Calcular monto de horas extras
+      const overtimeAmount = roundCurrency((employeeSummary.overtimeMinutes / 60) * employeeSummary.overtimeRate);
+
+      // Enviar email
+      const result = await sendTimesheetEmail({
+        employeeName: employee.person.names,
+        employeeEmail,
+        role: employee.position,
+        month: monthLabel,
+        hoursWorked: employeeSummary.hoursFormatted,
+        overtime: employeeSummary.overtimeFormatted,
+        hourlyRate: employeeSummary.hourlyRate,
+        overtimeAmount,
+        subtotal: employeeSummary.subtotal,
+        retention: employeeSummary.retention,
+        netAmount: employeeSummary.net,
+        payDate: employeeSummary.payDate,
+        pdfBuffer,
+        pdfFilename,
+      });
+
+      if (!result.success) {
+        logWarn("timesheets:send-email:failed", requestContext(req, { employeeId, error: result.error }));
+        return res.status(500).json({ status: "error", message: result.error || "Error al enviar email" });
+      }
+
+      logEvent("timesheets:send-email:success", requestContext(req, { employeeId, month, to: employeeEmail }));
+      res.json({ status: "ok", message: "Email enviado correctamente", messageId: result.messageId });
     })
   );
 }
