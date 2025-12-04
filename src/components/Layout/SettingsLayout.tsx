@@ -1,7 +1,8 @@
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useLocation, useNavigation } from "react-router-dom";
+import { useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { cn } from "../../lib/utils";
-import { Users, Shield, CreditCard, Calendar, Box, UserPlus } from "lucide-react";
+import { Users, Shield, CreditCard, Calendar, Box, UserPlus, Loader2 } from "lucide-react";
 
 const SETTINGS_SECTIONS = [
   {
@@ -29,6 +30,14 @@ const SETTINGS_SECTIONS = [
 export default function SettingsLayout() {
   const { hasRole } = useAuth();
   const canEdit = hasRole("GOD", "ADMIN");
+  const location = useLocation();
+  const navigation = useNavigation();
+  const [pendingPath, setPendingPath] = useState<string | null>(null);
+
+  // Clear pending state when navigation completes
+  if (navigation.state === "idle" && pendingPath) {
+    setPendingPath(null);
+  }
 
   if (!canEdit) {
     return (
@@ -57,25 +66,32 @@ export default function SettingsLayout() {
                 <h3 className="px-4 text-xs font-semibold uppercase tracking-wider text-base-content/40">
                   {section.title}
                 </h3>
-                <div className="space-y-0.5">
+                <div className="space-y-1">
                   {section.items.map((item) => {
                     const Icon = item.icon;
+                    const isPending = pendingPath === item.to && navigation.state === "loading";
+                    const alreadyHere = location.pathname === item.to || location.pathname.startsWith(`${item.to}/`);
+
                     return (
                       <NavLink
                         key={item.to}
                         to={item.to}
                         end={(item as { end?: boolean }).end}
+                        onClick={() => {
+                          if (!alreadyHere) setPendingPath(item.to);
+                        }}
                         className={({ isActive }) =>
                           cn(
                             "flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-200",
-                            isActive
+                            isActive || isPending
                               ? "bg-primary text-primary-content shadow-md shadow-primary/20"
                               : "text-base-content/60 hover:bg-base-200 hover:text-base-content"
                           )
                         }
                       >
                         <Icon size={18} strokeWidth={2} />
-                        <span>{item.label}</span>
+                        <span className="flex-1">{item.label}</span>
+                        {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
                       </NavLink>
                     );
                   })}

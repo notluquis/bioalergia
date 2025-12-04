@@ -303,13 +303,13 @@ export default function TimesheetDetailTable({
                         </Button>
                         <div
                           id={`menu-${row.date}`}
-                          className="dropdown-menu hidden absolute right-0 z-20 mt-2 w-44 origin-top-right rounded-xl bg-base-100 p-1 shadow-xl ring-1 ring-black/5"
+                          className="dropdown-menu hidden absolute right-0 z-20 mt-2 w-48 origin-top-right rounded-xl bg-base-100 p-2 shadow-xl ring-1 ring-black/5"
                           role="menu"
                         >
                           <Button
-                            variant="secondary"
+                            variant="ghost"
                             size="sm"
-                            className="w-full rounded-lg px-3 py-2 text-left text-sm text-base-content hover:bg-base-200"
+                            className="w-full justify-start rounded-lg px-3 py-2.5 text-left text-sm text-base-content hover:bg-base-200"
                             role="menuitem"
                             onClick={() => {
                               toggleMenu(`menu-${row.date}`);
@@ -320,9 +320,9 @@ export default function TimesheetDetailTable({
                           </Button>
                           {dirty && (
                             <Button
-                              variant="secondary"
+                              variant="ghost"
                               size="sm"
-                              className="w-full rounded-lg px-3 py-2 text-left text-sm text-base-content hover:bg-base-200"
+                              className="w-full justify-start rounded-lg px-3 py-2.5 text-left text-sm text-base-content hover:bg-base-200"
                               role="menuitem"
                               onClick={() => {
                                 onResetRow(index);
@@ -333,9 +333,9 @@ export default function TimesheetDetailTable({
                             </Button>
                           )}
                           <Button
-                            variant="secondary"
+                            variant="ghost"
                             size="sm"
-                            className="w-full rounded-lg px-3 py-2 text-left text-sm text-base-content hover:bg-base-200"
+                            className="w-full justify-start rounded-lg px-3 py-2.5 text-left text-sm text-base-content hover:bg-base-200"
                             role="menuitem"
                             onClick={() => {
                               toggleMenu(`menu-${row.date}`);
@@ -351,9 +351,9 @@ export default function TimesheetDetailTable({
                           </Button>
                           {row.entryId && (
                             <Button
-                              variant="secondary"
+                              variant="ghost"
                               size="sm"
-                              className="w-full rounded-lg px-3 py-2 text-left text-sm text-error hover:bg-error/10"
+                              className="w-full justify-start rounded-lg px-3 py-2.5 text-left text-sm text-error hover:bg-error/10"
                               role="menuitem"
                               onClick={() => {
                                 toggleMenu(`menu-${row.date}`);
@@ -364,7 +364,7 @@ export default function TimesheetDetailTable({
                             </Button>
                           )}
                           {!dirty && !row.entryId && (
-                            <div className="px-3 py-2 text-xs text-base-content/50">Sin acciones</div>
+                            <div className="px-3 py-2.5 text-xs text-base-content/50">Sin acciones</div>
                           )}
                         </div>
                       </div>

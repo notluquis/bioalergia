@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { NavLink, Outlet, useNavigate, useNavigation } from "react-router-dom";
+import { NavLink, Outlet, useNavigate, useNavigation, useLocation } from "react-router-dom";
+import { Loader2 } from "lucide-react";
 import Button from "../../../components/ui/Button";
 import { fetchServices } from "../../services/api";
 import type { ServiceSummary } from "../../services/types";
@@ -15,9 +16,15 @@ const NAV_ITEMS = [
 function ServicesLayoutContent() {
   const navigate = useNavigate();
   const navigation = useNavigation();
-  const pendingPath = navigation.location?.pathname;
+  const location = useLocation();
+  const [pendingPath, setPendingPath] = useState<string | null>(null);
   const [services, setServices] = useState<ServiceSummary[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // Clear pending state when navigation completes
+  if (navigation.state === "idle" && pendingPath) {
+    setPendingPath(null);
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -85,25 +92,33 @@ function ServicesLayoutContent() {
         />
       </div>
 
-      <nav className="flex flex-wrap gap-2 border border-base-300 p-3 text-sm text-base-content bg-base-100">
-        {NAV_ITEMS.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            end
-            className={({ isActive }) => {
-              const pendingMatch = pendingPath && pendingPath.startsWith(item.to);
-              const active = isActive || Boolean(pendingMatch);
-              return `rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide transition-all ${
-                active
-                  ? "bg-primary/15 text-primary shadow-inner"
-                  : "border border-base-300 bg-base-200 text-base-content/60 hover:border-primary/35 hover:text-primary"
-              }`;
-            }}
-          >
-            {item.label}
-          </NavLink>
-        ))}
+      <nav className="flex flex-wrap gap-3 border border-base-300 p-3 text-sm text-base-content bg-base-100">
+        {NAV_ITEMS.map((item) => {
+          const isPending = pendingPath === item.to && navigation.state === "loading";
+          const alreadyHere = location.pathname === item.to;
+
+          return (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              end
+              onClick={() => {
+                if (!alreadyHere) setPendingPath(item.to);
+              }}
+              className={({ isActive }) => {
+                const active = isActive || isPending;
+                return `flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold uppercase tracking-wide transition-all ${
+                  active
+                    ? "bg-primary/15 text-primary shadow-inner"
+                    : "border border-base-300 bg-base-200 text-base-content/60 hover:border-primary/35 hover:text-primary"
+                }`;
+              }}
+            >
+              {item.label}
+              {isPending && <Loader2 className="h-3 w-3 animate-spin" />}
+            </NavLink>
+          );
+        })}
       </nav>
 
       <Outlet />
