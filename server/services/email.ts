@@ -96,6 +96,7 @@ Este correo fue generado automáticamente.`;
 </head>
 <body>
   <div class="header">
+    <img src="https://bioalergia.cl/logo_sin_eslogan.png" alt="Bioalergia" style="max-width: 180px; height: auto; margin-bottom: 16px;" />
     <h1>Boleta de Honorarios</h1>
     <p>Servicios de ${data.role} - ${data.month}</p>
   </div>
