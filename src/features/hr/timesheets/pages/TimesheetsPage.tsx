@@ -15,6 +15,7 @@ import type { BulkRow, TimesheetSummaryRow, TimesheetSummaryResponse } from "@/f
 import { buildBulkRows, hasRowData, isRowDirty, parseDuration, formatDateLabel } from "@/features/hr/timesheets/utils";
 import TimesheetSummaryTable from "@/features/hr/timesheets/components/TimesheetSummaryTable";
 import TimesheetDetailTable from "@/features/hr/timesheets/components/TimesheetDetailTable";
+import EmailPreviewModal from "@/features/hr/timesheets/components/EmailPreviewModal";
 import Alert from "@/components/ui/Alert";
 // Removed unused Input component after cleanup
 import { useMonths } from "@/features/hr/timesheets/hooks/useMonths";
@@ -51,6 +52,8 @@ export default function TimesheetsPage() {
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [emailModalOpen, setEmailModalOpen] = useState(false);
+  const [sendingEmail, setSendingEmail] = useState(false);
 
   const loadEmployees = useCallback(async () => {
     try {
@@ -382,6 +385,139 @@ export default function TimesheetsPage() {
     }
   }
 
+  // Función para generar PDF como base64 (usando la misma lógica que TimesheetExportPDF)
+  async function generatePdfBase64(): Promise<string | null> {
+    if (!selectedEmployee || !employeeSummaryRow) return null;
+
+    try {
+      const [{ default: jsPDF }, autoTableModule] = await Promise.all([import("jspdf"), import("jspdf-autotable")]);
+      const autoTable = (autoTableModule.default ?? autoTableModule) as typeof autoTableModule.default;
+      const doc = new jsPDF();
+
+      // Simplificado: generar PDF básico con los datos
+      const margin = 10;
+
+      // Header
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.text("Boleta de Honorarios", margin, 20);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.text(`Servicios de ${employeeSummaryRow.role}`, margin, 28);
+      doc.text(`Periodo: ${monthLabel}`, margin, 35);
+
+      // Info empleado
+      doc.text(`Prestador: ${selectedEmployee.full_name}`, margin, 48);
+      doc.text(`RUT: ${selectedEmployee.person?.rut || "-"}`, margin, 55);
+
+      // Tabla resumen
+      const fmtCLP = (n: number) =>
+        n.toLocaleString("es-CL", { style: "currency", currency: "CLP", minimumFractionDigits: 0 });
+
+      autoTable(doc, {
+        head: [["Concepto", "Valor"]],
+        body: [
+          ["Horas trabajadas", employeeSummaryRow.hoursFormatted],
+          ["Horas extras", employeeSummaryRow.overtimeFormatted],
+          ["Tarifa por hora", fmtCLP(employeeSummaryRow.hourlyRate)],
+          ["Subtotal", fmtCLP(employeeSummaryRow.subtotal)],
+          ["Retención", fmtCLP(employeeSummaryRow.retention)],
+          ["Total Líquido", fmtCLP(employeeSummaryRow.net)],
+        ],
+        startY: 65,
+        theme: "grid",
+        styles: { fontSize: 10 },
+        headStyles: { fillColor: [14, 100, 183] },
+        columnStyles: { 1: { halign: "right" } },
+        margin: { left: margin, right: margin },
+      });
+
+      // Tabla detalle de días
+      const lastTableRef = doc as unknown as { lastAutoTable?: { finalY: number } };
+      const nextY = lastTableRef.lastAutoTable ? lastTableRef.lastAutoTable.finalY + 10 : 120;
+
+      const detailBody = bulkRows
+        .filter((row) => row.entrada || row.salida)
+        .map((row) => [
+          dayjs(row.date).format("DD-MM-YYYY"),
+          row.entrada || "-",
+          row.salida || "-",
+          row.overtime || "-",
+        ]);
+
+      if (detailBody.length) {
+        autoTable(doc, {
+          head: [["Fecha", "Entrada", "Salida", "Extras"]],
+          body: detailBody,
+          startY: nextY,
+          theme: "grid",
+          styles: { fontSize: 9 },
+          headStyles: { fillColor: [241, 167, 34] },
+          margin: { left: margin, right: margin },
+        });
+      }
+
+      // Convertir a base64
+      const pdfBlob = doc.output("blob");
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const dataUrl = reader.result as string;
+          // Remover el prefijo "data:application/pdf;base64,"
+          const base64 = dataUrl.split(",")[1] || "";
+          resolve(base64);
+        };
+        reader.onerror = () => resolve(null);
+        reader.readAsDataURL(pdfBlob);
+      });
+    } catch (err) {
+      console.error("Error generating PDF:", err);
+      return null;
+    }
+  }
+
+  async function handleSendEmail() {
+    if (!selectedEmployee || !employeeSummaryRow || !month) return;
+
+    setSendingEmail(true);
+    setError(null);
+
+    try {
+      // Generar PDF
+      const pdfBase64 = await generatePdfBase64();
+      if (!pdfBase64) {
+        throw new Error("No se pudo generar el PDF");
+      }
+
+      // Enviar al servidor
+      const response = await fetch("/api/timesheets/send-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          employeeId: selectedEmployee.id,
+          month,
+          monthLabel,
+          pdfBase64,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || data.status !== "ok") {
+        throw new Error(data.message || "Error al enviar el email");
+      }
+
+      setEmailModalOpen(false);
+      setInfo(`Email enviado correctamente a ${selectedEmployee.person?.email}`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Error al enviar el email";
+      setError(message);
+    } finally {
+      setSendingEmail(false);
+    }
+  }
+
   return (
     <section className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -453,9 +589,21 @@ export default function TimesheetsPage() {
         </div>
       </div>
 
-      {/* Botón de exportar PDF */}
+      {/* Botón de exportar PDF y enviar email */}
       {selectedEmployee && (
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-2">
+          <Button
+            type="button"
+            variant="secondary"
+            className="gap-2"
+            onClick={() => setEmailModalOpen(true)}
+            disabled={!employeeSummaryRow || !selectedEmployee.person?.email}
+            title={
+              !selectedEmployee.person?.email ? "El empleado no tiene email registrado" : "Enviar boleta por email"
+            }
+          >
+            ✉️ Enviar Email
+          </Button>
           <Suspense
             fallback={
               <div className="flex items-center gap-2">
@@ -511,6 +659,17 @@ export default function TimesheetsPage() {
           employeeOptions={employeeOptions}
         />
       )}
+
+      {/* Modal de preview de email */}
+      <EmailPreviewModal
+        isOpen={emailModalOpen}
+        onClose={() => setEmailModalOpen(false)}
+        onSend={handleSendEmail}
+        isSending={sendingEmail}
+        employee={selectedEmployee}
+        summary={employeeSummaryRow}
+        monthLabel={monthLabel}
+      />
     </section>
   );
 }
