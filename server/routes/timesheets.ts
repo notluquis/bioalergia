@@ -517,8 +517,8 @@ function buildEmployeeSummary(
   }
 
   const hourlyRate = Number(employee.hourlyRate ?? 0);
-  const overtimeRate = hourlyRate * 1.5; // Assumption: 1.5x
-  const retentionRate = 0; // Assumption: 0% if not in schema
+  const overtimeRate = Number(employee.overtimeRate ?? 0) || hourlyRate * 1.5; // Use employee's rate or default 1.5x
+  const retentionRate = Number(employee.retentionRate ?? 0); // From employee profile
   const basePay = roundCurrency((data.workedMinutes / 60) * hourlyRate);
   const overtimePay = roundCurrency((data.overtimeMinutes / 60) * overtimeRate);
   const subtotal = roundCurrency(basePay + overtimePay);
