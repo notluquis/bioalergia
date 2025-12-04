@@ -14,6 +14,7 @@ interface TimesheetDetailTableProps {
   loadingDetail: boolean;
   selectedEmployee: Employee | null;
   onRowChange: (index: number, field: keyof Omit<BulkRow, "date" | "entryId">, value: string) => void;
+  onSalidaBlur: (index: number) => void;
   onResetRow: (index: number) => void;
   onRemoveEntry: (row: BulkRow) => void;
   onBulkSave: () => void;
@@ -30,6 +31,7 @@ export default function TimesheetDetailTable({
   loadingDetail,
   selectedEmployee,
   onRowChange,
+  onSalidaBlur,
   onResetRow,
   onRemoveEntry,
   onBulkSave,
@@ -225,6 +227,7 @@ export default function TimesheetDetailTable({
                     <TimeInput
                       value={row.salida}
                       onChange={(value) => onRowChange(index, "salida", value)}
+                      onBlur={() => onSalidaBlur(index)}
                       placeholder="HH:MM"
                       className="w-28"
                       disabled={!canEditRow}
