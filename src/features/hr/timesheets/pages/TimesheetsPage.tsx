@@ -398,18 +398,34 @@ export default function TimesheetsPage() {
       // Simplificado: generar PDF básico con los datos
       const margin = 10;
 
-      // Header
+      // Cargar y agregar logo
+      try {
+        const logoResponse = await fetch("/logo_sin_eslogan.png");
+        const logoBlob = await logoResponse.blob();
+        const logoBase64 = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.readAsDataURL(logoBlob);
+        });
+        // Logo: ancho 50mm, alto proporcional (ratio 5000:1333 ≈ 3.75:1)
+        doc.addImage(logoBase64, "PNG", margin, 8, 50, 13.3);
+      } catch {
+        // Si falla el logo, continuar sin él
+        console.warn("No se pudo cargar el logo para el PDF");
+      }
+
+      // Header (ajustado para dejar espacio al logo)
       doc.setFontSize(14);
       doc.setFont("helvetica", "bold");
-      doc.text("Boleta de Honorarios", margin, 20);
+      doc.text("Boleta de Honorarios", margin, 30);
       doc.setFont("helvetica", "normal");
       doc.setFontSize(10);
-      doc.text(`Servicios de ${employeeSummaryRow.role}`, margin, 28);
-      doc.text(`Periodo: ${monthLabel}`, margin, 35);
+      doc.text(`Servicios de ${employeeSummaryRow.role}`, margin, 38);
+      doc.text(`Periodo: ${monthLabel}`, margin, 45);
 
       // Info empleado
-      doc.text(`Prestador: ${selectedEmployee.full_name}`, margin, 48);
-      doc.text(`RUT: ${selectedEmployee.person?.rut || "-"}`, margin, 55);
+      doc.text(`Prestador: ${selectedEmployee.full_name}`, margin, 58);
+      doc.text(`RUT: ${selectedEmployee.person?.rut || "-"}`, margin, 65);
 
       // Tabla resumen
       const fmtCLP = (n: number) =>
@@ -425,7 +441,7 @@ export default function TimesheetsPage() {
           ["Retención", fmtCLP(employeeSummaryRow.retention)],
           ["Total Líquido", fmtCLP(employeeSummaryRow.net)],
         ],
-        startY: 65,
+        startY: 75,
         theme: "grid",
         styles: { fontSize: 10 },
         headStyles: { fillColor: [14, 100, 183] },
