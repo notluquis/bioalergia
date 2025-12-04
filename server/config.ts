@@ -111,43 +111,6 @@ if (googleCalendarEnvMissing.length > 0) {
   );
 }
 
-// ============= SMTP / Email Configuration =============
-export type SmtpConfig = {
-  host: string;
-  port: number;
-  secure: boolean;
-  user: string;
-  pass: string;
-  from: string;
-};
-
-const smtpEnvMissing: string[] = [];
-const smtpHost = process.env.SMTP_HOST;
-if (!smtpHost) smtpEnvMissing.push("SMTP_HOST");
-
-const smtpUser = process.env.SMTP_USER;
-if (!smtpUser) smtpEnvMissing.push("SMTP_USER");
-
-const smtpPass = process.env.SMTP_PASS;
-if (!smtpPass) smtpEnvMissing.push("SMTP_PASS");
-
-const smtpPortRaw = Number(process.env.SMTP_PORT ?? 587);
-const smtpPort = Number.isFinite(smtpPortRaw) ? smtpPortRaw : 587;
-const smtpSecure = process.env.SMTP_SECURE === "true" || smtpPort === 465;
-const smtpFrom = process.env.SMTP_FROM || smtpUser || "";
-
-export const smtpConfig: SmtpConfig | null =
-  smtpEnvMissing.length === 0
-    ? {
-        host: smtpHost!,
-        port: smtpPort,
-        secure: smtpSecure,
-        user: smtpUser!,
-        pass: smtpPass!,
-        from: smtpFrom,
-      }
-    : null;
-
-if (smtpEnvMissing.length > 0) {
-  console.warn(`[config] SMTP deshabilitado. Variables faltantes: ${smtpEnvMissing.join(", ")}`);
-}
+// ============= Email Configuration =============
+// SMTP ya no se usa - ahora generamos archivos .eml que el usuario abre con Outlook
+// Las variables SMTP_* pueden eliminarse del .env

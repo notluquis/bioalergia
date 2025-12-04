@@ -6,8 +6,8 @@ import type { TimesheetSummaryRow } from "../types";
 interface EmailPreviewModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSend: () => void;
-  sendStatus: string | null; // null | 'generating-pdf' | 'sending' | 'done'
+  onPrepare: () => void;
+  prepareStatus: string | null; // null | 'generating-pdf' | 'preparing' | 'done'
   employee: Employee | null;
   summary: TimesheetSummaryRow | null;
   monthLabel: string;
@@ -16,13 +16,13 @@ interface EmailPreviewModalProps {
 export default function EmailPreviewModal({
   isOpen,
   onClose,
-  onSend,
-  sendStatus,
+  onPrepare,
+  prepareStatus,
   employee,
   summary,
   monthLabel,
 }: EmailPreviewModalProps) {
-  const isSending = sendStatus !== null;
+  const isPreparing = prepareStatus !== null && prepareStatus !== "done";
   if (!isOpen || !employee || !summary) return null;
 
   const employeeEmail = employee.person?.email;
@@ -126,33 +126,38 @@ export default function EmailPreviewModal({
         {/* Footer */}
         <div className="flex items-center justify-between border-t border-base-300 px-6 py-4">
           <p className="text-xs text-base-content/50">
-            {sendStatus === "generating-pdf" && "Generando documento PDF..."}
-            {sendStatus === "sending" && "Conectando con servidor de correo..."}
-            {sendStatus === "done" && "✅ Email enviado correctamente"}
-            {!sendStatus && "El PDF se generará y adjuntará automáticamente al enviar."}
+            {prepareStatus === "generating-pdf" && "Generando documento PDF..."}
+            {prepareStatus === "preparing" && "Preparando archivo de email..."}
+            {prepareStatus === "done" && "✅ Archivo descargado - Ábrelo con doble click y presiona Enviar"}
+            {!prepareStatus && "Se descargará un archivo .eml que puedes abrir con Outlook."}
           </p>
           <div className="flex gap-3">
-            <Button variant="secondary" onClick={onClose} disabled={isSending}>
-              Cancelar
+            <Button variant="secondary" onClick={onClose} disabled={isPreparing}>
+              {prepareStatus === "done" ? "Cerrar" : "Cancelar"}
             </Button>
-            <Button variant="primary" onClick={onSend} disabled={isSending || !employeeEmail} className="min-w-40">
-              {sendStatus === "generating-pdf" ? (
+            <Button
+              variant="primary"
+              onClick={onPrepare}
+              disabled={isPreparing || !employeeEmail || prepareStatus === "done"}
+              className="min-w-44"
+            >
+              {prepareStatus === "generating-pdf" ? (
                 <span className="flex items-center gap-2">
                   <span className="loading loading-spinner loading-sm"></span>
                   Generando PDF...
                 </span>
-              ) : sendStatus === "sending" ? (
+              ) : prepareStatus === "preparing" ? (
                 <span className="flex items-center gap-2">
                   <span className="loading loading-spinner loading-sm"></span>
-                  Enviando email...
+                  Preparando...
                 </span>
-              ) : sendStatus === "done" ? (
+              ) : prepareStatus === "done" ? (
                 <span className="flex items-center gap-2">
-                  <span>✅</span>
-                  ¡Enviado!
+                  <span>📧</span>
+                  Descargado
                 </span>
               ) : (
-                "Enviar Email"
+                "Preparar Email"
               )}
             </Button>
           </div>
