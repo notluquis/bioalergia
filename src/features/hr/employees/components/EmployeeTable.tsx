@@ -248,19 +248,21 @@ export default function EmployeeTable({ employees, loading, onEdit, onDeactivate
                     </td>
                   )}
                   {canEdit && table.isColumnVisible("actions") && (
-                    <td className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide">
-                      <Button variant="secondary" onClick={() => onEdit(employee)} className="mr-3">
-                        Editar
-                      </Button>
-                      {employee.status === "ACTIVE" ? (
-                        <Button variant="secondary" onClick={() => onDeactivate(employee.id)}>
-                          Desactivar
+                    <td className="px-4 py-3">
+                      <div className="flex flex-col items-end gap-2">
+                        <Button variant="primary" size="sm" onClick={() => onEdit(employee)}>
+                          Editar
                         </Button>
-                      ) : (
-                        <Button variant="secondary" onClick={() => onActivate(employee.id)}>
-                          Activar
-                        </Button>
-                      )}
+                        {employee.status === "ACTIVE" ? (
+                          <Button variant="outline" size="sm" onClick={() => onDeactivate(employee.id)}>
+                            Desactivar
+                          </Button>
+                        ) : (
+                          <Button variant="success" size="sm" onClick={() => onActivate(employee.id)}>
+                            Activar
+                          </Button>
+                        )}
+                      </div>
                     </td>
                   )}
                 </tr>
