@@ -53,7 +53,8 @@ export default function TimesheetsPage() {
   const [info, setInfo] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [emailModalOpen, setEmailModalOpen] = useState(false);
-  const [sendingEmail, setSendingEmail] = useState(false);
+  // Estados de envío: null | 'generating-pdf' | 'sending' | 'done'
+  const [emailSendStatus, setEmailSendStatus] = useState<string | null>(null);
 
   const loadEmployees = useCallback(async () => {
     try {
@@ -479,17 +480,18 @@ export default function TimesheetsPage() {
   async function handleSendEmail() {
     if (!selectedEmployee || !employeeSummaryRow || !month) return;
 
-    setSendingEmail(true);
+    setEmailSendStatus("generating-pdf");
     setError(null);
 
     try {
-      // Generar PDF
+      // Paso 1: Generar PDF
       const pdfBase64 = await generatePdfBase64();
       if (!pdfBase64) {
         throw new Error("No se pudo generar el PDF");
       }
 
-      // Enviar al servidor
+      // Paso 2: Enviar al servidor
+      setEmailSendStatus("sending");
       const response = await fetch("/api/timesheets/send-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -508,13 +510,17 @@ export default function TimesheetsPage() {
         throw new Error(data.message || "Error al enviar el email");
       }
 
-      setEmailModalOpen(false);
-      setInfo(`Email enviado correctamente a ${selectedEmployee.person?.email}`);
+      // Paso 3: Completado
+      setEmailSendStatus("done");
+      setTimeout(() => {
+        setEmailModalOpen(false);
+        setEmailSendStatus(null);
+        setInfo(`Email enviado correctamente a ${selectedEmployee.person?.email}`);
+      }, 1000);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Error al enviar el email";
       setError(message);
-    } finally {
-      setSendingEmail(false);
+      setEmailSendStatus(null);
     }
   }
 
@@ -665,7 +671,7 @@ export default function TimesheetsPage() {
         isOpen={emailModalOpen}
         onClose={() => setEmailModalOpen(false)}
         onSend={handleSendEmail}
-        isSending={sendingEmail}
+        sendStatus={emailSendStatus}
         employee={selectedEmployee}
         summary={employeeSummaryRow}
         monthLabel={monthLabel}
