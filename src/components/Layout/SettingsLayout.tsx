@@ -1,5 +1,5 @@
-import { NavLink, Outlet, useLocation, useNavigation } from "react-router-dom";
-import { useState } from "react";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { cn } from "../../lib/utils";
 import { Users, Shield, CreditCard, Calendar, Box, UserPlus, Loader2 } from "lucide-react";
@@ -31,13 +31,12 @@ export default function SettingsLayout() {
   const { hasRole } = useAuth();
   const canEdit = hasRole("GOD", "ADMIN");
   const location = useLocation();
-  const navigation = useNavigation();
   const [pendingPath, setPendingPath] = useState<string | null>(null);
 
-  // Clear pending state when navigation completes
-  if (navigation.state === "idle" && pendingPath) {
+  // Clear pending state when location changes (page loaded)
+  useEffect(() => {
     setPendingPath(null);
-  }
+  }, [location.pathname]);
 
   if (!canEdit) {
     return (
@@ -69,8 +68,8 @@ export default function SettingsLayout() {
                 <div className="space-y-1">
                   {section.items.map((item) => {
                     const Icon = item.icon;
-                    const isPending = pendingPath === item.to && navigation.state === "loading";
-                    const alreadyHere = location.pathname === item.to || location.pathname.startsWith(`${item.to}/`);
+                    const isPending = pendingPath === item.to;
+                    const isCurrentPath = location.pathname === item.to || location.pathname.startsWith(`${item.to}/`);
 
                     return (
                       <NavLink
@@ -78,7 +77,7 @@ export default function SettingsLayout() {
                         to={item.to}
                         end={(item as { end?: boolean }).end}
                         onClick={() => {
-                          if (!alreadyHere) setPendingPath(item.to);
+                          if (!isCurrentPath) setPendingPath(item.to);
                         }}
                         className={({ isActive }) =>
                           cn(
