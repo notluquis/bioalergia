@@ -10,7 +10,7 @@ import {
   updateTimesheetEntry,
   deleteTimesheetEntry,
 } from "../services/timesheets.js";
-import { sendTimesheetEmail, verifySmtpConnection } from "../services/email.js";
+import { generateTimesheetEml } from "../services/email.js";
 import { timesheetPayloadSchema, timesheetUpdateSchema, timesheetBulkSchema, monthParamSchema } from "../schemas.js";
 import type { AuthenticatedRequest } from "../types.js";
 import { durationToMinutes, minutesToDuration } from "../../shared/time.js";
@@ -302,20 +302,11 @@ export function registerTimesheetRoutes(app: express.Express) {
     })
   );
 
-  // Verificar estado de SMTP
-  app.get(
-    "/api/timesheets/email/status",
-    authenticate,
-    requireRole("GOD", "ADMIN"),
-    asyncHandler(async (_req, res) => {
-      const result = await verifySmtpConnection();
-      res.json({ status: "ok", smtp: result });
-    })
-  );
+  // Endpoint de status removido - ya no se usa SMTP
 
-  // Enviar boleta de honorarios por email
+  // Generar archivo .eml para enviar boleta de honorarios
   app.post(
-    "/api/timesheets/send-email",
+    "/api/timesheets/prepare-email",
     authenticate,
     requireRole("GOD", "ADMIN"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
@@ -328,7 +319,7 @@ export function registerTimesheetRoutes(app: express.Express) {
 
       const parsed = schema.safeParse(req.body);
       if (!parsed.success) {
-        logWarn("timesheets:send-email:invalid", requestContext(req, { issues: parsed.error.issues }));
+        logWarn("timesheets:prepare-email:invalid", requestContext(req, { issues: parsed.error.issues }));
         return res.status(400).json({ status: "error", message: "Datos inválidos", issues: parsed.error.issues });
       }
 
@@ -362,8 +353,8 @@ export function registerTimesheetRoutes(app: express.Express) {
       // Calcular monto de horas extras
       const overtimeAmount = roundCurrency((employeeSummary.overtimeMinutes / 60) * employeeSummary.overtimeRate);
 
-      // Enviar email
-      const result = await sendTimesheetEmail({
+      // Generar archivo .eml
+      const result = generateTimesheetEml({
         employeeName: employee.person.names,
         employeeEmail,
         role: employee.position,
@@ -378,15 +369,18 @@ export function registerTimesheetRoutes(app: express.Express) {
         payDate: employeeSummary.payDate,
         pdfBuffer,
         pdfFilename,
+        fromEmail: "contacto@bioalergia.cl",
+        fromName: "Bioalergia",
       });
 
-      if (!result.success) {
-        logWarn("timesheets:send-email:failed", requestContext(req, { employeeId, error: result.error }));
-        return res.status(500).json({ status: "error", message: result.error || "Error al enviar email" });
-      }
+      logEvent("timesheets:prepare-email:success", requestContext(req, { employeeId, month, to: employeeEmail }));
 
-      logEvent("timesheets:send-email:success", requestContext(req, { employeeId, month, to: employeeEmail }));
-      res.json({ status: "ok", message: "Email enviado correctamente", messageId: result.messageId });
+      // Devolver el archivo .eml como base64 para que el frontend lo descargue
+      res.json({
+        status: "ok",
+        emlBase64: Buffer.from(result.emlContent).toString("base64"),
+        filename: result.filename,
+      });
     })
   );
 }

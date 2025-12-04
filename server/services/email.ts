@@ -1,56 +1,9 @@
-import nodemailer from "nodemailer";
-import type { Transporter } from "nodemailer";
-import { smtpConfig } from "../config.js";
-import { logEvent, logWarn } from "../lib/logger.js";
+import { logEvent } from "../lib/logger.js";
 
-let transporter: Transporter | null = null;
-
-function getTransporter(): Transporter {
-  if (!smtpConfig) {
-    throw new Error("SMTP no está configurado. Revisa las variables de entorno SMTP_HOST, SMTP_USER, SMTP_PASS.");
-  }
-
-  // Resetear transporter para forzar reconexión con debug
-  transporter = null;
-
-  console.log("=".repeat(60));
-  console.log("[SMTP DEBUG] Creando transporter con configuración:");
-  console.log(`  Host: ${smtpConfig.host}`);
-  console.log(`  Port: ${smtpConfig.port}`);
-  console.log(`  Secure (SSL): ${smtpConfig.secure}`);
-  console.log(`  User: ${smtpConfig.user}`);
-  console.log(`  Pass: ${"*".repeat(Math.min(smtpConfig.pass.length, 8))}...`);
-  console.log(`  From: ${smtpConfig.from}`);
-  console.log("=".repeat(60));
-
-  transporter = nodemailer.createTransport({
-    host: smtpConfig.host,
-    port: smtpConfig.port,
-    secure: smtpConfig.secure, // true para 465, false para otros puertos
-    auth: {
-      user: smtpConfig.user,
-      pass: smtpConfig.pass,
-    },
-    // Timeouts para evitar esperas largas
-    connectionTimeout: 15000, // 15 segundos para conectar
-    greetingTimeout: 15000, // 15 segundos para saludo SMTP
-    socketTimeout: 30000, // 30 segundos para operaciones
-    // DEBUG: Siempre activar logging para diagnosticar
-    logger: true,
-    debug: true,
-    // TLS options para debug
-    tls: {
-      rejectUnauthorized: false, // Temporalmente para debug - aceptar certificados self-signed
-    },
-  });
-
-  // Event listeners para debug
-  transporter.on("error", (err) => {
-    console.error("[SMTP DEBUG] Transporter error event:", err);
-  });
-
-  return transporter;
-}
+/**
+ * Genera un archivo .eml que el usuario puede abrir con Outlook/Mail
+ * para enviar el email manualmente (solo presionar "Enviar")
+ */
 
 export type TimesheetEmailData = {
   employeeName: string;
@@ -67,72 +20,56 @@ export type TimesheetEmailData = {
   payDate: string; // "05-01-2026"
   pdfBuffer: Buffer;
   pdfFilename: string;
+  fromEmail: string; // Email del remitente
+  fromName: string; // Nombre del remitente
 };
 
-export async function sendTimesheetEmail(
-  data: TimesheetEmailData
-): Promise<{ success: boolean; messageId?: string; error?: string }> {
-  if (!smtpConfig) {
-    console.error("[SMTP DEBUG] smtpConfig es null - variables de entorno no configuradas");
-    return { success: false, error: "SMTP no configurado" };
-  }
+/**
+ * Genera un archivo .eml con el email listo para enviar
+ * El usuario solo tiene que abrir el archivo y presionar "Enviar"
+ */
+export function generateTimesheetEml(data: TimesheetEmailData): {
+  success: boolean;
+  emlContent: string;
+  filename: string;
+} {
+  // Formatear montos a CLP
+  const fmtCLP = (n: number) =>
+    n.toLocaleString("es-CL", { style: "currency", currency: "CLP", minimumFractionDigits: 0 });
 
-  console.log("\n" + "=".repeat(60));
-  console.log("[SMTP DEBUG] Iniciando envío de email");
-  console.log(`  Destinatario: ${data.employeeEmail}`);
-  console.log(`  Mes: ${data.month}`);
-  console.log(`  Tamaño PDF: ${data.pdfBuffer.length} bytes`);
-  console.log(`  Timestamp: ${new Date().toISOString()}`);
-  console.log("=".repeat(60));
+  const subject = `Boleta de Honorarios - ${data.month} - ${data.employeeName}`;
+  const boundary = `----=_Part_${Date.now()}_${Math.random().toString(36).substring(2)}`;
+  const boundaryAlt = `----=_Alt_${Date.now()}_${Math.random().toString(36).substring(2)}`;
 
-  logEvent("email:timesheet:start", {
-    to: data.employeeEmail,
-    month: data.month,
-    host: smtpConfig.host,
-    port: smtpConfig.port,
-  });
+  // Texto plano
+  const textBody = `Boleta de Honorarios - ${data.month}
+Servicios de ${data.role}
 
-  try {
-    console.log("[SMTP DEBUG] Obteniendo transporter...");
-    const transport = getTransporter();
+Estimado/a ${data.employeeName},
 
-    // Verificar conexión antes de enviar
-    console.log("[SMTP DEBUG] Verificando conexión SMTP...");
-    const verifyStartTime = Date.now();
-    logEvent("email:timesheet:verifying", { host: smtpConfig.host });
-    try {
-      await transport.verify();
-      const verifyDuration = Date.now() - verifyStartTime;
-      console.log(`[SMTP DEBUG] ✅ Conexión verificada en ${verifyDuration}ms`);
-      logEvent("email:timesheet:verified", { host: smtpConfig.host, duration: verifyDuration });
-    } catch (verifyError) {
-      const verifyDuration = Date.now() - verifyStartTime;
-      const verifyMsg = verifyError instanceof Error ? verifyError.message : "Error de verificación";
-      const verifyStack = verifyError instanceof Error ? verifyError.stack : "";
-      console.error(`[SMTP DEBUG] ❌ Verificación falló después de ${verifyDuration}ms`);
-      console.error(`[SMTP DEBUG] Error: ${verifyMsg}`);
-      console.error(`[SMTP DEBUG] Stack: ${verifyStack}`);
-      console.error(`[SMTP DEBUG] Error completo:`, verifyError);
-      logWarn("email:timesheet:verify-failed", {
-        error: verifyMsg,
-        host: smtpConfig.host,
-        port: smtpConfig.port,
-        duration: verifyDuration,
-      });
-      return { success: false, error: `No se pudo conectar al servidor de correo: ${verifyMsg}` };
-    }
+A continuación el resumen de tus servicios prestados:
 
-    // Formatear montos a CLP
-    const fmtCLP = (n: number) =>
-      n.toLocaleString("es-CL", { style: "currency", currency: "CLP", minimumFractionDigits: 0 });
+- Función: ${data.role}
+- Horas trabajadas: ${data.hoursWorked}
+- Horas extras: ${data.overtime}
+- Tarifa por hora: ${fmtCLP(data.hourlyRate)}
+- Monto extras: ${fmtCLP(data.overtimeAmount)}
+- Subtotal: ${fmtCLP(data.subtotal)}
+- Retención: ${fmtCLP(data.retention)}
+- Total Líquido: ${fmtCLP(data.netAmount)}
 
-    // Construir el cuerpo del email en HTML
-    const htmlBody = `
-<!DOCTYPE html>
+Fecha de pago estimada: ${data.payDate}
+
+Se adjunta el documento PDF con el detalle completo.
+
+---
+Este correo fue generado automáticamente.`;
+
+  // HTML del email
+  const htmlBody = `<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Boleta de Honorarios - ${data.month}</title>
   <style>
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
@@ -162,179 +99,95 @@ export async function sendTimesheetEmail(
     <h1>Boleta de Honorarios</h1>
     <p>Servicios de ${data.role} - ${data.month}</p>
   </div>
-  
   <div class="content">
     <p class="greeting">Estimado/a <strong>${data.employeeName}</strong>,</p>
-    
     <p>A continuación encontrarás el resumen de los servicios prestados durante el periodo <strong>${data.month}</strong>:</p>
-    
     <table class="summary-table">
-      <tr>
-        <th>Concepto</th>
-        <th class="amount">Detalle</th>
-      </tr>
-      <tr>
-        <td>Función</td>
-        <td class="amount">${data.role}</td>
-      </tr>
-      <tr>
-        <td>Horas trabajadas</td>
-        <td class="amount">${data.hoursWorked}</td>
-      </tr>
-      <tr>
-        <td>Horas extras</td>
-        <td class="amount">${data.overtime}</td>
-      </tr>
-      <tr>
-        <td>Tarifa por hora</td>
-        <td class="amount">${fmtCLP(data.hourlyRate)}</td>
-      </tr>
-      <tr>
-        <td>Monto extras</td>
-        <td class="amount">${fmtCLP(data.overtimeAmount)}</td>
-      </tr>
-      <tr>
-        <td>Subtotal</td>
-        <td class="amount">${fmtCLP(data.subtotal)}</td>
-      </tr>
-      <tr>
-        <td>Retención</td>
-        <td class="amount">${fmtCLP(data.retention)}</td>
-      </tr>
-      <tr class="total-row">
-        <td>Total Líquido</td>
-        <td class="amount">${fmtCLP(data.netAmount)}</td>
-      </tr>
+      <tr><th>Concepto</th><th class="amount">Detalle</th></tr>
+      <tr><td>Función</td><td class="amount">${data.role}</td></tr>
+      <tr><td>Horas trabajadas</td><td class="amount">${data.hoursWorked}</td></tr>
+      <tr><td>Horas extras</td><td class="amount">${data.overtime}</td></tr>
+      <tr><td>Tarifa por hora</td><td class="amount">${fmtCLP(data.hourlyRate)}</td></tr>
+      <tr><td>Monto extras</td><td class="amount">${fmtCLP(data.overtimeAmount)}</td></tr>
+      <tr><td>Subtotal</td><td class="amount">${fmtCLP(data.subtotal)}</td></tr>
+      <tr><td>Retención</td><td class="amount">${fmtCLP(data.retention)}</td></tr>
+      <tr class="total-row"><td>Total Líquido</td><td class="amount">${fmtCLP(data.netAmount)}</td></tr>
     </table>
-    
-    <div class="pay-date">
-      <strong>📅 Fecha de pago estimada: ${data.payDate}</strong>
-    </div>
-    
-    <div class="attachment-note">
-      <strong>📎 Adjunto:</strong> Se incluye el documento PDF con el detalle completo de horas trabajadas.
-    </div>
+    <div class="pay-date"><strong>📅 Fecha de pago estimada: ${data.payDate}</strong></div>
+    <div class="attachment-note"><strong>📎 Adjunto:</strong> Se incluye el documento PDF con el detalle completo de horas trabajadas.</div>
   </div>
-  
-  <div class="footer">
-    <p>Este correo fue generado automáticamente. Si tienes dudas, contacta al área de administración.</p>
-  </div>
+  <div class="footer"><p>Este correo fue generado automáticamente. Si tienes dudas, contacta al área de administración.</p></div>
 </body>
-</html>
-`;
+</html>`;
 
-    // Texto plano alternativo
-    const textBody = `
-Boleta de Honorarios - ${data.month}
-Servicios de ${data.role}
+  // Codificar subject para caracteres especiales
+  const encodedSubject = `=?UTF-8?B?${Buffer.from(subject).toString("base64")}?=`;
 
-Estimado/a ${data.employeeName},
+  // Codificar nombre del remitente
+  const encodedFromName = `=?UTF-8?B?${Buffer.from(data.fromName).toString("base64")}?=`;
 
-A continuación el resumen de tus servicios prestados:
+  // Construir el archivo .eml (formato RFC 822 MIME)
+  const emlContent = `MIME-Version: 1.0
+From: ${encodedFromName} <${data.fromEmail}>
+To: ${data.employeeName} <${data.employeeEmail}>
+Subject: ${encodedSubject}
+Content-Type: multipart/mixed; boundary="${boundary}"
+X-Unsent: 1
 
-- Función: ${data.role}
-- Horas trabajadas: ${data.hoursWorked}
-- Horas extras: ${data.overtime}
-- Tarifa por hora: ${fmtCLP(data.hourlyRate)}
-- Monto extras: ${fmtCLP(data.overtimeAmount)}
-- Subtotal: ${fmtCLP(data.subtotal)}
-- Retención: ${fmtCLP(data.retention)}
-- Total Líquido: ${fmtCLP(data.netAmount)}
+--${boundary}
+Content-Type: multipart/alternative; boundary="${boundaryAlt}"
 
-Fecha de pago estimada: ${data.payDate}
+--${boundaryAlt}
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: base64
 
-Se adjunta el documento PDF con el detalle completo.
-
----
-Este correo fue generado automáticamente.
-`;
-
-    const mailOptions = {
-      from: `"Bioalergia" <${smtpConfig.from}>`,
-      to: data.employeeEmail,
-      subject: `Boleta de Honorarios - ${data.month} - ${data.employeeName}`,
-      text: textBody,
-      html: htmlBody,
-      attachments: [
-        {
-          filename: data.pdfFilename,
-          content: data.pdfBuffer,
-          contentType: "application/pdf",
-        },
-      ],
-    };
-
-    console.log("[SMTP DEBUG] Preparando email para envío...");
-    logEvent("email:timesheet:sending", { to: data.employeeEmail });
-
-    const sendStartTime = Date.now();
-    console.log("[SMTP DEBUG] Llamando sendMail...");
-    const info = await transport.sendMail(mailOptions);
-    const sendDuration = Date.now() - sendStartTime;
-
-    console.log(`[SMTP DEBUG] ✅ Email enviado en ${sendDuration}ms`);
-    console.log(`[SMTP DEBUG] Message ID: ${info.messageId}`);
-    console.log(`[SMTP DEBUG] Response: ${info.response}`);
-
-    logEvent("email:timesheet:sent", {
-      to: data.employeeEmail,
-      month: data.month,
-      messageId: info.messageId,
-      duration: sendDuration,
-    });
-
-    return { success: true, messageId: info.messageId };
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : "Error desconocido";
-    const errorStack = error instanceof Error ? error.stack : "";
-    const errorCode = (error as NodeJS.ErrnoException)?.code;
-    const errorErrno = (error as NodeJS.ErrnoException)?.errno;
-    const errorSyscall = (error as NodeJS.ErrnoException)?.syscall;
-
-    console.error("[SMTP DEBUG] ❌ Error al enviar email");
-    console.error(`[SMTP DEBUG] Mensaje: ${errorMessage}`);
-    console.error(`[SMTP DEBUG] Código: ${errorCode}`);
-    console.error(`[SMTP DEBUG] Errno: ${errorErrno}`);
-    console.error(`[SMTP DEBUG] Syscall: ${errorSyscall}`);
-    console.error(`[SMTP DEBUG] Stack: ${errorStack}`);
-    console.error(`[SMTP DEBUG] Error completo:`, error);
-
-    logWarn("email:timesheet:error", {
-      error: errorMessage,
-      code: errorCode,
-      errno: errorErrno,
-      syscall: errorSyscall,
-      to: data.employeeEmail,
-      host: smtpConfig?.host,
-      port: smtpConfig?.port,
-    });
-
-    // Mensajes de error más amigables
-    let userMessage = errorMessage;
-    if (errorCode === "ECONNREFUSED") {
-      userMessage = "No se pudo conectar al servidor de correo. Verifica la configuración SMTP.";
-    } else if (errorCode === "ETIMEDOUT" || errorMessage.includes("timeout")) {
-      userMessage = "Tiempo de espera agotado al conectar con el servidor de correo.";
-    } else if (errorCode === "EAUTH" || errorMessage.includes("authentication")) {
-      userMessage = "Error de autenticación con el servidor de correo. Verifica usuario y contraseña.";
-    }
-
-    return { success: false, error: userMessage };
-  }
+${
+  Buffer.from(textBody)
+    .toString("base64")
+    .match(/.{1,76}/g)
+    ?.join("\n") || ""
 }
 
-// Verificar conexión SMTP
-export async function verifySmtpConnection(): Promise<{ success: boolean; error?: string }> {
-  if (!smtpConfig) {
-    return { success: false, error: "SMTP no configurado" };
-  }
+--${boundaryAlt}
+Content-Type: text/html; charset="UTF-8"
+Content-Transfer-Encoding: base64
 
-  try {
-    const transport = getTransporter();
-    await transport.verify();
-    return { success: true };
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : "Error desconocido";
-    return { success: false, error: errorMessage };
-  }
+${
+  Buffer.from(htmlBody)
+    .toString("base64")
+    .match(/.{1,76}/g)
+    ?.join("\n") || ""
 }
+
+--${boundaryAlt}--
+
+--${boundary}
+Content-Type: application/pdf; name="${data.pdfFilename}"
+Content-Disposition: attachment; filename="${data.pdfFilename}"
+Content-Transfer-Encoding: base64
+
+${
+  data.pdfBuffer
+    .toString("base64")
+    .match(/.{1,76}/g)
+    ?.join("\n") || ""
+}
+
+--${boundary}--
+`;
+
+  // Nombre del archivo .eml
+  const safeName = data.employeeName.replace(/[^a-zA-Z0-9_\- ]/g, "").replace(/\s+/g, "_");
+  const safeMonth = data.month.replace(/\s+/g, "_");
+  const filename = `Email_Boleta_${safeName}_${safeMonth}.eml`;
+
+  logEvent("email:eml:generated", {
+    to: data.employeeEmail,
+    month: data.month,
+    filename,
+  });
+
+  return { success: true, emlContent, filename };
+}
+
+// Ya no se necesita verificar SMTP - ahora generamos archivos .eml

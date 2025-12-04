@@ -53,8 +53,8 @@ export default function TimesheetsPage() {
   const [info, setInfo] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [emailModalOpen, setEmailModalOpen] = useState(false);
-  // Estados de envío: null | 'generating-pdf' | 'sending' | 'done'
-  const [emailSendStatus, setEmailSendStatus] = useState<string | null>(null);
+  // Estados de preparación: null | 'generating-pdf' | 'preparing' | 'done'
+  const [emailPrepareStatus, setEmailPrepareStatus] = useState<string | null>(null);
 
   const loadEmployees = useCallback(async () => {
     try {
@@ -477,10 +477,10 @@ export default function TimesheetsPage() {
     }
   }
 
-  async function handleSendEmail() {
+  async function handlePrepareEmail() {
     if (!selectedEmployee || !employeeSummaryRow || !month) return;
 
-    setEmailSendStatus("generating-pdf");
+    setEmailPrepareStatus("generating-pdf");
     setError(null);
 
     try {
@@ -490,9 +490,9 @@ export default function TimesheetsPage() {
         throw new Error("No se pudo generar el PDF");
       }
 
-      // Paso 2: Enviar al servidor
-      setEmailSendStatus("sending");
-      const response = await fetch("/api/timesheets/send-email", {
+      // Paso 2: Obtener archivo .eml del servidor
+      setEmailPrepareStatus("preparing");
+      const response = await fetch("/api/timesheets/prepare-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -507,20 +507,29 @@ export default function TimesheetsPage() {
       const data = await response.json();
 
       if (!response.ok || data.status !== "ok") {
-        throw new Error(data.message || "Error al enviar el email");
+        throw new Error(data.message || "Error al preparar el email");
       }
 
-      // Paso 3: Completado
-      setEmailSendStatus("done");
-      setTimeout(() => {
-        setEmailModalOpen(false);
-        setEmailSendStatus(null);
-        setInfo(`Email enviado correctamente a ${selectedEmployee.person?.email}`);
-      }, 1000);
+      // Paso 3: Descargar el archivo .eml
+      const emlBlob = new Blob([Uint8Array.from(atob(data.emlBase64), (c) => c.charCodeAt(0))], {
+        type: "message/rfc822",
+      });
+      const url = URL.createObjectURL(emlBlob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = data.filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      // Paso 4: Mostrar estado completado
+      setEmailPrepareStatus("done");
+      setInfo(`Archivo descargado: ${data.filename}. Ábrelo con doble click para enviar desde Outlook.`);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Error al enviar el email";
+      const message = err instanceof Error ? err.message : "Error al preparar el email";
       setError(message);
-      setEmailSendStatus(null);
+      setEmailPrepareStatus(null);
     }
   }
 
@@ -602,13 +611,18 @@ export default function TimesheetsPage() {
             type="button"
             variant="secondary"
             className="gap-2"
-            onClick={() => setEmailModalOpen(true)}
+            onClick={() => {
+              setEmailModalOpen(true);
+              setEmailPrepareStatus(null);
+            }}
             disabled={!employeeSummaryRow || !selectedEmployee.person?.email}
             title={
-              !selectedEmployee.person?.email ? "El empleado no tiene email registrado" : "Enviar boleta por email"
+              !selectedEmployee.person?.email
+                ? "El empleado no tiene email registrado"
+                : "Preparar boleta para enviar por email"
             }
           >
-            ✉️ Enviar Email
+            ✉️ Preparar Email
           </Button>
           <Suspense
             fallback={
@@ -669,9 +683,12 @@ export default function TimesheetsPage() {
       {/* Modal de preview de email */}
       <EmailPreviewModal
         isOpen={emailModalOpen}
-        onClose={() => setEmailModalOpen(false)}
-        onSend={handleSendEmail}
-        sendStatus={emailSendStatus}
+        onClose={() => {
+          setEmailModalOpen(false);
+          setEmailPrepareStatus(null);
+        }}
+        onPrepare={handlePrepareEmail}
+        prepareStatus={emailPrepareStatus}
         employee={selectedEmployee}
         summary={employeeSummaryRow}
         monthLabel={monthLabel}
