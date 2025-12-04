@@ -4,6 +4,7 @@ import { z } from "zod";
 import { authenticate as requireAuth, requireRole } from "../lib/http.js";
 import type { AuthenticatedRequest } from "../types.js";
 import { logAudit } from "../services/audit.js";
+import { mapPerson, type PersonWithRoles } from "../lib/mappers.js";
 
 const router = Router();
 
@@ -19,52 +20,73 @@ const personSchema = z.object({
   personType: z.enum(["NATURAL", "JURIDICAL"]).default("NATURAL"),
 });
 
-// GET /api/people - List all people
+// Include all roles when fetching people
+const personInclude = {
+  user: { select: { id: true, email: true, role: true, status: true } },
+  employee: true,
+  counterpart: { include: { accounts: true } },
+} as const;
+
+// GET /api/people - List all people with their roles
 router.get("/", requireAuth, async (req, res) => {
   try {
     const people = await prisma.person.findMany({
-      include: {
-        user: { select: { id: true, email: true, role: true, status: true } },
-        employee: { select: { id: true, position: true, status: true } },
-        counterpart: { select: { id: true, category: true } },
-      },
+      include: personInclude,
       orderBy: { names: "asc" },
     });
-    res.json(people);
+    res.json({
+      status: "ok",
+      people: people.map((p) => mapPerson(p as PersonWithRoles)),
+    });
   } catch (error) {
     console.error("Error fetching people:", error);
-    res.status(500).json({ error: "Failed to fetch people" });
+    res.status(500).json({ status: "error", message: "Failed to fetch people" });
   }
 });
 
-// GET /api/people/:id - Get single person details
+// GET /api/people/:id - Get single person with all roles
 router.get("/:id", requireAuth, async (req, res) => {
   try {
     const id = Number(req.params.id);
-    if (isNaN(id)) return res.status(400).json({ error: "Invalid ID" });
+    if (isNaN(id)) return res.status(400).json({ status: "error", message: "Invalid ID" });
 
     const person = await prisma.person.findUnique({
       where: { id },
       include: {
-        user: {
-          select: {
-            id: true,
-            email: true,
-            role: true,
-            status: true,
-            mfaEnabled: true,
-          },
-        },
-        employee: true,
-        counterpart: true,
+        ...personInclude,
         transactions: { take: 10, orderBy: { timestamp: "desc" } },
       },
     });
-    if (!person) return res.status(404).json({ error: "Person not found" });
-    res.json(person);
+    if (!person) return res.status(404).json({ status: "error", message: "Person not found" });
+
+    res.json({
+      status: "ok",
+      person: mapPerson(person as PersonWithRoles),
+      transactions: person.transactions,
+    });
   } catch (error) {
     console.error("Error fetching person:", error);
-    res.status(500).json({ error: "Failed to fetch person" });
+    res.status(500).json({ status: "error", message: "Failed to fetch person" });
+  }
+});
+
+// GET /api/people/rut/:rut - Get person by RUT
+router.get("/rut/:rut", requireAuth, async (req, res) => {
+  try {
+    const rut = req.params.rut;
+    const person = await prisma.person.findUnique({
+      where: { rut },
+      include: personInclude,
+    });
+    if (!person) return res.status(404).json({ status: "error", message: "Person not found" });
+
+    res.json({
+      status: "ok",
+      person: mapPerson(person as PersonWithRoles),
+    });
+  } catch (error) {
+    console.error("Error fetching person by RUT:", error);
+    res.status(500).json({ status: "error", message: "Failed to fetch person" });
   }
 });
 
@@ -76,9 +98,12 @@ router.post("/", requireAuth, requireRole("ADMIN", "GOD"), async (req, res) => {
 
     // Check for existing RUT
     const existing = await prisma.person.findUnique({ where: { rut: data.rut } });
-    if (existing) return res.status(400).json({ error: "RUT already exists" });
+    if (existing) return res.status(400).json({ status: "error", message: "RUT already exists" });
 
-    const person = await prisma.person.create({ data });
+    const person = await prisma.person.create({
+      data,
+      include: personInclude,
+    });
 
     await logAudit({
       userId: authReq.auth!.userId,
@@ -89,10 +114,10 @@ router.post("/", requireAuth, requireRole("ADMIN", "GOD"), async (req, res) => {
       ipAddress: req.ip,
     });
 
-    res.json(person);
+    res.json({ status: "ok", person: mapPerson(person as PersonWithRoles) });
   } catch (error) {
-    if (error instanceof z.ZodError) return res.status(400).json({ error: error.issues });
-    res.status(500).json({ error: "Failed to create person" });
+    if (error instanceof z.ZodError) return res.status(400).json({ status: "error", issues: error.issues });
+    res.status(500).json({ status: "error", message: "Failed to create person" });
   }
 });
 
@@ -106,6 +131,7 @@ router.put("/:id", requireAuth, requireRole("ADMIN", "GOD"), async (req, res) =>
     const person = await prisma.person.update({
       where: { id: targetPersonId },
       data,
+      include: personInclude,
     });
 
     await logAudit({
@@ -117,9 +143,9 @@ router.put("/:id", requireAuth, requireRole("ADMIN", "GOD"), async (req, res) =>
       ipAddress: req.ip,
     });
 
-    res.json(person);
+    res.json({ status: "ok", person: mapPerson(person as PersonWithRoles) });
   } catch {
-    res.status(500).json({ error: "Failed to update person" });
+    res.status(500).json({ status: "error", message: "Failed to update person" });
   }
 });
 
