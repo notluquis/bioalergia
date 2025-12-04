@@ -30,13 +30,14 @@ type WeekDefinition = {
   end: string;
 };
 
-type QuickRange = "this-week" | "last-week" | "this-month" | "last-month" | "custom";
+type QuickRange = "this-week" | "last-week" | "this-month" | "last-month" | "two-months-ago" | "custom";
 
 const QUICK_RANGES: { id: QuickRange; label: string }[] = [
   { id: "this-week", label: "Esta semana" },
   { id: "last-week", label: "Semana pasada" },
   { id: "this-month", label: "Este mes" },
   { id: "last-month", label: "Mes pasado" },
+  { id: "two-months-ago", label: "Mes antepasado" },
   { id: "custom", label: "Personalizado" },
 ];
 
@@ -97,6 +98,11 @@ function getQuickRangeValues(range: QuickRange): { start: string; end: string } 
         start: today.subtract(1, "month").startOf("month").format("YYYY-MM-DD"),
         end: today.subtract(1, "month").endOf("month").format("YYYY-MM-DD"),
       };
+    case "two-months-ago":
+      return {
+        start: today.subtract(2, "month").startOf("month").format("YYYY-MM-DD"),
+        end: today.subtract(2, "month").endOf("month").format("YYYY-MM-DD"),
+      };
     default:
       return null;
   }
@@ -127,10 +133,7 @@ export default function TimesheetAuditPage() {
   }, [selectedMonth]);
 
   // Active employees with search
-  const activeEmployees = useMemo(
-    () => employees.filter((emp) => emp.status === "ACTIVE"),
-    [employees]
-  );
+  const activeEmployees = useMemo(() => employees.filter((emp) => emp.status === "ACTIVE"), [employees]);
 
   const filteredEmployees = useMemo(() => {
     if (!employeeSearch.trim()) return activeEmployees;
@@ -157,7 +160,7 @@ export default function TimesheetAuditPage() {
   useEffect(() => {
     if (months.length && !selectedMonth) {
       const prevMonth = dayjs().subtract(1, "month").format("YYYY-MM");
-      setSelectedMonth(months.includes(prevMonth) ? prevMonth : months[0] ?? "");
+      setSelectedMonth(months.includes(prevMonth) ? prevMonth : (months[0] ?? ""));
     }
   }, [months, selectedMonth]);
 
@@ -255,9 +258,7 @@ export default function TimesheetAuditPage() {
       {/* Header */}
       <header>
         <h1 className="typ-title text-base-content">Auditoría de horarios</h1>
-        <p className="mt-1 text-sm text-base-content/60">
-          Detecta solapamientos de turnos entre empleados
-        </p>
+        <p className="mt-1 text-sm text-base-content/60">Detecta solapamientos de turnos entre empleados</p>
       </header>
 
       {/* Compact Filters */}
@@ -281,9 +282,7 @@ export default function TimesheetAuditPage() {
                 </button>
               ))}
             </div>
-            {rangeSummary && (
-              <span className="text-xs text-base-content/50 hidden sm:inline">({rangeSummary})</span>
-            )}
+            {rangeSummary && <span className="text-xs text-base-content/50 hidden sm:inline">({rangeSummary})</span>}
           </div>
 
           {/* Custom Week Picker (collapsible) */}
@@ -306,11 +305,7 @@ export default function TimesheetAuditPage() {
                   ))}
                 </select>
                 {weeksForMonth.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={handleSelectAllWeeks}
-                    className="link link-primary text-sm"
-                  >
+                  <button type="button" onClick={handleSelectAllWeeks} className="link link-primary text-sm">
                     {selectedWeekKeys.length === weeksForMonth.length ? "Quitar todas" : "Todas las semanas"}
                   </button>
                 )}
@@ -323,9 +318,7 @@ export default function TimesheetAuditPage() {
                       key={week.key}
                       type="button"
                       className={`badge badge-lg cursor-pointer transition-all ${
-                        isActive
-                          ? "badge-primary"
-                          : "badge-ghost border-base-300 hover:border-primary/50"
+                        isActive ? "badge-primary" : "badge-ghost border-base-300 hover:border-primary/50"
                       }`}
                       onClick={() => handleWeekToggle(week.key)}
                     >
@@ -334,9 +327,7 @@ export default function TimesheetAuditPage() {
                   );
                 })}
               </div>
-              {selectedWeekKeys.length === 0 && (
-                <p className="text-xs text-warning">Selecciona al menos una semana</p>
-              )}
+              {selectedWeekKeys.length === 0 && <p className="text-xs text-warning">Selecciona al menos una semana</p>}
             </div>
           )}
 
@@ -357,10 +348,7 @@ export default function TimesheetAuditPage() {
                   const emp = activeEmployees.find((e) => e.id === id);
                   if (!emp) return null;
                   return (
-                    <div
-                      key={id}
-                      className="badge badge-primary gap-1 pr-1"
-                    >
+                    <div key={id} className="badge badge-primary gap-1 pr-1">
                       <span className="max-w-32 truncate">{emp.full_name}</span>
                       <button
                         type="button"
@@ -384,11 +372,7 @@ export default function TimesheetAuditPage() {
                       onClick={() => setShowEmployeeDropdown(!showEmployeeDropdown)}
                     >
                       + Agregar
-                      {showEmployeeDropdown ? (
-                        <ChevronUp className="h-3 w-3" />
-                      ) : (
-                        <ChevronDown className="h-3 w-3" />
-                      )}
+                      {showEmployeeDropdown ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
                     </button>
                     {showEmployeeDropdown && (
                       <div
@@ -461,15 +445,11 @@ export default function TimesheetAuditPage() {
             </div>
 
             {selectedEmployeeIds.length === 0 && (
-              <p className="mt-2 text-xs text-warning">
-                Selecciona al menos 1 empleado para ver la auditoría
-              </p>
+              <p className="mt-2 text-xs text-warning">Selecciona al menos 1 empleado para ver la auditoría</p>
             )}
 
             {isMaxEmployees && (
-              <p className="mt-2 text-xs text-base-content/50">
-                Máximo {MAX_EMPLOYEES} empleados simultáneos
-              </p>
+              <p className="mt-2 text-xs text-base-content/50">Máximo {MAX_EMPLOYEES} empleados simultáneos</p>
             )}
           </div>
         </div>
@@ -519,9 +499,7 @@ export default function TimesheetAuditPage() {
           </div>
         </div>
       ) : !loadingEntries && entries.length === 0 ? (
-        <Alert variant="warning">
-          No hay registros para el periodo seleccionado. Prueba con otro rango de fechas.
-        </Alert>
+        <Alert variant="warning">No hay registros para el periodo seleccionado. Prueba con otro rango de fechas.</Alert>
       ) : null}
 
       {/* Calendar */}
@@ -538,9 +516,7 @@ export default function TimesheetAuditPage() {
       {/* Legend (collapsible) */}
       {canShowCalendar && entries.length > 0 && (
         <details className="collapse collapse-arrow bg-base-100 shadow-sm">
-          <summary className="collapse-title text-sm font-medium">
-            Guía de interpretación
-          </summary>
+          <summary className="collapse-title text-sm font-medium">Guía de interpretación</summary>
           <div className="collapse-content">
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 text-sm pt-2">
               <div className="flex items-start gap-2">
