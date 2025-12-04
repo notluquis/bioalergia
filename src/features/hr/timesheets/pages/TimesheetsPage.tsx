@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useState, useRef, type ChangeEvent } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState, type ChangeEvent } from "react";
 import dayjs from "dayjs";
 import { useAuth } from "@/context/AuthContext";
 import Button from "@/components/ui/Button";
@@ -21,11 +21,6 @@ import { useMonths } from "@/features/hr/timesheets/hooks/useMonths";
 import { useWakeLock } from "@/hooks/useWakeLock";
 
 const TimesheetExportPDF = lazy(() => import("@/features/hr/timesheets/components/TimesheetExportPDF"));
-
-// Removed unused EMPTY_BULK_ROW and computeExtraAmount during cleanup.
-
-// Configuración de auto-guardado
-const AUTO_SAVE_THRESHOLD = 5; // Guardar automáticamente cada N nuevos registros
 
 export default function TimesheetsPage() {
   useWakeLock(); // Keep screen active during timesheet entry
@@ -56,9 +51,6 @@ export default function TimesheetsPage() {
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-
-  // Auto-save tracking
-  const newEntriesCountRef = useRef(0);
 
   const loadEmployees = useCallback(async () => {
     try {
@@ -202,102 +194,76 @@ export default function TimesheetsPage() {
     [bulkRows, initialRows]
   );
 
-  // Función para contar filas COMPLETAS nuevas (no guardadas aún)
-  // Una fila está completa cuando tiene AMBOS: entrada Y salida
-  const countNewCompleteRows = useCallback((rows: BulkRow[], initial: BulkRow[]) => {
-    return rows.filter((row, index) => {
-      const init = initial[index];
-      // Solo contar filas nuevas (sin entryId) que están COMPLETAS (entrada Y salida) y son dirty
-      const isComplete = Boolean(row.entrada?.trim()) && Boolean(row.salida?.trim());
-      return !row.entryId && isComplete && isRowDirty(row, init);
-    }).length;
-  }, []);
+  // Guardar una fila individual inmediatamente (cuando se sale del campo salida)
+  const saveRowImmediately = useCallback(
+    async (index: number) => {
+      if (!selectedEmployeeId || saving) return;
 
-  // Auto-save silencioso (no muestra mensaje de éxito para no interrumpir)
-  const performAutoSave = useCallback(async () => {
-    if (!selectedEmployeeId || saving) return;
-
-    const entries: Array<{
-      work_date: string;
-      start_time: string | null;
-      end_time: string | null;
-      overtime_minutes: number;
-      extra_amount: number;
-      comment: string | null;
-    }> = [];
-
-    for (let index = 0; index < bulkRows.length; index += 1) {
       const row = bulkRows[index];
       const initial = initialRows[index];
-      if (!row || !initial) continue;
-      if (!isRowDirty(row, initial)) continue;
+      if (!row || !initial) return;
 
-      // Skip invalid entries silently for auto-save
-      if (row.entrada && !/^[0-9]{1,2}:[0-9]{2}$/.test(row.entrada)) continue;
-      if (row.salida && !/^[0-9]{1,2}:[0-9]{2}$/.test(row.salida)) continue;
+      // Solo guardar si la fila está completa (tiene entrada Y salida) y es dirty
+      const isComplete = Boolean(row.entrada?.trim()) && Boolean(row.salida?.trim());
+      if (!isComplete || !isRowDirty(row, initial)) return;
+
+      // Validar formato
+      if (row.entrada && !/^[0-9]{1,2}:[0-9]{2}$/.test(row.entrada)) return;
+      if (row.salida && !/^[0-9]{1,2}:[0-9]{2}$/.test(row.salida)) return;
 
       const overtime = parseDuration(row.overtime);
-      if (overtime === null) continue;
+      if (overtime === null) return;
 
       const comment = row.comment.trim() ? row.comment.trim() : null;
-      const hasContent = Boolean(row.entrada) || Boolean(row.salida) || overtime > 0 || Boolean(comment);
 
-      if (!hasContent) continue;
-
-      entries.push({
+      const entry = {
         work_date: row.date,
         start_time: row.entrada || null,
         end_time: row.salida || null,
         overtime_minutes: overtime,
         extra_amount: 0,
         comment,
-      });
-    }
+      };
 
-    if (!entries.length) return;
-
-    setSaving(true);
-    try {
-      await bulkUpsertTimesheets(selectedEmployeeId, entries, []);
-      // Recargar datos silenciosamente
-      if (month) {
-        const formattedMonth = formatMonthString(month);
-        const data = await fetchTimesheetDetail(selectedEmployeeId, formattedMonth);
-        const rows = buildBulkRows(formattedMonth, data.entries);
-        setBulkRows(rows);
-        setInitialRows(rows);
-        // Resetear contador
-        newEntriesCountRef.current = 0;
-        // Mostrar mensaje breve
-        setInfo(`Auto-guardado: ${entries.length} registro${entries.length > 1 ? "s" : ""}`);
-        // Limpiar mensaje después de 2 segundos
-        setTimeout(() => setInfo(null), 2000);
+      setSaving(true);
+      try {
+        await bulkUpsertTimesheets(selectedEmployeeId, [entry], []);
+        // Recargar datos silenciosamente
+        if (month) {
+          const formattedMonth = formatMonthString(month);
+          const data = await fetchTimesheetDetail(selectedEmployeeId, formattedMonth);
+          const rows = buildBulkRows(formattedMonth, data.entries);
+          setBulkRows(rows);
+          setInitialRows(rows);
+          // Mostrar mensaje breve
+          setInfo(`Guardado: ${formatDateLabel(row.date)}`);
+          setTimeout(() => setInfo(null), 1500);
+        }
+      } catch {
+        console.warn("Auto-save row failed");
+      } finally {
+        setSaving(false);
       }
-    } catch {
-      // Silently fail for auto-save, user can manually save later
-      console.warn("Auto-save failed, user can save manually");
-    } finally {
-      setSaving(false);
-    }
-  }, [selectedEmployeeId, saving, bulkRows, initialRows, month]);
+    },
+    [selectedEmployeeId, saving, bulkRows, initialRows, month]
+  );
+
+  // Handler cuando se sale del campo salida
+  const handleSalidaBlur = useCallback(
+    (index: number) => {
+      // Pequeño delay para permitir que el valor se actualice primero
+      setTimeout(() => {
+        saveRowImmediately(index);
+      }, 100);
+    },
+    [saveRowImmediately]
+  );
 
   function handleRowChange(index: number, field: keyof Omit<BulkRow, "date" | "entryId">, value: string) {
     setBulkRows((prev) => {
       const currentRow = prev[index];
       if (!currentRow || currentRow[field] === value) return prev;
-      const next = prev.map((row, i) => (i === index ? { ...row, [field]: value } : row));
-
-      // Verificar si debemos auto-guardar (solo cuando hay 5+ filas COMPLETAS nuevas)
-      const newCompleteCount = countNewCompleteRows(next, initialRows);
-      if (newCompleteCount >= AUTO_SAVE_THRESHOLD && newCompleteCount > newEntriesCountRef.current) {
-        // Disparar auto-guardado después de un pequeño delay para permitir más ediciones
-        setTimeout(() => {
-          performAutoSave();
-        }, 500);
-      }
-      newEntriesCountRef.current = newCompleteCount;
-
-      return next;
+      return prev.map((row, i) => (i === index ? { ...row, [field]: value } : row));
     });
     setInfo(null);
   }
@@ -534,6 +500,7 @@ export default function TimesheetsPage() {
           loadingDetail={loadingDetail}
           selectedEmployee={selectedEmployee}
           onRowChange={handleRowChange}
+          onSalidaBlur={handleSalidaBlur}
           onResetRow={handleResetRow}
           onRemoveEntry={handleRemoveEntry}
           onBulkSave={handleBulkSave}
