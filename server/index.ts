@@ -34,7 +34,7 @@ app.use(
     credentials: true,
   })
 );
-app.use(express.json());
+app.use(express.json({ limit: "10mb" })); // Increased for PDF attachments
 app.use(cookieParser());
 const CSP_HEADER_VALUE = [
   "default-src 'self'",

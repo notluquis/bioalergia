@@ -398,17 +398,17 @@ export default function TimesheetsPage() {
       // Simplificado: generar PDF básico con los datos
       const margin = 10;
 
-      // Cargar y agregar logo
+      // Cargar y agregar logo (usar logo192 que es más liviano)
       try {
-        const logoResponse = await fetch("/logo_sin_eslogan.png");
+        const logoResponse = await fetch("/logo192.png");
         const logoBlob = await logoResponse.blob();
         const logoBase64 = await new Promise<string>((resolve) => {
           const reader = new FileReader();
           reader.onload = () => resolve(reader.result as string);
           reader.readAsDataURL(logoBlob);
         });
-        // Logo: ancho 50mm, alto proporcional (ratio 5000:1333 ≈ 3.75:1)
-        doc.addImage(logoBase64, "PNG", margin, 8, 50, 13.3);
+        // Logo cuadrado 192x192: 20mm x 20mm
+        doc.addImage(logoBase64, "PNG", margin, 5, 20, 20);
       } catch {
         // Si falla el logo, continuar sin él
         console.warn("No se pudo cargar el logo para el PDF");
