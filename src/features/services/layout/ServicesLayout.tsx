@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { NavLink, Outlet, useNavigate, useNavigation, useLocation } from "react-router-dom";
+import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import Button from "../../../components/ui/Button";
 import { fetchServices } from "../../services/api";
@@ -15,16 +15,15 @@ const NAV_ITEMS = [
 
 function ServicesLayoutContent() {
   const navigate = useNavigate();
-  const navigation = useNavigation();
   const location = useLocation();
   const [pendingPath, setPendingPath] = useState<string | null>(null);
   const [services, setServices] = useState<ServiceSummary[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Clear pending state when navigation completes
-  if (navigation.state === "idle" && pendingPath) {
+  // Clear pending state when location changes (navigation completed)
+  useEffect(() => {
     setPendingPath(null);
-  }
+  }, [location.pathname]);
 
   useEffect(() => {
     let cancelled = false;
@@ -94,8 +93,8 @@ function ServicesLayoutContent() {
 
       <nav className="flex flex-wrap gap-3 border border-base-300 p-3 text-sm text-base-content bg-base-100">
         {NAV_ITEMS.map((item) => {
-          const isPending = pendingPath === item.to && navigation.state === "loading";
-          const alreadyHere = location.pathname === item.to;
+          const isPending = pendingPath === item.to;
+          const isCurrentPath = location.pathname === item.to;
 
           return (
             <NavLink
@@ -103,7 +102,7 @@ function ServicesLayoutContent() {
               to={item.to}
               end
               onClick={() => {
-                if (!alreadyHere) setPendingPath(item.to);
+                if (!isCurrentPath) setPendingPath(item.to);
               }}
               className={({ isActive }) => {
                 const active = isActive || isPending;
