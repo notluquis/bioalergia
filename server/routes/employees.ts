@@ -4,15 +4,7 @@ import { logEvent, logWarn, requestContext } from "../lib/logger.js";
 import { listEmployees, createEmployee, updateEmployee, deactivateEmployee } from "../services/employees.js";
 import { employeeSchema, employeeUpdateSchema } from "../schemas.js";
 import type { AuthenticatedRequest } from "../types.js";
-
-// Map employee with person to include full_name for frontend compatibility
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapEmployeeResponse(employee: any) {
-  return {
-    ...employee,
-    full_name: employee.person?.names ?? "",
-  };
-}
+import { mapEmployee } from "../lib/mappers.js";
 
 export function registerEmployeeRoutes(app: express.Express) {
   app.get(
@@ -21,7 +13,7 @@ export function registerEmployeeRoutes(app: express.Express) {
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       const includeInactive = req.query.includeInactive === "true";
       const employees = await listEmployees({ includeInactive });
-      const mapped = employees.map(mapEmployeeResponse);
+      const mapped = employees.map(mapEmployee);
       logEvent("employees:list", requestContext(req, { count: employees.length }));
       res.json({ status: "ok", employees: mapped });
     })
@@ -51,7 +43,7 @@ export function registerEmployeeRoutes(app: express.Express) {
         full_name: parsed.data.full_name,
       });
       logEvent("employees:create", requestContext(req, { employeeId: employee?.id }));
-      res.status(201).json({ status: "ok", employee: mapEmployeeResponse(employee) });
+      res.status(201).json({ status: "ok", employee: mapEmployee(employee) });
     })
   );
 
@@ -69,7 +61,7 @@ export function registerEmployeeRoutes(app: express.Express) {
       const employeeId = Number(req.params.id);
       const employee = await updateEmployee(employeeId, parsed.data);
       logEvent("employees:update", requestContext(req, { employeeId }));
-      res.json({ status: "ok", employee: mapEmployeeResponse(employee) });
+      res.json({ status: "ok", employee: mapEmployee(employee) });
     })
   );
 
