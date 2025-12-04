@@ -1,5 +1,3 @@
-import { IMaskInput } from "react-imask";
-import IMask from "imask";
 import { cn } from "@/lib/utils";
 import { useCallback, useRef } from "react";
 
@@ -77,7 +75,7 @@ export default function TimeInput({ value, onChange, onBlur, placeholder, classN
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleBlur = useCallback(() => {
-    // Al salir del campo, normalizar el valor
+    // Al salir del campo, normalizar el valor (ej: "9" -> "09:00", "930" -> "09:30")
     const normalized = normalizeTimeValue(value);
     if (normalized && normalized !== value) {
       onChange(normalized);
@@ -85,34 +83,20 @@ export default function TimeInput({ value, onChange, onBlur, placeholder, classN
     onBlur?.();
   }, [value, onChange, onBlur]);
 
+  // Use a simple input with pattern matching instead of IMask for more flexibility
+  // This allows typing "9" and converting it to "09:00" on blur
   return (
-    <IMaskInput
-      mask="HH:MM"
-      blocks={{
-        HH: {
-          mask: IMask.MaskedRange,
-          from: 0,
-          to: 23,
-          maxLength: 2,
-        },
-        MM: {
-          mask: IMask.MaskedRange,
-          from: 0,
-          to: 59,
-          maxLength: 2,
-        },
-      }}
+    <input
+      ref={inputRef}
+      type="text"
       value={value}
-      unmask={false}
-      onAccept={(value) => onChange(value)}
+      onChange={(e) => onChange(e.target.value)}
       onBlur={handleBlur}
       placeholder={placeholder || "HH:MM"}
       className={cn("input input-bordered input-sm w-full font-mono text-center", className)}
       disabled={disabled}
-      lazy={true}
-      autofix={false}
       inputMode="numeric"
-      inputRef={inputRef}
+      maxLength={5}
     />
   );
 }
