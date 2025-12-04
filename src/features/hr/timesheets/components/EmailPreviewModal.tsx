@@ -7,7 +7,7 @@ interface EmailPreviewModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSend: () => void;
-  isSending: boolean;
+  sendStatus: string | null; // null | 'generating-pdf' | 'sending' | 'done'
   employee: Employee | null;
   summary: TimesheetSummaryRow | null;
   monthLabel: string;
@@ -17,11 +17,12 @@ export default function EmailPreviewModal({
   isOpen,
   onClose,
   onSend,
-  isSending,
+  sendStatus,
   employee,
   summary,
   monthLabel,
 }: EmailPreviewModalProps) {
+  const isSending = sendStatus !== null;
   if (!isOpen || !employee || !summary) return null;
 
   const employeeEmail = employee.person?.email;
@@ -34,7 +35,7 @@ export default function EmailPreviewModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div className="w-full max-w-2xl rounded-2xl bg-base-100 shadow-2xl">
         {/* Header */}
-        <div className="rounded-t-2xl bg-gradient-to-r from-primary to-primary/80 px-6 py-5 text-primary-content">
+        <div className="rounded-t-2xl bg-linear-to-r from-primary to-primary/80 px-6 py-5 text-primary-content">
           <h2 className="text-xl font-bold">Vista previa del correo</h2>
           <p className="mt-1 text-sm opacity-90">
             Servicios de {summary.role} - {monthLabel}
@@ -124,16 +125,31 @@ export default function EmailPreviewModal({
 
         {/* Footer */}
         <div className="flex items-center justify-between border-t border-base-300 px-6 py-4">
-          <p className="text-xs text-base-content/50">El PDF se generará y adjuntará automáticamente al enviar.</p>
+          <p className="text-xs text-base-content/50">
+            {sendStatus === "generating-pdf" && "Generando documento PDF..."}
+            {sendStatus === "sending" && "Conectando con servidor de correo..."}
+            {sendStatus === "done" && "✅ Email enviado correctamente"}
+            {!sendStatus && "El PDF se generará y adjuntará automáticamente al enviar."}
+          </p>
           <div className="flex gap-3">
             <Button variant="secondary" onClick={onClose} disabled={isSending}>
               Cancelar
             </Button>
-            <Button variant="primary" onClick={onSend} disabled={isSending || !employeeEmail} className="min-w-[120px]">
-              {isSending ? (
+            <Button variant="primary" onClick={onSend} disabled={isSending || !employeeEmail} className="min-w-40">
+              {sendStatus === "generating-pdf" ? (
                 <span className="flex items-center gap-2">
                   <span className="loading loading-spinner loading-sm"></span>
-                  Enviando...
+                  Generando PDF...
+                </span>
+              ) : sendStatus === "sending" ? (
+                <span className="flex items-center gap-2">
+                  <span className="loading loading-spinner loading-sm"></span>
+                  Enviando email...
+                </span>
+              ) : sendStatus === "done" ? (
+                <span className="flex items-center gap-2">
+                  <span>✅</span>
+                  ¡Enviado!
                 </span>
               ) : (
                 "Enviar Email"
