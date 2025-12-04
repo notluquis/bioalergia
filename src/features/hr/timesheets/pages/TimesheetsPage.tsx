@@ -202,12 +202,14 @@ export default function TimesheetsPage() {
     [bulkRows, initialRows]
   );
 
-  // Función para contar filas con datos nuevos (no guardadas aún)
-  const countNewRowsWithData = useCallback((rows: BulkRow[], initial: BulkRow[]) => {
+  // Función para contar filas COMPLETAS nuevas (no guardadas aún)
+  // Una fila está completa cuando tiene AMBOS: entrada Y salida
+  const countNewCompleteRows = useCallback((rows: BulkRow[], initial: BulkRow[]) => {
     return rows.filter((row, index) => {
       const init = initial[index];
-      // Solo contar filas nuevas (sin entryId) que tienen datos y son dirty
-      return !row.entryId && hasRowData(row) && isRowDirty(row, init);
+      // Solo contar filas nuevas (sin entryId) que están COMPLETAS (entrada Y salida) y son dirty
+      const isComplete = Boolean(row.entrada?.trim()) && Boolean(row.salida?.trim());
+      return !row.entryId && isComplete && isRowDirty(row, init);
     }).length;
   }, []);
 
@@ -285,15 +287,15 @@ export default function TimesheetsPage() {
       if (!currentRow || currentRow[field] === value) return prev;
       const next = prev.map((row, i) => (i === index ? { ...row, [field]: value } : row));
 
-      // Verificar si debemos auto-guardar
-      const newCount = countNewRowsWithData(next, initialRows);
-      if (newCount >= AUTO_SAVE_THRESHOLD && newCount > newEntriesCountRef.current) {
+      // Verificar si debemos auto-guardar (solo cuando hay 5+ filas COMPLETAS nuevas)
+      const newCompleteCount = countNewCompleteRows(next, initialRows);
+      if (newCompleteCount >= AUTO_SAVE_THRESHOLD && newCompleteCount > newEntriesCountRef.current) {
         // Disparar auto-guardado después de un pequeño delay para permitir más ediciones
         setTimeout(() => {
           performAutoSave();
         }, 500);
       }
-      newEntriesCountRef.current = newCount;
+      newEntriesCountRef.current = newCompleteCount;
 
       return next;
     });
