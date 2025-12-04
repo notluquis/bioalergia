@@ -284,7 +284,7 @@ export default function TimesheetsPage() {
       const currentRow = prev[index];
       if (!currentRow || currentRow[field] === value) return prev;
       const next = prev.map((row, i) => (i === index ? { ...row, [field]: value } : row));
-      
+
       // Verificar si debemos auto-guardar
       const newCount = countNewRowsWithData(next, initialRows);
       if (newCount >= AUTO_SAVE_THRESHOLD && newCount > newEntriesCountRef.current) {
@@ -294,7 +294,7 @@ export default function TimesheetsPage() {
         }, 500);
       }
       newEntriesCountRef.current = newCount;
-      
+
       return next;
     });
     setInfo(null);
