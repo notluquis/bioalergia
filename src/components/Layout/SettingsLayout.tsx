@@ -2,29 +2,25 @@ import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
-import { Users, Shield, CreditCard, Calendar, Box, UserPlus, Loader2, Settings, Fingerprint } from "lucide-react";
+import { Users, Shield, Calendar, Box, UserPlus, Loader2, Fingerprint } from "lucide-react";
 
 const SETTINGS_SECTIONS = [
   {
-    title: "Personal",
+    title: "Mi Cuenta",
     items: [{ label: "Seguridad", to: "/settings/security", icon: Fingerprint, requiresAdmin: false }],
   },
   {
-    title: "General",
-    items: [{ label: "Ajustes", to: "/settings/general", icon: Settings, requiresAdmin: true }],
-  },
-  {
-    title: "Organización",
+    title: "Administración",
     items: [
       { label: "Usuarios", to: "/settings/users", icon: Users, requiresAdmin: true },
       { label: "Personas", to: "/settings/people", icon: UserPlus, requiresAdmin: true },
       { label: "Roles y Permisos", to: "/settings/roles", icon: Shield, requiresAdmin: true },
+      { label: "Accesos", to: "/settings/accesos", icon: Shield, requiresAdmin: true },
     ],
   },
   {
-    title: "Módulos",
+    title: "Configuración de Módulos",
     items: [
-      { label: "Finanzas", to: "/settings/finance", icon: CreditCard, requiresAdmin: true },
       { label: "Calendario", to: "/settings/calendar", icon: Calendar, requiresAdmin: true },
       { label: "Inventario", to: "/settings/inventory", icon: Box, requiresAdmin: true },
     ],

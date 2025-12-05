@@ -68,8 +68,7 @@ npx lint-staged
 - **Variables de entorno** en `.env` (ver `.env.example`):
   - `DATABASE_URL` → Conexión PostgreSQL
   - `PORT`, `JWT_SECRET` → API y autenticación
-  - `ADMIN_EMAIL`, `ADMIN_PASSWORD` → Usuario GOD inicial
-- En el primer arranque, si la tabla `users` está vacía y `ADMIN_EMAIL`/`ADMIN_PASSWORD` están definidos, se crea automáticamente un usuario con rol **GOD**.
+- El usuario inicial GOD se crea mediante `npx prisma db seed` (ver `prisma/seed.ts`).
 - **Comandos Prisma**:
   - `npx prisma generate` → Regenerar cliente
   - `npx prisma migrate dev` → Crear/aplicar migraciones

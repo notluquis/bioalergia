@@ -34,7 +34,6 @@ const TITLES: Record<string, string> = {
   "/hr/audit": "Auditoría de horarios",
   // Settings
   "/settings": "Configuración",
-  "/settings/general": "Identidad y marca",
   "/settings/accesos": "Accesos y conexiones",
   "/settings/inventario": "Parámetros de inventario",
   "/settings/roles": "Roles y permisos",

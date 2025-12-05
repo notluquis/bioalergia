@@ -1,50 +1,78 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Package, Plus, Trash2, Edit2, Loader2 } from "lucide-react";
+import { Package, Plus, Trash2, Edit2, Loader2, ChevronDown, ChevronRight, Box } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import { useToast } from "@/context/ToastContext";
+import { apiClient } from "@/lib/apiClient";
+
+type InventoryItem = {
+  id: number;
+  name: string;
+  description: string | null;
+  current_stock: number;
+  category_id: number | null;
+  category_name: string | null;
+};
 
 type Category = {
   id: number;
   name: string;
-  _count: {
-    items: number;
-  };
+  created_at: string;
+};
+
+type CategoriesResponse = {
+  status: string;
+  data: Category[];
+};
+
+type ItemsResponse = {
+  status: string;
+  data: InventoryItem[];
 };
 
 export default function InventorySettingsPage() {
   const [isCreating, setIsCreating] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
+  const [expandedCategories, setExpandedCategories] = useState<Set<number>>(new Set());
   const { success, error: toastError } = useToast();
   const queryClient = useQueryClient();
 
   // Fetch Categories
-  const { data: categories, isLoading } = useQuery({
+  const { data: categoriesData, isLoading: isLoadingCategories } = useQuery({
     queryKey: ["inventory-categories"],
     queryFn: async () => {
-      // Mock for now, replace with actual API call
-      // const res = await fetch("/api/inventory/categories");
-      // if (!res.ok) throw new Error("Failed to fetch categories");
-      // return res.json();
-      return [
-        { id: 1, name: "Medicamentos", _count: { items: 12 } },
-        { id: 2, name: "Insumos Médicos", _count: { items: 45 } },
-        { id: 3, name: "Oficina", _count: { items: 8 } },
-      ] as Category[];
+      const res = await apiClient.get<CategoriesResponse>("/api/inventory/categories");
+      return res.data;
     },
   });
 
+  // Fetch Items
+  const { data: itemsData, isLoading: isLoadingItems } = useQuery({
+    queryKey: ["inventory-items"],
+    queryFn: async () => {
+      const res = await apiClient.get<ItemsResponse>("/api/inventory/items");
+      return res.data;
+    },
+  });
+
+  const isLoading = isLoadingCategories || isLoadingItems;
+
+  // Group items by category
+  const itemsByCategory = (itemsData ?? []).reduce(
+    (acc, item) => {
+      const catId = item.category_id ?? 0; // 0 for uncategorized
+      if (!acc[catId]) acc[catId] = [];
+      acc[catId].push(item);
+      return acc;
+    },
+    {} as Record<number, InventoryItem[]>
+  );
+
   // Create Category Mutation
   const createMutation = useMutation({
-    mutationFn: async (_name: string) => {
-      void _name;
-      // await fetch("/api/inventory/categories", {
-      //   method: "POST",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify({ name }),
-      // });
-      await new Promise((resolve) => setTimeout(resolve, 500)); // Mock delay
+    mutationFn: async (name: string) => {
+      await apiClient.post("/api/inventory/categories", { name });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["inventory-categories"] });
@@ -55,18 +83,18 @@ export default function InventorySettingsPage() {
     onError: () => toastError("Error al crear categoría"),
   });
 
-  // Delete Category Mutation
+  // Delete Category Mutation (would need backend support)
   const deleteMutation = useMutation({
     mutationFn: async (_id: number) => {
-      void _id;
-      // await fetch(`/api/inventory/categories/${id}`, { method: "DELETE" });
-      await new Promise((resolve) => setTimeout(resolve, 500)); // Mock delay
+      // Backend doesn't have delete category endpoint yet
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      throw new Error("No implementado en backend");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["inventory-categories"] });
       success("Categoría eliminada");
     },
-    onError: () => toastError("Error al eliminar categoría"),
+    onError: (err) => toastError(err instanceof Error ? err.message : "Error al eliminar categoría"),
   });
 
   const handleCreate = (e: React.FormEvent) => {
@@ -75,12 +103,27 @@ export default function InventorySettingsPage() {
     createMutation.mutate(newCategoryName);
   };
 
+  const toggleCategory = (categoryId: number) => {
+    setExpandedCategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(categoryId)) {
+        next.delete(categoryId);
+      } else {
+        next.add(categoryId);
+      }
+      return next;
+    });
+  };
+
+  const categories = categoriesData ?? [];
+  const uncategorizedItems = itemsByCategory[0] ?? [];
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-base-content">Inventario</h1>
-          <p className="text-sm text-base-content/60">Gestiona las categorías de productos.</p>
+          <p className="text-sm text-base-content/60">Gestiona las categorías y productos del inventario.</p>
         </div>
         <Button onClick={() => setIsCreating(true)} className="gap-2">
           <Plus size={16} />
@@ -120,66 +163,149 @@ export default function InventorySettingsPage() {
       )}
 
       <div className="surface-elevated rounded-2xl overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="table w-full">
-            <thead>
-              <tr>
-                <th className="w-10"></th>
-                <th>Nombre</th>
-                <th className="text-center">Items</th>
-                <th className="text-right">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {isLoading ? (
-                <tr>
-                  <td colSpan={4} className="text-center py-8 text-base-content/50">
-                    <Loader2 className="mx-auto animate-spin" />
-                  </td>
-                </tr>
-              ) : categories?.length === 0 ? (
-                <tr>
-                  <td colSpan={4} className="text-center py-8 text-base-content/50">
-                    No hay categorías registradas.
-                  </td>
-                </tr>
-              ) : (
-                categories?.map((category) => (
-                  <tr key={category.id} className="hover:bg-base-200/50 group">
-                    <td>
-                      <div className="w-8 h-8 rounded-lg bg-base-200 flex items-center justify-center text-base-content/50">
-                        <Package size={16} />
-                      </div>
-                    </td>
-                    <td className="font-medium">{category.name}</td>
-                    <td className="text-center">
-                      <span className="badge badge-ghost badge-sm">{category._count.items} items</span>
-                    </td>
-                    <td className="text-right">
-                      <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button size="sm" variant="ghost" className="btn-square btn-xs">
-                          <Edit2 size={14} />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="btn-square btn-xs text-error hover:bg-error/10"
-                          onClick={() => {
-                            if (confirm("¿Estás seguro de eliminar esta categoría?")) {
-                              deleteMutation.mutate(category.id);
-                            }
-                          }}
+        {isLoading ? (
+          <div className="text-center py-8 text-base-content/50">
+            <Loader2 className="mx-auto animate-spin" />
+          </div>
+        ) : categories.length === 0 && uncategorizedItems.length === 0 ? (
+          <div className="text-center py-8 text-base-content/50">No hay categorías ni items registrados.</div>
+        ) : (
+          <div className="divide-y divide-base-200">
+            {categories.map((category) => {
+              const items = itemsByCategory[category.id] ?? [];
+              const isExpanded = expandedCategories.has(category.id);
+
+              return (
+                <div key={category.id}>
+                  {/* Category Row */}
+                  <div
+                    className="flex items-center gap-3 p-4 hover:bg-base-200/50 cursor-pointer group"
+                    onClick={() => toggleCategory(category.id)}
+                  >
+                    <button
+                      type="button"
+                      className="w-6 h-6 flex items-center justify-center text-base-content/50"
+                      aria-label={isExpanded ? "Colapsar" : "Expandir"}
+                    >
+                      {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+                    </button>
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                      <Package size={16} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <span className="font-medium">{category.name}</span>
+                    </div>
+                    <span className="badge badge-ghost badge-sm">{items.length} items</span>
+                    <div
+                      className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Button size="sm" variant="ghost" className="btn-square btn-xs">
+                        <Edit2 size={14} />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="btn-square btn-xs text-error hover:bg-error/10"
+                        onClick={() => {
+                          if (confirm("¿Estás seguro de eliminar esta categoría?")) {
+                            deleteMutation.mutate(category.id);
+                          }
+                        }}
+                      >
+                        <Trash2 size={14} />
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Items List (Expanded) */}
+                  {isExpanded && items.length > 0 && (
+                    <div className="bg-base-200/30 border-t border-base-200">
+                      {items.map((item) => (
+                        <div
+                          key={item.id}
+                          className="flex items-center gap-3 pl-14 pr-4 py-3 hover:bg-base-200/50 border-b border-base-200/50 last:border-b-0"
                         >
-                          <Trash2 size={14} />
-                        </Button>
+                          <div className="w-6 h-6 rounded bg-base-300/50 flex items-center justify-center text-base-content/40">
+                            <Box size={12} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{item.name}</p>
+                            {item.description && (
+                              <p className="text-xs text-base-content/50 truncate">{item.description}</p>
+                            )}
+                          </div>
+                          <span
+                            className={`text-xs font-medium ${item.current_stock <= 0 ? "text-error" : item.current_stock < 10 ? "text-warning" : "text-success"}`}
+                          >
+                            Stock: {item.current_stock}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {isExpanded && items.length === 0 && (
+                    <div className="bg-base-200/30 border-t border-base-200 py-4 pl-14 text-sm text-base-content/50 italic">
+                      Sin items en esta categoría
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+
+            {/* Uncategorized Items */}
+            {uncategorizedItems.length > 0 && (
+              <div>
+                <div
+                  className="flex items-center gap-3 p-4 hover:bg-base-200/50 cursor-pointer group"
+                  onClick={() => toggleCategory(0)}
+                >
+                  <button
+                    type="button"
+                    className="w-6 h-6 flex items-center justify-center text-base-content/50"
+                    aria-label={expandedCategories.has(0) ? "Colapsar" : "Expandir"}
+                  >
+                    {expandedCategories.has(0) ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+                  </button>
+                  <div className="w-8 h-8 rounded-lg bg-base-300 flex items-center justify-center text-base-content/50">
+                    <Package size={16} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <span className="font-medium text-base-content/70">Sin categoría</span>
+                  </div>
+                  <span className="badge badge-ghost badge-sm">{uncategorizedItems.length} items</span>
+                </div>
+
+                {expandedCategories.has(0) && (
+                  <div className="bg-base-200/30 border-t border-base-200">
+                    {uncategorizedItems.map((item) => (
+                      <div
+                        key={item.id}
+                        className="flex items-center gap-3 pl-14 pr-4 py-3 hover:bg-base-200/50 border-b border-base-200/50 last:border-b-0"
+                      >
+                        <div className="w-6 h-6 rounded bg-base-300/50 flex items-center justify-center text-base-content/40">
+                          <Box size={12} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{item.name}</p>
+                          {item.description && (
+                            <p className="text-xs text-base-content/50 truncate">{item.description}</p>
+                          )}
+                        </div>
+                        <span
+                          className={`text-xs font-medium ${item.current_stock <= 0 ? "text-error" : item.current_stock < 10 ? "text-warning" : "text-success"}`}
+                        >
+                          Stock: {item.current_stock}
+                        </span>
                       </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
