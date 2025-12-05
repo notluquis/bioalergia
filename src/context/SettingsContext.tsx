@@ -63,7 +63,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
 
   const settingsQuery = useQuery<AppSettings, Error>({
-    queryKey: ["settings"],
+    queryKey: ["settings", user?.id],
     enabled: Boolean(user),
     queryFn: async () => {
       logger.info("[settings] fetch:start", { userId: user?.id ?? null });

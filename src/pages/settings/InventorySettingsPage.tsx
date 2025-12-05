@@ -122,8 +122,8 @@ export default function InventorySettingsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-base-content">Inventario</h1>
-          <p className="text-sm text-base-content/60">Gestiona las categorías y productos del inventario.</p>
+          <h1 className="text-base-content text-2xl font-bold">Inventario</h1>
+          <p className="text-base-content/60 text-sm">Gestiona las categorías y productos del inventario.</p>
         </div>
         <Button onClick={() => setIsCreating(true)} className="gap-2">
           <Plus size={16} />
@@ -132,8 +132,8 @@ export default function InventorySettingsPage() {
       </div>
 
       {isCreating && (
-        <div className="surface-elevated p-4 rounded-xl animate-in fade-in slide-in-from-top-2">
-          <form onSubmit={handleCreate} className="flex gap-3 items-end">
+        <div className="surface-elevated animate-in fade-in slide-in-from-top-2 rounded-xl p-4">
+          <form onSubmit={handleCreate} className="flex items-end gap-3">
             <div className="flex-1">
               <label className="label py-1">
                 <span className="label-text text-xs">Nombre de la categoría</span>
@@ -162,15 +162,15 @@ export default function InventorySettingsPage() {
         </div>
       )}
 
-      <div className="surface-elevated rounded-2xl overflow-hidden">
+      <div className="surface-elevated overflow-hidden rounded-2xl">
         {isLoading ? (
-          <div className="text-center py-8 text-base-content/50">
+          <div className="text-base-content/50 py-8 text-center">
             <Loader2 className="mx-auto animate-spin" />
           </div>
         ) : categories.length === 0 && uncategorizedItems.length === 0 ? (
-          <div className="text-center py-8 text-base-content/50">No hay categorías ni items registrados.</div>
+          <div className="text-base-content/50 py-8 text-center">No hay categorías ni items registrados.</div>
         ) : (
-          <div className="divide-y divide-base-200">
+          <div className="divide-base-200 divide-y">
             {categories.map((category) => {
               const items = itemsByCategory[category.id] ?? [];
               const isExpanded = expandedCategories.has(category.id);
@@ -179,25 +179,25 @@ export default function InventorySettingsPage() {
                 <div key={category.id}>
                   {/* Category Row */}
                   <div
-                    className="flex items-center gap-3 p-4 hover:bg-base-200/50 cursor-pointer group"
+                    className="hover:bg-base-200/50 group flex cursor-pointer items-center gap-3 p-4"
                     onClick={() => toggleCategory(category.id)}
                   >
                     <button
                       type="button"
-                      className="w-6 h-6 flex items-center justify-center text-base-content/50"
+                      className="text-base-content/50 flex h-6 w-6 items-center justify-center"
                       aria-label={isExpanded ? "Colapsar" : "Expandir"}
                     >
                       {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
                     </button>
-                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                    <div className="bg-primary/10 text-primary flex h-8 w-8 items-center justify-center rounded-lg">
                       <Package size={16} />
                     </div>
-                    <div className="flex-1 min-w-0">
+                    <div className="min-w-0 flex-1">
                       <span className="font-medium">{category.name}</span>
                     </div>
                     <span className="badge badge-ghost badge-sm">{items.length} items</span>
                     <div
-                      className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <Button size="sm" variant="ghost" className="btn-square btn-xs">
@@ -220,19 +220,19 @@ export default function InventorySettingsPage() {
 
                   {/* Items List (Expanded) */}
                   {isExpanded && items.length > 0 && (
-                    <div className="bg-base-200/30 border-t border-base-200">
+                    <div className="bg-base-200/30 border-base-200 border-t">
                       {items.map((item) => (
                         <div
                           key={item.id}
-                          className="flex items-center gap-3 pl-14 pr-4 py-3 hover:bg-base-200/50 border-b border-base-200/50 last:border-b-0"
+                          className="hover:bg-base-200/50 border-base-200/50 flex items-center gap-3 border-b py-3 pr-4 pl-14 last:border-b-0"
                         >
-                          <div className="w-6 h-6 rounded bg-base-300/50 flex items-center justify-center text-base-content/40">
+                          <div className="bg-base-300/50 text-base-content/40 flex h-6 w-6 items-center justify-center rounded">
                             <Box size={12} />
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">{item.name}</p>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-medium">{item.name}</p>
                             {item.description && (
-                              <p className="text-xs text-base-content/50 truncate">{item.description}</p>
+                              <p className="text-base-content/50 truncate text-xs">{item.description}</p>
                             )}
                           </div>
                           <span
@@ -246,7 +246,7 @@ export default function InventorySettingsPage() {
                   )}
 
                   {isExpanded && items.length === 0 && (
-                    <div className="bg-base-200/30 border-t border-base-200 py-4 pl-14 text-sm text-base-content/50 italic">
+                    <div className="bg-base-200/30 border-base-200 text-base-content/50 border-t py-4 pl-14 text-sm italic">
                       Sin items en esta categoría
                     </div>
                   )}
@@ -258,39 +258,39 @@ export default function InventorySettingsPage() {
             {uncategorizedItems.length > 0 && (
               <div>
                 <div
-                  className="flex items-center gap-3 p-4 hover:bg-base-200/50 cursor-pointer group"
+                  className="hover:bg-base-200/50 group flex cursor-pointer items-center gap-3 p-4"
                   onClick={() => toggleCategory(0)}
                 >
                   <button
                     type="button"
-                    className="w-6 h-6 flex items-center justify-center text-base-content/50"
+                    className="text-base-content/50 flex h-6 w-6 items-center justify-center"
                     aria-label={expandedCategories.has(0) ? "Colapsar" : "Expandir"}
                   >
                     {expandedCategories.has(0) ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
                   </button>
-                  <div className="w-8 h-8 rounded-lg bg-base-300 flex items-center justify-center text-base-content/50">
+                  <div className="bg-base-300 text-base-content/50 flex h-8 w-8 items-center justify-center rounded-lg">
                     <Package size={16} />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <span className="font-medium text-base-content/70">Sin categoría</span>
+                  <div className="min-w-0 flex-1">
+                    <span className="text-base-content/70 font-medium">Sin categoría</span>
                   </div>
                   <span className="badge badge-ghost badge-sm">{uncategorizedItems.length} items</span>
                 </div>
 
                 {expandedCategories.has(0) && (
-                  <div className="bg-base-200/30 border-t border-base-200">
+                  <div className="bg-base-200/30 border-base-200 border-t">
                     {uncategorizedItems.map((item) => (
                       <div
                         key={item.id}
-                        className="flex items-center gap-3 pl-14 pr-4 py-3 hover:bg-base-200/50 border-b border-base-200/50 last:border-b-0"
+                        className="hover:bg-base-200/50 border-base-200/50 flex items-center gap-3 border-b py-3 pr-4 pl-14 last:border-b-0"
                       >
-                        <div className="w-6 h-6 rounded bg-base-300/50 flex items-center justify-center text-base-content/40">
+                        <div className="bg-base-300/50 text-base-content/40 flex h-6 w-6 items-center justify-center rounded">
                           <Box size={12} />
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">{item.name}</p>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium">{item.name}</p>
                           {item.description && (
-                            <p className="text-xs text-base-content/50 truncate">{item.description}</p>
+                            <p className="text-base-content/50 truncate text-xs">{item.description}</p>
                           )}
                         </div>
                         <span

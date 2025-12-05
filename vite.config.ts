@@ -5,21 +5,23 @@ import react from "@vitejs/plugin-react-swc";
 import tailwindcss from "@tailwindcss/vite";
 import { visualizer } from "rollup-plugin-visualizer";
 import { VitePWA } from "vite-plugin-pwa";
+import checker from "vite-plugin-checker";
+import viteCompression from "vite-plugin-compression";
 
 export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     tailwindcss(),
-    ...(mode === "development"
-      ? [
-          visualizer({
-            filename: "dist/stats.html",
-            open: false,
-            gzipSize: true,
-            brotliSize: true,
-          }),
-        ]
-      : []),
+    // TypeScript type-checking in dev mode
+    mode === "development" && checker({ typescript: true }),
+    // Bundle analyzer in dev mode
+    mode === "development" &&
+      visualizer({
+        filename: "dist/stats.html",
+        open: false,
+        gzipSize: true,
+        brotliSize: true,
+      }),
     // PWA - generates manifest and minimal SW
     VitePWA({
       registerType: "prompt",
@@ -75,7 +77,19 @@ export default defineConfig(({ mode }) => ({
       },
       devOptions: { enabled: false },
     }),
-  ],
+    // Gzip compression in production
+    mode === "production" &&
+      viteCompression({
+        algorithm: "gzip",
+        threshold: 1024,
+      }),
+    // Brotli compression in production
+    mode === "production" &&
+      viteCompression({
+        algorithm: "brotliCompress",
+        threshold: 1024,
+      }),
+  ].filter(Boolean),
   define: {
     "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV || "development"),
   },

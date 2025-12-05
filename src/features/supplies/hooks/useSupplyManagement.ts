@@ -54,7 +54,8 @@ export function useSupplyManagement(): UseSupplyManagementResult {
   const fetchData = useCallback(async () => {
     setError(null);
     await Promise.all([requestsQuery.refetch(), commonSuppliesQuery.refetch()]);
-  }, [requestsQuery, commonSuppliesQuery]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- refetch methods are stable by design
+  }, [requestsQuery.refetch, commonSuppliesQuery.refetch]);
 
   const updateStatusMutation = useMutation<
     void,
@@ -96,7 +97,8 @@ export function useSupplyManagement(): UseSupplyManagementResult {
         // Error handled in mutation
       }
     },
-    [updateStatusMutation]
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mutateAsync is stable by design
+    [updateStatusMutation.mutateAsync]
   );
 
   const loading =

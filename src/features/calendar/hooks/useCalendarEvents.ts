@@ -217,7 +217,8 @@ export function useCalendarEvents() {
 
   const syncNow = useCallback(() => {
     syncMutation.mutate();
-  }, [syncMutation]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mutate is stable by design
+  }, [syncMutation.mutate]);
 
   return {
     filters,

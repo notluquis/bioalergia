@@ -36,7 +36,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const timeoutSeconds = Number(import.meta.env?.VITE_AUTH_TIMEOUT ?? 8);
 
   const sessionQuery = useQuery({
-    queryKey: ["auth", "session"],
+    queryKey: ["auth", "session", timeoutSeconds],
     queryFn: async (): Promise<AuthUser | null> => {
       const controller = typeof AbortController !== "undefined" ? new AbortController() : undefined;
       const timeoutId =
@@ -163,7 +163,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshSession = useCallback(async () => {
     await sessionQuery.refetch();
-  }, [sessionQuery]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- refetch is stable by design
+  }, [sessionQuery.refetch]);
 
   const value = useMemo<AuthContextType>(
     () => ({ user, initializing, login, loginWithMfa, loginWithPasskey, logout, hasRole, refreshSession }),

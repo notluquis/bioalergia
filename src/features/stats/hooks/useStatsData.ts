@@ -83,7 +83,8 @@ export function useStatsData(): UseStatsDataResult {
   const fetchStats = useCallback(async () => {
     if (!canView) return;
     await Promise.all([statsQuery.refetch(), balancesQuery.refetch(), participantsQuery.refetch?.()]);
-  }, [canView, statsQuery, balancesQuery, participantsQuery]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- refetch methods are stable by design
+  }, [canView, statsQuery.refetch, balancesQuery.refetch, participantsQuery.refetch]);
 
   const fetchStatsWithRange = useCallback(
     async (fromValue: string, toValue: string) => {
