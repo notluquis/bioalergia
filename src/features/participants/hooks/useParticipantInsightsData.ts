@@ -7,7 +7,7 @@ import type {
   ParticipantSummaryRow,
   LeaderboardDisplayRow,
 } from "../types";
-import { formatRut } from "../../../lib/rut";
+import { formatRut } from "@/lib/rut";
 
 const MAX_MONTHS = 12;
 

@@ -64,10 +64,6 @@ export async function verifyPasskeyRegistration(
   body: RegistrationResponseJSON,
   expectedChallenge: string
 ) {
-  console.log("[Passkey Registration] Starting verification for userId:", userId);
-  console.log("[Passkey Registration] Challenge length:", expectedChallenge?.length);
-  console.log("[Passkey Registration] Body id:", body.id);
-
   try {
     const verification = await verifyRegistrationResponse({
       response: body,
@@ -77,15 +73,12 @@ export async function verifyPasskeyRegistration(
       requireUserVerification: false, // Allow if UV was skipped (since we used 'preferred')
     });
 
-    console.log("[Passkey Registration] Verification result:", verification.verified);
-
     if (verification.verified && verification.registrationInfo) {
       const { credential } = verification.registrationInfo;
       const { id: credentialID, publicKey: credentialPublicKey, counter } = credential;
 
       // credential.id already comes as base64url string from @simplewebauthn/server
       // DO NOT re-encode it - just use it directly
-      console.log("[Passkey Registration] Saving credentialID:", credentialID);
 
       await prisma.user.update({
         where: { id: userId },
@@ -97,12 +90,10 @@ export async function verifyPasskeyRegistration(
         },
       });
 
-      console.log("[Passkey Registration] SUCCESS - Passkey saved for user:", userId);
       logEvent("passkey:registered", { userId });
       return true;
     }
 
-    console.log("[Passkey Registration] Verification failed - verified:", verification.verified);
     return false;
   } catch (error) {
     console.error("[Passkey Registration] ERROR:", error);
@@ -129,34 +120,14 @@ export async function generatePasskeyLoginOptions() {
 export async function verifyPasskeyLogin(body: AuthenticationResponseJSON, expectedChallenge: string) {
   const credentialID = body.id;
 
-  console.log("[Passkey Service] Looking for credential:", credentialID);
-
   // Find user by credential ID
   const user = await prisma.user.findFirst({
     where: { passkeyCredentialID: credentialID },
   });
 
   if (!user || !user.passkeyPublicKey) {
-    console.error("[Passkey Service] User not found for credential:", credentialID);
-    // List all users with passkeys for debug
-    const usersWithPasskeys = await prisma.user.findMany({
-      where: { passkeyCredentialID: { not: null } },
-      select: { id: true, email: true, passkeyCredentialID: true },
-    });
-    console.log(
-      "[Passkey Service] Users with passkeys:",
-      usersWithPasskeys.map((u) => ({
-        id: u.id,
-        email: u.email,
-        cred: u.passkeyCredentialID?.substring(0, 20) + "...",
-      }))
-    );
     throw new Error("Passkey no encontrado");
   }
-
-  console.log("[Passkey Service] Found user:", user.id, user.email);
-  console.log("[Passkey Service] Stored credentialID:", user.passkeyCredentialID?.substring(0, 30) + "...");
-  console.log("[Passkey Service] Expected challenge:", expectedChallenge?.substring(0, 30) + "...");
 
   const verification = await verifyAuthenticationResponse({
     response: body,

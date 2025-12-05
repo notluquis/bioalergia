@@ -1,7 +1,7 @@
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { useAuth } from "../../context/AuthContext";
-import { cn } from "../../lib/utils";
+import { useAuth } from "@/context/AuthContext";
+import { cn } from "@/lib/utils";
 import { Users, Shield, CreditCard, Calendar, Box, UserPlus, Loader2, Settings, Fingerprint } from "lucide-react";
 
 const SETTINGS_SECTIONS = [

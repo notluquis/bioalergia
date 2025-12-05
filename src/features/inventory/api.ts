@@ -1,4 +1,4 @@
-import { apiClient } from "../../lib/apiClient";
+import { apiClient } from "@/lib/apiClient";
 import type { InventoryCategory, InventoryItem, InventoryMovement } from "./types";
 
 type ApiResponse<T> = {

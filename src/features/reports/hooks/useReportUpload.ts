@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { deriveMovements, parseDelimited, type Movement } from "@/mp/reports";
-import { useSettings } from "../../../context/settings-context";
+import { useSettings } from "@/context/SettingsContext";
 
 interface UseReportUploadResult {
   movs: Movement[];

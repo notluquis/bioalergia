@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Package, Plus, Trash2, Edit2, Loader2 } from "lucide-react";
 import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
-import { useToast } from "../../context/ToastContext";
+import { useToast } from "@/context/ToastContext";
 
 type Category = {
   id: number;

@@ -1,4 +1,4 @@
-import { roundCurrency } from "@/shared/currency";
+import { roundCurrency } from "~/shared/currency";
 import type { BalancesApiResponse } from "./types";
 
 export function formatBalanceInput(value: number) {

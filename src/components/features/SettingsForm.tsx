@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { useSettings, type AppSettings } from "../../context/SettingsContext";
-import { useAuth } from "../../context/AuthContext";
+import { useSettings, type AppSettings } from "@/context/SettingsContext";
+import { useAuth } from "@/context/AuthContext";
 import Button from "../ui/Button";
 import Alert from "../ui/Alert";
 

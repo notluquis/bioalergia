@@ -5,8 +5,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Input from "../../components/ui/Input";
 import Button from "../../components/ui/Button";
 import Alert from "../../components/ui/Alert";
-import { useToast } from "../../context/ToastContext";
-import { useSettings } from "../../context/SettingsContext";
+import { useToast } from "@/context/ToastContext";
+import { useSettings } from "@/context/SettingsContext";
 import {
   fetchProductionBalanceHistory,
   fetchProductionBalances,
@@ -15,7 +15,7 @@ import {
 import type { ProductionBalancePayload, ProductionBalanceStatus } from "../../features/dailyProductionBalances/types";
 import { deriveTotals } from "../../features/dailyProductionBalances/utils";
 import WeekView from "../../features/dailyProductionBalances/components/WeekView";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "@/context/AuthContext";
 
 type FormState = {
   date: string;

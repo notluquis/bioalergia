@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
-import { fmtCLP } from "../lib/format";
+import { fmtCLP } from "@/lib/format";
 import { useParticipantInsightsData } from "../features/participants/hooks/useParticipantInsightsData";
 import Alert from "../components/ui/Alert";
 import Input from "../components/ui/Input";

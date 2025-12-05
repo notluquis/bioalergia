@@ -7,8 +7,8 @@ import Button from "../../../components/ui/Button";
 import Input from "../../../components/ui/Input";
 import type { CommonSupply, StructuredSupplies } from "../types";
 import { createSupplyRequest, type SupplyRequestPayload } from "../api";
-import { queryKeys } from "../../../lib/queryKeys";
-import { useToast } from "../../../context/ToastContext";
+import { queryKeys } from "@/lib/queryKeys";
+import { useToast } from "@/context/ToastContext";
 
 const supplyRequestSchema = z.object({
   selectedSupply: z.string().min(1, "Seleccione un insumo"),

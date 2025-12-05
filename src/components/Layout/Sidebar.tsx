@@ -12,8 +12,9 @@ import {
   Settings,
   ChevronsLeft,
   ChevronsRight,
-} from "@/components/ui/icons";
-import { Loader2, FileSpreadsheet } from "lucide-react";
+  Loader2,
+  FileSpreadsheet,
+} from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/Tooltip";
 
 type NavItem = {

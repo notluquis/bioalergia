@@ -2,11 +2,11 @@ import { useState, useEffect } from "react";
 import { startRegistration } from "@simplewebauthn/browser";
 import type { PublicKeyCredentialCreationOptionsJSON } from "@simplewebauthn/types";
 import { Smartphone, Fingerprint, Check, Loader2 } from "lucide-react";
-import { useAuth } from "../../context/AuthContext";
-import { useToast } from "../../context/ToastContext";
-import Button from "../../components/ui/Button";
-import Input from "../../components/ui/Input";
-import { apiClient } from "../../lib/apiClient";
+import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/context/ToastContext";
+import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
+import { apiClient } from "@/lib/apiClient";
 
 export default function SecuritySettingsPage() {
   const { user, refreshSession } = useAuth();

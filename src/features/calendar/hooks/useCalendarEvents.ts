@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { fetchCalendarDaily, fetchCalendarSummary, syncCalendarEvents } from "../api";
 import type { CalendarDaily, CalendarFilters, CalendarSummary, CalendarSyncStep } from "../types";
-import { useSettings } from "../../../context/settings-context";
+import { useSettings } from "@/context/SettingsContext";
 import { useCalendarFilterStore } from "../../../store/calendarFilters";
 
 type SyncProgressStatus = "pending" | "in_progress" | "completed" | "error";

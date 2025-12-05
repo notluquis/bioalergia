@@ -7,8 +7,8 @@ import Button from "../components/ui/Button";
 import Input from "../components/ui/Input";
 import Alert from "../components/ui/Alert";
 import { MultiSelectFilter, type MultiSelectOption } from "../features/calendar/components/MultiSelectFilter";
-import { HeatmapMonth } from "../features/calendar/components/HeatmapMonth";
-import { apiClient } from "../lib/apiClient";
+import { HeatmapMonth } from "@/features/calendar/components/HeatmapMonth";
+import { apiClient } from "@/lib/apiClient";
 import type { CalendarSummary } from "../features/calendar/types";
 
 dayjs.locale("es");
