@@ -112,15 +112,34 @@ export async function generatePasskeyLoginOptions() {
 export async function verifyPasskeyLogin(body: AuthenticationResponseJSON, expectedChallenge: string) {
   const credentialID = body.id;
 
+  console.log("[Passkey Service] Looking for credential:", credentialID);
+
   // Find user by credential ID
   const user = await prisma.user.findFirst({
     where: { passkeyCredentialID: credentialID },
   });
 
   if (!user || !user.passkeyPublicKey) {
-    console.error("[Passkey] Login failed: User not found or no public key", { credentialID });
+    console.error("[Passkey Service] User not found for credential:", credentialID);
+    // List all users with passkeys for debug
+    const usersWithPasskeys = await prisma.user.findMany({
+      where: { passkeyCredentialID: { not: null } },
+      select: { id: true, email: true, passkeyCredentialID: true },
+    });
+    console.log(
+      "[Passkey Service] Users with passkeys:",
+      usersWithPasskeys.map((u) => ({
+        id: u.id,
+        email: u.email,
+        cred: u.passkeyCredentialID?.substring(0, 20) + "...",
+      }))
+    );
     throw new Error("Passkey no encontrado");
   }
+
+  console.log("[Passkey Service] Found user:", user.id, user.email);
+  console.log("[Passkey Service] Stored credentialID:", user.passkeyCredentialID?.substring(0, 30) + "...");
+  console.log("[Passkey Service] Expected challenge:", expectedChallenge?.substring(0, 30) + "...");
 
   const verification = await verifyAuthenticationResponse({
     response: body,

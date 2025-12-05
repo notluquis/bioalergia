@@ -82,6 +82,10 @@ export function registerAuthRoutes(app: express.Express) {
     asyncHandler(async (req, res) => {
       const { body, challenge } = req.body;
 
+      // Debug logging
+      console.log("[Passkey Login] Received body.id:", body?.id);
+      console.log("[Passkey Login] Received challenge length:", challenge?.length);
+
       try {
         const user = await verifyPasskeyLogin(body, challenge);
 
@@ -99,7 +103,9 @@ export function registerAuthRoutes(app: express.Express) {
           user: { ...sanitizeUser(user), role: effectiveRole, mfaEnabled: user.mfaEnabled },
         });
       } catch (err) {
-        logWarn("auth/login:passkey-failed", { error: String(err) });
+        const errMsg = err instanceof Error ? err.message : String(err);
+        console.error("[Passkey Login] Error details:", errMsg);
+        logWarn("auth/login:passkey-failed", { error: errMsg, credentialId: body?.id });
         res.status(400).json({ status: "error", message: "No se pudo validar el acceso biométrico" });
       }
     })
