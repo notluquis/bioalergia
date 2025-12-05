@@ -96,11 +96,15 @@ Este correo fue generado automáticamente.`;
     <p style="font-size: 16px; margin-bottom: 20px; color: #333333;">Estimado/a <strong>${data.employeeName}</strong>,</p>
     <p style="color: #333333;">A continuación encontrarás el resumen de los servicios prestados durante el periodo <strong>${data.month}</strong>, favor corroborar y emitir boleta de honorarios.</p>
     <div style="background-color: #dcfce7; border: 2px solid #22c55e; border-radius: 8px; padding: 20px; margin: 20px 0;">
-      <p style="margin: 0 0 4px; font-size: 12px; color: #166534; text-transform: uppercase; letter-spacing: 1px;">📝 Para la boleta de honorarios</p>
-      <table style="width: 100%; margin-top: 12px;">
-        <tr><td style="padding: 8px 0; font-size: 14px; color: #166534;">Descripción:</td><td style="padding: 8px 0; font-size: 15px; font-weight: 700; color: #166534; font-family: 'Consolas', monospace; text-align: right;">${boletaDescription}</td></tr>
-        <tr><td style="padding: 8px 0; font-size: 14px; color: #166534;">Monto Bruto:</td><td style="padding: 8px 0; font-size: 18px; font-weight: 700; color: #166534; font-family: 'Consolas', monospace; text-align: right;">${fmtCLP(data.subtotal)}</td></tr>
-      </table>
+      <p style="margin: 0 0 16px; font-size: 12px; color: #166534; text-transform: uppercase; letter-spacing: 1px;">📝 Para la boleta de honorarios</p>
+      <div style="margin-bottom: 12px;">
+        <p style="margin: 0 0 4px; font-size: 12px; color: #166534;">Descripción:</p>
+        <p style="margin: 0; font-size: 15px; font-weight: 700; color: #166534; font-family: 'Consolas', monospace;">${boletaDescription}</p>
+      </div>
+      <div>
+        <p style="margin: 0 0 4px; font-size: 12px; color: #166534;">Monto Bruto:</p>
+        <p style="margin: 0; font-size: 22px; font-weight: 700; color: #166534; font-family: 'Consolas', monospace;">${fmtCLP(data.subtotal)}</p>
+      </div>
     </div>
     <table style="width: 100%; border-collapse: collapse; margin: 20px 0; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
       <tr><th style="padding: 12px 16px; text-align: left; border-bottom: 1px solid #e2e8f0; background-color: #f1f5f9; font-weight: 600; color: #475569; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">Concepto</th><th style="padding: 12px 16px; text-align: right; border-bottom: 1px solid #e2e8f0; background-color: #f1f5f9; font-weight: 600; color: #475569; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">Detalle</th></tr>

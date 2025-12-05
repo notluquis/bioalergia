@@ -38,6 +38,7 @@ export type TimesheetSummaryRow = {
   retention: number;
   net: number;
   payDate: string;
+  workedMinutes: number;
   overtimeMinutes: number;
 };
 

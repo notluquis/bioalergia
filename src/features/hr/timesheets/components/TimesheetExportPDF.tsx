@@ -22,7 +22,6 @@ interface TimesheetExportPDFProps {
   bulkRows: BulkRow[];
   columns: TimesheetColumnKey[];
   monthLabel: string;
-  monthRaw?: string; // YYYY-MM
 }
 
 type JsPdfFactory = typeof import("jspdf");
@@ -35,7 +34,6 @@ export default function TimesheetExportPDF({
   bulkRows,
   columns,
   monthLabel,
-  monthRaw,
 }: TimesheetExportPDFProps) {
   const { settings } = useSettings();
   const defaultCols: readonly TimesheetColumnKey[] = ["date", "entrada", "salida", "worked", "overtime"];
@@ -178,14 +176,15 @@ export default function TimesheetExportPDF({
       const periodEs = dayjs(monthLabel, "MMMM YYYY").isValid()
         ? dayjs(monthLabel, "MMMM YYYY").locale("es").format("MMMM YYYY")
         : monthLabel;
-      const localPayDate = computeLocalPayDate(employee?.position || "", monthRaw);
+      // Usar payDate del summary (ya calculado en el backend) en lugar de recalcular
+      const payDateFormatted = summary?.payDate ? dayjs(summary.payDate).format("DD-MM-YYYY") : null;
       const infoStartY = Math.max(logoBottomY, rightY) + 6;
       doc.setFontSize(10);
       doc.text(`Prestador: ${employee?.full_name || "-"}`, margin, infoStartY);
       doc.text(`RUT: ${employee?.person?.rut || "-"}`, margin, infoStartY + 6);
       doc.text(`Periodo: ${periodEs}`, pageWidth - margin, infoStartY, { align: "right" });
-      if (localPayDate) {
-        doc.text(`Fecha de pago: ${dayjs(localPayDate).format("DD-MM-YYYY")}`, pageWidth - margin, infoStartY + 6, {
+      if (payDateFormatted) {
+        doc.text(`Fecha de pago: ${payDateFormatted}`, pageWidth - margin, infoStartY + 6, {
           align: "right",
         });
       }
@@ -194,23 +193,58 @@ export default function TimesheetExportPDF({
       doc.text(`Total líquido: ${fmtCLP(net)}`, margin, infoStartY + 14);
       doc.setFont("helvetica", "normal");
 
-      // Tabla de RESUMEN (sin fecha de pago, sin fila TOTAL)
-      const summaryHead = [
-        ["Función", "Horas trabajadas", "Extras", "Tarifa", "Monto extras", "Subtotal", "Retención", "Líquido"],
-      ];
+      // Tabla de RESUMEN - ocultar columnas de extras si no hay
+      const hasOvertime = summary && (summary.overtimeMinutes > 0 || (summary.extraAmount || 0) > 0);
+
+      const summaryHead = hasOvertime
+        ? [["Función", "Horas trabajadas", "Extras", "Tarifa", "Monto extras", "Subtotal", "Retención", "Líquido"]]
+        : [["Función", "Horas trabajadas", "Tarifa", "Subtotal", "Retención", "Líquido"]];
+
       const summaryBody: string[][] = [];
       if (summary) {
-        summaryBody.push([
-          summary.role || "",
-          summary.hoursFormatted || "",
-          summary.overtimeFormatted || "",
-          fmtCLP(summary.hourlyRate || 0),
-          fmtCLP(summary.extraAmount || 0),
-          fmtCLP(summary.subtotal || 0),
-          fmtCLP(summary.retention || 0),
-          fmtCLP(summary.net || 0),
-        ]);
+        if (hasOvertime) {
+          summaryBody.push([
+            summary.role || "",
+            summary.hoursFormatted || "",
+            summary.overtimeFormatted || "",
+            fmtCLP(summary.hourlyRate || 0),
+            fmtCLP(summary.extraAmount || 0),
+            fmtCLP(summary.subtotal || 0),
+            fmtCLP(summary.retention || 0),
+            fmtCLP(summary.net || 0),
+          ]);
+        } else {
+          summaryBody.push([
+            summary.role || "",
+            summary.hoursFormatted || "",
+            fmtCLP(summary.hourlyRate || 0),
+            fmtCLP(summary.subtotal || 0),
+            fmtCLP(summary.retention || 0),
+            fmtCLP(summary.net || 0),
+          ]);
+        }
       }
+
+      const summaryColumnStyles: Record<string, { halign: "left" | "center" | "right" }> = hasOvertime
+        ? {
+            0: { halign: "left" },
+            1: { halign: "center" },
+            2: { halign: "center" },
+            3: { halign: "right" },
+            4: { halign: "right" },
+            5: { halign: "right" },
+            6: { halign: "right" },
+            7: { halign: "right" },
+          }
+        : {
+            0: { halign: "left" },
+            1: { halign: "center" },
+            2: { halign: "right" },
+            3: { halign: "right" },
+            4: { halign: "right" },
+            5: { halign: "right" },
+          };
+
       autoTable(doc, {
         head: summaryHead,
         body: summaryBody,
@@ -220,20 +254,17 @@ export default function TimesheetExportPDF({
         headStyles: { fillColor: [14, 100, 183], textColor: [255, 255, 255], fontStyle: "bold" },
         tableWidth: pageWidth - margin * 2,
         margin: { left: margin, right: margin },
-        columnStyles: {
-          0: { halign: "left" }, // Cargo
-          1: { halign: "center" }, // Horas trabajadas
-          2: { halign: "center" }, // Horas extra
-          3: { halign: "right" }, // Tarifa
-          4: { halign: "right" }, // Extras
-          5: { halign: "right" }, // Subtotal
-          6: { halign: "right" }, // Retención
-          7: { halign: "right" }, // Líquido
-        },
+        columnStyles: summaryColumnStyles,
       });
 
       // Definición de columnas y etiquetas para DETALLE
-      const colKeys: TimesheetColumnKey[] = selectedCols.length ? selectedCols : Array.from(defaultCols);
+      // Si no hay overtime en ningún registro, ocultar esa columna
+      const hasAnyOvertime = bulkRows.some(
+        (row) => row.overtime && row.overtime !== "0:00" && row.overtime !== "00:00"
+      );
+      const baseColKeys: TimesheetColumnKey[] = selectedCols.length ? selectedCols : Array.from(defaultCols);
+      const colKeys: TimesheetColumnKey[] = hasAnyOvertime ? baseColKeys : baseColKeys.filter((k) => k !== "overtime");
+
       const labels: Record<TimesheetColumnKey, string> = {
         date: "Fecha",
         entrada: "Entrada",
@@ -420,32 +451,4 @@ export default function TimesheetExportPDF({
       </div>
     </div>
   );
-}
-
-// Cálculo local del día de pago según regla: ENFER* => 5to día hábil del mes siguiente; otros => día 5 del mes siguiente
-function computeLocalPayDate(role: string, monthRaw?: string | null) {
-  try {
-    const m = monthRaw && /^[0-9]{4}-[0-9]{2}$/.test(monthRaw) ? monthRaw : null;
-    const base = m ? dayjs(`${m}-01`) : null;
-    const nextFirst = base && base.isValid() ? base.add(1, "month").startOf("month") : null;
-    if (!nextFirst) return null;
-    if ((role || "").toUpperCase().includes("ENFER")) {
-      // 5to día hábil
-      let d = nextFirst.clone();
-      let count = 0;
-      while (count < 5) {
-        const wd = d.day(); // 0=Dom,6=Sab
-        if (wd !== 0 && wd !== 6) {
-          count += 1;
-          if (count === 5) break;
-        }
-        d = d.add(1, "day");
-      }
-      return d.format("YYYY-MM-DD");
-    }
-    // Otros: día 5 calendario del próximo mes
-    return nextFirst.date(5).format("YYYY-MM-DD");
-  } catch {
-    return null;
-  }
 }
