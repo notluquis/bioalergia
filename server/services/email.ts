@@ -74,7 +74,7 @@ Este correo fue generado automáticamente.`;
 </head>
 <body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #ffffff;">
   <div style="background-color: #0e64b7; color: #ffffff; padding: 24px; border-radius: 12px 12px 0 0; text-align: center;">
-    <img src="https://bioalergia.cl/logo_sin_eslogan.png" alt="Bioalergia" style="max-width: 180px; height: auto; margin-bottom: 16px;" />
+    <img src="https://intranet.bioalergia.cl/logo_sin_eslogan.png" alt="Bioalergia" style="max-width: 180px; height: auto; margin-bottom: 16px;" />
     <h1 style="margin: 0; font-size: 22px; font-weight: 600; color: #ffffff;">Boleta de Honorarios</h1>
     <p style="margin: 8px 0 0; font-size: 14px; color: #ffffff;">Servicios de ${data.role} - ${data.month}</p>
   </div>
