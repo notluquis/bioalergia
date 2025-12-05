@@ -175,7 +175,6 @@ export default function TimesheetDetailTable({
               const tooltipParts: string[] = [];
               if (showWarning && warningText) tooltipParts.push(warningText);
               if (hasComment) tooltipParts.push(`Comentario: ${row.comment.trim()}`);
-              const bangTitle = tooltipParts.join(" — ");
 
               const isMarkedNotWorked = notWorkedDays.has(row.date);
               // determine whether this row is dirty compared to initial values
@@ -281,12 +280,22 @@ export default function TimesheetDetailTable({
                   </td>
                   {/* Estado + indicador unificado "!" */}
                   <td className={`px-3 py-2 text-xs font-semibold uppercase tracking-wide ${statusColor} relative`}>
-                    {status}
-                    {showBang && (
-                      <span title={bangTitle} className={`ml-2 font-bold cursor-help ${bangColor}`}>
-                        !
-                      </span>
-                    )}
+                    <span className="inline-flex items-center gap-1">
+                      {status}
+                      {showBang && (
+                        <span className="group relative">
+                          <span className={`font-bold cursor-help ${bangColor}`}>!</span>
+                          <span className="invisible group-hover:visible absolute left-1/2 -translate-x-1/2 bottom-full mb-2 px-3 py-2 text-xs font-normal normal-case tracking-normal text-white bg-gray-900 rounded-lg shadow-lg whitespace-nowrap z-50 max-w-xs">
+                            {tooltipParts.map((part, i) => (
+                              <span key={i} className="block">
+                                {part}
+                              </span>
+                            ))}
+                            <span className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></span>
+                          </span>
+                        </span>
+                      )}
+                    </span>
                   </td>
                   {/* Acciones (menú de tres puntos) */}
                   <td className="px-3 py-2">
