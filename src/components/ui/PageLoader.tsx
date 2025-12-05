@@ -8,7 +8,7 @@ export default function PageLoader() {
         <div className="absolute inset-0 animate-pulse rounded-2xl bg-primary/5" />
       </div>
       <div className="flex flex-col items-center gap-1">
-        <p className="text-sm font-medium text-base-content/70 animate-pulse">Cargando aplicación...</p>
+        <p className="text-sm font-medium text-base-content/70 animate-pulse">Cargando...</p>
       </div>
     </div>
   );

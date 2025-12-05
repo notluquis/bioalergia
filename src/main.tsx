@@ -508,10 +508,3 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     </QueryClientProvider>
   </GlobalError>
 );
-
-// Service Worker Registration - with aggressive update strategy
-if ("serviceWorker" in navigator && import.meta.env.PROD) {
-  import("./lib/serviceWorker").then(({ registerServiceWorker }) => {
-    registerServiceWorker();
-  });
-}

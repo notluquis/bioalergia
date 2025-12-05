@@ -1,6 +1,5 @@
 import { Component, ErrorInfo, ReactNode } from "react";
 import Button from "./Button";
-import { clearAllCaches } from "@/lib/serviceWorker";
 
 interface Props {
   children: ReactNode;
@@ -18,7 +17,7 @@ const DEPLOY_ERROR_PATTERNS = [
   "Failed to fetch dynamically imported module",
   "Loading chunk",
   "Loading CSS chunk",
-  "Unexpected token '<'", // HTML returned instead of JS
+  "Unexpected token '<'",
   "ChunkLoadError",
 ];
 
@@ -26,6 +25,13 @@ function isDeployError(error: Error | null): boolean {
   if (!error) return false;
   const message = error.toString();
   return DEPLOY_ERROR_PATTERNS.some((pattern) => message.includes(pattern));
+}
+
+async function clearCaches() {
+  if ("caches" in window) {
+    const names = await caches.keys();
+    await Promise.all(names.map((name) => caches.delete(name)));
+  }
 }
 
 export class GlobalError extends Component<Props, State> {
@@ -51,20 +57,13 @@ export class GlobalError extends Component<Props, State> {
 
   private handleAutoReload = async () => {
     if (this.state.isReloading) return;
-
     this.setState({ isReloading: true });
 
     try {
-      // Limpiar todos los caches
-      await clearAllCaches();
-
-      // Pequeño delay para que se vea el estado
+      await clearCaches();
       await new Promise((r) => setTimeout(r, 500));
-
-      // Forzar recarga completa
       window.location.reload();
-    } catch (e) {
-      console.error("[GlobalError] Auto-reload failed:", e);
+    } catch {
       this.setState({ isReloading: false });
     }
   };

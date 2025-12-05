@@ -8,7 +8,6 @@ import { APP_VERSION, BUILD_TIMESTAMP } from "./version";
 import { useSettings } from "./context/SettingsContext";
 import { UpdateNotification } from "./components/features/UpdateNotification";
 import { PerformanceIndicator } from "./components/features/PerformanceIndicator";
-import { checkForUpdates } from "./lib/serviceWorker";
 
 export default function App() {
   const navigationState = useNavigation();
@@ -190,40 +189,9 @@ export default function App() {
               <PerformanceIndicator />
             </div>
 
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 text-xs text-base-content/70">
-                <span className="inline-flex h-2 w-2 rounded-full bg-primary/70" aria-hidden="true" />
-                <span>Build: {buildLabel}</span>
-              </div>
-
-              {/* Manual Update Button */}
-              <button
-                onClick={async () => {
-                  const found = await checkForUpdates();
-                  if (!found) {
-                    // Simple alert for now, or use a toast if available in context
-                    // Since we don't have the toast hook here easily without refactoring App to be a child of ToastProvider
-                    // We'll use a native alert or just rely on the console for now?
-                    // User asked for "mini notificacion".
-                    // Let's try to use the ToastContext if possible, but App is the root.
-                    // Actually, App is likely wrapped in Providers in main.tsx. Let's check.
-                    // Assuming App is inside ToastProvider, we can use useToast.
-                    alert("No se encontraron actualizaciones nuevas.");
-                  }
-                }}
-                className="flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs text-base-content/60 hover:bg-base-300/40 hover:text-base-content transition-colors"
-                title="Buscar actualizaciones"
-              >
-                <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                  />
-                </svg>
-                Buscar actualización
-              </button>
+            <div className="flex items-center gap-2 text-xs text-base-content/70">
+              <span className="inline-flex h-2 w-2 rounded-full bg-primary/70" aria-hidden="true" />
+              <span>Build: {buildLabel}</span>
             </div>
           </footer>
         </div>
