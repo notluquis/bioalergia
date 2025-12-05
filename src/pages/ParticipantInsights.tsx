@@ -150,7 +150,7 @@ export default function ParticipantInsightsPage() {
               ) : displayedLeaderboard.length ? (
                 displayedLeaderboard.map((row) => {
                   const participantKey = row.selectKey;
-                  const isActive = participantKey && participantKey === participantId.trim();
+                  const isActive = participantKey && participantId && participantKey === participantId.trim();
                   return (
                     <tr
                       key={row.key}
