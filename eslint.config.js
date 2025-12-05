@@ -5,6 +5,8 @@ import tsParser from "@typescript-eslint/parser";
 import react from "eslint-plugin-react";
 import reactHooks from "eslint-plugin-react-hooks";
 import reactRefresh from "eslint-plugin-react-refresh";
+import reactQuery from "@tanstack/eslint-plugin-query";
+import globals from "globals";
 
 export default [
   {
@@ -19,31 +21,8 @@ export default [
       ecmaVersion: "latest",
       sourceType: "module",
       globals: {
-        // Provide browser + node globals to avoid no-undef noise
-        window: "readonly",
-        document: "readonly",
-        navigator: "readonly",
-        console: "readonly",
-        setTimeout: "readonly",
-        clearTimeout: "readonly",
-        setInterval: "readonly",
-        clearInterval: "readonly",
-        AbortController: "readonly",
-        fetch: "readonly",
-        File: "readonly",
-        FormData: "readonly",
-        URL: "readonly",
-        URLSearchParams: "readonly",
-        Response: "readonly",
-        Request: "readonly",
-        RequestInit: "readonly",
-        Image: "readonly",
-        CustomEvent: "readonly",
-        Buffer: "readonly",
-        process: "readonly",
-        DOMException: "readonly",
-        alert: "readonly",
-        confirm: "readonly",
+        ...globals.browser,
+        ...globals.node,
       },
     },
     rules: {
@@ -70,10 +49,14 @@ export default [
       "react/react-in-jsx-scope": "off",
       "react-hooks/rules-of-hooks": "error",
       // Strict enforcement: prevent infinite loops and missing dependencies
+      // Note: React Query methods (refetch, mutate, mutateAsync) are stable by design,
+      // so we use eslint-disable-next-line when destructuring them from query/mutation objects
       "react-hooks/exhaustive-deps": "error",
     },
     settings: { react: { version: "detect" } },
   },
+  // React Query best practices
+  ...reactQuery.configs["flat/recommended"],
   // Overrides for TypeScript files only (ensure core rules remain off)
   {
     files: ["**/*.ts", "**/*.tsx"],
