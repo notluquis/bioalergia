@@ -3,12 +3,28 @@ import { prisma } from "../prisma.js";
 export async function findUserByEmail(email: string) {
   return await prisma.user.findUnique({
     where: { email },
+    include: {
+      person: {
+        select: {
+          names: true,
+          fatherName: true,
+        },
+      },
+    },
   });
 }
 
 export async function findUserById(id: number) {
   return await prisma.user.findUnique({
     where: { id },
+    include: {
+      person: {
+        select: {
+          names: true,
+          fatherName: true,
+        },
+      },
+    },
   });
 }
 

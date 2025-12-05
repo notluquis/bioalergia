@@ -122,9 +122,8 @@ export default function Sidebar({ isOpen, isMobile, onClose, isCollapsed = false
   const location = useLocation();
   const [pendingPath, setPendingPath] = React.useState<string | null>(null);
 
-  const displayName = user?.name || (user?.email?.split("@")[0] ?? "");
-  const firstWord = displayName.split(" ")[0];
-  const capitalizedName = firstWord ? firstWord.charAt(0).toUpperCase() + firstWord.slice(1).toLowerCase() : "";
+  // Use full name from backend, fallback to email prefix
+  const displayName = user?.name || user?.email?.split("@")[0] || "Usuario";
 
   React.useEffect(() => {
     // Clear manual pending once the URL actually changed
@@ -159,9 +158,7 @@ export default function Sidebar({ isOpen, isMobile, onClose, isCollapsed = false
               {!isCollapsed && (
                 <div className="min-w-0 overflow-hidden transition-all duration-300">
                   <p className="text-[10px] uppercase tracking-[0.2em] text-base-content/60">Bioalergia</p>
-                  <p className="truncate text-lg font-semibold leading-tight text-base-content">
-                    {capitalizedName || "Equipo"}
-                  </p>
+                  <p className="truncate text-lg font-semibold leading-tight text-base-content">{displayName}</p>
                   <p className="truncate text-[11px] text-base-content/60">{user?.email}</p>
                 </div>
               )}
