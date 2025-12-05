@@ -383,7 +383,7 @@ const router = createBrowserRouter([
         children: [
           {
             index: true,
-            element: <Navigate to="general" replace />,
+            element: <Navigate to="security" replace />,
           },
           {
             path: "general",
