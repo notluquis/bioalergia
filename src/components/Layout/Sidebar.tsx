@@ -153,7 +153,7 @@ export default function Sidebar({ isOpen, isMobile, onClose, isCollapsed = false
           >
             <div className={cn("flex items-center gap-3", isCollapsed && "justify-center")}>
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-white/20 bg-base-100/80 shadow-sm">
-                <img src="/logo_sin_eslogan.png" alt="Bioalergia" className="h-9 w-9 object-contain" loading="lazy" />
+                <img src="/logo_bimi.svg" alt="Bioalergia" className="h-9 w-9 object-contain" loading="lazy" />
               </div>
               {!isCollapsed && (
                 <div className="min-w-0 overflow-hidden transition-all duration-300">
