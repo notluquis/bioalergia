@@ -82,7 +82,6 @@ registerTransactionRoutes(app);
 registerEmployeeRoutes(app);
 registerTimesheetRoutes(app);
 registerCounterpartRoutes(app);
-registerCounterpartRoutes(app);
 registerInventoryRoutes(app);
 import { registerBalanceRoutes } from "./routes/balances.js";
 registerBalanceRoutes(app);
@@ -171,7 +170,7 @@ const sendIndexHtml = (_req: Request, res: Response) => {
 const STATIC_EXTENSIONS = /\.(js|mjs|css|map|json|woff2?|ttf|eot|svg|png|jpg|jpeg|gif|webp|ico|webmanifest)$/i;
 
 app.get("/", sendIndexHtml);
-app.get("/*path", (req: Request, res: Response, next: NextFunction) => {
+app.get("/*path", (req: Request, res: Response) => {
   // If requesting a static asset that doesn't exist, return 404
   // This prevents returning HTML for missing JS chunks (MIME type error)
   if (STATIC_EXTENSIONS.test(req.path)) {
