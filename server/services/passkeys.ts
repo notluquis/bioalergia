@@ -83,13 +83,14 @@ export async function verifyPasskeyRegistration(
       const { credential } = verification.registrationInfo;
       const { id: credentialID, publicKey: credentialPublicKey, counter } = credential;
 
-      const credentialIDBase64url = Buffer.from(credentialID).toString("base64url");
-      console.log("[Passkey Registration] Saving credentialID:", credentialIDBase64url);
+      // credential.id already comes as base64url string from @simplewebauthn/server
+      // DO NOT re-encode it - just use it directly
+      console.log("[Passkey Registration] Saving credentialID:", credentialID);
 
       await prisma.user.update({
         where: { id: userId },
         data: {
-          passkeyCredentialID: credentialIDBase64url,
+          passkeyCredentialID: credentialID,
           passkeyPublicKey: Buffer.from(credentialPublicKey),
           passkeyCounter: BigInt(counter),
           passkeyTransports: body.response.transports || [],
