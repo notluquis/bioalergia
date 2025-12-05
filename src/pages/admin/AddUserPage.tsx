@@ -2,9 +2,9 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/context/ToastContext";
 import { apiClient } from "@/lib/apiClient";
-import Button from "../../components/ui/Button";
-import Input from "../../components/ui/Input";
-import Checkbox from "../../components/ui/Checkbox";
+import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
+import Checkbox from "@/components/ui/Checkbox";
 import { Shield, UserPlus } from "lucide-react";
 
 export default function AddUserPage() {

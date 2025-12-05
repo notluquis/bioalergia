@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { getInventoryCategories, createInventoryCategory } from "../api";
 import type { InventoryCategory } from "../types";
 import { PlusCircle } from "lucide-react";
-import Button from "../../../components/ui/Button";
-import Input from "../../../components/ui/Input";
+import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
 
 export default function InventoryCategoryManager() {
   const [categories, setCategories] = useState<InventoryCategory[]>([]);

@@ -7,12 +7,12 @@ import { z } from "zod";
 import * as Tooltip from "@radix-ui/react-tooltip";
 import * as Toast from "@radix-ui/react-toast";
 
-import Alert from "../components/ui/Alert";
-import Button from "../components/ui/Button";
-import Input from "../components/ui/Input";
-import Checkbox from "../components/ui/Checkbox";
-import { classifyCalendarEvent, fetchUnclassifiedCalendarEvents } from "../features/calendar/api";
-import type { CalendarUnclassifiedEvent } from "../features/calendar/types";
+import Alert from "@/components/ui/Alert";
+import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
+import Checkbox from "@/components/ui/Checkbox";
+import { classifyCalendarEvent, fetchUnclassifiedCalendarEvents } from "@/features/calendar/api";
+import type { CalendarUnclassifiedEvent } from "@/features/calendar/types";
 
 dayjs.locale("es");
 

@@ -2,9 +2,9 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { ChangeEvent } from "react";
 import dayjs from "dayjs";
-import Button from "../../../components/ui/Button";
-import Modal from "../../../components/ui/Modal";
-import Input from "../../../components/ui/Input";
+import Button from "@/components/ui/Button";
+import Modal from "@/components/ui/Modal";
+import Input from "@/components/ui/Input";
 import type {
   RegenerateServicePayload,
   ServiceSchedule,

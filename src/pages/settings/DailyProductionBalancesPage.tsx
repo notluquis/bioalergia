@@ -2,19 +2,19 @@ import { useMemo, useState, useEffect } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 import dayjs from "dayjs";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import Input from "../../components/ui/Input";
-import Button from "../../components/ui/Button";
-import Alert from "../../components/ui/Alert";
+import Input from "@/components/ui/Input";
+import Button from "@/components/ui/Button";
+import Alert from "@/components/ui/Alert";
 import { useToast } from "@/context/ToastContext";
 import { useSettings } from "@/context/SettingsContext";
 import {
   fetchProductionBalanceHistory,
   fetchProductionBalances,
   saveProductionBalance,
-} from "../../features/dailyProductionBalances/api";
-import type { ProductionBalancePayload, ProductionBalanceStatus } from "../../features/dailyProductionBalances/types";
-import { deriveTotals } from "../../features/dailyProductionBalances/utils";
-import WeekView from "../../features/dailyProductionBalances/components/WeekView";
+} from "@/features/dailyProductionBalances/api";
+import type { ProductionBalancePayload, ProductionBalanceStatus } from "@/features/dailyProductionBalances/types";
+import { deriveTotals } from "@/features/dailyProductionBalances/utils";
+import WeekView from "@/features/dailyProductionBalances/components/WeekView";
 import { useAuth } from "@/context/AuthContext";
 
 type FormState = {

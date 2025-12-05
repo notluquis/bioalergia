@@ -4,12 +4,12 @@ import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
 import "dayjs/locale/es";
 
-import Input from "../components/ui/Input";
-import Button from "../components/ui/Button";
-import Alert from "../components/ui/Alert";
-import { MultiSelectFilter, type MultiSelectOption } from "../features/calendar/components/MultiSelectFilter";
-import { useCalendarEvents } from "../features/calendar/hooks/useCalendarEvents";
-import type { CalendarAggregateByDate } from "../features/calendar/types";
+import Input from "@/components/ui/Input";
+import Button from "@/components/ui/Button";
+import Alert from "@/components/ui/Alert";
+import { MultiSelectFilter, type MultiSelectOption } from "@/features/calendar/components/MultiSelectFilter";
+import { useCalendarEvents } from "@/features/calendar/hooks/useCalendarEvents";
+import type { CalendarAggregateByDate } from "@/features/calendar/types";
 import { Link } from "react-router-dom";
 
 dayjs.locale("es");

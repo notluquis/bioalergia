@@ -2,7 +2,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, User, Mail, Phone, MapPin, Calendar, Building, Briefcase } from "lucide-react";
 import dayjs from "dayjs";
-import PageLoader from "../../components/ui/PageLoader";
+import PageLoader from "@/components/ui/PageLoader";
 
 export default function PersonDetailsPage() {
   const { id } = useParams<{ id: string }>();

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
-import Alert from "../../../components/ui/Alert";
+import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
 import { fmtCLP } from "@/lib/format";
 import type { AllergyInventoryOverview } from "../types";

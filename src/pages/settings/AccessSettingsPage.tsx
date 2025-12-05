@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ShieldCheck, Loader2, Server, Globe, Database } from "lucide-react";
-import Button from "../../components/ui/Button";
-import Input from "../../components/ui/Input";
+import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
 import { useSettings, type AppSettings } from "@/context/SettingsContext";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
