@@ -1,5 +1,7 @@
 /* eslint-disable no-restricted-syntax -- Email preview uses hardcoded colors to accurately simulate how the actual .eml email will render in email clients */
 import { fmtCLP } from "@/lib/format";
+import dayjs from "dayjs";
+import "dayjs/locale/es";
 import Button from "@/components/ui/Button";
 import type { Employee } from "@/features/hr/employees/types";
 import type { TimesheetSummaryRow } from "../types";
@@ -28,6 +30,17 @@ export default function EmailPreviewModal({
 
   const employeeEmail = employee.person?.email;
 
+  // Convertir mes a español
+  dayjs.locale("es");
+  let monthLabelEs = monthLabel;
+  const monthMatch = monthLabel.match(/^(\d{4})-(\d{2})$/);
+  if (monthMatch) {
+    monthLabelEs = dayjs(`${monthMatch[1]}-${monthMatch[2]}-01`).locale("es").format("MMMM YYYY");
+  } else if (dayjs(monthLabel, "MMMM YYYY", "en").isValid()) {
+    monthLabelEs = dayjs(monthLabel, "MMMM YYYY", "en").locale("es").format("MMMM YYYY");
+  }
+  monthLabelEs = monthLabelEs.charAt(0).toUpperCase() + monthLabelEs.slice(1);
+
   // Usar datos ya calculados del backend - no recalcular
   const totalMinutes = (summary.workedMinutes || 0) + (summary.overtimeMinutes || 0);
   const totalHrs = Math.floor(totalMinutes / 60);
@@ -44,7 +57,7 @@ export default function EmailPreviewModal({
         <div className="rounded-t-2xl bg-linear-to-r from-primary to-primary/80 px-6 py-5 text-primary-content">
           <h2 className="text-xl font-bold">Vista previa del correo</h2>
           <p className="mt-1 text-sm opacity-90">
-            Servicios de {summary.role} - {monthLabel}
+            Servicios de {summary.role} - {monthLabelEs}
           </p>
         </div>
 
@@ -63,7 +76,7 @@ export default function EmailPreviewModal({
             <p className="mt-1 text-sm text-base-content/70">
               <strong>Asunto:</strong>{" "}
               <span className="font-medium text-base-content">
-                Boleta de Honorarios - {monthLabel} - {employee.full_name}
+                Boleta de Honorarios - {monthLabelEs} - {employee.full_name}
               </span>
             </p>
           </div>
@@ -75,7 +88,7 @@ export default function EmailPreviewModal({
             </p>
             <p className="mb-4 text-sm" style={{ color: "#333333" }}>
               A continuación encontrarás el resumen de los servicios prestados durante el periodo{" "}
-              <strong>{monthLabel}</strong>, favor corroborar y emitir boleta de honorarios.
+              <strong>{monthLabelEs}</strong>, favor corroborar y emitir boleta de honorarios.
             </p>
 
             {/* Caja verde para la boleta */}
