@@ -47,15 +47,19 @@ export function sanitizeUser(user: {
   mfaEnforced?: boolean;
   person?: { names: string; fatherName: string | null } | null;
 }) {
-  // Build full name from person data
-  const fullName = user.person ? [user.person.names, user.person.fatherName].filter(Boolean).join(" ") : null;
+  // Build display name: first name + father's last name
+  let displayName: string | null = null;
+  if (user.person) {
+    const firstName = user.person.names.split(" ")[0]; // Take only first name
+    displayName = [firstName, user.person.fatherName].filter(Boolean).join(" ");
+  }
 
   return {
     id: user.id,
     email: user.email,
     role: user.role,
     status: user.status,
-    name: fullName,
+    name: displayName,
     hasPasskey: !!user.passkeyCredentialID,
     mfaEnabled: user.mfaEnabled ?? false,
     mfaEnforced: user.mfaEnforced ?? true,
