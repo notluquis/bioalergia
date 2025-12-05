@@ -37,8 +37,8 @@ export default function AddUserPage() {
       <div className="space-y-2">
         <h1 className="text-3xl font-bold text-primary">Agregar Usuario</h1>
         <p className="text-base-content/70">
-          Crea un nuevo usuario en el sistema. Se generar? una contrase?a temporal y el usuario deber? completar su
-          configuraci?n de seguridad al iniciar sesi?n.
+          Crea un nuevo usuario en el sistema. Se generará una contraseña temporal y el usuario deberá completar su
+          configuración de seguridad al iniciar sesión.
         </p>
       </div>
 
@@ -46,7 +46,7 @@ export default function AddUserPage() {
         <div className="grid gap-6 md:grid-cols-2">
           <div className="md:col-span-2">
             <Input
-              label="Correo Electr?nico"
+              label="Correo Electrónico"
               type="email"
               value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
@@ -63,13 +63,13 @@ export default function AddUserPage() {
             required
           >
             <option value="VIEWER">Viewer (Solo lectura)</option>
-            <option value="ANALYST">Analyst (Gesti?n b?sica)</option>
-            <option value="ADMIN">Admin (Gesti?n total)</option>
+            <option value="ANALYST">Analyst (Gestión básica)</option>
+            <option value="ADMIN">Admin (Gestión total)</option>
             <option value="GOD">God (Acceso total)</option>
           </Input>
 
           <Input
-            label="Cargo / Posici?n"
+            label="Cargo / Posición"
             value={form.position}
             onChange={(e) => setForm({ ...form, position: e.target.value })}
             required
@@ -83,7 +83,7 @@ export default function AddUserPage() {
             <div className="space-y-1">
               <p className="font-medium text-primary">Seguridad Reforzada</p>
               <p className="text-xs text-base-content/70">
-                Si activas esta opci?n, el usuario estar? <strong>obligado</strong> a configurar Passkey o MFA (Google
+                Si activas esta opción, el usuario estará <strong>obligado</strong> a configurar Passkey o MFA (Google
                 Authenticator) antes de poder usar el sistema.
               </p>
             </div>

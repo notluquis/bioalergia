@@ -104,7 +104,7 @@ export const NAV_SECTIONS: NavSection[] = [
   {
     title: "Administración",
     category: "Finanzas",
-    items: [{ to: "/settings/general", label: "Ajustes", icon: Settings, roles: ["GOD", "ADMIN"] }],
+    items: [{ to: "/settings/security", label: "Ajustes", icon: Settings }],
   },
 ];
 
