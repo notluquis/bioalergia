@@ -166,8 +166,20 @@ const sendIndexHtml = (_req: Request, res: Response) => {
   res.sendFile(path.join(clientDir, "index.html"));
 };
 
+// Known static file extensions that should NOT fallback to index.html
+// If these don't exist, return 404 instead of HTML (prevents MIME type errors)
+const STATIC_EXTENSIONS = /\.(js|mjs|css|map|json|woff2?|ttf|eot|svg|png|jpg|jpeg|gif|webp|ico|webmanifest)$/i;
+
 app.get("/", sendIndexHtml);
-app.get("/*path", sendIndexHtml);
+app.get("/*path", (req: Request, res: Response, next: NextFunction) => {
+  // If requesting a static asset that doesn't exist, return 404
+  // This prevents returning HTML for missing JS chunks (MIME type error)
+  if (STATIC_EXTENSIONS.test(req.path)) {
+    return res.status(404).send("Not found");
+  }
+  // For all other routes (SPA navigation), serve index.html
+  sendIndexHtml(req, res);
+});
 
 const server = app.listen(PORT, () => {
   logger.info(`🚀 Server ready at http://localhost:${PORT}`);
