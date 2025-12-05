@@ -325,6 +325,27 @@ export function registerTimesheetRoutes(app: express.Express) {
 
       const { employeeId, month, monthLabel, pdfBase64 } = parsed.data;
 
+      // Convertir mes a español si viene en inglés
+      let monthLabelEs = monthLabel;
+      const monthNames: Record<string, string> = {
+        january: "Enero",
+        february: "Febrero",
+        march: "Marzo",
+        april: "Abril",
+        may: "Mayo",
+        june: "Junio",
+        july: "Julio",
+        august: "Agosto",
+        september: "Septiembre",
+        october: "Octubre",
+        november: "Noviembre",
+        december: "Diciembre",
+      };
+      const monthMatch = monthLabel.toLowerCase().match(/^(\w+)\s+(\d{4})$/);
+      if (monthMatch && monthNames[monthMatch[1]]) {
+        monthLabelEs = `${monthNames[monthMatch[1]]} ${monthMatch[2]}`;
+      }
+
       // Obtener datos del empleado
       const employee = await getEmployeeById(employeeId);
       if (!employee) {
@@ -348,7 +369,7 @@ export function registerTimesheetRoutes(app: express.Express) {
       // Convertir PDF de base64 a Buffer
       const pdfBuffer = Buffer.from(pdfBase64, "base64");
       const safeName = (employee.person.names || "Prestador").replace(/[^a-zA-Z0-9_\- ]/g, "");
-      const pdfFilename = `Honorarios_${safeName}_${monthLabel.replace(/\s+/g, "_")}.pdf`;
+      const pdfFilename = `Honorarios_${safeName}_${monthLabelEs.replace(/\s+/g, "_")}.pdf`;
 
       // Calcular monto de horas extras
       const overtimeAmount = roundCurrency((employeeSummary.overtimeMinutes / 60) * employeeSummary.overtimeRate);
@@ -358,7 +379,7 @@ export function registerTimesheetRoutes(app: express.Express) {
         employeeName: employee.person.names,
         employeeEmail,
         role: employee.position,
-        month: monthLabel,
+        month: monthLabelEs,
         hoursWorked: employeeSummary.hoursFormatted,
         overtime: employeeSummary.overtimeFormatted,
         hourlyRate: employeeSummary.hourlyRate,

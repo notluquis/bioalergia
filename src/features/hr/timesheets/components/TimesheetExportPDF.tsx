@@ -171,11 +171,23 @@ export default function TimesheetExportPDF({
         rightY += 5;
       }
 
-      // Info de trabajador y periodo
+      // Info de trabajador y periodo - forzar español
       dayjs.locale("es");
-      const periodEs = dayjs(monthLabel, "MMMM YYYY").isValid()
-        ? dayjs(monthLabel, "MMMM YYYY").locale("es").format("MMMM YYYY")
-        : monthLabel;
+      // monthLabel puede venir como "November 2025" o "2025-11", convertir a español
+      let periodEs = monthLabel;
+      const monthMatch = monthLabel.match(/^(\d{4})-(\d{2})$/);
+      if (monthMatch) {
+        // Formato YYYY-MM
+        periodEs = dayjs(`${monthMatch[1]}-${monthMatch[2]}-01`).locale("es").format("MMMM YYYY");
+      } else if (dayjs(monthLabel, "MMMM YYYY", "en").isValid()) {
+        // Formato inglés "November 2025"
+        periodEs = dayjs(monthLabel, "MMMM YYYY", "en").locale("es").format("MMMM YYYY");
+      } else if (dayjs(monthLabel, "MMMM YYYY", "es").isValid()) {
+        // Ya está en español
+        periodEs = dayjs(monthLabel, "MMMM YYYY", "es").locale("es").format("MMMM YYYY");
+      }
+      // Capitalizar primera letra
+      periodEs = periodEs.charAt(0).toUpperCase() + periodEs.slice(1);
       // Usar payDate del summary (ya calculado en el backend) en lugar de recalcular
       const payDateFormatted = summary?.payDate ? dayjs(summary.payDate).format("DD-MM-YYYY") : null;
       const infoStartY = Math.max(logoBottomY, rightY) + 6;
@@ -193,57 +205,26 @@ export default function TimesheetExportPDF({
       doc.text(`Total líquido: ${fmtCLP(net)}`, margin, infoStartY + 14);
       doc.setFont("helvetica", "normal");
 
-      // Tabla de RESUMEN - ocultar columnas de extras si no hay
+      // Tabla de RESUMEN - formato vertical simple
+      const summaryHead = [["Concepto", "Valor"]];
       const hasOvertime = summary && (summary.overtimeMinutes > 0 || (summary.extraAmount || 0) > 0);
-
-      const summaryHead = hasOvertime
-        ? [["Función", "Horas trabajadas", "Extras", "Tarifa", "Monto extras", "Subtotal", "Retención", "Líquido"]]
-        : [["Función", "Horas trabajadas", "Tarifa", "Subtotal", "Retención", "Líquido"]];
 
       const summaryBody: string[][] = [];
       if (summary) {
+        summaryBody.push(["Horas trabajadas", summary.hoursFormatted || "0:00"]);
         if (hasOvertime) {
-          summaryBody.push([
-            summary.role || "",
-            summary.hoursFormatted || "",
-            summary.overtimeFormatted || "",
-            fmtCLP(summary.hourlyRate || 0),
-            fmtCLP(summary.extraAmount || 0),
-            fmtCLP(summary.subtotal || 0),
-            fmtCLP(summary.retention || 0),
-            fmtCLP(summary.net || 0),
-          ]);
-        } else {
-          summaryBody.push([
-            summary.role || "",
-            summary.hoursFormatted || "",
-            fmtCLP(summary.hourlyRate || 0),
-            fmtCLP(summary.subtotal || 0),
-            fmtCLP(summary.retention || 0),
-            fmtCLP(summary.net || 0),
-          ]);
+          summaryBody.push(["Horas extras", summary.overtimeFormatted || "0:00"]);
         }
+        summaryBody.push(["Tarifa por hora", fmtCLP(summary.hourlyRate || 0)]);
+        summaryBody.push(["Subtotal", fmtCLP(summary.subtotal || 0)]);
+        summaryBody.push(["Retención", fmtCLP(summary.retention || 0)]);
+        summaryBody.push(["Total Líquido", fmtCLP(summary.net || 0)]);
       }
 
-      const summaryColumnStyles: Record<string, { halign: "left" | "center" | "right" }> = hasOvertime
-        ? {
-            0: { halign: "left" },
-            1: { halign: "center" },
-            2: { halign: "center" },
-            3: { halign: "right" },
-            4: { halign: "right" },
-            5: { halign: "right" },
-            6: { halign: "right" },
-            7: { halign: "right" },
-          }
-        : {
-            0: { halign: "left" },
-            1: { halign: "center" },
-            2: { halign: "right" },
-            3: { halign: "right" },
-            4: { halign: "right" },
-            5: { halign: "right" },
-          };
+      const summaryColumnStyles: Record<string, { halign: "left" | "center" | "right" }> = {
+        0: { halign: "left" },
+        1: { halign: "right" },
+      };
 
       autoTable(doc, {
         head: summaryHead,
@@ -296,19 +277,22 @@ export default function TimesheetExportPDF({
         return `${hh}:${mm}`;
       }
 
-      const body = bulkRows.map((row) =>
+      // Filtrar solo días con entrada o salida registrada
+      const workedRows = bulkRows.filter((row) => row.entrada || row.salida);
+
+      const body = workedRows.map((row) =>
         colKeys.map((key): string => {
           switch (key) {
             case "date":
               return dayjs(row.date).isValid() ? dayjs(row.date).format("DD-MM-YYYY") : row.date;
             case "entrada":
-              return row.entrada || "";
+              return row.entrada || "-";
             case "salida":
-              return row.salida || "";
+              return row.salida || "-";
             case "worked":
-              return computeWorked(row.entrada, row.salida);
+              return computeWorked(row.entrada, row.salida) || "-";
             case "overtime":
-              return row.overtime || "";
+              return row.overtime || "-";
             default:
               return assertUnreachable(key);
           }
@@ -342,7 +326,7 @@ export default function TimesheetExportPDF({
           willDrawCell: (data: CellHookData) => {
             if (data.section === "body") {
               const rowIndex = data.row.index;
-              const rawDate = bulkRows[rowIndex]?.date;
+              const rawDate = workedRows[rowIndex]?.date;
               const isSunday = rawDate && dayjs(rawDate).day() === 0;
               if (isSunday) {
                 data.cell.styles.fillColor = [245, 245, 245];
