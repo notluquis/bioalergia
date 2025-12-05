@@ -45,12 +45,17 @@ export function sanitizeUser(user: {
   passkeyCredentialID?: string | null;
   mfaEnabled?: boolean;
   mfaEnforced?: boolean;
+  person?: { names: string; fatherName: string | null } | null;
 }) {
+  // Build full name from person data
+  const fullName = user.person ? [user.person.names, user.person.fatherName].filter(Boolean).join(" ") : null;
+
   return {
     id: user.id,
     email: user.email,
     role: user.role,
     status: user.status,
+    name: fullName,
     hasPasskey: !!user.passkeyCredentialID,
     mfaEnabled: user.mfaEnabled ?? false,
     mfaEnforced: user.mfaEnforced ?? true,
