@@ -135,12 +135,12 @@ export default function App() {
             aria-hidden="true"
           >
             <span
-              className={`block h-[2px] w-4 rounded-full bg-current transition-all duration-200 ${
+              className={`block h-0.5 w-4 rounded-full bg-current transition-all duration-200 ${
                 sidebarOpen ? "absolute translate-y-0 rotate-45" : ""
               }`}
             />
             <span
-              className={`block h-[2px] w-4 rounded-full bg-current transition-all duration-200 ${
+              className={`block h-0.5 w-4 rounded-full bg-current transition-all duration-200 ${
                 sidebarOpen ? "absolute translate-y-0 -rotate-45" : ""
               }`}
             />

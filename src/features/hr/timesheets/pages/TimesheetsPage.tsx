@@ -661,7 +661,6 @@ export default function TimesheetsPage() {
               bulkRows={bulkRows}
               columns={["date", "entrada", "salida", "worked", "overtime"]}
               monthLabel={monthLabel}
-              monthRaw={month}
             />
           </Suspense>
         </div>

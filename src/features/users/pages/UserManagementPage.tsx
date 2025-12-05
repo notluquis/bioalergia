@@ -228,13 +228,13 @@ export default function UserManagementPage() {
                     </td>
                     <td className="text-sm text-base-content/70">{dayjs(user.createdAt).format("DD MMM YYYY")}</td>
                     <td>
-                      <div className="dropdown dropdown-left dropdown-end">
+                      <div className="dropdown dropdown-end">
                         <div tabIndex={0} role="button" className="btn btn-ghost btn-xs">
                           <MoreVertical size={16} />
                         </div>
                         <ul
                           tabIndex={0}
-                          className="dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow border border-base-200"
+                          className="dropdown-content menu bg-base-100 rounded-box z-50 w-52 p-2 shadow-lg border border-base-200"
                         >
                           <li>
                             <a onClick={() => handleResetPassword(user.id)}>
