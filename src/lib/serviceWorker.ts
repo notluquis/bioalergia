@@ -53,6 +53,18 @@ export function registerServiceWorker() {
         });
       });
 
+      // Listen for messages from SW (like FORCE_RELOAD)
+      navigator.serviceWorker.addEventListener("message", async (event) => {
+        if (event.data?.type === "FORCE_RELOAD") {
+          console.log("[SW] 🔄 Force reload requested:", event.data.reason);
+          if (!refreshing) {
+            refreshing = true;
+            await clearAllCaches();
+            window.location.reload();
+          }
+        }
+      });
+
       // Reload when the SW takes control (new BUILD_ID activated)
       navigator.serviceWorker.addEventListener("controllerchange", async () => {
         if (!refreshing) {

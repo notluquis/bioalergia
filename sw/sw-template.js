@@ -73,8 +73,15 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Assets (JS, CSS, images): Stale-while-revalidate
-  // Esto sirve del cache PERO actualiza en background
+  // Assets con hash (JS/CSS de Vite): Network first para evitar cache stale
+  // Estos archivos tienen hash en el nombre, así que si el nombre cambió,
+  // el archivo viejo YA NO EXISTE en el servidor
+  if (url.pathname.match(/\/assets\/.*\.[a-f0-9]{8}\.(js|css)$/)) {
+    event.respondWith(networkFirstForAssets(request));
+    return;
+  }
+
+  // Otros assets (imágenes, fonts, etc): Stale-while-revalidate está OK
   event.respondWith(staleWhileRevalidate(request));
 });
 
@@ -91,6 +98,49 @@ async function networkFirst(request) {
     return response;
   } catch (error) {
     // Si falla red, intentar cache
+    const cached = await caches.match(request);
+    if (cached) {
+      console.log("[SW] Network failed, serving from cache:", request.url);
+      return cached;
+    }
+    throw error;
+  }
+}
+
+// ============= ESTRATEGIA: Network First for Hashed Assets =============
+// Para JS/CSS con hash - SIEMPRE red primero
+// Si el archivo no existe (nuevo deploy), forzar recarga completa
+async function networkFirstForAssets(request) {
+  try {
+    const response = await fetch(request);
+
+    // Si la respuesta no es OK o devuelve HTML (404 page), es un asset viejo
+    const contentType = response.headers.get("content-type") || "";
+    if (!response.ok || contentType.includes("text/html")) {
+      console.log("[SW] ⚠️ Asset not found (new deploy?), forcing reload:", request.url);
+      // Limpiar caches y forzar recarga
+      const cacheNames = await caches.keys();
+      await Promise.all(cacheNames.map((name) => caches.delete(name)));
+      // Notificar a los clientes que recarguen
+      const clients = await self.clients.matchAll({ type: "window" });
+      clients.forEach((client) => {
+        client.postMessage({ type: "FORCE_RELOAD", reason: "asset_not_found" });
+      });
+      // Devolver error para que React lo maneje
+      return new Response("Asset not found - reload required", {
+        status: 503,
+        statusText: "New deploy detected",
+      });
+    }
+
+    // Cachear respuesta válida
+    if (request.method === "GET") {
+      const cache = await caches.open(CACHE_NAME);
+      cache.put(request, response.clone());
+    }
+    return response;
+  } catch (error) {
+    // Si falla red, intentar cache (offline)
     const cached = await caches.match(request);
     if (cached) {
       console.log("[SW] Network failed, serving from cache:", request.url);
