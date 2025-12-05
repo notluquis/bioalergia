@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef } from "react";
 
-import { useDisclosure } from "../../../hooks/useDisclosure";
-import { useOutsideClick } from "../../../hooks/useOutsideClick";
-import Checkbox from "../../../components/ui/Checkbox";
+import { useDisclosure } from "@/hooks/useDisclosure";
+import { useOutsideClick } from "@/hooks/useOutsideClick";
+import Checkbox from "@/components/ui/Checkbox";
 
 type Option = { value: string; label: string };
 

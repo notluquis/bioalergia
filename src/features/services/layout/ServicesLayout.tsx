@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
 import { Loader2 } from "lucide-react";
-import Button from "../../../components/ui/Button";
+import Button from "@/components/ui/Button";
 import { fetchServices } from "../../services/api";
 import type { ServiceSummary } from "../../services/types";
 

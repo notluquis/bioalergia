@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { InventoryCategory, InventoryItem } from "../types";
-import Button from "../../../components/ui/Button";
-import Input from "../../../components/ui/Input";
+import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
 import { getInventoryCategories } from "../api";
 
 interface InventoryItemFormProps {

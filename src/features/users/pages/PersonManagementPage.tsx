@@ -13,17 +13,18 @@ export default function PersonManagementPage() {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
 
-  const { data: people, isLoading } = useQuery<Person[]>({
+  const { data, isLoading } = useQuery({
     queryKey: ["people", "list"],
     queryFn: async () => {
-      return apiClient.get<Person[]>("/api/people");
+      return apiClient.get<{ status: string; people: Person[] }>("/api/people");
     },
   });
 
-  const filteredPeople =
-    people?.filter(
-      (p) => (p.names?.toLowerCase() ?? "").includes(search.toLowerCase()) || (p.rut ?? "").includes(search)
-    ) || [];
+  const people = data?.people ?? [];
+
+  const filteredPeople = people.filter(
+    (p) => (p.names?.toLowerCase() ?? "").includes(search.toLowerCase()) || (p.rut ?? "").includes(search)
+  );
 
   return (
     <div className="space-y-6">

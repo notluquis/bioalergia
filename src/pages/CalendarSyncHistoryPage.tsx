@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import dayjs from "dayjs";
 
-import Button from "../components/ui/Button";
-import Alert from "../components/ui/Alert";
-import { fetchCalendarSyncLogs, syncCalendarEvents } from "../features/calendar/api";
-import type { CalendarSyncLog } from "../features/calendar/types";
+import Button from "@/components/ui/Button";
+import Alert from "@/components/ui/Alert";
+import { fetchCalendarSyncLogs, syncCalendarEvents } from "@/features/calendar/api";
+import type { CalendarSyncLog } from "@/features/calendar/types";
 
 const numberFormatter = new Intl.NumberFormat("es-CL");
 

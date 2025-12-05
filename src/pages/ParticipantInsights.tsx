@@ -1,10 +1,10 @@
 import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
 import { fmtCLP } from "@/lib/format";
-import { useParticipantInsightsData } from "../features/participants/hooks/useParticipantInsightsData";
-import Alert from "../components/ui/Alert";
-import Input from "../components/ui/Input";
-import Button from "../components/ui/Button";
+import { useParticipantInsightsData } from "@/features/participants/hooks/useParticipantInsightsData";
+import Alert from "@/components/ui/Alert";
+import Input from "@/components/ui/Input";
+import Button from "@/components/ui/Button";
 
 export default function ParticipantInsightsPage() {
   const {

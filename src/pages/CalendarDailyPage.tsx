@@ -3,12 +3,12 @@ import type { ChangeEvent } from "react";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
 
-import Input from "../components/ui/Input";
-import Button from "../components/ui/Button";
-import Alert from "../components/ui/Alert";
-import { MultiSelectFilter, type MultiSelectOption } from "../features/calendar/components/MultiSelectFilter";
-import { useCalendarEvents } from "../features/calendar/hooks/useCalendarEvents";
-import type { CalendarEventDetail, CalendarDayEvents } from "../features/calendar/types";
+import Input from "@/components/ui/Input";
+import Button from "@/components/ui/Button";
+import Alert from "@/components/ui/Alert";
+import { MultiSelectFilter, type MultiSelectOption } from "@/features/calendar/components/MultiSelectFilter";
+import { useCalendarEvents } from "@/features/calendar/hooks/useCalendarEvents";
+import type { CalendarEventDetail, CalendarDayEvents } from "@/features/calendar/types";
 
 dayjs.locale("es");
 
