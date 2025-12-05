@@ -365,6 +365,7 @@ export function registerTimesheetRoutes(app: express.Express) {
         overtimeAmount,
         subtotal: employeeSummary.subtotal,
         retention: employeeSummary.retention,
+        retentionRate: employeeSummary.retentionRate,
         netAmount: employeeSummary.net,
         payDate: employeeSummary.payDate,
         pdfBuffer,
