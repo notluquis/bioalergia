@@ -2,7 +2,8 @@
 # Multi-stage Dockerfile optimized for Railway Metal builders
 
 # Stage 1: Base (Common files)
-FROM node:22-alpine AS base
+# Use LTS tag to always get the latest Long-Term Support version
+FROM node:lts-alpine AS base
 WORKDIR /app
 COPY package*.json ./
 
@@ -14,8 +15,10 @@ COPY prisma ./prisma/
 ENV DATABASE_URL="postgresql://dummy:dummy@dummy:5432/dummy"
 # Only generate Prisma binaries for Alpine Linux (musl) - reduces size significantly
 ENV PRISMA_CLI_BINARY_TARGETS="linux-musl-openssl-3.0.x"
-# Install ALL dependencies with Railway Metal cache mount
-RUN --mount=type=cache,id=s/cc493466-c691-4384-8199-99f757a14014-/root/.npm,target=/root/.npm npm ci
+# Update npm to latest version and install dependencies with cache mount
+RUN --mount=type=cache,id=s/cc493466-c691-4384-8199-99f757a14014-/root/.npm,target=/root/.npm \
+    npm install -g npm@latest && \
+    npm ci
 
 # Stage 3: Builder
 FROM deps AS builder
@@ -31,7 +34,8 @@ RUN npm prune --omit=dev && \
     rm -rf node_modules/.cache node_modules/*/.git node_modules/*/test node_modules/*/tests node_modules/*/*.md node_modules/*/docs 2>/dev/null || true
 
 # Stage 5: Runner (Production Image)
-FROM node:22-alpine AS runner
+# Use LTS tag to always get the latest Long-Term Support version
+FROM node:lts-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
