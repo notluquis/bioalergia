@@ -129,23 +129,23 @@ export default function App() {
           aria-pressed={sidebarOpen}
         >
           <span
-            className={`relative flex h-6 w-6 items-center justify-center rounded-full transition-colors ${
-              sidebarOpen ? "bg-primary/10 text-primary" : "bg-base-200 text-base-content"
+            className={`relative flex h-5 w-5 flex-col items-center justify-center gap-[5px] rounded-full transition-colors ${
+              sidebarOpen ? "text-primary" : "text-base-content"
             }`}
             aria-hidden="true"
           >
             <span
-              className={`block h-[1.5px] w-3 rounded-full transition-all duration-200 ${
-                sidebarOpen ? "translate-y-[3px] rotate-45 bg-primary" : "-translate-y-1 bg-base-content"
+              className={`block h-[2px] w-4 rounded-full bg-current transition-all duration-200 ${
+                sidebarOpen ? "absolute translate-y-0 rotate-45" : ""
               }`}
             />
             <span
-              className={`block h-[1.5px] w-3 rounded-full transition-all duration-200 ${
-                sidebarOpen ? "-translate-y-[3px] -rotate-45 bg-primary" : "translate-y-1 bg-base-content"
+              className={`block h-[2px] w-4 rounded-full bg-current transition-all duration-200 ${
+                sidebarOpen ? "absolute translate-y-0 -rotate-45" : ""
               }`}
             />
           </span>
-          <span className="text-xs uppercase tracking-wide">{sidebarOpen ? "Cerrar" : "Menú"}</span>
+          <span className="text-xs font-medium uppercase tracking-wide">{sidebarOpen ? "Cerrar" : "Menú"}</span>
         </button>
 
         {/* Overlay for mobile/tablet when sidebar is open */}
