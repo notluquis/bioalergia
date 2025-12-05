@@ -1,3 +1,4 @@
+/* eslint-disable no-restricted-syntax -- Email preview uses hardcoded colors to accurately simulate how the actual .eml email will render in email clients */
 import { fmtCLP } from "@/lib/format";
 import Button from "@/components/ui/Button";
 import type { Employee } from "@/features/hr/employees/types";
@@ -62,62 +63,102 @@ export default function EmailPreviewModal({
             </p>
           </div>
 
-          {/* Preview del email */}
+          {/* Preview del email - simula cómo se verá en el cliente de correo */}
           <div className="rounded-xl border border-base-300 bg-white p-5">
-            <p className="mb-4 text-base-content">
+            <p className="mb-4" style={{ color: "#333333" }}>
               Estimado/a <strong>{employee.full_name}</strong>,
             </p>
-            <p className="mb-4 text-sm text-base-content/80">
+            <p className="mb-4 text-sm" style={{ color: "#666666" }}>
               A continuación encontrarás el resumen de los servicios prestados durante el periodo{" "}
-              <strong>{monthLabel}</strong>:
+              <strong style={{ color: "#333333" }}>{monthLabel}</strong>:
             </p>
 
-            {/* Tabla resumen */}
-            <table className="mb-4 w-full text-sm">
-              <tbody className="divide-y divide-base-200">
-                <tr>
-                  <td className="py-2 text-base-content/70">Función</td>
-                  <td className="py-2 text-right font-medium">{summary.role}</td>
+            {/* Tabla resumen - usar colores explícitos para simular email */}
+            <table className="mb-4 w-full text-sm" style={{ borderCollapse: "collapse" }}>
+              <tbody>
+                <tr style={{ borderBottom: "1px solid #e2e8f0" }}>
+                  <td className="py-2" style={{ color: "#64748b" }}>
+                    Función
+                  </td>
+                  <td className="py-2 text-right font-medium" style={{ color: "#333333" }}>
+                    {summary.role}
+                  </td>
                 </tr>
-                <tr>
-                  <td className="py-2 text-base-content/70">Horas trabajadas</td>
-                  <td className="py-2 text-right font-medium">{summary.hoursFormatted}</td>
+                <tr style={{ borderBottom: "1px solid #e2e8f0" }}>
+                  <td className="py-2" style={{ color: "#64748b" }}>
+                    Horas trabajadas
+                  </td>
+                  <td className="py-2 text-right font-medium" style={{ color: "#333333" }}>
+                    {summary.hoursFormatted}
+                  </td>
                 </tr>
-                <tr>
-                  <td className="py-2 text-base-content/70">Horas extras</td>
-                  <td className="py-2 text-right font-medium">{summary.overtimeFormatted}</td>
+                <tr style={{ borderBottom: "1px solid #e2e8f0" }}>
+                  <td className="py-2" style={{ color: "#64748b" }}>
+                    Horas extras
+                  </td>
+                  <td className="py-2 text-right font-medium" style={{ color: "#333333" }}>
+                    {summary.overtimeFormatted}
+                  </td>
                 </tr>
-                <tr>
-                  <td className="py-2 text-base-content/70">Tarifa por hora</td>
-                  <td className="py-2 text-right font-medium">{fmtCLP(summary.hourlyRate)}</td>
+                <tr style={{ borderBottom: "1px solid #e2e8f0" }}>
+                  <td className="py-2" style={{ color: "#64748b" }}>
+                    Tarifa por hora
+                  </td>
+                  <td className="py-2 text-right font-medium" style={{ color: "#333333" }}>
+                    {fmtCLP(summary.hourlyRate)}
+                  </td>
                 </tr>
-                <tr>
-                  <td className="py-2 text-base-content/70">Monto extras</td>
-                  <td className="py-2 text-right font-medium">{fmtCLP(overtimeAmount)}</td>
+                <tr style={{ borderBottom: "1px solid #e2e8f0" }}>
+                  <td className="py-2" style={{ color: "#64748b" }}>
+                    Monto extras
+                  </td>
+                  <td className="py-2 text-right font-medium" style={{ color: "#333333" }}>
+                    {fmtCLP(overtimeAmount)}
+                  </td>
                 </tr>
-                <tr>
-                  <td className="py-2 text-base-content/70">Subtotal</td>
-                  <td className="py-2 text-right font-medium">{fmtCLP(summary.subtotal)}</td>
+                <tr style={{ borderBottom: "1px solid #e2e8f0" }}>
+                  <td className="py-2" style={{ color: "#64748b" }}>
+                    Subtotal
+                  </td>
+                  <td className="py-2 text-right font-medium" style={{ color: "#333333" }}>
+                    {fmtCLP(summary.subtotal)}
+                  </td>
                 </tr>
-                <tr>
-                  <td className="py-2 text-base-content/70">Retención</td>
-                  <td className="py-2 text-right font-medium">{fmtCLP(summary.retention)}</td>
+                <tr style={{ borderBottom: "1px solid #e2e8f0" }}>
+                  <td className="py-2" style={{ color: "#64748b" }}>
+                    Retención
+                  </td>
+                  <td className="py-2 text-right font-medium" style={{ color: "#333333" }}>
+                    {fmtCLP(summary.retention)}
+                  </td>
                 </tr>
-                <tr className="bg-primary/10">
-                  <td className="py-3 font-bold text-primary">Total Líquido</td>
-                  <td className="py-3 text-right font-bold text-primary">{fmtCLP(summary.net)}</td>
+                <tr style={{ backgroundColor: "#0e64b7" }}>
+                  <td className="py-3 font-bold" style={{ color: "#ffffff" }}>
+                    Total Líquido
+                  </td>
+                  <td className="py-3 text-right font-bold" style={{ color: "#ffffff" }}>
+                    {fmtCLP(summary.net)}
+                  </td>
                 </tr>
               </tbody>
             </table>
 
             {/* Fecha de pago */}
-            <div className="rounded-lg bg-warning/10 p-3 text-center text-sm">
-              <strong className="text-warning-content">📅 Fecha de pago estimada:</strong>{" "}
-              <span className="font-medium">{summary.payDate}</span>
+            <div
+              className="rounded-lg p-3 text-center text-sm"
+              style={{ backgroundColor: "#fef3c7", border: "1px solid #f59e0b" }}
+            >
+              <strong style={{ color: "#92400e" }}>📅 Fecha de pago estimada:</strong>{" "}
+              <span className="font-medium" style={{ color: "#78350f" }}>
+                {summary.payDate}
+              </span>
             </div>
 
             {/* Nota de adjunto */}
-            <div className="mt-3 rounded-lg bg-info/10 p-3 text-sm text-info-content">
+            <div
+              className="mt-3 rounded-lg p-3 text-sm"
+              style={{ backgroundColor: "#e0f2fe", border: "1px solid #0ea5e9", color: "#0369a1" }}
+            >
               <strong>📎 Adjunto:</strong> Se incluirá el documento PDF con el detalle completo de horas trabajadas.
             </div>
           </div>

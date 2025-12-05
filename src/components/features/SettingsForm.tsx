@@ -6,8 +6,8 @@ import Alert from "../ui/Alert";
 
 const FALLBACK_LOGO_PATH = "/logo192.png";
 const FALLBACK_FAVICON_PATH = "/logo_bimi.svg";
-const determineAssetMode = (value: string): "url" | "upload" => {
-  const trimmed = value.trim();
+const determineAssetMode = (value: string | undefined | null): "url" | "upload" => {
+  const trimmed = (value || "").trim();
   if (!trimmed) return "upload";
   return trimmed.startsWith("http") || trimmed.startsWith("/") ? "url" : "upload";
 };
