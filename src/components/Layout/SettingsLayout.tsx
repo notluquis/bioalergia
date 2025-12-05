@@ -2,27 +2,31 @@ import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { cn } from "../../lib/utils";
-import { Users, Shield, CreditCard, Calendar, Box, UserPlus, Loader2 } from "lucide-react";
+import { Users, Shield, CreditCard, Calendar, Box, UserPlus, Loader2, Settings, Fingerprint } from "lucide-react";
 
 const SETTINGS_SECTIONS = [
   {
+    title: "Personal",
+    items: [{ label: "Seguridad", to: "/settings/security", icon: Fingerprint, requiresAdmin: false }],
+  },
+  {
     title: "General",
-    items: [{ label: "Seguridad", to: "/settings/security", icon: Shield }],
+    items: [{ label: "Ajustes", to: "/settings/general", icon: Settings, requiresAdmin: true }],
   },
   {
     title: "Organización",
     items: [
-      { label: "Usuarios", to: "/settings/users", icon: Users },
-      { label: "Personas", to: "/settings/people", icon: UserPlus },
-      { label: "Roles y Permisos", to: "/settings/roles", icon: Shield },
+      { label: "Usuarios", to: "/settings/users", icon: Users, requiresAdmin: true },
+      { label: "Personas", to: "/settings/people", icon: UserPlus, requiresAdmin: true },
+      { label: "Roles y Permisos", to: "/settings/roles", icon: Shield, requiresAdmin: true },
     ],
   },
   {
     title: "Módulos",
     items: [
-      { label: "Finanzas", to: "/settings/finance", icon: CreditCard },
-      { label: "Calendario", to: "/settings/calendar", icon: Calendar },
-      { label: "Inventario", to: "/settings/inventory", icon: Box },
+      { label: "Finanzas", to: "/settings/finance", icon: CreditCard, requiresAdmin: true },
+      { label: "Calendario", to: "/settings/calendar", icon: Calendar, requiresAdmin: true },
+      { label: "Inventario", to: "/settings/inventory", icon: Box, requiresAdmin: true },
     ],
   },
 ];
@@ -38,17 +42,11 @@ export default function SettingsLayout() {
     setPendingPath(null);
   }, [location.pathname]);
 
-  if (!canEdit) {
-    return (
-      <div className="flex h-[50vh] flex-col items-center justify-center gap-4 text-center">
-        <Shield className="h-16 w-16 text-base-content/20" />
-        <div>
-          <h1 className="text-2xl font-bold text-base-content">Acceso Restringido</h1>
-          <p className="text-base-content/60">Necesitas permisos de administrador para acceder a la configuración.</p>
-        </div>
-      </div>
-    );
-  }
+  // Filter sections based on user role
+  const visibleSections = SETTINGS_SECTIONS.map((section) => ({
+    ...section,
+    items: section.items.filter((item) => !item.requiresAdmin || canEdit),
+  })).filter((section) => section.items.length > 0);
 
   return (
     <div className="flex flex-col gap-8 lg:flex-row lg:gap-10">
@@ -60,7 +58,7 @@ export default function SettingsLayout() {
           </div>
 
           <nav className="space-y-6">
-            {SETTINGS_SECTIONS.map((section) => (
+            {visibleSections.map((section) => (
               <div key={section.title} className="space-y-2">
                 <h3 className="px-4 text-xs font-semibold uppercase tracking-wider text-base-content/40">
                   {section.title}

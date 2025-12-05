@@ -132,6 +132,7 @@ export async function getParticipantLeaderboard(filters: ParticipantLeaderboardF
     GROUP BY 
       COALESCE(p.bank_account_number, p.destination, p.withdraw_id, 'unknown'),
       p.bank_account_holder,
+      p.bank_account_number,
       p.destination,
       p.identification_number,
       p.bank_account_type,
