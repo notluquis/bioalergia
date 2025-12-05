@@ -65,59 +65,37 @@ Se adjunta el documento PDF con el detalle completo.
 ---
 Este correo fue generado automáticamente.`;
 
-  // HTML del email
+  // HTML del email - NOTA: Usar estilos inline y colores sólidos para compatibilidad con Outlook
   const htmlBody = `<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
   <title>Boleta de Honorarios - ${data.month}</title>
-  <style>
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
-    .header { background: linear-gradient(135deg, #0e64b7 0%, #1a7fd1 100%); color: white; padding: 24px; border-radius: 12px 12px 0 0; text-align: center; }
-    .header h1 { margin: 0; font-size: 22px; font-weight: 600; }
-    .header p { margin: 8px 0 0; opacity: 0.9; font-size: 14px; }
-    .content { background: #f8fafc; padding: 24px; border: 1px solid #e2e8f0; border-top: none; }
-    .greeting { font-size: 16px; margin-bottom: 20px; }
-    .summary-table { width: 100%; border-collapse: collapse; margin: 20px 0; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-    .summary-table th, .summary-table td { padding: 12px 16px; text-align: left; border-bottom: 1px solid #e2e8f0; }
-    .summary-table th { background: #f1f5f9; font-weight: 600; color: #475569; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; }
-    .summary-table td { font-size: 15px; }
-    .summary-table tr:last-child td { border-bottom: none; }
-    .amount { text-align: right; font-family: 'Consolas', monospace; }
-    .total-row { background: #0e64b7 !important; color: white; }
-    .total-row td { font-weight: 700; font-size: 16px; border-bottom: none !important; }
-    .footer { background: #f1f5f9; padding: 20px 24px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 12px 12px; text-align: center; }
-    .footer p { margin: 0; color: #64748b; font-size: 13px; }
-    .pay-date { background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 12px 16px; margin: 16px 0; text-align: center; }
-    .pay-date strong { color: #92400e; }
-    .attachment-note { background: #e0f2fe; border: 1px solid #0ea5e9; border-radius: 8px; padding: 12px 16px; margin: 16px 0; font-size: 14px; }
-    .attachment-note strong { color: #0369a1; }
-  </style>
 </head>
-<body>
-  <div class="header">
+<body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #ffffff;">
+  <div style="background-color: #0e64b7; color: #ffffff; padding: 24px; border-radius: 12px 12px 0 0; text-align: center;">
     <img src="https://bioalergia.cl/logo_sin_eslogan.png" alt="Bioalergia" style="max-width: 180px; height: auto; margin-bottom: 16px;" />
-    <h1>Boleta de Honorarios</h1>
-    <p>Servicios de ${data.role} - ${data.month}</p>
+    <h1 style="margin: 0; font-size: 22px; font-weight: 600; color: #ffffff;">Boleta de Honorarios</h1>
+    <p style="margin: 8px 0 0; font-size: 14px; color: #ffffff;">Servicios de ${data.role} - ${data.month}</p>
   </div>
-  <div class="content">
-    <p class="greeting">Estimado/a <strong>${data.employeeName}</strong>,</p>
-    <p>A continuación encontrarás el resumen de los servicios prestados durante el periodo <strong>${data.month}</strong>:</p>
-    <table class="summary-table">
-      <tr><th>Concepto</th><th class="amount">Detalle</th></tr>
-      <tr><td>Función</td><td class="amount">${data.role}</td></tr>
-      <tr><td>Horas trabajadas</td><td class="amount">${data.hoursWorked}</td></tr>
-      <tr><td>Horas extras</td><td class="amount">${data.overtime}</td></tr>
-      <tr><td>Tarifa por hora</td><td class="amount">${fmtCLP(data.hourlyRate)}</td></tr>
-      <tr><td>Monto extras</td><td class="amount">${fmtCLP(data.overtimeAmount)}</td></tr>
-      <tr><td>Subtotal</td><td class="amount">${fmtCLP(data.subtotal)}</td></tr>
-      <tr><td>Retención</td><td class="amount">${fmtCLP(data.retention)}</td></tr>
-      <tr class="total-row"><td>Total Líquido</td><td class="amount">${fmtCLP(data.netAmount)}</td></tr>
+  <div style="background-color: #f8fafc; padding: 24px; border: 1px solid #e2e8f0; border-top: none;">
+    <p style="font-size: 16px; margin-bottom: 20px; color: #333333;">Estimado/a <strong>${data.employeeName}</strong>,</p>
+    <p style="color: #333333;">A continuación encontrarás el resumen de los servicios prestados durante el periodo <strong>${data.month}</strong>:</p>
+    <table style="width: 100%; border-collapse: collapse; margin: 20px 0; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+      <tr><th style="padding: 12px 16px; text-align: left; border-bottom: 1px solid #e2e8f0; background-color: #f1f5f9; font-weight: 600; color: #475569; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">Concepto</th><th style="padding: 12px 16px; text-align: right; border-bottom: 1px solid #e2e8f0; background-color: #f1f5f9; font-weight: 600; color: #475569; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">Detalle</th></tr>
+      <tr><td style="padding: 12px 16px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 15px; color: #333333;">Función</td><td style="padding: 12px 16px; text-align: right; border-bottom: 1px solid #e2e8f0; font-size: 15px; font-family: 'Consolas', monospace; color: #333333;">${data.role}</td></tr>
+      <tr><td style="padding: 12px 16px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 15px; color: #333333;">Horas trabajadas</td><td style="padding: 12px 16px; text-align: right; border-bottom: 1px solid #e2e8f0; font-size: 15px; font-family: 'Consolas', monospace; color: #333333;">${data.hoursWorked}</td></tr>
+      <tr><td style="padding: 12px 16px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 15px; color: #333333;">Horas extras</td><td style="padding: 12px 16px; text-align: right; border-bottom: 1px solid #e2e8f0; font-size: 15px; font-family: 'Consolas', monospace; color: #333333;">${data.overtime}</td></tr>
+      <tr><td style="padding: 12px 16px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 15px; color: #333333;">Tarifa por hora</td><td style="padding: 12px 16px; text-align: right; border-bottom: 1px solid #e2e8f0; font-size: 15px; font-family: 'Consolas', monospace; color: #333333;">${fmtCLP(data.hourlyRate)}</td></tr>
+      <tr><td style="padding: 12px 16px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 15px; color: #333333;">Monto extras</td><td style="padding: 12px 16px; text-align: right; border-bottom: 1px solid #e2e8f0; font-size: 15px; font-family: 'Consolas', monospace; color: #333333;">${fmtCLP(data.overtimeAmount)}</td></tr>
+      <tr><td style="padding: 12px 16px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 15px; color: #333333;">Subtotal</td><td style="padding: 12px 16px; text-align: right; border-bottom: 1px solid #e2e8f0; font-size: 15px; font-family: 'Consolas', monospace; color: #333333;">${fmtCLP(data.subtotal)}</td></tr>
+      <tr><td style="padding: 12px 16px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 15px; color: #333333;">Retención</td><td style="padding: 12px 16px; text-align: right; border-bottom: 1px solid #e2e8f0; font-size: 15px; font-family: 'Consolas', monospace; color: #333333;">${fmtCLP(data.retention)}</td></tr>
+      <tr style="background-color: #0e64b7;"><td style="padding: 12px 16px; text-align: left; font-size: 16px; font-weight: 700; color: #ffffff;">Total Líquido</td><td style="padding: 12px 16px; text-align: right; font-size: 16px; font-weight: 700; font-family: 'Consolas', monospace; color: #ffffff;">${fmtCLP(data.netAmount)}</td></tr>
     </table>
-    <div class="pay-date"><strong>📅 Fecha de pago estimada: ${data.payDate}</strong></div>
-    <div class="attachment-note"><strong>📎 Adjunto:</strong> Se incluye el documento PDF con el detalle completo de horas trabajadas.</div>
+    <div style="background-color: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 12px 16px; margin: 16px 0; text-align: center;"><strong style="color: #92400e;">📅 Fecha de pago estimada: ${data.payDate}</strong></div>
+    <div style="background-color: #e0f2fe; border: 1px solid #0ea5e9; border-radius: 8px; padding: 12px 16px; margin: 16px 0; font-size: 14px;"><strong style="color: #0369a1;">📎 Adjunto:</strong> Se incluye el documento PDF con el detalle completo de horas trabajadas.</div>
   </div>
-  <div class="footer"><p>Este correo fue generado automáticamente. Si tienes dudas, contacta al área de administración.</p></div>
+  <div style="background-color: #f1f5f9; padding: 20px 24px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 12px 12px; text-align: center;"><p style="margin: 0; color: #64748b; font-size: 13px;">Este correo fue generado automáticamente. Si tienes dudas, contacta al área de administración.</p></div>
 </body>
 </html>`;
 
@@ -128,12 +106,16 @@ Este correo fue generado automáticamente.`;
   const encodedFromName = `=?UTF-8?B?${Buffer.from(data.fromName).toString("base64")}?=`;
 
   // Construir el archivo .eml (formato RFC 822 MIME)
+  // Headers para marcar como borrador/no enviado
   const emlContent = `MIME-Version: 1.0
 From: ${encodedFromName} <${data.fromEmail}>
 To: ${data.employeeName} <${data.employeeEmail}>
 Subject: ${encodedSubject}
 Content-Type: multipart/mixed; boundary="${boundary}"
 X-Unsent: 1
+X-Mozilla-Status: 0000
+X-Mozilla-Status2: 00800000
+Status: O
 
 --${boundary}
 Content-Type: multipart/alternative; boundary="${boundaryAlt}"
