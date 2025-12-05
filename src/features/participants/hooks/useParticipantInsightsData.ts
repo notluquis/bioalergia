@@ -59,7 +59,7 @@ export function useParticipantInsightsData() {
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
   const [leaderboardError, setLeaderboardError] = useState<string | null>(null);
   const [selectedRange, setSelectedRange] = useState<RangeParams>(() => resolveRange("current", "", ""));
-  const activeParticipantId = participantId.trim();
+  const activeParticipantId = (participantId || "").trim();
 
   const accountRows = useMemo<LeaderboardDisplayRow[]>(() => {
     return leaderboard.map((row) => {
@@ -148,7 +148,7 @@ export function useParticipantInsightsData() {
   }, []);
 
   const loadParticipant = useCallback(async (participant: string, range: RangeParams) => {
-    const trimmed = participant.trim();
+    const trimmed = (participant || "").trim();
     if (!trimmed) {
       return;
     }
