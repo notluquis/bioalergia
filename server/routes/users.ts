@@ -72,7 +72,17 @@ export function registerUserRoutes(app: express.Express) {
     authenticate,
     requireRole("GOD", "ADMIN"),
     asyncHandler(async (req, res) => {
+      const includeTest = req.query.includeTest === "true";
+
       const users = await prisma.user.findMany({
+        where: includeTest
+          ? undefined
+          : {
+              // Exclude test users by default
+              NOT: {
+                email: { contains: "test" },
+              },
+            },
         select: {
           id: true,
           email: true,
