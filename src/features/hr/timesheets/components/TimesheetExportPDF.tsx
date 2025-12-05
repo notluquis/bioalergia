@@ -243,7 +243,9 @@ export default function TimesheetExportPDF({
       const hasAnyOvertime = bulkRows.some(
         (row) => row.overtime && row.overtime !== "0:00" && row.overtime !== "00:00"
       );
+      // Filtrar columna worked también si no está seleccionada
       const baseColKeys: TimesheetColumnKey[] = selectedCols.length ? selectedCols : Array.from(defaultCols);
+      // Ocultar columna overtime si no hay horas extras en ningún día
       const colKeys: TimesheetColumnKey[] = hasAnyOvertime ? baseColKeys : baseColKeys.filter((k) => k !== "overtime");
 
       const labels: Record<TimesheetColumnKey, string> = {
