@@ -64,33 +64,49 @@ export async function verifyPasskeyRegistration(
   body: RegistrationResponseJSON,
   expectedChallenge: string
 ) {
-  const verification = await verifyRegistrationResponse({
-    response: body,
-    expectedChallenge,
-    expectedOrigin: ORIGIN,
-    expectedRPID: RP_ID,
-    requireUserVerification: false, // Allow if UV was skipped (since we used 'preferred')
-  });
+  console.log("[Passkey Registration] Starting verification for userId:", userId);
+  console.log("[Passkey Registration] Challenge length:", expectedChallenge?.length);
+  console.log("[Passkey Registration] Body id:", body.id);
 
-  if (verification.verified && verification.registrationInfo) {
-    const { credential } = verification.registrationInfo;
-    const { id: credentialID, publicKey: credentialPublicKey, counter } = credential;
-
-    await prisma.user.update({
-      where: { id: userId },
-      data: {
-        passkeyCredentialID: Buffer.from(credentialID).toString("base64url"),
-        passkeyPublicKey: Buffer.from(credentialPublicKey),
-        passkeyCounter: BigInt(counter),
-        passkeyTransports: body.response.transports || [],
-      },
+  try {
+    const verification = await verifyRegistrationResponse({
+      response: body,
+      expectedChallenge,
+      expectedOrigin: ORIGIN,
+      expectedRPID: RP_ID,
+      requireUserVerification: false, // Allow if UV was skipped (since we used 'preferred')
     });
 
-    logEvent("passkey:registered", { userId });
-    return true;
-  }
+    console.log("[Passkey Registration] Verification result:", verification.verified);
 
-  return false;
+    if (verification.verified && verification.registrationInfo) {
+      const { credential } = verification.registrationInfo;
+      const { id: credentialID, publicKey: credentialPublicKey, counter } = credential;
+
+      const credentialIDBase64url = Buffer.from(credentialID).toString("base64url");
+      console.log("[Passkey Registration] Saving credentialID:", credentialIDBase64url);
+
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          passkeyCredentialID: credentialIDBase64url,
+          passkeyPublicKey: Buffer.from(credentialPublicKey),
+          passkeyCounter: BigInt(counter),
+          passkeyTransports: body.response.transports || [],
+        },
+      });
+
+      console.log("[Passkey Registration] SUCCESS - Passkey saved for user:", userId);
+      logEvent("passkey:registered", { userId });
+      return true;
+    }
+
+    console.log("[Passkey Registration] Verification failed - verified:", verification.verified);
+    return false;
+  } catch (error) {
+    console.error("[Passkey Registration] ERROR:", error);
+    throw error;
+  }
 }
 
 /**

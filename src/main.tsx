@@ -62,6 +62,7 @@ const InventorySettingsPage = lazy(() => import("./pages/settings/InventorySetti
 const RolesSettingsPage = lazy(() => import("./pages/settings/RolesSettingsPage"));
 const DailyProductionBalancesSettingsPage = lazy(() => import("./pages/settings/DailyProductionBalancesPage"));
 const SecuritySettingsPage = lazy(() => import("./pages/settings/SecuritySettingsPage"));
+const GeneralSettingsPage = lazy(() => import("./pages/settings/GeneralSettingsPage"));
 const AddUserPage = lazy(() => import("./pages/admin/AddUserPage"));
 const OnboardingWizard = lazy(() => import("./pages/onboarding/OnboardingWizard"));
 
@@ -382,7 +383,15 @@ const router = createBrowserRouter([
         children: [
           {
             index: true,
-            element: <Navigate to="users" replace />,
+            element: <Navigate to="general" replace />,
+          },
+          {
+            path: "general",
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <GeneralSettingsPage />
+              </Suspense>
+            ),
           },
           {
             path: "users",
