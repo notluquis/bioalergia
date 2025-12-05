@@ -1,82 +1,48 @@
-node_modules
-dist
-server/uploads
-dist/server/uploads
-storage/
-.vite
-.DS_Store
-
-# Variables de entorno sensibles
-.env
-.env.local
-.env.production
-.env.staging
-.env.development
-.env.test
-
-# Archivos permitidos de dotenv
-# .env.example (para documentación)
-# .env.vault (para secrets encriptados)
-
-.idea
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-*.log
-coverage
-*.tsbuildinfo
-*.tgz
-tmp/
-temp/
-pnpm-lock.yaml
-pnpm-debug.log*
-.env.keys
-mysql/josema22_bioalergia.create
-mysql/josema22_bioalergia.sql
-mysql/josema22_wp560.create
-mysql/josema22_wp560.sql
-mysql/openfileslimit
-docs/lint-summary.md
-lint-report.json
-typecheck-report.txt
-docs/typecheck-summary.md
-mercadopago_movimientos_diarios.ipynb
-reports/movimientos_20251011.csv
-mysql/service_seed_2024_2026.sql
-scripts/generate-service-seed.ts
-/generated/prisma
-
-# Additional ignores (catch common build/artifact folders)
+# Dependencies
 node_modules/
+
+# Build outputs
 dist/
 build/
-coverage/
-.parcel-cache/
-.next/
-.nuxt/
-.turbo/
-.cache/
 .vite/
-/.turbo
-.DS_Store
-*.log
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-/.env
-/.env.*
+*.tsbuildinfo
 
-# VSCode
-# .vscode/
-.vscode/*
-!.vscode/settings.json
+# Environment variables
+.env
+.env.*
+!.env.example
 
-# OS
-.DS_Store
-
-# Generated prisma client (ensure untracked)
+# Generated files
 generated/
-test_output_2.txt
-test_output.txt
-.vscode/settings.json
+coverage/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Storage and uploads
+storage/
+server/uploads/
+uploads/
+
+# Test outputs
+test_output*.txt
+
+# Database dumps
+mysql/
+
+# Temp files
+tmp/
+temp/
+*.tgz
