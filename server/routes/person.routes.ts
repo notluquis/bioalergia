@@ -2,6 +2,7 @@ import { Router } from "express";
 import { prisma } from "../prisma.js";
 import { z } from "zod";
 import { authenticate as requireAuth, requireRole } from "../lib/http.js";
+import { logger } from "../lib/logger.js";
 import type { AuthenticatedRequest } from "../types.js";
 import { logAudit } from "../services/audit.js";
 import { mapPerson, type PersonWithRoles } from "../lib/mappers.js";
@@ -39,7 +40,7 @@ router.get("/", requireAuth, async (req, res) => {
       people: people.map((p) => mapPerson(p as PersonWithRoles)),
     });
   } catch (error) {
-    console.error("Error fetching people:", error);
+    logger.error({ tag: "People", error }, "Error fetching people");
     res.status(500).json({ status: "error", message: "Failed to fetch people" });
   }
 });
@@ -65,7 +66,7 @@ router.get("/:id", requireAuth, async (req, res) => {
       transactions: person.transactions,
     });
   } catch (error) {
-    console.error("Error fetching person:", error);
+    logger.error({ tag: "People", error }, "Error fetching person");
     res.status(500).json({ status: "error", message: "Failed to fetch person" });
   }
 });
@@ -85,7 +86,7 @@ router.get("/rut/:rut", requireAuth, async (req, res) => {
       person: mapPerson(person as PersonWithRoles),
     });
   } catch (error) {
-    console.error("Error fetching person by RUT:", error);
+    logger.error({ tag: "People", error }, "Error fetching person by RUT");
     res.status(500).json({ status: "error", message: "Failed to fetch person" });
   }
 });

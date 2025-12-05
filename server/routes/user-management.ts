@@ -3,6 +3,7 @@ import { prisma } from "../prisma.js";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { authenticate as requireAuth, requireRole } from "../lib/http.js";
+import { logger } from "../lib/logger.js";
 import type { AuthenticatedRequest } from "../types.js";
 import { logAudit } from "../services/audit.js";
 
@@ -86,7 +87,7 @@ router.post("/invite", requireAuth, requireRole("ADMIN", "GOD"), async (req, res
 
     res.json({ message: "User created successfully", userId: result.id });
   } catch (error) {
-    console.error("Invite error:", error);
+    logger.error({ tag: "UserManagement", error }, "Invite error");
     res.status(500).json({ error: "Failed to invite user" });
   }
 });
@@ -154,7 +155,7 @@ router.get("/profile", requireAuth, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Get profile error:", error);
+    logger.error({ tag: "UserManagement", error }, "Get profile error");
     res.status(500).json({ error: "Failed to fetch profile" });
   }
 });
@@ -247,7 +248,7 @@ router.post("/setup", requireAuth, async (req, res) => {
 
     res.json({ message: "Setup complete" });
   } catch (error) {
-    console.error("Setup error:", error);
+    logger.error({ tag: "UserManagement", error }, "Setup error");
     res.status(500).json({ error: "Setup failed" });
   }
 });
@@ -311,7 +312,7 @@ router.post("/:id/mfa/toggle", requireAuth, requireRole("ADMIN", "GOD"), async (
 
     res.json({ status: "ok", message: `MFA ${enabled ? "enabled" : "disabled"}` });
   } catch (error) {
-    console.error("MFA toggle error:", error);
+    logger.error({ tag: "UserManagement", error }, "MFA toggle error");
     res.status(500).json({ status: "error", message: "Failed to toggle MFA" });
   }
 });
@@ -344,7 +345,7 @@ router.delete("/:id/passkey", requireAuth, requireRole("ADMIN", "GOD"), async (r
 
     res.json({ status: "ok", message: "Passkey removed" });
   } catch (error) {
-    console.error("Passkey delete error:", error);
+    logger.error({ tag: "UserManagement", error }, "Passkey delete error");
     res.status(500).json({ status: "error", message: "Failed to remove Passkey" });
   }
 });

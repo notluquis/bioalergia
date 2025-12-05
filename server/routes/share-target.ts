@@ -3,6 +3,7 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { authenticate } from "../lib/http.js";
+import { logger } from "../lib/logger.js";
 import type { AuthenticatedRequest } from "../types.js";
 
 const router = express.Router();
@@ -49,7 +50,7 @@ router.post("/", upload.array("media"), (req: express.Request, res: express.Resp
     const files = req.files as Express.Multer.File[];
     const { title, text, url } = req.body;
 
-    console.log("[ShareTarget] Received share:", { title, text, url, files: files?.length });
+    logger.info({ tag: "ShareTarget", title, text, url, fileCount: files?.length }, "Received share");
 
     if (!files || files.length === 0) {
       // If no files, just redirect to movements (maybe it was just text shared)
@@ -64,7 +65,7 @@ router.post("/", upload.array("media"), (req: express.Request, res: express.Resp
     // The frontend should read this param and open the "New Transaction" modal
     res.redirect(303, `/finanzas/movements?shared_file=${filename}`);
   } catch (error) {
-    console.error("[ShareTarget] Error processing share:", error);
+    logger.error({ tag: "ShareTarget", error }, "Error processing share");
     res.status(500).send("Error processing shared content");
   }
 });

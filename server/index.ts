@@ -101,7 +101,9 @@ app.use("/share-target", shareTargetRouter);
 app.use("/api/notifications", notificationsRouter);
 import { registerSuppliesRoutes } from "./routes/supplies.js";
 registerSuppliesRoutes(app);
+import { startGoogleCalendarScheduler } from "./lib/google-calendar-scheduler.js";
 startDailyProductionReminderJob();
+startGoogleCalendarScheduler();
 
 type HealthStatus = "ok" | "error";
 type HealthChecks = { db: { status: HealthStatus; latency: number | null } };
