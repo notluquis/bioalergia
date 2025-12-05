@@ -1,5 +1,8 @@
+/**
+ * Round currency to whole numbers (CLP has no decimals)
+ */
 export function roundCurrency(value: number): number {
-  return Math.round((value + Number.EPSILON) * 100) / 100;
+  return Math.round(value);
 }
 
 export function addCurrency(a: number, b: number): number {

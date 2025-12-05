@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "@/context/AuthContext";
 
 const VAPID_PUBLIC_KEY = "BIR7uwHD5foPZBVAKlBmngo2Ps1YTgsxJktvTmGeVq0bl7xZbQU76cpBXeVAEUzVX-OA0apUrovjSGrIeG9ggYI"; // Generated VAPID key
 

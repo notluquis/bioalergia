@@ -1,6 +1,6 @@
 import type { Counterpart, CounterpartCategory } from "../types";
-import Button from "../../../components/ui/Button";
-import { formatRut } from "../../../lib/rut";
+import Button from "@/components/ui/Button";
+import { formatRut } from "@/lib/rut";
 
 interface CounterpartListProps {
   counterparts: Counterpart[];

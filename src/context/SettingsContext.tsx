@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth, type UserRole } from "./AuthContext";
-import { logger } from "../lib/logger";
+import { logger } from "@/lib/logger";
 
 export type AppSettings = {
   orgName: string;

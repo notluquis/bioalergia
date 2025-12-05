@@ -1,7 +1,7 @@
 import { keepPreviousData, useQuery, type UseQueryOptions } from "@tanstack/react-query";
 import { fetchParticipantLeaderboard } from "./api";
 import type { ParticipantLeaderboardResponse, ParticipantSummaryRow } from "./types";
-import { queryKeys } from "../../lib/queryKeys";
+import { queryKeys } from "@/lib/queryKeys";
 
 type LeaderboardParams = {
   from?: string;

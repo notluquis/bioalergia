@@ -1,7 +1,6 @@
 import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Home, Users, Briefcase, BarChart3 } from "@/components/ui/icons";
-import type { LucideIcon } from "lucide-react";
+import { Home, Users, Briefcase, BarChart3, type LucideIcon } from "lucide-react";
 
 interface NavItem {
   path: string;

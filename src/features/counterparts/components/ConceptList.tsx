@@ -1,4 +1,4 @@
-import { fmtCLP } from "../../../lib/format";
+import { fmtCLP } from "@/lib/format";
 
 interface ConceptListProps {
   concepts: Array<[string, number]>;

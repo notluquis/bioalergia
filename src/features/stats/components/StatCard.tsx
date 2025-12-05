@@ -1,4 +1,4 @@
-import { fmtCLP } from "../../../lib/format";
+import { fmtCLP } from "@/lib/format";
 
 interface StatCardProps {
   title: string;

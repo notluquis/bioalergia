@@ -4,7 +4,7 @@ import { coerceAmount } from "@/lib/format";
 import { useAuth } from "@/context/AuthContext";
 import { useSettings } from "@/context/SettingsContext";
 import { logger } from "@/lib/logger";
-import { isCashbackCandidate } from "@/shared/cashback";
+import { isCashbackCandidate } from "~/shared/cashback";
 import Button from "@/components/ui/Button";
 import Checkbox from "@/components/ui/Checkbox";
 import Input from "@/components/ui/Input";

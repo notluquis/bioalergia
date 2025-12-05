@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import type { PublicKeyCredentialCreationOptionsJSON } from "@simplewebauthn/browser";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "@/context/AuthContext";
 import { Shield, Key, Check, ArrowRight, User, CreditCard, Smartphone, Loader2, Fingerprint } from "lucide-react";
-import { cn } from "../../lib/utils";
-import { formatRut, validateRut } from "../../lib/rut";
-import Input from "../../components/ui/Input";
-import { apiClient } from "../../lib/apiClient";
+import { cn } from "@/lib/utils";
+import { formatRut, validateRut } from "@/lib/rut";
+import Input from "@/components/ui/Input";
+import { apiClient } from "@/lib/apiClient";
 
 const STEPS = [
   { id: "welcome", title: "Bienvenida" },

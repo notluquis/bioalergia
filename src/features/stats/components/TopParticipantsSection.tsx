@@ -1,5 +1,5 @@
-import { fmtCLP } from "../../../lib/format";
-import { formatRut } from "../../../lib/rut";
+import { fmtCLP } from "@/lib/format";
+import { formatRut } from "@/lib/rut";
 import type { ParticipantSummaryRow } from "../../participants/types";
 
 interface TopParticipantsSectionProps {

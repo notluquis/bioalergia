@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useMemo, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { logger } from "../lib/logger";
-import { apiClient, ApiError } from "../lib/apiClient";
+import { logger } from "@/lib/logger";
+import { apiClient, ApiError } from "@/lib/apiClient";
 
 export type UserRole = "GOD" | "ADMIN" | "ANALYST" | "VIEWER";
 

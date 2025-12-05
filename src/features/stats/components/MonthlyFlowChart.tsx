@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import { fmtCLP } from "../../../lib/format";
+import { fmtCLP } from "@/lib/format";
 
 interface MonthlyFlowChartProps {
   data: Array<{ month: string; in: number; out: number; net: number }>;

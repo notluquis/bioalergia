@@ -4,7 +4,7 @@ import dayjs from "dayjs";
 import "dayjs/locale/es";
 import Button from "@/components/ui/Button";
 import Checkbox from "@/components/ui/Checkbox";
-import { useSettings } from "@/context/settings-context";
+import { useSettings } from "@/context/SettingsContext";
 import type { Employee } from "@/features/hr/employees/types";
 import type { BulkRow, TimesheetSummaryRow } from "../types";
 import type { CellHookData } from "jspdf-autotable";

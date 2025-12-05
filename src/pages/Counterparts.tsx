@@ -22,7 +22,7 @@ import AssociatedAccounts from "../features/counterparts/components/AssociatedAc
 import Button from "../components/ui/Button";
 import { ServicesHero, ServicesSurface, ServicesGrid } from "../features/services/components/ServicesShell";
 import { SUMMARY_RANGE_MONTHS } from "../features/counterparts/constants";
-import { useToast } from "../context/ToastContext";
+import { useToast } from "@/context/ToastContext";
 import { normalizeRut } from "../lib";
 import Modal from "../components/ui/Modal";
 

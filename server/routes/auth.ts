@@ -37,17 +37,11 @@ export function registerAuthRoutes(app: express.Express) {
       if (!req.auth) return res.status(401).json({ status: "error" });
       const { body, challenge } = req.body; // Client must send back the challenge they received
 
-      console.log("[Passkey Register Endpoint] userId:", req.auth.userId);
-      console.log("[Passkey Register Endpoint] challenge received:", !!challenge);
-      console.log("[Passkey Register Endpoint] body received:", !!body);
-
       try {
         const success = await verifyPasskeyRegistration(req.auth.userId, body, challenge);
         if (success) {
-          console.log("[Passkey Register Endpoint] SUCCESS");
           res.json({ status: "ok" });
         } else {
-          console.log("[Passkey Register Endpoint] FAILED - verification returned false");
           res.status(400).json({ status: "error", message: "Falló la verificación del Passkey" });
         }
       } catch (error) {
@@ -92,10 +86,6 @@ export function registerAuthRoutes(app: express.Express) {
     "/api/auth/passkey/login/verify",
     asyncHandler(async (req, res) => {
       const { body, challenge } = req.body;
-
-      // Debug logging
-      console.log("[Passkey Login] Received body.id:", body?.id);
-      console.log("[Passkey Login] Received challenge length:", challenge?.length);
 
       try {
         const user = await verifyPasskeyLogin(body, challenge);

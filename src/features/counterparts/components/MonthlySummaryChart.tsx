@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import { fmtCLP } from "../../../lib/format";
+import { fmtCLP } from "@/lib/format";
 
 interface MonthlySummaryChartProps {
   data: Array<{ month: string; concept: string; total: number }>;

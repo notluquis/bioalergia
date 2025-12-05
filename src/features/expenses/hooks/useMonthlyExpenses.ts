@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
-import { useAuth } from "../../../context/AuthContext";
-import { logger } from "../../../lib/logger";
+import { useAuth } from "@/context/AuthContext";
+import { logger } from "@/lib/logger";
 import type {
   CreateMonthlyExpensePayload,
   LinkMonthlyExpenseTransactionPayload,

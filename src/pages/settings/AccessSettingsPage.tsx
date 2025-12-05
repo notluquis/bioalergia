@@ -3,10 +3,10 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ShieldCheck, Loader2, Server, Globe, Database } from "lucide-react";
 import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
-import { useSettings, type AppSettings } from "../../context/settings-context";
-import { useAuth } from "../../context/AuthContext";
-import { useToast } from "../../context/ToastContext";
-import { apiClient } from "../../lib/apiClient";
+import { useSettings, type AppSettings } from "@/context/SettingsContext";
+import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/context/ToastContext";
+import { apiClient } from "@/lib/apiClient";
 
 function normalizeExternalUrl(value: string) {
   const trimmed = value.trim();

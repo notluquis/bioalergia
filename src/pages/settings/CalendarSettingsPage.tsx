@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Calendar, RefreshCw, CheckCircle2, AlertCircle } from "lucide-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import Button from "../../components/ui/Button";
-import { cn } from "../../lib/utils";
+import Button from "@/components/ui/Button";
+import { cn } from "@/lib/utils";
 
 export default function CalendarSettingsPage() {
   const [syncing, setSyncing] = useState(false);
