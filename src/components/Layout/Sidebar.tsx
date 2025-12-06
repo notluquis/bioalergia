@@ -135,10 +135,11 @@ export default function Sidebar({ isOpen, isMobile, onClose, isCollapsed = false
       <aside
         id="app-sidebar"
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex h-full shrink-0 flex-col rounded-3xl border border-base-300/50 bg-base-200/80 text-sm text-base-content shadow-2xl backdrop-blur-3xl transition-all duration-300 md:static md:h-[calc(100vh-5rem)] md:translate-x-0",
+          "border-base-300/50 bg-base-200/80 text-base-content fixed inset-y-0 left-0 z-50 flex h-full shrink-0 flex-col rounded-3xl border text-sm shadow-2xl backdrop-blur-3xl transition-all duration-300 md:static md:h-[calc(100vh-5rem)] md:translate-x-0",
           isOpen ? "translate-x-0" : "-translate-x-full",
           !isOpen && !isMobile && "hidden",
-          isCollapsed ? "w-20 px-2" : "w-[min(300px,88vw)] p-3",
+          isCollapsed ? "w-20" : "w-[min(300px,88vw)]",
+          isCollapsed ? "px-2 py-3" : "p-3",
           "overflow-x-hidden" // Prevent horizontal scroll
         )}
         aria-label="Navegación principal"
@@ -147,26 +148,26 @@ export default function Sidebar({ isOpen, isMobile, onClose, isCollapsed = false
           {/* User Profile Card */}
           <div
             className={cn(
-              "rounded-2xl border border-base-300/40 bg-linear-to-br from-base-100/85 via-base-200/70 to-base-100/50 shadow-inner transition-all",
+              "border-base-300/40 from-base-100/85 via-base-200/70 to-base-100/50 rounded-2xl border bg-linear-to-br shadow-inner transition-all",
               isCollapsed ? "p-2" : "p-3"
             )}
           >
             <div className={cn("flex items-center gap-3", isCollapsed && "justify-center")}>
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-white/20 bg-base-100/80 shadow-sm">
+              <div className="bg-base-100/80 flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-white/20 shadow-sm">
                 <img src="/logo_bimi.svg" alt="Bioalergia" className="h-9 w-9 object-contain" loading="lazy" />
               </div>
               {!isCollapsed && (
                 <div className="min-w-0 overflow-hidden transition-all duration-300">
-                  <p className="text-[10px] uppercase tracking-[0.2em] text-base-content/60">Bioalergia</p>
-                  <p className="truncate text-lg font-semibold leading-tight text-base-content">{displayName}</p>
-                  <p className="truncate text-[11px] text-base-content/60">{user?.email}</p>
+                  <p className="text-base-content/60 text-[10px] tracking-[0.2em] uppercase">Bioalergia</p>
+                  <p className="text-base-content truncate text-lg leading-tight font-semibold">{displayName}</p>
+                  <p className="text-base-content/60 truncate text-[11px]">{user?.email}</p>
                 </div>
               )}
             </div>
           </div>
 
           {/* Navigation Links */}
-          <nav className="flex-1 overflow-y-auto pr-1 muted-scrollbar">
+          <nav className="muted-scrollbar flex-1 overflow-y-auto pr-1">
             <div className="space-y-6">
               {NAV_SECTIONS.map((section) => {
                 const visibleItems = section.items.filter((item) => !item.roles || hasRole(...item.roles));
@@ -175,8 +176,8 @@ export default function Sidebar({ isOpen, isMobile, onClose, isCollapsed = false
                 return (
                   <section key={section.title} className={cn("space-y-1", isCollapsed && "text-center")}>
                     {!isCollapsed && (
-                      <div className="px-2 mb-2">
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-base-content/40">
+                      <div className="mb-2 px-2">
+                        <p className="text-base-content/40 text-[10px] font-bold tracking-widest uppercase">
                           {section.title}
                         </p>
                       </div>
@@ -204,14 +205,14 @@ export default function Sidebar({ isOpen, isMobile, onClose, isCollapsed = false
                                 return cn(
                                   "flex h-10 w-full items-center justify-center rounded-xl active:scale-95",
                                   active || isPending
-                                    ? "bg-primary text-primary-content shadow-md shadow-primary/20 ring-1 ring-primary/60"
+                                    ? "bg-primary text-primary-content shadow-primary/20 ring-primary/60 shadow-md ring-1"
                                     : "text-base-content/60 hover:bg-base-100 hover:text-base-content"
                                 );
                               }
                               return cn(
                                 "group relative flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium active:scale-[0.98]",
                                 active || isPending
-                                  ? "bg-primary text-primary-content shadow-md shadow-primary/20"
+                                  ? "bg-primary text-primary-content shadow-primary/20 shadow-md"
                                   : "text-base-content/70 hover:bg-base-100 hover:text-base-content"
                               );
                             }}
@@ -241,7 +242,7 @@ export default function Sidebar({ isOpen, isMobile, onClose, isCollapsed = false
                                   />
                                   <span className="truncate">{item.label}</span>
                                   {isPending && (
-                                    <Loader2 className="h-3 w-3 shrink-0 animate-spin text-primary-content/80" />
+                                    <Loader2 className="text-primary-content/80 h-3 w-3 shrink-0 animate-spin" />
                                   )}
                                 </>
                               );
@@ -259,7 +260,7 @@ export default function Sidebar({ isOpen, isMobile, onClose, isCollapsed = false
           {/* Footer Info / Collapse Toggle */}
           <div
             className={cn(
-              "rounded-2xl border border-base-300/20 bg-base-100/20 backdrop-blur-sm mt-auto",
+              "border-base-300/20 bg-base-100/20 mt-auto rounded-2xl border backdrop-blur-sm",
               isCollapsed ? "p-2" : "p-3"
             )}
           >
@@ -267,15 +268,15 @@ export default function Sidebar({ isOpen, isMobile, onClose, isCollapsed = false
               <button
                 onClick={toggleCollapse}
                 className={cn(
-                  "group flex w-full items-center justify-center rounded-lg py-2 text-base-content/40 hover:text-base-content/70 hover:bg-base-300/20 active:scale-95 transition-all duration-200",
+                  "group text-base-content/40 hover:text-base-content/70 hover:bg-base-300/20 flex w-full items-center justify-center rounded-lg py-2 transition-all duration-200 active:scale-95",
                   !isCollapsed && "mb-2"
                 )}
                 aria-label={isCollapsed ? "Expandir menú" : "Colapsar menú"}
               >
                 {isCollapsed ? (
-                  <ChevronsRight className="h-4 w-4 group-hover:scale-110 transition-transform" />
+                  <ChevronsRight className="h-4 w-4 transition-transform group-hover:scale-110" />
                 ) : (
-                  <ChevronsLeft className="h-4 w-4 group-hover:scale-110 transition-transform" />
+                  <ChevronsLeft className="h-4 w-4 transition-transform group-hover:scale-110" />
                 )}
               </button>
             )}
