@@ -19,7 +19,7 @@
     "dev:full": "concurrently \"npm run dev:client\" \"npm run server\"",
     "start": "node dist/server/index.js",
     "prisma:generate": "prisma generate",
-    "postinstall": "prisma generate --skip-seed",
+    "postinstall": "prisma generate",
     "build:prod": "rm -rf dist && concurrently --kill-others-on-fail \"npm run build:server\" \"npm run build:client\"",
     "deploy": "npm run build:prod && npm prune --omit=dev",
     "prod": "npm run build:prod && npm start",

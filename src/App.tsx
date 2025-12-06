@@ -104,12 +104,12 @@ export default function App() {
   return (
     <>
       {isNavigating && (
-        <div className="fixed left-0 right-0 top-0 z-50 h-1 overflow-hidden bg-base-200 shadow-lg">
+        <div className="bg-base-200 fixed top-0 right-0 left-0 z-50 h-1 overflow-hidden shadow-lg">
           <div className="nav-progress__indicator" />
         </div>
       )}
       <div
-        className="layout-shell relative mx-auto flex min-h-screen w-full gap-6 px-2 py-6 text-base-content transition-colors duration-300 sm:px-4 lg:px-6"
+        className="layout-shell text-base-content relative mx-auto flex min-h-screen w-full gap-6 px-2 py-6 transition-all duration-300 sm:px-4 lg:px-6"
         style={{
           paddingTop: "max(1.5rem, env(safe-area-inset-top))",
           paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))",
@@ -120,7 +120,7 @@ export default function App() {
         {/* Hamburger button: accessible, compact, always visible on mobile */}
         <button
           type="button"
-          className="fixed left-4 top-[clamp(0.9rem,env(safe-area-inset-top,0px)+0.9rem,2.5rem)] z-40 inline-flex items-center gap-2 rounded-full border border-base-300/70 bg-base-100/85 px-3 py-2 text-sm font-semibold text-base-content shadow-lg backdrop-blur-md transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-1 md:hidden"
+          className="border-base-300/70 bg-base-100/85 text-base-content focus-visible:ring-primary/60 fixed top-[clamp(0.9rem,env(safe-area-inset-top,0px)+0.9rem,2.5rem)] left-4 z-40 inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm font-semibold shadow-lg backdrop-blur-md transition-all duration-200 focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:outline-none md:hidden"
           onClick={toggleSidebar}
           aria-label={sidebarOpen ? "Cerrar menú principal" : "Abrir menú principal"}
           aria-expanded={sidebarOpen}
@@ -144,13 +144,13 @@ export default function App() {
               }`}
             />
           </span>
-          <span className="text-xs font-medium uppercase tracking-wide">{sidebarOpen ? "Cerrar" : "Menú"}</span>
+          <span className="text-xs font-medium tracking-wide uppercase">{sidebarOpen ? "Cerrar" : "Menú"}</span>
         </button>
 
         {/* Overlay for mobile/tablet when sidebar is open */}
         {isMobile && sidebarOpen && (
           <div
-            className="fixed inset-0 z-30 bg-base-content/30 backdrop-blur-[1px] transition-opacity duration-300"
+            className="bg-base-content/30 fixed inset-0 z-30 backdrop-blur-[1px] transition-opacity duration-300"
             role="presentation"
             aria-hidden="true"
             onClick={closeSidebar}
@@ -178,19 +178,19 @@ export default function App() {
             </div>
           </main>
 
-          <footer className="surface-elevated hidden md:flex items-center justify-between px-6 py-3 text-sm text-base-content">
+          <footer className="surface-elevated text-base-content hidden items-center justify-between px-6 py-3 text-sm md:flex">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <span className="font-semibold text-base-content">Bioalergia</span>
-                <span className="text-xs text-base-content/60">v{APP_VERSION}</span>
+                <span className="text-base-content font-semibold">Bioalergia</span>
+                <span className="text-base-content/60 text-xs">v{APP_VERSION}</span>
               </div>
 
               {/* Performance Mode Indicator */}
               <PerformanceIndicator />
             </div>
 
-            <div className="flex items-center gap-2 text-xs text-base-content/70">
-              <span className="inline-flex h-2 w-2 rounded-full bg-primary/70" aria-hidden="true" />
+            <div className="text-base-content/70 flex items-center gap-2 text-xs">
+              <span className="bg-primary/70 inline-flex h-2 w-2 rounded-full" aria-hidden="true" />
               <span>Build: {buildLabel}</span>
             </div>
           </footer>
