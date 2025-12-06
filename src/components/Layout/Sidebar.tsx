@@ -152,18 +152,34 @@ export default function Sidebar({ isOpen, isMobile, onClose, isCollapsed = false
               isCollapsed ? "p-2" : "p-3"
             )}
           >
-            <div className={cn("flex items-center gap-3", isCollapsed && "justify-center")}>
-              <div className="bg-base-100/80 flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-white/20 shadow-sm">
-                <img src="/logo_bimi.svg" alt="Bioalergia" className="h-9 w-9 object-contain" loading="lazy" />
-              </div>
-              {!isCollapsed && (
+            {isCollapsed ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center justify-center">
+                    <div className="bg-base-100/80 flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-white/20 shadow-sm">
+                      <img src="/logo_bimi.svg" alt="Bioalergia" className="h-9 w-9 object-contain" loading="lazy" />
+                    </div>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  <div className="text-left">
+                    <p className="font-semibold">{displayName}</p>
+                    <p className="text-base-content/60 text-xs">{user?.email}</p>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            ) : (
+              <div className="flex items-center gap-3">
+                <div className="bg-base-100/80 flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-white/20 shadow-sm">
+                  <img src="/logo_bimi.svg" alt="Bioalergia" className="h-9 w-9 object-contain" loading="lazy" />
+                </div>
                 <div className="min-w-0 overflow-hidden transition-all duration-300">
                   <p className="text-base-content/60 text-[10px] tracking-[0.2em] uppercase">Bioalergia</p>
                   <p className="text-base-content truncate text-lg leading-tight font-semibold">{displayName}</p>
                   <p className="text-base-content/60 truncate text-[11px]">{user?.email}</p>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
 
           {/* Navigation Links */}
