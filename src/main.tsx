@@ -26,6 +26,7 @@ const ParticipantInsightsPage = lazy(() => import("./pages/ParticipantInsights")
 const EmployeesPage = lazy(() => import("@/features/hr/employees/pages/EmployeesPage"));
 const TimesheetsPage = lazy(() => import("@/features/hr/timesheets/pages/TimesheetsPage"));
 const TimesheetAuditPage = lazy(() => import("@/features/hr/timesheets-audit/pages/TimesheetAuditPage"));
+const ReportsPage = lazy(() => import("@/features/hr/reports/pages/ReportsPage"));
 
 const CounterpartsPage = lazy(() => import("./pages/Counterparts"));
 // Lazy loading de layouts
@@ -366,6 +367,14 @@ const router = createBrowserRouter([
             element: (
               <Suspense fallback={<PageLoader />}>
                 <TimesheetAuditPage />
+              </Suspense>
+            ),
+          },
+          {
+            path: "reports",
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <ReportsPage />
               </Suspense>
             ),
           },
