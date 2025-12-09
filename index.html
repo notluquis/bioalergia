@@ -43,9 +43,20 @@
 
     <!-- iOS Meta Tags -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
+    <!-- Status bar: black-translucent allows content under notch/dynamic island -->
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Finanzas" />
+    <!-- Multiple icon sizes for iOS (180px is optimal for modern iPhones) -->
     <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-192.png" />
+    <!-- Web Clips for macOS Dock (mask icon) -->
+    <link rel="mask-icon" href="/logo_bimi.svg" color="#0e64b7" />
+    <!-- Prevent zoom on input focus (iOS) -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+    <!-- Prevent landscape zoom on double-tap (iOS) & font-size fix -->
+    <style>
+      input, select, textarea { font-size: 16px !important; }
+    </style>
 
     <!-- Android -->
     <meta name="mobile-web-app-capable" content="yes" />
