@@ -23,6 +23,12 @@ registerTransactionRoutes(app);
 
 describe("Finance Integration", () => {
   beforeAll(async () => {
+    // SAFETY: Prevent running tests against production DB
+    const dbUrl = process.env.DATABASE_URL || "";
+    if (dbUrl.includes("railway.app") || dbUrl.includes("prod") || dbUrl.includes("intranet")) {
+      throw new Error("🚨 TESTS CANNOT RUN AGAINST PRODUCTION DATABASE! Set DATABASE_URL to a test database.");
+    }
+
     await prisma.transaction.deleteMany();
     await prisma.user.deleteMany();
     await prisma.person.deleteMany();

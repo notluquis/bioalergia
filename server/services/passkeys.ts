@@ -64,41 +64,36 @@ export async function verifyPasskeyRegistration(
   body: RegistrationResponseJSON,
   expectedChallenge: string
 ) {
-  try {
-    const verification = await verifyRegistrationResponse({
-      response: body,
-      expectedChallenge,
-      expectedOrigin: ORIGIN,
-      expectedRPID: RP_ID,
-      requireUserVerification: false, // Allow if UV was skipped (since we used 'preferred')
+  const verification = await verifyRegistrationResponse({
+    response: body,
+    expectedChallenge,
+    expectedOrigin: ORIGIN,
+    expectedRPID: RP_ID,
+    requireUserVerification: false, // Allow if UV was skipped (since we used 'preferred')
+  });
+
+  if (verification.verified && verification.registrationInfo) {
+    const { credential } = verification.registrationInfo;
+    const { id: credentialID, publicKey: credentialPublicKey, counter } = credential;
+
+    // credential.id already comes as base64url string from @simplewebauthn/server
+    // DO NOT re-encode it - just use it directly
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        passkeyCredentialID: credentialID,
+        passkeyPublicKey: Buffer.from(credentialPublicKey),
+        passkeyCounter: BigInt(counter),
+        passkeyTransports: body.response.transports || [],
+      },
     });
 
-    if (verification.verified && verification.registrationInfo) {
-      const { credential } = verification.registrationInfo;
-      const { id: credentialID, publicKey: credentialPublicKey, counter } = credential;
-
-      // credential.id already comes as base64url string from @simplewebauthn/server
-      // DO NOT re-encode it - just use it directly
-
-      await prisma.user.update({
-        where: { id: userId },
-        data: {
-          passkeyCredentialID: credentialID,
-          passkeyPublicKey: Buffer.from(credentialPublicKey),
-          passkeyCounter: BigInt(counter),
-          passkeyTransports: body.response.transports || [],
-        },
-      });
-
-      logEvent("passkey:registered", { userId });
-      return true;
-    }
-
-    return false;
-  } catch (error) {
-    console.error("[Passkey Registration] ERROR:", error);
-    throw error;
+    logEvent("passkey:registered", { userId });
+    return true;
   }
+
+  return false;
 }
 
 /**
@@ -120,10 +115,21 @@ export async function generatePasskeyLoginOptions() {
 export async function verifyPasskeyLogin(body: AuthenticationResponseJSON, expectedChallenge: string) {
   const credentialID = body.id;
 
-  // Find user by credential ID
-  const user = await prisma.user.findFirst({
+  // Find user by credential ID (try exact match first, then try with/without padding variants)
+  let user = await prisma.user.findFirst({
     where: { passkeyCredentialID: credentialID },
   });
+
+  // If not found and credentialID is base64url, also try with = padding (base64 variant)
+  if (!user && credentialID) {
+    const credentialIDWithPadding = credentialID.padEnd(
+      credentialID.length + ((4 - (credentialID.length % 4)) % 4),
+      "="
+    );
+    user = await prisma.user.findFirst({
+      where: { passkeyCredentialID: credentialIDWithPadding },
+    });
+  }
 
   if (!user || !user.passkeyPublicKey) {
     throw new Error("Passkey no encontrado");
