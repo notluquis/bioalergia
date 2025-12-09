@@ -43,10 +43,12 @@ export default defineConfig(({ mode }) => ({
         start_url: "/",
         scope: "/",
         display: "standalone",
+        // Splash screen colors
         background_color: "#000000",
         theme_color: "#0e64b7",
-        orientation: "any",
+        orientation: "portrait-primary",
         lang: "es-CL",
+        categories: ["business", "productivity"],
         icons: [
           { src: "/icons/icon-72.png", sizes: "72x72", type: "image/png" },
           { src: "/icons/icon-96.png", sizes: "96x96", type: "image/png" },
@@ -74,6 +76,21 @@ export default defineConfig(({ mode }) => ({
             files: [{ name: "media", accept: ["image/*", "application/pdf"] }],
           },
         },
+        // iOS/macOS specific
+        screenshots: [
+          {
+            src: "/icons/icon-192.png",
+            sizes: "192x192",
+            form_factor: "narrow",
+            type: "image/png",
+          },
+          {
+            src: "/icons/icon-512.png",
+            sizes: "512x512",
+            form_factor: "wide",
+            type: "image/png",
+          },
+        ],
       },
       devOptions: { enabled: false },
     }),
