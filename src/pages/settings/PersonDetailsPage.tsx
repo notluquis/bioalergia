@@ -9,7 +9,7 @@ export default function PersonDetailsPage() {
   const navigate = useNavigate();
 
   const {
-    data: person,
+    data: response,
     isLoading,
     error,
   } = useQuery({
@@ -21,6 +21,8 @@ export default function PersonDetailsPage() {
     },
     enabled: !!id,
   });
+
+  const person = response?.person;
 
   if (isLoading) return <PageLoader />;
   if (error || !person)
@@ -40,8 +42,8 @@ export default function PersonDetailsPage() {
           <ArrowLeft size={20} />
         </button>
         <div>
-          <h1 className="text-2xl font-bold text-base-content">Detalles de Persona</h1>
-          <p className="text-sm text-base-content/60">Información completa y relaciones.</p>
+          <h1 className="text-base-content text-2xl font-bold">Detalles de Persona</h1>
+          <p className="text-base-content/60 text-sm">Información completa y relaciones.</p>
         </div>
       </div>
 
@@ -51,15 +53,15 @@ export default function PersonDetailsPage() {
           <div className="card-body">
             <div className="flex items-start gap-6">
               <div className="avatar placeholder">
-                <div className="w-24 rounded-full bg-primary text-primary-content text-3xl flex items-center justify-center">
-                  <span>{person.names.substring(0, 2).toUpperCase()}</span>
+                <div className="bg-primary text-primary-content flex w-24 items-center justify-center rounded-full text-3xl">
+                  <span>{person.names ? person.names.substring(0, 2).toUpperCase() : "?"}</span>
                 </div>
               </div>
               <div className="space-y-1">
                 <h2 className="text-2xl font-bold">
                   {person.names} {person.fatherName} {person.motherName}
                 </h2>
-                <div className="flex items-center gap-2 text-base-content/70">
+                <div className="text-base-content/70 flex items-center gap-2">
                   <span className="badge badge-ghost">{person.rut}</span>
                   {person.gender && <span className="badge badge-ghost">{person.gender}</span>}
                 </div>
@@ -70,38 +72,38 @@ export default function PersonDetailsPage() {
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-base-200 text-base-content/70">
+                <div className="bg-base-200 text-base-content/70 rounded-lg p-2">
                   <Mail size={18} />
                 </div>
                 <div>
-                  <p className="text-xs text-base-content/50">Email</p>
+                  <p className="text-base-content/50 text-xs">Email</p>
                   <p className="font-medium">{person.email || "No registrado"}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-base-200 text-base-content/70">
+                <div className="bg-base-200 text-base-content/70 rounded-lg p-2">
                   <Phone size={18} />
                 </div>
                 <div>
-                  <p className="text-xs text-base-content/50">Teléfono</p>
+                  <p className="text-base-content/50 text-xs">Teléfono</p>
                   <p className="font-medium">{person.phone || "No registrado"}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-base-200 text-base-content/70">
+                <div className="bg-base-200 text-base-content/70 rounded-lg p-2">
                   <MapPin size={18} />
                 </div>
                 <div>
-                  <p className="text-xs text-base-content/50">Dirección</p>
+                  <p className="text-base-content/50 text-xs">Dirección</p>
                   <p className="font-medium">{person.address || "No registrada"}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-base-200 text-base-content/70">
+                <div className="bg-base-200 text-base-content/70 rounded-lg p-2">
                   <Calendar size={18} />
                 </div>
                 <div>
-                  <p className="text-xs text-base-content/50">Fecha de Nacimiento</p>
+                  <p className="text-base-content/50 text-xs">Fecha de Nacimiento</p>
                   <p className="font-medium">
                     {person.birthDate ? dayjs(person.birthDate).format("DD MMM YYYY") : "No registrada"}
                   </p>
@@ -116,47 +118,47 @@ export default function PersonDetailsPage() {
           <div className="card bg-base-100 shadow-sm">
             <div className="card-body">
               <h3 className="card-title text-lg">Roles Activos</h3>
-              <div className="space-y-3 mt-2">
+              <div className="mt-2 space-y-3">
                 {person.user ? (
-                  <div className="flex items-center gap-3 p-3 rounded-xl bg-primary/10 text-primary">
+                  <div className="bg-primary/10 text-primary flex items-center gap-3 rounded-xl p-3">
                     <User size={20} />
                     <div>
-                      <p className="font-bold text-sm">Usuario del Sistema</p>
+                      <p className="text-sm font-bold">Usuario del Sistema</p>
                       <p className="text-xs opacity-70">{person.user.email}</p>
                     </div>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-3 p-3 rounded-xl bg-base-200 opacity-50">
+                  <div className="bg-base-200 flex items-center gap-3 rounded-xl p-3 opacity-50">
                     <User size={20} />
                     <p className="text-sm font-medium">No es usuario</p>
                   </div>
                 )}
 
                 {person.employee ? (
-                  <div className="flex items-center gap-3 p-3 rounded-xl bg-secondary/10 text-secondary">
+                  <div className="bg-secondary/10 text-secondary flex items-center gap-3 rounded-xl p-3">
                     <Briefcase size={20} />
                     <div>
-                      <p className="font-bold text-sm">Empleado</p>
+                      <p className="text-sm font-bold">Empleado</p>
                       <p className="text-xs opacity-70">{person.employee.position}</p>
                     </div>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-3 p-3 rounded-xl bg-base-200 opacity-50">
+                  <div className="bg-base-200 flex items-center gap-3 rounded-xl p-3 opacity-50">
                     <Briefcase size={20} />
                     <p className="text-sm font-medium">No es empleado</p>
                   </div>
                 )}
 
                 {person.counterpart ? (
-                  <div className="flex items-center gap-3 p-3 rounded-xl bg-accent/10 text-accent">
+                  <div className="bg-accent/10 text-accent flex items-center gap-3 rounded-xl p-3">
                     <Building size={20} />
                     <div>
-                      <p className="font-bold text-sm">Contraparte</p>
+                      <p className="text-sm font-bold">Contraparte</p>
                       <p className="text-xs opacity-70">{person.counterpart.institution?.name}</p>
                     </div>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-3 p-3 rounded-xl bg-base-200 opacity-50">
+                  <div className="bg-base-200 flex items-center gap-3 rounded-xl p-3 opacity-50">
                     <Building size={20} />
                     <p className="text-sm font-medium">No es contraparte</p>
                   </div>
