@@ -7,7 +7,7 @@ import { useEffect, useMemo, useState, useCallback } from "react";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
 import "dayjs/locale/es";
-import { Calendar, Users, AlertTriangle, ChevronDown, ChevronUp, Search, X, Check } from "lucide-react";
+import { Users, ChevronDown, ChevronUp, Search, X, Check } from "lucide-react";
 
 import { useAuth } from "@/context/AuthContext";
 import Alert from "@/components/ui/Alert";
@@ -257,45 +257,49 @@ export default function TimesheetAuditPage() {
     <section className="space-y-6">
       {/* Header */}
       <header>
-        <h1 className="typ-title text-base-content">Auditoría de horarios</h1>
-        <p className="mt-1 text-sm text-base-content/60">Detecta solapamientos de turnos entre empleados</p>
+        <h1 className="text-primary text-2xl font-bold">Auditoría de horarios</h1>
+        <p className="text-base-content/70 mt-1 text-sm">
+          Detecta solapamientos de turnos entre empleados y analiza conflictos de programación
+        </p>
       </header>
 
-      {/* Compact Filters */}
-      <div className="card bg-base-100 shadow-sm">
-        <div className="card-body p-4 space-y-4">
-          {/* Quick Range Selector */}
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-2 text-sm text-base-content/70">
-              <Calendar className="h-4 w-4" />
-              <span className="font-medium">Periodo:</span>
-            </div>
-            <div className="join">
-              {QUICK_RANGES.map((range) => (
-                <button
-                  key={range.id}
-                  type="button"
-                  className={`join-item btn btn-sm ${quickRange === range.id ? "btn-primary" : "btn-ghost"}`}
-                  onClick={() => handleQuickRangeChange(range.id)}
-                >
-                  {range.label}
-                </button>
-              ))}
-            </div>
-            {rangeSummary && <span className="text-xs text-base-content/50 hidden sm:inline">({rangeSummary})</span>}
-          </div>
+      {/* Step 1: Period Selection */}
+      <div className="border-base-300 bg-base-100 rounded-2xl border p-6 shadow-sm">
+        <div className="mb-4 flex items-center gap-3">
+          <div className="badge badge-lg badge-primary">1</div>
+          <h2 className="text-base-content text-lg font-semibold">Selecciona el periodo</h2>
+          {rangeSummary && <span className="text-base-content/60 ml-auto text-sm">({rangeSummary})</span>}
+        </div>
 
-          {/* Custom Week Picker (collapsible) */}
-          {quickRange === "custom" && (
-            <div className="border-t border-base-200 pt-4 space-y-3">
-              <div className="flex items-center gap-4">
+        {/* Quick Range Buttons */}
+        <div className="flex flex-wrap gap-2">
+          {QUICK_RANGES.map((range) => (
+            <button
+              key={range.id}
+              type="button"
+              className={`btn btn-sm ${quickRange === range.id ? "btn-primary" : "btn-ghost"}`}
+              onClick={() => handleQuickRangeChange(range.id)}
+            >
+              {range.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Custom Week Picker (collapsible) */}
+        {quickRange === "custom" && (
+          <details className="collapse-arrow bg-base-200/50 collapse mt-4">
+            <summary className="collapse-title cursor-pointer text-sm font-medium">
+              Personalizar semanas específicas
+            </summary>
+            <div className="collapse-content space-y-4">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
                 <select
                   value={selectedMonth}
                   onChange={(e) => {
                     setSelectedMonth(e.target.value);
                     setSelectedWeekKeys([]);
                   }}
-                  className="select select-bordered select-sm w-48"
+                  className="select select-bordered select-sm max-w-xs flex-1"
                   disabled={loadingMonths}
                 >
                   {months.map((month) => (
@@ -305,180 +309,190 @@ export default function TimesheetAuditPage() {
                   ))}
                 </select>
                 {weeksForMonth.length > 0 && (
-                  <button type="button" onClick={handleSelectAllWeeks} className="link link-primary text-sm">
-                    {selectedWeekKeys.length === weeksForMonth.length ? "Quitar todas" : "Todas las semanas"}
+                  <button
+                    type="button"
+                    onClick={handleSelectAllWeeks}
+                    className="link link-primary text-sm whitespace-nowrap"
+                  >
+                    {selectedWeekKeys.length === weeksForMonth.length ? "Deseleccionar todas" : "Seleccionar todas"}
                   </button>
                 )}
               </div>
-              <div className="flex flex-wrap gap-2">
+
+              {/* Weeks Grid */}
+              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                 {weeksForMonth.map((week) => {
                   const isActive = selectedWeekKeys.includes(week.key);
                   return (
                     <button
                       key={week.key}
                       type="button"
-                      className={`badge badge-lg cursor-pointer transition-all ${
-                        isActive ? "badge-primary" : "badge-ghost border-base-300 hover:border-primary/50"
-                      }`}
                       onClick={() => handleWeekToggle(week.key)}
+                      className={`rounded-lg border-2 p-3 text-left transition-all ${
+                        isActive
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-base-300 bg-base-100 text-base-content hover:border-primary/50"
+                      }`}
                     >
-                      {week.label}
+                      <div className="text-sm font-medium">{week.label}</div>
                     </button>
                   );
                 })}
               </div>
-              {selectedWeekKeys.length === 0 && <p className="text-xs text-warning">Selecciona al menos una semana</p>}
+
+              {selectedWeekKeys.length === 0 && <p className="text-warning text-sm">Selecciona al menos una semana</p>}
             </div>
-          )}
-
-          {/* Employee Selector */}
-          <div className="border-t border-base-200 pt-4">
-            <div className="flex flex-wrap items-start gap-4">
-              <div className="flex items-center gap-2 text-sm text-base-content/70">
-                <Users className="h-4 w-4" />
-                <span className="font-medium">Empleados:</span>
-                <span className="badge badge-sm badge-ghost">
-                  {selectedEmployeeIds.length}/{MAX_EMPLOYEES}
-                </span>
-              </div>
-
-              {/* Selected Employees Pills */}
-              <div className="flex flex-wrap gap-2 flex-1">
-                {selectedEmployeeIds.map((id) => {
-                  const emp = activeEmployees.find((e) => e.id === id);
-                  if (!emp) return null;
-                  return (
-                    <div key={id} className="badge badge-primary gap-1 pr-1">
-                      <span className="max-w-32 truncate">{emp.full_name}</span>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveEmployee(id)}
-                        className="btn btn-ghost btn-xs btn-circle"
-                        aria-label={`Quitar ${emp.full_name}`}
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </div>
-                  );
-                })}
-
-                {/* Add Employee Dropdown */}
-                {!isMaxEmployees && (
-                  <div className="dropdown dropdown-bottom">
-                    <button
-                      type="button"
-                      tabIndex={0}
-                      className="badge badge-ghost border-dashed border-base-300 gap-1 cursor-pointer hover:border-primary/50"
-                      onClick={() => setShowEmployeeDropdown(!showEmployeeDropdown)}
-                    >
-                      + Agregar
-                      {showEmployeeDropdown ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                    </button>
-                    {showEmployeeDropdown && (
-                      <div
-                        tabIndex={0}
-                        className="dropdown-content z-50 mt-2 w-72 rounded-box bg-base-100 shadow-xl border border-base-200"
-                      >
-                        {/* Search */}
-                        <div className="p-2 border-b border-base-200">
-                          <label className="input input-bordered input-sm flex items-center gap-2 w-full">
-                            <Search className="h-4 w-4 text-base-content/50" />
-                            <input
-                              type="text"
-                              placeholder="Buscar empleado..."
-                              value={employeeSearch}
-                              onChange={(e) => setEmployeeSearch(e.target.value)}
-                              className="grow bg-transparent outline-none"
-                            />
-                          </label>
-                        </div>
-
-                        {/* Employee List */}
-                        <ul className="menu menu-sm max-h-60 overflow-y-auto flex-nowrap p-2">
-                          {loadingEmployees ? (
-                            <li className="p-4 text-center">
-                              <span className="loading loading-spinner loading-sm" />
-                            </li>
-                          ) : filteredEmployees.length === 0 ? (
-                            <li className="p-4 text-center text-sm text-base-content/50">
-                              No se encontraron empleados
-                            </li>
-                          ) : (
-                            filteredEmployees.map((emp) => {
-                              const isSelected = selectedEmployeeIds.includes(emp.id);
-                              return (
-                                <li key={emp.id}>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      handleEmployeeToggle(emp.id);
-                                      if (!isSelected && selectedEmployeeIds.length + 1 >= MAX_EMPLOYEES) {
-                                        setShowEmployeeDropdown(false);
-                                      }
-                                    }}
-                                    className={`flex justify-between ${isSelected ? "active" : ""}`}
-                                  >
-                                    <span className="truncate">{emp.full_name}</span>
-                                    {isSelected && <Check className="h-4 w-4" />}
-                                  </button>
-                                </li>
-                              );
-                            })
-                          )}
-                        </ul>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {selectedEmployeeIds.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={handleClearEmployees}
-                    className="badge badge-ghost text-error gap-1 cursor-pointer hover:bg-error/10"
-                  >
-                    <X className="h-3 w-3" />
-                    Limpiar
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {selectedEmployeeIds.length === 0 && (
-              <p className="mt-2 text-xs text-warning">Selecciona al menos 1 empleado para ver la auditoría</p>
-            )}
-
-            {isMaxEmployees && (
-              <p className="mt-2 text-xs text-base-content/50">Máximo {MAX_EMPLOYEES} empleados simultáneos</p>
-            )}
-          </div>
-        </div>
+          </details>
+        )}
       </div>
 
-      {/* Stats Row (compact) */}
+      {/* Step 2: Employee Selection */}
+      <div className="border-base-300 bg-base-100 rounded-2xl border p-6 shadow-sm">
+        <div className="mb-4 flex items-center gap-3">
+          <div className="badge badge-lg badge-primary">2</div>
+          <h2 className="text-base-content text-lg font-semibold">Selecciona empleados</h2>
+          <span className="text-base-content/60 ml-auto text-sm">
+            {selectedEmployeeIds.length}/{MAX_EMPLOYEES}
+          </span>
+        </div>
+
+        {/* Selected Employees */}
+        {selectedEmployeeIds.length > 0 && (
+          <div className="mb-4 flex flex-wrap gap-2">
+            {selectedEmployeeIds.map((id) => {
+              const emp = activeEmployees.find((e) => e.id === id);
+              if (!emp) return null;
+              return (
+                <div key={id} className="badge badge-primary gap-2 px-3 py-2">
+                  <span>{emp.full_name}</span>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveEmployee(id)}
+                    className="btn btn-ghost btn-xs h-5 w-5 p-0"
+                    aria-label={`Quitar ${emp.full_name}`}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              );
+            })}
+            {selectedEmployeeIds.length > 0 && (
+              <button type="button" onClick={handleClearEmployees} className="link link-error text-sm">
+                Limpiar todos
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Add Employee Dropdown */}
+        {!isMaxEmployees && (
+          <div className="relative">
+            <button
+              type="button"
+              className="btn btn-outline btn-sm w-full justify-start gap-2"
+              onClick={() => setShowEmployeeDropdown(!showEmployeeDropdown)}
+            >
+              <span>+ Agregar empleado</span>
+              {showEmployeeDropdown ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </button>
+
+            {showEmployeeDropdown && (
+              <>
+                {/* Backdrop to close dropdown */}
+                <div className="fixed inset-0 z-40" onClick={() => setShowEmployeeDropdown(false)} />
+                {/* Dropdown Content */}
+                <div className="border-base-300 bg-base-100 absolute top-full right-0 left-0 z-50 mt-2 rounded-xl border shadow-xl">
+                  {/* Search */}
+                  <div className="border-base-300 border-b p-3">
+                    <label className="input input-bordered input-sm flex items-center gap-2">
+                      <Search className="text-base-content/50 h-4 w-4" />
+                      <input
+                        type="text"
+                        placeholder="Buscar empleado..."
+                        value={employeeSearch}
+                        onChange={(e) => setEmployeeSearch(e.target.value)}
+                        className="grow bg-transparent outline-none"
+                      />
+                    </label>
+                  </div>
+
+                  {/* Employee List */}
+                  <ul className="max-h-64 overflow-y-auto p-2">
+                    {loadingEmployees ? (
+                      <li className="flex justify-center p-4">
+                        <span className="loading loading-spinner loading-sm" />
+                      </li>
+                    ) : filteredEmployees.length === 0 ? (
+                      <li className="text-base-content/50 p-4 text-center text-sm">No se encontraron empleados</li>
+                    ) : (
+                      filteredEmployees.map((emp) => {
+                        const isSelected = selectedEmployeeIds.includes(emp.id);
+                        return (
+                          <li key={emp.id}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                handleEmployeeToggle(emp.id);
+                                if (!isSelected && selectedEmployeeIds.length + 1 >= MAX_EMPLOYEES) {
+                                  setShowEmployeeDropdown(false);
+                                }
+                              }}
+                              className={`flex w-full items-center justify-between rounded-lg p-2 transition-all ${
+                                isSelected ? "bg-primary/20 text-primary" : "hover:bg-base-200"
+                              }`}
+                            >
+                              <span className="truncate">{emp.full_name}</span>
+                              {isSelected && <Check className="h-4 w-4 shrink-0" />}
+                            </button>
+                          </li>
+                        );
+                      })
+                    )}
+                  </ul>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {selectedEmployeeIds.length === 0 && (
+          <p className="text-warning mt-2 text-sm">Selecciona al menos 1 empleado para ver la auditoría</p>
+        )}
+
+        {isMaxEmployees && (
+          <p className="text-base-content/60 mt-2 text-sm">Máximo {MAX_EMPLOYEES} empleados simultáneos</p>
+        )}
+      </div>
+
+      {/* Step 3: Results */}
       {canShowCalendar && (
-        <div className="flex flex-wrap gap-4">
-          <div className="stat bg-base-100 shadow-sm rounded-box flex-1 min-w-32 py-3 px-4">
-            <div className="stat-title text-xs">Periodos</div>
-            <div className="stat-value text-lg text-primary">{effectiveRanges.length}</div>
+        <div className="border-base-300 bg-base-100 rounded-2xl border p-6 shadow-sm">
+          <div className="mb-6 flex items-center gap-3">
+            <div className="badge badge-lg badge-primary">3</div>
+            <h2 className="text-base-content text-lg font-semibold">Resultados del análisis</h2>
           </div>
-          <div className="stat bg-base-100 shadow-sm rounded-box flex-1 min-w-32 py-3 px-4">
-            <div className="stat-title text-xs">Registros</div>
-            <div className="stat-value text-lg">{entries.length}</div>
-          </div>
-          <div className="stat bg-base-100 shadow-sm rounded-box flex-1 min-w-32 py-3 px-4">
-            <div className="stat-title text-xs flex items-center gap-1">
-              <AlertTriangle className="h-3 w-3" />
-              Días con alertas
+
+          {/* Stats Grid */}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="border-base-300 bg-base-100 rounded-xl border p-4">
+              <div className="text-base-content/70 text-sm">Periodos</div>
+              <div className="text-primary mt-2 text-2xl font-bold">{effectiveRanges.length}</div>
             </div>
-            <div className={`stat-value text-lg ${totalOverlapDays > 0 ? "text-warning" : "text-success"}`}>
-              {totalOverlapDays}
+            <div className="border-base-300 bg-base-100 rounded-xl border p-4">
+              <div className="text-base-content/70 text-sm">Registros</div>
+              <div className="text-base-content mt-2 text-2xl font-bold">{entries.length}</div>
             </div>
-          </div>
-          <div className="stat bg-base-100 shadow-sm rounded-box flex-1 min-w-32 py-3 px-4">
-            <div className="stat-title text-xs">Conflictos</div>
-            <div className={`stat-value text-lg ${totalOverlapPairs > 0 ? "text-error" : "text-success"}`}>
-              {totalOverlapPairs}
+            <div className="border-base-300 bg-base-100 rounded-xl border p-4">
+              <div className="text-base-content/70 text-sm">Días con alertas</div>
+              <div className={`mt-2 text-2xl font-bold ${totalOverlapDays > 0 ? "text-warning" : "text-success"}`}>
+                {totalOverlapDays}
+              </div>
+            </div>
+            <div className="border-base-300 bg-base-100 rounded-xl border p-4">
+              <div className="text-base-content/70 text-sm">Conflictos</div>
+              <div className={`mt-2 text-2xl font-bold ${totalOverlapPairs > 0 ? "text-error" : "text-success"}`}>
+                {totalOverlapPairs}
+              </div>
             </div>
           </div>
         </div>
@@ -490,10 +504,10 @@ export default function TimesheetAuditPage() {
       {/* Empty States */}
       {selectedEmployeeIds.length === 0 ? (
         <div className="card bg-base-100 shadow-sm">
-          <div className="card-body items-center text-center py-16">
-            <Users className="h-12 w-12 text-base-content/30 mb-4" />
-            <h3 className="text-lg font-semibold text-base-content/70">Selecciona empleados</h3>
-            <p className="text-sm text-base-content/50 max-w-md">
+          <div className="card-body items-center py-16 text-center">
+            <Users className="text-base-content/30 mb-4 h-12 w-12" />
+            <h3 className="text-base-content/70 text-lg font-semibold">Selecciona empleados</h3>
+            <p className="text-base-content/50 max-w-md text-sm">
               Elige hasta {MAX_EMPLOYEES} empleados para analizar sus horarios y detectar solapamientos
             </p>
           </div>
@@ -504,47 +518,52 @@ export default function TimesheetAuditPage() {
 
       {/* Calendar */}
       {canShowCalendar && (
-        <TimesheetAuditCalendar
-          entries={entries}
-          loading={loadingEntries}
-          selectedEmployeeIds={selectedEmployeeIds}
-          focusDate={focusDate}
-          visibleDateRanges={effectiveRanges}
-        />
+        <div className="border-base-300 bg-base-100 rounded-2xl border p-6 shadow-sm">
+          <h2 className="text-base-content mb-6 text-lg font-semibold">Calendario de auditoría</h2>
+          <TimesheetAuditCalendar
+            entries={entries}
+            loading={loadingEntries}
+            selectedEmployeeIds={selectedEmployeeIds}
+            focusDate={focusDate}
+            visibleDateRanges={effectiveRanges}
+          />
+        </div>
       )}
 
       {/* Legend (collapsible) */}
       {canShowCalendar && entries.length > 0 && (
-        <details className="collapse collapse-arrow bg-base-100 shadow-sm">
-          <summary className="collapse-title text-sm font-medium">Guía de interpretación</summary>
+        <details className="collapse-arrow border-base-300 bg-base-100 collapse rounded-2xl border shadow-sm">
+          <summary className="collapse-title text-base-content cursor-pointer font-medium">
+            📋 Guía de interpretación
+          </summary>
           <div className="collapse-content">
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 text-sm pt-2">
-              <div className="flex items-start gap-2">
-                <div className="h-4 w-4 rounded bg-accent shrink-0 mt-0.5" />
+            <div className="grid gap-6 pt-4 sm:grid-cols-2">
+              <div className="flex items-start gap-3">
+                <div className="bg-accent mt-1 h-4 w-4 shrink-0 rounded" />
                 <div>
-                  <p className="font-medium">Sin conflicto</p>
-                  <p className="text-xs text-base-content/60">Turnos sin solapamiento</p>
+                  <p className="text-base-content font-semibold">Sin conflicto</p>
+                  <p className="text-base-content/70 text-sm">Turnos sin solapamiento</p>
                 </div>
               </div>
-              <div className="flex items-start gap-2">
-                <div className="h-4 w-4 rounded bg-error shrink-0 mt-0.5" />
+              <div className="flex items-start gap-3">
+                <div className="bg-error mt-1 h-4 w-4 shrink-0 rounded" />
                 <div>
-                  <p className="font-medium">Conflicto</p>
-                  <p className="text-xs text-base-content/60">Horarios traslapados</p>
+                  <p className="text-base-content font-semibold">Conflicto detectado</p>
+                  <p className="text-base-content/70 text-sm">Horarios traslapados entre empleados</p>
                 </div>
               </div>
-              <div className="flex items-start gap-2">
-                <span className="text-base">👩‍⚕️</span>
+              <div className="flex items-start gap-3">
+                <span className="text-lg">👩‍⚕️</span>
                 <div>
-                  <p className="font-medium">Compatibles</p>
-                  <p className="text-xs text-base-content/60">Enfermero + TENS pueden coexistir</p>
+                  <p className="text-base-content font-semibold">Compatibles</p>
+                  <p className="text-base-content/70 text-sm">Enfermero + TENS pueden coexistir</p>
                 </div>
               </div>
-              <div className="flex items-start gap-2">
-                <span className="text-base">⌛</span>
+              <div className="flex items-start gap-3">
+                <span className="text-lg">⌛</span>
                 <div>
-                  <p className="font-medium">Tooltip</p>
-                  <p className="text-xs text-base-content/60">Pasa el cursor para detalles</p>
+                  <p className="text-base-content font-semibold">Tooltip</p>
+                  <p className="text-base-content/70 text-sm">Pasa el cursor para ver detalles del conflicto</p>
                 </div>
               </div>
             </div>
