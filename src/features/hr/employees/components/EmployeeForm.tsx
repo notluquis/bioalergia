@@ -119,10 +119,7 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="space-y-4 rounded-2xl border border-primary/15 bg-base-100 p-6 text-sm shadow-sm"
-    >
+    <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid gap-4 md:grid-cols-3">
         <div className="md:col-span-3">
           <Input
@@ -262,13 +259,11 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
         />
       </div>
       <div className="flex items-center justify-end gap-3">
-        {employee?.id && (
-          <Button type="button" variant="secondary" onClick={onCancel}>
-            Cancelar edición
-          </Button>
-        )}
+        <Button type="button" variant="secondary" onClick={onCancel}>
+          Cancelar
+        </Button>
         <Button type="submit" disabled={saving}>
-          {saving ? "Guardando..." : employee?.id ? "Actualizar" : "Agregar"}
+          {saving ? "Guardando..." : employee?.id ? "Actualizar empleado" : "Agregar empleado"}
         </Button>
       </div>
     </form>
