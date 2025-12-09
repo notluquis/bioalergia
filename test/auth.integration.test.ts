@@ -42,8 +42,9 @@ describe("Auth Integration", () => {
       expect(response.body).toHaveProperty("user");
       expect(response.body.user.email).toBe("login-test@example.com");
       // Check for cookie
-      const cookies = response.headers["set-cookie"];
-      expect(cookies).toBeDefined();
+      const rawCookies = response.headers["set-cookie"];
+      const cookies = Array.isArray(rawCookies) ? rawCookies : rawCookies ? [rawCookies] : [];
+      expect(cookies.length).toBeGreaterThan(0);
       expect(cookies.some((c: string) => c.includes("token"))).toBe(true);
     });
 
@@ -73,8 +74,9 @@ describe("Auth Integration", () => {
       const response = await request(app).post("/api/auth/logout");
 
       expect(response.status).toBe(200);
-      const cookies = response.headers["set-cookie"];
-      expect(cookies).toBeDefined();
+      const rawCookies = response.headers["set-cookie"];
+      const cookies = Array.isArray(rawCookies) ? rawCookies : rawCookies ? [rawCookies] : [];
+      expect(cookies.length).toBeGreaterThan(0);
       // Expect token to be cleared (empty value or past expiry)
       expect(cookies.some((c: string) => c.includes("token=;"))).toBe(true);
     });
