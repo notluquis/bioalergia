@@ -145,6 +145,7 @@ Short, actionable instructions so AI coding agents are productive immediately.
 - Do not change session duration (`server/config.ts` maxAge) without user approval — currently set to 24 hours.
 - Do not remove ChunkErrorBoundary wrapper in `src/main.tsx` — it handles production chunk 404s gracefully.
 - Do not alter LoginPage aesthetic (minimalist, passkey-first) without explicit request.
+- **Strict Pre-commit Hooks**: The project uses `husky` and `lint-staged`. Commits WILL FAIL if there are unused imports, unused variables, or type errors. Always run `npm run type-check` and `npm run lint` BEFORE attempting to commit.
 
 6. Testing and verification for PRs
 
