@@ -1,18 +1,20 @@
-import { Suspense, lazy, ReactNode } from "react";
+import { Suspense, lazy } from "react";
 import ReactDOM from "react-dom/client";
-import { createBrowserRouter, RouterProvider, Navigate, useLocation } from "react-router-dom";
+import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "./index.css";
 import "./i18n";
 import App from "./App";
 // RequireAuth is defined locally
-import { AuthProvider, useAuth } from "./context/AuthContext";
+import { AuthProvider } from "./context/AuthContext";
 import { SettingsProvider } from "./context/SettingsContext";
 import { ToastProvider } from "./context/ToastContext";
 
 import { GlobalError } from "./components/ui/GlobalError";
 import { ChunkErrorBoundary } from "./components/ui/ChunkErrorBoundary";
 import { initSWUpdateListener } from "./lib/swUpdateListener";
+import RequireAuth from "@/components/common/RequireAuth";
+import PublicOnlyRoute from "@/components/common/PublicOnlyRoute";
 
 // Lazy loading de componentes principales
 const Home = lazy(() => import("./pages/Home"));
@@ -74,39 +76,15 @@ const ChunkLoadErrorPage = lazy(() => import("./pages/ChunkLoadErrorPage"));
 import PageLoader from "./components/ui/PageLoader";
 import NotFoundPage from "./pages/NotFoundPage";
 
-// Wrapper to protect routes and handle onboarding redirect
-function RequireAuth({ children }: { children: ReactNode }) {
-  const { user, initializing } = useAuth();
-  const location = useLocation();
-
-  if (initializing) {
-    return <PageLoader />;
-  }
-
-  if (!user) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
-  }
-
-  // Redirect to onboarding if pending setup
-  if (user.status === "PENDING_SETUP" && location.pathname !== "/onboarding") {
-    return <Navigate to="/onboarding" replace />;
-  }
-
-  // Prevent access to onboarding if already active
-  if (user.status === "ACTIVE" && location.pathname === "/onboarding") {
-    return <Navigate to="/" replace />;
-  }
-
-  return children;
-}
-
 const router = createBrowserRouter([
   {
     path: "/login",
     element: (
-      <Suspense fallback={<PageLoader />}>
-        <Login />
-      </Suspense>
+      <PublicOnlyRoute>
+        <Suspense fallback={<PageLoader />}>
+          <Login />
+        </Suspense>
+      </PublicOnlyRoute>
     ),
   },
   {
