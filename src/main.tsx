@@ -11,6 +11,8 @@ import { SettingsProvider } from "./context/SettingsContext";
 import { ToastProvider } from "./context/ToastContext";
 
 import { GlobalError } from "./components/ui/GlobalError";
+import { ChunkErrorBoundary } from "./components/ui/ChunkErrorBoundary";
+import { initSWUpdateListener } from "./lib/swUpdateListener";
 
 // Lazy loading de componentes principales
 const Home = lazy(() => import("./pages/Home"));
@@ -65,6 +67,7 @@ const DailyProductionBalancesSettingsPage = lazy(() => import("./pages/settings/
 const SecuritySettingsPage = lazy(() => import("./pages/settings/SecuritySettingsPage"));
 const AddUserPage = lazy(() => import("./pages/admin/AddUserPage"));
 const OnboardingWizard = lazy(() => import("./pages/onboarding/OnboardingWizard"));
+const ChunkLoadErrorPage = lazy(() => import("./pages/ChunkLoadErrorPage"));
 
 // Componente de loading
 // Componente de loading
@@ -468,6 +471,15 @@ const router = createBrowserRouter([
           },
         ],
       },
+      // Chunk Load Error page
+      {
+        path: "/chunk-load-error",
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <ChunkLoadErrorPage />
+          </Suspense>
+        ),
+      },
       // Legacy Redirects (Optional but good for UX)
       { path: "/transactions/movements", element: <Navigate to="/finanzas/movements" replace /> },
       { path: "/transactions/balances", element: <Navigate to="/finanzas/balances" replace /> },
@@ -506,14 +518,19 @@ const queryClient = new QueryClient({
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <GlobalError>
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <SettingsProvider>
-          <ToastProvider>
-            <RouterProvider router={router} />
-          </ToastProvider>
-        </SettingsProvider>
-      </AuthProvider>
-    </QueryClientProvider>
+    <ChunkErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <SettingsProvider>
+            <ToastProvider>
+              <RouterProvider router={router} />
+            </ToastProvider>
+          </SettingsProvider>
+        </AuthProvider>
+      </QueryClientProvider>
+    </ChunkErrorBoundary>
   </GlobalError>
 );
+
+// Initialize Service Worker update listener
+initSWUpdateListener();
