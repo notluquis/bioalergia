@@ -10,6 +10,7 @@ import { logger } from "@/lib/logger";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import ConnectionIndicator from "@/components/features/ConnectionIndicator";
+import ThemeToggle from "@/components/ui/ThemeToggle";
 import { useToast } from "@/context/ToastContext";
 import { apiClient } from "@/lib/apiClient";
 
@@ -51,14 +52,14 @@ export default function LoginPage() {
         return;
       }
 
+      logger.info("[login-page] redirecting after successful login", { user: email, to: from });
       navigate(from, { replace: true });
     } catch (err) {
       const message = err instanceof Error ? err.message : "No se pudo iniciar sesión";
       toastError(message);
       setFormError(message);
       logger.error("[login-page] login error", { email, message });
-    } finally {
-      if (step === "credentials") setLoading(false);
+      setLoading(false);
     }
   };
 
@@ -70,6 +71,7 @@ export default function LoginPage() {
     setFormError(null);
     try {
       await loginWithMfa(tempUserId, mfaCode);
+      logger.info("[login-page] redirecting after successful mfa login", { userId: tempUserId, to: from });
       navigate(from, { replace: true });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Código incorrecto";
@@ -94,18 +96,24 @@ export default function LoginPage() {
       const authResp = await startAuthentication({ optionsJSON: options });
       await loginWithPasskey(authResp, options.challenge);
 
+      logger.info("[login-page] redirecting after successful passkey login", { to: from });
       navigate(from, { replace: true });
     } catch (err) {
       console.error(err);
       setFormError("No se pudo validar el acceso biométrico. Usa tu contraseña.");
       setStep("credentials");
-    } finally {
       setLoading(false);
     }
   };
 
   return (
     <div className="bg-base-100 flex min-h-screen items-center justify-center px-4 py-10">
+      {/* Floating controls - top right */}
+      <div className="fixed top-4 right-4 z-10 flex items-center gap-2">
+        <ConnectionIndicator />
+        <ThemeToggle />
+      </div>
+
       <div className="w-full max-w-sm">
         {/* Header */}
         <div className="mb-8 flex flex-col items-center gap-4 text-center">
@@ -156,8 +164,6 @@ export default function LoginPage() {
               <Mail className="size-4" />
               <span className="text-sm font-medium">Usar correo y contraseña</span>
             </button>
-
-            <ConnectionIndicator />
           </div>
         )}
 
@@ -206,8 +212,6 @@ export default function LoginPage() {
                 {loading ? "Verificando..." : "Continuar"}
               </Button>
             </div>
-
-            <ConnectionIndicator />
           </form>
         )}
 
@@ -249,8 +253,6 @@ export default function LoginPage() {
                 {loading ? "Verificando..." : "Confirmar"}
               </Button>
             </div>
-
-            <ConnectionIndicator />
           </form>
         )}
 
