@@ -195,15 +195,15 @@ export default function OnboardingWizard() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-base-200 p-4">
-      <div className="w-full max-w-2xl bg-base-100 rounded-3xl shadow-xl overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="bg-base-200 flex min-h-screen items-center justify-center p-4">
+      <div className="bg-base-100 flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl shadow-xl">
         {/* Progress Bar */}
-        <div className="p-4 mb-4">
-          <div className="relative flex justify-between items-center max-w-4xl mx-auto px-4">
+        <div className="mb-4 p-4">
+          <div className="relative mx-auto flex max-w-4xl items-center justify-between px-4">
             {/* Connecting Line */}
-            <div className="absolute top-1/2 left-0 w-full h-0.5 bg-base-300 z-0 -translate-y-1/2" />
+            <div className="bg-base-300 absolute top-1/2 left-0 z-0 h-0.5 w-full -translate-y-1/2" />
             <div
-              className="absolute top-1/2 left-0 h-0.5 bg-primary transition-all duration-500 z-0 -translate-y-1/2"
+              className="bg-primary absolute top-1/2 left-0 z-0 h-0.5 -translate-y-1/2 transition-all duration-500"
               style={{ width: `${(currentStep / (STEPS.length - 1)) * 100}%` }}
             />
 
@@ -211,9 +211,9 @@ export default function OnboardingWizard() {
               <div key={step.id} className="relative z-10 flex flex-col items-center gap-2 px-1">
                 <div
                   className={cn(
-                    "w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold transition-all duration-300 border-4",
+                    "flex h-8 w-8 items-center justify-center rounded-full border-4 text-xs font-bold transition-all duration-300 sm:h-10 sm:w-10 sm:text-sm",
                     idx <= currentStep
-                      ? "bg-primary text-primary-content border-primary shadow-lg shadow-primary/30 scale-110"
+                      ? "bg-primary text-primary-content border-primary shadow-primary/30 scale-110 shadow-lg"
                       : "bg-base-100 text-base-content/50 border-base-200"
                   )}
                 >
@@ -221,7 +221,7 @@ export default function OnboardingWizard() {
                 </div>
                 <span
                   className={cn(
-                    "absolute top-full mt-2 text-[10px] font-medium uppercase tracking-wider transition-colors whitespace-nowrap",
+                    "absolute top-full mt-2 text-[10px] font-medium tracking-wider whitespace-nowrap uppercase transition-colors",
                     idx <= currentStep ? "text-primary" : "text-base-content/60",
                     // Show all labels on sm+ screens, smart hiding on very small screens
                     "hidden sm:block",
@@ -238,27 +238,28 @@ export default function OnboardingWizard() {
           </div>
         </div>
 
-        <div className="p-6 sm:p-8 overflow-y-auto flex-1">
+        <div className="flex-1 overflow-y-auto p-6 sm:p-8">
           {error && (
-            <div className="alert alert-error text-sm py-2 mb-6">
+            <div className="alert alert-error mb-6 py-2 text-sm">
               <span>{error}</span>
             </div>
           )}
 
           {currentStep === 0 && (
-            <div className="text-center space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 py-8">
-              <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto text-primary">
+            <div className="animate-in fade-in slide-in-from-bottom-4 space-y-6 py-8 text-center duration-500">
+              <div className="bg-primary/10 text-primary mx-auto flex h-20 w-20 items-center justify-center rounded-full">
                 <Shield size={40} />
               </div>
               <div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-base-content break-all">Hola, {user?.email}</h1>
-                <p className="text-base-content/60 mt-2 max-w-md mx-auto">
-                  Bienvenido a Finanzas App. Antes de comenzar, necesitamos completar tu perfil y asegurar tu cuenta.
+                <h1 className="text-base-content text-2xl font-bold break-all sm:text-3xl">Hola, {user?.email}</h1>
+                <p className="text-base-content/60 mx-auto mt-2 max-w-md">
+                  Bienvenido a la intranet de Bioalergia. Antes de comenzar, necesitamos completar tu perfil y asegurar
+                  tu cuenta.
                 </p>
               </div>
               <button
                 onClick={handleNext}
-                className="btn btn-primary btn-lg w-full max-w-xs gap-2 shadow-lg shadow-primary/20"
+                className="btn btn-primary btn-lg shadow-primary/20 w-full max-w-xs gap-2 shadow-lg"
               >
                 Comenzar <ArrowRight size={20} />
               </button>
@@ -268,17 +269,17 @@ export default function OnboardingWizard() {
           {currentStep === 1 && (
             <form
               onSubmit={handleProfileSubmit}
-              className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500"
+              className="animate-in fade-in slide-in-from-right-4 space-y-6 duration-500"
             >
-              <div className="text-center mb-6">
-                <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto text-primary mb-3">
+              <div className="mb-6 text-center">
+                <div className="bg-primary/10 text-primary mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full">
                   <User size={24} />
                 </div>
                 <h2 className="text-2xl font-bold">Datos Personales</h2>
-                <p className="text-sm text-base-content/60">Información básica para tu perfil.</p>
+                <p className="text-base-content/60 text-sm">Información básica para tu perfil.</p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="form-control">
                   <label className="label">
                     <span className="label-text">Nombres</span>
@@ -371,8 +372,8 @@ export default function OnboardingWizard() {
                 </div>
               </div>
 
-              <div className="flex justify-end mt-6">
-                <button type="submit" className="btn btn-primary w-full sm:w-auto px-8">
+              <div className="mt-6 flex justify-end">
+                <button type="submit" className="btn btn-primary w-full px-8 sm:w-auto">
                   Siguiente
                 </button>
               </div>
@@ -382,14 +383,14 @@ export default function OnboardingWizard() {
           {currentStep === 2 && (
             <form
               onSubmit={handleFinancialSubmit}
-              className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500"
+              className="animate-in fade-in slide-in-from-right-4 space-y-6 duration-500"
             >
-              <div className="text-center mb-6">
-                <div className="w-12 h-12 bg-secondary/10 rounded-full flex items-center justify-center mx-auto text-secondary mb-3">
+              <div className="mb-6 text-center">
+                <div className="bg-secondary/10 text-secondary mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full">
                   <CreditCard size={24} />
                 </div>
-                <h2 className="text-2xl font-bold">Datos Bancarios (Opcional)</h2>
-                <p className="text-sm text-base-content/60">Para gestionar tus pagos y remuneraciones.</p>
+                <h2 className="text-2xl font-bold">Datos Bancarios</h2>
+                <p className="text-base-content/60 text-sm">Para gestionar tus pagos y remuneraciones.</p>
               </div>
 
               <div className="space-y-4">
@@ -405,7 +406,7 @@ export default function OnboardingWizard() {
                     placeholder="Ej: Banco de Chile"
                   />
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <div className="form-control">
                     <label className="label">
                       <span className="label-text">Tipo de Cuenta</span>
@@ -435,11 +436,11 @@ export default function OnboardingWizard() {
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 mt-6">
+              <div className="mt-6 flex justify-end gap-3">
                 <button type="button" onClick={() => setCurrentStep((prev) => prev - 1)} className="btn btn-ghost">
                   Atrás
                 </button>
-                <button type="submit" className="btn btn-primary w-full sm:w-auto px-8">
+                <button type="submit" className="btn btn-primary w-full px-8 sm:w-auto">
                   Siguiente
                 </button>
               </div>
@@ -449,14 +450,14 @@ export default function OnboardingWizard() {
           {currentStep === 3 && (
             <form
               onSubmit={handlePasswordSubmit}
-              className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500"
+              className="animate-in fade-in slide-in-from-right-4 space-y-6 duration-500"
             >
-              <div className="text-center mb-6">
-                <div className="w-12 h-12 bg-accent/10 rounded-full flex items-center justify-center mx-auto text-accent mb-3">
+              <div className="mb-6 text-center">
+                <div className="bg-accent/10 text-accent mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full">
                   <Key size={24} />
                 </div>
                 <h2 className="text-2xl font-bold">Seguridad</h2>
-                <p className="text-sm text-base-content/60">Crea una contraseña segura.</p>
+                <p className="text-base-content/60 text-sm">Crea una contraseña segura.</p>
               </div>
 
               <div className="space-y-4">
@@ -482,11 +483,11 @@ export default function OnboardingWizard() {
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 mt-6">
+              <div className="mt-6 flex justify-end gap-3">
                 <button type="button" onClick={() => setCurrentStep((prev) => prev - 1)} className="btn btn-ghost">
                   Atrás
                 </button>
-                <button type="submit" className="btn btn-primary w-full sm:w-auto px-8">
+                <button type="submit" className="btn btn-primary w-full px-8 sm:w-auto">
                   Siguiente
                 </button>
               </div>
@@ -494,13 +495,13 @@ export default function OnboardingWizard() {
           )}
 
           {currentStep === 4 && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
-              <div className="text-center mb-6">
-                <div className="w-12 h-12 bg-warning/10 rounded-full flex items-center justify-center mx-auto text-warning mb-3">
+            <div className="animate-in fade-in slide-in-from-right-4 space-y-6 duration-500">
+              <div className="mb-6 text-center">
+                <div className="bg-warning/10 text-warning mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full">
                   <Smartphone size={24} />
                 </div>
                 <h2 className="text-2xl font-bold">Configurar MFA</h2>
-                <p className="text-sm text-base-content/60">
+                <p className="text-base-content/60 text-sm">
                   Escanea el código con tu app de autenticación (Google Authenticator, Microsoft Authenticator, Apple
                   Passwords, etc).
                 </p>
@@ -508,17 +509,17 @@ export default function OnboardingWizard() {
 
               {loading && !mfaSecret ? (
                 <div className="flex justify-center py-8">
-                  <Loader2 className="animate-spin text-primary" size={40} />
+                  <Loader2 className="text-primary animate-spin" size={40} />
                 </div>
               ) : mfaSecret ? (
                 <div className="flex flex-col items-center gap-6">
-                  <div className="bg-white p-4 rounded-xl shadow-sm">
-                    <img src={mfaSecret.qrCodeUrl} alt="QR Code" className="w-48 h-48" />
+                  <div className="rounded-xl bg-white p-4 shadow-sm">
+                    <img src={mfaSecret.qrCodeUrl} alt="QR Code" className="h-48 w-48" />
                   </div>
 
-                  <div className="w-full max-w-xs form-control">
+                  <div className="form-control w-full max-w-xs">
                     <label className="label">
-                      <span className="label-text text-center w-full">Ingresa el código de 6 dígitos</span>
+                      <span className="label-text w-full text-center">Ingresa el código de 6 dígitos</span>
                     </label>
                     <input
                       type="text"
@@ -540,7 +541,7 @@ export default function OnboardingWizard() {
                     {loading ? <Loader2 className="animate-spin" /> : "Verificar y Activar"}
                   </button>
 
-                  <div className="divider text-xs text-base-content/40">O usa biometría</div>
+                  <div className="divider text-base-content/40 text-xs">O usa biometría</div>
 
                   <button
                     onClick={handlePasskeyRegister}
@@ -560,23 +561,23 @@ export default function OnboardingWizard() {
                   </button>
                 </div>
               ) : (
-                <div className="text-center text-error">No se pudo cargar el código QR.</div>
+                <div className="text-error text-center">No se pudo cargar el código QR.</div>
               )}
             </div>
           )}
 
           {currentStep === 5 && (
-            <div className="text-center space-y-6 animate-in fade-in zoom-in duration-500 py-8">
-              <div className="w-24 h-24 bg-success/10 rounded-full flex items-center justify-center mx-auto text-success">
+            <div className="animate-in fade-in zoom-in space-y-6 py-8 text-center duration-500">
+              <div className="bg-success/10 text-success mx-auto flex h-24 w-24 items-center justify-center rounded-full">
                 <Check size={48} strokeWidth={3} />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-base-content">¡Todo listo!</h1>
+                <h1 className="text-base-content text-3xl font-bold">¡Todo listo!</h1>
                 <p className="text-base-content/60 mt-2">Tu perfil ha sido completado y tu cuenta está segura.</p>
               </div>
               <button
                 onClick={handleFinalSubmit}
-                className="btn btn-primary btn-lg w-full max-w-xs shadow-lg shadow-primary/20"
+                className="btn btn-primary btn-lg shadow-primary/20 w-full max-w-xs shadow-lg"
                 disabled={loading}
               >
                 {loading ? <Loader2 className="animate-spin" /> : "Finalizar e Ir al Dashboard"}

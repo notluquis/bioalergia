@@ -108,13 +108,22 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-linear-to-br from-base-200/60 via-base-100 to-base-100 px-6 py-12">
-      <div className="surface-elevated relative z-10 w-full max-w-lg rounded-[1.75rem] px-10 py-12 shadow-2xl">
-        <div className="mb-6 flex justify-end">
+    <div className="bg-base-200 relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-10 sm:px-8">
+      <div className="pointer-events-none absolute inset-0 opacity-60 blur-3xl">
+        <div className="from-primary/10 via-secondary/5 to-accent/10 absolute top-0 -left-20 h-64 w-64 rounded-full bg-linear-to-br" />
+        <div className="from-secondary/10 via-primary/5 to-info/10 absolute -right-24 bottom-0 h-72 w-72 rounded-full bg-linear-to-tr" />
+      </div>
+
+      <div className="card border-base-200/70 bg-base-100/95 relative z-10 w-full max-w-lg border shadow-2xl backdrop-blur">
+        <div className="flex items-center justify-between px-8 pt-8">
+          <div className="text-base-content/70 flex flex-col gap-1 text-xs">
+            <span className="text-base-content font-semibold">Portal Seguro</span>
+            <span className="text-base-content/60 text-[11px]">Tus credenciales están cifradas</span>
+          </div>
           <ConnectionIndicator />
         </div>
 
-        <div className="flex flex-col items-center gap-3 text-center">
+        <div className="flex flex-col items-center gap-3 px-8 pt-6 text-center">
           <img
             src={logoSrc}
             alt={settings.orgName || "Bioalergia"}
@@ -125,19 +134,27 @@ export default function LoginPage() {
               }
             }}
           />
-          <h1 className="text-xl font-semibold text-primary drop-shadow-sm break-all">
-            {step === "mfa" ? "Verificación de seguridad" : `Inicia sesión en ${settings.orgName}`}
+          <h1 className="text-primary text-2xl font-semibold break-all drop-shadow-sm">
+            {step === "mfa" ? "Verificación de seguridad" : `Inicia sesión en ${settings.orgName || "Bioalergia"}`}
           </h1>
-          <p className="text-sm text-base-content/90">
+          <p className="text-base-content/80 text-sm">
             {step === "mfa"
-              ? "Ingresa el código de 6 dígitos de tu aplicación autenticadora."
-              : "Usa tu correo corporativo para continuar."}
+              ? "Ingresa el código de 6 dígitos de tu app autenticadora."
+              : "Usa tu correo corporativo o tu biometría para continuar."}
           </p>
         </div>
 
         {step === "credentials" ? (
-          <div className="mt-8 space-y-5">
-            <form onSubmit={handleCredentialsSubmit} className="space-y-5">
+          <div className="mt-8 space-y-5 px-8 pb-8">
+            <div className="bg-base-200/60 text-base-content/70 rounded-2xl p-4 text-left text-xs">
+              <p className="text-base-content font-semibold">Consejo:</p>
+              <ul className="mt-2 list-disc space-y-1 pl-4">
+                <li>Habilita Passkey/biometría para acceso rápido y seguro.</li>
+                <li>No compartas tu contraseña; puedes resetearla con el administrador.</li>
+              </ul>
+            </div>
+
+            <form onSubmit={handleCredentialsSubmit} className="space-y-4">
               <Input
                 label="Correo electrónico"
                 type="email"
@@ -169,10 +186,10 @@ export default function LoginPage() {
               </Button>
             </form>
 
-            <div className="relative flex items-center py-2">
-              <div className="grow border-t border-base-300"></div>
-              <span className="mx-4 shrink text-xs text-base-content/50">O ingresa con</span>
-              <div className="grow border-t border-base-300"></div>
+            <div className="relative flex items-center py-1">
+              <div className="border-base-300 grow border-t"></div>
+              <span className="text-base-content/50 mx-4 shrink text-xs">O usa</span>
+              <div className="border-base-300 grow border-t"></div>
             </div>
 
             <Button
@@ -183,14 +200,14 @@ export default function LoginPage() {
               disabled={loading}
             >
               <Fingerprint className="size-4" />
-              <span className="hidden sm:inline">Passkey / Biometría</span>
+              <span className="hidden sm:inline">Passkey / Biometría (recomendado)</span>
               <span className="sm:hidden">Biometría</span>
             </Button>
           </div>
         ) : (
-          <form onSubmit={handleMfaSubmit} className="mt-8 space-y-5">
+          <form onSubmit={handleMfaSubmit} className="mt-8 space-y-5 px-8 pb-8">
             <div className="flex justify-center">
-              <Smartphone className="size-12 text-primary/20" />
+              <Smartphone className="text-primary/40 size-12" />
             </div>
             <Input
               label="Código de seguridad"
@@ -231,15 +248,18 @@ export default function LoginPage() {
           </form>
         )}
 
-        {formError && <p className="mt-4 text-center text-xs text-rose-500">{formError}</p>}
+        {formError && <p className="text-error px-8 pb-4 text-center text-sm">{formError}</p>}
 
         {step === "credentials" && (
-          <p className="mt-8 text-center text-xs text-base-content/90">
-            ¿Olvidaste tu contraseña?{" "}
-            <a href={`mailto:${supportEmail}`} className="font-semibold text-primary underline">
-              Contacta al administrador
-            </a>
-          </p>
+          <div className="px-8 pb-8">
+            <div className="divider text-base-content/60 text-xs">¿Necesitas ayuda?</div>
+            <p className="text-base-content/80 text-center text-xs">
+              ¿Olvidaste tu contraseña?{" "}
+              <a href={`mailto:${supportEmail}`} className="text-primary font-semibold underline">
+                Contacta al administrador
+              </a>
+            </p>
+          </div>
         )}
       </div>
     </div>
