@@ -158,9 +158,23 @@ app.use((req, res, next) => {
   next();
 });
 
-// Serve static files
+// Cache headers: index.html never cached, assets cached forever (Vite hashes handle busting)
+app.use((req: Request, res: Response, next) => {
+  if (req.path === "/" || req.path.endsWith("/index.html")) {
+    res.set("Cache-Control", "public, max-age=0, must-revalidate");
+  } else if (STATIC_EXTENSIONS.test(req.path)) {
+    res.set("Cache-Control", "public, max-age=31536000, immutable");
+  }
+  next();
+});
+
 app.use(express.static(clientDir, { index: false }));
 app.use("/uploads", express.static(uploadsDir));
+
+// Redirect manifest.json to manifest.webmanifest
+app.get("/manifest.json", (_req: Request, res: Response) => {
+  res.sendFile(path.join(clientDir, "manifest.webmanifest"));
+});
 
 // SPA fallback - serve index.html para rutas no encontradas
 // Express 5: need separate handlers for "/" and "/*path"

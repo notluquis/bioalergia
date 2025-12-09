@@ -40,7 +40,7 @@ export function mapPerson(p: PersonWithRoles) {
     // Core person data
     id: p.id,
     rut: p.rut,
-    full_name: p.names,
+    full_name: [p.names, p.fatherName, p.motherName].filter(Boolean).join(" "),
     names: p.names,
     father_name: p.fatherName,
     mother_name: p.motherName,

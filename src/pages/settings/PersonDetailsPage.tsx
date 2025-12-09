@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, User, Mail, Phone, MapPin, Calendar, Building, Briefcase } from "lucide-react";
 import dayjs from "dayjs";
 import PageLoader from "@/components/ui/PageLoader";
+import { getPersonInitials, getPersonFullName } from "@/lib/person";
 
 export default function PersonDetailsPage() {
   const { id } = useParams<{ id: string }>();
@@ -54,13 +55,11 @@ export default function PersonDetailsPage() {
             <div className="flex items-start gap-6">
               <div className="avatar placeholder">
                 <div className="bg-primary text-primary-content flex w-24 items-center justify-center rounded-full text-3xl">
-                  <span>{person.names ? person.names.substring(0, 2).toUpperCase() : "?"}</span>
+                  <span>{getPersonInitials(person)}</span>
                 </div>
               </div>
               <div className="space-y-1">
-                <h2 className="text-2xl font-bold">
-                  {person.names} {person.fatherName} {person.motherName}
-                </h2>
+                <h2 className="text-2xl font-bold">{getPersonFullName(person)}</h2>
                 <div className="text-base-content/70 flex items-center gap-2">
                   <span className="badge badge-ghost">{person.rut}</span>
                   {person.gender && <span className="badge badge-ghost">{person.gender}</span>}

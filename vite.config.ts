@@ -29,7 +29,7 @@ export default defineConfig(({ mode }) => ({
       workbox: {
         cleanupOutdatedCaches: true,
         clientsClaim: true,
-        skipWaiting: false,
+        skipWaiting: true,
         // Minimal precaching - only HTML
         globPatterns: ["index.html"],
         // No runtime caching - rely on HTTP cache + Vite hashes

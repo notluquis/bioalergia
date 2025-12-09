@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { apiClient } from "@/lib/apiClient";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
+import { getPersonInitials, getPersonFullName } from "@/lib/person";
 
 export default function PersonManagementPage() {
   const navigate = useNavigate();
@@ -70,15 +71,11 @@ export default function PersonManagementPage() {
                   <div className="flex items-center gap-3">
                     <div className="avatar placeholder">
                       <div className="bg-base-200 text-base-content/60 flex w-10 items-center justify-center rounded-full">
-                        <span className="text-xs font-bold">
-                          {person.names ? person.names.substring(0, 2).toUpperCase() : "?"}
-                        </span>
+                        <span className="text-xs font-bold">{getPersonInitials(person)}</span>
                       </div>
                     </div>
                     <div>
-                      <h3 className="text-base-content font-bold">
-                        {person.names} {person.fatherName}
-                      </h3>
+                      <h3 className="text-base-content font-bold">{getPersonFullName(person)}</h3>
                       <p className="text-base-content/50 text-xs">{person.rut}</p>
                     </div>
                   </div>
