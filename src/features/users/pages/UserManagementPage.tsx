@@ -11,6 +11,7 @@ import { useToast } from "@/context/ToastContext";
 import Input from "@/components/ui/Input";
 import { cn } from "@/lib/utils";
 import { apiClient } from "@/lib/apiClient";
+import { getPersonInitials, getPersonFullName } from "@/lib/person";
 
 dayjs.extend(relativeTime);
 dayjs.locale("es");
@@ -130,8 +131,8 @@ export default function UserManagementPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-base-content">Usuarios</h1>
-          <p className="text-sm text-base-content/60">Gestiona el acceso y roles del sistema.</p>
+          <h1 className="text-base-content text-2xl font-bold">Usuarios</h1>
+          <p className="text-base-content/60 text-sm">Gestiona el acceso y roles del sistema.</p>
         </div>
         <Link to="/settings/users/add" className="btn btn-primary gap-2">
           <UserPlus size={20} />
@@ -142,7 +143,7 @@ export default function UserManagementPage() {
       <div className="surface-elevated rounded-2xl p-4">
         <div className="mb-4 flex flex-col gap-4 sm:flex-row">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-base-content/40" />
+            <Search className="text-base-content/40 absolute top-1/2 left-3 size-4 -translate-y-1/2" />
             <Input
               placeholder="Buscar por nombre, email o RUT..."
               className="pl-10"
@@ -162,7 +163,7 @@ export default function UserManagementPage() {
           </select>
         </div>
 
-        <div className="overflow-x-auto min-h-96 pb-32">
+        <div className="min-h-96 overflow-x-auto pb-32">
           <table className="table w-full">
             <thead>
               <tr>
@@ -177,13 +178,13 @@ export default function UserManagementPage() {
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-8 text-base-content/60">
+                  <td colSpan={6} className="text-base-content/60 py-8 text-center">
                     Cargando usuarios...
                   </td>
                 </tr>
               ) : filteredUsers?.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-8 text-base-content/60">
+                  <td colSpan={6} className="text-base-content/60 py-8 text-center">
                     No se encontraron usuarios
                   </td>
                 </tr>
@@ -193,14 +194,12 @@ export default function UserManagementPage() {
                     <td>
                       <div className="flex items-center gap-3">
                         <div className="avatar placeholder">
-                          <div className="w-10 rounded-full bg-neutral text-neutral-content flex items-center justify-center">
-                            <span className="text-xs font-bold">{user.person.names[0]}</span>
+                          <div className="bg-neutral text-neutral-content flex w-10 items-center justify-center rounded-full">
+                            <span className="text-xs font-bold">{getPersonInitials(user.person)}</span>
                           </div>
                         </div>
                         <div>
-                          <div className="font-bold">
-                            {user.person.names} {user.person.fatherName}
-                          </div>
+                          <div className="font-bold">{getPersonFullName(user.person)}</div>
                           <div className="text-xs opacity-50">{user.email}</div>
                         </div>
                       </div>
@@ -226,7 +225,7 @@ export default function UserManagementPage() {
                         )}
                       </div>
                     </td>
-                    <td className="text-sm text-base-content/70">{dayjs(user.createdAt).format("DD MMM YYYY")}</td>
+                    <td className="text-base-content/70 text-sm">{dayjs(user.createdAt).format("DD MMM YYYY")}</td>
                     <td>
                       <div className="dropdown dropdown-end">
                         <div tabIndex={0} role="button" className="btn btn-ghost btn-xs">
@@ -234,7 +233,7 @@ export default function UserManagementPage() {
                         </div>
                         <ul
                           tabIndex={0}
-                          className="dropdown-content menu bg-base-100 rounded-box z-50 w-52 p-2 shadow-lg border border-base-200"
+                          className="dropdown-content menu bg-base-100 rounded-box border-base-200 z-50 w-52 border p-2 shadow-lg"
                         >
                           <li>
                             <a onClick={() => handleResetPassword(user.id)}>
