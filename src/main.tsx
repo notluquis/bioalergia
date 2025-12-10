@@ -15,6 +15,7 @@ import { ChunkErrorBoundary } from "./components/ui/ChunkErrorBoundary";
 import { initSWUpdateListener } from "./lib/swUpdateListener";
 import RequireAuth from "@/components/common/RequireAuth";
 import PublicOnlyRoute from "@/components/common/PublicOnlyRoute";
+import RouteErrorBoundary from "@/components/common/RouteErrorBoundary";
 
 // Lazy loading de componentes principales
 const Home = lazy(() => import("./pages/Home"));
@@ -86,6 +87,7 @@ const router = createBrowserRouter([
         </Suspense>
       </PublicOnlyRoute>
     ),
+    errorElement: <RouteErrorBoundary />,
   },
   {
     path: "/onboarding",
@@ -96,6 +98,7 @@ const router = createBrowserRouter([
         </Suspense>
       </RequireAuth>
     ),
+    errorElement: <RouteErrorBoundary />,
   },
   {
     path: "/",
@@ -104,11 +107,7 @@ const router = createBrowserRouter([
         <App />
       </RequireAuth>
     ),
-    errorElement: (
-      <GlobalError>
-        <div>Error loading app</div>
-      </GlobalError>
-    ),
+    errorElement: <RouteErrorBoundary />,
     children: [
       {
         index: true,
