@@ -69,7 +69,7 @@ export const NAV_SECTIONS: NavSection[] = [
       },
       {
         to: "/finanzas/production-balances",
-        label: "Prestaciones",
+        label: "Balance Diario",
         icon: FileSpreadsheet,
         roles: ["GOD", "ADMIN", "ANALYST", "VIEWER"],
       },
