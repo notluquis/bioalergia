@@ -1,6 +1,6 @@
 import express from "express";
 import multer from "multer";
-import { asyncHandler, authenticate, requireRole } from "../lib/http.js";
+import { asyncHandler, authenticate, softAuthenticate, requireRole } from "../lib/http.js";
 import { logEvent, logWarn, requestContext } from "../lib/logger.js";
 import { getSettings, updateSettings, getSetting, updateSetting, deleteSetting } from "../services/settings.js";
 import { DEFAULT_SETTINGS, type AppSettings } from "../lib/settings.js";
@@ -45,7 +45,7 @@ const faviconUpload = multer({
 export function registerSettingsRoutes(app: express.Express) {
   app.get(
     "/api/settings",
-    authenticate,
+    softAuthenticate,
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       const settings = await getSettings();
       logEvent("settings:get", requestContext(req));
