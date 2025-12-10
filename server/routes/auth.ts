@@ -1,6 +1,6 @@
 import express from "express";
 import bcrypt from "bcryptjs";
-import { asyncHandler, authenticate, issueToken, sanitizeUser } from "../lib/http.js";
+import { asyncHandler, authenticate, softAuthenticate, issueToken, sanitizeUser } from "../lib/http.js";
 import { logEvent, logWarn, requestContext } from "../lib/logger.js";
 import { sessionCookieName, sessionCookieOptions } from "../config.js";
 import { findUserByEmail, findUserById, resolveUserRole } from "../services/users.js";
@@ -275,18 +275,18 @@ export function registerAuthRoutes(app: express.Express) {
 
   app.get(
     "/api/auth/me",
-    authenticate,
+    softAuthenticate,
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       if (!req.auth) {
-        logWarn("auth/me:missing-session", requestContext(req));
-        return res.status(401).json({ status: "error", message: "La sesión no es válida" });
+        // Return 200 with null user to avoid browser console 401 errors
+        return res.json({ status: "ok", user: null });
       }
 
       const user = await findUserById(req.auth.userId);
       if (!user) {
         logWarn("auth/me:stale-session", requestContext(req));
         res.clearCookie(sessionCookieName, { ...sessionCookieOptions, maxAge: undefined });
-        return res.status(401).json({ status: "error", message: "La sesión ha expirado" });
+        return res.json({ status: "ok", user: null });
       }
 
       // --- Role Governance Logic ---

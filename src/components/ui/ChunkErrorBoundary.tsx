@@ -32,14 +32,27 @@ export class ChunkErrorBoundary extends Component<Props, State> {
     }
   }
 
-  handleReset = () => {
-    // Limpiar cache del service worker y forzar reload limpio
-    if ("caches" in window) {
-      caches.keys().then((names) => {
-        names.forEach((name) => caches.delete(name));
-      });
+  handleReset = async () => {
+    try {
+      // 1. Desregistrar Service Workers
+      if ("serviceWorker" in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (const registration of registrations) {
+          await registration.unregister();
+        }
+      }
+
+      // 2. Limpiar todas las caches
+      if ("caches" in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map((key) => caches.delete(key)));
+      }
+    } catch (error) {
+      console.error("Error clearing cache:", error);
+    } finally {
+      // 3. Recargar la página
+      window.location.reload();
     }
-    window.location.href = "/";
   };
 
   render() {

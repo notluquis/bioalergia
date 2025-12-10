@@ -3,6 +3,41 @@
   <head>
     <meta charset="UTF-8" />
     <script>
+      // Community 2025 Standard: Global Chunk Load Error Handler
+      // Catches errors before React even mounts or during module evaluation
+      window.addEventListener('error', (e) => {
+        const msg = e.message || '';
+        if (/Failed to fetch dynamically imported module|Importing a module script failed|is not a valid JavaScript MIME type/i.test(msg)) {
+          console.warn('Global chunk load error detected. Attempting recovery...');
+          
+          // Prevent infinite reload loops (max 1 reload per 10 seconds)
+          const lastReload = sessionStorage.getItem('chunk_reload_ts');
+          const now = Date.now();
+          if (!lastReload || now - Number(lastReload) > 10000) {
+             sessionStorage.setItem('chunk_reload_ts', String(now));
+             
+             // Nuclear cache clear
+             if ('serviceWorker' in navigator) {
+               navigator.serviceWorker.getRegistrations().then(regs => {
+                 regs.forEach(r => r.unregister());
+               });
+             }
+             if ('caches' in window) {
+               caches.keys().then(names => Promise.all(names.map(n => caches.delete(n))))
+                     .then(() => window.location.reload());
+             } else {
+               window.location.reload();
+             }
+          }
+        }
+      });
+
+      // Fix for deprecated window.styleMedia warning
+      // Some legacy libraries check for this property. We remove it to force them to use matchMedia.
+      if (window.styleMedia) {
+        delete window.styleMedia;
+      }
+
       (function () {
         const THEME_KEY = "bioalergia:theme";
         let theme = "dark";

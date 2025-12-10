@@ -96,6 +96,27 @@ export function authenticate(req: AuthenticatedRequest, res: express.Response, n
   }
 }
 
+export function softAuthenticate(req: AuthenticatedRequest, res: express.Response, next: express.NextFunction) {
+  const token = req.cookies?.[sessionCookieName];
+  if (!token) {
+    return next();
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as jwt.JwtPayload;
+    if (decoded && typeof decoded.sub === "string") {
+      req.auth = {
+        userId: Number(decoded.sub),
+        email: String(decoded.email),
+        role: (decoded.role as UserRole) ?? "VIEWER",
+      };
+    }
+  } catch (error) {
+    // Ignore error, just don't set req.auth
+  }
+  next();
+}
+
 export function requireRole(...roles: UserRole[]) {
   return (req: AuthenticatedRequest, res: express.Response, next: express.NextFunction) => {
     if (!req.auth) {
