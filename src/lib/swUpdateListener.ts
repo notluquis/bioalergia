@@ -7,6 +7,8 @@
 export function initSWUpdateListener() {
   if (!("serviceWorker" in navigator)) return;
 
+  let hasShownUpdateNotification = false;
+
   navigator.serviceWorker.ready
     .then((registration) => {
       // Escuchar cambios en el SW
@@ -16,18 +18,29 @@ export function initSWUpdateListener() {
 
         newWorker.addEventListener("statechange", () => {
           if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
-            // Nueva versión disponible, mostrar notificación
-            console.info("New app version available. Reload to update.", newWorker);
-            // El usuario puede recargar cuando lo desee
-            // No forzamos reload automático para no interrumpir su sesión
+            // Nueva versión disponible, mostrar notificación SOLO UNA VEZ
+            if (!hasShownUpdateNotification) {
+              console.info("New app version available. Reload to update.", newWorker);
+              hasShownUpdateNotification = true;
+              // El usuario puede recargar cuando lo desee
+              // No forzamos reload automático para no interrumpir su sesión
+            }
           }
         });
       });
 
-      // Chequear updates regularmente
-      setInterval(() => {
-        registration.update();
-      }, 60000); // Cada minuto
+      // Chequear updates con menos frecuencia y solo si hay cambios reales
+      setInterval(
+        () => {
+          // Solo chequear si no hay un update pendiente
+          if (!registration.waiting && !registration.installing) {
+            registration.update().catch(() => {
+              // Silently fail - normal si no hay conexión
+            });
+          }
+        },
+        5 * 60 * 1000
+      ); // Cada 5 minutos (más razonable que cada minuto)
     })
     .catch((err) => {
       console.debug("SW registration not ready:", err);
