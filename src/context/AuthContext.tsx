@@ -33,11 +33,11 @@ export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
-  const timeoutSeconds = Number(import.meta.env?.VITE_AUTH_TIMEOUT ?? 8);
 
   const sessionQuery = useQuery({
-    queryKey: ["auth", "session", timeoutSeconds],
+    queryKey: ["auth", "session"],
     queryFn: async (): Promise<AuthUser | null> => {
+      const timeoutSeconds = Number(import.meta.env?.VITE_AUTH_TIMEOUT ?? 8);
       const controller = typeof AbortController !== "undefined" ? new AbortController() : undefined;
       const timeoutId =
         typeof window !== "undefined" && controller
