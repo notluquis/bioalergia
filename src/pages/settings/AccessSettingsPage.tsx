@@ -8,7 +8,8 @@ import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import { apiClient } from "@/lib/apiClient";
 
-function normalizeExternalUrl(value: string) {
+function normalizeExternalUrl(value: string | undefined) {
+  if (!value) return "";
   const trimmed = value.trim();
   if (!trimmed) return "";
   if (/^https?:\/\//i.test(trimmed)) return trimmed;
@@ -127,20 +128,20 @@ export default function AccessSettingsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-base-content">Accesos y Seguridad</h1>
-        <p className="text-sm text-base-content/60">Gestiona accesos técnicos y seguridad de usuarios.</p>
+        <h1 className="text-base-content text-2xl font-bold">Accesos y Seguridad</h1>
+        <p className="text-base-content/60 text-sm">Gestiona accesos técnicos y seguridad de usuarios.</p>
       </div>
 
       {/* Admin User Management Section */}
       {isAdmin && (
-        <div className="surface-elevated rounded-2xl p-6 space-y-4">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-full bg-warning/10 flex items-center justify-center text-warning">
+        <div className="surface-elevated space-y-4 rounded-2xl p-6">
+          <div className="mb-2 flex items-center gap-3">
+            <div className="bg-warning/10 text-warning flex h-10 w-10 items-center justify-center rounded-full">
               <ShieldCheck size={20} />
             </div>
             <div>
-              <h2 className="font-bold text-lg">Seguridad de Usuarios</h2>
-              <p className="text-xs text-base-content/60">Control de MFA y accesos.</p>
+              <h2 className="text-lg font-bold">Seguridad de Usuarios</h2>
+              <p className="text-base-content/60 text-xs">Control de MFA y accesos.</p>
             </div>
           </div>
 
@@ -158,7 +159,7 @@ export default function AccessSettingsPage() {
               <tbody>
                 {isLoadingUsers ? (
                   <tr>
-                    <td colSpan={5} className="py-8 text-center text-base-content/50">
+                    <td colSpan={5} className="text-base-content/50 py-8 text-center">
                       <Loader2 className="mx-auto size-6 animate-spin" />
                     </td>
                   </tr>
@@ -178,9 +179,9 @@ export default function AccessSettingsPage() {
                       </td>
                       <td className="text-center">
                         {u.hasPasskey ? (
-                          <span className="text-xs text-success">Sí</span>
+                          <span className="text-success text-xs">Sí</span>
                         ) : (
-                          <span className="text-xs text-base-content/30">-</span>
+                          <span className="text-base-content/30 text-xs">-</span>
                         )}
                       </td>
                       <td className="text-right">
@@ -205,14 +206,14 @@ export default function AccessSettingsPage() {
 
       <div className="grid gap-6 md:grid-cols-2">
         {/* Quick Links */}
-        <div className="surface-elevated rounded-2xl p-6 space-y-4">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-full bg-info/10 flex items-center justify-center text-info">
+        <div className="surface-elevated space-y-4 rounded-2xl p-6">
+          <div className="mb-2 flex items-center gap-3">
+            <div className="bg-info/10 text-info flex h-10 w-10 items-center justify-center rounded-full">
               <Globe size={20} />
             </div>
             <div>
-              <h2 className="font-bold text-lg">Accesos Rápidos</h2>
-              <p className="text-xs text-base-content/60">Enlaces a paneles externos.</p>
+              <h2 className="text-lg font-bold">Accesos Rápidos</h2>
+              <p className="text-base-content/60 text-xs">Enlaces a paneles externos.</p>
             </div>
           </div>
           <div className="space-y-3">
@@ -221,14 +222,14 @@ export default function AccessSettingsPage() {
                 key={link.label}
                 onClick={() => link.href && window.open(link.href, "_blank", "noopener,noreferrer")}
                 disabled={!link.href}
-                className="flex items-center gap-3 w-full p-3 rounded-xl border border-base-200 hover:border-primary/50 hover:bg-primary/5 transition-all text-left group"
+                className="border-base-200 hover:border-primary/50 hover:bg-primary/5 group flex w-full items-center gap-3 rounded-xl border p-3 text-left transition-all"
               >
-                <div className="w-8 h-8 rounded-lg bg-base-200 flex items-center justify-center group-hover:bg-primary/20 group-hover:text-primary transition-colors">
+                <div className="bg-base-200 group-hover:bg-primary/20 group-hover:text-primary flex h-8 w-8 items-center justify-center rounded-lg transition-colors">
                   <link.icon size={16} />
                 </div>
                 <div>
-                  <div className="font-medium text-sm">{link.label}</div>
-                  <div className="text-xs text-base-content/50 truncate max-w-[200px]">{link.description}</div>
+                  <div className="text-sm font-medium">{link.label}</div>
+                  <div className="text-base-content/50 max-w-[200px] truncate text-xs">{link.description}</div>
                 </div>
               </button>
             ))}
@@ -236,14 +237,14 @@ export default function AccessSettingsPage() {
         </div>
 
         {/* Connection Details Form */}
-        <div className="surface-elevated rounded-2xl p-6 space-y-4">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-full bg-secondary/10 flex items-center justify-center text-secondary">
+        <div className="surface-elevated space-y-4 rounded-2xl p-6">
+          <div className="mb-2 flex items-center gap-3">
+            <div className="bg-secondary/10 text-secondary flex h-10 w-10 items-center justify-center rounded-full">
               <Database size={20} />
             </div>
             <div>
-              <h2 className="font-bold text-lg">Conexiones</h2>
-              <p className="text-xs text-base-content/60">Configuración de acceso a DB.</p>
+              <h2 className="text-lg font-bold">Conexiones</h2>
+              <p className="text-base-content/60 text-xs">Configuración de acceso a DB.</p>
             </div>
           </div>
 
