@@ -145,10 +145,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(async () => {
     logger.info("[auth] logout:start");
-    await apiClient.post("/api/auth/logout", {});
-    queryClient.setQueryData(["auth", "session"], null);
-    await queryClient.invalidateQueries({ queryKey: ["settings"] });
-    logger.info("[auth] logout:done");
+    try {
+      await apiClient.post("/api/auth/logout", {});
+    } catch (error) {
+      logger.error("[auth] logout:error", error);
+    } finally {
+      queryClient.setQueryData(["auth", "session"], null);
+      await queryClient.invalidateQueries({ queryKey: ["settings"] });
+      logger.info("[auth] logout:done");
+    }
   }, [queryClient]);
 
   const hasRole = useCallback(
