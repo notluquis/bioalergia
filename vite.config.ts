@@ -29,7 +29,7 @@ export default defineConfig(({ mode }) => ({
       workbox: {
         cleanupOutdatedCaches: true,
         clientsClaim: true,
-        skipWaiting: true,
+        skipWaiting: false, // Defer update until user confirms via UpdateNotification
         // Minimal precaching - only HTML
         globPatterns: ["index.html"],
         // No runtime caching - rely on HTTP cache + Vite hashes
@@ -112,7 +112,9 @@ export default defineConfig(({ mode }) => ({
     "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV || "development"),
   },
   build: {
-    modulePreload: false,
+    modulePreload: {
+      polyfill: false,
+    },
     outDir: "dist/client",
     chunkSizeWarningLimit: 1000,
     sourcemap: false,

@@ -1,12 +1,25 @@
 export default function ChunkLoadErrorPage() {
-  const handleRetry = () => {
-    // Limpiar cache del service worker
-    if ("caches" in window) {
-      caches.keys().then((names) => {
-        names.forEach((name) => caches.delete(name));
-      });
+  const handleRetry = async () => {
+    try {
+      // 1. Desregistrar Service Workers para evitar cache stale
+      if ("serviceWorker" in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (const registration of registrations) {
+          await registration.unregister();
+        }
+      }
+
+      // 2. Limpiar todas las caches
+      if ("caches" in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map((key) => caches.delete(key)));
+      }
+    } catch (error) {
+      console.error("Error clearing cache:", error);
+    } finally {
+      // 3. Recargar la página forzando fetch al servidor
+      window.location.reload();
     }
-    window.location.href = "/";
   };
 
   return (
