@@ -159,7 +159,7 @@ export default function AccessSettingsPage() {
                           <td>
                             <div className="flex items-center gap-3">
                               <div className="avatar placeholder">
-                                <div className="bg-neutral text-neutral-content w-10 rounded-full">
+                                <div className="bg-neutral text-neutral-content flex h-10 w-10 items-center justify-center rounded-full">
                                   <span className="text-xs">
                                     {user.email?.split("@")[0]?.substring(0, 2)?.toUpperCase() || "??"}
                                   </span>
