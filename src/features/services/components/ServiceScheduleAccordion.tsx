@@ -2,6 +2,7 @@ import { memo, useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
 import type { ServiceSchedule, ServiceSummary } from "../types";
 import Button from "@/components/ui/Button";
+import { currencyFormatter } from "@/lib/format";
 
 type ServiceScheduleAccordionProps = {
   service: ServiceSummary;
@@ -21,12 +22,6 @@ const dateFormatter = new Intl.DateTimeFormat("es-CL", {
   weekday: "long",
   day: "numeric",
   month: "short",
-});
-
-const currencyFormatter = new Intl.NumberFormat("es-CL", {
-  style: "currency",
-  currency: "CLP",
-  maximumFractionDigits: 0,
 });
 
 const ServiceScheduleAccordion = memo(function ServiceScheduleAccordion({
@@ -91,20 +86,20 @@ const ServiceScheduleAccordion = memo(function ServiceScheduleAccordion({
 
   if (!groups.length) {
     return (
-      <section className="space-y-3 rounded-2xl border border-base-300 bg-base-200 p-4 text-sm text-base-content">
+      <section className="border-base-300 bg-base-200 text-base-content space-y-3 rounded-2xl border p-4 text-sm">
         <header className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-base-content/60">Agenda de vencimientos</h2>
+          <h2 className="text-base-content/60 text-sm font-semibold tracking-wide uppercase">Agenda de vencimientos</h2>
         </header>
-        <p className="text-xs text-base-content/60">No hay cuotas generadas para este servicio.</p>
+        <p className="text-base-content/60 text-xs">No hay cuotas generadas para este servicio.</p>
       </section>
     );
   }
 
   return (
-    <section className="space-y-3 rounded-2xl border border-base-300 bg-base-200 p-4 text-sm text-base-content">
+    <section className="border-base-300 bg-base-200 text-base-content space-y-3 rounded-2xl border p-4 text-sm">
       <header className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-base-content/60">Agenda de vencimientos</h2>
-        <span className="text-xs text-base-content/50">
+        <h2 className="text-base-content/60 text-sm font-semibold tracking-wide uppercase">Agenda de vencimientos</h2>
+        <span className="text-base-content/50 text-xs">
           {service.pending_count + service.overdue_count} pendientes totales
         </span>
       </header>
@@ -112,27 +107,27 @@ const ServiceScheduleAccordion = memo(function ServiceScheduleAccordion({
         {groups.map((group) => {
           const isExpanded = expanded[group.dateKey] ?? false;
           return (
-            <article key={group.dateKey} className="rounded-xl border border-base-300 bg-base-200 shadow-sm">
+            <article key={group.dateKey} className="border-base-300 bg-base-200 rounded-xl border shadow-sm">
               <button
                 type="button"
                 onClick={() => toggleGroup(group.dateKey)}
-                className="flex w-full items-center justify-between gap-4 px-4 py-3 text-left transition-colors hover:bg-base-200"
+                className="hover:bg-base-200 flex w-full items-center justify-between gap-4 px-4 py-3 text-left transition-colors"
               >
                 <div>
-                  <p className="text-sm font-semibold text-base-content capitalize">{group.label}</p>
-                  <p className="text-xs text-base-content/50">
+                  <p className="text-base-content text-sm font-semibold capitalize">{group.label}</p>
+                  <p className="text-base-content/50 text-xs">
                     {group.items.length} {group.items.length === 1 ? "cuota" : "cuotas"}
                   </p>
                 </div>
                 <span
-                  className={`inline-flex h-7 w-7 items-center justify-center rounded-full border border-base-300 bg-base-200 text-xs font-semibold text-base-content/60 transition-transform ${
+                  className={`border-base-300 bg-base-200 text-base-content/60 inline-flex h-7 w-7 items-center justify-center rounded-full border text-xs font-semibold transition-transform ${
                     isExpanded ? "rotate-180" : ""
                   }`}
                 >
                   ⌃
                 </span>
               </button>
-              <div className={`${isExpanded ? "space-y-2 border-t border-base-300 px-4 py-3" : "hidden"}`}>
+              <div className={`${isExpanded ? "border-base-300 space-y-2 border-t px-4 py-3" : "hidden"}`}>
                 {group.items.map((item) => {
                   const dueDate = dayjs(item.due_date);
                   const diffDays = dueDate.startOf("day").diff(dayjs().startOf("day"), "day");
@@ -147,26 +142,26 @@ const ServiceScheduleAccordion = memo(function ServiceScheduleAccordion({
                   return (
                     <div
                       key={item.id}
-                      className="rounded-xl border border-base-300 bg-base-200 p-3 shadow-inner transition hover:border-primary/40"
+                      className="border-base-300 bg-base-200 hover:border-primary/40 rounded-xl border p-3 shadow-inner transition"
                     >
                       <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
-                          <p className="text-sm font-semibold text-base-content">
+                          <p className="text-base-content text-sm font-semibold">
                             {currencyFormatter.format(item.expected_amount)}
                           </p>
-                          <p className="text-xs text-base-content/50">
+                          <p className="text-base-content/50 text-xs">
                             Vence el {dateFormatter.format(dueDate.toDate())}
                           </p>
                         </div>
                         <span
-                          className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${
+                          className={`rounded-full px-3 py-1 text-xs font-semibold tracking-wide uppercase ${
                             statusClasses[item.status]
                           }`}
                         >
                           {item.status === "PENDING" && isOverdue ? "Pendiente · Vencido" : item.status}
                         </span>
                       </div>
-                      <div className="mt-2 flex flex-wrap items-center gap-4 text-xs text-base-content/60">
+                      <div className="text-base-content/60 mt-2 flex flex-wrap items-center gap-4 text-xs">
                         <span>
                           Periodo {dayjs(item.period_start).format("DD MMM")} –{" "}
                           {dayjs(item.period_end).format("DD MMM YYYY")}

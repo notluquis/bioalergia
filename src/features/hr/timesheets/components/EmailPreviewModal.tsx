@@ -3,6 +3,7 @@ import { fmtCLP } from "@/lib/format";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
 import Button from "@/components/ui/Button";
+import { LOADING_SPINNER_SM } from "@/lib/styles";
 import type { Employee } from "@/features/hr/employees/types";
 import type { TimesheetSummaryRow } from "../types";
 
@@ -52,9 +53,9 @@ export default function EmailPreviewModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-2xl rounded-2xl bg-base-100 shadow-2xl">
+      <div className="bg-base-100 w-full max-w-2xl rounded-2xl shadow-2xl">
         {/* Header */}
-        <div className="rounded-t-2xl bg-linear-to-r from-primary to-primary/80 px-6 py-5 text-primary-content">
+        <div className="from-primary to-primary/80 text-primary-content rounded-t-2xl bg-linear-to-r px-6 py-5">
           <h2 className="text-xl font-bold">Vista previa del correo</h2>
           <p className="mt-1 text-sm opacity-90">
             Servicios de {summary.role} - {monthLabelEs}
@@ -64,25 +65,25 @@ export default function EmailPreviewModal({
         {/* Content */}
         <div className="max-h-[60vh] overflow-y-auto p-6">
           {/* Destinatario */}
-          <div className="mb-4 rounded-xl bg-base-200/50 p-4">
-            <p className="text-sm text-base-content/70">
+          <div className="bg-base-200/50 mb-4 rounded-xl p-4">
+            <p className="text-base-content/70 text-sm">
               <strong>Para:</strong>{" "}
               {employeeEmail ? (
-                <span className="font-medium text-base-content">{employeeEmail}</span>
+                <span className="text-base-content font-medium">{employeeEmail}</span>
               ) : (
                 <span className="text-error">⚠️ Sin email registrado</span>
               )}
             </p>
-            <p className="mt-1 text-sm text-base-content/70">
+            <p className="text-base-content/70 mt-1 text-sm">
               <strong>Asunto:</strong>{" "}
-              <span className="font-medium text-base-content">
+              <span className="text-base-content font-medium">
                 Boleta de Honorarios - {monthLabelEs} - {employee.full_name}
               </span>
             </p>
           </div>
 
           {/* Preview del email - simula cómo se verá en el cliente de correo */}
-          <div className="rounded-xl border border-base-300 bg-white p-5">
+          <div className="border-base-300 rounded-xl border bg-white p-5">
             <p className="mb-4" style={{ color: "#333333" }}>
               Estimado/a <strong>{employee.full_name}</strong>,
             </p>
@@ -93,23 +94,23 @@ export default function EmailPreviewModal({
 
             {/* Caja verde para la boleta */}
             <div className="mb-4 rounded-lg p-4" style={{ backgroundColor: "#dcfce7", border: "2px solid #22c55e" }}>
-              <p className="mb-3 text-xs font-semibold uppercase tracking-wider" style={{ color: "#166534" }}>
+              <p className="mb-3 text-xs font-semibold tracking-wider uppercase" style={{ color: "#166534" }}>
                 📝 Para la boleta de honorarios
               </p>
               <div className="space-y-2">
                 <div>
-                  <p className="text-xs mb-1" style={{ color: "#166534" }}>
+                  <p className="mb-1 text-xs" style={{ color: "#166534" }}>
                     Descripción:
                   </p>
-                  <p className="font-bold font-mono text-sm" style={{ color: "#166534" }}>
+                  <p className="font-mono text-sm font-bold" style={{ color: "#166534" }}>
                     {boletaDescription}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs mb-1" style={{ color: "#166534" }}>
+                  <p className="mb-1 text-xs" style={{ color: "#166534" }}>
                     Monto Bruto:
                   </p>
-                  <p className="font-bold font-mono text-xl" style={{ color: "#166534" }}>
+                  <p className="font-mono text-xl font-bold" style={{ color: "#166534" }}>
                     {fmtCLP(summary.subtotal)}
                   </p>
                 </div>
@@ -120,44 +121,44 @@ export default function EmailPreviewModal({
             <table className="mb-4 w-full text-sm" style={{ borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ backgroundColor: "#f1f5f9" }}>
-                  <th className="py-2 px-3 text-left text-xs font-semibold uppercase" style={{ color: "#475569" }}>
+                  <th className="px-3 py-2 text-left text-xs font-semibold uppercase" style={{ color: "#475569" }}>
                     Concepto
                   </th>
-                  <th className="py-2 px-3 text-right text-xs font-semibold uppercase" style={{ color: "#475569" }}>
+                  <th className="px-3 py-2 text-right text-xs font-semibold uppercase" style={{ color: "#475569" }}>
                     Detalle
                   </th>
                 </tr>
               </thead>
               <tbody>
                 <tr style={{ borderBottom: "1px solid #e2e8f0" }}>
-                  <td className="py-3 px-3" style={{ color: "#333333" }}>
+                  <td className="px-3 py-3" style={{ color: "#333333" }}>
                     Horas totales
                   </td>
-                  <td className="py-3 px-3 text-right font-mono" style={{ color: "#333333" }}>
+                  <td className="px-3 py-3 text-right font-mono" style={{ color: "#333333" }}>
                     {totalHoursFormatted}
                   </td>
                 </tr>
                 <tr style={{ borderBottom: "1px solid #e2e8f0" }}>
-                  <td className="py-3 px-3" style={{ color: "#333333" }}>
+                  <td className="px-3 py-3" style={{ color: "#333333" }}>
                     Monto Bruto
                   </td>
-                  <td className="py-3 px-3 text-right font-mono" style={{ color: "#333333" }}>
+                  <td className="px-3 py-3 text-right font-mono" style={{ color: "#333333" }}>
                     {fmtCLP(summary.subtotal)}
                   </td>
                 </tr>
                 <tr style={{ borderBottom: "1px solid #e2e8f0" }}>
-                  <td className="py-3 px-3" style={{ color: "#333333" }}>
+                  <td className="px-3 py-3" style={{ color: "#333333" }}>
                     Retención ({retentionPercent}%)
                   </td>
-                  <td className="py-3 px-3 text-right font-mono" style={{ color: "#333333" }}>
+                  <td className="px-3 py-3 text-right font-mono" style={{ color: "#333333" }}>
                     -{fmtCLP(summary.retention)}
                   </td>
                 </tr>
                 <tr style={{ backgroundColor: "#0e64b7" }}>
-                  <td className="py-3 px-3 font-bold" style={{ color: "#ffffff" }}>
+                  <td className="px-3 py-3 font-bold" style={{ color: "#ffffff" }}>
                     Total Líquido
                   </td>
-                  <td className="py-3 px-3 text-right font-bold font-mono" style={{ color: "#ffffff" }}>
+                  <td className="px-3 py-3 text-right font-mono font-bold" style={{ color: "#ffffff" }}>
                     {fmtCLP(summary.net)}
                   </td>
                 </tr>
@@ -183,8 +184,8 @@ export default function EmailPreviewModal({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between border-t border-base-300 px-6 py-4">
-          <p className="text-xs text-base-content/50">
+        <div className="border-base-300 flex items-center justify-between border-t px-6 py-4">
+          <p className="text-base-content/50 text-xs">
             {prepareStatus === "generating-pdf" && "Generando documento PDF..."}
             {prepareStatus === "preparing" && "Preparando archivo de email..."}
             {prepareStatus === "done" && "✅ Archivo descargado - Ábrelo con doble click y presiona Enviar"}
@@ -202,12 +203,12 @@ export default function EmailPreviewModal({
             >
               {prepareStatus === "generating-pdf" ? (
                 <span className="flex items-center gap-2">
-                  <span className="loading loading-spinner loading-sm"></span>
+                  <span className={LOADING_SPINNER_SM}></span>
                   Generando PDF...
                 </span>
               ) : prepareStatus === "preparing" ? (
                 <span className="flex items-center gap-2">
-                  <span className="loading loading-spinner loading-sm"></span>
+                  <span className={LOADING_SPINNER_SM}></span>
                   Preparando...
                 </span>
               ) : prepareStatus === "done" ? (

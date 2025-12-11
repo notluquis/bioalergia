@@ -1,4 +1,5 @@
 import dayjs from "dayjs";
+import { today } from "@/lib/dates";
 import {
   useCallback,
   useEffect,
@@ -60,7 +61,7 @@ function useServicesController() {
   const [paymentForm, setPaymentForm] = useState({
     transactionId: "",
     paidAmount: "",
-    paidDate: dayjs().format("YYYY-MM-DD"),
+    paidDate: today(),
     note: "",
   });
   const [processingPayment, setProcessingPayment] = useState(false);
@@ -286,7 +287,7 @@ function useServicesController() {
     setPaymentForm({
       transactionId: schedule.transaction!.id ? String(schedule.transaction!.id) : "",
       paidAmount: schedule.paid_amount != null ? String(schedule.paid_amount) : String(schedule.effective_amount),
-      paidDate: schedule.paid_date ?? dayjs().format("YYYY-MM-DD"),
+      paidDate: schedule.paid_date ?? today(),
       note: schedule.note ?? "",
     });
     setPaymentError(null);

@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ChangeEvent } from "react";
-import dayjs from "dayjs";
 import { useAuth } from "@/context/AuthContext";
 import { logger } from "@/lib/logger";
 import Alert from "@/components/ui/Alert";
@@ -25,6 +24,8 @@ import type {
   LoanDetailResponse,
   RegenerateSchedulePayload,
 } from "@/features/finance/loans/types";
+import { PAGE_CONTAINER, TITLE_LG } from "@/lib/styles";
+import { today } from "@/lib/dates";
 
 export default function LoansPage() {
   const { hasRole } = useAuth();
@@ -45,7 +46,7 @@ export default function LoansPage() {
   const [paymentForm, setPaymentForm] = useState({
     transactionId: "",
     paidAmount: "",
-    paidDate: dayjs().format("YYYY-MM-DD"),
+    paidDate: today(),
   });
   const [processingPayment, setProcessingPayment] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
@@ -136,7 +137,7 @@ export default function LoansPage() {
     setPaymentForm({
       transactionId: schedule.transaction_id ? String(schedule.transaction_id) : "",
       paidAmount: schedule.paid_amount != null ? String(schedule.paid_amount) : String(schedule.expected_amount),
-      paidDate: schedule.paid_date ?? dayjs().format("YYYY-MM-DD"),
+      paidDate: schedule.paid_date ?? today(),
     });
     setPaymentError(null);
   };
@@ -202,9 +203,9 @@ export default function LoansPage() {
 
   if (!canView) {
     return (
-      <section className="mx-auto max-w-7xl space-y-6">
+      <section className={PAGE_CONTAINER}>
         <div className="space-y-2">
-          <h1 className="text-primary text-2xl font-bold">Préstamos y créditos</h1>
+          <h1 className={TITLE_LG}>Préstamos y créditos</h1>
         </div>
         <Alert variant="error">No tienes permisos para ver los préstamos registrados.</Alert>
       </section>
@@ -212,9 +213,9 @@ export default function LoansPage() {
   }
 
   return (
-    <section className="mx-auto max-w-7xl space-y-6">
+    <section className={PAGE_CONTAINER}>
       <div className="space-y-2">
-        <h1 className="text-primary text-2xl font-bold">Préstamos y créditos</h1>
+        <h1 className={TITLE_LG}>Préstamos y créditos</h1>
         <p className="text-base-content/70 text-sm">
           Gestiona préstamos internos, cronogramas de pago y vincula cada cuota con las transacciones reales.
         </p>

@@ -1,15 +1,11 @@
 import dayjs from "dayjs";
 import ServicesUnifiedAgenda from "@/features/services/components/ServicesUnifiedAgenda";
 import Button from "@/components/ui/Button";
+import { LOADING_SPINNER_MD } from "@/lib/styles";
 import { useServicesOverview } from "@/features/services/hooks/useServicesOverview";
 import { ServicesHero, ServicesSurface, ServicesStatCard } from "@/features/services/components/ServicesShell";
 import { Link } from "react-router-dom";
-
-const currencyFormatter = new Intl.NumberFormat("es-CL", {
-  style: "currency",
-  currency: "CLP",
-  maximumFractionDigits: 0,
-});
+import { currencyFormatter } from "@/lib/format";
 
 export default function ServicesAgendaContent() {
   const {
@@ -47,8 +43,8 @@ export default function ServicesAgendaContent() {
         />
 
         <ServicesSurface className="flex min-h-64 items-center justify-center">
-          <div className="flex items-center gap-3 text-sm text-base-content/70">
-            <span className="loading loading-spinner loading-md text-primary" aria-hidden="true" />
+          <div className="text-base-content/70 flex items-center gap-3 text-sm">
+            <span className={LOADING_SPINNER_MD} aria-hidden="true" />
             <span>Cargando agenda consolidada...</span>
           </div>
         </ServicesSurface>

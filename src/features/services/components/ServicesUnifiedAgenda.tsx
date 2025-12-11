@@ -2,6 +2,8 @@ import { useMemo, useState } from "react";
 import dayjs from "dayjs";
 import type { ServiceSchedule, ServiceSummary } from "../types";
 import Button from "@/components/ui/Button";
+import { currencyFormatter } from "@/lib/format";
+import { LOADING_SPINNER_XS } from "@/lib/styles";
 
 type ServicesUnifiedAgendaProps = {
   items: Array<{ service: ServiceSummary; schedule: ServiceSchedule }>;
@@ -18,12 +20,6 @@ type AgendaGroup = {
   total: number;
   entries: Array<{ service: ServiceSummary; schedule: ServiceSchedule }>;
 };
-
-const currencyFormatter = new Intl.NumberFormat("es-CL", {
-  style: "currency",
-  currency: "CLP",
-  maximumFractionDigits: 0,
-});
 
 const dateFormatter = new Intl.DateTimeFormat("es-CL", {
   weekday: "long",
@@ -117,44 +113,44 @@ export default function ServicesUnifiedAgenda({
 
   return (
     <section className="space-y-4">
-      <header className="surface-muted grid gap-4 p-4 text-sm text-base-content/70 sm:grid-cols-3">
+      <header className="surface-muted text-base-content/70 grid gap-4 p-4 text-sm sm:grid-cols-3">
         <div>
-          <p className="text-xs uppercase tracking-wide text-base-content/50">Pagos hoy</p>
-          <p className="text-xl font-semibold text-base-content">{currencyFormatter.format(totals.day)}</p>
+          <p className="text-base-content/50 text-xs tracking-wide uppercase">Pagos hoy</p>
+          <p className="text-base-content text-xl font-semibold">{currencyFormatter.format(totals.day)}</p>
         </div>
         <div>
-          <p className="text-xs uppercase tracking-wide text-base-content/50">Semana en curso</p>
-          <p className="text-xl font-semibold text-base-content">{currencyFormatter.format(totals.week)}</p>
+          <p className="text-base-content/50 text-xs tracking-wide uppercase">Semana en curso</p>
+          <p className="text-base-content text-xl font-semibold">{currencyFormatter.format(totals.week)}</p>
         </div>
         <div>
-          <p className="text-xs uppercase tracking-wide text-base-content/50">Mes en curso</p>
-          <p className="text-xl font-semibold text-base-content">{currencyFormatter.format(totals.month)}</p>
+          <p className="text-base-content/50 text-xs tracking-wide uppercase">Mes en curso</p>
+          <p className="text-base-content text-xl font-semibold">{currencyFormatter.format(totals.month)}</p>
         </div>
       </header>
 
-      <div className="surface-recessed space-y-3 p-4 text-sm text-base-content/70">
+      <div className="surface-recessed text-base-content/70 space-y-3 p-4 text-sm">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-base-content/50">Agenda unificada</h2>
-            <p className="text-xs text-base-content/40">
+            <h2 className="text-base-content/50 text-sm font-semibold tracking-wide uppercase">Agenda unificada</h2>
+            <p className="text-base-content/40 text-xs">
               Visualiza todos los pagos programados por fecha de vencimiento.
             </p>
           </div>
           {loading && (
-            <div className="flex items-center gap-2 text-xs text-base-content/40">
-              <span className="loading loading-spinner loading-xs text-primary" aria-hidden="true" />
+            <div className="text-base-content/40 flex items-center gap-2 text-xs">
+              <span className={LOADING_SPINNER_XS} aria-hidden="true" />
               <span>Actualizando agenda…</span>
             </div>
           )}
         </div>
-        {error && <p className="text-xs text-error">{error}</p>}
+        {error && <p className="text-error text-xs">{error}</p>}
         {!groups.length && !loading && !error && (
-          <p className="text-xs text-base-content/40">No hay cuotas programadas en el periodo consultado.</p>
+          <p className="text-base-content/40 text-xs">No hay cuotas programadas en el periodo consultado.</p>
         )}
         {loading && groups.length === 0 && (
           <div className="space-y-2">
             {skeletons.map((value) => (
-              <div key={value} className="rounded-2xl border border-base-300/60 bg-base-200/60 p-4 shadow-inner">
+              <div key={value} className="border-base-300/60 bg-base-200/60 rounded-2xl border p-4 shadow-inner">
                 <div className="flex items-center justify-between">
                   <span className="skeleton-line w-24" />
                   <span className="skeleton-line w-16" />
@@ -171,7 +167,7 @@ export default function ServicesUnifiedAgenda({
           {groups.map((group) => {
             const isExpanded = expanded[group.dateKey] ?? false;
             return (
-              <article key={group.dateKey} className="surface-muted transition hover:border-primary/35 hover:shadow-lg">
+              <article key={group.dateKey} className="surface-muted hover:border-primary/35 transition hover:shadow-lg">
                 <Button
                   type="button"
                   variant="secondary"
@@ -179,17 +175,17 @@ export default function ServicesUnifiedAgenda({
                   onClick={() => toggle(group.dateKey)}
                 >
                   <div>
-                    <p className="text-sm font-semibold text-base-content capitalize">{group.label}</p>
-                    <p className="text-xs text-base-content/40">
+                    <p className="text-base-content text-sm font-semibold capitalize">{group.label}</p>
+                    <p className="text-base-content/40 text-xs">
                       {group.entries.length} {group.entries.length === 1 ? "servicio" : "servicios"}
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="text-sm font-semibold text-base-content">
+                    <span className="text-base-content text-sm font-semibold">
                       {currencyFormatter.format(group.total)}
                     </span>
                     <span
-                      className={`inline-flex h-7 w-7 items-center justify-center rounded-full border border-base-300 bg-base-100/70 text-xs font-semibold text-base-content/50 transition-transform ${
+                      className={`border-base-300 bg-base-100/70 text-base-content/50 inline-flex h-7 w-7 items-center justify-center rounded-full border text-xs font-semibold transition-transform ${
                         isExpanded ? "rotate-180" : ""
                       }`}
                     >
@@ -198,7 +194,7 @@ export default function ServicesUnifiedAgenda({
                   </div>
                 </Button>
                 {isExpanded && (
-                  <div className="space-y-2 border-t border-base-300/70 px-4 py-3">
+                  <div className="border-base-300/70 space-y-2 border-t px-4 py-3">
                     {group.entries.map(({ service, schedule }) => {
                       const dueDate = dayjs(schedule.due_date);
                       const diffDays = dueDate.startOf("day").diff(dayjs().startOf("day"), "day");
@@ -206,19 +202,19 @@ export default function ServicesUnifiedAgenda({
                       return (
                         <div
                           key={`${service.public_id}-${schedule.id}`}
-                          className="surface-recessed p-3 transition hover:border-primary/40"
+                          className="surface-recessed hover:border-primary/40 p-3 transition"
                         >
                           <div className="flex flex-wrap items-center justify-between gap-3">
                             <div>
-                              <p className="text-sm font-semibold text-base-content">{service.name}</p>
-                              {service.detail && <p className="text-xs text-base-content/40">{service.detail}</p>}
-                              <p className="mt-1 text-xs text-base-content/40">
+                              <p className="text-base-content text-sm font-semibold">{service.name}</p>
+                              {service.detail && <p className="text-base-content/40 text-xs">{service.detail}</p>}
+                              <p className="text-base-content/40 mt-1 text-xs">
                                 {currencyFormatter.format(schedule.expected_amount)} · Vence el{" "}
                                 {dateFormatter.format(dueDate.toDate())}
                               </p>
                             </div>
                             <span
-                              className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${
+                              className={`rounded-full px-3 py-1 text-xs font-semibold tracking-wide uppercase ${
                                 statusClasses[schedule.status]
                               }`}
                             >

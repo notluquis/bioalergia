@@ -5,6 +5,7 @@
  */
 
 import { useEffect, useMemo, useRef } from "react";
+import { LOADING_SPINNER_MD } from "@/lib/styles";
 import FullCalendar from "@fullcalendar/react";
 import type { CalendarApi } from "@fullcalendar/core";
 import dayGridPlugin from "@fullcalendar/daygrid";
@@ -252,8 +253,8 @@ export default function TimesheetAuditCalendar({
     <div className="surface-recessed w-full overflow-hidden p-6">
       <div className="timesheet-audit-calendar-wrapper">
         {loading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-base-100/80 z-50">
-            <span className="loading loading-spinner loading-md text-primary"></span>
+          <div className="bg-base-100/80 absolute inset-0 z-50 flex items-center justify-center">
+            <span className={LOADING_SPINNER_MD}></span>
           </div>
         )}
         <FullCalendar
@@ -304,13 +305,13 @@ export default function TimesheetAuditCalendar({
       </div>
 
       {/* Legend */}
-      <div className="mt-6 flex flex-col gap-3 text-sm text-base-content/70">
+      <div className="text-base-content/70 mt-6 flex flex-col gap-3 text-sm">
         <div className="flex items-center gap-3">
-          <div className="h-4 w-4 rounded bg-accent"></div>
+          <div className="bg-accent h-4 w-4 rounded"></div>
           <span>Sin solapamiento</span>
         </div>
         <div className="flex items-center gap-3">
-          <div className="h-4 w-4 rounded bg-error"></div>
+          <div className="bg-error h-4 w-4 rounded"></div>
           <span>Con solapamiento detectado</span>
         </div>
       </div>

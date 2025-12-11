@@ -8,6 +8,7 @@ import Input from "@/components/ui/Input";
 import Alert from "@/components/ui/Alert";
 import Modal from "@/components/ui/Modal";
 import { useToast } from "@/context/ToastContext";
+import { LOADING_SPINNER_LG, LOADING_SPINNER_XS } from "@/lib/styles";
 import type { Counterpart, CounterpartAccount, CounterpartAccountSuggestion, CounterpartSummary } from "../types";
 import type { DbMovement } from "@/features/finance/transactions/types";
 import { addCounterpartAccount, attachCounterpartRut, fetchAccountSuggestions, updateCounterpartAccount } from "../api";
@@ -485,14 +486,14 @@ export default function AssociatedAccounts({
   return (
     <section className="surface-recessed relative space-y-5 p-6" aria-busy={summaryLoading}>
       {summaryLoading && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-base-100/60 backdrop-blur-sm">
-          <span className="loading loading-spinner loading-lg text-primary" aria-hidden="true" />
+        <div className="bg-base-100/60 absolute inset-0 z-10 flex items-center justify-center rounded-2xl backdrop-blur-sm">
+          <span className={LOADING_SPINNER_LG} aria-hidden="true" />
         </div>
       )}
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div className="space-y-1">
-          <h2 className="text-lg font-semibold text-primary drop-shadow-sm">Cuentas asociadas</h2>
-          <p className="text-xs text-base-content/90">
+          <h2 className="text-primary text-lg font-semibold drop-shadow-sm">Cuentas asociadas</h2>
+          <p className="text-base-content/90 text-xs">
             Identificadores detectados en los movimientos y asignados a esta contraparte.
           </p>
         </div>
@@ -502,14 +503,14 @@ export default function AssociatedAccounts({
       </header>
       {error && <Alert variant="error">{error}</Alert>}
       <div className="overflow-x-auto">
-        <table className="min-w-full text-sm text-base-content">
+        <table className="text-base-content min-w-full text-sm">
           <thead className="bg-base-100/60 text-primary">
             <tr>
-              <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide">Cuenta</th>
-              <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide">Banco</th>
-              <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide">Titular</th>
-              <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide">Concepto</th>
-              <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide">Movimientos</th>
+              <th className="px-3 py-2 text-left text-xs font-semibold tracking-wide uppercase">Cuenta</th>
+              <th className="px-3 py-2 text-left text-xs font-semibold tracking-wide uppercase">Banco</th>
+              <th className="px-3 py-2 text-left text-xs font-semibold tracking-wide uppercase">Titular</th>
+              <th className="px-3 py-2 text-left text-xs font-semibold tracking-wide uppercase">Concepto</th>
+              <th className="px-3 py-2 text-left text-xs font-semibold tracking-wide uppercase">Movimientos</th>
             </tr>
           </thead>
           <tbody>
@@ -518,22 +519,22 @@ export default function AssociatedAccounts({
               const state = accountDetails[group.key];
               return (
                 <Fragment key={group.key}>
-                  <tr className="border-b border-base-300 bg-base-200 last:border-none even:bg-base-300">
-                    <td className="px-3 py-3 text-base-content">
-                      <div className="font-mono text-xs text-base-content">{group.label}</div>
+                  <tr className="border-base-300 bg-base-200 even:bg-base-300 border-b last:border-none">
+                    <td className="text-base-content px-3 py-3">
+                      <div className="text-base-content font-mono text-xs">{group.label}</div>
                       {summaryInfo && summaryInfo.count > 0 && (
-                        <span className="mt-1 inline-flex rounded-full bg-primary/15 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-primary">
+                        <span className="bg-primary/15 text-primary mt-1 inline-flex rounded-full px-2 py-0.5 text-xs font-semibold tracking-wide uppercase">
                           Cuenta reconocida
                         </span>
                       )}
                       {group.accounts.length > 1 && (
-                        <div className="text-xs text-base-content/90">
+                        <div className="text-base-content/90 text-xs">
                           {group.accounts.length} identificadores vinculados
                         </div>
                       )}
                     </td>
-                    <td className="px-3 py-3 text-base-content">{group.bankName ?? "-"}</td>
-                    <td className="px-3 py-3 text-base-content">{group.holder ?? "-"}</td>
+                    <td className="text-base-content px-3 py-3">{group.bankName ?? "-"}</td>
+                    <td className="text-base-content px-3 py-3">{group.holder ?? "-"}</td>
                     <td className="px-3 py-3">
                       {summaryInfo && summaryInfo.count > 0 ? (
                         <Input
@@ -546,15 +547,15 @@ export default function AssociatedAccounts({
                           placeholder="Concepto (ej. Compra de vacunas)"
                         />
                       ) : (
-                        <span className="text-xs italic text-base-content/60">Sin movimientos</span>
+                        <span className="text-base-content/60 text-xs italic">Sin movimientos</span>
                       )}
                     </td>
-                    <td className="px-3 py-3 text-base-content">
+                    <td className="text-base-content px-3 py-3">
                       <div className="flex flex-col gap-2 text-xs">
                         <Button variant="secondary" onClick={() => handleQuickView(group)} className="self-start">
                           Ver movimientos
                         </Button>
-                        <div className="text-xs text-base-content/60">
+                        <div className="text-base-content/60 text-xs">
                           {summaryInfo
                             ? `${summaryInfo.count} mov. · ${fmtCLP(summaryInfo.total)}`
                             : "Sin movimientos en el rango"}
@@ -572,7 +573,7 @@ export default function AssociatedAccounts({
             })}
             {!accountGroups.length && (
               <tr>
-                <td colSpan={5} className="px-3 py-4 text-center text-xs text-base-content/60">
+                <td colSpan={5} className="text-base-content/60 px-3 py-4 text-center text-xs">
                   Sin cuentas asociadas.
                 </td>
               </tr>
@@ -585,23 +586,23 @@ export default function AssociatedAccounts({
           <div className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-base-content/60">Resumen mensual</p>
-                <h3 className="text-lg font-semibold text-base-content">Transferencias</h3>
-                <p className="text-xs text-base-content/60">{quickViewGroup.label}</p>
-                <p className="text-xs text-base-content/50">
+                <p className="text-base-content/60 text-xs tracking-[0.3em] uppercase">Resumen mensual</p>
+                <h3 className="text-base-content text-lg font-semibold">Transferencias</h3>
+                <p className="text-base-content/60 text-xs">{quickViewGroup.label}</p>
+                <p className="text-base-content/50 text-xs">
                   {activeRange.from} – {activeRange.to}
                 </p>
               </div>
               <div className="flex gap-4">
-                <div className="rounded-2xl border border-base-300/60 bg-base-100/60 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-base-content/70">
+                <div className="border-base-300/60 bg-base-100/60 text-base-content/70 rounded-2xl border px-4 py-2 text-xs font-semibold tracking-[0.2em] uppercase">
                   Movimientos {quickStats.count}
                 </div>
-                <div className="rounded-2xl border border-base-300/60 bg-base-100/60 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-base-content/70">
+                <div className="border-base-300/60 bg-base-100/60 text-base-content/70 rounded-2xl border px-4 py-2 text-xs font-semibold tracking-[0.2em] uppercase">
                   Total {fmtCLP(quickStats.total)}
                 </div>
               </div>
             </div>
-            <div className="flex flex-wrap items-end gap-3 text-xs text-base-content/70">
+            <div className="text-base-content/70 flex flex-wrap items-end gap-3 text-xs">
               <Input
                 label="Desde"
                 type="date"
@@ -624,10 +625,10 @@ export default function AssociatedAccounts({
                 Año en curso
               </Button>
             </div>
-            <div className="surface-recessed border border-base-300/70 p-4">
+            <div className="surface-recessed border-base-300/70 border p-4">
               {quickViewDetails?.loading ? (
-                <div className="flex items-center gap-2 text-xs text-base-content/70">
-                  <span className="loading loading-spinner loading-xs text-primary" />
+                <div className="text-base-content/70 flex items-center gap-2 text-xs">
+                  <span className={LOADING_SPINNER_XS} />
                   Cargando movimientos…
                 </div>
               ) : quickViewDetails?.error ? (
@@ -636,28 +637,28 @@ export default function AssociatedAccounts({
                 </Alert>
               ) : quickViewDetails?.rows?.length ? (
                 <div className="overflow-x-auto">
-                  <table className="min-w-full text-xs text-base-content">
+                  <table className="text-base-content min-w-full text-xs">
                     <thead className="bg-base-100/60 text-primary">
                       <tr>
-                        <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide">Fecha</th>
-                        <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide">
+                        <th className="px-3 py-2 text-left text-xs font-semibold tracking-wide uppercase">Fecha</th>
+                        <th className="px-3 py-2 text-left text-xs font-semibold tracking-wide uppercase">
                           Descripción
                         </th>
-                        <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide">Origen</th>
-                        <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide">Destino</th>
-                        <th className="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wide">Monto</th>
+                        <th className="px-3 py-2 text-left text-xs font-semibold tracking-wide uppercase">Origen</th>
+                        <th className="px-3 py-2 text-left text-xs font-semibold tracking-wide uppercase">Destino</th>
+                        <th className="px-3 py-2 text-right text-xs font-semibold tracking-wide uppercase">Monto</th>
                       </tr>
                     </thead>
                     <tbody>
                       {quickViewDetails.rows.map((movement) => (
-                        <tr key={movement.id} className="border-t border-base-200">
-                          <td className="px-3 py-2 text-base-content">
+                        <tr key={movement.id} className="border-base-200 border-t">
+                          <td className="text-base-content px-3 py-2">
                             {dayjs(movement.timestamp).format("DD MMM YYYY HH:mm")}
                           </td>
-                          <td className="px-3 py-2 text-base-content">{movement.description ?? "-"}</td>
-                          <td className="px-3 py-2 text-base-content">{movement.origin ?? "-"}</td>
-                          <td className="px-3 py-2 text-base-content">{movement.destination ?? "-"}</td>
-                          <td className="px-3 py-2 text-right text-base-content">
+                          <td className="text-base-content px-3 py-2">{movement.description ?? "-"}</td>
+                          <td className="text-base-content px-3 py-2">{movement.origin ?? "-"}</td>
+                          <td className="text-base-content px-3 py-2">{movement.destination ?? "-"}</td>
+                          <td className="text-base-content px-3 py-2 text-right">
                             {movement.amount != null ? fmtCLP(movement.amount) : "-"}
                           </td>
                         </tr>
@@ -666,12 +667,12 @@ export default function AssociatedAccounts({
                   </table>
                 </div>
               ) : (
-                <p className="text-xs text-base-content/60">Sin movimientos dentro del rango seleccionado.</p>
+                <p className="text-base-content/60 text-xs">Sin movimientos dentro del rango seleccionado.</p>
               )}
             </div>
           </div>
         ) : (
-          <div className="rounded-[28px] border border-dashed border-base-300/70 bg-base-100/40 p-8 text-center text-sm text-base-content/60">
+          <div className="border-base-300/70 bg-base-100/40 text-base-content/60 rounded-[28px] border border-dashed p-8 text-center text-sm">
             Selecciona una cuenta en la tabla superior para ver su resumen y movimientos históricos.
           </div>
         )}
@@ -687,23 +688,23 @@ export default function AssociatedAccounts({
             placeholder="Ej. 124282432930"
           />
           {suggestionsLoading ? (
-            <span className="text-xs text-base-content/60">Buscando sugerencias...</span>
+            <span className="text-base-content/60 text-xs">Buscando sugerencias...</span>
           ) : accountSuggestions.length ? (
-            <div className="max-h-48 overflow-y-auto rounded-xl border border-base-300 bg-base-100">
+            <div className="border-base-300 bg-base-100 max-h-48 overflow-y-auto rounded-xl border">
               {accountSuggestions.map((suggestion) => (
                 <div
                   key={suggestion.accountIdentifier}
-                  className="flex flex-col gap-1 border-b border-base-300 px-3 py-2 text-xs last:border-b-0"
+                  className="border-base-300 flex flex-col gap-1 border-b px-3 py-2 text-xs last:border-b-0"
                 >
-                  <span className="font-semibold text-base-content">{suggestion.accountIdentifier}</span>
+                  <span className="text-base-content font-semibold">{suggestion.accountIdentifier}</span>
                   <span className="text-base-content/90">{suggestion.holder ?? "(sin titular)"}</span>
                   {suggestion.bankAccountNumber && (
-                    <span className="text-xs text-base-content/90">Cuenta {suggestion.bankAccountNumber}</span>
+                    <span className="text-base-content/90 text-xs">Cuenta {suggestion.bankAccountNumber}</span>
                   )}
                   {suggestion.rut && (
-                    <span className="text-xs text-base-content/90">RUT {formatRut(suggestion.rut)}</span>
+                    <span className="text-base-content/90 text-xs">RUT {formatRut(suggestion.rut)}</span>
                   )}
-                  <span className="text-xs text-base-content/90">
+                  <span className="text-base-content/90 text-xs">
                     {suggestion.movements} mov. · {fmtCLP(suggestion.totalAmount)}
                   </span>
                   <div className="flex flex-wrap gap-2 pt-1">

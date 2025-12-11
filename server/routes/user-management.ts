@@ -6,6 +6,7 @@ import { authenticate as requireAuth, requireRole } from "../lib/http.js";
 import { logger } from "../lib/logger.js";
 import type { AuthenticatedRequest } from "../types.js";
 import { logAudit } from "../services/audit.js";
+import { normalizeRut } from "../lib/rut.js";
 
 const router = Router();
 
@@ -165,7 +166,7 @@ router.get("/profile", requireAuth, async (req, res) => {
         names: user.person.names,
         fatherName: user.person.fatherName,
         motherName: user.person.motherName,
-        rut: user.person.rut,
+        rut: normalizeRut(user.person.rut),
         email: user.email,
         phone: user.person.phone,
         address: user.person.address,

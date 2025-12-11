@@ -9,22 +9,10 @@ import ServiceForm from "@/features/services/components/ServiceForm";
 import ServiceList from "@/features/services/components/ServiceList";
 import ServicesFilterPanel from "@/features/services/components/ServicesFilterPanel";
 import ServicesUnifiedAgenda from "@/features/services/components/ServicesUnifiedAgenda";
-import {
-  ServicesHero,
-  ServicesSurface,
-  ServicesStatCard,
-  ServicesGrid,
-} from "@/features/services/components/ServicesShell";
 import { useServicesOverview } from "@/features/services/hooks/useServicesOverview";
 import { Link } from "react-router-dom";
-
-const formatCurrency = new Intl.NumberFormat("es-CL", {
-  style: "currency",
-  currency: "CLP",
-  maximumFractionDigits: 0,
-});
-
-const formatNumber = new Intl.NumberFormat("es-CL");
+import { numberFormatter, currencyFormatter } from "@/lib/format";
+import { CARD_COMPACT, TITLE_MD, LOADING_SPINNER_MD, LOADING_SPINNER_XS } from "@/lib/styles";
 
 export default function ServicesOverviewContent() {
   const overview = useServicesOverview();
@@ -73,22 +61,22 @@ export default function ServicesOverviewContent() {
   const stats = [
     {
       title: "Servicios activos",
-      value: `${formatNumber.format(summaryTotals.activeCount)} / ${formatNumber.format(filteredServices.length)}`,
+      value: `${numberFormatter.format(summaryTotals.activeCount)} / ${numberFormatter.format(filteredServices.length)}`,
       helper: `Vista filtrada: ${filteredServices.length} de ${services.length}`,
     },
     {
       title: "Monto esperado",
-      value: formatCurrency.format(summaryTotals.totalExpected),
+      value: currencyFormatter.format(summaryTotals.totalExpected),
       helper: "Periodo actual",
     },
     {
       title: "Pagos conciliados",
-      value: formatCurrency.format(summaryTotals.totalPaid),
+      value: currencyFormatter.format(summaryTotals.totalPaid),
       helper: `Cobertura ${collectionRate ? `${Math.round(collectionRate * 100)}%` : "0%"}`,
     },
     {
       title: "Pendientes / vencidos",
-      value: `${formatNumber.format(summaryTotals.pendingCount)} / ${formatNumber.format(summaryTotals.overdueCount)}`,
+      value: `${numberFormatter.format(summaryTotals.pendingCount)} / ${numberFormatter.format(summaryTotals.overdueCount)}`,
       helper: "Cuotas con seguimiento",
     },
   ];
@@ -98,129 +86,108 @@ export default function ServicesOverviewContent() {
 
   if (showInitialLoading) {
     return (
-      <section className="space-y-8">
-        <ServicesHero title="Servicios recurrentes" description="Cargando datos de servicios y cronogramas..." />
-        <ServicesSurface className="flex min-h-80 items-center justify-center">
-          <div className="flex items-center gap-3 text-sm text-base-content/70">
-            <span className="loading loading-spinner loading-md text-primary" aria-hidden="true" />
-            <span>Preparando panel de servicios...</span>
-          </div>
-        </ServicesSurface>
-      </section>
+      <div className="flex min-h-60 items-center justify-center">
+        <div className="text-base-content/70 flex items-center gap-3 text-sm">
+          <span className={LOADING_SPINNER_MD} aria-hidden="true" />
+          <span>Cargando servicios...</span>
+        </div>
+      </div>
     );
   }
 
   return (
-    <section className="space-y-8">
+    <section className="space-y-4">
       {globalError && <Alert variant="error">{globalError}</Alert>}
 
-      <ServicesHero
-        title="Servicios recurrentes"
-        description="Supervisa tus servicios, cronogramas y pagos pendientes con una vista única optimizada para la operación diaria."
-        actions={
-          <>
-            {activeFiltersCount > 0 && (
-              <span className="rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-                {activeFiltersCount} filtros activos
-              </span>
-            )}
-            <Link to="/services/templates">
-              <Button variant="ghost">Plantillas</Button>
-            </Link>
-            {canManage && (
-              <Button variant="primary" onClick={openCreateModal}>
-                Nuevo servicio
-              </Button>
-            )}
-          </>
-        }
-      />
-
-      <ServicesSurface>
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {stats.map((stat) => (
-            <ServicesStatCard key={stat.title} label={stat.title} value={stat.value} helper={stat.helper} />
-          ))}
-        </div>
-
-        <div className="rounded-2xl border border-base-300/60 bg-base-100/70 p-5 shadow-inner">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="text-sm font-semibold text-base-content">Filtros inteligentes</p>
-              <p className="text-xs text-base-content/60">
-                Aplica criterios combinados para acotar la lista antes de seleccionar un servicio.
-              </p>
-            </div>
-            <Button variant="secondary" size="sm" onClick={() => handleFilterChange(filters)}>
-              Refrescar filtros
-            </Button>
-          </div>
-          <div className="mt-4">
-            <ServicesFilterPanel services={services} filters={filters} onChange={handleFilterChange} />
-          </div>
-        </div>
-
-        <ServicesGrid>
-          <div className="space-y-6">
-            <ServiceList
-              services={filteredServices}
-              selectedId={selectedId}
-              onSelect={setSelectedId}
-              onCreateRequest={openCreateModal}
-              canManage={canManage}
-              loading={loadingList}
-            />
-            <div className="rounded-2xl border border-base-300/60 bg-base-200/70 p-4 shadow-inner">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-semibold text-base-content">Plantillas guardadas</p>
-                  <p className="text-xs text-base-content/60">
-                    Aplica una configuración predefinida para acelerar la carga.
-                  </p>
-                </div>
-                <Link to="/services/templates">
-                  <Button variant="ghost" size="sm">
-                    Ver plantillas
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          </div>
-          <div className="space-y-6">
-            <ServiceDetail
-              service={selectedService}
-              schedules={schedules}
-              loading={loadingDetail}
-              canManage={canManage}
-              onRegenerate={handleRegenerate}
-              onRegisterPayment={openPaymentModal}
-              onUnlinkPayment={handleUnlink}
-            />
-          </div>
-        </ServicesGrid>
-      </ServicesSurface>
-
-      <ServicesSurface>
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-sm font-semibold text-base-content">Agenda unificada</p>
-            <p className="text-xs text-base-content/60">Pagos programados consolidados por fecha de vencimiento.</p>
-          </div>
-          <Link to="/services/agenda">
-            <Button variant="ghost" size="sm">
-              Abrir agenda
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className={TITLE_MD}>Resumen de servicios</h1>
+        {canManage && (
+          <Link to="/services/create">
+            <Button size="sm" variant="primary">
+              Nuevo servicio
             </Button>
           </Link>
+        )}
+      </div>
+
+      <div className={CARD_COMPACT}>
+        <div className="card-body">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {stats.map((stat) => (
+              <div key={stat.title} className="space-y-1">
+                <p className="text-base-content/60 text-xs font-medium uppercase">{stat.title}</p>
+                <p className="text-primary text-lg font-bold">{stat.value}</p>
+                {stat.helper && <p className="text-base-content/50 text-xs">{stat.helper}</p>}
+              </div>
+            ))}
+          </div>
         </div>
-        <ServicesUnifiedAgenda
-          items={unifiedAgendaItems}
-          loading={aggregatedLoading}
-          error={aggregatedError}
+      </div>
+
+      <div className={CARD_COMPACT}>
+        <div className="card-body">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <p className="text-base-content text-sm font-semibold">Filtros</p>
+            {activeFiltersCount > 0 && (
+              <span className="badge badge-primary badge-sm">{activeFiltersCount} activos</span>
+            )}
+          </div>
+          <ServicesFilterPanel services={services} filters={filters} onChange={handleFilterChange} />
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-base-content text-base font-semibold">
+            Servicios {filteredServices.length !== services.length && `(${filteredServices.length})`}
+          </h2>
+        </div>
+
+        <ServiceList
+          services={filteredServices}
+          selectedId={selectedId}
+          onSelect={setSelectedId}
+          onCreateRequest={openCreateModal}
           canManage={canManage}
-          onRegisterPayment={handleAgendaRegisterPayment}
-          onUnlinkPayment={handleAgendaUnlinkPayment}
+          loading={loadingList}
         />
-      </ServicesSurface>
+      </div>
+
+      {selectedService && (
+        <ServiceDetail
+          service={selectedService}
+          schedules={schedules}
+          loading={loadingDetail}
+          canManage={canManage}
+          onRegenerate={handleRegenerate}
+          onRegisterPayment={openPaymentModal}
+          onUnlinkPayment={handleUnlink}
+        />
+      )}
+
+      <div className="card card-compact bg-base-100 shadow-sm">
+        <div className="card-body">
+          <div className="mb-3 flex items-center justify-between">
+            <div>
+              <p className="text-base-content text-sm font-semibold">Agenda unificada</p>
+              <p className="text-base-content/60 text-xs">Próximos pagos programados</p>
+            </div>
+            <Link to="/services/agenda">
+              <Button variant="ghost" size="xs">
+                Ver todo
+              </Button>
+            </Link>
+          </div>
+          <ServicesUnifiedAgenda
+            items={unifiedAgendaItems}
+            loading={aggregatedLoading}
+            error={aggregatedError}
+            canManage={canManage}
+            onRegisterPayment={handleAgendaRegisterPayment}
+            onUnlinkPayment={handleAgendaUnlinkPayment}
+          />
+        </div>
+      </div>
 
       <Modal isOpen={createOpen} onClose={closeCreateModal} title="Nuevo servicio">
         <ServiceForm
@@ -245,17 +212,17 @@ export default function ServicesOverviewContent() {
       >
         {paymentSchedule && (
           <form onSubmit={handlePaymentSubmit} className="space-y-4">
-            <div className="rounded-2xl border border-base-300/60 bg-base-200/60 p-3 text-xs text-base-content/70">
-              <p className="font-semibold text-base-content">Sugerencias por monto</p>
+            <div className="border-base-300/60 bg-base-200/60 text-base-content/70 rounded-2xl border p-3 text-xs">
+              <p className="text-base-content font-semibold">Sugerencias por monto</p>
               {suggestedLoading && (
                 <div className="mt-2 flex items-center gap-2">
-                  <span className="loading loading-spinner loading-xs text-primary" aria-hidden="true" />
+                  <span className={LOADING_SPINNER_XS} aria-hidden="true" />
                   <span>
-                    Buscando movimientos cercanos a {formatCurrency.format(paymentSchedule.expected_amount)}...
+                    Buscando movimientos cercanos a {currencyFormatter.format(paymentSchedule.expected_amount)}...
                   </span>
                 </div>
               )}
-              {suggestedError && <p className="mt-2 text-error">{suggestedError}</p>}
+              {suggestedError && <p className="text-error mt-2">{suggestedError}</p>}
               {!suggestedLoading && !suggestedError && suggestedTransactions.length === 0 && (
                 <p className="mt-2">
                   No encontramos movimientos con ese monto en un rango cercano. Usa ID o ajusta manualmente.
@@ -266,17 +233,17 @@ export default function ServicesOverviewContent() {
                   {suggestedTransactions.map((tx) => (
                     <li
                       key={tx.id}
-                      className="rounded-xl border border-base-300 bg-base-100/80 p-3 shadow-sm transition hover:border-primary/40"
+                      className="border-base-300 bg-base-100/80 hover:border-primary/40 rounded-xl border p-3 shadow-sm transition"
                     >
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <div>
-                          <p className="text-sm font-semibold text-base-content">
-                            {formatCurrency.format(tx.amount ?? 0)}
+                          <p className="text-base-content text-sm font-semibold">
+                            {currencyFormatter.format(tx.amount ?? 0)}
                           </p>
-                          <p className="text-xs text-base-content/50">
+                          <p className="text-base-content/50 text-xs">
                             {dayjs(tx.timestamp).format("DD MMM YYYY")} · ID #{tx.id}
                           </p>
-                          {tx.description && <p className="text-xs text-base-content/60">{tx.description}</p>}
+                          {tx.description && <p className="text-base-content/60 text-xs">{tx.description}</p>}
                         </div>
                         <Button
                           type="button"

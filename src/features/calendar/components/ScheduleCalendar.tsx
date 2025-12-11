@@ -8,6 +8,7 @@ import esLocale from "@fullcalendar/core/locales/es";
 import dayjs from "dayjs";
 
 import type { CalendarEventDetail } from "../types";
+import { currencyFormatter } from "@/lib/format";
 
 import "./ScheduleCalendar.css";
 
@@ -47,11 +48,6 @@ type EventDidMountArg = {
   el: HTMLElement;
 };
 
-const currencyFormatter = new Intl.NumberFormat("es-CL", {
-  style: "currency",
-  currency: "CLP",
-  minimumFractionDigits: 0,
-});
 const TITLE_MAX_LENGTH = 42;
 const MAX_DETAIL_LINES = 2;
 const MINUTES_BUFFER = 30;
@@ -154,7 +150,7 @@ export function ScheduleCalendar({ events, loading = false }: ScheduleCalendarPr
   }, [events]);
 
   return (
-    <div className="schedule-calendar rounded-2xl border border-base-300 bg-base-200/80 p-4 shadow-md">
+    <div className="schedule-calendar border-base-300 bg-base-200/80 rounded-2xl border p-4 shadow-md">
       <FullCalendar
         plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
         initialView="timeGridWeek"
@@ -195,13 +191,13 @@ export function ScheduleCalendar({ events, loading = false }: ScheduleCalendarPr
           }
           return (
             <div className="flex flex-col gap-0.5 text-xs leading-tight">
-              <span className="font-semibold text-base-content">{formatTitle(arg.event.title)}</span>
+              <span className="text-base-content font-semibold">{formatTitle(arg.event.title)}</span>
               {lines.slice(0, MAX_DETAIL_LINES).map((line, index) => (
                 <span key={index} className="text-base-content">
                   {line}
                 </span>
               ))}
-              {lines.length > MAX_DETAIL_LINES ? <span className="text-xs text-base-content/50">…</span> : null}
+              {lines.length > MAX_DETAIL_LINES ? <span className="text-base-content/50 text-xs">…</span> : null}
             </div>
           );
         }}
@@ -244,17 +240,17 @@ export function ScheduleCalendar({ events, loading = false }: ScheduleCalendarPr
           }
         }}
       />
-      {loading && <p className="mt-2 text-xs text-base-content/60">Actualizando eventos…</p>}
+      {loading && <p className="text-base-content/60 mt-2 text-xs">Actualizando eventos…</p>}
       {selectedEvent && (
-        <div className="mt-4 rounded-xl border border-base-300 bg-base-100/70 p-4 shadow-sm text-sm text-base-content">
+        <div className="border-base-300 bg-base-100/70 text-base-content mt-4 rounded-xl border p-4 text-sm shadow-sm">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-xs uppercase tracking-wide text-base-content/60">Evento seleccionado</p>
-              <p className="text-lg font-semibold text-base-content">{selectedEvent.extendedProps.fullTitle}</p>
+              <p className="text-base-content/60 text-xs tracking-wide uppercase">Evento seleccionado</p>
+              <p className="text-base-content text-lg font-semibold">{selectedEvent.extendedProps.fullTitle}</p>
             </div>
             <button
               type="button"
-              className="text-xs font-semibold text-primary hover:underline"
+              className="text-primary text-xs font-semibold hover:underline"
               onClick={() => setSelectedEvent(null)}
             >
               Cerrar
@@ -262,27 +258,27 @@ export function ScheduleCalendar({ events, loading = false }: ScheduleCalendarPr
           </div>
           <dl className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
             <div>
-              <dt className="text-xs text-base-content/60">Inicio</dt>
+              <dt className="text-base-content/60 text-xs">Inicio</dt>
               <dd className="font-medium">
                 {selectedEvent.start ? dayjs(selectedEvent.start).format("DD MMM YYYY HH:mm") : "—"}
               </dd>
             </div>
             <div>
-              <dt className="text-xs text-base-content/60">Fin</dt>
+              <dt className="text-base-content/60 text-xs">Fin</dt>
               <dd className="font-medium">
                 {selectedEvent.end ? dayjs(selectedEvent.end).format("DD MMM YYYY HH:mm") : "—"}
               </dd>
             </div>
             <div>
-              <dt className="text-xs text-base-content/60">Calendario</dt>
+              <dt className="text-base-content/60 text-xs">Calendario</dt>
               <dd className="font-medium">{selectedEvent.extendedProps.calendarId}</dd>
             </div>
             <div>
-              <dt className="text-xs text-base-content/60">Categoría</dt>
+              <dt className="text-base-content/60 text-xs">Categoría</dt>
               <dd className="font-medium">{selectedEvent.extendedProps.category ?? "—"}</dd>
             </div>
             <div>
-              <dt className="text-xs text-base-content/60">Monto esperado</dt>
+              <dt className="text-base-content/60 text-xs">Monto esperado</dt>
               <dd className="font-medium">
                 {selectedEvent.extendedProps.amountExpected != null
                   ? currencyFormatter.format(selectedEvent.extendedProps.amountExpected)
@@ -290,7 +286,7 @@ export function ScheduleCalendar({ events, loading = false }: ScheduleCalendarPr
               </dd>
             </div>
             <div>
-              <dt className="text-xs text-base-content/60">Monto pagado</dt>
+              <dt className="text-base-content/60 text-xs">Monto pagado</dt>
               <dd className="font-medium">
                 {selectedEvent.extendedProps.amountPaid != null
                   ? currencyFormatter.format(selectedEvent.extendedProps.amountPaid)
@@ -298,11 +294,11 @@ export function ScheduleCalendar({ events, loading = false }: ScheduleCalendarPr
               </dd>
             </div>
             <div>
-              <dt className="text-xs text-base-content/60">Etapa</dt>
+              <dt className="text-base-content/60 text-xs">Etapa</dt>
               <dd className="font-medium">{selectedEvent.extendedProps.treatmentStage ?? "—"}</dd>
             </div>
             <div>
-              <dt className="text-xs text-base-content/60">Dosis</dt>
+              <dt className="text-base-content/60 text-xs">Dosis</dt>
               <dd className="font-medium">{selectedEvent.extendedProps.dosage ?? "—"}</dd>
             </div>
           </dl>

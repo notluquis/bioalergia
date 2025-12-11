@@ -18,6 +18,7 @@ import {
   Cell,
 } from "recharts";
 import { Filter, Plus, TrendingUp, X } from "lucide-react";
+import { INPUT_SEARCH_SM, LOADING_SPINNER_SM } from "@/lib/styles";
 
 import { useAuth } from "@/context/AuthContext";
 import { fetchEmployees } from "@/features/hr/employees/api";
@@ -28,6 +29,7 @@ import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
 import { prepareComparisonData, calculateStats } from "../utils";
 import type { EmployeeWorkData, ReportGranularity } from "../types";
+import { PAGE_CONTAINER, TITLE_LG } from "@/lib/styles";
 
 dayjs.extend(isoWeek);
 dayjs.locale("es");
@@ -160,10 +162,10 @@ export default function ReportsPage() {
   }
 
   return (
-    <section className="mx-auto max-w-7xl space-y-6">
+    <section className={PAGE_CONTAINER}>
       {/* Header */}
       <header>
-        <h1 className="text-primary text-2xl font-bold">Reportería de horas</h1>
+        <h1 className={TITLE_LG}>Reportería de horas</h1>
         <p className="text-base-content/70 mt-1 text-sm">
           Analiza horas trabajadas, compara empleados y genera reportes detallados
         </p>
@@ -258,7 +260,7 @@ export default function ReportsPage() {
                   <div className="fixed inset-0 z-40" onClick={() => setShowEmployeeDropdown(false)} />
                   <div className="border-base-300 bg-base-100 absolute top-full right-0 left-0 z-50 mt-2 rounded-xl border shadow-xl">
                     <div className="border-base-300 border-b p-3">
-                      <label className="input input-bordered input-sm flex items-center gap-2">
+                      <label className={INPUT_SEARCH_SM}>
                         <span className="text-base-content/50">🔍</span>
                         <input
                           type="text"
@@ -273,7 +275,7 @@ export default function ReportsPage() {
                     <ul className="max-h-64 overflow-y-auto p-2">
                       {loadingEmployees ? (
                         <li className="flex justify-center p-4">
-                          <span className="loading loading-spinner loading-sm" />
+                          <span className={LOADING_SPINNER_SM} />
                         </li>
                       ) : filteredEmployees.length === 0 ? (
                         <li className="text-base-content/50 p-4 text-center text-sm">No se encontraron empleados</li>

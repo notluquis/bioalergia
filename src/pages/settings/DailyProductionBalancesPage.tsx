@@ -5,6 +5,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import Alert from "@/components/ui/Alert";
+import { INPUT_CURRENCY_SM, GRID_2_COL_SM } from "@/lib/styles";
+import { today } from "@/lib/dates";
 import { useToast } from "@/context/ToastContext";
 import { useSettings } from "@/context/SettingsContext";
 import {
@@ -28,6 +30,7 @@ import type { ProductionBalancePayload, ProductionBalanceStatus } from "@/featur
 import { deriveTotals } from "@/features/dailyProductionBalances/utils";
 import WeekView from "@/features/dailyProductionBalances/components/WeekView";
 import { useAuth } from "@/context/AuthContext";
+import { PAGE_CONTAINER } from "@/lib/styles";
 
 type FormState = {
   date: string;
@@ -48,7 +51,7 @@ type FormState = {
 };
 
 const makeDefaultForm = (date?: string): FormState => ({
-  date: date || dayjs().format("YYYY-MM-DD"),
+  date: date || today(),
   status: "FINAL",
   ingresoTarjetas: "0",
   ingresoTransferencias: "0",
@@ -233,7 +236,7 @@ export default function DailyProductionBalancesPage() {
   };
 
   return (
-    <section className="mx-auto max-w-7xl space-y-6">
+    <section className={PAGE_CONTAINER}>
       <div className="flex flex-col gap-3">
         <div className="flex items-center gap-3">
           <div className="bg-primary/10 text-primary flex h-12 w-12 items-center justify-center rounded-2xl">
@@ -411,7 +414,7 @@ export default function DailyProductionBalancesPage() {
                             Tarjetas
                           </span>
                         </label>
-                        <label className="input input-bordered input-sm flex items-center gap-2">
+                        <label className={INPUT_CURRENCY_SM}>
                           <span className="text-base-content/60">$</span>
                           <input
                             type="text"
@@ -433,7 +436,7 @@ export default function DailyProductionBalancesPage() {
                             Transferencias
                           </span>
                         </label>
-                        <label className="input input-bordered input-sm flex items-center gap-2">
+                        <label className={INPUT_CURRENCY_SM}>
                           <span className="text-base-content/60">$</span>
                           <input
                             type="text"
@@ -455,7 +458,7 @@ export default function DailyProductionBalancesPage() {
                             Efectivo
                           </span>
                         </label>
-                        <label className="input input-bordered input-sm flex items-center gap-2">
+                        <label className={INPUT_CURRENCY_SM}>
                           <span className="text-base-content/60">$</span>
                           <input
                             type="text"
@@ -481,12 +484,12 @@ export default function DailyProductionBalancesPage() {
                       <TrendingDown className="text-error h-5 w-5" />
                       <h3 className="text-base-content text-base font-semibold">Gastos y Ajustes</h3>
                     </div>
-                    <div className="grid gap-3 sm:grid-cols-2">
+                    <div className={GRID_2_COL_SM}>
                       <div className="form-control">
                         <label className="label py-1">
                           <span className="label-text text-sm font-medium">Gastos diarios</span>
                         </label>
-                        <label className="input input-bordered input-sm flex items-center gap-2">
+                        <label className={INPUT_CURRENCY_SM}>
                           <span className="text-base-content/60">$</span>
                           <input
                             type="text"
@@ -508,7 +511,7 @@ export default function DailyProductionBalancesPage() {
                         <label className="label py-1">
                           <span className="label-text text-sm font-medium">Otros abonos</span>
                         </label>
-                        <label className="input input-bordered input-sm flex items-center gap-2">
+                        <label className={INPUT_CURRENCY_SM}>
                           <span className="text-base-content/60">$</span>
                           <input
                             type="text"
@@ -578,7 +581,7 @@ export default function DailyProductionBalancesPage() {
                         <label className="label py-1">
                           <span className="label-text text-sm font-medium">Consultas</span>
                         </label>
-                        <label className="input input-bordered input-sm flex items-center gap-2">
+                        <label className={INPUT_CURRENCY_SM}>
                           <span className="text-base-content/60">$</span>
                           <input
                             type="text"
@@ -597,7 +600,7 @@ export default function DailyProductionBalancesPage() {
                         <label className="label py-1">
                           <span className="label-text text-sm font-medium">Controles</span>
                         </label>
-                        <label className="input input-bordered input-sm flex items-center gap-2">
+                        <label className={INPUT_CURRENCY_SM}>
                           <span className="text-base-content/60">$</span>
                           <input
                             type="text"
@@ -620,7 +623,7 @@ export default function DailyProductionBalancesPage() {
                             Vacunas
                           </span>
                         </label>
-                        <label className="input input-bordered input-sm flex items-center gap-2">
+                        <label className={INPUT_CURRENCY_SM}>
                           <span className="text-base-content/60">$</span>
                           <input
                             type="text"
@@ -642,7 +645,7 @@ export default function DailyProductionBalancesPage() {
                             Licencias
                           </span>
                         </label>
-                        <label className="input input-bordered input-sm flex items-center gap-2">
+                        <label className={INPUT_CURRENCY_SM}>
                           <span className="text-base-content/60">$</span>
                           <input
                             type="text"
@@ -661,7 +664,7 @@ export default function DailyProductionBalancesPage() {
                         <label className="label py-1">
                           <span className="label-text text-sm font-medium">Roxair</span>
                         </label>
-                        <label className="input input-bordered input-sm flex items-center gap-2">
+                        <label className={INPUT_CURRENCY_SM}>
                           <span className="text-base-content/60">$</span>
                           <input
                             type="text"

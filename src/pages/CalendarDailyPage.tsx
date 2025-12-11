@@ -6,18 +6,14 @@ import "dayjs/locale/es";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import Alert from "@/components/ui/Alert";
+import { today } from "@/lib/dates";
 import { MultiSelectFilter, type MultiSelectOption } from "@/features/calendar/components/MultiSelectFilter";
 import { useCalendarEvents } from "@/features/calendar/hooks/useCalendarEvents";
 import type { CalendarEventDetail, CalendarDayEvents } from "@/features/calendar/types";
+import { numberFormatter, currencyFormatter } from "@/lib/format";
+import { PAGE_CONTAINER, TITLE_LG, SPACE_Y_TIGHT } from "@/lib/styles";
 
 dayjs.locale("es");
-
-const numberFormatter = new Intl.NumberFormat("es-CL");
-const currencyFormatter = new Intl.NumberFormat("es-CL", {
-  style: "currency",
-  currency: "CLP",
-  minimumFractionDigits: 0,
-});
 const NULL_EVENT_TYPE_VALUE = "__NULL__";
 const NULL_CATEGORY_VALUE = "__NULL_CATEGORY__";
 
@@ -256,7 +252,7 @@ function CalendarDailyPage() {
     </details>
   );
 
-  const todayKey = dayjs().format("YYYY-MM-DD");
+  const todayKey = today();
   const tomorrowKey = dayjs().add(1, "day").format("YYYY-MM-DD");
 
   const todayEntry = daily?.days.find((day) => day.date === todayKey) ?? null;
@@ -275,9 +271,9 @@ function CalendarDailyPage() {
     .sort((a, b) => (a.date > b.date ? 1 : -1));
 
   return (
-    <section className="mx-auto max-w-7xl space-y-6">
-      <header className="space-y-2">
-        <h1 className="text-primary text-2xl font-bold">Detalle diario de eventos</h1>
+    <section className={PAGE_CONTAINER}>
+      <header className={SPACE_Y_TIGHT}>
+        <h1 className={TITLE_LG}>Detalle diario de eventos</h1>
         <p className="text-base-content/70 text-sm">
           Revisa el detalle de cada jornada con los eventos sincronizados. Los días aparecen colapsados para que puedas
           expandir solo los que te interesen.

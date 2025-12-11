@@ -4,6 +4,7 @@ import { findUserById } from "../services/users.js";
 import { prisma, Prisma } from "../prisma.js";
 import { logEvent } from "../lib/logger.js";
 import type { AuthenticatedRequest } from "../types.js";
+import { normalizeRut } from "../lib/rut.js";
 
 export function registerUserRoutes(app: express.Express) {
   // Toggle MFA for a specific user (Admin only)
@@ -117,6 +118,12 @@ export function registerUserRoutes(app: express.Express) {
       // Map to safe response
       const safeUsers = users.map((u) => ({
         ...u,
+        person: u.person
+          ? {
+              ...u.person,
+              rut: normalizeRut(u.person.rut),
+            }
+          : null,
         hasPasskey: !!u.passkeyCredentialID,
         passkeyCredentialID: undefined, // Don't leak ID if not needed
       }));

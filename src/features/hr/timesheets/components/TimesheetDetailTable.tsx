@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Modal from "@/components/ui/Modal";
 import Button from "@/components/ui/Button";
 import TimeInput from "@/components/ui/TimeInput";
+import { LOADING_SPINNER_SM } from "@/lib/styles";
 import { computeStatus, isRowDirty, formatDateLabel } from "../utils";
 import type { BulkRow } from "../types";
 import type { Employee } from "@/features/hr/employees/types";
@@ -104,11 +105,11 @@ export default function TimesheetDetailTable({
   }, []);
 
   return (
-    <div className="space-y-4 p-6 bg-base-100">
+    <div className="bg-base-100 space-y-4 p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="text-sm text-base-content/70">
+        <div className="text-base-content/70 text-sm">
           <span className="font-semibold">{monthLabel}</span>
-          {selectedEmployee && <span className="ml-2 text-base-content/60">· {selectedEmployee.full_name}</span>}
+          {selectedEmployee && <span className="text-base-content/60 ml-2">· {selectedEmployee.full_name}</span>}
         </div>
         {canEdit && (
           <div className="flex items-center gap-2">
@@ -119,7 +120,7 @@ export default function TimesheetDetailTable({
             >
               Guardar cambios
             </Button>
-            <div className="text-xs text-base-content/60">
+            <div className="text-base-content/60 text-xs">
               {pendingCount > 0 && <span className="mr-2">Pendientes: {pendingCount}</span>}
               {modifiedCount > 0 && <span>Modificados: {modifiedCount}</span>}
             </div>
@@ -131,7 +132,7 @@ export default function TimesheetDetailTable({
         <div className="flex flex-wrap items-center justify-between gap-3">{/* ...existing code... */}</div>
       )}
 
-      <div className="overflow-x-auto muted-scrollbar transform-gpu">
+      <div className="muted-scrollbar transform-gpu overflow-x-auto">
         <table className="min-w-full text-sm will-change-scroll">
           <thead className="bg-primary/10 text-primary sticky top-0 z-10">
             <tr>
@@ -190,11 +191,11 @@ export default function TimesheetDetailTable({
                 <tr
                   key={row.date}
                   className={`odd:bg-base-200/60 hover:bg-base-300/80 transition-colors ${
-                    isMarkedNotWorked ? "opacity-60 pointer-events-none" : ""
+                    isMarkedNotWorked ? "pointer-events-none opacity-60" : ""
                   }`}
                 >
                   {/* Fecha */}
-                  <td className="px-3 py-2 text-base-content/70 whitespace-nowrap">
+                  <td className="text-base-content/70 px-3 py-2 whitespace-nowrap">
                     {formatDateLabel(row.date)}
                     {(() => {
                       const dayIdx = dayjs(row.date).day();
@@ -233,7 +234,7 @@ export default function TimesheetDetailTable({
                     />
                   </td>
                   {/* Trabajadas */}
-                  <td className="px-3 py-2 text-base-content tabular-nums">{worked}</td>
+                  <td className="text-base-content px-3 py-2 tabular-nums">{worked}</td>
                   {/* Extras */}
                   <td className="px-3 py-2">
                     {!row.overtime?.trim() && !openOvertimeEditors.has(row.date) ? (
@@ -242,7 +243,7 @@ export default function TimesheetDetailTable({
                           type="button"
                           size="sm"
                           variant="secondary"
-                          className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-base-300 bg-base-200 text-primary shadow hover:bg-base-200"
+                          className="border-base-300 bg-base-200 text-primary hover:bg-base-200 inline-flex h-8 w-8 items-center justify-center rounded-full border shadow"
                           aria-label="Agregar horas extra"
                           title="Agregar horas extra"
                           onClick={() =>
@@ -279,19 +280,19 @@ export default function TimesheetDetailTable({
                     )}
                   </td>
                   {/* Estado + indicador unificado "!" */}
-                  <td className={`px-3 py-2 text-xs font-semibold uppercase tracking-wide ${statusColor} relative`}>
+                  <td className={`px-3 py-2 text-xs font-semibold tracking-wide uppercase ${statusColor} relative`}>
                     <span className="inline-flex items-center gap-1">
                       {status}
                       {showBang && (
                         <span className="group relative">
-                          <span className={`font-bold cursor-help ${bangColor}`}>!</span>
-                          <span className="invisible group-hover:visible absolute left-1/2 -translate-x-1/2 bottom-full mb-2 px-3 py-2 text-xs font-normal normal-case tracking-normal text-white bg-gray-900 rounded-lg shadow-lg whitespace-nowrap z-50 max-w-xs">
+                          <span className={`cursor-help font-bold ${bangColor}`}>!</span>
+                          <span className="invisible absolute bottom-full left-1/2 z-50 mb-2 max-w-xs -translate-x-1/2 rounded-lg bg-gray-900 px-3 py-2 text-xs font-normal tracking-normal whitespace-nowrap text-white normal-case shadow-lg group-hover:visible">
                             {tooltipParts.map((part, i) => (
                               <span key={i} className="block">
                                 {part}
                               </span>
                             ))}
-                            <span className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></span>
+                            <span className="absolute top-full left-1/2 h-0 w-0 -translate-x-1/2 border-t-4 border-r-4 border-l-4 border-transparent border-t-gray-900"></span>
                           </span>
                         </span>
                       )}
@@ -315,13 +316,13 @@ export default function TimesheetDetailTable({
                         </Button>
                         <div
                           id={`menu-${row.date}`}
-                          className="dropdown-menu hidden absolute right-0 z-20 mt-2 w-48 origin-top-right rounded-xl bg-base-100 p-2 shadow-xl ring-1 ring-black/5"
+                          className="dropdown-menu bg-base-100 absolute right-0 z-20 mt-2 hidden w-48 origin-top-right rounded-xl p-2 shadow-xl ring-1 ring-black/5"
                           role="menu"
                         >
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="w-full justify-start rounded-lg px-3 py-2.5 text-left text-sm text-base-content hover:bg-base-200"
+                            className="text-base-content hover:bg-base-200 w-full justify-start rounded-lg px-3 py-2.5 text-left text-sm"
                             role="menuitem"
                             onClick={() => {
                               toggleMenu(`menu-${row.date}`);
@@ -334,7 +335,7 @@ export default function TimesheetDetailTable({
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="w-full justify-start rounded-lg px-3 py-2.5 text-left text-sm text-base-content hover:bg-base-200"
+                              className="text-base-content hover:bg-base-200 w-full justify-start rounded-lg px-3 py-2.5 text-left text-sm"
                               role="menuitem"
                               onClick={() => {
                                 onResetRow(index);
@@ -347,7 +348,7 @@ export default function TimesheetDetailTable({
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="w-full justify-start rounded-lg px-3 py-2.5 text-left text-sm text-base-content hover:bg-base-200"
+                            className="text-base-content hover:bg-base-200 w-full justify-start rounded-lg px-3 py-2.5 text-left text-sm"
                             role="menuitem"
                             onClick={() => {
                               toggleMenu(`menu-${row.date}`);
@@ -365,7 +366,7 @@ export default function TimesheetDetailTable({
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="w-full justify-start rounded-lg px-3 py-2.5 text-left text-sm text-error hover:bg-error/10"
+                              className="text-error hover:bg-error/10 w-full justify-start rounded-lg px-3 py-2.5 text-left text-sm"
                               role="menuitem"
                               onClick={() => {
                                 toggleMenu(`menu-${row.date}`);
@@ -376,12 +377,12 @@ export default function TimesheetDetailTable({
                             </Button>
                           )}
                           {!dirty && !row.entryId && (
-                            <div className="px-3 py-2.5 text-xs text-base-content/50">Sin acciones</div>
+                            <div className="text-base-content/50 px-3 py-2.5 text-xs">Sin acciones</div>
                           )}
                         </div>
                       </div>
                     ) : (
-                      <span className="text-xs text-base-content/50">—</span>
+                      <span className="text-base-content/50 text-xs">—</span>
                     )}
                   </td>
                 </tr>
@@ -389,9 +390,9 @@ export default function TimesheetDetailTable({
             })}
             {loadingDetail && (
               <tr>
-                <td colSpan={7} className="px-4 py-6 text-center text-base-content/60">
+                <td colSpan={7} className="text-base-content/60 px-4 py-6 text-center">
                   <div className="flex items-center justify-center gap-2">
-                    <span className="loading loading-spinner loading-sm"></span>
+                    <span className={LOADING_SPINNER_SM}></span>
                     <span>Cargando datos...</span>
                   </div>
                 </td>
@@ -399,7 +400,7 @@ export default function TimesheetDetailTable({
             )}
             {!loadingDetail && !bulkRows.length && (
               <tr>
-                <td colSpan={7} className="px-4 py-6 text-center text-base-content/60">
+                <td colSpan={7} className="text-base-content/60 px-4 py-6 text-center">
                   {employeeOptions.length
                     ? "Selecciona un trabajador para ver o editar sus horas."
                     : "Registra a trabajadores activos para comenzar a cargar horas."}
@@ -415,7 +416,7 @@ export default function TimesheetDetailTable({
         onClose={() => setCommentPreview(null)}
         title={`Comentario · ${commentPreview ? formatDateLabel(commentPreview.date) : ""}`}
       >
-        <p className="whitespace-pre-wrap text-base-content">{commentPreview?.text}</p>
+        <p className="text-base-content whitespace-pre-wrap">{commentPreview?.text}</p>
       </Modal>
     </div>
   );

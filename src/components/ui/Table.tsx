@@ -1,6 +1,7 @@
 import React from "react";
 import { ChevronUp, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { LOADING_SPINNER_MD } from "@/lib/styles";
 
 interface TableColumn<T extends string> {
   key: T;
@@ -51,9 +52,9 @@ function TableHeader<T extends string>({ columns, sortState, onSort, visibleColu
   const getSortIcon = (column: T) => {
     if (!sortState || sortState.column !== column) return null;
     return sortState.direction === "asc" ? (
-      <ChevronUp className="ml-1 h-3 w-3 inline text-primary" />
+      <ChevronUp className="text-primary ml-1 inline h-3 w-3" />
     ) : (
-      <ChevronDown className="ml-1 h-3 w-3 inline text-primary" />
+      <ChevronDown className="text-primary ml-1 inline h-3 w-3" />
     );
   };
 
@@ -66,8 +67,8 @@ function TableHeader<T extends string>({ columns, sortState, onSort, visibleColu
             <th
               key={column.key}
               className={cn(
-                "px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide whitespace-nowrap text-base-content/70",
-                column.sortable && onSort && "cursor-pointer hover:bg-base-200 hover:text-primary transition-colors",
+                "text-base-content/70 px-4 py-3 text-left text-xs font-semibold tracking-wide whitespace-nowrap uppercase",
+                column.sortable && onSort && "hover:bg-base-200 hover:text-primary cursor-pointer transition-colors",
                 column.align === "center" && "text-center",
                 column.align === "right" && "text-right"
               )}
@@ -96,14 +97,14 @@ function TableBody({
         <tr>
           <td colSpan={columnsCount} className="px-4 py-12 text-center">
             <div className="flex flex-col items-center justify-center gap-2">
-              <span className="loading loading-spinner loading-md text-primary"></span>
-              <span className="text-sm text-base-content/60">{loadingMessage}</span>
+              <span className={LOADING_SPINNER_MD}></span>
+              <span className="text-base-content/60 text-sm">{loadingMessage}</span>
             </div>
           </td>
         </tr>
       ) : React.Children.count(children) === 0 ? (
         <tr>
-          <td colSpan={columnsCount} className="px-4 py-12 text-center text-base-content/60 italic">
+          <td colSpan={columnsCount} className="text-base-content/60 px-4 py-12 text-center italic">
             {emptyMessage}
           </td>
         </tr>
@@ -137,7 +138,7 @@ export function Table<T extends string>({
   if (responsive) {
     return (
       <div className={containerClasses}>
-        <div className="overflow-x-auto muted-scrollbar">{tableContent}</div>
+        <div className="muted-scrollbar overflow-x-auto">{tableContent}</div>
       </div>
     );
   }

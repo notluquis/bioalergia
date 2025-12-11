@@ -64,6 +64,16 @@ export { durationToMinutes, minutesToDuration, parseTimeToMinutes, minutesToTime
 
 // === NUMERIC FORMATTING ===
 
+/** Shared number formatter instance (es-CL locale) */
+export const numberFormatter = new Intl.NumberFormat("es-CL");
+
+/** Shared currency formatter instance (CLP, no decimals) */
+export const currencyFormatter = new Intl.NumberFormat("es-CL", {
+  style: "currency",
+  currency: "CLP",
+  maximumFractionDigits: 0,
+});
+
 export function formatNumber(value: number, options?: Intl.NumberFormatOptions): string {
   if (!Number.isFinite(value)) return "-";
   return new Intl.NumberFormat("es-CL", options).format(value);
