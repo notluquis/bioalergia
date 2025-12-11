@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { ProductionBalance } from "../types";
 import DayCard from "./DayCard";
+import { currencyFormatter } from "@/lib/format";
 
 type WeekViewProps = {
   currentDate: dayjs.Dayjs;
@@ -19,12 +20,6 @@ export default function WeekView({ currentDate, onDateChange, balances, onSelect
   // Calculate weekly totals
   const weeklyIncome = balances.reduce((acc, b) => acc + Number(b.total), 0);
   const weeklyExpenses = balances.reduce((acc, b) => acc + Number(b.gastosDiarios), 0);
-
-  const currencyFormatter = new Intl.NumberFormat("es-CL", {
-    style: "currency",
-    currency: "CLP",
-    minimumFractionDigits: 0,
-  });
 
   return (
     <div className="space-y-6">

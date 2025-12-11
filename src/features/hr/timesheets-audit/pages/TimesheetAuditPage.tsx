@@ -8,6 +8,8 @@ import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
 import "dayjs/locale/es";
 import { Users, ChevronDown, ChevronUp, Search, X, Check } from "lucide-react";
+import { INPUT_SEARCH_SM, LOADING_SPINNER_SM } from "@/lib/styles";
+import { startOfMonth, endOfMonth, monthsAgoStart, monthsAgoEnd } from "@/lib/dates";
 
 import { useAuth } from "@/context/AuthContext";
 import Alert from "@/components/ui/Alert";
@@ -90,18 +92,18 @@ function getQuickRangeValues(range: QuickRange): { start: string; end: string } 
       };
     case "this-month":
       return {
-        start: today.startOf("month").format("YYYY-MM-DD"),
-        end: today.endOf("month").format("YYYY-MM-DD"),
+        start: startOfMonth(),
+        end: endOfMonth(),
       };
     case "last-month":
       return {
-        start: today.subtract(1, "month").startOf("month").format("YYYY-MM-DD"),
-        end: today.subtract(1, "month").endOf("month").format("YYYY-MM-DD"),
+        start: monthsAgoStart(1),
+        end: monthsAgoEnd(1),
       };
     case "two-months-ago":
       return {
-        start: today.subtract(2, "month").startOf("month").format("YYYY-MM-DD"),
-        end: today.subtract(2, "month").endOf("month").format("YYYY-MM-DD"),
+        start: monthsAgoStart(2),
+        end: monthsAgoEnd(2),
       };
     default:
       return null;
@@ -404,7 +406,7 @@ export default function TimesheetAuditPage() {
                 <div className="border-base-300 bg-base-100 absolute top-full right-0 left-0 z-50 mt-2 rounded-xl border shadow-xl">
                   {/* Search */}
                   <div className="border-base-300 border-b p-3">
-                    <label className="input input-bordered input-sm flex items-center gap-2">
+                    <label className={INPUT_SEARCH_SM}>
                       <Search className="text-base-content/50 h-4 w-4" />
                       <input
                         type="text"
@@ -420,7 +422,7 @@ export default function TimesheetAuditPage() {
                   <ul className="max-h-64 overflow-y-auto p-2">
                     {loadingEmployees ? (
                       <li className="flex justify-center p-4">
-                        <span className="loading loading-spinner loading-sm" />
+                        <span className={LOADING_SPINNER_SM} />
                       </li>
                     ) : filteredEmployees.length === 0 ? (
                       <li className="text-base-content/50 p-4 text-center text-sm">No se encontraron empleados</li>

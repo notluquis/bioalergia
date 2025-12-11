@@ -24,6 +24,8 @@ const FREQUENCY_OPTIONS: Array<{ value: ServiceFrequency; label: string }> = [
   { value: "ONCE", label: "Única vez" },
 ];
 
+import { GRID_2_COL_MD } from "@/lib/styles";
+
 export function SchedulingSection({
   frequency,
   startDate,
@@ -33,7 +35,7 @@ export function SchedulingSection({
   onChange,
 }: SchedulingSectionProps) {
   return (
-    <section className="grid gap-4 md:grid-cols-2">
+    <section className={GRID_2_COL_MD}>
       <Input
         label="Frecuencia"
         as="select"

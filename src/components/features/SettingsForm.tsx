@@ -3,6 +3,7 @@ import { useSettings, type AppSettings } from "@/context/SettingsContext";
 import { useAuth } from "@/context/AuthContext";
 import Button from "../ui/Button";
 import Alert from "../ui/Alert";
+import { GRID_2_COL_MD } from "@/lib/styles";
 
 const FALLBACK_LOGO_PATH = "/logo192.png";
 const FALLBACK_FAVICON_PATH = "/logo_bimi.svg";
@@ -285,13 +286,13 @@ export default function SettingsForm() {
   return (
     <form onSubmit={handleSubmit} className="bg-base-100 space-y-6 p-6">
       <div className="space-y-1">
-        <h2 className="text-lg font-semibold text-primary drop-shadow-sm">Configuración General</h2>
-        <p className="text-sm text-base-content/70">Personaliza la identidad visual y la información de contacto.</p>
+        <h2 className="text-primary text-lg font-semibold drop-shadow-sm">Configuración General</h2>
+        <p className="text-base-content/70 text-sm">Personaliza la identidad visual y la información de contacto.</p>
       </div>
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className={GRID_2_COL_MD}>
         {fields.map(({ key, label, type, helper }) => (
-          <label key={key} className="flex flex-col gap-2 text-sm text-base-content">
-            <span className="text-xs font-semibold uppercase tracking-wide text-base-content/80">{label}</span>
+          <label key={key} className="text-base-content flex flex-col gap-2 text-sm">
+            <span className="text-base-content/80 text-xs font-semibold tracking-wide uppercase">{label}</span>
             {type === "color" ? (
               <input
                 type="color"
@@ -310,12 +311,12 @@ export default function SettingsForm() {
                 autoComplete={key === "orgPhone" ? "tel" : key === "supportEmail" ? "email" : undefined}
               />
             )}
-            {helper && <span className="text-xs text-base-content/60">{helper}</span>}
+            {helper && <span className="text-base-content/60 text-xs">{helper}</span>}
           </label>
         ))}
-        <div className="col-span-full space-y-3 rounded-2xl border border-base-300 bg-base-200 p-4">
+        <div className="border-base-300 bg-base-200 col-span-full space-y-3 rounded-2xl border p-4">
           <div className="flex items-center justify-between gap-2">
-            <span className="text-xs font-semibold uppercase tracking-wide text-base-content/80">
+            <span className="text-base-content/80 text-xs font-semibold tracking-wide uppercase">
               Logo institucional
             </span>
             <div className="btn-group">
@@ -338,7 +339,7 @@ export default function SettingsForm() {
             </div>
           </div>
           {logoMode === "url" ? (
-            <label className="flex flex-col gap-2 text-sm text-base-content">
+            <label className="text-base-content flex flex-col gap-2 text-sm">
               <span className="sr-only">URL del logo</span>
               <input
                 type="text"
@@ -347,13 +348,13 @@ export default function SettingsForm() {
                 className="input input-bordered"
                 placeholder="https://..."
               />
-              <span className="text-xs text-base-content/60">
+              <span className="text-base-content/60 text-xs">
                 Puedes usar una URL pública (https://) o una ruta interna generada tras subir un archivo (ej:
                 /uploads/branding/logo.png).
               </span>
             </label>
           ) : (
-            <div className="space-y-3 text-sm text-base-content">
+            <div className="text-base-content space-y-3 text-sm">
               <div>
                 <input
                   ref={logoInputRef}
@@ -367,24 +368,24 @@ export default function SettingsForm() {
                 </Button>
               </div>
               <div className="flex flex-wrap items-center gap-4">
-                <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-xl border border-base-300 bg-base-100 p-2">
+                <div className="border-base-300 bg-base-100 flex h-20 w-20 items-center justify-center overflow-hidden rounded-xl border p-2">
                   <img src={displayedLogo} alt="Vista previa del logo" className="brand-logo--settings" />
                 </div>
-                <div className="text-xs text-base-content/70">
+                <div className="text-base-content/70 text-xs">
                   <p>{logoPreview ? "Vista previa sin guardar" : "Logo actual"}</p>
-                  <p className="mt-1 break-all text-base-content/60">{form.logoUrl}</p>
+                  <p className="text-base-content/60 mt-1 break-all">{form.logoUrl}</p>
                 </div>
               </div>
-              <span className="text-xs text-base-content/60">
+              <span className="text-base-content/60 text-xs">
                 Tamaño máximo 12&nbsp;MB. Los archivos subidos se guardan en{" "}
                 <code className="font-mono">/uploads/branding</code>.
               </span>
             </div>
           )}
         </div>
-        <div className="col-span-full space-y-3 rounded-2xl border border-base-300 bg-base-200 p-4">
+        <div className="border-base-300 bg-base-200 col-span-full space-y-3 rounded-2xl border p-4">
           <div className="flex items-center justify-between gap-2">
-            <span className="text-xs font-semibold uppercase tracking-wide text-base-content/80">
+            <span className="text-base-content/80 text-xs font-semibold tracking-wide uppercase">
               Favicon del sitio
             </span>
             <div className="btn-group">
@@ -407,7 +408,7 @@ export default function SettingsForm() {
             </div>
           </div>
           {faviconMode === "url" ? (
-            <label className="flex flex-col gap-2 text-sm text-base-content">
+            <label className="text-base-content flex flex-col gap-2 text-sm">
               <span className="sr-only">URL del favicon</span>
               <input
                 type="text"
@@ -416,13 +417,13 @@ export default function SettingsForm() {
                 className="input input-bordered"
                 placeholder="https://..."
               />
-              <span className="text-xs text-base-content/60">
+              <span className="text-base-content/60 text-xs">
                 Puedes usar una URL pública (https://) o una ruta interna generada tras subir un archivo (ej:
                 /uploads/branding/favicon.png).
               </span>
             </label>
           ) : (
-            <div className="space-y-3 text-sm text-base-content">
+            <div className="text-base-content space-y-3 text-sm">
               <div>
                 <input
                   ref={faviconInputRef}
@@ -436,15 +437,15 @@ export default function SettingsForm() {
                 </Button>
               </div>
               <div className="flex flex-wrap items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl border border-base-300 bg-base-100 p-2">
+                <div className="border-base-300 bg-base-100 flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl border p-2">
                   <img src={displayedFavicon} alt="Vista previa del favicon" className="h-full w-full object-contain" />
                 </div>
-                <div className="text-xs text-base-content/70">
+                <div className="text-base-content/70 text-xs">
                   <p>{faviconPreview ? "Vista previa sin guardar" : "Favicon actual"}</p>
-                  <p className="mt-1 break-all text-base-content/60">{form.faviconUrl}</p>
+                  <p className="text-base-content/60 mt-1 break-all">{form.faviconUrl}</p>
                 </div>
               </div>
-              <span className="text-xs text-base-content/60">
+              <span className="text-base-content/60 text-xs">
                 Usa imágenes cuadradas (ideal 512&nbsp;px) con fondo transparente cuando sea posible. Tamaño máximo
                 12&nbsp;MB.
               </span>
@@ -468,14 +469,14 @@ export default function SettingsForm() {
         </Button>
       </div>
       {hasRole() && (
-        <div className="mt-6 rounded-lg border border-base-300 bg-base-200 p-4">
+        <div className="border-base-300 bg-base-200 mt-6 rounded-lg border p-4">
           <h3 className="text-sm font-semibold">Ajustes internos (avanzado)</h3>
-          <p className="text-xs text-base-content/70">
+          <p className="text-base-content/70 text-xs">
             Variables internas editables (prefijo BIOALERGIA_X_). Solo administradores.
           </p>
           <div className="mt-3 grid gap-3 md:grid-cols-3">
-            <label className="flex flex-col gap-2 text-sm text-base-content">
-              <span className="text-xs font-semibold uppercase tracking-wide text-base-content/80">
+            <label className="text-base-content flex flex-col gap-2 text-sm">
+              <span className="text-base-content/80 text-xs font-semibold tracking-wide uppercase">
                 Tamaño de chunk para retiros
               </span>
               <input
@@ -487,7 +488,7 @@ export default function SettingsForm() {
                 className="input input-bordered"
                 inputMode="numeric"
               />
-              <span className="text-xs text-base-content/60">
+              <span className="text-base-content/60 text-xs">
                 Env var: <code>{envUpsertChunkSize ?? "(no definido)"}</code>
               </span>
             </label>
@@ -553,7 +554,7 @@ export default function SettingsForm() {
               </Button>
             </div>
           </div>
-          {internalError && <div className="mt-3 text-xs text-error">{internalError}</div>}
+          {internalError && <div className="text-error mt-3 text-xs">{internalError}</div>}
         </div>
       )}
     </form>

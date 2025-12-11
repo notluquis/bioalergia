@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 import { apiClient } from "@/lib/apiClient";
 import { getPersonInitials, getPersonFullName } from "@/lib/person";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/Tooltip";
+import { PAGE_CONTAINER, TITLE_LG, BADGE_SM } from "@/lib/styles";
 
 dayjs.extend(relativeTime);
 dayjs.locale("es");
@@ -178,12 +179,12 @@ export default function UserManagementPage() {
   };
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6">
+    <div className={PAGE_CONTAINER}>
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-base-content text-2xl font-bold">Usuarios y Seguridad</h1>
+            <h1 className={TITLE_LG}>Usuarios y Seguridad</h1>
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -342,14 +343,14 @@ export default function UserManagementPage() {
                         </div>
                       </td>
                       <td>
-                        <div className={cn("badge badge-sm gap-2", getStatusColor(user.status))}>
+                        <div className={cn(BADGE_SM, "gap-2", getStatusColor(user.status))}>
                           {user.status === "ACTIVE" && <div className="size-1.5 rounded-full bg-current" />}
                           {user.status}
                         </div>
                       </td>
                       <td className="text-center">
                         <div className="flex items-center justify-center gap-2">
-                          <span className={`badge badge-sm ${badge.color} gap-1`}>
+                          <span className={`${BADGE_SM} ${badge.color} gap-1`}>
                             <BadgeIcon className="size-3" />
                             {badge.label}
                           </span>

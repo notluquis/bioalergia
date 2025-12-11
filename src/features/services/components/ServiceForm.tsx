@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import dayjs from "dayjs";
 import Button from "@/components/ui/Button";
+import { today } from "@/lib/dates";
 import type { CreateServicePayload } from "../types";
 import { fetchCounterparts, fetchCounterpart } from "../../counterparts/api";
 import type { Counterpart, CounterpartAccount } from "../../counterparts/types";
@@ -44,7 +44,7 @@ const INITIAL_STATE: ServiceFormState = {
   emissionEndDay: null,
   emissionExactDate: null,
   dueDay: null,
-  startDate: dayjs().format("YYYY-MM-DD"),
+  startDate: today(),
   monthsToGenerate: 12,
   lateFeeMode: "NONE",
   lateFeeValue: null,

@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import dayjs from "dayjs";
 import Button from "@/components/ui/Button";
 import Alert from "@/components/ui/Alert";
+import { LOADING_SPINNER_MD } from "@/lib/styles";
 import { ServicesHero, ServicesSurface } from "@/features/services/components/ServicesShell";
 import ServiceForm from "@/features/services/components/ServiceForm";
 import ServiceScheduleAccordion from "@/features/services/components/ServiceScheduleAccordion";
@@ -190,8 +191,8 @@ export default function ServiceEditPage() {
         />
 
         <ServicesSurface className="flex min-h-[260px] items-center justify-center">
-          <div className="flex items-center gap-3 text-sm text-base-content/70">
-            <span className="loading loading-spinner loading-md text-primary" aria-hidden="true" />
+          <div className="text-base-content/70 flex items-center gap-3 text-sm">
+            <span className={LOADING_SPINNER_MD} aria-hidden="true" />
             <span>Preparando datos del servicio...</span>
           </div>
         </ServicesSurface>
@@ -225,25 +226,25 @@ export default function ServiceEditPage() {
       {service && (
         <ServicesSurface className="space-y-6">
           <div className="grid gap-6 lg:grid-cols-[320px,minmax(0,1fr)] lg:items-start">
-            <aside className="space-y-4 rounded-2xl border border-base-300/60 bg-base-100/80 p-4 text-sm text-base-content shadow-inner">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-base-content/80">Resumen</h2>
+            <aside className="border-base-300/60 bg-base-100/80 text-base-content space-y-4 rounded-2xl border p-4 text-sm shadow-inner">
+              <h2 className="text-base-content/80 text-sm font-semibold tracking-wide uppercase">Resumen</h2>
               <div className="space-y-3">
                 {summaryCards.map((card) => (
-                  <div key={card.label} className="rounded-2xl border border-base-300 bg-base-200 p-3">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-base-content/80">{card.label}</p>
-                    <p className="mt-1 text-lg font-semibold text-base-content">{card.value}</p>
-                    {card.helper && <p className="text-xs text-base-content/50">{card.helper}</p>}
+                  <div key={card.label} className="border-base-300 bg-base-200 rounded-2xl border p-3">
+                    <p className="text-base-content/80 text-xs font-semibold tracking-wide uppercase">{card.label}</p>
+                    <p className="text-base-content mt-1 text-lg font-semibold">{card.value}</p>
+                    {card.helper && <p className="text-base-content/50 text-xs">{card.helper}</p>}
                   </div>
                 ))}
               </div>
               <div className="space-y-2">
-                <h3 className="text-xs font-semibold uppercase tracking-wide text-base-content/80">Historial</h3>
-                <ol className="space-y-2 text-xs text-base-content/60">
+                <h3 className="text-base-content/80 text-xs font-semibold tracking-wide uppercase">Historial</h3>
+                <ol className="text-base-content/60 space-y-2 text-xs">
                   {historyItems.map((item) => (
-                    <li key={item.title} className="rounded-xl border border-base-300 bg-base-200 p-3">
-                      <p className="font-semibold text-base-content">{item.title}</p>
-                      {item.description && <p className="text-xs text-base-content/50">{item.description}</p>}
-                      <p className="text-xs uppercase tracking-wide text-base-content/40">{item.date}</p>
+                    <li key={item.title} className="border-base-300 bg-base-200 rounded-xl border p-3">
+                      <p className="text-base-content font-semibold">{item.title}</p>
+                      {item.description && <p className="text-base-content/50 text-xs">{item.description}</p>}
+                      <p className="text-base-content/40 text-xs tracking-wide uppercase">{item.date}</p>
                     </li>
                   ))}
                 </ol>
@@ -251,8 +252,8 @@ export default function ServiceEditPage() {
             </aside>
 
             <div className="space-y-6">
-              <section className="rounded-2xl border border-base-300 bg-base-100 p-6 shadow-sm">
-                <h2 className="text-sm font-semibold uppercase tracking-wide text-base-content/80">Datos generales</h2>
+              <section className="border-base-300 bg-base-100 rounded-2xl border p-6 shadow-sm">
+                <h2 className="text-base-content/80 text-sm font-semibold tracking-wide uppercase">Datos generales</h2>
                 {initialValues && (
                   <ServiceForm
                     onSubmit={handleSubmit}

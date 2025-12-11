@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { normalizeTimestamp } from "./time.js";
+import { normalizeRut } from "./rut.js";
 
 // --- Types ---
 
@@ -110,14 +111,14 @@ export function mapEmployee(e: EmployeeWithPerson) {
     // Person data at root level (for frontend compatibility)
     person_id: e.personId,
     full_name: e.person.names,
-    rut: e.person.rut,
+    rut: normalizeRut(e.person.rut),
     email: e.person.email,
     phone: e.person.phone,
 
     // Also include nested person for new code
     person: {
       id: e.person.id,
-      rut: e.person.rut,
+      rut: normalizeRut(e.person.rut),
       names: e.person.names,
       email: e.person.email,
       phone: e.person.phone,
@@ -161,7 +162,7 @@ export function mapEmployee(e: EmployeeWithPerson) {
 export function mapCounterpart(c: CounterpartWithAccounts) {
   return {
     id: c.id,
-    rut: c.person.rut,
+    rut: normalizeRut(c.person.rut),
     name: c.person.names,
     person_type: c.person.personType,
     category: c.category,

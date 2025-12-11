@@ -20,6 +20,7 @@ import Alert from "@/components/ui/Alert";
 // Removed unused Input component after cleanup
 import { useMonths } from "@/features/hr/timesheets/hooks/useMonths";
 import { useWakeLock } from "@/hooks/useWakeLock";
+import { PAGE_CONTAINER, TITLE_LG } from "@/lib/styles";
 
 const TimesheetExportPDF = lazy(() => import("@/features/hr/timesheets/components/TimesheetExportPDF"));
 
@@ -550,10 +551,10 @@ export default function TimesheetsPage() {
   }
 
   return (
-    <section className="mx-auto max-w-7xl space-y-6">
+    <section className={PAGE_CONTAINER}>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-2">
-          <h1 className="text-primary text-2xl font-bold">Registro de horas y pagos</h1>
+          <h1 className={TITLE_LG}>Registro de horas y pagos</h1>
           <p className="text-base-content/70 max-w-2xl text-sm">
             Consolida horas trabajadas, extras y montos líquidos por trabajador. Selecciona el mes y trabajador, luego
             completa la tabla diaria sin volver a guardar cada fila.

@@ -1,5 +1,6 @@
 import { Outlet } from "react-router-dom";
 import { Tabs, TabItem } from "@/components/ui/Tabs";
+import { PAGE_CONTAINER } from "@/lib/styles";
 
 const CALENDAR_TABS: TabItem[] = [
   { label: "Resumen", to: "/calendar/summary" },
@@ -12,7 +13,7 @@ const CALENDAR_TABS: TabItem[] = [
 
 export default function CalendarLayout() {
   return (
-    <div className="mx-auto max-w-7xl space-y-6">
+    <div className={PAGE_CONTAINER}>
       <Tabs items={CALENDAR_TABS} />
       <Outlet />
     </div>

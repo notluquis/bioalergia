@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
-import dayjs from "dayjs";
+import { today, monthsAgoStart } from "@/lib/dates";
 import { useAuth } from "@/context/AuthContext";
 import { fetchParticipantLeaderboard } from "@/features/participants/api";
 import type { ParticipantSummaryRow } from "@/features/participants/types";
@@ -41,8 +41,8 @@ interface UseStatsDataResult {
 export function useStatsData(): UseStatsDataResult {
   const { hasRole } = useAuth();
   const queryClient = useQueryClient();
-  const [from, setFrom] = useState(dayjs().subtract(3, "month").startOf("month").format("YYYY-MM-DD"));
-  const [to, setTo] = useState(dayjs().format("YYYY-MM-DD"));
+  const [from, setFrom] = useState(monthsAgoStart(3));
+  const [to, setTo] = useState(today());
 
   const canView = hasRole("GOD", "ADMIN", "ANALYST", "VIEWER");
 

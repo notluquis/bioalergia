@@ -1,5 +1,6 @@
 import { prisma } from "../prisma.js";
 import { Prisma } from "@prisma/client";
+import { normalizeRut } from "../lib/rut.js";
 
 export type TransactionFilters = {
   from?: Date;
@@ -172,7 +173,7 @@ export async function getParticipantLeaderboard(filters: ParticipantLeaderboardF
   return results.map((row) => ({
     participant: row.participant,
     displayName: row.display_name,
-    identificationNumber: row.identification_number,
+    identificationNumber: row.identification_number ? normalizeRut(row.identification_number) : null,
     bankAccountHolder: row.bank_account_holder,
     bankAccountNumber: row.bank_account_number,
     bankAccountType: row.bank_account_type,
@@ -395,7 +396,7 @@ export async function getParticipantInsight(
       bankAccountType: row.bank_account_type,
       bankBranch: row.bank_branch,
       identificationType: row.identification_type,
-      identificationNumber: row.identification_number,
+      identificationNumber: row.identification_number ? normalizeRut(row.identification_number) : null,
       outgoingCount: Number(row.outgoing_count),
       incomingCount: Number(row.incoming_count),
       outgoingAmount: Number(row.outgoing_amount),

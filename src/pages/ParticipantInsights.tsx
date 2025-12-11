@@ -1,10 +1,12 @@
 import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
 import { fmtCLP } from "@/lib/format";
+import { formatRut } from "@/lib/rut";
 import { useParticipantInsightsData } from "@/features/participants/hooks/useParticipantInsightsData";
 import Alert from "@/components/ui/Alert";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
+import { PAGE_CONTAINER, TITLE_LG } from "@/lib/styles";
 
 export default function ParticipantInsightsPage() {
   const {
@@ -34,9 +36,9 @@ export default function ParticipantInsightsPage() {
   } = useParticipantInsightsData();
 
   return (
-    <section className="mx-auto max-w-7xl space-y-6">
+    <section className={PAGE_CONTAINER}>
       <div className="bg-base-100 space-y-2 p-6">
-        <h1 className="text-primary text-2xl font-bold break-all drop-shadow-sm">Participantes en transacciones</h1>
+        <h1 className={TITLE_LG}>Participantes en transacciones</h1>
         <p className="text-base-content/70 max-w-2xl text-sm">
           Revisa la actividad de un identificador en los campos <strong>Desde</strong> y <strong>Hacia</strong>, con un
           resumen mensual y las contrapartes más frecuentes.
@@ -284,6 +286,12 @@ export default function ParticipantInsightsPage() {
                     }
                     const metadata = metadataParts.join(" · ");
 
+                    // Formatear RUT de manera segura
+                    const formattedRut =
+                      row.identificationNumber && typeof row.identificationNumber === "string"
+                        ? formatRut(row.identificationNumber)
+                        : "";
+
                     return (
                       <tr key={key} className="border-base-300 bg-base-200 even:bg-base-300 border-b last:border-none">
                         <td className="text-base-content px-4 py-3">
@@ -293,7 +301,7 @@ export default function ParticipantInsightsPage() {
                           {bankSummary && <div className="text-base-content/90 text-xs">{bankSummary}</div>}
                           {metadata && <div className="text-base-content/80 text-xs">{metadata}</div>}
                         </td>
-                        <td className="text-base-content px-4 py-3">{row.identificationNumber || "-"}</td>
+                        <td className="text-base-content px-4 py-3">{formattedRut || "-"}</td>
                         <td className="text-base-content px-4 py-3">
                           {row.bankAccountNumber || row.withdrawId || row.counterpartId || "-"}
                         </td>

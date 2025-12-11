@@ -1,8 +1,9 @@
-import dayjs from "dayjs";
 import { z } from "zod";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Input from "@/components/ui/Input";
+import { GRID_2_COL_MD } from "@/lib/styles";
+import { today } from "@/lib/dates";
 import Checkbox from "@/components/ui/Checkbox";
 import Button from "@/components/ui/Button";
 import Alert from "@/components/ui/Alert";
@@ -50,7 +51,7 @@ export function LoanForm({ onSubmit, onCancel }: LoanFormProps) {
       interestType: "SIMPLE",
       frequency: "WEEKLY",
       totalInstallments: 10,
-      startDate: dayjs().format("YYYY-MM-DD"),
+      startDate: today(),
       notes: "",
       generateSchedule: true,
     },
@@ -63,7 +64,7 @@ export function LoanForm({ onSubmit, onCancel }: LoanFormProps) {
 
   return (
     <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className={GRID_2_COL_MD}>
         <div>
           <Input label="Título" {...register("title")} required />
           {errors.title && <p className="mt-1 text-xs text-red-600">{errors.title.message}</p>}

@@ -10,10 +10,11 @@ import Alert from "@/components/ui/Alert";
 import { MultiSelectFilter, type MultiSelectOption } from "@/features/calendar/components/MultiSelectFilter";
 import { useCalendarEvents } from "@/features/calendar/hooks/useCalendarEvents";
 import ScheduleCalendar from "@/features/calendar/components/ScheduleCalendar";
+import { numberFormatter } from "@/lib/format";
+import { PAGE_CONTAINER, TITLE_LG, SPACE_Y_TIGHT } from "@/lib/styles";
 
 dayjs.locale("es");
 
-const numberFormatter = new Intl.NumberFormat("es-CL");
 const NULL_EVENT_TYPE_VALUE = "__NULL__";
 const NULL_CATEGORY_VALUE = "__NULL_CATEGORY__";
 
@@ -109,9 +110,9 @@ function CalendarSchedulePage() {
   const allEvents = useMemo(() => daily?.days.flatMap((day) => day.events) ?? [], [daily?.days]);
 
   return (
-    <section className="mx-auto max-w-7xl space-y-6">
-      <header className="space-y-2">
-        <h1 className="text-primary text-2xl font-bold">{tc("scheduleTitle")}</h1>
+    <section className={PAGE_CONTAINER}>
+      <header className={SPACE_Y_TIGHT}>
+        <h1 className={TITLE_LG}>{tc("scheduleTitle")}</h1>
         <p className="text-base-content/70 text-sm">{tc("scheduleDescription")}</p>
       </header>
 

@@ -5,8 +5,8 @@ import Button from "@/components/ui/Button";
 import Alert from "@/components/ui/Alert";
 import { fetchCalendarSyncLogs, syncCalendarEvents } from "@/features/calendar/api";
 import type { CalendarSyncLog } from "@/features/calendar/types";
-
-const numberFormatter = new Intl.NumberFormat("es-CL");
+import { numberFormatter } from "@/lib/format";
+import { TITLE_LG } from "@/lib/styles";
 
 export default function CalendarSyncHistoryPage() {
   const [logs, setLogs] = useState<CalendarSyncLog[]>([]);
@@ -57,8 +57,8 @@ export default function CalendarSyncHistoryPage() {
     <section className="space-y-4">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
-          <h1 className="text-2xl font-bold text-primary">Historial de sincronizaciones</h1>
-          <p className="text-sm text-base-content/70">
+          <h1 className={TITLE_LG}>Historial de sincronizaciones</h1>
+          <p className="text-base-content/70 text-sm">
             Consulta las sincronizaciones ejecutadas (manuales y programadas) y sus resultados.
           </p>
         </div>
@@ -75,9 +75,9 @@ export default function CalendarSyncHistoryPage() {
       {error && <Alert variant="error">{error}</Alert>}
       {syncMessage && <Alert variant="success">{syncMessage}</Alert>}
 
-      <div className="bg-base-100 overflow-hidden rounded-3xl border border-base-300">
-        <table className="w-full text-left text-xs text-base-content">
-          <thead className="bg-base-200 uppercase tracking-wide text-base-content/80">
+      <div className="bg-base-100 border-base-300 overflow-hidden rounded-3xl border">
+        <table className="text-base-content w-full text-left text-xs">
+          <thead className="bg-base-200 text-base-content/80 tracking-wide uppercase">
             <tr>
               <th className="px-4 py-3">Inicio</th>
               <th className="px-4 py-3">Estado</th>
@@ -92,7 +92,7 @@ export default function CalendarSyncHistoryPage() {
           <tbody>
             {logs.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-4 py-4 text-center text-base-content/50">
+                <td colSpan={8} className="text-base-content/50 px-4 py-4 text-center">
                   {loading ? "Cargando..." : "No hay ejecuciones registradas."}
                 </td>
               </tr>
@@ -104,8 +104,8 @@ export default function CalendarSyncHistoryPage() {
                 const sourceLabel = log.triggerLabel ?? log.triggerSource;
                 const statusClass = log.status === "SUCCESS" ? "text-success" : "text-error";
                 return (
-                  <tr key={log.id} className="border-t border-base-300 bg-base-200">
-                    <td className="px-4 py-3 font-medium text-base-content">{started}</td>
+                  <tr key={log.id} className="border-base-300 bg-base-200 border-t">
+                    <td className="text-base-content px-4 py-3 font-medium">{started}</td>
                     <td className={`px-4 py-3 font-semibold ${statusClass}`}>
                       {log.status === "SUCCESS" ? "Éxito" : "Error"}
                     </td>
@@ -124,8 +124,8 @@ export default function CalendarSyncHistoryPage() {
       </div>
 
       {logs.some((log) => log.errorMessage) && (
-        <div className="bg-base-100 space-y-2 rounded-3xl border border-error/20 p-4 text-xs text-error">
-          <p className="font-semibold uppercase tracking-wide">Errores recientes</p>
+        <div className="bg-base-100 border-error/20 text-error space-y-2 rounded-3xl border p-4 text-xs">
+          <p className="font-semibold tracking-wide uppercase">Errores recientes</p>
           <ul className="space-y-1">
             {logs
               .filter((log) => log.errorMessage)

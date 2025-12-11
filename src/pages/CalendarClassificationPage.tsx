@@ -13,17 +13,13 @@ import Input from "@/components/ui/Input";
 import Checkbox from "@/components/ui/Checkbox";
 import { classifyCalendarEvent, fetchUnclassifiedCalendarEvents } from "@/features/calendar/api";
 import type { CalendarUnclassifiedEvent } from "@/features/calendar/types";
+import { currencyFormatter } from "@/lib/format";
+import { TITLE_LG, SPACE_Y_TIGHT } from "@/lib/styles";
 
 dayjs.locale("es");
 
 const CATEGORY_CHOICES = ["Tratamiento subcutáneo"];
 const TREATMENT_STAGE_CHOICES = ["Mantención", "Inducción"];
-
-const currencyFormatter = new Intl.NumberFormat("es-CL", {
-  style: "currency",
-  currency: "CLP",
-  minimumFractionDigits: 0,
-});
 
 const classificationSchema = z.object({
   category: z.string().optional().nullable(),
@@ -216,8 +212,8 @@ function CalendarClassificationPage() {
     <Toast.Provider swipeDirection="right">
       <Tooltip.Provider delayDuration={200}>
         <section className="space-y-6">
-          <header className="space-y-2">
-            <h1 className="text-primary text-2xl font-bold">Clasificar eventos pendientes</h1>
+          <header className={SPACE_Y_TIGHT}>
+            <h1 className={TITLE_LG}>Clasificar eventos pendientes</h1>
             <p className="text-base-content/70 text-sm">
               Revisa los eventos que no pudieron clasificarse automáticamente. Asigna la categoría correcta, confirma
               montos y marca si la persona asistió.

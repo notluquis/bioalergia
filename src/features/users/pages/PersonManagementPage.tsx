@@ -9,6 +9,7 @@ import { apiClient } from "@/lib/apiClient";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import { getPersonInitials, getPersonFullName } from "@/lib/person";
+import { PAGE_CONTAINER, TITLE_LG, BADGE_SM } from "@/lib/styles";
 
 export default function PersonManagementPage() {
   const navigate = useNavigate();
@@ -28,10 +29,10 @@ export default function PersonManagementPage() {
   );
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6">
+    <div className={PAGE_CONTAINER}>
       <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-base-content text-2xl font-bold">Personas</h1>
+          <h1 className={TITLE_LG}>Personas</h1>
           <p className="text-base-content/60">Base de datos central de personas y entidades.</p>
         </div>
         <Button className="gap-2">
@@ -83,22 +84,22 @@ export default function PersonManagementPage() {
 
                 <div className="mt-4 flex flex-wrap gap-2">
                   {person.user && (
-                    <span className="badge badge-sm badge-primary gap-1 text-white">
+                    <span className={`${BADGE_SM} badge-primary gap-1 text-white`}>
                       <User size={10} /> Usuario
                     </span>
                   )}
                   {person.employee && (
-                    <span className="badge badge-sm badge-secondary gap-1 text-white">
+                    <span className={`${BADGE_SM} badge-secondary gap-1 text-white`}>
                       <Briefcase size={10} /> Empleado
                     </span>
                   )}
                   {person.counterpart && (
-                    <span className="badge badge-sm badge-accent gap-1 text-white">
+                    <span className={`${BADGE_SM} badge-accent gap-1 text-white`}>
                       <Building size={10} /> Contraparte
                     </span>
                   )}
                   {!person.user && !person.employee && !person.counterpart && (
-                    <span className="badge badge-sm badge-ghost">Sin roles</span>
+                    <span className={`${BADGE_SM} badge-ghost`}>Sin roles</span>
                   )}
                 </div>
 

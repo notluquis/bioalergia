@@ -10,15 +10,10 @@ import { MultiSelectFilter, type MultiSelectOption } from "@/features/calendar/c
 import { HeatmapMonth } from "@/features/calendar/components/HeatmapMonth";
 import { apiClient } from "@/lib/apiClient";
 import type { CalendarSummary } from "@/features/calendar/types";
+import { numberFormatter, currencyFormatter } from "@/lib/format";
+import { PAGE_CONTAINER, TITLE_LG, SPACE_Y_TIGHT } from "@/lib/styles";
 
 dayjs.locale("es");
-
-const numberFormatter = new Intl.NumberFormat("es-CL");
-const currencyFormatter = new Intl.NumberFormat("es-CL", {
-  style: "currency",
-  currency: "CLP",
-  minimumFractionDigits: 0,
-});
 const NULL_EVENT_TYPE_VALUE = "__NULL__";
 const NULL_CATEGORY_VALUE = "__NULL_CATEGORY__";
 
@@ -238,9 +233,9 @@ function CalendarHeatmapPage() {
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   return (
-    <section className="mx-auto max-w-7xl space-y-6">
-      <header className="space-y-2">
-        <h1 className="text-primary text-2xl font-bold">{tc("heatmapTitle")}</h1>
+    <section className={PAGE_CONTAINER}>
+      <header className={SPACE_Y_TIGHT}>
+        <h1 className={TITLE_LG}>{tc("heatmapTitle")}</h1>
         <p className="text-base-content/70 text-sm">{tc("heatmapDescription")}</p>
       </header>
 

@@ -7,20 +7,17 @@ import "dayjs/locale/es";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import Alert from "@/components/ui/Alert";
+import { LOADING_SPINNER_SM } from "@/lib/styles";
 import { MultiSelectFilter, type MultiSelectOption } from "@/features/calendar/components/MultiSelectFilter";
 import { useCalendarEvents } from "@/features/calendar/hooks/useCalendarEvents";
 import type { CalendarAggregateByDate } from "@/features/calendar/types";
 import { Link } from "react-router-dom";
+import { numberFormatter, currencyFormatter } from "@/lib/format";
+import { PAGE_CONTAINER } from "@/lib/styles";
 
 dayjs.locale("es");
 dayjs.extend(isoWeek);
 
-const numberFormatter = new Intl.NumberFormat("es-CL");
-const currencyFormatter = new Intl.NumberFormat("es-CL", {
-  style: "currency",
-  currency: "CLP",
-  minimumFractionDigits: 0,
-});
 const weekdayLabels = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 const NULL_EVENT_TYPE_VALUE = "__NULL__";
 const NULL_CATEGORY_VALUE = "__NULL_CATEGORY__";
@@ -261,7 +258,7 @@ function CalendarSummaryPage() {
   );
 
   return (
-    <section className="mx-auto max-w-7xl space-y-6">
+    <section className={PAGE_CONTAINER}>
       <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-2">
           <h1 className="text-primary text-2xl font-bold">Eventos de Calendario</h1>
@@ -426,7 +423,7 @@ function CalendarSummaryPage() {
                         : "Última ejecución completada correctamente."}
                   </p>
                 </div>
-                {syncing && <span className="loading loading-spinner text-primary" aria-label="Sincronizando" />}
+                {syncing && <span className={LOADING_SPINNER_SM} aria-label="Sincronizando" />}
                 {syncError && <span className="text-error text-xs font-semibold">Revisa los detalles abajo.</span>}
                 {!syncing && syncDurationMs != null && !syncError && (
                   <span className="bg-base-200 text-base-content/70 rounded-full px-3 py-1 text-xs">

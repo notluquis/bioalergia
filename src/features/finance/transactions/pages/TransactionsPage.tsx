@@ -14,6 +14,8 @@ import { TransactionsTable } from "@/features/finance/transactions/components/Tr
 import { COLUMN_DEFS, type ColumnKey } from "@/features/finance/transactions/constants";
 import type { Filters, LedgerRow } from "@/features/finance/transactions/types";
 import { useTransactionsQuery } from "@/features/finance/transactions/hooks/useTransactionsQuery";
+import { PAGE_CONTAINER } from "@/lib/styles";
+import { today } from "@/lib/dates";
 
 const DEFAULT_PAGE_SIZE = 50;
 
@@ -21,7 +23,7 @@ export default function TransactionsMovements() {
   const [initialBalance, setInitialBalance] = useState<string>("0");
   const [draftFilters, setDraftFilters] = useState<Filters>({
     from: dayjs().startOf("year").format("YYYY-MM-DD"),
-    to: dayjs().format("YYYY-MM-DD"),
+    to: today(),
     description: "",
     sourceId: "",
     origin: "",
@@ -112,7 +114,7 @@ export default function TransactionsMovements() {
   };
 
   return (
-    <section className="mx-auto max-w-7xl space-y-6">
+    <section className={PAGE_CONTAINER}>
       {!canView ? (
         <div className="card bg-base-100 border-error/20 text-error border p-6 text-sm shadow-sm">
           No tienes permisos para ver los movimientos almacenados.

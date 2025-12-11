@@ -41,6 +41,8 @@ const RECURRENCE_OPTIONS: Array<{ value: ServiceRecurrenceType; label: string }>
   { value: "ONE_OFF", label: "Puntual" },
 ];
 
+import { GRID_2_COL_MD } from "@/lib/styles";
+
 export function ServiceClassificationSection({
   serviceType,
   ownership,
@@ -49,7 +51,7 @@ export function ServiceClassificationSection({
   onChange,
 }: ServiceClassificationSectionProps) {
   return (
-    <section className="grid gap-4 md:grid-cols-2">
+    <section className={GRID_2_COL_MD}>
       <Input
         label="Tipo"
         as="select"

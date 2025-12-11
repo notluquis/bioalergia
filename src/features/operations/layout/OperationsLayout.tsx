@@ -1,5 +1,6 @@
 import { Outlet } from "react-router-dom";
 import { Tabs, TabItem } from "@/components/ui/Tabs";
+import { PAGE_CONTAINER } from "@/lib/styles";
 
 const INVENTORY_TABS: TabItem[] = [
   { label: "Items", to: "/operations/inventory" },
@@ -8,7 +9,7 @@ const INVENTORY_TABS: TabItem[] = [
 
 export default function OperationsLayout() {
   return (
-    <div className="mx-auto max-w-7xl space-y-6">
+    <div className={PAGE_CONTAINER}>
       <Tabs items={INVENTORY_TABS} />
       <Outlet />
     </div>

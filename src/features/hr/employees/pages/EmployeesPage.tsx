@@ -9,6 +9,7 @@ import Alert from "@/components/ui/Alert";
 import Checkbox from "@/components/ui/Checkbox";
 import Button from "@/components/ui/Button";
 import { ChevronUp, Plus } from "lucide-react";
+import { PAGE_CONTAINER, TITLE_LG } from "@/lib/styles";
 
 export default function EmployeesPage() {
   const { hasRole } = useAuth();
@@ -85,10 +86,10 @@ export default function EmployeesPage() {
   }
 
   return (
-    <section className="mx-auto max-w-7xl space-y-6">
+    <section className={PAGE_CONTAINER}>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-2">
-          <h1 className="text-primary text-2xl font-bold">Equipo y tarifas</h1>
+          <h1 className={TITLE_LG}>Equipo y tarifas</h1>
           <p className="text-base-content/70 text-sm">
             Registra trabajadores, correos y tarifas para calcular automáticamente los totales mensuales.
           </p>

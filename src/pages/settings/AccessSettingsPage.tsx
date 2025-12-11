@@ -4,6 +4,7 @@ import Button from "@/components/ui/Button";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import { apiClient } from "@/lib/apiClient";
+import { BADGE_SM } from "@/lib/styles";
 
 export default function AccessSettingsPage() {
   const { hasRole } = useAuth();
@@ -171,11 +172,11 @@ export default function AccessSettingsPage() {
                             </div>
                           </td>
                           <td>
-                            <span className="badge badge-sm badge-ghost">{user.role}</span>
+                            <span className={`${BADGE_SM} badge-ghost`}>{user.role}</span>
                           </td>
                           <td className="text-center">
                             <div className="flex items-center justify-center gap-2">
-                              <span className={`badge badge-sm ${badge.color} gap-1`}>
+                              <span className={`${BADGE_SM} ${badge.color} gap-1`}>
                                 <BadgeIcon className="size-3" />
                                 {badge.label}
                               </span>

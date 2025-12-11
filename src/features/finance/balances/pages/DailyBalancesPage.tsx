@@ -14,13 +14,14 @@ import { fetchBalances } from "@/features/finance/balances/api";
 import Alert from "@/components/ui/Alert";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
+import { today } from "@/lib/dates";
 
 export default function DailyBalances() {
   const { hasRole } = useAuth();
   // canEdit flag removed (unused)
 
   const [from, setFrom] = useState(dayjs().subtract(10, "day").format("YYYY-MM-DD"));
-  const [to, setTo] = useState(dayjs().format("YYYY-MM-DD"));
+  const [to, setTo] = useState(today());
   const { quickMonths } = useQuickDateRange();
 
   const quickRange = useMemo(() => {
@@ -70,63 +71,64 @@ export default function DailyBalances() {
   const derivedInitial = useMemo(() => (report ? deriveInitialBalance(report) : null), [report]);
 
   return (
-    <section className="mx-auto max-w-7xl space-y-6">
+    <section className="space-y-4">
       {!hasRole("GOD", "ADMIN", "ANALYST", "VIEWER") ? (
         <Alert variant="error">No tienes permisos para ver los saldos diarios.</Alert>
       ) : (
         <>
-          <div className="card bg-base-100 shadow-sm">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h1 className="text-primary text-xl font-semibold">Saldos diarios</h1>
+              {derivedInitial != null && (
+                <p className="text-base-content/60 text-sm">
+                  Saldo anterior: <strong>{formatBalanceInput(derivedInitial)}</strong>
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="card card-compact bg-base-100 shadow-sm">
             <div className="card-body">
-              <div className="flex flex-col gap-4">
-                <div className="space-y-2">
-                  <h1 className="text-primary text-2xl font-bold">Saldos diarios</h1>
-                  <p className="text-base-content/70 text-sm">
-                    Registra el saldo de cierre diario para conciliar movimientos.
-                    {derivedInitial != null && (
-                      <span className="ml-2 text-xs font-medium">
-                        Saldo anterior: <strong>{formatBalanceInput(derivedInitial)}</strong>
-                      </span>
-                    )}
-                  </p>
-                </div>
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                  <Input
-                    label="Desde"
-                    type="date"
-                    value={from}
-                    onChange={(event: ChangeEvent<HTMLInputElement>) => setFrom(event.target.value)}
-                  />
-                  <Input
-                    label="Hasta"
-                    type="date"
-                    value={to}
-                    onChange={(event: ChangeEvent<HTMLInputElement>) => setTo(event.target.value)}
-                  />
-                  <Input
-                    label="Mes rápido"
-                    as="select"
-                    value={quickRange}
-                    onChange={(event: ChangeEvent<HTMLSelectElement>) => {
-                      const value = event.target.value;
-                      if (value === "custom") return;
-                      const match = quickMonths.find((month) => month.value === value);
-                      if (!match) return;
-                      setFrom(match.from);
-                      setTo(match.to);
-                    }}
-                  >
-                    <option value="custom">Personalizado</option>
-                    {quickMonths.map((month) => (
-                      <option key={month.value} value={month.value}>
-                        {month.label}
-                      </option>
-                    ))}
-                  </Input>
-                  <div className="flex items-end">
-                    <Button onClick={() => refetch()} disabled={isFetching} className="w-full">
-                      {isFetching ? "Actualizando..." : "Actualizar"}
-                    </Button>
-                  </div>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                <Input
+                  label="Desde"
+                  type="date"
+                  value={from}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => setFrom(event.target.value)}
+                  className="input-sm"
+                />
+                <Input
+                  label="Hasta"
+                  type="date"
+                  value={to}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => setTo(event.target.value)}
+                  className="input-sm"
+                />
+                <Input
+                  label="Mes rápido"
+                  as="select"
+                  value={quickRange}
+                  onChange={(event: ChangeEvent<HTMLSelectElement>) => {
+                    const value = event.target.value;
+                    if (value === "custom") return;
+                    const match = quickMonths.find((month) => month.value === value);
+                    if (!match) return;
+                    setFrom(match.from);
+                    setTo(match.to);
+                  }}
+                  className="select-sm"
+                >
+                  <option value="custom">Personalizado</option>
+                  {quickMonths.map((month) => (
+                    <option key={month.value} value={month.value}>
+                      {month.label}
+                    </option>
+                  ))}
+                </Input>
+                <div className="flex items-end">
+                  <Button onClick={() => refetch()} disabled={isFetching} size="sm" className="w-full">
+                    {isFetching ? "..." : "Actualizar"}
+                  </Button>
                 </div>
               </div>
             </div>
