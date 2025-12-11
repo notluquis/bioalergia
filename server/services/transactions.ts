@@ -71,7 +71,7 @@ export async function getParticipantLeaderboard(filters: ParticipantLeaderboardF
   // Parse rawJson to extract bank details - we group by destination for outgoing transactions
   const query = `
     WITH parsed AS (
-      SELECT 
+      SELECT
         t.id,
         t.timestamp,
         t.amount,
@@ -80,37 +80,41 @@ export async function getParticipantLeaderboard(filters: ParticipantLeaderboardF
         t.origin,
         t.raw_json,
         -- Try to parse rawJson for bank details
-        CASE 
+        CASE
           WHEN t.raw_json IS NOT NULL AND t.raw_json != '' THEN
             (t.raw_json::json)->>'bankAccountHolder'
           ELSE NULL
         END as bank_account_holder,
-        CASE 
+        CASE
           WHEN t.raw_json IS NOT NULL AND t.raw_json != '' THEN
             (t.raw_json::json)->>'bankAccountNumber'
           ELSE NULL
         END as bank_account_number,
-        CASE 
+        CASE
           WHEN t.raw_json IS NOT NULL AND t.raw_json != '' THEN
             (t.raw_json::json)->>'bankAccountType'
           ELSE NULL
         END as bank_account_type,
-        CASE 
+        CASE
           WHEN t.raw_json IS NOT NULL AND t.raw_json != '' THEN
             (t.raw_json::json)->>'bankName'
           ELSE NULL
         END as bank_name,
-        CASE 
+        CASE
           WHEN t.raw_json IS NOT NULL AND t.raw_json != '' THEN
             (t.raw_json::json)->>'identificationNumber'
           ELSE NULL
         END as identification_number,
-        CASE 
+        CASE
           WHEN t.raw_json IS NOT NULL AND t.raw_json != '' THEN
             (t.raw_json::json)->>'withdrawId'
           ELSE NULL
         END as withdraw_id
       FROM transactions t
+      INNER JOIN person p ON t.person_id = p.id
+      WHERE (p.names NOT LIKE '%Test%' AND p.names NOT LIKE '%test%'
+             AND p.rut NOT LIKE '11111111%' AND p.rut NOT LIKE 'TEMP-%'
+             AND (p.email IS NULL OR p.email NOT LIKE '%test%'))
       ${whereClause}
     )
     SELECT 
@@ -238,25 +242,29 @@ export async function getParticipantInsight(
   // Monthly breakdown
   const monthlyQuery = `
     WITH parsed AS (
-      SELECT 
+      SELECT
         t.id,
         t.timestamp,
         t.amount,
         t.direction,
         t.destination,
         t.raw_json,
-        CASE 
+        CASE
           WHEN t.raw_json IS NOT NULL AND t.raw_json != '' THEN
             (t.raw_json::json)->>'bankAccountNumber'
           ELSE NULL
         END as bank_account_number,
-        CASE 
+        CASE
           WHEN t.raw_json IS NOT NULL AND t.raw_json != '' THEN
             (t.raw_json::json)->>'withdrawId'
           ELSE NULL
         END as withdraw_id
       FROM transactions t
-      WHERE 1=1 ${dateClause}
+      INNER JOIN person p ON t.person_id = p.id
+      WHERE (p.names NOT LIKE '%Test%' AND p.names NOT LIKE '%test%'
+             AND p.rut NOT LIKE '11111111%' AND p.rut NOT LIKE 'TEMP-%'
+             AND (p.email IS NULL OR p.email NOT LIKE '%test%'))
+      ${dateClause}
     )
     SELECT 
       TO_CHAR(p.timestamp, 'YYYY-MM') as month,
@@ -322,7 +330,11 @@ export async function getParticipantInsight(
           ELSE NULL
         END as withdraw_id
       FROM transactions t
-      WHERE 1=1 ${dateClause}
+      INNER JOIN person p ON t.person_id = p.id
+      WHERE (p.names NOT LIKE '%Test%' AND p.names NOT LIKE '%test%'
+             AND p.rut NOT LIKE '11111111%' AND p.rut NOT LIKE 'TEMP-%'
+             AND (p.email IS NULL OR p.email NOT LIKE '%test%'))
+      ${dateClause}
     )
     SELECT 
       COALESCE(p.origin, 'unknown') as counterpart,
@@ -430,6 +442,19 @@ export async function listTransactions(filters: TransactionFilters, limit = 100,
       { destination: { contains: filters.search, mode: "insensitive" } },
     ];
   }
+
+  // Filter out test/demo data by excluding transactions linked to test persons
+  where.person = {
+    NOT: {
+      OR: [
+        { names: { contains: "Test" } },
+        { names: { contains: "test" } },
+        { rut: { startsWith: "11111111" } },
+        { rut: { startsWith: "TEMP-" } },
+        { email: { contains: "test" } },
+      ],
+    },
+  };
 
   const [total, transactions] = await Promise.all([
     prisma.transaction.count({ where }),
