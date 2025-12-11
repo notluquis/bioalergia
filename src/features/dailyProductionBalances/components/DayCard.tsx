@@ -19,7 +19,7 @@ export default function DayCard({ date, balance, isSelected, isToday, onClick }:
     <button
       onClick={onClick}
       className={cn(
-        "group relative flex h-full min-h-[140px] w-full flex-col justify-between rounded-2xl border p-3 text-left transition-all hover:shadow-md",
+        "group relative flex h-full min-h-[100px] w-full flex-col justify-between rounded-lg border p-2 text-left transition-all hover:shadow-sm",
         isSelected
           ? "border-primary bg-primary/5 ring-primary ring-1"
           : "border-base-300 bg-base-100 hover:border-primary/50",
@@ -28,25 +28,25 @@ export default function DayCard({ date, balance, isSelected, isToday, onClick }:
     >
       <div className="flex w-full items-start justify-between">
         <div>
-          <span className="text-base-content/60 block text-xs font-medium uppercase">{date.format("ddd")}</span>
-          <span className={cn("text-xl font-bold", isToday ? "text-primary" : "text-base-content")}>
+          <span className="text-base-content/60 block text-[10px] font-medium uppercase">{date.format("ddd")}</span>
+          <span className={cn("text-lg font-bold", isToday ? "text-primary" : "text-base-content")}>
             {date.format("D")}
           </span>
         </div>
-        {status === "FINAL" && <CheckCircle2 size={18} className="text-success" />}
-        {status === "DRAFT" && <CircleDashed size={18} className="text-warning" />}
-        {status === "MISSING" && <div className="bg-base-300 h-2 w-2 rounded-full" />}
+        {status === "FINAL" && <CheckCircle2 size={14} className="text-success" />}
+        {status === "DRAFT" && <CircleDashed size={14} className="text-warning" />}
+        {status === "MISSING" && <div className="bg-base-300 h-1.5 w-1.5 rounded-full" />}
       </div>
 
-      <div className="mt-4 space-y-1">
+      <div className="mt-2 space-y-0.5">
         {balance ? (
           <>
-            <div className="flex justify-between text-xs">
+            <div className="flex justify-between text-[10px]">
               <span className="text-base-content/60">Ing.</span>
               <span className="text-base-content font-medium">{currencyFormatter.format(balance.total)}</span>
             </div>
             {balance.gastosDiarios > 0 && (
-              <div className="flex justify-between text-xs">
+              <div className="flex justify-between text-[10px]">
                 <span className="text-base-content/60">Gas.</span>
                 <span className="text-error font-medium">{currencyFormatter.format(balance.gastosDiarios)}</span>
               </div>
@@ -54,7 +54,7 @@ export default function DayCard({ date, balance, isSelected, isToday, onClick }:
           </>
         ) : (
           <div className="flex h-full items-end">
-            <span className="text-base-content/40 group-hover:text-primary text-xs">Registrar</span>
+            <span className="text-base-content/40 group-hover:text-primary text-[10px]">Registrar</span>
           </div>
         )}
       </div>

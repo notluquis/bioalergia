@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import Alert from "@/components/ui/Alert";
-import { INPUT_CURRENCY_SM, GRID_2_COL_SM } from "@/lib/styles";
+import { INPUT_CURRENCY_SM, GRID_2_COL_SM, PAGE_CONTAINER } from "@/lib/styles";
 import { today } from "@/lib/dates";
 import { useToast } from "@/context/ToastContext";
 import { useSettings } from "@/context/SettingsContext";
@@ -17,7 +17,6 @@ import {
   FileText,
   Syringe,
   ClipboardList,
-  Calendar,
   Save,
   History,
 } from "lucide-react";
@@ -30,7 +29,6 @@ import type { ProductionBalancePayload, ProductionBalanceStatus } from "@/featur
 import { deriveTotals } from "@/features/dailyProductionBalances/utils";
 import WeekView from "@/features/dailyProductionBalances/components/WeekView";
 import { useAuth } from "@/context/AuthContext";
-import { PAGE_CONTAINER } from "@/lib/styles";
 
 type FormState = {
   date: string;
@@ -52,7 +50,7 @@ type FormState = {
 
 const makeDefaultForm = (date?: string): FormState => ({
   date: date || today(),
-  status: "FINAL",
+  status: "DRAFT",
   ingresoTarjetas: "0",
   ingresoTransferencias: "0",
   ingresoEfectivo: "0",
@@ -236,18 +234,10 @@ export default function DailyProductionBalancesPage() {
   };
 
   return (
-    <section className={PAGE_CONTAINER}>
-      <div className="flex flex-col gap-3">
-        <div className="flex items-center gap-3">
-          <div className="bg-primary/10 text-primary flex h-12 w-12 items-center justify-center rounded-2xl">
-            <Calendar className="h-6 w-6" />
-          </div>
-          <div>
-            <p className="text-primary text-xs font-semibold tracking-wide uppercase">Finanzas</p>
-            <h1 className="text-base-content text-3xl font-bold">Balance Diario</h1>
-          </div>
-        </div>
-        <p className="text-base-content/70 max-w-3xl text-base">
+    <section className={`${PAGE_CONTAINER} p-4`}>
+      <div className="flex flex-col gap-1">
+        <h1 className="text-base-content text-2xl font-bold">Balances Diarios</h1>
+        <p className="text-base-content/60 text-sm">
           Registra ingresos, gastos y actividades diarias de forma rápida y eficiente.
         </p>
       </div>
@@ -261,51 +251,33 @@ export default function DailyProductionBalancesPage() {
       />
 
       {selectedDate && (
-        <div
-          className={`grid gap-6 ${canEdit ? "lg:grid-cols-[1fr_400px]" : "lg:grid-cols-1"} animate-in fade-in slide-in-from-bottom-2 duration-300`}
-        >
+        <div className={`grid gap-4 ${canEdit ? "lg:grid-cols-[1fr_360px]" : "lg:grid-cols-1"}`}>
           {canEdit && (
-            <div className="space-y-4">
-              <div
-                className="card bg-base-100 border-2 shadow-lg"
-                style={{ borderColor: form.status === "FINAL" ? "oklch(var(--su))" : "oklch(var(--wa))" }}
-              >
-                <div className="card-body">
+            <div className="space-y-3">
+              <div className="card bg-base-100 border shadow-sm">
+                <div className="card-body p-4">
                   <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3">
-                        <Calendar className="text-primary h-6 w-6" />
-                        <div>
-                          <h2 className="text-base-content text-2xl font-bold capitalize">
-                            {dayjs(selectedDate).format("dddd D [de] MMMM")}
-                          </h2>
-                          <div className="mt-1 flex items-center gap-2">
-                            <span
-                              className={`badge badge-sm ${
-                                form.status === "FINAL" ? "badge-success" : "badge-warning"
-                              }`}
-                            >
-                              {form.status === "FINAL" ? "✓ CERRADO" : "⏱ BORRADOR"}
-                            </span>
-                            <span className="text-base-content/60 text-xs">
-                              {selectedId ? `#${selectedId} · Editando` : "Nuevo registro"}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-base-content text-lg font-bold capitalize">
+                        {dayjs(selectedDate).format("ddd D MMM")}
+                      </h2>
+                      <span className={`badge badge-sm ${form.status === "FINAL" ? "badge-success" : "badge-warning"}`}>
+                        {form.status === "FINAL" ? "✓" : "⏱"}
+                      </span>
+                      {selectedId && <span className="text-base-content/60 text-xs">#{selectedId}</span>}
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="dropdown dropdown-end">
                         <label
                           tabIndex={0}
-                          className={`btn btn-sm gap-2 ${form.status === "FINAL" ? "btn-success" : "btn-warning"}`}
+                          className={`btn btn-xs gap-1 ${form.status === "FINAL" ? "btn-success" : "btn-warning"}`}
                         >
-                          {form.status === "FINAL" ? "✓ CERRADO" : "⏱ BORRADOR"}
+                          {form.status === "FINAL" ? "Final" : "Borrador"}
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
                             fill="none"
                             viewBox="0 0 24 24"
-                            className="h-4 w-4 stroke-current"
+                            className="h-3 w-3 stroke-current"
                           >
                             <path
                               strokeLinecap="round"
@@ -365,15 +337,15 @@ export default function DailyProductionBalancesPage() {
                           </li>
                         </ul>
                       </div>
-                      <Button type="button" variant="ghost" size="sm" onClick={() => setSelectedDate(null)}>
-                        Cerrar
+                      <Button type="button" variant="ghost" size="xs" onClick={() => setSelectedDate(null)}>
+                        ✕
                       </Button>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <form className="space-y-4" onSubmit={handleSubmit}>
+              <form className="space-y-3" onSubmit={handleSubmit}>
                 <div className="alert alert-info text-sm">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -395,8 +367,8 @@ export default function DailyProductionBalancesPage() {
                 </div>
 
                 {/* PASO 1: Ingresos por Método de Pago */}
-                <div className="card bg-success/5 border-success/20 border-2">
-                  <div className="card-body gap-4">
+                <div className="card bg-success/5 border-success/20 border">
+                  <div className="card-body gap-3 p-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <div className="badge badge-lg badge-success font-bold">1</div>
@@ -534,8 +506,8 @@ export default function DailyProductionBalancesPage() {
                 </div>
 
                 {/* Resumen Método de Pago */}
-                <div className="card bg-base-200 border-base-300 border-2">
-                  <div className="card-body">
+                <div className="card bg-base-200 border-base-300 border">
+                  <div className="card-body p-3">
                     <div className="mb-2 flex items-center gap-2">
                       <h3 className="text-base-content text-sm font-bold tracking-wide uppercase">
                         Total por Método de Pago
@@ -805,9 +777,9 @@ export default function DailyProductionBalancesPage() {
           )}
 
           {selectedId && (
-            <div className="space-y-4">
-              <div className="card bg-base-100 sticky top-6 h-fit shadow-md">
-                <div className="card-body">
+            <div className="space-y-3">
+              <div className="card bg-base-100 sticky top-4 h-fit shadow-sm">
+                <div className="card-body p-4">
                   <div className="mb-2 flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
                       <History className="text-base-content/60 h-5 w-5" />
