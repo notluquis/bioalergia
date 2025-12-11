@@ -83,13 +83,13 @@ export default function InventorySettingsPage() {
     onError: () => toastError("Error al crear categoría"),
   });
 
-  // Delete Category Mutation (would need backend support)
+  // Delete Category Mutation (stub - backend support pending)
+  // TODO: Implement backend DELETE /api/inventory/categories/:id endpoint
   const deleteMutation = useMutation({
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    mutationFn: async (_id: number) => {
+    mutationFn: async (id: number) => {
       // Backend doesn't have delete category endpoint yet
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      throw new Error("No implementado en backend");
+      console.warn("Delete category not implemented. Category ID:", id);
+      throw new Error("Función no implementada en backend");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["inventory-categories"] });

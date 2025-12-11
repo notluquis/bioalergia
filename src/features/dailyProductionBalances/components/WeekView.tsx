@@ -22,34 +22,34 @@ export default function WeekView({ currentDate, onDateChange, balances, onSelect
   const weeklyExpenses = balances.reduce((acc, b) => acc + Number(b.gastosDiarios), 0);
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={() => onDateChange(currentDate.subtract(1, "week"))}>
-            <ChevronLeft size={20} />
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="xs" onClick={() => onDateChange(currentDate.subtract(1, "week"))}>
+            <ChevronLeft size={16} />
           </Button>
-          <h2 className="text-base-content text-lg font-semibold capitalize">{startOfWeek.format("MMMM YYYY")}</h2>
-          <Button variant="ghost" size="sm" onClick={() => onDateChange(currentDate.add(1, "week"))}>
-            <ChevronRight size={20} />
+          <h2 className="text-base-content text-base font-semibold capitalize">{startOfWeek.format("MMM YYYY")}</h2>
+          <Button variant="ghost" size="xs" onClick={() => onDateChange(currentDate.add(1, "week"))}>
+            <ChevronRight size={16} />
           </Button>
-          <Button variant="ghost" size="sm" onClick={() => onDateChange(dayjs())}>
+          <Button variant="ghost" size="xs" onClick={() => onDateChange(dayjs())}>
             Hoy
           </Button>
         </div>
 
-        <div className="flex gap-4 text-sm">
-          <div className="bg-base-200/50 rounded-xl px-3 py-2">
-            <span className="text-base-content/60 block text-xs">Ingresos Semanales</span>
+        <div className="flex gap-2 text-xs">
+          <div className="bg-base-200/50 rounded-lg px-2 py-1">
+            <span className="text-base-content/60 block">Ingresos</span>
             <span className="text-success font-semibold">{currencyFormatter.format(weeklyIncome)}</span>
           </div>
-          <div className="bg-base-200/50 rounded-xl px-3 py-2">
-            <span className="text-base-content/60 block text-xs">Gastos Semanales</span>
+          <div className="bg-base-200/50 rounded-lg px-2 py-1">
+            <span className="text-base-content/60 block">Gastos</span>
             <span className="text-error font-semibold">{currencyFormatter.format(weeklyExpenses)}</span>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-6">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
         {days.map((day) => {
           const dateStr = day.format("YYYY-MM-DD");
           const balance = balances.find((b) => b.date === dateStr);

@@ -37,7 +37,7 @@ const TITLES: Record<string, string> = {
   "/settings/accesos": "Accesos y conexiones",
   "/settings/inventario": "Parámetros de inventario",
   "/settings/roles": "Roles y permisos",
-  "/settings/balances-diarios": "Balance diario de prestaciones",
+  "/settings/balances-diarios": "Balances Diarios",
 };
 
 export default function Header() {
