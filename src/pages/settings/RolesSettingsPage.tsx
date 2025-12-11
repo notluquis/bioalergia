@@ -50,7 +50,7 @@ export default function RolesSettingsPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-base-content text-2xl font-bold">Roles y Permisos</h1>
+          <h1 className="text-base-content text-2xl font-bold">Roles y permisos</h1>
           <p className="text-base-content/60 text-sm">Visualiza los niveles de acceso disponibles en el sistema.</p>
         </div>
         <a href="/settings/users" className="btn btn-primary btn-sm gap-2">

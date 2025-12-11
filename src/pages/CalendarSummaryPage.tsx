@@ -261,7 +261,7 @@ function CalendarSummaryPage() {
     <section className={PAGE_CONTAINER}>
       <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-2">
-          <h1 className="text-primary text-2xl font-bold">Eventos de Calendario</h1>
+          <h1 className="text-primary text-2xl font-bold">Eventos de calendario</h1>
           <p className="text-base-content/70 text-sm">
             Visualiza los eventos sincronizados desde Google Calendar y analiza su distribución por periodos.
           </p>

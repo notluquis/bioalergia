@@ -213,7 +213,7 @@ function CalendarClassificationPage() {
       <Tooltip.Provider delayDuration={200}>
         <section className="space-y-6">
           <header className={SPACE_Y_TIGHT}>
-            <h1 className={TITLE_LG}>Clasificar eventos pendientes</h1>
+            <h1 className={TITLE_LG}>Clasificar eventos</h1>
             <p className="text-base-content/70 text-sm">
               Revisa los eventos que no pudieron clasificarse automáticamente. Asigna la categoría correcta, confirma
               montos y marca si la persona asistió.

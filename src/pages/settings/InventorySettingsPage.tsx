@@ -123,7 +123,7 @@ export default function InventorySettingsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-base-content text-2xl font-bold">Inventario</h1>
+          <h1 className="text-base-content text-2xl font-bold">Parámetros de inventario</h1>
           <p className="text-base-content/60 text-sm">Gestiona las categorías y productos del inventario.</p>
         </div>
         <Button onClick={() => setIsCreating(true)} className="gap-2">

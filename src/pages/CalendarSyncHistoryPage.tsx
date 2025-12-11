@@ -57,7 +57,7 @@ export default function CalendarSyncHistoryPage() {
     <section className="space-y-4">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
-          <h1 className={TITLE_LG}>Historial de sincronizaciones</h1>
+          <h1 className={TITLE_LG}>Historial de sincronización</h1>
           <p className="text-base-content/70 text-sm">
             Consulta las sincronizaciones ejecutadas (manuales y programadas) y sus resultados.
           </p>
