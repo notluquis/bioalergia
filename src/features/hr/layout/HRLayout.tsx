@@ -10,17 +10,9 @@ const HR_TABS: TabItem[] = [
 
 export default function HRLayout() {
   return (
-    <div className="flex flex-col gap-6">
-      <header className="flex flex-col gap-4">
-        <div>
-          <h1 className="text-foreground text-2xl font-bold">Recursos Humanos</h1>
-          <p className="text-muted-foreground">Gestión de personal y control de horas.</p>
-        </div>
-        <Tabs items={HR_TABS} />
-      </header>
-      <main>
-        <Outlet />
-      </main>
+    <div className="mx-auto max-w-7xl space-y-6">
+      <Tabs items={HR_TABS} />
+      <Outlet />
     </div>
   );
 }

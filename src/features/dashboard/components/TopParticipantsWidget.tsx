@@ -15,42 +15,46 @@ export default function TopParticipantsWidget({
   return (
     <article className="surface-recessed space-y-4 p-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-base font-semibold text-secondary drop-shadow-sm">Retiros destacados</h3>
+        <h3 className="text-secondary text-base font-semibold drop-shadow-sm">Retiros destacados</h3>
         <Link
           to="/transactions/participants"
-          className="inline-flex items-center rounded-full border border-secondary/40 bg-secondary/15 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-secondary"
+          className="border-secondary/40 bg-secondary/15 text-secondary inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold tracking-wide uppercase"
         >
           Ver todos
         </Link>
       </div>
       {error && <p className="text-xs text-rose-600">{error}</p>}
       {loading ? (
-        <p className="text-xs text-base-content">Cargando...</p>
+        <p className="text-base-content text-xs">Cargando...</p>
       ) : data.length ? (
-        <ul className="space-y-3 text-sm text-base-content">
+        <ul className="text-base-content space-y-3 text-sm">
           {data.map((item) => {
-            const displayName = item.bankAccountHolder || item.displayName || item.participant;
-            const rut = item.identificationNumber ? formatRut(item.identificationNumber) || "-" : "-";
+            const displayName = item.bankAccountHolder || item.displayName || item.participant || "Sin información";
+            const rutValue =
+              item.identificationNumber && typeof item.identificationNumber === "string"
+                ? formatRut(item.identificationNumber)
+                : "";
+            const rut = rutValue || "-";
             const account = item.bankAccountNumber || item.withdrawId || "-";
             return (
               <li
                 key={`${item.participant}-${item.withdrawId ?? ""}`}
-                className="flex items-center justify-between gap-3 rounded-2xl border border-base-300 bg-base-200 px-4 py-3 shadow-sm"
+                className="border-base-300 bg-base-200 flex items-center justify-between gap-3 rounded-2xl border px-4 py-3 shadow-sm"
               >
                 <div>
-                  <p className="font-medium text-base-content">{displayName}</p>
-                  <p className="text-xs text-base-content/90">
+                  <p className="text-base-content font-medium">{displayName}</p>
+                  <p className="text-base-content/90 text-xs">
                     RUT {rut} · Cuenta {account}
                   </p>
-                  <p className="text-xs uppercase tracking-wide text-base-content/80">{item.outgoingCount} retiros</p>
+                  <p className="text-base-content/80 text-xs tracking-wide uppercase">{item.outgoingCount} retiros</p>
                 </div>
-                <span className="text-xs font-semibold text-base-content/70">{fmtCLP(item.outgoingAmount)}</span>
+                <span className="text-base-content/70 text-xs font-semibold">{fmtCLP(item.outgoingAmount)}</span>
               </li>
             );
           })}
         </ul>
       ) : (
-        <p className="text-xs text-base-content">Aún no hay retiros registrados.</p>
+        <p className="text-base-content text-xs">Aún no hay retiros registrados.</p>
       )}
     </article>
   );

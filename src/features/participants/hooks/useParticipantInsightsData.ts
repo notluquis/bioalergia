@@ -65,7 +65,11 @@ export function useParticipantInsightsData() {
     return leaderboard.map((row) => {
       const selectKey = row.participant || row.bankAccountNumber || row.withdrawId || row.identificationNumber || "";
       const displayName = row.bankAccountHolder || row.displayName || row.participant || "(sin información)";
-      const rut = row.identificationNumber ? formatRut(row.identificationNumber) || "-" : "-";
+      const rutValue =
+        row.identificationNumber && typeof row.identificationNumber === "string"
+          ? formatRut(row.identificationNumber)
+          : "";
+      const rut = rutValue || "-";
       const account = row.bankAccountNumber || row.withdrawId || row.participant || "-";
       return {
         key: selectKey || `${displayName}-${account}`,

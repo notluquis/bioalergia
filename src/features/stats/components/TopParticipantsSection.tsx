@@ -10,41 +10,45 @@ interface TopParticipantsSectionProps {
 
 export default function TopParticipantsSection({ data, loading, error }: TopParticipantsSectionProps) {
   return (
-    <section className="space-y-3 bg-base-100 p-6">
+    <section className="bg-base-100 space-y-3 p-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-lg font-semibold text-primary">Top retiros</h2>
-        <span className="text-xs uppercase tracking-wide text-base-content/50">Mayores egresos</span>
+        <h2 className="text-primary text-lg font-semibold">Top retiros</h2>
+        <span className="text-base-content/50 text-xs tracking-wide uppercase">Mayores egresos</span>
       </div>
-      {error && <p className="text-xs text-error">{error}</p>}
+      {error && <p className="text-error text-xs">{error}</p>}
       {loading ? (
-        <p className="text-xs text-base-content/60">Cargando contrapartes...</p>
+        <p className="text-base-content/60 text-xs">Cargando contrapartes...</p>
       ) : data.length ? (
-        <ul className="space-y-2 text-sm text-base-content/70">
+        <ul className="text-base-content/70 space-y-2 text-sm">
           {data.map((item) => {
-            const displayName = item.bankAccountHolder || item.displayName || item.participant;
-            const rut = item.identificationNumber ? formatRut(item.identificationNumber) || "-" : "-";
+            const displayName = item.bankAccountHolder || item.displayName || item.participant || "Sin información";
+            const rutValue =
+              item.identificationNumber && typeof item.identificationNumber === "string"
+                ? formatRut(item.identificationNumber)
+                : "";
+            const rut = rutValue || "-";
             const account = item.bankAccountNumber || item.withdrawId || "-";
             return (
               <li
                 key={`${item.participant}-${item.withdrawId ?? ""}`}
-                className="flex items-center justify-between rounded-lg bg-base-200 px-3 py-2"
+                className="bg-base-200 flex items-center justify-between rounded-lg px-3 py-2"
               >
                 <div>
-                  <p className="font-medium text-base-content">{displayName}</p>
-                  <p className="text-xs text-base-content/60">
+                  <p className="text-base-content font-medium">{displayName}</p>
+                  <p className="text-base-content/60 text-xs">
                     RUT {rut} · Cuenta {account}
                   </p>
-                  <p className="text-xs text-base-content/50">
+                  <p className="text-base-content/50 text-xs">
                     {item.outgoingCount} egresos · {fmtCLP(item.outgoingAmount)}
                   </p>
                 </div>
-                <span className="text-xs font-semibold text-base-content/50">Total {fmtCLP(item.totalAmount)}</span>
+                <span className="text-base-content/50 text-xs font-semibold">Total {fmtCLP(item.totalAmount)}</span>
               </li>
             );
           })}
         </ul>
       ) : (
-        <p className="text-xs text-base-content/60">Sin retiros registrados en el rango.</p>
+        <p className="text-base-content/60 text-xs">Sin retiros registrados en el rango.</p>
       )}
     </section>
   );

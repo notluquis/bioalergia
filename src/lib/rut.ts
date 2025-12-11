@@ -9,6 +9,11 @@ export function normalizeRut(value: string | null | undefined): string | null {
 }
 
 export function formatRut(value: string | null | undefined): string {
+  if (!value || typeof value !== "string") return "";
+
+  // Si el valor parece ser un mensaje de error o texto no esperado, retornar vacío
+  if (value.includes("pattern") || value.includes("error") || value.length > 20) return "";
+
   const normalized = normalizeRut(value);
   if (!normalized) return "";
   const [body, dv] = normalized.split("-");
