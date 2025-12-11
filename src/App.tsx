@@ -8,6 +8,7 @@ import { APP_VERSION, BUILD_TIMESTAMP } from "./version";
 import { useSettings } from "./context/SettingsContext";
 import { UpdateNotification } from "./components/features/UpdateNotification";
 import { PerformanceIndicator } from "./components/features/PerformanceIndicator";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./components/ui/Tooltip";
 
 export default function App() {
   const navigationState = useNavigation();
@@ -187,10 +188,18 @@ export default function App() {
 
             <div className="flex items-center gap-3">
               <PerformanceIndicator />
-              <div className="text-base-content/70 flex items-center gap-2 text-xs">
-                <span className="bg-success/70 inline-flex h-2 w-2 rounded-full" aria-hidden="true" />
-                <span>Sistema operativo</span>
-              </div>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="text-base-content/70 flex cursor-help items-center gap-2 text-xs">
+                      <span className="bg-success/70 inline-flex h-2 w-2 rounded-full" aria-label="Sistema operativo" />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Sistema operativo</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           </footer>
         </div>
