@@ -11,10 +11,8 @@ import {
   CreditCard,
   Banknote,
   Wallet,
-  TrendingUp,
   TrendingDown,
   FileText,
-  Stethoscope,
   Syringe,
   ClipboardList,
   Calendar,
@@ -71,6 +69,21 @@ function parseNumber(value: string): number {
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) return 0;
   return Math.round(parsed);
+}
+
+function formatInputValue(value: string): string {
+  // Remove non-numeric characters except for negative sign
+  const numericValue = value.replace(/[^0-9-]/g, "");
+  if (!numericValue || numericValue === "-") return "";
+  const parsed = parseInt(numericValue, 10);
+  if (isNaN(parsed)) return "";
+  // Format with thousands separator
+  return new Intl.NumberFormat("es-CL").format(parsed);
+}
+
+function parseInputValue(value: string): string {
+  // Remove formatting and return just the number
+  return value.replace(/[^0-9-]/g, "");
 }
 
 function toPayload(form: FormState): ProductionBalancePayload {
@@ -196,6 +209,19 @@ export default function DailyProductionBalancesPage() {
     otrosAbonos: parseNumber(form.otrosAbonos),
   });
 
+  // Calculate service totals for dual-accounting validation
+  const serviceTotals =
+    parseNumber(form.consultas) +
+    parseNumber(form.controles) +
+    parseNumber(form.tests) +
+    parseNumber(form.vacunas) +
+    parseNumber(form.licencias) +
+    parseNumber(form.roxair);
+
+  const paymentMethodTotal = derived.total;
+  const hasDifference = serviceTotals !== paymentMethodTotal;
+  const difference = serviceTotals - paymentMethodTotal;
+
   const handleChange =
     (key: keyof FormState) => (event: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
       setForm((prev) => ({ ...prev, [key]: event.target.value }));
@@ -237,34 +263,145 @@ export default function DailyProductionBalancesPage() {
         >
           {canEdit && (
             <div className="space-y-4">
-              <div className="card bg-base-100 shadow-md">
+              <div
+                className="card bg-base-100 border-2 shadow-lg"
+                style={{ borderColor: form.status === "FINAL" ? "oklch(var(--su))" : "oklch(var(--wa))" }}
+              >
                 <div className="card-body">
                   <div className="flex items-center justify-between">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <Calendar className="text-primary h-5 w-5" />
-                        <h2 className="text-base-content text-xl font-bold">
-                          {dayjs(selectedDate).format("dddd D [de] MMMM")}
-                        </h2>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3">
+                        <Calendar className="text-primary h-6 w-6" />
+                        <div>
+                          <h2 className="text-base-content text-2xl font-bold capitalize">
+                            {dayjs(selectedDate).format("dddd D [de] MMMM")}
+                          </h2>
+                          <div className="mt-1 flex items-center gap-2">
+                            <span
+                              className={`badge badge-sm ${
+                                form.status === "FINAL" ? "badge-success" : "badge-warning"
+                              }`}
+                            >
+                              {form.status === "FINAL" ? "✓ CERRADO" : "⏱ BORRADOR"}
+                            </span>
+                            <span className="text-base-content/60 text-xs">
+                              {selectedId ? `#${selectedId} · Editando` : "Nuevo registro"}
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                      <p className="text-base-content/60 mt-1 text-sm">
-                        {selectedId ? "Editando registro existente" : "Nuevo registro"}
-                      </p>
                     </div>
-                    <Button type="button" variant="ghost" size="sm" onClick={() => setSelectedDate(null)}>
-                      Cerrar
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <div className="dropdown dropdown-end">
+                        <label
+                          tabIndex={0}
+                          className={`btn btn-sm gap-2 ${form.status === "FINAL" ? "btn-success" : "btn-warning"}`}
+                        >
+                          {form.status === "FINAL" ? "✓ CERRADO" : "⏱ BORRADOR"}
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            className="h-4 w-4 stroke-current"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                              d="M19 9l-7 7-7-7"
+                            ></path>
+                          </svg>
+                        </label>
+                        <ul
+                          tabIndex={0}
+                          className="dropdown-content menu bg-base-100 rounded-box border-base-300 z-1 mt-2 w-80 border p-2 shadow-lg"
+                        >
+                          <li className="menu-title">
+                            <span className="text-xs font-bold">Estado del Balance</span>
+                          </li>
+                          <li>
+                            <a
+                              className={form.status === "DRAFT" ? "active" : ""}
+                              onClick={() => setForm((prev) => ({ ...prev, status: "DRAFT" }))}
+                            >
+                              <div className="flex items-start gap-2 py-2">
+                                <span className="badge badge-warning badge-sm mt-1">⏱</span>
+                                <div className="flex-1">
+                                  <div className="font-semibold">Borrador</div>
+                                  <div className="text-xs opacity-70">
+                                    Aún estoy ingresando datos o revisando. Puede tener errores.
+                                  </div>
+                                </div>
+                              </div>
+                            </a>
+                          </li>
+                          <li>
+                            <a
+                              className={form.status === "FINAL" ? "active" : ""}
+                              onClick={() => {
+                                if (hasDifference) {
+                                  if (
+                                    !confirm("⚠️ Los totales no coinciden. ¿Estás seguro de marcarlo como CERRADO?")
+                                  ) {
+                                    return;
+                                  }
+                                }
+                                setForm((prev) => ({ ...prev, status: "FINAL" }));
+                              }}
+                            >
+                              <div className="flex items-start gap-2 py-2">
+                                <span className="badge badge-success badge-sm mt-1">✓</span>
+                                <div className="flex-1">
+                                  <div className="font-semibold">Cerrado (Final)</div>
+                                  <div className="text-xs opacity-70">
+                                    Datos completos y verificados. Registro oficial.
+                                  </div>
+                                </div>
+                              </div>
+                            </a>
+                          </li>
+                        </ul>
+                      </div>
+                      <Button type="button" variant="ghost" size="sm" onClick={() => setSelectedDate(null)}>
+                        Cerrar
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>
 
               <form className="space-y-4" onSubmit={handleSubmit}>
-                {/* Ingresos Card */}
-                <div className="card bg-success/5 border-success/20 border">
+                <div className="alert alert-info text-sm">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    className="h-5 w-5 shrink-0 stroke-current"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    ></path>
+                  </svg>
+                  <span>
+                    <strong>Flujo de trabajo:</strong> 1) Registra ingresos por método de pago → 2) Registra ingresos
+                    por tipo de servicio → 3) Verifica que ambos totales coincidan
+                  </span>
+                </div>
+
+                {/* PASO 1: Ingresos por Método de Pago */}
+                <div className="card bg-success/5 border-success/20 border-2">
                   <div className="card-body gap-4">
-                    <div className="flex items-center gap-2">
-                      <TrendingUp className="text-success h-5 w-5" />
-                      <h3 className="text-base-content text-lg font-semibold">Ingresos</h3>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="badge badge-lg badge-success font-bold">1</div>
+                        <div>
+                          <h3 className="text-base-content text-lg font-bold">Ingresos por Método de Pago</h3>
+                          <p className="text-base-content/60 text-xs">¿Cómo ingresó el dinero?</p>
+                        </div>
+                      </div>
                     </div>
                     <div className="grid gap-3 sm:grid-cols-3">
                       <div className="form-control">
@@ -274,14 +411,20 @@ export default function DailyProductionBalancesPage() {
                             Tarjetas
                           </span>
                         </label>
-                        <input
-                          type="number"
-                          min="0"
-                          value={form.ingresoTarjetas}
-                          onChange={handleChange("ingresoTarjetas")}
-                          className="input input-bordered input-sm"
-                          placeholder="0"
-                        />
+                        <label className="input input-bordered input-sm flex items-center gap-2">
+                          <span className="text-base-content/60">$</span>
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            value={formatInputValue(form.ingresoTarjetas)}
+                            onChange={(e) => {
+                              const parsed = parseInputValue(e.target.value);
+                              setForm((prev) => ({ ...prev, ingresoTarjetas: parsed }));
+                            }}
+                            className="grow bg-transparent"
+                            placeholder="0"
+                          />
+                        </label>
                       </div>
                       <div className="form-control">
                         <label className="label py-1">
@@ -290,14 +433,20 @@ export default function DailyProductionBalancesPage() {
                             Transferencias
                           </span>
                         </label>
-                        <input
-                          type="number"
-                          min="0"
-                          value={form.ingresoTransferencias}
-                          onChange={handleChange("ingresoTransferencias")}
-                          className="input input-bordered input-sm"
-                          placeholder="0"
-                        />
+                        <label className="input input-bordered input-sm flex items-center gap-2">
+                          <span className="text-base-content/60">$</span>
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            value={formatInputValue(form.ingresoTransferencias)}
+                            onChange={(e) => {
+                              const parsed = parseInputValue(e.target.value);
+                              setForm((prev) => ({ ...prev, ingresoTransferencias: parsed }));
+                            }}
+                            className="grow bg-transparent"
+                            placeholder="0"
+                          />
+                        </label>
                       </div>
                       <div className="form-control">
                         <label className="label py-1">
@@ -306,116 +455,181 @@ export default function DailyProductionBalancesPage() {
                             Efectivo
                           </span>
                         </label>
-                        <input
-                          type="number"
-                          min="0"
-                          value={form.ingresoEfectivo}
-                          onChange={handleChange("ingresoEfectivo")}
-                          className="input input-bordered input-sm"
-                          placeholder="0"
-                        />
+                        <label className="input input-bordered input-sm flex items-center gap-2">
+                          <span className="text-base-content/60">$</span>
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            value={formatInputValue(form.ingresoEfectivo)}
+                            onChange={(e) => {
+                              const parsed = parseInputValue(e.target.value);
+                              setForm((prev) => ({ ...prev, ingresoEfectivo: parsed }));
+                            }}
+                            className="grow bg-transparent"
+                            placeholder="0"
+                          />
+                        </label>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Gastos Card */}
+                {/* PASO 1B: Gastos y Ajustes */}
                 <div className="card bg-error/5 border-error/20 border">
                   <div className="card-body gap-4">
                     <div className="flex items-center gap-2">
                       <TrendingDown className="text-error h-5 w-5" />
-                      <h3 className="text-base-content text-lg font-semibold">Gastos y Ajustes</h3>
+                      <h3 className="text-base-content text-base font-semibold">Gastos y Ajustes</h3>
                     </div>
                     <div className="grid gap-3 sm:grid-cols-2">
-                      <Input
-                        label="Gastos diarios"
-                        type="number"
-                        value={form.gastosDiarios}
-                        onChange={handleChange("gastosDiarios")}
-                        min="0"
-                        helper="Combustible, insumos, etc."
-                      />
-                      <Input
-                        label="Otros abonos"
-                        type="number"
-                        value={form.otrosAbonos}
-                        onChange={handleChange("otrosAbonos")}
-                        min="0"
-                        helper="Devoluciones, ajustes"
-                      />
+                      <div className="form-control">
+                        <label className="label py-1">
+                          <span className="label-text text-sm font-medium">Gastos diarios</span>
+                        </label>
+                        <label className="input input-bordered input-sm flex items-center gap-2">
+                          <span className="text-base-content/60">$</span>
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            value={formatInputValue(form.gastosDiarios)}
+                            onChange={(e) => {
+                              const parsed = parseInputValue(e.target.value);
+                              setForm((prev) => ({ ...prev, gastosDiarios: parsed }));
+                            }}
+                            className="grow bg-transparent"
+                            placeholder="0"
+                          />
+                        </label>
+                        <label className="label py-0">
+                          <span className="label-text-alt text-base-content/60">Combustible, insumos, etc.</span>
+                        </label>
+                      </div>
+                      <div className="form-control">
+                        <label className="label py-1">
+                          <span className="label-text text-sm font-medium">Otros abonos</span>
+                        </label>
+                        <label className="input input-bordered input-sm flex items-center gap-2">
+                          <span className="text-base-content/60">$</span>
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            value={formatInputValue(form.otrosAbonos)}
+                            onChange={(e) => {
+                              const parsed = parseInputValue(e.target.value);
+                              setForm((prev) => ({ ...prev, otrosAbonos: parsed }));
+                            }}
+                            className="grow bg-transparent"
+                            placeholder="0"
+                          />
+                        </label>
+                        <label className="label py-0">
+                          <span className="label-text-alt text-base-content/60">Devoluciones, ajustes</span>
+                        </label>
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Resumen Card */}
-                <div className="card bg-primary/5 border-primary/30 border-2">
+                {/* Resumen Método de Pago */}
+                <div className="card bg-base-200 border-base-300 border-2">
                   <div className="card-body">
-                    <h3 className="text-primary text-sm font-semibold tracking-wide uppercase">Resumen del día</h3>
+                    <div className="mb-2 flex items-center gap-2">
+                      <h3 className="text-base-content text-sm font-bold tracking-wide uppercase">
+                        Total por Método de Pago
+                      </h3>
+                    </div>
                     <div className="grid grid-cols-3 gap-4">
                       <div className="text-center">
                         <p className="text-base-content/60 mb-1 text-xs">Subtotal</p>
-                        <p className="text-success text-xl font-bold">{currencyFormatter.format(derived.subtotal)}</p>
+                        <p className="text-success text-lg font-bold">{currencyFormatter.format(derived.subtotal)}</p>
                       </div>
                       <div className="text-center">
-                        <p className="text-base-content/60 mb-1 text-xs">Neto</p>
-                        <p className="text-base-content text-xl font-bold">
-                          {currencyFormatter.format(derived.totalIngresos)}
+                        <p className="text-base-content/60 mb-1 text-xs">- Gastos</p>
+                        <p className="text-error text-lg font-bold">
+                          -{currencyFormatter.format(parseNumber(form.gastosDiarios))}
                         </p>
                       </div>
                       <div className="text-center">
-                        <p className="text-base-content/60 mb-1 text-xs">Total</p>
-                        <p className="text-primary text-2xl font-bold">{currencyFormatter.format(derived.total)}</p>
+                        <p className="text-base-content/60 mb-1 text-xs font-semibold">TOTAL</p>
+                        <p className="text-primary text-2xl font-bold">
+                          {currencyFormatter.format(paymentMethodTotal)}
+                        </p>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Actividades Card */}
-                <div className="card bg-info/5 border-info/20 border">
+                {/* PASO 2: Ingresos por Tipo de Servicio */}
+                <div className="card bg-info/5 border-info/20 border-2">
                   <div className="card-body gap-4">
-                    <div className="flex items-center gap-2">
-                      <Stethoscope className="text-info h-5 w-5" />
-                      <h3 className="text-base-content text-lg font-semibold">Actividades del día</h3>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="badge badge-lg badge-info font-bold">2</div>
+                        <div>
+                          <h3 className="text-base-content text-lg font-bold">Ingresos por Tipo de Servicio</h3>
+                          <p className="text-base-content/60 text-xs">
+                            ¿Qué servicios generaron ingresos? (montos en $)
+                          </p>
+                        </div>
+                      </div>
                     </div>
                     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                       <div className="form-control">
                         <label className="label py-1">
                           <span className="label-text text-sm font-medium">Consultas</span>
                         </label>
-                        <input
-                          type="number"
-                          min="0"
-                          value={form.consultas}
-                          onChange={handleChange("consultas")}
-                          className="input input-bordered input-sm"
-                          placeholder="0"
-                        />
+                        <label className="input input-bordered input-sm flex items-center gap-2">
+                          <span className="text-base-content/60">$</span>
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            value={formatInputValue(form.consultas)}
+                            onChange={(e) => {
+                              const parsed = parseInputValue(e.target.value);
+                              setForm((prev) => ({ ...prev, consultas: parsed }));
+                            }}
+                            className="grow bg-transparent"
+                            placeholder="0"
+                          />
+                        </label>
                       </div>
                       <div className="form-control">
                         <label className="label py-1">
                           <span className="label-text text-sm font-medium">Controles</span>
                         </label>
-                        <input
-                          type="number"
-                          min="0"
-                          value={form.controles}
-                          onChange={handleChange("controles")}
-                          className="input input-bordered input-sm"
-                          placeholder="0"
-                        />
+                        <label className="input input-bordered input-sm flex items-center gap-2">
+                          <span className="text-base-content/60">$</span>
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            value={formatInputValue(form.controles)}
+                            onChange={(e) => {
+                              const parsed = parseInputValue(e.target.value);
+                              setForm((prev) => ({ ...prev, controles: parsed }));
+                            }}
+                            className="grow bg-transparent"
+                            placeholder="0"
+                          />
+                        </label>
                       </div>
                       <div className="form-control">
                         <label className="label py-1">
                           <span className="label-text text-sm font-medium">Test</span>
                         </label>
-                        <input
-                          type="number"
-                          min="0"
-                          value={form.tests}
-                          onChange={handleChange("tests")}
-                          className="input input-bordered input-sm"
-                          placeholder="0"
-                        />
+                        <label className="input input-bordered input-sm flex items-center gap-2">
+                          <span className="text-base-content/60">$</span>
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            value={formatInputValue(form.tests)}
+                            onChange={(e) => {
+                              const parsed = parseInputValue(e.target.value);
+                              setForm((prev) => ({ ...prev, tests: parsed }));
+                            }}
+                            className="grow bg-transparent"
+                            placeholder="0"
+                          />
+                        </label>
                       </div>
                       <div className="form-control">
                         <label className="label py-1">
@@ -424,14 +638,20 @@ export default function DailyProductionBalancesPage() {
                             Vacunas
                           </span>
                         </label>
-                        <input
-                          type="number"
-                          min="0"
-                          value={form.vacunas}
-                          onChange={handleChange("vacunas")}
-                          className="input input-bordered input-sm"
-                          placeholder="0"
-                        />
+                        <label className="input input-bordered input-sm flex items-center gap-2">
+                          <span className="text-base-content/60">$</span>
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            value={formatInputValue(form.vacunas)}
+                            onChange={(e) => {
+                              const parsed = parseInputValue(e.target.value);
+                              setForm((prev) => ({ ...prev, vacunas: parsed }));
+                            }}
+                            className="grow bg-transparent"
+                            placeholder="0"
+                          />
+                        </label>
                       </div>
                       <div className="form-control">
                         <label className="label py-1">
@@ -440,27 +660,116 @@ export default function DailyProductionBalancesPage() {
                             Licencias
                           </span>
                         </label>
-                        <input
-                          type="number"
-                          min="0"
-                          value={form.licencias}
-                          onChange={handleChange("licencias")}
-                          className="input input-bordered input-sm"
-                          placeholder="0"
-                        />
+                        <label className="input input-bordered input-sm flex items-center gap-2">
+                          <span className="text-base-content/60">$</span>
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            value={formatInputValue(form.licencias)}
+                            onChange={(e) => {
+                              const parsed = parseInputValue(e.target.value);
+                              setForm((prev) => ({ ...prev, licencias: parsed }));
+                            }}
+                            className="grow bg-transparent"
+                            placeholder="0"
+                          />
+                        </label>
                       </div>
                       <div className="form-control">
                         <label className="label py-1">
                           <span className="label-text text-sm font-medium">Roxair</span>
                         </label>
-                        <input
-                          type="number"
-                          min="0"
-                          value={form.roxair}
-                          onChange={handleChange("roxair")}
-                          className="input input-bordered input-sm"
-                          placeholder="0"
-                        />
+                        <label className="input input-bordered input-sm flex items-center gap-2">
+                          <span className="text-base-content/60">$</span>
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            value={formatInputValue(form.roxair)}
+                            onChange={(e) => {
+                              const parsed = parseInputValue(e.target.value);
+                              setForm((prev) => ({ ...prev, roxair: parsed }));
+                            }}
+                            className="grow bg-transparent"
+                            placeholder="0"
+                          />
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Resumen Tipo de Servicio + Validación */}
+                <div className="card bg-base-200 border-base-300 border-2">
+                  <div className="card-body">
+                    <h3 className="text-base-content mb-2 text-sm font-bold tracking-wide uppercase">
+                      Total por Tipo de Servicio
+                    </h3>
+                    <div className="mb-4 text-center">
+                      <p className="text-base-content/60 mb-1 text-xs font-semibold">TOTAL</p>
+                      <p className="text-info text-2xl font-bold">{currencyFormatter.format(serviceTotals)}</p>
+                    </div>
+
+                    {/* Validation Alert */}
+                    {hasDifference ? (
+                      <div className="alert alert-warning text-sm">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          className="h-5 w-5 shrink-0 stroke-current"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                          ></path>
+                        </svg>
+                        <div>
+                          <div className="font-bold">⚠️ Los totales no coinciden</div>
+                          <div className="text-xs">
+                            Diferencia: {currencyFormatter.format(Math.abs(difference))} (
+                            {difference > 0 ? "servicios superan pagos" : "pagos superan servicios"})
+                            {form.status === "FINAL" && (
+                              <span className="ml-2 font-semibold">
+                                • Considera dejarlo en BORRADOR hasta verificar
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="alert alert-success text-sm">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-5 w-5 shrink-0 stroke-current"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
+                        </svg>
+                        <div>
+                          <span className="font-bold">✓ Totales coinciden perfectamente</span>
+                          <span className="ml-2 text-xs">• Puedes marcarlo como CERRADO cuando esté listo</span>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="divider my-2"></div>
+
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <p className="text-base-content/60 mb-1 text-xs">Por Método de Pago</p>
+                        <p className="text-primary font-bold">{currencyFormatter.format(paymentMethodTotal)}</p>
+                      </div>
+                      <div>
+                        <p className="text-base-content/60 mb-1 text-xs">Por Tipo de Servicio</p>
+                        <p className="text-info font-bold">{currencyFormatter.format(serviceTotals)}</p>
                       </div>
                     </div>
                   </div>
@@ -471,7 +780,7 @@ export default function DailyProductionBalancesPage() {
                   <div className="card-body gap-4">
                     <div className="flex items-center gap-2">
                       <ClipboardList className="text-base-content/60 h-5 w-5" />
-                      <h3 className="text-base-content text-lg font-semibold">Notas y Observaciones</h3>
+                      <h3 className="text-base-content text-base font-semibold">Notas y Observaciones</h3>
                     </div>
                     <div className="space-y-3">
                       <Input
@@ -496,34 +805,15 @@ export default function DailyProductionBalancesPage() {
                   </div>
                 </div>
 
-                {/* Estado y Guardar */}
-                <div className="card bg-base-100 border-base-300 border">
-                  <div className="card-body">
-                    <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
-                      <div className="form-control flex-1">
-                        <label className="label py-1">
-                          <span className="label-text text-sm font-medium">Estado del balance</span>
-                        </label>
-                        <select
-                          className="select select-bordered"
-                          value={form.status}
-                          onChange={handleChange("status")}
-                        >
-                          <option value="FINAL">✓ Final (Cerrado)</option>
-                          <option value="DRAFT">⏱ Borrador</option>
-                        </select>
-                      </div>
-                      <Button
-                        type="submit"
-                        disabled={mutation.isPending}
-                        size="lg"
-                        className="gap-2 sm:w-auto sm:self-end"
-                      >
-                        <Save className="h-4 w-4" />
-                        {mutation.isPending ? "Guardando..." : selectedId ? "Actualizar" : "Registrar"}
-                      </Button>
-                    </div>
-                  </div>
+                {/* Guardar */}
+                <div className="flex justify-end gap-2">
+                  <Button type="button" variant="ghost" onClick={() => setSelectedDate(null)}>
+                    Cancelar
+                  </Button>
+                  <Button type="submit" disabled={mutation.isPending} size="lg" className="gap-2">
+                    <Save className="h-5 w-5" />
+                    {mutation.isPending ? "Guardando..." : selectedId ? "Actualizar Balance" : "Registrar Balance"}
+                  </Button>
                 </div>
               </form>
             </div>
