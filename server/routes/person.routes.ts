@@ -31,7 +31,23 @@ const personInclude = {
 // GET /api/people - List all people with their roles
 router.get("/", requireAuth, async (req, res) => {
   try {
+    const includeTest = req.query.includeTest === "true";
+
     const people = await prisma.person.findMany({
+      where: includeTest
+        ? undefined
+        : {
+            // Exclude test/demo data
+            NOT: {
+              OR: [
+                { names: { contains: "Test" } },
+                { names: { contains: "test" } },
+                { rut: { startsWith: "11111111" } },
+                { rut: { startsWith: "TEMP-" } },
+                { email: { contains: "test" } },
+              ],
+            },
+          },
       include: personInclude,
       orderBy: { names: "asc" },
     });
