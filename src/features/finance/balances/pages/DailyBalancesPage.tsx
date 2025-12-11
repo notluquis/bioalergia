@@ -3,7 +3,6 @@ import type { ChangeEvent } from "react";
 import dayjs from "dayjs";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { useAuth } from "@/context/AuthContext";
-import { useSettings } from "@/context/SettingsContext";
 import { logger } from "@/lib/logger";
 import { DailyBalancesPanel } from "@/features/finance/balances/components/DailyBalancesPanel";
 import { BalanceSummary } from "@/features/finance/balances/components/BalanceSummary";
@@ -18,7 +17,6 @@ import Button from "@/components/ui/Button";
 
 export default function DailyBalances() {
   const { hasRole } = useAuth();
-  const { settings } = useSettings();
   // canEdit flag removed (unused)
 
   const [from, setFrom] = useState(dayjs().subtract(10, "day").format("YYYY-MM-DD"));
@@ -77,58 +75,60 @@ export default function DailyBalances() {
         <Alert variant="error">No tienes permisos para ver los saldos diarios.</Alert>
       ) : (
         <>
-          <div className="bg-base-100 flex flex-col gap-4 p-6 sm:flex-row sm:items-end sm:justify-between">
-            <div className="space-y-2">
-              <h1 className="text-primary text-2xl font-bold drop-shadow-sm">Saldos diarios</h1>
-              <p className="text-base-content/70 max-w-2xl text-sm">
-                Registra el saldo de la cuenta a las 23:59 de cada día para conciliar los movimientos almacenados en{" "}
-                <code>mp_transactions</code>. Para consultas, escribe a<strong> {settings.supportEmail}</strong>.
-              </p>
-              {derivedInitial != null && (
-                <p className="text-base-content/60 text-xs">
-                  Saldo anterior calculado: <strong>{formatBalanceInput(derivedInitial)}</strong>
-                </p>
-              )}
-            </div>
-            <div className="flex flex-wrap items-end gap-3">
-              <Input
-                label="Fecha desde"
-                type="date"
-                value={from}
-                onChange={(event: ChangeEvent<HTMLInputElement>) => setFrom(event.target.value)}
-                className="w-fit"
-              />
-              <Input
-                label="Fecha hasta"
-                type="date"
-                value={to}
-                onChange={(event: ChangeEvent<HTMLInputElement>) => setTo(event.target.value)}
-                className="w-fit"
-              />
-              <Input
-                label="Mes rápido"
-                as="select"
-                value={quickRange}
-                onChange={(event: ChangeEvent<HTMLSelectElement>) => {
-                  const value = event.target.value;
-                  if (value === "custom") return;
-                  const match = quickMonths.find((month) => month.value === value);
-                  if (!match) return;
-                  setFrom(match.from);
-                  setTo(match.to);
-                }}
-                className="w-fit"
-              >
-                <option value="custom">Personalizado</option>
-                {quickMonths.map((month) => (
-                  <option key={month.value} value={month.value}>
-                    {month.label}
-                  </option>
-                ))}
-              </Input>
-              <Button onClick={() => refetch()} disabled={isFetching} size="sm">
-                {isFetching ? "Actualizando..." : "Actualizar"}
-              </Button>
+          <div className="card bg-base-100 shadow-sm">
+            <div className="card-body">
+              <div className="flex flex-col gap-4">
+                <div className="space-y-2">
+                  <h1 className="text-primary text-2xl font-bold">Saldos diarios</h1>
+                  <p className="text-base-content/70 text-sm">
+                    Registra el saldo de cierre diario para conciliar movimientos.
+                    {derivedInitial != null && (
+                      <span className="ml-2 text-xs font-medium">
+                        Saldo anterior: <strong>{formatBalanceInput(derivedInitial)}</strong>
+                      </span>
+                    )}
+                  </p>
+                </div>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  <Input
+                    label="Desde"
+                    type="date"
+                    value={from}
+                    onChange={(event: ChangeEvent<HTMLInputElement>) => setFrom(event.target.value)}
+                  />
+                  <Input
+                    label="Hasta"
+                    type="date"
+                    value={to}
+                    onChange={(event: ChangeEvent<HTMLInputElement>) => setTo(event.target.value)}
+                  />
+                  <Input
+                    label="Mes rápido"
+                    as="select"
+                    value={quickRange}
+                    onChange={(event: ChangeEvent<HTMLSelectElement>) => {
+                      const value = event.target.value;
+                      if (value === "custom") return;
+                      const match = quickMonths.find((month) => month.value === value);
+                      if (!match) return;
+                      setFrom(match.from);
+                      setTo(match.to);
+                    }}
+                  >
+                    <option value="custom">Personalizado</option>
+                    {quickMonths.map((month) => (
+                      <option key={month.value} value={month.value}>
+                        {month.label}
+                      </option>
+                    ))}
+                  </Input>
+                  <div className="flex items-end">
+                    <Button onClick={() => refetch()} disabled={isFetching} className="w-full">
+                      {isFetching ? "Actualizando..." : "Actualizar"}
+                    </Button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 

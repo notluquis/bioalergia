@@ -34,7 +34,6 @@ const ReportsPage = lazy(() => import("@/features/hr/reports/pages/ReportsPage")
 
 const CounterpartsPage = lazy(() => import("./pages/Counterparts"));
 // Lazy loading de layouts
-const FinanceLayout = lazy(() => import("./components/Layout/FinanceLayout"));
 const CalendarLayout = lazy(() => import("./components/Layout/CalendarLayout"));
 const ServicesLayout = lazy(() => import("@/features/services/layout/ServicesLayout"));
 const InventoryLayout = lazy(() => import("@/features/operations/layout/OperationsLayout"));
@@ -118,11 +117,6 @@ const router = createBrowserRouter([
       // Finanzas Section
       {
         path: "/finanzas",
-        element: (
-          <Suspense fallback={<PageLoader />}>
-            <FinanceLayout />
-          </Suspense>
-        ),
         children: [
           { index: true, element: <Navigate to="movements" replace /> },
           {

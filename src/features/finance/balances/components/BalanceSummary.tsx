@@ -36,64 +36,68 @@ export function BalanceSummary({ report, loading, error }: BalanceSummaryProps) 
   const { mismatchDays, hasRecordedBalances, lastRecorded, lastExpected } = useBalanceReportSummary(report);
 
   return (
-    <section className="space-y-4 p-6 bg-base-100">
-      <h2 className="text-lg font-semibold text-primary drop-shadow-sm">Conciliación de saldo</h2>
-      {error && <p className="border-l-4 border-rose-300/80 bg-base-100 px-4 py-2 text-xs text-rose-700">{error}</p>}
-      {loading ? (
-        <div className="space-y-3">
-          <div className="skeleton-card space-y-2">
-            <span className="skeleton-line w-1/2" />
-            <span className="skeleton-line w-1/3" />
+    <section className="card bg-base-100 shadow-sm">
+      <div className="card-body">
+        <h2 className="card-title text-primary text-lg">Conciliación</h2>
+        {error && <p className="bg-base-100 border-l-4 border-rose-300/80 px-4 py-2 text-xs text-rose-700">{error}</p>}
+        {loading ? (
+          <div className="space-y-3">
+            <div className="skeleton-card space-y-2">
+              <span className="skeleton-line w-1/2" />
+              <span className="skeleton-line w-1/3" />
+            </div>
+            <div className="skeleton-card space-y-2">
+              <span className="skeleton-line w-1/4" />
+              <span className="skeleton-line w-2/3" />
+            </div>
           </div>
-          <div className="skeleton-card space-y-2">
-            <span className="skeleton-line w-1/4" />
-            <span className="skeleton-line w-2/3" />
+        ) : !report ? (
+          <p className="text-base-content text-sm">
+            Selecciona un rango para revisar los saldos de cierre registrados.
+          </p>
+        ) : !hasRecordedBalances ? (
+          <p className="text-base-content text-sm">
+            Aún no registras saldos de cierre para este rango. Actualiza la sección de Saldos diarios en la página de
+            movimientos para comenzar la conciliación.
+          </p>
+        ) : (
+          <div className="text-base-content space-y-3 text-xs">
+            {report.previous && (
+              <div className="border-base-300 bg-base-200 text-base-content rounded-2xl border px-4 py-3">
+                Saldo cierre previo ({dayjs(report.previous.date).format("DD-MM-YYYY")} 23:59)
+                <span className="text-base-content ml-2 font-semibold">{fmtCLP(report.previous.balance)}</span>
+              </div>
+            )}
+
+            {lastRecorded && (
+              <div className="rounded-2xl border border-emerald-200/80 bg-emerald-50/80 px-4 py-3 text-emerald-700">
+                Último saldo registrado ({dayjs(lastRecorded.date).format("DD-MM-YYYY")} 23:59)
+                <span className="ml-2 font-semibold text-emerald-800">{fmtCLP(lastRecorded.recordedBalance!)}</span>
+                {lastRecorded.difference != null && Math.abs(lastRecorded.difference) > 1 && (
+                  <span className="ml-2 font-semibold text-rose-600">
+                    Dif: {formatSignedCLP(lastRecorded.difference)}
+                  </span>
+                )}
+              </div>
+            )}
+
+            {!lastRecorded && lastExpected && (
+              <div className="border-base-300 bg-base-200 text-base-content rounded-2xl border px-4 py-3">
+                Saldo esperado del último día ({dayjs(lastExpected.date).format("DD-MM-YYYY")}):
+                <span className="text-base-content ml-2 font-semibold">{fmtCLP(lastExpected.expectedBalance!)}</span>
+              </div>
+            )}
+
+            {mismatchDays.length > 0 ? (
+              <MismatchSummary mismatchDays={mismatchDays} />
+            ) : (
+              <p className="font-semibold text-emerald-600">
+                Los saldos registrados coinciden con los movimientos del rango seleccionado.
+              </p>
+            )}
           </div>
-        </div>
-      ) : !report ? (
-        <p className="text-sm text-base-content">Selecciona un rango para revisar los saldos de cierre registrados.</p>
-      ) : !hasRecordedBalances ? (
-        <p className="text-sm text-base-content">
-          Aún no registras saldos de cierre para este rango. Actualiza la sección de Saldos diarios en la página de
-          movimientos para comenzar la conciliación.
-        </p>
-      ) : (
-        <div className="space-y-3 text-xs text-base-content">
-          {report.previous && (
-            <div className="rounded-2xl border border-base-300 bg-base-200 px-4 py-3 text-base-content">
-              Saldo cierre previo ({dayjs(report.previous.date).format("DD-MM-YYYY")} 23:59)
-              <span className="ml-2 font-semibold text-base-content">{fmtCLP(report.previous.balance)}</span>
-            </div>
-          )}
-
-          {lastRecorded && (
-            <div className="rounded-2xl border border-emerald-200/80 bg-emerald-50/80 px-4 py-3 text-emerald-700">
-              Último saldo registrado ({dayjs(lastRecorded.date).format("DD-MM-YYYY")} 23:59)
-              <span className="ml-2 font-semibold text-emerald-800">{fmtCLP(lastRecorded.recordedBalance!)}</span>
-              {lastRecorded.difference != null && Math.abs(lastRecorded.difference) > 1 && (
-                <span className="ml-2 font-semibold text-rose-600">
-                  Dif: {formatSignedCLP(lastRecorded.difference)}
-                </span>
-              )}
-            </div>
-          )}
-
-          {!lastRecorded && lastExpected && (
-            <div className="rounded-2xl border border-base-300 bg-base-200 px-4 py-3 text-base-content">
-              Saldo esperado del último día ({dayjs(lastExpected.date).format("DD-MM-YYYY")}):
-              <span className="ml-2 font-semibold text-base-content">{fmtCLP(lastExpected.expectedBalance!)}</span>
-            </div>
-          )}
-
-          {mismatchDays.length > 0 ? (
-            <MismatchSummary mismatchDays={mismatchDays} />
-          ) : (
-            <p className="font-semibold text-emerald-600">
-              Los saldos registrados coinciden con los movimientos del rango seleccionado.
-            </p>
-          )}
-        </div>
-      )}
+        )}
+      </div>
     </section>
   );
 }
@@ -105,10 +109,10 @@ function MismatchSummary({ mismatchDays }: { mismatchDays: MismatchDay[] }) {
         Hay {mismatchDays.length} día{mismatchDays.length > 1 ? "s" : ""} con diferencias entre el saldo esperado y el
         registrado.
       </p>
-      <ul className="space-y-1 text-base-content">
+      <ul className="text-base-content space-y-1">
         {mismatchDays.slice(0, 5).map((day) => (
           <li key={day.date} className="flex flex-wrap items-center gap-2">
-            <span className="font-medium text-base-content">{dayjs(day.date).format("DD-MM-YYYY")}</span>
+            <span className="text-base-content font-medium">{dayjs(day.date).format("DD-MM-YYYY")}</span>
             <span>Diferencia:</span>
             <span className="font-semibold text-rose-600">{formatSignedCLP(day.difference ?? 0)}</span>
             {day.expectedBalance != null && (
