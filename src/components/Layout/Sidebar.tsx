@@ -144,12 +144,12 @@ export default function Sidebar({ isOpen, isMobile, onClose, isCollapsed = false
         )}
         aria-label="Navegación principal"
       >
-        <div className="flex h-full flex-col gap-4 overflow-hidden">
+        <div className="flex h-full flex-col gap-3 overflow-hidden">
           {/* User Profile Card */}
           <div
             className={cn(
               "border-base-300/40 from-base-100/85 via-base-200/70 to-base-100/50 rounded-2xl border bg-linear-to-br shadow-inner transition-all",
-              isCollapsed ? "p-2" : "p-3"
+              isCollapsed ? "p-2" : "p-2.5"
             )}
           >
             {isCollapsed ? (
@@ -184,15 +184,15 @@ export default function Sidebar({ isOpen, isMobile, onClose, isCollapsed = false
 
           {/* Navigation Links */}
           <nav className="muted-scrollbar flex-1 overflow-y-auto pr-1">
-            <div className="space-y-4">
+            <div className="space-y-3">
               {NAV_SECTIONS.map((section) => {
                 const visibleItems = section.items.filter((item) => !item.roles || hasRole(...item.roles));
                 if (!visibleItems.length) return null;
 
                 return (
-                  <section key={section.title} className={cn("space-y-1", isCollapsed && "text-center")}>
+                  <section key={section.title} className={cn("space-y-0.5", isCollapsed && "text-center")}>
                     {!isCollapsed && (
-                      <div className="mb-2 px-2">
+                      <div className="mb-1.5 px-2">
                         <p className="text-base-content/40 text-[10px] font-bold tracking-widest uppercase">
                           {section.title}
                         </p>
@@ -226,7 +226,7 @@ export default function Sidebar({ isOpen, isMobile, onClose, isCollapsed = false
                                 );
                               }
                               return cn(
-                                "group relative flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium active:scale-[0.98]",
+                                "group relative flex items-center gap-3 rounded-xl px-3 py-1.5 text-sm font-medium active:scale-[0.98]",
                                 active || isPending
                                   ? "bg-primary text-primary-content shadow-primary/20 shadow-md"
                                   : "text-base-content/70 hover:bg-base-100 hover:text-base-content"

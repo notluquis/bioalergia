@@ -62,7 +62,6 @@ const PersonManagementPage = lazy(() => import("@/features/users/pages/PersonMan
 const PersonDetailsPage = lazy(() => import("./pages/settings/PersonDetailsPage"));
 
 const CalendarSettingsPage = lazy(() => import("./pages/settings/CalendarSettingsPage"));
-const AccessSettingsPage = lazy(() => import("./pages/settings/AccessSettingsPage"));
 const InventorySettingsPage = lazy(() => import("./pages/settings/InventorySettingsPage"));
 const RolesSettingsPage = lazy(() => import("./pages/settings/RolesSettingsPage"));
 const DailyProductionBalancesSettingsPage = lazy(() => import("./pages/settings/DailyProductionBalancesPage"));
@@ -418,14 +417,6 @@ const router = createBrowserRouter([
             element: (
               <Suspense fallback={<PageLoader />}>
                 <SecuritySettingsPage />
-              </Suspense>
-            ),
-          },
-          {
-            path: "accesos",
-            element: (
-              <Suspense fallback={<PageLoader />}>
-                <AccessSettingsPage />
               </Suspense>
             ),
           },

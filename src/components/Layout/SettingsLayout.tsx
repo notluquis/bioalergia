@@ -15,7 +15,6 @@ const SETTINGS_SECTIONS = [
       { label: "Usuarios", to: "/settings/users", icon: Users, requiresAdmin: true },
       { label: "Personas", to: "/settings/people", icon: UserPlus, requiresAdmin: true },
       { label: "Roles y Permisos", to: "/settings/roles", icon: Shield, requiresAdmin: true },
-      { label: "Accesos", to: "/settings/accesos", icon: Fingerprint, requiresAdmin: true },
     ],
   },
   {
