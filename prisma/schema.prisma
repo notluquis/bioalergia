@@ -468,20 +468,20 @@ model DailyProductionBalance {
   id                    Int      @id @default(autoincrement())
   balanceDate           DateTime @map("balance_date") @db.Date
   
-  // Financials
+  // Income by payment method (how money came in)
   ingresoTarjetas       Int      @default(0) @map("ingreso_tarjetas")
   ingresoTransferencias Int      @default(0) @map("ingreso_transferencias")
   ingresoEfectivo       Int      @default(0) @map("ingreso_efectivo")
   gastosDiarios         Int      @default(0) @map("gastos_diarios")
   otrosAbonos           Int      @default(0) @map("otros_abonos")
   
-  // Counts
-  consultasCount        Int      @default(0) @map("consultas_count")
-  controlesCount        Int      @default(0) @map("controles_count")
-  testsCount            Int      @default(0) @map("tests_count")
-  vacunasCount          Int      @default(0) @map("vacunas_count")
-  licenciasCount        Int      @default(0) @map("licencias_count")
-  roxairCount           Int      @default(0) @map("roxair_count")
+  // Income by service type (what services generated money) - must match payment method total
+  consultasMonto        Int      @default(0) @map("consultas_monto")
+  controlesMonto        Int      @default(0) @map("controles_monto")
+  testsMonto            Int      @default(0) @map("tests_monto")
+  vacunasMonto          Int      @default(0) @map("vacunas_monto")
+  licenciasMonto        Int      @default(0) @map("licencias_monto")
+  roxairMonto           Int      @default(0) @map("roxair_monto")
   
   // Metadata
   comentarios           String?  @db.Text

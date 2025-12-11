@@ -13,12 +13,12 @@ type ListResponse = {
     subtotalIngresos: number;
     gastosDiarios: number;
     totalIngresos: number;
-    consultasCount: number;
-    controlesCount: number;
-    testsCount: number;
-    vacunasCount: number;
-    licenciasCount: number;
-    roxairCount: number;
+    consultasMonto: number;
+    controlesMonto: number;
+    testsMonto: number;
+    vacunasMonto: number;
+    licenciasMonto: number;
+    roxairMonto: number;
     otrosAbonos: number;
     total: number;
     comentarios: string | null;
@@ -56,12 +56,12 @@ const asBalance = (item: ListResponse["items"][number]): ProductionBalance => ({
   subtotalIngresos: item.subtotalIngresos,
   gastosDiarios: item.gastosDiarios,
   totalIngresos: item.totalIngresos,
-  consultas: item.consultasCount,
-  controles: item.controlesCount,
-  tests: item.testsCount,
-  vacunas: item.vacunasCount,
-  licencias: item.licenciasCount,
-  roxair: item.roxairCount,
+  consultas: item.consultasMonto,
+  controles: item.controlesMonto,
+  tests: item.testsMonto,
+  vacunas: item.vacunasMonto,
+  licencias: item.licenciasMonto,
+  roxair: item.roxairMonto,
   otrosAbonos: item.otrosAbonos,
   total: item.total,
   comentarios: item.comentarios,
