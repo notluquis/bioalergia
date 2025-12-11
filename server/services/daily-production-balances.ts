@@ -13,12 +13,12 @@ export type ProductionBalanceRecord = {
   subtotalIngresos: number;
   gastosDiarios: number;
   totalIngresos: number;
-  consultasCount: number;
-  controlesCount: number;
-  testsCount: number;
-  vacunasCount: number;
-  licenciasCount: number;
-  roxairCount: number;
+  consultasMonto: number;
+  controlesMonto: number;
+  testsMonto: number;
+  vacunasMonto: number;
+  licenciasMonto: number;
+  roxairMonto: number;
   otrosAbonos: number;
   total: number;
   comentarios: string | null;
@@ -48,12 +48,12 @@ export type ProductionBalancePayload = {
   ingresoEfectivo: number;
   gastosDiarios: number;
   otrosAbonos: number;
-  consultasCount: number;
-  controlesCount: number;
-  testsCount: number;
-  vacunasCount: number;
-  licenciasCount: number;
-  roxairCount: number;
+  consultasMonto: number;
+  controlesMonto: number;
+  testsMonto: number;
+  vacunasMonto: number;
+  licenciasMonto: number;
+  roxairMonto: number;
   comentarios: string | null;
   status: ProductionBalanceStatus;
   changeReason?: string | null;
@@ -91,12 +91,12 @@ function mapBalanceRecord(balance: BalanceWithRelations): ProductionBalanceRecor
     subtotalIngresos,
     gastosDiarios: balance.gastosDiarios,
     totalIngresos,
-    consultasCount: balance.consultasCount,
-    controlesCount: balance.controlesCount,
-    testsCount: balance.testsCount,
-    vacunasCount: balance.vacunasCount,
-    licenciasCount: balance.licenciasCount,
-    roxairCount: balance.roxairCount,
+    consultasMonto: balance.consultasMonto,
+    controlesMonto: balance.controlesMonto,
+    testsMonto: balance.testsMonto,
+    vacunasMonto: balance.vacunasMonto,
+    licenciasMonto: balance.licenciasMonto,
+    roxairMonto: balance.roxairMonto,
     otrosAbonos: balance.otrosAbonos,
     total,
     comentarios: balance.comentarios,
@@ -152,12 +152,12 @@ export async function createProductionBalance(
       ingresoTransferencias: asInt(payload.ingresoTransferencias),
       ingresoEfectivo: asInt(payload.ingresoEfectivo),
       gastosDiarios: asInt(payload.gastosDiarios),
-      consultasCount: asInt(payload.consultasCount),
-      controlesCount: asInt(payload.controlesCount),
-      testsCount: asInt(payload.testsCount),
-      vacunasCount: asInt(payload.vacunasCount),
-      licenciasCount: asInt(payload.licenciasCount),
-      roxairCount: asInt(payload.roxairCount),
+      consultasMonto: asInt(payload.consultasMonto),
+      controlesMonto: asInt(payload.controlesMonto),
+      testsMonto: asInt(payload.testsMonto),
+      vacunasMonto: asInt(payload.vacunasMonto),
+      licenciasMonto: asInt(payload.licenciasMonto),
+      roxairMonto: asInt(payload.roxairMonto),
       otrosAbonos: asInt(payload.otrosAbonos),
       comentarios: payload.comentarios,
       status: payload.status,
@@ -192,12 +192,12 @@ export async function updateProductionBalance(
       ingresoTransferencias: asInt(payload.ingresoTransferencias),
       ingresoEfectivo: asInt(payload.ingresoEfectivo),
       gastosDiarios: asInt(payload.gastosDiarios),
-      consultasCount: asInt(payload.consultasCount),
-      controlesCount: asInt(payload.controlesCount),
-      testsCount: asInt(payload.testsCount),
-      vacunasCount: asInt(payload.vacunasCount),
-      licenciasCount: asInt(payload.licenciasCount),
-      roxairCount: asInt(payload.roxairCount),
+      consultasMonto: asInt(payload.consultasMonto),
+      controlesMonto: asInt(payload.controlesMonto),
+      testsMonto: asInt(payload.testsMonto),
+      vacunasMonto: asInt(payload.vacunasMonto),
+      licenciasMonto: asInt(payload.licenciasMonto),
+      roxairMonto: asInt(payload.roxairMonto),
       otrosAbonos: asInt(payload.otrosAbonos),
       comentarios: payload.comentarios,
       status: payload.status,
