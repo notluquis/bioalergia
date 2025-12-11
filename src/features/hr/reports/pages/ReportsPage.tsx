@@ -160,7 +160,7 @@ export default function ReportsPage() {
   }
 
   return (
-    <section className="space-y-6">
+    <section className="mx-auto max-w-7xl space-y-6">
       {/* Header */}
       <header>
         <h1 className="text-primary text-2xl font-bold">Reportería de horas</h1>

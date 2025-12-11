@@ -112,9 +112,9 @@ export default function TransactionsMovements() {
   };
 
   return (
-    <section className="space-y-6">
+    <section className="mx-auto max-w-7xl space-y-6">
       {!canView ? (
-        <div className="card bg-base-100 border border-error/20 p-6 text-sm text-error shadow-sm">
+        <div className="card bg-base-100 border-error/20 text-error border p-6 text-sm shadow-sm">
           No tienes permisos para ver los movimientos almacenados.
         </div>
       ) : (
@@ -144,14 +144,14 @@ export default function TransactionsMovements() {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div className="space-y-2">
               <h1 className="typ-title text-base-content">Movimientos en base</h1>
-              <p className="max-w-2xl typ-body text-base-content/70">
+              <p className="typ-body text-base-content/70 max-w-2xl">
                 Los datos provienen de la tabla <code>mp_transactions</code>. Ajusta el saldo inicial para recalcular el
                 saldo acumulado. Para consultas o soporte escribe a<strong> {settings.supportEmail}</strong>.
               </p>
             </div>
             <div className="flex flex-wrap items-end gap-3">
-              <div className="flex flex-col gap-1 w-32">
-                <span className="text-xs font-semibold uppercase tracking-wide text-base-content">
+              <div className="flex w-32 flex-col gap-1">
+                <span className="text-base-content text-xs font-semibold tracking-wide uppercase">
                   Saldo inicial (CLP)
                 </span>
                 <Input
@@ -163,8 +163,8 @@ export default function TransactionsMovements() {
                   inputMode="decimal"
                 />
               </div>
-              <div className="flex flex-col gap-1 w-40">
-                <span className="text-xs font-semibold uppercase tracking-wide text-base-content">Mes rápido</span>
+              <div className="flex w-40 flex-col gap-1">
+                <span className="text-base-content text-xs font-semibold tracking-wide uppercase">Mes rápido</span>
                 <Input
                   as="select"
                   value={quickRange}

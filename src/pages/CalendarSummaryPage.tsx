@@ -36,26 +36,26 @@ type AggregationRow = {
 
 function AggregationCard({ title, rows }: { title: string; rows: AggregationRow[] }) {
   return (
-    <section className="space-y-3 rounded-2xl border border-base-300 p-5 text-sm shadow-sm bg-base-100">
+    <section className="border-base-300 bg-base-100 space-y-3 rounded-2xl border p-5 text-sm shadow-sm">
       <header className="flex items-center justify-between gap-2">
-        <h3 className="text-base font-semibold text-secondary">{title}</h3>
-        <span className="rounded-full bg-base-200 px-3 py-1 text-xs font-semibold text-base-content/80">
+        <h3 className="text-secondary text-base font-semibold">{title}</h3>
+        <span className="bg-base-200 text-base-content/80 rounded-full px-3 py-1 text-xs font-semibold">
           {rows.length}
         </span>
       </header>
       {rows.length === 0 ? (
-        <p className="text-xs text-base-content/60">Sin datos para los filtros aplicados.</p>
+        <p className="text-base-content/60 text-xs">Sin datos para los filtros aplicados.</p>
       ) : (
         <ul className="space-y-2">
           {rows.map((row) => (
             <li key={`${row.label}-${row.hint ?? ""}`} className="flex items-baseline justify-between gap-3">
               <div className="flex flex-col">
-                <span className="text-sm font-medium text-base-content">{row.label}</span>
-                {row.hint && <span className="text-xs text-base-content/50">{row.hint}</span>}
+                <span className="text-base-content text-sm font-medium">{row.label}</span>
+                {row.hint && <span className="text-base-content/50 text-xs">{row.hint}</span>}
               </div>
-              <span className="text-sm font-semibold text-primary">{numberFormatter.format(row.value)}</span>
+              <span className="text-primary text-sm font-semibold">{numberFormatter.format(row.value)}</span>
               {(row.amountExpected != null || row.amountPaid != null) && (
-                <span className="text-xs text-base-content/60">
+                <span className="text-base-content/60 text-xs">
                   {row.amountExpected != null ? `Esperado ${currencyFormatter.format(row.amountExpected)}` : ""}
                   {row.amountExpected != null && row.amountPaid != null ? " · " : ""}
                   {row.amountPaid != null ? `Pagado ${currencyFormatter.format(row.amountPaid)}` : ""}
@@ -261,11 +261,11 @@ function CalendarSummaryPage() {
   );
 
   return (
-    <section className="space-y-6">
+    <section className="mx-auto max-w-7xl space-y-6">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-2">
-          <h1 className="text-2xl font-bold text-primary">Eventos de Calendario</h1>
-          <p className="text-sm text-base-content/70">
+          <h1 className="text-primary text-2xl font-bold">Eventos de Calendario</h1>
+          <p className="text-base-content/70 text-sm">
             Visualiza los eventos sincronizados desde Google Calendar y analiza su distribución por periodos.
           </p>
         </div>
@@ -275,7 +275,7 @@ function CalendarSummaryPage() {
           </Button>
           <Link
             to="/calendar/classify"
-            className="text-xs font-semibold uppercase tracking-wide text-secondary underline"
+            className="text-secondary text-xs font-semibold tracking-wide uppercase underline"
           >
             Clasificar pendientes
           </Link>
@@ -283,7 +283,7 @@ function CalendarSummaryPage() {
       </header>
 
       <form
-        className="grid gap-4 rounded-2xl border border-primary/15 bg-base-100 p-6 text-xs text-base-content shadow-sm md:grid-cols-6"
+        className="border-primary/15 bg-base-100 text-base-content grid gap-4 rounded-2xl border p-6 text-xs shadow-sm md:grid-cols-6"
         onSubmit={(event) => {
           event.preventDefault();
           applyFilters();
@@ -416,9 +416,9 @@ function CalendarSummaryPage() {
           <section className="surface-elevated rounded-2xl p-5 shadow-md">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-3">
-                <div className="rounded-xl bg-base-200/60 px-3 py-2">
-                  <p className="text-sm font-semibold text-base-content">{title}</p>
-                  <p className="text-xs text-base-content/60">
+                <div className="bg-base-200/60 rounded-xl px-3 py-2">
+                  <p className="text-base-content text-sm font-semibold">{title}</p>
+                  <p className="text-base-content/60 text-xs">
                     {syncing
                       ? "Consultando eventos y actualizando la base."
                       : syncError
@@ -427,15 +427,15 @@ function CalendarSummaryPage() {
                   </p>
                 </div>
                 {syncing && <span className="loading loading-spinner text-primary" aria-label="Sincronizando" />}
-                {syncError && <span className="text-xs font-semibold text-error">Revisa los detalles abajo.</span>}
+                {syncError && <span className="text-error text-xs font-semibold">Revisa los detalles abajo.</span>}
                 {!syncing && syncDurationMs != null && !syncError && (
-                  <span className="rounded-full bg-base-200 px-3 py-1 text-xs text-base-content/70">
+                  <span className="bg-base-200 text-base-content/70 rounded-full px-3 py-1 text-xs">
                     Duración total: {formatDuration(syncDurationMs)}
                   </span>
                 )}
               </div>
               <div className="flex gap-2">
-                <span className="rounded-full bg-base-200/80 px-3 py-1 text-xs text-base-content/70">
+                <span className="bg-base-200/80 text-base-content/70 rounded-full px-3 py-1 text-xs">
                   {dayjs().format("DD MMM YYYY · HH:mm")}
                 </span>
                 <Button type="button" variant="secondary" size="sm" disabled={syncing} onClick={() => syncNow()}>
@@ -445,24 +445,24 @@ function CalendarSummaryPage() {
             </div>
 
             {lastSyncInfo && !syncing && !syncError && (
-              <div className="mt-4 grid gap-2 text-xs text-base-content md:grid-cols-2">
+              <div className="text-base-content mt-4 grid gap-2 text-xs md:grid-cols-2">
                 <p>
-                  <span className="font-semibold text-base-content">Nuevas:</span>{" "}
+                  <span className="text-base-content font-semibold">Nuevas:</span>{" "}
                   {numberFormatter.format(lastSyncInfo.inserted)}
                 </p>
                 <p>
-                  <span className="font-semibold text-base-content">Actualizadas:</span>{" "}
+                  <span className="text-base-content font-semibold">Actualizadas:</span>{" "}
                   {numberFormatter.format(lastSyncInfo.updated)}
                 </p>
                 <p>
-                  <span className="font-semibold text-base-content">Omitidas:</span>{" "}
+                  <span className="text-base-content font-semibold">Omitidas:</span>{" "}
                   {numberFormatter.format(lastSyncInfo.skipped)}
                 </p>
                 <p>
-                  <span className="font-semibold text-base-content">Filtradas:</span>{" "}
+                  <span className="text-base-content font-semibold">Filtradas:</span>{" "}
                   {numberFormatter.format(lastSyncInfo.excluded)}
                 </p>
-                <p className="md:col-span-2 text-base-content/60">
+                <p className="text-base-content/60 md:col-span-2">
                   Ejecutado el {dayjs(lastSyncInfo.fetchedAt).format("DD MMM YYYY HH:mm")}
                   {lastSyncInfo.logId && (
                     <>
@@ -476,7 +476,7 @@ function CalendarSummaryPage() {
               </div>
             )}
 
-            {syncError && <p className="mt-3 text-xs text-error">{syncError}</p>}
+            {syncError && <p className="text-error mt-3 text-xs">{syncError}</p>}
 
             {syncProgress.length > 0 && (
               <ul className="mt-4 space-y-3">
@@ -485,18 +485,18 @@ function CalendarSummaryPage() {
                   const details = formatDetails(step.details);
                   const duration = formatDuration(step.durationMs);
                   return (
-                    <li key={step.id} className="rounded-2xl border border-base-300/60 bg-base-100/70 px-4 py-3">
+                    <li key={step.id} className="border-base-300/60 bg-base-100/70 rounded-2xl border px-4 py-3">
                       <div className="flex items-center justify-between gap-3">
                         <div className="flex items-center gap-3">
                           <span className={`h-2.5 w-2.5 rounded-full ${dotClass[step.status]}`} />
-                          <p className="text-sm font-semibold text-base-content">{step.label}</p>
+                          <p className="text-base-content text-sm font-semibold">{step.label}</p>
                         </div>
                         <span className={`rounded-full px-3 py-1 text-xs font-semibold ${badgeClass[step.status]}`}>
                           {status}
                         </span>
                       </div>
                       {(details || duration) && (
-                        <p className="mt-2 text-xs text-base-content/60">
+                        <p className="text-base-content/60 mt-2 text-xs">
                           {details}
                           {details && duration ? " · " : ""}
                           {duration ? `Tiempo: ${duration}` : ""}
@@ -512,21 +512,21 @@ function CalendarSummaryPage() {
       })()}
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-2xl border border-base-300 p-4 text-sm shadow-sm bg-base-100">
-          <p className="text-xs font-semibold uppercase tracking-wide text-base-content/80">Eventos en el rango</p>
-          <p className="mt-2 text-2xl font-semibold text-primary">{numberFormatter.format(totals.events)}</p>
+        <div className="border-base-300 bg-base-100 rounded-2xl border p-4 text-sm shadow-sm">
+          <p className="text-base-content/80 text-xs font-semibold tracking-wide uppercase">Eventos en el rango</p>
+          <p className="text-primary mt-2 text-2xl font-semibold">{numberFormatter.format(totals.events)}</p>
         </div>
-        <div className="rounded-2xl border border-base-300 p-4 text-sm shadow-sm bg-base-100">
-          <p className="text-xs font-semibold uppercase tracking-wide text-base-content/80">Días con eventos</p>
-          <p className="mt-2 text-2xl font-semibold text-primary">{numberFormatter.format(totals.days)}</p>
+        <div className="border-base-300 bg-base-100 rounded-2xl border p-4 text-sm shadow-sm">
+          <p className="text-base-content/80 text-xs font-semibold tracking-wide uppercase">Días con eventos</p>
+          <p className="text-primary mt-2 text-2xl font-semibold">{numberFormatter.format(totals.days)}</p>
         </div>
-        <div className="rounded-2xl border border-base-300 p-4 text-sm shadow-sm bg-base-100">
-          <p className="text-xs font-semibold uppercase tracking-wide text-base-content/80">Monto esperado</p>
-          <p className="mt-2 text-2xl font-semibold text-primary">{currencyFormatter.format(totals.amountExpected)}</p>
+        <div className="border-base-300 bg-base-100 rounded-2xl border p-4 text-sm shadow-sm">
+          <p className="text-base-content/80 text-xs font-semibold tracking-wide uppercase">Monto esperado</p>
+          <p className="text-primary mt-2 text-2xl font-semibold">{currencyFormatter.format(totals.amountExpected)}</p>
         </div>
-        <div className="rounded-2xl border border-base-300 p-4 text-sm shadow-sm bg-base-100">
-          <p className="text-xs font-semibold uppercase tracking-wide text-base-content/80">Monto pagado</p>
-          <p className="mt-2 text-2xl font-semibold text-primary">{currencyFormatter.format(totals.amountPaid)}</p>
+        <div className="border-base-300 bg-base-100 rounded-2xl border p-4 text-sm shadow-sm">
+          <p className="text-base-content/80 text-xs font-semibold tracking-wide uppercase">Monto pagado</p>
+          <p className="text-primary mt-2 text-2xl font-semibold">{currencyFormatter.format(totals.amountPaid)}</p>
         </div>
       </section>
 

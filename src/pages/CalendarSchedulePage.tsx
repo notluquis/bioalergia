@@ -109,14 +109,14 @@ function CalendarSchedulePage() {
   const allEvents = useMemo(() => daily?.days.flatMap((day) => day.events) ?? [], [daily?.days]);
 
   return (
-    <section className="space-y-6">
+    <section className="mx-auto max-w-7xl space-y-6">
       <header className="space-y-2">
-        <h1 className="text-2xl font-bold text-primary">{tc("scheduleTitle")}</h1>
-        <p className="text-sm text-base-content/70">{tc("scheduleDescription")}</p>
+        <h1 className="text-primary text-2xl font-bold">{tc("scheduleTitle")}</h1>
+        <p className="text-base-content/70 text-sm">{tc("scheduleDescription")}</p>
       </header>
 
       <form
-        className="space-y-4 rounded-2xl border border-primary/15 bg-base-100 p-6 text-xs text-base-content shadow-sm"
+        className="border-primary/15 bg-base-100 text-base-content space-y-4 rounded-2xl border p-6 text-xs shadow-sm"
         onSubmit={(event) => {
           event.preventDefault();
           applyFilters();
@@ -217,7 +217,7 @@ function CalendarSchedulePage() {
       <ScheduleCalendar events={allEvents} loading={loading} />
 
       {summary && (
-        <p className="text-xs text-base-content/60">
+        <p className="text-base-content/60 text-xs">
           {tc("activeRange", {
             from: dayjs(summary.filters.from).format("DD MMM YYYY"),
             to: dayjs(summary.filters.to).format("DD MMM YYYY"),

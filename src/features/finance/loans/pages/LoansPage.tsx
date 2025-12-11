@@ -202,9 +202,9 @@ export default function LoansPage() {
 
   if (!canView) {
     return (
-      <section className="space-y-6">
+      <section className="mx-auto max-w-7xl space-y-6">
         <div className="space-y-2">
-          <h1 className="text-2xl font-bold text-primary">Préstamos y créditos</h1>
+          <h1 className="text-primary text-2xl font-bold">Préstamos y créditos</h1>
         </div>
         <Alert variant="error">No tienes permisos para ver los préstamos registrados.</Alert>
       </section>
@@ -212,20 +212,20 @@ export default function LoansPage() {
   }
 
   return (
-    <section className="space-y-6">
+    <section className="mx-auto max-w-7xl space-y-6">
       <div className="space-y-2">
-        <h1 className="text-2xl font-bold text-primary">Préstamos y créditos</h1>
-        <p className="text-sm text-base-content/70">
+        <h1 className="text-primary text-2xl font-bold">Préstamos y créditos</h1>
+        <p className="text-base-content/70 text-sm">
           Gestiona préstamos internos, cronogramas de pago y vincula cada cuota con las transacciones reales.
         </p>
       </div>
 
       {globalError && <Alert variant="error">{globalError}</Alert>}
 
-      {loadingList && <p className="text-xs text-base-content/50">Actualizando listado de préstamos...</p>}
+      {loadingList && <p className="text-base-content/50 text-xs">Actualizando listado de préstamos...</p>}
 
       <div className="grid gap-4 lg:grid-cols-[300px,1fr]">
-        <div className="rounded-2xl border border-base-300 bg-base-100 p-6 shadow-sm min-h-[70vh]">
+        <div className="border-base-300 bg-base-100 min-h-[70vh] rounded-2xl border p-6 shadow-sm">
           <LoanList
             loans={loans}
             selectedId={selectedId}
@@ -237,7 +237,7 @@ export default function LoansPage() {
             canManage={canManage}
           />
         </div>
-        <div className="rounded-2xl border border-base-300 bg-base-100 p-6 shadow-sm min-h-[70vh]">
+        <div className="border-base-300 bg-base-100 min-h-[70vh] rounded-2xl border p-6 shadow-sm">
           <LoanDetail
             loan={selectedLoan}
             schedules={schedules}

@@ -238,14 +238,14 @@ function CalendarHeatmapPage() {
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   return (
-    <section className="space-y-6">
+    <section className="mx-auto max-w-7xl space-y-6">
       <header className="space-y-2">
-        <h1 className="text-2xl font-bold text-primary">{tc("heatmapTitle")}</h1>
-        <p className="text-sm text-base-content/70">{tc("heatmapDescription")}</p>
+        <h1 className="text-primary text-2xl font-bold">{tc("heatmapTitle")}</h1>
+        <p className="text-base-content/70 text-sm">{tc("heatmapDescription")}</p>
       </header>
 
       <form
-        className="space-y-4 rounded-2xl border border-primary/15 bg-base-100 p-6 text-xs text-base-content/80 shadow-sm"
+        className="border-primary/15 bg-base-100 text-base-content/80 space-y-4 rounded-2xl border p-6 text-xs shadow-sm"
         onSubmit={(event) => {
           event.preventDefault();
           handleApply().catch(() => {
@@ -332,14 +332,14 @@ function CalendarHeatmapPage() {
       {error && <Alert variant="error">{error}</Alert>}
 
       {initializing && !summary ? (
-        <p className="text-sm text-base-content/60">{tc("loading")}</p>
+        <p className="text-base-content/60 text-sm">{tc("loading")}</p>
       ) : summary ? (
         <section className="space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-base-content/60">
+            <h2 className="text-base-content/60 text-sm font-semibold tracking-wide uppercase">
               {tc("heatmapSection")}
             </h2>
-            <span className="text-xs text-base-content/60">
+            <span className="text-base-content/60 text-xs">
               {tc("heatmapRange", {
                 start: rangeStartLabel,
                 end: rangeEndLabel,
@@ -347,7 +347,7 @@ function CalendarHeatmapPage() {
             </span>
           </div>
 
-          <div className="grid gap-4 lg:grid-cols-3 items-start">
+          <div className="grid items-start gap-4 lg:grid-cols-3">
             {heatmapMonths.map((month) => (
               <HeatmapMonth
                 key={month.format("YYYY-MM")}
@@ -357,7 +357,7 @@ function CalendarHeatmapPage() {
               />
             ))}
           </div>
-          <p className="text-xs text-base-content/60">
+          <p className="text-base-content/60 text-xs">
             {tc("heatmapTotals", {
               events: numberFormatter.format(summary.totals.events),
               expected: currencyFormatter.format(summary.totals.amountExpected),

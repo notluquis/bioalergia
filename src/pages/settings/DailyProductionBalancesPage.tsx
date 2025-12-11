@@ -233,7 +233,7 @@ export default function DailyProductionBalancesPage() {
   };
 
   return (
-    <section className="space-y-6">
+    <section className="mx-auto max-w-7xl space-y-6">
       <div className="flex flex-col gap-3">
         <div className="flex items-center gap-3">
           <div className="bg-primary/10 text-primary flex h-12 w-12 items-center justify-center rounded-2xl">
