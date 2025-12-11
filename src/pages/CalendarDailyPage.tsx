@@ -273,7 +273,7 @@ function CalendarDailyPage() {
   return (
     <section className={PAGE_CONTAINER}>
       <header className={SPACE_Y_TIGHT}>
-        <h1 className={TITLE_LG}>Detalle diario de eventos</h1>
+        <h1 className={TITLE_LG}>Detalle diario</h1>
         <p className="text-base-content/70 text-sm">
           Revisa el detalle de cada jornada con los eventos sincronizados. Los días aparecen colapsados para que puedas
           expandir solo los que te interesen.

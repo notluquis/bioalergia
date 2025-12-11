@@ -10,7 +10,7 @@
     "daily": "Daily detail",
     "scheduleTitle": "Interactive calendar",
     "scheduleDescription": "Browse your Google Calendar events with monthly, weekly and daily views. Filter by calendar, event type and classification.",
-    "heatmapTitle": "Calendar heat map",
+    "heatmapTitle": "Heat map",
     "heatmapDescription": "See how events are distributed by week and day. All data is shown by default; use the filters if you need to narrow the view.",
     "filters": {
       "from": "From",
