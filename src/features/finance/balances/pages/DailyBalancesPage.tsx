@@ -72,20 +72,20 @@ export default function DailyBalances() {
   const derivedInitial = useMemo(() => (report ? deriveInitialBalance(report) : null), [report]);
 
   return (
-    <section className="space-y-6">
+    <section className="mx-auto max-w-7xl space-y-6">
       {!hasRole("GOD", "ADMIN", "ANALYST", "VIEWER") ? (
         <Alert variant="error">No tienes permisos para ver los saldos diarios.</Alert>
       ) : (
         <>
           <div className="bg-base-100 flex flex-col gap-4 p-6 sm:flex-row sm:items-end sm:justify-between">
             <div className="space-y-2">
-              <h1 className="text-2xl font-bold text-primary drop-shadow-sm">Saldos diarios</h1>
-              <p className="max-w-2xl text-sm text-base-content/70">
+              <h1 className="text-primary text-2xl font-bold drop-shadow-sm">Saldos diarios</h1>
+              <p className="text-base-content/70 max-w-2xl text-sm">
                 Registra el saldo de la cuenta a las 23:59 de cada día para conciliar los movimientos almacenados en{" "}
                 <code>mp_transactions</code>. Para consultas, escribe a<strong> {settings.supportEmail}</strong>.
               </p>
               {derivedInitial != null && (
-                <p className="text-xs text-base-content/60">
+                <p className="text-base-content/60 text-xs">
                   Saldo anterior calculado: <strong>{formatBalanceInput(derivedInitial)}</strong>
                 </p>
               )}

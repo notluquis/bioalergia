@@ -550,11 +550,11 @@ export default function TimesheetsPage() {
   }
 
   return (
-    <section className="space-y-6">
+    <section className="mx-auto max-w-7xl space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-2">
-          <h1 className="text-2xl font-bold text-primary">Registro de horas y pagos</h1>
-          <p className="max-w-2xl text-sm text-base-content/70">
+          <h1 className="text-primary text-2xl font-bold">Registro de horas y pagos</h1>
+          <p className="text-base-content/70 max-w-2xl text-sm">
             Consolida horas trabajadas, extras y montos líquidos por trabajador. Selecciona el mes y trabajador, luego
             completa la tabla diaria sin volver a guardar cada fila.
           </p>
@@ -610,7 +610,7 @@ export default function TimesheetsPage() {
                 type="button"
                 variant="secondary"
                 size="sm"
-                className="text-xs text-primary underline mt-1"
+                className="text-primary mt-1 text-xs underline"
                 onClick={() => setVisibleCount((c) => c + 4)}
               >
                 Ver más meses...
@@ -647,7 +647,7 @@ export default function TimesheetsPage() {
                   type="button"
                   disabled
                   variant="primary"
-                  className="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-primary/70 cursor-wait"
+                  className="bg-primary/70 cursor-wait rounded-xl px-4 py-2 text-sm font-semibold text-white"
                 >
                   Cargando exportador...
                 </Button>

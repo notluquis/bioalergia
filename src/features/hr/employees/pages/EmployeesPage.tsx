@@ -85,7 +85,7 @@ export default function EmployeesPage() {
   }
 
   return (
-    <section className="space-y-6">
+    <section className="mx-auto max-w-7xl space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-2">
           <h1 className="text-primary text-2xl font-bold">Equipo y tarifas</h1>

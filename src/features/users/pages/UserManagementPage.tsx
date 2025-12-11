@@ -23,6 +23,7 @@ import Input from "@/components/ui/Input";
 import { cn } from "@/lib/utils";
 import { apiClient } from "@/lib/apiClient";
 import { getPersonInitials, getPersonFullName } from "@/lib/person";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/Tooltip";
 
 dayjs.extend(relativeTime);
 dayjs.locale("es");
@@ -177,11 +178,34 @@ export default function UserManagementPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-7xl space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-base-content text-2xl font-bold">Usuarios y Seguridad</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-base-content text-2xl font-bold">Usuarios y Seguridad</h1>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button className="text-info hover:text-info/80 transition-colors">
+                    <ShieldCheck size={18} />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="max-w-xs">
+                  <div className="space-y-1.5 text-xs">
+                    <p className="font-semibold">Recomendaciones de Seguridad</p>
+                    <p>
+                      <strong>MFA:</strong> Código de verificación adicional.
+                    </p>
+                    <p>
+                      <strong>Passkey:</strong> Huella digital o Face ID.
+                    </p>
+                    <p className="text-xs opacity-75">Se recomienda activar ambas.</p>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
           <p className="text-base-content/60 text-sm">
             Gestiona el acceso, roles y seguridad de las cuentas del sistema.
           </p>
@@ -406,29 +430,6 @@ export default function UserManagementPage() {
             </tbody>
           </table>
         </div>
-
-        {/* Security Recommendations */}
-        {users && users.length > 0 && (
-          <div className="bg-info/10 mt-6 rounded-lg p-4">
-            <div className="flex items-start gap-3">
-              <ShieldCheck className="text-info mt-0.5 size-5" />
-              <div className="flex-1">
-                <h3 className="text-info font-semibold">Recomendaciones de Seguridad</h3>
-                <ul className="text-base-content/70 mt-2 space-y-1 text-sm">
-                  <li>
-                    • <strong>MFA (Autenticación Multifactor):</strong> Añade una capa extra de seguridad solicitando un
-                    código de verificación además de la contraseña.
-                  </li>
-                  <li>
-                    • <strong>Passkey (Biometría):</strong> Permite iniciar sesión de forma segura usando huella
-                    digital, reconocimiento facial o clave de dispositivo.
-                  </li>
-                  <li>• Se recomienda que todos los usuarios activen ambas opciones para máxima seguridad.</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
