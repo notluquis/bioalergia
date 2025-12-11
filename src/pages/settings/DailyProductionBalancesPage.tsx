@@ -612,25 +612,7 @@ export default function DailyProductionBalancesPage() {
                           />
                         </label>
                       </div>
-                      <div className="form-control">
-                        <label className="label py-1">
-                          <span className="label-text text-sm font-medium">Test</span>
-                        </label>
-                        <label className="input input-bordered input-sm flex items-center gap-2">
-                          <span className="text-base-content/60">$</span>
-                          <input
-                            type="text"
-                            inputMode="numeric"
-                            value={formatInputValue(form.tests)}
-                            onChange={(e) => {
-                              const parsed = parseInputValue(e.target.value);
-                              setForm((prev) => ({ ...prev, tests: parsed }));
-                            }}
-                            className="grow bg-transparent"
-                            placeholder="0"
-                          />
-                        </label>
-                      </div>
+                      {/* Test field hidden per user request */}
                       <div className="form-control">
                         <label className="label py-1">
                           <span className="label-text flex items-center gap-1.5 text-sm font-medium">

@@ -16,7 +16,7 @@ import type { CalendarUnclassifiedEvent } from "@/features/calendar/types";
 
 dayjs.locale("es");
 
-const CATEGORY_CHOICES = ["Tratamiento subcutáneo", "Test y exámenes"];
+const CATEGORY_CHOICES = ["Tratamiento subcutáneo"];
 const TREATMENT_STAGE_CHOICES = ["Mantención", "Inducción"];
 
 const currencyFormatter = new Intl.NumberFormat("es-CL", {
@@ -217,48 +217,47 @@ function CalendarClassificationPage() {
       <Tooltip.Provider delayDuration={200}>
         <section className="space-y-6">
           <header className="space-y-2">
-            <h1 className="text-2xl font-bold text-primary">Clasificar eventos pendientes</h1>
-            <p className="text-sm text-base-content/70">
+            <h1 className="text-primary text-2xl font-bold">Clasificar eventos pendientes</h1>
+            <p className="text-base-content/70 text-sm">
               Revisa los eventos que no pudieron clasificarse automáticamente. Asigna la categoría correcta, confirma
               montos y marca si la persona asistió.
             </p>
             <Tooltip.Root>
               <Tooltip.Trigger asChild>
-                <span className="inline-flex cursor-help items-center gap-1 text-xs text-base-content/60">
+                <span className="text-base-content/60 inline-flex cursor-help items-center gap-1 text-xs">
                   ¿Cómo se clasifica?
-                  <span className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-base-300 bg-base-100 text-xs text-base-content/60">
+                  <span className="border-base-300 bg-base-100 text-base-content/60 inline-flex h-4 w-4 items-center justify-center rounded-full border text-xs">
                     i
                   </span>
                 </span>
               </Tooltip.Trigger>
               <Tooltip.Content
-                className="rounded-md bg-base-300 px-3 py-2 text-xs text-base-content shadow-lg"
+                className="bg-base-300 text-base-content rounded-md px-3 py-2 text-xs shadow-lg"
                 side="bottom"
                 align="start"
               >
-                Usa &quot;Tratamiento subcutáneo&quot; para vacunas (vac, clustoid) y &quot;Test y exámenes&quot; para
-                paneles o multitest.
+                Usa &quot;Tratamiento subcutáneo&quot; para vacunas (vac, clustoid) y otros tratamientos.
                 <Tooltip.Arrow className="fill-base-300" />
               </Tooltip.Content>
             </Tooltip.Root>
           </header>
 
-          <div className="grid gap-4 rounded-2xl border border-base-300 bg-base-100 p-4 text-xs shadow-sm sm:grid-cols-3">
+          <div className="border-base-300 bg-base-100 grid gap-4 rounded-2xl border p-4 text-xs shadow-sm sm:grid-cols-3">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-base-content/80">Pendientes</p>
-              <p className="mt-1 text-xl font-semibold text-primary">{pendingCount}</p>
+              <p className="text-base-content/80 text-xs font-semibold tracking-wide uppercase">Pendientes</p>
+              <p className="text-primary mt-1 text-xl font-semibold">{pendingCount}</p>
             </div>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-base-content/80">
+              <p className="text-base-content/80 text-xs font-semibold tracking-wide uppercase">
                 Monto esperado sugerido
               </p>
-              <p className="mt-1 text-xl font-semibold text-primary">{currencyFormatter.format(totals.expected)}</p>
+              <p className="text-primary mt-1 text-xl font-semibold">{currencyFormatter.format(totals.expected)}</p>
             </div>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-base-content/80">
+              <p className="text-base-content/80 text-xs font-semibold tracking-wide uppercase">
                 Monto pagado sugerido
               </p>
-              <p className="mt-1 text-xl font-semibold text-primary">{currencyFormatter.format(totals.paid)}</p>
+              <p className="text-primary mt-1 text-xl font-semibold">{currencyFormatter.format(totals.paid)}</p>
             </div>
           </div>
 
@@ -286,24 +285,24 @@ function CalendarClassificationPage() {
               return (
                 <article
                   key={field.id}
-                  className="space-y-4 rounded-2xl border border-base-300 bg-base-100 p-5 text-sm shadow-sm"
+                  className="border-base-300 bg-base-100 space-y-4 rounded-2xl border p-5 text-sm shadow-sm"
                 >
                   <header className="flex flex-wrap items-start justify-between gap-3">
                     <div className="flex flex-col gap-1">
-                      <span className="text-xs font-semibold uppercase tracking-wide text-secondary/70">
+                      <span className="text-secondary/70 text-xs font-semibold tracking-wide uppercase">
                         {event.calendarId}
                       </span>
-                      <h2 className="text-lg font-semibold text-base-content">{event.summary ?? "(Sin título)"}</h2>
-                      <span className="text-xs text-base-content/60">{formatEventDate(event)}</span>
+                      <h2 className="text-base-content text-lg font-semibold">{event.summary ?? "(Sin título)"}</h2>
+                      <span className="text-base-content/60 text-xs">{formatEventDate(event)}</span>
                     </div>
-                    <div className="flex flex-col items-end gap-2 text-xs text-base-content/60">
+                    <div className="text-base-content/60 flex flex-col items-end gap-2 text-xs">
                       {event.eventType && (
-                        <span className="rounded-full bg-base-200 px-2 py-1 font-semibold text-base-content">
+                        <span className="bg-base-200 text-base-content rounded-full px-2 py-1 font-semibold">
                           {event.eventType}
                         </span>
                       )}
                       {event.category && (
-                        <span className="rounded-full bg-secondary/15 px-2 py-1 font-semibold text-secondary">
+                        <span className="bg-secondary/15 text-secondary rounded-full px-2 py-1 font-semibold">
                           {event.category}
                         </span>
                       )}
@@ -311,13 +310,13 @@ function CalendarClassificationPage() {
                   </header>
 
                   {description && (
-                    <p className="rounded-xl bg-base-200 p-3 text-xs text-base-content shadow-inner">
-                      <span className="font-semibold text-base-content">Descripción:</span>{" "}
+                    <p className="bg-base-200 text-base-content rounded-xl p-3 text-xs shadow-inner">
+                      <span className="text-base-content font-semibold">Descripción:</span>{" "}
                       <span className="whitespace-pre-wrap">{description}</span>
                     </p>
                   )}
 
-                  <div className="grid gap-4 text-xs text-base-content md:grid-cols-6">
+                  <div className="text-base-content grid gap-4 text-xs md:grid-cols-6">
                     <Controller
                       control={control}
                       name={`entries.${index}.category` as const}
@@ -444,14 +443,14 @@ function CalendarClassificationPage() {
         </section>
       </Tooltip.Provider>
       <Toast.Root
-        className="rounded-lg bg-base-300 px-4 py-3 text-sm text-base-content shadow-lg"
+        className="bg-base-300 text-base-content rounded-lg px-4 py-3 text-sm shadow-lg"
         open={toastOpen && Boolean(toastMessage)}
         onOpenChange={setToastOpen}
       >
         <Toast.Title className="font-semibold">Operación completada</Toast.Title>
-        <Toast.Description className="text-xs text-base-content/80">{toastMessage}</Toast.Description>
+        <Toast.Description className="text-base-content/80 text-xs">{toastMessage}</Toast.Description>
       </Toast.Root>
-      <Toast.Viewport className="fixed bottom-4 right-4 z-50 flex flex-col gap-2" />
+      <Toast.Viewport className="fixed right-4 bottom-4 z-50 flex flex-col gap-2" />
     </Toast.Provider>
   );
 }

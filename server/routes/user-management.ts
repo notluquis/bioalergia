@@ -15,42 +15,62 @@ const inviteUserSchema = z.object({
   role: z.enum(["GOD", "ADMIN", "ANALYST", "VIEWER"]),
   position: z.string().min(1).default("Por definir"),
   mfaEnforced: z.boolean().default(true),
+  personId: z.number().optional(), // Optional: link to existing person
 });
 
 // POST /api/users/invite - Create a user for an existing person OR create new person+user
 router.post("/invite", requireAuth, requireRole("ADMIN", "GOD"), async (req, res) => {
   try {
-    const { email, role, position, mfaEnforced } = inviteUserSchema.parse(req.body);
+    const { email, role, position, mfaEnforced, personId } = inviteUserSchema.parse(req.body);
     const authReq = req as AuthenticatedRequest;
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) return res.status(400).json({ error: "User with this email already exists" });
 
+    // If personId provided, verify it exists
+    if (personId) {
+      const personExists = await prisma.person.findUnique({ where: { id: personId } });
+      if (!personExists) return res.status(400).json({ error: "Person not found" });
+
+      // Check if person already has a user
+      const existingUserForPerson = await prisma.user.findFirst({ where: { personId } });
+      if (existingUserForPerson) {
+        return res.status(400).json({ error: "This person already has a user account" });
+      }
+    }
+
     // Generate temporary password
     const tempPassword = await bcrypt.hash("Temp1234!", 10);
 
     // Transaction to create Person, User, and Employee
     const result = await prisma.$transaction(async (tx) => {
-      // 1. Create Person (or find if exists by email? For now, assume new person for simplicity or check email)
-      // Actually, let's check if person exists by email to avoid duplicates
-      let person = await tx.person.findFirst({ where: { email } });
+      let targetPersonId: number;
 
-      if (!person) {
-        // Create new person with placeholder name
-        person = await tx.person.create({
-          data: {
-            names: "Nuevo Usuario", // Placeholder, will be updated in onboarding
-            email,
-            rut: `TEMP-${Date.now()}`, // Temporary RUT, will be updated
-          },
-        });
+      if (personId) {
+        // Use existing person
+        targetPersonId = personId;
+      } else {
+        // Create new person - check if person exists by email to avoid duplicates
+        let person = await tx.person.findFirst({ where: { email } });
+
+        if (!person) {
+          // Create new person with placeholder name
+          person = await tx.person.create({
+            data: {
+              names: "Nuevo Usuario", // Placeholder, will be updated in onboarding
+              email,
+              rut: `TEMP-${Date.now()}`, // Temporary RUT, will be updated
+            },
+          });
+        }
+        targetPersonId = person.id;
       }
 
-      // 2. Create User
+      // Create User
       const user = await tx.user.create({
         data: {
-          personId: person.id,
+          personId: targetPersonId,
           email,
           role,
           passwordHash: tempPassword,
@@ -59,11 +79,11 @@ router.post("/invite", requireAuth, requireRole("ADMIN", "GOD"), async (req, res
         },
       });
 
-      // 3. Create Employee
+      // Create or update Employee
       await tx.employee.upsert({
-        where: { personId: person.id },
+        where: { personId: targetPersonId },
         create: {
-          personId: person.id,
+          personId: targetPersonId,
           position,
           startDate: new Date(),
           status: "ACTIVE",
@@ -81,7 +101,7 @@ router.post("/invite", requireAuth, requireRole("ADMIN", "GOD"), async (req, res
       action: "USER_INVITE",
       entity: "User",
       entityId: result.id,
-      details: { email, role, position, mfaEnforced },
+      details: { email, role, position, mfaEnforced, personId },
       ipAddress: req.ip,
     });
 
