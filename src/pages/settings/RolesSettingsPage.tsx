@@ -41,17 +41,17 @@ const PERMISSIONS = [
   { name: "Ver Reportes Detallados", roles: ["GOD", "ADMIN", "ANALYST"] },
   { name: "Gestionar Inventario", roles: ["GOD", "ADMIN", "ANALYST"] },
   { name: "Acceso a Logs de Auditoría", roles: ["GOD", "ADMIN"] },
-  { name: "Resetear Contraseñas", roles: ["GOD", "ADMIN"] },
+  { name: "Restablecer contraseñas", roles: ["GOD", "ADMIN"] },
   { name: "Eliminar Registros", roles: ["GOD"] },
 ];
 
 export default function RolesSettingsPage() {
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-base-content">Roles y Permisos</h1>
-          <p className="text-sm text-base-content/60">Visualiza los niveles de acceso disponibles en el sistema.</p>
+          <h1 className="text-base-content text-2xl font-bold">Roles y Permisos</h1>
+          <p className="text-base-content/60 text-sm">Visualiza los niveles de acceso disponibles en el sistema.</p>
         </div>
         <a href="/settings/users" className="btn btn-primary btn-sm gap-2">
           Gestionar Usuarios
@@ -60,17 +60,17 @@ export default function RolesSettingsPage() {
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {ROLES.map((role) => (
-          <div key={role.id} className="surface-elevated p-4 rounded-xl space-y-2">
-            <div className={cn("w-10 h-10 rounded-full flex items-center justify-center", role.bg, role.color)}>
+          <div key={role.id} className="surface-elevated space-y-2 rounded-xl p-4">
+            <div className={cn("flex h-10 w-10 items-center justify-center rounded-full", role.bg, role.color)}>
               <Shield size={20} />
             </div>
             <h3 className="font-bold">{role.name}</h3>
-            <p className="text-xs text-base-content/60">{role.description}</p>
+            <p className="text-base-content/60 text-xs">{role.description}</p>
           </div>
         ))}
       </div>
 
-      <div className="surface-elevated rounded-2xl overflow-hidden">
+      <div className="surface-elevated overflow-hidden rounded-2xl">
         <div className="overflow-x-auto">
           <table className="table w-full">
             <thead>
@@ -88,15 +88,15 @@ export default function RolesSettingsPage() {
             <tbody>
               {PERMISSIONS.map((perm, idx) => (
                 <tr key={idx} className="hover:bg-base-200/50">
-                  <td className="font-medium text-sm">{perm.name}</td>
+                  <td className="text-sm font-medium">{perm.name}</td>
                   {ROLES.map((role) => {
                     const hasAccess = perm.roles.includes(role.id);
                     return (
                       <td key={role.id} className="text-center">
                         {hasAccess ? (
-                          <Check size={16} className="mx-auto text-success" />
+                          <Check size={16} className="text-success mx-auto" />
                         ) : (
-                          <X size={16} className="mx-auto text-base-content/20" />
+                          <X size={16} className="text-base-content/20 mx-auto" />
                         )}
                       </td>
                     );

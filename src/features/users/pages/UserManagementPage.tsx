@@ -63,12 +63,12 @@ export default function UserManagementPage() {
       return apiClient.post<{ tempPassword: string }>(`/api/users/${userId}/reset-password`, {});
     },
     onSuccess: (data) => {
-      success(`Contraseña reseteada. Temporal: ${data.tempPassword}`);
+      success(`Contraseña restablecida. Temporal: ${data.tempPassword}`);
       queryClient.invalidateQueries({ queryKey: ["users"] });
       alert(`Contraseña temporal: ${data.tempPassword}\n\nPor favor compártela con el usuario de forma segura.`);
     },
     onError: (err: Error) => {
-      error(err.message || "Error al resetear contraseña");
+      error(err.message || "Error al restablecer contraseña");
     },
   });
 
@@ -92,7 +92,7 @@ export default function UserManagementPage() {
   };
 
   const handleResetPassword = (userId: number) => {
-    if (confirm("¿Resetear contraseña? Esto generará una clave temporal y requerirá configuración nueva.")) {
+    if (confirm("¿Restablecer contraseña? Esto generará una clave temporal y requerirá configuración nueva.")) {
       resetPasswordMutation.mutate(userId);
     }
   };
@@ -238,7 +238,7 @@ export default function UserManagementPage() {
                           <li>
                             <a onClick={() => handleResetPassword(user.id)}>
                               <Key size={14} />
-                              Resetear Contraseña
+                              Restablecer contraseña
                             </a>
                           </li>
                           {user.hasPasskey && (
@@ -253,14 +253,14 @@ export default function UserManagementPage() {
                             <li>
                               <a onClick={() => handleToggleStatus(user.id, user.status)} className="text-error">
                                 <Lock size={14} />
-                                Suspender Acceso
+                                Suspender acceso
                               </a>
                             </li>
                           ) : (
                             <li>
                               <a onClick={() => handleToggleStatus(user.id, user.status)} className="text-success">
                                 <Shield size={14} />
-                                Reactivar Acceso
+                                Reactivar acceso
                               </a>
                             </li>
                           )}
