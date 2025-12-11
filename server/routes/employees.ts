@@ -12,7 +12,8 @@ export function registerEmployeeRoutes(app: express.Express) {
     authenticate,
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       const includeInactive = req.query.includeInactive === "true";
-      const employees = await listEmployees({ includeInactive });
+      const includeTest = req.query.includeTest === "true";
+      const employees = await listEmployees({ includeInactive, includeTest });
       const mapped = employees.map(mapEmployee);
       logEvent("employees:list", requestContext(req, { count: employees.length }));
       res.json({ status: "ok", employees: mapped });

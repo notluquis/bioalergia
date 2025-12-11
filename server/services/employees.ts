@@ -86,11 +86,27 @@ function mapToPersonData(payload: EmployeePayload): Prisma.PersonUpdateInput {
   return data;
 }
 
-export async function listEmployees(options?: { includeInactive?: boolean }) {
+export async function listEmployees(options?: { includeInactive?: boolean; includeTest?: boolean }) {
   const where: Prisma.EmployeeWhereInput = {};
   if (!options?.includeInactive) {
     where.status = "ACTIVE";
   }
+
+  // Exclude test data by default
+  if (!options?.includeTest) {
+    where.person = {
+      NOT: {
+        OR: [
+          { names: { contains: "Test" } },
+          { names: { contains: "test" } },
+          { rut: { startsWith: "11111111" } },
+          { rut: { startsWith: "TEMP-" } },
+          { email: { contains: "test" } },
+        ],
+      },
+    };
+  }
+
   return await prisma.employee.findMany({
     where,
     orderBy: { person: { names: "asc" } },

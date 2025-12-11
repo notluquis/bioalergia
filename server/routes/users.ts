@@ -78,9 +78,21 @@ export function registerUserRoutes(app: express.Express) {
         where: includeTest
           ? undefined
           : {
-              // Exclude test users by default
+              // Exclude test users and test persons by default
               NOT: {
-                email: { contains: "test" },
+                OR: [
+                  { email: { contains: "test" } },
+                  {
+                    person: {
+                      OR: [
+                        { names: { contains: "Test" } },
+                        { names: { contains: "test" } },
+                        { rut: { startsWith: "11111111" } },
+                        { rut: { startsWith: "TEMP-" } },
+                      ],
+                    },
+                  },
+                ],
               },
             },
         select: {
