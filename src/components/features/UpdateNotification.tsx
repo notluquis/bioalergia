@@ -8,24 +8,32 @@ export function UpdateNotification() {
     updateServiceWorker,
   } = useRegisterSW({
     onRegistered(r) {
-      // Check for updates on visibility change and periodically
       if (r) {
+        // Check for updates when page becomes visible
         document.addEventListener("visibilitychange", () => {
           if (!document.hidden) r.update();
         });
-        setInterval(() => r.update(), 6 * 60 * 60 * 1000); // Every 6 hours
+        // Check for updates periodically (every 5 minutes)
+        setInterval(() => r.update(), 5 * 60 * 1000);
       }
     },
+    onNeedRefresh() {
+      console.info("New app version available");
+    },
   });
+
+  const handleUpdate = () => {
+    updateServiceWorker(true);
+  };
 
   if (!needRefresh) return null;
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 max-w-sm animate-in slide-in-from-bottom-5 fade-in">
-      <div className="rounded-2xl border border-primary/20 bg-base-100 p-4 shadow-2xl">
+    <div className="animate-in slide-in-from-bottom-5 fade-in fixed right-4 bottom-4 z-50 max-w-sm">
+      <div className="border-primary/20 bg-base-100 rounded-2xl border p-4 shadow-2xl">
         <div className="flex items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10">
-            <svg className="h-6 w-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="bg-primary/10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
+            <svg className="text-primary h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -35,10 +43,10 @@ export function UpdateNotification() {
             </svg>
           </div>
           <div className="flex-1">
-            <h3 className="text-sm font-semibold text-base-content">Nueva versión disponible</h3>
-            <p className="mt-1 text-xs text-base-content/70">Actualiza para obtener las últimas mejoras.</p>
+            <h3 className="text-base-content text-sm font-semibold">Nueva versión disponible</h3>
+            <p className="text-base-content/70 mt-1 text-xs">Actualiza para obtener las últimas mejoras.</p>
             <div className="mt-3 flex gap-2">
-              <Button size="sm" onClick={() => updateServiceWorker(true)} className="flex-1">
+              <Button size="sm" onClick={handleUpdate} className="flex-1">
                 Actualizar
               </Button>
               <Button size="sm" variant="ghost" onClick={() => setNeedRefresh(false)} className="px-3">

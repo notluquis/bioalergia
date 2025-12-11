@@ -179,19 +179,18 @@ export default function App() {
           </main>
 
           <footer className="surface-elevated text-base-content hidden items-center justify-between px-6 py-3 text-sm md:flex">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <span className="text-base-content font-semibold">Bioalergia</span>
-                <span className="text-base-content/60 text-xs">v{APP_VERSION}</span>
-              </div>
-
-              {/* Performance Mode Indicator */}
-              <PerformanceIndicator />
+            <div className="flex items-center gap-3 text-xs">
+              <span className="text-base-content/60">v{APP_VERSION}</span>
+              <span className="text-base-content/30">•</span>
+              <span className="text-base-content/60">Build: {buildLabel}</span>
             </div>
 
-            <div className="text-base-content/70 flex items-center gap-2 text-xs">
-              <span className="bg-primary/70 inline-flex h-2 w-2 rounded-full" aria-hidden="true" />
-              <span>Build: {buildLabel}</span>
+            <div className="flex items-center gap-3">
+              <PerformanceIndicator />
+              <div className="text-base-content/70 flex items-center gap-2 text-xs">
+                <span className="bg-success/70 inline-flex h-2 w-2 rounded-full" aria-hidden="true" />
+                <span>Sistema operativo</span>
+              </div>
             </div>
           </footer>
         </div>

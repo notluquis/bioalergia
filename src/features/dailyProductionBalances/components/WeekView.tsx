@@ -14,7 +14,7 @@ type WeekViewProps = {
 
 export default function WeekView({ currentDate, onDateChange, balances, onSelectDay, selectedDate }: WeekViewProps) {
   const startOfWeek = currentDate.startOf("week").add(1, "day"); // Start on Monday
-  const days = Array.from({ length: 7 }).map((_, i) => startOfWeek.add(i, "day"));
+  const days = Array.from({ length: 6 }).map((_, i) => startOfWeek.add(i, "day")); // Monday to Saturday
 
   // Calculate weekly totals
   const weeklyIncome = balances.reduce((acc, b) => acc + Number(b.total), 0);
@@ -33,7 +33,7 @@ export default function WeekView({ currentDate, onDateChange, balances, onSelect
           <Button variant="ghost" size="sm" onClick={() => onDateChange(currentDate.subtract(1, "week"))}>
             <ChevronLeft size={20} />
           </Button>
-          <h2 className="text-lg font-semibold capitalize text-base-content">{startOfWeek.format("MMMM YYYY")}</h2>
+          <h2 className="text-base-content text-lg font-semibold capitalize">{startOfWeek.format("MMMM YYYY")}</h2>
           <Button variant="ghost" size="sm" onClick={() => onDateChange(currentDate.add(1, "week"))}>
             <ChevronRight size={20} />
           </Button>
@@ -43,18 +43,18 @@ export default function WeekView({ currentDate, onDateChange, balances, onSelect
         </div>
 
         <div className="flex gap-4 text-sm">
-          <div className="rounded-xl bg-base-200/50 px-3 py-2">
-            <span className="block text-xs text-base-content/60">Ingresos Semanales</span>
-            <span className="font-semibold text-success">{currencyFormatter.format(weeklyIncome)}</span>
+          <div className="bg-base-200/50 rounded-xl px-3 py-2">
+            <span className="text-base-content/60 block text-xs">Ingresos Semanales</span>
+            <span className="text-success font-semibold">{currencyFormatter.format(weeklyIncome)}</span>
           </div>
-          <div className="rounded-xl bg-base-200/50 px-3 py-2">
-            <span className="block text-xs text-base-content/60">Gastos Semanales</span>
-            <span className="font-semibold text-error">{currencyFormatter.format(weeklyExpenses)}</span>
+          <div className="bg-base-200/50 rounded-xl px-3 py-2">
+            <span className="text-base-content/60 block text-xs">Gastos Semanales</span>
+            <span className="text-error font-semibold">{currencyFormatter.format(weeklyExpenses)}</span>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-7">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-6">
         {days.map((day) => {
           const dateStr = day.format("YYYY-MM-DD");
           const balance = balances.find((b) => b.date === dateStr);

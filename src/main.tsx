@@ -12,7 +12,6 @@ import { ToastProvider } from "./context/ToastContext";
 
 import { GlobalError } from "./components/ui/GlobalError";
 import { ChunkErrorBoundary } from "./components/ui/ChunkErrorBoundary";
-import { initSWUpdateListener } from "./lib/swUpdateListener";
 import RequireAuth from "@/components/common/RequireAuth";
 import PublicOnlyRoute from "@/components/common/PublicOnlyRoute";
 import RouteErrorBoundary from "@/components/common/RouteErrorBoundary";
@@ -508,6 +507,3 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     </ChunkErrorBoundary>
   </GlobalError>
 );
-
-// Initialize Service Worker update listener
-initSWUpdateListener();
