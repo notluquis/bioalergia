@@ -44,7 +44,7 @@ export function UpdateNotification() {
           </div>
           <div className="flex-1">
             <h3 className="text-base-content text-sm font-semibold">Nueva versión disponible</h3>
-            <p className="text-base-content/70 mt-1 text-xs">Actualiza para obtener las últimas mejoras.</p>
+            <p className="text-base-content/70 mt-1 text-xs">Actualiza cuando estés listo. No perderás tu progreso.</p>
             <div className="mt-3 flex gap-2">
               <Button size="sm" onClick={handleUpdate} className="flex-1">
                 Actualizar
