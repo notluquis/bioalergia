@@ -3,6 +3,7 @@ import dayjs from "dayjs";
 import type { ServiceSchedule, ServiceSummary } from "../types";
 import Button from "@/components/ui/Button";
 import { currencyFormatter } from "@/lib/format";
+import { today } from "@/lib/dates";
 
 type ServiceScheduleAccordionProps = {
   service: ServiceSummary;
@@ -62,7 +63,7 @@ const ServiceScheduleAccordion = memo(function ServiceScheduleAccordion({
   }, [schedules]);
 
   const [expanded, setExpanded] = useState<Record<string, boolean>>(() => {
-    const todayKey = dayjs().format("YYYY-MM-DD");
+    const todayKey = today();
     return groups.reduce<Record<string, boolean>>((acc, group) => {
       acc[group.dateKey] = group.dateKey === todayKey;
       return acc;
@@ -70,7 +71,7 @@ const ServiceScheduleAccordion = memo(function ServiceScheduleAccordion({
   });
 
   useEffect(() => {
-    const todayKey = dayjs().format("YYYY-MM-DD");
+    const todayKey = today();
     setExpanded((prev) => {
       const next: Record<string, boolean> = {};
       groups.forEach((group) => {

@@ -4,6 +4,7 @@ import type { ServiceSchedule, ServiceSummary } from "../types";
 import Button from "@/components/ui/Button";
 import { currencyFormatter } from "@/lib/format";
 import { LOADING_SPINNER_XS } from "@/lib/styles";
+import { today } from "@/lib/dates";
 
 type ServicesUnifiedAgendaProps = {
   items: Array<{ service: ServiceSummary; schedule: ServiceSchedule }>;
@@ -100,7 +101,7 @@ export default function ServicesUnifiedAgenda({
   }, [items]);
 
   const [expanded, setExpanded] = useState<Record<string, boolean>>(() => {
-    const todayKey = dayjs().format("YYYY-MM-DD");
+    const todayKey = today();
     return groups.reduce<Record<string, boolean>>((acc, group) => {
       acc[group.dateKey] = group.dateKey === todayKey;
       return acc;

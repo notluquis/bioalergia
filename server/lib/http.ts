@@ -111,7 +111,7 @@ export function softAuthenticate(req: AuthenticatedRequest, res: express.Respons
         role: (decoded.role as UserRole) ?? "VIEWER",
       };
     }
-  } catch (error) {
+  } catch {
     // Ignore error, just don't set req.auth
   }
   next();

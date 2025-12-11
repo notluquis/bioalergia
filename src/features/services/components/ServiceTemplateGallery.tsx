@@ -1,5 +1,5 @@
-import dayjs from "dayjs";
 import Button from "@/components/ui/Button";
+import { today } from "@/lib/dates";
 import type { CreateServicePayload } from "../types";
 
 export type ServiceTemplate = {
@@ -14,7 +14,7 @@ type ServiceTemplateGalleryProps = {
   onApply: (template: ServiceTemplate) => void;
 };
 
-const TODAY = dayjs().format("YYYY-MM-DD");
+const TODAY = today();
 
 export const SERVICE_TEMPLATES: ServiceTemplate[] = [
   {
@@ -98,10 +98,10 @@ export const SERVICE_TEMPLATES: ServiceTemplate[] = [
 
 export default function ServiceTemplateGallery({ onApply }: ServiceTemplateGalleryProps) {
   return (
-    <section className="space-y-4 border border-base-300 p-4 text-sm text-base-content bg-base-100">
+    <section className="border-base-300 text-base-content bg-base-100 space-y-4 border p-4 text-sm">
       <div className="flex flex-col gap-1">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-base-content/60">Plantillas rápidas</h2>
-        <p className="text-xs text-base-content/50">
+        <h2 className="text-base-content/60 text-sm font-semibold tracking-wide uppercase">Plantillas rápidas</h2>
+        <p className="text-base-content/50 text-xs">
           Usa plantillas predefinidas para acelerar la creación de servicios.
         </p>
       </div>
@@ -109,13 +109,13 @@ export default function ServiceTemplateGallery({ onApply }: ServiceTemplateGalle
         {SERVICE_TEMPLATES.map((template) => (
           <article
             key={template.id}
-            className="flex h-full flex-col justify-between rounded-2xl border border-base-300 bg-base-200 p-4 shadow-sm transition hover:border-primary/45 hover:shadow-md"
+            className="border-base-300 bg-base-200 hover:border-primary/45 flex h-full flex-col justify-between rounded-2xl border p-4 shadow-sm transition hover:shadow-md"
           >
             <div className="space-y-2">
-              <p className="text-sm font-semibold text-base-content">{template.name}</p>
-              <p className="text-xs text-base-content/60">{template.description}</p>
+              <p className="text-base-content text-sm font-semibold">{template.name}</p>
+              <p className="text-base-content/60 text-xs">{template.description}</p>
               {template.category && (
-                <span className="inline-flex items-center rounded-full border border-base-300 bg-base-200 px-2 py-1 text-xs font-semibold uppercase tracking-wide text-base-content/60">
+                <span className="border-base-300 bg-base-200 text-base-content/60 inline-flex items-center rounded-full border px-2 py-1 text-xs font-semibold tracking-wide uppercase">
                   {template.category}
                 </span>
               )}
