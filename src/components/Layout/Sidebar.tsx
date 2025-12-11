@@ -184,7 +184,7 @@ export default function Sidebar({ isOpen, isMobile, onClose, isCollapsed = false
 
           {/* Navigation Links */}
           <nav className="muted-scrollbar flex-1 overflow-y-auto pr-1">
-            <div className="space-y-6">
+            <div className="space-y-4">
               {NAV_SECTIONS.map((section) => {
                 const visibleItems = section.items.filter((item) => !item.roles || hasRole(...item.roles));
                 if (!visibleItems.length) return null;
