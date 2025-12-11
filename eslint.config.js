@@ -10,7 +10,7 @@ import globals from "globals";
 
 export default [
   {
-    ignores: ["dist", "node_modules", "generated"],
+    ignores: ["dist", "node_modules", "generated", ".conda/**"],
   },
   js.configs.recommended,
   // Base TS rules

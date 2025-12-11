@@ -9,6 +9,7 @@ import Alert from "@/components/ui/Alert";
 import Modal from "@/components/ui/Modal";
 import { useToast } from "@/context/ToastContext";
 import { LOADING_SPINNER_LG, LOADING_SPINNER_XS } from "@/lib/styles";
+import { today } from "@/lib/dates";
 import type { Counterpart, CounterpartAccount, CounterpartAccountSuggestion, CounterpartSummary } from "../types";
 import type { DbMovement } from "@/features/finance/transactions/types";
 import { addCounterpartAccount, attachCounterpartRut, fetchAccountSuggestions, updateCounterpartAccount } from "../api";
@@ -110,7 +111,7 @@ export default function AssociatedAccounts({
   const fallbackRange = useMemo<DateRange>(
     () => ({
       from: dayjs().startOf("year").format("YYYY-MM-DD"),
-      to: dayjs().format("YYYY-MM-DD"),
+      to: today(),
     }),
     []
   );

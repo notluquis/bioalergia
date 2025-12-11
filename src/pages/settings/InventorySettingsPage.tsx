@@ -85,6 +85,7 @@ export default function InventorySettingsPage() {
 
   // Delete Category Mutation (would need backend support)
   const deleteMutation = useMutation({
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     mutationFn: async (_id: number) => {
       // Backend doesn't have delete category endpoint yet
       await new Promise((resolve) => setTimeout(resolve, 500));
