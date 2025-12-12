@@ -1,39 +1,34 @@
 import React from "react";
-import { useLocation, useNavigation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigation, useNavigate, useMatches } from "react-router-dom";
 import { Loader2, LogOut, ChevronRight } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import ThemeToggle from "../ui/ThemeToggle";
 import ConnectionIndicator from "../features/ConnectionIndicator";
 import Clock from "../features/Clock";
 
-const TITLES: Record<string, string> = {
+type RouteHandle = {
+  title?: string;
+  breadcrumb?: string;
+};
+
+// Fallback titles para rutas legacy sin handle
+const FALLBACK_TITLES: Record<string, string> = {
   "/": "Panel financiero",
-  // Finanzas
-  "/finanzas/movements": "Movimientos registrados",
-  "/finanzas/balances": "Saldos diarios",
-  "/finanzas/counterparts": "Contrapartes",
-  "/finanzas/participants": "Participantes",
-  "/finanzas/loans": "Préstamos y créditos",
-  "/finanzas/production-balances": "Balances de producción diaria",
-  // Servicios
   "/services": "Servicios recurrentes",
   "/services/agenda": "Agenda de servicios",
   "/services/create": "Crear servicio",
   "/services/templates": "Plantillas de servicios",
-  // Calendario
   "/calendar/summary": "Eventos de calendario",
   "/calendar/schedule": "Calendario interactivo",
   "/calendar/daily": "Detalle diario",
   "/calendar/heatmap": "Mapa de calor",
   "/calendar/classify": "Clasificar eventos",
   "/calendar/history": "Historial de sincronización",
-  // Operaciones (Inventario + RRHH)
   "/inventory/items": "Gestión de Inventario",
   "/inventory/supplies": "Solicitud de Insumos",
   "/hr/employees": "Trabajadores",
   "/hr/timesheets": "Horas y pagos",
   "/hr/audit": "Auditoría de horarios",
-  // Settings
   "/settings": "Configuración",
   "/settings/accesos": "Accesos y conexiones",
   "/settings/inventario": "Parámetros de inventario",
@@ -45,22 +40,32 @@ export default function Header() {
   const location = useLocation();
   const navigationState = useNavigation();
   const navigate = useNavigate();
+  const matches = useMatches();
   const { logout } = useAuth();
 
   const isNavigating = navigationState.state === "loading";
 
   const { breadcrumbs, title } = React.useMemo(() => {
     const path = location.pathname;
+
+    // Special case para rutas dinámicas
     if (/^\/services\/.+\/edit$/.test(path)) {
       return { breadcrumbs: ["Servicios"], title: "Editar servicio" };
     }
 
-    const titleText = TITLES[path];
+    // Intentar obtener título desde route handle
+    const currentMatch = matches[matches.length - 1];
+    const handle = currentMatch?.handle as RouteHandle | undefined;
+    const titleFromHandle = handle?.title;
+
+    // Fallback al diccionario legacy si no hay handle
+    const titleText = titleFromHandle || FALLBACK_TITLES[path];
+
     if (!titleText) {
       return { breadcrumbs: [], title: "Inicio" };
     }
 
-    // Extract breadcrumbs from path
+    // Extraer breadcrumbs desde el path
     const parts = path.split("/").filter(Boolean);
     const crumbs: string[] = [];
 
@@ -72,7 +77,7 @@ export default function Header() {
     else if (parts[0] === "settings") crumbs.push("Configuración");
 
     return { breadcrumbs: crumbs, title: titleText };
-  }, [location.pathname]);
+  }, [location.pathname, matches]);
 
   const handleLogout = async () => {
     await logout();
