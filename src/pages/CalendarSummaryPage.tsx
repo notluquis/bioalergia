@@ -152,6 +152,13 @@ function CalendarSummaryPage() {
     );
   };
 
+  const setMonthOffset = (offsetMonths: number) => {
+    const targetDate = dayjs().add(offsetMonths, "month");
+    updateFilters("from", targetDate.startOf("month").format("YYYY-MM-DD"));
+    updateFilters("to", targetDate.endOf("month").format("YYYY-MM-DD"));
+    applyFilters();
+  };
+
   const aggregationRows = useMemo(() => {
     if (!summary) {
       return {
@@ -281,6 +288,27 @@ function CalendarSummaryPage() {
           </Link>
         </div>
       </header>
+
+      <section className="bg-base-100 border-base-300 rounded-2xl border p-4 shadow-sm">
+        <p className="text-base-content/80 mb-3 text-xs font-semibold tracking-wide uppercase">Accesos rápidos</p>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="secondary" size="sm" onClick={() => setMonthOffset(-2)} disabled={loading}>
+            {dayjs().subtract(2, "month").format("MMM YYYY")}
+          </Button>
+          <Button variant="secondary" size="sm" onClick={() => setMonthOffset(-1)} disabled={loading}>
+            {dayjs().subtract(1, "month").format("MMM YYYY")}
+          </Button>
+          <Button variant="primary" size="sm" onClick={() => setMonthOffset(0)} disabled={loading}>
+            {dayjs().format("MMM YYYY")} (Actual)
+          </Button>
+          <Button variant="secondary" size="sm" onClick={() => setMonthOffset(1)} disabled={loading}>
+            {dayjs().add(1, "month").format("MMM YYYY")}
+          </Button>
+          <Button variant="secondary" size="sm" onClick={() => setMonthOffset(2)} disabled={loading}>
+            {dayjs().add(2, "month").format("MMM YYYY")}
+          </Button>
+        </div>
+      </section>
 
       <form
         className="border-primary/15 bg-base-100 text-base-content grid gap-4 rounded-2xl border p-6 text-xs shadow-sm md:grid-cols-6"
