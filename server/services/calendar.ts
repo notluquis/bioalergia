@@ -23,19 +23,20 @@ export async function createCalendarSyncLogEntry(data: {
   });
 
   if (running) {
-    // Check if it's stale (> 5 minutes old) to avoid permanent lock
+    // Check if it's stale (> 15 minutes old) to avoid permanent lock
     const diff = new Date().getTime() - running.startedAt.getTime();
-    if (diff < 5 * 60 * 1000) {
+    const STALE_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes
+    if (diff < STALE_TIMEOUT_MS) {
       throw new Error("Sincronización ya en curso");
     }
-    // If stale (>5min), mark as ERROR and proceed
+    // If stale (>15min), mark as ERROR and proceed
     console.warn(`⚠ Cleaning up stale sync log ${running.id} (${Math.round(diff / 1000 / 60)}min old)`);
     await prisma.syncLog.update({
       where: { id: running.id },
       data: {
         status: "ERROR",
         finishedAt: new Date(),
-        errorMessage: "Sync timeout - marked as stale after 5 minutes",
+        errorMessage: `Sync timeout - marked as stale after ${Math.round(diff / 1000 / 60)} minutes`,
       },
     });
   }
