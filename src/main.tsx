@@ -68,6 +68,7 @@ const SecuritySettingsPage = lazy(() => import("./pages/settings/SecuritySetting
 const AddUserPage = lazy(() => import("./pages/admin/AddUserPage"));
 const OnboardingWizard = lazy(() => import("./pages/onboarding/OnboardingWizard"));
 const ChunkLoadErrorPage = lazy(() => import("./pages/ChunkLoadErrorPage"));
+const CSVUploadPage = lazy(() => import("./pages/settings/CSVUploadPage"));
 
 // Componente de loading
 // Componente de loading
@@ -464,6 +465,15 @@ const router = createBrowserRouter([
             element: (
               <Suspense fallback={<PageLoader />}>
                 <RolesSettingsPage />
+              </Suspense>
+            ),
+          },
+          {
+            path: "csv-upload",
+            handle: { title: "Carga masiva de datos" },
+            element: (
+              <Suspense fallback={<PageLoader />}>
+                <CSVUploadPage />
               </Suspense>
             ),
           },
