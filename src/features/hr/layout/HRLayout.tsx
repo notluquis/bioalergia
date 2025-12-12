@@ -3,10 +3,10 @@ import { Tabs, TabItem } from "@/components/ui/Tabs";
 import { PAGE_CONTAINER } from "@/lib/styles";
 
 const HR_TABS: TabItem[] = [
-  { label: "Trabajadores", to: "/hr/employees" },
-  { label: "Horas y Pagos", to: "/hr/timesheets" },
-  { label: "Auditoría", to: "/hr/audit" },
-  { label: "Reportería", to: "/hr/reports" },
+  { label: "Trabajadores", to: "/hr/employees", end: true },
+  { label: "Horas y Pagos", to: "/hr/timesheets", end: true },
+  { label: "Auditoría", to: "/hr/audit", end: true },
+  { label: "Reportería", to: "/hr/reports", end: true },
 ];
 
 export default function HRLayout() {
