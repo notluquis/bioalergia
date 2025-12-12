@@ -6,7 +6,15 @@ import { z } from "zod";
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
-const SUBCUT_PATTERNS = [/\bclustoid\b/i, /\bvacc?\b/i, /\bvacuna\b/i, /\bvac\.?\b/i];
+const SUBCUT_PATTERNS = [
+  /\bclustoid\b/i,
+  /\bclust\b/i,
+  /\bdosis\s+clust/i,
+  /\bvacc?\b/i,
+  /\bvacuna\b/i,
+  /\bvac\.?\b/i,
+  /\bsubcut[áa]ne[oa]/i,
+];
 const TEST_PATTERNS = [/\bexamen\b/i, /\btest\b/i, /cut[áa]neo/i, /ambiental/i, /panel/i, /multitest/i];
 const ATTENDED_PATTERNS = [/\blleg[oó]\b/i, /\basist[ií]o\b/i];
 const MAINTENANCE_PATTERNS = [/\bmantenci[oó]n\b/i, /\bmant\b/i];

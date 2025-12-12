@@ -48,13 +48,20 @@ function parseCalendarIds(raw?: string | null) {
 }
 
 function parseExcludePatterns(raw?: string | null) {
+  const defaultPatterns = [
+    "no disponible",
+    "cumpleaños",
+    "^\\s*$",  // eventos vacíos
+    "^\\d{1,2}\\s+(ene|feb|mar|abr|may|jun|jul|ago|sep|oct|nov|dic)",  // solo fechas sin info
+  ];
   if (!raw) {
-    return ["no disponible"]; // default placeholder blocker
+    return defaultPatterns;
   }
-  return raw
+  const custom = raw
     .split(",")
     .map((value) => value.trim())
     .filter(Boolean);
+  return [...new Set([...defaultPatterns, ...custom])];
 }
 
 export function compileExcludePatterns(values: string[]): RegExp[] {
