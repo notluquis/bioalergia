@@ -2,7 +2,7 @@ import { useState } from "react";
 import type { ChangeEvent } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { startAuthentication } from "@simplewebauthn/browser";
-import type { PublicKeyCredentialCreationOptionsJSON } from "@simplewebauthn/types";
+import type { PublicKeyCredentialCreationOptionsJSON } from "@simplewebauthn/browser";
 import { Fingerprint, Mail } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useSettings } from "@/context/SettingsContext";
