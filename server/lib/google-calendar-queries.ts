@@ -383,7 +383,7 @@ export async function getCalendarEventsByDate(
   >(Prisma.sql`
     SELECT
         events.calendar_id AS calendarId,
-        events.event_id AS eventId,
+        events.external_event_id AS eventId,
         events.event_status AS status,
         events.event_type AS eventType,
         events.summary,
@@ -412,7 +412,7 @@ export async function getCalendarEventsByDate(
         DATE_FORMAT(${EVENT_DATETIME}, '%Y-%m-%dT%H:%i:%s') AS event_date_time
       FROM events AS events
       ${whereWithDates}
-     ORDER BY event_date DESC, ${EVENT_DATETIME} ASC, events.event_id ASC
+     ORDER BY event_date DESC, ${EVENT_DATETIME} ASC, events.external_event_id ASC
   `);
 
   const grouped = new Map<string, CalendarEventDetail[]>();
