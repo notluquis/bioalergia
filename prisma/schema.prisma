@@ -129,7 +129,7 @@ model User {
   id                  Int      @id @default(autoincrement())
   personId            Int      @unique @map("person_id")
   email               String   @unique
-  passwordHash        String   @map("password_hash")
+  passwordHash        String?  @map("password_hash") // Optional: supports passkey-only users
   role                UserRole @default(VIEWER)
   status              UserStatus @default(PENDING_SETUP)
   

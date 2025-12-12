@@ -29,6 +29,7 @@ export default function AddUserPage() {
     role: "VIEWER",
     position: "Por definir",
     mfaEnforced: true,
+    passkeyOnly: false,
     personId: undefined as number | undefined,
     linkToPerson: false,
   });
@@ -54,6 +55,7 @@ export default function AddUserPage() {
         role: form.role,
         position: form.position,
         mfaEnforced: form.mfaEnforced,
+        passkeyOnly: form.passkeyOnly,
       };
 
       if (form.linkToPerson && form.personId) {
@@ -182,12 +184,22 @@ export default function AddUserPage() {
               </p>
             </div>
           </div>
-          <div className="mt-4 pl-8">
+          <div className="mt-4 space-y-3 pl-8">
             <Checkbox
               label="Forzar Passkey o MFA"
               checked={form.mfaEnforced}
               onChange={(e) => setForm({ ...form, mfaEnforced: e.target.checked })}
             />
+            <Checkbox
+              label="Solo Passkey (sin contraseña)"
+              checked={form.passkeyOnly}
+              onChange={(e) => setForm({ ...form, passkeyOnly: e.target.checked })}
+            />
+            {form.passkeyOnly && (
+              <p className="text-warning pl-6 text-xs">
+                ⚠️ El usuario deberá configurar un Passkey al iniciar sesión por primera vez. No podrá usar contraseña.
+              </p>
+            )}
           </div>
         </div>
 

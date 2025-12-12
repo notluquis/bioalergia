@@ -134,24 +134,31 @@ export function registerAuthRoutes(app: express.Express) {
 
       // Special case: Allow login with empty password if user is in PENDING_SETUP status
       if (user.status === "PENDING_SETUP") {
-        // If password is provided, try to validate it (optional, but good for security if they already set one)
-        // But if they are PENDING_SETUP, we assume they might not have one or we allow the bypass.
-        // For strictness: If they send empty password AND are PENDING_SETUP, we allow.
+        // Allow empty password for PENDING_SETUP users (passkey-only flow)
         if (!password) {
-          // Allow proceed
-        } else {
-          // If they provided a password, check it. If it fails, but they are PENDING_SETUP,
-          // we might still want to allow? No, if they try a password it should be correct.
-          // BUT, the requirement is "inicio sesion con solo correo y sin clave".
-          // So if password is empty string, we skip bcrypt check.
+          // Allow proceed without password check
+        } else if (user.passwordHash) {
+          // If they provided a password and have a hash, validate it
           const valid = await bcrypt.compare(password, user.passwordHash);
           if (!valid) {
             logWarn("auth/login:bad-password", requestContext(req, { email }));
             return res.status(401).json({ status: "error", message: "El correo o la contraseña no son correctos" });
           }
+        } else {
+          // User has no password hash but tried to provide password - reject
+          logWarn("auth/login:no-password-set", requestContext(req, { email }));
+          return res
+            .status(401)
+            .json({ status: "error", message: "Este usuario no tiene contraseña configurada. Use passkey." });
         }
       } else {
-        // Normal flow for ACTIVE users
+        // Normal flow for ACTIVE users - password is required
+        if (!user.passwordHash) {
+          logWarn("auth/login:passkey-only-user", requestContext(req, { email }));
+          return res
+            .status(401)
+            .json({ status: "error", message: "Este usuario solo puede usar passkey para iniciar sesión" });
+        }
         const valid = await bcrypt.compare(password, user.passwordHash);
         if (!valid) {
           logWarn("auth/login:bad-password", requestContext(req, { email }));

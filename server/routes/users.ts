@@ -152,13 +152,9 @@ export function registerUserRoutes(app: express.Express) {
         return res.status(403).json({ status: "error", message: "No tienes permisos para modificar a este usuario" });
       }
 
-      // Generate temp password (fixed for now as requested in previous flows, or random)
-      // Let's use a standard temp password "temp1234" hash for simplicity in this "emergency fix" context,
-      // or better, use the same logic as the "ensure-admin" script but hardcoded hash for "temp1234".
-      // Hash for "temp1234" is $2b$10$l4zVKe6jibPP4dhwcTNi2OxqvABhDJtf87aX/edUIKXVoiHptwfN6 (from previous sql)
-      // OR we can import bcrypt. Let's import bcrypt to be safe and dynamic.
+      // Generate random temporary password
       const bcrypt = await import("bcryptjs");
-      const tempPassword = "temp" + Math.floor(1000 + Math.random() * 9000); // temp1234 random
+      const tempPassword = "temp" + Math.floor(1000 + Math.random() * 9000);
       const salt = await bcrypt.genSalt(10);
       const passwordHash = await bcrypt.hash(tempPassword, salt);
 
