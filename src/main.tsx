@@ -179,6 +179,7 @@ const router = createBrowserRouter([
       // Services Section
       {
         path: "/services",
+        handle: { title: "Servicios" },
         element: (
           <Suspense fallback={<PageLoader />}>
             <ServicesLayout />
@@ -187,6 +188,7 @@ const router = createBrowserRouter([
         children: [
           {
             index: true,
+            handle: { title: "Servicios recurrentes" },
             element: (
               <Suspense fallback={<PageLoader />}>
                 <ServicesOverviewPage />
@@ -195,6 +197,7 @@ const router = createBrowserRouter([
           },
           {
             path: "agenda",
+            handle: { title: "Agenda de servicios" },
             element: (
               <Suspense fallback={<PageLoader />}>
                 <ServicesAgendaPage />
@@ -203,6 +206,7 @@ const router = createBrowserRouter([
           },
           {
             path: "create",
+            handle: { title: "Crear servicio" },
             element: (
               <Suspense fallback={<PageLoader />}>
                 <ServicesCreatePage />
@@ -211,6 +215,7 @@ const router = createBrowserRouter([
           },
           {
             path: ":id/edit",
+            handle: { title: "Editar servicio" },
             element: (
               <Suspense fallback={<PageLoader />}>
                 <ServiceEditPage />
@@ -219,6 +224,7 @@ const router = createBrowserRouter([
           },
           {
             path: "templates",
+            handle: { title: "Plantillas de servicios" },
             element: (
               <Suspense fallback={<PageLoader />}>
                 <ServicesTemplatesPage />
@@ -230,6 +236,7 @@ const router = createBrowserRouter([
       // Calendar Section
       {
         path: "/calendar",
+        handle: { title: "Calendario" },
         element: (
           <Suspense fallback={<PageLoader />}>
             <CalendarLayout />
@@ -239,6 +246,7 @@ const router = createBrowserRouter([
           { index: true, element: <Navigate to="summary" replace /> },
           {
             path: "summary",
+            handle: { title: "Eventos de calendario" },
             element: (
               <Suspense fallback={<PageLoader />}>
                 <CalendarSummaryPage />
@@ -247,6 +255,7 @@ const router = createBrowserRouter([
           },
           {
             path: "schedule",
+            handle: { title: "Calendario interactivo" },
             element: (
               <Suspense fallback={<PageLoader />}>
                 <CalendarSchedulePage />
@@ -255,6 +264,7 @@ const router = createBrowserRouter([
           },
           {
             path: "daily",
+            handle: { title: "Detalle diario" },
             element: (
               <Suspense fallback={<PageLoader />}>
                 <CalendarDailyPage />
@@ -263,6 +273,7 @@ const router = createBrowserRouter([
           },
           {
             path: "heatmap",
+            handle: { title: "Mapa de calor" },
             element: (
               <Suspense fallback={<PageLoader />}>
                 <CalendarHeatmapPage />
@@ -271,6 +282,7 @@ const router = createBrowserRouter([
           },
           {
             path: "classify",
+            handle: { title: "Clasificar eventos" },
             element: (
               <Suspense fallback={<PageLoader />}>
                 <CalendarClassificationPage />
@@ -279,6 +291,7 @@ const router = createBrowserRouter([
           },
           {
             path: "history",
+            handle: { title: "Historial de sincronización" },
             element: (
               <Suspense fallback={<PageLoader />}>
                 <CalendarSyncHistoryPage />
@@ -290,6 +303,7 @@ const router = createBrowserRouter([
       // Operations Section
       {
         path: "/operations",
+        handle: { title: "Operaciones" },
         element: (
           <Suspense fallback={<PageLoader />}>
             <InventoryLayout />
@@ -299,6 +313,7 @@ const router = createBrowserRouter([
           { index: true, element: <Navigate to="inventory" replace /> },
           {
             path: "inventory",
+            handle: { title: "Gestión de Inventario" },
             element: (
               <Suspense fallback={<PageLoader />}>
                 <InventoryPage />
@@ -307,6 +322,7 @@ const router = createBrowserRouter([
           },
           {
             path: "supplies",
+            handle: { title: "Solicitud de Insumos" },
             element: (
               <Suspense fallback={<PageLoader />}>
                 <SuppliesPage />
@@ -318,6 +334,7 @@ const router = createBrowserRouter([
       // HR Section
       {
         path: "/hr",
+        handle: { title: "RRHH" },
         element: (
           <Suspense fallback={<PageLoader />}>
             <HRLayout />
@@ -327,6 +344,7 @@ const router = createBrowserRouter([
           { index: true, element: <Navigate to="employees" replace /> },
           {
             path: "employees",
+            handle: { title: "Trabajadores" },
             element: (
               <Suspense fallback={<PageLoader />}>
                 <EmployeesPage />
@@ -335,6 +353,7 @@ const router = createBrowserRouter([
           },
           {
             path: "timesheets",
+            handle: { title: "Horas y pagos" },
             element: (
               <Suspense fallback={<PageLoader />}>
                 <TimesheetsPage />
@@ -343,6 +362,7 @@ const router = createBrowserRouter([
           },
           {
             path: "audit",
+            handle: { title: "Auditoría de horarios" },
             element: (
               <Suspense fallback={<PageLoader />}>
                 <TimesheetAuditPage />
@@ -351,6 +371,7 @@ const router = createBrowserRouter([
           },
           {
             path: "reports",
+            handle: { title: "Reportes" },
             element: (
               <Suspense fallback={<PageLoader />}>
                 <ReportsPage />
@@ -362,6 +383,7 @@ const router = createBrowserRouter([
       // Settings Section
       {
         path: "/settings",
+        handle: { title: "Configuración" },
         element: (
           <Suspense fallback={<PageLoader />}>
             <SettingsLayout />
@@ -374,6 +396,7 @@ const router = createBrowserRouter([
           },
           {
             path: "users",
+            handle: { title: "Gestión de usuarios" },
             element: (
               <Suspense fallback={<PageLoader />}>
                 <UserManagementPage />
@@ -382,6 +405,7 @@ const router = createBrowserRouter([
           },
           {
             path: "users/add",
+            handle: { title: "Agregar usuario" },
             element: (
               <Suspense fallback={<PageLoader />}>
                 <AddUserPage />
@@ -390,6 +414,7 @@ const router = createBrowserRouter([
           },
           {
             path: "people",
+            handle: { title: "Gestión de personas" },
             element: (
               <Suspense fallback={<PageLoader />}>
                 <PersonManagementPage />
@@ -398,6 +423,7 @@ const router = createBrowserRouter([
           },
           {
             path: "people/:id",
+            handle: { title: "Detalles de persona" },
             element: (
               <Suspense fallback={<PageLoader />}>
                 <PersonDetailsPage />
@@ -407,6 +433,7 @@ const router = createBrowserRouter([
 
           {
             path: "calendar",
+            handle: { title: "Accesos y conexiones" },
             element: (
               <Suspense fallback={<PageLoader />}>
                 <CalendarSettingsPage />
@@ -415,6 +442,7 @@ const router = createBrowserRouter([
           },
           {
             path: "security",
+            handle: { title: "Seguridad" },
             element: (
               <Suspense fallback={<PageLoader />}>
                 <SecuritySettingsPage />
@@ -423,6 +451,7 @@ const router = createBrowserRouter([
           },
           {
             path: "inventario",
+            handle: { title: "Parámetros de inventario" },
             element: (
               <Suspense fallback={<PageLoader />}>
                 <InventorySettingsPage />
@@ -431,6 +460,7 @@ const router = createBrowserRouter([
           },
           {
             path: "roles",
+            handle: { title: "Roles y permisos" },
             element: (
               <Suspense fallback={<PageLoader />}>
                 <RolesSettingsPage />
