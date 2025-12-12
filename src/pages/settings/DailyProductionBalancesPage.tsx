@@ -251,7 +251,7 @@ export default function DailyProductionBalancesPage() {
       />
 
       {selectedDate && (
-        <div className={`grid gap-4 ${canEdit ? "lg:grid-cols-[1fr_360px]" : "lg:grid-cols-1"}`}>
+        <div className={`grid gap-4 ${canEdit ? "lg:grid-cols-2" : "lg:grid-cols-1"}`}>
           {canEdit && (
             <div className="space-y-3">
               <div className="card bg-base-100 border shadow-sm">
@@ -345,395 +345,405 @@ export default function DailyProductionBalancesPage() {
                 </div>
               </div>
 
-              <form className="space-y-3" onSubmit={handleSubmit}>
-                <div className="alert alert-info text-sm">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    className="h-5 w-5 shrink-0 stroke-current"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                    ></path>
-                  </svg>
-                  <span>
-                    <strong>Flujo de trabajo:</strong> 1) Registra ingresos por método de pago → 2) Registra ingresos
-                    por tipo de servicio → 3) Verifica que ambos totales coincidan
-                  </span>
-                </div>
+              <form className="lg:col-span-2" onSubmit={handleSubmit}>
+                <div className="grid gap-4 lg:grid-cols-2">
+                  {/* COLUMNA IZQUIERDA: Métodos de Pago + Gastos */}
+                  <div className="space-y-3">
+                    <div className="alert alert-info text-sm">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        className="h-5 w-5 shrink-0 stroke-current"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        ></path>
+                      </svg>
+                      <span>
+                        <strong>Flujo de trabajo:</strong> 1) Registra ingresos por método de pago → 2) Registra
+                        ingresos por tipo de servicio → 3) Verifica que ambos totales coincidan
+                      </span>
+                    </div>
 
-                {/* PASO 1: Ingresos por Método de Pago */}
-                <div className="card bg-success/5 border-success/20 border">
-                  <div className="card-body gap-3 p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="badge badge-lg badge-success font-bold">1</div>
-                        <div>
-                          <h3 className="text-base-content text-lg font-bold">Ingresos por Método de Pago</h3>
-                          <p className="text-base-content/60 text-xs">¿Cómo ingresó el dinero?</p>
+                    {/* PASO 1: Ingresos por Método de Pago */}
+                    <div className="card bg-success/5 border-success/20 border">
+                      <div className="card-body gap-3 p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="badge badge-lg badge-success font-bold">1</div>
+                            <div>
+                              <h3 className="text-base-content text-lg font-bold">Ingresos por Método de Pago</h3>
+                              <p className="text-base-content/60 text-xs">¿Cómo ingresó el dinero?</p>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                    <div className="grid gap-3 sm:grid-cols-3">
-                      <div className="form-control">
-                        <label className="label py-1">
-                          <span className="label-text flex items-center gap-1.5 text-sm font-medium">
-                            <CreditCard className="h-4 w-4" />
-                            Tarjetas
-                          </span>
-                        </label>
-                        <label className={INPUT_CURRENCY_SM}>
-                          <span className="text-base-content/60">$</span>
-                          <input
-                            type="text"
-                            inputMode="numeric"
-                            value={formatInputValue(form.ingresoTarjetas)}
-                            onChange={(e) => {
-                              const parsed = parseInputValue(e.target.value);
-                              setForm((prev) => ({ ...prev, ingresoTarjetas: parsed }));
-                            }}
-                            className="grow bg-transparent"
-                            placeholder="0"
-                          />
-                        </label>
-                      </div>
-                      <div className="form-control">
-                        <label className="label py-1">
-                          <span className="label-text flex items-center gap-1.5 text-sm font-medium">
-                            <Banknote className="h-4 w-4" />
-                            Transferencias
-                          </span>
-                        </label>
-                        <label className={INPUT_CURRENCY_SM}>
-                          <span className="text-base-content/60">$</span>
-                          <input
-                            type="text"
-                            inputMode="numeric"
-                            value={formatInputValue(form.ingresoTransferencias)}
-                            onChange={(e) => {
-                              const parsed = parseInputValue(e.target.value);
-                              setForm((prev) => ({ ...prev, ingresoTransferencias: parsed }));
-                            }}
-                            className="grow bg-transparent"
-                            placeholder="0"
-                          />
-                        </label>
-                      </div>
-                      <div className="form-control">
-                        <label className="label py-1">
-                          <span className="label-text flex items-center gap-1.5 text-sm font-medium">
-                            <Wallet className="h-4 w-4" />
-                            Efectivo
-                          </span>
-                        </label>
-                        <label className={INPUT_CURRENCY_SM}>
-                          <span className="text-base-content/60">$</span>
-                          <input
-                            type="text"
-                            inputMode="numeric"
-                            value={formatInputValue(form.ingresoEfectivo)}
-                            onChange={(e) => {
-                              const parsed = parseInputValue(e.target.value);
-                              setForm((prev) => ({ ...prev, ingresoEfectivo: parsed }));
-                            }}
-                            className="grow bg-transparent"
-                            placeholder="0"
-                          />
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* PASO 1B: Gastos y Ajustes */}
-                <div className="card bg-error/5 border-error/20 border">
-                  <div className="card-body gap-4">
-                    <div className="flex items-center gap-2">
-                      <TrendingDown className="text-error h-5 w-5" />
-                      <h3 className="text-base-content text-base font-semibold">Gastos y Ajustes</h3>
-                    </div>
-                    <div className={GRID_2_COL_SM}>
-                      <div className="form-control">
-                        <label className="label py-1">
-                          <span className="label-text text-sm font-medium">Gastos diarios</span>
-                        </label>
-                        <label className={INPUT_CURRENCY_SM}>
-                          <span className="text-base-content/60">$</span>
-                          <input
-                            type="text"
-                            inputMode="numeric"
-                            value={formatInputValue(form.gastosDiarios)}
-                            onChange={(e) => {
-                              const parsed = parseInputValue(e.target.value);
-                              setForm((prev) => ({ ...prev, gastosDiarios: parsed }));
-                            }}
-                            className="grow bg-transparent"
-                            placeholder="0"
-                          />
-                        </label>
-                        <label className="label py-0">
-                          <span className="label-text-alt text-base-content/60">Combustible, insumos, etc.</span>
-                        </label>
-                      </div>
-                      <div className="form-control">
-                        <label className="label py-1">
-                          <span className="label-text text-sm font-medium">Otros abonos</span>
-                        </label>
-                        <label className={INPUT_CURRENCY_SM}>
-                          <span className="text-base-content/60">$</span>
-                          <input
-                            type="text"
-                            inputMode="numeric"
-                            value={formatInputValue(form.otrosAbonos)}
-                            onChange={(e) => {
-                              const parsed = parseInputValue(e.target.value);
-                              setForm((prev) => ({ ...prev, otrosAbonos: parsed }));
-                            }}
-                            className="grow bg-transparent"
-                            placeholder="0"
-                          />
-                        </label>
-                        <label className="label py-0">
-                          <span className="label-text-alt text-base-content/60">Devoluciones, ajustes</span>
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Resumen Método de Pago */}
-                <div className="card bg-base-200 border-base-300 border">
-                  <div className="card-body p-3">
-                    <div className="mb-2 flex items-center gap-2">
-                      <h3 className="text-base-content text-sm font-bold tracking-wide uppercase">
-                        Total por Método de Pago
-                      </h3>
-                    </div>
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="text-center">
-                        <p className="text-base-content/60 mb-1 text-xs">Subtotal</p>
-                        <p className="text-success text-lg font-bold">{currencyFormatter.format(derived.subtotal)}</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-base-content/60 mb-1 text-xs">- Gastos</p>
-                        <p className="text-error text-lg font-bold">
-                          -{currencyFormatter.format(parseNumber(form.gastosDiarios))}
-                        </p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-base-content/60 mb-1 text-xs font-semibold">TOTAL</p>
-                        <p className="text-primary text-2xl font-bold">
-                          {currencyFormatter.format(paymentMethodTotal)}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* PASO 2: Ingresos por Tipo de Servicio */}
-                <div className="card bg-info/5 border-info/20 border-2">
-                  <div className="card-body gap-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="badge badge-lg badge-info font-bold">2</div>
-                        <div>
-                          <h3 className="text-base-content text-lg font-bold">Ingresos por Tipo de Servicio</h3>
-                          <p className="text-base-content/60 text-xs">
-                            ¿Qué servicios generaron ingresos? (montos en $)
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                      <div className="form-control">
-                        <label className="label py-1">
-                          <span className="label-text text-sm font-medium">Consultas</span>
-                        </label>
-                        <label className={INPUT_CURRENCY_SM}>
-                          <span className="text-base-content/60">$</span>
-                          <input
-                            type="text"
-                            inputMode="numeric"
-                            value={formatInputValue(form.consultas)}
-                            onChange={(e) => {
-                              const parsed = parseInputValue(e.target.value);
-                              setForm((prev) => ({ ...prev, consultas: parsed }));
-                            }}
-                            className="grow bg-transparent"
-                            placeholder="0"
-                          />
-                        </label>
-                      </div>
-                      <div className="form-control">
-                        <label className="label py-1">
-                          <span className="label-text text-sm font-medium">Controles</span>
-                        </label>
-                        <label className={INPUT_CURRENCY_SM}>
-                          <span className="text-base-content/60">$</span>
-                          <input
-                            type="text"
-                            inputMode="numeric"
-                            value={formatInputValue(form.controles)}
-                            onChange={(e) => {
-                              const parsed = parseInputValue(e.target.value);
-                              setForm((prev) => ({ ...prev, controles: parsed }));
-                            }}
-                            className="grow bg-transparent"
-                            placeholder="0"
-                          />
-                        </label>
-                      </div>
-                      {/* Test field hidden per user request */}
-                      <div className="form-control">
-                        <label className="label py-1">
-                          <span className="label-text flex items-center gap-1.5 text-sm font-medium">
-                            <Syringe className="h-3.5 w-3.5" />
-                            Vacunas
-                          </span>
-                        </label>
-                        <label className={INPUT_CURRENCY_SM}>
-                          <span className="text-base-content/60">$</span>
-                          <input
-                            type="text"
-                            inputMode="numeric"
-                            value={formatInputValue(form.vacunas)}
-                            onChange={(e) => {
-                              const parsed = parseInputValue(e.target.value);
-                              setForm((prev) => ({ ...prev, vacunas: parsed }));
-                            }}
-                            className="grow bg-transparent"
-                            placeholder="0"
-                          />
-                        </label>
-                      </div>
-                      <div className="form-control">
-                        <label className="label py-1">
-                          <span className="label-text flex items-center gap-1.5 text-sm font-medium">
-                            <FileText className="h-3.5 w-3.5" />
-                            Licencias
-                          </span>
-                        </label>
-                        <label className={INPUT_CURRENCY_SM}>
-                          <span className="text-base-content/60">$</span>
-                          <input
-                            type="text"
-                            inputMode="numeric"
-                            value={formatInputValue(form.licencias)}
-                            onChange={(e) => {
-                              const parsed = parseInputValue(e.target.value);
-                              setForm((prev) => ({ ...prev, licencias: parsed }));
-                            }}
-                            className="grow bg-transparent"
-                            placeholder="0"
-                          />
-                        </label>
-                      </div>
-                      <div className="form-control">
-                        <label className="label py-1">
-                          <span className="label-text text-sm font-medium">Roxair</span>
-                        </label>
-                        <label className={INPUT_CURRENCY_SM}>
-                          <span className="text-base-content/60">$</span>
-                          <input
-                            type="text"
-                            inputMode="numeric"
-                            value={formatInputValue(form.roxair)}
-                            onChange={(e) => {
-                              const parsed = parseInputValue(e.target.value);
-                              setForm((prev) => ({ ...prev, roxair: parsed }));
-                            }}
-                            className="grow bg-transparent"
-                            placeholder="0"
-                          />
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Resumen Tipo de Servicio + Validación */}
-                <div className="card bg-base-200 border-base-300 border-2">
-                  <div className="card-body">
-                    <h3 className="text-base-content mb-2 text-sm font-bold tracking-wide uppercase">
-                      Total por Tipo de Servicio
-                    </h3>
-                    <div className="mb-4 text-center">
-                      <p className="text-base-content/60 mb-1 text-xs font-semibold">TOTAL</p>
-                      <p className="text-info text-2xl font-bold">{currencyFormatter.format(serviceTotals)}</p>
-                    </div>
-
-                    {/* Validation Alert */}
-                    {hasDifference ? (
-                      <div className="alert alert-warning text-sm">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          className="h-5 w-5 shrink-0 stroke-current"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                          ></path>
-                        </svg>
-                        <div>
-                          <div className="font-bold">⚠️ Los totales no coinciden</div>
-                          <div className="text-xs">
-                            Diferencia: {currencyFormatter.format(Math.abs(difference))} (
-                            {difference > 0 ? "servicios superan pagos" : "pagos superan servicios"})
-                            {form.status === "FINAL" && (
-                              <span className="ml-2 font-semibold">
-                                • Considera dejarlo en BORRADOR hasta verificar
+                        <div className="grid gap-3 sm:grid-cols-3">
+                          <div className="form-control">
+                            <label className="label py-1">
+                              <span className="label-text flex items-center gap-1.5 text-sm font-medium">
+                                <CreditCard className="h-4 w-4" />
+                                Tarjetas
                               </span>
-                            )}
+                            </label>
+                            <label className={INPUT_CURRENCY_SM}>
+                              <span className="text-base-content/60">$</span>
+                              <input
+                                type="text"
+                                inputMode="numeric"
+                                value={formatInputValue(form.ingresoTarjetas)}
+                                onChange={(e) => {
+                                  const parsed = parseInputValue(e.target.value);
+                                  setForm((prev) => ({ ...prev, ingresoTarjetas: parsed }));
+                                }}
+                                className="grow bg-transparent"
+                                placeholder="0"
+                              />
+                            </label>
+                          </div>
+                          <div className="form-control">
+                            <label className="label py-1">
+                              <span className="label-text flex items-center gap-1.5 text-sm font-medium">
+                                <Banknote className="h-4 w-4" />
+                                Transferencias
+                              </span>
+                            </label>
+                            <label className={INPUT_CURRENCY_SM}>
+                              <span className="text-base-content/60">$</span>
+                              <input
+                                type="text"
+                                inputMode="numeric"
+                                value={formatInputValue(form.ingresoTransferencias)}
+                                onChange={(e) => {
+                                  const parsed = parseInputValue(e.target.value);
+                                  setForm((prev) => ({ ...prev, ingresoTransferencias: parsed }));
+                                }}
+                                className="grow bg-transparent"
+                                placeholder="0"
+                              />
+                            </label>
+                          </div>
+                          <div className="form-control">
+                            <label className="label py-1">
+                              <span className="label-text flex items-center gap-1.5 text-sm font-medium">
+                                <Wallet className="h-4 w-4" />
+                                Efectivo
+                              </span>
+                            </label>
+                            <label className={INPUT_CURRENCY_SM}>
+                              <span className="text-base-content/60">$</span>
+                              <input
+                                type="text"
+                                inputMode="numeric"
+                                value={formatInputValue(form.ingresoEfectivo)}
+                                onChange={(e) => {
+                                  const parsed = parseInputValue(e.target.value);
+                                  setForm((prev) => ({ ...prev, ingresoEfectivo: parsed }));
+                                }}
+                                className="grow bg-transparent"
+                                placeholder="0"
+                              />
+                            </label>
                           </div>
                         </div>
                       </div>
-                    ) : (
-                      <div className="alert alert-success text-sm">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-5 w-5 shrink-0 stroke-current"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                          />
-                        </svg>
-                        <div>
-                          <span className="font-bold">✓ Totales coinciden perfectamente</span>
-                          <span className="ml-2 text-xs">• Puedes marcarlo como CERRADO cuando esté listo</span>
+                    </div>
+
+                    {/* PASO 1B: Gastos y Ajustes */}
+                    <div className="card bg-error/5 border-error/20 border">
+                      <div className="card-body gap-4">
+                        <div className="flex items-center gap-2">
+                          <TrendingDown className="text-error h-5 w-5" />
+                          <h3 className="text-base-content text-base font-semibold">Gastos y Ajustes</h3>
+                        </div>
+                        <div className={GRID_2_COL_SM}>
+                          <div className="form-control">
+                            <label className="label py-1">
+                              <span className="label-text text-sm font-medium">Gastos diarios</span>
+                            </label>
+                            <label className={INPUT_CURRENCY_SM}>
+                              <span className="text-base-content/60">$</span>
+                              <input
+                                type="text"
+                                inputMode="numeric"
+                                value={formatInputValue(form.gastosDiarios)}
+                                onChange={(e) => {
+                                  const parsed = parseInputValue(e.target.value);
+                                  setForm((prev) => ({ ...prev, gastosDiarios: parsed }));
+                                }}
+                                className="grow bg-transparent"
+                                placeholder="0"
+                              />
+                            </label>
+                            <label className="label py-0">
+                              <span className="label-text-alt text-base-content/60">Combustible, insumos, etc.</span>
+                            </label>
+                          </div>
+                          <div className="form-control">
+                            <label className="label py-1">
+                              <span className="label-text text-sm font-medium">Otros abonos</span>
+                            </label>
+                            <label className={INPUT_CURRENCY_SM}>
+                              <span className="text-base-content/60">$</span>
+                              <input
+                                type="text"
+                                inputMode="numeric"
+                                value={formatInputValue(form.otrosAbonos)}
+                                onChange={(e) => {
+                                  const parsed = parseInputValue(e.target.value);
+                                  setForm((prev) => ({ ...prev, otrosAbonos: parsed }));
+                                }}
+                                className="grow bg-transparent"
+                                placeholder="0"
+                              />
+                            </label>
+                            <label className="label py-0">
+                              <span className="label-text-alt text-base-content/60">Devoluciones, ajustes</span>
+                            </label>
+                          </div>
                         </div>
                       </div>
-                    )}
+                    </div>
 
-                    <div className="divider my-2"></div>
-
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <p className="text-base-content/60 mb-1 text-xs">Por Método de Pago</p>
-                        <p className="text-primary font-bold">{currencyFormatter.format(paymentMethodTotal)}</p>
+                    {/* Resumen Método de Pago */}
+                    <div className="card bg-base-200 border-base-300 border">
+                      <div className="card-body p-3">
+                        <div className="mb-2 flex items-center gap-2">
+                          <h3 className="text-base-content text-sm font-bold tracking-wide uppercase">
+                            Total por Método de Pago
+                          </h3>
+                        </div>
+                        <div className="grid grid-cols-3 gap-4">
+                          <div className="text-center">
+                            <p className="text-base-content/60 mb-1 text-xs">Subtotal</p>
+                            <p className="text-success text-lg font-bold">
+                              {currencyFormatter.format(derived.subtotal)}
+                            </p>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-base-content/60 mb-1 text-xs">- Gastos</p>
+                            <p className="text-error text-lg font-bold">
+                              -{currencyFormatter.format(parseNumber(form.gastosDiarios))}
+                            </p>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-base-content/60 mb-1 text-xs font-semibold">TOTAL</p>
+                            <p className="text-primary text-2xl font-bold">
+                              {currencyFormatter.format(paymentMethodTotal)}
+                            </p>
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-base-content/60 mb-1 text-xs">Por Tipo de Servicio</p>
-                        <p className="text-info font-bold">{currencyFormatter.format(serviceTotals)}</p>
+                    </div>
+                  </div>
+
+                  {/* COLUMNA DERECHA: Servicios + Validación */}
+                  <div className="space-y-3">
+                    {/* PASO 2: Ingresos por Tipo de Servicio */}
+                    <div className="card bg-info/5 border-info/20 border-2">
+                      <div className="card-body gap-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="badge badge-lg badge-info font-bold">2</div>
+                            <div>
+                              <h3 className="text-base-content text-lg font-bold">Ingresos por Tipo de Servicio</h3>
+                              <p className="text-base-content/60 text-xs">
+                                ¿Qué servicios generaron ingresos? (montos en $)
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                          <div className="form-control">
+                            <label className="label py-1">
+                              <span className="label-text text-sm font-medium">Consultas</span>
+                            </label>
+                            <label className={INPUT_CURRENCY_SM}>
+                              <span className="text-base-content/60">$</span>
+                              <input
+                                type="text"
+                                inputMode="numeric"
+                                value={formatInputValue(form.consultas)}
+                                onChange={(e) => {
+                                  const parsed = parseInputValue(e.target.value);
+                                  setForm((prev) => ({ ...prev, consultas: parsed }));
+                                }}
+                                className="grow bg-transparent"
+                                placeholder="0"
+                              />
+                            </label>
+                          </div>
+                          <div className="form-control">
+                            <label className="label py-1">
+                              <span className="label-text text-sm font-medium">Controles</span>
+                            </label>
+                            <label className={INPUT_CURRENCY_SM}>
+                              <span className="text-base-content/60">$</span>
+                              <input
+                                type="text"
+                                inputMode="numeric"
+                                value={formatInputValue(form.controles)}
+                                onChange={(e) => {
+                                  const parsed = parseInputValue(e.target.value);
+                                  setForm((prev) => ({ ...prev, controles: parsed }));
+                                }}
+                                className="grow bg-transparent"
+                                placeholder="0"
+                              />
+                            </label>
+                          </div>
+                          {/* Test field hidden per user request */}
+                          <div className="form-control">
+                            <label className="label py-1">
+                              <span className="label-text flex items-center gap-1.5 text-sm font-medium">
+                                <Syringe className="h-3.5 w-3.5" />
+                                Vacunas
+                              </span>
+                            </label>
+                            <label className={INPUT_CURRENCY_SM}>
+                              <span className="text-base-content/60">$</span>
+                              <input
+                                type="text"
+                                inputMode="numeric"
+                                value={formatInputValue(form.vacunas)}
+                                onChange={(e) => {
+                                  const parsed = parseInputValue(e.target.value);
+                                  setForm((prev) => ({ ...prev, vacunas: parsed }));
+                                }}
+                                className="grow bg-transparent"
+                                placeholder="0"
+                              />
+                            </label>
+                          </div>
+                          <div className="form-control">
+                            <label className="label py-1">
+                              <span className="label-text flex items-center gap-1.5 text-sm font-medium">
+                                <FileText className="h-3.5 w-3.5" />
+                                Licencias
+                              </span>
+                            </label>
+                            <label className={INPUT_CURRENCY_SM}>
+                              <span className="text-base-content/60">$</span>
+                              <input
+                                type="text"
+                                inputMode="numeric"
+                                value={formatInputValue(form.licencias)}
+                                onChange={(e) => {
+                                  const parsed = parseInputValue(e.target.value);
+                                  setForm((prev) => ({ ...prev, licencias: parsed }));
+                                }}
+                                className="grow bg-transparent"
+                                placeholder="0"
+                              />
+                            </label>
+                          </div>
+                          <div className="form-control">
+                            <label className="label py-1">
+                              <span className="label-text text-sm font-medium">Roxair</span>
+                            </label>
+                            <label className={INPUT_CURRENCY_SM}>
+                              <span className="text-base-content/60">$</span>
+                              <input
+                                type="text"
+                                inputMode="numeric"
+                                value={formatInputValue(form.roxair)}
+                                onChange={(e) => {
+                                  const parsed = parseInputValue(e.target.value);
+                                  setForm((prev) => ({ ...prev, roxair: parsed }));
+                                }}
+                                className="grow bg-transparent"
+                                placeholder="0"
+                              />
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Resumen Tipo de Servicio + Validación */}
+                    <div className="card bg-base-200 border-base-300 border-2">
+                      <div className="card-body">
+                        <h3 className="text-base-content mb-2 text-sm font-bold tracking-wide uppercase">
+                          Total por Tipo de Servicio
+                        </h3>
+                        <div className="mb-4 text-center">
+                          <p className="text-base-content/60 mb-1 text-xs font-semibold">TOTAL</p>
+                          <p className="text-info text-2xl font-bold">{currencyFormatter.format(serviceTotals)}</p>
+                        </div>
+
+                        {/* Validation Alert */}
+                        {hasDifference ? (
+                          <div className="alert alert-warning text-sm">
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              className="h-5 w-5 shrink-0 stroke-current"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2"
+                                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                              ></path>
+                            </svg>
+                            <div>
+                              <div className="font-bold">⚠️ Los totales no coinciden</div>
+                              <div className="text-xs">
+                                Diferencia: {currencyFormatter.format(Math.abs(difference))} (
+                                {difference > 0 ? "servicios superan pagos" : "pagos superan servicios"})
+                                {form.status === "FINAL" && (
+                                  <span className="ml-2 font-semibold">
+                                    • Considera dejarlo en BORRADOR hasta verificar
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="alert alert-success text-sm">
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-5 w-5 shrink-0 stroke-current"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2"
+                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                              />
+                            </svg>
+                            <div>
+                              <span className="font-bold">✓ Totales coinciden perfectamente</span>
+                              <span className="ml-2 text-xs">• Puedes marcarlo como CERRADO cuando esté listo</span>
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="divider my-2"></div>
+
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <p className="text-base-content/60 mb-1 text-xs">Por Método de Pago</p>
+                            <p className="text-primary font-bold">{currencyFormatter.format(paymentMethodTotal)}</p>
+                          </div>
+                          <div>
+                            <p className="text-base-content/60 mb-1 text-xs">Por Tipo de Servicio</p>
+                            <p className="text-info font-bold">{currencyFormatter.format(serviceTotals)}</p>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Notas Card */}
-                <div className="card bg-base-100 border-base-300 border">
+                {/* Notas Card - Full width debajo de ambas columnas */}
+                <div className="card bg-base-100 border-base-300 mt-4 border">
                   <div className="card-body gap-4">
                     <div className="flex items-center gap-2">
                       <ClipboardList className="text-base-content/60 h-5 w-5" />
