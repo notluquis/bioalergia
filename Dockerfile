@@ -2,8 +2,8 @@
 # Multi-stage Dockerfile optimized for Railway Metal builders
 
 # Stage 1: Base (Common files)
-# Use LTS tag to always get the latest Long-Term Support version
-FROM node:lts-alpine AS base
+# Use latest Current version with Debian Slim (faster than Alpine, uses glibc)
+FROM node:current-slim AS base
 WORKDIR /app
 COPY package*.json ./
 
@@ -34,8 +34,8 @@ RUN npm prune --omit=dev && \
     rm -rf node_modules/.cache node_modules/*/.git node_modules/*/test node_modules/*/tests node_modules/*/*.md node_modules/*/docs 2>/dev/null || true
 
 # Stage 5: Runner (Production Image)
-# Use LTS tag to always get the latest Long-Term Support version
-FROM node:lts-alpine AS runner
+# Use latest Current version with Debian Slim (faster than Alpine, uses glibc)
+FROM node:current-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
