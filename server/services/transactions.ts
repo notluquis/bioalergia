@@ -261,7 +261,7 @@ export async function getParticipantInsight(
           ELSE NULL
         END as withdraw_id
       FROM transactions t
-      INNER JOIN person p ON t.person_id = p.id
+      INNER JOIN people p ON t.person_id = p.id
       WHERE (p.names NOT LIKE '%Test%' AND p.names NOT LIKE '%test%'
              AND p.rut NOT LIKE '11111111%' AND p.rut NOT LIKE 'TEMP-%'
              AND (p.email IS NULL OR p.email NOT LIKE '%test%'))
@@ -331,7 +331,7 @@ export async function getParticipantInsight(
           ELSE NULL
         END as withdraw_id
       FROM transactions t
-      INNER JOIN person p ON t.person_id = p.id
+      INNER JOIN people p ON t.person_id = p.id
       WHERE (p.names NOT LIKE '%Test%' AND p.names NOT LIKE '%test%'
              AND p.rut NOT LIKE '11111111%' AND p.rut NOT LIKE 'TEMP-%'
              AND (p.email IS NULL OR p.email NOT LIKE '%test%'))
