@@ -345,31 +345,32 @@ export default function DailyProductionBalancesPage() {
                 </div>
               </div>
 
-              <form className="lg:col-span-2" onSubmit={handleSubmit}>
-                <div className="grid gap-4 lg:grid-cols-2">
-                  {/* COLUMNA IZQUIERDA: Métodos de Pago + Gastos */}
-                  <div className="space-y-3">
-                    <div className="alert alert-info text-sm">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        className="h-5 w-5 shrink-0 stroke-current"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                        ></path>
-                      </svg>
-                      <span>
-                        <strong>Flujo de trabajo:</strong> 1) Registra ingresos por método de pago → 2) Registra
-                        ingresos por tipo de servicio → 3) Verifica que ambos totales coincidan
-                      </span>
-                    </div>
+              <form className="space-y-4 lg:col-span-2" onSubmit={handleSubmit}>
+                {/* Alert de flujo - arriba de todo */}
+                <div className="alert alert-info text-sm">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    className="h-5 w-5 shrink-0 stroke-current"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    ></path>
+                  </svg>
+                  <span>
+                    <strong>Flujo de trabajo:</strong> 1) Registra ingresos por método de pago → 2) Registra ingresos
+                    por tipo de servicio → 3) Verifica que ambos totales coincidan
+                  </span>
+                </div>
 
-                    {/* PASO 1: Ingresos por Método de Pago */}
+                {/* Grid de 2 columnas */}
+                <div className="grid gap-4 lg:grid-cols-2">
+                  {/* COLUMNA IZQUIERDA: Métodos de Pago + Gastos + Total Método */}
+                  <div className="space-y-3">
                     <div className="card bg-success/5 border-success/20 border">
                       <div className="card-body gap-3 p-4">
                         <div className="flex items-center justify-between">
@@ -540,7 +541,7 @@ export default function DailyProductionBalancesPage() {
                     </div>
                   </div>
 
-                  {/* COLUMNA DERECHA: Servicios + Validación */}
+                  {/* COLUMNA DERECHA: Servicios + Total Servicio + Validación */}
                   <div className="space-y-3">
                     {/* PASO 2: Ingresos por Tipo de Servicio */}
                     <div className="card bg-info/5 border-info/20 border-2">
