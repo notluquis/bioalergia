@@ -345,7 +345,7 @@ export default function DailyProductionBalancesPage() {
                 </div>
               </div>
 
-              <form className="space-y-4 lg:col-span-2" onSubmit={handleSubmit}>
+              <form className="space-y-4" onSubmit={handleSubmit}>
                 {/* Alert de flujo - arriba de todo */}
                 <div className="alert alert-info text-sm">
                   <svg
