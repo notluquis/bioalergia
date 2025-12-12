@@ -63,7 +63,7 @@ const PersonDetailsPage = lazy(() => import("./pages/settings/PersonDetailsPage"
 const CalendarSettingsPage = lazy(() => import("./pages/settings/CalendarSettingsPage"));
 const InventorySettingsPage = lazy(() => import("./pages/settings/InventorySettingsPage"));
 const RolesSettingsPage = lazy(() => import("./pages/settings/RolesSettingsPage"));
-const DailyProductionBalancesSettingsPage = lazy(() => import("./pages/settings/DailyProductionBalancesPage"));
+const ProductionBalancesPage = lazy(() => import("./pages/finanzas/ProductionBalancesPage"));
 const SecuritySettingsPage = lazy(() => import("./pages/settings/SecuritySettingsPage"));
 const AddUserPage = lazy(() => import("./pages/admin/AddUserPage"));
 const OnboardingWizard = lazy(() => import("./pages/onboarding/OnboardingWizard"));
@@ -163,7 +163,7 @@ const router = createBrowserRouter([
             path: "production-balances",
             element: (
               <Suspense fallback={<PageLoader />}>
-                <DailyProductionBalancesSettingsPage />
+                <ProductionBalancesPage />
               </Suspense>
             ),
           },

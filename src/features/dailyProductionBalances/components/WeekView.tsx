@@ -22,15 +22,15 @@ export default function WeekView({ currentDate, onDateChange, balances, onSelect
   const weeklyExpenses = balances.reduce((acc, b) => acc + Number(b.gastosDiarios), 0);
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-1">
           <Button variant="ghost" size="xs" onClick={() => onDateChange(currentDate.subtract(1, "week"))}>
-            <ChevronLeft size={16} />
+            <ChevronLeft size={14} />
           </Button>
-          <h2 className="text-base-content text-base font-semibold capitalize">{startOfWeek.format("MMM YYYY")}</h2>
+          <h2 className="text-base-content text-sm font-semibold capitalize">{startOfWeek.format("MMM YYYY")}</h2>
           <Button variant="ghost" size="xs" onClick={() => onDateChange(currentDate.add(1, "week"))}>
-            <ChevronRight size={16} />
+            <ChevronRight size={14} />
           </Button>
           <Button variant="ghost" size="xs" onClick={() => onDateChange(dayjs())}>
             Hoy
@@ -38,13 +38,13 @@ export default function WeekView({ currentDate, onDateChange, balances, onSelect
         </div>
 
         <div className="flex gap-2 text-xs">
-          <div className="bg-base-200/50 rounded-lg px-2 py-1">
-            <span className="text-base-content/60 block">Ingresos</span>
-            <span className="text-success font-semibold">{currencyFormatter.format(weeklyIncome)}</span>
+          <div className="bg-base-200/50 rounded px-2 py-0.5">
+            <span className="text-base-content/60 text-[10px]">Ingresos</span>
+            <span className="text-success ml-1 font-semibold">{currencyFormatter.format(weeklyIncome)}</span>
           </div>
-          <div className="bg-base-200/50 rounded-lg px-2 py-1">
-            <span className="text-base-content/60 block">Gastos</span>
-            <span className="text-error font-semibold">{currencyFormatter.format(weeklyExpenses)}</span>
+          <div className="bg-base-200/50 rounded px-2 py-0.5">
+            <span className="text-base-content/60 text-[10px]">Gastos</span>
+            <span className="text-error ml-1 font-semibold">{currencyFormatter.format(weeklyExpenses)}</span>
           </div>
         </div>
       </div>

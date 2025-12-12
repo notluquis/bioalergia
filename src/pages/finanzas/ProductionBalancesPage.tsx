@@ -323,7 +323,7 @@ export default function DailyProductionBalancesPage() {
                           <div className="flex items-center gap-2">
                             <div className="badge badge-lg badge-success font-bold">1</div>
                             <div>
-                              <h3 className="text-base-content text-lg font-bold">Ingresos por Método de Pago</h3>
+                              <h3 className="text-base-content text-lg font-bold">Ingresos por método de pago</h3>
                               <p className="text-base-content/60 text-xs">¿Cómo ingresó el dinero?</p>
                             </div>
                           </div>
@@ -404,7 +404,7 @@ export default function DailyProductionBalancesPage() {
                       <div className="card-body gap-4">
                         <div className="flex items-center gap-2">
                           <TrendingDown className="text-error h-5 w-5" />
-                          <h3 className="text-base-content text-base font-semibold">Gastos y Ajustes</h3>
+                          <h3 className="text-base-content text-base font-semibold">Gastos y ajustes</h3>
                         </div>
                         <div className={GRID_2_COL_SM}>
                           <div className="form-control">
@@ -459,9 +459,7 @@ export default function DailyProductionBalancesPage() {
                     <div className="card bg-base-200 border-base-300 border">
                       <div className="card-body p-3">
                         <div className="mb-2 flex items-center gap-2">
-                          <h3 className="text-base-content text-sm font-bold tracking-wide uppercase">
-                            Total por Método de Pago
-                          </h3>
+                          <h3 className="text-base-content text-sm font-bold">Total por método de pago</h3>
                         </div>
                         <div className="grid grid-cols-3 gap-4">
                           <div className="text-center">
@@ -477,7 +475,7 @@ export default function DailyProductionBalancesPage() {
                             </p>
                           </div>
                           <div className="text-center">
-                            <p className="text-base-content/60 mb-1 text-xs font-semibold">TOTAL</p>
+                            <p className="text-base-content/60 mb-1 text-xs font-semibold">Total</p>
                             <p className="text-primary text-2xl font-bold">
                               {currencyFormatter.format(paymentMethodTotal)}
                             </p>
@@ -496,7 +494,7 @@ export default function DailyProductionBalancesPage() {
                           <div className="flex items-center gap-2">
                             <div className="badge badge-lg badge-info font-bold">2</div>
                             <div>
-                              <h3 className="text-base-content text-lg font-bold">Ingresos por Tipo de Servicio</h3>
+                              <h3 className="text-base-content text-lg font-bold">Ingresos por tipo de servicio</h3>
                               <p className="text-base-content/60 text-xs">
                                 ¿Qué servicios generaron ingresos? (montos en $)
                               </p>
@@ -613,9 +611,7 @@ export default function DailyProductionBalancesPage() {
                     {/* Resumen Tipo de Servicio + Validación */}
                     <div className="card bg-base-200 border-base-300 border-2">
                       <div className="card-body">
-                        <h3 className="text-base-content mb-2 text-sm font-bold tracking-wide uppercase">
-                          Total por Tipo de Servicio
-                        </h3>
+                        <h3 className="text-base-content mb-2 text-sm font-bold">Total por tipo de servicio</h3>
                         <div className="mb-4 text-center">
                           <p className="text-base-content/60 mb-1 text-xs font-semibold">TOTAL</p>
                           <p className="text-info text-2xl font-bold">{currencyFormatter.format(serviceTotals)}</p>
@@ -644,7 +640,7 @@ export default function DailyProductionBalancesPage() {
                                 {difference > 0 ? "servicios superan pagos" : "pagos superan servicios"})
                                 {form.status === "FINAL" && (
                                   <span className="ml-2 font-semibold">
-                                    • Considera dejarlo en BORRADOR hasta verificar
+                                    • Considera dejarlo en borrador hasta verificar
                                   </span>
                                 )}
                               </div>
@@ -676,11 +672,11 @@ export default function DailyProductionBalancesPage() {
 
                         <div className="grid grid-cols-2 gap-4 text-sm">
                           <div>
-                            <p className="text-base-content/60 mb-1 text-xs">Por Método de Pago</p>
+                            <p className="text-base-content/60 mb-1 text-xs">Por método de pago</p>
                             <p className="text-primary font-bold">{currencyFormatter.format(paymentMethodTotal)}</p>
                           </div>
                           <div>
-                            <p className="text-base-content/60 mb-1 text-xs">Por Tipo de Servicio</p>
+                            <p className="text-base-content/60 mb-1 text-xs">Por tipo de servicio</p>
                             <p className="text-info font-bold">{currencyFormatter.format(serviceTotals)}</p>
                           </div>
                         </div>
@@ -694,7 +690,7 @@ export default function DailyProductionBalancesPage() {
                   <div className="card-body gap-4">
                     <div className="flex items-center gap-2">
                       <ClipboardList className="text-base-content/60 h-5 w-5" />
-                      <h3 className="text-base-content text-base font-semibold">Notas y Observaciones</h3>
+                      <h3 className="text-base-content text-base font-semibold">Notas y observaciones</h3>
                     </div>
                     <div className="space-y-3">
                       <Input
