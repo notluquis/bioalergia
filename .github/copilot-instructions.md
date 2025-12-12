@@ -27,13 +27,14 @@ Recent Major Changes (Last 30 Days)
 **Calendar & API Infrastructure (Dec 2024):**
 
 - **Calendar API**: Use `src/features/calendar/api.ts` for all calendar operations — already has `fetchCalendarSummary`, `fetchCalendarDaily`, `syncCalendarEvents`, `fetchCalendarSyncLogs`, `fetchUnclassifiedCalendarEvents`, `classifyCalendarEvent`.
-- **Calendar Hooks**: Use `src/features/calendar/hooks/useCalendarEvents.ts` — provides complete state management for calendar filters, sync status, and data fetching.
-- **Calendar Types**: All types defined in `src/features/calendar/types.ts` — use these instead of creating duplicates. CalendarSyncLog now includes "RUNNING" status.
-- **Settings Pages**: `src/pages/settings/CalendarSettingsPage.tsx` uses existing calendar API functions, shows RUNNING state with auto-refresh every 5s.
+- **Calendar Hooks**: Use `src/features/calendar/hooks/useCalendarEvents.ts` — provides complete state management for calendar filters, sync status, and data fetching. Exposes `hasRunningSyncFromOtherSource` to detect RUNNING syncs from any source.
+- **Calendar Types**: All types defined in `src/features/calendar/types.ts` — use these instead of creating duplicates. CalendarSyncLog includes "RUNNING" | "SUCCESS" | "ERROR" status.
+- **Settings Pages**: `src/pages/settings/CalendarSettingsPage.tsx` uses existing calendar API functions, shows RUNNING state with auto-refresh only when RUNNING (no unnecessary polling).
 - **Backend Endpoints**: `GET /api/calendar/calendars` returns list of calendars with event counts. All calendar routes in `server/routes/calendar-events.ts`.
 - **Error Handling**: `server/lib/google-calendar-store.ts` wraps all calendar upserts in try-catch with detailed logging. Follows Google Calendar API best practices for exponential backoff on 403/429 errors.
 - **Sync Lock**: `server/services/calendar.ts` manages RUNNING sync lock with 5-minute stale timeout (reduced from 10min). Automatically marks stale syncs as ERROR.
-- **UI State**: All calendar UI components (`CalendarSettingsPage`, `CalendarSyncHistoryPage`) display RUNNING state with badge-warning + spinner, auto-refresh every 5s to detect state changes.
+- **UI State**: All calendar UI components (`CalendarSettingsPage`, `CalendarSyncHistoryPage`, `CalendarSummaryPage`) display RUNNING state with badge-warning + spinner. Auto-refresh every 5s only when status=RUNNING (conditional polling via useEffect).
+- **Google Calendar Webhooks**: Documented in `docs/google-calendar-webhooks.md`. Push notifications available but not implemented (polling every 15min sufficient for current scale). Use webhooks when >100 active users or need <5min latency.
 
 **Schema Consistency (Dec 2024):**
 
