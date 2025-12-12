@@ -11,7 +11,6 @@ import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import ConnectionIndicator from "@/components/features/ConnectionIndicator";
 import ThemeToggle from "@/components/ui/ThemeToggle";
-import { useToast } from "@/context/ToastContext";
 import { apiClient } from "@/lib/apiClient";
 
 export default function LoginPage() {
@@ -19,7 +18,6 @@ export default function LoginPage() {
   const { settings } = useSettings();
   const navigate = useNavigate();
   const location = useLocation();
-  const { error: toastError } = useToast();
 
   // Login State
   const [email, setEmail] = useState("");
@@ -56,7 +54,6 @@ export default function LoginPage() {
       navigate(from, { replace: true });
     } catch (err) {
       const message = err instanceof Error ? err.message : "No se pudo iniciar sesión";
-      toastError(message);
       setFormError(message);
       logger.error("[login-page] login error", { email, message });
       setLoading(false);
@@ -192,7 +189,6 @@ export default function LoginPage() {
               placeholder="••••••••"
               autoComplete="current-password"
               enterKeyHint="go"
-              required
             />
 
             <div className="flex gap-2 pt-2">
