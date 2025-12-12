@@ -198,7 +198,7 @@ export async function getCalendarAggregates(filters: CalendarEventFilters): Prom
            COUNT(*) AS total,
            SUM(events.amount_expected) AS amountExpected,
            SUM(events.amount_paid) AS amountPaid
-      FROM google_calendar_events events
+      FROM events AS events
       ${where}
      GROUP BY EXTRACT(YEAR FROM ${EVENT_DATETIME})
      ORDER BY EXTRACT(YEAR FROM ${EVENT_DATETIME})
@@ -212,7 +212,7 @@ export async function getCalendarAggregates(filters: CalendarEventFilters): Prom
            COUNT(*) AS total,
            SUM(events.amount_expected) AS amountExpected,
            SUM(events.amount_paid) AS amountPaid
-      FROM google_calendar_events events
+      FROM events AS events
       ${where}
      GROUP BY EXTRACT(YEAR FROM ${EVENT_DATETIME}), EXTRACT(MONTH FROM ${EVENT_DATETIME})
      ORDER BY EXTRACT(YEAR FROM ${EVENT_DATETIME}), EXTRACT(MONTH FROM ${EVENT_DATETIME})
@@ -226,7 +226,7 @@ export async function getCalendarAggregates(filters: CalendarEventFilters): Prom
            COUNT(*) AS total,
            SUM(events.amount_expected) AS amountExpected,
            SUM(events.amount_paid) AS amountPaid
-      FROM google_calendar_events events
+      FROM events AS events
       ${where}
      GROUP BY isoYear, isoWeek
      ORDER BY isoYear, isoWeek
@@ -239,7 +239,7 @@ export async function getCalendarAggregates(filters: CalendarEventFilters): Prom
            COUNT(*) AS total,
            SUM(events.amount_expected) AS amountExpected,
            SUM(events.amount_paid) AS amountPaid
-      FROM google_calendar_events events
+      FROM events AS events
       ${where}
      GROUP BY EXTRACT(DOW FROM ${EVENT_DATETIME})
      ORDER BY EXTRACT(DOW FROM ${EVENT_DATETIME})
@@ -252,7 +252,7 @@ export async function getCalendarAggregates(filters: CalendarEventFilters): Prom
            COUNT(*) AS total,
            SUM(events.amount_expected) AS amountExpected,
            SUM(events.amount_paid) AS amountPaid
-      FROM google_calendar_events events
+      FROM events AS events
       ${where}
      GROUP BY date
      ORDER BY date
@@ -264,14 +264,14 @@ export async function getCalendarAggregates(filters: CalendarEventFilters): Prom
     SELECT COUNT(*) AS total,
            SUM(events.amount_expected) AS total_expected,
            SUM(events.amount_paid) AS total_paid
-      FROM google_calendar_events events
+      FROM events AS events
       ${where}
   `);
 
   const calendarRows = await prisma.$queryRaw<Array<{ calendarId: string; total: bigint }>>(Prisma.sql`
     SELECT events.calendar_id AS calendarId,
            COUNT(*) AS total
-      FROM google_calendar_events events
+      FROM events AS events
       ${where}
      GROUP BY events.calendar_id
      ORDER BY events.calendar_id
@@ -280,7 +280,7 @@ export async function getCalendarAggregates(filters: CalendarEventFilters): Prom
   const eventTypeRows = await prisma.$queryRaw<Array<{ eventType: string | null; total: bigint }>>(Prisma.sql`
     SELECT events.event_type AS eventType,
            COUNT(*) AS total
-      FROM google_calendar_events events
+      FROM events AS events
       ${where}
      GROUP BY events.event_type
      ORDER BY events.event_type IS NULL, events.event_type
@@ -289,7 +289,7 @@ export async function getCalendarAggregates(filters: CalendarEventFilters): Prom
   const categoryRows = await prisma.$queryRaw<Array<{ category: string | null; total: bigint }>>(Prisma.sql`
     SELECT CASE WHEN events.category IS NULL OR events.category = '' THEN NULL ELSE events.category END AS category,
            COUNT(*) AS total
-      FROM google_calendar_events events
+      FROM events AS events
       ${where}
      GROUP BY category
      ORDER BY category IS NULL, category
@@ -354,7 +354,7 @@ export async function getCalendarEventsByDate(
            COUNT(*) AS total,
            SUM(events.amount_expected) AS amountExpected,
            SUM(events.amount_paid) AS amountPaid
-      FROM google_calendar_events events
+      FROM events AS events
       ${where}
      GROUP BY date
      ORDER BY date DESC
@@ -410,7 +410,7 @@ export async function getCalendarEventsByDate(
         events.raw_event AS rawEvent,
         ${EVENT_DATE} AS event_date,
         DATE_FORMAT(${EVENT_DATETIME}, '%Y-%m-%dT%H:%i:%s') AS event_date_time
-      FROM google_calendar_events events
+      FROM events AS events
       ${whereWithDates}
      ORDER BY event_date DESC, ${EVENT_DATETIME} ASC, events.event_id ASC
   `);
