@@ -117,10 +117,12 @@ const router = createBrowserRouter([
       // Finanzas Section
       {
         path: "/finanzas",
+        handle: { title: "Finanzas" },
         children: [
           { index: true, element: <Navigate to="movements" replace /> },
           {
             path: "movements",
+            handle: { title: "Movimientos registrados" },
             element: (
               <Suspense fallback={<PageLoader />}>
                 <TransactionsMovements />
@@ -129,6 +131,7 @@ const router = createBrowserRouter([
           },
           {
             path: "balances",
+            handle: { title: "Saldos diarios" },
             element: (
               <Suspense fallback={<PageLoader />}>
                 <DailyBalances />
@@ -137,6 +140,7 @@ const router = createBrowserRouter([
           },
           {
             path: "participants",
+            handle: { title: "Participantes" },
             element: (
               <Suspense fallback={<PageLoader />}>
                 <ParticipantInsightsPage />
@@ -145,6 +149,7 @@ const router = createBrowserRouter([
           },
           {
             path: "counterparts",
+            handle: { title: "Contrapartes" },
             element: (
               <Suspense fallback={<PageLoader />}>
                 <CounterpartsPage />
@@ -153,6 +158,7 @@ const router = createBrowserRouter([
           },
           {
             path: "loans",
+            handle: { title: "Préstamos y créditos" },
             element: (
               <Suspense fallback={<PageLoader />}>
                 <LoansPage />
@@ -161,6 +167,7 @@ const router = createBrowserRouter([
           },
           {
             path: "production-balances",
+            handle: { title: "Balances de producción diaria" },
             element: (
               <Suspense fallback={<PageLoader />}>
                 <ProductionBalancesPage />
