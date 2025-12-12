@@ -1,57 +1,107 @@
 import { useState } from "react";
 import { Calendar, RefreshCw, CheckCircle2, AlertCircle } from "lucide-react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Button from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
+import { apiClient } from "@/lib/apiClient";
+
+interface CalendarData {
+  id: number;
+  googleId: string;
+  name: string;
+  eventCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface SyncLog {
+  id: number;
+  status: string;
+  startedAt: string;
+  finishedAt: string | null;
+  inserted: number;
+  updated: number;
+  excluded: number;
+}
 
 export default function CalendarSettingsPage() {
   const [syncing, setSyncing] = useState(false);
+  const queryClient = useQueryClient();
 
-  // Fetch sync status (mock for now, or real endpoint if available)
-  const { data: syncStatus } = useQuery({
-    queryKey: ["calendar-sync-status"],
+  // Fetch calendars
+  const { data: calendarsData, isLoading: calendarsLoading } = useQuery({
+    queryKey: ["calendars"],
     queryFn: async () => {
-      // In a real app, fetch from /api/calendar/status
-      return {
-        lastSync: new Date().toISOString(),
-        status: "SUCCESS", // SUCCESS, ERROR, PENDING
-        calendars: ["primary", "secondary"],
-      };
+      return await apiClient.get<{ calendars: CalendarData[] }>("/api/calendar/calendars");
     },
   });
+
+  // Fetch sync logs
+  const { data: syncLogsData } = useQuery({
+    queryKey: ["calendar-sync-logs"],
+    queryFn: async () => {
+      return await apiClient.get<{ logs: SyncLog[] }>("/api/calendar/events/sync/logs");
+    },
+  });
+
+  const lastSync = syncLogsData?.logs?.[0];
+  const syncStatus = lastSync?.status === "SUCCESS" ? "SUCCESS" : lastSync?.status === "RUNNING" ? "RUNNING" : "ERROR";
 
   const syncMutation = useMutation({
     mutationFn: async () => {
       setSyncing(true);
-      // Simulate sync delay
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      // Call actual endpoint: await apiClient.post("/api/calendar/sync", {});
-      setSyncing(false);
+      try {
+        await apiClient.post("/api/calendar/events/sync", {});
+        await queryClient.invalidateQueries({ queryKey: ["calendar-sync-logs"] });
+        await queryClient.invalidateQueries({ queryKey: ["calendars"] });
+      } finally {
+        setSyncing(false);
+      }
     },
   });
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-base-content">Configuración de Calendario</h1>
-        <p className="text-sm text-base-content/60">Gestiona la sincronización con Google Calendar.</p>
+        <h1 className="text-base-content text-2xl font-bold">Configuración de Calendario</h1>
+        <p className="text-base-content/60 text-sm">Gestiona la sincronización con Google Calendar.</p>
       </div>
 
-      <div className="surface-elevated rounded-2xl p-6 space-y-6">
+      <div className="surface-elevated space-y-6 rounded-2xl p-6">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-500/10 text-blue-500">
               <Calendar size={24} />
             </div>
             <div>
-              <h2 className="font-bold text-lg">Sincronización Automática</h2>
-              <p className="text-sm text-base-content/60">Los eventos se sincronizan cada 15 minutos.</p>
+              <h2 className="text-lg font-bold">Sincronización Automática</h2>
+              <p className="text-base-content/60 text-sm">Los eventos se sincronizan cada 15 minutos.</p>
+              {lastSync && (
+                <p className="text-base-content/50 mt-1 text-xs">
+                  Última sincronización:{" "}
+                  {new Date(lastSync.startedAt).toLocaleString("es-CL", {
+                    dateStyle: "short",
+                    timeStyle: "short",
+                  })}
+                </p>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <span className={cn("badge gap-1", syncStatus?.status === "SUCCESS" ? "badge-success" : "badge-error")}>
-              {syncStatus?.status === "SUCCESS" ? <CheckCircle2 size={12} /> : <AlertCircle size={12} />}
-              {syncStatus?.status === "SUCCESS" ? "Activo" : "Error"}
+            <span
+              className={cn(
+                "badge gap-1",
+                syncStatus === "SUCCESS" ? "badge-success" : syncStatus === "RUNNING" ? "badge-warning" : "badge-error"
+              )}
+            >
+              {syncStatus === "SUCCESS" ? (
+                <CheckCircle2 size={12} />
+              ) : syncStatus === "RUNNING" ? (
+                <RefreshCw size={12} className="animate-spin" />
+              ) : (
+                <AlertCircle size={12} />
+              )}
+              {syncStatus === "SUCCESS" ? "Activo" : syncStatus === "RUNNING" ? "Sincronizando" : "Error"}
             </span>
           </div>
         </div>
@@ -59,27 +109,51 @@ export default function CalendarSettingsPage() {
         <div className="divider" />
 
         <div className="space-y-4">
-          <h3 className="font-medium text-base-content/80">Calendarios Conectados</h3>
-          <div className="grid gap-3">
-            {syncStatus?.calendars.map((cal, idx) => (
-              <div
-                key={idx}
-                className="flex items-center justify-between p-3 bg-base-200/50 rounded-lg border border-base-200"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 rounded-full bg-blue-500" />
-                  <span className="font-medium">{cal}</span>
-                </div>
-                <span className="text-xs text-base-content/50 font-mono">ID: {cal}</span>
-              </div>
-            ))}
+          <div className="flex items-center justify-between">
+            <h3 className="text-base-content/80 font-medium">Calendarios Conectados</h3>
+            {!calendarsLoading && (
+              <span className="text-base-content/50 text-xs">{calendarsData?.calendars.length || 0} calendario(s)</span>
+            )}
           </div>
+
+          {calendarsLoading ? (
+            <div className="flex justify-center p-8">
+              <RefreshCw size={24} className="text-base-content/30 animate-spin" />
+            </div>
+          ) : calendarsData?.calendars && calendarsData.calendars.length > 0 ? (
+            <div className="grid gap-3">
+              {calendarsData.calendars.map((cal: CalendarData) => (
+                <div
+                  key={cal.id}
+                  className="bg-base-200/50 border-base-200 flex items-center justify-between rounded-lg border p-3"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="h-2 w-2 rounded-full bg-blue-500" />
+                    <div>
+                      <span className="font-medium">{cal.name}</span>
+                      <p className="text-base-content/50 mt-0.5 text-xs">{cal.eventCount.toLocaleString()} evento(s)</p>
+                    </div>
+                  </div>
+                  <span className="text-base-content/50 font-mono text-xs">{cal.googleId}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-base-content/50 p-8 text-center">
+              <Calendar size={32} className="mx-auto mb-2 opacity-30" />
+              <p className="text-sm">No hay calendarios conectados</p>
+            </div>
+          )}
         </div>
 
         <div className="flex justify-end pt-4">
-          <Button onClick={() => syncMutation.mutate()} disabled={syncing} className="gap-2">
-            <RefreshCw size={16} className={cn(syncing && "animate-spin")} />
-            {syncing ? "Sincronizando..." : "Sincronizar Ahora"}
+          <Button
+            onClick={() => syncMutation.mutate()}
+            disabled={syncing || syncStatus === "RUNNING"}
+            className="gap-2"
+          >
+            <RefreshCw size={16} className={cn((syncing || syncStatus === "RUNNING") && "animate-spin")} />
+            {syncing || syncStatus === "RUNNING" ? "Sincronizando..." : "Sincronizar Ahora"}
           </Button>
         </div>
       </div>

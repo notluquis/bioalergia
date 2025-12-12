@@ -9,6 +9,7 @@ import {
   type CalendarEventFilters,
 } from "../lib/google-calendar-queries.js";
 import { syncGoogleCalendarOnce } from "../lib/google-calendar.js";
+import { prisma } from "../prisma.js";
 
 import {
   loadSettings,
@@ -296,6 +297,41 @@ export function registerCalendarEventRoutes(app: express.Express) {
       });
 
       res.json({ status: "ok" });
+    })
+  );
+
+  app.get(
+    "/api/calendar/calendars",
+    authenticate,
+    requireRole("VIEWER", "ANALYST", "ADMIN", "GOD"),
+    asyncHandler(async (_req, res) => {
+      const calendars = await prisma.calendar.findMany({
+        orderBy: { name: "asc" },
+        select: {
+          id: true,
+          googleId: true,
+          name: true,
+          createdAt: true,
+          updatedAt: true,
+          _count: {
+            select: {
+              events: true,
+            },
+          },
+        },
+      });
+
+      res.json({
+        status: "ok",
+        calendars: calendars.map((cal) => ({
+          id: cal.id,
+          googleId: cal.googleId,
+          name: cal.name ?? "Sin nombre",
+          eventCount: cal._count.events,
+          createdAt: cal.createdAt.toISOString(),
+          updatedAt: cal.updatedAt.toISOString(),
+        })),
+      });
     })
   );
 }
