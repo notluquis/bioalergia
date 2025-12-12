@@ -190,16 +190,6 @@ export default function AddUserPage() {
               checked={form.mfaEnforced}
               onChange={(e) => setForm({ ...form, mfaEnforced: e.target.checked })}
             />
-            <Checkbox
-              label="Solo Passkey (sin contraseña)"
-              checked={form.passkeyOnly}
-              onChange={(e) => setForm({ ...form, passkeyOnly: e.target.checked })}
-            />
-            {form.passkeyOnly && (
-              <p className="text-warning pl-6 text-xs">
-                ⚠️ El usuario deberá configurar un Passkey al iniciar sesión por primera vez. No podrá usar contraseña.
-              </p>
-            )}
           </div>
         </div>
 

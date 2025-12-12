@@ -189,7 +189,7 @@ export const productionBalancePayloadSchema = z.object({
 
 export const loginSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(1),
+  password: z.string().optional().default(""), // Allow empty for PENDING_SETUP users only
 });
 
 export const employeeSchema = z.object({
