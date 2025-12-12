@@ -1,16 +1,17 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 
 import Button from "@/components/ui/Button";
-import Alert from "@/components/ui/Alert";
-import { fetchCalendarSyncLogs, syncCalendarEvents } from "@/features/calendar/api";
+import { fetchCalendarSyncLogs } from "@/features/calendar/api";
+import { useCalendarEvents } from "@/features/calendar/hooks/useCalendarEvents";
+import { SyncProgressPanel } from "@/features/calendar/components/SyncProgressPanel";
 import { numberFormatter } from "@/lib/format";
 import { TITLE_LG } from "@/lib/styles";
 
 export default function CalendarSyncHistoryPage() {
-  const [error, setError] = useState<string | null>(null);
-  const [syncMessage, setSyncMessage] = useState<string | null>(null);
+  const { syncing, syncError, syncProgress, syncDurationMs, syncNow, hasRunningSyncFromOtherSource } =
+    useCalendarEvents();
 
   // Use React Query for auto-refresh only when RUNNING
   const {
@@ -22,38 +23,24 @@ export default function CalendarSyncHistoryPage() {
     queryFn: () => fetchCalendarSyncLogs(50),
   });
 
-  const syncing = logs.some((log) => log.status === "RUNNING");
+  const hasRunningSyncInHistory = logs.some((log) => log.status === "RUNNING");
+  const isSyncing = syncing || hasRunningSyncFromOtherSource || hasRunningSyncInHistory;
 
   // Auto-refresh every 5s when there's a RUNNING sync
   useEffect(() => {
-    if (!syncing) return;
+    if (!hasRunningSyncInHistory) return;
     const interval = setInterval(() => {
       refetchLogs().catch(() => {
         /* handled */
       });
     }, 5000);
     return () => clearInterval(interval);
-  }, [syncing, refetchLogs]);
+  }, [hasRunningSyncInHistory, refetchLogs]);
 
   const handleRefresh = () => {
     refetchLogs().catch(() => {
       /* handled */
     });
-  };
-
-  const handleSync = async () => {
-    setSyncMessage(null);
-    setError(null);
-    try {
-      const result = await syncCalendarEvents();
-      setSyncMessage(
-        `Sincronización completada. Nuevos: ${numberFormatter.format(result.inserted)}, actualizados: ${numberFormatter.format(result.updated)}, omitidos: ${numberFormatter.format(result.skipped)}.`
-      );
-      await refetchLogs();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "No se pudo ejecutar la sincronización";
-      setError(message);
-    }
   };
 
   return (
@@ -66,17 +53,14 @@ export default function CalendarSyncHistoryPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="secondary" onClick={handleRefresh} disabled={loading || syncing}>
+          <Button variant="secondary" onClick={handleRefresh} disabled={loading || isSyncing}>
             {loading ? "Actualizando..." : "Actualizar"}
           </Button>
-          <Button onClick={handleSync} disabled={syncing || loading}>
-            {syncing ? "Sincronizando..." : "Sincronizar ahora"}
+          <Button onClick={syncNow} disabled={isSyncing || loading}>
+            {isSyncing ? "Sincronizando..." : "Sincronizar ahora"}
           </Button>
         </div>
       </header>
-
-      {error && <Alert variant="error">{error}</Alert>}
-      {syncMessage && <Alert variant="success">{syncMessage}</Alert>}
 
       <div className="bg-base-100 border-base-300 overflow-hidden rounded-3xl border">
         <table className="text-base-content w-full text-left text-xs">
@@ -142,6 +126,13 @@ export default function CalendarSyncHistoryPage() {
           </ul>
         </div>
       )}
+
+      <SyncProgressPanel
+        syncing={syncing}
+        syncError={syncError}
+        syncProgress={syncProgress}
+        syncDurationMs={syncDurationMs}
+      />
     </section>
   );
 }

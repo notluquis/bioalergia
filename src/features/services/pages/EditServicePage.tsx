@@ -190,7 +190,7 @@ export default function ServiceEditPage() {
           }
         />
 
-        <ServicesSurface className="flex min-h-[260px] items-center justify-center">
+        <ServicesSurface className="flex min-h-65 items-center justify-center">
           <div className="text-base-content/70 flex items-center gap-3 text-sm">
             <span className={LOADING_SPINNER_MD} aria-hidden="true" />
             <span>Preparando datos del servicio...</span>

@@ -129,7 +129,7 @@ export default function App() {
           aria-pressed={sidebarOpen}
         >
           <span
-            className={`relative flex h-5 w-5 flex-col items-center justify-center gap-[5px] rounded-full transition-colors ${
+            className={`relative flex h-5 w-5 flex-col items-center justify-center gap-1.25 rounded-full transition-colors ${
               sidebarOpen ? "text-primary" : "text-base-content"
             }`}
             aria-hidden="true"

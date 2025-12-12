@@ -426,7 +426,7 @@ export default function CSVUploadPage() {
                         </select>
                       </td>
                       <td>
-                        <span className="text-base-content/50 inline-block max-w-[200px] truncate text-xs">
+                        <span className="text-base-content/50 inline-block max-w-50 truncate text-xs">
                           {(() => {
                             const mappedColumn = columnMapping[field.name];
                             if (mappedColumn && csvData[0]) {
