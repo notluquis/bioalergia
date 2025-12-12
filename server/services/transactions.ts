@@ -67,7 +67,7 @@ export async function getParticipantLeaderboard(filters: ParticipantLeaderboardF
     paramIndex++;
   }
 
-  const whereClause = dateFilter.length > 0 ? `WHERE ${dateFilter.join(" AND ")}` : "";
+  const whereClause = dateFilter.length > 0 ? `AND ${dateFilter.join(" AND ")}` : "";
 
   // Parse rawJson to extract bank details - we group by destination for outgoing transactions
   const query = `

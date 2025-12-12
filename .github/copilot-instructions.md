@@ -189,6 +189,11 @@ Short, actionable instructions so AI coding agents are productive immediately.
   - If you touched imports or server routes, run `npm run build:server` and `npm run server` to smoke-test APIs.
   - If you changed the withdrawals flow, run `npm run test:withdrawals` with `RUN_WITHDRAWALS_IT=1` and a valid `TEST_COOKIE`.
 
+**Expected Build Warnings (Safe to Ignore):**
+
+- `npm warn deprecated sourcemap-codec, source-map, node-domexception` — Transitive dependencies from vite-plugin-pwa/workbox-build (latest versions, no updates available)
+- `PostCSS: Unknown at rule: @property` — daisyUI uses modern CSS Houdini features, fully functional in target browsers
+
 7. Search helpers & quick gambits
 
 - Find remaining non-semantic UI styling to convert:
