@@ -14,6 +14,7 @@ const TITLES: Record<string, string> = {
   "/finanzas/counterparts": "Contrapartes",
   "/finanzas/participants": "Participantes",
   "/finanzas/loans": "Préstamos y créditos",
+  "/finanzas/production-balances": "Balances de producción diaria",
   // Servicios
   "/services": "Servicios recurrentes",
   "/services/agenda": "Agenda de servicios",

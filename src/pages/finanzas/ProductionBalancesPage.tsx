@@ -235,13 +235,6 @@ export default function DailyProductionBalancesPage() {
 
   return (
     <section className={`${PAGE_CONTAINER} p-4`}>
-      <div className="flex flex-col gap-1">
-        <h1 className="text-base-content text-2xl font-bold">Balances Diarios</h1>
-        <p className="text-base-content/60 text-sm">
-          Registra ingresos, gastos y actividades diarias de forma rápida y eficiente.
-        </p>
-      </div>
-
       <WeekView
         currentDate={currentDate}
         onDateChange={setCurrentDate}
