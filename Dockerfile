@@ -4,6 +4,8 @@
 # Stage 1: Base (Common files)
 # Use latest Current version with Debian Slim (faster than Alpine, uses glibc)
 FROM node:current-slim AS base
+# Install OpenSSL for Prisma
+RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY package*.json ./
 
@@ -13,8 +15,8 @@ FROM base AS deps
 COPY prisma ./prisma/
 # Set dummy DB URL for Prisma generation
 ENV DATABASE_URL="postgresql://dummy:dummy@dummy:5432/dummy"
-# Only generate Prisma binaries for Alpine Linux (musl) - reduces size significantly
-ENV PRISMA_CLI_BINARY_TARGETS="linux-musl-openssl-3.0.x"
+# Only generate Prisma binaries for Debian Linux (glibc) - optimized for node:current-slim
+ENV PRISMA_CLI_BINARY_TARGETS="debian-openssl-3.0.x"
 # Update npm to latest version and install dependencies with cache mount
 RUN --mount=type=cache,id=s/cc493466-c691-4384-8199-99f757a14014-/root/.npm,target=/root/.npm \
     npm install -g npm@latest && \
@@ -36,6 +38,8 @@ RUN npm prune --omit=dev && \
 # Stage 5: Runner (Production Image)
 # Use latest Current version with Debian Slim (faster than Alpine, uses glibc)
 FROM node:current-slim AS runner
+# Install OpenSSL for Prisma runtime
+RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 ENV NODE_ENV=production
 

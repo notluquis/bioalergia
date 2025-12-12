@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { startRegistration } from "@simplewebauthn/browser";
-import type { PublicKeyCredentialCreationOptionsJSON } from "@simplewebauthn/types";
+import type { PublicKeyCredentialCreationOptionsJSON } from "@simplewebauthn/browser";
 import { Smartphone, Fingerprint, Check, Loader2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
@@ -151,26 +151,26 @@ export default function SecuritySettingsPage() {
   return (
     <div className="space-y-6">
       <div className="space-y-1 px-6 pt-6">
-        <h2 className="text-lg font-semibold text-primary drop-shadow-sm">Seguridad de la Cuenta</h2>
-        <p className="text-sm text-base-content/70">Gestiona tus métodos de autenticación para proteger tu cuenta.</p>
+        <h2 className="text-primary text-lg font-semibold drop-shadow-sm">Seguridad de la Cuenta</h2>
+        <p className="text-base-content/70 text-sm">Gestiona tus métodos de autenticación para proteger tu cuenta.</p>
       </div>
 
       {/* MFA Section */}
       <section className="bg-base-100 p-6">
         <div className="flex items-start gap-4">
-          <div className="rounded-full bg-primary/10 p-3 text-primary">
+          <div className="bg-primary/10 text-primary rounded-full p-3">
             <Smartphone className="size-6" />
           </div>
           <div className="flex-1 space-y-4">
             <div>
-              <h3 className="font-semibold text-base-content">Autenticación de dos factores (MFA)</h3>
-              <p className="text-sm text-base-content/70">
+              <h3 className="text-base-content font-semibold">Autenticación de dos factores (MFA)</h3>
+              <p className="text-base-content/70 text-sm">
                 Añade una capa extra de seguridad usando una app como Google Authenticator o Authy.
               </p>
             </div>
 
             {isMfaEnabled ? (
-              <div className="flex items-center gap-2 rounded-lg bg-success/10 px-4 py-3 text-sm text-success-content">
+              <div className="bg-success/10 text-success-content flex items-center gap-2 rounded-lg px-4 py-3 text-sm">
                 <Check className="size-4" />
                 <span className="font-medium">MFA está activado en tu cuenta.</span>
                 <div className="ml-auto">
@@ -193,11 +193,11 @@ export default function SecuritySettingsPage() {
                     Configurar MFA
                   </Button>
                 ) : (
-                  <div className="rounded-xl border border-base-300 bg-base-200/50 p-4">
+                  <div className="border-base-300 bg-base-200/50 rounded-xl border p-4">
                     <div className="mb-4 text-center">
                       <p className="mb-2 text-sm font-medium">1. Escanea este código QR con tu app de autenticación:</p>
                       <img src={qrCodeUrl} alt="QR Code" className="mx-auto rounded-lg bg-white p-2 shadow-sm" />
-                      <p className="mt-2 text-xs text-base-content/50">Secreto: {mfaSecret}</p>
+                      <p className="text-base-content/50 mt-2 text-xs">Secreto: {mfaSecret}</p>
                     </div>
 
                     <div className="mx-auto max-w-xs space-y-3">
@@ -218,7 +218,7 @@ export default function SecuritySettingsPage() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="w-full text-base-content/50"
+                        className="text-base-content/50 w-full"
                         onClick={() => {
                           setQrCodeUrl(null);
                           setMfaSecret(null);
@@ -238,19 +238,19 @@ export default function SecuritySettingsPage() {
       {/* Passkey Section */}
       <section className="bg-base-100 p-6">
         <div className="flex items-start gap-4">
-          <div className="rounded-full bg-secondary/10 p-3 text-secondary">
+          <div className="bg-secondary/10 text-secondary rounded-full p-3">
             <Fingerprint className="size-6" />
           </div>
           <div className="flex-1 space-y-4">
             <div>
-              <h3 className="font-semibold text-base-content">Passkeys / Biometría</h3>
-              <p className="text-sm text-base-content/70">
+              <h3 className="text-base-content font-semibold">Passkeys / Biometría</h3>
+              <p className="text-base-content/70 text-sm">
                 Inicia sesión sin contraseña usando tu huella dactilar, reconocimiento facial o PIN del dispositivo.
               </p>
             </div>
 
             {(user as unknown as { hasPasskey: boolean })?.hasPasskey ? (
-              <div className="flex items-center gap-2 rounded-lg bg-success/10 px-4 py-3 text-sm text-success-content">
+              <div className="bg-success/10 text-success-content flex items-center gap-2 rounded-lg px-4 py-3 text-sm">
                 <Check className="size-4" />
                 <span className="font-medium">Passkey configurado.</span>
                 <div className="ml-auto flex gap-2">
@@ -281,7 +281,7 @@ export default function SecuritySettingsPage() {
               </div>
             )}
 
-            <p className="text-xs text-base-content/50">
+            <p className="text-base-content/50 text-xs">
               Nota: Solo puedes tener un Passkey activo por usuario. Registrar uno nuevo reemplazará el anterior.
             </p>
           </div>

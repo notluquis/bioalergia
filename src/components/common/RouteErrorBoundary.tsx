@@ -1,8 +1,10 @@
 import { useRouteError, isRouteErrorResponse, useNavigate } from "react-router-dom";
+import { lazy, Suspense } from "react";
 import { AlertTriangle, RefreshCw, LogIn, Home } from "lucide-react";
-import ChunkLoadErrorPage from "@/pages/ChunkLoadErrorPage";
 import NotFoundPage from "@/pages/NotFoundPage";
 import Button from "@/components/ui/Button";
+
+const ChunkLoadErrorPage = lazy(() => import("@/pages/ChunkLoadErrorPage"));
 
 export default function RouteErrorBoundary() {
   const error = useRouteError();
@@ -17,7 +19,11 @@ export default function RouteErrorBoundary() {
       errorMessage
     )
   ) {
-    return <ChunkLoadErrorPage />;
+    return (
+      <Suspense fallback={<div className="flex min-h-screen items-center justify-center">Cargando...</div>}>
+        <ChunkLoadErrorPage />
+      </Suspense>
+    );
   }
 
   // 2. Handle React Router specific errors (404, 401, 503, etc.)
