@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { fmtCLP, coerceAmount, formatDate, formatFileSize, formatRelativeDate } from "./format";
+import { fmtCLP, formatCurrency, coerceAmount, formatDate, formatFileSize, formatRelativeDate } from "./format";
 
 describe("Format Utilities", () => {
   describe("fmtCLP", () => {
@@ -14,8 +14,35 @@ describe("Format Utilities", () => {
       expect(fmtCLP("1000")).toContain("1.000");
     });
 
-    it("should return - for invalid input", () => {
-      expect(fmtCLP(NaN)).toBe("-");
+    it("should return $0 for NaN", () => {
+      expect(fmtCLP(NaN)).toBe("$0");
+    });
+
+    it("should return $0 for null/undefined", () => {
+      expect(fmtCLP(null)).toBe("$0");
+      expect(fmtCLP(undefined)).toBe("$0");
+    });
+
+    it("should handle zero", () => {
+      expect(fmtCLP(0)).toContain("$");
+      expect(fmtCLP(0)).toContain("0");
+    });
+  });
+
+  describe("formatCurrency", () => {
+    it("should format number as CLP currency", () => {
+      const result = formatCurrency(1000);
+      expect(result).toContain("1.000");
+      expect(result).toContain("$");
+    });
+
+    it("should return $0 for null/undefined", () => {
+      expect(formatCurrency(null)).toBe("$0");
+      expect(formatCurrency(undefined)).toBe("$0");
+    });
+
+    it("should return $0 for NaN", () => {
+      expect(formatCurrency(NaN)).toBe("$0");
     });
   });
 
