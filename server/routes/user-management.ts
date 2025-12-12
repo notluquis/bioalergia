@@ -17,13 +17,12 @@ const inviteUserSchema = z.object({
   position: z.string().min(1).default("Por definir"),
   mfaEnforced: z.boolean().default(true),
   personId: z.number().optional(), // Optional: link to existing person
-  passkeyOnly: z.boolean().default(false), // If true, don't generate password
 });
 
 // POST /api/users/invite - Create a user for an existing person OR create new person+user
 router.post("/invite", requireAuth, requireRole("ADMIN", "GOD"), async (req, res) => {
   try {
-    const { email, role, position, mfaEnforced, personId, passkeyOnly } = inviteUserSchema.parse(req.body);
+    const { email, role, position, mfaEnforced, personId } = inviteUserSchema.parse(req.body);
     const authReq = req as AuthenticatedRequest;
 
     // Check if user already exists
@@ -42,8 +41,8 @@ router.post("/invite", requireAuth, requireRole("ADMIN", "GOD"), async (req, res
       }
     }
 
-    // Generate temporary password only if not using passkey-only flow
-    const tempPassword = passkeyOnly ? null : await bcrypt.hash("Temp1234!", 10);
+    // Generate temporary password for PENDING_SETUP users
+    const tempPassword = await bcrypt.hash("Temp1234!", 10);
 
     // Transaction to create Person, User, and Employee
     const result = await prisma.$transaction(async (tx) => {
@@ -75,7 +74,7 @@ router.post("/invite", requireAuth, requireRole("ADMIN", "GOD"), async (req, res
           personId: targetPersonId,
           email,
           role,
-          passwordHash: tempPassword, // Can be null for passkey-only users
+          passwordHash: tempPassword,
           status: "PENDING_SETUP",
           mfaEnforced,
         },

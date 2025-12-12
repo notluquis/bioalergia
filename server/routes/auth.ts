@@ -134,7 +134,7 @@ export function registerAuthRoutes(app: express.Express) {
 
       // Special case: Allow login with empty password if user is in PENDING_SETUP status
       if (user.status === "PENDING_SETUP") {
-        // Allow empty password for PENDING_SETUP users (passkey-only flow)
+        // PENDING_SETUP users can login without password to set up passkey
         if (!password) {
           // Allow proceed without password check
         } else if (user.passwordHash) {
@@ -154,10 +154,15 @@ export function registerAuthRoutes(app: express.Express) {
       } else {
         // Normal flow for ACTIVE users - password is required
         if (!user.passwordHash) {
-          logWarn("auth/login:passkey-only-user", requestContext(req, { email }));
+          logWarn("auth/login:no-password-hash", requestContext(req, { email }));
           return res
             .status(401)
-            .json({ status: "error", message: "Este usuario solo puede usar passkey para iniciar sesión" });
+            .json({ status: "error", message: "Error de configuración de usuario. Contacta al administrador." });
+        }
+        // Validate password is provided
+        if (!password) {
+          logWarn("auth/login:empty-password", requestContext(req, { email }));
+          return res.status(401).json({ status: "error", message: "La contraseña es requerida" });
         }
         const valid = await bcrypt.compare(password, user.passwordHash);
         if (!valid) {
