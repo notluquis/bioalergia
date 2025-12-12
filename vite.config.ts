@@ -112,9 +112,7 @@ export default defineConfig(({ mode }) => ({
     "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV || "development"),
   },
   build: {
-    modulePreload: {
-      polyfill: false,
-    },
+    modulePreload: false, // Disable to eliminate preload warnings for lazy chunks
     outDir: "dist/client",
     chunkSizeWarningLimit: 1000,
     sourcemap: false,
