@@ -5,8 +5,8 @@ import { PAGE_CONTAINER } from "@/lib/styles";
 
 const SERVICES_TABS: TabItem[] = [
   { label: "Resumen", to: "/services", end: true },
-  { label: "Agenda", to: "/services/agenda" },
-  { label: "Crear", to: "/services/create" },
+  { label: "Agenda", to: "/services/agenda", end: true },
+  { label: "Crear", to: "/services/create", end: true },
 ];
 
 export default function ServicesLayout() {
