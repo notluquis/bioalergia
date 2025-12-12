@@ -2,7 +2,7 @@ import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
-import { Users, Shield, Calendar, Box, UserPlus, Loader2, Fingerprint } from "lucide-react";
+import { Users, Shield, Calendar, Box, UserPlus, Loader2, Fingerprint, Upload } from "lucide-react";
 
 const SETTINGS_SECTIONS = [
   {
@@ -23,6 +23,10 @@ const SETTINGS_SECTIONS = [
       { label: "Calendario", to: "/settings/calendar", icon: Calendar, requiresAdmin: true },
       { label: "Inventario", to: "/settings/inventario", icon: Box, requiresAdmin: true },
     ],
+  },
+  {
+    title: "Importación",
+    items: [{ label: "Carga masiva de datos", to: "/settings/csv-upload", icon: Upload, requiresAdmin: true }],
   },
 ];
 

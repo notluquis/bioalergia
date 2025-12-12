@@ -24,6 +24,7 @@ import { registerDailyProductionBalanceRoutes } from "./routes/daily-production-
 import { startDailyProductionReminderJob } from "./modules/dailyProductionReminders.js";
 import shareTargetRouter from "./routes/share-target.js";
 import notificationsRouter from "./routes/notifications.js";
+import csvUploadRouter from "./routes/csv-upload.js";
 
 export const app = express();
 
@@ -100,6 +101,7 @@ registerCalendarEventRoutes(app);
 registerDailyProductionBalanceRoutes(app);
 app.use("/share-target", shareTargetRouter);
 app.use("/api/notifications", notificationsRouter);
+app.use("/api/csv-upload", csvUploadRouter);
 import { registerSuppliesRoutes } from "./routes/supplies.js";
 registerSuppliesRoutes(app);
 import { startGoogleCalendarScheduler } from "./lib/google-calendar-scheduler.js";
