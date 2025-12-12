@@ -1,13 +1,26 @@
 // === CURRENCY FORMATTING ===
 
-export const fmtCLP = (n: number | string) => {
+export const fmtCLP = (n: number | string | null | undefined) => {
+  // Handle null/undefined
+  if (n == null) return "$0";
+
+  // Convert string to number
   const num = typeof n === "string" ? Number(n) : n;
-  if (!Number.isFinite(num)) return "-";
-  return new Intl.NumberFormat("es-CL", {
-    style: "currency",
-    currency: "CLP",
-    maximumFractionDigits: 0,
-  }).format(num);
+
+  // Handle NaN or non-finite numbers
+  if (!Number.isFinite(num)) return "$0";
+
+  try {
+    return new Intl.NumberFormat("es-CL", {
+      style: "currency",
+      currency: "CLP",
+      maximumFractionDigits: 0,
+    }).format(num);
+  } catch (error) {
+    // Fallback if formatting fails
+    console.error("Error formatting currency:", error, "value:", n);
+    return "$0";
+  }
 };
 
 export const coerceAmount = (v: unknown): number => {
@@ -73,6 +86,22 @@ export const currencyFormatter = new Intl.NumberFormat("es-CL", {
   currency: "CLP",
   maximumFractionDigits: 0,
 });
+
+/** Safe wrapper for currency formatting that handles null/undefined/invalid values */
+export function formatCurrency(value: number | string | null | undefined): string {
+  if (value == null) return "$0";
+
+  const num = typeof value === "string" ? Number(value) : value;
+
+  if (!Number.isFinite(num)) return "$0";
+
+  try {
+    return currencyFormatter.format(num);
+  } catch (error) {
+    console.error("Error formatting currency:", error, "value:", value);
+    return "$0";
+  }
+}
 
 export function formatNumber(value: number, options?: Intl.NumberFormatOptions): string {
   if (!Number.isFinite(value)) return "-";
