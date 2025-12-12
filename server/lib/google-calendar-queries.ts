@@ -409,7 +409,7 @@ export async function getCalendarEventsByDate(
         events.hangout_link AS hangoutLink,
         events.raw_event AS rawEvent,
         ${EVENT_DATE} AS event_date,
-        DATE_FORMAT(${EVENT_DATETIME}, '%Y-%m-%dT%H:%i:%s') AS event_date_time
+        TO_CHAR(${EVENT_DATETIME}, 'YYYY-MM-DD"T"HH24:MI:SS') AS event_date_time
       FROM events AS events
       ${whereWithDates}
      ORDER BY event_date DESC, ${EVENT_DATETIME} ASC, events.external_event_id ASC
