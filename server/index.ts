@@ -22,6 +22,7 @@ import { registerCalendarEventRoutes } from "./routes/calendar-events.js";
 import { getUploadsRootDir } from "./lib/uploads.js";
 import { registerDailyProductionBalanceRoutes } from "./routes/daily-production-balances.js";
 import { startDailyProductionReminderJob } from "./modules/dailyProductionReminders.js";
+import { startCalendarCron, stopCalendarCron } from "./lib/calendar-cron.js";
 import shareTargetRouter from "./routes/share-target.js";
 import notificationsRouter from "./routes/notifications.js";
 import csvUploadRouter from "./routes/csv-upload.js";
@@ -203,6 +204,9 @@ const server = app.listen(PORT, () => {
   logger.info(`🚀 Server ready at http://localhost:${PORT}`);
   logger.info(`📦 Serving static files from: ${clientDir}`);
   logger.info(`📤 Uploads directory: ${uploadsDir}`);
+
+  // Start calendar cron jobs (webhook renewal + fallback sync)
+  startCalendarCron();
 });
 
 // Graceful Shutdown
@@ -214,11 +218,15 @@ const shutdown = async (signal: string) => {
     logger.info({ event: "shutdown:server_closed" });
 
     try {
-      // 2. Disconnect Database
+      // 2. Stop cron jobs
+      stopCalendarCron();
+      logger.info({ event: "shutdown:cron_stopped" });
+
+      // 3. Disconnect Database
       await prisma.$disconnect();
       logger.info({ event: "shutdown:db_disconnected" });
 
-      // 3. Exit
+      // 4. Exit
       process.exit(0);
     } catch (err) {
       logger.error({ event: "shutdown:error", error: err });

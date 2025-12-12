@@ -73,7 +73,9 @@ export default function CalendarSettingsPage() {
             </div>
             <div>
               <h2 className="text-lg font-bold">Sincronización Automática</h2>
-              <p className="text-base-content/60 text-sm">Los eventos se sincronizan cada 15 minutos.</p>
+              <p className="text-base-content/60 text-sm">
+                Webhooks activos para sincronización en tiempo real. Sincronización de respaldo cada 15 minutos.
+              </p>
               {lastSync && (
                 <p className="text-base-content/50 mt-1 text-xs">
                   Última sincronización:{" "}
