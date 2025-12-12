@@ -40,7 +40,7 @@ export default function Input(props: Props) {
   );
 
   const textareaClasses = cn(
-    "textarea textarea-bordered bg-base-100/50 hover:bg-base-100 focus:bg-base-100 min-h-[100px]",
+    "textarea textarea-bordered bg-base-100/50 hover:bg-base-100 focus:bg-base-100 min-h-25",
     error && "textarea-error focus:ring-error/20 focus:border-error",
     baseClasses,
     className
@@ -80,7 +80,7 @@ export default function Input(props: Props) {
       <button
         type="button"
         onClick={() => setIsPasswordVisible(!isPasswordVisible)}
-        className="focus:outline-none text-base-content/50 hover:text-base-content transition-colors p-1 rounded-full hover:bg-base-200/50"
+        className="text-base-content/50 hover:text-base-content hover:bg-base-200/50 rounded-full p-1 transition-colors focus:outline-none"
         tabIndex={-1}
       >
         {isPasswordVisible ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -105,7 +105,7 @@ export default function Input(props: Props) {
       )}
 
       {(helper || error) && (
-        <div className="label pb-0 pt-0">
+        <div className="label pt-0 pb-0">
           <span className={helperClasses}>{error || helper}</span>
         </div>
       )}

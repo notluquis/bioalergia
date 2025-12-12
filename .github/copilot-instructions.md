@@ -76,6 +76,8 @@ Project-specific conventions (do these)
 - **Never create mock data**: Always use real API endpoints. Calendar API already exists in `src/features/calendar/api.ts`.
 - **Check for existing APIs first**: Search `src/features/*/api.ts` and `server/routes/*.ts` before creating new endpoints or duplicating types.
 - **Reuse existing hooks**: Check `src/features/*/hooks/` for state management hooks before creating new ones.
+- **Calendar sync UI**: Always use `SyncProgressPanel` component + `useCalendarEvents` hook for sync functionality. **Do NOT duplicate sync state management** - all pages should use the hook.
+- **Calendar webhooks**: Infrastructure implemented but **cron job pending**. Webhook endpoint at POST /api/calendar/webhook handles Google push notifications. Watch channels last 7 days, renewal logic exists in google-calendar-watch.ts but not scheduled.
 - **Calendar sync state**: Always display RUNNING/SUCCESS/ERROR states in calendar UIs. Use auto-refresh (5s interval) to detect state changes. Disable sync buttons when status is RUNNING.
 - **Error handling**: Wrap all external API calls (Google Calendar, Prisma upserts) in try-catch with detailed logging including input values and error stack traces.
 - **Google Calendar API**: Follow exponential backoff for 403/429 rate limit errors. Log all calendar ID mapping failures with googleId context.
@@ -91,12 +93,17 @@ Project-specific conventions (do these)
 
 Important files & quick tour
 
+- `src/features/calendar/components/SyncProgressPanel.tsx` — **NEW**: reusable granular sync progress UI component. Shows step-by-step sync progress with badges, durations, and details. **Use this in all calendar sync UIs**.
 - `src/features/calendar/api.ts` — centralized calendar API calls (sync, fetch logs, classify events). **Use these instead of creating new API calls**.
-- `src/features/calendar/hooks/useCalendarEvents.ts` — complete calendar state management hook with filters, sync, etc.
+- `src/features/calendar/hooks/useCalendarEvents.ts` — complete calendar state management hook with filters, sync progress tracking, etc. **All calendar pages should use this hook**.
 - `src/features/calendar/types.ts` — all calendar-related TypeScript types. **Do not duplicate these**.
-- `server/routes/calendar-events.ts` — all calendar endpoints (summary, daily, sync, logs, classify, calendars list).
+- `src/pages/settings/CalendarSettingsPage.tsx` — **REFACTORED**: uses useCalendarEvents hook + SyncProgressPanel (removed duplicate sync logic).
+- `src/pages/CalendarSyncHistoryPage.tsx` — **REFACTORED**: uses useCalendarEvents hook + SyncProgressPanel (removed duplicate sync logic).
+- `server/lib/google-calendar-watch.ts` — **NEW**: Google Calendar webhook infrastructure (registerWatchChannel, stopWatchChannel, renewWatchChannels).
+- `server/routes/calendar-events.ts` — all calendar endpoints including **NEW** POST /api/calendar/webhook (handles Google push notifications).
 - `server/lib/google-calendar-queries.ts` — raw SQL queries for calendar aggregations (fixed to match schema).
 - `server/lib/google-calendar.ts` — Google Calendar API integration and sync logic.
+- `prisma/schema.prisma` — **NEW** CalendarWatchChannel model for managing webhook subscriptions.
 - `server/db.ts` — upsertWithdrawals, internal config (DB overrides for chunk size)
 - `server/config.ts` — session duration (24h), JWT secrets, cookie options
 - `server/routes/auth.ts` — Passkey + email/password + MFA endpoints

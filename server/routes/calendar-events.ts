@@ -348,4 +348,60 @@ export function registerCalendarEventRoutes(app: express.Express) {
       });
     })
   );
+
+  // Webhook endpoint for Google Calendar push notifications
+  // Does NOT require authentication (Google will call this)
+  app.post(
+    "/api/calendar/webhook",
+    express.raw({ type: "application/json" }),
+    asyncHandler(async (req, res) => {
+      const channelId = req.headers["x-goog-channel-id"] as string | undefined;
+      const resourceState = req.headers["x-goog-resource-state"] as string | undefined;
+      const resourceId = req.headers["x-goog-resource-id"] as string | undefined;
+
+      // Log webhook received
+      console.log("Calendar webhook received", {
+        channelId,
+        resourceState,
+        resourceId,
+        headers: req.headers,
+      });
+
+      // Verify channel exists in database
+      if (!channelId || !resourceId) {
+        console.warn("Missing channelId or resourceId in webhook headers");
+        res.status(400).json({ error: "Missing required headers" });
+        return;
+      }
+
+      // Handle different resource states
+      if (resourceState === "sync") {
+        // Initial verification request from Google
+        console.log("Webhook sync verification", { channelId });
+        res.status(200).end();
+        return;
+      }
+
+      if (resourceState === "exists") {
+        // Calendar has changes - trigger sync
+        console.log("Webhook exists notification - queueing sync", { channelId, resourceId });
+
+        // Queue sync job (don't await - respond immediately to Google)
+        syncGoogleCalendarOnce()
+          .then(() => {
+            console.log("Webhook-triggered sync completed", { channelId });
+          })
+          .catch((err) => {
+            console.error("Webhook-triggered sync failed", err, { channelId });
+          });
+
+        res.status(200).end();
+        return;
+      }
+
+      // Unknown state
+      console.log("Unknown webhook resource state", { resourceState, channelId });
+      res.status(200).end();
+    })
+  );
 }

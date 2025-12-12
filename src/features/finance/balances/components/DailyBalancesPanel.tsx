@@ -55,7 +55,7 @@ export const DailyBalancesPanel = memo(function DailyBalancesPanel({
                 <span className="skeleton-line w-24" />
                 <span className="skeleton-line w-16" />
                 <span className="skeleton-line w-24" />
-                <span className="skeleton-line min-w-[120px] flex-1" />
+                <span className="skeleton-line min-w-30 flex-1" />
                 <span className="skeleton-line w-16" />
               </div>
             ))}

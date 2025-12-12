@@ -363,9 +363,25 @@ model Calendar {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
 
-  events Event[]
+  events        Event[]
+  watchChannels CalendarWatchChannel[]
 
   @@map("calendars")
+}
+
+model CalendarWatchChannel {
+  id         Int      @id @default(autoincrement())
+  calendarId Int      @map("calendar_id")
+  channelId  String   @unique @map("channel_id")
+  resourceId String   @map("resource_id")
+  expiration DateTime
+  webhookUrl String   @map("webhook_url")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  calendar Calendar @relation(fields: [calendarId], references: [id], onDelete: Cascade)
+
+  @@map("calendar_watch_channels")
 }
 
 model Event {

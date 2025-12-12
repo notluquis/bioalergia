@@ -1,10 +1,12 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { CheckCircle2, AlertCircle, RefreshCw, Calendar } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import Button from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 import { apiClient } from "@/lib/apiClient";
-import { syncCalendarEvents, fetchCalendarSyncLogs } from "@/features/calendar/api";
+import { fetchCalendarSyncLogs } from "@/features/calendar/api";
+import { useCalendarEvents } from "@/features/calendar/hooks/useCalendarEvents";
+import { SyncProgressPanel } from "@/features/calendar/components/SyncProgressPanel";
 
 interface CalendarData {
   id: number;
@@ -16,8 +18,8 @@ interface CalendarData {
 }
 
 export default function CalendarSettingsPage() {
-  const [syncing, setSyncing] = useState(false);
-  const queryClient = useQueryClient();
+  const { syncing, syncError, syncProgress, syncDurationMs, syncNow, hasRunningSyncFromOtherSource } =
+    useCalendarEvents();
 
   // Fetch calendars
   const { data: calendarsData, isLoading: calendarsLoading } = useQuery({
@@ -54,18 +56,7 @@ export default function CalendarSettingsPage() {
     return () => clearInterval(interval);
   }, [syncStatus, refetchSyncLogs]);
 
-  const syncMutation = useMutation({
-    mutationFn: async () => {
-      setSyncing(true);
-      try {
-        await syncCalendarEvents();
-        await queryClient.invalidateQueries({ queryKey: ["calendar"] });
-        await queryClient.invalidateQueries({ queryKey: ["calendars"] });
-      } finally {
-        setSyncing(false);
-      }
-    },
-  });
+  const isSyncing = syncing || hasRunningSyncFromOtherSource;
 
   return (
     <div className="space-y-6">
@@ -168,16 +159,19 @@ export default function CalendarSettingsPage() {
         </div>
 
         <div className="flex justify-end pt-4">
-          <Button
-            onClick={() => syncMutation.mutate()}
-            disabled={syncing || syncStatus === "RUNNING"}
-            className="gap-2"
-          >
-            <RefreshCw size={16} className={cn(syncing && "animate-spin")} />
-            {syncing ? "Sincronizando..." : "Sincronizar Ahora"}
+          <Button onClick={syncNow} disabled={isSyncing} className="gap-2">
+            <RefreshCw size={16} className={cn(isSyncing && "animate-spin")} />
+            {isSyncing ? "Sincronizando..." : "Sincronizar Ahora"}
           </Button>
         </div>
       </div>
+
+      <SyncProgressPanel
+        syncing={syncing}
+        syncError={syncError}
+        syncProgress={syncProgress}
+        syncDurationMs={syncDurationMs}
+      />
     </div>
   );
 }

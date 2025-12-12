@@ -1,0 +1,225 @@
+import { promises as fs } from "fs";
+import path from "path";
+import { randomUUID } from "crypto";
+import { calendar, calendar_v3 } from "@googleapis/calendar";
+import { JWT } from "google-auth-library";
+
+import { prisma } from "../prisma.js";
+import { logEvent, logWarn } from "./logger.js";
+
+const CALENDAR_SCOPES = ["https://www.googleapis.com/auth/calendar.readonly"];
+const CREDENTIALS_PATH = path.resolve(process.cwd(), "storage", "google-calendar", "credentials.json");
+const WEBHOOK_BASE_URL = process.env.PUBLIC_URL || "http://localhost:5000";
+const WEBHOOK_ENDPOINT = `${WEBHOOK_BASE_URL}/api/calendar/webhook`;
+
+// Google Calendar watch channels expire after 7 days max
+const CHANNEL_TTL_DAYS = 7;
+const RENEWAL_BUFFER_DAYS = 1; // Renew 1 day before expiration
+
+type CalendarClient = calendar_v3.Calendar;
+
+async function getCalendarClient(): Promise<CalendarClient> {
+  const credentials = JSON.parse(await fs.readFile(CREDENTIALS_PATH, "utf-8"));
+
+  const auth = new JWT({
+    email: credentials.client_email,
+    key: credentials.private_key,
+    scopes: CALENDAR_SCOPES,
+  });
+
+  return calendar({ version: "v3", auth });
+}
+
+/**
+ * Register a watch channel for a calendar to receive push notifications
+ * @param calendarGoogleId - Google Calendar ID (e.g., "primary" or email)
+ * @param calendarDbId - Internal database calendar ID
+ * @returns Channel information or null if registration failed
+ */
+export async function registerWatchChannel(
+  calendarGoogleId: string,
+  calendarDbId: number
+): Promise<{ channelId: string; resourceId: string; expiration: Date } | null> {
+  try {
+    const client = await getCalendarClient();
+    const channelId = randomUUID();
+    const expiration = new Date(Date.now() + CHANNEL_TTL_DAYS * 24 * 60 * 60 * 1000);
+
+    logEvent("register_watch_channel_start", {
+      calendarGoogleId,
+      calendarDbId,
+      channelId,
+      webhookUrl: WEBHOOK_ENDPOINT,
+    });
+
+    const response = await client.events.watch({
+      calendarId: calendarGoogleId,
+      requestBody: {
+        id: channelId,
+        type: "web_hook",
+        address: WEBHOOK_ENDPOINT,
+        params: {
+          ttl: String(CHANNEL_TTL_DAYS * 24 * 60 * 60), // seconds
+        },
+      },
+    });
+
+    const resourceId = response.data.resourceId;
+    if (!resourceId) {
+      logWarn("register_watch_channel_failed", {
+        calendarGoogleId,
+        channelId,
+        error: "No resourceId in response",
+      });
+      return null;
+    }
+
+    // Store in database
+    await prisma.calendarWatchChannel.upsert({
+      where: { channelId },
+      create: {
+        calendarId: calendarDbId,
+        channelId,
+        resourceId,
+        expiration,
+        webhookUrl: WEBHOOK_ENDPOINT,
+      },
+      update: {
+        resourceId,
+        expiration,
+        webhookUrl: WEBHOOK_ENDPOINT,
+      },
+    });
+
+    logEvent("register_watch_channel_success", {
+      calendarGoogleId,
+      calendarDbId,
+      channelId,
+      resourceId,
+      expiration: expiration.toISOString(),
+    });
+
+    return { channelId, resourceId, expiration };
+  } catch (error) {
+    console.error("register_watch_channel_error", error, { calendarGoogleId, calendarDbId });
+    logWarn("register_watch_channel_error", { calendarGoogleId, calendarDbId });
+    return null;
+  }
+}
+
+/**
+ * Stop watching a calendar by stopping the channel
+ * @param channelId - Channel ID to stop
+ * @param resourceId - Resource ID from Google
+ */
+export async function stopWatchChannel(channelId: string, resourceId: string): Promise<boolean> {
+  try {
+    const client = await getCalendarClient();
+
+    logEvent("stop_watch_channel_start", { channelId, resourceId });
+
+    await client.channels.stop({
+      requestBody: {
+        id: channelId,
+        resourceId,
+      },
+    });
+
+    // Remove from database
+    await prisma.calendarWatchChannel.delete({
+      where: { channelId },
+    });
+
+    logEvent("stop_watch_channel_success", { channelId, resourceId });
+    return true;
+  } catch (error) {
+    console.error("stop_watch_channel_error", error, { channelId, resourceId });
+    logWarn("stop_watch_channel_error", { channelId, resourceId });
+    return false;
+  }
+}
+
+/**
+ * Renew all watch channels that are about to expire
+ * Should be run daily via cron job
+ */
+export async function renewWatchChannels(): Promise<void> {
+  try {
+    const expirationThreshold = new Date(Date.now() + RENEWAL_BUFFER_DAYS * 24 * 60 * 60 * 1000);
+
+    // Find channels expiring soon
+    const expiring = await prisma.calendarWatchChannel.findMany({
+      where: {
+        expiration: {
+          lte: expirationThreshold,
+        },
+      },
+      include: {
+        calendar: true,
+      },
+    });
+
+    logEvent("renew_watch_channels_start", {
+      expiringCount: expiring.length,
+      expirationThreshold: expirationThreshold.toISOString(),
+    });
+
+    for (const channel of expiring) {
+      // Stop old channel
+      await stopWatchChannel(channel.channelId, channel.resourceId);
+
+      // Register new channel
+      const result = await registerWatchChannel(channel.calendar.googleId, channel.calendarId);
+
+      if (result) {
+        logEvent("renew_watch_channel_success", {
+          calendarGoogleId: channel.calendar.googleId,
+          oldChannelId: channel.channelId,
+          newChannelId: result.channelId,
+        });
+      } else {
+        logWarn("renew_watch_channel_failed", {
+          calendarGoogleId: channel.calendar.googleId,
+          oldChannelId: channel.channelId,
+        });
+      }
+    }
+
+    logEvent("renew_watch_channels_complete", {
+      processedCount: expiring.length,
+    });
+  } catch (error) {
+    console.error("renew_watch_channels_error", error);
+    logWarn("renew_watch_channels_error", {});
+  }
+}
+
+/**
+ * Get all active watch channels
+ */
+export async function getActiveWatchChannels(): Promise<
+  Array<{
+    channelId: string;
+    resourceId: string;
+    calendarGoogleId: string;
+    expiration: Date;
+  }>
+> {
+  const channels = await prisma.calendarWatchChannel.findMany({
+    where: {
+      expiration: {
+        gt: new Date(),
+      },
+    },
+    include: {
+      calendar: true,
+    },
+  });
+
+  return channels.map((ch) => ({
+    channelId: ch.channelId,
+    resourceId: ch.resourceId,
+    calendarGoogleId: ch.calendar.googleId,
+    expiration: ch.expiration,
+  }));
+}

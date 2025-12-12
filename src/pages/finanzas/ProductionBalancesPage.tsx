@@ -751,7 +751,7 @@ export default function DailyProductionBalancesPage() {
                         <p className="text-base-content/60 text-sm">Primer registro</p>
                       </div>
                     ) : (
-                      <ul className="max-h-[600px] space-y-2 overflow-y-auto">
+                      <ul className="max-h-150 space-y-2 overflow-y-auto">
                         {historyQuery.data.map((entry) => (
                           <li key={entry.id} className="card bg-base-200 p-3">
                             <div className="mb-1 flex items-start justify-between gap-2">
