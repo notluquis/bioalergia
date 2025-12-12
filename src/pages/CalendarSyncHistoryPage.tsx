@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import dayjs from "dayjs";
 
 import Button from "@/components/ui/Button";
@@ -15,25 +15,37 @@ export default function CalendarSyncHistoryPage() {
   const [error, setError] = useState<string | null>(null);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
 
-  const loadLogs = async () => {
+  const loadLogs = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const data = await fetchCalendarSyncLogs(50);
       setLogs(data);
+      // Check if any sync is running
+      const hasRunning = data.some((log) => log.status === "RUNNING");
+      if (hasRunning && !syncing) {
+        setSyncing(true);
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : "No se pudo cargar el historial";
       setError(message);
     } finally {
       setLoading(false);
     }
-  };
+  }, [syncing]);
 
   useEffect(() => {
     loadLogs().catch(() => {
       /* handled */
     });
-  }, []);
+    // Auto-refresh every 5s to detect RUNNING state changes
+    const interval = setInterval(() => {
+      loadLogs().catch(() => {
+        /* handled */
+      });
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [loadLogs]);
 
   const handleSync = async () => {
     setSyncMessage(null);
@@ -102,12 +114,13 @@ export default function CalendarSyncHistoryPage() {
                 const finished = log.finishedAt ? dayjs(log.finishedAt) : null;
                 const duration = finished ? `${finished.diff(dayjs(log.startedAt), "second")}s` : "-";
                 const sourceLabel = log.triggerLabel ?? log.triggerSource;
-                const statusClass = log.status === "SUCCESS" ? "text-success" : "text-error";
+                const statusClass =
+                  log.status === "SUCCESS" ? "text-success" : log.status === "RUNNING" ? "text-warning" : "text-error";
                 return (
                   <tr key={log.id} className="border-base-300 bg-base-200 border-t">
                     <td className="text-base-content px-4 py-3 font-medium">{started}</td>
                     <td className={`px-4 py-3 font-semibold ${statusClass}`}>
-                      {log.status === "SUCCESS" ? "Éxito" : "Error"}
+                      {log.status === "SUCCESS" ? "Éxito" : log.status === "RUNNING" ? "En curso..." : "Error"}
                     </td>
                     <td className="px-4 py-3">{numberFormatter.format(log.inserted)}</td>
                     <td className="px-4 py-3">{numberFormatter.format(log.updated)}</td>

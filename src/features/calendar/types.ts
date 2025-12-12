@@ -137,7 +137,7 @@ export type CalendarSyncLog = {
   triggerSource: string;
   triggerUserId: number | null;
   triggerLabel: string | null;
-  status: "SUCCESS" | "ERROR";
+  status: "SUCCESS" | "ERROR" | "RUNNING";
   startedAt: string;
   finishedAt: string | null;
   fetchedAt: string | null;

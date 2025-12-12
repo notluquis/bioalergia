@@ -27,14 +27,22 @@ export default function CalendarSettingsPage() {
     },
   });
 
-  // Fetch sync logs using existing API function
+  // Fetch sync logs using existing API function (refetch every 5s to detect RUNNING state)
   const { data: syncLogs } = useQuery({
     queryKey: ["calendar", "sync-logs"],
     queryFn: () => fetchCalendarSyncLogs(10),
+    refetchInterval: 5000, // Refetch every 5s to detect RUNNING state changes
   });
 
   const lastSync = syncLogs?.[0];
-  const syncStatus = lastSync?.status === "SUCCESS" ? "SUCCESS" : lastSync?.status === "ERROR" ? "ERROR" : undefined;
+  const syncStatus: "SUCCESS" | "ERROR" | "RUNNING" | undefined =
+    lastSync?.status === "RUNNING"
+      ? "RUNNING"
+      : lastSync?.status === "SUCCESS"
+        ? "SUCCESS"
+        : lastSync?.status === "ERROR"
+          ? "ERROR"
+          : undefined;
 
   const syncMutation = useMutation({
     mutationFn: async () => {
@@ -80,17 +88,31 @@ export default function CalendarSettingsPage() {
             <span
               className={cn(
                 "badge gap-1",
-                syncStatus === "SUCCESS" ? "badge-success" : syncStatus === "ERROR" ? "badge-error" : "badge-ghost"
+                syncStatus === "SUCCESS"
+                  ? "badge-success"
+                  : syncStatus === "RUNNING"
+                    ? "badge-warning"
+                    : syncStatus === "ERROR"
+                      ? "badge-error"
+                      : "badge-ghost"
               )}
             >
               {syncStatus === "SUCCESS" ? (
                 <CheckCircle2 size={12} />
+              ) : syncStatus === "RUNNING" ? (
+                <span className="loading loading-spinner loading-xs"></span>
               ) : syncStatus === "ERROR" ? (
                 <AlertCircle size={12} />
               ) : (
                 <RefreshCw size={12} />
               )}
-              {syncStatus === "SUCCESS" ? "Activo" : syncStatus === "ERROR" ? "Error" : "Sin datos"}
+              {syncStatus === "SUCCESS"
+                ? "Activo"
+                : syncStatus === "RUNNING"
+                  ? "Sincronizando..."
+                  : syncStatus === "ERROR"
+                    ? "Error"
+                    : "Sin datos"}
             </span>
           </div>
         </div>
@@ -136,7 +158,11 @@ export default function CalendarSettingsPage() {
         </div>
 
         <div className="flex justify-end pt-4">
-          <Button onClick={() => syncMutation.mutate()} disabled={syncing} className="gap-2">
+          <Button
+            onClick={() => syncMutation.mutate()}
+            disabled={syncing || syncStatus === "RUNNING"}
+            className="gap-2"
+          >
             <RefreshCw size={16} className={cn(syncing && "animate-spin")} />
             {syncing ? "Sincronizando..." : "Sincronizar Ahora"}
           </Button>
