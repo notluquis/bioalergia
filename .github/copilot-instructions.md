@@ -32,7 +32,7 @@ Recent Major Changes (Last 30 Days)
 - **Settings Pages**: `src/pages/settings/CalendarSettingsPage.tsx` uses existing calendar API functions, shows RUNNING state with auto-refresh only when RUNNING (no unnecessary polling).
 - **Backend Endpoints**: `GET /api/calendar/calendars` returns list of calendars with event counts. All calendar routes in `server/routes/calendar-events.ts`.
 - **Error Handling**: `server/lib/google-calendar-store.ts` wraps all calendar upserts in try-catch with detailed logging. Follows Google Calendar API best practices for exponential backoff on 403/429 errors.
-- **Sync Lock**: `server/services/calendar.ts` manages RUNNING sync lock with 5-minute stale timeout (reduced from 10min). Automatically marks stale syncs as ERROR.
+- **Sync Lock**: `server/services/calendar.ts` manages RUNNING sync lock with **15-minute stale timeout**. Automatically marks stale syncs as ERROR.
 - **UI State**: All calendar UI components (`CalendarSettingsPage`, `CalendarSyncHistoryPage`, `CalendarSummaryPage`) display RUNNING state with badge-warning + spinner. Auto-refresh every 5s only when status=RUNNING (conditional polling via useEffect).
 - **Google Calendar Webhooks**: Documented in `docs/google-calendar-webhooks.md`. Push notifications available but not implemented (polling every 15min sufficient for current scale). Use webhooks when >100 active users or need <5min latency.
 
@@ -153,7 +153,8 @@ Short, actionable instructions so AI coding agents are productive immediately.
 1. High-level architecture (what to know first)
 
 - Frontend: React + TypeScript + Vite (entry: `src/main.tsx`, styles in `src/index.css`). Tailwind + DaisyUI theme configured in `tailwind.config.cjs`. Theme toggle implemented in `src/components/ThemeToggle.tsx`.
-- Backend: Node + Express + TypeScript under `server/`. Routes live in `server/routes/*.ts` and DB logic in `server/db.ts`. DB uses MySQL via `mysql2/promise`. Prisma client artifacts are in `generated/`.
+- Backend: Node + Express + TypeScript under `server/`. Routes live in `server/routes/*.ts` and DB logic in `server/db.ts`. **DB uses PostgreSQL via Prisma** (NOT MySQL). Prisma client artifacts are in `generated/`.
+- **CRITICAL**: All raw SQL queries MUST use PostgreSQL syntax (`TO_CHAR`, `EXTRACT`, etc.), NOT MySQL syntax (`DATE_FORMAT`, etc.).
 - Data flows:
   - CSV upload flow is intentionally preview-first: client parses CSV -> POST `/api/transactions/withdrawals/preview` (preview existing withdraws) -> POST `/api/transactions/withdrawals/import` (server upsert).
   - Legacy compatibility wrapper exists: `POST /api/transactions/withdrawals/upload` (server-side parsing -> upsert) — do not remove without checking external callers.
