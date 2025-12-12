@@ -11,31 +11,6 @@ type RouteHandle = {
   breadcrumb?: string;
 };
 
-// Fallback titles para rutas legacy sin handle
-const FALLBACK_TITLES: Record<string, string> = {
-  "/": "Panel financiero",
-  "/services": "Servicios recurrentes",
-  "/services/agenda": "Agenda de servicios",
-  "/services/create": "Crear servicio",
-  "/services/templates": "Plantillas de servicios",
-  "/calendar/summary": "Eventos de calendario",
-  "/calendar/schedule": "Calendario interactivo",
-  "/calendar/daily": "Detalle diario",
-  "/calendar/heatmap": "Mapa de calor",
-  "/calendar/classify": "Clasificar eventos",
-  "/calendar/history": "Historial de sincronización",
-  "/inventory/items": "Gestión de Inventario",
-  "/inventory/supplies": "Solicitud de Insumos",
-  "/hr/employees": "Trabajadores",
-  "/hr/timesheets": "Horas y pagos",
-  "/hr/audit": "Auditoría de horarios",
-  "/settings": "Configuración",
-  "/settings/accesos": "Accesos y conexiones",
-  "/settings/inventario": "Parámetros de inventario",
-  "/settings/roles": "Roles y permisos",
-  "/settings/balances-diarios": "Balances Diarios",
-};
-
 export default function Header() {
   const location = useLocation();
   const navigationState = useNavigation();
@@ -48,18 +23,10 @@ export default function Header() {
   const { breadcrumbs, title } = React.useMemo(() => {
     const path = location.pathname;
 
-    // Special case para rutas dinámicas
-    if (/^\/services\/.+\/edit$/.test(path)) {
-      return { breadcrumbs: ["Servicios"], title: "Editar servicio" };
-    }
-
-    // Intentar obtener título desde route handle
+    // Obtener título desde route handle
     const currentMatch = matches[matches.length - 1];
     const handle = currentMatch?.handle as RouteHandle | undefined;
-    const titleFromHandle = handle?.title;
-
-    // Fallback al diccionario legacy si no hay handle
-    const titleText = titleFromHandle || FALLBACK_TITLES[path];
+    const titleText = handle?.title;
 
     if (!titleText) {
       return { breadcrumbs: [], title: "Inicio" };

@@ -20,9 +20,8 @@ describe("Auth Integration", () => {
       throw new Error("🚨 TESTS CANNOT RUN AGAINST PRODUCTION DATABASE! Set DATABASE_URL to a test database.");
     }
 
-    // Clean up database before tests
-    await prisma.user.deleteMany();
-    await prisma.person.deleteMany();
+    // Note: Tests no longer clean database to prevent accidental data loss
+    // Use a dedicated test database with seed data
   });
 
   afterAll(async () => {

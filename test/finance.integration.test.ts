@@ -29,9 +29,8 @@ describe("Finance Integration", () => {
       throw new Error("🚨 TESTS CANNOT RUN AGAINST PRODUCTION DATABASE! Set DATABASE_URL to a test database.");
     }
 
-    await prisma.transaction.deleteMany();
-    await prisma.user.deleteMany();
-    await prisma.person.deleteMany();
+    // Note: Tests no longer clean database to prevent accidental data loss
+    // Use a dedicated test database with seed data
   });
 
   afterAll(async () => {
