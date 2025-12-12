@@ -93,7 +93,14 @@ export async function upsertGoogleCalendarEvents(events: CalendarEventRecord[]) 
       // Por ahora incrementamos "updated" ya que upsert no nos dice cuál fue
       updated++;
     } catch (error) {
-      console.error(`Error upserting event ${event.eventId}:`, error);
+      console.error(
+        `Error upserting event ${event.eventId} (calendar: ${event.calendarId}, summary: "${event.summary?.slice(0, 50)}"):`,
+        {
+          amountExpected: event.amountExpected,
+          amountPaid: event.amountPaid,
+          error: error instanceof Error ? error.message : String(error),
+        }
+      );
       skipped++;
     }
   }
