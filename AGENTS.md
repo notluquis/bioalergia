@@ -16,6 +16,7 @@ Deploy:      git push (Railway auto-deploy)
 ```
 
 **3 reglas de oro:**
+
 1. **NUNCA usar `bg-white`** → usar `bg-base-100` (DaisyUI)
 2. **NUNCA crear mock data** → usar APIs reales existentes
 3. **SIEMPRE** verificar con `npm run type-check` antes de commit
@@ -24,15 +25,15 @@ Deploy:      git push (Railway auto-deploy)
 
 ## Stack tecnológico
 
-| Capa | Tecnología | Notas |
-|------|------------|-------|
-| Frontend | React 18 + TypeScript + Vite | Entry: `src/main.tsx` |
-| Styling | Tailwind CSS + DaisyUI | Themes en `tailwind.config.cjs` |
-| State | TanStack Query + Zustand | Hooks en `src/features/*/hooks/` |
-| Backend | Node + Express + TypeScript | Entry: `server/index.ts` |
-| Database | **PostgreSQL** (via Prisma) | Schema: `prisma/schema.prisma` |
-| Auth | Passkey (WebAuthn) + email/password + MFA | Session: 24h |
-| Deploy | Railway (auto-deploy on push) | Dockerfile con node:current-slim |
+| Capa     | Tecnología                                | Notas                            |
+| -------- | ----------------------------------------- | -------------------------------- |
+| Frontend | React 18 + TypeScript + Vite              | Entry: `src/main.tsx`            |
+| Styling  | Tailwind CSS + DaisyUI                    | Themes en `tailwind.config.cjs`  |
+| State    | TanStack Query + Zustand                  | Hooks en `src/features/*/hooks/` |
+| Backend  | Node + Express + TypeScript               | Entry: `server/index.ts`         |
+| Database | **PostgreSQL** (via Prisma)               | Schema: `prisma/schema.prisma`   |
+| Auth     | Passkey (WebAuthn) + email/password + MFA | Session: 24h                     |
+| Deploy   | Railway (auto-deploy on push)             | Dockerfile con node:current-slim |
 
 ⚠️ **IMPORTANTE**: La base de datos es **PostgreSQL**, NO MySQL. Usar sintaxis PostgreSQL en raw queries (`TO_CHAR`, `EXTRACT`, etc.)
 
@@ -92,28 +93,40 @@ finanzas-app/
 ## Cambios críticos recientes (Diciembre 2025)
 
 ### 🔴 PostgreSQL (NO MySQL)
+
 - **TODAS** las raw queries usan sintaxis PostgreSQL
 - `TO_CHAR()` en vez de `DATE_FORMAT()`
 - `EXTRACT()` para fechas
 - Tablas usan nombres de `@@map`: `events` (no `google_calendar_events`), `people` (no `person`)
 
 ### 🔴 Sync timeout = 15 minutos
+
 - `server/services/calendar.ts` usa 15min como timeout para marcar syncs como "stale"
 - Cambiado de 5min porque syncs grandes se marcaban como error prematuramente
 
 ### 🔴 Patrones de exclusión de calendario
+
 - Definidos en `server/config.ts` → `parseExcludePatterns()`
 - Excluye automáticamente: "cumpleaños", eventos vacíos, solo fechas
 - Se pueden agregar más via `GOOGLE_CALENDAR_EXCLUDE_SUMMARIES` env var
 
 ### 🔴 Tabs con `end: true`
+
 - TODOS los tabs en layouts deben tener `end: true` para marcar ruta activa correctamente
 - Archivos: `CalendarLayout.tsx`, `HRLayout.tsx`, `ServicesLayout.tsx`, `OperationsLayout.tsx`
 
 ### 🟡 Auth: passwordHash nullable
+
 - `prisma/schema.prisma`: `passwordHash String?` (nullable)
 - Usuarios passkey-only tienen `passwordHash = null`
 - `server/routes/auth.ts` maneja null safely
+
+### 🔴 Amount validation: Int32 limits
+
+- `server/modules/calendar/parsers.ts` → `normalizeAmountRaw()` valida rangos
+- PostgreSQL INTEGER max: 2,147,483,647 (~2.1 billion)
+- Límite razonable: 100M CLP (100,000,000)
+- Valores fuera de rango se descartan con warning en logs
 
 ---
 
@@ -164,7 +177,7 @@ await prisma.$queryRaw`
 try {
   await externalApi.call(data);
 } catch (error) {
-  console.error('[service:method] Error:', { input: data, error });
+  console.error("[service:method] Error:", { input: data, error });
   throw error;
 }
 ```
@@ -173,39 +186,47 @@ try {
 
 ## Errores comunes (EVITAR)
 
-| Error | Solución |
-|-------|----------|
-| `DATE_FORMAT is not a function` | Usar `TO_CHAR()` (PostgreSQL, no MySQL) |
-| Tab no se marca como activo | Agregar `end: true` al TabItem |
-| Sync se marca como error muy rápido | Timeout es 15min, no 5min |
-| `bg-white` no funciona en dark mode | Usar `bg-base-100` (DaisyUI) |
-| Commit falla por lint | Correr `npm run lint --fix` primero |
-| `Cannot find module` en server | Correr `npm run build:server` |
-| Tabla no existe en raw query | Verificar `@@map` en schema.prisma |
+| Error                                                | Solución                                                  |
+| ---------------------------------------------------- | --------------------------------------------------------- |
+| `DATE_FORMAT is not a function`                      | Usar `TO_CHAR()` (PostgreSQL, no MySQL)                   |
+| `Unable to fit value X into a 64-bit signed integer` | Validar amounts ≤ 2,147,483,647 en `normalizeAmountRaw()` |
+| `Value out of range for type integer`                | Mismo que arriba - valores exceden Int32 max              |
+| Tab no se marca como activo                          | Agregar `end: true` al TabItem                            |
+| Sync se marca como error muy rápido                  | Timeout es 15min, no 5min                                 |
+| `bg-white` no funciona en dark mode                  | Usar `bg-base-100` (DaisyUI)                              |
+| Commit falla por lint                                | Correr `npm run lint --fix` primero                       |
+| `Cannot find module` en server                       | Correr `npm run build:server`                             |
+| Tabla no existe en raw query                         | Verificar `@@map` en schema.prisma                        |
 
 ---
 
 ## Archivos clave por área
 
 ### Calendar
+
 - `src/features/calendar/api.ts` — API calls centralizados
 - `src/features/calendar/hooks/useCalendarEvents.ts` — Estado y sync
 - `server/routes/calendar-events.ts` — Endpoints
 - `server/lib/google-calendar-queries.ts` — Raw SQL (PostgreSQL)
+- `server/lib/google-calendar-store.ts` — DB upsert con error logging mejorado
 - `server/services/calendar.ts` — Sync lock (15min timeout)
+- `server/modules/calendar/parsers.ts` — Parsing de eventos + validación de amounts (Int32)
 - `server/config.ts` — Patrones de exclusión
 
 ### Auth
+
 - `server/routes/auth.ts` — Login, passkey, MFA
 - `server/routes/user-management.ts` — CRUD usuarios
 - `src/features/auth/pages/LoginPage.tsx` — UI login
 
 ### Finance
+
 - `server/routes/transactions.ts` — Preview/import
 - `server/db.ts` — upsertWithdrawals
 - `src/features/transactions/` — UI
 
 ### Config
+
 - `server/config.ts` — Session (24h), JWT, calendar config
 - `tailwind.config.cjs` — Temas DaisyUI
 - `vite.config.ts` — PWA, build config
@@ -223,13 +244,46 @@ try {
 
 ---
 
-## Quick reference para documentación
+## Herramientas MCP disponibles
 
-Para obtener documentación actualizada de librerías, usar Context7:
-- Prisma: `/prisma/prisma`
-- React Query: `/tanstack/query`
-- DaisyUI: `/saadeghi/daisyui`
-- Vite: `/vitejs/vite`
+Este proyecto tiene configurados los siguientes MCP (Model Context Protocol) tools:
+
+### 🧠 Sequential Thinking
+
+Para problemas complejos que requieren razonamiento paso a paso:
+
+```text
+Usar: mcp_sequentialthi_sequentialthinking
+Cuándo: Debugging complejo, diseño de arquitectura, análisis de problemas multi-paso
+```
+
+### 📚 Context7 (Documentación actualizada)
+
+Para obtener documentación actualizada de librerías:
+
+```text
+Usar: mcp_upstash_conte_get-library-docs
+Primero: mcp_upstash_conte_resolve-library-id para obtener el ID
+
+Librerías frecuentes:
+- Prisma: /prisma/prisma
+- React Query: /tanstack/query
+- DaisyUI: /saadeghi/daisyui
+- Vite: /vitejs/vite
+- Express: /expressjs/express
+```
+
+### 🐙 GitHub MCP
+
+Para operaciones con GitHub (PRs, issues, branches):
+
+```text
+- mcp_github_search_pull_requests
+- mcp_github_create_or_update_file
+- activate_repository_management_tools (para más herramientas)
+```
+
+**Tip**: Usar Sequential Thinking para planificar cambios complejos, luego Context7 para verificar sintaxis de librerías.
 
 ---
 
@@ -245,4 +299,4 @@ git add -A && git commit -m "feat: descripción clara"
 
 ---
 
-*Este archivo es la fuente de verdad para cualquier agente de IA trabajando en este repo.*
+_Este archivo es la fuente de verdad para cualquier agente de IA trabajando en este repo._

@@ -48,12 +48,31 @@ export function normalizeEventDate(value: string | null | undefined): string | n
   }
 }
 
+// PostgreSQL INTEGER max: 2,147,483,647 (~2.1 billion)
+// Reasonable max amount: 100M CLP (~100,000,000)
+const MAX_INT32 = 2147483647;
+const MAX_REASONABLE_AMOUNT = 100_000_000; // 100M CLP
+
 function normalizeAmountRaw(raw: string) {
   const digits = raw.replace(/[^0-9]/g, "");
   if (!digits) return null;
   const value = Number.parseInt(digits, 10);
   if (Number.isNaN(value) || value <= 0) return null;
-  return value >= 1000 ? value : value * 1000;
+
+  // Normalizar valores menores a 1000 multiplicando x1000
+  const normalized = value >= 1000 ? value : value * 1000;
+
+  // Validar que esté dentro del rango de Int32 y sea razonable
+  if (normalized > MAX_INT32) {
+    console.warn(`[parsers] Amount ${normalized} exceeds Int32 max (${MAX_INT32}), skipping`);
+    return null;
+  }
+  if (normalized > MAX_REASONABLE_AMOUNT) {
+    console.warn(`[parsers] Amount ${normalized} exceeds reasonable max (${MAX_REASONABLE_AMOUNT}), skipping`);
+    return null;
+  }
+
+  return normalized;
 }
 
 function extractAmounts(summary: string, description: string) {
