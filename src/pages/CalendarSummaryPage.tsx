@@ -110,7 +110,10 @@ function CalendarSummaryPage() {
     updateFilters,
     applyFilters,
     resetFilters,
+    hasRunningSyncFromOtherSource,
   } = useCalendarEvents();
+
+  const isSyncing = syncing || hasRunningSyncFromOtherSource;
 
   const totals = useMemo(
     () => ({
@@ -267,8 +270,8 @@ function CalendarSummaryPage() {
           </p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
-          <Button onClick={syncNow} disabled={syncing} className="self-start sm:self-auto">
-            {syncing ? "Sincronizando..." : "Sincronizar ahora"}
+          <Button onClick={syncNow} disabled={isSyncing} className="self-start sm:self-auto">
+            {isSyncing ? "Sincronizando..." : "Sincronizar ahora"}
           </Button>
           <Link
             to="/calendar/classify"

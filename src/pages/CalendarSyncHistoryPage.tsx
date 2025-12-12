@@ -1,67 +1,58 @@
-import { useCallback, useEffect, useState } from "react";
+import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 
 import Button from "@/components/ui/Button";
 import Alert from "@/components/ui/Alert";
 import { fetchCalendarSyncLogs, syncCalendarEvents } from "@/features/calendar/api";
-import type { CalendarSyncLog } from "@/features/calendar/types";
 import { numberFormatter } from "@/lib/format";
 import { TITLE_LG } from "@/lib/styles";
 
 export default function CalendarSyncHistoryPage() {
-  const [logs, setLogs] = useState<CalendarSyncLog[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
 
-  const loadLogs = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await fetchCalendarSyncLogs(50);
-      setLogs(data);
-      // Check if any sync is running
-      const hasRunning = data.some((log) => log.status === "RUNNING");
-      if (hasRunning && !syncing) {
-        setSyncing(true);
-      }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "No se pudo cargar el historial";
-      setError(message);
-    } finally {
-      setLoading(false);
-    }
-  }, [syncing]);
+  // Use React Query for auto-refresh only when RUNNING
+  const {
+    data: logs = [],
+    isLoading: loading,
+    refetch: refetchLogs,
+  } = useQuery({
+    queryKey: ["calendar", "sync-logs-history"],
+    queryFn: () => fetchCalendarSyncLogs(50),
+  });
 
+  const syncing = logs.some((log) => log.status === "RUNNING");
+
+  // Auto-refresh every 5s when there's a RUNNING sync
   useEffect(() => {
-    loadLogs().catch(() => {
-      /* handled */
-    });
-    // Auto-refresh every 5s to detect RUNNING state changes
+    if (!syncing) return;
     const interval = setInterval(() => {
-      loadLogs().catch(() => {
+      refetchLogs().catch(() => {
         /* handled */
       });
     }, 5000);
     return () => clearInterval(interval);
-  }, [loadLogs]);
+  }, [syncing, refetchLogs]);
+
+  const handleRefresh = () => {
+    refetchLogs().catch(() => {
+      /* handled */
+    });
+  };
 
   const handleSync = async () => {
     setSyncMessage(null);
     setError(null);
-    setSyncing(true);
     try {
       const result = await syncCalendarEvents();
       setSyncMessage(
         `Sincronización completada. Nuevos: ${numberFormatter.format(result.inserted)}, actualizados: ${numberFormatter.format(result.updated)}, omitidos: ${numberFormatter.format(result.skipped)}.`
       );
-      await loadLogs();
+      await refetchLogs();
     } catch (err) {
       const message = err instanceof Error ? err.message : "No se pudo ejecutar la sincronización";
       setError(message);
-    } finally {
-      setSyncing(false);
     }
   };
 
@@ -75,7 +66,7 @@ export default function CalendarSyncHistoryPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="secondary" onClick={loadLogs} disabled={loading || syncing}>
+          <Button variant="secondary" onClick={handleRefresh} disabled={loading || syncing}>
             {loading ? "Actualizando..." : "Actualizar"}
           </Button>
           <Button onClick={handleSync} disabled={syncing || loading}>
