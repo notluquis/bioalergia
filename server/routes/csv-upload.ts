@@ -1,10 +1,9 @@
 import { Router, Request, Response } from "express";
-import { PrismaClient } from "@prisma/client";
 import { z } from "zod";
 import { authenticate } from "../lib/index.js";
+import { prisma } from "../prisma.js";
 
 const router = Router();
-const prisma = new PrismaClient();
 
 // Esquemas de validación por tabla
 const TABLE_SCHEMAS = {
