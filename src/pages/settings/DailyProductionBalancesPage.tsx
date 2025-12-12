@@ -127,7 +127,7 @@ export default function DailyProductionBalancesPage() {
 
   // State for WeekView
   const [currentDate, setCurrentDate] = useState(dayjs());
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string | null>(today());
 
   // Calculate range for the current week view
   const startOfWeek = currentDate.startOf("week").add(1, "day");
@@ -255,88 +255,34 @@ export default function DailyProductionBalancesPage() {
           {canEdit && (
             <div className="space-y-3">
               <div className="card bg-base-100 border shadow-sm">
-                <div className="card-body p-4">
+                <div className="card-body p-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <h2 className="text-base-content text-lg font-bold capitalize">
+                      <h2 className="text-base-content text-sm font-bold capitalize">
                         {dayjs(selectedDate).format("ddd D MMM")}
                       </h2>
-                      <span className={`badge badge-sm ${form.status === "FINAL" ? "badge-success" : "badge-warning"}`}>
+                      <span className={`badge badge-xs ${form.status === "FINAL" ? "badge-success" : "badge-warning"}`}>
                         {form.status === "FINAL" ? "✓" : "⏱"}
                       </span>
                       {selectedId && <span className="text-base-content/60 text-xs">#{selectedId}</span>}
                     </div>
                     <div className="flex items-center gap-2">
-                      <div className="dropdown dropdown-end">
-                        <label
-                          tabIndex={0}
-                          className={`btn btn-xs gap-1 ${form.status === "FINAL" ? "btn-success" : "btn-warning"}`}
-                        >
-                          {form.status === "FINAL" ? "Final" : "Borrador"}
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            className="h-3 w-3 stroke-current"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth="2"
-                              d="M19 9l-7 7-7-7"
-                            ></path>
-                          </svg>
-                        </label>
-                        <ul
-                          tabIndex={0}
-                          className="dropdown-content menu bg-base-100 rounded-box border-base-300 z-1 mt-2 w-80 border p-2 shadow-lg"
-                        >
-                          <li className="menu-title">
-                            <span className="text-xs font-bold">Estado del Balance</span>
-                          </li>
-                          <li>
-                            <a
-                              className={form.status === "DRAFT" ? "active" : ""}
-                              onClick={() => setForm((prev) => ({ ...prev, status: "DRAFT" }))}
-                            >
-                              <div className="flex items-start gap-2 py-2">
-                                <span className="badge badge-warning badge-sm mt-1">⏱</span>
-                                <div className="flex-1">
-                                  <div className="font-semibold">Borrador</div>
-                                  <div className="text-xs opacity-70">
-                                    Aún estoy ingresando datos o revisando. Puede tener errores.
-                                  </div>
-                                </div>
-                              </div>
-                            </a>
-                          </li>
-                          <li>
-                            <a
-                              className={form.status === "FINAL" ? "active" : ""}
-                              onClick={() => {
-                                if (hasDifference) {
-                                  if (
-                                    !confirm("⚠️ Los totales no coinciden. ¿Estás seguro de marcarlo como CERRADO?")
-                                  ) {
-                                    return;
-                                  }
-                                }
-                                setForm((prev) => ({ ...prev, status: "FINAL" }));
-                              }}
-                            >
-                              <div className="flex items-start gap-2 py-2">
-                                <span className="badge badge-success badge-sm mt-1">✓</span>
-                                <div className="flex-1">
-                                  <div className="font-semibold">Cerrado (Final)</div>
-                                  <div className="text-xs opacity-70">
-                                    Datos completos y verificados. Registro oficial.
-                                  </div>
-                                </div>
-                              </div>
-                            </a>
-                          </li>
-                        </ul>
-                      </div>
+                      <select
+                        className="select select-xs"
+                        value={form.status}
+                        onChange={(e) => {
+                          const newStatus = e.target.value as ProductionBalanceStatus;
+                          if (newStatus === "FINAL" && hasDifference) {
+                            if (!confirm("⚠️ Los totales no coinciden. ¿Estás seguro de marcarlo como cerrado?")) {
+                              return;
+                            }
+                          }
+                          setForm((prev) => ({ ...prev, status: newStatus }));
+                        }}
+                      >
+                        <option value="DRAFT">Borrador</option>
+                        <option value="FINAL">Final</option>
+                      </select>
                       <Button type="button" variant="ghost" size="xs" onClick={() => setSelectedDate(null)}>
                         ✕
                       </Button>
