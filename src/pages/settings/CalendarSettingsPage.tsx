@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Button from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 import { apiClient } from "@/lib/apiClient";
+import { syncCalendarEvents, fetchCalendarSyncLogs } from "@/features/calendar/api";
 
 interface CalendarData {
   id: number;
@@ -12,16 +13,6 @@ interface CalendarData {
   eventCount: number;
   createdAt: string;
   updatedAt: string;
-}
-
-interface SyncLog {
-  id: number;
-  status: string;
-  startedAt: string;
-  finishedAt: string | null;
-  inserted: number;
-  updated: number;
-  excluded: number;
 }
 
 export default function CalendarSettingsPage() {
@@ -36,23 +27,21 @@ export default function CalendarSettingsPage() {
     },
   });
 
-  // Fetch sync logs
-  const { data: syncLogsData } = useQuery({
-    queryKey: ["calendar-sync-logs"],
-    queryFn: async () => {
-      return await apiClient.get<{ logs: SyncLog[] }>("/api/calendar/events/sync/logs");
-    },
+  // Fetch sync logs using existing API function
+  const { data: syncLogs } = useQuery({
+    queryKey: ["calendar", "sync-logs"],
+    queryFn: () => fetchCalendarSyncLogs(10),
   });
 
-  const lastSync = syncLogsData?.logs?.[0];
-  const syncStatus = lastSync?.status === "SUCCESS" ? "SUCCESS" : lastSync?.status === "RUNNING" ? "RUNNING" : "ERROR";
+  const lastSync = syncLogs?.[0];
+  const syncStatus = lastSync?.status === "SUCCESS" ? "SUCCESS" : lastSync?.status === "ERROR" ? "ERROR" : undefined;
 
   const syncMutation = useMutation({
     mutationFn: async () => {
       setSyncing(true);
       try {
-        await apiClient.post("/api/calendar/events/sync", {});
-        await queryClient.invalidateQueries({ queryKey: ["calendar-sync-logs"] });
+        await syncCalendarEvents();
+        await queryClient.invalidateQueries({ queryKey: ["calendar"] });
         await queryClient.invalidateQueries({ queryKey: ["calendars"] });
       } finally {
         setSyncing(false);
@@ -91,17 +80,17 @@ export default function CalendarSettingsPage() {
             <span
               className={cn(
                 "badge gap-1",
-                syncStatus === "SUCCESS" ? "badge-success" : syncStatus === "RUNNING" ? "badge-warning" : "badge-error"
+                syncStatus === "SUCCESS" ? "badge-success" : syncStatus === "ERROR" ? "badge-error" : "badge-ghost"
               )}
             >
               {syncStatus === "SUCCESS" ? (
                 <CheckCircle2 size={12} />
-              ) : syncStatus === "RUNNING" ? (
-                <RefreshCw size={12} className="animate-spin" />
-              ) : (
+              ) : syncStatus === "ERROR" ? (
                 <AlertCircle size={12} />
+              ) : (
+                <RefreshCw size={12} />
               )}
-              {syncStatus === "SUCCESS" ? "Activo" : syncStatus === "RUNNING" ? "Sincronizando" : "Error"}
+              {syncStatus === "SUCCESS" ? "Activo" : syncStatus === "ERROR" ? "Error" : "Sin datos"}
             </span>
           </div>
         </div>
@@ -147,13 +136,9 @@ export default function CalendarSettingsPage() {
         </div>
 
         <div className="flex justify-end pt-4">
-          <Button
-            onClick={() => syncMutation.mutate()}
-            disabled={syncing || syncStatus === "RUNNING"}
-            className="gap-2"
-          >
-            <RefreshCw size={16} className={cn((syncing || syncStatus === "RUNNING") && "animate-spin")} />
-            {syncing || syncStatus === "RUNNING" ? "Sincronizando..." : "Sincronizar Ahora"}
+          <Button onClick={() => syncMutation.mutate()} disabled={syncing} className="gap-2">
+            <RefreshCw size={16} className={cn(syncing && "animate-spin")} />
+            {syncing ? "Sincronizando..." : "Sincronizar Ahora"}
           </Button>
         </div>
       </div>
