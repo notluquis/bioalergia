@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { Calendar, RefreshCw, CheckCircle2, AlertCircle } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { CheckCircle2, AlertCircle, RefreshCw, Calendar } from "lucide-react";
+import { useState, useEffect } from "react";
 import Button from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 import { apiClient } from "@/lib/apiClient";
@@ -27,11 +27,10 @@ export default function CalendarSettingsPage() {
     },
   });
 
-  // Fetch sync logs using existing API function (refetch every 5s to detect RUNNING state)
-  const { data: syncLogs } = useQuery({
+  // Fetch sync logs using existing API function
+  const { data: syncLogs, refetch: refetchSyncLogs } = useQuery({
     queryKey: ["calendar", "sync-logs"],
     queryFn: () => fetchCalendarSyncLogs(10),
-    refetchInterval: 5000, // Refetch every 5s to detect RUNNING state changes
   });
 
   const lastSync = syncLogs?.[0];
@@ -43,6 +42,17 @@ export default function CalendarSettingsPage() {
         : lastSync?.status === "ERROR"
           ? "ERROR"
           : undefined;
+
+  // Auto-refresh sync logs every 5s when there's a RUNNING sync
+  useEffect(() => {
+    if (syncStatus !== "RUNNING") return;
+    const interval = setInterval(() => {
+      refetchSyncLogs().catch(() => {
+        /* handled */
+      });
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [syncStatus, refetchSyncLogs]);
 
   const syncMutation = useMutation({
     mutationFn: async () => {

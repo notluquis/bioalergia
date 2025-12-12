@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect, useCallback } from "react";
 import dayjs from "dayjs";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
-import { fetchCalendarDaily, fetchCalendarSummary, syncCalendarEvents } from "../api";
+import { fetchCalendarDaily, fetchCalendarSummary, syncCalendarEvents, fetchCalendarSyncLogs } from "../api";
 import type { CalendarDaily, CalendarFilters, CalendarSummary, CalendarSyncStep } from "../types";
 import { useSettings } from "@/context/SettingsContext";
 import { useCalendarFilterStore } from "@/store/calendarFilters";
@@ -115,6 +115,25 @@ export function useCalendarEvents() {
     queryFn: () => fetchCalendarDaily(normalizedApplied),
     enabled: Boolean(normalizedApplied.from && normalizedApplied.to),
   });
+
+  // Check for RUNNING syncs to disable sync button
+  const { data: syncLogsData, refetch: refetchSyncLogs } = useQuery({
+    queryKey: ["calendar", "sync-logs"],
+    queryFn: () => fetchCalendarSyncLogs(5),
+  });
+
+  const hasRunningSyncFromOtherSource = syncLogsData?.some((log) => log.status === "RUNNING") ?? false;
+
+  // Auto-refresh when there's a RUNNING sync
+  useEffect(() => {
+    if (!hasRunningSyncFromOtherSource) return;
+    const interval = setInterval(() => {
+      refetchSyncLogs().catch(() => {
+        /* handled */
+      });
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [hasRunningSyncFromOtherSource, refetchSyncLogs]);
 
   const summary = summaryQuery.data ?? null;
   const daily = dailyQuery.data ?? null;
@@ -240,5 +259,6 @@ export function useCalendarEvents() {
     syncProgress,
     syncDurationMs,
     syncNow,
+    hasRunningSyncFromOtherSource,
   };
 }
