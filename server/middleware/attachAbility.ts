@@ -40,7 +40,8 @@ export async function attachAbility(req: AuthenticatedRequest, res: Response, ne
     });
 
     const version = userPermissionVersion.version;
-    let rules = getCachedRules(userId, version);
+    // let rules = getCachedRules(userId, version);
+    let rules = null; // FORCE CACHE SKIP for debugging
 
     if (!rules) {
       rules = await getAbilityRulesForUser(userId);
