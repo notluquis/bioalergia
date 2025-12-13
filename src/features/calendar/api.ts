@@ -4,7 +4,6 @@ import type {
   CalendarSummary,
   CalendarDaily,
   CalendarSyncLog,
-  CalendarSyncStep,
   CalendarUnclassifiedEvent,
   CalendarEventClassificationPayload,
 } from "./types";
@@ -13,16 +12,9 @@ type CalendarSummaryResponse = CalendarSummary & { status: "ok" };
 
 type CalendarDailyResponse = CalendarDaily & { status: "ok" };
 type CalendarSyncResponse = {
-  status: "ok";
-  fetchedAt: string;
-  events: number;
-  inserted: number;
-  updated: number;
-  skipped: number;
-  excluded: number;
+  status: "accepted";
+  message: string;
   logId: number;
-  steps: CalendarSyncStep[];
-  totalDurationMs: number;
 };
 
 function buildQuery(filters: CalendarFilters, options?: { includeMaxDays?: boolean }) {
@@ -89,8 +81,8 @@ export async function fetchCalendarDaily(filters: CalendarFilters): Promise<Cale
 
 export async function syncCalendarEvents(): Promise<CalendarSyncResponse> {
   const response = await apiClient.post<CalendarSyncResponse>("/api/calendar/events/sync", {});
-  if (response.status !== "ok") {
-    throw new Error("No se pudo sincronizar el calendario");
+  if (response.status !== "accepted") {
+    throw new Error("No se pudo iniciar la sincronización del calendario");
   }
   return response;
 }

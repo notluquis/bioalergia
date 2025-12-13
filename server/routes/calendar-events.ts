@@ -127,84 +127,40 @@ export function registerCalendarEventRoutes(app: express.Express) {
     authenticate,
     requireRole("ADMIN", "GOD"),
     asyncHandler(async (req, res) => {
-      let logId: number | null = null;
+      // Create log entry first
+      const logId = await createCalendarSyncLogEntry({
+        triggerSource: "manual",
+        triggerUserId: req.auth?.userId ?? null,
+        triggerLabel: req.auth?.email ?? null,
+      });
 
-      try {
-        logId = await createCalendarSyncLogEntry({
-          triggerSource: "manual",
-          triggerUserId: req.auth?.userId ?? null,
-          triggerLabel: req.auth?.email ?? null,
-        });
-
-        const result = await syncGoogleCalendarOnce();
-        const steps = [
-          {
-            id: "fetch",
-            label: "Consultando Google Calendar",
-            durationMs: Math.round(result.metrics.fetchDurationMs),
-            details: {
-              calendars: result.payload.calendars.length,
-              events: result.payload.events.length,
-            },
-          },
-          {
-            id: "upsert",
-            label: "Actualizando base de datos",
-            durationMs: Math.round(result.metrics.upsertDurationMs),
-            details: {
-              inserted: result.upsertResult.inserted,
-              updated: result.upsertResult.updated,
-            },
-          },
-          {
-            id: "exclude",
-            label: "Eliminando eventos excluidos",
-            durationMs: Math.round(result.metrics.removeDurationMs),
-            details: {
-              excluded: result.payload.excludedEvents.length,
-            },
-          },
-          {
-            id: "snapshot",
-            label: "Guardando snapshot",
-            durationMs: Math.round(result.metrics.snapshotDurationMs),
-            details: {
-              stored: true,
-            },
-          },
-        ];
-
-        await finalizeCalendarSyncLogEntry(logId, {
-          status: "SUCCESS",
-          fetchedAt: new Date(result.payload.fetchedAt),
-          inserted: result.upsertResult.inserted,
-          updated: result.upsertResult.updated,
-          skipped: result.upsertResult.skipped,
-          excluded: result.payload.excludedEvents.length,
-        });
-
-        res.json({
-          status: "ok",
-          fetchedAt: result.payload.fetchedAt,
-          events: result.payload.events.length,
-          inserted: result.upsertResult.inserted,
-          updated: result.upsertResult.updated,
-          skipped: result.upsertResult.skipped,
-          excluded: result.payload.excludedEvents.length,
-          logId,
-          steps,
-          totalDurationMs: Math.round(result.metrics.totalDurationMs),
-        });
-      } catch (error) {
-        // Si hubo un error, marcar el log como ERROR
-        if (logId) {
+      // Start sync in background (don't await)
+      syncGoogleCalendarOnce()
+        .then(async (result) => {
+          await finalizeCalendarSyncLogEntry(logId, {
+            status: "SUCCESS",
+            fetchedAt: new Date(result.payload.fetchedAt),
+            inserted: result.upsertResult.inserted,
+            updated: result.upsertResult.updated,
+            skipped: result.upsertResult.skipped,
+            excluded: result.payload.excludedEvents.length,
+          });
+          console.log(`✅ Sync completed successfully (logId: ${logId})`);
+        })
+        .catch(async (error) => {
           await finalizeCalendarSyncLogEntry(logId, {
             status: "ERROR",
             errorMessage: error instanceof Error ? error.message : String(error),
           });
-        }
-        throw error; // Re-throw para que asyncHandler lo maneje
-      }
+          console.error(`❌ Sync failed (logId: ${logId}):`, error);
+        });
+
+      // Respond immediately with 202 Accepted
+      res.status(202).json({
+        status: "accepted",
+        message: "Sincronización iniciada en segundo plano",
+        logId,
+      });
     })
   );
 

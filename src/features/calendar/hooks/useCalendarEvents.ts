@@ -190,46 +190,85 @@ export function useCalendarEvents() {
       );
     },
     onSuccess: (result) => {
-      setSyncDurationMs(result.totalDurationMs ?? null);
-      setSyncProgress(
-        SYNC_STEPS_TEMPLATE.map((step) => {
-          const payloadStep = result.steps.find((entry) => entry.id === step.id);
-          return {
-            id: step.id,
-            label: step.label,
-            durationMs: payloadStep?.durationMs ?? 0,
-            details: payloadStep?.details ?? {},
-            status: "completed" as SyncProgressStatus,
-          };
-        })
-      );
-      setLastSyncInfo({
-        fetchedAt: result.fetchedAt,
-        inserted: result.inserted,
-        updated: result.updated,
-        skipped: result.skipped,
-        excluded: result.excluded,
-        logId: result.logId,
-      });
-      queryClient.invalidateQueries({ queryKey: ["calendar"] }).catch(() => {
-        /* handled */
-      });
-    },
-    onError: (err: unknown) => {
-      const message = err instanceof Error ? err.message : "No se pudo sincronizar";
-      setSyncError(message);
-      setSyncProgress((prev) =>
-        prev.map((entry) =>
-          entry.status === "in_progress"
-            ? {
+      // Sync started in background - poll for status
+      const logId = result.logId;
+      let pollCount = 0;
+      const maxPolls = 60; // 5 minutes max (5s interval)
+
+      const pollInterval = setInterval(async () => {
+        pollCount++;
+        try {
+          const logs = await fetchCalendarSyncLogs(10);
+          const currentLog = logs.find((log) => log.id === logId);
+
+          if (!currentLog) {
+            clearInterval(pollInterval);
+            setSyncError("No se encontró el log de sincronización");
+            setSyncing(false);
+            return;
+          }
+
+          if (currentLog.status === "SUCCESS") {
+            clearInterval(pollInterval);
+            setSyncDurationMs(
+              currentLog.finishedAt && currentLog.startedAt
+                ? new Date(currentLog.finishedAt).getTime() - new Date(currentLog.startedAt).getTime()
+                : null
+            );
+            setSyncProgress(
+              SYNC_STEPS_TEMPLATE.map((step) => ({
+                id: step.id,
+                label: step.label,
+                durationMs: 0,
+                details: {},
+                status: "completed" as SyncProgressStatus,
+              }))
+            );
+            setLastSyncInfo({
+              fetchedAt: currentLog.fetchedAt ?? new Date().toISOString(),
+              inserted: currentLog.inserted,
+              updated: currentLog.updated,
+              skipped: currentLog.skipped,
+              excluded: currentLog.excluded,
+              logId: currentLog.id,
+            });
+            setSyncing(false);
+            queryClient.invalidateQueries({ queryKey: ["calendar"] }).catch(() => {
+              /* handled */
+            });
+          } else if (currentLog.status === "ERROR") {
+            clearInterval(pollInterval);
+            setSyncError(currentLog.errorMessage || "Error desconocido durante la sincronización");
+            setSyncProgress((prev) =>
+              prev.map((entry) => ({
                 ...entry,
                 status: "error" as SyncProgressStatus,
-              }
-            : entry
-        )
-      );
+              }))
+            );
+            setSyncing(false);
+          } else if (pollCount >= maxPolls) {
+            clearInterval(pollInterval);
+            setSyncError("Timeout: la sincronización tardó demasiado");
+            setSyncing(false);
+          }
+          // else: still RUNNING, keep polling
+        } catch (err) {
+          clearInterval(pollInterval);
+          const message = err instanceof Error ? err.message : "Error al verificar estado de sincronización";
+          setSyncError(message);
+          setSyncing(false);
+        }
+      }, 5000); // Poll every 5 seconds
     },
-    onSettled: () => {
+    onError: (err: unknown) => {
+      const message = err instanceof Error ? err.message : "No se pudo iniciar la sincronización";
+      setSyncError(message);
+      setSyncProgress((prev) =>
+        prev.map((entry) => ({
+          ...entry,
+          status: "error" as SyncProgressStatus,
+        }))
+      );
       setSyncing(false);
     },
   });
