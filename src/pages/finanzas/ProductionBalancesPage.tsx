@@ -497,7 +497,7 @@ export default function DailyProductionBalancesPage() {
                   </div>
                 </div>
 
-                <div className="bg-base-100 border-base-200 flex h-full flex-col justify-between rounded-3xl border p-5 shadow-sm">
+                <div className="bg-base-100 border-base-200 flex flex-col rounded-3xl border p-5 shadow-sm">
                   {/* Header */}
                   <div>
                     <div className="mb-4 flex items-center gap-2">
