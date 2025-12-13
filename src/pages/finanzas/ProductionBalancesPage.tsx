@@ -236,53 +236,51 @@ export default function DailyProductionBalancesPage() {
       {selectedDate ? (
         <div className="space-y-4">
           <div className="card bg-base-100 border-base-200 border shadow-sm">
-            <div className="card-body p-3">
+            <div className="card-body p-4">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <h2 className="text-base-content text-sm font-bold capitalize">
-                    {dayjs(selectedDate).format("ddd D MMM")}
+                <div className="flex items-center gap-3">
+                  <h2 className="text-base-content text-xl font-bold capitalize">
+                    {dayjs(selectedDate).format("dddd D [de] MMMM")}
                   </h2>
-                  <span className={`badge badge-xs ${form.status === "FINAL" ? "badge-success" : "badge-warning"}`}>
-                    {form.status === "FINAL" ? "Final" : "Borrador"}
+                  <span
+                    className={`badge ${
+                      form.status === "FINAL"
+                        ? "badge-success text-success-content"
+                        : "badge-warning text-warning-content"
+                    } font-medium`}
+                  >
+                    {form.status === "FINAL" ? "Finalizado" : "Borrador"}
                   </span>
-                  {selectedId && <span className="text-base-content/60 text-xs">#{selectedId}</span>}
+                  {selectedId && <span className="text-base-content/40 font-mono text-xs">#{selectedId}</span>}
                 </div>
                 <div className="flex items-center gap-2">
+                  {canEdit && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        if (confirm("¿Estás seguro de limpiar todos los campos?")) {
+                          setForm(makeDefaultForm(selectedDate));
+                          setSelectedId(null);
+                        }
+                      }}
+                      className="text-base-content/70 hover:text-error hover:bg-error/10"
+                    >
+                      Limpiar formulario
+                    </Button>
+                  )}
                   {selectedId && (
                     <Button
-                      size="xs"
+                      size="sm"
                       variant="ghost"
                       onClick={() => setShowHistory((prev) => !prev)}
-                      className="gap-1"
+                      className="gap-1.5"
                       aria-label="Historial de cambios"
                     >
                       <MoreVertical className="h-4 w-4" />
+                      <span className="hidden sm:inline">Historial</span>
                     </Button>
-                  )}
-                  {canEdit ? (
-                    <>
-                      <select
-                        className="select select-xs"
-                        value={form.status}
-                        onChange={(e) => {
-                          const newStatus = e.target.value as ProductionBalanceStatus;
-                          if (newStatus === "FINAL" && hasDifference) {
-                            if (!confirm("⚠️ Los totales no coinciden. ¿Estás seguro de marcarlo como cerrado?")) {
-                              return;
-                            }
-                          }
-                          setForm((prev) => ({ ...prev, status: newStatus }));
-                        }}
-                      >
-                        <option value="DRAFT">Borrador</option>
-                        <option value="FINAL">Final</option>
-                      </select>
-                      <Button type="button" variant="ghost" size="xs" onClick={() => setSelectedDate(null)}>
-                        Limpiar
-                      </Button>
-                    </>
-                  ) : (
-                    <span className="badge badge-ghost badge-sm">Solo lectura</span>
                   )}
                 </div>
               </div>
@@ -496,54 +494,56 @@ export default function DailyProductionBalancesPage() {
                   {/* Actions Footer */}
                   <div className="border-base-200/60 mt-4 flex flex-col gap-3 border-t pt-4">
                     <div className="flex items-center justify-between gap-3">
-                      {/* Integrated Status Toggle */}
-                      <div className="bg-base-200/50 flex shrink-0 items-center gap-2 rounded-xl px-3 py-2.5">
-                        <input
-                          id="mark-final-toggle"
-                          type="checkbox"
-                          className={`toggle toggle-sm ${form.status === "FINAL" ? "toggle-success" : ""}`}
-                          checked={form.status === "FINAL"}
-                          disabled={!canEdit}
-                          onChange={(e) => {
-                            const nextStatus = e.target.checked ? "FINAL" : "DRAFT";
-                            if (nextStatus === "FINAL" && hasDifference) {
-                              if (!confirm("⚠️ Los totales no coinciden. ¿Estás seguro de marcarlo como cerrado?")) {
-                                return;
-                              }
-                            }
-                            setForm((prev) => ({ ...prev, status: nextStatus }));
-                          }}
-                        />
-                        <label htmlFor="mark-final-toggle" className="cursor-pointer text-xs font-semibold select-none">
-                          {form.status === "FINAL" ? "Cerrado" : "Borrador"}
-                        </label>
-                      </div>
+                      {/* Status Toggle Removed - Auto managed */}
 
                       {/* Primary Save Button */}
-                      <Button
-                        type="button"
-                        variant={!hasDifference && form.status !== "FINAL" ? "primary" : "outline"}
-                        className={`grow rounded-xl text-sm font-bold shadow-sm ${
-                          !hasDifference && form.status !== "FINAL" ? "shadow-primary/20" : ""
-                        }`}
-                        disabled={mutation.isPending || !canEdit}
-                        onClick={() => {
-                          if (!hasDifference) {
-                            triggerSave({ forceFinal: true });
-                          } else {
-                            triggerSave({ forceFinal: false });
-                          }
-                        }}
-                      >
-                        {mutation.isPending ? (
-                          <span className="loading loading-spinner loading-xs"></span>
+                      <div className="flex w-full gap-2">
+                        {form.status === "FINAL" ? (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => {
+                              if (confirm("¿Reabrir este balance como borrador?")) {
+                                setForm((prev) => ({ ...prev, status: "DRAFT" }));
+                                triggerSave({ forceFinal: false });
+                              }
+                            }}
+                          >
+                            Reabrir como Borrador
+                          </Button>
                         ) : (
-                          <>
-                            <Save className="h-4 w-4" />
-                            {form.status === "FINAL" ? "Actualizar" : "Guardar"}
-                          </>
+                          <div className="text-base-content/50 flex items-center px-2 text-xs">
+                            <span className="hidden sm:inline">Se guardará como borrador hasta cuadrar.</span>
+                          </div>
                         )}
-                      </Button>
+
+                        <Button
+                          type="button"
+                          variant="primary"
+                          className="shadow-primary/20 grow rounded-xl text-sm font-bold shadow-sm"
+                          disabled={mutation.isPending || !canEdit}
+                          onClick={() => {
+                            if (!hasDifference) {
+                              triggerSave({ forceFinal: true });
+                            } else {
+                              triggerSave({ forceFinal: false });
+                            }
+                          }}
+                        >
+                          {mutation.isPending ? (
+                            <span className="loading loading-spinner loading-xs"></span>
+                          ) : (
+                            <>
+                              <Save className="h-4 w-4" />
+                              {form.status === "FINAL"
+                                ? "Guardar cambios"
+                                : !hasDifference
+                                  ? "Guardar y Finalizar"
+                                  : "Guardar Borrador"}
+                            </>
+                          )}
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </div>

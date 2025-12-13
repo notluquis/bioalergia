@@ -139,6 +139,13 @@ body {
   -webkit-tap-highlight-color: transparent;
   -webkit-text-size-adjust: 100%;
   overscroll-behavior-y: none;
+  /* Apple-like text rendering */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-feature-settings:
+    "tnum" 1,
+    "cv11" 1; /* Tabular numbers + CV11 (often alt geometric) */
 }
 
 html[data-theme="bioalergia-dark"] body,
@@ -183,7 +190,7 @@ html[data-theme="bioalergia-dark"] .layout-shell {
   background: var(--surface-elevated-bg);
   border: 1px solid var(--surface-elevated-border);
   border-radius: 1.75rem;
-  box-shadow: 0 26px 60px color-mix(in srgb, #000 18%, transparent);
+  box-shadow: 0 16px 36px color-mix(in srgb, #000 12%, transparent);
   transition:
     background-color 180ms ease,
     border-color 180ms ease,
@@ -274,7 +281,7 @@ html[data-theme="bioalergia-dark"] .layout-shell {
   padding: 1.75rem;
   background: var(--surface-recessed-bg);
   border: 1px solid var(--surface-recessed-border);
-  box-shadow: 0 22px 60px color-mix(in srgb, #000 16%, transparent);
+  box-shadow: 0 12px 32px color-mix(in srgb, #000 10%, transparent);
 }
 
 @media (prefers-reduced-motion: reduce) {

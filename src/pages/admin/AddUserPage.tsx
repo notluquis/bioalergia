@@ -82,7 +82,7 @@ export default function AddUserPage() {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="surface-elevated space-y-6 rounded-3xl p-8 shadow-lg">
+      <form onSubmit={handleSubmit} className="surface-elevated space-y-6 rounded-3xl p-6 shadow-lg">
         {/* Opción de vincular a persona existente */}
         <div className="border-info/20 bg-info/5 rounded-xl border p-4">
           <div className="flex items-start gap-3">

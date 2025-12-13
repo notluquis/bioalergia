@@ -96,10 +96,10 @@ export default function App() {
         </div>
       )}
       <div
-        className="layout-shell text-base-content relative mx-auto flex min-h-screen w-full gap-6 px-2 py-6 transition-all duration-300 sm:px-4 lg:px-6"
+        className="layout-shell text-base-content relative mx-auto flex min-h-screen w-full gap-3 px-2 py-3 transition-all duration-300 sm:px-4 lg:px-6"
         style={{
-          paddingTop: "max(1.5rem, env(safe-area-inset-top))",
-          paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))",
+          paddingTop: "max(0.75rem, env(safe-area-inset-top))",
+          paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))",
           paddingLeft: "max(0.75rem, env(safe-area-inset-left))",
           paddingRight: "max(0.75rem, env(safe-area-inset-right))",
         }}
@@ -107,7 +107,7 @@ export default function App() {
         {/* Hamburger button: accessible, compact, always visible on mobile */}
         <button
           type="button"
-          className="border-base-300/70 bg-base-100/85 text-base-content focus-visible:ring-primary/60 fixed top-[clamp(0.9rem,env(safe-area-inset-top,0px)+0.9rem,2.5rem)] left-4 z-40 inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm font-semibold shadow-lg backdrop-blur-md transition-all duration-200 focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:outline-none md:hidden"
+          className="border-base-300/70 bg-base-100/85 text-base-content focus-visible:ring-primary/60 fixed top-[clamp(0.5rem,env(safe-area-inset-top,0px)+0.5rem,1.5rem)] left-4 z-40 inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm font-semibold shadow-lg backdrop-blur-md transition-all duration-200 focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:outline-none md:hidden"
           onClick={toggleSidebar}
           aria-label={sidebarOpen ? "Cerrar menú principal" : "Abrir menú principal"}
           aria-expanded={sidebarOpen}
@@ -154,11 +154,11 @@ export default function App() {
         />
 
         {/* Main content */}
-        <div className="layout-container flex min-w-0 flex-1 flex-col gap-6 pb-[calc(110px+env(safe-area-inset-bottom))] md:pb-0">
+        <div className="layout-container flex min-w-0 flex-1 flex-col gap-3 pb-[calc(110px+env(safe-area-inset-bottom))] md:pb-0">
           <Header />
 
-          <main className="flex-1 rounded-[2.25rem]">
-            <div className="surface-recessed h-full rounded-[2.25rem] px-4 py-6 shadow-inner sm:px-6">
+          <main className="flex-1 rounded-3xl">
+            <div className="surface-recessed h-full rounded-3xl px-3 py-4 shadow-inner sm:px-5">
               <div className="muted-scrollbar h-full overflow-auto">
                 <Outlet />
               </div>
