@@ -202,7 +202,7 @@ export default function DailyProductionBalancesPage() {
         <div className="card-body gap-3 p-4 sm:p-5">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-base-content/70 text-[11px] tracking-wide uppercase">Semana seleccionada</p>
+              <p className="text-base-content/70 text-xs tracking-wide uppercase">Semana seleccionada</p>
               <h3 className="text-base-content text-base font-bold">
                 {startOfWeek.format("DD MMM")} - {endOfWeek.format("DD MMM YYYY")}
               </h3>
