@@ -3,7 +3,7 @@ import dayjs from "dayjs";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { fetchCalendarDaily, fetchCalendarSummary, syncCalendarEvents, fetchCalendarSyncLogs } from "../api";
-import type { CalendarDaily, CalendarFilters, CalendarSummary, CalendarSyncStep } from "../types";
+import type { CalendarDaily, CalendarFilters, CalendarSummary, CalendarSyncLog, CalendarSyncStep } from "../types";
 import { useSettings } from "@/context/SettingsContext";
 import { useCalendarFilterStore } from "@/store/calendarFilters";
 
@@ -17,6 +17,21 @@ const SYNC_STEPS_TEMPLATE: Array<{ id: CalendarSyncStep["id"]; label: string }> 
   { id: "exclude", label: "Eliminando eventos excluidos" },
   { id: "snapshot", label: "Guardando snapshot" },
 ];
+const STALE_SYNC_WINDOW_MS = 15 * 60 * 1000; // keep in sync with backend stale lock
+export const CALENDAR_SYNC_LOGS_QUERY_KEY = ["calendar", "sync-logs", "full"] as const;
+
+const hasFreshRunningSync = (logs: CalendarSyncLog[] | undefined) => {
+  if (!logs?.length) return false;
+  return logs.some((log) => {
+    if (log.status !== "RUNNING") return false;
+    const started = dayjs(log.startedAt);
+    return started.isValid() && Date.now() - started.valueOf() < STALE_SYNC_WINDOW_MS;
+  });
+};
+
+const resolveRefetchInterval = (logs: CalendarSyncLog[] | undefined) => {
+  return hasFreshRunningSync(logs) ? 5000 : false;
+};
 
 function normalizeFilters(filters: CalendarFilters): CalendarFilters {
   const unique = (values: string[]) => Array.from(new Set(values)).sort();
@@ -116,24 +131,19 @@ export function useCalendarEvents() {
     enabled: Boolean(normalizedApplied.from && normalizedApplied.to),
   });
 
-  // Check for RUNNING syncs to disable sync button
-  const { data: syncLogsData, refetch: refetchSyncLogs } = useQuery({
-    queryKey: ["calendar", "sync-logs"],
-    queryFn: () => fetchCalendarSyncLogs(5),
+  // Single source of truth for sync logs (shared across pages)
+  const { data: syncLogsData = [] } = useQuery<CalendarSyncLog[], Error>({
+    queryKey: CALENDAR_SYNC_LOGS_QUERY_KEY,
+    queryFn: () => fetchCalendarSyncLogs(50),
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    staleTime: 30_000,
+    retry: false,
+    refetchInterval: (query) => resolveRefetchInterval(query.state.data),
+    placeholderData: [],
   });
 
-  const hasRunningSyncFromOtherSource = syncLogsData?.some((log) => log.status === "RUNNING") ?? false;
-
-  // Auto-refresh when there's a RUNNING sync
-  useEffect(() => {
-    if (!hasRunningSyncFromOtherSource) return;
-    const interval = setInterval(() => {
-      refetchSyncLogs().catch(() => {
-        /* handled */
-      });
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [hasRunningSyncFromOtherSource, refetchSyncLogs]);
+  const hasRunningSyncFromOtherSource = hasFreshRunningSync(syncLogsData);
 
   const summary = summaryQuery.data ?? null;
   const daily = dailyQuery.data ?? null;

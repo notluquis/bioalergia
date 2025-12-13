@@ -1,10 +1,10 @@
-import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 
 import Button from "@/components/ui/Button";
 import { fetchCalendarSyncLogs } from "@/features/calendar/api";
-import { useCalendarEvents } from "@/features/calendar/hooks/useCalendarEvents";
+import { CALENDAR_SYNC_LOGS_QUERY_KEY, useCalendarEvents } from "@/features/calendar/hooks/useCalendarEvents";
+import type { CalendarSyncLog } from "@/features/calendar/types";
 import { SyncProgressPanel } from "@/features/calendar/components/SyncProgressPanel";
 import { numberFormatter } from "@/lib/format";
 import { TITLE_LG } from "@/lib/styles";
@@ -18,24 +18,30 @@ export default function CalendarSyncHistoryPage() {
     data: logs = [],
     isLoading: loading,
     refetch: refetchLogs,
-  } = useQuery({
-    queryKey: ["calendar", "sync-logs-history"],
+  } = useQuery<CalendarSyncLog[], Error>({
+    queryKey: CALENDAR_SYNC_LOGS_QUERY_KEY,
     queryFn: () => fetchCalendarSyncLogs(50),
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    staleTime: 30_000,
+    retry: false,
+    refetchInterval: (query) => {
+      const data = query.state.data;
+      if (!data?.length) return false;
+      const running = data.find((log) => log.status === "RUNNING");
+      if (!running) return false;
+      const started = dayjs(running.startedAt);
+      return started.isValid() && Date.now() - started.valueOf() < 15 * 60 * 1000 ? 5000 : false;
+    },
+    placeholderData: [],
   });
 
-  const hasRunningSyncInHistory = logs.some((log) => log.status === "RUNNING");
+  const hasRunningSyncInHistory = logs.some((log) => {
+    if (log.status !== "RUNNING") return false;
+    const started = dayjs(log.startedAt);
+    return started.isValid() && Date.now() - started.valueOf() < 15 * 60 * 1000;
+  });
   const isSyncing = syncing || hasRunningSyncFromOtherSource || hasRunningSyncInHistory;
-
-  // Auto-refresh every 5s when there's a RUNNING sync
-  useEffect(() => {
-    if (!hasRunningSyncInHistory) return;
-    const interval = setInterval(() => {
-      refetchLogs().catch(() => {
-        /* handled */
-      });
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [hasRunningSyncInHistory, refetchLogs]);
 
   const handleRefresh = () => {
     refetchLogs().catch(() => {
