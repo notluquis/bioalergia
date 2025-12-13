@@ -48,10 +48,29 @@ export function sanitizeUser(user: {
   person?: { names: string; fatherName: string | null } | null;
 }) {
   // Build display name: first name + father's last name
+  // Build display name: first name + father's last name
+  // Smart logic: detect if names already includes surnames to avoid duplication
   let displayName: string | null = null;
   if (user.person) {
-    const firstName = user.person.names.split(" ")[0]; // Take only first name
-    displayName = [firstName, user.person.fatherName].filter(Boolean).join(" ");
+    const names = user.person.names.trim();
+    const father = user.person.fatherName?.trim();
+
+    if (father && names.toLowerCase().includes(father.toLowerCase())) {
+      // Names already includes the father name, so use names as is (but better capitalized if needed)
+      // Or if we want strictly First + Last:
+      // Attempt to extract First Name even if names has full name
+      // Heuristic: If names has 3+ parts it's likely Full Name.
+      // For now: Clean up and Title Case.
+      displayName = toTitleCase(names);
+    } else {
+      // Concatenate if distinct
+      const firstName = names.split(" ")[0];
+      displayName = toTitleCase([firstName, father].filter(Boolean).join(" "));
+    }
+  }
+
+  function toTitleCase(str: string) {
+    return str.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
   }
 
   return {
