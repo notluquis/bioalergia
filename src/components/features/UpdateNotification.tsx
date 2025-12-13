@@ -1,8 +1,10 @@
 import { useRegisterSW } from "virtual:pwa-register/react";
 import { X } from "lucide-react";
+import { useState } from "react";
 import Button from "@/components/ui/Button";
 
 export function UpdateNotification() {
+  const [isUpdating, setIsUpdating] = useState(false);
   const {
     needRefresh: [needRefresh, setNeedRefresh],
     updateServiceWorker,
@@ -29,7 +31,13 @@ export function UpdateNotification() {
   });
 
   const handleUpdate = () => {
-    updateServiceWorker(true);
+    setIsUpdating(true);
+    updateServiceWorker(true)
+      .catch(() => {
+        // Si falla el flujo normal, recargar manualmente
+        window.location.reload();
+      })
+      .finally(() => setIsUpdating(false));
   };
 
   if (!needRefresh) return null;
@@ -52,8 +60,8 @@ export function UpdateNotification() {
             <h3 className="text-base-content text-sm font-semibold">Nueva versión disponible</h3>
             <p className="text-base-content/70 mt-1 text-xs">Actualiza cuando estés listo. No perderás tu progreso.</p>
             <div className="mt-3 flex gap-2">
-              <Button size="sm" onClick={handleUpdate} className="flex-1">
-                Actualizar
+              <Button size="sm" onClick={handleUpdate} className="flex-1" disabled={isUpdating}>
+                {isUpdating ? "Actualizando..." : "Actualizar"}
               </Button>
               <Button size="sm" variant="ghost" onClick={() => setNeedRefresh(false)} className="px-3">
                 <X className="h-4 w-4" />

@@ -294,8 +294,14 @@ export default function DailyProductionBalancesPage() {
 
             {canEdit ? (
               <form className="space-y-4" onSubmit={handleSubmit}>
-                <div className="alert alert-info text-xs">
-                  <strong>Flujo:</strong> 1) Método de pago → 2) Servicios → 3) Valida totales → 4) Guarda.
+                <div className="alert alert-info flex flex-wrap items-center gap-2 text-xs">
+                  <span className="text-info-content font-semibold">Flujo:</span>
+                  <div className="flex flex-wrap gap-1">
+                    <span className="badge badge-sm">1) Método de pago</span>
+                    <span className="badge badge-sm">2) Servicios</span>
+                    <span className="badge badge-sm">3) Valida totales</span>
+                    <span className="badge badge-sm">4) Guarda</span>
+                  </div>
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -476,9 +482,9 @@ export default function DailyProductionBalancesPage() {
                     <FileText className="text-base-content/70 h-5 w-5" />
                     <h3 className="text-base-content text-sm font-semibold">Notas (opcional)</h3>
                   </div>
-                  <div className="mt-3 grid gap-3">
+                  <div className="mt-3 grid gap-3 md:grid-cols-2">
                     <textarea
-                      className="textarea textarea-bordered h-20"
+                      className="textarea textarea-bordered h-24 md:col-span-2"
                       value={form.comentarios}
                       onChange={(e) => setForm((prev) => ({ ...prev, comentarios: e.target.value }))}
                       placeholder="Notas sobre ingresos, incidencias, etc."

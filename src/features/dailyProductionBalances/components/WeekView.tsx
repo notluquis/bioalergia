@@ -49,7 +49,7 @@ export default function WeekView({ currentDate, onDateChange, balances, onSelect
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+      <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-6 lg:grid-cols-6">
         {days.map((day) => {
           const dateStr = day.format("YYYY-MM-DD");
           const balance = balances.find((b) => b.date === dateStr);
