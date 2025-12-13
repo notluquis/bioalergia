@@ -472,15 +472,15 @@ export default function DailyProductionBalancesPage() {
                     <FileText className="text-base-content/70 h-5 w-5" />
                     <h3 className="text-base-content text-sm font-semibold">Notas (opcional)</h3>
                   </div>
-                  <div className="mt-3 grid gap-3 md:grid-cols-2">
+                  <div className="mt-3 flex flex-col gap-3">
                     <textarea
-                      className="textarea textarea-bordered h-24 md:col-span-2"
+                      className="textarea textarea-bordered h-28 w-full"
                       value={form.comentarios}
                       onChange={(e) => setForm((prev) => ({ ...prev, comentarios: e.target.value }))}
                       placeholder="Notas sobre ingresos, incidencias, etc."
                     />
                     <input
-                      className="input input-bordered"
+                      className="input input-bordered w-full"
                       value={form.reason}
                       onChange={(e) => setForm((prev) => ({ ...prev, reason: e.target.value }))}
                       placeholder="Motivo de edición (requerido si finalizado)"
