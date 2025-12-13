@@ -18,8 +18,8 @@ export default function WeekView({ currentDate, onDateChange, balances, onSelect
   const days = Array.from({ length: 6 }).map((_, i) => startOfWeek.add(i, "day")); // Monday to Saturday
 
   // Calculate weekly totals
-  const weeklyIncome = balances.reduce((acc, b) => acc + Number(b.total), 0);
-  const weeklyExpenses = balances.reduce((acc, b) => acc + Number(b.gastosDiarios), 0);
+  const weeklyIncome = balances.reduce((acc, b) => acc + Number(b.total ?? 0), 0);
+  const weeklyExpenses = balances.reduce((acc, b) => acc + Number(b.gastosDiarios ?? 0), 0);
 
   return (
     <div className="space-y-2">
