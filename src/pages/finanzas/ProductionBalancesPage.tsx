@@ -441,6 +441,29 @@ export default function DailyProductionBalancesPage() {
                 </div>
 
                 <div className="space-y-3 lg:col-span-3 xl:col-span-3">
+                  <div className="bg-base-100 border-base-200 rounded-2xl border p-4 shadow-sm">
+                    <div className="flex items-center gap-2">
+                      <FileText className="text-base-content/70 h-5 w-5" />
+                      <h3 className="text-base-content text-sm font-semibold">Notas (opcional)</h3>
+                    </div>
+                    <div className="mt-3 flex flex-col gap-3">
+                      <textarea
+                        className="textarea textarea-bordered h-28 w-full"
+                        value={form.comentarios}
+                        onChange={(e) => setForm((prev) => ({ ...prev, comentarios: e.target.value }))}
+                        placeholder="Notas sobre ingresos, incidencias, etc."
+                      />
+                      {wasFinal && (
+                        <input
+                          className="input input-bordered w-full"
+                          value={form.reason}
+                          onChange={(e) => setForm((prev) => ({ ...prev, reason: e.target.value }))}
+                          placeholder="Motivo de edición (requerido si finalizado)"
+                        />
+                      )}
+                    </div>
+                  </div>
+
                   <div className="bg-base-100 border-base-200 h-full rounded-2xl border p-4 shadow-sm">
                     <div className="flex items-center gap-2">
                       <ClipboardList className="text-primary h-5 w-5" />
@@ -495,29 +518,6 @@ export default function DailyProductionBalancesPage() {
                       </div>
                     </div>
                   </div>
-                </div>
-              </div>
-
-              <div className="bg-base-100 border-base-200 rounded-2xl border p-4 shadow-sm">
-                <div className="flex items-center gap-2">
-                  <FileText className="text-base-content/70 h-5 w-5" />
-                  <h3 className="text-base-content text-sm font-semibold">Notas (opcional)</h3>
-                </div>
-                <div className="mt-3 flex flex-col gap-3">
-                  <textarea
-                    className="textarea textarea-bordered h-28 w-full"
-                    value={form.comentarios}
-                    onChange={(e) => setForm((prev) => ({ ...prev, comentarios: e.target.value }))}
-                    placeholder="Notas sobre ingresos, incidencias, etc."
-                  />
-                  {wasFinal && (
-                    <input
-                      className="input input-bordered w-full"
-                      value={form.reason}
-                      onChange={(e) => setForm((prev) => ({ ...prev, reason: e.target.value }))}
-                      placeholder="Motivo de edición (requerido si finalizado)"
-                    />
-                  )}
                 </div>
               </div>
 
@@ -649,13 +649,13 @@ function MoneyInput({
         </span>
       </label>
       <label className={INPUT_CURRENCY_SM}>
-        <span className="text-base-content/60">$</span>
+        <span className="text-base-content/60 text-xs sm:text-sm">$</span>
         <input
           type="text"
           inputMode="numeric"
           value={formatInputValue(value)}
           onChange={(e) => onChange(parseInputValue(e.target.value))}
-          className="text-base-content placeholder:text-base-content/40 grow bg-transparent text-sm sm:text-base"
+          className="text-base-content placeholder:text-base-content/40 grow bg-transparent text-xs sm:text-sm md:text-base"
           placeholder="0"
         />
       </label>
