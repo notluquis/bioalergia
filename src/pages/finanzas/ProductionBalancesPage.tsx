@@ -104,6 +104,14 @@ export default function DailyProductionBalancesPage() {
 
   const [form, setForm] = useState<FormState>(() => makeDefaultForm());
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  const handleGoToday = () => {
+    const now = dayjs();
+    const todayStr = now.format("YYYY-MM-DD");
+    setCurrentDate(now);
+    setSelectedDate(todayStr);
+    setSelectedId(null);
+    setForm(makeDefaultForm(todayStr));
+  };
 
   const balancesQuery = useQuery({
     queryKey: ["production-balances", from, to],
@@ -204,18 +212,18 @@ export default function DailyProductionBalancesPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button size="sm" onClick={() => setCurrentDate(dayjs())}>
+          <Button size="sm" onClick={handleGoToday}>
             Ir a hoy
           </Button>
         </div>
       </header>
 
       <div className="card bg-base-100 border shadow-sm">
-        <div className="card-body gap-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="card-body gap-3 p-4 sm:p-5">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-base-content/70 text-xs tracking-wide uppercase">Semana seleccionada</p>
-              <h3 className="text-base-content text-lg font-bold">
+              <p className="text-base-content/70 text-[11px] tracking-wide uppercase">Semana seleccionada</p>
+              <h3 className="text-base-content text-base font-bold">
                 {startOfWeek.format("DD MMM")} - {endOfWeek.format("DD MMM YYYY")}
               </h3>
             </div>
@@ -508,28 +516,6 @@ export default function DailyProductionBalancesPage() {
           </div>
 
           <div className="space-y-4">
-            <div className="card bg-base-100 border shadow-sm">
-              <div className="card-body p-4">
-                <p className="text-base-content/70 text-xs tracking-wide uppercase">Totales de la semana</p>
-                <h3 className="text-base-content text-lg font-bold">{startOfWeek.format("YYYY [Semana] WW")}</h3>
-                <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                  <StatMini
-                    label="Método de pago"
-                    value={currencyFormatter.format(derived.total)}
-                    tone="primary"
-                    bold
-                  />
-                  <StatMini label="Servicios" value={currencyFormatter.format(serviceTotals)} tone="primary" bold />
-                  <StatMini
-                    label="Gastos"
-                    value={`-${currencyFormatter.format(parseNumber(form.gastosDiarios))}`}
-                    tone="error"
-                  />
-                  <StatMini label="Otros abonos" value={currencyFormatter.format(parseNumber(form.otrosAbonos))} />
-                </div>
-              </div>
-            </div>
-
             {selectedId && (
               <div className="card bg-base-100 border shadow-sm">
                 <div className="card-body p-4">

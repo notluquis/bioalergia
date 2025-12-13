@@ -19,7 +19,7 @@ export default function DayCard({ date, balance, isSelected, isToday, onClick }:
     <button
       onClick={onClick}
       className={cn(
-        "group relative flex h-full min-h-25 w-full flex-col justify-between rounded-lg border p-2 text-left transition-all hover:shadow-sm",
+        "group relative flex h-full min-h-24 w-full flex-col justify-between rounded-lg border p-1.5 text-left transition-all hover:shadow-sm",
         isSelected
           ? "border-primary bg-primary/5 ring-primary ring-1"
           : "border-base-300 bg-base-100 hover:border-primary/50",
@@ -29,16 +29,16 @@ export default function DayCard({ date, balance, isSelected, isToday, onClick }:
       <div className="flex w-full items-start justify-between">
         <div>
           <span className="text-base-content/60 block text-[10px] font-medium uppercase">{date.format("ddd")}</span>
-          <span className={cn("text-lg font-bold", isToday ? "text-primary" : "text-base-content")}>
+          <span className={cn("text-base font-bold", isToday ? "text-primary" : "text-base-content")}>
             {date.format("D")}
           </span>
         </div>
-        {status === "FINAL" && <CheckCircle2 size={14} className="text-success" />}
-        {status === "DRAFT" && <CircleDashed size={14} className="text-warning" />}
+        {status === "FINAL" && <CheckCircle2 size={12} className="text-success" />}
+        {status === "DRAFT" && <CircleDashed size={12} className="text-warning" />}
         {status === "MISSING" && <div className="bg-base-300 h-1.5 w-1.5 rounded-full" />}
       </div>
 
-      <div className="mt-2 space-y-0.5">
+      <div className="mt-1.5 space-y-0.5">
         {balance ? (
           <>
             <div className="flex justify-between text-[10px]">
