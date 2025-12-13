@@ -12,13 +12,11 @@ export function useWakeLock() {
           const wakeLock = await navigator.wakeLock.request("screen");
           wakeLockRef.current = wakeLock;
           setIsLocked(true);
-          console.log("[WakeLock] Screen wake lock active");
 
           // Re-acquire lock if visibility changes (e.g. tab switch)
           document.addEventListener("visibilitychange", handleVisibilityChange);
 
           wakeLock.addEventListener("release", () => {
-            console.log("[WakeLock] Screen wake lock released");
             setIsLocked(false);
           });
         } catch (err) {

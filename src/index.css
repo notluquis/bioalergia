@@ -551,6 +551,12 @@ html[data-theme="bioalergia-dark"] .layout-shell {
   font-size: 0.875rem; /* 14px - slightly smaller */
 }
 
+textarea,
+.textarea {
+  field-sizing: content;
+  min-height: 2.5rem;
+}
+
 input[type="date"],
 input[type="time"],
 input[type="datetime-local"] {
@@ -647,6 +653,16 @@ button.btn-xs {
 }
 
 /* Optimize heavy components */
+/* Optimize heavy components */
+.content-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: 1px 300px; /* Estimate height to prevent scrollbar jumping */
+}
+
+.contain-layout {
+  contain: layout style;
+}
+
 /* .surface-elevated contain: layout paint; - Removed to allow dropdown overflow */
 
 .brand-logo {
@@ -657,8 +673,23 @@ button.btn-xs {
 
 .scroll-header-animation {
   /* Ensure sticky header is on its own layer */
-  will-change: transform;
+  will-change: transform, background-color, box-shadow;
   transform: translateZ(0);
+
+  /* Scroll-Driven Animation (2025 Modern Standard) */
+  animation: header-scroll linear forwards;
+  animation-timeline: scroll();
+  animation-range: 0rem 5rem; /* Effect completes after scrolling 5rem */
+}
+
+/* Modern Interaction-State Validation (:user-invalid)
+   Only shows error border AFTER user has interacted/typed, native replacement for "touched" logic.
+*/
+input:user-invalid,
+textarea:user-invalid,
+select:user-invalid {
+  border-color: var(--color-error);
+  color: var(--color-error);
 }
 
 /* Interactive elements inside header must not be draggable */

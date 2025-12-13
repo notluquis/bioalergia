@@ -52,7 +52,7 @@ export default function Header() {
   };
 
   return (
-    <header className="scroll-header-animation flex items-center justify-between rounded-3xl px-6 py-1 transition-all duration-300">
+    <header className="scroll-header-animation sticky top-0 z-30 flex items-center justify-between rounded-3xl px-6 py-1 transition-all duration-300">
       <div className="flex flex-col gap-0.5">
         {breadcrumbs.length > 0 && (
           <div className="text-base-content/60 flex items-center gap-1 text-xs">

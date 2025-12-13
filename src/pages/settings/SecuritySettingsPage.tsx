@@ -196,7 +196,13 @@ export default function SecuritySettingsPage() {
                   <div className="border-base-300 bg-base-200/50 rounded-xl border p-4">
                     <div className="mb-4 text-center">
                       <p className="mb-2 text-sm font-medium">1. Escanea este código QR con tu app de autenticación:</p>
-                      <img src={qrCodeUrl} alt="QR Code" className="mx-auto rounded-lg bg-white p-2 shadow-sm" />
+                      <img
+                        src={qrCodeUrl}
+                        alt="QR Code"
+                        className="mx-auto rounded-lg bg-white p-2 shadow-sm"
+                        loading="lazy"
+                        decoding="async"
+                      />
                       <p className="text-base-content/50 mt-2 text-xs">Secreto: {mfaSecret}</p>
                     </div>
 

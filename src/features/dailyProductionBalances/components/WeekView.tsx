@@ -49,7 +49,7 @@ export default function WeekView({ currentDate, onDateChange, balances, onSelect
           </Button>
         </div>
 
-        <div className="flex gap-1.5 text-[11px]">
+        <div className="flex gap-1.5 text-xs">
           <div className="bg-base-200/60 rounded px-2 py-0.5">
             <span className="text-base-content/60 text-[10px]">Semana actual · Ingresos</span>
             <span className="text-success ml-1 font-semibold">{currencyFormatter.format(weeklyIncome)}</span>

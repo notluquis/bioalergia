@@ -38,10 +38,8 @@ export function initPerformanceMonitoring() {
   if (isLowEnd) {
     html.classList.add("perf-low");
     html.classList.remove("perf-high");
-    console.log("[Perf] Low-end device detected. Disabling expensive effects.");
   } else {
     html.classList.add("perf-high");
     html.classList.remove("perf-low");
-    console.log("[Perf] High-end device detected. Enabling full effects.");
   }
 }

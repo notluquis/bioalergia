@@ -514,7 +514,13 @@ export default function OnboardingWizard() {
               ) : mfaSecret ? (
                 <div className="flex flex-col items-center gap-6">
                   <div className="rounded-xl bg-white p-4 shadow-sm">
-                    <img src={mfaSecret.qrCodeUrl} alt="QR Code" className="h-48 w-48" />
+                    <img
+                      src={mfaSecret.qrCodeUrl}
+                      alt="QR Code"
+                      className="h-48 w-48"
+                      loading="lazy"
+                      decoding="async"
+                    />
                   </div>
 
                   <div className="form-control w-full max-w-xs">

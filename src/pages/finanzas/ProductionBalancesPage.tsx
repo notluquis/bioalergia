@@ -601,7 +601,7 @@ function HistoryItem({ entry }: { entry: ProductionBalanceHistoryEntry }) {
   const status = entry.snapshot?.status ?? "DRAFT";
   const badgeTone = status === "FINAL" ? "badge-success" : "badge-warning";
   return (
-    <li className="border-base-200 rounded-lg border p-3">
+    <li className="content-auto border-base-200 rounded-lg border p-3">
       <div className="flex items-center justify-between">
         <div>
           <p className="text-base-content font-semibold">{dayjs(entry.createdAt).format("DD MMM YYYY HH:mm")}</p>
