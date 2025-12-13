@@ -497,70 +497,134 @@ export default function DailyProductionBalancesPage() {
                   </div>
                 </div>
 
-                <div className="bg-base-100 border-base-200 h-full rounded-2xl border p-4 shadow-sm">
-                  <div className="flex items-center gap-2">
-                    <ClipboardList className="text-primary h-5 w-5" />
-                    <h3 className="text-base-content text-base font-semibold">Validación</h3>
-                  </div>
-                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                    <StatMini
-                      label="Total método de pago"
-                      value={currencyFormatter.format(paymentMethodTotal)}
-                      tone="primary"
-                      bold
-                    />
-                    <StatMini
-                      label="Total servicios"
-                      value={currencyFormatter.format(serviceTotals)}
-                      tone="primary"
-                      bold
-                    />
-                    <div className="sm:col-span-2">
-                      <div
-                        className={`alert ${hasDifference ? "alert-error" : "alert-success"} flex flex-col gap-2 p-3 text-xs`}
-                      >
-                        <div className="flex flex-col gap-1">
-                          <span className="font-semibold">
-                            {hasDifference ? "⚠️ Totales no coinciden" : "✅ Totales cuadran"}
-                          </span>
-                          <span className="text-base-content/70">
-                            Diferencia: {currencyFormatter.format(difference)}
-                          </span>
-                        </div>
-                        <div className="flex w-full flex-wrap items-center justify-between gap-2">
-                          <div className="flex items-center gap-2">
-                            <input
-                              aria-label="Marcar como final"
-                              type="checkbox"
-                              className="toggle toggle-sm"
-                              checked={form.status === "FINAL"}
-                              disabled={!canEdit}
-                              onChange={(e) => {
-                                const nextStatus = e.target.checked ? "FINAL" : "DRAFT";
-                                if (nextStatus === "FINAL" && hasDifference) {
-                                  if (
-                                    !confirm("⚠️ Los totales no coinciden. ¿Estás seguro de marcarlo como cerrado?")
-                                  ) {
-                                    return;
-                                  }
-                                }
-                                setForm((prev) => ({ ...prev, status: nextStatus }));
-                              }}
-                            />
-                            <span className="text-base-content/70 text-[11px]">Marcar como final</span>
-                          </div>
-                          <Button
-                            type="button"
-                            variant="primary"
-                            size="sm"
-                            disabled={mutation.isPending || !canEdit}
-                            onClick={() => triggerSave({ forceFinal: true })}
-                          >
-                            <Save className="h-4 w-4" />
-                            {mutation.isPending ? "Guardando..." : "Guardar balance"}
-                          </Button>
-                        </div>
+                <div className="bg-base-100 border-base-200 flex h-full flex-col justify-between rounded-3xl border p-5 shadow-sm">
+                  {/* Header */}
+                  <div>
+                    <div className="mb-4 flex items-center gap-2">
+                      <div className="bg-primary/10 text-primary rounded-xl p-2">
+                        <ClipboardList className="h-5 w-5" />
                       </div>
+                      <div>
+                        <h3 className="text-base-content text-base font-bold">Validación y Cierre</h3>
+                        <p className="text-base-content/60 text-xs">Confirma que los totales coincidan</p>
+                      </div>
+                    </div>
+
+                    {/* Stats */}
+                    <div className="mb-6 grid grid-cols-2 gap-3">
+                      <div className="bg-base-200/50 hover:bg-base-200 rounded-2xl p-3 text-center transition-all">
+                        <p className="text-base-content/60 text-[10px] font-semibold tracking-wider uppercase">
+                          Métodos de Pago
+                        </p>
+                        <p className="text-primary mt-1 text-lg font-bold">
+                          {currencyFormatter.format(paymentMethodTotal)}
+                        </p>
+                      </div>
+                      <div className="bg-base-200/50 hover:bg-base-200 rounded-2xl p-3 text-center transition-all">
+                        <p className="text-base-content/60 text-[10px] font-semibold tracking-wider uppercase">
+                          Servicios
+                        </p>
+                        <p className="text-primary mt-1 text-lg font-bold">{currencyFormatter.format(serviceTotals)}</p>
+                      </div>
+                    </div>
+
+                    {/* Status Banner */}
+                    <div
+                      className={`flex flex-col items-center justify-center rounded-2xl p-4 text-center transition-all duration-300 ${
+                        hasDifference
+                          ? "bg-error/10 text-error ring-error/20 ring-1"
+                          : "bg-success/10 text-success ring-success/20 ring-1"
+                      }`}
+                    >
+                      {hasDifference ? (
+                        <>
+                          <TrendingDown className="mb-2 h-8 w-8 opacity-80" />
+                          <span className="text-lg font-bold">Diferencia Detectada</span>
+                          <span className="my-1 text-2xl font-black tracking-tight">
+                            {currencyFormatter.format(difference)}
+                          </span>
+                          <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs font-medium opacity-80">
+                            Revisa los montos ingresados
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <div className="bg-success/20 mb-2 flex h-8 w-8 items-center justify-center rounded-full">
+                            <span className="text-xl">✨</span>
+                          </div>
+                          <span className="text-lg font-bold">¡Totales Cuadran!</span>
+                          <span className="mt-1 text-xs font-medium opacity-80">Diferencia: $0</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Actions Footer */}
+                  <div className="border-base-200/60 mt-6 space-y-3 border-t pt-5">
+                    {/* Primary Action */}
+                    <Button
+                      type="button"
+                      variant={!hasDifference && form.status !== "FINAL" ? "primary" : "outline"}
+                      className={`h-11 w-full gap-2 rounded-xl text-sm font-semibold shadow-sm ${
+                        !hasDifference && form.status !== "FINAL" ? "shadow-primary/20" : ""
+                      }`}
+                      disabled={mutation.isPending || !canEdit}
+                      onClick={() => {
+                        // Intelligent Save:
+                        // If fully valid -> Finalize
+                        // If invalid -> Just save draft (or ask confirm to finalize)
+                        if (!hasDifference) {
+                          triggerSave({ forceFinal: true });
+                        } else {
+                          // If diff exists, just save as is (Draft usually, unless overridden)
+                          triggerSave({ forceFinal: false });
+                        }
+                      }}
+                    >
+                      {mutation.isPending ? (
+                        <span className="loading loading-spinner loading-xs"></span>
+                      ) : !hasDifference ? (
+                        <>
+                          <Save className="h-4 w-4" />
+                          {form.status === "FINAL" ? "Actualizar Balance Cerrado" : "Finalizar y Guardar"}
+                        </>
+                      ) : (
+                        <>
+                          <Save className="h-4 w-4" />
+                          Guardar Cambios
+                        </>
+                      )}
+                    </Button>
+
+                    {/* Secondary / Advanced Options */}
+                    <div className="flex items-center justify-between px-1">
+                      <div className="flex items-center gap-2">
+                        <input
+                          id="mark-final-toggle"
+                          type="checkbox"
+                          className="toggle toggle-xs toggle-success"
+                          checked={form.status === "FINAL"}
+                          disabled={!canEdit}
+                          onChange={(e) => {
+                            const nextStatus = e.target.checked ? "FINAL" : "DRAFT";
+                            if (nextStatus === "FINAL" && hasDifference) {
+                              if (!confirm("⚠️ Los totales no coinciden. ¿Estás seguro de marcarlo como cerrado?")) {
+                                return;
+                              }
+                            }
+                            setForm((prev) => ({ ...prev, status: nextStatus }));
+                          }}
+                        />
+                        <label
+                          htmlFor="mark-final-toggle"
+                          className="text-base-content/60 hover:text-base-content cursor-pointer text-xs font-medium select-none"
+                        >
+                          Estado: {form.status === "FINAL" ? "Cerrado" : "Borrador"}
+                        </label>
+                      </div>
+
+                      {/* Explicit Save Draft if needed, or link to history */}
+                      {/* We can hide history toggle here if we wanted to simplify main header, but let's keep it simple */}
                     </div>
                   </div>
                 </div>

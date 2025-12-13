@@ -20,7 +20,13 @@ export const permissionMap = readonly({
   "setting.manage": { action: "manage", subject: "Setting" },
   "manage.all": { action: "manage", subject: "all" },
 
-  // Add other permissions here
+  "role.create": { action: "create", subject: "Role" },
+  "role.read": { action: "read", subject: "Role" },
+  "role.update": { action: "update", subject: "Role" },
+  "role.delete": { action: "delete", subject: "Role" },
+
+  "permission.read": { action: "read", subject: "Permission" },
+  "permission.manage": { action: "manage", subject: "Permission" },
 } as const);
 
 export type PermissionKey = keyof typeof permissionMap;
