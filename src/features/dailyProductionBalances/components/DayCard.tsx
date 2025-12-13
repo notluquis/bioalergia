@@ -14,12 +14,13 @@ type DayCardProps = {
 
 export default function DayCard({ date, balance, isSelected, isToday, onClick }: DayCardProps) {
   const status = balance?.status || "MISSING";
+  const hasMoney = (balance?.total ?? 0) > 0 || (balance?.gastosDiarios ?? 0) > 0;
 
   return (
     <button
       onClick={onClick}
       className={cn(
-        "group relative flex h-full min-h-24 w-full flex-col justify-between rounded-lg border p-1.5 text-left transition-all hover:shadow-sm",
+        "group relative flex h-full min-h-20 w-full flex-col justify-between rounded-md border p-1 text-left transition-all hover:shadow-sm",
         isSelected
           ? "border-primary bg-primary/5 ring-primary ring-1"
           : "border-base-300 bg-base-100 hover:border-primary/50",
@@ -29,7 +30,7 @@ export default function DayCard({ date, balance, isSelected, isToday, onClick }:
       <div className="flex w-full items-start justify-between">
         <div>
           <span className="text-base-content/60 block text-[10px] font-medium uppercase">{date.format("ddd")}</span>
-          <span className={cn("text-base font-bold", isToday ? "text-primary" : "text-base-content")}>
+          <span className={cn("text-sm font-bold", isToday ? "text-primary" : "text-base-content")}>
             {date.format("D")}
           </span>
         </div>
@@ -38,23 +39,25 @@ export default function DayCard({ date, balance, isSelected, isToday, onClick }:
         {status === "MISSING" && <div className="bg-base-300 h-1.5 w-1.5 rounded-full" />}
       </div>
 
-      <div className="mt-1.5 space-y-0.5">
+      <div className="mt-1 space-y-0.5 text-[10px]">
         {balance ? (
           <>
-            <div className="flex justify-between text-[10px]">
+            <div className="flex justify-between">
               <span className="text-base-content/60">Ing.</span>
-              <span className="text-base-content font-medium">{currencyFormatter.format(balance.total)}</span>
+              <span className="text-base-content font-semibold">{currencyFormatter.format(balance.total)}</span>
             </div>
             {balance.gastosDiarios > 0 && (
-              <div className="flex justify-between text-[10px]">
+              <div className="flex justify-between">
                 <span className="text-base-content/60">Gas.</span>
-                <span className="text-error font-medium">{currencyFormatter.format(balance.gastosDiarios)}</span>
+                <span className="text-error font-semibold">{currencyFormatter.format(balance.gastosDiarios)}</span>
               </div>
             )}
           </>
         ) : (
           <div className="flex h-full items-end">
-            <span className="text-base-content/40 group-hover:text-primary text-[10px]">Registrar</span>
+            <span className="text-base-content/60 group-hover:text-primary">
+              {hasMoney ? "Ver detalle" : "Registrar"}
+            </span>
           </div>
         )}
       </div>
