@@ -648,7 +648,7 @@ function MoneyInput({
           inputMode="numeric"
           value={formatInputValue(value)}
           onChange={(e) => onChange(parseInputValue(e.target.value))}
-          className="text-base-content placeholder:text-base-content/40 grow bg-transparent"
+          className="text-base-content placeholder:text-base-content/40 grow bg-transparent text-sm sm:text-base"
           placeholder="0"
         />
       </label>
