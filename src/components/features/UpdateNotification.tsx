@@ -1,10 +1,11 @@
 import { useRegisterSW } from "virtual:pwa-register/react";
 import { X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Button from "@/components/ui/Button";
 
 export function UpdateNotification() {
   const [isUpdating, setIsUpdating] = useState(false);
+  const [hasReloaded, setHasReloaded] = useState(false);
   const {
     needRefresh: [needRefresh, setNeedRefresh],
     updateServiceWorker,
@@ -32,13 +33,24 @@ export function UpdateNotification() {
 
   const handleUpdate = () => {
     setIsUpdating(true);
-    updateServiceWorker(true)
-      .catch(() => {
-        // Si falla el flujo normal, recargar manualmente
-        window.location.reload();
-      })
-      .finally(() => setIsUpdating(false));
+    updateServiceWorker(true).catch(() => {
+      // Si falla el flujo normal, recargar manualmente
+      window.location.reload();
+    });
   };
+
+  useEffect(() => {
+    // Recarga segura cuando el nuevo SW toma el control (sin forzar si el usuario no pulsó)
+    const onControllerChange = () => {
+      if (hasReloaded) return;
+      setHasReloaded(true);
+      window.location.reload();
+    };
+    navigator.serviceWorker?.addEventListener("controllerchange", onControllerChange);
+    return () => {
+      navigator.serviceWorker?.removeEventListener("controllerchange", onControllerChange);
+    };
+  }, [hasReloaded]);
 
   if (!needRefresh) return null;
 
