@@ -181,6 +181,11 @@ export default function DailyProductionBalancesPage() {
     }
   }, [selectedDate, balances]);
 
+  const existingBalance = selectedDate
+    ? balances.find((b) => b.date === selectedDate || dayjs(b.date).isSame(dayjs(selectedDate), "day"))
+    : null;
+  const wasFinal = existingBalance?.status === "FINAL";
+
   const derived = deriveTotals({
     ingresoTarjetas: parseNumber(form.ingresoTarjetas),
     ingresoTransferencias: parseNumber(form.ingresoTransferencias),
@@ -505,12 +510,14 @@ export default function DailyProductionBalancesPage() {
                     onChange={(e) => setForm((prev) => ({ ...prev, comentarios: e.target.value }))}
                     placeholder="Notas sobre ingresos, incidencias, etc."
                   />
-                  <input
-                    className="input input-bordered w-full"
-                    value={form.reason}
-                    onChange={(e) => setForm((prev) => ({ ...prev, reason: e.target.value }))}
-                    placeholder="Motivo de edición (requerido si finalizado)"
-                  />
+                  {wasFinal && (
+                    <input
+                      className="input input-bordered w-full"
+                      value={form.reason}
+                      onChange={(e) => setForm((prev) => ({ ...prev, reason: e.target.value }))}
+                      placeholder="Motivo de edición (requerido si finalizado)"
+                    />
+                  )}
                 </div>
               </div>
 
