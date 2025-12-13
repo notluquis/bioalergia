@@ -27,6 +27,21 @@ export const permissionMap = readonly({
 
   "permission.read": { action: "read", subject: "Permission" },
   "permission.manage": { action: "manage", subject: "Permission" },
+
+  "person.read": { action: "read", subject: "Person" },
+  "person.manage": { action: "manage", subject: "Person" },
+
+  "counterpart.read": { action: "read", subject: "Counterpart" },
+  "counterpart.manage": { action: "manage", subject: "Counterpart" },
+
+  "loan.read": { action: "read", subject: "Loan" },
+  "loan.manage": { action: "manage", subject: "Loan" },
+
+  "service.read": { action: "read", subject: "Service" },
+  "service.manage": { action: "manage", subject: "Service" },
+
+  "inventory.read": { action: "read", subject: "InventoryItem" },
+  "inventory.manage": { action: "manage", subject: "InventoryItem" },
 } as const);
 
 export type PermissionKey = keyof typeof permissionMap;

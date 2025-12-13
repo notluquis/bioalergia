@@ -15,7 +15,8 @@ type WeekViewProps = {
 };
 
 export default function WeekView({ currentDate, onDateChange, balances, onSelectDay, selectedDate }: WeekViewProps) {
-  const startOfWeek = currentDate.startOf("week").add(1, "day"); // Start on Monday
+  // Use 'es' locale to ensure startOf('week') is Monday.
+  const startOfWeek = currentDate.locale("es").startOf("week"); // Start on Monday
   const today = dayjsLib();
   const nextWeekStart = startOfWeek.add(7, "day");
   const canGoNextWeek = !nextWeekStart.isAfter(today, "day");

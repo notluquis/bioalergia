@@ -50,39 +50,57 @@ export const NAV_SECTIONS: NavSection[] = [
         label: "Movimientos",
         icon: PiggyBank,
         requiredPermission: { action: "read", subject: "Transaction" },
-        // roles: ["GOD", "ADMIN", "ANALYST", "VIEWER"], // Replaced by permission
       },
       {
         to: "/finanzas/balances",
         label: "Saldos Diarios",
         icon: PiggyBank,
-        requiredPermission: { action: "read", subject: "Transaction" }, // Assuming derived from transactions
+        requiredPermission: { action: "read", subject: "Transaction" },
       },
       {
         to: "/finanzas/counterparts",
         label: "Contrapartes",
         icon: Users2,
-        roles: ["GOD", "ADMIN", "ANALYST", "VIEWER"], // TODO: Add Counterpart permission
+        requiredPermission: { action: "read", subject: "Counterpart" },
       },
       {
         to: "/finanzas/participants",
         label: "Participantes",
         icon: Users2,
-        roles: ["GOD", "ADMIN", "ANALYST", "VIEWER"], // TODO: Add Participant permission
+        requiredPermission: { action: "read", subject: "Person" },
       },
       {
         to: "/finanzas/production-balances",
         label: "Balance Diario",
         icon: FileSpreadsheet,
+        // Using Transaction read as proxy or custom 'ProductionBalance' if strictly needed.
+        // For now, keeping existing roles + transaction read or using a new 'ProductionBalance' subject?
+        // Let's use 'Transaction' read for now as it's financial, OR leave broad access.
+        // Actually, let's leave it role based for now as I didn't add ProductionBalance subject yet,
+        // OR better: use "Service" permission since it involves service income?
+        // Let's use roles for this one specific complex item to strictly follow my plan of only replacing what I added.
+        // But I can switch "Préstamos" to Loan.
         roles: ["GOD", "ADMIN", "ANALYST", "VIEWER"],
       },
-      { to: "/finanzas/loans", label: "Préstamos", icon: PiggyBank, roles: ["GOD", "ADMIN", "ANALYST", "VIEWER"] },
+      {
+        to: "/finanzas/loans",
+        label: "Préstamos",
+        icon: PiggyBank,
+        requiredPermission: { action: "read", subject: "Loan" },
+      },
     ],
   },
   {
     title: "Servicios",
     category: "Servicios",
-    items: [{ to: "/services", label: "Servicios", icon: Briefcase, roles: ["GOD", "ADMIN", "ANALYST", "VIEWER"] }],
+    items: [
+      {
+        to: "/services",
+        label: "Servicios",
+        icon: Briefcase,
+        requiredPermission: { action: "read", subject: "Service" },
+      },
+    ],
   },
   {
     title: "Calendario",
@@ -92,6 +110,7 @@ export const NAV_SECTIONS: NavSection[] = [
         to: "/calendar/summary",
         label: "Calendario",
         icon: CalendarDays,
+        // Calendar subject? I didn't add it. Keeping roles.
         roles: ["GOD", "ADMIN", "ANALYST", "VIEWER"],
       },
     ],
@@ -100,12 +119,16 @@ export const NAV_SECTIONS: NavSection[] = [
     title: "Operaciones",
     category: "Gestión",
     items: [
-      { to: "/operations/inventory", label: "Inventario", icon: Box, roles: ["GOD", "ADMIN", "ANALYST"] },
+      {
+        to: "/operations/inventory",
+        label: "Inventario",
+        icon: Box,
+        requiredPermission: { action: "read", subject: "InventoryItem" },
+      },
       {
         to: "/hr/employees",
         label: "RRHH",
         icon: Users2,
-        roles: ["GOD", "ADMIN"],
         requiredPermission: { action: "read", subject: "User" },
       }, // RRHH usually implies User management
     ],

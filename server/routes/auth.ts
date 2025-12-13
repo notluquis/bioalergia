@@ -370,6 +370,26 @@ export function registerAuthRoutes(app: express.Express) {
         // Setting
         { action: "manage", subject: "Setting", description: "Manage settings" },
 
+        // Person
+        { action: "read", subject: "Person", description: "Read people" },
+        { action: "manage", subject: "Person", description: "Manage people" },
+
+        // Counterpart
+        { action: "read", subject: "Counterpart", description: "Read counterparts" },
+        { action: "manage", subject: "Counterpart", description: "Manage counterparts" },
+
+        // Loan
+        { action: "read", subject: "Loan", description: "Read loans" },
+        { action: "manage", subject: "Loan", description: "Manage loans" },
+
+        // Service
+        { action: "read", subject: "Service", description: "Read services" },
+        { action: "manage", subject: "Service", description: "Manage services" },
+
+        // Inventory
+        { action: "read", subject: "InventoryItem", description: "Read inventory" },
+        { action: "manage", subject: "InventoryItem", description: "Manage inventory" },
+
         // Fallback global
         { action: "manage", subject: "all", description: "Manage everything" },
       ];
