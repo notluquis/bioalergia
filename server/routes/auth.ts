@@ -316,4 +316,121 @@ export function registerAuthRoutes(app: express.Express) {
       });
     })
   );
+
+  // Emergency Repair Endpoint for Permissions
+  app.get(
+    "/api/auth/repair-permissions",
+    authenticate,
+    asyncHandler(async (req: AuthenticatedRequest, res) => {
+      // Manual check for GOD role to avoid circular authorization failure
+      if (!req.auth?.userId) return res.status(401).json({ status: "error" });
+
+      const user = await findUserById(req.auth.userId);
+      if (!user) return res.status(401).json({ status: "error" });
+
+      const roles = await prisma.userRoleAssignment.findMany({
+        where: { userId: user.id },
+        include: { role: true },
+      });
+      const isGod = roles.some((r) => r.role.name === "GOD");
+
+      if (!isGod) {
+        logWarn("auth/repair:unauthorized-attempt", { userId: user.id });
+        return res.status(403).json({ status: "error", message: "Only GOD can repair permissions" });
+      }
+
+      console.log("Repairing permissions via HTTP endpoint...");
+
+      const allPermissions = [
+        // Transaction
+        { action: "create", subject: "Transaction", description: "Create transactions" },
+        { action: "read", subject: "Transaction", description: "Read transactions" },
+        { action: "update", subject: "Transaction", description: "Update transactions" },
+        { action: "delete", subject: "Transaction", description: "Delete transactions" },
+
+        // User
+        { action: "create", subject: "User", description: "Create users" },
+        { action: "read", subject: "User", description: "Read users" },
+        { action: "update", subject: "User", description: "Update users" },
+        { action: "delete", subject: "User", description: "Delete users" },
+
+        // Role
+        { action: "create", subject: "Role", description: "Create roles" },
+        { action: "read", subject: "Role", description: "Read roles" },
+        { action: "update", subject: "Role", description: "Update roles" },
+        { action: "delete", subject: "Role", description: "Delete roles" },
+
+        // Permission
+        { action: "read", subject: "Permission", description: "Read permissions" },
+        { action: "manage", subject: "Permission", description: "Manage permissions" },
+
+        // Setting
+        { action: "manage", subject: "Setting", description: "Manage settings" },
+
+        // Fallback global
+        { action: "manage", subject: "all", description: "Manage everything" },
+      ];
+
+      for (const perm of allPermissions) {
+        const existing = await prisma.permission.findFirst({
+          where: { action: perm.action, subject: perm.subject },
+        });
+
+        if (!existing) {
+          await prisma.permission.create({ data: perm });
+        }
+      }
+
+      const godRole = await prisma.role.findUnique({ where: { name: "GOD" } });
+      if (godRole) {
+        const allPermsInDb = await prisma.permission.findMany();
+        for (const perm of allPermsInDb) {
+          await prisma.rolePermission.upsert({
+            where: {
+              roleId_permissionId: {
+                roleId: godRole.id,
+                permissionId: perm.id,
+              },
+            },
+            create: {
+              roleId: godRole.id,
+              permissionId: perm.id,
+            },
+            update: {},
+          });
+        }
+
+        await prisma.userPermissionVersion.updateMany({
+          where: { user: { roles: { some: { roleId: godRole.id } } } },
+          data: { version: { increment: 1 } },
+        });
+      }
+
+      const adminRole = await prisma.role.findUnique({ where: { name: "ADMIN" } });
+      if (adminRole) {
+        const adminPerms = await prisma.permission.findMany({
+          where: {
+            subject: { in: ["Transaction", "User", "Role", "Permission", "Setting"] },
+          },
+        });
+        for (const perm of adminPerms) {
+          await prisma.rolePermission.upsert({
+            where: {
+              roleId_permissionId: {
+                roleId: adminRole.id,
+                permissionId: perm.id,
+              },
+            },
+            create: {
+              roleId: adminRole.id,
+              permissionId: perm.id,
+            },
+            update: {},
+          });
+        }
+      }
+
+      res.json({ status: "ok", message: "Permissions repaired. Please reload." });
+    })
+  );
 }
