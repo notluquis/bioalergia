@@ -18,7 +18,10 @@ export async function attachAbility(req: AuthenticatedRequest, res: Response, ne
       return next();
     }
 
-    const user = await prisma.user.findUnique({ where: { id: req.auth.userId } });
+    const user = await prisma.user.findUnique({
+      where: { id: req.auth.userId },
+      include: { person: true },
+    });
     if (!user) {
       // User deleted or stale token - clear session and require login
       res.clearCookie(sessionCookieName, sessionCookieOptions);

@@ -15,7 +15,7 @@ import { RawRuleOf } from "@casl/ability";
 
 export type AuthenticatedRequest = Request & {
   auth?: AuthSession;
-  user?: User;
+  user?: User & { person?: { names: string; fatherName: string | null } | null };
   ability?: AppAbility;
   abilityRules?: RawRuleOf<AppAbility>[];
   permissionVersion?: number;
