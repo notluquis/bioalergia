@@ -24,7 +24,7 @@ Recent Major Changes (Last 30 Days)
 - `@simplewebauthn/types` deprecated (v12) → removed package, updated imports to use `@simplewebauthn/browser` and `@simplewebauthn/server` types directly (v13+).
 - `src/pages/ChunkLoadErrorPage.tsx` — now lazy-loaded with React.lazy() + Suspense (fixed Vite bundle duplication warning).
 
-**Calendar & API Infrastructure (Dec 2024):**
+**Calendar & API Infrastructure (Dec 2025):**
 
 - **Calendar API**: Use `src/features/calendar/api.ts` for all calendar operations — already has `fetchCalendarSummary`, `fetchCalendarDaily`, `syncCalendarEvents`, `fetchCalendarSyncLogs`, `fetchUnclassifiedCalendarEvents`, `classifyCalendarEvent`.
 - **Calendar Hooks**: Use `src/features/calendar/hooks/useCalendarEvents.ts` — provides complete state management for calendar filters, sync status, and data fetching. Exposes `hasRunningSyncFromOtherSource` to detect RUNNING syncs from any source.
@@ -34,7 +34,7 @@ Recent Major Changes (Last 30 Days)
 - **Error Handling**: `server/lib/google-calendar-store.ts` wraps all calendar upserts in try-catch with detailed logging. Follows Google Calendar API best practices for exponential backoff on 403/429 errors.
 - **Sync Lock**: `server/services/calendar.ts` manages RUNNING sync lock with **15-minute stale timeout**. Automatically marks stale syncs as ERROR.
 - **UI State**: All calendar UI components (`CalendarSettingsPage`, `CalendarSyncHistoryPage`, `CalendarSummaryPage`) display RUNNING state with badge-warning + spinner. Auto-refresh every 5s only when status=RUNNING (conditional polling via useEffect).
-- **Google Calendar Webhooks**: Documented in `docs/google-calendar-webhooks.md`. Push notifications available but not implemented (polling every 15min sufficient for current scale). Use webhooks when >100 active users or need <5min latency.
+- **Google Calendar Webhooks**: `docs/google-calendar-webhooks.md` — push notifications + incremental sync window (`updatedMin` + deleted events), fallback polling cada 15m eliminado; cron scheduler diario mantiene vigentes los channels.
 
 **Schema Consistency (Dec 2024):**
 

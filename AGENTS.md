@@ -217,6 +217,7 @@ try {
 - `src/features/calendar/api.ts` — API calls centralizados, sync retorna 202 Accepted
 - `src/features/calendar/hooks/useCalendarEvents.ts` — Estado, sync con polling cada 5s
 - `server/routes/calendar-events.ts` — Endpoints, sync ahora asíncrono (background)
+- `docs/google-calendar-webhooks.md` — Guía de webhooks/push notifications e implementación incremental (sin polling cada 15m)
 - `server/lib/google-calendar-queries.ts` — Raw SQL (PostgreSQL)
 - `server/lib/google-calendar-store.ts` — DB upsert con error logging mejorado
 - `server/services/calendar.ts` — Sync lock (15min timeout)
