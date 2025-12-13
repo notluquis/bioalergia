@@ -22,6 +22,7 @@ type ListResponse = {
     otrosAbonos: number;
     total: number;
     comentarios: string | null;
+    changeReason?: string | null;
     status: "DRAFT" | "FINAL";
     createdByEmail: string | null;
     updatedByEmail: string | null;
@@ -65,6 +66,7 @@ const asBalance = (item: ListResponse["items"][number]): ProductionBalance => ({
   otrosAbonos: item.otrosAbonos,
   total: item.total,
   comentarios: item.comentarios,
+  changeReason: item.changeReason,
   status: item.status,
   createdByEmail: item.createdByEmail,
   updatedByEmail: item.updatedByEmail,
