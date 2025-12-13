@@ -484,7 +484,7 @@ export default function DailyProductionBalancesPage() {
                       />
                       <div className="sm:col-span-2">
                         <div
-                          className={`alert ${hasDifference ? "alert-error" : "alert-success"} items-center p-3 text-xs`}
+                          className={`alert ${hasDifference ? "alert-error" : "alert-success"} flex flex-col gap-2 p-3 text-xs`}
                         >
                           <div className="flex flex-col gap-1">
                             <span className="font-semibold">
@@ -495,24 +495,30 @@ export default function DailyProductionBalancesPage() {
                             </span>
                           </div>
                           <div className="flex w-full flex-wrap items-center justify-between gap-2">
-                            <input
-                              aria-label="Marcar como final"
-                              type="checkbox"
-                              className="toggle toggle-sm"
-                              checked={form.status === "FINAL"}
-                              onChange={(e) => {
-                                const nextStatus = e.target.checked ? "FINAL" : "DRAFT";
-                                if (nextStatus === "FINAL" && hasDifference) {
-                                  if (
-                                    !confirm("⚠️ Los totales no coinciden. ¿Estás seguro de marcarlo como cerrado?")
-                                  ) {
-                                    return;
+                            <div className="flex items-center gap-2">
+                              <input
+                                aria-label="Marcar como final"
+                                type="checkbox"
+                                className="toggle toggle-sm"
+                                checked={form.status === "FINAL"}
+                                onChange={(e) => {
+                                  const nextStatus = e.target.checked ? "FINAL" : "DRAFT";
+                                  if (nextStatus === "FINAL" && hasDifference) {
+                                    if (
+                                      !confirm("⚠️ Los totales no coinciden. ¿Estás seguro de marcarlo como cerrado?")
+                                    ) {
+                                      return;
+                                    }
                                   }
-                                }
-                                setForm((prev) => ({ ...prev, status: nextStatus }));
-                              }}
-                            />
-                            <span className="text-base-content/70 text-[11px]">Marcar como final</span>
+                                  setForm((prev) => ({ ...prev, status: nextStatus }));
+                                }}
+                              />
+                              <span className="text-base-content/70 text-[11px]">Marcar como final</span>
+                            </div>
+                            <Button type="submit" variant="primary" size="sm" disabled={mutation.isPending}>
+                              <Save className="h-4 w-4" />
+                              {mutation.isPending ? "Guardando..." : "Guardar balance"}
+                            </Button>
                           </div>
                         </div>
                       </div>
@@ -522,10 +528,6 @@ export default function DailyProductionBalancesPage() {
               </div>
 
               <div className="flex flex-wrap gap-2">
-                <Button type="submit" variant="primary" disabled={mutation.isPending}>
-                  <Save className="h-4 w-4" />
-                  {mutation.isPending ? "Guardando..." : "Guardar balance"}
-                </Button>
                 {mutation.isError && <Alert variant="error">No se pudo guardar el balance.</Alert>}
                 {mutation.isSuccess && <Alert variant="success">Balance guardado.</Alert>}
               </div>
