@@ -68,7 +68,7 @@ export function sanitizeUser(user: {
 
 export function authenticate(req: AuthenticatedRequest, res: express.Response, next: express.NextFunction) {
   const requestLogger = getRequestLogger(req);
-  requestLogger.info({ event: "auth:authenticate", url: req.originalUrl });
+  requestLogger.debug({ event: "auth:authenticate", url: req.originalUrl });
   const token = req.cookies?.[sessionCookieName];
   if (!token) {
     requestLogger.warn({ event: "auth:no-cookie" });
@@ -77,7 +77,7 @@ export function authenticate(req: AuthenticatedRequest, res: express.Response, n
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as jwt.JwtPayload;
-    requestLogger.info({ event: "auth:token-verified" });
+    requestLogger.debug({ event: "auth:token-verified" });
     if (!decoded || typeof decoded.sub !== "string") {
       throw new Error("Token inválido");
     }
@@ -87,7 +87,7 @@ export function authenticate(req: AuthenticatedRequest, res: express.Response, n
       email: String(decoded.email),
       role: (decoded.role as UserRole) ?? "VIEWER",
     };
-    requestLogger.info({ event: "auth:session-set", auth: req.auth });
+    requestLogger.debug({ event: "auth:session-set", auth: req.auth });
     next();
   } catch (error) {
     requestLogger.error({ event: "auth:error", error }, "Token inválido o expirado");
