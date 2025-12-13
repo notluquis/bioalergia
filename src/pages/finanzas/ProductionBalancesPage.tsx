@@ -1,13 +1,14 @@
 import { useMemo, useState, useEffect } from "react";
 import type { FormEvent, ReactNode } from "react";
 import dayjs from "dayjs";
+import "dayjs/locale/es"; // Import Spanish locale
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Button from "@/components/ui/Button";
 import Alert from "@/components/ui/Alert";
 import { INPUT_CURRENCY_SM } from "@/lib/styles";
 import { today } from "@/lib/dates";
 import { useToast } from "@/context/ToastContext";
-import { useSettings } from "@/context/SettingsContext";
+// import { useSettings } from "@/context/SettingsContext";
 import { CreditCard, Banknote, Wallet, TrendingDown, FileText, ClipboardList, Save, MoreVertical } from "lucide-react";
 import {
   fetchProductionBalanceHistory,
@@ -22,84 +23,26 @@ import type {
 import { deriveTotals } from "@/features/dailyProductionBalances/utils";
 import WeekView from "@/features/dailyProductionBalances/components/WeekView";
 import { useAuth } from "@/context/AuthContext";
+import { fmtCLP, coerceAmount, numberFormatter } from "@/lib/format";
 
-type FormState = {
-  date: string;
-  status: ProductionBalanceStatus;
-  ingresoTarjetas: string;
-  ingresoTransferencias: string;
-  ingresoEfectivo: string;
-  gastosDiarios: string;
-  otrosAbonos: string;
-  consultas: string;
-  controles: string;
-  tests: string;
-  vacunas: string;
-  licencias: string;
-  roxair: string;
-  comentarios: string;
-  reason: string;
-};
-
-const makeDefaultForm = (date?: string): FormState => ({
-  date: date || today(),
-  status: "DRAFT",
-  ingresoTarjetas: "0",
-  ingresoTransferencias: "0",
-  ingresoEfectivo: "0",
-  gastosDiarios: "0",
-  otrosAbonos: "0",
-  consultas: "0",
-  controles: "0",
-  tests: "0",
-  vacunas: "0",
-  licencias: "0",
-  roxair: "0",
-  comentarios: "",
-  reason: "",
-});
-
-function parseNumber(value: string): number {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed)) return 0;
-  return Math.round(parsed);
-}
-
-function formatInputValue(value: string): string {
-  const numericValue = value.replace(/[^0-9-]/g, "");
-  if (!numericValue || numericValue === "-") return "";
-  const parsed = parseInt(numericValue, 10);
-  if (Number.isNaN(parsed)) return "";
-  return new Intl.NumberFormat("es-CL").format(parsed);
-}
-
-function parseInputValue(value: string): string {
-  return value.replace(/[^0-9-]/g, "");
-}
+// Ensure Spanish locale is used for correct week start (Monday)
+dayjs.locale("es");
 
 export default function DailyProductionBalancesPage() {
-  const { hasRole } = useAuth();
-  const canView = hasRole("GOD", "ADMIN", "ANALYST", "VIEWER");
-  const canEdit = hasRole("GOD", "ADMIN", "ANALYST");
-
-  const queryClient = useQueryClient();
+  const { user } = useAuth();
   const { success: toastSuccess, error: toastError } = useToast();
-  const { settings } = useSettings();
-  const currencyFormatter = useMemo(
-    () =>
-      new Intl.NumberFormat("es-CL", {
-        style: "currency",
-        currency: settings.primaryCurrency || "CLP",
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-      }),
-    [settings.primaryCurrency]
-  );
+  const queryClient = useQueryClient();
+  // Settings unused
+
+  // Simple role-based access for now (matching sidebar)
+  const canView = true; // If they can reach this page, they can view
+  const canEdit = ["GOD", "ADMIN", "ANALYST"].includes(user?.role || "");
 
   const [currentDate, setCurrentDate] = useState(dayjs());
   const [selectedDate, setSelectedDate] = useState<string | null>(today());
-  const startOfWeek = currentDate.startOf("week").add(1, "day");
-  const endOfWeek = startOfWeek.add(6, "day");
+  // Fix: With 'es' locale, startOf('week') is Monday. Do NOT add 1 day.
+  const startOfWeek = currentDate.locale("es").startOf("week");
+  const endOfWeek = startOfWeek.add(6, "day"); // Ends on Sunday if 7 days, but we render 6 days in WeekView
   const todayDate = dayjs();
   const nextWeekStart = startOfWeek.add(7, "day");
   const canGoNextWeek = !nextWeekStart.isAfter(todayDate, "day");
@@ -188,20 +131,20 @@ export default function DailyProductionBalancesPage() {
   const wasFinal = existingBalance?.status === "FINAL";
 
   const derived = deriveTotals({
-    ingresoTarjetas: parseNumber(form.ingresoTarjetas),
-    ingresoTransferencias: parseNumber(form.ingresoTransferencias),
-    ingresoEfectivo: parseNumber(form.ingresoEfectivo),
-    gastosDiarios: parseNumber(form.gastosDiarios),
+    ingresoTarjetas: coerceAmount(form.ingresoTarjetas),
+    ingresoTransferencias: coerceAmount(form.ingresoTransferencias),
+    ingresoEfectivo: coerceAmount(form.ingresoEfectivo),
+    gastosDiarios: coerceAmount(form.gastosDiarios),
   });
 
   const serviceTotals =
-    parseNumber(form.consultas) +
-    parseNumber(form.controles) +
-    parseNumber(form.tests) +
-    parseNumber(form.vacunas) +
-    parseNumber(form.licencias) +
-    parseNumber(form.roxair) +
-    parseNumber(form.otrosAbonos);
+    coerceAmount(form.consultas) +
+    coerceAmount(form.controles) +
+    coerceAmount(form.tests) +
+    coerceAmount(form.vacunas) +
+    coerceAmount(form.licencias) +
+    coerceAmount(form.roxair) +
+    coerceAmount(form.otrosAbonos);
 
   const paymentMethodTotal = derived.total;
   const hasDifference = serviceTotals !== paymentMethodTotal;
@@ -401,13 +344,9 @@ export default function DailyProductionBalancesPage() {
                 <div className="border-base-200 bg-base-50 rounded-2xl border p-4 shadow-sm">
                   <h3 className="text-base-content text-sm font-bold">Total por método</h3>
                   <div className="mt-2 grid grid-cols-3 gap-3 text-center text-xs">
-                    <StatMini label="Subtotal" value={currencyFormatter.format(derived.subtotal)} tone="success" />
-                    <StatMini
-                      label="Gastos"
-                      value={`-${currencyFormatter.format(parseNumber(form.gastosDiarios))}`}
-                      tone="error"
-                    />
-                    <StatMini label="Total" value={currencyFormatter.format(paymentMethodTotal)} tone="primary" bold />
+                    <StatMini label="Subtotal" value={fmtCLP(derived.subtotal)} tone="success" />
+                    <StatMini label="Gastos" value={`-${fmtCLP(coerceAmount(form.gastosDiarios))}`} tone="error" />
+                    <StatMini label="Total" value={fmtCLP(paymentMethodTotal)} tone="primary" bold />
                   </div>
                 </div>
               </div>
@@ -516,17 +455,13 @@ export default function DailyProductionBalancesPage() {
                         <p className="text-base-content/60 text-[10px] font-semibold tracking-wider uppercase">
                           Métodos
                         </p>
-                        <p className="text-primary mt-0.5 text-base font-bold">
-                          {currencyFormatter.format(paymentMethodTotal)}
-                        </p>
+                        <p className="text-primary mt-0.5 text-base font-bold">{fmtCLP(paymentMethodTotal)}</p>
                       </div>
                       <div className="bg-base-200/50 hover:bg-base-200 rounded-xl p-2 text-center transition-all">
                         <p className="text-base-content/60 text-[10px] font-semibold tracking-wider uppercase">
                           Servicios
                         </p>
-                        <p className="text-primary mt-0.5 text-base font-bold">
-                          {currencyFormatter.format(serviceTotals)}
-                        </p>
+                        <p className="text-primary mt-0.5 text-base font-bold">{fmtCLP(serviceTotals)}</p>
                       </div>
                     </div>
 
@@ -544,9 +479,7 @@ export default function DailyProductionBalancesPage() {
                             <TrendingDown className="h-5 w-5" />
                             <span className="font-bold">Diferencia</span>
                           </div>
-                          <span className="text-xl font-black tracking-tight">
-                            {currencyFormatter.format(difference)}
-                          </span>
+                          <span className="text-xl font-black tracking-tight">{fmtCLP(difference)}</span>
                         </>
                       ) : (
                         <>
@@ -651,7 +584,7 @@ export default function DailyProductionBalancesPage() {
             {historyQuery.data && historyQuery.data.length > 0 ? (
               <ul className="space-y-2">
                 {historyQuery.data.map((entry) => (
-                  <HistoryItem key={entry.id} entry={entry} currencyFormatter={currencyFormatter} />
+                  <HistoryItem key={entry.id} entry={entry} />
                 ))}
               </ul>
             ) : (
@@ -664,13 +597,7 @@ export default function DailyProductionBalancesPage() {
   );
 }
 
-function HistoryItem({
-  entry,
-  currencyFormatter,
-}: {
-  entry: ProductionBalanceHistoryEntry;
-  currencyFormatter: Intl.NumberFormat;
-}) {
+function HistoryItem({ entry }: { entry: ProductionBalanceHistoryEntry }) {
   const status = entry.snapshot?.status ?? "DRAFT";
   const badgeTone = status === "FINAL" ? "badge-success" : "badge-warning";
   return (
@@ -684,9 +611,9 @@ function HistoryItem({
       </div>
       {entry.snapshot && (
         <p className="text-base-content/70 mt-2 text-xs">
-          Snapshot: Ingresos {currencyFormatter.format(entry.snapshot.ingresoTarjetas)} tarjetas,{" "}
-          {currencyFormatter.format(entry.snapshot.ingresoTransferencias)} transferencias,{" "}
-          {currencyFormatter.format(entry.snapshot.ingresoEfectivo)} efectivo.
+          Snapshot: Ingresos {fmtCLP(entry.snapshot.ingresoTarjetas)} tarjetas,{" "}
+          {fmtCLP(entry.snapshot.ingresoTransferencias)} transferencias, {fmtCLP(entry.snapshot.ingresoEfectivo)}{" "}
+          efectivo.
         </p>
       )}
       {entry.changeReason && <p className="text-base-content/70 mt-1 text-xs">Motivo: {entry.changeReason}</p>}
@@ -697,17 +624,17 @@ function HistoryItem({
 function toPayload(form: FormState): ProductionBalancePayload {
   return {
     date: form.date,
-    ingresoTarjetas: parseNumber(form.ingresoTarjetas),
-    ingresoTransferencias: parseNumber(form.ingresoTransferencias),
-    ingresoEfectivo: parseNumber(form.ingresoEfectivo),
-    gastosDiarios: parseNumber(form.gastosDiarios),
-    otrosAbonos: parseNumber(form.otrosAbonos),
-    consultas: parseNumber(form.consultas),
-    controles: parseNumber(form.controles),
-    tests: parseNumber(form.tests),
-    vacunas: parseNumber(form.vacunas),
-    licencias: parseNumber(form.licencias),
-    roxair: parseNumber(form.roxair),
+    ingresoTarjetas: coerceAmount(form.ingresoTarjetas),
+    ingresoTransferencias: coerceAmount(form.ingresoTransferencias),
+    ingresoEfectivo: coerceAmount(form.ingresoEfectivo),
+    gastosDiarios: coerceAmount(form.gastosDiarios),
+    otrosAbonos: coerceAmount(form.otrosAbonos),
+    consultas: coerceAmount(form.consultas),
+    controles: coerceAmount(form.controles),
+    tests: coerceAmount(form.tests),
+    vacunas: coerceAmount(form.vacunas),
+    licencias: coerceAmount(form.licencias),
+    roxair: coerceAmount(form.roxair),
     comentarios: form.comentarios.trim() ? form.comentarios.trim() : null,
     status: form.status,
     reason: form.reason.trim() ? form.reason.trim() : null,
@@ -742,8 +669,11 @@ function MoneyInput({
         <input
           type="text"
           inputMode="numeric"
-          value={formatInputValue(value)}
-          onChange={(e) => onChange(parseInputValue(e.target.value))}
+          value={value ? numberFormatter.format(Number(value)) : ""}
+          onChange={(e) => {
+            const raw = e.target.value.replace(/[^0-9-]/g, "");
+            onChange(raw);
+          }}
           className="text-base-content placeholder:text-base-content/40 grow bg-transparent text-xs sm:text-sm md:text-base"
           placeholder="0"
           disabled={disabled}
@@ -773,4 +703,42 @@ function StatMini({
       <p className={`${toneClass} ${bold ? "text-lg font-bold" : "text-sm font-semibold"}`}>{value}</p>
     </div>
   );
+}
+
+interface FormState {
+  date: string;
+  status: ProductionBalanceStatus;
+  ingresoTarjetas: string;
+  ingresoTransferencias: string;
+  ingresoEfectivo: string;
+  gastosDiarios: string;
+  otrosAbonos: string;
+  consultas: string;
+  controles: string;
+  tests: string;
+  vacunas: string;
+  licencias: string;
+  roxair: string;
+  comentarios: string;
+  reason: string;
+}
+
+function makeDefaultForm(dateStr?: string): FormState {
+  return {
+    date: dateStr ?? dayjs().format("YYYY-MM-DD"),
+    status: "DRAFT",
+    ingresoTarjetas: "",
+    ingresoTransferencias: "",
+    ingresoEfectivo: "",
+    gastosDiarios: "",
+    otrosAbonos: "",
+    consultas: "",
+    controles: "",
+    tests: "",
+    vacunas: "",
+    licencias: "",
+    roxair: "",
+    comentarios: "",
+    reason: "",
+  };
 }
