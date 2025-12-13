@@ -8,11 +8,19 @@ import Input from "@/components/ui/Input";
 import { Shield, CheckCircle, Smartphone } from "lucide-react";
 import { startRegistration } from "@simplewebauthn/browser";
 
+// Derive type directly from the function that consumes it to avoid import issues
+type PublicKeyCredentialCreationOptionsJSON = Parameters<typeof startRegistration>[0]["optionsJSON"];
+
+declare global {
+  interface Window {
+    MSStream?: unknown;
+  }
+}
+
 // Helper to detect OS
 function getOS() {
   const userAgent = window.navigator.userAgent;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  if (/iPad|iPhone|iPod/.test(userAgent) && !(window as unknown as any).MSStream) return "iOS";
+  if (/iPad|iPhone|iPod/.test(userAgent) && !window.MSStream) return "iOS";
   if (/Macintosh/.test(userAgent)) return "macOS";
   if (/Android/.test(userAgent)) return "Android";
   return "Other";
@@ -68,10 +76,9 @@ export default function UserOnboardingWizard() {
   const handleRegisterPasskey = async () => {
     setLoading(true);
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const opts = await apiClient.get<any>("/api/auth/passkey/register/options");
+      const opts = await apiClient.get<PublicKeyCredentialCreationOptionsJSON>("/api/auth/passkey/register/options");
 
-      const attResp = await startRegistration(opts);
+      const attResp = await startRegistration({ optionsJSON: opts });
 
       await apiClient.post("/api/auth/passkey/register/verify", { body: attResp, challenge: opts.challenge });
 
@@ -96,17 +103,17 @@ export default function UserOnboardingWizard() {
   const isSecurityComplete = user?.hasPasskey || user?.mfaEnabled;
 
   return (
-    <div className="min-h-screen bg-base-200 flex items-center justify-center p-4">
-      <div className="w-full max-w-3xl surface-elevated rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row">
+    <div className="bg-base-200 flex min-h-screen items-center justify-center p-4">
+      <div className="surface-elevated flex w-full max-w-3xl flex-col overflow-hidden rounded-3xl shadow-2xl md:flex-row">
         {/* Sidebar / Progress */}
-        <div className="bg-primary/5 p-8 md:w-1/3 flex flex-col justify-between border-r border-base-300/50">
+        <div className="bg-primary/5 border-base-300/50 flex flex-col justify-between border-r p-8 md:w-1/3">
           <div>
-            <h2 className="text-2xl font-bold text-primary mb-6">Bienvenido</h2>
+            <h2 className="text-primary mb-6 text-2xl font-bold">Bienvenido</h2>
             <div className="space-y-4">
               <div className={`flex items-center gap-3 ${step >= 1 ? "text-primary" : "text-base-content/40"}`}>
                 <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
-                    step > 1 ? "bg-primary text-white border-primary" : "border-current"
+                  className={`flex h-8 w-8 items-center justify-center rounded-full border-2 ${
+                    step > 1 ? "bg-primary border-primary text-white" : "border-current"
                   }`}
                 >
                   {step > 1 ? <CheckCircle size={16} /> : "1"}
@@ -115,8 +122,8 @@ export default function UserOnboardingWizard() {
               </div>
               <div className={`flex items-center gap-3 ${step >= 2 ? "text-primary" : "text-base-content/40"}`}>
                 <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
-                    isSecurityComplete ? "bg-primary text-white border-primary" : "border-current"
+                  className={`flex h-8 w-8 items-center justify-center rounded-full border-2 ${
+                    isSecurityComplete ? "bg-primary border-primary text-white" : "border-current"
                   }`}
                 >
                   {isSecurityComplete ? <CheckCircle size={16} /> : "2"}
@@ -125,17 +132,17 @@ export default function UserOnboardingWizard() {
               </div>
             </div>
           </div>
-          <div className="text-xs text-base-content/60 mt-8">
+          <div className="text-base-content/60 mt-8 text-xs">
             Configuración inicial obligatoria para acceder a la plataforma.
           </div>
         </div>
 
         {/* Content */}
-        <div className="p-8 md:w-2/3 bg-base-100">
+        <div className="bg-base-100 p-8 md:w-2/3">
           {step === 1 && (
-            <form onSubmit={handleProfileSubmit} className="space-y-4 animate-fade-in">
+            <form onSubmit={handleProfileSubmit} className="animate-fade-in space-y-4">
               <h3 className="text-xl font-bold">Completa tu Perfil</h3>
-              <p className="text-sm text-base-content/70">
+              <p className="text-base-content/70 text-sm">
                 Necesitamos algunos datos básicos y que definas tu contraseña personal.
               </p>
 
@@ -169,8 +176,8 @@ export default function UserOnboardingWizard() {
                 onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
               />
 
-              <div className="pt-4 border-t border-base-300">
-                <p className="text-sm font-semibold mb-3">Nueva Contraseña</p>
+              <div className="border-base-300 border-t pt-4">
+                <p className="mb-3 text-sm font-semibold">Nueva Contraseña</p>
                 <div className="grid grid-cols-2 gap-4">
                   <Input
                     label="Contraseña"
@@ -200,20 +207,20 @@ export default function UserOnboardingWizard() {
           )}
 
           {step === 2 && (
-            <div className="space-y-6 animate-fade-in">
+            <div className="animate-fade-in space-y-6">
               <h3 className="text-xl font-bold">Seguridad de Cuenta</h3>
-              <p className="text-sm text-base-content/70">
+              <p className="text-base-content/70 text-sm">
                 Para proteger tu cuenta, es <strong>obligatorio</strong> configurar un método de acceso seguro.
               </p>
 
               {/* Apple Guide */}
               {(os === "macOS" || os === "iOS") && (
-                <div className="rounded-xl border border-base-300 bg-base-200/50 p-4">
-                  <div className="flex items-center gap-2 mb-2">
+                <div className="border-base-300 bg-base-200/50 rounded-xl border p-4">
+                  <div className="mb-2 flex items-center gap-2">
                     <Shield className="text-primary" size={20} />
                     <h4 className="font-bold">Recomendado: Apple Passkeys</h4>
                   </div>
-                  <p className="text-sm mb-3">
+                  <p className="mb-3 text-sm">
                     Usa Touch ID o Face ID para iniciar sesión sin contraseñas. Se sincroniza con tu Llavero de iCloud.
                   </p>
                   <Button onClick={handleRegisterPasskey} disabled={loading || !!user?.hasPasskey} className="w-full">
@@ -224,29 +231,29 @@ export default function UserOnboardingWizard() {
 
               {/* Android/Other Guide */}
               {os !== "macOS" && os !== "iOS" && (
-                <div className="rounded-xl border border-base-300 bg-base-200/50 p-4">
-                  <div className="flex items-center gap-2 mb-2">
+                <div className="border-base-300 bg-base-200/50 rounded-xl border p-4">
+                  <div className="mb-2 flex items-center gap-2">
                     <Smartphone className="text-primary" size={20} />
                     <h4 className="font-bold">Recomendado: Google Authenticator</h4>
                   </div>
-                  <p className="text-sm mb-3">
+                  <p className="mb-3 text-sm">
                     Descarga Google Authenticator en tu celular para generar códigos de acceso.
                   </p>
-                  <div className="flex gap-2 mb-4">
+                  <div className="mb-4 flex gap-2">
                     <a
                       href="https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2"
                       target="_blank"
                       rel="noreferrer"
-                      className="text-xs text-primary underline"
+                      className="text-primary text-xs underline"
                     >
                       Play Store
                     </a>
-                    <span className="text-xs text-base-content/40">|</span>
+                    <span className="text-base-content/40 text-xs">|</span>
                     <a
                       href="https://apps.apple.com/app/google-authenticator/id388497605"
                       target="_blank"
                       rel="noreferrer"
-                      className="text-xs text-primary underline"
+                      className="text-primary text-xs underline"
                     >
                       App Store
                     </a>
@@ -257,18 +264,18 @@ export default function UserOnboardingWizard() {
                   <Button
                     onClick={handleRegisterPasskey}
                     disabled={loading || !!user?.hasPasskey}
-                    className="w-full mb-2"
+                    className="mb-2 w-full"
                   >
                     {user?.hasPasskey ? "Passkey Configurado ✅" : "Usar Huella / Windows Hello"}
                   </Button>
-                  <p className="text-xs text-center text-base-content/60">
+                  <p className="text-base-content/60 text-center text-xs">
                     O ve a Configuración más tarde para activar Google Authenticator.
                   </p>
                 </div>
               )}
 
-              <div className="pt-4 border-t border-base-300 flex justify-between items-center">
-                <div className="text-xs text-base-content/60">
+              <div className="border-base-300 flex items-center justify-between border-t pt-4">
+                <div className="text-base-content/60 text-xs">
                   Estado:{" "}
                   <span className={isSecurityComplete ? "text-success font-bold" : "text-warning font-bold"}>
                     {isSecurityComplete ? "Seguro" : "Pendiente"}

@@ -15,13 +15,13 @@ export function initPerformanceMonitoring() {
   }
 
   // 2. Check Device Memory (RAM in GB) - Chrome only
-  // @ts-ignore
+  // 2. Check Device Memory (RAM in GB) - Chrome only
   if (navigator.deviceMemory && navigator.deviceMemory < 4) {
     isLowEnd = true;
   }
 
   // 3. Check Data Saver / Lite Mode
-  // @ts-ignore
+  // 3. Check Data Saver / Lite Mode
   if (navigator.connection && navigator.connection.saveData) {
     isLowEnd = true;
   }
