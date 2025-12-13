@@ -1,8 +1,17 @@
 import { prisma } from "../prisma.js";
 import { Prisma } from "@prisma/client";
+import { accessibleBy } from "@casl/prisma";
+import type { AppAbility } from "../lib/authz/ability.js";
 
-export async function listLoans() {
+export async function listLoans(ability?: AppAbility) {
+  const where: Prisma.LoanWhereInput = {};
+
+  if (ability) {
+    Object.assign(where, accessibleBy(ability).Loan);
+  }
+
   return await prisma.loan.findMany({
+    where,
     orderBy: { createdAt: "desc" },
     include: {
       schedules: true,

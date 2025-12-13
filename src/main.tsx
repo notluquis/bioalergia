@@ -524,6 +524,8 @@ const queryClient = new QueryClient({
   },
 });
 
+import { AbilityProvider } from "./lib/authz/AbilityProvider";
+
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <GlobalError>
     <ChunkErrorBoundary>
@@ -531,7 +533,9 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         <AuthProvider>
           <SettingsProvider>
             <ToastProvider>
-              <RouterProvider router={router} />
+              <AbilityProvider>
+                <RouterProvider router={router} />
+              </AbilityProvider>
             </ToastProvider>
           </SettingsProvider>
         </AuthProvider>

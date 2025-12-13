@@ -2,11 +2,13 @@ import { Router } from "express";
 import { prisma } from "../prisma.js";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
-import { authenticate as requireAuth, requireRole } from "../lib/http.js";
+import { authenticate as requireAuth } from "../lib/http.js";
 import { logger } from "../lib/logger.js";
 import type { AuthenticatedRequest } from "../types.js";
 import { logAudit } from "../services/audit.js";
 import { normalizeRut } from "../lib/rut.js";
+
+import { authorize } from "../middleware/authorize.js";
 
 const router = Router();
 
@@ -20,7 +22,7 @@ const inviteUserSchema = z.object({
 });
 
 // POST /api/users/invite - Create a user for an existing person OR create new person+user
-router.post("/invite", requireAuth, requireRole("ADMIN", "GOD"), async (req, res) => {
+router.post("/invite", requireAuth, authorize("create", "User"), async (req, res) => {
   try {
     const { email, role, position, mfaEnforced, personId } = inviteUserSchema.parse(req.body);
     const authReq = req as AuthenticatedRequest;
@@ -114,7 +116,7 @@ router.post("/invite", requireAuth, requireRole("ADMIN", "GOD"), async (req, res
 });
 
 // POST /api/users/:id/reset-password - Admin force reset
-router.post("/:id/reset-password", requireAuth, requireRole("ADMIN", "GOD"), async (req, res) => {
+router.post("/:id/reset-password", requireAuth, authorize("update", "User"), async (req, res) => {
   try {
     const { newPassword } = z.object({ newPassword: z.string().min(6) }).parse(req.body);
     const hash = await bcrypt.hash(newPassword, 10);
@@ -275,7 +277,7 @@ router.post("/setup", requireAuth, async (req, res) => {
 });
 
 // DELETE /api/users/:id/mfa - Admin disable MFA (Recovery)
-router.delete("/:id/mfa", requireAuth, requireRole("ADMIN", "GOD"), async (req, res) => {
+router.delete("/:id/mfa", requireAuth, authorize("update", "User"), async (req, res) => {
   try {
     const authReq = req as AuthenticatedRequest;
     const targetUserId = Number(req.params.id);
@@ -300,7 +302,7 @@ router.delete("/:id/mfa", requireAuth, requireRole("ADMIN", "GOD"), async (req, 
 });
 
 // POST /api/users/:id/mfa/toggle - Admin toggle MFA
-router.post("/:id/mfa/toggle", requireAuth, requireRole("ADMIN", "GOD"), async (req, res) => {
+router.post("/:id/mfa/toggle", requireAuth, authorize("update", "User"), async (req, res) => {
   try {
     const authReq = req as AuthenticatedRequest;
     const targetUserId = Number(req.params.id);
@@ -339,7 +341,7 @@ router.post("/:id/mfa/toggle", requireAuth, requireRole("ADMIN", "GOD"), async (
 });
 
 // DELETE /api/users/:id/passkey - Admin remove passkey
-router.delete("/:id/passkey", requireAuth, requireRole("ADMIN", "GOD"), async (req, res) => {
+router.delete("/:id/passkey", requireAuth, authorize("update", "User"), async (req, res) => {
   try {
     const authReq = req as AuthenticatedRequest;
     const targetUserId = Number(req.params.id);

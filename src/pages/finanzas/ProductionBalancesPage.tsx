@@ -79,6 +79,7 @@ function parseInputValue(value: string): string {
 
 export default function DailyProductionBalancesPage() {
   const { hasRole } = useAuth();
+  const canView = hasRole("GOD", "ADMIN", "ANALYST", "VIEWER");
   const canEdit = hasRole("GOD", "ADMIN", "ANALYST");
 
   const queryClient = useQueryClient();
@@ -121,23 +122,23 @@ export default function DailyProductionBalancesPage() {
   const balancesQuery = useQuery({
     queryKey: ["production-balances", from, to],
     queryFn: () => fetchProductionBalances(from, to),
+    enabled: canView,
   });
 
   const historyQuery = useQuery({
     queryKey: ["production-balance-history", selectedId],
-    enabled: selectedId != null && showHistory,
+    enabled: selectedId != null && showHistory && canView,
     queryFn: () => fetchProductionBalanceHistory(selectedId ?? 0),
   });
 
   const mutation = useMutation({
-    mutationFn: async () => {
-      const payload = toPayload(form);
+    mutationFn: async (payload: ProductionBalancePayload) => {
       return saveProductionBalance(payload, selectedId);
     },
     onSuccess: (saved) => {
       toastSuccess("Balance guardado correctamente");
       setSelectedId(saved.id);
-      setForm((prev) => ({ ...prev, reason: "" }));
+      setForm((prev) => ({ ...prev, status: saved.status, reason: "" }));
       queryClient.invalidateQueries({ queryKey: ["production-balances"] });
       queryClient.invalidateQueries({ queryKey: ["production-balance-history", saved.id] });
     },
@@ -208,8 +209,33 @@ export default function DailyProductionBalancesPage() {
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    mutation.mutate();
+    if (!canEdit) return;
+    triggerSave({ forceFinal: false });
   };
+
+  const triggerSave = (options?: { forceFinal?: boolean }) => {
+    if (!canEdit) return;
+    const forceFinal = options?.forceFinal ?? false;
+    if (forceFinal && hasDifference) {
+      const confirmed = confirm("⚠️ Los totales no coinciden. ¿Estás seguro de marcarlo como cerrado?");
+      if (!confirmed) return;
+    }
+
+    if (forceFinal && form.status !== "FINAL") {
+      setForm((prev) => ({ ...prev, status: "FINAL" }));
+    }
+
+    const payload = toPayload({ ...form, status: forceFinal ? "FINAL" : form.status });
+    mutation.mutate(payload);
+  };
+
+  if (!canView) {
+    return (
+      <section className="mx-auto w-full max-w-none space-y-6 p-4">
+        <Alert variant="error">No tienes permisos para ver balances de producción.</Alert>
+      </section>
+    );
+  }
 
   return (
     <section className="mx-auto w-full max-w-none space-y-6 p-4">
@@ -320,223 +346,232 @@ export default function DailyProductionBalancesPage() {
             </div>
           </div>
 
-          {canEdit ? (
-            <form className="space-y-4" onSubmit={handleSubmit}>
-              <div className="grid gap-4 lg:grid-cols-12">
-                <div className="space-y-3 lg:col-span-5 xl:col-span-5">
-                  <div className="border-success/30 bg-success/5 rounded-2xl border p-4 shadow-sm">
-                    <div className="flex items-center gap-2">
-                      <div className="badge badge-lg badge-success font-bold">1</div>
-                      <div>
-                        <h3 className="text-base-content text-lg font-bold">Ingresos por método de pago</h3>
-                        <p className="text-base-content/60 text-xs">Tarjeta, transferencia y efectivo</p>
-                      </div>
-                    </div>
-                    <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
-                      <MoneyInput
-                        icon={<CreditCard className="h-4 w-4" />}
-                        label="Tarjetas"
-                        value={form.ingresoTarjetas}
-                        onChange={(v) => setForm((prev) => ({ ...prev, ingresoTarjetas: v }))}
-                      />
-                      <MoneyInput
-                        icon={<Banknote className="h-4 w-4" />}
-                        label="Transferencias"
-                        value={form.ingresoTransferencias}
-                        onChange={(v) => setForm((prev) => ({ ...prev, ingresoTransferencias: v }))}
-                      />
-                      <MoneyInput
-                        icon={<Wallet className="h-4 w-4" />}
-                        label="Efectivo"
-                        value={form.ingresoEfectivo}
-                        onChange={(v) => setForm((prev) => ({ ...prev, ingresoEfectivo: v }))}
-                      />
+          <form className="space-y-4" onSubmit={handleSubmit}>
+            <div className="grid gap-4 lg:grid-cols-12">
+              <div className="space-y-3 lg:col-span-5 xl:col-span-5">
+                <div className="border-success/30 bg-success/5 rounded-2xl border p-4 shadow-sm">
+                  <div className="flex items-center gap-2">
+                    <div className="badge badge-lg badge-success font-bold">1</div>
+                    <div>
+                      <h3 className="text-base-content text-lg font-bold">Ingresos por método de pago</h3>
+                      <p className="text-base-content/60 text-xs">Tarjeta, transferencia y efectivo</p>
                     </div>
                   </div>
+                  <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                    <MoneyInput
+                      icon={<CreditCard className="h-4 w-4" />}
+                      label="Tarjetas"
+                      value={form.ingresoTarjetas}
+                      onChange={(v) => setForm((prev) => ({ ...prev, ingresoTarjetas: v }))}
+                      disabled={!canEdit}
+                    />
+                    <MoneyInput
+                      icon={<Banknote className="h-4 w-4" />}
+                      label="Transferencias"
+                      value={form.ingresoTransferencias}
+                      onChange={(v) => setForm((prev) => ({ ...prev, ingresoTransferencias: v }))}
+                      disabled={!canEdit}
+                    />
+                    <MoneyInput
+                      icon={<Wallet className="h-4 w-4" />}
+                      label="Efectivo"
+                      value={form.ingresoEfectivo}
+                      onChange={(v) => setForm((prev) => ({ ...prev, ingresoEfectivo: v }))}
+                      disabled={!canEdit}
+                    />
+                  </div>
+                </div>
 
-                  <div className="border-error/30 bg-error/5 rounded-2xl border p-4 shadow-sm">
-                    <div className="flex items-center gap-2">
-                      <TrendingDown className="text-error h-5 w-5" />
-                      <h3 className="text-base-content text-base font-semibold">Gastos</h3>
-                    </div>
-                    <div className="grid grid-cols-1 gap-3">
-                      <MoneyInput
-                        label="Gastos diarios"
-                        value={form.gastosDiarios}
-                        onChange={(v) => setForm((prev) => ({ ...prev, gastosDiarios: v }))}
-                        hint="Combustible, insumos, etc."
-                      />
+                <div className="border-error/30 bg-error/5 rounded-2xl border p-4 shadow-sm">
+                  <div className="flex items-center gap-2">
+                    <TrendingDown className="text-error h-5 w-5" />
+                    <h3 className="text-base-content text-base font-semibold">Gastos</h3>
+                  </div>
+                  <div className="grid grid-cols-1 gap-3">
+                    <MoneyInput
+                      label="Gastos diarios"
+                      value={form.gastosDiarios}
+                      onChange={(v) => setForm((prev) => ({ ...prev, gastosDiarios: v }))}
+                      hint="Combustible, insumos, etc."
+                      disabled={!canEdit}
+                    />
+                  </div>
+                </div>
+
+                <div className="border-base-200 bg-base-50 rounded-2xl border p-4 shadow-sm">
+                  <h3 className="text-base-content text-sm font-bold">Total por método</h3>
+                  <div className="mt-2 grid grid-cols-3 gap-3 text-center text-xs">
+                    <StatMini label="Subtotal" value={currencyFormatter.format(derived.subtotal)} tone="success" />
+                    <StatMini
+                      label="Gastos"
+                      value={`-${currencyFormatter.format(parseNumber(form.gastosDiarios))}`}
+                      tone="error"
+                    />
+                    <StatMini label="Total" value={currencyFormatter.format(paymentMethodTotal)} tone="primary" bold />
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-3 lg:col-span-4 xl:col-span-4">
+                <div className="bg-info/5 border-base-200 h-full rounded-2xl border p-4 shadow-sm">
+                  <div className="flex items-center gap-2">
+                    <div className="badge badge-lg badge-info font-bold">2</div>
+                    <div>
+                      <h3 className="text-base-content text-lg font-bold">Ingresos por servicio</h3>
+                      <p className="text-base-content/60 text-xs">Registra los servicios del día</p>
                     </div>
                   </div>
-
-                  <div className="border-base-200 bg-base-50 rounded-2xl border p-4 shadow-sm">
-                    <h3 className="text-base-content text-sm font-bold">Total por método</h3>
-                    <div className="mt-2 grid grid-cols-3 gap-3 text-center text-xs">
-                      <StatMini label="Subtotal" value={currencyFormatter.format(derived.subtotal)} tone="success" />
-                      <StatMini
-                        label="Gastos"
-                        value={`-${currencyFormatter.format(parseNumber(form.gastosDiarios))}`}
-                        tone="error"
-                      />
-                      <StatMini
-                        label="Total"
-                        value={currencyFormatter.format(paymentMethodTotal)}
-                        tone="primary"
-                        bold
+                  <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                    <MoneyInput
+                      label="Consultas"
+                      value={form.consultas}
+                      onChange={(v) => setForm((prev) => ({ ...prev, consultas: v }))}
+                      disabled={!canEdit}
+                    />
+                    <MoneyInput
+                      label="Controles"
+                      value={form.controles}
+                      onChange={(v) => setForm((prev) => ({ ...prev, controles: v }))}
+                      disabled={!canEdit}
+                    />
+                    <MoneyInput
+                      label="Tests"
+                      value={form.tests}
+                      onChange={(v) => setForm((prev) => ({ ...prev, tests: v }))}
+                      disabled={!canEdit}
+                    />
+                    <MoneyInput
+                      label="Vacunas"
+                      value={form.vacunas}
+                      onChange={(v) => setForm((prev) => ({ ...prev, vacunas: v }))}
+                      disabled={!canEdit}
+                    />
+                    <MoneyInput
+                      label="Licencias"
+                      value={form.licencias}
+                      onChange={(v) => setForm((prev) => ({ ...prev, licencias: v }))}
+                      disabled={!canEdit}
+                    />
+                    <MoneyInput
+                      label="Roxair"
+                      value={form.roxair}
+                      onChange={(v) => setForm((prev) => ({ ...prev, roxair: v }))}
+                      disabled={!canEdit}
+                    />
+                    <div className="sm:col-span-3">
+                      <MoneyInput
+                        label="Otros abonos"
+                        value={form.otrosAbonos}
+                        onChange={(v) => setForm((prev) => ({ ...prev, otrosAbonos: v }))}
+                        hint="Devoluciones, ajustes"
+                        disabled={!canEdit}
                       />
                     </div>
                   </div>
                 </div>
+              </div>
 
-                <div className="space-y-3 lg:col-span-4 xl:col-span-4">
-                  <div className="bg-info/5 border-base-200 h-full rounded-2xl border p-4 shadow-sm">
-                    <div className="flex items-center gap-2">
-                      <div className="badge badge-lg badge-info font-bold">2</div>
-                      <div>
-                        <h3 className="text-base-content text-lg font-bold">Ingresos por servicio</h3>
-                        <p className="text-base-content/60 text-xs">Registra los servicios del día</p>
-                      </div>
-                    </div>
-                    <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
-                      <MoneyInput
-                        label="Consultas"
-                        value={form.consultas}
-                        onChange={(v) => setForm((prev) => ({ ...prev, consultas: v }))}
+              <div className="space-y-3 lg:col-span-3 xl:col-span-3">
+                <div className="bg-base-100 border-base-200 rounded-2xl border p-4 shadow-sm">
+                  <div className="flex items-center gap-2">
+                    <FileText className="text-base-content/70 h-5 w-5" />
+                    <h3 className="text-base-content text-sm font-semibold">Notas (opcional)</h3>
+                  </div>
+                  <div className="mt-3 flex flex-col gap-3">
+                    <textarea
+                      className="textarea textarea-bordered h-28 w-full"
+                      value={form.comentarios}
+                      onChange={(e) => setForm((prev) => ({ ...prev, comentarios: e.target.value }))}
+                      placeholder="Notas sobre ingresos, incidencias, etc."
+                      disabled={!canEdit}
+                    />
+                    {wasFinal && (
+                      <input
+                        className="input input-bordered w-full"
+                        value={form.reason}
+                        onChange={(e) => setForm((prev) => ({ ...prev, reason: e.target.value }))}
+                        placeholder="Motivo de edición (requerido si finalizado)"
+                        disabled={!canEdit}
                       />
-                      <MoneyInput
-                        label="Controles"
-                        value={form.controles}
-                        onChange={(v) => setForm((prev) => ({ ...prev, controles: v }))}
-                      />
-                      <MoneyInput
-                        label="Tests"
-                        value={form.tests}
-                        onChange={(v) => setForm((prev) => ({ ...prev, tests: v }))}
-                      />
-                      <MoneyInput
-                        label="Vacunas"
-                        value={form.vacunas}
-                        onChange={(v) => setForm((prev) => ({ ...prev, vacunas: v }))}
-                      />
-                      <MoneyInput
-                        label="Licencias"
-                        value={form.licencias}
-                        onChange={(v) => setForm((prev) => ({ ...prev, licencias: v }))}
-                      />
-                      <MoneyInput
-                        label="Roxair"
-                        value={form.roxair}
-                        onChange={(v) => setForm((prev) => ({ ...prev, roxair: v }))}
-                      />
-                      <div className="sm:col-span-3">
-                        <MoneyInput
-                          label="Otros abonos"
-                          value={form.otrosAbonos}
-                          onChange={(v) => setForm((prev) => ({ ...prev, otrosAbonos: v }))}
-                          hint="Devoluciones, ajustes"
-                        />
-                      </div>
-                    </div>
+                    )}
                   </div>
                 </div>
 
-                <div className="space-y-3 lg:col-span-3 xl:col-span-3">
-                  <div className="bg-base-100 border-base-200 rounded-2xl border p-4 shadow-sm">
-                    <div className="flex items-center gap-2">
-                      <FileText className="text-base-content/70 h-5 w-5" />
-                      <h3 className="text-base-content text-sm font-semibold">Notas (opcional)</h3>
-                    </div>
-                    <div className="mt-3 flex flex-col gap-3">
-                      <textarea
-                        className="textarea textarea-bordered h-28 w-full"
-                        value={form.comentarios}
-                        onChange={(e) => setForm((prev) => ({ ...prev, comentarios: e.target.value }))}
-                        placeholder="Notas sobre ingresos, incidencias, etc."
-                      />
-                      {wasFinal && (
-                        <input
-                          className="input input-bordered w-full"
-                          value={form.reason}
-                          onChange={(e) => setForm((prev) => ({ ...prev, reason: e.target.value }))}
-                          placeholder="Motivo de edición (requerido si finalizado)"
-                        />
-                      )}
-                    </div>
+                <div className="bg-base-100 border-base-200 h-full rounded-2xl border p-4 shadow-sm">
+                  <div className="flex items-center gap-2">
+                    <ClipboardList className="text-primary h-5 w-5" />
+                    <h3 className="text-base-content text-base font-semibold">Validación</h3>
                   </div>
-
-                  <div className="bg-base-100 border-base-200 h-full rounded-2xl border p-4 shadow-sm">
-                    <div className="flex items-center gap-2">
-                      <ClipboardList className="text-primary h-5 w-5" />
-                      <h3 className="text-base-content text-base font-semibold">Validación</h3>
-                    </div>
-                    <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                      <StatMini
-                        label="Total método de pago"
-                        value={currencyFormatter.format(paymentMethodTotal)}
-                        tone="primary"
-                        bold
-                      />
-                      <StatMini
-                        label="Total servicios"
-                        value={currencyFormatter.format(serviceTotals)}
-                        tone="primary"
-                        bold
-                      />
-                      <div className="sm:col-span-2">
-                        <div
-                          className={`alert ${hasDifference ? "alert-error" : "alert-success"} flex flex-col gap-2 p-3 text-xs`}
-                        >
-                          <div className="flex flex-col gap-1">
-                            <span className="font-semibold">
-                              {hasDifference ? "⚠️ Totales no coinciden" : "✅ Totales cuadran"}
-                            </span>
-                            <span className="text-base-content/70">
-                              Diferencia: {currencyFormatter.format(difference)}
-                            </span>
-                          </div>
-                          <div className="flex w-full flex-wrap items-center justify-between gap-2">
-                            <div className="flex items-center gap-2">
-                              <input
-                                aria-label="Marcar como final"
-                                type="checkbox"
-                                className="toggle toggle-sm"
-                                checked={form.status === "FINAL"}
-                                onChange={(e) => {
-                                  const nextStatus = e.target.checked ? "FINAL" : "DRAFT";
-                                  if (nextStatus === "FINAL" && hasDifference) {
-                                    if (
-                                      !confirm("⚠️ Los totales no coinciden. ¿Estás seguro de marcarlo como cerrado?")
-                                    ) {
-                                      return;
-                                    }
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                    <StatMini
+                      label="Total método de pago"
+                      value={currencyFormatter.format(paymentMethodTotal)}
+                      tone="primary"
+                      bold
+                    />
+                    <StatMini
+                      label="Total servicios"
+                      value={currencyFormatter.format(serviceTotals)}
+                      tone="primary"
+                      bold
+                    />
+                    <div className="sm:col-span-2">
+                      <div
+                        className={`alert ${hasDifference ? "alert-error" : "alert-success"} flex flex-col gap-2 p-3 text-xs`}
+                      >
+                        <div className="flex flex-col gap-1">
+                          <span className="font-semibold">
+                            {hasDifference ? "⚠️ Totales no coinciden" : "✅ Totales cuadran"}
+                          </span>
+                          <span className="text-base-content/70">
+                            Diferencia: {currencyFormatter.format(difference)}
+                          </span>
+                        </div>
+                        <div className="flex w-full flex-wrap items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <input
+                              aria-label="Marcar como final"
+                              type="checkbox"
+                              className="toggle toggle-sm"
+                              checked={form.status === "FINAL"}
+                              disabled={!canEdit}
+                              onChange={(e) => {
+                                const nextStatus = e.target.checked ? "FINAL" : "DRAFT";
+                                if (nextStatus === "FINAL" && hasDifference) {
+                                  if (
+                                    !confirm("⚠️ Los totales no coinciden. ¿Estás seguro de marcarlo como cerrado?")
+                                  ) {
+                                    return;
                                   }
-                                  setForm((prev) => ({ ...prev, status: nextStatus }));
-                                }}
-                              />
-                              <span className="text-base-content/70 text-[11px]">Marcar como final</span>
-                            </div>
-                            <Button type="submit" variant="primary" size="sm" disabled={mutation.isPending}>
-                              <Save className="h-4 w-4" />
-                              {mutation.isPending ? "Guardando..." : "Guardar balance"}
-                            </Button>
+                                }
+                                setForm((prev) => ({ ...prev, status: nextStatus }));
+                              }}
+                            />
+                            <span className="text-base-content/70 text-[11px]">Marcar como final</span>
                           </div>
+                          <Button
+                            type="button"
+                            variant="primary"
+                            size="sm"
+                            disabled={mutation.isPending || !canEdit}
+                            onClick={() => triggerSave({ forceFinal: true })}
+                          >
+                            <Save className="h-4 w-4" />
+                            {mutation.isPending ? "Guardando..." : "Guardar balance"}
+                          </Button>
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
-
-              <div className="flex flex-wrap gap-2">
-                {mutation.isError && <Alert variant="error">No se pudo guardar el balance.</Alert>}
-                {mutation.isSuccess && <Alert variant="success">Balance guardado.</Alert>}
-              </div>
-            </form>
-          ) : (
-            <div className="alert alert-info">
-              No tienes permisos para editar. Selecciona otro día o contacta a un administrador.
             </div>
-          )}
+
+            <div className="flex flex-wrap gap-2">
+              {mutation.isError && <Alert variant="error">No se pudo guardar el balance.</Alert>}
+              {mutation.isSuccess && <Alert variant="success">Balance guardado.</Alert>}
+            </div>
+          </form>
         </div>
       ) : (
         <div className="alert alert-info">Selecciona un día en el calendario para editar o revisar el balance.</div>
@@ -635,12 +670,14 @@ function MoneyInput({
   value,
   onChange,
   hint,
+  disabled,
 }: {
   icon?: ReactNode;
   label: string;
   value: string;
   onChange: (next: string) => void;
   hint?: string;
+  disabled?: boolean;
 }) {
   return (
     <div className="form-control">
@@ -659,6 +696,7 @@ function MoneyInput({
           onChange={(e) => onChange(parseInputValue(e.target.value))}
           className="text-base-content placeholder:text-base-content/40 grow bg-transparent text-xs sm:text-sm md:text-base"
           placeholder="0"
+          disabled={disabled}
         />
       </label>
       {hint && <span className="text-base-content/60 mt-1 text-xs">{hint}</span>}

@@ -9,7 +9,11 @@
     "strict": true,
     "skipLibCheck": true,
     "incremental": true,
-    "types": ["node"]
+    "types": ["node"],
+    "baseUrl": ".",
+    "paths": {
+      "~/*": ["./*"]
+    }
   },
   "include": ["server/**/*.ts", "shared/**/*.ts"]
 }
