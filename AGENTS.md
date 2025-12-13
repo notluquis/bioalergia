@@ -137,6 +137,11 @@ finanzas-app/
 - Límite razonable: 100M CLP (100,000,000)
 - Valores fuera de rango se descartan con warning en logs
 
+### 🟢 Balances diarios (CSV + UI)
+
+- CSV de balances diarios acepta fechas `DD/MM/YYYY` (e.g. `28/1/2025`) y limpia montos con `$`, puntos y comas antes de insertarlos; status por defecto `DRAFT`.
+- Página `finanzas/production-balances`: distribución más ancha, historial accesible vía ícono (panel flotante opcional), y toggle “Marcar como final” se adapta en pantallas pequeñas.
+
 ---
 
 ## Convenciones obligatorias

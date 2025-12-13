@@ -16,7 +16,10 @@ type WeekViewProps = {
 
 export default function WeekView({ currentDate, onDateChange, balances, onSelectDay, selectedDate }: WeekViewProps) {
   const startOfWeek = currentDate.startOf("week").add(1, "day"); // Start on Monday
-  const days = Array.from({ length: 6 }).map((_, i) => startOfWeek.add(i, "day")); // Monday to Saturday
+  const today = dayjsLib();
+  const days = Array.from({ length: 6 })
+    .map((_, i) => startOfWeek.add(i, "day")) // Monday to Saturday
+    .filter((d) => !d.isAfter(today, "day")); // Hide future days
 
   // Calculate weekly totals
   const weeklyIncome = balances.reduce((acc, b) => acc + Number(b.total ?? 0), 0);

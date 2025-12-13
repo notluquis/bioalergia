@@ -454,7 +454,7 @@ export default function DailyProductionBalancesPage() {
                               Diferencia: {currencyFormatter.format(difference)}
                             </span>
                           </div>
-                          <label className="label cursor-pointer gap-2 p-0">
+                          <div className="flex w-full flex-wrap items-center justify-between gap-2">
                             <span className="text-base-content/70 text-xs">Marcar como final</span>
                             <input
                               type="checkbox"
@@ -472,7 +472,7 @@ export default function DailyProductionBalancesPage() {
                                 setForm((prev) => ({ ...prev, status: nextStatus }));
                               }}
                             />
-                          </label>
+                          </div>
                         </div>
                       </div>
                     </div>

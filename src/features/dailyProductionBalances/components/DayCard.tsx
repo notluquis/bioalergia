@@ -14,7 +14,9 @@ type DayCardProps = {
 
 export default function DayCard({ date, balance, isSelected, isToday, onClick }: DayCardProps) {
   const status = balance?.status || "MISSING";
-  const hasMoney = (balance?.total ?? 0) > 0 || (balance?.gastosDiarios ?? 0) > 0;
+  const total = Number(balance?.total ?? 0);
+  const gastos = Number(balance?.gastosDiarios ?? 0);
+  const hasMoney = total > 0 || gastos > 0;
 
   return (
     <button
@@ -44,12 +46,12 @@ export default function DayCard({ date, balance, isSelected, isToday, onClick }:
           <>
             <div className="flex justify-between">
               <span className="text-base-content/60">Ing.</span>
-              <span className="text-base-content font-semibold">{currencyFormatter.format(balance.total)}</span>
+              <span className="text-base-content font-semibold">{currencyFormatter.format(total)}</span>
             </div>
-            {balance.gastosDiarios > 0 && (
+            {gastos > 0 && (
               <div className="flex justify-between">
                 <span className="text-base-content/60">Gas.</span>
-                <span className="text-error font-semibold">{currencyFormatter.format(balance.gastosDiarios)}</span>
+                <span className="text-error font-semibold">{currencyFormatter.format(gastos)}</span>
               </div>
             )}
           </>

@@ -113,11 +113,14 @@ function mapBalanceRecord(balance: BalanceWithRelations): ProductionBalanceRecor
 export async function listProductionBalances(
   options: ListProductionBalanceOptions
 ): Promise<ProductionBalanceRecord[]> {
+  const fromDate = dayjs(options.from).startOf("day").toDate();
+  const toDate = dayjs(options.to).endOf("day").toDate();
+
   const balances = await prisma.dailyProductionBalance.findMany({
     where: {
       balanceDate: {
-        gte: new Date(options.from),
-        lte: new Date(options.to),
+        gte: fromDate,
+        lte: toDate,
       },
     },
     include: {
