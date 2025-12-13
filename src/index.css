@@ -139,13 +139,40 @@ body {
   -webkit-tap-highlight-color: transparent;
   -webkit-text-size-adjust: 100%;
   overscroll-behavior-y: none;
+
+  /* Modern Native UI Colors */
+  accent-color: var(--color-primary);
+  caret-color: var(--color-primary);
+
+  /* Sticky Header Offset */
+  scroll-padding-top: 5rem;
   /* Apple-like text rendering */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
   font-feature-settings:
     "tnum" 1,
-    "cv11" 1; /* Tabular numbers + CV11 (often alt geometric) */
+    "cv11" 1; /* Tabular numbers + CV11 */
+  /* Advanced line breaking */
+  text-wrap: pretty;
+  hyphens: auto;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  text-wrap: balance;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+a {
+  text-underline-offset: 4px;
 }
 
 html[data-theme="bioalergia-dark"] body,
@@ -179,8 +206,8 @@ html[data-theme="bioalergia-dark"] .layout-shell {
 }
 
 ::selection {
-  background-color: var(--color-primary);
-  color: var(--color-primary-content);
+  background-color: color-mix(in srgb, var(--color-primary) 20%, transparent);
+  color: var(--color-base-content);
 }
 
 /* Tailwind component helpers: prefer utilities via @apply, keep custom visuals here */
@@ -620,10 +647,7 @@ button.btn-xs {
 }
 
 /* Optimize heavy components */
-.surface-elevated {
-  /* Isolate layout/paint for performance */
-  /* contain: layout paint; - Removed to allow dropdown overflow */
-}
+/* .surface-elevated contain: layout paint; - Removed to allow dropdown overflow */
 
 .brand-logo {
   /* Promote to layer for smooth hover transform */
