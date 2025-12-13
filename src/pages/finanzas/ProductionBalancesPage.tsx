@@ -421,7 +421,7 @@ export default function DailyProductionBalancesPage() {
                       <p className="text-base-content/60 text-xs">Registra los servicios del día</p>
                     </div>
                   </div>
-                  <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <MoneyInput
                       label="Consultas"
                       value={form.consultas}
@@ -458,7 +458,7 @@ export default function DailyProductionBalancesPage() {
                       onChange={(v) => setForm((prev) => ({ ...prev, roxair: v }))}
                       disabled={!canEdit}
                     />
-                    <div className="sm:col-span-3">
+                    <div className="sm:col-span-2">
                       <MoneyInput
                         label="Otros abonos"
                         value={form.otrosAbonos}
@@ -511,26 +511,28 @@ export default function DailyProductionBalancesPage() {
                     </div>
 
                     {/* Stats */}
-                    <div className="mb-6 grid grid-cols-2 gap-3">
-                      <div className="bg-base-200/50 hover:bg-base-200 rounded-2xl p-3 text-center transition-all">
+                    <div className="mb-4 grid grid-cols-2 gap-2">
+                      <div className="bg-base-200/50 hover:bg-base-200 rounded-xl p-2 text-center transition-all">
                         <p className="text-base-content/60 text-[10px] font-semibold tracking-wider uppercase">
-                          Métodos de Pago
+                          Métodos
                         </p>
-                        <p className="text-primary mt-1 text-lg font-bold">
+                        <p className="text-primary mt-0.5 text-base font-bold">
                           {currencyFormatter.format(paymentMethodTotal)}
                         </p>
                       </div>
-                      <div className="bg-base-200/50 hover:bg-base-200 rounded-2xl p-3 text-center transition-all">
+                      <div className="bg-base-200/50 hover:bg-base-200 rounded-xl p-2 text-center transition-all">
                         <p className="text-base-content/60 text-[10px] font-semibold tracking-wider uppercase">
                           Servicios
                         </p>
-                        <p className="text-primary mt-1 text-lg font-bold">{currencyFormatter.format(serviceTotals)}</p>
+                        <p className="text-primary mt-0.5 text-base font-bold">
+                          {currencyFormatter.format(serviceTotals)}
+                        </p>
                       </div>
                     </div>
 
                     {/* Status Banner */}
                     <div
-                      className={`flex flex-col items-center justify-center rounded-2xl p-4 text-center transition-all duration-300 ${
+                      className={`flex flex-col items-center justify-center rounded-2xl p-3 text-center transition-all duration-300 ${
                         hasDifference
                           ? "bg-error/10 text-error ring-error/20 ring-1"
                           : "bg-success/10 text-success ring-success/20 ring-1"
@@ -538,71 +540,35 @@ export default function DailyProductionBalancesPage() {
                     >
                       {hasDifference ? (
                         <>
-                          <TrendingDown className="mb-2 h-8 w-8 opacity-80" />
-                          <span className="text-lg font-bold">Diferencia Detectada</span>
-                          <span className="my-1 text-2xl font-black tracking-tight">
+                          <div className="mb-1 flex items-center gap-1">
+                            <TrendingDown className="h-5 w-5" />
+                            <span className="font-bold">Diferencia</span>
+                          </div>
+                          <span className="text-xl font-black tracking-tight">
                             {currencyFormatter.format(difference)}
-                          </span>
-                          <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs font-medium opacity-80">
-                            Revisa los montos ingresados
                           </span>
                         </>
                       ) : (
                         <>
-                          <div className="bg-success/20 mb-2 flex h-8 w-8 items-center justify-center rounded-full">
-                            <span className="text-xl">✨</span>
+                          <div className="mb-1 flex items-center gap-1">
+                            <span className="text-lg">✨</span>
+                            <span className="font-bold">¡Cuadra!</span>
                           </div>
-                          <span className="text-lg font-bold">¡Totales Cuadran!</span>
-                          <span className="mt-1 text-xs font-medium opacity-80">Diferencia: $0</span>
+                          <span className="text-xs font-medium opacity-80">Diferencia: $0</span>
                         </>
                       )}
                     </div>
                   </div>
 
                   {/* Actions Footer */}
-                  <div className="border-base-200/60 mt-6 space-y-3 border-t pt-5">
-                    {/* Primary Action */}
-                    <Button
-                      type="button"
-                      variant={!hasDifference && form.status !== "FINAL" ? "primary" : "outline"}
-                      className={`h-11 w-full gap-2 rounded-xl text-sm font-semibold shadow-sm ${
-                        !hasDifference && form.status !== "FINAL" ? "shadow-primary/20" : ""
-                      }`}
-                      disabled={mutation.isPending || !canEdit}
-                      onClick={() => {
-                        // Intelligent Save:
-                        // If fully valid -> Finalize
-                        // If invalid -> Just save draft (or ask confirm to finalize)
-                        if (!hasDifference) {
-                          triggerSave({ forceFinal: true });
-                        } else {
-                          // If diff exists, just save as is (Draft usually, unless overridden)
-                          triggerSave({ forceFinal: false });
-                        }
-                      }}
-                    >
-                      {mutation.isPending ? (
-                        <span className="loading loading-spinner loading-xs"></span>
-                      ) : !hasDifference ? (
-                        <>
-                          <Save className="h-4 w-4" />
-                          {form.status === "FINAL" ? "Actualizar Balance Cerrado" : "Finalizar y Guardar"}
-                        </>
-                      ) : (
-                        <>
-                          <Save className="h-4 w-4" />
-                          Guardar Cambios
-                        </>
-                      )}
-                    </Button>
-
-                    {/* Secondary / Advanced Options */}
-                    <div className="flex items-center justify-between px-1">
-                      <div className="flex items-center gap-2">
+                  <div className="border-base-200/60 mt-4 flex flex-col gap-3 border-t pt-4">
+                    <div className="flex items-center justify-between gap-3">
+                      {/* Integrated Status Toggle */}
+                      <div className="bg-base-200/50 flex shrink-0 items-center gap-2 rounded-xl px-3 py-2.5">
                         <input
                           id="mark-final-toggle"
                           type="checkbox"
-                          className="toggle toggle-xs toggle-success"
+                          className={`toggle toggle-sm ${form.status === "FINAL" ? "toggle-success" : ""}`}
                           checked={form.status === "FINAL"}
                           disabled={!canEdit}
                           onChange={(e) => {
@@ -615,16 +581,36 @@ export default function DailyProductionBalancesPage() {
                             setForm((prev) => ({ ...prev, status: nextStatus }));
                           }}
                         />
-                        <label
-                          htmlFor="mark-final-toggle"
-                          className="text-base-content/60 hover:text-base-content cursor-pointer text-xs font-medium select-none"
-                        >
-                          Estado: {form.status === "FINAL" ? "Cerrado" : "Borrador"}
+                        <label htmlFor="mark-final-toggle" className="cursor-pointer text-xs font-semibold select-none">
+                          {form.status === "FINAL" ? "Cerrado" : "Borrador"}
                         </label>
                       </div>
 
-                      {/* Explicit Save Draft if needed, or link to history */}
-                      {/* We can hide history toggle here if we wanted to simplify main header, but let's keep it simple */}
+                      {/* Primary Save Button */}
+                      <Button
+                        type="button"
+                        variant={!hasDifference && form.status !== "FINAL" ? "primary" : "outline"}
+                        className={`grow rounded-xl text-sm font-bold shadow-sm ${
+                          !hasDifference && form.status !== "FINAL" ? "shadow-primary/20" : ""
+                        }`}
+                        disabled={mutation.isPending || !canEdit}
+                        onClick={() => {
+                          if (!hasDifference) {
+                            triggerSave({ forceFinal: true });
+                          } else {
+                            triggerSave({ forceFinal: false });
+                          }
+                        }}
+                      >
+                        {mutation.isPending ? (
+                          <span className="loading loading-spinner loading-xs"></span>
+                        ) : (
+                          <>
+                            <Save className="h-4 w-4" />
+                            {form.status === "FINAL" ? "Actualizar" : "Guardar"}
+                          </>
+                        )}
+                      </Button>
                     </div>
                   </div>
                 </div>

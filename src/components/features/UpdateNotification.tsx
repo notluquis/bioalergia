@@ -30,10 +30,20 @@ export function UpdateNotification() {
     },
   });
 
-  const handleUpdate = () => {
+  const handleUpdate = async () => {
     setIsUpdating(true);
-    updateServiceWorker(true).catch(() => {
-      // Si falla el flujo normal, recargar manualmente
+    // Registrar el listener para recargar solo cuando el worker cambie realmente
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.addEventListener(
+        "controllerchange",
+        () => {
+          window.location.reload();
+        },
+        { once: true }
+      );
+    }
+    await updateServiceWorker(true).catch(() => {
+      // Fallback si falla
       window.location.reload();
     });
   };
