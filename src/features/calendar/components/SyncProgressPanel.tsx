@@ -124,7 +124,9 @@ export function SyncProgressPanel({
         </div>
         <div className="flex gap-2">
           <span className="bg-base-200/80 text-base-content/70 rounded-full px-3 py-1 text-xs">
-            {dayjs().format("DD MMM YYYY · HH:mm")}
+            {lastSyncInfo && !syncing && !syncError
+              ? dayjs(lastSyncInfo.fetchedAt).format("DD MMM YYYY · HH:mm")
+              : dayjs().format("DD MMM YYYY · HH:mm")}
           </span>
           {showSyncButton && onSyncNow && (
             <Button type="button" variant="secondary" size="sm" disabled={syncing} onClick={onSyncNow}>
@@ -153,7 +155,7 @@ export function SyncProgressPanel({
             {numberFormatter.format(lastSyncInfo.excluded)}
           </p>
           <p className="text-base-content/60 md:col-span-2">
-            Ejecutado el {dayjs(lastSyncInfo.fetchedAt).format("DD MMM YYYY HH:mm")}
+            Ejecutado el {dayjs(lastSyncInfo.fetchedAt).format("DD MMM YYYY · HH:mm")}
           </p>
         </div>
       )}

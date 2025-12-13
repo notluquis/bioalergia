@@ -1,3 +1,4 @@
+import { useMemo, useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 
@@ -10,8 +11,10 @@ import { numberFormatter } from "@/lib/format";
 import { TITLE_LG } from "@/lib/styles";
 
 export default function CalendarSyncHistoryPage() {
-  const { syncing, syncError, syncProgress, syncDurationMs, syncNow, hasRunningSyncFromOtherSource } =
+  const { syncing, syncError, syncProgress, syncDurationMs, syncNow, hasRunningSyncFromOtherSource, lastSyncInfo } =
     useCalendarEvents();
+  const [page, setPage] = useState(0);
+  const pageSize = 5;
 
   // Use React Query for auto-refresh only when RUNNING
   const {
@@ -42,11 +45,22 @@ export default function CalendarSyncHistoryPage() {
     return started.isValid() && Date.now() - started.valueOf() < 15 * 60 * 1000;
   });
   const isSyncing = syncing || hasRunningSyncFromOtherSource || hasRunningSyncInHistory;
+  const totalPages = Math.max(1, Math.ceil(logs.length / pageSize));
+
+  useEffect(() => {
+    // Clamp page when log size changes
+    if (page >= totalPages) {
+      setPage(totalPages - 1);
+    }
+  }, [page, totalPages]);
+
+  const visibleLogs = useMemo(() => logs.slice(page * pageSize, page * pageSize + pageSize), [logs, page, pageSize]);
 
   const handleRefresh = () => {
     refetchLogs().catch(() => {
       /* handled */
     });
+    setPage(0);
   };
 
   return (
@@ -90,7 +104,7 @@ export default function CalendarSyncHistoryPage() {
                 </td>
               </tr>
             ) : (
-              logs.map((log) => {
+              visibleLogs.map((log) => {
                 const started = dayjs(log.startedAt).format("DD MMM YYYY HH:mm");
                 const finished = log.finishedAt ? dayjs(log.finishedAt) : null;
                 const duration = finished ? `${finished.diff(dayjs(log.startedAt), "second")}s` : "-";
@@ -115,6 +129,31 @@ export default function CalendarSyncHistoryPage() {
             )}
           </tbody>
         </table>
+        {logs.length > 0 && (
+          <div className="border-base-200 flex flex-wrap items-center justify-between gap-2 border-t px-4 py-3 text-xs">
+            <span className="text-base-content/60">
+              Página {page + 1} de {totalPages}
+            </span>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="secondary"
+                disabled={page === 0}
+                onClick={() => setPage((prev) => Math.max(0, prev - 1))}
+              >
+                Anterior
+              </Button>
+              <Button
+                size="sm"
+                variant="secondary"
+                disabled={page + 1 >= totalPages}
+                onClick={() => setPage((prev) => Math.min(totalPages - 1, prev + 1))}
+              >
+                Siguiente
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
 
       {logs.some((log) => log.errorMessage) && (
@@ -138,6 +177,8 @@ export default function CalendarSyncHistoryPage() {
         syncError={syncError}
         syncProgress={syncProgress}
         syncDurationMs={syncDurationMs}
+        lastSyncInfo={lastSyncInfo ?? undefined}
+        showLastSyncInfo
       />
     </section>
   );
