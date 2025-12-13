@@ -19,6 +19,7 @@ export type ProductionBalance = {
   total: number;
   comentarios: string | null;
   status: ProductionBalanceStatus;
+  changeReason?: string | null;
   createdByEmail: string | null;
   updatedByEmail: string | null;
   createdAt: string;
