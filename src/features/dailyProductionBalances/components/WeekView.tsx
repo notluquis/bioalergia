@@ -46,18 +46,15 @@ export default function WeekView({ currentDate, onDateChange, balances, onSelect
           >
             <ChevronRight size={12} />
           </Button>
-          <Button variant="ghost" size="xs" onClick={() => onDateChange(dayjs())}>
-            Hoy
-          </Button>
         </div>
 
         <div className="flex gap-1.5 text-[11px]">
           <div className="bg-base-200/60 rounded px-2 py-0.5">
-            <span className="text-base-content/60 text-[10px]">Ingresos</span>
+            <span className="text-base-content/60 text-[10px]">Semana actual · Ingresos</span>
             <span className="text-success ml-1 font-semibold">{currencyFormatter.format(weeklyIncome)}</span>
           </div>
           <div className="bg-base-200/60 rounded px-2 py-0.5">
-            <span className="text-base-content/60 text-[10px]">Gastos</span>
+            <span className="text-base-content/60 text-[10px]">Semana actual · Gastos</span>
             <span className="text-error ml-1 font-semibold">{currencyFormatter.format(weeklyExpenses)}</span>
           </div>
         </div>
