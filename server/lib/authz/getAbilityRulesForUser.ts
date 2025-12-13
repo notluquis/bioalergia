@@ -56,6 +56,11 @@ export async function getAbilityRulesForUser(userId: number) {
     }
   }
 
+  /*
+   * removed hardcoded check.
+   * Permissions must come from the DB
+   */
+
   const finalRules = Array.from(rules).map((rule) => JSON.parse(rule));
   // console.log(`[getAbilityRulesForUser] Generated ${finalRules.length} rules for user ${userId}`);
 
