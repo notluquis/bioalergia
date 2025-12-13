@@ -88,20 +88,6 @@ export default function App() {
     }
   }, []);
 
-  // Windows 11 / macOS App Badging
-  React.useEffect(() => {
-    if (!("setAppBadge" in navigator)) return;
-
-    // Example: Set badge if there are pending items (mocked for now)
-    // In production, connect this to your notification/inbox context
-    // navigator.setAppBadge(3);
-
-    // Clear badge on focus
-    const clearBadge = () => navigator.clearAppBadge();
-    window.addEventListener("focus", clearBadge);
-    return () => window.removeEventListener("focus", clearBadge);
-  }, []);
-
   return (
     <>
       {isNavigating && (
