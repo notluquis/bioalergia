@@ -34,7 +34,7 @@ Recent Major Changes (Last 30 Days)
 - **Error Handling**: `server/lib/google-calendar-store.ts` wraps all calendar upserts in try-catch with detailed logging. Follows Google Calendar API best practices for exponential backoff on 403/429 errors.
 - **Sync Lock**: `server/services/calendar.ts` manages RUNNING sync lock with **15-minute stale timeout**. Automatically marks stale syncs as ERROR.
 - **UI State**: All calendar UI components (`CalendarSettingsPage`, `CalendarSyncHistoryPage`, `CalendarSummaryPage`) display RUNNING state with badge-warning + spinner. Auto-refresh every 5s only when status=RUNNING (conditional polling via useEffect).
-- **Google Calendar Webhooks**: `docs/google-calendar-webhooks.md` — push notifications + incremental sync window (`updatedMin` + deleted events), fallback polling cada 15m eliminado; cron scheduler diario mantiene vigentes los channels.
+- **Google Calendar Webhooks**: Infra lista; push notifications con ventana incremental (`updatedMin` + deleted events), fallback polling cada 15m eliminado; cron scheduler diario mantiene vigentes los channels.
 
 **Schema Consistency (Dec 2024):**
 
@@ -77,7 +77,7 @@ Project-specific conventions (do these)
 - **Check for existing APIs first**: Search `src/features/*/api.ts` and `server/routes/*.ts` before creating new endpoints or duplicating types.
 - **Reuse existing hooks**: Check `src/features/*/hooks/` for state management hooks before creating new ones.
 - **Calendar sync UI**: Always use `SyncProgressPanel` component + `useCalendarEvents` hook for sync functionality. **Do NOT duplicate sync state management** - all pages should use the hook.
-- **Calendar webhooks**: Infrastructure implemented but **cron job pending**. Webhook endpoint at POST /api/calendar/webhook handles Google push notifications. Watch channels last 7 days, renewal logic exists in google-calendar-watch.ts but not scheduled.
+- **Calendar webhooks**: Infrastructure implemented but **cron job pending**. Webhook endpoint at POST /api/calendar/webhook handles Google push notifications. Watch channels last 7 days; renewal logic exists in google-calendar-watch.ts but not scheduled.
 - **Calendar sync state**: Always display RUNNING/SUCCESS/ERROR states in calendar UIs. Use auto-refresh (5s interval) to detect state changes. Disable sync buttons when status is RUNNING.
 - **Error handling**: Wrap all external API calls (Google Calendar, Prisma upserts) in try-catch with detailed logging including input values and error stack traces.
 - **Google Calendar API**: Follow exponential backoff for 403/429 rate limit errors. Log all calendar ID mapping failures with googleId context.
