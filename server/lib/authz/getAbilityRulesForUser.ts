@@ -39,6 +39,7 @@ export async function getAbilityRulesForUser(userId: number) {
   console.log(
     `[getAbilityRulesForUser] User ${userId} role: ${userWithRolesAndPermissions.role}. Generating standard rules.`
   );
+  console.log(`[getAbilityRulesForUser] Raw roles data:`, JSON.stringify(userWithRolesAndPermissions.roles, null, 2));
 
   for (const roleAssignment of userWithRolesAndPermissions.roles) {
     for (const rolePermission of roleAssignment.role.permissions) {

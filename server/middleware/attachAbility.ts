@@ -25,6 +25,8 @@ export async function attachAbility(req: AuthenticatedRequest, res: Response, ne
       return res.status(401).json({ status: "error", message: "Sesión inválida - Usuario no encontrado" });
     }
 
+    console.log(`[attachAbility] Authenticated User: ID=${user.id}, Email=${user.email}, Role=${user.role}`);
+
     // Attach user to request for downstream handlers
     req.user = user;
 
