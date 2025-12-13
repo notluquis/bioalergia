@@ -48,6 +48,7 @@ export function registerTransactionRoutes(app: express.Express) {
   app.get(
     "/api/transactions/participants/:participantId",
     authenticate,
+    authorize("read", "Transaction"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       const participantId = decodeURIComponent(req.params.participantId);
       const from = req.query.from ? parseDateOnly(String(req.query.from)) : undefined;
@@ -67,6 +68,7 @@ export function registerTransactionRoutes(app: express.Express) {
   app.get(
     "/api/transactions",
     authenticate,
+    authorize("read", "Transaction"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       const parsed = transactionsQuerySchema.parse(req.query);
       const limit = coerceLimit(req.query.limit, 500, 2000);

@@ -1,5 +1,5 @@
 import express from "express";
-import { asyncHandler, authenticate, requireRole } from "../lib/http.js";
+import { asyncHandler, authenticate, requireRole, isRoleAtLeast } from "../lib/http.js";
 import { findUserById } from "../services/users.js";
 import { prisma, Prisma } from "../prisma.js";
 import { logEvent } from "../lib/logger.js";
@@ -148,7 +148,7 @@ export function registerUserRoutes(app: express.Express) {
       }
 
       // Prevent resetting GOD users if not GOD
-      if (user.role === "GOD" && req.auth?.role !== "GOD") {
+      if (isRoleAtLeast(user.role, ["GOD"]) && !isRoleAtLeast(req.auth?.role || "VIEWER", ["GOD"])) {
         return res.status(403).json({ status: "error", message: "No tienes permisos para modificar a este usuario" });
       }
 
@@ -210,7 +210,7 @@ export function registerUserRoutes(app: express.Express) {
       }
 
       // Prevent suspending GOD users if not GOD
-      if (user.role === "GOD" && req.auth?.role !== "GOD") {
+      if (isRoleAtLeast(user.role, ["GOD"]) && !isRoleAtLeast(req.auth?.role || "VIEWER", ["GOD"])) {
         return res.status(403).json({ status: "error", message: "No tienes permisos para modificar a este usuario" });
       }
 
