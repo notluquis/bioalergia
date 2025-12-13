@@ -465,8 +465,8 @@ export default function DailyProductionBalancesPage() {
                             </span>
                           </div>
                           <div className="flex w-full flex-wrap items-center justify-between gap-2">
-                            <span className="text-base-content/70 text-xs">Marcar como final</span>
                             <input
+                              aria-label="Marcar como final"
                               type="checkbox"
                               className="toggle toggle-sm"
                               checked={form.status === "FINAL"}
@@ -482,6 +482,7 @@ export default function DailyProductionBalancesPage() {
                                 setForm((prev) => ({ ...prev, status: nextStatus }));
                               }}
                             />
+                            <span className="text-base-content/70 text-[11px]">Marcar como final</span>
                           </div>
                         </div>
                       </div>
