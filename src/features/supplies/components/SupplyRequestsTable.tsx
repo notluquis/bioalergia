@@ -10,81 +10,81 @@ interface SupplyRequestsTableProps {
 }
 
 export default function SupplyRequestsTable({ requests, onStatusChange }: SupplyRequestsTableProps) {
-  const { user } = useAuth();
-  const isAdmin = user?.role === "ADMIN" || user?.role === "GOD";
+  const { user, hasRole } = useAuth();
+  const isAdmin = hasRole("ADMIN", "GOD");
 
   return (
-    <div className="p-6 bg-base-100 shadow-md rounded-lg">
-      <h2 className="text-xl font-semibold mb-4">{isAdmin ? "Todas las Solicitudes" : "Solicitudes Activas"}</h2>
+    <div className="bg-base-100 rounded-lg p-6 shadow-md">
+      <h2 className="mb-4 text-xl font-semibold">{isAdmin ? "Todas las Solicitudes" : "Solicitudes Activas"}</h2>
       {requests.length === 0 ? (
         <p>No se encontraron solicitudes de insumos.</p>
       ) : (
-        <div className="overflow-x-auto muted-scrollbar">
+        <div className="muted-scrollbar overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
+                  className="px-6 py-3 text-left text-xs font-medium tracking-wider whitespace-nowrap text-gray-500 uppercase"
                 >
                   ID
                 </th>
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
+                  className="px-6 py-3 text-left text-xs font-medium tracking-wider whitespace-nowrap text-gray-500 uppercase"
                 >
                   Insumo
                 </th>
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
+                  className="px-6 py-3 text-left text-xs font-medium tracking-wider whitespace-nowrap text-gray-500 uppercase"
                 >
                   Cantidad
                 </th>
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
+                  className="px-6 py-3 text-left text-xs font-medium tracking-wider whitespace-nowrap text-gray-500 uppercase"
                 >
                   Marca/Modelo
                 </th>
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
+                  className="px-6 py-3 text-left text-xs font-medium tracking-wider whitespace-nowrap text-gray-500 uppercase"
                 >
                   Notas
                 </th>
                 {isAdmin && (
                   <th
                     scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
+                    className="px-6 py-3 text-left text-xs font-medium tracking-wider whitespace-nowrap text-gray-500 uppercase"
                   >
                     Solicitado Por
                   </th>
                 )}
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
+                  className="px-6 py-3 text-left text-xs font-medium tracking-wider whitespace-nowrap text-gray-500 uppercase"
                 >
                   Estado
                 </th>
                 {isAdmin && (
                   <th
                     scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
+                    className="px-6 py-3 text-left text-xs font-medium tracking-wider whitespace-nowrap text-gray-500 uppercase"
                   >
                     Notas del Admin
                   </th>
                 )}
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
+                  className="px-6 py-3 text-left text-xs font-medium tracking-wider whitespace-nowrap text-gray-500 uppercase"
                 >
                   Fecha Solicitud
                 </th>
                 {isAdmin && (
                   <th
                     scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
+                    className="px-6 py-3 text-left text-xs font-medium tracking-wider whitespace-nowrap text-gray-500 uppercase"
                   >
                     Acciones
                   </th>
@@ -94,36 +94,36 @@ export default function SupplyRequestsTable({ requests, onStatusChange }: Supply
             <tbody className="bg-base-100 divide-y divide-gray-200">
               {requests.map((request) => (
                 <tr key={request.id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{request.id}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{request.supply_name}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{request.quantity}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-6 py-4 text-sm font-medium whitespace-nowrap text-gray-900">{request.id}</td>
+                  <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-500">{request.supply_name}</td>
+                  <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-500">{request.quantity}</td>
+                  <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-500">
                     {request.brand && <span>{request.brand}</span>}
                     {request.brand && request.model && <span>/</span>}
                     {request.model && <span>{request.model}</span>}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{request.notes || "-"}</td>
+                  <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-500">{request.notes || "-"}</td>
                   {isAdmin && (
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{request.user_email}</td>
+                    <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-500">{request.user_email}</td>
                   )}
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-500">
                     {translateStatus(request.status)}
                   </td>
                   {isAdmin && (
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{request.admin_notes || "-"}</td>
+                    <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-500">{request.admin_notes || "-"}</td>
                   )}
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-500">
                     {new Date(request.created_at).toLocaleString()}
                   </td>
                   {isAdmin && (
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <td className="px-6 py-4 text-right text-sm font-medium whitespace-nowrap">
                       <Input
                         as="select"
                         value={request.status}
                         onChange={(event: ChangeEvent<HTMLSelectElement>) =>
                           onStatusChange(request.id, event.target.value as SupplyRequest["status"])
                         }
-                        className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                        className="mt-1 block w-full rounded-md border-gray-300 py-2 pr-10 pl-3 text-base focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none sm:text-sm"
                       >
                         <option value="pending">Pendiente</option>
                         <option value="ordered">Pedido</option>

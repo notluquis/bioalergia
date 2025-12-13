@@ -185,11 +185,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [queryClient]);
 
   const hasRole = useCallback(
-    (...roles: UserRole[]) => {
+    (...roles: (UserRole | string)[]) => {
       if (!user) return false;
-      if (user.role === "GOD") return true;
+      const normalize = (r: string) => r.toUpperCase();
+      const current = normalize(user.role);
+
+      if (current === "GOD") return true;
       if (!roles.length) return true;
-      return roles.includes(user.role);
+      return roles.some((r) => normalize(r) === current);
     },
     [user]
   );
