@@ -36,10 +36,9 @@ export async function getAbilityRulesForUser(userId: number) {
 
   const rules = new Set<string>();
 
-  console.log(
-    `[getAbilityRulesForUser] User ${userId} role: ${userWithRolesAndPermissions.role}. Generating standard rules.`
-  );
-  console.log(`[getAbilityRulesForUser] Raw roles data:`, JSON.stringify(userWithRolesAndPermissions.roles, null, 2));
+  // console.log(
+  //   `[getAbilityRulesForUser] User ${userId} role: ${userWithRolesAndPermissions.role}. Generating standard rules.`
+  // );
 
   for (const roleAssignment of userWithRolesAndPermissions.roles) {
     for (const rolePermission of roleAssignment.role.permissions) {
@@ -58,7 +57,7 @@ export async function getAbilityRulesForUser(userId: number) {
   }
 
   const finalRules = Array.from(rules).map((rule) => JSON.parse(rule));
-  console.log(`[getAbilityRulesForUser] Generated ${finalRules.length} rules for user ${userId}:`, finalRules);
+  // console.log(`[getAbilityRulesForUser] Generated ${finalRules.length} rules for user ${userId}`);
 
   return finalRules;
 }

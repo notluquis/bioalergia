@@ -25,7 +25,7 @@ export async function attachAbility(req: AuthenticatedRequest, res: Response, ne
       return res.status(401).json({ status: "error", message: "Sesión inválida - Usuario no encontrado" });
     }
 
-    console.log(`[attachAbility] Authenticated User: ID=${user.id}, Email=${user.email}, Role=${user.role}`);
+    console.log(`[attachAbility] Authenticated User: ID=${user.id}`);
 
     // Attach user to request for downstream handlers
     req.user = user;
@@ -40,8 +40,7 @@ export async function attachAbility(req: AuthenticatedRequest, res: Response, ne
     });
 
     const version = userPermissionVersion.version;
-    // let rules = getCachedRules(userId, version);
-    let rules = null; // FORCE CACHE SKIP for debugging
+    let rules = getCachedRules(userId, version);
 
     if (!rules) {
       rules = await getAbilityRulesForUser(userId);
