@@ -200,6 +200,8 @@ export default function DailyProductionBalancesPage() {
     mutation.mutate();
   };
 
+  const hasHistory = selectedId != null;
+
   return (
     <section className="mx-auto w-full max-w-none space-y-6 p-4">
       <header className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -247,8 +249,8 @@ export default function DailyProductionBalancesPage() {
       </div>
 
       {selectedDate ? (
-        <div className="grid gap-4 lg:grid-cols-3 xl:grid-cols-4">
-          <div className="space-y-4 lg:col-span-2 xl:col-span-3">
+        <div className={`grid gap-4 ${hasHistory ? "lg:grid-cols-3 xl:grid-cols-4" : ""}`}>
+          <div className={`space-y-4 ${hasHistory ? "lg:col-span-2 xl:col-span-3" : ""}`}>
             <div className="card bg-base-100 border shadow-sm">
               <div className="card-body p-3">
                 <div className="flex items-center justify-between">

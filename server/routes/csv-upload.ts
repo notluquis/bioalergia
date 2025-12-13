@@ -1,7 +1,8 @@
-import { Router, Request, Response } from "express";
+import { Router, Response } from "express";
 import { z } from "zod";
 import { authenticate } from "../lib/index.js";
 import { prisma } from "../prisma.js";
+import type { AuthenticatedRequest } from "../types.js";
 
 const router = Router();
 
@@ -59,6 +60,23 @@ const TABLE_SCHEMAS = {
     amount: z.coerce.number(),
     note: z.string().optional(),
   }),
+  daily_production_balances: z.object({
+    balanceDate: z.string().refine((d) => !isNaN(Date.parse(d))),
+    ingresoTarjetas: z.coerce.number().default(0),
+    ingresoTransferencias: z.coerce.number().default(0),
+    ingresoEfectivo: z.coerce.number().default(0),
+    gastosDiarios: z.coerce.number().default(0),
+    otrosAbonos: z.coerce.number().default(0),
+    consultasMonto: z.coerce.number().default(0),
+    controlesMonto: z.coerce.number().default(0),
+    testsMonto: z.coerce.number().default(0),
+    vacunasMonto: z.coerce.number().default(0),
+    licenciasMonto: z.coerce.number().default(0),
+    roxairMonto: z.coerce.number().default(0),
+    comentarios: z.string().optional(),
+    status: z.enum(["DRAFT", "FINAL"]).default("DRAFT"),
+    changeReason: z.string().optional(),
+  }),
   services: z.object({
     name: z.string().min(1),
     rut: z.string().optional(),
@@ -97,7 +115,7 @@ async function findPersonByRut(rut: string) {
 }
 
 // Preview endpoint - valida los datos sin insertarlos
-router.post("/preview", authenticate, async (req: Request, res: Response) => {
+router.post("/preview", authenticate, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { table, data } = req.body;
 
@@ -124,19 +142,21 @@ router.post("/preview", authenticate, async (req: Request, res: Response) => {
         continue;
       }
 
+      const parsed = validation.data as typeof row;
+
       // Verificar si existe (para tablas con RUT)
-      if (table === "people" && row.rut) {
-        const exists = await findPersonByRut(row.rut);
+      if (table === "people" && parsed.rut) {
+        const exists = await findPersonByRut(parsed.rut);
         if (exists) {
           toUpdate++;
         } else {
           toInsert++;
         }
       } else if (table === "employees" || table === "counterparts" || table === "employee_timesheets") {
-        if (row.rut) {
-          const person = await findPersonByRut(row.rut);
+        if (parsed.rut) {
+          const person = await findPersonByRut(parsed.rut);
           if (!person) {
-            errors.push(`Fila ${i + 1}: Persona con RUT ${row.rut} no existe`);
+            errors.push(`Fila ${i + 1}: Persona con RUT ${parsed.rut} no existe`);
             toSkip++;
             continue;
           }
@@ -153,15 +173,21 @@ router.post("/preview", authenticate, async (req: Request, res: Response) => {
             const exists = await prisma.employeeTimesheet.findFirst({
               where: {
                 employeeId: person.employee?.id,
-                workDate: new Date(row.workDate),
+                workDate: new Date(parsed.workDate),
               },
             });
             if (exists) toUpdate++;
             else toInsert++;
           }
         }
-      } else if (table === "daily_balances" && row.date) {
-        const exists = await prisma.dailyBalance.findUnique({ where: { date: new Date(row.date) } });
+      } else if (table === "daily_balances" && parsed.date) {
+        const exists = await prisma.dailyBalance.findUnique({ where: { date: new Date(parsed.date) } });
+        if (exists) toUpdate++;
+        else toInsert++;
+      } else if (table === "daily_production_balances" && parsed.balanceDate) {
+        const exists = await prisma.dailyProductionBalance.findUnique({
+          where: { balanceDate: new Date(parsed.balanceDate) },
+        });
         if (exists) toUpdate++;
         else toInsert++;
       } else {
@@ -183,7 +209,7 @@ router.post("/preview", authenticate, async (req: Request, res: Response) => {
 });
 
 // Import endpoint - inserta/actualiza los datos
-router.post("/import", authenticate, async (req: Request, res: Response) => {
+router.post("/import", authenticate, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { table, data } = req.body;
 
@@ -210,194 +236,211 @@ router.post("/import", authenticate, async (req: Request, res: Response) => {
         continue;
       }
 
+      const parsed = validation.data as typeof row;
+
       try {
         if (table === "people") {
-          const existing = await findPersonByRut(row.rut);
+          const existing = await findPersonByRut(parsed.rut);
+          const personData = {
+            names: parsed.names,
+            fatherName: parsed.fatherName || null,
+            motherName: parsed.motherName || null,
+            email: parsed.email || null,
+            phone: parsed.phone || null,
+            address: parsed.address || null,
+            personType: parsed.personType || "NATURAL",
+          };
+
           if (existing) {
-            await prisma.person.update({
-              where: { id: existing.id },
-              data: {
-                names: row.names,
-                fatherName: row.fatherName || null,
-                motherName: row.motherName || null,
-                email: row.email || null,
-                phone: row.phone || null,
-                address: row.address || null,
-                personType: row.personType || "NATURAL",
-              },
-            });
+            await prisma.person.update({ where: { id: existing.id }, data: personData });
             updated++;
           } else {
             await prisma.person.create({
               data: {
-                rut: row.rut,
-                names: row.names,
-                fatherName: row.fatherName || null,
-                motherName: row.motherName || null,
-                email: row.email || null,
-                phone: row.phone || null,
-                address: row.address || null,
-                personType: row.personType || "NATURAL",
+                rut: parsed.rut,
+                ...personData,
               },
             });
             inserted++;
           }
         } else if (table === "employees") {
-          const person = await findPersonByRut(row.rut);
+          const person = await findPersonByRut(parsed.rut);
           if (!person) {
-            errors.push(`Fila ${i + 1}: Persona con RUT ${row.rut} no existe`);
+            errors.push(`Fila ${i + 1}: Persona con RUT ${parsed.rut} no existe`);
             skipped++;
             continue;
           }
+
+          const employeeData = {
+            position: parsed.position,
+            department: parsed.department || null,
+            startDate: new Date(parsed.startDate),
+            endDate: parsed.endDate ? new Date(parsed.endDate) : null,
+            status: parsed.status || "ACTIVE",
+            salaryType: parsed.salaryType || "FIXED",
+            baseSalary: parsed.baseSalary || 0,
+            hourlyRate: parsed.hourlyRate || null,
+            overtimeRate: parsed.overtimeRate || null,
+            retentionRate: parsed.retentionRate || 0.145,
+            bankName: parsed.bankName || null,
+            bankAccountType: parsed.bankAccountType || null,
+            bankAccountNumber: parsed.bankAccountNumber || null,
+          };
 
           const existing = await prisma.employee.findUnique({ where: { personId: person.id } });
           if (existing) {
-            await prisma.employee.update({
-              where: { id: existing.id },
-              data: {
-                position: row.position,
-                department: row.department || null,
-                startDate: new Date(row.startDate),
-                endDate: row.endDate ? new Date(row.endDate) : null,
-                status: row.status || "ACTIVE",
-                salaryType: row.salaryType || "FIXED",
-                baseSalary: row.baseSalary || 0,
-                hourlyRate: row.hourlyRate || null,
-                overtimeRate: row.overtimeRate || null,
-                retentionRate: row.retentionRate || 0.145,
-                bankName: row.bankName || null,
-                bankAccountType: row.bankAccountType || null,
-                bankAccountNumber: row.bankAccountNumber || null,
-              },
-            });
+            await prisma.employee.update({ where: { id: existing.id }, data: employeeData });
             updated++;
           } else {
-            await prisma.employee.create({
-              data: {
-                personId: person.id,
-                position: row.position,
-                department: row.department || null,
-                startDate: new Date(row.startDate),
-                endDate: row.endDate ? new Date(row.endDate) : null,
-                status: row.status || "ACTIVE",
-                salaryType: row.salaryType || "FIXED",
-                baseSalary: row.baseSalary || 0,
-                hourlyRate: row.hourlyRate || null,
-                overtimeRate: row.overtimeRate || null,
-                retentionRate: row.retentionRate || 0.145,
-                bankName: row.bankName || null,
-                bankAccountType: row.bankAccountType || null,
-                bankAccountNumber: row.bankAccountNumber || null,
-              },
-            });
+            await prisma.employee.create({ data: { ...employeeData, personId: person.id } });
             inserted++;
           }
         } else if (table === "counterparts") {
-          const person = await findPersonByRut(row.rut);
+          const person = await findPersonByRut(parsed.rut);
           if (!person) {
-            errors.push(`Fila ${i + 1}: Persona con RUT ${row.rut} no existe`);
+            errors.push(`Fila ${i + 1}: Persona con RUT ${parsed.rut} no existe`);
             skipped++;
             continue;
           }
 
+          const counterpartData = {
+            category: parsed.category || "OTHER",
+            notes: parsed.notes || null,
+          };
+
           const existing = await prisma.counterpart.findUnique({ where: { personId: person.id } });
           if (existing) {
-            await prisma.counterpart.update({
-              where: { id: existing.id },
-              data: {
-                category: row.category || "OTHER",
-                notes: row.notes || null,
-              },
-            });
+            await prisma.counterpart.update({ where: { id: existing.id }, data: counterpartData });
             updated++;
           } else {
-            await prisma.counterpart.create({
-              data: {
-                personId: person.id,
-                category: row.category || "OTHER",
-                notes: row.notes || null,
-              },
-            });
+            await prisma.counterpart.create({ data: { ...counterpartData, personId: person.id } });
             inserted++;
           }
         } else if (table === "transactions") {
           let personId = null;
-          if (row.rut) {
-            const person = await findPersonByRut(row.rut);
+          if (parsed.rut) {
+            const person = await findPersonByRut(parsed.rut);
             if (person) personId = person.id;
           }
 
           await prisma.transaction.create({
             data: {
-              timestamp: new Date(row.timestamp),
-              description: row.description || null,
-              amount: row.amount,
-              direction: row.direction,
+              timestamp: new Date(parsed.timestamp),
+              description: parsed.description || null,
+              amount: parsed.amount,
+              direction: parsed.direction,
               personId,
-              origin: row.origin || null,
-              destination: row.destination || null,
-              category: row.category || null,
+              origin: parsed.origin || null,
+              destination: parsed.destination || null,
+              category: parsed.category || null,
             },
           });
           inserted++;
         } else if (table === "daily_balances") {
-          const existing = await prisma.dailyBalance.findUnique({ where: { date: new Date(row.date) } });
+          const dailyBalanceData = {
+            amount: parsed.amount,
+            note: parsed.note || null,
+          };
+          const existing = await prisma.dailyBalance.findUnique({ where: { date: new Date(parsed.date) } });
           if (existing) {
-            await prisma.dailyBalance.update({
-              where: { id: existing.id },
-              data: {
-                amount: row.amount,
-                note: row.note || null,
-              },
-            });
+            await prisma.dailyBalance.update({ where: { id: existing.id }, data: dailyBalanceData });
             updated++;
           } else {
             await prisma.dailyBalance.create({
+              data: { ...dailyBalanceData, date: new Date(parsed.date) },
+            });
+            inserted++;
+          }
+        } else if (table === "daily_production_balances") {
+          const userId = req.auth?.userId;
+          if (!userId) {
+            errors.push(`Fila ${i + 1}: Usuario no autenticado`);
+            skipped++;
+            continue;
+          }
+
+          const productionData = {
+            ingresoTarjetas: parsed.ingresoTarjetas ?? 0,
+            ingresoTransferencias: parsed.ingresoTransferencias ?? 0,
+            ingresoEfectivo: parsed.ingresoEfectivo ?? 0,
+            gastosDiarios: parsed.gastosDiarios ?? 0,
+            otrosAbonos: parsed.otrosAbonos ?? 0,
+            consultasMonto: parsed.consultasMonto ?? 0,
+            controlesMonto: parsed.controlesMonto ?? 0,
+            testsMonto: parsed.testsMonto ?? 0,
+            vacunasMonto: parsed.vacunasMonto ?? 0,
+            licenciasMonto: parsed.licenciasMonto ?? 0,
+            roxairMonto: parsed.roxairMonto ?? 0,
+            comentarios: parsed.comentarios || null,
+            status: parsed.status ?? "DRAFT",
+            changeReason: parsed.changeReason || null,
+          };
+
+          const existing = await prisma.dailyProductionBalance.findUnique({
+            where: { balanceDate: new Date(parsed.balanceDate) },
+          });
+
+          if (existing) {
+            await prisma.dailyProductionBalance.update({
+              where: { id: existing.id },
+              data: productionData,
+            });
+            updated++;
+          } else {
+            await prisma.dailyProductionBalance.create({
               data: {
-                date: new Date(row.date),
-                amount: row.amount,
-                note: row.note || null,
+                ...productionData,
+                balanceDate: new Date(parsed.balanceDate),
+                createdBy: userId,
               },
             });
             inserted++;
           }
         } else if (table === "services") {
           let counterpartId = null;
-          if (row.rut) {
-            const person = await findPersonByRut(row.rut);
+          if (parsed.rut) {
+            const person = await findPersonByRut(parsed.rut);
             if (person?.counterpart) counterpartId = person.counterpart.id;
           }
 
           await prisma.service.create({
             data: {
-              name: row.name,
+              name: parsed.name,
               counterpartId,
-              type: row.type || "BUSINESS",
-              frequency: row.frequency || "MONTHLY",
-              defaultAmount: row.defaultAmount || 0,
-              status: row.status || "ACTIVE",
+              type: parsed.type || "BUSINESS",
+              frequency: parsed.frequency || "MONTHLY",
+              defaultAmount: parsed.defaultAmount || 0,
+              status: parsed.status || "ACTIVE",
             },
           });
           inserted++;
         } else if (table === "inventory_items") {
           await prisma.inventoryItem.create({
             data: {
-              categoryId: row.categoryId || null,
-              name: row.name,
-              description: row.description || null,
-              currentStock: row.currentStock || 0,
+              categoryId: parsed.categoryId || null,
+              name: parsed.name,
+              description: parsed.description || null,
+              currentStock: parsed.currentStock || 0,
             },
           });
           inserted++;
         } else if (table === "employee_timesheets") {
-          const person = await findPersonByRut(row.rut);
+          const person = await findPersonByRut(parsed.rut);
           if (!person?.employee) {
-            errors.push(`Fila ${i + 1}: Empleado con RUT ${row.rut} no existe`);
+            errors.push(`Fila ${i + 1}: Empleado con RUT ${parsed.rut} no existe`);
             skipped++;
             continue;
           }
 
-          const workDate = new Date(row.workDate);
+          const workDate = new Date(parsed.workDate);
+          const timesheetData = {
+            startTime: parsed.startTime || null,
+            endTime: parsed.endTime || null,
+            workedMinutes: parsed.workedMinutes,
+            overtimeMinutes: parsed.overtimeMinutes || 0,
+            comment: parsed.comment || null,
+          };
+
           const existing = await prisma.employeeTimesheet.findFirst({
             where: {
               employeeId: person.employee.id,
@@ -406,27 +449,14 @@ router.post("/import", authenticate, async (req: Request, res: Response) => {
           });
 
           if (existing) {
-            await prisma.employeeTimesheet.update({
-              where: { id: existing.id },
-              data: {
-                startTime: row.startTime || null,
-                endTime: row.endTime || null,
-                workedMinutes: row.workedMinutes,
-                overtimeMinutes: row.overtimeMinutes || 0,
-                comment: row.comment || null,
-              },
-            });
+            await prisma.employeeTimesheet.update({ where: { id: existing.id }, data: timesheetData });
             updated++;
           } else {
             await prisma.employeeTimesheet.create({
               data: {
                 employeeId: person.employee.id,
                 workDate,
-                startTime: row.startTime || null,
-                endTime: row.endTime || null,
-                workedMinutes: row.workedMinutes,
-                overtimeMinutes: row.overtimeMinutes || 0,
-                comment: row.comment || null,
+                ...timesheetData,
               },
             });
             inserted++;
