@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { useForm, Controller } from "react-hook-form";
+import { useForm, Controller, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Input from "@/components/ui/Input";
 import { GRID_2_COL_MD } from "@/lib/styles";
@@ -40,8 +40,7 @@ export function LoanForm({ onSubmit, onCancel }: LoanFormProps) {
     control,
     formState: { errors, isSubmitting, isValid },
   } = useForm<LoanFormData>({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    resolver: zodResolver(loanFormSchema) as any, // Type mismatch between Zod output and RHF expectation
+    resolver: zodResolver(loanFormSchema) as unknown as Resolver<LoanFormData>, // Fix type mismatch
     defaultValues: {
       title: "",
       borrowerName: "",

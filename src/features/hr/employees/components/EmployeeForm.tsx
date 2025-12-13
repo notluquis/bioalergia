@@ -100,8 +100,8 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
       onSave();
       onCancel();
     } catch (err) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const details = (err as any).details;
+      const errObj = err as { details?: unknown; message?: string };
+      const details = errObj.details;
       let message = err instanceof Error ? err.message : "No se pudo guardar el empleado";
 
       if (Array.isArray(details)) {

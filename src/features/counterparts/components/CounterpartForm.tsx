@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { z } from "zod";
-import { useForm } from "react-hook-form";
+import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { formatRut, validateRut } from "@/lib/rut";
 import Button from "@/components/ui/Button";
@@ -57,8 +57,7 @@ export default function CounterpartForm({ counterpart, onSave, error, saving, lo
     watch,
     formState: { errors, isSubmitting },
   } = useForm<CounterpartFormValues>({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    resolver: zodResolver(counterpartFormSchema) as any, // Type mismatch between Zod output and RHF expectation
+    resolver: zodResolver(counterpartFormSchema) as unknown as Resolver<CounterpartFormValues>, // Fix type mismatch
     defaultValues: {
       rut: "",
       name: "",
