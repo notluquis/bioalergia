@@ -18,6 +18,7 @@ export const permissionMap = readonly({
   "transaction.delete": { action: "delete", subject: "Transaction" },
 
   "setting.manage": { action: "manage", subject: "Setting" },
+  "manage.all": { action: "manage", subject: "all" },
 
   // Add other permissions here
 } as const);
