@@ -296,7 +296,7 @@ export default function DailyProductionBalancesPage() {
               <form className="space-y-4" onSubmit={handleSubmit}>
                 <div className="grid gap-4 lg:grid-cols-12">
                   <div className="space-y-3 lg:col-span-5 xl:col-span-5">
-                    <div className="border-success/30 bg-success/5 border-base-200 rounded-2xl border p-4 shadow-sm">
+                    <div className="border-success/30 bg-success/5 rounded-2xl border p-4 shadow-sm">
                       <div className="flex items-center gap-2">
                         <div className="badge badge-lg badge-success font-bold">1</div>
                         <div>
@@ -326,7 +326,7 @@ export default function DailyProductionBalancesPage() {
                       </div>
                     </div>
 
-                    <div className="border-error/30 bg-error/5 border-base-200 rounded-2xl border p-4 shadow-sm">
+                    <div className="border-error/30 bg-error/5 rounded-2xl border p-4 shadow-sm">
                       <div className="flex items-center gap-2">
                         <TrendingDown className="text-error h-5 w-5" />
                         <h3 className="text-base-content text-base font-semibold">Gastos y ajustes</h3>
@@ -367,7 +367,7 @@ export default function DailyProductionBalancesPage() {
                   </div>
 
                   <div className="space-y-3 lg:col-span-4 xl:col-span-4">
-                    <div className="border-info/30 bg-info/5 border-base-200 h-full rounded-2xl border p-4 shadow-sm">
+                    <div className="bg-info/5 border-base-200 h-full rounded-2xl border p-4 shadow-sm">
                       <div className="flex items-center gap-2">
                         <div className="badge badge-lg badge-info font-bold">2</div>
                         <div>
@@ -411,7 +411,7 @@ export default function DailyProductionBalancesPage() {
                   </div>
 
                   <div className="space-y-3 lg:col-span-3 xl:col-span-3">
-                    <div className="border-primary/30 bg-base-100 border-base-200 h-full rounded-2xl border p-4 shadow-sm">
+                    <div className="bg-base-100 border-base-200 h-full rounded-2xl border p-4 shadow-sm">
                       <div className="flex items-center gap-2">
                         <ClipboardList className="text-primary h-5 w-5" />
                         <h3 className="text-base-content text-base font-semibold">Validación</h3>
