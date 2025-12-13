@@ -149,7 +149,7 @@ export default function DailyProductionBalancesPage() {
       setSelectedId(null);
       return;
     }
-    const balance = balances.find((b) => b.date === selectedDate);
+    const balance = balances.find((b) => dayjs(b.date).isSame(dayjs(selectedDate), "day"));
     if (balance) {
       setSelectedId(balance.id);
       setForm({
