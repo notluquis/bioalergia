@@ -1,5 +1,6 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState, type ChangeEvent } from "react";
 import dayjs from "dayjs";
+import { useToast } from "@/context/ToastContext";
 import { useAuth } from "@/context/AuthContext";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
@@ -51,7 +52,7 @@ export default function TimesheetsPage() {
   const [loadingSummary, setLoadingSummary] = useState(false);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [info, setInfo] = useState<string | null>(null);
+  const { success: toastSuccess } = useToast();
   const [saving, setSaving] = useState(false);
   const [emailModalOpen, setEmailModalOpen] = useState(false);
   // Estados de preparación: null | 'generating-pdf' | 'preparing' | 'done'
@@ -93,7 +94,7 @@ export default function TimesheetsPage() {
       // Load summary
       setLoadingSummary(true);
       setError(null);
-      setInfo(null);
+      setError(null);
       try {
         const formattedMonth = formatMonthString(month);
         // Pasar selectedEmployeeId para mostrar solo ese empleado si está seleccionado
@@ -156,7 +157,8 @@ export default function TimesheetsPage() {
     if (!monthParam) return;
     setLoadingSummary(true);
     setError(null);
-    setInfo(null);
+    setLoadingSummary(true);
+    setError(null);
     try {
       const formattedMonth = formatMonthString(monthParam);
       // Pasar employeeId para filtrar si hay uno seleccionado
@@ -241,16 +243,16 @@ export default function TimesheetsPage() {
           setBulkRows(rows);
           setInitialRows(rows);
           // Mostrar mensaje breve
-          setInfo(`Guardado: ${formatDateLabel(row.date)}`);
-          setTimeout(() => setInfo(null), 1500);
+          toastSuccess(`Guardado: ${formatDateLabel(row.date)}`);
         }
       } catch {
+        // toastError handles errors in the UI if needed, or keeping silence for auto-save retry logic
         console.warn("Auto-save row failed");
       } finally {
         setSaving(false);
       }
     },
-    [selectedEmployeeId, saving, bulkRows, initialRows, month]
+    [selectedEmployeeId, saving, bulkRows, initialRows, month, toastSuccess]
   );
 
   // Handler cuando se sale del campo salida
@@ -270,7 +272,6 @@ export default function TimesheetsPage() {
       if (!currentRow || currentRow[field] === value) return prev;
       return prev.map((row, i) => (i === index ? { ...row, [field]: value } : row));
     });
-    setInfo(null);
   }
 
   function handleResetRow(index: number) {
@@ -280,7 +281,6 @@ export default function TimesheetsPage() {
       if (initialRow) next[index] = { ...initialRow };
       return next;
     });
-    setInfo(null);
   }
 
   async function handleRemoveEntry(row: BulkRow) {
@@ -294,7 +294,7 @@ export default function TimesheetsPage() {
         await loadSummary(month, selectedEmployeeId);
         await loadDetail(selectedEmployeeId, month);
       }
-      setInfo("Registro eliminado");
+      toastSuccess("Registro eliminado");
     } catch (err) {
       const message = err instanceof Error ? err.message : "No se pudo eliminar el registro";
       setError(message);
@@ -310,7 +310,7 @@ export default function TimesheetsPage() {
     }
 
     setError(null);
-    setInfo(null);
+    setError(null);
 
     const entries: Array<{
       work_date: string;
@@ -367,7 +367,7 @@ export default function TimesheetsPage() {
     }
 
     if (!entries.length && !removeIds.length) {
-      setInfo("No hay cambios para guardar");
+      toastSuccess("No hay cambios para guardar");
       return;
     }
 
@@ -378,7 +378,7 @@ export default function TimesheetsPage() {
         await loadSummary(month, selectedEmployeeId);
         await loadDetail(selectedEmployeeId, month);
       }
-      setInfo("Cambios guardados correctamente");
+      toastSuccess("Cambios guardados correctamente");
     } catch (err) {
       const message = err instanceof Error ? err.message : "No se pudieron guardar los cambios";
       setError(message);
@@ -542,7 +542,7 @@ export default function TimesheetsPage() {
 
       // Paso 4: Mostrar estado completado
       setEmailPrepareStatus("done");
-      setInfo(`Archivo descargado: ${data.filename}. Ábrelo con doble click para enviar desde Outlook.`);
+      toastSuccess(`Archivo descargado: ${data.filename}. Ábrelo con doble click para enviar desde Outlook.`);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Error al preparar el email";
       setError(message);
@@ -570,7 +570,6 @@ export default function TimesheetsPage() {
               onChange={(event: ChangeEvent<HTMLSelectElement>) => {
                 const value = event.target.value;
                 setSelectedEmployeeId(value ? Number(value) : null);
-                setInfo(null);
               }}
               disabled={!employeeOptions.length}
               className="bg-base-100"
@@ -591,7 +590,6 @@ export default function TimesheetsPage() {
               value={month}
               onChange={(event: ChangeEvent<HTMLSelectElement>) => {
                 setMonth(event.target.value);
-                setInfo(null);
               }}
               disabled={loadingMonths}
               className="bg-base-100"
@@ -668,7 +666,6 @@ export default function TimesheetsPage() {
       )}
 
       {error && <Alert variant="error">{error}</Alert>}
-      {info && <Alert variant="success">{info}</Alert>}
 
       <TimesheetSummaryTable
         summary={summary}

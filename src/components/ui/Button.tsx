@@ -24,6 +24,7 @@ export default function Button({
   children,
   isLoading,
   disabled,
+  type = "button", // Safety first: prevent accidental form submits
   ...props
 }: ButtonProps) {
   const Component = as || (href ? "a" : "button");
@@ -63,6 +64,7 @@ export default function Button({
       )}
       href={href}
       disabled={disabled || isLoading}
+      type={!href && !as ? type : undefined}
       {...props}
     >
       {isLoading && <span className="loading loading-spinner loading-sm mr-2"></span>}

@@ -125,7 +125,7 @@ export default function LoginPage() {
             }}
           />
           <div>
-            <h1 className="text-base-content text-2xl font-semibold">
+            <h1 className="text-base-content text-2xl font-semibold text-balance">
               {step === "mfa" ? "Verifica tu identidad" : "Inicia sesión"}
             </h1>
             <p className="text-base-content/60 mt-1 text-sm">

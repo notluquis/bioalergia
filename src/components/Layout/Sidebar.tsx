@@ -167,7 +167,7 @@ export default function Sidebar({ isOpen, isMobile, onClose, isCollapsed = false
       <aside
         id="app-sidebar"
         className={cn(
-          "border-base-300/50 bg-base-200/80 text-base-content fixed inset-y-0 left-0 z-50 flex h-full shrink-0 flex-col rounded-3xl border text-sm shadow-2xl backdrop-blur-3xl transition-all duration-300 md:static md:h-[calc(100vh-5rem)] md:translate-x-0",
+          "border-base-300/50 bg-base-200/80 text-base-content fixed inset-y-0 left-0 z-50 flex h-full shrink-0 flex-col rounded-3xl border text-sm shadow-2xl backdrop-blur-3xl transition-all duration-300 md:static md:h-[calc(100dvh-5rem)] md:translate-x-0",
           isOpen ? "translate-x-0" : "-translate-x-full",
           !isOpen && !isMobile && "hidden",
           isCollapsed ? "w-20" : "w-[min(300px,88vw)]",
@@ -203,7 +203,13 @@ export default function Sidebar({ isOpen, isMobile, onClose, isCollapsed = false
             ) : (
               <div className="flex items-center gap-2">
                 <div className="bg-base-100/80 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/20 shadow-sm">
-                  <img src="/logo_bimi.svg" alt="Bioalergia" className="h-7 w-7 object-contain" loading="lazy" />
+                  <img
+                    src="/logo_bimi.svg"
+                    alt="Bioalergia"
+                    className="h-7 w-7 object-contain"
+                    loading="lazy"
+                    decoding="async"
+                  />
                 </div>
                 <div className="min-w-0 overflow-hidden transition-all duration-300">
                   <p className="text-base-content truncate text-sm leading-tight font-semibold">{displayName}</p>
@@ -213,7 +219,7 @@ export default function Sidebar({ isOpen, isMobile, onClose, isCollapsed = false
           </div>
 
           {/* Navigation Links */}
-          <nav className="muted-scrollbar flex-1 overflow-y-auto pr-1">
+          <nav className="muted-scrollbar flex-1 space-y-0.5 overflow-y-auto px-2 py-2 contain-layout">
             <div className="space-y-1">
               {NAV_SECTIONS.map((section) => {
                 const visibleItems = section.items.filter((item) => {
