@@ -1,31 +1,24 @@
 import { useMemo, useState, useEffect } from "react";
-import type { ChangeEvent, FormEvent } from "react";
+import type { FormEvent, ReactNode } from "react";
 import dayjs from "dayjs";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import Alert from "@/components/ui/Alert";
 import { INPUT_CURRENCY_SM, GRID_2_COL_SM, PAGE_CONTAINER } from "@/lib/styles";
 import { today } from "@/lib/dates";
 import { useToast } from "@/context/ToastContext";
 import { useSettings } from "@/context/SettingsContext";
-import {
-  CreditCard,
-  Banknote,
-  Wallet,
-  TrendingDown,
-  FileText,
-  Syringe,
-  ClipboardList,
-  Save,
-  History,
-} from "lucide-react";
+import { CreditCard, Banknote, Wallet, TrendingDown, FileText, ClipboardList, Save, History } from "lucide-react";
 import {
   fetchProductionBalanceHistory,
   fetchProductionBalances,
   saveProductionBalance,
 } from "@/features/dailyProductionBalances/api";
-import type { ProductionBalancePayload, ProductionBalanceStatus } from "@/features/dailyProductionBalances/types";
+import type {
+  ProductionBalancePayload,
+  ProductionBalanceStatus,
+  ProductionBalanceHistoryEntry,
+} from "@/features/dailyProductionBalances/types";
 import { deriveTotals } from "@/features/dailyProductionBalances/utils";
 import WeekView from "@/features/dailyProductionBalances/components/WeekView";
 import { useAuth } from "@/context/AuthContext";
@@ -73,38 +66,15 @@ function parseNumber(value: string): number {
 }
 
 function formatInputValue(value: string): string {
-  // Remove non-numeric characters except for negative sign
   const numericValue = value.replace(/[^0-9-]/g, "");
   if (!numericValue || numericValue === "-") return "";
   const parsed = parseInt(numericValue, 10);
-  if (isNaN(parsed)) return "";
-  // Format with thousands separator
+  if (Number.isNaN(parsed)) return "";
   return new Intl.NumberFormat("es-CL").format(parsed);
 }
 
 function parseInputValue(value: string): string {
-  // Remove formatting and return just the number
   return value.replace(/[^0-9-]/g, "");
-}
-
-function toPayload(form: FormState): ProductionBalancePayload {
-  return {
-    date: form.date,
-    ingresoTarjetas: parseNumber(form.ingresoTarjetas),
-    ingresoTransferencias: parseNumber(form.ingresoTransferencias),
-    ingresoEfectivo: parseNumber(form.ingresoEfectivo),
-    gastosDiarios: parseNumber(form.gastosDiarios),
-    otrosAbonos: parseNumber(form.otrosAbonos),
-    consultas: parseNumber(form.consultas),
-    controles: parseNumber(form.controles),
-    tests: parseNumber(form.tests),
-    vacunas: parseNumber(form.vacunas),
-    licencias: parseNumber(form.licencias),
-    roxair: parseNumber(form.roxair),
-    comentarios: form.comentarios.trim() ? form.comentarios.trim() : null,
-    status: form.status,
-    reason: form.reason.trim() ? form.reason.trim() : null,
-  };
 }
 
 export default function DailyProductionBalancesPage() {
@@ -125,11 +95,8 @@ export default function DailyProductionBalancesPage() {
     [settings.primaryCurrency]
   );
 
-  // State for WeekView
   const [currentDate, setCurrentDate] = useState(dayjs());
   const [selectedDate, setSelectedDate] = useState<string | null>(today());
-
-  // Calculate range for the current week view
   const startOfWeek = currentDate.startOf("week").add(1, "day");
   const endOfWeek = startOfWeek.add(6, "day");
   const from = startOfWeek.format("YYYY-MM-DD");
@@ -169,13 +136,11 @@ export default function DailyProductionBalancesPage() {
 
   const balances = useMemo(() => balancesQuery.data ?? [], [balancesQuery.data]);
 
-  // When a date is selected, find the balance for that date or reset form
   useEffect(() => {
     if (!selectedDate) {
       setSelectedId(null);
       return;
     }
-
     const balance = balances.find((b) => b.date === selectedDate);
     if (balance) {
       setSelectedId(balance.id);
@@ -210,7 +175,6 @@ export default function DailyProductionBalancesPage() {
     otrosAbonos: parseNumber(form.otrosAbonos),
   });
 
-  // Calculate service totals for dual-accounting validation
   const serviceTotals =
     parseNumber(form.consultas) +
     parseNumber(form.controles) +
@@ -223,42 +187,73 @@ export default function DailyProductionBalancesPage() {
   const hasDifference = serviceTotals !== paymentMethodTotal;
   const difference = serviceTotals - paymentMethodTotal;
 
-  const handleChange =
-    (key: keyof FormState) => (event: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-      setForm((prev) => ({ ...prev, [key]: event.target.value }));
-    };
-
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     mutation.mutate();
   };
 
   return (
-    <section className={`${PAGE_CONTAINER} p-4`}>
-      <WeekView
-        currentDate={currentDate}
-        onDateChange={setCurrentDate}
-        balances={balances}
-        onSelectDay={setSelectedDate}
-        selectedDate={selectedDate}
-      />
+    <section className={`${PAGE_CONTAINER} space-y-6 p-4`}>
+      <header className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-base-content/70 text-xs tracking-wide uppercase">Balances diarios</p>
+          <h1 className="text-base-content text-2xl font-bold">Producción y cobros</h1>
+          <p className="text-base-content/60 text-sm">
+            Registra ingresos por método de pago y por servicio. Verifica que ambos totales coincidan antes de cerrar el
+            día.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button size="sm" onClick={() => setCurrentDate(dayjs())}>
+            Ir a hoy
+          </Button>
+        </div>
+      </header>
 
-      {selectedDate && (
-        <div className={`grid gap-4 ${canEdit ? "lg:grid-cols-2" : "lg:grid-cols-1"}`}>
-          {canEdit && (
-            <div className="space-y-3">
-              <div className="card bg-base-100 border shadow-sm">
-                <div className="card-body p-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <h2 className="text-base-content text-sm font-bold capitalize">
-                        {dayjs(selectedDate).format("ddd D MMM")}
-                      </h2>
-                      <span className={`badge badge-xs ${form.status === "FINAL" ? "badge-success" : "badge-warning"}`}>
-                        {form.status === "FINAL" ? "✓" : "⏱"}
-                      </span>
-                      {selectedId && <span className="text-base-content/60 text-xs">#{selectedId}</span>}
-                    </div>
+      <div className="card bg-base-100 border shadow-sm">
+        <div className="card-body gap-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-base-content/70 text-xs tracking-wide uppercase">Semana seleccionada</p>
+              <h3 className="text-base-content text-lg font-bold">
+                {startOfWeek.format("DD MMM")} - {endOfWeek.format("DD MMM YYYY")}
+              </h3>
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" onClick={() => setCurrentDate((d) => d.subtract(1, "week"))}>
+                ← Semana previa
+              </Button>
+              <Button size="sm" onClick={() => setCurrentDate((d) => d.add(1, "week"))}>
+                Semana siguiente →
+              </Button>
+            </div>
+          </div>
+          <WeekView
+            currentDate={currentDate}
+            onDateChange={setCurrentDate}
+            balances={balances}
+            onSelectDay={setSelectedDate}
+            selectedDate={selectedDate}
+          />
+        </div>
+      </div>
+
+      {selectedDate ? (
+        <div className="grid gap-4 lg:grid-cols-3">
+          <div className="space-y-4 lg:col-span-2">
+            <div className="card bg-base-100 border shadow-sm">
+              <div className="card-body p-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-base-content text-sm font-bold capitalize">
+                      {dayjs(selectedDate).format("ddd D MMM")}
+                    </h2>
+                    <span className={`badge badge-xs ${form.status === "FINAL" ? "badge-success" : "badge-warning"}`}>
+                      {form.status === "FINAL" ? "Final" : "Borrador"}
+                    </span>
+                    {selectedId && <span className="text-base-content/60 text-xs">#{selectedId}</span>}
+                  </div>
+                  {canEdit ? (
                     <div className="flex items-center gap-2">
                       <select
                         className="select select-xs"
@@ -277,512 +272,401 @@ export default function DailyProductionBalancesPage() {
                         <option value="FINAL">Final</option>
                       </select>
                       <Button type="button" variant="ghost" size="xs" onClick={() => setSelectedDate(null)}>
-                        ✕
+                        Limpiar
                       </Button>
                     </div>
-                  </div>
+                  ) : (
+                    <span className="badge badge-ghost badge-sm">Solo lectura</span>
+                  )}
                 </div>
               </div>
+            </div>
 
+            {canEdit ? (
               <form className="space-y-4" onSubmit={handleSubmit}>
-                {/* Alert de flujo - arriba de todo */}
-                <div className="alert alert-info text-sm">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    className="h-5 w-5 shrink-0 stroke-current"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                    ></path>
-                  </svg>
-                  <span>
-                    <strong>Flujo de trabajo:</strong> 1) Registra ingresos por método de pago → 2) Registra ingresos
-                    por tipo de servicio → 3) Verifica que ambos totales coincidan
-                  </span>
+                <div className="alert alert-info text-xs">
+                  <strong>Flujo:</strong> 1) Método de pago → 2) Servicios → 3) Valida totales → 4) Guarda.
                 </div>
 
-                {/* Grid de 2 columnas */}
-                <div className="grid gap-4 lg:grid-cols-2">
-                  {/* COLUMNA IZQUIERDA: Métodos de Pago + Gastos + Total Método */}
+                <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-3">
-                    <div className="card bg-success/5 border-success/20 border">
-                      <div className="card-body gap-3 p-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <div className="badge badge-lg badge-success font-bold">1</div>
-                            <div>
-                              <h3 className="text-base-content text-lg font-bold">Ingresos por método de pago</h3>
-                              <p className="text-base-content/60 text-xs">¿Cómo ingresó el dinero?</p>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="grid gap-3 sm:grid-cols-3">
-                          <div className="form-control">
-                            <label className="label py-1">
-                              <span className="label-text flex items-center gap-1.5 text-sm font-medium">
-                                <CreditCard className="h-4 w-4" />
-                                Tarjetas
-                              </span>
-                            </label>
-                            <label className={INPUT_CURRENCY_SM}>
-                              <span className="text-base-content/60">$</span>
-                              <input
-                                type="text"
-                                inputMode="numeric"
-                                value={formatInputValue(form.ingresoTarjetas)}
-                                onChange={(e) => {
-                                  const parsed = parseInputValue(e.target.value);
-                                  setForm((prev) => ({ ...prev, ingresoTarjetas: parsed }));
-                                }}
-                                className="grow bg-transparent"
-                                placeholder="0"
-                              />
-                            </label>
-                          </div>
-                          <div className="form-control">
-                            <label className="label py-1">
-                              <span className="label-text flex items-center gap-1.5 text-sm font-medium">
-                                <Banknote className="h-4 w-4" />
-                                Transferencias
-                              </span>
-                            </label>
-                            <label className={INPUT_CURRENCY_SM}>
-                              <span className="text-base-content/60">$</span>
-                              <input
-                                type="text"
-                                inputMode="numeric"
-                                value={formatInputValue(form.ingresoTransferencias)}
-                                onChange={(e) => {
-                                  const parsed = parseInputValue(e.target.value);
-                                  setForm((prev) => ({ ...prev, ingresoTransferencias: parsed }));
-                                }}
-                                className="grow bg-transparent"
-                                placeholder="0"
-                              />
-                            </label>
-                          </div>
-                          <div className="form-control">
-                            <label className="label py-1">
-                              <span className="label-text flex items-center gap-1.5 text-sm font-medium">
-                                <Wallet className="h-4 w-4" />
-                                Efectivo
-                              </span>
-                            </label>
-                            <label className={INPUT_CURRENCY_SM}>
-                              <span className="text-base-content/60">$</span>
-                              <input
-                                type="text"
-                                inputMode="numeric"
-                                value={formatInputValue(form.ingresoEfectivo)}
-                                onChange={(e) => {
-                                  const parsed = parseInputValue(e.target.value);
-                                  setForm((prev) => ({ ...prev, ingresoEfectivo: parsed }));
-                                }}
-                                className="grow bg-transparent"
-                                placeholder="0"
-                              />
-                            </label>
-                          </div>
+                    <div className="border-success/30 bg-success/5 rounded-2xl border p-4">
+                      <div className="flex items-center gap-2">
+                        <div className="badge badge-lg badge-success font-bold">1</div>
+                        <div>
+                          <h3 className="text-base-content text-lg font-bold">Ingresos por método de pago</h3>
+                          <p className="text-base-content/60 text-xs">Tarjeta, transferencia y efectivo</p>
                         </div>
                       </div>
-                    </div>
-
-                    {/* PASO 1B: Gastos y Ajustes */}
-                    <div className="card bg-error/5 border-error/20 border">
-                      <div className="card-body gap-4">
-                        <div className="flex items-center gap-2">
-                          <TrendingDown className="text-error h-5 w-5" />
-                          <h3 className="text-base-content text-base font-semibold">Gastos y ajustes</h3>
-                        </div>
-                        <div className={GRID_2_COL_SM}>
-                          <div className="form-control">
-                            <label className="label py-1">
-                              <span className="label-text text-sm font-medium">Gastos diarios</span>
-                            </label>
-                            <label className={INPUT_CURRENCY_SM}>
-                              <span className="text-base-content/60">$</span>
-                              <input
-                                type="text"
-                                inputMode="numeric"
-                                value={formatInputValue(form.gastosDiarios)}
-                                onChange={(e) => {
-                                  const parsed = parseInputValue(e.target.value);
-                                  setForm((prev) => ({ ...prev, gastosDiarios: parsed }));
-                                }}
-                                className="grow bg-transparent"
-                                placeholder="0"
-                              />
-                            </label>
-                            <label className="label py-0">
-                              <span className="label-text-alt text-base-content/60">Combustible, insumos, etc.</span>
-                            </label>
-                          </div>
-                          <div className="form-control">
-                            <label className="label py-1">
-                              <span className="label-text text-sm font-medium">Otros abonos</span>
-                            </label>
-                            <label className={INPUT_CURRENCY_SM}>
-                              <span className="text-base-content/60">$</span>
-                              <input
-                                type="text"
-                                inputMode="numeric"
-                                value={formatInputValue(form.otrosAbonos)}
-                                onChange={(e) => {
-                                  const parsed = parseInputValue(e.target.value);
-                                  setForm((prev) => ({ ...prev, otrosAbonos: parsed }));
-                                }}
-                                className="grow bg-transparent"
-                                placeholder="0"
-                              />
-                            </label>
-                            <label className="label py-0">
-                              <span className="label-text-alt text-base-content/60">Devoluciones, ajustes</span>
-                            </label>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Resumen Método de Pago */}
-                    <div className="card bg-base-200 border-base-300 border">
-                      <div className="card-body p-3">
-                        <div className="mb-2 flex items-center gap-2">
-                          <h3 className="text-base-content text-sm font-bold">Total por método de pago</h3>
-                        </div>
-                        <div className="grid grid-cols-3 gap-4">
-                          <div className="text-center">
-                            <p className="text-base-content/60 mb-1 text-xs">Subtotal</p>
-                            <p className="text-success text-lg font-bold">
-                              {currencyFormatter.format(derived.subtotal)}
-                            </p>
-                          </div>
-                          <div className="text-center">
-                            <p className="text-base-content/60 mb-1 text-xs">- Gastos</p>
-                            <p className="text-error text-lg font-bold">
-                              -{currencyFormatter.format(parseNumber(form.gastosDiarios))}
-                            </p>
-                          </div>
-                          <div className="text-center">
-                            <p className="text-base-content/60 mb-1 text-xs font-semibold">Total</p>
-                            <p className="text-primary text-2xl font-bold">
-                              {currencyFormatter.format(paymentMethodTotal)}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* COLUMNA DERECHA: Servicios + Total Servicio + Validación */}
-                  <div className="space-y-3">
-                    {/* PASO 2: Ingresos por Tipo de Servicio */}
-                    <div className="card bg-info/5 border-info/20 border-2">
-                      <div className="card-body gap-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <div className="badge badge-lg badge-info font-bold">2</div>
-                            <div>
-                              <h3 className="text-base-content text-lg font-bold">Ingresos por tipo de servicio</h3>
-                              <p className="text-base-content/60 text-xs">
-                                ¿Qué servicios generaron ingresos? (montos en $)
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                          <div className="form-control">
-                            <label className="label py-1">
-                              <span className="label-text text-sm font-medium">Consultas</span>
-                            </label>
-                            <label className={INPUT_CURRENCY_SM}>
-                              <span className="text-base-content/60">$</span>
-                              <input
-                                type="text"
-                                inputMode="numeric"
-                                value={formatInputValue(form.consultas)}
-                                onChange={(e) => {
-                                  const parsed = parseInputValue(e.target.value);
-                                  setForm((prev) => ({ ...prev, consultas: parsed }));
-                                }}
-                                className="grow bg-transparent"
-                                placeholder="0"
-                              />
-                            </label>
-                          </div>
-                          <div className="form-control">
-                            <label className="label py-1">
-                              <span className="label-text text-sm font-medium">Controles</span>
-                            </label>
-                            <label className={INPUT_CURRENCY_SM}>
-                              <span className="text-base-content/60">$</span>
-                              <input
-                                type="text"
-                                inputMode="numeric"
-                                value={formatInputValue(form.controles)}
-                                onChange={(e) => {
-                                  const parsed = parseInputValue(e.target.value);
-                                  setForm((prev) => ({ ...prev, controles: parsed }));
-                                }}
-                                className="grow bg-transparent"
-                                placeholder="0"
-                              />
-                            </label>
-                          </div>
-                          {/* Test field hidden per user request */}
-                          <div className="form-control">
-                            <label className="label py-1">
-                              <span className="label-text flex items-center gap-1.5 text-sm font-medium">
-                                <Syringe className="h-3.5 w-3.5" />
-                                Vacunas
-                              </span>
-                            </label>
-                            <label className={INPUT_CURRENCY_SM}>
-                              <span className="text-base-content/60">$</span>
-                              <input
-                                type="text"
-                                inputMode="numeric"
-                                value={formatInputValue(form.vacunas)}
-                                onChange={(e) => {
-                                  const parsed = parseInputValue(e.target.value);
-                                  setForm((prev) => ({ ...prev, vacunas: parsed }));
-                                }}
-                                className="grow bg-transparent"
-                                placeholder="0"
-                              />
-                            </label>
-                          </div>
-                          <div className="form-control">
-                            <label className="label py-1">
-                              <span className="label-text flex items-center gap-1.5 text-sm font-medium">
-                                <FileText className="h-3.5 w-3.5" />
-                                Licencias
-                              </span>
-                            </label>
-                            <label className={INPUT_CURRENCY_SM}>
-                              <span className="text-base-content/60">$</span>
-                              <input
-                                type="text"
-                                inputMode="numeric"
-                                value={formatInputValue(form.licencias)}
-                                onChange={(e) => {
-                                  const parsed = parseInputValue(e.target.value);
-                                  setForm((prev) => ({ ...prev, licencias: parsed }));
-                                }}
-                                className="grow bg-transparent"
-                                placeholder="0"
-                              />
-                            </label>
-                          </div>
-                          <div className="form-control">
-                            <label className="label py-1">
-                              <span className="label-text text-sm font-medium">Roxair</span>
-                            </label>
-                            <label className={INPUT_CURRENCY_SM}>
-                              <span className="text-base-content/60">$</span>
-                              <input
-                                type="text"
-                                inputMode="numeric"
-                                value={formatInputValue(form.roxair)}
-                                onChange={(e) => {
-                                  const parsed = parseInputValue(e.target.value);
-                                  setForm((prev) => ({ ...prev, roxair: parsed }));
-                                }}
-                                className="grow bg-transparent"
-                                placeholder="0"
-                              />
-                            </label>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Resumen Tipo de Servicio + Validación */}
-                    <div className="card bg-base-200 border-base-300 border-2">
-                      <div className="card-body">
-                        <h3 className="text-base-content mb-2 text-sm font-bold">Total por tipo de servicio</h3>
-                        <div className="mb-4 text-center">
-                          <p className="text-base-content/60 mb-1 text-xs font-semibold">TOTAL</p>
-                          <p className="text-info text-2xl font-bold">{currencyFormatter.format(serviceTotals)}</p>
-                        </div>
-
-                        {/* Validation Alert */}
-                        {hasDifference ? (
-                          <div className="alert alert-warning text-sm">
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              className="h-5 w-5 shrink-0 stroke-current"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                              ></path>
-                            </svg>
-                            <div>
-                              <div className="font-bold">⚠️ Los totales no coinciden</div>
-                              <div className="text-xs">
-                                Diferencia: {currencyFormatter.format(Math.abs(difference))} (
-                                {difference > 0 ? "servicios superan pagos" : "pagos superan servicios"})
-                                {form.status === "FINAL" && (
-                                  <span className="ml-2 font-semibold">
-                                    • Considera dejarlo en borrador hasta verificar
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="alert alert-success text-sm">
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              className="h-5 w-5 shrink-0 stroke-current"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                              />
-                            </svg>
-                            <div>
-                              <span className="font-bold">✓ Totales coinciden perfectamente</span>
-                              <span className="ml-2 text-xs">• Puedes marcarlo como CERRADO cuando esté listo</span>
-                            </div>
-                          </div>
-                        )}
-
-                        <div className="divider my-2"></div>
-
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div>
-                            <p className="text-base-content/60 mb-1 text-xs">Por método de pago</p>
-                            <p className="text-primary font-bold">{currencyFormatter.format(paymentMethodTotal)}</p>
-                          </div>
-                          <div>
-                            <p className="text-base-content/60 mb-1 text-xs">Por tipo de servicio</p>
-                            <p className="text-info font-bold">{currencyFormatter.format(serviceTotals)}</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Notas Card - Full width debajo de ambas columnas */}
-                <div className="card bg-base-100 border-base-300 mt-4 border">
-                  <div className="card-body gap-4">
-                    <div className="flex items-center gap-2">
-                      <ClipboardList className="text-base-content/60 h-5 w-5" />
-                      <h3 className="text-base-content text-base font-semibold">Notas y observaciones</h3>
-                    </div>
-                    <div className="space-y-3">
-                      <Input
-                        label="Comentarios"
-                        as="textarea"
-                        rows={2}
-                        value={form.comentarios}
-                        onChange={handleChange("comentarios")}
-                        helper="Notas internas sobre el día"
-                      />
-                      {selectedId && (
-                        <Input
-                          label="Motivo del cambio"
-                          as="textarea"
-                          rows={2}
-                          value={form.reason}
-                          onChange={handleChange("reason")}
-                          helper="Requerido para auditoría"
+                      <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                        <MoneyInput
+                          icon={<CreditCard className="h-4 w-4" />}
+                          label="Tarjetas"
+                          value={form.ingresoTarjetas}
+                          onChange={(v) => setForm((prev) => ({ ...prev, ingresoTarjetas: v }))}
                         />
-                      )}
+                        <MoneyInput
+                          icon={<Banknote className="h-4 w-4" />}
+                          label="Transferencias"
+                          value={form.ingresoTransferencias}
+                          onChange={(v) => setForm((prev) => ({ ...prev, ingresoTransferencias: v }))}
+                        />
+                        <MoneyInput
+                          icon={<Wallet className="h-4 w-4" />}
+                          label="Efectivo"
+                          value={form.ingresoEfectivo}
+                          onChange={(v) => setForm((prev) => ({ ...prev, ingresoEfectivo: v }))}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="border-error/30 bg-error/5 rounded-2xl border p-4">
+                      <div className="flex items-center gap-2">
+                        <TrendingDown className="text-error h-5 w-5" />
+                        <h3 className="text-base-content text-base font-semibold">Gastos y ajustes</h3>
+                      </div>
+                      <div className={GRID_2_COL_SM}>
+                        <MoneyInput
+                          label="Gastos diarios"
+                          value={form.gastosDiarios}
+                          onChange={(v) => setForm((prev) => ({ ...prev, gastosDiarios: v }))}
+                          hint="Combustible, insumos, etc."
+                        />
+                        <MoneyInput
+                          label="Otros abonos"
+                          value={form.otrosAbonos}
+                          onChange={(v) => setForm((prev) => ({ ...prev, otrosAbonos: v }))}
+                          hint="Devoluciones, ajustes"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="border-base-300 bg-base-50 rounded-2xl border p-4">
+                      <h3 className="text-base-content text-sm font-bold">Total por método</h3>
+                      <div className="mt-2 grid grid-cols-3 gap-3 text-center text-xs">
+                        <StatMini label="Subtotal" value={currencyFormatter.format(derived.subtotal)} tone="success" />
+                        <StatMini
+                          label="- Gastos"
+                          value={`-${currencyFormatter.format(parseNumber(form.gastosDiarios))}`}
+                          tone="error"
+                        />
+                        <StatMini
+                          label="Total"
+                          value={currencyFormatter.format(paymentMethodTotal)}
+                          tone="primary"
+                          bold
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="border-info/30 bg-info/5 rounded-2xl border p-4">
+                      <div className="flex items-center gap-2">
+                        <div className="badge badge-lg badge-info font-bold">2</div>
+                        <div>
+                          <h3 className="text-base-content text-lg font-bold">Ingresos por servicio</h3>
+                          <p className="text-base-content/60 text-xs">Registra los servicios del día</p>
+                        </div>
+                      </div>
+                      <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                        <MoneyInput
+                          label="Consultas"
+                          value={form.consultas}
+                          onChange={(v) => setForm((prev) => ({ ...prev, consultas: v }))}
+                        />
+                        <MoneyInput
+                          label="Controles"
+                          value={form.controles}
+                          onChange={(v) => setForm((prev) => ({ ...prev, controles: v }))}
+                        />
+                        <MoneyInput
+                          label="Tests"
+                          value={form.tests}
+                          onChange={(v) => setForm((prev) => ({ ...prev, tests: v }))}
+                        />
+                        <MoneyInput
+                          label="Vacunas"
+                          value={form.vacunas}
+                          onChange={(v) => setForm((prev) => ({ ...prev, vacunas: v }))}
+                        />
+                        <MoneyInput
+                          label="Licencias"
+                          value={form.licencias}
+                          onChange={(v) => setForm((prev) => ({ ...prev, licencias: v }))}
+                        />
+                        <MoneyInput
+                          label="Roxair"
+                          value={form.roxair}
+                          onChange={(v) => setForm((prev) => ({ ...prev, roxair: v }))}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="border-primary/30 bg-base-100 rounded-2xl border p-4">
+                      <div className="flex items-center gap-2">
+                        <ClipboardList className="text-primary h-5 w-5" />
+                        <h3 className="text-base-content text-base font-semibold">Validación</h3>
+                      </div>
+                      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                        <StatMini
+                          label="Total método de pago"
+                          value={currencyFormatter.format(paymentMethodTotal)}
+                          tone="primary"
+                          bold
+                        />
+                        <StatMini
+                          label="Total servicios"
+                          value={currencyFormatter.format(serviceTotals)}
+                          tone="primary"
+                          bold
+                        />
+                        <div className="sm:col-span-2">
+                          <div
+                            className={`alert ${hasDifference ? "alert-error" : "alert-success"} items-center p-3 text-xs`}
+                          >
+                            <div className="flex flex-col gap-1">
+                              <span className="font-semibold">
+                                {hasDifference ? "⚠️ Totales no coinciden" : "✅ Totales cuadran"}
+                              </span>
+                              <span className="text-base-content/70">
+                                Diferencia: {currencyFormatter.format(difference)}
+                              </span>
+                            </div>
+                            <label className="label cursor-pointer gap-2 p-0">
+                              <span className="text-base-content/70 text-xs">Marcar como final</span>
+                              <input
+                                type="checkbox"
+                                className="toggle toggle-sm"
+                                checked={form.status === "FINAL"}
+                                onChange={(e) => {
+                                  const nextStatus = e.target.checked ? "FINAL" : "DRAFT";
+                                  if (nextStatus === "FINAL" && hasDifference) {
+                                    if (
+                                      !confirm("⚠️ Los totales no coinciden. ¿Estás seguro de marcarlo como cerrado?")
+                                    ) {
+                                      return;
+                                    }
+                                  }
+                                  setForm((prev) => ({ ...prev, status: nextStatus }));
+                                }}
+                              />
+                            </label>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Guardar */}
-                <div className="flex justify-end gap-2">
-                  <Button type="button" variant="ghost" onClick={() => setSelectedDate(null)}>
-                    Cancelar
+                <div className="bg-base-100 rounded-2xl border p-4">
+                  <div className="flex items-center gap-2">
+                    <FileText className="text-base-content/70 h-5 w-5" />
+                    <h3 className="text-base-content text-sm font-semibold">Notas (opcional)</h3>
+                  </div>
+                  <div className="mt-3 grid gap-3">
+                    <textarea
+                      className="textarea textarea-bordered h-20"
+                      value={form.comentarios}
+                      onChange={(e) => setForm((prev) => ({ ...prev, comentarios: e.target.value }))}
+                      placeholder="Notas sobre ingresos, incidencias, etc."
+                    />
+                    <input
+                      className="input input-bordered"
+                      value={form.reason}
+                      onChange={(e) => setForm((prev) => ({ ...prev, reason: e.target.value }))}
+                      placeholder="Motivo de edición (requerido si finalizado)"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  <Button type="submit" variant="primary" disabled={mutation.isPending}>
+                    <Save className="h-4 w-4" />
+                    {mutation.isPending ? "Guardando..." : "Guardar balance"}
                   </Button>
-                  <Button type="submit" disabled={mutation.isPending} size="lg" className="gap-2">
-                    <Save className="h-5 w-5" />
-                    {mutation.isPending ? "Guardando..." : selectedId ? "Actualizar Balance" : "Registrar Balance"}
-                  </Button>
+                  {selectedId && (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      disabled={historyQuery.isLoading}
+                      onClick={() => historyQuery.refetch()}
+                    >
+                      <History className="h-4 w-4" />
+                      Ver historial
+                    </Button>
+                  )}
+                  {mutation.isError && <Alert variant="error">No se pudo guardar el balance.</Alert>}
+                  {mutation.isSuccess && <Alert variant="success">Balance guardado.</Alert>}
                 </div>
               </form>
-            </div>
-          )}
+            ) : (
+              <div className="alert alert-info">
+                No tienes permisos para editar. Selecciona otro día o contacta a un administrador.
+              </div>
+            )}
+          </div>
 
-          {selectedId && (
-            <div className="space-y-3">
-              <div className="card bg-base-100 sticky top-4 h-fit shadow-sm">
-                <div className="card-body p-4">
-                  <div className="mb-2 flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <History className="text-base-content/60 h-5 w-5" />
-                      <h3 className="text-base-content text-lg font-semibold">Historial</h3>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => historyQuery.refetch()}
-                      disabled={historyQuery.isFetching}
-                    >
-                      Refrescar
-                    </Button>
-                  </div>
-                  <p className="text-base-content/60 text-xs">Auditoría de cambios</p>
-                  <div className="mt-4">
-                    {historyQuery.isLoading ? (
-                      <div className="text-base-content/60 py-8 text-center text-sm">Cargando...</div>
-                    ) : historyQuery.error ? (
-                      <Alert variant="error">Error al cargar historial</Alert>
-                    ) : !historyQuery.data?.length ? (
-                      <div className="py-8 text-center">
-                        <p className="text-base-content/60 text-sm">Primer registro</p>
-                      </div>
-                    ) : (
-                      <ul className="max-h-150 space-y-2 overflow-y-auto">
-                        {historyQuery.data.map((entry) => (
-                          <li key={entry.id} className="card bg-base-200 p-3">
-                            <div className="mb-1 flex items-start justify-between gap-2">
-                              <p className="text-base-content text-sm font-medium">
-                                {entry.changedByEmail?.split("@")[0] || "Sistema"}
-                              </p>
-                              <span className="text-base-content/50 text-xs">
-                                {dayjs(entry.createdAt).format("DD/MM HH:mm")}
-                              </span>
-                            </div>
-                            {entry.changeReason && (
-                              <p className="text-base-content/70 mb-1 text-xs italic">
-                                &quot;{entry.changeReason}&quot;
-                              </p>
-                            )}
-                            {entry.snapshot && (
-                              <p className="text-primary text-xs font-semibold">
-                                Total: {currencyFormatter.format(entry.snapshot.total)}
-                              </p>
-                            )}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
+          <div className="space-y-4">
+            <div className="card bg-base-100 border shadow-sm">
+              <div className="card-body p-4">
+                <p className="text-base-content/70 text-xs tracking-wide uppercase">Totales de la semana</p>
+                <h3 className="text-base-content text-lg font-bold">{startOfWeek.format("YYYY [Semana] WW")}</h3>
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                  <StatMini
+                    label="Método de pago"
+                    value={currencyFormatter.format(derived.total)}
+                    tone="primary"
+                    bold
+                  />
+                  <StatMini label="Servicios" value={currencyFormatter.format(serviceTotals)} tone="primary" bold />
+                  <StatMini
+                    label="Gastos"
+                    value={`-${currencyFormatter.format(parseNumber(form.gastosDiarios))}`}
+                    tone="error"
+                  />
+                  <StatMini label="Otros abonos" value={currencyFormatter.format(parseNumber(form.otrosAbonos))} />
                 </div>
               </div>
             </div>
-          )}
+
+            {selectedId && (
+              <div className="card bg-base-100 border shadow-sm">
+                <div className="card-body p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-base-content/70 text-xs tracking-wide uppercase">Historial de cambios</p>
+                      <h3 className="text-base-content text-lg font-bold">Balance #{selectedId}</h3>
+                    </div>
+                    <Button size="sm" onClick={() => historyQuery.refetch()} disabled={historyQuery.isLoading}>
+                      {historyQuery.isLoading ? "Cargando..." : "Refrescar"}
+                    </Button>
+                  </div>
+                  {historyQuery.data && historyQuery.data.length > 0 ? (
+                    <ul className="mt-3 space-y-2 text-sm">
+                      {historyQuery.data.map((entry) => (
+                        <HistoryItem key={entry.id} entry={entry} currencyFormatter={currencyFormatter} />
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-base-content/60 mt-2 text-sm">Sin historial para este balance.</p>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
+      ) : (
+        <div className="alert alert-info">Selecciona un día en el calendario para editar o revisar el balance.</div>
       )}
     </section>
+  );
+}
+
+function HistoryItem({
+  entry,
+  currencyFormatter,
+}: {
+  entry: ProductionBalanceHistoryEntry;
+  currencyFormatter: Intl.NumberFormat;
+}) {
+  const status = entry.snapshot?.status ?? "DRAFT";
+  const badgeTone = status === "FINAL" ? "badge-success" : "badge-warning";
+  return (
+    <li className="border-base-200 rounded-lg border p-3">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-base-content font-semibold">{dayjs(entry.createdAt).format("DD MMM YYYY HH:mm")}</p>
+          <p className="text-base-content/60 text-xs">Por: {entry.changedByEmail || "Desconocido"}</p>
+        </div>
+        <span className={`badge ${badgeTone} badge-sm`}>{status}</span>
+      </div>
+      {entry.snapshot && (
+        <p className="text-base-content/70 mt-2 text-xs">
+          Snapshot: Ingresos {currencyFormatter.format(entry.snapshot.ingresoTarjetas)} tarjetas,{" "}
+          {currencyFormatter.format(entry.snapshot.ingresoTransferencias)} transferencias,{" "}
+          {currencyFormatter.format(entry.snapshot.ingresoEfectivo)} efectivo.
+        </p>
+      )}
+      {entry.changeReason && <p className="text-base-content/70 mt-1 text-xs">Motivo: {entry.changeReason}</p>}
+    </li>
+  );
+}
+
+function toPayload(form: FormState): ProductionBalancePayload {
+  return {
+    date: form.date,
+    ingresoTarjetas: parseNumber(form.ingresoTarjetas),
+    ingresoTransferencias: parseNumber(form.ingresoTransferencias),
+    ingresoEfectivo: parseNumber(form.ingresoEfectivo),
+    gastosDiarios: parseNumber(form.gastosDiarios),
+    otrosAbonos: parseNumber(form.otrosAbonos),
+    consultas: parseNumber(form.consultas),
+    controles: parseNumber(form.controles),
+    tests: parseNumber(form.tests),
+    vacunas: parseNumber(form.vacunas),
+    licencias: parseNumber(form.licencias),
+    roxair: parseNumber(form.roxair),
+    comentarios: form.comentarios.trim() ? form.comentarios.trim() : null,
+    status: form.status,
+    reason: form.reason.trim() ? form.reason.trim() : null,
+  };
+}
+
+function MoneyInput({
+  icon,
+  label,
+  value,
+  onChange,
+  hint,
+}: {
+  icon?: ReactNode;
+  label: string;
+  value: string;
+  onChange: (next: string) => void;
+  hint?: string;
+}) {
+  return (
+    <div className="form-control">
+      <label className="label py-1">
+        <span className="label-text flex items-center gap-1.5 text-sm font-medium">
+          {icon}
+          {label}
+        </span>
+      </label>
+      <label className={INPUT_CURRENCY_SM}>
+        <span className="text-base-content/60">$</span>
+        <input
+          type="text"
+          inputMode="numeric"
+          value={formatInputValue(value)}
+          onChange={(e) => onChange(parseInputValue(e.target.value))}
+          className="grow bg-transparent"
+          placeholder="0"
+        />
+      </label>
+      {hint && <span className="text-base-content/60 mt-1 text-xs">{hint}</span>}
+    </div>
+  );
+}
+
+function StatMini({
+  label,
+  value,
+  tone,
+  bold,
+}: {
+  label: string;
+  value: string;
+  tone?: "primary" | "success" | "error";
+  bold?: boolean;
+}) {
+  const toneClass =
+    tone === "primary" ? "text-primary" : tone === "success" ? "text-success" : tone === "error" ? "text-error" : "";
+  return (
+    <div className="border-base-200 bg-base-100 rounded-lg border p-3 text-center">
+      <p className="text-base-content/60 text-xs">{label}</p>
+      <p className={`${toneClass} ${bold ? "text-lg font-bold" : "text-sm font-semibold"}`}>{value}</p>
+    </div>
   );
 }

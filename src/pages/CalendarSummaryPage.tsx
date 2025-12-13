@@ -7,9 +7,8 @@ import "dayjs/locale/es";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import Alert from "@/components/ui/Alert";
-import { LOADING_SPINNER_SM, PAGE_CONTAINER } from "@/lib/styles";
+import { PAGE_CONTAINER } from "@/lib/styles";
 import { MultiSelectFilter, type MultiSelectOption } from "@/features/calendar/components/MultiSelectFilter";
-import { SyncProgressPanel } from "@/features/calendar/components/SyncProgressPanel";
 import { useCalendarEvents } from "@/features/calendar/hooks/useCalendarEvents";
 import type { CalendarAggregateByDate } from "@/features/calendar/types";
 import { Link } from "react-router-dom";
@@ -132,10 +131,6 @@ function CalendarSummaryPage() {
     availableEventTypes,
     availableCategories,
     syncing,
-    syncError,
-    lastSyncInfo,
-    syncProgress,
-    syncDurationMs,
     syncNow,
     updateFilters,
     applyFilters,
@@ -188,6 +183,17 @@ function CalendarSummaryPage() {
     updateFilters("to", targetDate.endOf("month").format("YYYY-MM-DD"));
     applyFilters();
   };
+
+  const activeMonthOffset = useMemo(() => {
+    const fromDate = dayjs(filters.from);
+    const toDate = dayjs(filters.to);
+    if (!fromDate.isValid() || !toDate.isValid()) return null;
+    if (!fromDate.isSame(toDate, "month")) return null;
+    const start = fromDate.startOf("month");
+    const end = fromDate.endOf("month");
+    if (!start.isSame(fromDate, "day") || !end.isSame(toDate, "day")) return null;
+    return start.diff(dayjs().startOf("month"), "month");
+  }, [filters.from, filters.to]);
 
   const aggregationRows = useMemo(() => {
     if (!summary) {
@@ -297,14 +303,26 @@ function CalendarSummaryPage() {
     [availableEventTypes]
   );
 
+  const isSingleMonthRange = useMemo(() => {
+    const fromDate = dayjs(filters.from);
+    const toDate = dayjs(filters.to);
+    if (!fromDate.isValid() || !toDate.isValid()) return false;
+    if (!fromDate.isSame(toDate, "month")) return false;
+    const start = fromDate.startOf("month");
+    const end = fromDate.endOf("month");
+    return start.isSame(fromDate, "day") && end.isSame(toDate, "day");
+  }, [filters.from, filters.to]);
+
   const highlights = useMemo(() => {
     if (!summary) {
       return { month: null, week: null, day: aggregationRows.topDates[0] ?? null, category: null };
     }
     const currentYear = dayjs().year();
-    const month =
-      summary.aggregates.byMonth.filter((entry) => entry.year === currentYear).sort((a, b) => b.total - a.total)[0] ??
-      null;
+    const month = isSingleMonthRange
+      ? null
+      : (summary.aggregates.byMonth
+          .filter((entry) => entry.year === currentYear)
+          .sort((a, b) => b.total - a.total)[0] ?? null);
     const week =
       aggregationRows.byWeek.slice().sort((a, b) => b.value - a.value)[0] ??
       aggregationRows.topDates.map((entry) => ({
@@ -318,7 +336,7 @@ function CalendarSummaryPage() {
     const day = aggregationRows.topDates[0] ?? null;
 
     return { month, week, day, category };
-  }, [aggregationRows.byWeek, aggregationRows.topDates, summary]);
+  }, [aggregationRows.byWeek, aggregationRows.topDates, isSingleMonthRange, summary]);
 
   return (
     <section className={PAGE_CONTAINER}>
@@ -342,76 +360,27 @@ function CalendarSummaryPage() {
         </div>
       </header>
 
-      <section className="grid items-start gap-4 lg:grid-cols-3">
+      <section className="grid items-start gap-4 lg:grid-cols-2">
         <div className="bg-base-100 border-base-300 rounded-2xl border p-5 shadow-sm">
           <p className="text-base-content/80 mb-3 text-xs font-semibold tracking-wide uppercase">Accesos rápidos</p>
           <div className="flex flex-wrap gap-2">
-            <Button variant="secondary" size="sm" onClick={() => setMonthOffset(-2)} disabled={loading}>
-              {dayjs().subtract(2, "month").format("MMM YYYY")}
-            </Button>
-            <Button variant="secondary" size="sm" onClick={() => setMonthOffset(-1)} disabled={loading}>
-              {dayjs().subtract(1, "month").format("MMM YYYY")}
-            </Button>
-            <Button variant="primary" size="sm" onClick={() => setMonthOffset(0)} disabled={loading}>
-              {dayjs().format("MMM YYYY")} (Actual)
-            </Button>
-            <Button variant="secondary" size="sm" onClick={() => setMonthOffset(1)} disabled={loading}>
-              {dayjs().add(1, "month").format("MMM YYYY")}
-            </Button>
-            <Button variant="secondary" size="sm" onClick={() => setMonthOffset(2)} disabled={loading}>
-              {dayjs().add(2, "month").format("MMM YYYY")}
-            </Button>
+            {[-2, -1, 0, 1, 2].map((offset) => {
+              const target = dayjs().add(offset, "month");
+              const isActive = activeMonthOffset === offset;
+              const label = `${target.format("MMM YYYY")}${offset === 0 ? " (Actual)" : ""}`;
+              return (
+                <Button
+                  key={offset}
+                  variant={isActive ? "primary" : "secondary"}
+                  size="sm"
+                  onClick={() => setMonthOffset(offset)}
+                  disabled={loading}
+                >
+                  {label}
+                </Button>
+              );
+            })}
           </div>
-        </div>
-
-        <div className="bg-base-100 border-base-300 rounded-2xl border p-5 shadow-sm">
-          <p className="text-base-content/80 mb-2 text-xs font-semibold tracking-wide uppercase">Sync</p>
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-2">
-              {isSyncing && <span className={LOADING_SPINNER_SM} aria-label="Sincronizando" />}
-              <p className="text-base-content text-sm font-semibold">
-                {isSyncing ? "Sincronizando calendario..." : "Último estado listo"}
-              </p>
-            </div>
-            {lastSyncInfo && !syncing && (
-              <p className="text-base-content/70 text-xs">
-                Nuevas {numberFormatter.format(lastSyncInfo.inserted)} · Actualizadas{" "}
-                {numberFormatter.format(lastSyncInfo.updated)} · Filtradas{" "}
-                {numberFormatter.format(lastSyncInfo.excluded)} ({dayjs(lastSyncInfo.fetchedAt).format("DD MMM HH:mm")})
-                {lastSyncInfo.logId && (
-                  <>
-                    {" · "}
-                    <Link to="/calendar/history" className="underline">
-                      Ver historial
-                    </Link>
-                  </>
-                )}
-              </p>
-            )}
-            {syncError && <p className="text-error text-xs">{syncError}</p>}
-          </div>
-        </div>
-
-        <div className="bg-base-100 border-base-300 rounded-2xl border p-5 shadow-sm">
-          <p className="text-base-content/80 mb-2 text-xs font-semibold tracking-wide uppercase">Filtros rápidos</p>
-          <div className="flex flex-wrap gap-2">
-            <Button size="sm" variant="ghost" onClick={applyFilters} disabled={loading}>
-              Aplicar
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              disabled={loading || !isDirty}
-              onClick={() => {
-                resetFilters();
-              }}
-            >
-              Reestablecer
-            </Button>
-          </div>
-          <p className="text-base-content/60 mt-2 text-xs">
-            Ajusta fechas o selecciones abajo y aplica desde aquí para refrescar.
-          </p>
         </div>
       </section>
 
@@ -490,13 +459,15 @@ function CalendarSummaryPage() {
         <div className="bg-base-100 border-base-300 rounded-2xl border p-5 shadow-sm">
           <p className="text-base-content/80 mb-3 text-xs font-semibold tracking-wide uppercase">Highlights rápidos</p>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
-            <HighlightCard
-              title="Mes con más eventos"
-              primary={highlights.month ? `${formatMonthLabel(highlights.month).hint} ${highlights.month.year}` : "—"}
-              secondary={
-                highlights.month ? `${numberFormatter.format(highlights.month.total)} eventos` : "Sin datos en rango"
-              }
-            />
+            {!isSingleMonthRange && (
+              <HighlightCard
+                title="Mes con más eventos"
+                primary={highlights.month ? `${formatMonthLabel(highlights.month).hint} ${highlights.month.year}` : "—"}
+                secondary={
+                  highlights.month ? `${numberFormatter.format(highlights.month.total)} eventos` : "Sin datos en rango"
+                }
+              />
+            )}
             <HighlightCard
               title="Semana más activa"
               primary={highlights.week?.label ?? "—"}
@@ -516,15 +487,6 @@ function CalendarSummaryPage() {
             />
           </div>
         </div>
-
-        <SyncProgressPanel
-          syncing={syncing}
-          syncError={syncError}
-          syncProgress={syncProgress}
-          syncDurationMs={syncDurationMs}
-          lastSyncInfo={lastSyncInfo ?? undefined}
-          showLastSyncInfo
-        />
       </section>
 
       {error && <Alert variant="error">{error}</Alert>}
