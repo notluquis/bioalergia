@@ -42,6 +42,24 @@ export const permissionMap = readonly({
 
   "inventory.read": { action: "read", subject: "InventoryItem" },
   "inventory.manage": { action: "manage", subject: "InventoryItem" },
+
+  "production_balance.read": { action: "read", subject: "ProductionBalance" },
+  "production_balance.manage": { action: "manage", subject: "ProductionBalance" },
+
+  "calendar.read": { action: "read", subject: "CalendarEvent" },
+  "calendar.manage": { action: "manage", subject: "CalendarEvent" },
+
+  "employee.read": { action: "read", subject: "Employee" },
+  "employee.manage": { action: "manage", subject: "Employee" },
+
+  "timesheet.read": { action: "read", subject: "Timesheet" },
+  "timesheet.manage": { action: "manage", subject: "Timesheet" },
+
+  "report.read": { action: "read", subject: "Report" },
+  "report.manage": { action: "manage", subject: "Report" },
+
+  "supply.read": { action: "read", subject: "SupplyRequest" },
+  "supply.manage": { action: "manage", subject: "SupplyRequest" },
 } as const);
 
 export type PermissionKey = keyof typeof permissionMap;

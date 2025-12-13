@@ -4,6 +4,7 @@ import dayjs from "dayjs";
 import Button from "@/components/ui/Button";
 import Alert from "@/components/ui/Alert";
 import { LOADING_SPINNER_MD } from "@/lib/styles";
+import { fmtCLP } from "@/lib/format";
 import { ServicesHero, ServicesSurface } from "@/features/services/components/ServicesShell";
 import ServiceForm from "@/features/services/components/ServiceForm";
 import ServiceScheduleAccordion from "@/features/services/components/ServiceScheduleAccordion";
@@ -120,9 +121,7 @@ export default function ServiceEditPage() {
     return [
       {
         label: "Monto mensual",
-        value: new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP", maximumFractionDigits: 0 }).format(
-          service.default_amount
-        ),
+        value: fmtCLP(service.default_amount),
         helper: "Monto base configurado",
       },
       {
@@ -132,9 +131,7 @@ export default function ServiceEditPage() {
       },
       {
         label: "Pagado",
-        value: new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP", maximumFractionDigits: 0 }).format(
-          service.total_paid
-        ),
+        value: fmtCLP(service.total_paid),
         helper: "Total conciliado a la fecha",
       },
       {

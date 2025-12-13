@@ -13,6 +13,7 @@ import { ToastProvider } from "./context/ToastContext";
 import { GlobalError } from "./components/ui/GlobalError";
 import { ChunkErrorBoundary } from "./components/ui/ChunkErrorBoundary";
 import RequireAuth from "@/components/common/RequireAuth";
+import RequirePermission from "@/components/common/RequirePermission";
 import PublicOnlyRoute from "@/components/common/PublicOnlyRoute";
 import RouteErrorBoundary from "@/components/common/RouteErrorBoundary";
 
@@ -125,54 +126,66 @@ const router = createBrowserRouter([
             path: "movements",
             handle: { title: "Movimientos registrados" },
             element: (
-              <Suspense fallback={<PageLoader />}>
-                <TransactionsMovements />
-              </Suspense>
+              <RequirePermission action="read" subject="Transaction">
+                <Suspense fallback={<PageLoader />}>
+                  <TransactionsMovements />
+                </Suspense>
+              </RequirePermission>
             ),
           },
           {
             path: "balances",
             handle: { title: "Saldos diarios" },
             element: (
-              <Suspense fallback={<PageLoader />}>
-                <DailyBalances />
-              </Suspense>
+              <RequirePermission action="read" subject="Transaction">
+                <Suspense fallback={<PageLoader />}>
+                  <DailyBalances />
+                </Suspense>
+              </RequirePermission>
             ),
           },
           {
             path: "participants",
             handle: { title: "Participantes" },
             element: (
-              <Suspense fallback={<PageLoader />}>
-                <ParticipantInsightsPage />
-              </Suspense>
+              <RequirePermission action="read" subject="Person">
+                <Suspense fallback={<PageLoader />}>
+                  <ParticipantInsightsPage />
+                </Suspense>
+              </RequirePermission>
             ),
           },
           {
             path: "counterparts",
             handle: { title: "Contrapartes" },
             element: (
-              <Suspense fallback={<PageLoader />}>
-                <CounterpartsPage />
-              </Suspense>
+              <RequirePermission action="read" subject="Counterpart">
+                <Suspense fallback={<PageLoader />}>
+                  <CounterpartsPage />
+                </Suspense>
+              </RequirePermission>
             ),
           },
           {
             path: "loans",
             handle: { title: "Préstamos y créditos" },
             element: (
-              <Suspense fallback={<PageLoader />}>
-                <LoansPage />
-              </Suspense>
+              <RequirePermission action="read" subject="Loan">
+                <Suspense fallback={<PageLoader />}>
+                  <LoansPage />
+                </Suspense>
+              </RequirePermission>
             ),
           },
           {
             path: "production-balances",
             handle: { title: "Balances de producción diaria" },
             element: (
-              <Suspense fallback={<PageLoader />}>
-                <ProductionBalancesPage />
-              </Suspense>
+              <RequirePermission action="read" subject="ProductionBalance">
+                <Suspense fallback={<PageLoader />}>
+                  <ProductionBalancesPage />
+                </Suspense>
+              </RequirePermission>
             ),
           },
         ],
@@ -182,9 +195,11 @@ const router = createBrowserRouter([
         path: "/services",
         handle: { title: "Servicios" },
         element: (
-          <Suspense fallback={<PageLoader />}>
-            <ServicesLayout />
-          </Suspense>
+          <RequirePermission action="read" subject="Service">
+            <Suspense fallback={<PageLoader />}>
+              <ServicesLayout />
+            </Suspense>
+          </RequirePermission>
         ),
         children: [
           {
@@ -209,18 +224,22 @@ const router = createBrowserRouter([
             path: "create",
             handle: { title: "Crear servicio" },
             element: (
-              <Suspense fallback={<PageLoader />}>
-                <ServicesCreatePage />
-              </Suspense>
+              <RequirePermission action="manage" subject="Service">
+                <Suspense fallback={<PageLoader />}>
+                  <ServicesCreatePage />
+                </Suspense>
+              </RequirePermission>
             ),
           },
           {
             path: ":id/edit",
             handle: { title: "Editar servicio" },
             element: (
-              <Suspense fallback={<PageLoader />}>
-                <ServiceEditPage />
-              </Suspense>
+              <RequirePermission action="manage" subject="Service">
+                <Suspense fallback={<PageLoader />}>
+                  <ServiceEditPage />
+                </Suspense>
+              </RequirePermission>
             ),
           },
           {
@@ -239,9 +258,11 @@ const router = createBrowserRouter([
         path: "/calendar",
         handle: { title: "Calendario" },
         element: (
-          <Suspense fallback={<PageLoader />}>
-            <CalendarLayout />
-          </Suspense>
+          <RequirePermission action="read" subject="CalendarEvent">
+            <Suspense fallback={<PageLoader />}>
+              <CalendarLayout />
+            </Suspense>
+          </RequirePermission>
         ),
         children: [
           { index: true, element: <Navigate to="summary" replace /> },
@@ -306,9 +327,11 @@ const router = createBrowserRouter([
         path: "/operations",
         handle: { title: "Operaciones" },
         element: (
-          <Suspense fallback={<PageLoader />}>
-            <InventoryLayout />
-          </Suspense>
+          <RequirePermission action="read" subject="InventoryItem">
+            <Suspense fallback={<PageLoader />}>
+              <InventoryLayout />
+            </Suspense>
+          </RequirePermission>
         ),
         children: [
           { index: true, element: <Navigate to="inventory" replace /> },
@@ -325,9 +348,11 @@ const router = createBrowserRouter([
             path: "supplies",
             handle: { title: "Solicitud de Insumos" },
             element: (
-              <Suspense fallback={<PageLoader />}>
-                <SuppliesPage />
-              </Suspense>
+              <RequirePermission action="read" subject="SupplyRequest">
+                <Suspense fallback={<PageLoader />}>
+                  <SuppliesPage />
+                </Suspense>
+              </RequirePermission>
             ),
           },
         ],
@@ -337,9 +362,11 @@ const router = createBrowserRouter([
         path: "/hr",
         handle: { title: "RRHH" },
         element: (
-          <Suspense fallback={<PageLoader />}>
-            <HRLayout />
-          </Suspense>
+          <RequirePermission action="read" subject="Employee">
+            <Suspense fallback={<PageLoader />}>
+              <HRLayout />
+            </Suspense>
+          </RequirePermission>
         ),
         children: [
           { index: true, element: <Navigate to="employees" replace /> },
@@ -356,27 +383,33 @@ const router = createBrowserRouter([
             path: "timesheets",
             handle: { title: "Horas y pagos" },
             element: (
-              <Suspense fallback={<PageLoader />}>
-                <TimesheetsPage />
-              </Suspense>
+              <RequirePermission action="read" subject="Timesheet">
+                <Suspense fallback={<PageLoader />}>
+                  <TimesheetsPage />
+                </Suspense>
+              </RequirePermission>
             ),
           },
           {
             path: "audit",
             handle: { title: "Auditoría de horarios" },
             element: (
-              <Suspense fallback={<PageLoader />}>
-                <TimesheetAuditPage />
-              </Suspense>
+              <RequirePermission action="read" subject="Timesheet">
+                <Suspense fallback={<PageLoader />}>
+                  <TimesheetAuditPage />
+                </Suspense>
+              </RequirePermission>
             ),
           },
           {
             path: "reports",
             handle: { title: "Reportes" },
             element: (
-              <Suspense fallback={<PageLoader />}>
-                <ReportsPage />
-              </Suspense>
+              <RequirePermission action="read" subject="Report">
+                <Suspense fallback={<PageLoader />}>
+                  <ReportsPage />
+                </Suspense>
+              </RequirePermission>
             ),
           },
         ],
@@ -399,82 +432,100 @@ const router = createBrowserRouter([
             path: "users",
             handle: { title: "Gestión de usuarios" },
             element: (
-              <Suspense fallback={<PageLoader />}>
-                <UserManagementPage />
-              </Suspense>
+              <RequirePermission action="read" subject="User">
+                <Suspense fallback={<PageLoader />}>
+                  <UserManagementPage />
+                </Suspense>
+              </RequirePermission>
             ),
           },
           {
             path: "users/add",
             handle: { title: "Agregar usuario" },
             element: (
-              <Suspense fallback={<PageLoader />}>
-                <AddUserPage />
-              </Suspense>
+              <RequirePermission action="create" subject="User">
+                <Suspense fallback={<PageLoader />}>
+                  <AddUserPage />
+                </Suspense>
+              </RequirePermission>
             ),
           },
           {
             path: "people",
             handle: { title: "Gestión de personas" },
             element: (
-              <Suspense fallback={<PageLoader />}>
-                <PersonManagementPage />
-              </Suspense>
+              <RequirePermission action="read" subject="Person">
+                <Suspense fallback={<PageLoader />}>
+                  <PersonManagementPage />
+                </Suspense>
+              </RequirePermission>
             ),
           },
           {
             path: "people/:id",
             handle: { title: "Detalles de persona" },
             element: (
-              <Suspense fallback={<PageLoader />}>
-                <PersonDetailsPage />
-              </Suspense>
+              <RequirePermission action="read" subject="Person">
+                <Suspense fallback={<PageLoader />}>
+                  <PersonDetailsPage />
+                </Suspense>
+              </RequirePermission>
             ),
           },
-
+          // Settings Pages
           {
             path: "calendar",
             handle: { title: "Accesos y conexiones" },
             element: (
-              <Suspense fallback={<PageLoader />}>
-                <CalendarSettingsPage />
-              </Suspense>
+              <RequirePermission action="manage" subject="CalendarEvent">
+                <Suspense fallback={<PageLoader />}>
+                  <CalendarSettingsPage />
+                </Suspense>
+              </RequirePermission>
             ),
           },
           {
             path: "security",
             handle: { title: "Seguridad" },
             element: (
-              <Suspense fallback={<PageLoader />}>
-                <SecuritySettingsPage />
-              </Suspense>
+              <RequirePermission action="manage" subject="Setting">
+                <Suspense fallback={<PageLoader />}>
+                  <SecuritySettingsPage />
+                </Suspense>
+              </RequirePermission>
             ),
           },
           {
             path: "inventario",
             handle: { title: "Parámetros de inventario" },
             element: (
-              <Suspense fallback={<PageLoader />}>
-                <InventorySettingsPage />
-              </Suspense>
+              <RequirePermission action="manage" subject="InventoryItem">
+                <Suspense fallback={<PageLoader />}>
+                  <InventorySettingsPage />
+                </Suspense>
+              </RequirePermission>
             ),
           },
           {
             path: "roles",
             handle: { title: "Roles y permisos" },
             element: (
-              <Suspense fallback={<PageLoader />}>
-                <RolesSettingsPage />
-              </Suspense>
+              <RequirePermission action="manage" subject="Role">
+                <Suspense fallback={<PageLoader />}>
+                  <RolesSettingsPage />
+                </Suspense>
+              </RequirePermission>
             ),
           },
           {
             path: "csv-upload",
             handle: { title: "Carga masiva de datos" },
             element: (
-              <Suspense fallback={<PageLoader />}>
-                <CSVUploadPage />
-              </Suspense>
+              <RequirePermission action="manage" subject="Setting">
+                <Suspense fallback={<PageLoader />}>
+                  <CSVUploadPage />
+                </Suspense>
+              </RequirePermission>
             ),
           },
         ],
