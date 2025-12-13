@@ -9,6 +9,7 @@ import Button from "@/components/ui/Button";
 import Alert from "@/components/ui/Alert";
 import { LOADING_SPINNER_SM, PAGE_CONTAINER } from "@/lib/styles";
 import { MultiSelectFilter, type MultiSelectOption } from "@/features/calendar/components/MultiSelectFilter";
+import { SyncProgressPanel } from "@/features/calendar/components/SyncProgressPanel";
 import { useCalendarEvents } from "@/features/calendar/hooks/useCalendarEvents";
 import type { CalendarAggregateByDate } from "@/features/calendar/types";
 import { Link } from "react-router-dom";
@@ -20,7 +21,6 @@ dayjs.extend(isoWeek);
 const weekdayLabels = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 const NULL_EVENT_TYPE_VALUE = "__NULL__";
 const NULL_CATEGORY_VALUE = "__NULL_CATEGORY__";
-type SyncProgressStatus = "pending" | "in_progress" | "completed" | "error";
 
 type AggregationRow = {
   label: string;
@@ -342,7 +342,7 @@ function CalendarSummaryPage() {
         </div>
       </header>
 
-      <section className="grid gap-4 lg:grid-cols-3">
+      <section className="grid items-start gap-4 lg:grid-cols-3">
         <div className="bg-base-100 border-base-300 rounded-2xl border p-5 shadow-sm">
           <p className="text-base-content/80 mb-3 text-xs font-semibold tracking-wide uppercase">Accesos rápidos</p>
           <div className="flex flex-wrap gap-2">
@@ -422,9 +422,9 @@ function CalendarSummaryPage() {
         <StatCard label="Monto pagado" value={currencyFormatter.format(totals.amountPaid)} />
       </section>
 
-      <section className="grid gap-4 lg:grid-cols-3">
+      <section className="grid items-start gap-4 lg:grid-cols-3">
         <form
-          className="border-primary/15 bg-base-100 text-base-content grid grid-cols-1 gap-4 rounded-2xl border p-6 text-xs shadow-sm sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+          className="border-primary/15 bg-base-100 text-base-content grid grid-cols-1 gap-4 rounded-2xl border p-6 text-xs shadow-sm sm:grid-cols-2 lg:col-span-2 lg:grid-cols-3 xl:grid-cols-4"
           onSubmit={(event) => {
             event.preventDefault();
             applyFilters();
@@ -470,7 +470,7 @@ function CalendarSummaryPage() {
             onChange={(event: ChangeEvent<HTMLInputElement>) => updateFilters("search", event.target.value)}
           />
           <div className="col-span-full flex flex-wrap items-end gap-2">
-            <Button type="submit" disabled={loading} className="min-w-[140px]">
+            <Button type="submit" disabled={loading} className="min-w-35">
               {loading ? "Actualizando..." : "Aplicar filtros"}
             </Button>
             <Button
@@ -480,7 +480,7 @@ function CalendarSummaryPage() {
               onClick={() => {
                 resetFilters();
               }}
-              className="min-w-[140px]"
+              className="min-w-35"
             >
               Reestablecer
             </Button>
@@ -517,171 +517,14 @@ function CalendarSummaryPage() {
           </div>
         </div>
 
-        <div className="bg-base-100 border-base-300 rounded-2xl border p-5 shadow-sm">
-          {(() => {
-            const hasProgress = syncProgress.length > 0;
-            if (!syncing && !syncError && !hasProgress) {
-              return (
-                <div className="flex h-full flex-col justify-center gap-2">
-                  <p className="text-base-content text-sm font-semibold">Sincronización lista</p>
-                  <p className="text-base-content/60 text-xs">Pulsa sincronizar si necesitas refrescar de inmediato.</p>
-                </div>
-              );
-            }
-
-            const title = syncError
-              ? "Error al sincronizar"
-              : syncing
-                ? "Sincronizando calendario"
-                : "Sincronización completada";
-
-            const statusLabelMap: Record<SyncProgressStatus, string> = {
-              pending: "Pendiente",
-              in_progress: "En progreso",
-              completed: "Listo",
-              error: "Error",
-            };
-
-            const badgeClass: Record<SyncProgressStatus, string> = {
-              pending: "bg-base-200 text-base-content/70",
-              in_progress: "bg-primary/15 text-primary",
-              completed: "bg-secondary/20 text-secondary",
-              error: "bg-error/20 text-error",
-            };
-
-            const dotClass: Record<SyncProgressStatus, string> = {
-              pending: "bg-base-300",
-              in_progress: "bg-primary animate-pulse",
-              completed: "bg-secondary",
-              error: "bg-error",
-            };
-
-            const detailLabels: Record<string, string> = {
-              calendars: "Calendarios",
-              events: "Eventos",
-              inserted: "Nuevas",
-              updated: "Actualizadas",
-              skipped: "Omitidas",
-              excluded: "Excluidas",
-              stored: "Snapshot",
-            };
-
-            const formatDuration = (value: number) => {
-              if (!value) return null;
-              if (value >= 1000) return `${(value / 1000).toFixed(1)} s`;
-              return `${Math.round(value)} ms`;
-            };
-
-            const formatDetails = (details: Record<string, unknown>) => {
-              const parts: string[] = [];
-              Object.entries(details ?? {}).forEach(([key, rawValue]) => {
-                if (rawValue == null) return;
-                const label = detailLabels[key] ?? key;
-                if (typeof rawValue === "number" && Number.isFinite(rawValue)) {
-                  parts.push(`${label}: ${numberFormatter.format(rawValue)}`);
-                } else if (typeof rawValue === "boolean") {
-                  parts.push(`${label}: ${rawValue ? "Sí" : "No"}`);
-                } else if (typeof rawValue === "string" && rawValue.length) {
-                  parts.push(`${label}: ${rawValue}`);
-                }
-              });
-              return parts.join(" · ");
-            };
-
-            return (
-              <section className="surface-elevated border-base-300/70 space-y-3 rounded-xl border p-4 shadow-md">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <span className="bg-base-200/60 rounded-xl px-3 py-2">
-                      <p className="text-base-content text-sm font-semibold">{title}</p>
-                      <p className="text-base-content/60 text-xs">
-                        {syncing
-                          ? "Consultando eventos y actualizando la base."
-                          : syncError
-                            ? "Vuelve a intentar más tarde."
-                            : "Última ejecución completada correctamente."}
-                      </p>
-                    </span>
-                    {syncing && <span className={LOADING_SPINNER_SM} aria-label="Sincronizando" />}
-                    {syncError && <span className="text-error text-xs font-semibold">Revisa los detalles abajo.</span>}
-                    {!syncing && syncDurationMs != null && !syncError && (
-                      <span className="bg-base-200 text-base-content/70 rounded-full px-3 py-1 text-xs">
-                        Duración total: {formatDuration(syncDurationMs)}
-                      </span>
-                    )}
-                  </div>
-                  <span className="bg-base-200/80 text-base-content/70 rounded-full px-3 py-1 text-xs">
-                    {dayjs().format("DD MMM YYYY · HH:mm")}
-                  </span>
-                </div>
-
-                {lastSyncInfo && !syncing && !syncError && (
-                  <div className="text-base-content grid gap-2 text-xs md:grid-cols-2">
-                    <p>
-                      <span className="text-base-content font-semibold">Nuevas:</span>{" "}
-                      {numberFormatter.format(lastSyncInfo.inserted)}
-                    </p>
-                    <p>
-                      <span className="text-base-content font-semibold">Actualizadas:</span>{" "}
-                      {numberFormatter.format(lastSyncInfo.updated)}
-                    </p>
-                    <p>
-                      <span className="text-base-content font-semibold">Omitidas:</span>{" "}
-                      {numberFormatter.format(lastSyncInfo.skipped)}
-                    </p>
-                    <p>
-                      <span className="text-base-content font-semibold">Filtradas:</span>{" "}
-                      {numberFormatter.format(lastSyncInfo.excluded)}
-                    </p>
-                    <p className="text-base-content/60 md:col-span-2">
-                      Ejecutado el {dayjs(lastSyncInfo.fetchedAt).format("DD MMM YYYY HH:mm")}
-                      {lastSyncInfo.logId && (
-                        <>
-                          {" · "}
-                          <Link to="/calendar/history" className="underline">
-                            Ver historial
-                          </Link>
-                        </>
-                      )}
-                    </p>
-                  </div>
-                )}
-
-                {syncError && <p className="text-error text-xs">{syncError}</p>}
-
-                {syncProgress.length > 0 && (
-                  <ul className="space-y-3">
-                    {syncProgress.map((step) => {
-                      const status = statusLabelMap[step.status];
-                      const details = formatDetails(step.details);
-                      const duration = formatDuration(step.durationMs);
-                      return (
-                        <li key={step.id} className="border-base-300/60 bg-base-100/70 rounded-2xl border px-4 py-3">
-                          <div className="flex items-center justify-between gap-3">
-                            <div className="flex items-center gap-3">
-                              <span className={`h-2.5 w-2.5 rounded-full ${dotClass[step.status]}`} />
-                              <p className="text-base-content text-sm font-semibold">{step.label}</p>
-                            </div>
-                            <span className={`rounded-full px-3 py-1 text-xs font-semibold ${badgeClass[step.status]}`}>
-                              {status}
-                            </span>
-                          </div>
-                          {(details || duration) && (
-                            <p className="text-base-content/60 mt-2 text-xs">
-                              {details}
-                              {details && duration ? " · " : ""}
-                              {duration ? `Tiempo: ${duration}` : ""}
-                            </p>
-                          )}
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-              </section>
-            );
-          })()}
-        </div>
+        <SyncProgressPanel
+          syncing={syncing}
+          syncError={syncError}
+          syncProgress={syncProgress}
+          syncDurationMs={syncDurationMs}
+          lastSyncInfo={lastSyncInfo ?? undefined}
+          showLastSyncInfo
+        />
       </section>
 
       {error && <Alert variant="error">{error}</Alert>}
