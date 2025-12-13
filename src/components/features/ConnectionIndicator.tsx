@@ -77,16 +77,30 @@ export function ConnectionIndicator() {
 
   // Use refs to persist retry state and connection status across effect reruns
   const retryCountRef = useRef(0);
-  const delayRef = useRef(120000);
+  const delayRef = useRef<number | null>(120000);
   const timeoutIdRef = useRef<number | null>(null);
   const hasConnectedRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
+    const BASE_DELAY_MS = 120000;
+    const MAX_DELAY_MS = 300000;
+
+    const schedule = (delay: number | null) => {
+      if (timeoutIdRef.current) window.clearTimeout(timeoutIdRef.current);
+      if (delay == null) {
+        timeoutIdRef.current = null;
+        delayRef.current = null;
+        return;
+      }
+      delayRef.current = delay;
+      timeoutIdRef.current = window.setTimeout(fetchHealthWithBackoff, delay);
+    };
 
     async function fetchHealthWithBackoff() {
       const controller = new AbortController();
       const requestTimeoutId = window.setTimeout(() => controller.abort(), 5000);
+      let nextDelay: number | null = BASE_DELAY_MS;
       try {
         const res = await fetch("/api/health", {
           credentials: "include",
@@ -96,12 +110,6 @@ export function ConnectionIndicator() {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const payload = (await res.json()) as HealthResponse;
         if (cancelled) return;
-
-        if (!hasConnectedRef.current) {
-          hasConnectedRef.current = true;
-          retryCountRef.current = 0;
-          delayRef.current = 120000;
-        }
 
         const details: string[] = [];
         if (payload.checks?.db) {
@@ -118,7 +126,8 @@ export function ConnectionIndicator() {
           if (!cancelled)
             setState({ level: "online", fetchedAt, message: STATUS_COPY.online.description, details, retryCount: 0 });
           retryCountRef.current = 0;
-          delayRef.current = 120000;
+          hasConnectedRef.current = true;
+          nextDelay = null; // no polling while healthy
         } else if (payload.status === "degraded") {
           if (!cancelled)
             setState({
@@ -129,12 +138,13 @@ export function ConnectionIndicator() {
               retryCount: 0,
             });
           retryCountRef.current = 0;
-          delayRef.current = 120000;
+          hasConnectedRef.current = true;
+          nextDelay = BASE_DELAY_MS;
         } else {
           if (!cancelled)
             setState({ level: "offline", fetchedAt, message: STATUS_COPY.offline.description, details, retryCount: 0 });
           retryCountRef.current++;
-          delayRef.current = Math.min(300000, 120000 * Math.pow(2, retryCountRef.current));
+          nextDelay = Math.min(MAX_DELAY_MS, BASE_DELAY_MS * Math.pow(2, retryCountRef.current));
         }
       } catch (error) {
         if (cancelled) return;
@@ -157,36 +167,36 @@ export function ConnectionIndicator() {
           };
         });
         retryCountRef.current++;
-        delayRef.current = Math.min(300000, 120000 * Math.pow(2, retryCountRef.current));
+        nextDelay = Math.min(MAX_DELAY_MS, BASE_DELAY_MS * Math.pow(2, retryCountRef.current));
         if (!hasConnectedRef.current && retryCountRef.current > 2 && !cancelled) setOpen(true);
       } finally {
         window.clearTimeout(requestTimeoutId);
       }
       if (!cancelled) {
-        timeoutIdRef.current = window.setTimeout(fetchHealthWithBackoff, delayRef.current);
+        schedule(nextDelay);
       }
     }
 
     // Initial delay before first health check
-    timeoutIdRef.current = window.setTimeout(fetchHealthWithBackoff, 2000);
+    schedule(2000);
 
-    // Listen for global API success events to reset health check
-    function resetHealthCheck() {
-      if (timeoutIdRef.current) window.clearTimeout(timeoutIdRef.current);
-      retryCountRef.current = 0;
-      delayRef.current = 120000;
-      timeoutIdRef.current = window.setTimeout(fetchHealthWithBackoff, 2000);
+    // Recheck when tab becomes visible and we're not online
+    function handleVisibilityChange() {
+      if (document.visibilityState === "visible" && state.level !== "online") {
+        schedule(500);
+      }
     }
-    window.addEventListener("api-success", resetHealthCheck);
-    window.addEventListener("beforeunload", resetHealthCheck);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("beforeunload", () => {
+      if (timeoutIdRef.current) window.clearTimeout(timeoutIdRef.current);
+    });
 
     return () => {
       cancelled = true;
       if (timeoutIdRef.current) window.clearTimeout(timeoutIdRef.current);
-      window.removeEventListener("api-success", resetHealthCheck);
-      window.removeEventListener("beforeunload", resetHealthCheck);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, []);
+  }, [state.level]);
 
   // Auto-cerrar después de un tiempo si no está online
   useEffect(() => {
@@ -199,13 +209,13 @@ export function ConnectionIndicator() {
   const styles = INDICATOR_STYLES[state.level];
 
   return (
-    <div className="relative dropdown dropdown-end">
+    <div className="dropdown dropdown-end relative">
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
         className={cn(
-          "flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors backdrop-blur-sm",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary/70",
+          "flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold backdrop-blur-sm transition-colors",
+          "focus-visible:ring-primary/70 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none",
           styles.chip
         )}
         aria-pressed={open}
@@ -218,28 +228,28 @@ export function ConnectionIndicator() {
       {open && (
         <div tabIndex={0} className="dropdown-content mt-2 w-72">
           <div
-            className={cn("space-y-3 rounded-2xl border bg-base-100/95 p-4 shadow-xl backdrop-blur-md", styles.panel)}
+            className={cn("bg-base-100/95 space-y-3 rounded-2xl border p-4 shadow-xl backdrop-blur-md", styles.panel)}
           >
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-sm font-semibold text-base-content">{statusCopy.label}</p>
-                <p className="text-xs text-base-content/70">{state.message}</p>
+                <p className="text-base-content text-sm font-semibold">{statusCopy.label}</p>
+                <p className="text-base-content/70 text-xs">{state.message}</p>
               </div>
               <span className={cn("h-3 w-3 rounded-full shadow-inner", styles.dot)} aria-hidden="true" />
             </div>
             {state.details.length > 0 && (
-              <ul className="space-y-1 text-xs text-base-content/60">
+              <ul className="text-base-content/60 space-y-1 text-xs">
                 {state.details.map((detail, index) => (
                   <li key={index}>• {detail}</li>
                 ))}
               </ul>
             )}
             {state.level === "starting" && (
-              <div className="rounded-lg bg-info/10 p-2 text-xs text-info">
+              <div className="bg-info/10 text-info rounded-lg p-2 text-xs">
                 💡 El servidor puede tardar 10-20 segundos en inicializar.
               </div>
             )}
-            <div className="flex justify-between text-xs uppercase tracking-wide text-base-content/50">
+            <div className="text-base-content/50 flex justify-between text-xs tracking-wide uppercase">
               <span>Servicio API</span>
               <span>
                 {state.fetchedAt

@@ -1,10 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { CheckCircle2, AlertCircle, RefreshCw, Calendar } from "lucide-react";
-import { useEffect } from "react";
 import Button from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 import { apiClient } from "@/lib/apiClient";
-import { fetchCalendarSyncLogs } from "@/features/calendar/api";
 import { useCalendarEvents } from "@/features/calendar/hooks/useCalendarEvents";
 import { SyncProgressPanel } from "@/features/calendar/components/SyncProgressPanel";
 
@@ -18,7 +16,7 @@ interface CalendarData {
 }
 
 export default function CalendarSettingsPage() {
-  const { syncing, syncError, syncProgress, syncDurationMs, syncNow, hasRunningSyncFromOtherSource } =
+  const { syncing, syncError, syncProgress, syncDurationMs, syncNow, syncLogs, hasRunningSyncFromOtherSource } =
     useCalendarEvents();
 
   // Fetch calendars
@@ -27,12 +25,6 @@ export default function CalendarSettingsPage() {
     queryFn: async () => {
       return await apiClient.get<{ calendars: CalendarData[] }>("/api/calendar/calendars");
     },
-  });
-
-  // Fetch sync logs using existing API function
-  const { data: syncLogs, refetch: refetchSyncLogs } = useQuery({
-    queryKey: ["calendar", "sync-logs"],
-    queryFn: () => fetchCalendarSyncLogs(10),
   });
 
   const lastSync = syncLogs?.[0];
@@ -44,17 +36,6 @@ export default function CalendarSettingsPage() {
         : lastSync?.status === "ERROR"
           ? "ERROR"
           : undefined;
-
-  // Auto-refresh sync logs every 5s when there's a RUNNING sync
-  useEffect(() => {
-    if (syncStatus !== "RUNNING") return;
-    const interval = setInterval(() => {
-      refetchSyncLogs().catch(() => {
-        /* handled */
-      });
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [syncStatus, refetchSyncLogs]);
 
   const isSyncing = syncing || hasRunningSyncFromOtherSource;
 

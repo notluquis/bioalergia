@@ -147,6 +147,7 @@ export function useCalendarEvents() {
 
   const summary = summaryQuery.data ?? null;
   const daily = dailyQuery.data ?? null;
+  const syncLogs = syncLogsData ?? [];
   const loading = summaryQuery.isLoading || dailyQuery.isLoading;
   const error = summaryQuery.error?.message || dailyQuery.error?.message || null;
 
@@ -309,6 +310,7 @@ export function useCalendarEvents() {
     syncProgress,
     syncDurationMs,
     syncNow,
+    syncLogs,
     hasRunningSyncFromOtherSource,
   };
 }
