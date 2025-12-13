@@ -32,12 +32,6 @@
         }
       });
 
-      // Fix for deprecated window.styleMedia warning
-      // Some legacy libraries check for this property. We remove it to force them to use matchMedia.
-      if (window.styleMedia) {
-        delete window.styleMedia;
-      }
-
       (function () {
         const THEME_KEY = "bioalergia:theme";
         let theme = "dark";
