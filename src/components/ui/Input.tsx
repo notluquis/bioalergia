@@ -33,7 +33,7 @@ export default function Input(props: Props) {
     "w-full transition-all duration-200 ease-apple placeholder:text-base-content/40 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary";
 
   const inputClasses = cn(
-    "input input-bordered bg-base-100/50 hover:bg-base-100 focus:bg-base-100 h-12", // Fixed height for better alignment
+    "input input-bordered bg-base-100/50 hover:bg-base-100 focus:bg-base-100 h-10", // Compact height (40px)
     error && "input-error focus:ring-error/20 focus:border-error",
     baseClasses,
     className
@@ -47,7 +47,7 @@ export default function Input(props: Props) {
   );
 
   const selectClasses = cn(
-    "select select-bordered bg-base-100/50 hover:bg-base-100 focus:bg-base-100 h-12",
+    "select select-bordered bg-base-100/50 hover:bg-base-100 focus:bg-base-100 h-10",
     error && "select-error focus:ring-error/20 focus:border-error",
     baseClasses,
     className

@@ -171,25 +171,25 @@ export default function Sidebar({ isOpen, isMobile, onClose, isCollapsed = false
           isOpen ? "translate-x-0" : "-translate-x-full",
           !isOpen && !isMobile && "hidden",
           isCollapsed ? "w-20" : "w-[min(300px,88vw)]",
-          isCollapsed ? "px-2 py-3" : "p-3",
+          isCollapsed ? "px-1.5 py-2" : "p-2",
           "overflow-x-hidden" // Prevent horizontal scroll
         )}
         aria-label="Navegación principal"
       >
-        <div className="flex h-full flex-col gap-3 overflow-hidden">
+        <div className="flex h-full flex-col gap-2 overflow-hidden">
           {/* User Profile Card */}
           <div
             className={cn(
               "border-base-300/40 from-base-100/85 via-base-200/70 to-base-100/50 rounded-2xl border bg-linear-to-br shadow-inner transition-all",
-              isCollapsed ? "p-2" : "p-2.5"
+              isCollapsed ? "p-1.5" : "p-2"
             )}
           >
             {isCollapsed ? (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="flex items-center justify-center">
-                    <div className="bg-base-100/80 flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-white/20 shadow-sm">
-                      <img src="/logo_bimi.svg" alt="Bioalergia" className="h-9 w-9 object-contain" loading="lazy" />
+                    <div className="bg-base-100/80 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/20 shadow-sm">
+                      <img src="/logo_bimi.svg" alt="Bioalergia" className="h-7 w-7 object-contain" loading="lazy" />
                     </div>
                   </div>
                 </TooltipTrigger>
@@ -201,14 +201,14 @@ export default function Sidebar({ isOpen, isMobile, onClose, isCollapsed = false
                 </TooltipContent>
               </Tooltip>
             ) : (
-              <div className="flex items-center gap-3">
-                <div className="bg-base-100/80 flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-white/20 shadow-sm">
-                  <img src="/logo_bimi.svg" alt="Bioalergia" className="h-9 w-9 object-contain" loading="lazy" />
+              <div className="flex items-center gap-2">
+                <div className="bg-base-100/80 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/20 shadow-sm">
+                  <img src="/logo_bimi.svg" alt="Bioalergia" className="h-7 w-7 object-contain" loading="lazy" />
                 </div>
                 <div className="min-w-0 overflow-hidden transition-all duration-300">
-                  <p className="text-base-content/60 text-[10px] tracking-[0.2em] uppercase">Bioalergia</p>
-                  <p className="text-base-content truncate text-lg leading-tight font-semibold">{displayName}</p>
-                  <p className="text-base-content/60 truncate text-[11px]">{user?.email}</p>
+                  <p className="text-base-content/60 text-[9px] tracking-[0.2em] uppercase">Bioalergia</p>
+                  <p className="text-base-content truncate text-sm leading-tight font-semibold">{displayName}</p>
+                  <p className="text-base-content/60 truncate text-[10px]">{user?.email}</p>
                 </div>
               </div>
             )}
@@ -216,7 +216,7 @@ export default function Sidebar({ isOpen, isMobile, onClose, isCollapsed = false
 
           {/* Navigation Links */}
           <nav className="muted-scrollbar flex-1 overflow-y-auto pr-1">
-            <div className="space-y-3">
+            <div className="space-y-1">
               {NAV_SECTIONS.map((section) => {
                 const visibleItems = section.items.filter((item) => {
                   if (item.roles && !hasRole(...item.roles)) return false;
@@ -229,14 +229,14 @@ export default function Sidebar({ isOpen, isMobile, onClose, isCollapsed = false
                 return (
                   <section key={section.title} className={cn("space-y-0.5", isCollapsed && "text-center")}>
                     {!isCollapsed && (
-                      <div className="mb-1.5 px-2">
-                        <p className="text-base-content/40 text-[10px] font-bold tracking-widest uppercase">
+                      <div className="mb-1 px-2">
+                        <p className="text-base-content/40 text-[9px] font-bold tracking-widest uppercase">
                           {section.title}
                         </p>
                       </div>
                     )}
 
-                    <div className="space-y-1">
+                    <div className="space-y-0.5">
                       {visibleItems.map((item) => {
                         const isPending =
                           pendingPath === item.to || (navigation.state === "loading" && pendingPath === item.to);
@@ -256,14 +256,14 @@ export default function Sidebar({ isOpen, isMobile, onClose, isCollapsed = false
                               const active = isActive;
                               if (isCollapsed) {
                                 return cn(
-                                  "flex h-10 w-full items-center justify-center rounded-xl active:scale-95",
+                                  "flex h-9 w-full items-center justify-center rounded-xl active:scale-95",
                                   active || isPending
                                     ? "bg-primary text-primary-content shadow-primary/20 ring-primary/60 shadow-md ring-1"
                                     : "text-base-content/60 hover:bg-base-100 hover:text-base-content"
                                 );
                               }
                               return cn(
-                                "group relative flex items-center gap-3 rounded-xl px-3 py-1.5 text-sm font-medium active:scale-[0.98]",
+                                "group relative flex items-center gap-3 rounded-lg px-3 py-1.5 text-xs font-medium active:scale-[0.98]",
                                 active || isPending
                                   ? "bg-primary text-primary-content shadow-primary/20 shadow-md"
                                   : "text-base-content/70 hover:bg-base-100 hover:text-base-content"
