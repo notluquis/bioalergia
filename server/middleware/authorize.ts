@@ -16,11 +16,16 @@ export function authorize(action: string, subject: ExtractSubjectType<AppSubject
       return next();
     } catch (error) {
       if (error instanceof ForbiddenError) {
+        console.warn(
+          `[authorize] Access denied. Action: ${action}, Subject: ${subject}. Ability rules:`,
+          JSON.stringify(req.abilityRules)
+        );
         return res.status(403).json({
           status: "error",
           message: "You are not authorized to perform this action.",
         });
       }
+      console.error(`[authorize] Unexpected error. Action: ${action}, Subject: ${subject}:`, error);
       return next(error);
     }
   };
