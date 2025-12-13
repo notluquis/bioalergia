@@ -1,8 +1,17 @@
 import { prisma } from "../prisma.js";
 import { Prisma } from "@prisma/client";
+import { accessibleBy } from "@casl/prisma";
+import type { AppAbility } from "../lib/authz/ability.js";
 
-export async function listServices() {
+export async function listServices(ability?: AppAbility) {
+  const where: Prisma.ServiceWhereInput = {};
+
+  if (ability) {
+    Object.assign(where, accessibleBy(ability).Service);
+  }
+
   return await prisma.service.findMany({
+    where,
     orderBy: { createdAt: "desc" },
     include: {
       counterpart: {

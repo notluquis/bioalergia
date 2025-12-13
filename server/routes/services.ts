@@ -1,5 +1,6 @@
 import express from "express";
-import { asyncHandler, authenticate, requireRole } from "../lib/http.js";
+import { asyncHandler, authenticate } from "../lib/http.js";
+import { authorize } from "../middleware/authorize.js";
 
 import { logEvent, requestContext } from "../lib/logger.js";
 import { createService, getServiceById, listServices, updateService, deleteService } from "../services/services.js";
@@ -15,8 +16,9 @@ export function registerServiceRoutes(app: express.Express) {
   router.get(
     "/",
     authenticate,
-    asyncHandler(async (_req: AuthenticatedRequest, res) => {
-      const services = await listServices();
+    authorize("read", "Service"),
+    asyncHandler(async (req: AuthenticatedRequest, res) => {
+      const services = await listServices(req.ability);
       res.json({
         status: "ok",
         services: services.map((s) => ({
@@ -29,7 +31,7 @@ export function registerServiceRoutes(app: express.Express) {
   router.post(
     "/",
     authenticate,
-    requireRole("GOD", "ADMIN"),
+    authorize("create", "Service"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       const parsed = serviceCreateSchema.safeParse(req.body);
       if (!parsed.success) {
@@ -55,7 +57,7 @@ export function registerServiceRoutes(app: express.Express) {
   router.put(
     "/:id",
     authenticate,
-    requireRole("GOD", "ADMIN"),
+    authorize("update", "Service"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       const id = Number(req.params.id);
       if (!Number.isFinite(id)) {
@@ -104,7 +106,7 @@ export function registerServiceRoutes(app: express.Express) {
   router.delete(
     "/:id",
     authenticate,
-    requireRole("GOD", "ADMIN"),
+    authorize("delete", "Service"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       const id = Number(req.params.id);
       if (!Number.isFinite(id)) {

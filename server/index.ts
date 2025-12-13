@@ -39,6 +39,9 @@ app.use(
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 app.use(cookieParser());
+import { attachAbility } from "./middleware/attachAbility.js";
+app.use(attachAbility);
+
 const CSP_HEADER_VALUE = [
   "default-src 'self'",
   [
@@ -105,6 +108,8 @@ app.use("/api/notifications", notificationsRouter);
 app.use("/api/csv-upload", csvUploadRouter);
 import { registerSuppliesRoutes } from "./routes/supplies.js";
 registerSuppliesRoutes(app);
+import { registerRoleRoutes } from "./routes/roles.js";
+registerRoleRoutes(app);
 import { startGoogleCalendarScheduler } from "./lib/google-calendar-scheduler.js";
 startDailyProductionReminderJob();
 startGoogleCalendarScheduler();

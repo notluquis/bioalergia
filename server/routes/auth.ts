@@ -15,6 +15,7 @@ import {
   generatePasskeyLoginOptions,
   verifyPasskeyLogin,
 } from "../services/passkeys.js";
+import { attachAbility } from "../middleware/attachAbility.js";
 
 export function registerAuthRoutes(app: express.Express) {
   // --- Passkey Registration ---
@@ -286,20 +287,16 @@ export function registerAuthRoutes(app: express.Express) {
   );
 
   app.get(
-    "/api/auth/me",
+    "/api/auth/me/session",
     softAuthenticate,
+    attachAbility,
     asyncHandler(async (req: AuthenticatedRequest, res) => {
-      if (!req.auth) {
+      if (!req.auth || !req.user) {
         // Return 200 with null user to avoid browser console 401 errors
         return res.json({ status: "ok", user: null });
       }
 
-      const user = await findUserById(req.auth.userId);
-      if (!user) {
-        logWarn("auth/me:stale-session", requestContext(req));
-        res.clearCookie(sessionCookieName, { ...sessionCookieOptions, maxAge: undefined });
-        return res.json({ status: "ok", user: null });
-      }
+      const user = req.user;
 
       // --- Role Governance Logic ---
       const effectiveRole = await resolveUserRole(user);
@@ -311,7 +308,12 @@ export function registerAuthRoutes(app: express.Express) {
       };
       // --- End Role Governance Logic ---
 
-      res.json({ status: "ok", user: finalUser });
+      res.json({
+        status: "ok",
+        user: finalUser,
+        abilityRules: req.abilityRules,
+        permissionVersion: req.permissionVersion,
+      });
     })
   );
 }

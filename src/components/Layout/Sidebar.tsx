@@ -1,6 +1,7 @@
 import React from "react";
 import { NavLink, useLocation, useNavigation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
+import { useCan } from "@/hooks/useCan";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
@@ -22,6 +23,7 @@ type NavItem = {
   label: string;
   icon: React.ElementType;
   roles?: Array<"GOD" | "ADMIN" | "ANALYST" | "VIEWER">;
+  requiredPermission?: { action: string; subject: string };
   exact?: boolean;
 };
 
@@ -118,6 +120,7 @@ interface SidebarProps {
 
 export default function Sidebar({ isOpen, isMobile, onClose, isCollapsed = false, toggleCollapse }: SidebarProps) {
   const { user, hasRole } = useAuth();
+  const { can } = useCan();
   const navigation = useNavigation();
   const location = useLocation();
   const [pendingPath, setPendingPath] = React.useState<string | null>(null);
@@ -186,7 +189,12 @@ export default function Sidebar({ isOpen, isMobile, onClose, isCollapsed = false
           <nav className="muted-scrollbar flex-1 overflow-y-auto pr-1">
             <div className="space-y-3">
               {NAV_SECTIONS.map((section) => {
-                const visibleItems = section.items.filter((item) => !item.roles || hasRole(...item.roles));
+                const visibleItems = section.items.filter((item) => {
+                  if (item.roles && !hasRole(...item.roles)) return false;
+                  if (item.requiredPermission && !can(item.requiredPermission.action, item.requiredPermission.subject))
+                    return false;
+                  return true;
+                });
                 if (!visibleItems.length) return null;
 
                 return (

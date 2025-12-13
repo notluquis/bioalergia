@@ -1,5 +1,6 @@
 import express from "express";
-import { asyncHandler, authenticate, requireRole } from "../lib/http.js";
+import { asyncHandler, authenticate } from "../lib/http.js";
+import { authorize } from "../middleware/authorize.js";
 import { logEvent, requestContext } from "../lib/logger.js";
 import { createLoan, getLoanById, listLoans, updateLoan, deleteLoan } from "../services/loans.js";
 import { loanCreateSchema } from "../schemas.js";
@@ -11,8 +12,9 @@ export function registerLoanRoutes(app: express.Express) {
   router.get(
     "/",
     authenticate,
+    authorize("read", "Loan"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
-      const loans = await listLoans();
+      const loans = await listLoans(req.ability);
       res.json({ status: "ok", loans });
     })
   );
@@ -20,7 +22,7 @@ export function registerLoanRoutes(app: express.Express) {
   router.post(
     "/",
     authenticate,
-    requireRole("GOD", "ADMIN"),
+    authorize("create", "Loan"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       const parsed = loanCreateSchema.safeParse(req.body);
       if (!parsed.success) {
@@ -62,7 +64,7 @@ export function registerLoanRoutes(app: express.Express) {
   router.put(
     "/:id",
     authenticate,
-    requireRole("GOD", "ADMIN"),
+    authorize("update", "Loan"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       const id = Number(req.params.id);
       if (!Number.isFinite(id)) {
@@ -87,7 +89,7 @@ export function registerLoanRoutes(app: express.Express) {
   router.delete(
     "/:id",
     authenticate,
-    requireRole("GOD", "ADMIN"),
+    authorize("delete", "Loan"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       const id = Number(req.params.id);
       if (!Number.isFinite(id)) {

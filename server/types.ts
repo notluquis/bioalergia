@@ -9,7 +9,17 @@ export type AuthSession = {
   role: UserRole;
 };
 
-export type AuthenticatedRequest = Request & { auth?: AuthSession };
+import type { User } from "@prisma/client";
+import { AppAbility } from "./lib/authz/ability.js";
+import { RawRuleOf } from "@casl/ability";
+
+export type AuthenticatedRequest = Request & {
+  auth?: AuthSession;
+  user?: User;
+  ability?: AppAbility;
+  abilityRules?: RawRuleOf<AppAbility>[];
+  permissionVersion?: number;
+};
 
 export type InventoryCategory = {
   id: number;

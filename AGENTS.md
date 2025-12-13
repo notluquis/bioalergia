@@ -25,15 +25,15 @@ Deploy:      git push (Railway auto-deploy)
 
 ## Stack tecnológico
 
-| Capa     | Tecnología                                | Notas                            |
-| -------- | ----------------------------------------- | -------------------------------- |
-| Frontend | React 18 + TypeScript + Vite              | Entry: `src/main.tsx`            |
-| Styling  | Tailwind CSS + DaisyUI                    | Themes en `tailwind.config.cjs`  |
-| State    | TanStack Query + Zustand                  | Hooks en `src/features/*/hooks/` |
-| Backend  | Node + Express + TypeScript               | Entry: `server/index.ts`         |
-| Database | **PostgreSQL** (via Prisma)               | Schema: `prisma/schema.prisma`   |
-| Auth     | Passkey (WebAuthn) + email/password + MFA | Session: 24h                     |
-| Deploy   | Railway (auto-deploy on push)             | Dockerfile con node:current-slim |
+| Capa     | Tecnología                               | Notas                            |
+| -------- | ---------------------------------------- | -------------------------------- |
+| Frontend | React 18 + TypeScript + Vite             | Entry: `src/main.tsx`            |
+| Styling  | Tailwind CSS + DaisyUI                   | Themes en `tailwind.config.cjs`  |
+| State    | TanStack Query + Zustand                 | Hooks en `src/features/*/hooks/` |
+| Backend  | Node + Express + TypeScript              | Entry: `server/index.ts`         |
+| Database | **PostgreSQL** (via Prisma)              | Schema: `prisma/schema.prisma`   |
+| Auth     | Passkey + email/password + **RBAC/ABAC** | Session: 24h                     |
+| Deploy   | Railway (auto-deploy on push)            | Dockerfile con node:current-slim |
 
 ⚠️ **IMPORTANTE**: La base de datos es **PostgreSQL**, NO MySQL. Usar sintaxis PostgreSQL en raw queries (`TO_CHAR`, `EXTRACT`, etc.)
 
@@ -142,6 +142,14 @@ finanzas-app/
 - CSV de balances diarios acepta fechas `DD/MM/YYYY` (e.g. `28/1/2025`) y limpia montos con `$`, puntos y comas antes de insertarlos; status por defecto `DRAFT`.
 - Página `finanzas/production-balances`: distribución más ancha, historial accesible vía ícono (panel flotante opcional), y toggle “Marcar como final” se adapta en pantallas pequeñas.
 
+### 🟢 Sistema RBAC/ABAC (Roles y Permisos)
+
+- Implementation: **CASL + Prisma**
+- Middleware: `authorize('action', 'Subject')` reemplaza a checks manuales.
+- Data Filtering: `accessibleBy(req.ability)` filtra automáticamente queries de Prisma (ABAC).
+- Frontend: `useCan()` hook para renderizado condicional.
+- Admin UI: `/settings/roles` para crear roles y asignar permisos dinámicamente.
+
 ---
 
 ## Convenciones obligatorias
@@ -231,7 +239,9 @@ try {
 ### Auth
 
 - `server/routes/auth.ts` — Login, passkey, MFA
-- `server/routes/user-management.ts` — CRUD usuarios
+- `server/routes/roles.ts` — Gestión de roles y permisos
+- `server/middleware/authorize.ts` — Middleware de autorización
+- `server/lib/authz/` — Lógica CASL + ABAC
 - `src/features/auth/pages/LoginPage.tsx` — UI login
 
 ### Finance

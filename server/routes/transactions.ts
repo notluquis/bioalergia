@@ -15,11 +15,16 @@ import {
   type TransactionFilters,
 } from "../services/transactions.js";
 
+import { authorize } from "../middleware/authorize.js";
+
+// ... (other imports)
+
 export function registerTransactionRoutes(app: express.Express) {
   // Participant leaderboard endpoint
   app.get(
     "/api/transactions/participants",
     authenticate,
+    authorize("read", "Transaction"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       const from = req.query.from ? parseDateOnly(String(req.query.from)) : undefined;
       const to = req.query.to ? parseDateOnly(String(req.query.to)) : undefined;
@@ -92,7 +97,7 @@ export function registerTransactionRoutes(app: express.Express) {
         search: parsed.search,
       };
 
-      const { total, transactions } = await listTransactions(filters, pageSize, offset);
+      const { total, transactions } = await listTransactions(filters, pageSize, offset, req.ability);
 
       const data = transactions.map(mapTransaction);
 

@@ -1,6 +1,8 @@
 import { prisma } from "../prisma.js";
 import { Prisma } from "@prisma/client";
 import { normalizeRut } from "../lib/rut.js";
+import { accessibleBy } from "@casl/prisma";
+import type { AppAbility } from "../lib/authz/ability.js";
 
 export type TransactionFilters = {
   from?: Date;
@@ -405,7 +407,7 @@ export async function getParticipantInsight(
   };
 }
 
-export async function listTransactions(filters: TransactionFilters, limit = 100, offset = 0) {
+export async function listTransactions(filters: TransactionFilters, limit = 100, offset = 0, ability?: AppAbility) {
   const where: Prisma.TransactionWhereInput = {};
 
   if (filters.from || filters.to) {
@@ -442,6 +444,13 @@ export async function listTransactions(filters: TransactionFilters, limit = 100,
       { origin: { contains: filters.search, mode: "insensitive" } },
       { destination: { contains: filters.search, mode: "insensitive" } },
     ];
+  }
+
+  // ABAC: Apply accessibleBy filter if ability is provided
+  if (ability) {
+    const accessQuery = accessibleBy(ability).Transaction;
+    // merge with existing where using AND
+    where.AND = [accessQuery];
   }
 
   // Filter out test/demo data by excluding transactions linked to test persons
