@@ -4,6 +4,7 @@ import { Response, NextFunction } from "express";
 import { prisma } from "../prisma.js";
 import { getAbilityRulesForUser } from "../lib/authz/getAbilityRulesForUser.js";
 import { getCachedRules, setCachedRules } from "../lib/authz/rulesCache.js";
+import { sessionCookieName, sessionCookieOptions } from "../config.js";
 import { createAbility } from "../lib/authz/ability.js";
 import { AuthenticatedRequest } from "../types.js";
 
@@ -19,8 +20,9 @@ export async function attachAbility(req: AuthenticatedRequest, res: Response, ne
 
     const user = await prisma.user.findUnique({ where: { id: req.auth.userId } });
     if (!user) {
-      // This should not happen if the token is valid
-      return next(new Error("User not found"));
+      // User deleted or stale token - clear session and require login
+      res.clearCookie(sessionCookieName, sessionCookieOptions);
+      return res.status(401).json({ status: "error", message: "Sesión inválida - Usuario no encontrado" });
     }
 
     // Attach user to request for downstream handlers
