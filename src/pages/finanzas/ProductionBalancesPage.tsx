@@ -4,7 +4,7 @@ import dayjs from "dayjs";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Button from "@/components/ui/Button";
 import Alert from "@/components/ui/Alert";
-import { INPUT_CURRENCY_SM, GRID_2_COL_SM, PAGE_CONTAINER } from "@/lib/styles";
+import { INPUT_CURRENCY_SM, GRID_2_COL_SM } from "@/lib/styles";
 import { today } from "@/lib/dates";
 import { useToast } from "@/context/ToastContext";
 import { useSettings } from "@/context/SettingsContext";
@@ -201,7 +201,7 @@ export default function DailyProductionBalancesPage() {
   };
 
   return (
-    <section className={`${PAGE_CONTAINER} space-y-6 p-4`}>
+    <section className="mx-auto w-full max-w-none space-y-6 p-4">
       <header className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-base-content/70 text-xs tracking-wide uppercase">Balances diarios</p>
