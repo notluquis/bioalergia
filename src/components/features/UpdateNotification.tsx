@@ -13,12 +13,18 @@ export function UpdateNotification() {
         document.addEventListener("visibilitychange", () => {
           if (!document.hidden) r.update();
         });
-        // Check for updates periodically (every 5 minutes)
+        // Check for updates periodically (every 5 minutes) without forcing reload
         setInterval(() => r.update(), 5 * 60 * 1000);
+
+        // If a new worker is found, surface the banner (non-blocking, no auto-reload)
+        r.addEventListener?.("updatefound", () => {
+          setNeedRefresh(true);
+        });
       }
     },
     onNeedRefresh() {
       console.info("New app version available");
+      setNeedRefresh(true);
     },
   });
 

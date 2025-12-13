@@ -76,6 +76,27 @@ const TABLE_OPTIONS: TableOption[] = [
     ],
   },
   {
+    value: "daily_production_balances",
+    label: "Balances de producción diaria",
+    fields: [
+      { name: "balanceDate", type: "date", required: true },
+      { name: "ingresoTarjetas", type: "number", required: false },
+      { name: "ingresoTransferencias", type: "number", required: false },
+      { name: "ingresoEfectivo", type: "number", required: false },
+      { name: "gastosDiarios", type: "number", required: false },
+      { name: "otrosAbonos", type: "number", required: false },
+      { name: "consultasMonto", type: "number", required: false },
+      { name: "controlesMonto", type: "number", required: false },
+      { name: "testsMonto", type: "number", required: false },
+      { name: "vacunasMonto", type: "number", required: false },
+      { name: "licenciasMonto", type: "number", required: false },
+      { name: "roxairMonto", type: "number", required: false },
+      { name: "comentarios", type: "string", required: false },
+      { name: "status", type: "enum", required: false },
+      { name: "changeReason", type: "string", required: false },
+    ],
+  },
+  {
     value: "services",
     label: "Servicios",
     fields: [
