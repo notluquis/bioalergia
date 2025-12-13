@@ -64,10 +64,22 @@ export function registerDailyProductionBalanceRoutes(app: express.Express) {
     "/api/daily-production-balances",
     authenticate,
     asyncHandler(async (req: AuthenticatedRequest, res) => {
-      const parsed = productionBalanceQuerySchema.parse(req.query ?? {});
+      const normalize = (value: unknown): string | undefined => {
+        if (Array.isArray(value)) return value[0];
+        return typeof value === "string" ? value : undefined;
+      };
+
+      const raw = { from: normalize(req.query?.from), to: normalize(req.query?.to) };
+      const parsedResult = productionBalanceQuerySchema.safeParse(raw);
+      if (!parsedResult.success) {
+        return res
+          .status(400)
+          .json({ status: "error", message: "Parámetros inválidos", issues: parsedResult.error.issues });
+      }
+
       const today = dayjs();
-      const toDate = parsed.to ?? today.format("YYYY-MM-DD");
-      const fromDate = parsed.from ?? today.subtract(30, "day").format("YYYY-MM-DD");
+      const toDate = parsedResult.data.to ?? today.format("YYYY-MM-DD");
+      const fromDate = parsedResult.data.from ?? today.subtract(30, "day").format("YYYY-MM-DD");
 
       const items = await listProductionBalances({ from: fromDate, to: toDate });
 
@@ -92,7 +104,13 @@ export function registerDailyProductionBalanceRoutes(app: express.Express) {
       if (!req.auth?.userId) {
         return res.status(401).json({ status: "error", message: "No autorizado" });
       }
-      const parsed = productionBalancePayloadSchema.parse(req.body ?? {});
+      const parsedResult = productionBalancePayloadSchema.safeParse(req.body ?? {});
+      if (!parsedResult.success) {
+        return res
+          .status(400)
+          .json({ status: "error", message: "Payload inválido", issues: parsedResult.error.issues });
+      }
+      const parsed = parsedResult.data;
       const payload = sanitizePayload(parsed);
       const created = await createProductionBalance(payload, req.auth.userId);
 
@@ -118,7 +136,13 @@ export function registerDailyProductionBalanceRoutes(app: express.Express) {
       if (!existing) {
         return res.status(404).json({ status: "error", message: "Registro no encontrado" });
       }
-      const parsed = productionBalancePayloadSchema.parse(req.body ?? {});
+      const parsedResult = productionBalancePayloadSchema.safeParse(req.body ?? {});
+      if (!parsedResult.success) {
+        return res
+          .status(400)
+          .json({ status: "error", message: "Payload inválido", issues: parsedResult.error.issues });
+      }
+      const parsed = parsedResult.data;
       const payload = sanitizePayload(parsed);
 
       const updated = await updateProductionBalance(id, payload);
