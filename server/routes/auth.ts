@@ -332,9 +332,8 @@ export function registerAuthRoutes(app: express.Express) {
         where: { userId: user.id },
         include: { role: true },
       });
-      const isGod = roles.some((r) => r.role.name === "GOD");
-
-      if (!isGod) {
+      const godRoleDef = roles.find((r) => r.role.name.toUpperCase() === "GOD")?.role;
+      if (!godRoleDef) {
         logWarn("auth/repair:unauthorized-attempt", { userId: user.id });
         const roleNames = roles.map((r) => r.role.name).join(", ");
         return res.status(403).json({
@@ -385,32 +384,34 @@ export function registerAuthRoutes(app: express.Express) {
         }
       }
 
-      const godRole = await prisma.role.findUnique({ where: { name: "GOD" } });
-      if (godRole) {
-        const allPermsInDb = await prisma.permission.findMany();
-        for (const perm of allPermsInDb) {
-          await prisma.rolePermission.upsert({
-            where: {
-              roleId_permissionId: {
-                roleId: godRole.id,
-                permissionId: perm.id,
-              },
-            },
-            create: {
-              roleId: godRole.id,
+      // Use the found God role directly (whether it's "God" or "GOD")
+      const allPermsInDb = await prisma.permission.findMany();
+      for (const perm of allPermsInDb) {
+        await prisma.rolePermission.upsert({
+          where: {
+            roleId_permissionId: {
+              roleId: godRoleDef.id,
               permissionId: perm.id,
             },
-            update: {},
-          });
-        }
-
-        await prisma.userPermissionVersion.updateMany({
-          where: { user: { roles: { some: { roleId: godRole.id } } } },
-          data: { version: { increment: 1 } },
+          },
+          create: {
+            roleId: godRoleDef.id,
+            permissionId: perm.id,
+          },
+          update: {},
         });
       }
 
-      const adminRole = await prisma.role.findUnique({ where: { name: "ADMIN" } });
+      await prisma.userPermissionVersion.updateMany({
+        where: { user: { roles: { some: { roleId: godRoleDef.id } } } },
+        data: { version: { increment: 1 } },
+      });
+
+      // Try to find ADMIN role case-insensitively
+      const adminRole = await prisma.role.findFirst({
+        where: { name: { equals: "ADMIN", mode: "insensitive" } },
+      });
+
       if (adminRole) {
         const adminPerms = await prisma.permission.findMany({
           where: {
@@ -434,7 +435,10 @@ export function registerAuthRoutes(app: express.Express) {
         }
       }
 
-      res.json({ status: "ok", message: "Permissions repaired. Please reload." });
+      res.json({
+        status: "ok",
+        message: `Permissions repaired for role ${godRoleDef.name} (ID: ${godRoleDef.id}). Please reload.`,
+      });
     })
   );
 }
