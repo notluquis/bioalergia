@@ -8,6 +8,7 @@ import {
   updateInventoryItem,
   deleteInventoryItem,
   createInventoryMovement,
+  deleteInventoryCategory,
 } from "../services/inventory.js";
 import {
   inventoryCategorySchema,
@@ -51,6 +52,24 @@ export function registerInventoryRoutes(app: express.Express) {
           created_at: category.createdAt.toISOString(),
         },
       });
+    })
+  );
+
+  // Delete Category
+  router.delete(
+    "/categories/:id",
+    asyncHandler(async (req, res) => {
+      const id = Number(req.params.id);
+      try {
+        await deleteInventoryCategory(id);
+        res.status(204).send();
+      } catch (err: unknown) {
+        if (err instanceof Error && err.message.includes("associated items")) {
+          res.status(409).json({ status: "error", message: err.message });
+        } else {
+          throw err;
+        }
+      }
     })
   );
 
