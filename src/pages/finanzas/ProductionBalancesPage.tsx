@@ -247,8 +247,8 @@ export default function DailyProductionBalancesPage() {
       </div>
 
       {selectedDate ? (
-        <div className="grid gap-4 lg:grid-cols-3">
-          <div className="space-y-4 lg:col-span-2">
+        <div className="grid gap-4 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="space-y-4 lg:col-span-2 xl:col-span-3">
             <div className="card bg-base-100 border shadow-sm">
               <div className="card-body p-3">
                 <div className="flex items-center justify-between">
@@ -296,7 +296,7 @@ export default function DailyProductionBalancesPage() {
                   <strong>Flujo:</strong> 1) Método de pago → 2) Servicios → 3) Valida totales → 4) Guarda.
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                   <div className="space-y-3">
                     <div className="border-success/30 bg-success/5 rounded-2xl border p-4">
                       <div className="flex items-center gap-2">
@@ -410,7 +410,9 @@ export default function DailyProductionBalancesPage() {
                         />
                       </div>
                     </div>
+                  </div>
 
+                  <div className="space-y-3">
                     <div className="border-primary/30 bg-base-100 rounded-2xl border p-4">
                       <div className="flex items-center gap-2">
                         <ClipboardList className="text-primary h-5 w-5" />
