@@ -32,20 +32,30 @@ export function UpdateNotification() {
 
   const handleUpdate = async () => {
     setIsUpdating(true);
+
+    // Fallback de seguridad: recargar después de 4 segundos si el evento controllerchange no se dispara
+    const fallbackId = setTimeout(() => {
+      window.location.reload();
+    }, 4000);
+
     // Registrar el listener para recargar solo cuando el worker cambie realmente
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.addEventListener(
         "controllerchange",
         () => {
+          clearTimeout(fallbackId);
           window.location.reload();
         },
         { once: true }
       );
     }
-    await updateServiceWorker(true).catch(() => {
-      // Fallback si falla
+
+    try {
+      await updateServiceWorker(true);
+    } catch (error) {
+      console.error("Update failed", error);
       window.location.reload();
-    });
+    }
   };
 
   // Removed automatic reload on controllerchange to prevent data loss.
