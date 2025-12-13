@@ -10,6 +10,7 @@ import { logEvent, logWarn } from "./logger.js";
 import { upsertGoogleCalendarEvents, removeGoogleCalendarEvents } from "./google-calendar-store.js";
 import { loadSettings } from "../services/settings.js";
 import { parseCalendarMetadata } from "../modules/calendar/parsers.js";
+import { prisma } from "../prisma.js";
 
 const CALENDAR_SCOPES = ["https://www.googleapis.com/auth/calendar.readonly"];
 const STORAGE_ROOT = path.resolve(process.cwd(), "storage", "google-calendar");
@@ -100,6 +101,7 @@ type FetchRange = {
   timeMin: string;
   timeMax: string;
   timeZone: string;
+  updatedMin?: string;
 };
 
 async function getRuntimeCalendarConfig(): Promise<CalendarRuntimeConfig> {
@@ -134,15 +136,36 @@ async function getRuntimeCalendarConfig(): Promise<CalendarRuntimeConfig> {
   }
 }
 
-function buildFetchRange(runtime: CalendarRuntimeConfig): FetchRange {
+async function getLastSuccessfulSyncTime(): Promise<Date | null> {
+  try {
+    const last = await prisma.syncLog.findFirst({
+      where: { status: "SUCCESS", fetchedAt: { not: null } },
+      select: { fetchedAt: true },
+      orderBy: { startedAt: "desc" },
+    });
+    return last?.fetchedAt ?? null;
+  } catch (error) {
+    logWarn("googleCalendar.lastSync.load_error", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return null;
+  }
+}
+
+function buildFetchRange(runtime: CalendarRuntimeConfig, lastFetchedAt: Date | null): FetchRange {
   const startDate = dayjs(runtime.syncStartDate);
-  const effectiveStart = startDate.isValid() ? startDate.startOf("day") : dayjs("2000-01-01").startOf("day");
+  const configuredStart = startDate.isValid() ? startDate.startOf("day") : dayjs("2000-01-01").startOf("day");
+  const safetyStart = lastFetchedAt ? dayjs(lastFetchedAt).subtract(5, "minute") : null;
+  const effectiveStart =
+    safetyStart && safetyStart.isAfter(configuredStart) ? safetyStart.startOf("minute") : configuredStart;
   const endDate = dayjs().add(runtime.syncLookAheadDays, "day").add(1, "day").startOf("day");
 
   return {
     timeMin: effectiveStart.toISOString(),
     timeMax: endDate.toISOString(),
     timeZone: runtime.timeZone,
+    updatedMin:
+      safetyStart && safetyStart.isAfter(configuredStart) ? safetyStart.startOf("minute").toISOString() : undefined,
   };
 }
 
@@ -165,7 +188,9 @@ async function fetchCalendarEventsForId(
       timeMin: range.timeMin,
       timeMax: range.timeMax,
       timeZone: range.timeZone,
+      updatedMin: range.updatedMin,
       singleEvents: true,
+      showDeleted: true,
       orderBy: "startTime",
       maxResults: 2500,
     });
@@ -174,6 +199,11 @@ async function fetchCalendarEventsForId(
 
     for (const item of items) {
       if (!item.id) {
+        continue;
+      }
+
+      if (item.status === "cancelled") {
+        excluded.push({ calendarId, eventId: item.id });
         continue;
       }
 
@@ -239,7 +269,15 @@ export async function fetchGoogleCalendarData(): Promise<GoogleCalendarSyncPaylo
 
   const client = await getCalendarClient();
   const runtime = await getRuntimeCalendarConfig();
-  const range = buildFetchRange(runtime);
+  const lastFetchedAt = await getLastSuccessfulSyncTime();
+  const range = buildFetchRange(runtime, lastFetchedAt);
+
+  logEvent("googleCalendar.fetch.window", {
+    timeMin: range.timeMin,
+    timeMax: range.timeMax,
+    updatedMin: range.updatedMin ?? null,
+    lastFetchedAt: lastFetchedAt?.toISOString() ?? null,
+  });
 
   const events: CalendarEventRecord[] = [];
   const calendarsSummary: Array<{ calendarId: string; totalEvents: number }> = [];
