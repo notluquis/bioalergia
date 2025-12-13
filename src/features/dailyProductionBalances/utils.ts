@@ -8,7 +8,7 @@ const safeNumber = (value: unknown) => {
 export function deriveTotals(
   payload: Pick<
     ProductionBalancePayload,
-    "ingresoTarjetas" | "ingresoTransferencias" | "ingresoEfectivo" | "gastosDiarios" | "otrosAbonos"
+    "ingresoTarjetas" | "ingresoTransferencias" | "ingresoEfectivo" | "gastosDiarios"
   >
 ) {
   const subtotal =
@@ -16,7 +16,7 @@ export function deriveTotals(
     safeNumber(payload.ingresoTransferencias) +
     safeNumber(payload.ingresoEfectivo);
   const totalIngresos = subtotal - safeNumber(payload.gastosDiarios);
-  const total = totalIngresos + safeNumber(payload.otrosAbonos);
+  const total = totalIngresos;
   return { subtotal, totalIngresos, total };
 }
 

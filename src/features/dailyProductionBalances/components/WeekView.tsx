@@ -17,6 +17,8 @@ type WeekViewProps = {
 export default function WeekView({ currentDate, onDateChange, balances, onSelectDay, selectedDate }: WeekViewProps) {
   const startOfWeek = currentDate.startOf("week").add(1, "day"); // Start on Monday
   const today = dayjsLib();
+  const nextWeekStart = startOfWeek.add(7, "day");
+  const canGoNextWeek = !nextWeekStart.isAfter(today, "day");
   const days = Array.from({ length: 6 })
     .map((_, i) => startOfWeek.add(i, "day")) // Monday to Saturday
     .filter((d) => !d.isAfter(today, "day")); // Hide future days
@@ -33,7 +35,15 @@ export default function WeekView({ currentDate, onDateChange, balances, onSelect
             <ChevronLeft size={12} />
           </Button>
           <h2 className="text-base-content text-xs font-semibold capitalize">{startOfWeek.format("MMM YYYY")}</h2>
-          <Button variant="ghost" size="xs" onClick={() => onDateChange(currentDate.add(1, "week"))}>
+          <Button
+            variant="ghost"
+            size="xs"
+            disabled={!canGoNextWeek}
+            onClick={() => {
+              if (!canGoNextWeek) return;
+              onDateChange(currentDate.add(1, "week"));
+            }}
+          >
             <ChevronRight size={12} />
           </Button>
           <Button variant="ghost" size="xs" onClick={() => onDateChange(dayjs())}>

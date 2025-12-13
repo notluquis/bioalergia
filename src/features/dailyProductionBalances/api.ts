@@ -6,7 +6,7 @@ type ListResponse = {
   to: string;
   items: Array<{
     id: number;
-    balanceDate: string;
+    date: string;
     ingresoTarjetas: number;
     ingresoTransferencias: number;
     ingresoEfectivo: number;
@@ -49,7 +49,7 @@ type HistoryResponse = {
 
 const asBalance = (item: ListResponse["items"][number]): ProductionBalance => ({
   id: item.id,
-  date: item.balanceDate,
+  date: item.date,
   ingresoTarjetas: item.ingresoTarjetas,
   ingresoTransferencias: item.ingresoTransferencias,
   ingresoEfectivo: item.ingresoEfectivo,
