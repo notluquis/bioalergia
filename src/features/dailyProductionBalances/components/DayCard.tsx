@@ -44,14 +44,18 @@ export default function DayCard({ date, balance, isSelected, isToday, onClick }:
       <div className="mt-1 space-y-0.5 text-[10px]">
         {balance ? (
           <>
-            <div className="flex justify-between">
-              <span className="text-base-content/60">Ing.</span>
-              <span className="text-base-content font-semibold">{currencyFormatter.format(total)}</span>
+            <div className="flex items-center justify-between gap-1 leading-tight">
+              <span className="text-base-content/60 text-[10px]">Ing.</span>
+              <span className="text-base-content text-[11px] leading-tight font-semibold">
+                {currencyFormatter.format(total)}
+              </span>
             </div>
             {gastos > 0 && (
-              <div className="flex justify-between">
-                <span className="text-base-content/60">Gas.</span>
-                <span className="text-error font-semibold">{currencyFormatter.format(gastos)}</span>
+              <div className="flex items-center justify-between gap-1 leading-tight">
+                <span className="text-base-content/60 text-[10px]">Gas.</span>
+                <span className="text-error text-[11px] leading-tight font-semibold">
+                  {currencyFormatter.format(gastos)}
+                </span>
               </div>
             )}
           </>
