@@ -84,12 +84,10 @@ export default function InventorySettingsPage() {
   });
 
   // Delete Category Mutation (stub - backend support pending)
-  // TODO: Implement backend DELETE /api/inventory/categories/:id endpoint
+
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      // Backend doesn't have delete category endpoint yet
-      console.warn("Delete category not implemented. Category ID:", id);
-      throw new Error("Función no implementada en backend");
+      await apiClient.delete(`/api/inventory/categories/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["inventory-categories"] });

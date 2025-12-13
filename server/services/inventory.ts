@@ -13,6 +13,17 @@ export async function createInventoryCategory(name: string) {
   });
 }
 
+export async function deleteInventoryCategory(id: number) {
+  // Check if category has items
+  const count = await prisma.inventoryItem.count({ where: { categoryId: id } });
+  if (count > 0) {
+    throw new Error("Cannot delete category with associated items. Please move or delete items first.");
+  }
+  await prisma.inventoryCategory.delete({
+    where: { id },
+  });
+}
+
 export async function listInventoryItems() {
   const items = await prisma.inventoryItem.findMany({
     include: {

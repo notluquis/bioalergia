@@ -98,6 +98,25 @@ router.post("/send-test", async (req: express.Request, res: express.Response) =>
     if (failed.length > 0) {
       logger.warn({ count: failed.length }, "Some notifications failed to send");
       // TODO: Implement cleanup logic for 410/404 errors
+      for (const [index, result] of results.entries()) {
+        if (result.status === "rejected") {
+          const error = result.reason;
+          if (error && typeof error === "object" && "statusCode" in error) {
+            const statusCode = (error as { statusCode: number }).statusCode;
+            if (statusCode === 410 || statusCode === 404) {
+              const subToDelete = subscriptions[index];
+              try {
+                await prisma.pushSubscription.delete({
+                  where: { endpoint: subToDelete.endpoint },
+                });
+                logger.info({ endpoint: subToDelete.endpoint }, "Deleted invalid subscription");
+              } catch (deleteErr) {
+                logger.error({ err: deleteErr }, "Failed to delete invalid subscription");
+              }
+            }
+          }
+        }
+      }
     }
 
     res.json({ message: "Test notification sent", results });
