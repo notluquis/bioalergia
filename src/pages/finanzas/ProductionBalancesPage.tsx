@@ -220,7 +220,7 @@ export default function DailyProductionBalancesPage() {
         </div>
       </header>
 
-      <div className="card bg-base-100 border shadow-sm">
+      <div className="card bg-base-100 border-base-200 border shadow-sm">
         <div className="card-body gap-3 p-4 sm:p-5">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -294,16 +294,6 @@ export default function DailyProductionBalancesPage() {
 
             {canEdit ? (
               <form className="space-y-4" onSubmit={handleSubmit}>
-                <div className="alert alert-info flex flex-wrap items-center gap-2 text-xs">
-                  <span className="text-info-content font-semibold">Flujo:</span>
-                  <div className="flex flex-wrap gap-1">
-                    <span className="badge badge-sm">1) Método de pago</span>
-                    <span className="badge badge-sm">2) Servicios</span>
-                    <span className="badge badge-sm">3) Valida totales</span>
-                    <span className="badge badge-sm">4) Guarda</span>
-                  </div>
-                </div>
-
                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                   <div className="space-y-3">
                     <div className="border-success/30 bg-success/5 rounded-2xl border p-4">
