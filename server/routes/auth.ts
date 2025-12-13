@@ -390,6 +390,26 @@ export function registerAuthRoutes(app: express.Express) {
         { action: "read", subject: "InventoryItem", description: "Read inventory" },
         { action: "manage", subject: "InventoryItem", description: "Manage inventory" },
 
+        // Production Balance
+        { action: "read", subject: "ProductionBalance", description: "Read production balances" },
+        { action: "manage", subject: "ProductionBalance", description: "Manage production balances" },
+
+        // Calendar
+        { action: "read", subject: "CalendarEvent", description: "Read calendar" },
+        { action: "manage", subject: "CalendarEvent", description: "Manage calendar" },
+
+        // HR
+        { action: "read", subject: "Employee", description: "Read employees" },
+        { action: "manage", subject: "Employee", description: "Manage employees" },
+        { action: "read", subject: "Timesheet", description: "Read timesheets" },
+        { action: "manage", subject: "Timesheet", description: "Manage timesheets" },
+        { action: "read", subject: "Report", description: "Read reports" },
+        { action: "manage", subject: "Report", description: "Manage reports" },
+
+        // Supplies
+        { action: "read", subject: "SupplyRequest", description: "Read supply requests" },
+        { action: "manage", subject: "SupplyRequest", description: "Manage supply requests" },
+
         // Fallback global
         { action: "manage", subject: "all", description: "Manage everything" },
       ];

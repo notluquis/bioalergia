@@ -73,14 +73,7 @@ export const NAV_SECTIONS: NavSection[] = [
         to: "/finanzas/production-balances",
         label: "Balance Diario",
         icon: FileSpreadsheet,
-        // Using Transaction read as proxy or custom 'ProductionBalance' if strictly needed.
-        // For now, keeping existing roles + transaction read or using a new 'ProductionBalance' subject?
-        // Let's use 'Transaction' read for now as it's financial, OR leave broad access.
-        // Actually, let's leave it role based for now as I didn't add ProductionBalance subject yet,
-        // OR better: use "Service" permission since it involves service income?
-        // Let's use roles for this one specific complex item to strictly follow my plan of only replacing what I added.
-        // But I can switch "Préstamos" to Loan.
-        roles: ["GOD", "ADMIN", "ANALYST", "VIEWER"],
+        requiredPermission: { action: "read", subject: "ProductionBalance" },
       },
       {
         to: "/finanzas/loans",
@@ -110,8 +103,7 @@ export const NAV_SECTIONS: NavSection[] = [
         to: "/calendar/summary",
         label: "Calendario",
         icon: CalendarDays,
-        // Calendar subject? I didn't add it. Keeping roles.
-        roles: ["GOD", "ADMIN", "ANALYST", "VIEWER"],
+        requiredPermission: { action: "read", subject: "CalendarEvent" },
       },
     ],
   },

@@ -1,5 +1,6 @@
 import dayjs, { type Dayjs } from "dayjs";
 import clsx from "clsx";
+import { fmtCLP } from "@/lib/format";
 
 import "./HeatmapMonth.css";
 
@@ -106,22 +107,14 @@ function colorForValue(count: number, max: number) {
   return colorPalette[0];
 }
 
-function formatCurrency(amount: number) {
-  return new Intl.NumberFormat("es-CL", {
-    style: "currency",
-    currency: "CLP",
-    minimumFractionDigits: 0,
-  }).format(amount ?? 0);
-}
-
 function buildTooltip(cell: WeekCell) {
   if (!cell.dayNumber || !cell.isoDate) return "Sin datos";
   const dateLabel = dayjs(cell.isoDate).format("DD MMM YYYY");
   return [
     `${dateLabel}`,
     `${cell.count} evento${cell.count === 1 ? "" : "s"}`,
-    `Esperado: ${formatCurrency(cell.amountExpected)}`,
-    `Pagado: ${formatCurrency(cell.amountPaid)}`,
+    `Esperado: ${fmtCLP(cell.amountExpected)}`,
+    `Pagado: ${fmtCLP(cell.amountPaid)}`,
   ].join("\n");
 }
 
