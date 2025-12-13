@@ -10,7 +10,7 @@ interface SupplyRequestsTableProps {
 }
 
 export default function SupplyRequestsTable({ requests, onStatusChange }: SupplyRequestsTableProps) {
-  const { user, hasRole } = useAuth();
+  const { hasRole } = useAuth();
   const isAdmin = hasRole("ADMIN", "GOD");
 
   return (
