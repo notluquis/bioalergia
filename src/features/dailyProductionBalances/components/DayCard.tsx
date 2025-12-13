@@ -67,14 +67,14 @@ export default function DayCard({ date, balance, isSelected, isToday, onClick }:
           <>
             <div className="grid grid-cols-[auto,1fr] items-center gap-1 leading-tight">
               <span className="text-base-content/60 text-[10px]">Ing.</span>
-              <span className="text-base-content text-right text-[11px] leading-tight font-semibold wrap-break-word">
+              <span className="text-base-content text-right text-xs leading-tight font-semibold wrap-break-word">
                 {currencyFormatter.format(total)}
               </span>
             </div>
             {gastos > 0 && (
               <div className="grid grid-cols-[auto,1fr] items-center gap-1 leading-tight">
                 <span className="text-base-content/60 text-[10px]">Gas.</span>
-                <span className="text-error text-right text-[11px] leading-tight font-semibold wrap-break-word">
+                <span className="text-error text-right text-xs leading-tight font-semibold wrap-break-word">
                   {currencyFormatter.format(gastos)}
                 </span>
               </div>

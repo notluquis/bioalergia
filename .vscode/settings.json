@@ -1,20 +1,8 @@
 {
-  "python-envs.defaultEnvManager": "ms-python.python:conda",
-  "python-envs.defaultPackageManager": "ms-python.python:conda",
-  "python-envs.pythonProjects": [],
-  "editor.formatOnSave": true,
-  "editor.defaultFormatter": "esbenp.prettier-vscode",
-  "editor.codeActionsOnSave": {
-    "source.fixAll.eslint": "explicit"
+  "css.lint.unknownAtRules": "ignore",
+  "scss.lint.unknownAtRules": "ignore",
+  "files.associations": {
+    "*.css": "tailwindcss"
   },
-  "eslint.validate": ["javascript", "javascriptreact", "typescript", "typescriptreact"],
-  "[sql]": {
-    "editor.defaultFormatter": "cweijan.vscode-database-client2"
-  },
-  "[typescriptreact]": {
-    "editor.defaultFormatter": "prettier.prettier-vscode"
-  },
-  "[typescript]": {
-    "editor.defaultFormatter": "prettier.prettier-vscode"
-  }
+  "css.customData": ["./.vscode/css_custom_data.json"]
 }

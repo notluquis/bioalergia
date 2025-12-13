@@ -206,9 +206,7 @@ export default function Sidebar({ isOpen, isMobile, onClose, isCollapsed = false
                   <img src="/logo_bimi.svg" alt="Bioalergia" className="h-7 w-7 object-contain" loading="lazy" />
                 </div>
                 <div className="min-w-0 overflow-hidden transition-all duration-300">
-                  <p className="text-base-content/60 text-[9px] tracking-[0.2em] uppercase">Bioalergia</p>
                   <p className="text-base-content truncate text-sm leading-tight font-semibold">{displayName}</p>
-                  <p className="text-base-content/60 truncate text-[10px]">{user?.email}</p>
                 </div>
               </div>
             )}
