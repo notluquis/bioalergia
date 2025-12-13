@@ -56,5 +56,8 @@ export async function getAbilityRulesForUser(userId: number) {
     }
   }
 
-  return Array.from(rules).map((rule) => JSON.parse(rule));
+  const finalRules = Array.from(rules).map((rule) => JSON.parse(rule));
+  console.log(`[getAbilityRulesForUser] Generated ${finalRules.length} rules for user ${userId}:`, finalRules);
+
+  return finalRules;
 }
