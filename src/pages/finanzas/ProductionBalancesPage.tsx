@@ -354,7 +354,7 @@ export default function DailyProductionBalancesPage() {
                       <TrendingDown className="text-error h-5 w-5" />
                       <h3 className="text-base-content text-base font-semibold">Gastos</h3>
                     </div>
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div className="grid grid-cols-1 gap-3">
                       <MoneyInput
                         label="Gastos diarios"
                         value={form.gastosDiarios}
@@ -423,12 +423,14 @@ export default function DailyProductionBalancesPage() {
                         value={form.roxair}
                         onChange={(v) => setForm((prev) => ({ ...prev, roxair: v }))}
                       />
-                      <MoneyInput
-                        label="Otros abonos"
-                        value={form.otrosAbonos}
-                        onChange={(v) => setForm((prev) => ({ ...prev, otrosAbonos: v }))}
-                        hint="Devoluciones, ajustes"
-                      />
+                      <div className="sm:col-span-3">
+                        <MoneyInput
+                          label="Otros abonos"
+                          value={form.otrosAbonos}
+                          onChange={(v) => setForm((prev) => ({ ...prev, otrosAbonos: v }))}
+                          hint="Devoluciones, ajustes"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
