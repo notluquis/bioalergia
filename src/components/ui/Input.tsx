@@ -9,45 +9,63 @@ type InputBaseProps = {
   containerClassName?: string;
   rightElement?: React.ReactNode;
   type?: string;
+  size?: "xs" | "sm" | "md" | "lg";
 };
 
 type InputProps = InputBaseProps &
-  React.InputHTMLAttributes<HTMLInputElement> & {
+  Omit<React.InputHTMLAttributes<HTMLInputElement>, "size"> & {
     inputMode?: "none" | "text" | "decimal" | "numeric" | "tel" | "search" | "email" | "url";
     enterKeyHint?: "enter" | "done" | "go" | "next" | "previous" | "search" | "send";
   };
 type TextareaProps = InputBaseProps & React.TextareaHTMLAttributes<HTMLTextAreaElement>;
-type SelectProps = InputBaseProps & React.SelectHTMLAttributes<HTMLSelectElement>;
+type SelectProps = InputBaseProps & Omit<React.SelectHTMLAttributes<HTMLSelectElement>, "size">;
 
 // Discriminated union for props
 type Props = ({ as?: "input" } & InputProps) | ({ as: "textarea" } & TextareaProps) | ({ as: "select" } & SelectProps);
 
 export default function Input(props: Props) {
-  const { label, helper, error, className, containerClassName, as = "input", type, ...rest } = props;
+  const { label, helper, error, className, containerClassName, as = "input", type, size = "md", ...rest } = props;
   const [isPasswordVisible, setIsPasswordVisible] = React.useState(false);
 
   const isPassword = type === "password";
   const inputType = isPassword ? (isPasswordVisible ? "text" : "password") : type;
 
+  const sizeClasses = {
+    xs: "input-xs h-6 text-xs",
+    sm: "input-sm h-8 text-sm",
+    md: "h-10 text-sm", // Default compact
+    lg: "input-lg h-12 text-base",
+  };
+
+  const selectSizeClasses = {
+    xs: "select-xs h-6 text-xs",
+    sm: "select-sm h-8 text-sm",
+    md: "h-10 text-sm",
+    lg: "select-lg h-12 text-base",
+  };
+
   const baseClasses =
     "w-full transition-all duration-200 ease-apple placeholder:text-base-content/40 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary";
 
   const inputClasses = cn(
-    "input input-bordered bg-base-100/50 hover:bg-base-100 focus:bg-base-100 h-10", // Compact height (40px)
+    "input input-bordered bg-base-100/50 hover:bg-base-100 focus:bg-base-100",
+    sizeClasses[size],
     error && "input-error focus:ring-error/20 focus:border-error",
     baseClasses,
     className
   );
 
   const textareaClasses = cn(
-    "textarea textarea-bordered bg-base-100/50 hover:bg-base-100 focus:bg-base-100 min-h-25",
+    "textarea textarea-bordered bg-base-100/50 hover:bg-base-100 focus:bg-base-100 min-h-25 py-2",
+    size === "xs" || size === "sm" ? "text-xs" : "text-sm",
     error && "textarea-error focus:ring-error/20 focus:border-error",
     baseClasses,
     className
   );
 
   const selectClasses = cn(
-    "select select-bordered bg-base-100/50 hover:bg-base-100 focus:bg-base-100 h-10",
+    "select select-bordered bg-base-100/50 hover:bg-base-100 focus:bg-base-100",
+    selectSizeClasses[size],
     error && "select-error focus:ring-error/20 focus:border-error",
     baseClasses,
     className

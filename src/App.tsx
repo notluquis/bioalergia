@@ -79,7 +79,6 @@ export default function App() {
 
         // Store file in a global state or navigate with it
         // For now, we'll log it and maybe show a toast or redirect
-        // console.log("File opened via OS:", file.name);
 
         // In a real implementation, we would upload this file or open the transaction modal
         // Since we can't easily pass the File object via URL params, we might need a context

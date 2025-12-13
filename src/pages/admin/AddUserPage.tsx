@@ -107,11 +107,10 @@ export default function AddUserPage() {
               />
               {form.linkToPerson && (
                 <div className="space-y-2">
-                  <label className="label py-1">
-                    <span className="label-text text-sm">Seleccionar Persona</span>
-                  </label>
-                  <select
-                    className="select select-bordered w-full"
+                  <Input
+                    label="Seleccionar Persona"
+                    as="select"
+                    id="personId"
                     value={form.personId ?? ""}
                     onChange={(e) =>
                       setForm({
@@ -127,7 +126,7 @@ export default function AddUserPage() {
                         {getPersonFullName(person)} - {person.rut}
                       </option>
                     ))}
-                  </select>
+                  </Input>
                   {availablePeople.length === 0 && (
                     <p className="text-warning text-xs">
                       No hay personas disponibles sin usuario. Desmarca esta opción para crear una nueva.

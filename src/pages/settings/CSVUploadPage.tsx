@@ -1,6 +1,9 @@
 import { useState } from "react";
 import Papa from "papaparse";
 import { Upload, CheckCircle, AlertCircle, ArrowRight } from "lucide-react";
+import Input from "@/components/ui/Input";
+import FileInput from "@/components/ui/FileInput";
+import Button from "@/components/ui/Button";
 
 type TableOption = {
   value: string;
@@ -313,8 +316,8 @@ export default function CSVUploadPage() {
       <div className="card bg-base-100 shadow">
         <div className="card-body p-4">
           <h2 className="card-title text-lg">Seleccionar tabla destino</h2>
-          <select
-            className="select select-bordered w-full"
+          <Input
+            as="select"
             value={selectedTable}
             onChange={(e) => {
               setSelectedTable(e.target.value);
@@ -331,7 +334,7 @@ export default function CSVUploadPage() {
                 {table.label}
               </option>
             ))}
-          </select>
+          </Input>
 
           {currentTable && (
             <div className="mt-4">
@@ -357,18 +360,12 @@ export default function CSVUploadPage() {
         <div className="card bg-base-100 shadow">
           <div className="card-body p-4">
             <h2 className="card-title text-lg">Subir archivo CSV</h2>
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text">Selecciona un archivo CSV</span>
-              </label>
-              <input
-                type="file"
-                accept=".csv"
-                className="file-input file-input-bordered w-full"
-                onChange={handleFileChange}
-                disabled={uploadStatus === "uploading"}
-              />
-            </div>
+            <FileInput
+              accept=".csv"
+              onChange={handleFileChange}
+              disabled={uploadStatus === "uploading"}
+              label="Selecciona un archivo CSV"
+            />
 
             {uploadStatus === "parsing" && (
               <div className="alert">
@@ -433,8 +430,10 @@ export default function CSVUploadPage() {
                         <span className="badge badge-xs badge-ghost">{field.type}</span>
                       </td>
                       <td>
-                        <select
-                          className="select select-bordered select-xs w-full max-w-xs"
+                        <Input
+                          as="select"
+                          size="xs"
+                          className="w-full max-w-xs"
                           value={columnMapping[field.name] || ""}
                           onChange={(e) => handleColumnMapChange(field.name, e.target.value)}
                         >
@@ -444,7 +443,7 @@ export default function CSVUploadPage() {
                               {header}
                             </option>
                           ))}
-                        </select>
+                        </Input>
                       </td>
                       <td>
                         <span className="text-base-content/50 inline-block max-w-50 truncate text-xs">
@@ -515,22 +514,26 @@ export default function CSVUploadPage() {
         <div className="card bg-base-100 shadow">
           <div className="card-body p-4">
             <div className="flex gap-3">
-              <button
-                className="btn btn-outline gap-2"
+              <Button
+                type="button"
+                variant="outline"
+                className="gap-2"
                 onClick={handlePreview}
                 disabled={!isValidMapping() || uploadStatus === "uploading"}
               >
                 <Upload size={16} />
                 Vista previa
-              </button>
-              <button
-                className="btn btn-primary gap-2"
+              </Button>
+              <Button
+                type="button"
+                variant="primary"
+                className="gap-2"
                 onClick={handleImport}
                 disabled={!isValidMapping() || uploadStatus === "uploading"}
               >
                 <ArrowRight size={16} />
                 {uploadStatus === "uploading" ? "Importando..." : "Importar datos"}
-              </button>
+              </Button>
             </div>
 
             {!isValidMapping() && (
