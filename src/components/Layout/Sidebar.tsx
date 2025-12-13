@@ -49,25 +49,26 @@ export const NAV_SECTIONS: NavSection[] = [
         to: "/finanzas/movements",
         label: "Movimientos",
         icon: PiggyBank,
-        roles: ["GOD", "ADMIN", "ANALYST", "VIEWER"],
+        requiredPermission: { action: "read", subject: "Transaction" },
+        // roles: ["GOD", "ADMIN", "ANALYST", "VIEWER"], // Replaced by permission
       },
       {
         to: "/finanzas/balances",
         label: "Saldos Diarios",
         icon: PiggyBank,
-        roles: ["GOD", "ADMIN", "ANALYST", "VIEWER"],
+        requiredPermission: { action: "read", subject: "Transaction" }, // Assuming derived from transactions
       },
       {
         to: "/finanzas/counterparts",
         label: "Contrapartes",
         icon: Users2,
-        roles: ["GOD", "ADMIN", "ANALYST", "VIEWER"],
+        roles: ["GOD", "ADMIN", "ANALYST", "VIEWER"], // TODO: Add Counterpart permission
       },
       {
         to: "/finanzas/participants",
         label: "Participantes",
         icon: Users2,
-        roles: ["GOD", "ADMIN", "ANALYST", "VIEWER"],
+        roles: ["GOD", "ADMIN", "ANALYST", "VIEWER"], // TODO: Add Participant permission
       },
       {
         to: "/finanzas/production-balances",
@@ -100,13 +101,26 @@ export const NAV_SECTIONS: NavSection[] = [
     category: "Gestión",
     items: [
       { to: "/operations/inventory", label: "Inventario", icon: Box, roles: ["GOD", "ADMIN", "ANALYST"] },
-      { to: "/hr/employees", label: "RRHH", icon: Users2, roles: ["GOD", "ADMIN"] },
+      {
+        to: "/hr/employees",
+        label: "RRHH",
+        icon: Users2,
+        roles: ["GOD", "ADMIN"],
+        requiredPermission: { action: "read", subject: "User" },
+      }, // RRHH usually implies User management
     ],
   },
   {
     title: "Administración",
     category: "Finanzas",
-    items: [{ to: "/settings/security", label: "Ajustes", icon: Settings }],
+    items: [
+      {
+        to: "/settings/security",
+        label: "Ajustes",
+        icon: Settings,
+        requiredPermission: { action: "manage", subject: "Setting" },
+      },
+    ],
   },
 ];
 
