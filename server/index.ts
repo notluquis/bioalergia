@@ -39,7 +39,9 @@ app.use(
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 app.use(cookieParser());
+import { softAuthenticate } from "./lib/http.js";
 import { attachAbility } from "./middleware/attachAbility.js";
+app.use(softAuthenticate);
 app.use(attachAbility);
 
 const CSP_HEADER_VALUE = [
