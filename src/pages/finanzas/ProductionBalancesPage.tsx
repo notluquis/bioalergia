@@ -8,7 +8,7 @@ import { INPUT_CURRENCY_SM, GRID_2_COL_SM } from "@/lib/styles";
 import { today } from "@/lib/dates";
 import { useToast } from "@/context/ToastContext";
 import { useSettings } from "@/context/SettingsContext";
-import { CreditCard, Banknote, Wallet, TrendingDown, FileText, ClipboardList, Save, History } from "lucide-react";
+import { CreditCard, Banknote, Wallet, TrendingDown, FileText, ClipboardList, Save, MoreVertical } from "lucide-react";
 import {
   fetchProductionBalanceHistory,
   fetchProductionBalances,
@@ -104,12 +104,14 @@ export default function DailyProductionBalancesPage() {
 
   const [form, setForm] = useState<FormState>(() => makeDefaultForm());
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [showHistory, setShowHistory] = useState(false);
   const handleGoToday = () => {
     const now = dayjs();
     const todayStr = now.format("YYYY-MM-DD");
     setCurrentDate(now);
     setSelectedDate(todayStr);
     setSelectedId(null);
+    setShowHistory(false);
     setForm(makeDefaultForm(todayStr));
   };
 
@@ -120,7 +122,7 @@ export default function DailyProductionBalancesPage() {
 
   const historyQuery = useQuery({
     queryKey: ["production-balance-history", selectedId],
-    enabled: selectedId != null,
+    enabled: selectedId != null && showHistory,
     queryFn: () => fetchProductionBalanceHistory(selectedId ?? 0),
   });
 
@@ -149,7 +151,7 @@ export default function DailyProductionBalancesPage() {
       setSelectedId(null);
       return;
     }
-    const balance = balances.find((b) => dayjs(b.date).isSame(dayjs(selectedDate), "day"));
+    const balance = balances.find((b) => b.date === selectedDate || dayjs(b.date).isSame(dayjs(selectedDate), "day"));
     if (balance) {
       setSelectedId(balance.id);
       setForm({
@@ -171,6 +173,7 @@ export default function DailyProductionBalancesPage() {
       });
     } else {
       setSelectedId(null);
+      setShowHistory(false);
       setForm(makeDefaultForm(selectedDate));
     }
   }, [selectedDate, balances]);
@@ -199,8 +202,6 @@ export default function DailyProductionBalancesPage() {
     event.preventDefault();
     mutation.mutate();
   };
-
-  const hasHistory = selectedId != null;
 
   return (
     <section className="mx-auto w-full max-w-none space-y-6 p-4">
@@ -249,22 +250,33 @@ export default function DailyProductionBalancesPage() {
       </div>
 
       {selectedDate ? (
-        <div className={`grid gap-4 ${hasHistory ? "lg:grid-cols-3 xl:grid-cols-4" : ""}`}>
-          <div className={`space-y-4 ${hasHistory ? "lg:col-span-2 xl:col-span-3" : ""}`}>
-            <div className="card bg-base-100 border-base-200 border shadow-sm">
-              <div className="card-body p-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-base-content text-sm font-bold capitalize">
-                      {dayjs(selectedDate).format("ddd D MMM")}
-                    </h2>
-                    <span className={`badge badge-xs ${form.status === "FINAL" ? "badge-success" : "badge-warning"}`}>
-                      {form.status === "FINAL" ? "Final" : "Borrador"}
-                    </span>
-                    {selectedId && <span className="text-base-content/60 text-xs">#{selectedId}</span>}
-                  </div>
+        <div className="space-y-4">
+          <div className="card bg-base-100 border-base-200 border shadow-sm">
+            <div className="card-body p-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-base-content text-sm font-bold capitalize">
+                    {dayjs(selectedDate).format("ddd D MMM")}
+                  </h2>
+                  <span className={`badge badge-xs ${form.status === "FINAL" ? "badge-success" : "badge-warning"}`}>
+                    {form.status === "FINAL" ? "Final" : "Borrador"}
+                  </span>
+                  {selectedId && <span className="text-base-content/60 text-xs">#{selectedId}</span>}
+                </div>
+                <div className="flex items-center gap-2">
+                  {selectedId && (
+                    <Button
+                      size="xs"
+                      variant="ghost"
+                      onClick={() => setShowHistory((prev) => !prev)}
+                      className="gap-1"
+                      aria-label="Historial de cambios"
+                    >
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  )}
                   {canEdit ? (
-                    <div className="flex items-center gap-2">
+                    <>
                       <select
                         className="select select-xs"
                         value={form.status}
@@ -284,266 +296,262 @@ export default function DailyProductionBalancesPage() {
                       <Button type="button" variant="ghost" size="xs" onClick={() => setSelectedDate(null)}>
                         Limpiar
                       </Button>
-                    </div>
+                    </>
                   ) : (
                     <span className="badge badge-ghost badge-sm">Solo lectura</span>
                   )}
                 </div>
               </div>
             </div>
+          </div>
 
-            {canEdit ? (
-              <form className="space-y-4" onSubmit={handleSubmit}>
-                <div className="grid gap-4 lg:grid-cols-12">
-                  <div className="space-y-3 lg:col-span-5 xl:col-span-5">
-                    <div className="border-success/30 bg-success/5 rounded-2xl border p-4 shadow-sm">
-                      <div className="flex items-center gap-2">
-                        <div className="badge badge-lg badge-success font-bold">1</div>
-                        <div>
-                          <h3 className="text-base-content text-lg font-bold">Ingresos por método de pago</h3>
-                          <p className="text-base-content/60 text-xs">Tarjeta, transferencia y efectivo</p>
-                        </div>
-                      </div>
-                      <div className="mt-3 grid gap-3 sm:grid-cols-3">
-                        <MoneyInput
-                          icon={<CreditCard className="h-4 w-4" />}
-                          label="Tarjetas"
-                          value={form.ingresoTarjetas}
-                          onChange={(v) => setForm((prev) => ({ ...prev, ingresoTarjetas: v }))}
-                        />
-                        <MoneyInput
-                          icon={<Banknote className="h-4 w-4" />}
-                          label="Transferencias"
-                          value={form.ingresoTransferencias}
-                          onChange={(v) => setForm((prev) => ({ ...prev, ingresoTransferencias: v }))}
-                        />
-                        <MoneyInput
-                          icon={<Wallet className="h-4 w-4" />}
-                          label="Efectivo"
-                          value={form.ingresoEfectivo}
-                          onChange={(v) => setForm((prev) => ({ ...prev, ingresoEfectivo: v }))}
-                        />
+          {canEdit ? (
+            <form className="space-y-4" onSubmit={handleSubmit}>
+              <div className="grid gap-4 lg:grid-cols-12">
+                <div className="space-y-3 lg:col-span-5 xl:col-span-5">
+                  <div className="border-success/30 bg-success/5 rounded-2xl border p-4 shadow-sm">
+                    <div className="flex items-center gap-2">
+                      <div className="badge badge-lg badge-success font-bold">1</div>
+                      <div>
+                        <h3 className="text-base-content text-lg font-bold">Ingresos por método de pago</h3>
+                        <p className="text-base-content/60 text-xs">Tarjeta, transferencia y efectivo</p>
                       </div>
                     </div>
-
-                    <div className="border-error/30 bg-error/5 rounded-2xl border p-4 shadow-sm">
-                      <div className="flex items-center gap-2">
-                        <TrendingDown className="text-error h-5 w-5" />
-                        <h3 className="text-base-content text-base font-semibold">Gastos y ajustes</h3>
-                      </div>
-                      <div className={GRID_2_COL_SM}>
-                        <MoneyInput
-                          label="Gastos diarios"
-                          value={form.gastosDiarios}
-                          onChange={(v) => setForm((prev) => ({ ...prev, gastosDiarios: v }))}
-                          hint="Combustible, insumos, etc."
-                        />
-                        <MoneyInput
-                          label="Otros abonos"
-                          value={form.otrosAbonos}
-                          onChange={(v) => setForm((prev) => ({ ...prev, otrosAbonos: v }))}
-                          hint="Devoluciones, ajustes"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="border-base-200 bg-base-50 rounded-2xl border p-4 shadow-sm">
-                      <h3 className="text-base-content text-sm font-bold">Total por método</h3>
-                      <div className="mt-2 grid grid-cols-3 gap-3 text-center text-xs">
-                        <StatMini label="Subtotal" value={currencyFormatter.format(derived.subtotal)} tone="success" />
-                        <StatMini
-                          label="- Gastos"
-                          value={`-${currencyFormatter.format(parseNumber(form.gastosDiarios))}`}
-                          tone="error"
-                        />
-                        <StatMini
-                          label="Total"
-                          value={currencyFormatter.format(paymentMethodTotal)}
-                          tone="primary"
-                          bold
-                        />
-                      </div>
+                    <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                      <MoneyInput
+                        icon={<CreditCard className="h-4 w-4" />}
+                        label="Tarjetas"
+                        value={form.ingresoTarjetas}
+                        onChange={(v) => setForm((prev) => ({ ...prev, ingresoTarjetas: v }))}
+                      />
+                      <MoneyInput
+                        icon={<Banknote className="h-4 w-4" />}
+                        label="Transferencias"
+                        value={form.ingresoTransferencias}
+                        onChange={(v) => setForm((prev) => ({ ...prev, ingresoTransferencias: v }))}
+                      />
+                      <MoneyInput
+                        icon={<Wallet className="h-4 w-4" />}
+                        label="Efectivo"
+                        value={form.ingresoEfectivo}
+                        onChange={(v) => setForm((prev) => ({ ...prev, ingresoEfectivo: v }))}
+                      />
                     </div>
                   </div>
 
-                  <div className="space-y-3 lg:col-span-4 xl:col-span-4">
-                    <div className="bg-info/5 border-base-200 h-full rounded-2xl border p-4 shadow-sm">
-                      <div className="flex items-center gap-2">
-                        <div className="badge badge-lg badge-info font-bold">2</div>
-                        <div>
-                          <h3 className="text-base-content text-lg font-bold">Ingresos por servicio</h3>
-                          <p className="text-base-content/60 text-xs">Registra los servicios del día</p>
-                        </div>
-                      </div>
-                      <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
-                        <MoneyInput
-                          label="Consultas"
-                          value={form.consultas}
-                          onChange={(v) => setForm((prev) => ({ ...prev, consultas: v }))}
-                        />
-                        <MoneyInput
-                          label="Controles"
-                          value={form.controles}
-                          onChange={(v) => setForm((prev) => ({ ...prev, controles: v }))}
-                        />
-                        <MoneyInput
-                          label="Tests"
-                          value={form.tests}
-                          onChange={(v) => setForm((prev) => ({ ...prev, tests: v }))}
-                        />
-                        <MoneyInput
-                          label="Vacunas"
-                          value={form.vacunas}
-                          onChange={(v) => setForm((prev) => ({ ...prev, vacunas: v }))}
-                        />
-                        <MoneyInput
-                          label="Licencias"
-                          value={form.licencias}
-                          onChange={(v) => setForm((prev) => ({ ...prev, licencias: v }))}
-                        />
-                        <MoneyInput
-                          label="Roxair"
-                          value={form.roxair}
-                          onChange={(v) => setForm((prev) => ({ ...prev, roxair: v }))}
-                        />
-                      </div>
+                  <div className="border-error/30 bg-error/5 rounded-2xl border p-4 shadow-sm">
+                    <div className="flex items-center gap-2">
+                      <TrendingDown className="text-error h-5 w-5" />
+                      <h3 className="text-base-content text-base font-semibold">Gastos y ajustes</h3>
+                    </div>
+                    <div className={GRID_2_COL_SM}>
+                      <MoneyInput
+                        label="Gastos diarios"
+                        value={form.gastosDiarios}
+                        onChange={(v) => setForm((prev) => ({ ...prev, gastosDiarios: v }))}
+                        hint="Combustible, insumos, etc."
+                      />
+                      <MoneyInput
+                        label="Otros abonos"
+                        value={form.otrosAbonos}
+                        onChange={(v) => setForm((prev) => ({ ...prev, otrosAbonos: v }))}
+                        hint="Devoluciones, ajustes"
+                      />
                     </div>
                   </div>
 
-                  <div className="space-y-3 lg:col-span-3 xl:col-span-3">
-                    <div className="bg-base-100 border-base-200 h-full rounded-2xl border p-4 shadow-sm">
-                      <div className="flex items-center gap-2">
-                        <ClipboardList className="text-primary h-5 w-5" />
-                        <h3 className="text-base-content text-base font-semibold">Validación</h3>
+                  <div className="border-base-200 bg-base-50 rounded-2xl border p-4 shadow-sm">
+                    <h3 className="text-base-content text-sm font-bold">Total por método</h3>
+                    <div className="mt-2 grid grid-cols-3 gap-3 text-center text-xs">
+                      <StatMini label="Subtotal" value={currencyFormatter.format(derived.subtotal)} tone="success" />
+                      <StatMini
+                        label="- Gastos"
+                        value={`-${currencyFormatter.format(parseNumber(form.gastosDiarios))}`}
+                        tone="error"
+                      />
+                      <StatMini
+                        label="Total"
+                        value={currencyFormatter.format(paymentMethodTotal)}
+                        tone="primary"
+                        bold
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-3 lg:col-span-4 xl:col-span-4">
+                  <div className="bg-info/5 border-base-200 h-full rounded-2xl border p-4 shadow-sm">
+                    <div className="flex items-center gap-2">
+                      <div className="badge badge-lg badge-info font-bold">2</div>
+                      <div>
+                        <h3 className="text-base-content text-lg font-bold">Ingresos por servicio</h3>
+                        <p className="text-base-content/60 text-xs">Registra los servicios del día</p>
                       </div>
-                      <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                        <StatMini
-                          label="Total método de pago"
-                          value={currencyFormatter.format(paymentMethodTotal)}
-                          tone="primary"
-                          bold
-                        />
-                        <StatMini
-                          label="Total servicios"
-                          value={currencyFormatter.format(serviceTotals)}
-                          tone="primary"
-                          bold
-                        />
-                        <div className="sm:col-span-2">
-                          <div
-                            className={`alert ${hasDifference ? "alert-error" : "alert-success"} items-center p-3 text-xs`}
-                          >
-                            <div className="flex flex-col gap-1">
-                              <span className="font-semibold">
-                                {hasDifference ? "⚠️ Totales no coinciden" : "✅ Totales cuadran"}
-                              </span>
-                              <span className="text-base-content/70">
-                                Diferencia: {currencyFormatter.format(difference)}
-                              </span>
-                            </div>
-                            <label className="label cursor-pointer gap-2 p-0">
-                              <span className="text-base-content/70 text-xs">Marcar como final</span>
-                              <input
-                                type="checkbox"
-                                className="toggle toggle-sm"
-                                checked={form.status === "FINAL"}
-                                onChange={(e) => {
-                                  const nextStatus = e.target.checked ? "FINAL" : "DRAFT";
-                                  if (nextStatus === "FINAL" && hasDifference) {
-                                    if (
-                                      !confirm("⚠️ Los totales no coinciden. ¿Estás seguro de marcarlo como cerrado?")
-                                    ) {
-                                      return;
-                                    }
-                                  }
-                                  setForm((prev) => ({ ...prev, status: nextStatus }));
-                                }}
-                              />
-                            </label>
+                    </div>
+                    <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                      <MoneyInput
+                        label="Consultas"
+                        value={form.consultas}
+                        onChange={(v) => setForm((prev) => ({ ...prev, consultas: v }))}
+                      />
+                      <MoneyInput
+                        label="Controles"
+                        value={form.controles}
+                        onChange={(v) => setForm((prev) => ({ ...prev, controles: v }))}
+                      />
+                      <MoneyInput
+                        label="Tests"
+                        value={form.tests}
+                        onChange={(v) => setForm((prev) => ({ ...prev, tests: v }))}
+                      />
+                      <MoneyInput
+                        label="Vacunas"
+                        value={form.vacunas}
+                        onChange={(v) => setForm((prev) => ({ ...prev, vacunas: v }))}
+                      />
+                      <MoneyInput
+                        label="Licencias"
+                        value={form.licencias}
+                        onChange={(v) => setForm((prev) => ({ ...prev, licencias: v }))}
+                      />
+                      <MoneyInput
+                        label="Roxair"
+                        value={form.roxair}
+                        onChange={(v) => setForm((prev) => ({ ...prev, roxair: v }))}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-3 lg:col-span-3 xl:col-span-3">
+                  <div className="bg-base-100 border-base-200 h-full rounded-2xl border p-4 shadow-sm">
+                    <div className="flex items-center gap-2">
+                      <ClipboardList className="text-primary h-5 w-5" />
+                      <h3 className="text-base-content text-base font-semibold">Validación</h3>
+                    </div>
+                    <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                      <StatMini
+                        label="Total método de pago"
+                        value={currencyFormatter.format(paymentMethodTotal)}
+                        tone="primary"
+                        bold
+                      />
+                      <StatMini
+                        label="Total servicios"
+                        value={currencyFormatter.format(serviceTotals)}
+                        tone="primary"
+                        bold
+                      />
+                      <div className="sm:col-span-2">
+                        <div
+                          className={`alert ${hasDifference ? "alert-error" : "alert-success"} items-center p-3 text-xs`}
+                        >
+                          <div className="flex flex-col gap-1">
+                            <span className="font-semibold">
+                              {hasDifference ? "⚠️ Totales no coinciden" : "✅ Totales cuadran"}
+                            </span>
+                            <span className="text-base-content/70">
+                              Diferencia: {currencyFormatter.format(difference)}
+                            </span>
                           </div>
+                          <label className="label cursor-pointer gap-2 p-0">
+                            <span className="text-base-content/70 text-xs">Marcar como final</span>
+                            <input
+                              type="checkbox"
+                              className="toggle toggle-sm"
+                              checked={form.status === "FINAL"}
+                              onChange={(e) => {
+                                const nextStatus = e.target.checked ? "FINAL" : "DRAFT";
+                                if (nextStatus === "FINAL" && hasDifference) {
+                                  if (
+                                    !confirm("⚠️ Los totales no coinciden. ¿Estás seguro de marcarlo como cerrado?")
+                                  ) {
+                                    return;
+                                  }
+                                }
+                                setForm((prev) => ({ ...prev, status: nextStatus }));
+                              }}
+                            />
+                          </label>
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
-
-                <div className="bg-base-100 border-base-200 rounded-2xl border p-4 shadow-sm">
-                  <div className="flex items-center gap-2">
-                    <FileText className="text-base-content/70 h-5 w-5" />
-                    <h3 className="text-base-content text-sm font-semibold">Notas (opcional)</h3>
-                  </div>
-                  <div className="mt-3 flex flex-col gap-3">
-                    <textarea
-                      className="textarea textarea-bordered h-28 w-full"
-                      value={form.comentarios}
-                      onChange={(e) => setForm((prev) => ({ ...prev, comentarios: e.target.value }))}
-                      placeholder="Notas sobre ingresos, incidencias, etc."
-                    />
-                    <input
-                      className="input input-bordered w-full"
-                      value={form.reason}
-                      onChange={(e) => setForm((prev) => ({ ...prev, reason: e.target.value }))}
-                      placeholder="Motivo de edición (requerido si finalizado)"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                  <Button type="submit" variant="primary" disabled={mutation.isPending}>
-                    <Save className="h-4 w-4" />
-                    {mutation.isPending ? "Guardando..." : "Guardar balance"}
-                  </Button>
-                  {selectedId && (
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      disabled={historyQuery.isLoading}
-                      onClick={() => historyQuery.refetch()}
-                    >
-                      <History className="h-4 w-4" />
-                      Ver historial
-                    </Button>
-                  )}
-                  {mutation.isError && <Alert variant="error">No se pudo guardar el balance.</Alert>}
-                  {mutation.isSuccess && <Alert variant="success">Balance guardado.</Alert>}
-                </div>
-              </form>
-            ) : (
-              <div className="alert alert-info">
-                No tienes permisos para editar. Selecciona otro día o contacta a un administrador.
               </div>
-            )}
-          </div>
 
-          <div className="space-y-4">
-            {selectedId && (
-              <div className="card bg-base-100 border shadow-sm">
-                <div className="card-body p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-base-content/70 text-xs tracking-wide uppercase">Historial de cambios</p>
-                      <h3 className="text-base-content text-lg font-bold">Balance #{selectedId}</h3>
-                    </div>
-                    <Button size="sm" onClick={() => historyQuery.refetch()} disabled={historyQuery.isLoading}>
-                      {historyQuery.isLoading ? "Cargando..." : "Refrescar"}
-                    </Button>
-                  </div>
-                  {historyQuery.data && historyQuery.data.length > 0 ? (
-                    <ul className="mt-3 space-y-2 text-sm">
-                      {historyQuery.data.map((entry) => (
-                        <HistoryItem key={entry.id} entry={entry} currencyFormatter={currencyFormatter} />
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-base-content/60 mt-2 text-sm">Sin historial para este balance.</p>
-                  )}
+              <div className="bg-base-100 border-base-200 rounded-2xl border p-4 shadow-sm">
+                <div className="flex items-center gap-2">
+                  <FileText className="text-base-content/70 h-5 w-5" />
+                  <h3 className="text-base-content text-sm font-semibold">Notas (opcional)</h3>
+                </div>
+                <div className="mt-3 flex flex-col gap-3">
+                  <textarea
+                    className="textarea textarea-bordered h-28 w-full"
+                    value={form.comentarios}
+                    onChange={(e) => setForm((prev) => ({ ...prev, comentarios: e.target.value }))}
+                    placeholder="Notas sobre ingresos, incidencias, etc."
+                  />
+                  <input
+                    className="input input-bordered w-full"
+                    value={form.reason}
+                    onChange={(e) => setForm((prev) => ({ ...prev, reason: e.target.value }))}
+                    placeholder="Motivo de edición (requerido si finalizado)"
+                  />
                 </div>
               </div>
-            )}
-          </div>
+
+              <div className="flex flex-wrap gap-2">
+                <Button type="submit" variant="primary" disabled={mutation.isPending}>
+                  <Save className="h-4 w-4" />
+                  {mutation.isPending ? "Guardando..." : "Guardar balance"}
+                </Button>
+                {mutation.isError && <Alert variant="error">No se pudo guardar el balance.</Alert>}
+                {mutation.isSuccess && <Alert variant="success">Balance guardado.</Alert>}
+              </div>
+            </form>
+          ) : (
+            <div className="alert alert-info">
+              No tienes permisos para editar. Selecciona otro día o contacta a un administrador.
+            </div>
+          )}
         </div>
       ) : (
         <div className="alert alert-info">Selecciona un día en el calendario para editar o revisar el balance.</div>
+      )}
+
+      {showHistory && selectedId && (
+        <div className="bg-base-100 border-base-200 fixed right-4 bottom-4 z-40 w-full max-w-sm rounded-2xl border shadow-lg">
+          <div className="border-base-200 flex items-center justify-between border-b px-4 py-2">
+            <div>
+              <p className="text-base-content/70 text-[11px] tracking-wide uppercase">Historial de cambios</p>
+              <h3 className="text-base-content text-sm font-bold">Balance #{selectedId}</h3>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button size="xs" onClick={() => historyQuery.refetch()} disabled={historyQuery.isLoading}>
+                {historyQuery.isLoading ? "Cargando..." : "Refrescar"}
+              </Button>
+              <button
+                className="text-base-content/60 hover:text-base-content rounded-full p-1"
+                onClick={() => setShowHistory(false)}
+                aria-label="Cerrar historial"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+          <div className="max-h-80 overflow-y-auto px-4 py-3 text-sm">
+            {historyQuery.data && historyQuery.data.length > 0 ? (
+              <ul className="space-y-2">
+                {historyQuery.data.map((entry) => (
+                  <HistoryItem key={entry.id} entry={entry} currencyFormatter={currencyFormatter} />
+                ))}
+              </ul>
+            ) : (
+              <p className="text-base-content/60">Sin historial para este balance.</p>
+            )}
+          </div>
+        </div>
       )}
     </section>
   );

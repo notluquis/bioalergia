@@ -4,6 +4,7 @@ import Button from "@/components/ui/Button";
 import { ProductionBalance } from "../types";
 import DayCard from "./DayCard";
 import { currencyFormatter } from "@/lib/format";
+import dayjsLib from "dayjs";
 
 type WeekViewProps = {
   currentDate: dayjs.Dayjs;
@@ -52,7 +53,7 @@ export default function WeekView({ currentDate, onDateChange, balances, onSelect
       <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-6 lg:grid-cols-6">
         {days.map((day) => {
           const dateStr = day.format("YYYY-MM-DD");
-          const balance = balances.find((b) => b.date === dateStr);
+          const balance = balances.find((b) => dayjsLib(b.date).isSame(day, "day"));
           const isSelected = selectedDate === dateStr;
           const isToday = day.isSame(dayjs(), "day");
 
