@@ -154,14 +154,15 @@ export function useCalendarEvents() {
   );
 
   const applyFilters = useCallback(() => {
-    const fromDate = dayjs(normalizedDraft.from);
-    const toDate = dayjs(normalizedDraft.to);
+    const draft = normalizeFilters(useCalendarFilterStore.getState());
+    const fromDate = dayjs(draft.from);
+    const toDate = dayjs(draft.to);
     const spanDays = fromDate.isValid() && toDate.isValid() ? Math.max(1, toDate.diff(fromDate, "day") + 1) : 1;
-    const resolvedMaxDays = Math.min(Math.max(spanDays, normalizedDraft.maxDays, 1), 365);
-    const next = { ...normalizedDraft, maxDays: resolvedMaxDays };
+    const resolvedMaxDays = Math.min(Math.max(spanDays, draft.maxDays, 1), 365);
+    const next = { ...draft, maxDays: resolvedMaxDays };
     setAppliedFilters(next);
     setFilters(next);
-  }, [normalizedDraft, setFilters]);
+  }, [setFilters]);
 
   const resetFilters = useCallback(() => {
     const defaults = computeDefaults();

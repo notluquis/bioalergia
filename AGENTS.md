@@ -7,7 +7,7 @@
 
 ## TL;DR (lee esto primero)
 
-```
+```text
 Stack:       React + Vite + TypeScript (frontend) | Node + Express + Prisma + PostgreSQL (backend)
 Desarrollo:  npm run dev:full (frontend + backend simultáneo)
 Build:       npm run build && npm run build:server
@@ -66,7 +66,7 @@ npx prisma migrate status # Verificar estado de migraciones
 
 ## Estructura del proyecto
 
-```
+```text
 finanzas-app/
 ├── src/                    # Frontend React
 │   ├── main.tsx           # Entry point + rutas
@@ -98,6 +98,15 @@ finanzas-app/
 - `TO_CHAR()` en vez de `DATE_FORMAT()`
 - `EXTRACT()` para fechas
 - Tablas usan nombres de `@@map`: `events` (no `google_calendar_events`), `people` (no `person`)
+
+### 🔴 Calendar sync asíncrono (evita Cloudflare 524)
+
+- `POST /api/calendar/events/sync` retorna **202 Accepted** inmediatamente
+- Sync se ejecuta en **background** con async/await promise handling
+- Frontend hace **polling cada 5s** del estado via `GET /api/calendar/events/sync/logs`
+- Polling máximo: **5 minutos** (60 polls × 5s)
+- Evita Error 524 de Cloudflare (timeout >100s en syncs largos)
+- NUNCA hacer sync bloqueante - siempre retornar HTTP response antes de 100s
 
 ### 🔴 Sync timeout = 15 minutos
 
@@ -186,17 +195,18 @@ try {
 
 ## Errores comunes (EVITAR)
 
-| Error                                                | Solución                                                  |
-| ---------------------------------------------------- | --------------------------------------------------------- |
-| `DATE_FORMAT is not a function`                      | Usar `TO_CHAR()` (PostgreSQL, no MySQL)                   |
-| `Unable to fit value X into a 64-bit signed integer` | Validar amounts ≤ 2,147,483,647 en `normalizeAmountRaw()` |
-| `Value out of range for type integer`                | Mismo que arriba - valores exceden Int32 max              |
-| Tab no se marca como activo                          | Agregar `end: true` al TabItem                            |
-| Sync se marca como error muy rápido                  | Timeout es 15min, no 5min                                 |
-| `bg-white` no funciona en dark mode                  | Usar `bg-base-100` (DaisyUI)                              |
-| Commit falla por lint                                | Correr `npm run lint --fix` primero                       |
-| `Cannot find module` en server                       | Correr `npm run build:server`                             |
-| Tabla no existe en raw query                         | Verificar `@@map` en schema.prisma                        |
+| Error                                                | Solución                                                           |
+| ---------------------------------------------------- | ------------------------------------------------------------------ |
+| Error 524 Cloudflare timeout durante sync            | Sync ahora es asíncrono (202 Accepted), polling automático del log |
+| `DATE_FORMAT is not a function`                      | Usar `TO_CHAR()` (PostgreSQL, no MySQL)                            |
+| `Unable to fit value X into a 64-bit signed integer` | Validar amounts ≤ 2,147,483,647 en `normalizeAmountRaw()`          |
+| `Value out of range for type integer`                | Mismo que arriba - valores exceden Int32 max                       |
+| Tab no se marca como activo                          | Agregar `end: true` al TabItem                                     |
+| Sync se marca como error muy rápido                  | Timeout es 15min, no 5min                                          |
+| `bg-white` no funciona en dark mode                  | Usar `bg-base-100` (DaisyUI)                                       |
+| Commit falla por lint                                | Correr `npm run lint --fix` primero                                |
+| `Cannot find module` en server                       | Correr `npm run build:server`                                      |
+| Tabla no existe en raw query                         | Verificar `@@map` en schema.prisma                                 |
 
 ---
 
@@ -204,9 +214,9 @@ try {
 
 ### Calendar
 
-- `src/features/calendar/api.ts` — API calls centralizados
-- `src/features/calendar/hooks/useCalendarEvents.ts` — Estado y sync
-- `server/routes/calendar-events.ts` — Endpoints
+- `src/features/calendar/api.ts` — API calls centralizados, sync retorna 202 Accepted
+- `src/features/calendar/hooks/useCalendarEvents.ts` — Estado, sync con polling cada 5s
+- `server/routes/calendar-events.ts` — Endpoints, sync ahora asíncrono (background)
 - `server/lib/google-calendar-queries.ts` — Raw SQL (PostgreSQL)
 - `server/lib/google-calendar-store.ts` — DB upsert con error logging mejorado
 - `server/services/calendar.ts` — Sync lock (15min timeout)
