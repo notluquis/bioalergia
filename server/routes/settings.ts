@@ -1,6 +1,6 @@
 import express from "express";
 import multer from "multer";
-import { asyncHandler, authenticate, softAuthenticate, requireRole } from "../lib/http.js";
+import { asyncHandler, authenticate, softAuthenticate, requireRole, authorize } from "../lib/http.js";
 import { logEvent, logWarn, requestContext } from "../lib/logger.js";
 import { getSettings, updateSettings, getSetting, updateSetting, deleteSetting } from "../services/settings.js";
 import { DEFAULT_SETTINGS, type AppSettings } from "../lib/settings.js";
