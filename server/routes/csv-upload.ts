@@ -6,6 +6,41 @@ import type { AuthenticatedRequest } from "../types.js";
 
 const router = Router();
 
+const toInt = (val: unknown): number => {
+  if (typeof val === "number") return Math.round(val);
+  if (typeof val !== "string") return 0;
+  const cleaned = val.replace(/[^0-9-]/g, "");
+  const num = Number(cleaned);
+  if (!Number.isFinite(num)) return 0;
+  return Math.round(num);
+};
+
+const normalizeCsvDate = (raw: string, ctx: z.RefinementCtx): string => {
+  const value = (raw || "").toString().trim();
+  let date: Date | null = null;
+
+  // Accept DD/MM/YYYY or ISO-like strings
+  const ddmmyyyy = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;
+  const match = value.match(ddmmyyyy);
+  if (match) {
+    const [, d, m, y] = match;
+    const day = Number(d);
+    const month = Number(m) - 1;
+    const year = Number(y);
+    date = new Date(year, month, day);
+  } else if (!Number.isNaN(Date.parse(value))) {
+    date = new Date(value);
+  }
+
+  if (!date || Number.isNaN(date.getTime())) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Fecha inválida" });
+     
+    return z.NEVER;
+  }
+
+  return date.toISOString().slice(0, 10);
+};
+
 // Esquemas de validación por tabla
 const TABLE_SCHEMAS = {
   people: z.object({
@@ -56,23 +91,23 @@ const TABLE_SCHEMAS = {
     category: z.string().optional(),
   }),
   daily_balances: z.object({
-    date: z.string().refine((d) => !isNaN(Date.parse(d))),
+    date: z.string().transform((val, ctx) => normalizeCsvDate(val, ctx)),
     amount: z.coerce.number(),
     note: z.string().optional(),
   }),
   daily_production_balances: z.object({
-    balanceDate: z.string().refine((d) => !isNaN(Date.parse(d))),
-    ingresoTarjetas: z.coerce.number().default(0),
-    ingresoTransferencias: z.coerce.number().default(0),
-    ingresoEfectivo: z.coerce.number().default(0),
-    gastosDiarios: z.coerce.number().default(0),
-    otrosAbonos: z.coerce.number().default(0),
-    consultasMonto: z.coerce.number().default(0),
-    controlesMonto: z.coerce.number().default(0),
-    testsMonto: z.coerce.number().default(0),
-    vacunasMonto: z.coerce.number().default(0),
-    licenciasMonto: z.coerce.number().default(0),
-    roxairMonto: z.coerce.number().default(0),
+    balanceDate: z.string().transform((val, ctx) => normalizeCsvDate(val, ctx)),
+    ingresoTarjetas: z.union([z.string(), z.number()]).transform((v) => toInt(v)),
+    ingresoTransferencias: z.union([z.string(), z.number()]).transform((v) => toInt(v)),
+    ingresoEfectivo: z.union([z.string(), z.number()]).transform((v) => toInt(v)),
+    gastosDiarios: z.union([z.string(), z.number()]).transform((v) => toInt(v)),
+    otrosAbonos: z.union([z.string(), z.number()]).transform((v) => toInt(v)),
+    consultasMonto: z.union([z.string(), z.number()]).transform((v) => toInt(v)),
+    controlesMonto: z.union([z.string(), z.number()]).transform((v) => toInt(v)),
+    testsMonto: z.union([z.string(), z.number()]).transform((v) => toInt(v)),
+    vacunasMonto: z.union([z.string(), z.number()]).transform((v) => toInt(v)),
+    licenciasMonto: z.union([z.string(), z.number()]).transform((v) => toInt(v)),
+    roxairMonto: z.union([z.string(), z.number()]).transform((v) => toInt(v)),
     comentarios: z.string().optional(),
     status: z.enum(["DRAFT", "FINAL"]).default("DRAFT"),
     changeReason: z.string().optional(),
