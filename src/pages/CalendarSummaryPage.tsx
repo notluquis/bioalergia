@@ -424,7 +424,7 @@ function CalendarSummaryPage() {
 
       <section className="grid gap-4 lg:grid-cols-3">
         <form
-          className="border-primary/15 bg-base-100 text-base-content grid gap-4 rounded-2xl border p-6 text-xs shadow-sm md:grid-cols-6"
+          className="border-primary/15 bg-base-100 text-base-content grid grid-cols-1 gap-4 rounded-2xl border p-6 text-xs shadow-sm sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
           onSubmit={(event) => {
             event.preventDefault();
             applyFilters();
@@ -469,8 +469,8 @@ function CalendarSummaryPage() {
             value={filters.search}
             onChange={(event: ChangeEvent<HTMLInputElement>) => updateFilters("search", event.target.value)}
           />
-          <div className="flex items-end gap-2 md:col-span-2">
-            <Button type="submit" disabled={loading}>
+          <div className="col-span-full flex flex-wrap items-end gap-2">
+            <Button type="submit" disabled={loading} className="min-w-[140px]">
               {loading ? "Actualizando..." : "Aplicar filtros"}
             </Button>
             <Button
@@ -480,6 +480,7 @@ function CalendarSummaryPage() {
               onClick={() => {
                 resetFilters();
               }}
+              className="min-w-[140px]"
             >
               Reestablecer
             </Button>
