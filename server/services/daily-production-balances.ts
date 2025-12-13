@@ -80,7 +80,7 @@ type BalanceWithRelations = Prisma.DailyProductionBalanceGetPayload<{
 function mapBalanceRecord(balance: BalanceWithRelations): ProductionBalanceRecord {
   const subtotalIngresos = balance.ingresoTarjetas + balance.ingresoTransferencias + balance.ingresoEfectivo;
   const totalIngresos = subtotalIngresos - balance.gastosDiarios;
-  const total = totalIngresos + balance.otrosAbonos;
+  const total = totalIngresos;
 
   return {
     id: Number(balance.id),

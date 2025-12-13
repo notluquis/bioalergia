@@ -4,7 +4,7 @@ import dayjs from "dayjs";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Button from "@/components/ui/Button";
 import Alert from "@/components/ui/Alert";
-import { INPUT_CURRENCY_SM, GRID_2_COL_SM } from "@/lib/styles";
+import { INPUT_CURRENCY_SM } from "@/lib/styles";
 import { today } from "@/lib/dates";
 import { useToast } from "@/context/ToastContext";
 import { useSettings } from "@/context/SettingsContext";
@@ -99,6 +99,9 @@ export default function DailyProductionBalancesPage() {
   const [selectedDate, setSelectedDate] = useState<string | null>(today());
   const startOfWeek = currentDate.startOf("week").add(1, "day");
   const endOfWeek = startOfWeek.add(6, "day");
+  const todayDate = dayjs();
+  const nextWeekStart = startOfWeek.add(7, "day");
+  const canGoNextWeek = !nextWeekStart.isAfter(todayDate, "day");
   const from = startOfWeek.format("YYYY-MM-DD");
   const to = endOfWeek.format("YYYY-MM-DD");
 
@@ -183,7 +186,6 @@ export default function DailyProductionBalancesPage() {
     ingresoTransferencias: parseNumber(form.ingresoTransferencias),
     ingresoEfectivo: parseNumber(form.ingresoEfectivo),
     gastosDiarios: parseNumber(form.gastosDiarios),
-    otrosAbonos: parseNumber(form.otrosAbonos),
   });
 
   const serviceTotals =
@@ -192,7 +194,8 @@ export default function DailyProductionBalancesPage() {
     parseNumber(form.tests) +
     parseNumber(form.vacunas) +
     parseNumber(form.licencias) +
-    parseNumber(form.roxair);
+    parseNumber(form.roxair) +
+    parseNumber(form.otrosAbonos);
 
   const paymentMethodTotal = derived.total;
   const hasDifference = serviceTotals !== paymentMethodTotal;
@@ -234,7 +237,14 @@ export default function DailyProductionBalancesPage() {
               <Button size="sm" onClick={() => setCurrentDate((d) => d.subtract(1, "week"))}>
                 ← Semana previa
               </Button>
-              <Button size="sm" onClick={() => setCurrentDate((d) => d.add(1, "week"))}>
+              <Button
+                size="sm"
+                disabled={!canGoNextWeek}
+                onClick={() => {
+                  if (!canGoNextWeek) return;
+                  setCurrentDate((d) => d.add(1, "week"));
+                }}
+              >
                 Semana siguiente →
               </Button>
             </div>
@@ -317,7 +327,7 @@ export default function DailyProductionBalancesPage() {
                         <p className="text-base-content/60 text-xs">Tarjeta, transferencia y efectivo</p>
                       </div>
                     </div>
-                    <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                    <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
                       <MoneyInput
                         icon={<CreditCard className="h-4 w-4" />}
                         label="Tarjetas"
@@ -342,20 +352,14 @@ export default function DailyProductionBalancesPage() {
                   <div className="border-error/30 bg-error/5 rounded-2xl border p-4 shadow-sm">
                     <div className="flex items-center gap-2">
                       <TrendingDown className="text-error h-5 w-5" />
-                      <h3 className="text-base-content text-base font-semibold">Gastos y ajustes</h3>
+                      <h3 className="text-base-content text-base font-semibold">Gastos</h3>
                     </div>
-                    <div className={GRID_2_COL_SM}>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                       <MoneyInput
                         label="Gastos diarios"
                         value={form.gastosDiarios}
                         onChange={(v) => setForm((prev) => ({ ...prev, gastosDiarios: v }))}
                         hint="Combustible, insumos, etc."
-                      />
-                      <MoneyInput
-                        label="Otros abonos"
-                        value={form.otrosAbonos}
-                        onChange={(v) => setForm((prev) => ({ ...prev, otrosAbonos: v }))}
-                        hint="Devoluciones, ajustes"
                       />
                     </div>
                   </div>
@@ -365,7 +369,7 @@ export default function DailyProductionBalancesPage() {
                     <div className="mt-2 grid grid-cols-3 gap-3 text-center text-xs">
                       <StatMini label="Subtotal" value={currencyFormatter.format(derived.subtotal)} tone="success" />
                       <StatMini
-                        label="- Gastos"
+                        label="Gastos"
                         value={`-${currencyFormatter.format(parseNumber(form.gastosDiarios))}`}
                         tone="error"
                       />
@@ -388,7 +392,7 @@ export default function DailyProductionBalancesPage() {
                         <p className="text-base-content/60 text-xs">Registra los servicios del día</p>
                       </div>
                     </div>
-                    <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                    <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
                       <MoneyInput
                         label="Consultas"
                         value={form.consultas}
@@ -418,6 +422,12 @@ export default function DailyProductionBalancesPage() {
                         label="Roxair"
                         value={form.roxair}
                         onChange={(v) => setForm((prev) => ({ ...prev, roxair: v }))}
+                      />
+                      <MoneyInput
+                        label="Otros abonos"
+                        value={form.otrosAbonos}
+                        onChange={(v) => setForm((prev) => ({ ...prev, otrosAbonos: v }))}
+                        hint="Devoluciones, ajustes"
                       />
                     </div>
                   </div>
@@ -623,7 +633,7 @@ function MoneyInput({
   return (
     <div className="form-control">
       <label className="label py-1">
-        <span className="label-text flex items-center gap-1.5 text-sm font-medium">
+        <span className="label-text flex items-center gap-1.5 text-xs leading-tight font-medium sm:text-sm">
           {icon}
           {label}
         </span>
@@ -635,7 +645,7 @@ function MoneyInput({
           inputMode="numeric"
           value={formatInputValue(value)}
           onChange={(e) => onChange(parseInputValue(e.target.value))}
-          className="grow bg-transparent"
+          className="text-base-content placeholder:text-base-content/40 grow bg-transparent"
           placeholder="0"
         />
       </label>
