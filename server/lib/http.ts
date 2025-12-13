@@ -17,10 +17,12 @@ export function asyncHandler(handler: AsyncHandler) {
   };
 }
 
-export function isRoleAtLeast(role: UserRole, expected: UserRole[]): boolean {
-  if (role === "GOD") return true;
-  if (expected.includes(role)) return true;
-  return false;
+export function isRoleAtLeast(role: UserRole | string, expected: (UserRole | string)[]): boolean {
+  const normalize = (r: string) => r.toUpperCase();
+  const current = normalize(role);
+
+  if (current === "GOD") return true;
+  return expected.some((e) => normalize(e) === current);
 }
 
 export function issueToken(session: AuthSession) {
