@@ -17,6 +17,7 @@ import {
   FileSpreadsheet,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/Tooltip";
+import { APP_CONFIG } from "@/config/app";
 
 type NavItem = {
   to: string;
@@ -213,6 +214,7 @@ export default function Sidebar({ isOpen, isMobile, onClose, isCollapsed = false
                 </div>
                 <div className="min-w-0 overflow-hidden transition-all duration-300">
                   <p className="text-base-content truncate text-sm leading-tight font-semibold">{displayName}</p>
+                  <p className="text-base-content/70 truncate text-xs">{APP_CONFIG.name}</p>
                 </div>
               </div>
             )}

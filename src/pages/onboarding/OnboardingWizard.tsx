@@ -6,6 +6,7 @@ import { Shield, Key, Check, ArrowRight, User, CreditCard, Smartphone, Loader2, 
 import { cn } from "@/lib/utils";
 import { formatRut, validateRut } from "@/lib/rut";
 import Input from "@/components/ui/Input";
+import Button from "@/components/ui/Button";
 import { apiClient } from "@/lib/apiClient";
 
 const STEPS = [
@@ -257,12 +258,14 @@ export default function OnboardingWizard() {
                   tu cuenta.
                 </p>
               </div>
-              <button
+              <Button
                 onClick={handleNext}
-                className="btn btn-primary btn-lg shadow-primary/20 w-full max-w-xs gap-2 shadow-lg"
+                variant="primary"
+                size="lg"
+                className="shadow-primary/20 w-full max-w-xs gap-2 shadow-lg"
               >
                 Comenzar <ArrowRight size={20} />
-              </button>
+              </Button>
             </div>
           )}
 
@@ -281,36 +284,20 @@ export default function OnboardingWizard() {
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="form-control">
-                  <label className="label">
-                    <span className="label-text">Nombres</span>
-                  </label>
-                  <input
-                    type="text"
-                    className="input input-bordered w-full"
+                  <Input
+                    label="Nombres"
                     value={profile.names}
                     onChange={(e) => setProfile({ ...profile, names: e.target.value })}
                     required
                   />
                 </div>
                 <div className="form-control">
-                  <label className="label">
-                    <span className="label-text">RUT</span>
-                  </label>
-                  <input
-                    type="text"
-                    className={cn("input input-bordered w-full", error && error.includes("RUT") && "input-error")}
+                  <Input
+                    label="RUT"
                     value={profile.rut}
+                    error={error && error.includes("RUT") ? "RUT inválido" : undefined}
                     onChange={(e) => {
                       const val = e.target.value;
-                      // Allow typing freely, but maybe restrict chars?
-                      // Better to just update state and format on blur or as they type if we want
-                      // Let's format as they type but be careful not to block editing
-                      // Actually user asked for "formateen automaticamente".
-                      // A common pattern is to format on change if it's valid-ish, or just on blur.
-                      // Let's try formatting on change but keeping cursor position is hard without a library.
-                      // Safest is format on blur or use a controlled input that formats raw input.
-                      // For now, let's just update raw value and format on blur, OR format if it looks like a full RUT.
-                      // Let's stick to simple: update value, format on blur.
                       setProfile({ ...profile, rut: val });
                     }}
                     onBlur={() => {
@@ -327,45 +314,30 @@ export default function OnboardingWizard() {
                   />
                 </div>
                 <div className="form-control">
-                  <label className="label">
-                    <span className="label-text">Primer Apellido</span>
-                  </label>
-                  <input
-                    type="text"
-                    className="input input-bordered w-full"
+                  <Input
+                    label="Primer Apellido"
                     value={profile.fatherName}
                     onChange={(e) => setProfile({ ...profile, fatherName: e.target.value })}
                   />
                 </div>
                 <div className="form-control">
-                  <label className="label">
-                    <span className="label-text">Segundo Apellido</span>
-                  </label>
-                  <input
-                    type="text"
-                    className="input input-bordered w-full"
+                  <Input
+                    label="Segundo Apellido"
                     value={profile.motherName}
                     onChange={(e) => setProfile({ ...profile, motherName: e.target.value })}
                   />
                 </div>
                 <div className="form-control">
-                  <label className="label">
-                    <span className="label-text">Teléfono</span>
-                  </label>
-                  <input
+                  <Input
+                    label="Teléfono"
                     type="tel"
-                    className="input input-bordered w-full"
                     value={profile.phone}
                     onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
                   />
                 </div>
                 <div className="form-control md:col-span-2">
-                  <label className="label">
-                    <span className="label-text">Dirección</span>
-                  </label>
-                  <input
-                    type="text"
-                    className="input input-bordered w-full"
+                  <Input
+                    label="Dirección"
                     value={profile.address}
                     onChange={(e) => setProfile({ ...profile, address: e.target.value })}
                   />
@@ -373,9 +345,9 @@ export default function OnboardingWizard() {
               </div>
 
               <div className="mt-6 flex justify-end">
-                <button type="submit" className="btn btn-primary w-full px-8 sm:w-auto">
+                <Button type="submit" variant="primary" className="w-full px-8 sm:w-auto">
                   Siguiente
-                </button>
+                </Button>
               </div>
             </form>
           )}
@@ -395,12 +367,8 @@ export default function OnboardingWizard() {
 
               <div className="space-y-4">
                 <div className="form-control">
-                  <label className="label">
-                    <span className="label-text">Banco</span>
-                  </label>
-                  <input
-                    type="text"
-                    className="input input-bordered w-full"
+                  <Input
+                    label="Banco"
                     value={profile.bankName}
                     onChange={(e) => setProfile({ ...profile, bankName: e.target.value })}
                     placeholder="Ej: Banco de Chile"
@@ -408,11 +376,9 @@ export default function OnboardingWizard() {
                 </div>
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <div className="form-control">
-                    <label className="label">
-                      <span className="label-text">Tipo de Cuenta</span>
-                    </label>
-                    <select
-                      className="select select-bordered w-full"
+                    <Input
+                      as="select"
+                      label="Tipo de Cuenta"
                       value={profile.bankAccountType}
                       onChange={(e) => setProfile({ ...profile, bankAccountType: e.target.value })}
                     >
@@ -420,15 +386,11 @@ export default function OnboardingWizard() {
                       <option value="Corriente">Cuenta Corriente</option>
                       <option value="Vista">Cuenta Vista / RUT</option>
                       <option value="Ahorro">Cuenta de Ahorro</option>
-                    </select>
+                    </Input>
                   </div>
                   <div className="form-control">
-                    <label className="label">
-                      <span className="label-text">Número de Cuenta</span>
-                    </label>
-                    <input
-                      type="text"
-                      className="input input-bordered w-full"
+                    <Input
+                      label="Número de Cuenta"
                       value={profile.bankAccountNumber}
                       onChange={(e) => setProfile({ ...profile, bankAccountNumber: e.target.value })}
                     />
@@ -437,12 +399,12 @@ export default function OnboardingWizard() {
               </div>
 
               <div className="mt-6 flex justify-end gap-3">
-                <button type="button" onClick={() => setCurrentStep((prev) => prev - 1)} className="btn btn-ghost">
+                <Button type="button" onClick={() => setCurrentStep((prev) => prev - 1)} variant="ghost">
                   Atrás
-                </button>
-                <button type="submit" className="btn btn-primary w-full px-8 sm:w-auto">
+                </Button>
+                <Button type="submit" variant="primary" className="w-full px-8 sm:w-auto">
                   Siguiente
-                </button>
+                </Button>
               </div>
             </form>
           )}
@@ -484,12 +446,12 @@ export default function OnboardingWizard() {
               </div>
 
               <div className="mt-6 flex justify-end gap-3">
-                <button type="button" onClick={() => setCurrentStep((prev) => prev - 1)} className="btn btn-ghost">
+                <Button type="button" onClick={() => setCurrentStep((prev) => prev - 1)} variant="ghost">
                   Atrás
-                </button>
-                <button type="submit" className="btn btn-primary w-full px-8 sm:w-auto">
+                </Button>
+                <Button type="submit" variant="primary" className="w-full px-8 sm:w-auto">
                   Siguiente
-                </button>
+                </Button>
               </div>
             </form>
           )}
@@ -524,47 +486,49 @@ export default function OnboardingWizard() {
                   </div>
 
                   <div className="form-control w-full max-w-xs">
-                    <label className="label">
-                      <span className="label-text w-full text-center">Ingresa el código de 6 dígitos</span>
-                    </label>
-                    <input
+                    <Input
+                      label="Ingresa el código de 6 dígitos"
                       type="text"
                       inputMode="numeric"
                       pattern="[0-9]*"
                       maxLength={6}
-                      className="input input-bordered text-center text-2xl tracking-widest"
+                      className="text-center text-2xl tracking-widest"
                       value={mfaCode}
                       onChange={(e) => setMfaCode(e.target.value)}
                       placeholder="000000"
                     />
                   </div>
 
-                  <button
+                  <Button
                     onClick={verifyMfa}
-                    className="btn btn-primary w-full max-w-xs"
+                    variant="primary"
+                    className="w-full max-w-xs"
                     disabled={mfaCode.length !== 6 || loading}
                   >
                     {loading ? <Loader2 className="animate-spin" /> : "Verificar y Activar"}
-                  </button>
+                  </Button>
 
                   <div className="divider text-base-content/40 text-xs">O usa biometría</div>
 
-                  <button
+                  <Button
                     onClick={handlePasskeyRegister}
-                    className="btn btn-outline w-full max-w-xs gap-2"
+                    variant="outline"
+                    className="w-full max-w-xs gap-2"
                     disabled={loading}
                   >
                     <Fingerprint size={20} />
                     Registrar Passkey (Huella/FaceID)
-                  </button>
+                  </Button>
 
-                  <button
+                  <Button
                     onClick={handleNext}
-                    className="btn btn-ghost btn-sm text-base-content/50 hover:text-base-content mt-2"
+                    variant="ghost"
+                    size="sm"
+                    className="text-base-content/50 hover:text-base-content mt-2"
                     disabled={loading}
                   >
                     Omitir por ahora
-                  </button>
+                  </Button>
                 </div>
               ) : (
                 <div className="text-error text-center">No se pudo cargar el código QR.</div>
@@ -581,13 +545,15 @@ export default function OnboardingWizard() {
                 <h1 className="text-base-content text-3xl font-bold">¡Todo listo!</h1>
                 <p className="text-base-content/60 mt-2">Tu perfil ha sido completado y tu cuenta está segura.</p>
               </div>
-              <button
+              <Button
                 onClick={handleFinalSubmit}
-                className="btn btn-primary btn-lg shadow-primary/20 w-full max-w-xs shadow-lg"
+                variant="primary"
+                size="lg"
+                className="shadow-primary/20 w-full max-w-xs shadow-lg"
                 disabled={loading}
               >
                 {loading ? <Loader2 className="animate-spin" /> : "Finalizar e Ir al Dashboard"}
-              </button>
+              </Button>
             </div>
           )}
         </div>

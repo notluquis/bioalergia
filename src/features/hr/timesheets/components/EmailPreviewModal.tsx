@@ -1,4 +1,3 @@
-/* eslint-disable no-restricted-syntax -- Email preview uses hardcoded colors to accurately simulate how the actual .eml email will render in email clients */
 import { fmtCLP } from "@/lib/format";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
@@ -84,100 +83,66 @@ export default function EmailPreviewModal({
 
           {/* Preview del email - simula cómo se verá en el cliente de correo */}
           <div className="border-base-300 rounded-xl border bg-white p-5">
-            <p className="mb-4" style={{ color: "#333333" }}>
+            <p className="mb-4 text-zinc-800">
               Estimado/a <strong>{employee.full_name}</strong>,
             </p>
-            <p className="mb-4 text-sm" style={{ color: "#333333" }}>
+            <p className="mb-4 text-sm text-zinc-800">
               A continuación encontrarás el resumen de los servicios prestados durante el periodo{" "}
               <strong>{monthLabelEs}</strong>, favor corroborar y emitir boleta de honorarios.
             </p>
 
             {/* Caja verde para la boleta */}
-            <div className="mb-4 rounded-lg p-4" style={{ backgroundColor: "#dcfce7", border: "2px solid #22c55e" }}>
-              <p className="mb-3 text-xs font-semibold tracking-wider uppercase" style={{ color: "#166534" }}>
+            <div className="mb-4 rounded-lg border-2 border-green-500 bg-green-100 p-4">
+              <p className="mb-3 text-xs font-semibold tracking-wider text-green-800 uppercase">
                 📝 Para la boleta de honorarios
               </p>
               <div className="space-y-2">
                 <div>
-                  <p className="mb-1 text-xs" style={{ color: "#166534" }}>
-                    Descripción:
-                  </p>
-                  <p className="font-mono text-sm font-bold" style={{ color: "#166534" }}>
-                    {boletaDescription}
-                  </p>
+                  <p className="mb-1 text-xs text-green-800">Descripción:</p>
+                  <p className="font-mono text-sm font-bold text-green-800">{boletaDescription}</p>
                 </div>
                 <div>
-                  <p className="mb-1 text-xs" style={{ color: "#166534" }}>
-                    Monto Bruto:
-                  </p>
-                  <p className="font-mono text-xl font-bold" style={{ color: "#166534" }}>
-                    {fmtCLP(summary.subtotal)}
-                  </p>
+                  <p className="mb-1 text-xs text-green-800">Monto Bruto:</p>
+                  <p className="font-mono text-xl font-bold text-green-800">{fmtCLP(summary.subtotal)}</p>
                 </div>
               </div>
             </div>
 
             {/* Tabla resumen */}
-            <table className="mb-4 w-full text-sm" style={{ borderCollapse: "collapse" }}>
+            <table className="mb-4 w-full border-collapse text-sm">
               <thead>
-                <tr style={{ backgroundColor: "#f1f5f9" }}>
-                  <th className="px-3 py-2 text-left text-xs font-semibold uppercase" style={{ color: "#475569" }}>
-                    Concepto
-                  </th>
-                  <th className="px-3 py-2 text-right text-xs font-semibold uppercase" style={{ color: "#475569" }}>
-                    Detalle
-                  </th>
+                <tr className="bg-slate-100">
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-slate-600 uppercase">Concepto</th>
+                  <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600 uppercase">Detalle</th>
                 </tr>
               </thead>
               <tbody>
-                <tr style={{ borderBottom: "1px solid #e2e8f0" }}>
-                  <td className="px-3 py-3" style={{ color: "#333333" }}>
-                    Horas totales
-                  </td>
-                  <td className="px-3 py-3 text-right font-mono" style={{ color: "#333333" }}>
-                    {totalHoursFormatted}
-                  </td>
+                <tr className="border-b border-slate-200">
+                  <td className="px-3 py-3 text-zinc-800">Horas totales</td>
+                  <td className="px-3 py-3 text-right font-mono text-zinc-800">{totalHoursFormatted}</td>
                 </tr>
-                <tr style={{ borderBottom: "1px solid #e2e8f0" }}>
-                  <td className="px-3 py-3" style={{ color: "#333333" }}>
-                    Monto Bruto
-                  </td>
-                  <td className="px-3 py-3 text-right font-mono" style={{ color: "#333333" }}>
-                    {fmtCLP(summary.subtotal)}
-                  </td>
+                <tr className="border-b border-slate-200">
+                  <td className="px-3 py-3 text-zinc-800">Monto Bruto</td>
+                  <td className="px-3 py-3 text-right font-mono text-zinc-800">{fmtCLP(summary.subtotal)}</td>
                 </tr>
-                <tr style={{ borderBottom: "1px solid #e2e8f0" }}>
-                  <td className="px-3 py-3" style={{ color: "#333333" }}>
-                    Retención ({retentionPercent}%)
-                  </td>
-                  <td className="px-3 py-3 text-right font-mono" style={{ color: "#333333" }}>
-                    -{fmtCLP(summary.retention)}
-                  </td>
+                <tr className="border-b border-slate-200">
+                  <td className="px-3 py-3 text-zinc-800">Retención ({retentionPercent}%)</td>
+                  <td className="px-3 py-3 text-right font-mono text-zinc-800">-{fmtCLP(summary.retention)}</td>
                 </tr>
-                <tr style={{ backgroundColor: "#0e64b7" }}>
-                  <td className="px-3 py-3 font-bold" style={{ color: "#ffffff" }}>
-                    Total Líquido
-                  </td>
-                  <td className="px-3 py-3 text-right font-mono font-bold" style={{ color: "#ffffff" }}>
-                    {fmtCLP(summary.net)}
-                  </td>
+                <tr className="bg-blue-700">
+                  <td className="px-3 py-3 font-bold text-white">Total Líquido</td>
+                  <td className="px-3 py-3 text-right font-mono font-bold text-white">{fmtCLP(summary.net)}</td>
                 </tr>
               </tbody>
             </table>
 
             {/* Fecha de pago */}
-            <div
-              className="rounded-lg p-3 text-center text-sm"
-              style={{ backgroundColor: "#fef3c7", border: "1px solid #f59e0b" }}
-            >
-              <strong style={{ color: "#92400e" }}>📅 Fecha de pago estimada: {summary.payDate}</strong>
+            <div className="rounded-lg border border-amber-500 bg-amber-100 p-3 text-center text-sm">
+              <strong className="text-amber-800">📅 Fecha de pago estimada: {summary.payDate}</strong>
             </div>
 
             {/* Nota de adjunto */}
-            <div
-              className="mt-3 rounded-lg p-3 text-sm"
-              style={{ backgroundColor: "#e0f2fe", border: "1px solid #0ea5e9", color: "#0369a1" }}
-            >
+            <div className="mt-3 rounded-lg border border-sky-500 bg-sky-100 p-3 text-sm text-sky-700">
               <strong>📎 Adjunto:</strong> Se incluye el documento PDF con el detalle completo de horas trabajadas.
             </div>
           </div>

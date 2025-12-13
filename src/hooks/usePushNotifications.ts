@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
-
-const VAPID_PUBLIC_KEY = "BIR7uwHD5foPZBVAKlBmngo2Ps1YTgsxJktvTmGeVq0bl7xZbQU76cpBXeVAEUzVX-OA0apUrovjSGrIeG9ggYI"; // Generated VAPID key
+import { useToast } from "@/context/ToastContext";
+const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY;
 
 function urlBase64ToUint8Array(base64String: string) {
   try {
@@ -23,6 +23,7 @@ function urlBase64ToUint8Array(base64String: string) {
 
 export function usePushNotifications() {
   const [isSubscribed, setIsSubscribed] = useState(false);
+  const { success: toastSuccess, error: toastError } = useToast();
   const [permission, setPermission] = useState<NotificationPermission>("default");
   const { user } = useAuth();
 
@@ -65,10 +66,10 @@ export function usePushNotifications() {
 
       setIsSubscribed(true);
       setPermission("granted");
-      alert("¡Notificaciones activadas!");
+      toastSuccess("¡Notificaciones activadas!");
     } catch (error) {
-      console.error("Failed to subscribe the user: ", error);
-      alert("Error al activar notificaciones. Verifica los permisos del navegador.");
+      console.error("Error subscribing to push:", error);
+      toastError("Error al activar notificaciones. Verifica los permisos del navegador.");
     }
   };
 

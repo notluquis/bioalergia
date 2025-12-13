@@ -4,6 +4,8 @@ import dayjs from "dayjs";
 import "dayjs/locale/es"; // Import Spanish locale
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
+import Modal from "@/components/ui/Modal";
 import Alert from "@/components/ui/Alert";
 import { INPUT_CURRENCY_SM } from "@/lib/styles";
 import { today } from "@/lib/dates";
@@ -40,6 +42,13 @@ export default function DailyProductionBalancesPage() {
 
   const [currentDate, setCurrentDate] = useState(dayjs());
   const [selectedDate, setSelectedDate] = useState<string | null>(today());
+  const [confirmConfig, setConfirmConfig] = useState<{
+    open: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({ open: false, title: "", message: "", onConfirm: () => {} });
+
   // Fix: With 'es' locale, startOf('week') is Monday. Do NOT add 1 day.
   const startOfWeek = currentDate.locale("es").startOf("week");
   const endOfWeek = startOfWeek.add(6, "day"); // Ends on Sunday if 7 days, but we render 6 days in WeekView
@@ -160,10 +169,23 @@ export default function DailyProductionBalancesPage() {
     if (!canEdit) return;
     const forceFinal = options?.forceFinal ?? false;
     if (forceFinal && hasDifference) {
-      const confirmed = confirm("⚠️ Los totales no coinciden. ¿Estás seguro de marcarlo como cerrado?");
-      if (!confirmed) return;
+      setConfirmConfig({
+        open: true,
+        title: "Confirmar cierre con diferencias",
+        message: "⚠️ Los totales no coinciden. ¿Estás seguro de marcarlo como cerrado?",
+        onConfirm: () => {
+          proceedSave({ forceFinal: true });
+          setConfirmConfig((prev) => ({ ...prev, open: false }));
+        },
+      });
+      return;
     }
 
+    proceedSave({ forceFinal });
+  };
+
+  const proceedSave = (options: { forceFinal: boolean }) => {
+    const { forceFinal } = options;
     if (forceFinal && form.status !== "FINAL") {
       setForm((prev) => ({ ...prev, status: "FINAL" }));
     }
@@ -260,10 +282,16 @@ export default function DailyProductionBalancesPage() {
                       variant="ghost"
                       size="sm"
                       onClick={() => {
-                        if (confirm("¿Estás seguro de limpiar todos los campos?")) {
-                          setForm(makeDefaultForm(selectedDate));
-                          setSelectedId(null);
-                        }
+                        setConfirmConfig({
+                          open: true,
+                          title: "Limpiar formulario",
+                          message: "¿Estás seguro de limpiar todos los campos del balance seleccionado?",
+                          onConfirm: () => {
+                            setForm(makeDefaultForm(selectedDate));
+                            setSelectedId(null);
+                            setConfirmConfig((prev) => ({ ...prev, open: false }));
+                          },
+                        });
                       }}
                       className="text-base-content/70 hover:text-error hover:bg-error/10"
                     >
@@ -415,16 +443,16 @@ export default function DailyProductionBalancesPage() {
                     <h3 className="text-base-content text-sm font-semibold">Notas (opcional)</h3>
                   </div>
                   <div className="mt-3 flex flex-col gap-3">
-                    <textarea
-                      className="textarea textarea-bordered h-28 w-full"
+                    <Input
+                      as="textarea"
+                      className="h-28"
                       value={form.comentarios}
                       onChange={(e) => setForm((prev) => ({ ...prev, comentarios: e.target.value }))}
                       placeholder="Notas sobre ingresos, incidencias, etc."
                       disabled={!canEdit}
                     />
                     {wasFinal && (
-                      <input
-                        className="input input-bordered w-full"
+                      <Input
                         value={form.reason}
                         onChange={(e) => setForm((prev) => ({ ...prev, reason: e.target.value }))}
                         placeholder="Motivo de edición (requerido si finalizado)"
@@ -503,10 +531,17 @@ export default function DailyProductionBalancesPage() {
                             type="button"
                             variant="outline"
                             onClick={() => {
-                              if (confirm("¿Reabrir este balance como borrador?")) {
-                                setForm((prev) => ({ ...prev, status: "DRAFT" }));
-                                triggerSave({ forceFinal: false });
-                              }
+                              setConfirmConfig({
+                                open: true,
+                                title: "Reabrir como borrador",
+                                message:
+                                  "¿Estás seguro de reabrir este balance como borrador? Esto permitirá editarlo nuevamente.",
+                                onConfirm: () => {
+                                  setForm((prev) => ({ ...prev, status: "DRAFT" }));
+                                  triggerSave({ forceFinal: false });
+                                  setConfirmConfig((prev) => ({ ...prev, open: false }));
+                                },
+                              });
                             }}
                           >
                             Reabrir como Borrador
@@ -593,6 +628,23 @@ export default function DailyProductionBalancesPage() {
           </div>
         </div>
       )}
+      <Modal
+        isOpen={confirmConfig.open}
+        onClose={() => setConfirmConfig((prev) => ({ ...prev, open: false }))}
+        title={confirmConfig.title}
+      >
+        <div className="space-y-4">
+          <p className="text-base-content/80 text-sm whitespace-pre-wrap">{confirmConfig.message}</p>
+          <div className="flex justify-end gap-3">
+            <Button variant="secondary" onClick={() => setConfirmConfig((prev) => ({ ...prev, open: false }))}>
+              Cancelar
+            </Button>
+            <Button variant="primary" onClick={confirmConfig.onConfirm}>
+              Confirmar
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </section>
   );
 }

@@ -1,5 +1,6 @@
 import { Component, ErrorInfo, ReactNode } from "react";
 import Button from "./Button";
+import { logger } from "@/lib/logger";
 
 interface Props {
   children: ReactNode;
@@ -46,11 +47,11 @@ export class GlobalError extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error("Uncaught error:", error, errorInfo);
+    logger.error("Uncaught error:", { error, errorInfo });
 
     // Si es un error de deploy, recargar automáticamente
     if (isDeployError(error)) {
-      console.log("[GlobalError] 🔄 Deploy error detected, auto-reloading...");
+      logger.info("[GlobalError] 🔄 Deploy error detected, auto-reloading...");
       this.handleAutoReload();
     }
   }
@@ -75,9 +76,9 @@ export class GlobalError extends Component<Props, State> {
       // Si es error de deploy, mostrar UI mínima mientras recarga
       if (isDeployIssue || this.state.isReloading) {
         return (
-          <div className="flex min-h-screen flex-col items-center justify-center bg-base-100 p-4 text-center">
+          <div className="bg-base-100 flex min-h-screen flex-col items-center justify-center p-4 text-center">
             <div className="max-w-md space-y-6">
-              <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <div className="bg-primary/10 text-primary mx-auto flex h-20 w-20 items-center justify-center rounded-full">
                 <svg
                   className="h-10 w-10 animate-spin"
                   xmlns="http://www.w3.org/2000/svg"
@@ -94,7 +95,7 @@ export class GlobalError extends Component<Props, State> {
               </div>
 
               <div className="space-y-2">
-                <h1 className="text-2xl font-bold text-base-content">Nueva versión detectada</h1>
+                <h1 className="text-base-content text-2xl font-bold">Nueva versión detectada</h1>
                 <p className="text-base-content/60">Actualizando la aplicación...</p>
               </div>
             </div>
@@ -104,9 +105,9 @@ export class GlobalError extends Component<Props, State> {
 
       // Error genérico - mostrar UI completa
       return (
-        <div className="flex min-h-screen flex-col items-center justify-center bg-base-100 p-4 text-center">
+        <div className="bg-base-100 flex min-h-screen flex-col items-center justify-center p-4 text-center">
           <div className="max-w-md space-y-6">
-            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-error/10 text-error">
+            <div className="bg-error/10 text-error mx-auto flex h-20 w-20 items-center justify-center rounded-full">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
@@ -124,15 +125,15 @@ export class GlobalError extends Component<Props, State> {
             </div>
 
             <div className="space-y-2">
-              <h1 className="text-3xl font-bold text-base-content">Algo salió mal</h1>
+              <h1 className="text-base-content text-3xl font-bold">Algo salió mal</h1>
               <p className="text-base-content/60">
                 Ha ocurrido un error inesperado. Hemos registrado el problema y nuestro equipo lo revisará.
               </p>
             </div>
 
             {this.state.error && (
-              <div className="rounded-xl bg-base-200 p-4 text-left">
-                <p className="font-mono text-xs text-error break-all">{this.state.error.toString()}</p>
+              <div className="bg-base-200 rounded-xl p-4 text-left">
+                <p className="text-error font-mono text-xs break-all">{this.state.error.toString()}</p>
               </div>
             )}
 

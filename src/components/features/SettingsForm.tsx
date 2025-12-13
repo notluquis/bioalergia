@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useSettings, type AppSettings } from "@/context/SettingsContext";
 import { useAuth } from "@/context/AuthContext";
 import Button from "../ui/Button";
+import Input from "../ui/Input";
 import Alert from "../ui/Alert";
 import { GRID_2_COL_MD } from "@/lib/styles";
 
@@ -294,24 +295,26 @@ export default function SettingsForm() {
           <label key={key} className="text-base-content flex flex-col gap-2 text-sm">
             <span className="text-base-content/80 text-xs font-semibold tracking-wide uppercase">{label}</span>
             {type === "color" ? (
-              <input
+              <Input
                 type="color"
+                label={label}
+                helper={helper}
                 value={form[key]}
                 onChange={(event) => handleChange(key, event.target.value)}
                 className="h-12 w-20 cursor-pointer px-0"
               />
             ) : (
-              <input
+              <Input
+                label={label}
+                helper={helper}
                 type="text"
                 value={form[key]}
                 onChange={(event) => handleChange(key, event.target.value)}
-                className="input input-bordered"
                 placeholder={label}
                 inputMode={key === "orgPhone" ? "tel" : key === "supportEmail" ? "email" : undefined}
                 autoComplete={key === "orgPhone" ? "tel" : key === "supportEmail" ? "email" : undefined}
               />
             )}
-            {helper && <span className="text-base-content/60 text-xs">{helper}</span>}
           </label>
         ))}
         <div className="border-base-300 bg-base-200 col-span-full space-y-3 rounded-2xl border p-4">
@@ -339,20 +342,15 @@ export default function SettingsForm() {
             </div>
           </div>
           {logoMode === "url" ? (
-            <label className="text-base-content flex flex-col gap-2 text-sm">
-              <span className="sr-only">URL del logo</span>
-              <input
-                type="text"
+            <div className="flex flex-col gap-2">
+              <Input
+                label="URL del logo"
                 value={form.logoUrl}
                 onChange={(event) => handleChange("logoUrl", event.target.value)}
-                className="input input-bordered"
                 placeholder="https://..."
+                helper="Puedes usar una URL pública (https://) o una ruta interna generada tras subir un archivo (ej: /uploads/branding/logo.png)."
               />
-              <span className="text-base-content/60 text-xs">
-                Puedes usar una URL pública (https://) o una ruta interna generada tras subir un archivo (ej:
-                /uploads/branding/logo.png).
-              </span>
-            </label>
+            </div>
           ) : (
             <div className="text-base-content space-y-3 text-sm">
               <div>
@@ -408,20 +406,15 @@ export default function SettingsForm() {
             </div>
           </div>
           {faviconMode === "url" ? (
-            <label className="text-base-content flex flex-col gap-2 text-sm">
-              <span className="sr-only">URL del favicon</span>
-              <input
-                type="text"
+            <div className="flex flex-col gap-2">
+              <Input
+                label="URL del favicon"
                 value={form.faviconUrl}
                 onChange={(event) => handleChange("faviconUrl", event.target.value)}
-                className="input input-bordered"
                 placeholder="https://..."
+                helper="Puedes usar una URL pública (https://) o una ruta interna generada tras subir un archivo (ej: /uploads/branding/favicon.png)."
               />
-              <span className="text-base-content/60 text-xs">
-                Puedes usar una URL pública (https://) o una ruta interna generada tras subir un archivo (ej:
-                /uploads/branding/favicon.png).
-              </span>
-            </label>
+            </div>
           ) : (
             <div className="text-base-content space-y-3 text-sm">
               <div>
@@ -475,23 +468,16 @@ export default function SettingsForm() {
             Variables internas editables (prefijo BIOALERGIA_X_). Solo administradores.
           </p>
           <div className="mt-3 grid gap-3 md:grid-cols-3">
-            <label className="text-base-content flex flex-col gap-2 text-sm">
-              <span className="text-base-content/80 text-xs font-semibold tracking-wide uppercase">
-                Tamaño de chunk para retiros
-              </span>
-              <input
-                type="number"
-                min={50}
-                max={5000}
-                value={String(upsertChunkSize ?? "")}
-                onChange={(e) => setUpsertChunkSize(e.target.value)}
-                className="input input-bordered"
-                inputMode="numeric"
-              />
-              <span className="text-base-content/60 text-xs">
-                Env var: <code>{envUpsertChunkSize ?? "(no definido)"}</code>
-              </span>
-            </label>
+            <Input
+              type="number"
+              label="Tamaño de chunk para retiros"
+              min={50}
+              max={5000}
+              value={String(upsertChunkSize ?? "")}
+              onChange={(e) => setUpsertChunkSize(e.target.value)}
+              inputMode="numeric"
+              helper={`Env var: ${envUpsertChunkSize ?? "(no definido)"}`}
+            />
             <div className="flex items-end gap-2 md:col-span-2">
               <Button
                 type="button"
