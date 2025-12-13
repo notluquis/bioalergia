@@ -336,7 +336,11 @@ export function registerAuthRoutes(app: express.Express) {
 
       if (!isGod) {
         logWarn("auth/repair:unauthorized-attempt", { userId: user.id });
-        return res.status(403).json({ status: "error", message: "Only GOD can repair permissions" });
+        const roleNames = roles.map((r) => r.role.name).join(", ");
+        return res.status(403).json({
+          status: "error",
+          message: `Only GOD can repair permissions. You are ${user.email} with roles: [${roleNames}]`,
+        });
       }
 
       console.log("Repairing permissions via HTTP endpoint...");
