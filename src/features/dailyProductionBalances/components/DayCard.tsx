@@ -20,7 +20,7 @@ export default function DayCard({ date, balance, isSelected, isToday, onClick }:
     <button
       onClick={onClick}
       className={cn(
-        "group relative flex h-full min-h-20 w-full flex-col justify-between rounded-md border p-1 text-left transition-all hover:shadow-sm",
+        "group border-base-200 relative flex h-full min-h-20 w-full flex-col justify-between rounded-md border p-1 text-left transition-all hover:shadow-sm",
         isSelected
           ? "border-primary bg-primary/5 ring-primary ring-1"
           : "border-base-300 bg-base-100 hover:border-primary/50",
