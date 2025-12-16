@@ -29,8 +29,8 @@ export function BulkToggleCell({
         className={cn(
           "mx-auto flex h-8 w-8 items-center justify-center rounded-md transition-colors",
           variant === "section"
-            ? "text-base-content/50 hover:text-base-content"
-            : "text-base-content/40 hover:text-primary",
+            ? "text-base-content/60 hover:text-base-content"
+            : "text-base-content/60 hover:text-primary",
           allPresent && "text-primary bg-primary/5 font-bold"
         )}
       >

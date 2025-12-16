@@ -1,6 +1,5 @@
 generator client {
   provider        = "prisma-client-js"
-
   previewFeatures = ["fullTextSearchPostgres"]
 }
 
@@ -8,9 +7,442 @@ datasource db {
   provider = "postgresql"
 }
 
-// --- Enums ---
+model Person {
+  id           Int           @id @default(autoincrement())
+  rut          String        @unique @db.VarChar(20)
+  names        String
+  fatherName   String?       @map("father_name")
+  motherName   String?       @map("mother_name")
+  email        String?
+  phone        String?
+  address      String?
+  personType   PersonType    @default(NATURAL) @map("person_type")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @default(now()) @updatedAt @map("updated_at")
+  counterpart  Counterpart?
+  employee     Employee?
+  transactions Transaction[]
+  user         User?
 
+  @@map("people")
+}
 
+model User {
+  id                      Int                      @id @default(autoincrement())
+  personId                Int                      @unique @map("person_id")
+  email                   String                   @unique
+  passwordHash            String?                  @map("password_hash")
+  status                  UserStatus               @default(PENDING_SETUP)
+  mfaSecret               String?                  @map("mfa_secret")
+  mfaEnabled              Boolean                  @default(false) @map("mfa_enabled")
+  passkeyCredentialID     String?                  @unique @map("passkey_credential_id")
+  passkeyPublicKey        Bytes?                   @map("passkey_public_key")
+  passkeyCounter          BigInt                   @default(0) @map("passkey_counter")
+  passkeyTransports       Json?                    @map("passkey_transports")
+  createdAt               DateTime                 @default(now()) @map("created_at")
+  updatedAt               DateTime                 @default(now()) @updatedAt @map("updated_at")
+  mfaEnforced             Boolean                  @default(true) @map("mfa_enforced")
+  auditLogs               AuditLog[]
+  dailyProductionBalances DailyProductionBalance[]
+  pushSubscriptions       PushSubscription[]
+  supplyRequests          SupplyRequest[]
+  permissionVersion       UserPermissionVersion?
+  roles                   UserRoleAssignment[]
+  person                  Person                   @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  @@map("users")
+}
+
+model Role {
+  id          Int                  @id @default(autoincrement())
+  name        String               @unique
+  description String?
+  isSystem    Boolean              @default(false) @map("is_system")
+  createdAt   DateTime             @default(now()) @map("created_at")
+  updatedAt   DateTime             @default(now()) @updatedAt @map("updated_at")
+  permissions RolePermission[]
+  users       UserRoleAssignment[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id          Int              @id @default(autoincrement())
+  action      String
+  subject     String
+  description String?
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @default(now()) @updatedAt @map("updated_at")
+  roles       RolePermission[]
+
+  @@unique([action, subject])
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       Int
+  permissionId Int
+  conditions   Json?
+  createdAt    DateTime   @default(now()) @map("created_at")
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model UserRoleAssignment {
+  userId     Int
+  roleId     Int
+  assignedAt DateTime @default(now()) @map("assigned_at")
+  role       Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@map("user_role_assignments")
+}
+
+model UserPermissionVersion {
+  userId    Int      @id
+  version   Int      @default(1)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_permission_versions")
+}
+
+model Employee {
+  id                Int                 @id @default(autoincrement())
+  personId          Int                 @unique @map("person_id")
+  position          String
+  department        String?
+  startDate         DateTime            @map("start_date") @db.Date
+  endDate           DateTime?           @map("end_date") @db.Date
+  status            EmployeeStatus      @default(ACTIVE)
+  salaryType        EmployeeSalaryType  @default(FIXED) @map("salary_type")
+  baseSalary        Decimal             @default(0) @map("base_salary") @db.Decimal(12, 2)
+  hourlyRate        Decimal?            @map("hourly_rate") @db.Decimal(10, 2)
+  bankName          String?             @map("bank_name")
+  bankAccountType   String?             @map("bank_account_type")
+  bankAccountNumber String?             @map("bank_account_number")
+  createdAt         DateTime            @default(now()) @map("created_at")
+  updatedAt         DateTime            @default(now()) @updatedAt @map("updated_at")
+  metadata          Json?
+  overtimeRate      Decimal?            @map("overtime_rate") @db.Decimal(10, 2)
+  retentionRate     Decimal             @default(0.145) @map("retention_rate") @db.Decimal(5, 4)
+  timesheets        EmployeeTimesheet[]
+  person            Person              @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  @@map("employees")
+}
+
+model Counterpart {
+  id        Int                  @id @default(autoincrement())
+  personId  Int                  @unique @map("person_id")
+  category  CounterpartCategory  @default(SUPPLIER)
+  notes     String?
+  createdAt DateTime             @default(now()) @map("created_at")
+  updatedAt DateTime             @default(now()) @updatedAt @map("updated_at")
+  accounts  CounterpartAccount[]
+  person    Person               @relation(fields: [personId], references: [id], onDelete: Cascade)
+  services  Service[]
+
+  @@map("counterparts")
+}
+
+model CounterpartAccount {
+  id            Int         @id @default(autoincrement())
+  counterpartId Int         @map("counterpart_id")
+  bankName      String?     @map("bank_name")
+  accountType   String?     @map("account_type")
+  accountNumber String      @map("account_number")
+  counterpart   Counterpart @relation(fields: [counterpartId], references: [id], onDelete: Cascade)
+
+  @@map("counterpart_accounts")
+}
+
+model EmployeeTimesheet {
+  id              BigInt    @id @default(autoincrement())
+  employeeId      Int       @map("employee_id")
+  workDate        DateTime  @map("work_date") @db.Date
+  startTime       DateTime? @map("start_time") @db.Time(6)
+  endTime         DateTime? @map("end_time") @db.Time(6)
+  workedMinutes   Int       @map("worked_minutes")
+  overtimeMinutes Int       @default(0) @map("overtime_minutes")
+  comment         String?
+  employee        Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, workDate])
+  @@map("employee_timesheets")
+}
+
+model Transaction {
+  id          Int                  @id @default(autoincrement())
+  timestamp   DateTime
+  description String?
+  amount      Decimal              @db.Decimal(15, 2)
+  direction   TransactionDirection
+  personId    Int?                 @map("person_id")
+  origin      String?
+  destination String?
+  sourceFile  String?              @map("source_file")
+  rawJson     String?              @map("raw_json")
+  createdAt   DateTime             @default(now()) @map("created_at")
+  category    String?
+  person      Person?              @relation(fields: [personId], references: [id])
+
+  @@map("transactions")
+}
+
+model DailyBalance {
+  id        Int      @id @default(autoincrement())
+  date      DateTime @unique @db.Date
+  amount    Decimal  @db.Decimal(15, 2)
+  note      String?
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("daily_balances")
+}
+
+model Service {
+  id            Int              @id @default(autoincrement())
+  name          String
+  counterpartId Int?             @map("counterpart_id")
+  type          ServiceType      @default(BUSINESS)
+  frequency     ServiceFrequency @default(MONTHLY)
+  defaultAmount Decimal          @default(0) @map("default_amount") @db.Decimal(15, 2)
+  status        ServiceStatus    @default(ACTIVE)
+  createdAt     DateTime         @default(now()) @map("created_at")
+  updatedAt     DateTime         @default(now()) @updatedAt @map("updated_at")
+  counterpart   Counterpart?     @relation(fields: [counterpartId], references: [id])
+
+  @@map("services")
+}
+
+model Loan {
+  id              Int            @id @default(autoincrement())
+  title           String
+  principalAmount Decimal        @map("principal_amount") @db.Decimal(15, 2)
+  interestRate    Decimal        @map("interest_rate") @db.Decimal(9, 6)
+  startDate       DateTime       @map("start_date") @db.Date
+  status          LoanStatus     @default(ACTIVE)
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @default(now()) @updatedAt @map("updated_at")
+  schedules       LoanSchedule[]
+
+  @@map("loans")
+}
+
+model LoanSchedule {
+  id                Int                @id @default(autoincrement())
+  loanId            Int                @map("loan_id")
+  installmentNumber Int                @map("installment_number")
+  dueDate           DateTime           @map("due_date") @db.Date
+  expectedAmount    Decimal            @map("expected_amount") @db.Decimal(15, 2)
+  status            LoanScheduleStatus @default(PENDING)
+  loan              Loan               @relation(fields: [loanId], references: [id], onDelete: Cascade)
+
+  @@map("loan_schedules")
+}
+
+model AuditLog {
+  id        BigInt   @id @default(autoincrement())
+  userId    Int?     @map("user_id")
+  action    String
+  entity    String
+  entityId  String?  @map("entity_id")
+  details   Json?
+  ipAddress String?  @map("ip_address")
+  createdAt DateTime @default(now()) @map("created_at")
+  user      User?    @relation(fields: [userId], references: [id])
+
+  @@map("audit_logs")
+}
+
+model Setting {
+  key       String   @id
+  value     String?
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("settings")
+}
+
+model PushSubscription {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  endpoint  String   @unique
+  keys      Json
+  createdAt DateTime @default(now()) @map("created_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("push_subscriptions")
+}
+
+model Calendar {
+  id            Int                    @id @default(autoincrement())
+  googleId      String                 @unique @map("google_id")
+  name          String?
+  createdAt     DateTime               @default(now()) @map("created_at")
+  updatedAt     DateTime               @default(now()) @updatedAt @map("updated_at")
+  watchChannels CalendarWatchChannel[]
+  events        Event[]
+
+  @@map("calendars")
+}
+
+model CalendarWatchChannel {
+  id         Int      @id @default(autoincrement())
+  calendarId Int      @map("calendar_id")
+  channelId  String   @unique @map("channel_id")
+  resourceId String   @map("resource_id")
+  expiration DateTime
+  webhookUrl String   @map("webhook_url")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+  calendar   Calendar @relation(fields: [calendarId], references: [id], onDelete: Cascade)
+
+  @@map("calendar_watch_channels")
+}
+
+model Event {
+  id              Int       @id @default(autoincrement())
+  calendarId      Int       @map("calendar_id")
+  externalEventId String    @map("external_event_id")
+  eventStatus     String?   @map("event_status")
+  eventType       String?   @map("event_type")
+  summary         String?
+  description     String?
+  startDate       DateTime? @map("start_date") @db.Date
+  startDateTime   DateTime? @map("start_date_time")
+  startTimeZone   String?   @map("start_time_zone")
+  endDate         DateTime? @map("end_date") @db.Date
+  endDateTime     DateTime? @map("end_date_time")
+  endTimeZone     String?   @map("end_time_zone")
+  eventCreatedAt  DateTime? @map("event_created_at")
+  eventUpdatedAt  DateTime? @map("event_updated_at")
+  colorId         String?   @map("color_id")
+  location        String?
+  transparency    String?
+  visibility      String?
+  hangoutLink     String?   @map("hangout_link")
+  category        String?
+  amountExpected  Int?      @map("amount_expected")
+  amountPaid      Int?      @map("amount_paid")
+  attended        Boolean?
+  dosage          String?
+  treatmentStage  String?   @map("treatment_stage")
+  rawEvent        Json?     @map("raw_event")
+  lastSyncedAt    DateTime  @map("last_synced_at")
+  calendar        Calendar  @relation(fields: [calendarId], references: [id])
+
+  @@unique([calendarId, externalEventId])
+  @@map("events")
+}
+
+model SyncLog {
+  id            BigInt    @id @default(autoincrement())
+  triggerSource String    @map("trigger_source")
+  triggerUserId Int?      @map("trigger_user_id")
+  triggerLabel  String?   @map("trigger_label")
+  status        String    @default("SUCCESS")
+  startedAt     DateTime  @map("started_at")
+  finishedAt    DateTime? @map("finished_at")
+  fetchedAt     DateTime? @map("fetched_at")
+  inserted      Int?      @default(0)
+  updated       Int?      @default(0)
+  skipped       Int?      @default(0)
+  excluded      Int?      @default(0)
+  errorMessage  String?   @map("error_message")
+
+  @@map("sync_logs")
+}
+
+model InventoryCategory {
+  id        Int             @id @default(autoincrement())
+  name      String          @unique
+  createdAt DateTime        @default(now()) @map("created_at")
+  updatedAt DateTime        @default(now()) @updatedAt @map("updated_at")
+  items     InventoryItem[]
+
+  @@map("inventory_categories")
+}
+
+model InventoryItem {
+  id           Int                 @id @default(autoincrement())
+  categoryId   Int?                @map("category_id")
+  name         String
+  description  String?
+  currentStock Int                 @default(0) @map("current_stock")
+  createdAt    DateTime            @default(now()) @map("created_at")
+  updatedAt    DateTime            @default(now()) @updatedAt @map("updated_at")
+  category     InventoryCategory?  @relation(fields: [categoryId], references: [id])
+  movements    InventoryMovement[]
+
+  @@map("inventory_items")
+}
+
+model InventoryMovement {
+  id             Int           @id @default(autoincrement())
+  itemId         Int           @map("item_id")
+  quantityChange Int           @map("quantity_change")
+  reason         String?
+  createdAt      DateTime      @default(now()) @map("created_at")
+  item           InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@map("inventory_movements")
+}
+
+model DailyProductionBalance {
+  id                    Int      @id @default(autoincrement())
+  balanceDate           DateTime @unique @map("balance_date") @db.Date
+  ingresoTarjetas       Int      @default(0) @map("ingreso_tarjetas")
+  ingresoTransferencias Int      @default(0) @map("ingreso_transferencias")
+  ingresoEfectivo       Int      @default(0) @map("ingreso_efectivo")
+  gastosDiarios         Int      @default(0) @map("gastos_diarios")
+  otrosAbonos           Int      @default(0) @map("otros_abonos")
+  comentarios           String?
+  status                String   @default("DRAFT")
+  changeReason          String?  @map("change_reason")
+  createdBy             Int      @map("created_by")
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @default(now()) @updatedAt @map("updated_at")
+  consultasMonto        Int      @default(0) @map("consultas_monto")
+  controlesMonto        Int      @default(0) @map("controles_monto")
+  licenciasMonto        Int      @default(0) @map("licencias_monto")
+  roxairMonto           Int      @default(0) @map("roxair_monto")
+  testsMonto            Int      @default(0) @map("tests_monto")
+  vacunasMonto          Int      @default(0) @map("vacunas_monto")
+  user                  User     @relation(fields: [createdBy], references: [id])
+
+  @@map("daily_production_balances")
+}
+
+model SupplyRequest {
+  id         Int      @id @default(autoincrement())
+  userId     Int      @map("user_id")
+  supplyName String   @map("supply_name")
+  quantity   Int
+  brand      String?
+  model      String?
+  notes      String?
+  status     String   @default("PENDING")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+  user       User     @relation(fields: [userId], references: [id])
+
+  @@map("supply_requests")
+}
+
+model CommonSupply {
+  id        Int      @id @default(autoincrement())
+  name      String
+  brand     String?
+  model     String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([name, brand, model])
+  @@map("common_supplies")
+}
 
 enum PersonType {
   NATURAL
@@ -91,524 +523,4 @@ enum UserStatus {
   PENDING_SETUP
   ACTIVE
   SUSPENDED
-}
-
-// --- Core Models ---
-
-model Person {
-  id          Int        @id @default(autoincrement())
-  rut         String     @unique @db.VarChar(20) // Unique Identifier
-  names       String
-  fatherName  String?    @map("father_name")
-  motherName  String?    @map("mother_name")
-  email       String?
-  phone       String?
-  address     String?
-  personType  PersonType @default(NATURAL) @map("person_type")
-  
-  // Roles linked to this person
-  user        User?
-  employee    Employee?
-  counterpart Counterpart?
-
-  // Relations
-  transactions Transaction[] // Transactions directly linked to this person
-  
-  createdAt   DateTime   @default(now()) @map("created_at")
-  updatedAt   DateTime   @default(now()) @updatedAt @map("updated_at")
-
-  @@map("people")
-}
-
-model User {
-  id                  Int      @id @default(autoincrement())
-  personId            Int      @unique @map("person_id")
-  email               String   @unique
-  passwordHash        String?  @map("password_hash") // Nullable only for PENDING_SETUP users temporarily
-
-  status              UserStatus @default(PENDING_SETUP)
-  
-  // Security
-  mfaSecret           String?  @map("mfa_secret")
-  mfaEnabled          Boolean  @default(false) @map("mfa_enabled")
-  mfaEnforced         Boolean  @default(true) @map("mfa_enforced")
-  
-  // Passkey / WebAuthn
-  passkeyCredentialID String?  @unique @map("passkey_credential_id")
-  passkeyPublicKey    Bytes?   @map("passkey_public_key")
-  passkeyCounter      BigInt   @default(0) @map("passkey_counter")
-  passkeyTransports   Json?    @map("passkey_transports")
-
-  // Relations
-  person              Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
-  roles               UserRoleAssignment[]
-  permissionVersion   UserPermissionVersion?
-  pushSubscriptions   PushSubscription[]
-  auditLogs           AuditLog[]
-  dailyProductionBalances DailyProductionBalance[]
-  supplyRequests      SupplyRequest[]
-
-  createdAt           DateTime @default(now()) @map("created_at")
-  updatedAt           DateTime @default(now()) @updatedAt @map("updated_at")
-
-  @@map("users")
-}
-
-// --- RBAC Models ---
-
-model Role {
-  id          Int      @id @default(autoincrement())
-  name        String   @unique
-  description String?
-
-  users UserRoleAssignment[]
-  permissions RolePermission[]
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
-
-  @@map("roles")
-}
-
-model Permission {
-  id          Int      @id @default(autoincrement())
-  action      String   // e.g., 'create', 'read', 'update', 'delete'
-  subject     String   // e.g., 'User', 'Transaction'
-  description String?
-
-  roles RolePermission[]
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
-
-  @@unique([action, subject])
-  @@map("permissions")
-}
-
-model RolePermission {
-  roleId       Int
-  permissionId Int
-  
-  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
-
-  // Attribute-Based Access Control (ABAC)
-  conditions Json? // e.g., { "authorId": "${user.id}" }
-
-  createdAt DateTime @default(now()) @map("created_at")
-
-  @@id([roleId, permissionId])
-  @@map("role_permissions")
-}
-
-model UserRoleAssignment {
-  userId Int
-  roleId Int
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
-
-  assignedAt DateTime @default(now()) @map("assigned_at")
-
-  @@id([userId, roleId])
-  @@map("user_role_assignments")
-}
-
-model UserPermissionVersion {
-  userId  Int @id
-  version Int @default(1)
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
-
-  @@map("user_permission_versions")
-}
-
-
-model Employee {
-  id                Int                @id @default(autoincrement())
-  personId          Int                @unique @map("person_id")
-  
-  // Job Details
-  position          String
-  department        String?
-  startDate         DateTime           @map("start_date") @db.Date
-  endDate           DateTime?          @map("end_date") @db.Date
-  status            EmployeeStatus     @default(ACTIVE)
-  
-  // Financial
-  salaryType        EmployeeSalaryType @default(FIXED) @map("salary_type")
-  baseSalary        Decimal            @default(0) @map("base_salary") @db.Decimal(12, 2)
-  hourlyRate        Decimal?           @map("hourly_rate") @db.Decimal(10, 2)
-  overtimeRate      Decimal?           @map("overtime_rate") @db.Decimal(10, 2)
-  retentionRate     Decimal            @default(0.145) @map("retention_rate") @db.Decimal(5, 4)
-  metadata          Json?
-  
-  // Bank Details (Specific to Employee payments)
-  bankName          String?            @map("bank_name")
-  bankAccountType   String?            @map("bank_account_type")
-  bankAccountNumber String?            @map("bank_account_number")
-
-  // Relations
-  person            Person             @relation(fields: [personId], references: [id], onDelete: Cascade)
-  timesheets        EmployeeTimesheet[]
-
-  createdAt         DateTime           @default(now()) @map("created_at")
-  updatedAt         DateTime           @default(now()) @updatedAt @map("updated_at")
-
-  @@map("employees")
-}
-
-model Counterpart {
-  id          Int                 @id @default(autoincrement())
-  personId    Int                 @unique @map("person_id")
-  category    CounterpartCategory @default(SUPPLIER)
-  notes       String?             @db.Text
-  
-  // Relations
-  person      Person              @relation(fields: [personId], references: [id], onDelete: Cascade)
-  services    Service[]
-  accounts    CounterpartAccount[]
-
-  createdAt   DateTime            @default(now()) @map("created_at")
-  updatedAt   DateTime            @default(now()) @updatedAt @map("updated_at")
-
-  @@map("counterparts")
-}
-
-// --- Supporting Models ---
-
-model CounterpartAccount {
-  id                Int         @id @default(autoincrement())
-  counterpartId     Int         @map("counterpart_id")
-  bankName          String?     @map("bank_name")
-  accountType       String?     @map("account_type")
-  accountNumber     String      @map("account_number")
-  
-  counterpart       Counterpart @relation(fields: [counterpartId], references: [id], onDelete: Cascade)
-
-  @@map("counterpart_accounts")
-}
-
-model EmployeeTimesheet {
-  id              BigInt   @id @default(autoincrement())
-  employeeId      Int      @map("employee_id")
-  workDate        DateTime @map("work_date") @db.Date
-  startTime       DateTime? @map("start_time") @db.Time
-  endTime         DateTime? @map("end_time") @db.Time
-  workedMinutes   Int      @map("worked_minutes")
-  overtimeMinutes Int      @default(0) @map("overtime_minutes")
-  comment         String?
-  
-  employee        Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-
-  @@unique([employeeId, workDate])
-  @@map("employee_timesheets")
-}
-
-model Transaction {
-  id           Int                  @id @default(autoincrement())
-  timestamp    DateTime
-  description  String?
-  amount       Decimal              @db.Decimal(15, 2)
-  direction    TransactionDirection
-  
-  // Linking
-  personId     Int?                 @map("person_id")
-  person       Person?              @relation(fields: [personId], references: [id])
-  
-  // Metadata
-  origin       String?
-  destination  String?
-  category     String?              // Added for categorization (e.g. CASHBACK)
-  sourceFile   String?              @map("source_file")
-  rawJson      String?              @map("raw_json") @db.Text
-
-  createdAt    DateTime             @default(now()) @map("created_at")
-
-  @@map("transactions")
-}
-
-model DailyBalance {
-  id        Int      @id @default(autoincrement())
-  date      DateTime @unique @db.Date
-  amount    Decimal  @db.Decimal(15, 2)
-  note      String?  @db.Text
-  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
-
-  @@map("daily_balances")
-}
-
-model Service {
-  id             Int              @id @default(autoincrement())
-  name           String
-  counterpartId  Int?             @map("counterpart_id")
-  type           ServiceType      @default(BUSINESS)
-  frequency      ServiceFrequency @default(MONTHLY)
-  defaultAmount  Decimal          @default(0) @map("default_amount") @db.Decimal(15, 2)
-  status         ServiceStatus    @default(ACTIVE)
-  
-  counterpart    Counterpart?     @relation(fields: [counterpartId], references: [id])
-  
-  createdAt      DateTime         @default(now()) @map("created_at")
-  updatedAt      DateTime         @default(now()) @updatedAt @map("updated_at")
-
-  @@map("services")
-}
-
-model Loan {
-  id                Int              @id @default(autoincrement())
-  title             String
-  principalAmount   Decimal          @map("principal_amount") @db.Decimal(15, 2)
-  interestRate      Decimal          @map("interest_rate") @db.Decimal(9, 6)
-  startDate         DateTime         @map("start_date") @db.Date
-  status            LoanStatus       @default(ACTIVE)
-  
-  schedules         LoanSchedule[]
-
-  createdAt         DateTime         @default(now()) @map("created_at")
-  updatedAt         DateTime         @default(now()) @updatedAt @map("updated_at")
-
-  @@map("loans")
-}
-
-model LoanSchedule {
-  id                Int                @id @default(autoincrement())
-  loanId            Int                @map("loan_id")
-  installmentNumber Int                @map("installment_number")
-  dueDate           DateTime           @map("due_date") @db.Date
-  expectedAmount    Decimal            @map("expected_amount") @db.Decimal(15, 2)
-  status            LoanScheduleStatus @default(PENDING)
-  
-  loan              Loan               @relation(fields: [loanId], references: [id], onDelete: Cascade)
-
-  @@map("loan_schedules")
-}
-
-// --- System & Audit ---
-
-model AuditLog {
-  id        BigInt   @id @default(autoincrement())
-  userId    Int?     @map("user_id")
-  action    String
-  entity    String
-  entityId  String?  @map("entity_id")
-  details   Json?
-  ipAddress String?  @map("ip_address")
-  createdAt DateTime @default(now()) @map("created_at")
-
-  user      User?    @relation(fields: [userId], references: [id])
-
-  @@map("audit_logs")
-}
-
-model Setting {
-  key       String   @id
-  value     String?  @db.Text
-  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
-
-  @@map("settings")
-}
-
-model PushSubscription {
-  id        Int      @id @default(autoincrement())
-  userId    Int      @map("user_id")
-  endpoint  String   @unique
-  keys      Json
-  createdAt DateTime @default(now()) @map("created_at")
-
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("push_subscriptions")
-}
-
-// --- Calendar Models ---
-
-model Calendar {
-  id        Int      @id @default(autoincrement())
-  googleId  String   @unique @map("google_id")
-  name      String?
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
-
-  events        Event[]
-  watchChannels CalendarWatchChannel[]
-
-  @@map("calendars")
-}
-
-model CalendarWatchChannel {
-  id         Int      @id @default(autoincrement())
-  calendarId Int      @map("calendar_id")
-  channelId  String   @unique @map("channel_id")
-  resourceId String   @map("resource_id")
-  expiration DateTime
-  webhookUrl String   @map("webhook_url")
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
-
-  calendar Calendar @relation(fields: [calendarId], references: [id], onDelete: Cascade)
-
-  @@map("calendar_watch_channels")
-}
-
-model Event {
-  id              Int       @id @default(autoincrement())
-  calendarId      Int       @map("calendar_id")
-  externalEventId String    @map("external_event_id")
-  eventStatus     String?   @map("event_status")
-  eventType       String?   @map("event_type")
-  summary         String?
-  description     String?
-  startDate       DateTime? @map("start_date") @db.Date
-  startDateTime   DateTime? @map("start_date_time")
-  startTimeZone   String?   @map("start_time_zone")
-  endDate         DateTime? @map("end_date") @db.Date
-  endDateTime     DateTime? @map("end_date_time")
-  endTimeZone     String?   @map("end_time_zone")
-  eventCreatedAt  DateTime? @map("event_created_at")
-  eventUpdatedAt  DateTime? @map("event_updated_at")
-  colorId         String?   @map("color_id")
-  location        String?
-  transparency    String?
-  visibility      String?
-  hangoutLink     String?   @map("hangout_link")
-  category        String?
-  amountExpected  Int?      @map("amount_expected")
-  amountPaid      Int?      @map("amount_paid")
-  attended        Boolean?
-  dosage          String?
-  treatmentStage  String?   @map("treatment_stage")
-  rawEvent        Json?     @map("raw_event")
-  lastSyncedAt    DateTime  @map("last_synced_at")
-
-  calendar Calendar @relation(fields: [calendarId], references: [id])
-
-  @@unique([calendarId, externalEventId])
-  @@map("events")
-}
-
-model SyncLog {
-  id            BigInt     @id @default(autoincrement())
-  triggerSource String     @map("trigger_source")
-  triggerUserId Int?       @map("trigger_user_id")
-  triggerLabel  String?    @map("trigger_label")
-  status        String     @default("SUCCESS") // Simplified from Enum for now
-  startedAt     DateTime   @map("started_at")
-  finishedAt    DateTime?  @map("finished_at")
-  fetchedAt     DateTime?  @map("fetched_at")
-  inserted      Int?       @default(0)
-  updated       Int?       @default(0)
-  skipped       Int?       @default(0)
-  excluded      Int?       @default(0)
-  errorMessage  String?    @map("error_message")
-
-  @@map("sync_logs")
-}
-
-// --- Inventory Models ---
-
-model InventoryCategory {
-  id        Int      @id @default(autoincrement())
-  name      String   @unique
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
-
-  items     InventoryItem[]
-
-  @@map("inventory_categories")
-}
-
-model InventoryItem {
-  id           Int                @id @default(autoincrement())
-  categoryId   Int?               @map("category_id")
-  name         String
-  description  String?
-  currentStock Int                @default(0) @map("current_stock")
-  createdAt    DateTime           @default(now()) @map("created_at")
-  updatedAt    DateTime           @default(now()) @updatedAt @map("updated_at")
-
-  category     InventoryCategory? @relation(fields: [categoryId], references: [id])
-  movements    InventoryMovement[]
-
-  @@map("inventory_items")
-}
-
-model InventoryMovement {
-  id             Int           @id @default(autoincrement())
-  itemId         Int           @map("item_id")
-  quantityChange Int           @map("quantity_change")
-  reason         String?
-  createdAt      DateTime      @default(now()) @map("created_at")
-
-  item           InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
-
-  @@map("inventory_movements")
-}
-
-// --- Daily Production Models ---
-
-model DailyProductionBalance {
-  id                    Int      @id @default(autoincrement())
-  balanceDate           DateTime @map("balance_date") @db.Date
-  
-  // Income by payment method (how money came in)
-  ingresoTarjetas       Int      @default(0) @map("ingreso_tarjetas")
-  ingresoTransferencias Int      @default(0) @map("ingreso_transferencias")
-  ingresoEfectivo       Int      @default(0) @map("ingreso_efectivo")
-  gastosDiarios         Int      @default(0) @map("gastos_diarios")
-  otrosAbonos           Int      @default(0) @map("otros_abonos")
-  
-  // Income by service type (what services generated money) - must match payment method total
-  consultasMonto        Int      @default(0) @map("consultas_monto")
-  controlesMonto        Int      @default(0) @map("controles_monto")
-  testsMonto            Int      @default(0) @map("tests_monto")
-  vacunasMonto          Int      @default(0) @map("vacunas_monto")
-  licenciasMonto        Int      @default(0) @map("licencias_monto")
-  roxairMonto           Int      @default(0) @map("roxair_monto")
-  
-  // Metadata
-  comentarios           String?  @db.Text
-  status                String   @default("DRAFT") // DRAFT, FINALIZED
-  changeReason          String?  @map("change_reason")
-  
-  createdBy             Int      @map("created_by")
-  user                  User     @relation(fields: [createdBy], references: [id])
-
-  createdAt             DateTime @default(now()) @map("created_at")
-  updatedAt             DateTime @default(now()) @updatedAt @map("updated_at")
-
-  @@unique([balanceDate])
-  @@map("daily_production_balances")
-}
-
-// --- Supplies Models ---
-
-model SupplyRequest {
-  id        Int      @id @default(autoincrement())
-  userId    Int      @map("user_id")
-  supplyName String  @map("supply_name")
-  quantity  Int
-  brand     String?
-  model     String?
-  notes     String?
-  status    String   @default("PENDING") // PENDING, APPROVED, REJECTED, FULFILLED
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
-
-  user      User     @relation(fields: [userId], references: [id])
-
-  @@map("supply_requests")
-}
-
-model CommonSupply {
-  id        Int      @id @default(autoincrement())
-  name      String
-  brand     String?
-  model     String?
-  createdAt DateTime @default(now()) @map("created_at")
-
-  @@unique([name, brand, model])
-  @@map("common_supplies")
 }
