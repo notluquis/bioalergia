@@ -2,7 +2,8 @@ import express from "express";
 import type { ParsedQs } from "qs";
 import dayjs from "dayjs";
 
-import { asyncHandler, authenticate, requireRole } from "../lib/index.js";
+import { asyncHandler, authenticate } from "../lib/index.js";
+import { authorize } from "../middleware/authorize.js";
 import {
   getCalendarAggregates,
   getCalendarEventsByDate,
@@ -89,7 +90,7 @@ export function registerCalendarEventRoutes(app: express.Express) {
   app.get(
     "/api/calendar/events/summary",
     authenticate,
-    requireRole("VIEWER", "ANALYST", "ADMIN", "GOD"),
+    authorize("read", "CalendarEvent"),
     asyncHandler(async (req, res) => {
       const { filters, applied } = await buildFilters(req.query);
       const aggregates = await getCalendarAggregates(filters);
@@ -106,7 +107,7 @@ export function registerCalendarEventRoutes(app: express.Express) {
   app.get(
     "/api/calendar/events/daily",
     authenticate,
-    requireRole("VIEWER", "ANALYST", "ADMIN", "GOD"),
+    authorize("read", "CalendarEvent"),
     asyncHandler(async (req, res) => {
       const { filters, applied, maxDays } = await buildFilters(req.query);
       const events = await getCalendarEventsByDate(filters, { maxDays });
@@ -124,8 +125,7 @@ export function registerCalendarEventRoutes(app: express.Express) {
 
   app.post(
     "/api/calendar/events/sync",
-    authenticate,
-    requireRole("ADMIN", "GOD"),
+    authorize("manage", "CalendarEvent"),
     asyncHandler(async (req, res) => {
       // Create log entry first
       const logId = await createCalendarSyncLogEntry({
@@ -167,7 +167,7 @@ export function registerCalendarEventRoutes(app: express.Express) {
   app.get(
     "/api/calendar/events/sync/logs",
     authenticate,
-    requireRole("VIEWER", "ANALYST", "ADMIN", "GOD"),
+    authorize("read", "CalendarEvent"),
     asyncHandler(async (_req, res) => {
       const logs = await listCalendarSyncLogs(50);
       res.json({
@@ -209,8 +209,7 @@ export function registerCalendarEventRoutes(app: express.Express) {
 
   app.get(
     "/api/calendar/events/unclassified",
-    authenticate,
-    requireRole("ANALYST", "ADMIN", "GOD"),
+    authorize("read", "CalendarEvent"),
     asyncHandler(async (req, res) => {
       const limitParam = Array.isArray(req.query.limit) ? req.query.limit[0] : req.query.limit;
       const limitRaw = limitParam ? Number.parseInt(String(limitParam), 10) : 50;
@@ -243,7 +242,7 @@ export function registerCalendarEventRoutes(app: express.Express) {
   app.post(
     "/api/calendar/events/classify",
     authenticate,
-    requireRole("ANALYST", "ADMIN", "GOD"),
+    authorize("manage", "CalendarEvent"),
     asyncHandler(async (req, res) => {
       const parsed = updateClassificationSchema.safeParse(req.body);
       if (!parsed.success) {
@@ -273,7 +272,7 @@ export function registerCalendarEventRoutes(app: express.Express) {
   app.get(
     "/api/calendar/calendars",
     authenticate,
-    requireRole("VIEWER", "ANALYST", "ADMIN", "GOD"),
+    authorize("read", "CalendarEvent"),
     asyncHandler(async (_req, res) => {
       const calendars = await prisma.calendar.findMany({
         orderBy: { name: "asc" },

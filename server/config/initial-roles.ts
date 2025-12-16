@@ -1,0 +1,87 @@
+import { PermissionKey } from "../lib/authz/permissionMap.js";
+
+type RoleDefinition = {
+  name: string;
+  description: string;
+  permissions: PermissionKey[];
+};
+
+export const INITIAL_ROLES: RoleDefinition[] = [
+  {
+    name: "SystemAdministrator",
+    description: "System Administrator with full access",
+    permissions: ["manage.all"] as PermissionKey[],
+  },
+  {
+    name: "OperationsManager",
+    description: "Manager with broad operational access",
+    permissions: [
+      "transaction.create",
+      "transaction.read",
+      "transaction.update",
+      "transaction.delete",
+      "user.create",
+      "user.read",
+      "user.update",
+      "user.delete",
+      "role.create",
+      "role.read",
+      "role.update",
+      "role.delete",
+      "permission.read",
+      "permission.manage",
+      "setting.manage",
+      "person.read",
+      "person.manage",
+      "counterpart.read",
+      "counterpart.manage",
+      "loan.read",
+      "loan.manage",
+      "service.read",
+      "service.manage",
+      "inventory.read",
+      "inventory.manage",
+      "production_balance.read",
+      "production_balance.manage",
+      "calendar.read",
+      "calendar.manage",
+      "employee.read",
+      "employee.manage",
+      "timesheet.read",
+      "timesheet.manage",
+      "report.read",
+      "report.manage",
+      "supply.read",
+      "supply.manage",
+    ] as PermissionKey[],
+  },
+  {
+    name: "ANALYST",
+    description: "Operational Analyst with data management access",
+    permissions: [
+      "counterpart.read",
+      "counterpart.manage",
+      "timesheet.read",
+      "timesheet.manage",
+      "supply.read",
+      "supply.manage",
+      "service.read",
+      "service.manage",
+      "inventory.read",
+      "inventory.manage",
+      "production_balance.read",
+      "production_balance.manage",
+      "loan.read",
+      "loan.manage",
+      "calendar.read",
+      "calendar.manage",
+      "report.read",
+      "report.manage",
+    ] as PermissionKey[],
+  },
+  {
+    name: "VIEWER",
+    description: "Read-only access to calendar",
+    permissions: ["calendar.read"] as PermissionKey[],
+  },
+];

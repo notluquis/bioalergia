@@ -6,7 +6,14 @@ import { normalizeRut } from "./rut.js";
 
 export type PersonWithRoles = Prisma.PersonGetPayload<{
   include: {
-    user: { select: { id: true; email: true; role: true; status: true } };
+    user: {
+      select: {
+        id: true;
+        email: true;
+        status: true;
+        roles: { select: { role: { select: { name: true } } } };
+      };
+    };
     employee: true;
     counterpart: { include: { accounts: true } };
   };
@@ -62,7 +69,7 @@ export function mapPerson(p: PersonWithRoles) {
       ? {
           id: p.user.id,
           email: p.user.email,
-          role: p.user.role,
+          role: p.user.roles?.[0]?.role?.name || "VIEWER", // Flatten role, default to VIEWER
           status: p.user.status,
         }
       : null,

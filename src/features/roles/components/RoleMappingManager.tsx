@@ -1,17 +1,22 @@
 import { useState, useEffect } from "react";
 import { fetchEmployees, type Employee } from "@/features/hr/employees/api";
 import { getRoleMappings, saveRoleMapping } from "../api";
+import { apiClient } from "@/lib/apiClient";
 import type { RoleMapping } from "../api";
-import type { UserRole } from "~/server/types";
 import Button from "@/components/ui/Button";
 
-type ExtendedRoleMapping = RoleMapping & { isNew?: boolean; isModified?: boolean };
+type AvailableRole = {
+  id: number;
+  name: string;
+  description: string | null;
+};
 
-const APP_ROLES: UserRole[] = ["VIEWER", "ANALYST", "ADMIN", "GOD"];
+type ExtendedRoleMapping = RoleMapping & { isNew?: boolean; isModified?: boolean };
 
 export default function RoleMappingManager() {
   const [mappings, setMappings] = useState<ExtendedRoleMapping[]>([]);
   const [jobTitles, setJobTitles] = useState<string[]>([]);
+  const [availableRoles, setAvailableRoles] = useState<AvailableRole[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -21,18 +26,27 @@ export default function RoleMappingManager() {
       setLoading(true);
       setError(null);
       try {
-        const [employees, dbMappings] = await Promise.all([fetchEmployees(true), getRoleMappings()]);
+        const [employees, dbMappings, rolesRes] = await Promise.all([
+          fetchEmployees(true),
+          getRoleMappings(),
+          apiClient.get<{ roles: AvailableRole[] }>("/api/roles"),
+        ]);
+
+        const roles = rolesRes.roles;
+        setAvailableRoles(roles);
 
         const dbMappingsMap = new Map(dbMappings.map((m: RoleMapping) => [m.employee_role, m]));
         const uniqueRoles = [...new Set(employees.map((e: Employee) => e.position))].sort();
         setJobTitles(uniqueRoles);
 
-        const allRoles = uniqueRoles.map((role: string) => {
-          const existing = dbMappingsMap.get(role);
+        const allRoles = uniqueRoles.map((resultRole: string) => {
+          const existing = dbMappingsMap.get(resultRole);
           if (existing) {
             return { ...existing, isNew: false, isModified: false };
           }
-          return { employee_role: role, app_role: "VIEWER" as UserRole, isNew: true, isModified: false };
+          // Default to first available role or empty if none (though VIEWER is likely)
+          const defaultRole = roles.find((r: AvailableRole) => r.name === "VIEWER")?.name || roles[0]?.name || "";
+          return { employee_role: resultRole, app_role: defaultRole, isNew: true, isModified: false };
         });
 
         setMappings(allRoles);
@@ -46,7 +60,7 @@ export default function RoleMappingManager() {
     fetchInitialData();
   }, []);
 
-  const handleRoleChange = (employeeRole: string, newAppRole: UserRole) => {
+  const handleRoleChange = (employeeRole: string, newAppRole: string) => {
     setMappings(
       mappings.map((m) => (m.employee_role === employeeRole ? { ...m, app_role: newAppRole, isModified: !m.isNew } : m))
     );
@@ -70,7 +84,9 @@ export default function RoleMappingManager() {
         if (existing) {
           return { ...existing, isNew: false, isModified: false };
         }
-        return { employee_role: role, app_role: "VIEWER" as UserRole, isNew: true, isModified: false };
+        // Use cached available roles for default
+        const defaultRole = availableRoles.find((r) => r.name === "VIEWER")?.name || availableRoles[0]?.name || "";
+        return { employee_role: role, app_role: defaultRole, isNew: true, isModified: false };
       });
       setMappings(allRoles);
     } catch {
@@ -81,35 +97,35 @@ export default function RoleMappingManager() {
   };
 
   if (loading) {
-    return <div className="p-6 text-sm text-primary bg-base-100">Cargando configuración de roles...</div>;
+    return <div className="text-primary bg-base-100 p-6 text-sm">Cargando configuración de roles...</div>;
   }
 
   return (
-    <section className="space-y-5 p-6 bg-base-100">
+    <section className="bg-base-100 space-y-5 p-6">
       <div className="space-y-1">
-        <h2 className="text-lg font-semibold text-primary drop-shadow-sm">Gobernanza de Roles</h2>
-        <p className="text-sm text-base-content/90">
+        <h2 className="text-primary text-lg font-semibold drop-shadow-sm">Gobernanza de Roles</h2>
+        <p className="text-base-content/90 text-sm">
           Asigna un rol de la aplicación a cada cargo de empleado para controlar los permisos de acceso.
         </p>
       </div>
 
-      {error && <p className="text-sm text-error">{error}</p>}
+      {error && <p className="text-error text-sm">{error}</p>}
 
-      <div className="divide-y divide-base-300 rounded-2xl border border-base-300 bg-base-200">
+      <div className="divide-base-300 border-base-300 bg-base-200 divide-y rounded-2xl border">
         {mappings.map((mapping) => (
           <div
             key={mapping.employee_role}
             className="grid gap-3 p-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,220px)] sm:items-center"
           >
-            <label className="font-medium text-base-content">{mapping.employee_role}</label>
+            <label className="text-base-content font-medium">{mapping.employee_role}</label>
             <select
               value={mapping.app_role}
-              onChange={(e) => handleRoleChange(mapping.employee_role, e.target.value as UserRole)}
+              onChange={(e) => handleRoleChange(mapping.employee_role, e.target.value)}
               className="select select-bordered text-sm"
             >
-              {APP_ROLES.map((role) => (
-                <option key={role} value={role}>
-                  {role}
+              {availableRoles.map((role) => (
+                <option key={role.id} value={role.name}>
+                  {role.name}
                 </option>
               ))}
             </select>

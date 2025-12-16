@@ -10,8 +10,8 @@ interface UseDailyBalanceManagementProps {
 }
 
 export function useDailyBalanceManagement({ loadBalances }: UseDailyBalanceManagementProps) {
-  const { hasRole } = useAuth();
-  const canEdit = hasRole("GOD", "ADMIN", "ANALYST");
+  const { can } = useAuth();
+  const canEdit = can("manage", "Transaction");
 
   const [drafts, setDrafts] = useState<Record<string, BalanceDraft>>({});
   const [saving, setSaving] = useState<Record<string, boolean>>({});

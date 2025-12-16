@@ -17,7 +17,7 @@ import Button from "@/components/ui/Button";
 import { today } from "@/lib/dates";
 
 export default function DailyBalances() {
-  const { hasRole } = useAuth();
+  const { can } = useAuth();
   // canEdit flag removed (unused)
 
   const [from, setFrom] = useState(dayjs().subtract(10, "day").format("YYYY-MM-DD"));
@@ -72,7 +72,7 @@ export default function DailyBalances() {
 
   return (
     <section className="space-y-4">
-      {!hasRole("GOD", "ADMIN", "ANALYST", "VIEWER") ? (
+      {!can("read", "DailyBalance") ? (
         <Alert variant="error">No tienes permisos para ver los saldos diarios.</Alert>
       ) : (
         <>

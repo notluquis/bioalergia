@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/context/ToastContext";
@@ -27,12 +27,22 @@ export default function AddUserPage() {
   const [form, setForm] = useState({
     email: "",
     role: "VIEWER",
-    position: "Por definir",
+    position: "",
     mfaEnforced: true,
     passkeyOnly: false,
     personId: undefined as number | undefined,
     linkToPerson: false,
   });
+
+  const [availableRoles, setAvailableRoles] = useState<{ name: string; description: string }[]>([]);
+
+  useEffect(() => {
+    // Fetch available roles
+    apiClient
+      .get<{ roles: { name: string; description: string }[] }>("/api/roles")
+      .then((res) => setAvailableRoles(res.roles))
+      .catch(console.error);
+  }, []);
 
   // Fetch people without users
   const { data: peopleData } = useQuery({
@@ -150,18 +160,25 @@ export default function AddUserPage() {
             />
           </div>
 
-          <Input
-            label="Rol"
-            as="select"
-            value={form.role}
-            onChange={(e) => setForm({ ...form, role: e.target.value })}
-            required
-          >
-            <option value="VIEWER">Viewer (Solo lectura)</option>
-            <option value="ANALYST">Analyst (Gestión básica)</option>
-            <option value="ADMIN">Admin (Gestión total)</option>
-            <option value="GOD">God (Acceso total)</option>
-          </Input>
+          <div>
+            <label htmlFor="role" className="label">
+              <span className="label-text">Rol</span>
+            </label>
+            <select
+              id="role"
+              className="select select-bordered w-full"
+              value={form.role}
+              onChange={(e) => setForm({ ...form, role: e.target.value })}
+              required
+            >
+              {availableRoles.length === 0 && <option value="VIEWER">VIEWER (Fallback)</option>}
+              {availableRoles.map((role) => (
+                <option key={role.name} value={role.name}>
+                  {role.name} {role.description ? `- ${role.description}` : ""}
+                </option>
+              ))}
+            </select>
+          </div>
 
           <Input
             label="Cargo / Posición"

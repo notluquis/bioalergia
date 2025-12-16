@@ -39,12 +39,12 @@ interface UseStatsDataResult {
 }
 
 export function useStatsData(): UseStatsDataResult {
-  const { hasRole } = useAuth();
+  const { can } = useAuth();
   const queryClient = useQueryClient();
   const [from, setFrom] = useState(monthsAgoStart(3));
   const [to, setTo] = useState(today());
 
-  const canView = hasRole("GOD", "ADMIN", "ANALYST", "VIEWER");
+  const canView = can("read", "Transaction");
 
   const { quickMonths } = useQuickDateRange();
 

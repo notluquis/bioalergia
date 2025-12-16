@@ -7,10 +7,10 @@ import { apiClient } from "@/lib/apiClient";
 import { BADGE_SM } from "@/lib/styles";
 
 export default function AccessSettingsPage() {
-  const { hasRole } = useAuth();
   const { success, error: toastError } = useToast();
+  const { can } = useAuth();
   const queryClient = useQueryClient();
-  const isAdmin = hasRole("GOD", "ADMIN");
+  const isAdmin = can("manage", "User");
 
   // --- Users Query (for Admin MFA Control) ---
   interface User {

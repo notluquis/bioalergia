@@ -1,5 +1,6 @@
 import express from "express";
-import { asyncHandler, authenticate, requireRole } from "../lib/index.js";
+import { asyncHandler, authenticate } from "../lib/index.js";
+import { authorize } from "../middleware/authorize.js";
 import { requestContext, logEvent } from "../lib/logger.js";
 import {
   listCounterparts,
@@ -24,6 +25,7 @@ export function registerCounterpartRoutes(app: express.Express) {
   app.get(
     "/api/counterparts",
     authenticate,
+    authorize("manage", "Counterpart"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       logEvent("counterparts:list", requestContext(req));
       const counterparts = await listCounterparts();
@@ -40,7 +42,7 @@ export function registerCounterpartRoutes(app: express.Express) {
   app.post(
     "/api/counterparts",
     authenticate,
-    requireRole("GOD", "ADMIN", "ANALYST"),
+    authorize("manage", "Counterpart"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       const parsed = counterpartPayloadSchema.safeParse(req.body);
       if (!parsed.success) {
@@ -76,7 +78,7 @@ export function registerCounterpartRoutes(app: express.Express) {
   app.put(
     "/api/counterparts/:id",
     authenticate,
-    requireRole("GOD", "ADMIN", "ANALYST"),
+    authorize("manage", "Counterpart"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       const counterpartId = Number(req.params.id);
       if (!Number.isFinite(counterpartId)) {
@@ -133,7 +135,7 @@ export function registerCounterpartRoutes(app: express.Express) {
   app.post(
     "/api/counterparts/:id/accounts",
     authenticate,
-    requireRole("GOD", "ADMIN", "ANALYST"),
+    authorize("manage", "Counterpart"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       const counterpartId = Number(req.params.id);
       if (!Number.isFinite(counterpartId)) {
@@ -163,7 +165,7 @@ export function registerCounterpartRoutes(app: express.Express) {
   app.put(
     "/api/counterparts/accounts/:accountId",
     authenticate,
-    requireRole("GOD", "ADMIN", "ANALYST"),
+    authorize("manage", "Counterpart"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       const accountId = Number(req.params.accountId);
       if (!Number.isFinite(accountId)) {

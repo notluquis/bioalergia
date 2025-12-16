@@ -49,8 +49,8 @@ const getChartColors = (): string[] => {
 };
 
 export default function ReportsPage() {
-  const { hasRole } = useAuth();
-  const canView = hasRole("GOD", "ADMIN");
+  const { can } = useAuth();
+  const canView = can("read", "Report");
 
   // Data loading
   const { months } = useMonths();

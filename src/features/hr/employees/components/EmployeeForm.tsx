@@ -15,9 +15,9 @@ interface EmployeeFormProps {
 }
 
 export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFormProps) {
-  const { hasRole } = useAuth();
+  const { can } = useAuth();
   const { error: toastError, success: toastSuccess } = useToast();
-  const canEdit = hasRole("GOD", "ADMIN");
+  const canEdit = can("manage", "Employee");
 
   const [form, setForm] = useState({
     fullName: "",

@@ -96,13 +96,17 @@ export function registerAuthRoutes(app: express.Express) {
         // --- End Role Governance Logic ---
 
         // Passkey login bypasses MFA because it is MFA (Something you have + Something you are)
-        const token = issueToken({ userId: user.id, email: user.email, role: effectiveRole });
+        const token = issueToken({ userId: user.id, email: user.email, roles: effectiveRole });
         res.cookie(sessionCookieName, token, sessionCookieOptions);
 
         logEvent("auth/login:passkey-success", { userId: user.id });
         res.json({
           status: "ok",
-          user: { ...sanitizeUser(user), role: effectiveRole, mfaEnabled: user.mfaEnabled },
+          user: {
+            ...sanitizeUser({ ...user, roles: effectiveRole }),
+            role: effectiveRole,
+            mfaEnabled: user.mfaEnabled,
+          },
         });
       } catch (err) {
         const errMsg = err instanceof Error ? err.message : String(err);
@@ -181,13 +185,13 @@ export function registerAuthRoutes(app: express.Express) {
         return res.json({ status: "mfa_required", userId: user.id });
       }
 
-      const token = issueToken({ userId: user.id, email: user.email, role: effectiveRole });
+      const token = issueToken({ userId: user.id, email: user.email, roles: effectiveRole });
       res.cookie(sessionCookieName, token, sessionCookieOptions);
 
       logEvent("auth/login:success", requestContext(req, { userId: user.id, email: user.email }));
       res.json({
         status: "ok",
-        user: { ...sanitizeUser(user), role: effectiveRole },
+        user: { ...sanitizeUser({ ...user, roles: effectiveRole }), role: effectiveRole },
       });
     })
   );
@@ -217,13 +221,13 @@ export function registerAuthRoutes(app: express.Express) {
       }
 
       const effectiveRole = await resolveUserRole(user);
-      const sessionToken = issueToken({ userId: user.id, email: user.email, role: effectiveRole });
+      const sessionToken = issueToken({ userId: user.id, email: user.email, roles: effectiveRole });
       res.cookie(sessionCookieName, sessionToken, sessionCookieOptions);
 
       logEvent("auth/login:mfa-success", { userId });
       res.json({
         status: "ok",
-        user: { ...sanitizeUser(user), role: effectiveRole },
+        user: { ...sanitizeUser({ ...user, roles: effectiveRole }), role: effectiveRole },
       });
     })
   );
@@ -299,9 +303,10 @@ export function registerAuthRoutes(app: express.Express) {
       const user = req.user;
 
       // --- Role Governance Logic ---
-      const effectiveRole = await resolveUserRole(user);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const effectiveRole = await resolveUserRole(user as any);
       const finalUser = {
-        ...sanitizeUser(user),
+        ...sanitizeUser({ ...user, roles: effectiveRole }),
         role: effectiveRole,
         mfaEnabled: user.mfaEnabled,
         mfaEnforced: user.mfaEnforced,
@@ -321,163 +326,88 @@ export function registerAuthRoutes(app: express.Express) {
   app.get(
     "/api/auth/repair-permissions",
     authenticate,
+    attachAbility, // Required to check permissions
     asyncHandler(async (req: AuthenticatedRequest, res) => {
-      // Manual check for GOD role to avoid circular authorization failure
-      if (!req.auth?.userId) return res.status(401).json({ status: "error" });
+      // Logic: Only users with 'manage.all' permission can repair permissions.
+      // If the system is broken and no one has 'manage.all', this endpoint might be inaccessible
+      // without a fallback.
+      // Check permissions
 
-      const user = await findUserById(req.auth.userId);
-      if (!user) return res.status(401).json({ status: "error" });
+      const hasPermission = req.ability?.can("manage", "all");
 
-      const roles = await prisma.userRoleAssignment.findMany({
-        where: { userId: user.id },
-        include: { role: true },
-      });
-      const godRoleDef = roles.find((r) => r.role.name.toUpperCase() === "GOD")?.role;
-      if (!godRoleDef) {
-        logWarn("auth/repair:unauthorized-attempt", { userId: user.id });
-        const roleNames = roles.map((r) => r.role.name).join(", ");
+      if (!hasPermission) {
+        logWarn("auth/repair:unauthorized-attempt", { userId: req.auth?.userId });
         return res.status(403).json({
           status: "error",
-          message: `Only GOD can repair permissions. You are ${user.email} with roles: [${roleNames}]`,
+          message: "Unauthorized: You need 'manage.all' permission.",
         });
       }
 
-      console.log("Repairing permissions via HTTP endpoint...");
+      console.log("Repairing permissions via HTTP endpoint using CONFIG...");
+      const { INITIAL_ROLES } = await import("../config/initial-roles.js");
 
-      const allPermissions = [
-        // Transaction
-        { action: "create", subject: "Transaction", description: "Create transactions" },
-        { action: "read", subject: "Transaction", description: "Read transactions" },
-        { action: "update", subject: "Transaction", description: "Update transactions" },
-        { action: "delete", subject: "Transaction", description: "Delete transactions" },
+      // 1. Ensure all Permissions exist
+      const allDesiredPermissions = new Set<string>();
+      INITIAL_ROLES.forEach((r) => r.permissions.forEach((p) => allDesiredPermissions.add(p)));
 
-        // User
-        { action: "create", subject: "User", description: "Create users" },
-        { action: "read", subject: "User", description: "Read users" },
-        { action: "update", subject: "User", description: "Update users" },
-        { action: "delete", subject: "User", description: "Delete users" },
+      // Add fallback 'manage.all' just in case
+      allDesiredPermissions.add("manage.all");
 
-        // Role
-        { action: "create", subject: "Role", description: "Create roles" },
-        { action: "read", subject: "Role", description: "Read roles" },
-        { action: "update", subject: "Role", description: "Update roles" },
-        { action: "delete", subject: "Role", description: "Delete roles" },
+      for (const permKey of allDesiredPermissions) {
+        // Fix split logic: permissionMap uses keys like "user.create" -> action=create, subject=User
+        // But here we are iterating KEYS from config.
+        // Actually, we should use permissionMap to resolve the real Action/Subject.
+        const { permissionMap } = await import("../lib/authz/permissionMap.js");
+        const def = permissionMap[permKey as keyof typeof permissionMap];
 
-        // Permission
-        { action: "read", subject: "Permission", description: "Read permissions" },
-        { action: "manage", subject: "Permission", description: "Manage permissions" },
-
-        // Setting
-        { action: "manage", subject: "Setting", description: "Manage settings" },
-
-        // Person
-        { action: "read", subject: "Person", description: "Read people" },
-        { action: "manage", subject: "Person", description: "Manage people" },
-
-        // Counterpart
-        { action: "read", subject: "Counterpart", description: "Read counterparts" },
-        { action: "manage", subject: "Counterpart", description: "Manage counterparts" },
-
-        // Loan
-        { action: "read", subject: "Loan", description: "Read loans" },
-        { action: "manage", subject: "Loan", description: "Manage loans" },
-
-        // Service
-        { action: "read", subject: "Service", description: "Read services" },
-        { action: "manage", subject: "Service", description: "Manage services" },
-
-        // Inventory
-        { action: "read", subject: "InventoryItem", description: "Read inventory" },
-        { action: "manage", subject: "InventoryItem", description: "Manage inventory" },
-
-        // Production Balance
-        { action: "read", subject: "ProductionBalance", description: "Read production balances" },
-        { action: "manage", subject: "ProductionBalance", description: "Manage production balances" },
-
-        // Calendar
-        { action: "read", subject: "CalendarEvent", description: "Read calendar" },
-        { action: "manage", subject: "CalendarEvent", description: "Manage calendar" },
-
-        // HR
-        { action: "read", subject: "Employee", description: "Read employees" },
-        { action: "manage", subject: "Employee", description: "Manage employees" },
-        { action: "read", subject: "Timesheet", description: "Read timesheets" },
-        { action: "manage", subject: "Timesheet", description: "Manage timesheets" },
-        { action: "read", subject: "Report", description: "Read reports" },
-        { action: "manage", subject: "Report", description: "Manage reports" },
-
-        // Supplies
-        { action: "read", subject: "SupplyRequest", description: "Read supply requests" },
-        { action: "manage", subject: "SupplyRequest", description: "Manage supply requests" },
-
-        // Fallback global
-        { action: "manage", subject: "all", description: "Manage everything" },
-      ];
-
-      for (const perm of allPermissions) {
-        const existing = await prisma.permission.findFirst({
-          where: { action: perm.action, subject: perm.subject },
-        });
-
-        if (!existing) {
-          await prisma.permission.create({ data: perm });
-        }
-      }
-
-      // Use the found God role directly (whether it's "God" or "GOD")
-      const allPermsInDb = await prisma.permission.findMany();
-      for (const perm of allPermsInDb) {
-        await prisma.rolePermission.upsert({
-          where: {
-            roleId_permissionId: {
-              roleId: godRoleDef.id,
-              permissionId: perm.id,
-            },
-          },
-          create: {
-            roleId: godRoleDef.id,
-            permissionId: perm.id,
-          },
-          update: {},
-        });
-      }
-
-      await prisma.userPermissionVersion.updateMany({
-        where: { user: { roles: { some: { roleId: godRoleDef.id } } } },
-        data: { version: { increment: 1 } },
-      });
-
-      // Try to find ADMIN role case-insensitively
-      const adminRole = await prisma.role.findFirst({
-        where: { name: { equals: "ADMIN", mode: "insensitive" } },
-      });
-
-      if (adminRole) {
-        const adminPerms = await prisma.permission.findMany({
-          where: {
-            subject: { in: ["Transaction", "User", "Role", "Permission", "Setting"] },
-          },
-        });
-        for (const perm of adminPerms) {
-          await prisma.rolePermission.upsert({
-            where: {
-              roleId_permissionId: {
-                roleId: adminRole.id,
-                permissionId: perm.id,
-              },
-            },
-            create: {
-              roleId: adminRole.id,
-              permissionId: perm.id,
-            },
+        if (def) {
+          await prisma.permission.upsert({
+            where: { action_subject: { action: def.action, subject: def.subject } },
+            create: { action: def.action, subject: def.subject, description: `Auto-generated for ${permKey}` },
             update: {},
           });
         }
       }
 
+      // 2. Ensure Roles exist and have Permissions
+      for (const roleDef of INITIAL_ROLES) {
+        let role = await prisma.role.findUnique({ where: { name: roleDef.name } });
+        if (!role) {
+          role = await prisma.role.create({ data: { name: roleDef.name, description: roleDef.description } });
+        }
+
+        // Assign permissions to Role
+        const { permissionMap } = await import("../lib/authz/permissionMap.js");
+        const permissionIds: number[] = [];
+
+        for (const permKey of roleDef.permissions) {
+          const def = permissionMap[permKey];
+          if (def) {
+            const p = await prisma.permission.findUnique({
+              where: { action_subject: { action: def.action, subject: def.subject } },
+            });
+            if (p) permissionIds.push(p.id);
+          }
+        }
+
+        // Sync RolePermissions
+        for (const pId of permissionIds) {
+          await prisma.rolePermission.upsert({
+            where: { roleId_permissionId: { roleId: role.id, permissionId: pId } },
+            create: { roleId: role.id, permissionId: pId },
+            update: {},
+          });
+        }
+      }
+
+      // 3. Increment Version for all users to force refresh
+      await prisma.userPermissionVersion.updateMany({
+        data: { version: { increment: 1 } },
+      });
+
       res.json({
         status: "ok",
-        message: `Permissions repaired for role ${godRoleDef.name} (ID: ${godRoleDef.id}). Please reload.`,
+        message: `Permissions repaired using Configuration. Roles synced: ${INITIAL_ROLES.map((r) => r.name).join(", ")}`,
       });
     })
   );

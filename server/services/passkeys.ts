@@ -118,6 +118,14 @@ export async function verifyPasskeyLogin(body: AuthenticationResponseJSON, expec
   // Find user by credential ID (try exact match first, then try with/without padding variants)
   let user = await prisma.user.findFirst({
     where: { passkeyCredentialID: credentialID },
+    include: {
+      roles: {
+        include: {
+          role: true,
+        },
+      },
+      person: { select: { names: true, fatherName: true } },
+    },
   });
 
   // If not found and credentialID is base64url, also try with = padding (base64 variant)
@@ -128,6 +136,14 @@ export async function verifyPasskeyLogin(body: AuthenticationResponseJSON, expec
     );
     user = await prisma.user.findFirst({
       where: { passkeyCredentialID: credentialIDWithPadding },
+      include: {
+        roles: {
+          include: {
+            role: true,
+          },
+        },
+        person: { select: { names: true, fatherName: true } },
+      },
     });
   }
 

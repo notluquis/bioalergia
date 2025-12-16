@@ -15,7 +15,7 @@ const router = Router();
 // Schema for inviting a user (Simplified Creation)
 const inviteUserSchema = z.object({
   email: z.string().email(),
-  role: z.enum(["GOD", "ADMIN", "ANALYST", "VIEWER"]),
+  role: z.string().min(1),
   position: z.string().min(1).default("Por definir"),
   mfaEnforced: z.boolean().default(true),
   personId: z.number().optional(), // Optional: link to existing person
@@ -71,16 +71,41 @@ router.post("/invite", requireAuth, authorize("create", "User"), async (req, res
       }
 
       // Create User
+      // Create User
       const user = await tx.user.create({
         data: {
           personId: targetPersonId,
           email,
-          role,
+          // role field removed
           passwordHash: tempPassword,
           status: "PENDING_SETUP",
           mfaEnforced,
         },
       });
+
+      // Assign Role (Dynamic Lookup)
+      const roleRecord = await tx.role.findUnique({ where: { name: role } });
+      if (roleRecord) {
+        await tx.userRoleAssignment.create({
+          data: {
+            userId: user.id,
+            roleId: roleRecord.id,
+          },
+        });
+      } else {
+        // Fallback or Error?
+        // If role doesn't exist, we might want to default to "VIEWER" or log a warning.
+        // For now, let's try to find "VIEWER" if the requested role fails.
+        const viewerRole = await tx.role.findUnique({ where: { name: "VIEWER" } });
+        if (viewerRole) {
+          await tx.userRoleAssignment.create({
+            data: {
+              userId: user.id,
+              roleId: viewerRole.id,
+            },
+          });
+        }
+      }
 
       // Create or update Employee
       await tx.employee.upsert({

@@ -2,7 +2,7 @@
 export * from "./schemas.js";
 
 // HTTP utilities
-export { asyncHandler, authenticate, requireRole, issueToken, sanitizeUser } from "./http.js";
+export { asyncHandler, authenticate, issueToken, sanitizeUser } from "./http.js";
 
 // Other utilities
 export * from "./logger.js";

@@ -1,6 +1,6 @@
 import { apiClient } from "@/lib/apiClient";
 
-export type AppRole = "GOD" | "ADMIN" | "ANALYST" | "VIEWER";
+export type AppRole = string;
 
 export type RoleMapping = {
   employee_role: string;

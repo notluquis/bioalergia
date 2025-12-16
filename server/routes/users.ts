@@ -1,8 +1,9 @@
 import express from "express";
-import { asyncHandler, authenticate, requireRole, isRoleAtLeast } from "../lib/http.js";
+import { asyncHandler, authenticate } from "../lib/http.js";
 import { authorize } from "../middleware/authorize.js";
 import { findUserById } from "../services/users.js";
 import { prisma, Prisma } from "../prisma.js";
+
 import { logEvent } from "../lib/logger.js";
 import type { AuthenticatedRequest } from "../types.js";
 import { normalizeRut } from "../lib/rut.js";
@@ -12,7 +13,7 @@ export function registerUserRoutes(app: express.Express) {
   app.post(
     "/api/users/:id/mfa/toggle",
     authenticate,
-    requireRole("GOD", "ADMIN"),
+    authorize("manage", "User"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       const targetUserId = Number(req.params.id);
       const { enabled } = req.body;
@@ -72,7 +73,7 @@ export function registerUserRoutes(app: express.Express) {
   app.get(
     "/api/users",
     authenticate,
-    requireRole("GOD", "ADMIN"),
+    authorize("read", "User"),
     asyncHandler(async (req, res) => {
       const includeTest = req.query.includeTest === "true";
 
@@ -100,7 +101,13 @@ export function registerUserRoutes(app: express.Express) {
         select: {
           id: true,
           email: true,
-          role: true,
+          roles: {
+            select: {
+              role: {
+                select: { name: true },
+              },
+            },
+          },
           mfaEnabled: true,
           passkeyCredentialID: true,
           createdAt: true,
@@ -119,6 +126,7 @@ export function registerUserRoutes(app: express.Express) {
       // Map to safe response
       const safeUsers = users.map((u) => ({
         ...u,
+        role: u.roles[0]?.role.name || "VIEWER", // Flatten role for frontend compatibility
         person: u.person
           ? {
               ...u.person,
@@ -136,7 +144,7 @@ export function registerUserRoutes(app: express.Express) {
   app.post(
     "/api/users/:id/reset-password",
     authenticate,
-    requireRole("GOD", "ADMIN"),
+    authorize("manage", "User"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       const targetUserId = Number(req.params.id);
       if (isNaN(targetUserId)) {
@@ -146,11 +154,6 @@ export function registerUserRoutes(app: express.Express) {
       const user = await findUserById(targetUserId);
       if (!user) {
         return res.status(404).json({ status: "error", message: "Usuario no encontrado" });
-      }
-
-      // Prevent resetting GOD users if not GOD
-      if (isRoleAtLeast(user.role, ["GOD"]) && !isRoleAtLeast(req.auth?.role || "VIEWER", ["GOD"])) {
-        return res.status(403).json({ status: "error", message: "No tienes permisos para modificar a este usuario" });
       }
 
       // Generate random temporary password
@@ -187,7 +190,7 @@ export function registerUserRoutes(app: express.Express) {
   app.put(
     "/api/users/:id/status",
     authenticate,
-    requireRole("GOD", "ADMIN"),
+    authorize("manage", "User"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       const targetUserId = Number(req.params.id);
       const { status } = req.body;
@@ -208,11 +211,6 @@ export function registerUserRoutes(app: express.Express) {
       // Prevent suspending self
       if (user.id === req.auth?.userId) {
         return res.status(400).json({ status: "error", message: "No puedes suspender tu propia cuenta" });
-      }
-
-      // Prevent suspending GOD users if not GOD
-      if (isRoleAtLeast(user.role, ["GOD"]) && !isRoleAtLeast(req.auth?.role || "VIEWER", ["GOD"])) {
-        return res.status(403).json({ status: "error", message: "No tienes permisos para modificar a este usuario" });
       }
 
       await prisma.user.update({

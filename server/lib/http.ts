@@ -1,6 +1,6 @@
 import type express from "express";
 import jwt from "jsonwebtoken";
-import { UserRole } from "@prisma/client";
+
 import { JWT_SECRET, sessionCookieName, sessionCookieOptions } from "../config.js";
 import type { AuthenticatedRequest, AuthSession } from "../types.js";
 import { getRequestLogger } from "./logger.js";
@@ -17,20 +17,12 @@ export function asyncHandler(handler: AsyncHandler) {
   };
 }
 
-export function isRoleAtLeast(role: UserRole | string, expected: (UserRole | string)[]): boolean {
-  const normalize = (r: string) => r.toUpperCase();
-  const current = normalize(role);
-
-  if (current === "GOD") return true;
-  return expected.some((e) => normalize(e) === current);
-}
-
 export function issueToken(session: AuthSession) {
   return jwt.sign(
     {
       sub: session.userId.toString(),
       email: session.email,
-      role: session.role,
+      roles: session.roles,
     },
     JWT_SECRET,
     {
@@ -42,7 +34,7 @@ export function issueToken(session: AuthSession) {
 export function sanitizeUser(user: {
   id: number;
   email: string;
-  role: UserRole;
+  roles: string[];
   status: string;
   passkeyCredentialID?: string | null;
   mfaEnabled?: boolean;
@@ -78,7 +70,7 @@ export function sanitizeUser(user: {
   return {
     id: user.id,
     email: user.email,
-    role: user.role,
+    roles: user.roles,
     status: user.status,
     name: displayName,
     hasPasskey: !!user.passkeyCredentialID,
@@ -106,7 +98,7 @@ export function authenticate(req: AuthenticatedRequest, res: express.Response, n
     req.auth = {
       userId: Number(decoded.sub),
       email: String(decoded.email),
-      role: (decoded.role as UserRole) ?? "VIEWER",
+      roles: (decoded.roles as string[]) || [],
     };
     requestLogger.debug({ event: "auth:session-set", auth: req.auth });
     next();
@@ -129,23 +121,11 @@ export function softAuthenticate(req: AuthenticatedRequest, res: express.Respons
       req.auth = {
         userId: Number(decoded.sub),
         email: String(decoded.email),
-        role: (decoded.role as UserRole) ?? "VIEWER",
+        roles: (decoded.roles as string[]) || [],
       };
     }
   } catch {
     // Ignore error, just don't set req.auth
   }
   next();
-}
-
-export function requireRole(...roles: UserRole[]) {
-  return (req: AuthenticatedRequest, res: express.Response, next: express.NextFunction) => {
-    if (!req.auth) {
-      return res.status(401).json({ status: "error", message: "No autorizado" });
-    }
-    if (!isRoleAtLeast(req.auth.role, roles)) {
-      return res.status(403).json({ status: "error", message: "Permisos insuficientes" });
-    }
-    next();
-  };
 }

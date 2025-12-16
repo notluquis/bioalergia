@@ -1,7 +1,8 @@
 import { Router } from "express";
 import { prisma } from "../prisma.js";
 import { z } from "zod";
-import { authenticate as requireAuth, requireRole } from "../lib/http.js";
+import { authenticate as requireAuth } from "../lib/http.js";
+import { authorize } from "../middleware/authorize.js";
 import { logger } from "../lib/logger.js";
 import type { AuthenticatedRequest } from "../types.js";
 import { logAudit } from "../services/audit.js";
@@ -23,7 +24,20 @@ const personSchema = z.object({
 
 // Include all roles when fetching people
 const personInclude = {
-  user: { select: { id: true, email: true, role: true, status: true } },
+  user: {
+    select: {
+      id: true,
+      email: true,
+      status: true,
+      roles: {
+        select: {
+          role: {
+            select: { name: true },
+          },
+        },
+      },
+    },
+  },
   employee: true,
   counterpart: { include: { accounts: true } },
 } as const;
@@ -108,7 +122,7 @@ router.get("/rut/:rut", requireAuth, async (req, res) => {
 });
 
 // POST /api/people - Create new person
-router.post("/", requireAuth, requireRole("ADMIN", "GOD"), async (req, res) => {
+router.post("/", requireAuth, authorize("manage", "Person"), async (req, res) => {
   try {
     const data = personSchema.parse(req.body);
     const authReq = req as AuthenticatedRequest;
@@ -139,7 +153,7 @@ router.post("/", requireAuth, requireRole("ADMIN", "GOD"), async (req, res) => {
 });
 
 // PUT /api/people/:id - Update person
-router.put("/:id", requireAuth, requireRole("ADMIN", "GOD"), async (req, res) => {
+router.put("/:id", requireAuth, authorize("manage", "Person"), async (req, res) => {
   try {
     const data = personSchema.partial().parse(req.body);
     const authReq = req as AuthenticatedRequest;

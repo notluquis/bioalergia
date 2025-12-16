@@ -1,5 +1,6 @@
 import express from "express";
-import { asyncHandler, authenticate, requireRole } from "../lib/http.js";
+import { asyncHandler, authenticate } from "../lib/http.js";
+import { authorize } from "../middleware/authorize.js";
 import { logEvent, logWarn, requestContext } from "../lib/logger.js";
 import { listEmployees, createEmployee, updateEmployee, deactivateEmployee } from "../services/employees.js";
 import { employeeSchema, employeeUpdateSchema } from "../schemas.js";
@@ -23,7 +24,7 @@ export function registerEmployeeRoutes(app: express.Express) {
   app.post(
     "/api/employees",
     authenticate,
-    requireRole("GOD", "ADMIN"),
+    authorize("manage", "Employee"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       const parsed = employeeSchema.safeParse(req.body);
       if (!parsed.success) {
@@ -51,7 +52,7 @@ export function registerEmployeeRoutes(app: express.Express) {
   app.put(
     "/api/employees/:id",
     authenticate,
-    requireRole("GOD", "ADMIN"),
+    authorize("manage", "Employee"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       const parsed = employeeUpdateSchema.safeParse(req.body);
       if (!parsed.success) {
@@ -69,7 +70,7 @@ export function registerEmployeeRoutes(app: express.Express) {
   app.delete(
     "/api/employees/:id",
     authenticate,
-    requireRole("GOD", "ADMIN"),
+    authorize("manage", "Employee"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       const employeeId = Number(req.params.id);
       await deactivateEmployee(employeeId);
