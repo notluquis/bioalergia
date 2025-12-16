@@ -1,24 +1,25 @@
-import { useState } from "react";
+import { Shield, Check, RotateCw, Plus, Loader2 } from "lucide-react";
+import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/apiClient";
-import { Shield, Check, RotateCw, Plus, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/context/ToastContext";
 import Modal from "@/components/ui/Modal";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import { NAV_SECTIONS } from "@/config/navigation";
+import { BulkToggleCell } from "./components/BulkToggleCell";
 
 // --- Types ---
 
-type Role = {
+export type Role = {
   id: number;
   name: string;
   description: string | null;
   permissions: { permissionId: number; permission: Permission }[];
 };
 
-type Permission = {
+export type Permission = {
   id: number;
   action: string;
   subject: string;
@@ -107,6 +108,25 @@ export default function RolesSettingsPage() {
     updateRolePermissionsMutation.mutate({ roleId: role.id, permissionIds: newPermissionIds });
   };
 
+  const handleBulkToggle = (role: Role, permissionIdsToToggle: number[]) => {
+    const currentPermissionIds = role.permissions.map((p) => p.permissionId);
+
+    // Check if ALL provided permissions are already present
+    const allPresent = permissionIdsToToggle.every((id) => currentPermissionIds.includes(id));
+
+    let newPermissionIds;
+    if (allPresent) {
+      // If all are present, remove them (toggle off)
+      newPermissionIds = currentPermissionIds.filter((id) => !permissionIdsToToggle.includes(id));
+    } else {
+      // If not all are present, add the missing ones (toggle on)
+      const missingIds = permissionIdsToToggle.filter((id) => !currentPermissionIds.includes(id));
+      newPermissionIds = [...currentPermissionIds, ...missingIds];
+    }
+
+    updateRolePermissionsMutation.mutate({ roleId: role.id, permissionIds: newPermissionIds });
+  };
+
   if (isLoading) {
     return (
       <div className="flex h-64 items-center justify-center">
@@ -123,42 +143,37 @@ export default function RolesSettingsPage() {
   const sectionsWithPermissions = NAV_SECTIONS.map((section) => {
     const itemsWithPermissions = section.items
       .map((item) => {
-        // Find all permissions related to this item's subject
-        // If item has no subject, maybe it's public or we skip it?
         if (!item.requiredPermission) return null;
 
         const subject = item.requiredPermission.subject;
-
-        // Filter permissions matching this subject (case insensitive just in case, though usually exact)
+        // Filter permissions matching this subject
         const relatedPermissions = allPermissions.filter((p) => p.subject.toLowerCase() === subject.toLowerCase());
 
         relatedPermissions.forEach((p) => usedPermissionIds.add(p.id));
 
+        if (relatedPermissions.length === 0) return null;
+
         return {
           ...item,
           relatedPermissions,
+          permissionIds: relatedPermissions.map((p) => p.id),
         };
       })
-      .filter((item) => item !== null && item.relatedPermissions.length > 0);
+      .filter((item) => item !== null);
+
+    // Collect ALL permission IDs in this section for the section bulk toggle
+    const sectionPermissionIds = itemsWithPermissions.flatMap((item) => item!.permissionIds);
 
     return {
       ...section,
-      items: itemsWithPermissions,
+      items: itemsWithPermissions as NonNullable<(typeof itemsWithPermissions)[number]>[],
+      permissionIds: sectionPermissionIds,
     };
   }).filter((section) => section.items.length > 0);
 
-  // Find remaining permissions not linked to any page (e.g., manage.all, user.delete if distinct from page?)
-  // Actually "user.delete" has subject "User", if "RRHH" uses subject "Employee" or "User", let's check.
-  // Sidebar says RRHH -> requiredPermission: { action: "read", subject: "Employee" }.
-  // Users Page? Not in sidebar explicitly? Ah, "Usuarios" might be under Admin?
-  // Let's check config/navigation.
-  // Administration -> Settings (subject: Setting).
-  // "SystemAdministrator" needs manage.all.
-
   const otherPermissions = allPermissions.filter((p) => !usedPermissionIds.has(p.id));
-
-  // Sort other permissions by subject for cleanliness
   otherPermissions.sort((a, b) => a.subject.localeCompare(b.subject));
+  const otherPermissionIds = otherPermissions.map((p) => p.id);
 
   return (
     <div className="space-y-4">
@@ -207,91 +222,137 @@ export default function RolesSettingsPage() {
             </thead>
             <tbody>
               {sectionsWithPermissions.map((section) => (
-                <>
-                  {/* Section Title */}
-                  <tr key={section.title} className="bg-base-200/30">
-                    <td
-                      colSpan={roles.length + 1}
-                      className="py-2 text-xs font-bold tracking-widest uppercase opacity-70"
-                    >
-                      {section.title}
-                    </td>
+                <React.Fragment key={section.title}>
+                  {/* Section Title & Bulk Toggle */}
+                  <tr className="bg-base-200/30">
+                    <td className="py-2 text-xs font-bold tracking-widest uppercase opacity-70">{section.title}</td>
+                    {roles.map((role) => (
+                      <BulkToggleCell
+                        key={role.id}
+                        role={role}
+                        permissionIds={section.permissionIds}
+                        isUpdating={
+                          updateRolePermissionsMutation.isPending &&
+                          updateRolePermissionsMutation.variables?.roleId === role.id
+                        }
+                        onToggle={handleBulkToggle}
+                        variant="section"
+                      />
+                    ))}
                   </tr>
 
                   {/* Section Items (Pages) */}
                   {section.items.map((item) => {
-                    if (!item) return null;
+                    const hasMultiple = item.relatedPermissions.length > 1;
 
-                    // Group permissions by this page (read, manage, etc.)
-                    // item.relatedPermissions are all permissions matching the subject
-                    // We want to show a single row for the Page, with columns for actions?
-                    // No, the table structure is Roles as columns.
-                    // So we show the Page Name, and maybe list the actions underneath or have separate rows per action?
-                    // User wants "Movimientos" -> [Checkboxes for roles]
-
-                    // Current implementation lists every permission in a new row.
-                    // To make it cleaner:
-                    // Row: "Movimientos" (Page Label)
-                    // Subtext: "Ver (Read), Editar (Manage)" -> Wait, granular control means we need a checkbox for EACH permission.
-                    // If we have separate Read/Manage permissions, we need separate toggles.
-                    // Let's render:
-                    // Row 1: Movimientos (Ver)
-                    // Row 2: Movimientos (Editar) - if applicable.
-                    // Using the Page Label + Action Label.
-
-                    return item.relatedPermissions.map((perm) => {
-                      // Map action to friendly name
-                      const actionLabel =
-                        perm.action === "read" ? "Ver" : perm.action === "manage" ? "Administrar" : perm.action;
-                      const fullLabel = `${item.label} (${actionLabel})`;
-
-                      return (
-                        <tr key={perm.id} className="hover:bg-base-200/50 border-base-100 border-b transition-colors">
-                          <td className="py-3 pl-6">
-                            <div className="flex flex-col">
-                              <span className="flex items-center gap-2 font-medium">
+                    return (
+                      <React.Fragment key={item.label}>
+                        {/* If multiple permissions, show Page Header with Bulk Toggle */}
+                        {hasMultiple && (
+                          <tr className="bg-base-100/50 border-base-100 hover:bg-base-200/20 border-b">
+                            <td className="py-2 pl-4 text-sm font-semibold">
+                              <div className="flex items-center gap-2">
                                 <item.icon className="h-4 w-4 opacity-70" />
-                                {fullLabel}
-                              </span>
-                              <span className="text-base-content/40 pl-6 font-mono text-[10px]">
-                                {perm.description || `${perm.action}.${perm.subject}`}
-                              </span>
-                            </div>
-                          </td>
-                          {roles.map((role) => (
-                            <PermissionCell
-                              key={role.id}
-                              role={role}
-                              permissionId={perm.id}
-                              isUpdating={
-                                updateRolePermissionsMutation.isPending &&
-                                updateRolePermissionsMutation.variables?.roleId === role.id
-                              }
-                              onToggle={handlePermissionToggle}
-                            />
-                          ))}
-                        </tr>
-                      );
-                    });
+                                {item.label} <span className="text-xs font-normal opacity-50">(Todos)</span>
+                              </div>
+                            </td>
+                            {roles.map((role) => (
+                              <BulkToggleCell
+                                key={role.id}
+                                role={role}
+                                permissionIds={item.permissionIds}
+                                isUpdating={
+                                  updateRolePermissionsMutation.isPending &&
+                                  updateRolePermissionsMutation.variables?.roleId === role.id
+                                }
+                                onToggle={handleBulkToggle}
+                                variant="page"
+                              />
+                            ))}
+                          </tr>
+                        )}
+
+                        {/* Individual Permissions */}
+                        {item.relatedPermissions.map((perm) => {
+                          const actionMap: Record<string, string> = {
+                            read: "Ver",
+                            manage: "Administrar",
+                            create: "Crear",
+                            update: "Editar",
+                            delete: "Eliminar",
+                          };
+                          const actionLabel = actionMap[perm.action] || perm.action;
+
+                          // Consistently format Subject (Action) when falling back, or use label
+                          const displayLabel = hasMultiple ? actionLabel : `${item.label} (${actionLabel})`;
+                          const indentClass = hasMultiple ? "pl-10" : "pl-6";
+
+                          return (
+                            <tr
+                              key={perm.id}
+                              className="hover:bg-base-200/50 border-base-100 border-b transition-colors last:border-0"
+                            >
+                              <td className={`py-3 ${indentClass}`}>
+                                <div className="flex flex-col">
+                                  <span className="flex items-center gap-2 text-sm font-medium">
+                                    {!hasMultiple && <item.icon className="h-4 w-4 opacity-70" />}
+                                    {displayLabel}
+                                  </span>
+                                  {/* Cleaner subtext: Always Action • Subject */}
+                                  <span className="text-base-content/40 pl-0 font-mono text-[10px]">
+                                    {perm.action} • {perm.subject}
+                                  </span>
+                                </div>
+                              </td>
+                              {roles.map((role) => (
+                                <PermissionCell
+                                  key={role.id}
+                                  role={role}
+                                  permissionId={perm.id}
+                                  isUpdating={
+                                    updateRolePermissionsMutation.isPending &&
+                                    updateRolePermissionsMutation.variables?.roleId === role.id
+                                  }
+                                  onToggle={handlePermissionToggle}
+                                />
+                              ))}
+                            </tr>
+                          );
+                        })}
+                      </React.Fragment>
+                    );
                   })}
-                </>
+                </React.Fragment>
               ))}
 
               {/* Other Permissions (System) */}
               {otherPermissions.length > 0 && (
                 <>
                   <tr className="bg-base-200/30">
-                    <td
-                      colSpan={roles.length + 1}
-                      className="py-2 text-xs font-bold tracking-widest uppercase opacity-70"
-                    >
-                      Sistema / Avanzado
-                    </td>
+                    <td className="py-2 text-xs font-bold tracking-widest uppercase opacity-70">Sistema / Avanzado</td>
+                    {roles.map((role) => (
+                      <BulkToggleCell
+                        key={role.id}
+                        role={role}
+                        permissionIds={otherPermissionIds}
+                        isUpdating={
+                          updateRolePermissionsMutation.isPending &&
+                          updateRolePermissionsMutation.variables?.roleId === role.id
+                        }
+                        onToggle={handleBulkToggle}
+                        variant="section"
+                      />
+                    ))}
                   </tr>
                   {otherPermissions.map((perm) => {
-                    const actionLabel =
-                      perm.action === "read" ? "Ver" : perm.action === "manage" ? "Administrar" : perm.action;
-                    // Try to humanize subject
+                    const actionMap: Record<string, string> = {
+                      read: "Ver",
+                      manage: "Administrar",
+                      create: "Crear",
+                      update: "Editar",
+                      delete: "Eliminar",
+                    };
+                    const actionLabel = actionMap[perm.action] || perm.action;
                     const subjectLabel = perm.subject === "all" ? "Todo el Sistema" : perm.subject;
 
                     return (
@@ -302,7 +363,7 @@ export default function RolesSettingsPage() {
                               {subjectLabel} ({actionLabel})
                             </span>
                             <span className="text-base-content/40 font-mono text-[10px]">
-                              {perm.action}.{perm.subject}
+                              {perm.action} • {perm.subject}
                             </span>
                           </div>
                         </td>
