@@ -1,5 +1,6 @@
 import { prisma } from "../prisma.js";
 import { permissionMap } from "../lib/authz/permissionMap.js";
+import { NAV_DATA } from "../../shared/navigation-data.js";
 
 export async function listPermissions() {
   return await prisma.permission.findMany({
@@ -8,9 +9,10 @@ export async function listPermissions() {
 }
 
 export async function syncPermissions() {
-  // Syncs permissionMap with DB
+  // Syncs permissionMap (Static) + NAV_DATA (Dynamic) with DB
   const operations = [];
 
+  // 1. Static Permissions from Map
   for (const [key, def] of Object.entries(permissionMap) as [string, { action: string; subject: string }][]) {
     operations.push(
       prisma.permission.upsert({
@@ -26,6 +28,37 @@ export async function syncPermissions() {
           subject: def.subject,
           description: `Generated from ${key}`,
         },
+      })
+    );
+  }
+
+  // 2. Dynamic Permissions from Navigation
+  // Strategy: For every page with a "requiredPermission.subject", ensure "read" and "manage" exist.
+  const subjects = new Set<string>();
+
+  NAV_DATA.forEach((section) => {
+    section.items.forEach((item) => {
+      if (item.requiredPermission && item.requiredPermission.subject) {
+        subjects.add(item.requiredPermission.subject);
+      }
+    });
+  });
+
+  for (const subject of subjects) {
+    // Read Permission
+    operations.push(
+      prisma.permission.upsert({
+        where: { action_subject: { action: "read", subject } },
+        update: {},
+        create: { action: "read", subject, description: `Auto-generated read for ${subject}` },
+      })
+    );
+    // Manage Permission
+    operations.push(
+      prisma.permission.upsert({
+        where: { action_subject: { action: "manage", subject } },
+        update: {},
+        create: { action: "manage", subject, description: `Auto-generated manage for ${subject}` },
       })
     );
   }

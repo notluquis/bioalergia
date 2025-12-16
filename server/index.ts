@@ -41,6 +41,39 @@ app.use(express.urlencoded({ limit: "50mb", extended: true }));
 app.use(cookieParser());
 import { softAuthenticate } from "./lib/http.js";
 import { attachAbility } from "./middleware/attachAbility.js";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
+
+// Cloudflare Proxy Trust
+app.set("trust proxy", 1); // Trust the first proxy (Cloudflare)
+
+// Security Headers
+app.use(
+  helmet({
+    contentSecurityPolicy: false, // We handle CSP manually below due to strict requirements
+    crossOriginEmbedderPolicy: false,
+  })
+);
+
+// Rate Limiting (Basic DDoS Prevention)
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 1000, // Limit each IP to 1000 requests per window
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  message: "Too many requests from this IP, please try again later.",
+});
+app.use("/api", limiter);
+
+// Stricter Auth Rate Limiting
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 50, // 50 login attempts per 15 min
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use("/api/auth", authLimiter);
+
 app.use(softAuthenticate);
 app.use(attachAbility);
 
