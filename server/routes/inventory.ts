@@ -21,6 +21,46 @@ export function registerInventoryRoutes(app: express.Express) {
   const router = express.Router();
 
   // Category Routes
+
+  // GET /api/inventory/allergy-overview - Specialized view for allergy inventory
+  router.get(
+    "/allergy-overview",
+    asyncHandler(async (_req, res) => {
+      // Fetch all items with their categories
+      const items = await listInventoryItems();
+
+      // Transform into the expected frontend shape (AllergyInventoryOverview)
+      // Since we don't have explicit "AllergyType" or "Provider" tables yet, we'll map existing data.
+      // We'll treat all items as belonging to a "General" type for now, or group by some logic if needed.
+
+      const mappedData = items.map((item) => ({
+        item_id: item.id,
+        name: item.name,
+        description: item.description,
+        current_stock: item.currentStock,
+        allergy_type: {
+          type: {
+            id: 1,
+            name: "Insumos Generales", // Placeholder Type
+            slug: "general",
+            description: null,
+          },
+          category: {
+            id: item.categoryId ?? 0,
+            name: item.category?.name ?? "Sin categoría",
+            description: null,
+          },
+        },
+        providers: [], // We don't have providers linked to items in the schema yet
+      }));
+
+      res.json({
+        status: "ok",
+        data: mappedData,
+      });
+    })
+  );
+
   router.get(
     "/categories",
     asyncHandler(async (_req, res) => {
