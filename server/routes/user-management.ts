@@ -134,8 +134,12 @@ router.post("/invite", requireAuth, authorize("create", "User"), async (req, res
     });
 
     res.json({ message: "User created successfully", userId: result.id });
+    res.json({ message: "User created successfully", userId: result.id });
   } catch (error) {
     logger.error({ tag: "UserManagement", error }, "Invite error");
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: "Validation failed", details: error.flatten() });
+    }
     res.status(500).json({ error: "Failed to invite user" });
   }
 });

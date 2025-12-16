@@ -28,12 +28,11 @@ COPY . .
 # Build the application
 RUN npm run build:prod
 
-# Stage 4: Production Dependencies (Prune from full deps)
+# Stage 4: Production Dependencies (Fresh Install)
 FROM deps AS prod-deps
-# Prune dev dependencies (this keeps the already generated Prisma client)
-RUN npm prune --omit=dev && \
-    # Remove unnecessary files from node_modules to reduce size
-    rm -rf node_modules/.cache node_modules/*/.git node_modules/*/test node_modules/*/tests node_modules/*/*.md node_modules/*/docs 2>/dev/null || true
+# Install ONLY production dependencies directly (much faster than pruning)
+RUN --mount=type=cache,id=s/cc493466-c691-4384-8199-99f757a14014-/root/.npm,target=/root/.npm \
+    npm ci --omit=dev --ignore-scripts
 
 # Stage 5: Runner (Production Image)
 # Use latest Current version with Debian Slim (faster than Alpine, uses glibc)
@@ -51,6 +50,10 @@ USER node
 
 # Copy prod deps from prod-deps stage
 COPY --from=prod-deps --chown=node:node /app/node_modules ./node_modules
+
+# Copy Prisma Client from deps stage (It was generated there!)
+COPY --from=deps --chown=node:node /app/node_modules/.prisma /app/node_modules/.prisma
+COPY --from=deps --chown=node:node /app/node_modules/@prisma/client /app/node_modules/@prisma/client
 
 # Copy built application from builder stage
 COPY --from=builder --chown=node:node /app/dist ./dist
