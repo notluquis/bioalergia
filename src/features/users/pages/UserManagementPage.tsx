@@ -338,7 +338,7 @@ export default function UserManagementPage() {
 
                   return (
                     <tr key={user.id} className="hover:bg-base-200/50">
-                      <td>
+                      <td className="whitespace-nowrap">
                         <div className="flex items-center gap-3">
                           <div className="avatar placeholder">
                             <div className="bg-neutral text-neutral-content flex h-10 w-10 items-center justify-center rounded-full">
@@ -351,28 +351,28 @@ export default function UserManagementPage() {
                           </div>
                         </div>
                       </td>
-                      <td>
+                      <td className="whitespace-nowrap">
                         <div className="flex items-center gap-2">
                           {can("manage", "all") && <Shield size={14} className="text-warning" />}
-                          <span className="badge badge-ghost badge-sm font-medium">{user.role}</span>
+                          <span className="badge badge-ghost badge-sm font-medium whitespace-nowrap">{user.role}</span>
                         </div>
                       </td>
-                      <td>
-                        <div className={cn(BADGE_SM, "gap-2", getStatusColor(user.status))}>
+                      <td className="whitespace-nowrap">
+                        <div className={cn(BADGE_SM, "w-fit gap-2 whitespace-nowrap", getStatusColor(user.status))}>
                           {user.status === "ACTIVE" && <div className="size-1.5 rounded-full bg-current" />}
                           {user.status}
                         </div>
                       </td>
-                      <td className="text-center">
+                      <td className="text-center whitespace-nowrap">
                         <div className="flex items-center justify-center gap-2">
-                          <span className={`${BADGE_SM} ${badge.color} gap-1`}>
+                          <span className={`${BADGE_SM} ${badge.color} w-fit gap-1 whitespace-nowrap`}>
                             <BadgeIcon className="size-3" />
                             {badge.label}
                           </span>
                           <span className="text-base-content/50 text-xs">{securityScore}%</span>
                         </div>
                       </td>
-                      <td className="text-center">
+                      <td className="text-center whitespace-nowrap">
                         {user.mfaEnabled ? (
                           <div className="flex items-center justify-center gap-1">
                             <ShieldCheck className="text-success size-4" />

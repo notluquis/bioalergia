@@ -67,13 +67,13 @@ export const BTN_SECONDARY = "btn btn-secondary";
 // ===== BADGES =====
 
 /** Small badge */
-export const BADGE_SM = "badge badge-sm";
+export const BADGE_SM = "badge badge-sm whitespace-nowrap";
 
 /** Small primary badge */
-export const BADGE_SM_PRIMARY = "badge badge-sm badge-primary";
+export const BADGE_SM_PRIMARY = "badge badge-sm badge-primary whitespace-nowrap";
 
 /** Small ghost badge */
-export const BADGE_SM_GHOST = "badge badge-sm badge-ghost";
+export const BADGE_SM_GHOST = "badge badge-sm badge-ghost whitespace-nowrap";
 
 // ===== LAYOUT UTILITIES =====
 

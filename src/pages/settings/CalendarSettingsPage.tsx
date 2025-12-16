@@ -71,7 +71,7 @@ export default function CalendarSettingsPage() {
           <div className="flex items-center gap-2">
             <span
               className={cn(
-                "badge gap-1",
+                "badge h-auto gap-1 py-1 whitespace-nowrap",
                 syncStatus === "SUCCESS"
                   ? "badge-success"
                   : syncStatus === "RUNNING"
@@ -120,16 +120,20 @@ export default function CalendarSettingsPage() {
               {calendarsData.calendars.map((cal: CalendarData) => (
                 <div
                   key={cal.id}
-                  className="bg-base-200/50 border-base-200 flex items-center justify-between rounded-lg border p-3"
+                  className="bg-base-200/50 border-base-200 flex items-center justify-between gap-4 rounded-lg border p-3"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="h-2 w-2 rounded-full bg-blue-500" />
-                    <div>
-                      <span className="font-medium">{cal.name}</span>
-                      <p className="text-base-content/50 mt-0.5 text-xs">{cal.eventCount.toLocaleString()} evento(s)</p>
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div className="h-2 w-2 shrink-0 rounded-full bg-blue-500" />
+                    <div className="min-w-0">
+                      <span className="block truncate font-medium">{cal.name}</span>
+                      <p className="text-base-content/50 mt-0.5 truncate text-xs">
+                        {cal.eventCount.toLocaleString()} evento(s)
+                      </p>
                     </div>
                   </div>
-                  <span className="text-base-content/50 font-mono text-xs">{cal.googleId}</span>
+                  <span className="text-base-content/50 max-w-32 shrink-0 truncate font-mono text-xs sm:max-w-48">
+                    {cal.googleId}
+                  </span>
                 </div>
               ))}
             </div>
