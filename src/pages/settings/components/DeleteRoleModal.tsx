@@ -66,7 +66,9 @@ export function DeleteRoleModal({ isOpen, onClose, role, allRoles }: DeleteRoleM
 
   if (!isOpen) return null;
 
-  const isSystemRole = ["ADMIN", "GOD", "SystemAdministrator", "OperationsManager"].includes(role.name);
+  if (!isOpen) return null;
+
+  const isSystemRole = role.isSystem;
 
   return (
     <dialog open className="modal modal-bottom sm:modal-middle">

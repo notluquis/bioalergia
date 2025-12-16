@@ -130,7 +130,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     [currentSettings, loading, hasRole, updateSettings]
   );
 
-  return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;
+  return <SettingsContext value={value}>{children}</SettingsContext>;
 }
 
 export function useSettings() {

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, lazy, Suspense } from "react";
 import type { ChangeEvent } from "react";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
@@ -9,9 +9,10 @@ import Input from "@/components/ui/Input";
 import Alert from "@/components/ui/Alert";
 import { MultiSelectFilter, type MultiSelectOption } from "@/features/calendar/components/MultiSelectFilter";
 import { useCalendarEvents } from "@/features/calendar/hooks/useCalendarEvents";
-import ScheduleCalendar from "@/features/calendar/components/ScheduleCalendar";
 import { numberFormatter } from "@/lib/format";
 import { PAGE_CONTAINER, TITLE_LG, SPACE_Y_TIGHT } from "@/lib/styles";
+
+const ScheduleCalendar = lazy(() => import("@/features/calendar/components/ScheduleCalendar"));
 
 dayjs.locale("es");
 
@@ -215,7 +216,15 @@ function CalendarSchedulePage() {
 
       {error && <Alert variant="error">{error}</Alert>}
 
-      <ScheduleCalendar events={allEvents} loading={loading} />
+      <Suspense
+        fallback={
+          <div className="flex h-96 items-center justify-center">
+            <span className="loading loading-spinner loading-lg text-primary" />
+          </div>
+        }
+      >
+        <ScheduleCalendar events={allEvents} loading={loading} />
+      </Suspense>
 
       {summary && (
         <p className="text-base-content/60 text-xs">

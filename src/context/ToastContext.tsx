@@ -38,13 +38,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const value = useMemo<ToastContextValue>(() => ({ showToast }), [showToast]);
 
   return (
-    <ToastContext.Provider value={value}>
+    <ToastContext value={value}>
       {children}
       <div className="pointer-events-none fixed inset-x-0 bottom-4 z-9999 flex flex-col items-center gap-3 px-4 sm:items-end sm:px-6">
         {toasts.map((toast) => (
           <div
             key={toast.id}
-            className={`pointer-events-auto w-full max-w-sm surface-elevated border-l-4 px-4 py-3 text-sm shadow-xl sm:w-80 ${
+            className={`surface-elevated pointer-events-auto w-full max-w-sm border-l-4 px-4 py-3 text-sm shadow-xl sm:w-80 ${
               toast.variant === "success"
                 ? "border-success/70 text-success"
                 : toast.variant === "error"
@@ -52,12 +52,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                   : "border-primary/50 text-base-content"
             }`}
           >
-            {toast.title && <p className="font-semibold text-base-content">{toast.title}</p>}
-            <p className="text-sm text-base-content/80">{toast.message}</p>
+            {toast.title && <p className="text-base-content font-semibold">{toast.title}</p>}
+            <p className="text-base-content/80 text-sm">{toast.message}</p>
           </div>
         ))}
       </div>
-    </ToastContext.Provider>
+    </ToastContext>
   );
 }
 

@@ -187,16 +187,22 @@ export default function RolesSettingsPage() {
         </div>
       </div>
 
-      <div className="rounded-md border">
+      <div className="overflow-x-auto rounded-md border">
         <table className="table">
           <thead>
             <tr>
-              <th className="w-75">Permiso / Acción</th>
+              <th className="bg-base-100 border-base-300 sticky left-0 z-20 w-80 border-r px-6 text-left">
+                Permiso / Acción
+              </th>
               {roles.map((role) => (
-                <th key={role.id} className="group relative min-w-30 text-center">
+                <th key={role.id} className="group relative min-w-45 p-2 text-center align-top">
                   <div className="flex flex-col items-center gap-1">
-                    <span className="text-base font-bold">{role.name}</span>
-                    <span className="text-xs font-normal opacity-70">{role.description || "Sin descripción"}</span>
+                    <span className="line-clamp-2 text-base leading-tight font-bold" title={role.name}>
+                      {role.name}
+                    </span>
+                    <span className="line-clamp-2 text-xs font-normal opacity-70" title={role.description || ""}>
+                      {role.description || "Sin descripción"}
+                    </span>
 
                     {/* Role Actions - Visible on hover/group */}
                     <div className="bg-base-100 rounded-box absolute -top-8 mt-1 flex gap-1 border p-1 opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
@@ -225,7 +231,9 @@ export default function RolesSettingsPage() {
               <React.Fragment key={section.title}>
                 {/* Section Title & Bulk Toggle */}
                 <tr className="bg-base-200/30">
-                  <td className="py-2 text-xs font-bold tracking-widest uppercase opacity-70">{section.title}</td>
+                  <td className="bg-base-200 border-base-300 sticky left-0 z-10 border-r py-2 text-xs font-bold tracking-widest uppercase opacity-70">
+                    {section.title}
+                  </td>
                   {roles.map((role) => (
                     <BulkToggleCell
                       key={role.id}
@@ -250,7 +258,7 @@ export default function RolesSettingsPage() {
                       {/* If multiple permissions, show Page Header with Bulk Toggle */}
                       {hasMultiple && (
                         <tr className="bg-base-100/50 border-base-100 hover:bg-base-200/20 border-b">
-                          <td className="py-2 pl-4 text-sm font-semibold">
+                          <td className="bg-base-100 border-base-300 sticky left-0 z-10 border-r py-2 pl-4 text-sm font-semibold">
                             <div className="flex items-center gap-2">
                               <item.icon className="h-4 w-4 opacity-70" />
                               {item.label} <span className="text-xs font-normal opacity-50">(Todos)</span>
@@ -292,14 +300,16 @@ export default function RolesSettingsPage() {
                             key={perm.id}
                             className="hover:bg-base-200/50 border-base-100 border-b transition-colors last:border-0"
                           >
-                            <td className={`py-3 ${indentClass}`}>
+                            <td
+                              className={`bg-base-100 sticky left-0 z-10 py-3 ${indentClass} border-base-300 border-r`}
+                            >
                               <div className="flex flex-col">
                                 <span className="flex items-center gap-2 text-sm font-medium">
                                   {!hasMultiple && <item.icon className="h-4 w-4 opacity-70" />}
                                   {displayLabel}
                                 </span>
                                 {/* Cleaner subtext: Always Action • Subject */}
-                                <span className="text-base-content/40 pl-0 font-mono text-[10px]">
+                                <span className="text-base-content/60 pl-0 font-mono text-[10px]">
                                   {perm.action} • {perm.subject}
                                 </span>
                               </div>
@@ -329,7 +339,9 @@ export default function RolesSettingsPage() {
             {otherPermissions.length > 0 && (
               <>
                 <tr className="bg-base-200/30">
-                  <td className="py-2 text-xs font-bold tracking-widest uppercase opacity-70">Sistema / Avanzado</td>
+                  <td className="bg-base-200 border-base-300 sticky left-0 z-10 border-r py-2 text-xs font-bold tracking-widest uppercase opacity-70">
+                    Sistema / Avanzado
+                  </td>
                   {roles.map((role) => (
                     <BulkToggleCell
                       key={role.id}
@@ -357,12 +369,12 @@ export default function RolesSettingsPage() {
 
                   return (
                     <tr key={perm.id} className="hover:bg-base-200/50 border-base-100 border-b transition-colors">
-                      <td className="py-3 pl-6">
+                      <td className="bg-base-100 border-base-300 sticky left-0 z-10 border-r py-3 pl-6">
                         <div className="flex flex-col">
                           <span className="font-medium">
                             {subjectLabel} ({actionLabel})
                           </span>
-                          <span className="text-base-content/40 font-mono text-[10px]">
+                          <span className="text-base-content/60 font-mono text-[10px]">
                             {perm.action} • {perm.subject}
                           </span>
                         </div>
@@ -424,7 +436,7 @@ function PermissionCell({
         disabled={isUpdating}
         className={cn(
           "mx-auto flex h-12 w-full items-center justify-center px-4 transition-colors",
-          hasAccess ? "hover:bg-red-500/10" : "hover:bg-green-500/10"
+          hasAccess ? "hover:bg-error/10" : "hover:bg-success/10"
         )}
       >
         {isUpdating ? (

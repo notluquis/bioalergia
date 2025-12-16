@@ -3,7 +3,7 @@
  * A more ergonomic, user-friendly interface for auditing employee schedules
  */
 
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, lazy, Suspense } from "react";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
 import "dayjs/locale/es";
@@ -15,10 +15,11 @@ import { useAuth } from "@/context/AuthContext";
 import Alert from "@/components/ui/Alert";
 import { fetchEmployees } from "@/features/hr/employees/api";
 import type { Employee } from "@/features/hr/employees/types";
-import { TimesheetAuditCalendar } from "@/features/hr/timesheets-audit/components";
 import { detectAllOverlaps } from "@/features/hr/timesheets-audit/utils/overlapDetection";
 import { useMonths } from "@/features/hr/timesheets/hooks/useMonths";
 import { useTimesheetAudit, type AuditDateRange } from "@/features/hr/timesheets-audit/hooks/useTimesheetAudit";
+
+const TimesheetAuditCalendar = lazy(() => import("@/features/hr/timesheets-audit/components/TimesheetAuditCalendar"));
 
 dayjs.extend(isoWeek);
 dayjs.locale("es");
@@ -522,13 +523,21 @@ export default function TimesheetAuditPage() {
       {canShowCalendar && (
         <div className="border-base-300 bg-base-100 rounded-2xl border p-6 shadow-sm">
           <h2 className="text-base-content mb-6 text-lg font-semibold">Calendario de auditoría</h2>
-          <TimesheetAuditCalendar
-            entries={entries}
-            loading={loadingEntries}
-            selectedEmployeeIds={selectedEmployeeIds}
-            focusDate={focusDate}
-            visibleDateRanges={effectiveRanges}
-          />
+          <Suspense
+            fallback={
+              <div className="flex h-64 items-center justify-center">
+                <span className="loading loading-spinner loading-lg text-primary" />
+              </div>
+            }
+          >
+            <TimesheetAuditCalendar
+              entries={entries}
+              loading={loadingEntries}
+              selectedEmployeeIds={selectedEmployeeIds}
+              focusDate={focusDate}
+              visibleDateRanges={effectiveRanges}
+            />
+          </Suspense>
         </div>
       )}
 
