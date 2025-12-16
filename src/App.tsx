@@ -94,15 +94,7 @@ export default function App() {
           <div className="nav-progress__indicator" />
         </div>
       )}
-      <div
-        className="layout-shell text-base-content relative mx-auto flex min-h-screen w-full gap-3 px-2 py-3 transition-all duration-300 sm:px-4 lg:px-6"
-        style={{
-          paddingTop: "max(0.75rem, env(safe-area-inset-top))",
-          paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))",
-          paddingLeft: "max(0.75rem, env(safe-area-inset-left))",
-          paddingRight: "max(0.75rem, env(safe-area-inset-right))",
-        }}
-      >
+      <div className="layout-shell text-base-content relative mx-auto flex min-h-screen w-full gap-3 px-2 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] pr-[max(0.75rem,env(safe-area-inset-right))] pb-[max(0.75rem,env(safe-area-inset-bottom))] pl-[max(0.75rem,env(safe-area-inset-left))] transition-all duration-300 sm:px-4 lg:px-6">
         {/* Hamburger button: accessible, compact, always visible on mobile */}
         <button
           type="button"
