@@ -16,7 +16,10 @@ const router = Router();
 const inviteUserSchema = z.object({
   email: z.string().email(),
   role: z.string().min(1),
-  position: z.string().min(1).default("Por definir"),
+  position: z
+    .string()
+    .optional()
+    .transform((val) => (val && val.trim().length > 0 ? val : "Por definir")),
   mfaEnforced: z.boolean().default(true),
   personId: z.number().optional(), // Optional: link to existing person
 });
