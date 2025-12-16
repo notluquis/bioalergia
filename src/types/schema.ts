@@ -1,4 +1,4 @@
-export type UserRole = "GOD" | "ADMIN" | "ANALYST" | "VIEWER";
+export type UserRole = string;
 export type PersonType = "NATURAL" | "JURIDICAL";
 export type CounterpartCategory =
   | "SUPPLIER"

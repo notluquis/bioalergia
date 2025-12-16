@@ -10,8 +10,8 @@ interface SupplyRequestsTableProps {
 }
 
 export default function SupplyRequestsTable({ requests, onStatusChange }: SupplyRequestsTableProps) {
-  const { hasRole } = useAuth();
-  const isAdmin = hasRole("ADMIN", "GOD");
+  const { can } = useAuth();
+  const isAdmin = can("manage", "SupplyRequest");
 
   return (
     <div className="bg-base-100 rounded-lg p-6 shadow-md">

@@ -7,32 +7,70 @@ import { Users, Shield, Calendar, Box, UserPlus, Loader2, Fingerprint, Upload } 
 const SETTINGS_SECTIONS = [
   {
     title: "Mi Cuenta",
-    items: [{ label: "Seguridad", to: "/settings/security", icon: Fingerprint, requiresAdmin: false }],
+    items: [
+      {
+        label: "Seguridad",
+        to: "/settings/security",
+        icon: Fingerprint,
+        requiredPermission: { action: "read", subject: "Setting" }, // Basic access
+      },
+    ],
   },
   {
     title: "Administración",
     items: [
-      { label: "Usuarios", to: "/settings/users", icon: Users, requiresAdmin: true },
-      { label: "Personas", to: "/settings/people", icon: UserPlus, requiresAdmin: true },
-      { label: "Roles y Permisos", to: "/settings/roles", icon: Shield, requiresAdmin: true },
+      {
+        label: "Usuarios",
+        to: "/settings/users",
+        icon: Users,
+        requiredPermission: { action: "read", subject: "User" },
+      },
+      {
+        label: "Personas",
+        to: "/settings/people",
+        icon: UserPlus,
+        requiredPermission: { action: "read", subject: "Person" },
+      },
+      {
+        label: "Roles y Permisos",
+        to: "/settings/roles",
+        icon: Shield,
+        requiredPermission: { action: "manage", subject: "Role" },
+      },
     ],
   },
   {
     title: "Configuración de Módulos",
     items: [
-      { label: "Calendario", to: "/settings/calendar", icon: Calendar, requiresAdmin: true },
-      { label: "Inventario", to: "/settings/inventario", icon: Box, requiresAdmin: true },
+      {
+        label: "Calendario",
+        to: "/settings/calendar",
+        icon: Calendar,
+        requiredPermission: { action: "manage", subject: "CalendarEvent" },
+      },
+      {
+        label: "Inventario",
+        to: "/settings/inventario",
+        icon: Box,
+        requiredPermission: { action: "manage", subject: "InventoryItem" },
+      },
     ],
   },
   {
     title: "Importación",
-    items: [{ label: "Carga masiva de datos", to: "/settings/csv-upload", icon: Upload, requiresAdmin: true }],
+    items: [
+      {
+        label: "Carga masiva de datos",
+        to: "/settings/csv-upload",
+        icon: Upload,
+        requiredPermission: { action: "manage", subject: "Setting" },
+      },
+    ],
   },
 ];
 
 export default function SettingsLayout() {
-  const { hasRole } = useAuth();
-  const canEdit = hasRole("GOD", "ADMIN");
+  const { can } = useAuth();
   const location = useLocation();
   const [pendingPath, setPendingPath] = useState<string | null>(null);
 
@@ -41,10 +79,13 @@ export default function SettingsLayout() {
     setPendingPath(null);
   }, [location.pathname]);
 
-  // Filter sections based on user role
+  // Filter sections based on user permissions
   const visibleSections = SETTINGS_SECTIONS.map((section) => ({
     ...section,
-    items: section.items.filter((item) => !item.requiresAdmin || canEdit),
+    items: section.items.filter((item) => {
+      if (!item.requiredPermission) return true;
+      return can(item.requiredPermission.action, item.requiredPermission.subject);
+    }),
   })).filter((section) => section.items.length > 0);
 
   return (

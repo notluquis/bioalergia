@@ -12,8 +12,8 @@ import { ChevronUp, Plus } from "lucide-react";
 import { PAGE_CONTAINER, TITLE_LG } from "@/lib/styles";
 
 export default function EmployeesPage() {
-  const { hasRole } = useAuth();
-  const canEdit = hasRole("GOD", "ADMIN");
+  const { can } = useAuth();
+  const canEdit = can("manage", "Employee");
 
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(false);

@@ -10,6 +10,11 @@ export async function findUserByEmail(email: string) {
           fatherName: true,
         },
       },
+      roles: {
+        include: {
+          role: true,
+        },
+      },
     },
   });
 }
@@ -22,6 +27,11 @@ export async function findUserById(id: number) {
         select: {
           names: true,
           fatherName: true,
+        },
+      },
+      roles: {
+        include: {
+          role: true,
         },
       },
     },
@@ -38,7 +48,9 @@ export async function updateUserMfa(userId: number, secret: string | null, enabl
   });
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function resolveUserRole(user: any) {
-  return user.role;
+export async function resolveUserRole(user: { roles?: Array<{ role?: { name: string }; name?: string }> }) {
+  if (user.roles && Array.isArray(user.roles)) {
+    return user.roles.map((r) => r.role?.name || r.name).filter((r): r is string => !!r);
+  }
+  return [];
 }

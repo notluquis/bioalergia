@@ -1,5 +1,6 @@
 import express from "express";
-import { asyncHandler, authenticate, requireRole } from "../lib/http.js";
+import { asyncHandler, authenticate } from "../lib/http.js";
+import { authorize } from "../middleware/authorize.js";
 import {
   getSupplyRequests,
   getCommonSupplies,
@@ -58,7 +59,7 @@ export function registerSuppliesRoutes(app: express.Express) {
 
   router.put(
     "/requests/:id/status",
-    requireRole("ADMIN", "GOD", "ANALYST"),
+    authorize("manage", "SupplyRequest"),
     asyncHandler(async (req, res) => {
       const id = Number(req.params.id);
       const parsed = updateStatusSchema.safeParse(req.body);

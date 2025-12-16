@@ -28,8 +28,8 @@ interface EmployeeTableProps {
 }
 
 export default function EmployeeTable({ employees, loading, onEdit, onDeactivate, onActivate }: EmployeeTableProps) {
-  const { hasRole } = useAuth();
-  const canEdit = hasRole("GOD", "ADMIN");
+  const { can } = useAuth();
+  const canEdit = can("manage", "Employee");
 
   const columns: EmployeeColumn[] = [
     "name",
@@ -108,7 +108,7 @@ export default function EmployeeTable({ employees, loading, onEdit, onDeactivate
     <div className="space-y-4">
       {/* Column visibility controls */}
       <div className="flex flex-wrap gap-2">
-        <span className="text-xs font-semibold text-base-content">Mostrar columnas:</span>
+        <span className="text-base-content text-xs font-semibold">Mostrar columnas:</span>
         {columns
           .filter((col) => col !== "actions")
           .map((column) => (
@@ -133,14 +133,14 @@ export default function EmployeeTable({ employees, loading, onEdit, onDeactivate
           ))}
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-primary/15 bg-base-100 shadow-sm">
-        <div className="overflow-x-auto muted-scrollbar">
+      <div className="border-primary/15 bg-base-100 overflow-hidden rounded-2xl border shadow-sm">
+        <div className="muted-scrollbar overflow-x-auto">
           <table className="min-w-full text-sm">
             <thead className="bg-primary/10 text-primary">
               <tr>
                 {table.isColumnVisible("name") && (
                   <th
-                    className="px-4 py-3 text-left font-semibold cursor-pointer hover:bg-primary/20 whitespace-nowrap"
+                    className="hover:bg-primary/20 cursor-pointer px-4 py-3 text-left font-semibold whitespace-nowrap"
                     {...table.getSortProps("name")}
                   >
                     <span className="inline-flex items-center gap-1">Nombre {table.getSortIcon("name")}</span>
@@ -148,7 +148,7 @@ export default function EmployeeTable({ employees, loading, onEdit, onDeactivate
                 )}
                 {table.isColumnVisible("role") && (
                   <th
-                    className="px-4 py-3 text-left font-semibold cursor-pointer hover:bg-primary/20 whitespace-nowrap"
+                    className="hover:bg-primary/20 cursor-pointer px-4 py-3 text-left font-semibold whitespace-nowrap"
                     {...table.getSortProps("role")}
                   >
                     <span className="inline-flex items-center gap-1">Cargo {table.getSortIcon("role")}</span>
@@ -156,7 +156,7 @@ export default function EmployeeTable({ employees, loading, onEdit, onDeactivate
                 )}
                 {table.isColumnVisible("email") && (
                   <th
-                    className="px-4 py-3 text-left font-semibold cursor-pointer hover:bg-primary/20 whitespace-nowrap"
+                    className="hover:bg-primary/20 cursor-pointer px-4 py-3 text-left font-semibold whitespace-nowrap"
                     {...table.getSortProps("email")}
                   >
                     <span className="inline-flex items-center gap-1">Correo {table.getSortIcon("email")}</span>
@@ -170,7 +170,7 @@ export default function EmployeeTable({ employees, loading, onEdit, onDeactivate
                 )}
                 {table.isColumnVisible("hourlyRate") && (
                   <th
-                    className="px-4 py-3 text-left font-semibold cursor-pointer hover:bg-primary/20"
+                    className="hover:bg-primary/20 cursor-pointer px-4 py-3 text-left font-semibold"
                     {...table.getSortProps("hourlyRate")}
                   >
                     <span className="inline-flex items-center gap-1">Hora base {table.getSortIcon("hourlyRate")}</span>
@@ -178,7 +178,7 @@ export default function EmployeeTable({ employees, loading, onEdit, onDeactivate
                 )}
                 {table.isColumnVisible("overtimeRate") && (
                   <th
-                    className="px-4 py-3 text-left font-semibold cursor-pointer hover:bg-primary/20"
+                    className="hover:bg-primary/20 cursor-pointer px-4 py-3 text-left font-semibold"
                     {...table.getSortProps("overtimeRate")}
                   >
                     <span className="inline-flex items-center gap-1">
@@ -188,7 +188,7 @@ export default function EmployeeTable({ employees, loading, onEdit, onDeactivate
                 )}
                 {table.isColumnVisible("retentionRate") && (
                   <th
-                    className="px-4 py-3 text-left font-semibold cursor-pointer hover:bg-primary/20"
+                    className="hover:bg-primary/20 cursor-pointer px-4 py-3 text-left font-semibold"
                     {...table.getSortProps("retentionRate")}
                   >
                     <span className="inline-flex items-center gap-1">
@@ -198,7 +198,7 @@ export default function EmployeeTable({ employees, loading, onEdit, onDeactivate
                 )}
                 {table.isColumnVisible("status") && (
                   <th
-                    className="px-4 py-3 text-left font-semibold cursor-pointer hover:bg-primary/20"
+                    className="hover:bg-primary/20 cursor-pointer px-4 py-3 text-left font-semibold"
                     {...table.getSortProps("status")}
                   >
                     <span className="inline-flex items-center gap-1">Estado {table.getSortIcon("status")}</span>
@@ -213,19 +213,19 @@ export default function EmployeeTable({ employees, loading, onEdit, onDeactivate
               {sortedEmployees.map((employee) => (
                 <tr key={employee.id} className="odd:bg-base-200/60">
                   {table.isColumnVisible("name") && (
-                    <td className="px-4 py-3 font-medium text-base-content">{employee.full_name}</td>
+                    <td className="text-base-content px-4 py-3 font-medium">{employee.full_name}</td>
                   )}
                   {table.isColumnVisible("role") && (
-                    <td className="px-4 py-3 text-base-content">{employee.position}</td>
+                    <td className="text-base-content px-4 py-3">{employee.position}</td>
                   )}
                   {table.isColumnVisible("email") && (
-                    <td className="px-4 py-3 text-base-content/60">{employee.person?.email ?? "—"}</td>
+                    <td className="text-base-content/60 px-4 py-3">{employee.person?.email ?? "—"}</td>
                   )}
                   {table.isColumnVisible("rut") && (
-                    <td className="px-4 py-3 text-base-content">{employee.person?.rut ?? "—"}</td>
+                    <td className="text-base-content px-4 py-3">{employee.person?.rut ?? "—"}</td>
                   )}
                   {table.isColumnVisible("bank") && (
-                    <td className="px-4 py-3 text-base-content">
+                    <td className="text-base-content px-4 py-3">
                       {employee.bankName ? (
                         <span className="whitespace-nowrap">
                           {employee.bankName}
@@ -238,18 +238,18 @@ export default function EmployeeTable({ employees, loading, onEdit, onDeactivate
                     </td>
                   )}
                   {table.isColumnVisible("hourlyRate") && (
-                    <td className="px-4 py-3 text-base-content">{fmtCLP(employee.hourlyRate || 0)}</td>
+                    <td className="text-base-content px-4 py-3">{fmtCLP(employee.hourlyRate || 0)}</td>
                   )}
-                  {table.isColumnVisible("overtimeRate") && <td className="px-4 py-3 text-base-content">—</td>}
-                  {table.isColumnVisible("retentionRate") && <td className="px-4 py-3 text-base-content">14.5%</td>}
+                  {table.isColumnVisible("overtimeRate") && <td className="text-base-content px-4 py-3">—</td>}
+                  {table.isColumnVisible("retentionRate") && <td className="text-base-content px-4 py-3">14.5%</td>}
                   {table.isColumnVisible("status") && (
-                    <td className="px-4 py-3 text-base-content">
+                    <td className="text-base-content px-4 py-3">
                       {employee.status === "ACTIVE" ? "Activo" : "Inactivo"}
                     </td>
                   )}
                   {canEdit && table.isColumnVisible("actions") && (
                     <td className="px-4 py-3">
-                      <div className="flex flex-col items-end gap-2">
+                      <div className="flex flex-row items-center justify-end gap-2 whitespace-nowrap">
                         <Button variant="primary" size="sm" onClick={() => onEdit(employee)}>
                           Editar
                         </Button>
@@ -271,7 +271,7 @@ export default function EmployeeTable({ employees, loading, onEdit, onDeactivate
                 <tr>
                   <td
                     colSpan={table.getVisibleColumns(columns).length}
-                    className="px-4 py-6 text-center text-base-content/60"
+                    className="text-base-content/60 px-4 py-6 text-center"
                   >
                     No hay registros.
                   </td>
@@ -279,7 +279,7 @@ export default function EmployeeTable({ employees, loading, onEdit, onDeactivate
               )}
               {loading && (
                 <tr>
-                  <td colSpan={table.getVisibleColumns(columns).length} className="px-4 py-6 text-center text-primary">
+                  <td colSpan={table.getVisibleColumns(columns).length} className="text-primary px-4 py-6 text-center">
                     Cargando...
                   </td>
                 </tr>

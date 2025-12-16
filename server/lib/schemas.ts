@@ -41,7 +41,7 @@ export const PositiveCurrencySchema = CurrencyAmountSchema.positive("Debe ser ma
 
 // === ENUMS ===
 
-export const UserRoleSchema = z.enum(["GOD", "ADMIN", "ANALYST", "VIEWER"]);
+export const UserRoleSchema = z.string().min(1);
 
 export const CounterpartPersonTypeSchema = z.enum(["PERSON", "COMPANY", "OTHER"]);
 

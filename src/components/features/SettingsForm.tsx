@@ -46,7 +46,7 @@ function isUploadResponse(value: unknown): value is UploadResponse {
 
 export default function SettingsForm() {
   const { settings, updateSettings } = useSettings();
-  const { hasRole } = useAuth();
+  const { hasRole, can } = useAuth();
   const [form, setForm] = useState<AppSettings>(settings);
   const [status, setStatus] = useState<"idle" | "saving" | "success" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
@@ -97,11 +97,10 @@ export default function SettingsForm() {
     }
     setLogoPreview(null);
     setLogoFile(null);
-    setFaviconPreview(null);
     setFaviconFile(null);
 
     // load internal setting if user can edit (with AbortController for cleanup)
-    if (!hasRole("GOD", "ADMIN")) return;
+    if (!can("manage", "Setting")) return;
 
     const controller = new AbortController();
 
@@ -130,7 +129,7 @@ export default function SettingsForm() {
     return () => {
       controller.abort();
     };
-  }, [settings, hasRole]);
+  }, [settings, hasRole, can]);
   useEffect(() => {
     return () => {
       if (logoPreviewRef.current) {

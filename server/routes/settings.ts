@@ -1,6 +1,6 @@
 import express from "express";
 import multer from "multer";
-import { asyncHandler, authenticate, softAuthenticate, requireRole } from "../lib/http.js";
+import { asyncHandler, authenticate, softAuthenticate } from "../lib/http.js";
 import { authorize } from "../middleware/authorize.js";
 import { logEvent, logWarn, requestContext } from "../lib/logger.js";
 import { getSettings, updateSettings, getSetting, updateSetting, deleteSetting } from "../services/settings.js";
@@ -58,7 +58,7 @@ export function registerSettingsRoutes(app: express.Express) {
   app.get(
     "/api/settings/internal",
     authenticate,
-    requireRole("GOD", "ADMIN"),
+    authorize("manage", "Setting"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       const upsertChunk = await getSetting("bioalergia_x.upsert_chunk_size");
       // Expose both DB value and effective value (env var overrides DB). Do not expose other secrets.
@@ -74,7 +74,7 @@ export function registerSettingsRoutes(app: express.Express) {
   app.put(
     "/api/settings/internal",
     authenticate,
-    requireRole("GOD", "ADMIN"),
+    authorize("manage", "Setting"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       const { upsertChunkSize } = req.body ?? {};
       if (upsertChunkSize == null) {
@@ -94,7 +94,7 @@ export function registerSettingsRoutes(app: express.Express) {
   app.put(
     "/api/settings",
     authenticate,
-    requireRole("GOD", "ADMIN"),
+    authorize("manage", "Setting"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       logEvent("settings:update:attempt", requestContext(req, { body: req.body }));
       const parsed = settingsSchema.safeParse(req.body);
@@ -128,7 +128,7 @@ export function registerSettingsRoutes(app: express.Express) {
   app.post(
     "/api/settings/logo/upload",
     authenticate,
-    requireRole("GOD", "ADMIN"),
+    authorize("manage", "Setting"),
     logoUpload.single("logo"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       if (!req.file) {
@@ -143,7 +143,7 @@ export function registerSettingsRoutes(app: express.Express) {
   app.post(
     "/api/settings/favicon/upload",
     authenticate,
-    requireRole("GOD", "ADMIN"),
+    authorize("manage", "Setting"),
     faviconUpload.single("favicon"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       if (!req.file) {

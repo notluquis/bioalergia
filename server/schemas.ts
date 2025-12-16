@@ -429,7 +429,7 @@ export const monthlyExpenseStatsSchema = z.object({
 
 export const roleMappingSchema = z.object({
   employee_role: z.string().min(1).max(120),
-  app_role: z.enum(["GOD", "ADMIN", "ANALYST", "VIEWER"]),
+  app_role: z.string().min(1),
 });
 
 export const supplyRequestSchema = z.object({

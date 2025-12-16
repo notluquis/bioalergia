@@ -10,12 +10,7 @@ datasource db {
 
 // --- Enums ---
 
-enum UserRole {
-  GOD
-  ADMIN
-  ANALYST
-  VIEWER
-}
+
 
 enum PersonType {
   NATURAL
@@ -130,7 +125,7 @@ model User {
   personId            Int      @unique @map("person_id")
   email               String   @unique
   passwordHash        String?  @map("password_hash") // Nullable only for PENDING_SETUP users temporarily
-  role                UserRole @default(VIEWER)
+
   status              UserStatus @default(PENDING_SETUP)
   
   // Security

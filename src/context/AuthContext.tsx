@@ -4,12 +4,12 @@ import { RawRuleOf, MongoAbility } from "@casl/ability";
 import { logger } from "@/lib/logger";
 import { apiClient, ApiError } from "@/lib/apiClient";
 
-export type UserRole = "GOD" | "ADMIN" | "ANALYST" | "VIEWER";
+export type UserRole = string;
 
 export type AuthUser = {
   id: number;
   email: string;
-  role: UserRole;
+  roles: string[];
   name: string | null;
   mfaEnabled?: boolean;
   status: string;
@@ -26,13 +26,14 @@ export type AuthContextType = {
   loginWithMfa: (userId: number, token: string) => Promise<void>;
   loginWithPasskey: (authResponse: unknown, challenge: string) => Promise<void>;
   logout: () => Promise<void>;
-  hasRole: (...roles: UserRole[]) => boolean;
+  hasRole: (...roles: string[]) => boolean;
+  can: (action: string, subject: string, field?: string) => boolean;
   refreshSession: () => Promise<void>;
 };
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-import { updateAbility } from "@/lib/authz/ability";
+import { updateAbility, ability } from "@/lib/authz/ability";
 
 // ... (existing imports)
 
@@ -185,14 +186,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [queryClient]);
 
   const hasRole = useCallback(
-    (...roles: (UserRole | string)[]) => {
+    (...rolesToCheck: string[]) => {
       if (!user) return false;
-      const normalize = (r: string) => r.toUpperCase();
-      const current = normalize(user.role);
+      if (!rolesToCheck.length) return true;
 
-      if (current === "GOD") return true;
-      if (!roles.length) return true;
-      return roles.some((r) => normalize(r) === current);
+      const userRoles = user.roles.map((r) => r.toUpperCase());
+      return rolesToCheck.some((r) => userRoles.includes(r.toUpperCase()));
     },
     [user]
   );
@@ -202,9 +201,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- refetch is stable by design
   }, [sessionQuery.refetch]);
 
+  const can = useCallback((action: string, subject: string, field?: string) => {
+    // Wrapper for CASL ability
+    return ability.can(action, subject, field);
+  }, []);
+
   const value = useMemo<AuthContextType>(
-    () => ({ user, initializing, login, loginWithMfa, loginWithPasskey, logout, hasRole, refreshSession }),
-    [user, initializing, login, loginWithMfa, loginWithPasskey, logout, hasRole, refreshSession]
+    () => ({ user, initializing, login, loginWithMfa, loginWithPasskey, logout, hasRole, refreshSession, can }),
+    [user, initializing, login, loginWithMfa, loginWithPasskey, logout, hasRole, refreshSession, can]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

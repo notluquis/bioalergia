@@ -1,6 +1,7 @@
 import express from "express";
 import { z } from "zod";
-import { asyncHandler, authenticate, requireRole } from "../lib/http.js";
+import { asyncHandler, authenticate } from "../lib/http.js";
+import { authorize } from "../middleware/authorize.js";
 import { Prisma } from "@prisma/client";
 import { logEvent, logWarn, requestContext } from "../lib/logger.js";
 import { listEmployees, getEmployeeById } from "../services/employees.js";
@@ -77,8 +78,7 @@ export function registerTimesheetRoutes(app: express.Express) {
 
   app.post(
     "/api/timesheets",
-    authenticate,
-    requireRole("GOD", "ADMIN", "ANALYST"),
+    authorize("manage", "Timesheet"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       const parsed = timesheetPayloadSchema.safeParse(req.body);
       if (!parsed.success) {
@@ -99,7 +99,7 @@ export function registerTimesheetRoutes(app: express.Express) {
   app.put(
     "/api/timesheets/:id",
     authenticate,
-    requireRole("GOD", "ADMIN", "ANALYST"),
+    authorize("manage", "Timesheet"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       const parsed = timesheetUpdateSchema.safeParse(req.body);
       if (!parsed.success) {
@@ -141,7 +141,7 @@ export function registerTimesheetRoutes(app: express.Express) {
   app.delete(
     "/api/timesheets/:id",
     authenticate,
-    requireRole("GOD", "ADMIN", "ANALYST"),
+    authorize("manage", "Timesheet"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       const id = Number(req.params.id);
       await deleteTimesheetEntry(id);
@@ -152,8 +152,7 @@ export function registerTimesheetRoutes(app: express.Express) {
 
   app.post(
     "/api/timesheets/bulk",
-    authenticate,
-    requireRole("GOD", "ADMIN", "ANALYST"),
+    authorize("manage", "Timesheet"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       const parsed = timesheetBulkSchema.parse(req.body ?? {});
       const employee = await getEmployeeById(parsed.employee_id);
@@ -308,7 +307,7 @@ export function registerTimesheetRoutes(app: express.Express) {
   app.post(
     "/api/timesheets/prepare-email",
     authenticate,
-    requireRole("GOD", "ADMIN"),
+    authorize("manage", "Timesheet"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       const schema = z.object({
         employeeId: z.number().int().positive(),

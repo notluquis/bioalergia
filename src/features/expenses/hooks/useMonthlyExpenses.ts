@@ -26,9 +26,9 @@ export type ExpenseFilters = {
 };
 
 export function useMonthlyExpenses() {
-  const { hasRole } = useAuth();
-  const canManage = useMemo(() => hasRole("GOD", "ADMIN"), [hasRole]);
-  const canView = useMemo(() => hasRole("GOD", "ADMIN", "ANALYST", "VIEWER"), [hasRole]);
+  const { can } = useAuth();
+  const canManage = useMemo(() => can("manage", "Expense"), [can]);
+  const canView = useMemo(() => can("read", "Expense"), [can]);
 
   const [expenses, setExpenses] = useState<MonthlyExpense[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);

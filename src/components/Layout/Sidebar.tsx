@@ -23,7 +23,7 @@ type NavItem = {
   to: string;
   label: string;
   icon: React.ElementType;
-  roles?: Array<"GOD" | "ADMIN" | "ANALYST" | "VIEWER">;
+  roles?: string[];
   requiredPermission?: { action: string; subject: string };
   exact?: boolean;
 };
@@ -122,7 +122,7 @@ export const NAV_SECTIONS: NavSection[] = [
         to: "/hr/employees",
         label: "RRHH",
         icon: Users2,
-        requiredPermission: { action: "read", subject: "User" },
+        requiredPermission: { action: "read", subject: "Employee" },
       }, // RRHH usually implies User management
     ],
   },
@@ -149,7 +149,7 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ isOpen, isMobile, onClose, isCollapsed = false, toggleCollapse }: SidebarProps) {
-  const { user, hasRole } = useAuth();
+  const { user } = useAuth();
   const { can } = useCan();
   const navigation = useNavigation();
   const location = useLocation();
@@ -225,7 +225,6 @@ export default function Sidebar({ isOpen, isMobile, onClose, isCollapsed = false
             <div className="space-y-1">
               {NAV_SECTIONS.map((section) => {
                 const visibleItems = section.items.filter((item) => {
-                  if (item.roles && !hasRole(...item.roles)) return false;
                   if (item.requiredPermission && !can(item.requiredPermission.action, item.requiredPermission.subject))
                     return false;
                   return true;

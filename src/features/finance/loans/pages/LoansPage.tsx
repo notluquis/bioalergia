@@ -28,9 +28,9 @@ import { PAGE_CONTAINER, TITLE_LG } from "@/lib/styles";
 import { today } from "@/lib/dates";
 
 export default function LoansPage() {
-  const { hasRole } = useAuth();
-  const canManage = useMemo(() => hasRole("GOD", "ADMIN"), [hasRole]);
-  const canView = useMemo(() => hasRole("GOD", "ADMIN", "ANALYST", "VIEWER"), [hasRole]);
+  const { can } = useAuth();
+  const canManage = useMemo(() => can("manage", "Loan"), [can]);
+  const canView = useMemo(() => can("read", "Loan"), [can]);
 
   const [loans, setLoans] = useState<LoanSummary[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);

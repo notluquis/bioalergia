@@ -20,7 +20,14 @@ export async function attachAbility(req: AuthenticatedRequest, res: Response, ne
 
     const user = await prisma.user.findUnique({
       where: { id: req.auth.userId },
-      include: { person: true },
+      include: {
+        person: true,
+        roles: {
+          include: {
+            role: true,
+          },
+        },
+      },
     });
     if (!user) {
       // User deleted or stale token - clear session and require login

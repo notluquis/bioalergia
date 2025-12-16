@@ -32,7 +32,7 @@ dayjs.locale("es");
 type User = {
   id: number;
   email: string;
-  role: "GOD" | "ADMIN" | "ANALYST" | "VIEWER";
+  role: string;
   status: "ACTIVE" | "INACTIVE" | "PENDING_SETUP" | "SUSPENDED";
   createdAt: string;
   hasPasskey: boolean;
@@ -45,16 +45,29 @@ type User = {
 };
 
 export default function UserManagementPage() {
-  useAuth();
+  const { can } = useAuth();
+  // const { user } = useAuth(); // removed unused
   const { success, error } = useToast();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("ALL");
+  const [availableRoles, setAvailableRoles] = useState<{ name: string; description: string }[]>([]);
+
+  // Fetch roles for filter
+  useQuery({
+    queryKey: ["roles"],
+    queryFn: async () => {
+      const res = await apiClient.get<{ roles: { name: string; description: string }[] }>("/api/roles");
+      setAvailableRoles(res.roles || []);
+      return res.roles;
+    },
+  });
 
   const { data: users, isLoading } = useQuery({
     queryKey: ["users"],
     queryFn: async () => {
       const payload = await apiClient.get<{ users: User[] }>("/api/users");
+      // Use string type for users
       return payload.users || [];
     },
   });
@@ -282,9 +295,11 @@ export default function UserManagementPage() {
             onChange={(e) => setRoleFilter(e.target.value)}
           >
             <option value="ALL">Todos los roles</option>
-            <option value="ADMIN">Admin</option>
-            <option value="ANALYST">Analista</option>
-            <option value="VIEWER">Visualizador</option>
+            {availableRoles.map((role) => (
+              <option key={role.name} value={role.name}>
+                {role.description || role.name}
+              </option>
+            ))}
           </select>
         </div>
 
@@ -338,7 +353,7 @@ export default function UserManagementPage() {
                       </td>
                       <td>
                         <div className="flex items-center gap-2">
-                          {user.role === "GOD" && <Shield size={14} className="text-warning" />}
+                          {can("manage", "all") && <Shield size={14} className="text-warning" />}
                           <span className="badge badge-ghost badge-sm font-medium">{user.role}</span>
                         </div>
                       </td>

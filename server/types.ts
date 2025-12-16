@@ -1,12 +1,9 @@
 import type { Request } from "express";
-import type { UserRole } from "@prisma/client";
-
-export type { UserRole };
 
 export type AuthSession = {
   userId: number;
   email: string;
-  role: UserRole;
+  roles: string[];
 };
 
 import type { User } from "@prisma/client";

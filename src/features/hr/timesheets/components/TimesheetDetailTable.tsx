@@ -42,8 +42,8 @@ export default function TimesheetDetailTable({
   monthLabel,
   employeeOptions,
 }: TimesheetDetailTableProps) {
-  const { hasRole } = useAuth();
-  const canEdit = hasRole("GOD", "ADMIN", "ANALYST");
+  const { can } = useAuth();
+  const canEdit = can("manage", "Timesheet");
   const [openOvertimeEditors, setOpenOvertimeEditors] = useState<Set<string>>(new Set());
   const [commentPreview, setCommentPreview] = useState<{ date: string; text: string } | null>(null);
   const [notWorkedDays, setNotWorkedDays] = useState<Set<string>>(new Set());

@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, typ
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth, type UserRole } from "./AuthContext";
 import { logger } from "@/lib/logger";
+import { APP_CONFIG } from "@/config/app";
 
 export type AppSettings = {
   orgName: string;
@@ -27,26 +28,10 @@ export type AppSettings = {
 };
 
 export const DEFAULT_SETTINGS: AppSettings = {
-  orgName: "Bioalergia",
-  tagline: "Suite integral de administración",
-  primaryColor: "oklch(var(--p))",
-  secondaryColor: "oklch(var(--s))",
-  logoUrl: "",
-  faviconUrl: "/logo_bimi.svg",
-  dbDisplayHost: "localhost",
-  dbDisplayName: "finanzas",
-  dbConsoleUrl: "",
-  cpanelUrl: "",
+  orgName: APP_CONFIG.name,
   orgAddress: "",
   orgPhone: "",
-  primaryCurrency: "CLP",
-  supportEmail: "soporte@bioalergia.cl",
-  pageTitle: "Bioalergia Suite",
-  calendarTimeZone: "America/Santiago",
-  calendarSyncStart: "2000-01-01",
-  calendarSyncLookaheadDays: "365",
-  calendarExcludeSummaries: "No Disponible",
-  calendarDailyMaxDays: "31",
+  ...APP_CONFIG.defaults,
 };
 
 export type SettingsContextType = {

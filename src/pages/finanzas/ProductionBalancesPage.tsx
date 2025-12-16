@@ -31,14 +31,16 @@ import { fmtCLP, coerceAmount, numberFormatter } from "@/lib/format";
 dayjs.locale("es");
 
 export default function DailyProductionBalancesPage() {
-  const { user } = useAuth();
+  const { can } = useAuth();
   const { success: toastSuccess, error: toastError } = useToast();
   const queryClient = useQueryClient();
   // Settings unused
 
   // Simple role-based access for now (matching sidebar)
   const canView = true; // If they can reach this page, they can view
-  const canEdit = ["GOD", "ADMIN", "ANALYST"].includes(user?.role || "");
+
+  // Use permissions instead of role checks
+  const canEdit = can("manage", "ProductionBalance");
 
   const [currentDate, setCurrentDate] = useState(dayjs());
   const [selectedDate, setSelectedDate] = useState<string | null>(today());
@@ -155,7 +157,7 @@ export default function DailyProductionBalancesPage() {
     coerceAmount(form.roxair) +
     coerceAmount(form.otrosAbonos);
 
-  const paymentMethodTotal = derived.total;
+  const paymentMethodTotal = derived.subtotal;
   const hasDifference = serviceTotals !== paymentMethodTotal;
   const difference = serviceTotals - paymentMethodTotal;
 
@@ -527,25 +529,10 @@ export default function DailyProductionBalancesPage() {
                       {/* Primary Save Button */}
                       <div className="flex w-full gap-2">
                         {form.status === "FINAL" ? (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => {
-                              setConfirmConfig({
-                                open: true,
-                                title: "Reabrir como borrador",
-                                message:
-                                  "¿Estás seguro de reabrir este balance como borrador? Esto permitirá editarlo nuevamente.",
-                                onConfirm: () => {
-                                  setForm((prev) => ({ ...prev, status: "DRAFT" }));
-                                  triggerSave({ forceFinal: false });
-                                  setConfirmConfig((prev) => ({ ...prev, open: false }));
-                                },
-                              });
-                            }}
-                          >
-                            Reabrir como Borrador
-                          </Button>
+                          // Feature removed: Reopen as draft
+                          <div className="text-base-content/50 flex items-center px-2 text-xs">
+                            <span className="hidden sm:inline">Balance finalizado.</span>
+                          </div>
                         ) : (
                           <div className="text-base-content/50 flex items-center px-2 text-xs">
                             <span className="hidden sm:inline">Se guardará como borrador hasta cuadrar.</span>

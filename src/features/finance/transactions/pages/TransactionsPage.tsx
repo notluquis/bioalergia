@@ -1,11 +1,14 @@
 import { useMemo, useState } from "react";
+import { useDebounce } from "use-debounce";
 import dayjs from "dayjs";
 import { coerceAmount } from "@/lib/format";
 import { useAuth } from "@/context/AuthContext";
 import { useSettings } from "@/context/SettingsContext";
 import { logger } from "@/lib/logger";
 import { isCashbackCandidate } from "~/shared/cashback";
+import { useTransactionsQuery } from "@/features/finance/transactions/hooks/useTransactionsQuery";
 import Button from "@/components/ui/Button";
+import Alert from "@/components/ui/Alert";
 import Checkbox from "@/components/ui/Checkbox";
 import Input from "@/components/ui/Input";
 import { TransactionsFilters } from "@/features/finance/transactions/components/TransactionsFilters";
@@ -13,14 +16,13 @@ import { TransactionsColumnToggles } from "@/features/finance/transactions/compo
 import { TransactionsTable } from "@/features/finance/transactions/components/TransactionsTable";
 import { COLUMN_DEFS, type ColumnKey } from "@/features/finance/transactions/constants";
 import type { Filters, LedgerRow } from "@/features/finance/transactions/types";
-import { useTransactionsQuery } from "@/features/finance/transactions/hooks/useTransactionsQuery";
-import { PAGE_CONTAINER } from "@/lib/styles";
 import { today } from "@/lib/dates";
 
 const DEFAULT_PAGE_SIZE = 50;
 
 export default function TransactionsMovements() {
   const [initialBalance, setInitialBalance] = useState<string>("0");
+  const [debouncedInitialBalance] = useDebounce(initialBalance, 500);
   const [draftFilters, setDraftFilters] = useState<Filters>({
     from: dayjs().startOf("year").format("YYYY-MM-DD"),
     to: today(),
@@ -58,12 +60,12 @@ export default function TransactionsMovements() {
     return match ? match.value : "custom";
   }, [quickMonths, draftFilters.from, draftFilters.to]);
 
-  const { hasRole } = useAuth();
+  // const { hasRole } = useAuth(); // unused
+  const { can } = useAuth();
   const { settings } = useSettings();
+  const canView = can("read", "Transaction");
 
-  const canView = hasRole("GOD", "ADMIN", "ANALYST", "VIEWER");
-
-  const initialBalanceNumber = useMemo(() => coerceAmount(initialBalance), [initialBalance]);
+  const initialBalanceNumber = useMemo(() => coerceAmount(debouncedInitialBalance), [debouncedInitialBalance]);
 
   const queryParams = useMemo(
     () => ({
@@ -114,10 +116,10 @@ export default function TransactionsMovements() {
   };
 
   return (
-    <section className={PAGE_CONTAINER}>
+    <section className="mx-auto w-full max-w-none space-y-4 p-4">
       {!canView ? (
-        <div className="card bg-base-100 border-error/20 text-error border p-6 text-sm shadow-sm">
-          No tienes permisos para ver los movimientos almacenados.
+        <div className="card bg-base-100 border-error/20 border p-0 shadow-sm">
+          <Alert variant="error">No tienes permisos para ver los movimientos almacenados.</Alert>
         </div>
       ) : (
         <>

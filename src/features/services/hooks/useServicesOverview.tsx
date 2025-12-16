@@ -42,9 +42,9 @@ type SummaryTotals = {
 };
 
 function useServicesController() {
-  const { hasRole } = useAuth();
-  const canManage = useMemo(() => hasRole("GOD", "ADMIN"), [hasRole]);
-  const canView = useMemo(() => hasRole("GOD", "ADMIN", "ANALYST", "VIEWER"), [hasRole]);
+  const { can } = useAuth();
+  const canManage = useMemo(() => can("manage", "Service"), [can]);
+  const canView = useMemo(() => can("read", "Service"), [can]);
 
   const [services, setServices] = useState<ServiceSummary[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
