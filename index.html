@@ -5,29 +5,35 @@
     <script>
       // Community 2025 Standard: Global Chunk Load Error Handler
       // Catches errors before React even mounts or during module evaluation
-      window.addEventListener('error', (e) => {
-        const msg = e.message || '';
-        if (/Failed to fetch dynamically imported module|Importing a module script failed|is not a valid JavaScript MIME type/i.test(msg)) {
-          console.warn('Global chunk load error detected. Attempting recovery...');
-          
+      window.addEventListener("error", (e) => {
+        const msg = e.message || "";
+        if (
+          /Failed to fetch dynamically imported module|Importing a module script failed|is not a valid JavaScript MIME type/i.test(
+            msg
+          )
+        ) {
+          console.warn("Global chunk load error detected. Attempting recovery...");
+
           // Prevent infinite reload loops (max 1 reload per 10 seconds)
-          const lastReload = sessionStorage.getItem('chunk_reload_ts');
+          const lastReload = sessionStorage.getItem("chunk_reload_ts");
           const now = Date.now();
           if (!lastReload || now - Number(lastReload) > 10000) {
-             sessionStorage.setItem('chunk_reload_ts', String(now));
-             
-             // Nuclear cache clear
-             if ('serviceWorker' in navigator) {
-               navigator.serviceWorker.getRegistrations().then(regs => {
-                 regs.forEach(r => r.unregister());
-               });
-             }
-             if ('caches' in window) {
-               caches.keys().then(names => Promise.all(names.map(n => caches.delete(n))))
-                     .then(() => window.location.reload());
-             } else {
-               window.location.reload();
-             }
+            sessionStorage.setItem("chunk_reload_ts", String(now));
+
+            // Nuclear cache clear
+            if ("serviceWorker" in navigator) {
+              navigator.serviceWorker.getRegistrations().then((regs) => {
+                regs.forEach((r) => r.unregister());
+              });
+            }
+            if ("caches" in window) {
+              caches
+                .keys()
+                .then((names) => Promise.all(names.map((n) => caches.delete(n))))
+                .then(() => window.location.reload());
+            } else {
+              window.location.reload();
+            }
           }
         }
       });
@@ -77,18 +83,18 @@
     <meta name="apple-mobile-web-app-title" content="Bioalergia" />
     <!-- Multiple icon sizes for iOS (180px is optimal for modern iPhones) -->
     <!-- Apple Passwords/Keychain usa estos iconos -->
-    <link rel="apple-touch-icon" href="/icons/icon-180.png" />
-    <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152.png" />
-    <link rel="apple-touch-icon" sizes="167x167" href="/icons/icon-192.png" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-180.png" />
-    <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192.png" />
+    <link rel="apple-touch-icon" href="/logo_bimi.svg" />
     <!-- Web Clips for macOS Dock (mask icon) -->
     <link rel="mask-icon" href="/logo_bimi.svg" color="#0e64b7" />
     <!-- Prevent zoom on input focus (iOS) -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
     <!-- Prevent landscape zoom on double-tap (iOS) & font-size fix -->
     <style>
-      input, select, textarea { font-size: 16px !important; }
+      input,
+      select,
+      textarea {
+        font-size: 16px !important;
+      }
     </style>
 
     <!-- Android -->
