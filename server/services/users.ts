@@ -54,3 +54,27 @@ export async function resolveUserRole(user: { roles?: Array<{ role?: { name: str
   }
   return [];
 }
+
+export async function findUsersByRoleIds(roleIds: number[]) {
+  return await prisma.user.findMany({
+    where: {
+      roles: {
+        some: {
+          roleId: {
+            in: roleIds,
+          },
+        },
+      },
+    },
+    select: {
+      id: true,
+      email: true,
+      person: {
+        select: {
+          names: true,
+          fatherName: true,
+        },
+      },
+    },
+  });
+}

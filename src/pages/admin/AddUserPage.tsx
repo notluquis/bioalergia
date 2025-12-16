@@ -104,63 +104,67 @@ export default function AddUserPage() {
                   Si esta persona ya existe en el sistema, puedes vincular el usuario directamente.
                 </p>
               </div>
-              <Checkbox
-                label="Vincular a persona existente"
-                checked={form.linkToPerson}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    linkToPerson: e.target.checked,
-                    personId: e.target.checked ? form.personId : undefined,
-                  })
-                }
-              />
-              {form.linkToPerson && (
-                <div className="space-y-2">
-                  <Input
-                    label="Seleccionar Persona"
-                    as="select"
-                    id="personId"
-                    value={form.personId ?? ""}
-                    onChange={(e) =>
-                      setForm({
-                        ...form,
-                        personId: e.target.value ? Number(e.target.value) : undefined,
-                      })
-                    }
-                    required={form.linkToPerson}
-                  >
-                    <option value="">Selecciona una persona...</option>
-                    {availablePeople.map((person) => (
-                      <option key={person.id} value={person.id}>
-                        {getPersonFullName(person)} - {person.rut}
-                      </option>
-                    ))}
-                  </Input>
-                  {availablePeople.length === 0 && (
-                    <p className="text-warning text-xs">
-                      No hay personas disponibles sin usuario. Desmarca esta opción para crear una nueva.
-                    </p>
-                  )}
-                </div>
-              )}
+              <div className="space-y-2">
+                <Input
+                  label="Vincular con Persona (Opcional)"
+                  as="select"
+                  id="personId"
+                  value={form.personId ?? ""}
+                  onChange={(e) => {
+                    const pid = e.target.value ? Number(e.target.value) : undefined;
+                    const person = availablePeople.find((p) => p.id === pid);
+                    setForm({
+                      ...form,
+                      personId: pid,
+                      linkToPerson: !!pid,
+                      email: person?.email ?? form.email, // Auto-fill email if available
+                      // position: we don't autofill position as user might want to set it, OR user said hide it.
+                      // User said "hide email and position". So we will just hide them below.
+                    });
+                  }}
+                >
+                  <option value="">No vincular (Crear usuario nuevo)</option>
+                  {availablePeople.map((person) => (
+                    <option key={person.id} value={person.id}>
+                      {getPersonFullName(person)} - {person.rut}
+                    </option>
+                  ))}
+                </Input>
+                {availablePeople.length === 0 && (
+                  <p className="text-base-content/50 text-xs">
+                    No hay personas disponibles para vincular. Se creará un usuario nuevo.
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         </div>
 
         <div className="grid gap-6 md:grid-cols-2">
-          <div className="md:col-span-2">
-            <Input
-              label="Correo Electrónico"
-              type="email"
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-              required
-              placeholder="usuario@bioalergia.cl"
-            />
-          </div>
+          {!form.personId && (
+            <>
+              <div className="md:col-span-2">
+                <Input
+                  label="Correo Electrónico"
+                  type="email"
+                  value={form.email}
+                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  required={!form.personId}
+                  placeholder="usuario@bioalergia.cl"
+                />
+              </div>
 
-          <div>
+              <Input
+                label="Cargo / Posición"
+                value={form.position}
+                onChange={(e) => setForm({ ...form, position: e.target.value })}
+                required={!form.personId}
+                placeholder="Ej: Enfermera, Administrativo"
+              />
+            </>
+          )}
+
+          <div className={form.personId ? "md:col-span-2" : ""}>
             <label htmlFor="role" className="label">
               <span className="label-text">Rol</span>
             </label>
@@ -179,14 +183,6 @@ export default function AddUserPage() {
               ))}
             </select>
           </div>
-
-          <Input
-            label="Cargo / Posición"
-            value={form.position}
-            onChange={(e) => setForm({ ...form, position: e.target.value })}
-            required
-            placeholder="Ej: Enfermera, Administrativo"
-          />
         </div>
 
         <div className="border-primary/20 bg-primary/5 rounded-xl border p-4">

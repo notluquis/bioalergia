@@ -33,8 +33,9 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
     overtimeRate: "",
     retentionRate: "0.145",
   });
-  // no-op
+
   const [saving, setSaving] = useState(false);
+  const [rutError, setRutError] = useState<string | null>(null);
 
   useEffect(() => {
     if (employee) {
@@ -68,11 +69,34 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
         retentionRate: "0.145",
       });
     }
+    // Clear RUT error on employee change
+    setRutError(null);
   }, [employee]);
+
+  const handleRutChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value;
+    setForm((prev) => ({ ...prev, rut: value }));
+    if (rutError) setRutError(null);
+  };
+
+  const handleRutBlur = () => {
+    const formatted = formatRut(normalizeRut(form.rut) ?? form.rut);
+    setForm((prev) => ({ ...prev, rut: formatted }));
+
+    if (formatted && !validateRut(formatted)) {
+      setRutError("RUT inválido");
+    }
+  };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!canEdit) return;
+
+    // Validate RUT before submit if present
+    if (form.rut && !validateRut(form.rut)) {
+      setRutError("RUT inválido");
+      return;
+    }
 
     const payload = {
       full_name: form.fullName.trim(),
@@ -165,15 +189,11 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
           label="RUT"
           type="text"
           value={form.rut}
-          onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
-            setForm((prev) => ({ ...prev, rut: event.target.value }))
-          }
-          onBlur={() => setForm((prev) => ({ ...prev, rut: formatRut(normalizeRut(prev.rut) ?? prev.rut) }))}
+          onChange={handleRutChange}
+          onBlur={handleRutBlur}
+          error={rutError || undefined}
           placeholder="12.345.678-9"
         />
-        {form.rut && !validateRut(form.rut) && (
-          <span className="text-xs text-red-600">RUT inválido (se formatea al salir del campo)</span>
-        )}
         <Input
           label="Banco"
           type="text"

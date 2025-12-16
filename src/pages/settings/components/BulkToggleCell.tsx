@@ -1,6 +1,6 @@
 import { CheckCheck, Loader2 } from "lucide-react";
+import { Role } from "@/types/roles";
 import { cn } from "@/lib/utils";
-import type { Role } from "../RolesSettingsPage";
 
 export function BulkToggleCell({
   role,
