@@ -25,21 +25,11 @@ export const INITIAL_ROLES: RoleDefinition[] = [
   {
     name: "EnfermeroUniversitario",
     description: "Viewer y editor de balance diario solamente",
-    permissions: [
-      "production_balance.read",
-      "production_balance.manage",
-      "daily_balance.read",
-      "daily_balance.manage",
-    ] as PermissionKey[],
+    permissions: ["production_balance.read", "production_balance.manage"] as PermissionKey[],
   },
   {
     name: "Tens",
     description: "Viewer y editor de balance diario solamente",
-    permissions: [
-      "production_balance.read",
-      "production_balance.manage",
-      "daily_balance.read",
-      "daily_balance.manage",
-    ] as PermissionKey[],
+    permissions: ["production_balance.read", "production_balance.manage"] as PermissionKey[],
   },
 ];
