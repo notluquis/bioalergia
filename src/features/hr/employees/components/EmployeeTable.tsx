@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { fmtCLP } from "@/lib/format";
+
 import { useAuth } from "@/context/AuthContext";
 import { useTable } from "@/hooks";
 import type { Employee } from "../types";
@@ -7,17 +7,7 @@ import Button from "@/components/ui/Button";
 import Alert from "@/components/ui/Alert";
 import Checkbox from "@/components/ui/Checkbox";
 
-type EmployeeColumn =
-  | "name"
-  | "role"
-  | "email"
-  | "rut"
-  | "bank"
-  | "hourlyRate"
-  | "overtimeRate"
-  | "retentionRate"
-  | "status"
-  | "actions";
+type EmployeeColumn = "name" | "role" | "email" | "rut" | "bank" | "retentionRate" | "status" | "actions";
 
 interface EmployeeTableProps {
   employees: Employee[];
@@ -37,8 +27,6 @@ export default function EmployeeTable({ employees, loading, onEdit, onDeactivate
     "email",
     "rut",
     "bank",
-    "hourlyRate",
-    "overtimeRate",
     "retentionRate",
     "status",
     ...(canEdit ? ["actions" as const] : []),
@@ -72,14 +60,6 @@ export default function EmployeeTable({ employees, loading, onEdit, onDeactivate
         case "email":
           aValue = a.person?.email || "";
           bValue = b.person?.email || "";
-          break;
-        case "hourlyRate":
-          aValue = a.hourlyRate || 0;
-          bValue = b.hourlyRate || 0;
-          break;
-        case "overtimeRate":
-          aValue = 0; // Not in schema
-          bValue = 0;
           break;
         case "retentionRate":
           aValue = 0; // Not in schema
@@ -122,8 +102,6 @@ export default function EmployeeTable({ employees, loading, onEdit, onDeactivate
                 {column === "name" && "Nombre"}
                 {column === "role" && "Cargo"}
                 {column === "email" && "Correo"}
-                {column === "hourlyRate" && "Hora base"}
-                {column === "overtimeRate" && "Hora extra"}
                 {column === "retentionRate" && "Retención"}
                 {column === "rut" && "RUT"}
                 {column === "bank" && "Banco / Cuenta"}
@@ -167,24 +145,6 @@ export default function EmployeeTable({ employees, loading, onEdit, onDeactivate
                 )}
                 {table.isColumnVisible("bank") && (
                   <th className="px-4 py-3 text-left font-semibold whitespace-nowrap">Banco / Cuenta</th>
-                )}
-                {table.isColumnVisible("hourlyRate") && (
-                  <th
-                    className="hover:bg-primary/20 cursor-pointer px-4 py-3 text-left font-semibold"
-                    {...table.getSortProps("hourlyRate")}
-                  >
-                    <span className="inline-flex items-center gap-1">Hora base {table.getSortIcon("hourlyRate")}</span>
-                  </th>
-                )}
-                {table.isColumnVisible("overtimeRate") && (
-                  <th
-                    className="hover:bg-primary/20 cursor-pointer px-4 py-3 text-left font-semibold"
-                    {...table.getSortProps("overtimeRate")}
-                  >
-                    <span className="inline-flex items-center gap-1">
-                      Hora extra {table.getSortIcon("overtimeRate")}
-                    </span>
-                  </th>
                 )}
                 {table.isColumnVisible("retentionRate") && (
                   <th
@@ -237,10 +197,6 @@ export default function EmployeeTable({ employees, loading, onEdit, onDeactivate
                       )}
                     </td>
                   )}
-                  {table.isColumnVisible("hourlyRate") && (
-                    <td className="text-base-content px-4 py-3">{fmtCLP(employee.hourlyRate || 0)}</td>
-                  )}
-                  {table.isColumnVisible("overtimeRate") && <td className="text-base-content px-4 py-3">—</td>}
                   {table.isColumnVisible("retentionRate") && <td className="text-base-content px-4 py-3">14.5%</td>}
                   {table.isColumnVisible("status") && (
                     <td className="text-base-content px-4 py-3">
