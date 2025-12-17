@@ -132,7 +132,7 @@ export default function Sidebar({ isOpen, isMobile, onClose, isCollapsed = false
                               const active = isActive;
                               if (isCollapsed) {
                                 return cn(
-                                  "flex h-9 w-full items-center justify-center rounded-xl active:scale-95",
+                                  "mx-auto flex h-9 w-9 items-center justify-center rounded-xl transition-all active:scale-95",
                                   active || isPending
                                     ? "bg-primary text-primary-content shadow-primary/20 ring-primary/60 shadow-md ring-1"
                                     : "text-base-content/60 hover:bg-base-100 hover:text-base-content"
