@@ -82,6 +82,9 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Track the actual date range used for the current report data to calculate stats correctly
+  const [effectiveDateRange, setEffectiveDateRange] = useState<{ start: string; end: string } | null>(null);
+
   const activeEmployees = useMemo(() => employees.filter((emp) => emp.status === "ACTIVE"), [employees]);
 
   const filteredEmployees = useMemo(() => {
@@ -190,6 +193,7 @@ export default function ReportsPage() {
         const end = dayjs(`${selectedMonth}-01`).endOf("month").format("YYYY-MM-DD");
         const entries = await fetchGlobalTimesheetRange(start, end);
         data = processRawEntries(entries, selectedEmployeeIds);
+        setEffectiveDateRange({ start, end });
       } else {
         let start = startDate;
         let end = endDate;
@@ -210,6 +214,7 @@ export default function ReportsPage() {
 
         const entries = await fetchGlobalTimesheetRange(start, end);
         data = processRawEntries(entries, selectedEmployeeIds);
+        setEffectiveDateRange({ start, end });
       }
 
       setReportData(data);
@@ -244,36 +249,23 @@ export default function ReportsPage() {
 
   // Calculate period count for stats based on granularity
   const periodCount = useMemo(() => {
-    // For "month" view (which forces single month selection), period is 1 month-unit (granularity is set to week though?)
-    // Wait, earlier logic: if viewMode="month", granularity="week".
-    // If viewMode="month" (single month selected), calculating "weeks"?
-    // User wants "Promedio por [Agrupacion Temporal]".
+    if (!effectiveDateRange) return 1;
 
-    // If granularity is "month" (View Mode All/Range -> Month), we want months.
-    // If granularity is "week" (View Mode Month -> Week), we want weeks.
-    // If granularity is "day", we want days.
-
-    if (!startDate || !endDate) return 1;
-    // Special case: Single Month View sets dates to start/end of month.
-    // diff gives approx weeks.
-
-    const start = dayjs(startDate);
-    const end = dayjs(endDate);
+    const start = dayjs(effectiveDateRange.start);
+    const end = dayjs(effectiveDateRange.end);
 
     // exact diff
     let count = 1;
     if (granularity === "day") {
       count = end.diff(start, "day") + 1;
     } else if (granularity === "week") {
-      // isoWeeksInInterval?
-      // Simple diff in weeks
       count = end.diff(start, "week", true);
     } else {
       count = end.diff(start, "month", true);
     }
 
     return Math.max(1, Math.ceil(count));
-  }, [startDate, endDate, granularity]);
+  }, [effectiveDateRange, granularity]);
 
   const stats = useMemo(() => calculateStats(reportData, periodCount), [reportData, periodCount]);
   const chartColors = getChartColors();
