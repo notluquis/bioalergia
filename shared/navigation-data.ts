@@ -35,7 +35,7 @@ export const NAV_DATA: NavSectionData[] = [
         to: "/finanzas/balances",
         label: "Saldos Diarios",
         iconKey: "PiggyBank",
-        requiredPermission: { action: "read", subject: "Transaction" },
+        requiredPermission: { action: "read", subject: "DailyBalance" },
       },
       {
         to: "/finanzas/counterparts",
@@ -106,14 +106,13 @@ export const NAV_DATA: NavSectionData[] = [
     ],
   },
   {
-    title: "Administración",
-    category: "Finanzas",
+    title: "Cuenta",
+    category: "Gestión",
     items: [
       {
         to: "/settings/security",
-        label: "Ajustes",
+        label: "Seguridad",
         iconKey: "Settings",
-        requiredPermission: { action: "manage", subject: "Setting" },
       },
     ],
   },
