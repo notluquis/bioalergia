@@ -50,6 +50,10 @@ export function mapPerson(p: PersonWithRoles) {
     rut: p.rut,
     full_name: [p.names, p.fatherName, p.motherName].filter(Boolean).join(" "),
     names: p.names,
+    // Start Standardizing to camelCase (matching Schema & Prisma)
+    fatherName: p.fatherName,
+    motherName: p.motherName,
+    // Keep snake_case for backward compat if any legacy view uses it
     father_name: p.fatherName,
     mother_name: p.motherName,
     email: p.email,
@@ -60,9 +64,9 @@ export function mapPerson(p: PersonWithRoles) {
     updated_at: p.updatedAt,
 
     // Flags for quick role checking
-    is_user: !!p.user,
-    is_employee: !!p.employee,
-    is_counterpart: !!p.counterpart,
+    hasUser: !!p.user,
+    hasEmployee: !!p.employee,
+    hasCounterpart: !!p.counterpart,
 
     // User role data (if exists)
     user: p.user
@@ -106,10 +110,7 @@ export function mapPerson(p: PersonWithRoles) {
   };
 }
 
-/**
- * Maps an Employee with its Person data included
- * Returns a flat structure with person fields at root level for frontend compatibility
- */
+// ... mapEmployee changes below ...
 export function mapEmployee(e: EmployeeWithPerson) {
   return {
     // Employee ID
@@ -117,7 +118,7 @@ export function mapEmployee(e: EmployeeWithPerson) {
 
     // Person data at root level (for frontend compatibility)
     person_id: e.personId,
-    full_name: e.person.names,
+    full_name: [e.person.names, e.person.fatherName, e.person.motherName].filter(Boolean).join(" "),
     rut: normalizeRut(e.person.rut),
     email: e.person.email,
     phone: e.person.phone,
@@ -127,6 +128,8 @@ export function mapEmployee(e: EmployeeWithPerson) {
       id: e.person.id,
       rut: normalizeRut(e.person.rut),
       names: e.person.names,
+      fatherName: e.person.fatherName,
+      motherName: e.person.motherName,
       email: e.person.email,
       phone: e.person.phone,
       person_type: e.person.personType,
