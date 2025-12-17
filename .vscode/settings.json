@@ -4,5 +4,10 @@
   "files.associations": {
     "*.css": "tailwindcss"
   },
-  "css.customData": ["./.vscode/css_custom_data.json"]
+  "css.customData": [
+    "./.vscode/css_custom_data.json"
+  ],
+  "python-envs.defaultEnvManager": "ms-python.python:conda",
+  "python-envs.defaultPackageManager": "ms-python.python:conda",
+  "python-envs.pythonProjects": []
 }
