@@ -121,11 +121,20 @@ export function prepareComparisonData(employees: EmployeeWorkData[], granularity
 /**
  * Calcula estadísticas
  */
-export function calculateStats(data: EmployeeWorkData[]) {
+/**
+ * Calcula estadísticas
+ * @param data Datos de los empleados
+ * @param periodCount Cantidad de periodos (días, semanas, meses) en el rango
+ */
+export function calculateStats(data: EmployeeWorkData[], periodCount = 1) {
   if (data.length === 0) return null;
 
   const totalHours = data.reduce((sum, emp) => sum + emp.totalMinutes, 0) / 60;
-  const averageHours = totalHours / data.length;
+
+  // Promedio = Total Horas / (Cantidad de Empleados * Cantidad de Periodos)
+  // Ej: 1600 horas / (10 empleados * 1 mes) = 160h promedio/emp/mes
+  const averageHours = totalHours / (data.length * Math.max(periodCount, 1));
+
   const maxEmployee = data.reduce((max, emp) => (emp.totalMinutes > max.totalMinutes ? emp : max));
   const minEmployee = data.reduce((min, emp) => (emp.totalMinutes < min.totalMinutes ? emp : min));
 
