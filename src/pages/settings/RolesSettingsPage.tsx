@@ -21,6 +21,7 @@ export default function RolesSettingsPage() {
   const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
+  const [viewModeRole, setViewModeRole] = useState<string>("all");
 
   const toggleSection = (title: string) => {
     setOpenSections((prev) => ({
@@ -202,6 +203,8 @@ export default function RolesSettingsPage() {
   otherPermissions.sort((a, b) => a.subject.localeCompare(b.subject));
   const otherPermissionIds = otherPermissions.map((p) => p.id);
 
+  const displayRoles = viewModeRole === "all" ? roles : roles.filter((r) => r.id.toString() === viewModeRole);
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -214,6 +217,21 @@ export default function RolesSettingsPage() {
             <RotateCw className={cn("h-4 w-4", isSyncing && "animate-spin")} />
             Sincronizar permisos
           </button>
+
+          {/* Role Filter Selector */}
+          <select
+            className="select select-bordered select-sm max-w-xs"
+            value={viewModeRole}
+            onChange={(e) => setViewModeRole(e.target.value)}
+          >
+            <option value="all">Ver todos los roles</option>
+            {roles.map((r) => (
+              <option key={r.id} value={r.id}>
+                {r.name}
+              </option>
+            ))}
+          </select>
+
           <button className="btn btn-primary gap-2" onClick={handleCreateRole}>
             <Plus className="h-4 w-4" />
             Nuevo rol
@@ -222,262 +240,267 @@ export default function RolesSettingsPage() {
       </div>
 
       <div className="border-base-300 overflow-x-auto rounded-md border pb-24">
-        <table className="table w-full table-fixed">
-          <thead>
-            <tr>
-              <th className="bg-base-100 border-base-300 sticky left-0 z-20 w-80 border-r px-6 text-left">
-                Permiso / acción
-              </th>
-              {roles.map((role) => (
-                <th key={role.id} className="group relative w-48 min-w-48 p-2 text-center align-top">
-                  <div className="flex flex-col items-center gap-1">
-                    <span className="line-clamp-2 text-base leading-tight font-bold" title={role.name}>
-                      {role.name}
-                    </span>
-                    <span className="line-clamp-2 text-xs font-normal opacity-70" title={role.description || ""}>
-                      {role.description || "Sin descripción"}
-                    </span>
-
-                    {/* Role Actions - Dropdown for cleaner UI */}
-                    <div className="mt-2 flex justify-center">
-                      <details className="dropdown dropdown-end dropdown-bottom">
-                        <summary className="btn btn-ghost btn-xs h-6 w-full gap-1 font-normal opacity-50 hover:opacity-100">
-                          Opciones
-                          <ChevronDown className="h-3 w-3" />
-                        </summary>
-                        <ul className="menu dropdown-content bg-base-100 rounded-box border-base-200 z-1 w-40 border p-2 shadow-sm">
-                          <li>
-                            <button onClick={() => handleEditRole(role)} className="gap-2">
-                              <Pencil className="h-4 w-4" />
-                              Editar
-                            </button>
-                          </li>
-                          <li>
-                            <button
-                              onClick={() => handleDeleteRole(role)}
-                              className="text-error hover:text-error gap-2"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                              Eliminar
-                            </button>
-                          </li>
-                        </ul>
-                      </details>
-                    </div>
-                  </div>
+        {/* Dynamic Grid Layout */}
+        <div className="min-w-full">
+          {/* Note: using displayRoles for rendering */}
+          <table className="table w-full table-fixed">
+            {/* ... Header logic using displayRoles ... */}
+            <thead>
+              <tr>
+                <th className="bg-base-100 border-base-300 sticky left-0 z-20 w-80 border-r px-6 text-left">
+                  Permiso / acción
                 </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {sectionsWithPermissions.map((section) => (
-              <React.Fragment key={section.title}>
-                {/* Section Title & Bulk Toggle */}
-                <tr
-                  className="bg-base-200/30 hover:bg-base-200/50 cursor-pointer transition-colors"
-                  onClick={() => toggleSection(section.title)}
-                >
-                  <td className="bg-base-200 border-base-300 sticky left-0 z-10 w-80 border-r py-2 text-xs font-bold tracking-widest uppercase opacity-70">
-                    <div className="flex items-center gap-2">
-                      {openSections[section.title] ? (
-                        <ChevronDown className="h-4 w-4" />
-                      ) : (
-                        <ChevronRight className="h-4 w-4" />
-                      )}
-                      {section.title}
+                {displayRoles.map((role) => (
+                  <th key={role.id} className="group relative w-48 min-w-48 p-2 text-center align-top">
+                    <div className="flex flex-col items-center gap-1">
+                      <span className="line-clamp-2 text-base leading-tight font-bold" title={role.name}>
+                        {role.name}
+                      </span>
+                      <span className="line-clamp-2 text-xs font-normal opacity-70" title={role.description || ""}>
+                        {role.description || "Sin descripción"}
+                      </span>
+
+                      {/* Role Actions - Dropdown for cleaner UI */}
+                      <div className="mt-2 flex justify-center">
+                        <details className="dropdown dropdown-end dropdown-bottom">
+                          <summary className="btn btn-ghost btn-xs h-6 w-full gap-1 font-normal opacity-50 hover:opacity-100">
+                            Opciones
+                            <ChevronDown className="h-3 w-3" />
+                          </summary>
+                          <ul className="menu dropdown-content bg-base-100 rounded-box border-base-200 z-1 w-40 border p-2 shadow-sm">
+                            <li>
+                              <button onClick={() => handleEditRole(role)} className="gap-2">
+                                <Pencil className="h-4 w-4" />
+                                Editar
+                              </button>
+                            </li>
+                            <li>
+                              <button
+                                onClick={() => handleDeleteRole(role)}
+                                className="text-error hover:text-error gap-2"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                                Eliminar
+                              </button>
+                            </li>
+                          </ul>
+                        </details>
+                      </div>
                     </div>
-                  </td>
-                  {roles.map((role) => (
-                    <BulkToggleCell
-                      key={role.id}
-                      role={role}
-                      permissionIds={section.permissionIds}
-                      isUpdating={
-                        updateRolePermissionsMutation.isPending &&
-                        updateRolePermissionsMutation.variables?.roleId === role.id
-                      }
-                      onToggle={handleBulkToggle}
-                      variant="section"
-                    />
-                  ))}
-                </tr>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {sectionsWithPermissions.map((section) => (
+                <React.Fragment key={section.title}>
+                  {/* Section Title & Bulk Toggle */}
+                  <tr
+                    className="bg-base-200/30 hover:bg-base-200/50 cursor-pointer transition-colors"
+                    onClick={() => toggleSection(section.title)}
+                  >
+                    <td className="bg-base-200 border-base-300 sticky left-0 z-10 w-80 border-r py-2 text-xs font-bold tracking-widest uppercase opacity-70">
+                      <div className="flex items-center gap-2">
+                        {openSections[section.title] ? (
+                          <ChevronDown className="h-4 w-4" />
+                        ) : (
+                          <ChevronRight className="h-4 w-4" />
+                        )}
+                        {section.title}
+                      </div>
+                    </td>
+                    {displayRoles.map((role) => (
+                      <BulkToggleCell
+                        key={role.id}
+                        role={role}
+                        permissionIds={section.permissionIds}
+                        isUpdating={
+                          updateRolePermissionsMutation.isPending &&
+                          updateRolePermissionsMutation.variables?.roleId === role.id
+                        }
+                        onToggle={handleBulkToggle}
+                        variant="section"
+                      />
+                    ))}
+                  </tr>
 
-                {/* Collapsible Content Row */}
-                <tr>
-                  <td colSpan={roles.length + 1} className="border-0 p-0">
-                    <SmoothCollapse isOpen={!!openSections[section.title]}>
-                      <table className="w-full table-fixed">
-                        <tbody>
-                          {section.items.map((item) => {
-                            const hasMultiple = item.relatedPermissions.length > 1;
+                  {/* Collapsible Content Row */}
+                  <tr>
+                    <td colSpan={displayRoles.length + 1} className="border-0 p-0">
+                      <SmoothCollapse isOpen={!!openSections[section.title]}>
+                        <table className="w-full table-fixed">
+                          <tbody>
+                            {section.items.map((item) => {
+                              const hasMultiple = item.relatedPermissions.length > 1;
 
-                            return (
-                              <React.Fragment key={item.label}>
-                                {/* Page Header (if multiple) */}
-                                {hasMultiple && (
-                                  <tr className="bg-base-100/50 border-base-100 hover:bg-base-200/20 border-b">
-                                    <td className="bg-base-100 border-base-300 w-80 border-r py-2 pl-4 text-sm font-semibold">
-                                      <div className="flex items-center gap-2">
-                                        <item.icon className="h-4 w-4 opacity-70" />
-                                        {item.label} <span className="text-xs font-normal opacity-50">(Todos)</span>
-                                      </div>
-                                    </td>
-                                    {roles.map((role) => (
-                                      <td key={role.id} className="w-48 min-w-48 p-2 text-center align-top">
-                                        <BulkToggleCell
-                                          role={role}
-                                          permissionIds={item.permissionIds}
-                                          isUpdating={
-                                            updateRolePermissionsMutation.isPending &&
-                                            updateRolePermissionsMutation.variables?.roleId === role.id
-                                          }
-                                          onToggle={handleBulkToggle}
-                                          variant="page"
-                                        />
-                                      </td>
-                                    ))}
-                                  </tr>
-                                )}
-
-                                {/* Individual Permissions */}
-                                {item.relatedPermissions.map((perm) => {
-                                  const actionMap: Record<string, string> = {
-                                    read: "Ver",
-                                    manage: "Administrar",
-                                    create: "Crear",
-                                    update: "Editar",
-                                    delete: "Eliminar",
-                                  };
-                                  const actionLabel = actionMap[perm.action] || perm.action;
-                                  const displayLabel = hasMultiple ? actionLabel : `${item.label} (${actionLabel})`;
-                                  const indentClass = hasMultiple ? "pl-10" : "pl-6";
-
-                                  return (
-                                    <tr
-                                      key={perm.id}
-                                      className="hover:bg-base-200/50 border-base-100 border-b transition-colors last:border-0"
-                                    >
-                                      <td className={`bg-base-100 w-80 py-3 ${indentClass} border-base-300 border-r`}>
-                                        <div className="flex flex-col">
-                                          <span className="flex items-center gap-2 text-sm font-medium">
-                                            {!hasMultiple && <item.icon className="h-4 w-4 opacity-70" />}
-                                            {displayLabel}
-                                          </span>
-                                          <span className="text-base-content/60 pl-0 font-mono text-[10px]">
-                                            {perm.action} • {perm.subject}
-                                          </span>
+                              return (
+                                <React.Fragment key={item.label}>
+                                  {/* Page Header (if multiple) */}
+                                  {hasMultiple && (
+                                    <tr className="bg-base-100/50 border-base-100 hover:bg-base-200/20 border-b">
+                                      <td className="bg-base-100 border-base-300 w-80 border-r py-2 pl-4 text-sm font-semibold">
+                                        <div className="flex items-center gap-2">
+                                          <item.icon className="h-4 w-4 opacity-70" />
+                                          {item.label} <span className="text-xs font-normal opacity-50">(Todos)</span>
                                         </div>
                                       </td>
-                                      {roles.map((role) => (
-                                        <td key={role.id} className="w-48 min-w-48 p-0 text-center align-middle">
-                                          <PermissionCell
+                                      {displayRoles.map((role) => (
+                                        <td key={role.id} className="w-48 min-w-48 p-2 text-center align-top">
+                                          <BulkToggleCell
                                             role={role}
-                                            permissionId={perm.id}
-                                            // Optimistic update handles feedback, no local spinner needed for instant feel
-                                            isUpdating={false}
-                                            onToggle={handlePermissionToggle}
+                                            permissionIds={item.permissionIds}
+                                            isUpdating={
+                                              updateRolePermissionsMutation.isPending &&
+                                              updateRolePermissionsMutation.variables?.roleId === role.id
+                                            }
+                                            onToggle={handleBulkToggle}
+                                            variant="page"
                                           />
                                         </td>
                                       ))}
                                     </tr>
-                                  );
-                                })}
-                              </React.Fragment>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </SmoothCollapse>
-                  </td>
-                </tr>
-              </React.Fragment>
-            ))}
+                                  )}
 
-            {/* Other Permissions (System) */}
-            {otherPermissions.length > 0 && (
-              <>
-                <tr
-                  className="bg-base-200/30 hover:bg-base-200/50 cursor-pointer transition-colors"
-                  onClick={() => toggleSection("advanced")}
-                >
-                  <td className="bg-base-200 border-base-300 sticky left-0 z-10 w-80 border-r py-2 text-xs font-bold tracking-widest uppercase opacity-70">
-                    <div className="flex items-center gap-2">
-                      {openSections["advanced"] ? (
-                        <ChevronDown className="h-4 w-4" />
-                      ) : (
-                        <ChevronRight className="h-4 w-4" />
-                      )}
-                      Sistema / avanzado
-                    </div>
-                  </td>
-                  {roles.map((role) => (
-                    <BulkToggleCell
-                      key={role.id}
-                      role={role}
-                      permissionIds={otherPermissionIds}
-                      isUpdating={
-                        updateRolePermissionsMutation.isPending &&
-                        updateRolePermissionsMutation.variables?.roleId === role.id
-                      }
-                      onToggle={handleBulkToggle}
-                      variant="section"
-                    />
-                  ))}
-                </tr>
-                {/* Collapsible System Row */}
-                <tr>
-                  <td colSpan={roles.length + 1} className="border-0 p-0">
-                    <SmoothCollapse isOpen={!!openSections["advanced"]}>
-                      <table className="w-full table-fixed">
-                        <tbody>
-                          {otherPermissions.map((perm) => {
-                            const actionMap: Record<string, string> = {
-                              read: "Ver",
-                              manage: "Administrar",
-                              create: "Crear",
-                              update: "Editar",
-                              delete: "Eliminar",
-                            };
-                            const actionLabel = actionMap[perm.action] || perm.action;
-                            const subjectLabel = perm.subject === "all" ? "Todo el sistema" : perm.subject;
+                                  {/* Individual Permissions */}
+                                  {item.relatedPermissions.map((perm) => {
+                                    const actionMap: Record<string, string> = {
+                                      read: "Ver",
+                                      manage: "Administrar",
+                                      create: "Crear",
+                                      update: "Editar",
+                                      delete: "Eliminar",
+                                    };
+                                    const actionLabel = actionMap[perm.action] || perm.action;
+                                    const displayLabel = hasMultiple ? actionLabel : `${item.label} (${actionLabel})`;
+                                    const indentClass = hasMultiple ? "pl-10" : "pl-6";
 
-                            return (
-                              <tr
-                                key={perm.id}
-                                className="hover:bg-base-200/50 border-base-100 border-b transition-colors"
-                              >
-                                <td className="bg-base-100 border-base-300 w-80 border-r py-3 pl-6">
-                                  <div className="flex flex-col">
-                                    <span className="font-medium">
-                                      {subjectLabel} ({actionLabel})
-                                    </span>
-                                    <span className="text-base-content/60 font-mono text-[10px]">
-                                      {perm.action} • {perm.subject}
-                                    </span>
-                                  </div>
-                                </td>
-                                {roles.map((role) => (
-                                  <td key={role.id} className="w-48 min-w-48 p-0 text-center align-middle">
-                                    <PermissionCell
-                                      role={role}
-                                      permissionId={perm.id}
-                                      isUpdating={false}
-                                      onToggle={handlePermissionToggle}
-                                    />
+                                    return (
+                                      <tr
+                                        key={perm.id}
+                                        className="hover:bg-base-200/50 border-base-100 border-b transition-colors last:border-0"
+                                      >
+                                        <td className={`bg-base-100 w-80 py-3 ${indentClass} border-base-300 border-r`}>
+                                          <div className="flex flex-col">
+                                            <span className="flex items-center gap-2 text-sm font-medium">
+                                              {!hasMultiple && <item.icon className="h-4 w-4 opacity-70" />}
+                                              {displayLabel}
+                                            </span>
+                                            <span className="text-base-content/60 pl-0 font-mono text-[10px]">
+                                              {perm.action} • {perm.subject}
+                                            </span>
+                                          </div>
+                                        </td>
+                                        {displayRoles.map((role) => (
+                                          <td key={role.id} className="w-48 min-w-48 p-0 text-center align-middle">
+                                            <PermissionCell
+                                              role={role}
+                                              permissionId={perm.id}
+                                              // Optimistic update handles feedback, no local spinner needed for instant feel
+                                              isUpdating={false}
+                                              onToggle={handlePermissionToggle}
+                                            />
+                                          </td>
+                                        ))}
+                                      </tr>
+                                    );
+                                  })}
+                                </React.Fragment>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </SmoothCollapse>
+                    </td>
+                  </tr>
+                </React.Fragment>
+              ))}
+
+              {/* Other Permissions (System) */}
+              {otherPermissions.length > 0 && (
+                <>
+                  <tr
+                    className="bg-base-200/30 hover:bg-base-200/50 cursor-pointer transition-colors"
+                    onClick={() => toggleSection("advanced")}
+                  >
+                    <td className="bg-base-200 border-base-300 sticky left-0 z-10 w-80 border-r py-2 text-xs font-bold tracking-widest uppercase opacity-70">
+                      <div className="flex items-center gap-2">
+                        {openSections["advanced"] ? (
+                          <ChevronDown className="h-4 w-4" />
+                        ) : (
+                          <ChevronRight className="h-4 w-4" />
+                        )}
+                        Sistema / avanzado
+                      </div>
+                    </td>
+                    {displayRoles.map((role) => (
+                      <BulkToggleCell
+                        key={role.id}
+                        role={role}
+                        permissionIds={otherPermissionIds}
+                        isUpdating={
+                          updateRolePermissionsMutation.isPending &&
+                          updateRolePermissionsMutation.variables?.roleId === role.id
+                        }
+                        onToggle={handleBulkToggle}
+                        variant="section"
+                      />
+                    ))}
+                  </tr>
+                  {/* Collapsible System Row */}
+                  <tr>
+                    <td colSpan={displayRoles.length + 1} className="border-0 p-0">
+                      <SmoothCollapse isOpen={!!openSections["advanced"]}>
+                        <table className="w-full table-fixed">
+                          <tbody>
+                            {otherPermissions.map((perm) => {
+                              const actionMap: Record<string, string> = {
+                                read: "Ver",
+                                manage: "Administrar",
+                                create: "Crear",
+                                update: "Editar",
+                                delete: "Eliminar",
+                              };
+                              const actionLabel = actionMap[perm.action] || perm.action;
+                              const subjectLabel = perm.subject === "all" ? "Todo el sistema" : perm.subject;
+
+                              return (
+                                <tr
+                                  key={perm.id}
+                                  className="hover:bg-base-200/50 border-base-100 border-b transition-colors"
+                                >
+                                  <td className="bg-base-100 border-base-300 w-80 border-r py-3 pl-6">
+                                    <div className="flex flex-col">
+                                      <span className="font-medium">
+                                        {subjectLabel} ({actionLabel})
+                                      </span>
+                                      <span className="text-base-content/60 font-mono text-[10px]">
+                                        {perm.action} • {perm.subject}
+                                      </span>
+                                    </div>
                                   </td>
-                                ))}
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </SmoothCollapse>
-                  </td>
-                </tr>
-              </>
-            )}
-          </tbody>
-        </table>
+                                  {displayRoles.map((role) => (
+                                    <td key={role.id} className="w-48 min-w-48 p-0 text-center align-middle">
+                                      <PermissionCell
+                                        role={role}
+                                        permissionId={perm.id}
+                                        isUpdating={false}
+                                        onToggle={handlePermissionToggle}
+                                      />
+                                    </td>
+                                  ))}
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </SmoothCollapse>
+                    </td>
+                  </tr>
+                </>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {isRoleModalOpen && (
