@@ -343,7 +343,7 @@ export default function TimesheetAuditPage() {
                         key={week.key}
                         type="button"
                         onClick={() => handleWeekToggle(week.key)}
-                        className={`rounded-lg border-2 p-3 text-left transition-all ${
+                        className={`rounded-lg border p-3 text-left transition-all ${
                           isActive
                             ? "border-primary bg-primary/10 text-primary"
                             : "border-base-300 bg-base-100 text-base-content hover:border-primary/50"
