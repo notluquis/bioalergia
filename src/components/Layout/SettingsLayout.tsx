@@ -6,7 +6,7 @@ import { Users, Shield, Calendar, Box, UserPlus, Loader2, Fingerprint, Upload } 
 
 const SETTINGS_SECTIONS = [
   {
-    title: "Mi Cuenta",
+    title: "Mi cuenta",
     items: [
       {
         label: "Seguridad",
@@ -32,7 +32,7 @@ const SETTINGS_SECTIONS = [
         requiredPermission: { action: "read", subject: "Person" },
       },
       {
-        label: "Roles y Permisos",
+        label: "Roles y permisos",
         to: "/settings/roles",
         icon: Shield,
         requiredPermission: { action: "manage", subject: "Role" },
@@ -40,7 +40,7 @@ const SETTINGS_SECTIONS = [
     ],
   },
   {
-    title: "Configuración de Módulos",
+    title: "Configuración de módulos",
     items: [
       {
         label: "Calendario",

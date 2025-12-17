@@ -63,7 +63,7 @@ export default function Home() {
       <header className={CARD_COMPACT}>
         <div className="card-body">
           <h1 className={TITLE_MD}>Panel</h1>
-          <p className="text-base-content/60 text-sm">Últimos {RANGE_DAYS} días</p>
+          <p className="text-base-content/70 text-sm">Últimos {RANGE_DAYS} días</p>
         </div>
       </header>
 
@@ -146,9 +146,9 @@ function QuickLinksSection() {
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-base-content truncate text-sm font-medium">{link.title}</p>
-                <p className="text-base-content/60 truncate text-xs">{link.description}</p>
+                <p className="text-base-content/70 truncate text-xs">{link.description}</p>
               </div>
-              <ArrowUpRight className="text-base-content/40 h-4 w-4 shrink-0 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+              <ArrowUpRight className="text-base-content/60 h-4 w-4 shrink-0 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
             </Link>
           ))}
         </div>

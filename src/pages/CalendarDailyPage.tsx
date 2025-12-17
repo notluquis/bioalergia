@@ -341,7 +341,7 @@ function CalendarDailyPage() {
             {loading ? "Actualizando..." : "Aplicar filtros"}
           </Button>
           <Button type="button" variant="secondary" onClick={resetFilters} disabled={loading}>
-            Reestablecer
+            Restablecer
           </Button>
         </div>
       </form>

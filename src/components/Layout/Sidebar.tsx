@@ -68,7 +68,7 @@ export default function Sidebar({ isOpen, isMobile, onClose, isCollapsed = false
                 <TooltipContent side="right">
                   <div className="text-left">
                     <p className="font-semibold">{displayName}</p>
-                    <p className="text-base-content/60 text-xs">{user?.email}</p>
+                    <p className="text-base-content/70 text-xs">{user?.email}</p>
                   </div>
                 </TooltipContent>
               </Tooltip>
@@ -106,7 +106,7 @@ export default function Sidebar({ isOpen, isMobile, onClose, isCollapsed = false
                   <section key={section.title} className={cn("space-y-0.5", isCollapsed && "text-center")}>
                     {!isCollapsed && (
                       <div className="mb-1 px-2">
-                        <p className="text-base-content/40 text-[9px] font-bold tracking-widest uppercase">
+                        <p className="text-base-content/60 text-[9px] font-bold tracking-widest uppercase">
                           {section.title}
                         </p>
                       </div>
@@ -134,15 +134,15 @@ export default function Sidebar({ isOpen, isMobile, onClose, isCollapsed = false
                                 return cn(
                                   "mx-auto flex h-9 w-9 items-center justify-center rounded-xl transition-all active:scale-95",
                                   active || isPending
-                                    ? "bg-primary text-primary-content shadow-primary/20 shadow-sm"
-                                    : "text-base-content/60 hover:bg-base-100 hover:text-base-content"
+                                    ? "bg-primary text-primary-content"
+                                    : "text-base-content/70 hover:bg-base-100/50 hover:text-base-content"
                                 );
                               }
                               return cn(
                                 "group relative flex items-center gap-3 rounded-lg px-3 py-1.5 text-xs font-medium active:scale-[0.98]",
                                 active || isPending
-                                  ? "bg-primary text-primary-content shadow-primary/20 shadow-sm"
-                                  : "text-base-content/70 hover:bg-base-100 hover:text-base-content"
+                                  ? "bg-primary text-primary-content"
+                                  : "text-base-content/70 hover:bg-base-100/50 hover:text-base-content"
                               );
                             }}
                           >
@@ -166,7 +166,7 @@ export default function Sidebar({ isOpen, isMobile, onClose, isCollapsed = false
                                   <item.icon
                                     className={cn(
                                       "h-4 w-4 shrink-0",
-                                      active ? "text-primary-content" : "text-base-content/50 group-hover:text-primary"
+                                      active ? "text-primary-content" : "text-base-content/60 group-hover:text-primary"
                                     )}
                                   />
                                   <span className="truncate">{item.label}</span>
@@ -197,7 +197,7 @@ export default function Sidebar({ isOpen, isMobile, onClose, isCollapsed = false
               <button
                 onClick={toggleCollapse}
                 className={cn(
-                  "group text-base-content/40 hover:text-base-content/70 hover:bg-base-300/20 flex w-full items-center justify-center rounded-lg py-2 transition-all duration-200 active:scale-95",
+                  "group text-base-content/60 hover:text-base-content/80 hover:bg-base-300/20 flex w-full items-center justify-center rounded-lg py-2 transition-all duration-200 active:scale-95",
                   !isCollapsed && "mb-2"
                 )}
                 aria-label={isCollapsed ? "Expandir menú" : "Colapsar menú"}

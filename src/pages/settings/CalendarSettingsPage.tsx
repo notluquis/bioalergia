@@ -42,7 +42,7 @@ export default function CalendarSettingsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-base-content text-2xl font-bold">Configuración de Calendario</h1>
+        <h1 className="text-base-content text-2xl font-bold">Configuración de calendario</h1>
         <p className="text-base-content/60 text-sm">Gestiona la sincronización con Google Calendar.</p>
       </div>
 
@@ -53,7 +53,7 @@ export default function CalendarSettingsPage() {
               <Calendar size={24} />
             </div>
             <div>
-              <h2 className="text-lg font-bold">Sincronización Automática</h2>
+              <h2 className="text-lg font-bold">Sincronización automática</h2>
               <p className="text-base-content/60 text-sm">
                 Webhooks activos para sincronización en tiempo real. Sincronización de respaldo cada 15 minutos.
               </p>
@@ -105,7 +105,7 @@ export default function CalendarSettingsPage() {
 
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-base-content/80 font-medium">Calendarios Conectados</h3>
+            <h3 className="text-base-content/80 font-medium">Calendarios conectados</h3>
             {!calendarsLoading && (
               <span className="text-base-content/50 text-xs">{calendarsData?.calendars.length || 0} calendario(s)</span>
             )}
@@ -148,7 +148,7 @@ export default function CalendarSettingsPage() {
         <div className="flex justify-end pt-4">
           <Button onClick={syncNow} disabled={isSyncing} className="gap-2">
             <RefreshCw size={16} className={cn(isSyncing && "animate-spin")} />
-            {isSyncing ? "Sincronizando..." : "Sincronizar Ahora"}
+            {isSyncing ? "Sincronizando..." : "Sincronizar ahora"}
           </Button>
         </div>
       </div>

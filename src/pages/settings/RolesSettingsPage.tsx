@@ -66,12 +66,37 @@ export default function RolesSettingsPage() {
     mutationFn: async ({ roleId, permissionIds }: { roleId: number; permissionIds: number[] }) => {
       await apiClient.post(`/api/roles/${roleId}/permissions`, { permissionIds });
     },
-    onSuccess: () => {
-      // toast.success("Permisos actualizados"); // Too noisy
-      queryClient.invalidateQueries({ queryKey: ["roles"] });
+    onMutate: async ({ roleId, permissionIds }) => {
+      await queryClient.cancelQueries({ queryKey: ["roles"] });
+      const previousRoles = queryClient.getQueryData<Role[]>(["roles"]);
+
+      queryClient.setQueryData<Role[]>(["roles"], (old) => {
+        if (!old) return [];
+        return old.map((role) => {
+          if (role.id === roleId) {
+            // Reconstruct permissions array based on IDs (we only need permissionId for UI check)
+            // Note: We lose the full Permission object here temporarily, but UI only checks permissionId
+            // The invalidateQueries will fetch the full object back
+            const newPermissions = permissionIds.map((id) => ({
+              permissionId: id,
+              permission: { id, action: "", subject: "", description: "" }, // Placeholder
+            }));
+            return { ...role, permissions: newPermissions };
+          }
+          return role;
+        });
+      });
+
+      return { previousRoles };
     },
-    onError: () => {
+    onError: (_err, _newTodo, context) => {
       // toast.error("Error al actualizar permisos");
+      if (context?.previousRoles) {
+        queryClient.setQueryData(["roles"], context.previousRoles);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["roles"] });
     },
   });
 
@@ -181,30 +206,30 @@ export default function RolesSettingsPage() {
     <div className="space-y-4">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-base-content text-2xl font-bold">Roles y Permisos</h1>
+          <h1 className="text-base-content text-2xl font-bold">Roles y permisos</h1>
           <p className="text-base-content/60 text-sm">Gestiona el acceso por secciones y páginas.</p>
         </div>
         <div className="flex gap-2">
           <button className="btn btn-outline gap-2" onClick={() => syncMutation.mutate()} disabled={isSyncing}>
             <RotateCw className={cn("h-4 w-4", isSyncing && "animate-spin")} />
-            Sincronizar Permisos
+            Sincronizar permisos
           </button>
           <button className="btn btn-primary gap-2" onClick={handleCreateRole}>
             <Plus className="h-4 w-4" />
-            Nuevo Rol
+            Nuevo rol
           </button>
         </div>
       </div>
 
-      <div className="border-base-300 overflow-x-auto rounded-md border">
-        <table className="table">
+      <div className="border-base-300 overflow-x-auto rounded-md border pb-24">
+        <table className="table w-full table-fixed">
           <thead>
             <tr>
               <th className="bg-base-100 border-base-300 sticky left-0 z-20 w-80 border-r px-6 text-left">
-                Permiso / Acción
+                Permiso / acción
               </th>
               {roles.map((role) => (
-                <th key={role.id} className="group relative min-w-45 p-2 text-center align-top">
+                <th key={role.id} className="group relative w-48 min-w-48 p-2 text-center align-top">
                   <div className="flex flex-col items-center gap-1">
                     <span className="line-clamp-2 text-base leading-tight font-bold" title={role.name}>
                       {role.name}
@@ -213,19 +238,18 @@ export default function RolesSettingsPage() {
                       {role.description || "Sin descripción"}
                     </span>
 
-                    {/* Role Actions - Visible on hover/group - Moved to static position to avoid overlap */}
                     {/* Role Actions - Always visible for better usability */}
                     <div className="mt-2 flex justify-center gap-2">
                       <button
                         className="hover:bg-base-200 text-base-content/70 hover:text-primary btn btn-ghost btn-circle h-8 min-h-0 w-8"
-                        title="Editar Rol"
+                        title="Editar rol"
                         onClick={() => handleEditRole(role)}
                       >
                         <Pencil className="h-4 w-4" />
                       </button>
                       <button
                         className="hover:bg-error/10 text-error/70 hover:text-error btn btn-ghost btn-circle h-8 min-h-0 w-8"
-                        title="Eliminar Rol"
+                        title="Eliminar rol"
                         onClick={() => handleDeleteRole(role)}
                       >
                         <Trash2 className="h-4 w-4" />
@@ -244,7 +268,7 @@ export default function RolesSettingsPage() {
                   className="bg-base-200/30 hover:bg-base-200/50 cursor-pointer transition-colors"
                   onClick={() => toggleSection(section.title)}
                 >
-                  <td className="bg-base-200 border-base-300 sticky left-0 z-10 border-r py-2 text-xs font-bold tracking-widest uppercase opacity-70">
+                  <td className="bg-base-200 border-base-300 sticky left-0 z-10 w-80 border-r py-2 text-xs font-bold tracking-widest uppercase opacity-70">
                     <div className="flex items-center gap-2">
                       {openSections[section.title] ? (
                         <ChevronDown className="h-4 w-4" />
@@ -273,7 +297,7 @@ export default function RolesSettingsPage() {
                 <tr>
                   <td colSpan={roles.length + 1} className="border-0 p-0">
                     <SmoothCollapse isOpen={!!openSections[section.title]}>
-                      <table className="w-full">
+                      <table className="w-full table-fixed">
                         <tbody>
                           {section.items.map((item) => {
                             const hasMultiple = item.relatedPermissions.length > 1;
@@ -284,15 +308,13 @@ export default function RolesSettingsPage() {
                                 {hasMultiple && (
                                   <tr className="bg-base-100/50 border-base-100 hover:bg-base-200/20 border-b">
                                     <td className="bg-base-100 border-base-300 w-80 border-r py-2 pl-4 text-sm font-semibold">
-                                      {/* Matching the width of the main header th (w-80) */}
                                       <div className="flex items-center gap-2">
                                         <item.icon className="h-4 w-4 opacity-70" />
                                         {item.label} <span className="text-xs font-normal opacity-50">(Todos)</span>
                                       </div>
                                     </td>
                                     {roles.map((role) => (
-                                      <td key={role.id} className="min-w-45 p-2 text-center align-top">
-                                        {/* Matching min-w-45 from main header */}
+                                      <td key={role.id} className="w-48 min-w-48 p-2 text-center align-top">
                                         <BulkToggleCell
                                           role={role}
                                           permissionIds={item.permissionIds}
@@ -338,14 +360,12 @@ export default function RolesSettingsPage() {
                                         </div>
                                       </td>
                                       {roles.map((role) => (
-                                        <td key={role.id} className="min-w-45 p-0 text-center align-middle">
+                                        <td key={role.id} className="w-48 min-w-48 p-0 text-center align-middle">
                                           <PermissionCell
                                             role={role}
                                             permissionId={perm.id}
-                                            isUpdating={
-                                              updateRolePermissionsMutation.isPending &&
-                                              updateRolePermissionsMutation.variables?.roleId === role.id
-                                            }
+                                            // Optimistic update handles feedback, no local spinner needed for instant feel
+                                            isUpdating={false}
                                             onToggle={handlePermissionToggle}
                                           />
                                         </td>
@@ -371,14 +391,14 @@ export default function RolesSettingsPage() {
                   className="bg-base-200/30 hover:bg-base-200/50 cursor-pointer transition-colors"
                   onClick={() => toggleSection("advanced")}
                 >
-                  <td className="bg-base-200 border-base-300 sticky left-0 z-10 border-r py-2 text-xs font-bold tracking-widest uppercase opacity-70">
+                  <td className="bg-base-200 border-base-300 sticky left-0 z-10 w-80 border-r py-2 text-xs font-bold tracking-widest uppercase opacity-70">
                     <div className="flex items-center gap-2">
                       {openSections["advanced"] ? (
                         <ChevronDown className="h-4 w-4" />
                       ) : (
                         <ChevronRight className="h-4 w-4" />
                       )}
-                      Sistema / Avanzado
+                      Sistema / avanzado
                     </div>
                   </td>
                   {roles.map((role) => (
@@ -399,7 +419,7 @@ export default function RolesSettingsPage() {
                 <tr>
                   <td colSpan={roles.length + 1} className="border-0 p-0">
                     <SmoothCollapse isOpen={!!openSections["advanced"]}>
-                      <table className="w-full">
+                      <table className="w-full table-fixed">
                         <tbody>
                           {otherPermissions.map((perm) => {
                             const actionMap: Record<string, string> = {
@@ -410,7 +430,7 @@ export default function RolesSettingsPage() {
                               delete: "Eliminar",
                             };
                             const actionLabel = actionMap[perm.action] || perm.action;
-                            const subjectLabel = perm.subject === "all" ? "Todo el Sistema" : perm.subject;
+                            const subjectLabel = perm.subject === "all" ? "Todo el sistema" : perm.subject;
 
                             return (
                               <tr
@@ -428,14 +448,11 @@ export default function RolesSettingsPage() {
                                   </div>
                                 </td>
                                 {roles.map((role) => (
-                                  <td key={role.id} className="min-w-45 p-0 text-center align-middle">
+                                  <td key={role.id} className="w-48 min-w-48 p-0 text-center align-middle">
                                     <PermissionCell
                                       role={role}
                                       permissionId={perm.id}
-                                      isUpdating={
-                                        updateRolePermissionsMutation.isPending &&
-                                        updateRolePermissionsMutation.variables?.roleId === role.id
-                                      }
+                                      isUpdating={false}
                                       onToggle={handlePermissionToggle}
                                     />
                                   </td>
@@ -488,17 +505,15 @@ function PermissionCell({
       <button
         onClick={() => onToggle(role, permissionId)}
         disabled={isUpdating}
-        className={cn(
-          "mx-auto flex h-12 w-full items-center justify-center px-4 transition-colors",
-          hasAccess ? "hover:bg-error/10" : "hover:bg-success/10"
-        )}
+        className="group mx-auto flex h-12 w-full items-center justify-center transition-colors"
       >
-        {isUpdating ? (
-          <Loader2 className="text-base-content/40 h-4 w-4 animate-spin" />
-        ) : hasAccess ? (
-          <Check size={18} className="text-success" />
+        {/* Solid badge style for better visibility */}
+        {hasAccess ? (
+          <div className="bg-primary hover:bg-primary-focus flex h-6 w-6 items-center justify-center rounded-md shadow-sm transition-transform active:scale-95">
+            <Check size={14} className="text-primary-content" />
+          </div>
         ) : (
-          <div className="border-base-300 bg-base-100 h-4 w-4 rounded-full border" />
+          <div className="border-base-300 group-hover:border-primary/50 group-hover:bg-primary/5 h-6 w-6 rounded-md border-2 transition-colors" />
         )}
       </button>
     </td>

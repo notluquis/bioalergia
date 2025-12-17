@@ -109,7 +109,7 @@ export default function AccessSettingsPage() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{usersData.users.filter((u) => u.hasPasskey).length}</p>
-                  <p className="text-base-content/60 text-sm">Con Passkey</p>
+                  <p className="text-base-content/60 text-sm">Con passkey</p>
                 </div>
               </div>
             </div>
@@ -123,7 +123,7 @@ export default function AccessSettingsPage() {
           <div className="card-body">
             <div className="mb-4 flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-bold">Gestión de Usuarios</h2>
+                <h2 className="text-xl font-bold">Gestión de usuarios</h2>
                 <p className="text-base-content/60 text-sm">
                   Administra el nivel de seguridad de cada cuenta de usuario
                 </p>
@@ -232,7 +232,7 @@ export default function AccessSettingsPage() {
                 <div className="flex items-start gap-3">
                   <ShieldCheck className="text-info mt-0.5 size-5" />
                   <div className="flex-1">
-                    <h3 className="text-info font-semibold">Recomendaciones de Seguridad</h3>
+                    <h3 className="text-info font-semibold">Recomendaciones de seguridad</h3>
                     <ul className="text-base-content/70 mt-2 space-y-1 text-sm">
                       <li>
                         • <strong>MFA (Autenticación Multifactor):</strong> Añade una capa extra de seguridad
@@ -257,7 +257,7 @@ export default function AccessSettingsPage() {
         <div className="card bg-base-100 shadow-sm">
           <div className="card-body text-center">
             <Lock className="text-base-content/30 mx-auto size-12" />
-            <h3 className="text-lg font-semibold">Acceso Restringido</h3>
+            <h3 className="text-lg font-semibold">Acceso restringido</h3>
             <p className="text-base-content/60 text-sm">
               Solo los administradores pueden gestionar la seguridad de usuarios.
             </p>

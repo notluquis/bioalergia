@@ -11,8 +11,8 @@ import { apiClient } from "@/lib/apiClient";
 
 const STEPS = [
   { id: "welcome", title: "Bienvenida" },
-  { id: "profile", title: "Datos Personales" },
-  { id: "financial", title: "Datos Bancarios" },
+  { id: "profile", title: "Datos personales" },
+  { id: "financial", title: "Datos bancarios" },
   { id: "password", title: "Contraseña" },
   { id: "mfa", title: "MFA" },
   { id: "complete", title: "Listo" },
@@ -291,14 +291,14 @@ export default function OnboardingWizard() {
                 <div className="bg-primary/10 text-primary mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full">
                   <User size={24} />
                 </div>
-                <h2 className="text-2xl font-bold">Datos Personales</h2>
+                <h2 className="text-2xl font-bold">Datos personales</h2>
                 <p className="text-base-content/60 text-sm">Información básica para tu perfil.</p>
               </div>
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="form-control">
                   <Input
-                    label="Nombres (Sin Apellidos)"
+                    label="Nombres (sin apellidos)"
                     value={profile.names}
                     onChange={(e) => setProfile({ ...profile, names: e.target.value })}
                     required
@@ -328,14 +328,14 @@ export default function OnboardingWizard() {
                 </div>
                 <div className="form-control">
                   <Input
-                    label="Primer Apellido"
+                    label="Primer apellido"
                     value={profile.fatherName}
                     onChange={(e) => setProfile({ ...profile, fatherName: e.target.value })}
                   />
                 </div>
                 <div className="form-control">
                   <Input
-                    label="Segundo Apellido"
+                    label="Segundo apellido"
                     value={profile.motherName}
                     onChange={(e) => setProfile({ ...profile, motherName: e.target.value })}
                   />
@@ -374,7 +374,7 @@ export default function OnboardingWizard() {
                 <div className="bg-secondary/10 text-secondary mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full">
                   <CreditCard size={24} />
                 </div>
-                <h2 className="text-2xl font-bold">Datos Bancarios</h2>
+                <h2 className="text-2xl font-bold">Datos bancarios</h2>
                 <p className="text-base-content/60 text-sm">Para gestionar tus pagos y remuneraciones.</p>
               </div>
 
@@ -391,19 +391,19 @@ export default function OnboardingWizard() {
                   <div className="form-control">
                     <Input
                       as="select"
-                      label="Tipo de Cuenta"
+                      label="Tipo de cuenta"
                       value={profile.bankAccountType}
                       onChange={(e) => setProfile({ ...profile, bankAccountType: e.target.value })}
                     >
                       <option value="">Seleccionar...</option>
-                      <option value="Corriente">Cuenta Corriente</option>
-                      <option value="Vista">Cuenta Vista / RUT</option>
-                      <option value="Ahorro">Cuenta de Ahorro</option>
+                      <option value="Corriente">Cuenta corriente</option>
+                      <option value="Vista">Cuenta vista / RUT</option>
+                      <option value="Ahorro">Cuenta de ahorro</option>
                     </Input>
                   </div>
                   <div className="form-control">
                     <Input
-                      label="Número de Cuenta"
+                      label="Número de cuenta"
                       value={profile.bankAccountNumber}
                       onChange={(e) => setProfile({ ...profile, bankAccountNumber: e.target.value })}
                     />
@@ -438,7 +438,7 @@ export default function OnboardingWizard() {
               <div className="space-y-4">
                 <div className="form-control">
                   <Input
-                    label="Nueva Contraseña"
+                    label="Nueva contraseña"
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -448,7 +448,7 @@ export default function OnboardingWizard() {
                 </div>
                 <div className="form-control">
                   <Input
-                    label="Confirmar Contraseña"
+                    label="Confirmar contraseña"
                     type="password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
@@ -518,7 +518,7 @@ export default function OnboardingWizard() {
                     className="w-full max-w-xs"
                     disabled={mfaCode.length !== 6 || loading}
                   >
-                    {loading ? <Loader2 className="animate-spin" /> : "Verificar y Activar"}
+                    {loading ? <Loader2 className="animate-spin" /> : "Verificar y activar"}
                   </Button>
 
                   <div className="divider text-base-content/40 text-xs">O usa biometría</div>
@@ -530,7 +530,7 @@ export default function OnboardingWizard() {
                     disabled={loading}
                   >
                     <Fingerprint size={20} />
-                    Registrar Passkey (Huella/FaceID)
+                    Registrar passkey (huella/FaceID)
                   </Button>
 
                   <Button
@@ -565,7 +565,7 @@ export default function OnboardingWizard() {
                 className="shadow-primary/20 w-full max-w-xs shadow-lg"
                 disabled={loading}
               >
-                {loading ? <Loader2 className="animate-spin" /> : "Finalizar e Ir al Dashboard"}
+                {loading ? <Loader2 className="animate-spin" /> : "Finalizar e ir al dashboard"}
               </Button>
             </div>
           )}

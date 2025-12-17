@@ -100,12 +100,12 @@ export default function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyR
     selectedSupply && selectedBrand ? (structuredSupplies[selectedSupply]?.[selectedBrand] ?? []) : [];
 
   return (
-    <div className="card mb-8 bg-base-100 p-6 shadow-lg">
-      <h2 className="mb-4 text-xl font-semibold">Solicitar Nuevo Insumo</h2>
+    <div className="card bg-base-100 mb-8 p-6 shadow-lg">
+      <h2 className="mb-4 text-xl font-semibold">Solicitar nuevo insumo</h2>
       <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div>
           <Input
-            label="Nombre del Insumo"
+            label="Nombre del insumo"
             as="select"
             {...register("selectedSupply")}
             onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -172,12 +172,12 @@ export default function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyR
           {errors.selectedModel && <p className="mt-1 text-xs text-red-600">{errors.selectedModel.message}</p>}
         </div>
         <div className="md:col-span-2">
-          <Input label="Notas (Opcional)" as="textarea" rows={3} {...register("notes")} enterKeyHint="done" />
+          <Input label="Notas (opcional)" as="textarea" rows={3} {...register("notes")} enterKeyHint="done" />
           {errors.notes && <p className="mt-1 text-xs text-red-600">{errors.notes.message}</p>}
         </div>
-        <div className="md:col-span-2 flex justify-end">
+        <div className="flex justify-end md:col-span-2">
           <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Enviando..." : "Enviar Solicitud"}
+            {isSubmitting ? "Enviando..." : "Enviar solicitud"}
           </Button>
         </div>
       </form>
