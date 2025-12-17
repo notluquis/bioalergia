@@ -12,10 +12,10 @@ interface ServiceScheduleTableProps {
 function statusBadge(status: ServiceSchedule["status"], dueDate: string) {
   const today = dayjs().startOf("day");
   const due = dayjs(dueDate);
-  if (status === "PAID") return "bg-emerald-100 text-emerald-700";
-  if (status === "PARTIAL") return "bg-amber-100 text-amber-700";
+  if (status === "PAID") return "bg-success/15 text-success";
+  if (status === "PARTIAL") return "bg-warning/15 text-warning";
   if (status === "SKIPPED") return "bg-base-200 text-base-content";
-  return due.isBefore(today) ? "bg-rose-100 text-rose-700" : "bg-base-200 text-base-content";
+  return due.isBefore(today) ? "bg-error/15 text-error" : "bg-base-200 text-base-content";
 }
 
 export function ServiceScheduleTable({
@@ -25,18 +25,18 @@ export function ServiceScheduleTable({
   onUnlinkPayment,
 }: ServiceScheduleTableProps) {
   return (
-    <div className="overflow-hidden bg-base-100">
-      <table className="min-w-full text-sm text-base-content">
+    <div className="bg-base-100 overflow-hidden">
+      <table className="text-base-content min-w-full text-sm">
         <thead className="bg-base-200 text-primary">
           <tr>
-            <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide">Periodo</th>
-            <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide">Vencimiento</th>
-            <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide">Monto</th>
-            <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide">Estado</th>
-            <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide">Pago</th>
-            <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide">Transacción</th>
+            <th className="px-4 py-3 text-left text-xs font-semibold tracking-wide uppercase">Periodo</th>
+            <th className="px-4 py-3 text-left text-xs font-semibold tracking-wide uppercase">Vencimiento</th>
+            <th className="px-4 py-3 text-left text-xs font-semibold tracking-wide uppercase">Monto</th>
+            <th className="px-4 py-3 text-left text-xs font-semibold tracking-wide uppercase">Estado</th>
+            <th className="px-4 py-3 text-left text-xs font-semibold tracking-wide uppercase">Pago</th>
+            <th className="px-4 py-3 text-left text-xs font-semibold tracking-wide uppercase">Transacción</th>
             {canManage && (
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide">Acciones</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold tracking-wide uppercase">Acciones</th>
             )}
           </tr>
         </thead>
@@ -44,35 +44,35 @@ export function ServiceScheduleTable({
           {schedules.map((schedule) => {
             const badgeClass = statusBadge(schedule.status, schedule.due_date);
             return (
-              <tr key={schedule.id} className="border-b border-base-300 bg-base-200 last:border-none even:bg-base-300">
-                <td className="px-4 py-3 font-semibold text-base-content">
+              <tr key={schedule.id} className="border-base-300 bg-base-200 even:bg-base-300 border-b last:border-none">
+                <td className="text-base-content px-4 py-3 font-semibold">
                   {dayjs(schedule.period_start).format("MMM YYYY")}
                 </td>
-                <td className="px-4 py-3 text-base-content">{dayjs(schedule.due_date).format("DD MMM YYYY")}</td>
-                <td className="px-4 py-3 text-base-content">
-                  <div className="font-semibold text-base-content">
+                <td className="text-base-content px-4 py-3">{dayjs(schedule.due_date).format("DD MMM YYYY")}</td>
+                <td className="text-base-content px-4 py-3">
+                  <div className="text-base-content font-semibold">
                     ${schedule.effective_amount.toLocaleString("es-CL")}
                   </div>
                   {schedule.late_fee_amount > 0 && (
-                    <div className="text-xs text-rose-500">
+                    <div className="text-error text-xs">
                       Incluye recargo ${schedule.late_fee_amount.toLocaleString("es-CL")}
                     </div>
                   )}
                   {schedule.late_fee_amount === 0 && schedule.expected_amount !== schedule.effective_amount && (
-                    <div className="text-xs text-base-content/50">Monto ajustado</div>
+                    <div className="text-base-content/50 text-xs">Monto ajustado</div>
                   )}
                   {schedule.overdue_days > 0 && schedule.status === "PENDING" && (
-                    <div className="text-xs text-rose-400">{schedule.overdue_days} días de atraso</div>
+                    <div className="text-error text-xs">{schedule.overdue_days} días de atraso</div>
                   )}
                   {schedule.late_fee_amount > 0 && (
-                    <div className="text-xs text-base-content/50">
+                    <div className="text-base-content/50 text-xs">
                       Base ${schedule.expected_amount.toLocaleString("es-CL")}
                     </div>
                   )}
                 </td>
                 <td className="px-4 py-3">
                   <span
-                    className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${badgeClass}`}
+                    className={`rounded-full px-3 py-1 text-xs font-semibold tracking-wide uppercase ${badgeClass}`}
                   >
                     {schedule.status === "PAID"
                       ? "Pagado"
@@ -83,19 +83,19 @@ export function ServiceScheduleTable({
                           : "Pendiente"}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-base-content">
+                <td className="text-base-content px-4 py-3">
                   <div className="space-y-1">
                     <div>{schedule.paid_amount != null ? `$${schedule.paid_amount.toLocaleString("es-CL")}` : "—"}</div>
-                    <div className="text-xs text-base-content/50">
+                    <div className="text-base-content/50 text-xs">
                       {schedule.paid_date ? dayjs(schedule.paid_date).format("DD MMM YYYY") : "—"}
                     </div>
                   </div>
                 </td>
-                <td className="px-4 py-3 text-base-content">
+                <td className="text-base-content px-4 py-3">
                   {schedule.transaction ? (
                     <div className="space-y-1">
                       <div className="font-medium">ID #{schedule.transaction.id}</div>
-                      <div className="text-xs text-base-content/50">
+                      <div className="text-base-content/50 text-xs">
                         {schedule.transaction.description ?? "(sin descripción)"}
                       </div>
                     </div>
@@ -124,7 +124,7 @@ export function ServiceScheduleTable({
           })}
           {!schedules.length && (
             <tr>
-              <td colSpan={canManage ? 7 : 6} className="px-4 py-6 text-center text-base-content/60">
+              <td colSpan={canManage ? 7 : 6} className="text-base-content/60 px-4 py-6 text-center">
                 No hay periodos generados aún.
               </td>
             </tr>

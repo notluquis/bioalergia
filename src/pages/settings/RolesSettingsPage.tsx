@@ -238,22 +238,31 @@ export default function RolesSettingsPage() {
                       {role.description || "Sin descripción"}
                     </span>
 
-                    {/* Role Actions - Always visible for better usability */}
-                    <div className="mt-2 flex justify-center gap-2">
-                      <button
-                        className="hover:bg-base-200 text-base-content/70 hover:text-primary btn btn-ghost btn-circle h-8 min-h-0 w-8"
-                        title="Editar rol"
-                        onClick={() => handleEditRole(role)}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </button>
-                      <button
-                        className="hover:bg-error/10 text-error/70 hover:text-error btn btn-ghost btn-circle h-8 min-h-0 w-8"
-                        title="Eliminar rol"
-                        onClick={() => handleDeleteRole(role)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                    {/* Role Actions - Dropdown for cleaner UI */}
+                    <div className="mt-2 flex justify-center">
+                      <details className="dropdown dropdown-end dropdown-bottom">
+                        <summary className="btn btn-ghost btn-xs h-6 w-full gap-1 font-normal opacity-50 hover:opacity-100">
+                          Opciones
+                          <ChevronDown className="h-3 w-3" />
+                        </summary>
+                        <ul className="menu dropdown-content bg-base-100 rounded-box border-base-200 z-1 w-40 border p-2 shadow-sm">
+                          <li>
+                            <button onClick={() => handleEditRole(role)} className="gap-2">
+                              <Pencil className="h-4 w-4" />
+                              Editar
+                            </button>
+                          </li>
+                          <li>
+                            <button
+                              onClick={() => handleDeleteRole(role)}
+                              className="text-error hover:text-error gap-2"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              Eliminar
+                            </button>
+                          </li>
+                        </ul>
+                      </details>
                     </div>
                   </div>
                 </th>

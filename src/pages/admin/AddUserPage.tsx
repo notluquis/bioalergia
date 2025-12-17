@@ -27,6 +27,9 @@ export default function AddUserPage() {
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     email: "",
+    names: "",
+    fatherName: "",
+    rut: "",
     role: "VIEWER",
     position: "",
     mfaEnforced: true,
@@ -71,12 +74,18 @@ export default function AddUserPage() {
 
       if (form.linkToPerson && form.personId) {
         payload.personId = form.personId;
+      } else {
+        // If creating new person, include person details
+        payload.names = form.names;
+        payload.fatherName = form.fatherName;
+        // payload.motherName = ""; // Optional/omitted
+        payload.rut = form.rut;
       }
 
       await apiClient.post("/api/users/invite", payload);
-      queryClient.invalidateQueries({ queryKey: ["users"] });
+      await queryClient.invalidateQueries({ queryKey: ["users"] });
       // Also invalidate people list as one person now has a user
-      queryClient.invalidateQueries({ queryKey: ["people"] });
+      await queryClient.invalidateQueries({ queryKey: ["people"] });
 
       success("Usuario creado exitosamente");
       navigate("/settings/users");
@@ -99,55 +108,83 @@ export default function AddUserPage() {
 
       <form onSubmit={handleSubmit} className="surface-elevated space-y-6 rounded-3xl p-6 shadow-lg">
         {/* Opción de vincular a persona existente */}
-        <div className="border-info/20 bg-info/5 rounded-xl border p-4">
-          <div className="flex items-start gap-3">
-            <Users className="text-info mt-0.5 h-5 w-5" />
-            <div className="flex-1 space-y-3">
-              <div>
-                <p className="text-info font-medium">Vincular a persona existente</p>
-                <p className="text-base-content/70 text-xs">
-                  Si esta persona ya existe en el sistema, puedes vincular el usuario directamente.
-                </p>
-              </div>
-              <div className="space-y-2">
-                <Input
-                  label="Vincular con persona (opcional)"
-                  as="select"
-                  id="personId"
-                  value={form.personId ?? ""}
-                  onChange={(e) => {
-                    const pid = e.target.value ? Number(e.target.value) : undefined;
-                    const person = availablePeople.find((p) => p.id === pid);
-                    setForm({
-                      ...form,
-                      personId: pid,
-                      linkToPerson: !!pid,
-                      email: person?.email ?? form.email, // Auto-fill email if available
-                      // position: we don't autofill position as user might want to set it, OR user said hide it.
-                      // User said "hide email and position". So we will just hide them below.
-                    });
-                  }}
-                >
-                  <option value="">No vincular (Crear usuario nuevo)</option>
-                  {availablePeople.map((person) => (
-                    <option key={person.id} value={person.id}>
-                      {getPersonFullName(person)} - {person.rut}
-                    </option>
-                  ))}
-                </Input>
-                {availablePeople.length === 0 && (
-                  <p className="text-base-content/50 text-xs">
-                    No hay personas disponibles para vincular. Se creará un usuario nuevo.
+        {availablePeople.length > 0 && (
+          <div className="border-info/20 bg-info/5 rounded-xl border p-4">
+            <div className="flex items-start gap-3">
+              <Users className="text-info mt-0.5 h-5 w-5" />
+              <div className="flex-1 space-y-3">
+                <div>
+                  <p className="text-info font-medium">Vincular a persona existente</p>
+                  <p className="text-base-content/70 text-xs">
+                    Si esta persona ya existe en el sistema, puedes vincular el usuario directamente.
                   </p>
-                )}
+                </div>
+                <div className="space-y-2">
+                  <Input
+                    label="Vincular con persona (opcional)"
+                    as="select"
+                    id="personId"
+                    value={form.personId ?? ""}
+                    onChange={(e) => {
+                      const pid = e.target.value ? Number(e.target.value) : undefined;
+                      const person = availablePeople.find((p) => p.id === pid);
+                      setForm({
+                        ...form,
+                        personId: pid,
+                        linkToPerson: !!pid,
+                        email: person?.email ?? form.email,
+                        names: pid ? "" : form.names, // Clear manual fields if linking
+                        fatherName: pid ? "" : form.fatherName,
+                        rut: pid ? "" : form.rut,
+                      });
+                    }}
+                  >
+                    <option value="">No vincular (Crear usuario nuevo)</option>
+                    {availablePeople.map((person) => (
+                      <option key={person.id} value={person.id}>
+                        {getPersonFullName(person)} - {person.rut}
+                      </option>
+                    ))}
+                  </Input>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
 
         <div className="grid gap-6 md:grid-cols-2">
           {!form.personId && (
             <>
+              <div className="md:col-span-2">
+                <h3 className="text-base-content mb-4 font-semibold">Datos personales</h3>
+              </div>
+              <Input
+                label="Nombres"
+                value={form.names}
+                onChange={(e) => setForm({ ...form, names: e.target.value })}
+                required={!form.personId}
+                placeholder="Ej: Juan Andrés"
+              />
+              <Input
+                label="Apellido Paterno"
+                value={form.fatherName}
+                onChange={(e) => setForm({ ...form, fatherName: e.target.value })}
+                required={!form.personId}
+                placeholder="Ej: Pérez"
+              />
+              <Input
+                label="RUT"
+                value={form.rut}
+                onChange={(e) => setForm({ ...form, rut: e.target.value })}
+                required={!form.personId}
+                placeholder="12.345.678-9"
+              />
+              <div className="md:col-span-1">{/* Spacer to align grid if needed, or just let email flow */}</div>
+
+              <div className="md:col-span-2">
+                <h3 className="text-base-content mt-2 mb-4 font-semibold">Datos de cuenta</h3>
+              </div>
+
               <div className="md:col-span-2">
                 <Input
                   label="Correo electrónico"
