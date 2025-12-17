@@ -44,3 +44,21 @@ export async function fetchEmployeeTimesheets(employeeId: number, startDate: str
     to: string;
   };
 }
+
+export async function fetchGlobalTimesheetRange(startDate: string, endDate: string) {
+  const params = new URLSearchParams({
+    from: startDate,
+    to: endDate,
+  });
+
+  const res = await fetch(`/api/timesheets?${params.toString()}`, {
+    credentials: "include",
+  });
+
+  if (!res.ok) {
+    throw new Error("Error fetching global timesheets");
+  }
+
+  const data = await res.json();
+  return data.entries as TimesheetEntry[];
+}

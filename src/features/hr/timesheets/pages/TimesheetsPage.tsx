@@ -18,7 +18,6 @@ import TimesheetSummaryTable from "@/features/hr/timesheets/components/Timesheet
 import TimesheetDetailTable from "@/features/hr/timesheets/components/TimesheetDetailTable";
 import EmailPreviewModal from "@/features/hr/timesheets/components/EmailPreviewModal";
 import Alert from "@/components/ui/Alert";
-// Removed unused Input component after cleanup
 import { useMonths } from "@/features/hr/timesheets/hooks/useMonths";
 import { useWakeLock } from "@/hooks/useWakeLock";
 import { PAGE_CONTAINER, TITLE_LG } from "@/lib/styles";
@@ -36,11 +35,9 @@ export default function TimesheetsPage() {
     return dayjs().format("YYYY-MM"); // fallback to current month
   }
   useAuth(); // invoke to ensure auth refresh (no direct usage of hasRole here)
-  // canEdit removed (unused in current UI flow)
 
   const { months, monthsWithData, loading: loadingMonths } = useMonths();
   const [month, setMonth] = useState<string>("");
-  const [visibleCount, setVisibleCount] = useState(10);
   const [summary, setSummary] = useState<{
     employees: TimesheetSummaryRow[];
     totals: TimesheetSummaryResponse["totals"];
@@ -93,7 +90,6 @@ export default function TimesheetsPage() {
     async function loadData() {
       // Load summary
       setLoadingSummary(true);
-      setError(null);
       setError(null);
       try {
         const formattedMonth = formatMonthString(month);
@@ -155,8 +151,6 @@ export default function TimesheetsPage() {
 
   const loadSummary = useCallback(async (monthParam: string, employeeId: number | null) => {
     if (!monthParam) return;
-    setLoadingSummary(true);
-    setError(null);
     setLoadingSummary(true);
     setError(null);
     try {
@@ -309,7 +303,6 @@ export default function TimesheetsPage() {
       return;
     }
 
-    setError(null);
     setError(null);
 
     const entries: Array<{
@@ -550,6 +543,15 @@ export default function TimesheetsPage() {
     }
   }
 
+  // Group months by year for dropdown
+  const groupedMonths = useMemo(() => {
+    const years = [...new Set(months.map((m) => m.split("-")[0] || ""))];
+    return years.map((year) => ({
+      year,
+      months: months.filter((m) => m.startsWith(year)),
+    }));
+  }, [months]);
+
   return (
     <section className={PAGE_CONTAINER}>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -594,27 +596,20 @@ export default function TimesheetsPage() {
               disabled={loadingMonths}
               className="bg-base-100"
             >
-              {months.slice(0, visibleCount).map((m) => {
-                const hasData = monthsWithData.has(m);
-                const label = dayjs(m + "-01").format("MMMM YYYY");
-                return (
-                  <option key={m} value={m}>
-                    {hasData ? `${label} ✓` : label}
-                  </option>
-                );
-              })}
+              {groupedMonths.map((group) => (
+                <optgroup key={group.year} label={group.year}>
+                  {group.months.map((m) => {
+                    const hasData = monthsWithData.has(m);
+                    const label = dayjs(m + "-01").format("MMMM"); // Just month name inside year group, e.g. "Octubre"
+                    return (
+                      <option key={m} value={m}>
+                        {label} {hasData ? "✓" : ""}
+                      </option>
+                    );
+                  })}
+                </optgroup>
+              ))}
             </Input>
-            {months.length > visibleCount && (
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                className="text-primary mt-1 text-xs underline"
-                onClick={() => setVisibleCount((c) => c + 4)}
-              >
-                Ver más meses...
-              </Button>
-            )}
           </div>
         </div>
       </div>
