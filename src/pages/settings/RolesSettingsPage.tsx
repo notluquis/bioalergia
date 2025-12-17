@@ -30,6 +30,15 @@ export default function RolesSettingsPage() {
     }));
   };
 
+  const [openItems, setOpenItems] = useState<Record<string, boolean>>({});
+
+  const toggleItem = (key: string) => {
+    setOpenItems((prev) => ({
+      ...prev,
+      [key]: !prev[key],
+    }));
+  };
+
   // Queries
   const rolesQuery = useQuery({
     queryKey: ["roles"],
@@ -332,16 +341,25 @@ export default function RolesSettingsPage() {
                           <tbody>
                             {section.items.map((item) => {
                               const hasMultiple = item.relatedPermissions.length > 1;
+                              const itemKey = `${section.title}-${item.label}`;
+                              const isOpen = !!openItems[itemKey];
 
-                              return (
-                                <React.Fragment key={item.label}>
-                                  {/* Page Header (if multiple) */}
-                                  {hasMultiple && (
-                                    <tr className="bg-base-100/50 border-base-100 hover:bg-base-200/20 border-b">
+                              // If it has multiple permissions, we treat it as a collapsible group
+                              if (hasMultiple) {
+                                return (
+                                  <React.Fragment key={item.label}>
+                                    {/* Page Header (Collapsible Trigger) */}
+                                    <tr
+                                      className="bg-base-100/50 hover:bg-base-200/20 border-base-100 cursor-pointer border-b transition-colors"
+                                      onClick={() => toggleItem(itemKey)}
+                                    >
                                       <td className="bg-base-100 border-base-300 w-80 border-r py-2 pl-4 text-sm font-semibold">
                                         <div className="flex items-center gap-2">
+                                          <div className="text-base-content/40 flex h-4 w-4 items-center justify-center">
+                                            {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                                          </div>
                                           <item.icon className="h-4 w-4 opacity-70" />
-                                          {item.label} <span className="text-xs font-normal opacity-50">(Todos)</span>
+                                          {item.label}
                                         </div>
                                       </td>
                                       {displayRoles.map((role) => (
@@ -359,52 +377,105 @@ export default function RolesSettingsPage() {
                                         </td>
                                       ))}
                                     </tr>
-                                  )}
 
-                                  {/* Individual Permissions */}
-                                  {item.relatedPermissions.map((perm) => {
-                                    const actionMap: Record<string, string> = {
-                                      read: "Ver",
-                                      manage: "Administrar",
-                                      create: "Crear",
-                                      update: "Editar",
-                                      delete: "Eliminar",
-                                    };
-                                    const actionLabel = actionMap[perm.action] || perm.action;
-                                    const displayLabel = hasMultiple ? actionLabel : `${item.label} (${actionLabel})`;
-                                    const indentClass = hasMultiple ? "pl-10" : "pl-6";
+                                    {/* Individual Permissions (Collapsible) */}
+                                    <tr>
+                                      <td colSpan={displayRoles.length + 1} className="border-0 p-0">
+                                        <SmoothCollapse isOpen={isOpen}>
+                                          <table className="w-full table-fixed">
+                                            <tbody>
+                                              {item.relatedPermissions.map((perm) => {
+                                                const actionMap: Record<string, string> = {
+                                                  read: "Ver",
+                                                  manage: "Administrar",
+                                                  create: "Crear",
+                                                  update: "Editar",
+                                                  delete: "Eliminar",
+                                                };
+                                                const actionLabel = actionMap[perm.action] || perm.action;
 
-                                    return (
-                                      <tr
-                                        key={perm.id}
-                                        className="hover:bg-base-200/50 border-base-100 border-b transition-colors last:border-0"
-                                      >
-                                        <td className={`bg-base-100 w-80 py-3 ${indentClass} border-base-300 border-r`}>
-                                          <div className="flex flex-col">
-                                            <span className="flex items-center gap-2 text-sm font-medium">
-                                              {!hasMultiple && <item.icon className="h-4 w-4 opacity-70" />}
-                                              {displayLabel}
-                                            </span>
-                                            <span className="text-base-content/60 pl-0 font-mono text-[10px]">
-                                              {perm.action} • {perm.subject}
-                                            </span>
-                                          </div>
-                                        </td>
-                                        {displayRoles.map((role) => (
-                                          <td key={role.id} className="w-48 min-w-48 p-0 text-center align-middle">
-                                            <PermissionCell
-                                              role={role}
-                                              permissionId={perm.id}
-                                              // Optimistic update handles feedback, no local spinner needed for instant feel
-                                              isUpdating={false}
-                                              onToggle={handlePermissionToggle}
-                                            />
-                                          </td>
-                                        ))}
-                                      </tr>
-                                    );
-                                  })}
-                                </React.Fragment>
+                                                return (
+                                                  <tr
+                                                    key={perm.id}
+                                                    className="hover:bg-base-200/50 border-base-100 border-b transition-colors last:border-0"
+                                                  >
+                                                    <td className="bg-base-100 border-base-300 w-80 border-r py-2 pl-12 text-sm">
+                                                      <div className="flex flex-col">
+                                                        <span className="flex items-center gap-2 font-medium">
+                                                          {actionLabel}
+                                                        </span>
+                                                        <span className="text-base-content/60 font-mono text-[10px]">
+                                                          {perm.action} • {perm.subject}
+                                                        </span>
+                                                      </div>
+                                                    </td>
+                                                    {displayRoles.map((role) => (
+                                                      <td
+                                                        key={role.id}
+                                                        className="w-48 min-w-48 p-0 text-center align-middle"
+                                                      >
+                                                        <PermissionCell
+                                                          role={role}
+                                                          permissionId={perm.id}
+                                                          isUpdating={false}
+                                                          onToggle={handlePermissionToggle}
+                                                        />
+                                                      </td>
+                                                    ))}
+                                                  </tr>
+                                                );
+                                              })}
+                                            </tbody>
+                                          </table>
+                                        </SmoothCollapse>
+                                      </td>
+                                    </tr>
+                                  </React.Fragment>
+                                );
+                              }
+
+                              // Single permission item (Rare case in this app, usually it's pages)
+                              // Render as simple row without collapse
+                              const perm = item.relatedPermissions[0];
+                              if (!perm) return null; // Should not happen due to filter
+
+                              const actionMap: Record<string, string> = {
+                                read: "Ver",
+                                manage: "Administrar",
+                                create: "Crear",
+                                update: "Editar",
+                                delete: "Eliminar",
+                              };
+                              const actionLabel = actionMap[perm.action] || perm.action;
+                              const displayLabel = `${item.label} (${actionLabel})`;
+
+                              return (
+                                <tr
+                                  key={perm.id}
+                                  className="hover:bg-base-200/50 border-base-100 border-b transition-colors last:border-0"
+                                >
+                                  <td className="bg-base-100 border-base-300 w-80 border-r py-3 pl-6">
+                                    <div className="flex flex-col">
+                                      <span className="flex items-center gap-2 text-sm font-medium">
+                                        <item.icon className="h-4 w-4 opacity-70" />
+                                        {displayLabel}
+                                      </span>
+                                      <span className="text-base-content/60 pl-0 font-mono text-[10px]">
+                                        {perm.action} • {perm.subject}
+                                      </span>
+                                    </div>
+                                  </td>
+                                  {displayRoles.map((role) => (
+                                    <td key={role.id} className="w-48 min-w-48 p-0 text-center align-middle">
+                                      <PermissionCell
+                                        role={role}
+                                        permissionId={perm.id}
+                                        isUpdating={false}
+                                        onToggle={handlePermissionToggle}
+                                      />
+                                    </td>
+                                  ))}
+                                </tr>
                               );
                             })}
                           </tbody>

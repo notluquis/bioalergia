@@ -159,7 +159,8 @@ export default function Sidebar({ isOpen, isMobile, onClose, isCollapsed = false
                                     </TooltipTrigger>
                                     <TooltipContent
                                       side="right"
-                                      className="bg-base-300 text-base-content border-base-200/50 z-50 font-medium"
+                                      sideOffset={10}
+                                      className="bg-base-300 text-base-content border-base-200 z-50 border font-medium shadow-sm"
                                     >
                                       {item.label}
                                     </TooltipContent>
