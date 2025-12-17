@@ -18,6 +18,8 @@ import type { Employee } from "@/features/hr/employees/types";
 import { detectAllOverlaps } from "@/features/hr/timesheets-audit/utils/overlapDetection";
 import { useMonths } from "@/features/hr/timesheets/hooks/useMonths";
 import { useTimesheetAudit, type AuditDateRange } from "@/features/hr/timesheets-audit/hooks/useTimesheetAudit";
+import { SmoothCollapse } from "@/components/ui/SmoothCollapse";
+import { cn } from "@/lib/utils";
 
 const TimesheetAuditCalendar = lazy(() => import("@/features/hr/timesheets-audit/components/TimesheetAuditCalendar"));
 
@@ -128,6 +130,8 @@ export default function TimesheetAuditPage() {
   // UI state
   const [employeeSearch, setEmployeeSearch] = useState("");
   const [showEmployeeDropdown, setShowEmployeeDropdown] = useState(false);
+  const [customWeeksOpen, setCustomWeeksOpen] = useState(true);
+  const [legendOpen, setLegendOpen] = useState(false);
 
   // Build weeks for the selected month
   const weeksForMonth = useMemo(() => {
@@ -290,62 +294,73 @@ export default function TimesheetAuditPage() {
 
         {/* Custom Week Picker (collapsible) */}
         {quickRange === "custom" && (
-          <details className="collapse-arrow bg-base-200/50 collapse mt-4">
-            <summary className="collapse-title cursor-pointer text-sm font-medium">
-              Personalizar semanas específicas
-            </summary>
-            <div className="collapse-content space-y-4">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-                <select
-                  value={selectedMonth}
-                  onChange={(e) => {
-                    setSelectedMonth(e.target.value);
-                    setSelectedWeekKeys([]);
-                  }}
-                  className="select select-bordered select-sm max-w-xs flex-1"
-                  disabled={loadingMonths}
-                >
-                  {months.map((month) => (
-                    <option key={month} value={month}>
-                      {dayjs(`${month}-01`).format("MMMM YYYY")}
-                    </option>
-                  ))}
-                </select>
-                {weeksForMonth.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={handleSelectAllWeeks}
-                    className="link link-primary text-sm whitespace-nowrap"
+          <div className="bg-base-200/50 mt-4 rounded-xl">
+            <div
+              className="flex w-full cursor-pointer items-center justify-between px-4 py-3 font-medium select-none"
+              onClick={() => setCustomWeeksOpen(!customWeeksOpen)}
+            >
+              <span>Personalizar semanas específicas</span>
+              <ChevronDown
+                size={16}
+                className={cn("transform transition-transform duration-300", customWeeksOpen && "rotate-180")}
+              />
+            </div>
+            <SmoothCollapse isOpen={customWeeksOpen}>
+              <div className="space-y-4 px-4 pt-0 pb-4">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                  <select
+                    value={selectedMonth}
+                    onChange={(e) => {
+                      setSelectedMonth(e.target.value);
+                      setSelectedWeekKeys([]);
+                    }}
+                    className="select select-bordered select-sm max-w-xs flex-1"
+                    disabled={loadingMonths}
                   >
-                    {selectedWeekKeys.length === weeksForMonth.length ? "Deseleccionar todas" : "Seleccionar todas"}
-                  </button>
+                    {months.map((month) => (
+                      <option key={month} value={month}>
+                        {dayjs(`${month}-01`).format("MMMM YYYY")}
+                      </option>
+                    ))}
+                  </select>
+                  {weeksForMonth.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleSelectAllWeeks}
+                      className="link link-primary text-sm whitespace-nowrap"
+                    >
+                      {selectedWeekKeys.length === weeksForMonth.length ? "Deseleccionar todas" : "Seleccionar todas"}
+                    </button>
+                  )}
+                </div>
+
+                {/* Weeks Grid */}
+                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                  {weeksForMonth.map((week) => {
+                    const isActive = selectedWeekKeys.includes(week.key);
+                    return (
+                      <button
+                        key={week.key}
+                        type="button"
+                        onClick={() => handleWeekToggle(week.key)}
+                        className={`rounded-lg border-2 p-3 text-left transition-all ${
+                          isActive
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-base-300 bg-base-100 text-base-content hover:border-primary/50"
+                        }`}
+                      >
+                        <div className="text-sm font-medium">{week.label}</div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {selectedWeekKeys.length === 0 && (
+                  <p className="text-warning text-sm">Selecciona al menos una semana</p>
                 )}
               </div>
-
-              {/* Weeks Grid */}
-              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                {weeksForMonth.map((week) => {
-                  const isActive = selectedWeekKeys.includes(week.key);
-                  return (
-                    <button
-                      key={week.key}
-                      type="button"
-                      onClick={() => handleWeekToggle(week.key)}
-                      className={`rounded-lg border-2 p-3 text-left transition-all ${
-                        isActive
-                          ? "border-primary bg-primary/10 text-primary"
-                          : "border-base-300 bg-base-100 text-base-content hover:border-primary/50"
-                      }`}
-                    >
-                      <div className="text-sm font-medium">{week.label}</div>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {selectedWeekKeys.length === 0 && <p className="text-warning text-sm">Selecciona al menos una semana</p>}
-            </div>
-          </details>
+            </SmoothCollapse>
+          </div>
         )}
       </div>
 
@@ -543,43 +558,52 @@ export default function TimesheetAuditPage() {
 
       {/* Legend (collapsible) */}
       {canShowCalendar && entries.length > 0 && (
-        <details className="collapse-arrow border-base-300 bg-base-100 collapse rounded-2xl border shadow-sm">
-          <summary className="collapse-title text-base-content cursor-pointer font-medium">
-            📋 Guía de interpretación
-          </summary>
-          <div className="collapse-content">
-            <div className="grid gap-6 pt-4 sm:grid-cols-2">
-              <div className="flex items-start gap-3">
-                <div className="bg-accent mt-1 h-4 w-4 shrink-0 rounded" />
-                <div>
-                  <p className="text-base-content font-semibold">Sin conflicto</p>
-                  <p className="text-base-content/70 text-sm">Turnos sin solapamiento</p>
+        <div className="border-base-300 bg-base-100 rounded-2xl border shadow-sm">
+          <div
+            className="flex w-full cursor-pointer items-center justify-between px-4 py-3 font-medium select-none"
+            onClick={() => setLegendOpen(!legendOpen)}
+          >
+            <span>📋 Guía de interpretación</span>
+            <ChevronDown
+              size={16}
+              className={cn("transform transition-transform duration-300", legendOpen && "rotate-180")}
+            />
+          </div>
+          <SmoothCollapse isOpen={legendOpen}>
+            <div className="px-4 pt-0 pb-4">
+              <div className="grid gap-6 pt-4 sm:grid-cols-2">
+                <div className="flex items-start gap-3">
+                  <div className="bg-accent mt-1 h-4 w-4 shrink-0 rounded" />
+                  <div>
+                    <p className="text-base-content font-semibold">Sin conflicto</p>
+                    <p className="text-base-content/70 text-sm">Turnos sin solapamiento</p>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="bg-error mt-1 h-4 w-4 shrink-0 rounded" />
-                <div>
-                  <p className="text-base-content font-semibold">Conflicto detectado</p>
-                  <p className="text-base-content/70 text-sm">Horarios traslapados entre empleados</p>
+                <div className="flex items-start gap-3">
+                  <div className="bg-error mt-1 h-4 w-4 shrink-0 rounded" />
+                  <div>
+                    <p className="text-base-content font-semibold">Conflicto detectado</p>
+                    <p className="text-base-content/70 text-sm">Horarios traslapados entre empleados</p>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <span className="text-lg">👩‍⚕️</span>
-                <div>
-                  <p className="text-base-content font-semibold">Compatibles</p>
-                  <p className="text-base-content/70 text-sm">Enfermero + TENS pueden coexistir</p>
+                <div className="flex items-start gap-3">
+                  <span className="text-lg">👩‍⚕️</span>
+                  <div>
+                    <p className="text-base-content font-semibold">Compatibles</p>
+                    <p className="text-base-content/70 text-sm">Enfermero + TENS pueden coexistir</p>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <span className="text-lg">⌛</span>
-                <div>
-                  <p className="text-base-content font-semibold">Tooltip</p>
-                  <p className="text-base-content/70 text-sm">Pasa el cursor para ver detalles del conflicto</p>
+                <div className="flex items-start gap-3">
+                  <span className="text-lg">⌛</span>
+                  <div>
+                    <p className="text-base-content font-semibold">Tooltip</p>
+                    <p className="text-base-content/70 text-sm">Pasa el cursor para ver detalles del conflicto</p>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </details>
+          </SmoothCollapse>
+        </div>
       )}
     </section>
   );
