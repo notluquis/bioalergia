@@ -98,7 +98,7 @@ export default function App() {
         {/* Hamburger button: accessible, compact, always visible on mobile */}
         <button
           type="button"
-          className="border-base-300/70 bg-base-100/85 text-base-content focus-visible:ring-primary/60 fixed top-[clamp(0.5rem,env(safe-area-inset-top,0px)+0.5rem,1.5rem)] left-4 z-40 inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm font-semibold shadow-lg backdrop-blur-md transition-all duration-200 focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:outline-none md:hidden"
+          className="border-base-300/70 bg-base-100/85 text-base-content focus-visible:ring-primary/60 fixed top-[calc(env(safe-area-inset-top)+0.5rem)] left-4 z-40 inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm font-semibold shadow-lg backdrop-blur-md transition-all duration-200 focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:outline-none md:hidden"
           onClick={toggleSidebar}
           aria-label={sidebarOpen ? "Cerrar menú principal" : "Abrir menú principal"}
           aria-expanded={sidebarOpen}

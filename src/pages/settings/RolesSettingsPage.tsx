@@ -187,7 +187,7 @@ export default function RolesSettingsPage() {
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-md border">
+      <div className="border-base-300 overflow-x-auto rounded-md border">
         <table className="table">
           <thead>
             <tr>

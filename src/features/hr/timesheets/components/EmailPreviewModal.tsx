@@ -82,11 +82,11 @@ export default function EmailPreviewModal({
           </div>
 
           {/* Preview del email - simula cómo se verá en el cliente de correo */}
-          <div className="border-base-300 rounded-xl border bg-white p-5">
-            <p className="mb-4 text-zinc-800">
+          <div className="border-base-300 bg-base-100 rounded-xl border p-5">
+            <p className="text-base-content mb-4">
               Estimado/a <strong>{employee.full_name}</strong>,
             </p>
-            <p className="mb-4 text-sm text-zinc-800">
+            <p className="text-base-content mb-4 text-sm">
               A continuación encontrarás el resumen de los servicios prestados durante el periodo{" "}
               <strong>{monthLabelEs}</strong>, favor corroborar y emitir boleta de honorarios.
             </p>
@@ -111,23 +111,23 @@ export default function EmailPreviewModal({
             {/* Tabla resumen */}
             <table className="mb-4 w-full border-collapse text-sm">
               <thead>
-                <tr className="bg-slate-100">
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-slate-600 uppercase">Concepto</th>
-                  <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600 uppercase">Detalle</th>
+                <tr className="bg-base-200">
+                  <th className="text-base-content/70 px-3 py-2 text-left text-xs font-semibold uppercase">Concepto</th>
+                  <th className="text-base-content/70 px-3 py-2 text-right text-xs font-semibold uppercase">Detalle</th>
                 </tr>
               </thead>
               <tbody>
-                <tr className="border-b border-slate-200">
-                  <td className="px-3 py-3 text-zinc-800">Horas totales</td>
-                  <td className="px-3 py-3 text-right font-mono text-zinc-800">{totalHoursFormatted}</td>
+                <tr className="border-base-300 border-b">
+                  <td className="text-base-content px-3 py-3">Horas totales</td>
+                  <td className="text-base-content px-3 py-3 text-right font-mono">{totalHoursFormatted}</td>
                 </tr>
-                <tr className="border-b border-slate-200">
-                  <td className="px-3 py-3 text-zinc-800">Monto Bruto</td>
-                  <td className="px-3 py-3 text-right font-mono text-zinc-800">{fmtCLP(summary.subtotal)}</td>
+                <tr className="border-base-300 border-b">
+                  <td className="text-base-content px-3 py-3">Monto Bruto</td>
+                  <td className="text-base-content px-3 py-3 text-right font-mono">{fmtCLP(summary.subtotal)}</td>
                 </tr>
-                <tr className="border-b border-slate-200">
-                  <td className="px-3 py-3 text-zinc-800">Retención ({retentionPercent}%)</td>
-                  <td className="px-3 py-3 text-right font-mono text-zinc-800">-{fmtCLP(summary.retention)}</td>
+                <tr className="border-base-300 border-b">
+                  <td className="text-base-content px-3 py-3">Retención ({retentionPercent}%)</td>
+                  <td className="text-base-content px-3 py-3 text-right font-mono">-{fmtCLP(summary.retention)}</td>
                 </tr>
                 <tr className="bg-blue-700">
                   <td className="px-3 py-3 font-bold text-white">Total Líquido</td>
