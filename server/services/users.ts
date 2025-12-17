@@ -2,7 +2,7 @@ import { prisma } from "../prisma.js";
 
 export async function findUserByEmail(email: string) {
   return await prisma.user.findUnique({
-    where: { email },
+    where: { email: email.toLowerCase() },
     include: {
       person: {
         select: {
