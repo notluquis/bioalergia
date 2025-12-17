@@ -2,7 +2,7 @@
 # Multi-stage Dockerfile optimized for Railway Metal builders
 
 # Stage 1: Base (Common files)
-# Use latest Current version with Debian Slim (faster than Alpine, uses glibc)
+# Use latest Current version with Debian Slim (User preference: specific latest features)
 FROM node:current-slim AS base
 # Install OpenSSL for Prisma
 RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
@@ -15,9 +15,9 @@ FROM base AS deps
 COPY prisma ./prisma/
 # Set dummy DB URL for Prisma generation
 ENV DATABASE_URL="postgresql://dummy:dummy@dummy:5432/dummy"
-# Only generate Prisma binaries for Debian Linux (glibc) - optimized for node:current-slim
+# Only generate Prisma binaries for Debian Linux (glibc) - optimized for node:20-slim
 ENV PRISMA_CLI_BINARY_TARGETS="debian-openssl-3.0.x"
-# Update npm to latest version and install dependencies with cache mount
+# Install dependencies with cache mount (User requirement: Always use latest npm)
 RUN --mount=type=cache,id=s/cc493466-c691-4384-8199-99f757a14014-/root/.npm,target=/root/.npm \
     npm install -g npm@latest && \
     npm ci
@@ -35,7 +35,7 @@ RUN --mount=type=cache,id=s/cc493466-c691-4384-8199-99f757a14014-/root/.npm,targ
     npm ci --omit=dev --ignore-scripts
 
 # Stage 5: Runner (Production Image)
-# Use latest Current version with Debian Slim (faster than Alpine, uses glibc)
+# Use latest Current version to match base
 FROM node:current-slim AS runner
 # Install OpenSSL for Prisma runtime
 RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*

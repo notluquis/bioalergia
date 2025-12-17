@@ -85,11 +85,14 @@ export function registerUserRoutes(app: express.Express) {
               NOT: {
                 OR: [
                   { email: { contains: "test" } },
+                  { email: { contains: "debug" } },
                   {
                     person: {
                       OR: [
                         { names: { contains: "Test" } },
                         { names: { contains: "test" } },
+                        { names: { contains: "Debug" } },
+                        { names: { contains: "debug" } },
                         { rut: { startsWith: "11111111" } },
                       ],
                     },
