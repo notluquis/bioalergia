@@ -44,24 +44,24 @@ const STATUS_COPY: Record<IndicatorLevel, { label: string; description: string }
 
 const INDICATOR_STYLES: Record<IndicatorLevel, { dot: string; chip: string; panel: string }> = {
   online: {
-    dot: "bg-emerald-500 shadow-[0_0_0_3px] shadow-emerald-400/25",
-    chip: "bg-emerald-50 text-emerald-800 border border-emerald-200/80 shadow-sm dark:bg-emerald-900/40 dark:text-emerald-50 dark:border-emerald-700/60",
-    panel: "border-emerald-200/80 dark:border-emerald-700/60",
+    dot: "bg-success shadow-[0_0_0_3px] shadow-success/25",
+    chip: "bg-success/15 text-success border border-success/20 shadow-sm",
+    panel: "border-success/20",
   },
   degraded: {
-    dot: "bg-amber-500 shadow-[0_0_0_3px] shadow-amber-400/30",
-    chip: "bg-amber-50 text-amber-900 border border-amber-200/80 shadow-sm dark:bg-amber-900/40 dark:text-amber-50 dark:border-amber-700/60",
-    panel: "border-amber-200/80 dark:border-amber-700/60",
+    dot: "bg-warning shadow-[0_0_0_3px] shadow-warning/30",
+    chip: "bg-warning/15 text-warning-content border border-warning/20 shadow-sm",
+    panel: "border-warning/20",
   },
   offline: {
-    dot: "bg-rose-500 shadow-[0_0_0_3px] shadow-rose-400/30",
-    chip: "bg-rose-50 text-rose-900 border border-rose-200/80 shadow-sm dark:bg-rose-900/40 dark:text-rose-50 dark:border-rose-700/60",
-    panel: "border-rose-200/80 dark:border-rose-700/60",
+    dot: "bg-error shadow-[0_0_0_3px] shadow-error/30",
+    chip: "bg-error/15 text-error border border-error/20 shadow-sm",
+    panel: "border-error/20",
   },
   starting: {
-    dot: "bg-blue-500 animate-pulse shadow-[0_0_0_3px] shadow-blue-400/30",
-    chip: "bg-blue-50 text-blue-900 border border-blue-200/80 shadow-sm dark:bg-blue-900/40 dark:text-blue-50 dark:border-blue-700/60",
-    panel: "border-blue-200/80 dark:border-blue-700/60",
+    dot: "bg-info animate-pulse shadow-[0_0_0_3px] shadow-info/30",
+    chip: "bg-info/15 text-info border border-info/20 shadow-sm",
+    panel: "border-info/20",
   },
 };
 
