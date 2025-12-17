@@ -7,35 +7,35 @@ export default function RecentMovementsWidget({ rows }: { rows: DbMovement[] }) 
   return (
     <article className="surface-recessed space-y-4 p-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-base font-semibold text-base-content drop-shadow-sm">Últimos movimientos</h3>
+        <h3 className="text-base-content text-base font-semibold drop-shadow-sm">Últimos movimientos</h3>
         <Link
           to="/transactions/movements"
-          className="inline-flex items-center rounded-full border border-primary/45 bg-primary/15 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-primary"
+          className="border-primary/45 bg-primary/15 text-primary inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold tracking-wide uppercase"
         >
           Ver más
         </Link>
       </div>
       {rows.length ? (
-        <ul className="space-y-3 text-xs text-base-content">
+        <ul className="text-base-content space-y-3 text-xs">
           {rows.map((row) => (
             <li
               key={row.id}
-              className="flex items-start justify-between gap-3 rounded-2xl border border-base-300 bg-base-200 px-4 py-3 shadow-sm"
+              className="border-base-300 bg-base-200 flex items-start justify-between gap-3 rounded-2xl border px-4 py-3 shadow-sm"
             >
               <div>
-                <p className="font-medium text-base-content">
+                <p className="text-base-content font-medium">
                   {row.description ?? row.source_id ?? "(sin descripción)"}
                 </p>
-                <p className="text-xs uppercase tracking-wide text-base-content/50">
+                <p className="text-base-content/50 text-xs tracking-wide uppercase">
                   {dayjs(row.timestamp).format("DD MMM YYYY HH:mm")}
                 </p>
               </div>
               <span
                 className={`text-xs font-semibold ${
                   row.direction === "IN"
-                    ? "text-emerald-600"
+                    ? "text-success"
                     : row.direction === "OUT"
-                      ? "text-rose-600"
+                      ? "text-error"
                       : "text-base-content/70"
                 }`}
               >
@@ -45,7 +45,7 @@ export default function RecentMovementsWidget({ rows }: { rows: DbMovement[] }) 
           ))}
         </ul>
       ) : (
-        <p className="text-xs text-base-content">Sin movimientos cargados aún.</p>
+        <p className="text-base-content text-xs">Sin movimientos cargados aún.</p>
       )}
     </article>
   );

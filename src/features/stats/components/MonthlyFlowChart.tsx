@@ -9,10 +9,10 @@ export default function MonthlyFlowChart({ data }: MonthlyFlowChartProps) {
   if (!data.length) return null;
   const maxValue = Math.max(...data.map((row) => Math.max(row.in, row.out)));
   return (
-    <section className="space-y-3 bg-base-100 p-6">
+    <section className="bg-base-100 space-y-3 p-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-lg font-semibold text-primary">Flujo mensual</h2>
-        <p className="text-xs text-base-content/60">Ingresos vs egresos por mes</p>
+        <h2 className="text-primary text-lg font-semibold">Flujo mensual</h2>
+        <p className="text-base-content/60 text-xs">Ingresos vs egresos por mes</p>
       </div>
       <div className="flex items-end gap-4 overflow-x-auto pb-2">
         {data.map((row) => {
@@ -23,19 +23,19 @@ export default function MonthlyFlowChart({ data }: MonthlyFlowChartProps) {
               <div className="flex h-40 w-full items-end gap-2">
                 <div
                   title={`Ingresos ${fmtCLP(row.in)}`}
-                  className="flex-1 rounded-t bg-emerald-500/80"
+                  className="bg-success/80 flex-1 rounded-t"
                   style={{ height: `${inHeight}px` }}
                 />
                 <div
                   title={`Egresos ${fmtCLP(row.out)}`}
-                  className="flex-1 rounded-t bg-rose-500/80"
+                  className="bg-error/80 flex-1 rounded-t"
                   style={{ height: `${outHeight}px` }}
                 />
               </div>
-              <div className="text-center text-xs font-medium text-base-content">
+              <div className="text-base-content text-center text-xs font-medium">
                 {dayjs(row.month).format("MMM YY")}
               </div>
-              <div className={`text-xs font-semibold ${row.net >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+              <div className={`text-xs font-semibold ${row.net >= 0 ? "text-success" : "text-error"}`}>
                 {row.net >= 0 ? fmtCLP(row.net) : `-${fmtCLP(Math.abs(row.net))}`}
               </div>
             </div>

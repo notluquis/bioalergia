@@ -89,7 +89,7 @@ export default function SettingsLayout() {
   })).filter((section) => section.items.length > 0);
 
   return (
-    <div className="flex flex-col gap-6 pt-[env(safe-area-inset-top)] lg:flex-row lg:gap-10 lg:pt-0">
+    <div className="flex flex-col gap-6 pt-[env(safe-area-inset-top)] lg:flex-row lg:items-start lg:gap-10 lg:pt-0">
       {/* Sidebar - horizontal scroll on mobile */}
       <aside className="w-full shrink-0 lg:w-64">
         <div className="space-y-4 lg:sticky lg:top-6 lg:space-y-8">

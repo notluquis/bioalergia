@@ -172,7 +172,7 @@ export default function TimesheetDetailTable({
               // Unificado: un solo "!" para warning y comentario
               const hasComment = Boolean(row.comment?.trim());
               const showBang = showWarning || hasComment;
-              const bangColor = showWarning ? "text-red-600 hover:text-red-800" : "text-primary hover:text-primary/80";
+              const bangColor = showWarning ? "text-error hover:text-error/80" : "text-primary hover:text-primary/80";
               const tooltipParts: string[] = [];
               if (showWarning && warningText) tooltipParts.push(warningText);
               if (hasComment) tooltipParts.push(`Comentario: ${row.comment.trim()}`);
@@ -286,13 +286,13 @@ export default function TimesheetDetailTable({
                       {showBang && (
                         <span className="group relative">
                           <span className={`cursor-help font-bold ${bangColor}`}>!</span>
-                          <span className="invisible absolute bottom-full left-1/2 z-50 mb-2 max-w-xs -translate-x-1/2 rounded-lg bg-gray-900 px-3 py-2 text-xs font-normal tracking-normal whitespace-nowrap text-white normal-case shadow-lg group-hover:visible">
+                          <span className="bg-neutral text-neutral-content invisible absolute bottom-full left-1/2 z-50 mb-2 max-w-xs -translate-x-1/2 rounded-lg px-3 py-2 text-xs font-normal tracking-normal whitespace-nowrap normal-case shadow-lg group-hover:visible">
                             {tooltipParts.map((part, i) => (
                               <span key={i} className="block">
                                 {part}
                               </span>
                             ))}
-                            <span className="absolute top-full left-1/2 h-0 w-0 -translate-x-1/2 border-t-4 border-r-4 border-l-4 border-transparent border-t-gray-900"></span>
+                            <span className="border-t-neutral absolute top-full left-1/2 h-0 w-0 -translate-x-1/2 border-t-4 border-r-4 border-l-4 border-transparent"></span>
                           </span>
                         </span>
                       )}

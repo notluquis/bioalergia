@@ -23,7 +23,7 @@ export default function TopParticipantsWidget({
           Ver todos
         </Link>
       </div>
-      {error && <p className="text-xs text-rose-600">{error}</p>}
+      {error && <p className="text-error text-xs">{error}</p>}
       {loading ? (
         <p className="text-base-content text-xs">Cargando...</p>
       ) : data.length ? (

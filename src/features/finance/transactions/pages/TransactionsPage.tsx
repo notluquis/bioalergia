@@ -217,7 +217,7 @@ export default function TransactionsMovements() {
             </div>
           </div>
 
-          {error && <p className="rounded-lg bg-rose-100 px-4 py-3 text-sm text-rose-700">{error}</p>}
+          {error && <Alert variant="error">{error}</Alert>}
 
           <TransactionsTable
             rows={ledger}
