@@ -242,7 +242,40 @@ export default function ReportsPage() {
     [reportData, granularity]
   );
 
-  const stats = useMemo(() => calculateStats(reportData), [reportData]);
+  // Calculate period count for stats based on granularity
+  const periodCount = useMemo(() => {
+    // For "month" view (which forces single month selection), period is 1 month-unit (granularity is set to week though?)
+    // Wait, earlier logic: if viewMode="month", granularity="week".
+    // If viewMode="month" (single month selected), calculating "weeks"?
+    // User wants "Promedio por [Agrupacion Temporal]".
+
+    // If granularity is "month" (View Mode All/Range -> Month), we want months.
+    // If granularity is "week" (View Mode Month -> Week), we want weeks.
+    // If granularity is "day", we want days.
+
+    if (!startDate || !endDate) return 1;
+    // Special case: Single Month View sets dates to start/end of month.
+    // diff gives approx weeks.
+
+    const start = dayjs(startDate);
+    const end = dayjs(endDate);
+
+    // exact diff
+    let count = 1;
+    if (granularity === "day") {
+      count = end.diff(start, "day") + 1;
+    } else if (granularity === "week") {
+      // isoWeeksInInterval?
+      // Simple diff in weeks
+      count = end.diff(start, "week", true);
+    } else {
+      count = end.diff(start, "month", true);
+    }
+
+    return Math.max(1, Math.ceil(count));
+  }, [startDate, endDate, granularity]);
+
+  const stats = useMemo(() => calculateStats(reportData, periodCount), [reportData, periodCount]);
   const chartColors = getChartColors();
 
   if (!canView) {
@@ -551,7 +584,7 @@ export default function ReportsPage() {
                   </div>
                 </div>
 
-                <div className="h-87.5 w-full">
+                <div className="w-full" style={{ height: 350, minHeight: 350 }}>
                   <ResponsiveContainer width="100%" height="100%">
                     {granularity === "month" ? (
                       <BarChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
