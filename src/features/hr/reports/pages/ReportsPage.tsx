@@ -125,7 +125,7 @@ const getChartColors = (): string[] => {
     ].filter(Boolean) as string[];
 
     return themeColors.length > 0 ? themeColors : defaultColors;
-  } catch (e) {
+  } catch {
     return defaultColors;
   }
 };
