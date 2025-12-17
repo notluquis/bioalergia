@@ -119,18 +119,18 @@ export default function SecuritySettingsPage() {
         success("Passkey registrado exitosamente");
         await refreshSession();
       } else {
-        error(verifyData.message || "Error al verificar Passkey");
+        error(verifyData.message || "Error al verificar passkey");
       }
     } catch (err) {
       console.error(err);
-      error(err instanceof Error ? err.message : "Error al registrar Passkey");
+      error(err instanceof Error ? err.message : "Error al registrar passkey");
     } finally {
       setLoadingPasskey(false);
     }
   };
 
   const handleDeletePasskey = async () => {
-    if (!confirm("¿Estás seguro de eliminar tu Passkey? Tendrás que usar tu contraseña para iniciar sesión.")) return;
+    if (!confirm("¿Estás seguro de eliminar tu passkey? Tendrás que usar tu contraseña para iniciar sesión.")) return;
 
     setLoadingPasskey(true);
     try {
@@ -139,7 +139,7 @@ export default function SecuritySettingsPage() {
         success("Passkey eliminado");
         await refreshSession();
       } else {
-        error(data.message || "Error al eliminar Passkey");
+        error(data.message || "Error al eliminar passkey");
       }
     } catch {
       error("Error de conexión");
@@ -151,7 +151,7 @@ export default function SecuritySettingsPage() {
   return (
     <div className="space-y-6">
       <div className="space-y-1 px-6 pt-6">
-        <h2 className="text-primary text-lg font-semibold drop-shadow-sm">Seguridad de la Cuenta</h2>
+        <h2 className="text-primary text-lg font-semibold drop-shadow-sm">Seguridad de la cuenta</h2>
         <p className="text-base-content/70 text-sm">Gestiona tus métodos de autenticación para proteger tu cuenta.</p>
       </div>
 
@@ -249,7 +249,7 @@ export default function SecuritySettingsPage() {
           </div>
           <div className="flex-1 space-y-4">
             <div>
-              <h3 className="text-base-content font-semibold">Passkeys / Biometría</h3>
+              <h3 className="text-base-content font-semibold">Passkeys / biometría</h3>
               <p className="text-base-content/70 text-sm">
                 Inicia sesión sin contraseña usando tu huella dactilar, reconocimiento facial o PIN del dispositivo.
               </p>
@@ -282,13 +282,13 @@ export default function SecuritySettingsPage() {
                   ) : (
                     <Fingerprint className="mr-2 size-4" />
                   )}
-                  Registrar nuevo Passkey
+                  Registrar nuevo passkey
                 </Button>
               </div>
             )}
 
             <p className="text-base-content/50 text-xs">
-              Nota: Solo puedes tener un Passkey activo por usuario. Registrar uno nuevo reemplazará el anterior.
+              Nota: Solo puedes tener un passkey activo por usuario. Registrar uno nuevo reemplazará el anterior.
             </p>
           </div>
         </div>

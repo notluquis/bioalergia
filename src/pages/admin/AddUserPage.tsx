@@ -90,7 +90,7 @@ export default function AddUserPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-8">
       <div className="space-y-2">
-        <h1 className="text-primary text-3xl font-bold">Agregar Usuario</h1>
+        <h1 className="text-primary text-3xl font-bold">Agregar usuario</h1>
         <p className="text-base-content/70">
           Crea un nuevo usuario en el sistema. Se generará una contraseña temporal y el usuario deberá completar su
           configuración de seguridad al iniciar sesión.
@@ -104,14 +104,14 @@ export default function AddUserPage() {
             <Users className="text-info mt-0.5 h-5 w-5" />
             <div className="flex-1 space-y-3">
               <div>
-                <p className="text-info font-medium">Vincular a Persona Existente</p>
+                <p className="text-info font-medium">Vincular a persona existente</p>
                 <p className="text-base-content/70 text-xs">
                   Si esta persona ya existe en el sistema, puedes vincular el usuario directamente.
                 </p>
               </div>
               <div className="space-y-2">
                 <Input
-                  label="Vincular con Persona (Opcional)"
+                  label="Vincular con persona (opcional)"
                   as="select"
                   id="personId"
                   value={form.personId ?? ""}
@@ -150,7 +150,7 @@ export default function AddUserPage() {
             <>
               <div className="md:col-span-2">
                 <Input
-                  label="Correo Electrónico"
+                  label="Correo electrónico"
                   type="email"
                   value={form.email}
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
@@ -160,7 +160,7 @@ export default function AddUserPage() {
               </div>
 
               <Input
-                label="Cargo / Posición"
+                label="Cargo / posición"
                 value={form.position}
                 onChange={(e) => setForm({ ...form, position: e.target.value })}
                 required={!form.personId}
@@ -194,7 +194,7 @@ export default function AddUserPage() {
           <div className="flex items-start gap-3">
             <Shield className="text-primary mt-0.5 h-5 w-5" />
             <div className="space-y-1">
-              <p className="text-primary font-medium">Seguridad Reforzada</p>
+              <p className="text-primary font-medium">Seguridad reforzada</p>
               <p className="text-base-content/70 text-xs">
                 Si activas esta opción, el usuario estará <strong>obligado</strong> a configurar Passkey o MFA (Google
                 Authenticator) antes de poder usar el sistema.
@@ -203,7 +203,7 @@ export default function AddUserPage() {
           </div>
           <div className="mt-4 space-y-3 pl-8">
             <Checkbox
-              label="Forzar Passkey o MFA"
+              label="Forzar passkey o MFA"
               checked={form.mfaEnforced}
               onChange={(e) => setForm({ ...form, mfaEnforced: e.target.checked })}
             />
@@ -216,7 +216,7 @@ export default function AddUserPage() {
           </Button>
           <Button type="submit" disabled={loading} className="gap-2">
             <UserPlus size={18} />
-            {loading ? "Creando..." : "Crear Usuario"}
+            {loading ? "Creando..." : "Crear usuario"}
           </Button>
         </div>
       </form>

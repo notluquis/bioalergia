@@ -45,7 +45,7 @@ export default function Input(props: Props) {
   };
 
   const baseClasses =
-    "w-full transition-all duration-200 ease-apple placeholder:text-base-content/40 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary";
+    "w-full transition-all duration-200 ease-apple placeholder:text-base-content/60 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary";
 
   const inputClasses = cn(
     "input input-bordered bg-base-100/50 hover:bg-base-100 focus:bg-base-100",
@@ -72,8 +72,8 @@ export default function Input(props: Props) {
   );
 
   const labelClasses = "label pt-0 pb-2"; // Increased bottom padding
-  const labelTextClasses = "label-text text-xs font-semibold uppercase tracking-wider text-base-content/60 ml-1";
-  const helperClasses = cn("label-text-alt mt-1.5 ml-1 text-xs text-base-content/60", error && "text-error");
+  const labelTextClasses = "label-text text-xs font-semibold uppercase tracking-wider text-base-content/70 ml-1";
+  const helperClasses = cn("label-text-alt mt-1.5 ml-1 text-xs text-base-content/70", error && "text-error");
 
   let control: React.ReactNode;
 
@@ -98,7 +98,7 @@ export default function Input(props: Props) {
       <button
         type="button"
         onClick={() => setIsPasswordVisible(!isPasswordVisible)}
-        className="text-base-content/50 hover:text-base-content hover:bg-base-200/50 rounded-full p-1 transition-colors focus:outline-none"
+        className="text-base-content/60 hover:text-base-content hover:bg-base-200/50 rounded-full p-1 transition-colors focus:outline-none"
         tabIndex={-1}
       >
         {isPasswordVisible ? <EyeOff size={18} /> : <Eye size={18} />}

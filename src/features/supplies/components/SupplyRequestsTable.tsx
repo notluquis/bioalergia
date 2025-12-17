@@ -15,7 +15,7 @@ export default function SupplyRequestsTable({ requests, onStatusChange }: Supply
 
   return (
     <div className="bg-base-100 rounded-lg p-6 shadow-md">
-      <h2 className="mb-4 text-xl font-semibold">{isAdmin ? "Todas las Solicitudes" : "Solicitudes Activas"}</h2>
+      <h2 className="mb-4 text-xl font-semibold">{isAdmin ? "Todas las solicitudes" : "Solicitudes activas"}</h2>
       {requests.length === 0 ? (
         <p>No se encontraron solicitudes de insumos.</p>
       ) : (
@@ -25,66 +25,66 @@ export default function SupplyRequestsTable({ requests, onStatusChange }: Supply
               <tr>
                 <th
                   scope="col"
-                  className="text-base-content/50 px-6 py-3 text-left text-xs font-medium tracking-wider whitespace-nowrap uppercase"
+                  className="text-base-content/70 px-6 py-3 text-left text-xs font-medium tracking-wider whitespace-nowrap uppercase"
                 >
                   ID
                 </th>
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium tracking-wider whitespace-nowrap text-gray-500 uppercase"
+                  className="text-base-content/70 px-6 py-3 text-left text-xs font-medium tracking-wider whitespace-nowrap uppercase"
                 >
                   Insumo
                 </th>
                 <th
                   scope="col"
-                  className="text-base-content/50 px-6 py-3 text-left text-xs font-medium tracking-wider whitespace-nowrap uppercase"
+                  className="text-base-content/70 px-6 py-3 text-left text-xs font-medium tracking-wider whitespace-nowrap uppercase"
                 >
                   Cantidad
                 </th>
                 <th
                   scope="col"
-                  className="text-base-content/50 px-6 py-3 text-left text-xs font-medium tracking-wider whitespace-nowrap uppercase"
+                  className="text-base-content/70 px-6 py-3 text-left text-xs font-medium tracking-wider whitespace-nowrap uppercase"
                 >
-                  Marca/Modelo
+                  Marca/modelo
                 </th>
                 <th
                   scope="col"
-                  className="text-base-content/50 px-6 py-3 text-left text-xs font-medium tracking-wider whitespace-nowrap uppercase"
+                  className="text-base-content/70 px-6 py-3 text-left text-xs font-medium tracking-wider whitespace-nowrap uppercase"
                 >
                   Notas
                 </th>
                 {isAdmin && (
                   <th
                     scope="col"
-                    className="text-base-content/50 px-6 py-3 text-left text-xs font-medium tracking-wider whitespace-nowrap uppercase"
+                    className="text-base-content/70 px-6 py-3 text-left text-xs font-medium tracking-wider whitespace-nowrap uppercase"
                   >
-                    Solicitado Por
+                    Solicitado por
                   </th>
                 )}
                 <th
                   scope="col"
-                  className="text-base-content/50 px-6 py-3 text-left text-xs font-medium tracking-wider whitespace-nowrap uppercase"
+                  className="text-base-content/70 px-6 py-3 text-left text-xs font-medium tracking-wider whitespace-nowrap uppercase"
                 >
                   Estado
                 </th>
                 {isAdmin && (
                   <th
                     scope="col"
-                    className="text-base-content/50 px-6 py-3 text-left text-xs font-medium tracking-wider whitespace-nowrap uppercase"
+                    className="text-base-content/70 px-6 py-3 text-left text-xs font-medium tracking-wider whitespace-nowrap uppercase"
                   >
-                    Notas del Admin
+                    Notas del admin
                   </th>
                 )}
                 <th
                   scope="col"
-                  className="text-base-content/50 px-6 py-3 text-left text-xs font-medium tracking-wider whitespace-nowrap uppercase"
+                  className="text-base-content/70 px-6 py-3 text-left text-xs font-medium tracking-wider whitespace-nowrap uppercase"
                 >
-                  Fecha Solicitud
+                  Fecha solicitud
                 </th>
                 {isAdmin && (
                   <th
                     scope="col"
-                    className="text-base-content/50 px-6 py-3 text-left text-xs font-medium tracking-wider whitespace-nowrap uppercase"
+                    className="text-base-content/70 px-6 py-3 text-left text-xs font-medium tracking-wider whitespace-nowrap uppercase"
                   >
                     Acciones
                   </th>
@@ -129,7 +129,7 @@ export default function SupplyRequestsTable({ requests, onStatusChange }: Supply
                       >
                         <option value="pending">Pendiente</option>
                         <option value="ordered">Pedido</option>
-                        <option value="in_transit">En Tránsito</option>
+                        <option value="in_transit">En tránsito</option>
                         <option value="delivered">Entregado</option>
                         <option value="rejected">Rechazado</option>
                       </Input>

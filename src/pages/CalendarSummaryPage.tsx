@@ -451,7 +451,7 @@ function CalendarSummaryPage() {
               }}
               className="min-w-35"
             >
-              Reestablecer
+              Restablecer
             </Button>
           </div>
         </form>

@@ -440,7 +440,7 @@ export default function TimesheetsPage() {
           ["Tarifa por hora", fmtCLP(employeeSummaryRow.hourlyRate)],
           ["Subtotal", fmtCLP(employeeSummaryRow.subtotal)],
           ["Retención", fmtCLP(employeeSummaryRow.retention)],
-          ["Total Líquido", fmtCLP(employeeSummaryRow.net)],
+          ["Total líquido", fmtCLP(employeeSummaryRow.net)],
         ],
         startY: 75,
         theme: "grid",
@@ -637,7 +637,7 @@ export default function TimesheetsPage() {
                 : "Preparar boleta para enviar por email"
             }
           >
-            ✉️ Preparar Email
+            ✉️ Preparar email
           </Button>
           <Suspense
             fallback={

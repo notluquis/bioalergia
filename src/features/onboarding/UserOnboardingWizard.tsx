@@ -110,7 +110,7 @@ export default function UserOnboardingWizard() {
           <div>
             <h2 className="text-primary mb-6 text-2xl font-bold">Bienvenido</h2>
             <div className="space-y-4">
-              <div className={`flex items-center gap-3 ${step >= 1 ? "text-primary" : "text-base-content/40"}`}>
+              <div className={`flex items-center gap-3 ${step >= 1 ? "text-primary" : "text-base-content/60"}`}>
                 <div
                   className={`flex h-8 w-8 items-center justify-center rounded-full border-2 ${
                     step > 1 ? "bg-primary border-primary text-white" : "border-current"
@@ -132,7 +132,7 @@ export default function UserOnboardingWizard() {
               </div>
             </div>
           </div>
-          <div className="text-base-content/60 mt-8 text-xs">
+          <div className="text-base-content/70 mt-8 text-xs">
             Configuración inicial obligatoria para acceder a la plataforma.
           </div>
         </div>
@@ -268,14 +268,14 @@ export default function UserOnboardingWizard() {
                   >
                     {user?.hasPasskey ? "Passkey Configurado ✅" : "Usar Huella / Windows Hello"}
                   </Button>
-                  <p className="text-base-content/60 text-center text-xs">
+                  <p className="text-base-content/70 text-center text-xs">
                     O ve a Configuración más tarde para activar Google Authenticator.
                   </p>
                 </div>
               )}
 
               <div className="border-base-300 flex items-center justify-between border-t pt-4">
-                <div className="text-base-content/60 text-xs">
+                <div className="text-base-content/80 text-xs">
                   Estado:{" "}
                   <span className={isSecurityComplete ? "text-success font-bold" : "text-warning font-bold"}>
                     {isSecurityComplete ? "Seguro" : "Pendiente"}

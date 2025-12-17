@@ -18,14 +18,20 @@ export default function App() {
   const [sidebarOpen, setSidebarOpen] = React.useState(true);
 
   // Detect if mobile/tablet (md breakpoint)
-  // We still need this for the overlay and initial state, but we can optimize it
+  // Optimized 2025: Use standard matchMedia listener instead of resize event to avoid layout thrashing
   const [isMobile, setIsMobile] = React.useState(!window.matchMedia("(min-width: 768px)").matches);
   const [debouncedIsMobile] = useDebounce(isMobile, 150);
 
   React.useEffect(() => {
-    const checkMobile = () => setIsMobile(!window.matchMedia("(min-width: 768px)").matches);
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
+    const mql = window.matchMedia("(min-width: 768px)");
+    const onChange = (e: MediaQueryListEvent) => setIsMobile(!e.matches);
+
+    // Set initial value
+    setIsMobile(!mql.matches);
+
+    // Modern event listener for Media Query
+    mql.addEventListener("change", onChange);
+    return () => mql.removeEventListener("change", onChange);
   }, []);
 
   // Use debounced value for sidebar control to prevent jank

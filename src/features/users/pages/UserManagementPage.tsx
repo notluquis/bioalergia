@@ -184,7 +184,7 @@ export default function UserManagementPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className={TITLE_LG}>Usuarios y Seguridad</h1>
+            <h1 className={TITLE_LG}>Usuarios y seguridad</h1>
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -194,7 +194,7 @@ export default function UserManagementPage() {
                 </TooltipTrigger>
                 <TooltipContent side="right" className="max-w-xs">
                   <div className="space-y-1.5 text-xs">
-                    <p className="font-semibold">Recomendaciones de Seguridad</p>
+                    <p className="font-semibold">Recomendaciones de seguridad</p>
                     <p>
                       <strong>MFA:</strong> Código de verificación adicional.
                     </p>
@@ -213,7 +213,7 @@ export default function UserManagementPage() {
         </div>
         <Link to="/settings/users/add" className="btn btn-primary gap-2">
           <UserPlus size={20} />
-          Agregar Usuario
+          Agregar usuario
         </Link>
       </div>
 
@@ -256,7 +256,7 @@ export default function UserManagementPage() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{users.filter((u) => u.hasPasskey).length}</p>
-                  <p className="text-base-content/60 text-sm">Con Passkey</p>
+                  <p className="text-base-content/60 text-sm">Con passkey</p>
                 </div>
               </div>
             </div>
@@ -350,11 +350,11 @@ export default function UserManagementPage() {
                       <td className="text-center align-middle">
                         <div className="flex justify-center">
                           {user.mfaEnabled ? (
-                            <div className="tooltip" data-tip="MFA Activado">
+                            <div className="tooltip" data-tip="MFA activado">
                               <ShieldCheck className="text-success size-5" />
                             </div>
                           ) : (
-                            <div className="tooltip" data-tip="MFA Inactivo">
+                            <div className="tooltip" data-tip="MFA inactivo">
                               <ShieldCheck className="text-base-content/20 size-5" />
                             </div>
                           )}
@@ -364,11 +364,11 @@ export default function UserManagementPage() {
                       <td className="text-center align-middle">
                         <div className="flex justify-center">
                           {user.hasPasskey ? (
-                            <div className="tooltip" data-tip="Passkey Configurado">
+                            <div className="tooltip" data-tip="Passkey configurado">
                               <Fingerprint size={5} className="text-success size-5" />
                             </div>
                           ) : (
-                            <div className="tooltip" data-tip="Sin Passkey">
+                            <div className="tooltip" data-tip="Sin passkey">
                               <Fingerprint className="text-base-content/20 size-5" />
                             </div>
                           )}
@@ -400,7 +400,7 @@ export default function UserManagementPage() {
                               <li>
                                 <a onClick={() => handleDeletePasskey(user.id)} className="text-warning">
                                   <Trash2 size={14} />
-                                  Eliminar Passkey
+                                  Eliminar passkey
                                 </a>
                               </li>
                             )}
