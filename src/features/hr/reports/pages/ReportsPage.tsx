@@ -252,6 +252,15 @@ export default function ReportsPage() {
         data.monthlyBreakdown[monthKey] = (data.monthlyBreakdown[monthKey] || 0) + entry.worked_minutes;
       });
 
+      // Calculate derived stats
+      for (const data of map.values()) {
+        const uniqueDays = Object.keys(data.dailyBreakdown).length;
+        data.totalDays = uniqueDays;
+        data.avgDailyMinutes = uniqueDays > 0 ? Math.round(data.totalMinutes / uniqueDays) : 0;
+        data.overtimePercentage =
+          data.totalMinutes > 0 ? parseFloat(((data.totalOvertimeMinutes / data.totalMinutes) * 100).toFixed(1)) : 0;
+      }
+
       return Array.from(map.values());
     },
     [employees]
@@ -773,8 +782,6 @@ export default function ReportsPage() {
                           <th className="text-right">Días</th>
                           <th className="text-right">Diario</th>
                           <th className="text-right">Horas</th>
-                          <th className="text-right">Ext.</th>
-                          <th className="text-right">%</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -794,16 +801,6 @@ export default function ReportsPage() {
                             <td className="text-right font-mono text-base">
                               {parseFloat((emp.totalMinutes / 60).toFixed(1))}
                             </td>
-                            <td className="text-warning text-right font-mono text-base">
-                              {parseFloat((emp.totalOvertimeMinutes / 60).toFixed(1))}
-                            </td>
-                            <td className="text-right text-xs">
-                              {emp.overtimePercentage > 0 ? (
-                                <span className="badge badge-sm badge-ghost">{emp.overtimePercentage}%</span>
-                              ) : (
-                                <span className="text-base-content/30">-</span>
-                              )}
-                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -813,8 +810,6 @@ export default function ReportsPage() {
                           <td className="text-right">{reportData.reduce((acc, e) => acc + e.totalDays, 0)}</td>
                           <td className="text-right">-</td>
                           <td className="text-right">{stats?.totalHours}</td>
-                          <td className="text-right">-</td>
-                          <td className="text-right"></td>
                         </tr>
                       </tfoot>
                     </table>
