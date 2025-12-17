@@ -1,45 +1,45 @@
 # Cursor AI Rules — finanzas-app
 
 ## Project Overview
-React + Vite + TypeScript frontend with Node + Express + Prisma + **PostgreSQL** backend.
+React 19 + Vite + TypeScript frontend with Node + Express + Prisma + **PostgreSQL** backend.
 Medical/financial management system for a healthcare clinic.
 
 ## Critical Rules
 
-### Database is PostgreSQL (NOT MySQL)
+### 1. Database is PostgreSQL (NOT MySQL)
 - Use `TO_CHAR()` instead of `DATE_FORMAT()`
 - Use `EXTRACT()` for date parts
 - Table names follow Prisma `@@map`: `events` (not `google_calendar_events`), `people` (not `person`)
 
-### Styling
-- ALWAYS use DaisyUI semantic classes: `bg-base-100`, `text-base-content`, `card`, `btn`
-- NEVER use `bg-white`, `text-gray-*`, or hardcoded hex colors
-- Use `src/components/ui/Button.tsx` for all buttons
+### 2. Styling (DaisyUI + Tailwind)
+- **ALWAYS** use semantic tokens: `bg-base-100`, `text-base-content`, `text-success`, `text-error`.
+- **NEVER** use `bg-white`, `text-gray-*`, `text-slate-*`, or hardcoded hex colors.
+- **Contrast**: Use `text-base-content/70` for metadata, not `/40` or `/50`.
+- **Layout**: Use `pt-[env(safe-area-inset-top)]` for safe areas (Harmonic Layout).
 
-### Code Patterns
-- Check existing APIs in `src/features/*/api.ts` before creating new ones
-- Use existing hooks from `src/features/*/hooks/` 
-- All tabs need `end: true` property to mark active route correctly
+### 3. Authorization (RBAC)
+- **NEVER** check for `role === 'GOD'` or `'ADMIN'`.
+- **ALWAYS** use permission checks: `can('manage', 'all')` or `can('read', 'Employee')`.
+- Backend: Use `authorize` middleware. Frontend: Use `useAuth().can()`.
 
-### Before Committing
-```bash
-npm run type-check  # Required - commits fail on type errors
-npm run lint        # Required - commits fail on lint errors
-npm run build       # Verify build works
-```
+### 4. React 19 & Architecture
+- Use `src/features/{domain}/` for code organization.
+- Prefer `useQuery` hooks from `src/features/*/hooks/`.
+- Use `<Context>` instead of `<Context.Provider>`.
+- **Lazy Loading**: Use `lazy(() => import(...))` for heavy components (Calendar, Charts).
+
+### 5. Quality Standards
+- **Strict TypeScript**: No `any`. Fix all type errors.
+- **Lint**: Run `npm run lint --fix` before committing.
+- **Forms**: Use `react-hook-form` + `zod` validation.
 
 ## Key Files
-- `AGENTS.md` — Full documentation for AI agents
-- `server/config.ts` — Session (24h), JWT, calendar config
-- `prisma/schema.prisma` — Database schema (check `@@map` for table names)
-- `src/main.tsx` — App entry + routes
+- `AGENTS.md` — Full documentation
+- `server/config/initial-roles.ts` — Role definitions
+- `src/config/permissions.ts` — Permission constants
+- `prisma/schema.prisma` — DB Schema
 
 ## Common Mistakes to Avoid
-1. Using MySQL syntax in raw queries (use PostgreSQL)
-2. Using `bg-white` instead of `bg-base-100`
-3. Creating duplicate API functions
-4. Missing `end: true` on tab items
-5. Committing without running type-check
-
-## Documentation Reference
-See `AGENTS.md` in project root for complete instructions.
+1. Hardcoding role names ("GOD") instead of permissions.
+2. Using "light-only" colors (`bg-emerald-100`) -> Use `bg-success/15`.
+3. Blocking the event loop in `sync` endpoints.

@@ -91,7 +91,6 @@ export function registerUserRoutes(app: express.Express) {
                         { names: { contains: "Test" } },
                         { names: { contains: "test" } },
                         { rut: { startsWith: "11111111" } },
-                        { rut: { startsWith: "TEMP-" } },
                       ],
                     },
                   },

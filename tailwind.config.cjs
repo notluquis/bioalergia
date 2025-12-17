@@ -43,9 +43,9 @@ module.exports = {
           "base-200": "#f5f5f5" /* Light gray */,
           "base-300": "#e5e5e5" /* Medium gray */,
           info: "#3abff8",
-          success: "#36d399",
-          warning: "#fbbd23",
-          error: "#f87272",
+          success: "#16a34a", /* Darker green (emerald-600) for text accessibility on light bg */
+          warning: "#d97706", /* Darker amber (amber-600) for text accessibility */
+          error: "#dc2626",   /* Darker red (red-600) for text accessibility */
           /* brand tokens (available as CSS variables via data-theme) */
           "--brand-primary": "#0e64b7",
           "--brand-secondary": "#f1a722",
