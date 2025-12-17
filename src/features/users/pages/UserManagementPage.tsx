@@ -178,19 +178,6 @@ export default function UserManagementPage() {
     }
   };
 
-  const getSecurityScore = (user: User) => {
-    let score = 0;
-    if (user.mfaEnabled) score += 50;
-    if (user.hasPasskey) score += 50;
-    return score;
-  };
-
-  const getSecurityBadge = (score: number) => {
-    if (score === 100) return { label: "Óptima", color: "badge-success", icon: Shield };
-    if (score >= 50) return { label: "Buena", color: "badge-warning", icon: ShieldCheck };
-    return { label: "Básica", color: "badge-error", icon: Lock };
-  };
-
   return (
     <div className={PAGE_CONTAINER}>
       {/* Header */}
@@ -310,9 +297,9 @@ export default function UserManagementPage() {
                 <th>Usuario</th>
                 <th>Rol</th>
                 <th>Estado</th>
-                <th className="text-center">Seguridad</th>
-                <th className="text-center">MFA</th>
-                <th className="text-center">Passkey</th>
+                {/* Security column removed as per request */}
+                <th className="w-16 text-center">MFA</th>
+                <th className="w-16 text-center">Passkey</th>
                 <th>Creado</th>
                 <th className="w-10"></th>
               </tr>
@@ -320,22 +307,18 @@ export default function UserManagementPage() {
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={8} className="text-base-content/60 py-8 text-center">
+                  <td colSpan={7} className="text-base-content/60 py-8 text-center">
                     Cargando usuarios...
                   </td>
                 </tr>
               ) : filteredUsers?.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="text-base-content/60 py-8 text-center">
+                  <td colSpan={7} className="text-base-content/60 py-8 text-center">
                     No se encontraron usuarios
                   </td>
                 </tr>
               ) : (
                 filteredUsers?.map((user) => {
-                  const securityScore = getSecurityScore(user);
-                  const badge = getSecurityBadge(securityScore);
-                  const BadgeIcon = badge.icon;
-
                   return (
                     <tr key={user.id} className="hover:bg-base-200/50">
                       <td className="whitespace-nowrap">
@@ -363,33 +346,33 @@ export default function UserManagementPage() {
                           {user.status}
                         </div>
                       </td>
-                      <td className="text-center whitespace-nowrap">
-                        <div className="flex items-center justify-center gap-2">
-                          <span className={`${BADGE_SM} ${badge.color} w-fit gap-1 whitespace-nowrap`}>
-                            <BadgeIcon className="size-3" />
-                            {badge.label}
-                          </span>
-                          <span className="text-base-content/50 text-xs">{securityScore}%</span>
+                      {/* MFA Icon Only */}
+                      <td className="text-center align-middle">
+                        <div className="flex justify-center">
+                          {user.mfaEnabled ? (
+                            <div className="tooltip" data-tip="MFA Activado">
+                              <ShieldCheck className="text-success size-5" />
+                            </div>
+                          ) : (
+                            <div className="tooltip" data-tip="MFA Inactivo">
+                              <ShieldCheck className="text-base-content/20 size-5" />
+                            </div>
+                          )}
                         </div>
                       </td>
-                      <td className="text-center whitespace-nowrap">
-                        {user.mfaEnabled ? (
-                          <div className="flex items-center justify-center gap-1">
-                            <ShieldCheck className="text-success size-4" />
-                            <span className="text-success text-xs font-medium">Activo</span>
-                          </div>
-                        ) : (
-                          <span className="text-base-content/30 text-xs">Inactivo</span>
-                        )}
-                      </td>
-                      <td className="text-center">
-                        {user.hasPasskey ? (
-                          <div className="tooltip" data-tip="Passkey Configurado">
-                            <Fingerprint size={16} className="text-success" />
-                          </div>
-                        ) : (
-                          <span className="text-base-content/30 text-xs">-</span>
-                        )}
+                      {/* Passkey Icon Only */}
+                      <td className="text-center align-middle">
+                        <div className="flex justify-center">
+                          {user.hasPasskey ? (
+                            <div className="tooltip" data-tip="Passkey Configurado">
+                              <Fingerprint size={5} className="text-success size-5" />
+                            </div>
+                          ) : (
+                            <div className="tooltip" data-tip="Sin Passkey">
+                              <Fingerprint className="text-base-content/20 size-5" />
+                            </div>
+                          )}
+                        </div>
                       </td>
                       <td className="text-base-content/70 text-sm">{dayjs(user.createdAt).format("DD MMM YYYY")}</td>
                       <td>

@@ -10,6 +10,9 @@ interface CollapsibleSectionProps {
   className?: string;
 }
 
+import { SmoothCollapse } from "@/components/ui/SmoothCollapse";
+import { ChevronDown } from "lucide-react";
+
 export default function CollapsibleSection({
   title,
   description,
@@ -21,36 +24,27 @@ export default function CollapsibleSection({
   const [open, setOpen] = useState(defaultOpen);
 
   return (
-    <div
-      className={cn(
-        "collapse collapse-plus border border-base-300 p-0 text-sm text-base-content bg-base-100",
-        className
-      )}
-    >
-      <input type="checkbox" className="hidden" checked={open} readOnly onClick={() => setOpen((v) => !v)} />
+    <div className={cn("rounded-box border-base-300 bg-base-100 border", className)}>
       <div
-        className="collapse-title flex w-full items-center justify-between gap-3 px-4 py-3 cursor-pointer"
+        className="flex w-full cursor-pointer items-center justify-between gap-3 px-4 py-3 select-none"
         onClick={() => setOpen((v) => !v)}
       >
         <div>
-          <p className="text-sm font-semibold uppercase tracking-wide text-base-content/80">{title}</p>
-          {description && <p className="text-xs text-base-content/60">{description}</p>}
+          <p className="text-base-content/80 text-sm font-semibold tracking-wide uppercase">{title}</p>
+          {description && <p className="text-base-content/60 text-xs">{description}</p>}
         </div>
-        {/* DaisyUI collapse-plus handles the icon rotation automatically via CSS if using checkbox or details/summary, 
-            but since we are controlling state manually for custom behavior, we might need to adjust. 
-            However, the original code used manual icon. DaisyUI collapse-plus adds a plus/minus icon. 
-            Let's stick to DaisyUI's built-in icon behavior if possible, or custom if needed.
-            The original code had a custom chevron. Let's keep the custom chevron if we want specific style, 
-            or use collapse-plus. The original used collapse-plus class BUT also a manual span with rotation.
-            That's conflicting. Let's use standard DaisyUI collapse behavior or fully custom.
-            
-            Let's go with fully custom to match the original look but cleaner.
-        */}
+        <ChevronDown
+          size={18}
+          className={cn("text-base-content/50 transition-transform duration-300", open ? "rotate-180" : "")}
+        />
       </div>
-      <div className={cn("collapse-content p-4", open && "block")}>
-        {actions && <div className="mb-3 flex flex-wrap items-center gap-2">{actions}</div>}
-        <div className="space-y-4">{children}</div>
-      </div>
+
+      <SmoothCollapse isOpen={open}>
+        <div className="px-4 pt-0 pb-4">
+          {actions && <div className="mb-3 flex flex-wrap items-center gap-2">{actions}</div>}
+          <div className="space-y-4">{children}</div>
+        </div>
+      </SmoothCollapse>
     </div>
   );
 }

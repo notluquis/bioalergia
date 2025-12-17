@@ -134,14 +134,14 @@ export default function Sidebar({ isOpen, isMobile, onClose, isCollapsed = false
                                 return cn(
                                   "mx-auto flex h-9 w-9 items-center justify-center rounded-xl transition-all active:scale-95",
                                   active || isPending
-                                    ? "bg-primary text-primary-content shadow-primary/20 ring-primary/60 shadow-md ring-1"
+                                    ? "bg-primary text-primary-content shadow-primary/20 shadow-sm"
                                     : "text-base-content/60 hover:bg-base-100 hover:text-base-content"
                                 );
                               }
                               return cn(
                                 "group relative flex items-center gap-3 rounded-lg px-3 py-1.5 text-xs font-medium active:scale-[0.98]",
                                 active || isPending
-                                  ? "bg-primary text-primary-content shadow-primary/20 shadow-md"
+                                  ? "bg-primary text-primary-content shadow-primary/20 shadow-sm"
                                   : "text-base-content/70 hover:bg-base-100 hover:text-base-content"
                               );
                             }}
