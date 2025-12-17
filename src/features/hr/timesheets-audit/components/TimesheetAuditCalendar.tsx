@@ -250,7 +250,7 @@ export default function TimesheetAuditCalendar({
   };
 
   return (
-    <div className="surface-recessed w-full overflow-hidden p-6">
+    <div className="bg-base-200/30 border-base-200 w-full overflow-hidden rounded-xl border p-6">
       <div className="timesheet-audit-calendar-wrapper">
         {loading && (
           <div className="bg-base-100/80 absolute inset-0 z-50 flex items-center justify-center">
