@@ -130,7 +130,8 @@ export function registerAuthRoutes(app: express.Express) {
         return res.status(400).json({ status: "error", message: "Credenciales no válidas" });
       }
 
-      const { email, password } = parsed.data;
+      const { email: rawEmail, password } = parsed.data;
+      const email = rawEmail.toLowerCase();
       const user = await findUserByEmail(email);
       if (!user) {
         logWarn("auth/login:unknown-user", requestContext(req, { email }));

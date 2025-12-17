@@ -47,6 +47,9 @@ export const permissionMap = readonly({
   "production_balance.read": { action: "read", subject: "ProductionBalance" },
   "production_balance.manage": { action: "manage", subject: "ProductionBalance" },
 
+  "daily_balance.read": { action: "read", subject: "DailyBalance" },
+  "daily_balance.manage": { action: "manage", subject: "DailyBalance" },
+
   "calendar.read": { action: "read", subject: "CalendarEvent" },
   "calendar.manage": { action: "manage", subject: "CalendarEvent" },
 

@@ -78,7 +78,7 @@ router.post("/invite", requireAuth, authorize("create", "User"), async (req, res
       const user = await tx.user.create({
         data: {
           personId: targetPersonId,
-          email,
+          email: email.toLowerCase(),
           // role field removed
           passwordHash: tempPassword,
           status: "PENDING_SETUP",

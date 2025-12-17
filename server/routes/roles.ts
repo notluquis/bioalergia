@@ -144,6 +144,23 @@ export function registerRoleRoutes(app: express.Express) {
 
   // --- Role Assignments ---
 
+  app.get(
+    "/api/roles/:id/permissions",
+    authenticate,
+    authorize("read", "Role"),
+    asyncHandler(async (req, res) => {
+      const id = Number(req.params.id);
+      const role = await prisma.role.findUnique({
+        where: { id },
+        include: { permissions: { include: { permission: true } } },
+      });
+      if (!role) return res.status(404).json({ status: "error", message: "Role not found" });
+
+      const permissions = role.permissions.map((rp) => rp.permission);
+      res.json({ status: "ok", permissions });
+    })
+  );
+
   app.post(
     "/api/roles/:id/permissions",
     authenticate,
