@@ -46,9 +46,13 @@ export function registerTimesheetRoutes(app: express.Express) {
           .filter(Boolean)
       );
 
+      // Combinar meses disponibles por defecto con meses que tienen datos
+      const allMonths = new Set([...availableMonths, ...Array.from(monthsWithData)]);
+      const sortedMonths = Array.from(allMonths).sort((a, b) => b.localeCompare(a)); // Descending order
+
       res.json({
         status: "ok",
-        months: availableMonths,
+        months: sortedMonths,
         monthsWithData: Array.from(monthsWithData),
       });
     })
