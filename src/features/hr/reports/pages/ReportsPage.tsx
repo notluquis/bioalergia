@@ -17,7 +17,20 @@ import {
   Pie,
   Cell,
 } from "recharts";
-import { Filter, Search, X, Check, Calendar, BarChart2, List } from "lucide-react";
+import {
+  Filter,
+  Search,
+  X,
+  Check,
+  Calendar,
+  BarChart2,
+  List,
+  Clock,
+  TrendingUp,
+  BarChart3,
+  PieChart as PieChartIcon,
+  type LucideIcon,
+} from "lucide-react";
 import { LOADING_SPINNER_SM } from "@/lib/styles";
 
 import { useAuth } from "@/context/AuthContext";
@@ -28,13 +41,55 @@ import { fetchGlobalTimesheetRange } from "../api";
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
-import { prepareComparisonData, calculateStats } from "../utils";
+import { prepareComparisonData, calculateStats, minutesToTime } from "../utils";
 import type { EmployeeWorkData, ReportGranularity } from "../types";
 import { PAGE_CONTAINER, TITLE_LG } from "@/lib/styles";
 import { cn } from "@/lib/utils";
 
 dayjs.extend(isoWeek);
 dayjs.locale("es");
+
+// Local Stat Card Component for Report specific metrics
+function StatCard({
+  title,
+  value,
+  subtext,
+  icon: Icon,
+  className,
+  suffix,
+}: {
+  title: string;
+  value: string | number;
+  subtext?: string;
+  icon: LucideIcon;
+  className?: string;
+  suffix?: string;
+}) {
+  return (
+    <div className="bg-base-100 border-base-200 relative overflow-hidden rounded-2xl border p-4 shadow-sm transition-shadow hover:shadow-md">
+      <div className="mb-2 flex items-start justify-between">
+        <span className="text-base-content/50 text-xs font-bold tracking-wider uppercase">{title}</span>
+        <div
+          className={cn(
+            "bg-base-200/50 rounded-full p-2",
+            className?.replace("text-", "bg-").replace("500", "100") + "/10"
+          )}
+        >
+          <Icon className={cn("h-4 w-4", className)} />
+        </div>
+      </div>
+      <div className="flex items-baseline gap-1">
+        <span className={cn("text-2xl font-black tracking-tight", className)}>{value}</span>
+        {suffix && <span className="text-base-content/40 text-sm font-medium">{suffix}</span>}
+      </div>
+      {subtext && (
+        <div className="text-base-content/60 mt-1 truncate text-xs" title={subtext}>
+          {subtext}
+        </div>
+      )}
+    </div>
+  );
+}
 
 // Color palette mapped to DaisyUI variables
 const getChartColors = (): string[] => {
@@ -63,7 +118,6 @@ export default function ReportsPage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [, setLoadingEmployees] = useState(true); // removed loadingEmployees usage warning
 
-  // Selection state
   // Selection state
   const [viewMode, setViewMode] = useState<ViewMode>("month");
   const [selectedMonth, setSelectedMonth] = useState<string>("");
@@ -144,6 +198,9 @@ export default function ReportsPage() {
             role: emp.position,
             totalMinutes: 0,
             totalOvertimeMinutes: 0,
+            totalDays: 0,
+            avgDailyMinutes: 0,
+            overtimePercentage: 0,
             dailyBreakdown: {},
             weeklyBreakdown: {},
             monthlyBreakdown: {},
@@ -522,47 +579,40 @@ export default function ReportsPage() {
             </div>
           ) : (
             <>
-              {/* KPIs */}
-              {stats && (
-                <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-                  {[
-                    { label: "Total Horas", value: stats.totalHours, icon: "⏱️", color: "text-primary" },
-                    { label: "Promedio", value: stats.averageHours, icon: "📊", color: "text-secondary" },
-                    {
-                      label: "Máximo",
-                      value: `${stats.maxEmployee.hours}h`,
-                      sub: stats.maxEmployee.name,
-                      icon: "🏆",
-                      color: "text-success",
-                    },
-                    {
-                      label: "Mínimo",
-                      value: `${stats.minEmployee.hours}h`,
-                      sub: stats.minEmployee.name,
-                      icon: "📉",
-                      color: "text-warning",
-                    },
-                  ].map((stat, i) => (
-                    <div
-                      key={i}
-                      className="bg-base-100 border-base-200 rounded-2xl border p-4 shadow-sm transition-shadow hover:shadow-md"
-                    >
-                      <div className="mb-2 flex items-start justify-between">
-                        <span className="text-base-content/50 text-xs font-bold tracking-wider uppercase">
-                          {stat.label}
-                        </span>
-                        <span className="text-lg grayscale">{stat.icon}</span>
-                      </div>
-                      <div className={cn("text-2xl font-black tracking-tight", stat.color)}>{stat.value}</div>
-                      {stat.sub && (
-                        <div className="text-base-content/60 mt-1 truncate text-xs" title={stat.sub}>
-                          {stat.sub}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
+              {/* KPI Grid */}
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                <StatCard title="TOTAL HORAS" value={stats?.totalHours ?? 0} icon={Clock} className="text-primary" />
+                <StatCard
+                  title="PROMEDIO"
+                  value={stats?.averageHours ?? 0}
+                  icon={BarChart3}
+                  className="text-secondary"
+                  subtext={`Por ${granularity === "month" ? "mes" : granularity === "week" ? "sem" : "día"}`}
+                />
+                <StatCard
+                  title="DÍAS TRAB."
+                  value={reportData.reduce((acc, e) => acc + e.totalDays, 0)}
+                  icon={Calendar}
+                  className="text-accent"
+                  subtext="Total asistencias"
+                />
+                <StatCard
+                  title="PROM. DIARIO"
+                  value={
+                    reportData.length
+                      ? parseFloat(
+                          (reportData.reduce((acc, e) => acc + e.avgDailyMinutes, 0) / reportData.length / 60).toFixed(
+                            1
+                          )
+                        )
+                      : 0
+                  }
+                  suffix="h"
+                  icon={TrendingUp}
+                  className="text-success"
+                  subtext="Horas/día asis."
+                />
+              </div>
 
               {/* Main Chart */}
               <div className="bg-base-100 border-base-200 rounded-3xl border p-6 shadow-sm">
@@ -639,11 +689,11 @@ export default function ReportsPage() {
                 {/* Pie Chart */}
                 {reportData.length > 1 && (
                   <div className="bg-base-100 border-base-200 rounded-3xl border p-6 shadow-sm">
-                    <h3 className="mb-6 flex items-center gap-2 text-lg font-bold">
-                      <PieChart className="text-secondary h-5 w-5" />
+                    <h3 className="mb-2 flex items-center gap-2 text-lg font-bold">
+                      <PieChartIcon className="text-secondary h-5 w-5" />
                       Distribución Total
                     </h3>
-                    <div className="relative h-62.5 w-full">
+                    <div className="h-80 w-full">
                       <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                           <Pie
@@ -652,24 +702,31 @@ export default function ReportsPage() {
                               value: parseFloat((emp.totalMinutes / 60).toFixed(1)),
                             }))}
                             cx="50%"
-                            cy="50%"
-                            innerRadius={60}
-                            outerRadius={80}
+                            cy="45%"
+                            innerRadius={70}
+                            outerRadius={90}
                             paddingAngle={5}
                             dataKey="value"
                           >
                             {reportData.map((_, idx) => (
-                              <Cell key={`cell-${idx}`} fill={chartColors[idx % chartColors.length]} stroke="none" />
+                              <Cell
+                                key={`cell-${idx}`}
+                                fill={chartColors[idx % chartColors.length]}
+                                stroke="hsl(var(--b1))"
+                                strokeWidth={2}
+                              />
                             ))}
                           </Pie>
-                          <Tooltip />
-                          <Legend verticalAlign="middle" align="right" layout="vertical" iconType="circle" />
+                          <Tooltip
+                            contentStyle={{
+                              borderRadius: "12px",
+                              border: "none",
+                              boxShadow: "0 4px 6px -1px hsl(var(--b3) / 0.5)",
+                            }}
+                          />
+                          <Legend verticalAlign="bottom" align="center" height={70} iconType="circle" />
                         </PieChart>
                       </ResponsiveContainer>
-                      {/* Center Text */}
-                      <div className="pointer-events-none absolute inset-0 -ml-24 flex items-center justify-center">
-                        <span className="text-2xl font-bold opacity-30">%</span>
-                      </div>
                     </div>
                   </div>
                 )}
@@ -690,8 +747,11 @@ export default function ReportsPage() {
                       <thead>
                         <tr className="border-base-200 text-base-content/60 border-b">
                           <th>Empleado</th>
+                          <th className="text-right">Días</th>
+                          <th className="text-right">Diario</th>
                           <th className="text-right">Horas</th>
-                          <th className="text-right">Extras</th>
+                          <th className="text-right">Ext.</th>
+                          <th className="text-right">%</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -706,11 +766,20 @@ export default function ReportsPage() {
                                 </div>
                               </div>
                             </td>
+                            <td className="text-right font-medium">{emp.totalDays}</td>
+                            <td className="text-right font-mono">{minutesToTime(emp.avgDailyMinutes)}</td>
                             <td className="text-right font-mono text-base">
                               {parseFloat((emp.totalMinutes / 60).toFixed(1))}
                             </td>
                             <td className="text-warning text-right font-mono text-base">
                               {parseFloat((emp.totalOvertimeMinutes / 60).toFixed(1))}
+                            </td>
+                            <td className="text-right text-xs">
+                              {emp.overtimePercentage > 0 ? (
+                                <span className="badge badge-sm badge-ghost">{emp.overtimePercentage}%</span>
+                              ) : (
+                                <span className="text-base-content/30">-</span>
+                              )}
                             </td>
                           </tr>
                         ))}
@@ -718,8 +787,11 @@ export default function ReportsPage() {
                       <tfoot className="border-base-200 border-t-2 border-double">
                         <tr className="text-base-content font-bold">
                           <td>Total</td>
+                          <td className="text-right">{reportData.reduce((acc, e) => acc + e.totalDays, 0)}</td>
+                          <td className="text-right">-</td>
                           <td className="text-right">{stats?.totalHours}</td>
                           <td className="text-right">-</td>
+                          <td className="text-right"></td>
                         </tr>
                       </tfoot>
                     </table>

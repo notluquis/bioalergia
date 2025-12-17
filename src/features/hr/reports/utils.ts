@@ -65,12 +65,23 @@ export function processEmployeeData(
   const totalMinutes = entries.reduce((sum, e) => sum + e.worked_minutes, 0);
   const totalOvertimeMinutes = entries.reduce((sum, e) => sum + e.overtime_minutes, 0);
 
+  // Calculate distinct days worked (entries might be multiple per day, though typically 1 per day/emp in this system, but let's be safe)
+  const uniqueDays = new Set(entries.map((e) => e.work_date));
+  const totalDays = uniqueDays.size;
+
+  const avgDailyMinutes = totalDays > 0 ? Math.round(totalMinutes / totalDays) : 0;
+  const overtimePercentage =
+    totalMinutes > 0 ? parseFloat(((totalOvertimeMinutes / totalMinutes) * 100).toFixed(1)) : 0;
+
   return {
     employeeId,
     fullName,
     role,
     totalMinutes,
     totalOvertimeMinutes,
+    totalDays,
+    avgDailyMinutes,
+    overtimePercentage,
     dailyBreakdown: groupByDay(entries),
     weeklyBreakdown: groupByWeek(entries),
     monthlyBreakdown: groupByMonth(entries),
