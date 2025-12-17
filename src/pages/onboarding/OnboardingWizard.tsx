@@ -180,9 +180,22 @@ export default function OnboardingWizard() {
     setError(null);
 
     try {
+      // Logic to prevent surname duplication in 'names' field
+      let cleanNames = profile.names.trim();
+      if (profile.motherName) {
+        const regex = new RegExp(`\\s+${profile.motherName.trim()}$`, "i");
+        cleanNames = cleanNames.replace(regex, "");
+      }
+      if (profile.fatherName) {
+        const regex = new RegExp(`\\s+${profile.fatherName.trim()}$`, "i");
+        cleanNames = cleanNames.replace(regex, "");
+      }
+      cleanNames = cleanNames.trim();
+
       // 1. Save Profile & Password
       await apiClient.post("/api/users/setup", {
         ...profile,
+        names: cleanNames,
         password,
       });
 
@@ -285,7 +298,7 @@ export default function OnboardingWizard() {
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="form-control">
                   <Input
-                    label="Nombres"
+                    label="Nombres (Sin Apellidos)"
                     value={profile.names}
                     onChange={(e) => setProfile({ ...profile, names: e.target.value })}
                     required

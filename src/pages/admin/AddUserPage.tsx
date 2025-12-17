@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/context/ToastContext";
 import { apiClient } from "@/lib/apiClient";
 import Button from "@/components/ui/Button";
@@ -22,6 +22,7 @@ type Person = {
 
 export default function AddUserPage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { success, error } = useToast();
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
@@ -73,6 +74,10 @@ export default function AddUserPage() {
       }
 
       await apiClient.post("/api/users/invite", payload);
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      // Also invalidate people list as one person now has a user
+      queryClient.invalidateQueries({ queryKey: ["people"] });
+
       success("Usuario creado exitosamente");
       navigate("/settings/users");
     } catch (err) {

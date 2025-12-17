@@ -30,7 +30,7 @@ export function BottomNav() {
   };
 
   return (
-    <nav className="pb-safe-bottom fixed bottom-5 left-1/2 z-50 w-[calc(100%-2.5rem)] max-w-lg -translate-x-1/2 px-2 pr-[max(0.5rem,env(safe-area-inset-right))] pl-[max(0.5rem,env(safe-area-inset-left))] md:hidden">
+    <nav className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] left-1/2 z-50 w-[calc(100%-2.5rem)] max-w-lg -translate-x-1/2 px-2 pr-[max(0.5rem,env(safe-area-inset-right))] pl-[max(0.5rem,env(safe-area-inset-left))] md:hidden">
       <div className="bottom-bar-glass flex items-stretch gap-1 px-4 py-2">
         {NAV_ITEMS.map(({ path, icon: Icon, label }) => {
           const active = isActive(path);
