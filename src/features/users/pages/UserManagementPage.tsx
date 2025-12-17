@@ -23,7 +23,7 @@ import Input from "@/components/ui/Input";
 import { cn } from "@/lib/utils";
 import { apiClient } from "@/lib/apiClient";
 import { getPersonInitials, getPersonFullName } from "@/lib/person";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/Tooltip";
+
 import { PAGE_CONTAINER, TITLE_LG, BADGE_SM } from "@/lib/styles";
 
 dayjs.extend(relativeTime);
@@ -185,27 +185,6 @@ export default function UserManagementPage() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className={TITLE_LG}>Usuarios y seguridad</h1>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button className="text-info hover:text-info/80 transition-colors">
-                    <ShieldCheck size={18} />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="right" className="max-w-xs">
-                  <div className="space-y-1.5 text-xs">
-                    <p className="font-semibold">Recomendaciones de seguridad</p>
-                    <p>
-                      <strong>MFA:</strong> Código de verificación adicional.
-                    </p>
-                    <p>
-                      <strong>Passkey:</strong> Huella digital o Face ID.
-                    </p>
-                    <p className="text-xs opacity-75">Se recomienda activar ambas.</p>
-                  </div>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
           </div>
           <p className="text-base-content/60 text-sm">
             Gestiona el acceso, roles y seguridad de las cuentas del sistema.
