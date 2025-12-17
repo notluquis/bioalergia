@@ -157,7 +157,12 @@ export default function Sidebar({ isOpen, isMobile, onClose, isCollapsed = false
                                         <item.icon className="h-5 w-5" />
                                       </span>
                                     </TooltipTrigger>
-                                    <TooltipContent side="right">{item.label}</TooltipContent>
+                                    <TooltipContent
+                                      side="right"
+                                      className="bg-base-300 text-base-content border-base-200/50 z-50 font-medium"
+                                    >
+                                      {item.label}
+                                    </TooltipContent>
                                   </Tooltip>
                                 );
                               }
