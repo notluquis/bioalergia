@@ -17,19 +17,21 @@ import {
   Pie,
   Cell,
 } from "recharts";
-import { Filter, Plus, TrendingUp, X } from "lucide-react";
-import { INPUT_SEARCH_SM, LOADING_SPINNER_SM } from "@/lib/styles";
+import { Filter, Search, X, Check, Calendar, BarChart2, List } from "lucide-react";
+import { LOADING_SPINNER_SM } from "@/lib/styles";
 
 import { useAuth } from "@/context/AuthContext";
 import { fetchEmployees } from "@/features/hr/employees/api";
 import type { Employee } from "@/features/hr/employees/types";
 import { useMonths } from "@/features/hr/timesheets/hooks/useMonths";
-import { fetchTimesheetSummary } from "@/features/hr/timesheets/api";
+import { fetchGlobalTimesheetRange } from "../api";
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
 import { prepareComparisonData, calculateStats } from "../utils";
 import type { EmployeeWorkData, ReportGranularity } from "../types";
 import { PAGE_CONTAINER, TITLE_LG } from "@/lib/styles";
+import { cn } from "@/lib/utils";
 
 dayjs.extend(isoWeek);
 dayjs.locale("es");
@@ -40,27 +42,38 @@ const getChartColors = (): string[] => {
   const root = window.getComputedStyle(document.documentElement);
   return [
     `hsl(${root.getPropertyValue("--p")})`,
-    `hsl(${root.getPropertyValue("--e")})`,
+    `hsl(${root.getPropertyValue("--s")})`,
+    `hsl(${root.getPropertyValue("--a")})`,
+    `hsl(${root.getPropertyValue("--n")})`,
+    `hsl(${root.getPropertyValue("--in")})`,
     `hsl(${root.getPropertyValue("--su")})`,
     `hsl(${root.getPropertyValue("--wa")})`,
-    `hsl(${root.getPropertyValue("--in")})`,
-    `hsl(${root.getPropertyValue("--o")})`,
+    `hsl(${root.getPropertyValue("--er")})`,
   ];
 };
+
+type ViewMode = "month" | "range" | "all";
 
 export default function ReportsPage() {
   const { can } = useAuth();
   const canView = can("read", "Report");
 
   // Data loading
-  const { months } = useMonths();
+  const { months, monthsWithData } = useMonths();
   const [employees, setEmployees] = useState<Employee[]>([]);
-  const [loadingEmployees, setLoadingEmployees] = useState(true);
+  const [, setLoadingEmployees] = useState(true); // removed loadingEmployees usage warning
 
   // Selection state
+  // Selection state
+  const [viewMode, setViewMode] = useState<ViewMode>("month");
   const [selectedMonth, setSelectedMonth] = useState<string>("");
+  const [startDate, setStartDate] = useState<string>(() => dayjs().startOf("month").format("YYYY-MM-DD"));
+  const [endDate, setEndDate] = useState<string>(() => dayjs().endOf("month").format("YYYY-MM-DD"));
+
   const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<number[]>([]);
   const [granularity, setGranularity] = useState<ReportGranularity>("month");
+
+  // UI State
   const [showEmployeeDropdown, setShowEmployeeDropdown] = useState(false);
   const [employeeSearch, setEmployeeSearch] = useState("");
 
@@ -99,54 +112,129 @@ export default function ReportsPage() {
     }
   }, [months, selectedMonth]);
 
+  // Set granularity based on mode
+  useEffect(() => {
+    if (viewMode === "month") setGranularity("week");
+    else if (viewMode === "all") setGranularity("month");
+  }, [viewMode]);
+
+  // Core processing logic for raw entries
+  interface RawTimesheetEntry {
+    employee_id: number;
+    work_date: string;
+    worked_minutes: number;
+    overtime_minutes: number;
+    // other fields if needed
+  }
+
+  const processRawEntries = useCallback(
+    (entries: RawTimesheetEntry[], employeeIds: number[]) => {
+      const map = new Map<number, EmployeeWorkData>();
+
+      // Init map for selected employees
+      employeeIds.forEach((id) => {
+        const emp = employees.find((e) => e.id === id);
+        if (emp) {
+          map.set(id, {
+            employeeId: id,
+            fullName: emp.full_name,
+            role: emp.position,
+            totalMinutes: 0,
+            totalOvertimeMinutes: 0,
+            dailyBreakdown: {},
+            weeklyBreakdown: {},
+            monthlyBreakdown: {},
+          });
+        }
+      });
+
+      // Populate data
+      entries.forEach((entry) => {
+        if (!map.has(entry.employee_id)) return;
+        const data = map.get(entry.employee_id)!;
+
+        data.totalMinutes += entry.worked_minutes;
+        data.totalOvertimeMinutes += entry.overtime_minutes;
+
+        // Daily
+        const dateKey = entry.work_date;
+        data.dailyBreakdown[dateKey] = (data.dailyBreakdown[dateKey] || 0) + entry.worked_minutes;
+
+        // Weekly
+        const weekKey = dayjs(entry.work_date).startOf("isoWeek").format("YYYY-MM-DD");
+        data.weeklyBreakdown[weekKey] = (data.weeklyBreakdown[weekKey] || 0) + entry.worked_minutes;
+
+        // Monthly
+        const monthKey = dayjs(entry.work_date).format("YYYY-MM");
+        data.monthlyBreakdown[monthKey] = (data.monthlyBreakdown[monthKey] || 0) + entry.worked_minutes;
+      });
+
+      return Array.from(map.values());
+    },
+    [employees]
+  );
+
   // Load report data
   const handleGenerateReport = useCallback(async () => {
-    if (!selectedMonth || selectedEmployeeIds.length === 0) return;
+    if (selectedEmployeeIds.length === 0) return;
 
     setLoading(true);
     setError(null);
     try {
-      const response = await fetchTimesheetSummary(selectedMonth);
+      let data: EmployeeWorkData[] = [];
 
-      // Map summary data to our format
-      const processedData = response.employees
-        .filter((emp) => selectedEmployeeIds.includes(emp.employeeId))
-        .map((emp) => ({
-          employeeId: emp.employeeId,
-          fullName: emp.fullName,
-          role: emp.role,
-          totalMinutes: emp.workedMinutes,
-          totalOvertimeMinutes: emp.overtimeMinutes,
-          dailyBreakdown: {},
-          weeklyBreakdown: {},
-          monthlyBreakdown: { [selectedMonth]: emp.workedMinutes },
-        }));
+      if (viewMode === "month") {
+        if (!selectedMonth) return;
+        // Fetch raw detail for the month to support granular charts
+        const start = dayjs(`${selectedMonth}-01`).startOf("month").format("YYYY-MM-DD");
+        const end = dayjs(`${selectedMonth}-01`).endOf("month").format("YYYY-MM-DD");
+        const entries = await fetchGlobalTimesheetRange(start, end);
+        data = processRawEntries(entries, selectedEmployeeIds);
+      } else {
+        let start = startDate;
+        let end = endDate;
 
-      setReportData(processedData);
+        if (viewMode === "all") {
+          const available = Array.from(monthsWithData).sort();
+          if (available.length > 0) {
+            start = dayjs(`${available[0]}-01`).startOf("month").format("YYYY-MM-DD");
+            end = dayjs(`${available[available.length - 1]}-01`)
+              .endOf("month")
+              .format("YYYY-MM-DD");
+          } else {
+            // Fallback
+            start = dayjs().subtract(1, "year").format("YYYY-MM-DD");
+            end = dayjs().format("YYYY-MM-DD");
+          }
+        }
+
+        const entries = await fetchGlobalTimesheetRange(start, end);
+        data = processRawEntries(entries, selectedEmployeeIds);
+      }
+
+      setReportData(data);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Error al generar el reporte";
       setError(message);
     } finally {
       setLoading(false);
     }
-  }, [selectedMonth, selectedEmployeeIds]);
+  }, [viewMode, selectedMonth, startDate, endDate, selectedEmployeeIds, monthsWithData, processRawEntries]);
 
   const handleEmployeeToggle = useCallback((employeeId: number) => {
     setSelectedEmployeeIds((prev) => {
-      if (prev.includes(employeeId)) {
-        return prev.filter((id) => id !== employeeId);
-      }
+      if (prev.includes(employeeId)) return prev.filter((id) => id !== employeeId);
       return [...prev, employeeId];
     });
   }, []);
 
-  const handleRemoveEmployee = useCallback((employeeId: number) => {
-    setSelectedEmployeeIds((prev) => prev.filter((id) => id !== employeeId));
-  }, []);
-
-  const handleClearEmployees = useCallback(() => {
-    setSelectedEmployeeIds([]);
-  }, []);
+  const handleSelectAll = useCallback(() => {
+    if (filteredEmployees.length === selectedEmployeeIds.length) {
+      setSelectedEmployeeIds([]);
+    } else {
+      setSelectedEmployeeIds(filteredEmployees.map((e) => e.id));
+    }
+  }, [filteredEmployees, selectedEmployeeIds]);
 
   // Prepare chart data
   const chartData = useMemo(
@@ -165,308 +253,458 @@ export default function ReportsPage() {
     <section className={PAGE_CONTAINER}>
       {/* Header */}
       <header>
-        <h1 className={TITLE_LG}>Reportería de horas</h1>
+        <h1 className={TITLE_LG}>Reportería y Análisis</h1>
         <p className="text-base-content/70 mt-1 text-sm">
-          Analiza horas trabajadas, compara empleados y genera reportes detallados
+          Visualiza tendencias, compara desempeño y exporta datos históricos
         </p>
       </header>
 
-      {/* Filters */}
-      <div className="border-base-300 bg-base-100 rounded-2xl border p-6 shadow-sm">
-        <div className="mb-4 flex items-center gap-3">
-          <Filter className="text-primary h-5 w-5" />
-          <h2 className="text-base-content text-lg font-semibold">Filtros y opciones</h2>
-        </div>
-
-        <div className="space-y-4">
-          {/* Month Selection */}
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label className="text-base-content mb-2 block text-sm font-medium">Mes</label>
-              <select
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(e.target.value)}
-                className="select select-bordered w-full"
-              >
-                {months.map((month) => (
-                  <option key={month} value={month}>
-                    {dayjs(`${month}-01`).format("MMMM YYYY")}
-                  </option>
-                ))}
-              </select>
+      {/* Main Controls */}
+      <div className="grid gap-6 lg:grid-cols-12">
+        {/* Left Column: Filters */}
+        <div className="space-y-6 lg:col-span-4">
+          <div className="bg-base-100 border-base-200 space-y-6 rounded-2xl border p-5 shadow-sm">
+            <div className="border-base-200 flex items-center gap-2 border-b pb-2">
+              <Filter className="text-primary h-5 w-5" />
+              <h2 className="text-lg font-semibold">Configuración</h2>
             </div>
 
-            {/* Granularity Selection */}
-            <div>
-              <label className="text-base-content mb-2 block text-sm font-medium">Agrupar por</label>
-              <select
-                value={granularity}
-                onChange={(e) => setGranularity(e.target.value as ReportGranularity)}
-                className="select select-bordered w-full"
-              >
-                <option value="day">Días</option>
-                <option value="week">Semanas</option>
-                <option value="month">Meses</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Employee Selection */}
-          <div>
-            <label className="text-base-content mb-2 block text-sm font-medium">
-              Empleados seleccionados ({selectedEmployeeIds.length})
-            </label>
-
-            {/* Selected Employees */}
-            {selectedEmployeeIds.length > 0 && (
-              <div className="mb-3 flex flex-wrap gap-2">
-                {selectedEmployeeIds.map((id) => {
-                  const emp = activeEmployees.find((e) => e.id === id);
-                  if (!emp) return null;
-                  return (
-                    <div key={id} className="badge badge-primary gap-2 px-3 py-2">
-                      <span>{emp.full_name}</span>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveEmployee(id)}
-                        className="btn btn-ghost btn-xs h-5 w-5 p-0"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </div>
-                  );
-                })}
-                {selectedEmployeeIds.length > 0 && (
-                  <button type="button" onClick={handleClearEmployees} className="link link-error text-sm">
-                    Limpiar
-                  </button>
+            {/* View Mode Tabs */}
+            <div role="tablist" className="tabs tabs-boxed bg-base-200/50 p-1">
+              <a
+                role="tab"
+                className={cn(
+                  "tab transition-all duration-200",
+                  viewMode === "month" && "tab-active bg-white shadow-sm"
                 )}
-              </div>
-            )}
-
-            {/* Add Employee Dropdown */}
-            <div className="relative">
-              <button
-                type="button"
-                className="btn btn-outline btn-sm w-full justify-start gap-2"
-                onClick={() => setShowEmployeeDropdown(!showEmployeeDropdown)}
+                onClick={() => setViewMode("month")}
               >
-                <Plus className="h-4 w-4" />
-                Agregar empleado
-              </button>
+                Mensual
+              </a>
+              <a
+                role="tab"
+                className={cn(
+                  "tab transition-all duration-200",
+                  viewMode === "range" && "tab-active bg-white shadow-sm"
+                )}
+                onClick={() => setViewMode("range")}
+              >
+                Rango
+              </a>
+              <a
+                role="tab"
+                className={cn("tab transition-all duration-200", viewMode === "all" && "tab-active bg-white shadow-sm")}
+                onClick={() => setViewMode("all")}
+              >
+                Todo
+              </a>
+            </div>
 
-              {showEmployeeDropdown && (
-                <>
-                  <div className="fixed inset-0 z-40" onClick={() => setShowEmployeeDropdown(false)} />
-                  <div className="border-base-300 bg-base-100 absolute top-full right-0 left-0 z-50 mt-2 rounded-xl border shadow-xl">
-                    <div className="border-base-300 border-b p-3">
-                      <label className={INPUT_SEARCH_SM}>
-                        <span className="text-base-content/50">🔍</span>
-                        <input
-                          type="text"
-                          placeholder="Buscar..."
-                          value={employeeSearch}
-                          onChange={(e) => setEmployeeSearch(e.target.value)}
-                          className="grow bg-transparent outline-none"
-                        />
-                      </label>
+            {/* Date Controls */}
+            <div className="space-y-4">
+              {viewMode === "month" && (
+                <div className="form-control">
+                  <label className="label text-sm font-medium">Seleccionar Mes</label>
+                  <select
+                    value={selectedMonth}
+                    onChange={(e) => setSelectedMonth(e.target.value)}
+                    className="select select-bordered w-full"
+                  >
+                    {months.map((month) => (
+                      <option key={month} value={month}>
+                        {dayjs(`${month}-01`).format("MMMM YYYY")} {monthsWithData.has(month) ? "✓" : ""}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {viewMode === "range" && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="form-control">
+                    <label className="label text-sm font-medium">Desde</label>
+                    <Input
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      className="w-full"
+                    />
+                  </div>
+                  <div className="form-control">
+                    <label className="label text-sm font-medium">Hasta</label>
+                    <Input
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      className="w-full"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {viewMode === "all" && (
+                <div className="alert bg-base-200/50 text-sm">
+                  <Calendar className="text-primary h-4 w-4" />
+                  <span>Se analizará todo el historial disponible en la base de datos.</span>
+                </div>
+              )}
+
+              <div className="form-control">
+                <label className="label text-sm font-medium">Agrupación temporal</label>
+                <select
+                  value={granularity}
+                  onChange={(e) => setGranularity(e.target.value as ReportGranularity)}
+                  className="select select-bordered w-full"
+                >
+                  <option value="day">Diaria</option>
+                  <option value="week">Semanal</option>
+                  <option value="month">Mensual</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="divider my-2"></div>
+
+            {/* Employee Selector */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium">Empleados ({selectedEmployeeIds.length})</label>
+                <button onClick={handleSelectAll} className="link link-primary text-xs no-underline hover:underline">
+                  {selectedEmployeeIds.length === filteredEmployees.length ? "Ninguno" : "Todos"}
+                </button>
+              </div>
+
+              {/* Selected Tags */}
+              {selectedEmployeeIds.length > 0 && (
+                <div className="custom-scrollbar flex max-h-32 flex-wrap gap-1.5 overflow-y-auto p-1">
+                  {selectedEmployeeIds.slice(0, 10).map((id) => {
+                    const emp = activeEmployees.find((e) => e.id === id);
+                    if (!emp) return null;
+                    return (
+                      <div key={id} className="badge badge-primary badge-sm gap-1 py-3 text-xs">
+                        {/* Fix: use fatherName derived or just fallback, keeping it simple */}
+                        <span className="max-w-25 truncate">{emp.person?.names.split(" ")[0] ?? emp.full_name}</span>
+                        <button
+                          onClick={() => setSelectedEmployeeIds((p) => p.filter((x) => x !== id))}
+                          className="hover:text-white/80"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    );
+                  })}
+                  {selectedEmployeeIds.length > 10 && (
+                    <div className="badge badge-ghost badge-sm py-3 text-xs">
+                      +{selectedEmployeeIds.length - 10} más
                     </div>
+                  )}
+                </div>
+              )}
 
-                    <ul className="max-h-64 overflow-y-auto p-2">
-                      {loadingEmployees ? (
-                        <li className="flex justify-center p-4">
-                          <span className={LOADING_SPINNER_SM} />
-                        </li>
-                      ) : filteredEmployees.length === 0 ? (
-                        <li className="text-base-content/50 p-4 text-center text-sm">No se encontraron empleados</li>
-                      ) : (
-                        filteredEmployees.map((emp) => {
+              {/* Add Dropdown */}
+              <div className="relative">
+                <button
+                  type="button"
+                  className="btn btn-outline btn-sm w-full justify-between font-normal"
+                  onClick={() => setShowEmployeeDropdown(!showEmployeeDropdown)}
+                >
+                  <span>Seleccionar empleados...</span>
+                  <Search className="h-3.5 w-3.5 opacity-50" />
+                </button>
+
+                {showEmployeeDropdown && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setShowEmployeeDropdown(false)} />
+                    <div className="bg-base-100 border-base-200 absolute top-full right-0 left-0 z-50 mt-2 flex max-h-80 flex-col overflow-hidden rounded-xl border shadow-xl">
+                      <div className="border-base-200 bg-base-50 border-b p-2">
+                        <label className="input input-sm input-bordered flex items-center gap-2 bg-white">
+                          <Search className="h-4 w-4 opacity-50" />
+                          <input
+                            type="text"
+                            className="grow"
+                            placeholder="Buscar..."
+                            value={employeeSearch}
+                            onChange={(e) => setEmployeeSearch(e.target.value)}
+                            autoFocus
+                          />
+                        </label>
+                      </div>
+                      <div className="overflow-y-auto p-1">
+                        {filteredEmployees.map((emp) => {
                           const isSelected = selectedEmployeeIds.includes(emp.id);
                           return (
-                            <li key={emp.id}>
-                              <button
-                                type="button"
-                                onClick={() => handleEmployeeToggle(emp.id)}
-                                className={`flex w-full items-center gap-2 rounded-lg p-2 transition-all ${
-                                  isSelected ? "bg-primary/20 text-primary" : "hover:bg-base-200"
-                                }`}
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={isSelected}
-                                  onChange={() => {}}
-                                  className="checkbox checkbox-sm checkbox-primary"
-                                />
-                                <span className="truncate">{emp.full_name}</span>
-                              </button>
-                            </li>
+                            <button
+                              key={emp.id}
+                              onClick={() => handleEmployeeToggle(emp.id)}
+                              className={cn(
+                                "flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition-colors",
+                                isSelected
+                                  ? "bg-primary/10 text-primary font-medium"
+                                  : "hover:bg-base-200 text-base-content"
+                              )}
+                            >
+                              <span className="truncate">{emp.full_name}</span>
+                              {isSelected && <Check className="ml-2 h-4 w-4" />}
+                            </button>
                           );
-                        })
-                      )}
-                    </ul>
-                  </div>
-                </>
-              )}
+                        })}
+                        {filteredEmployees.length === 0 && (
+                          <div className="text-base-content/50 p-4 text-center text-sm">No hay resultados</div>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
-          </div>
 
-          {/* Generate Button */}
-          <Button
-            variant="primary"
-            className="w-full"
-            onClick={handleGenerateReport}
-            disabled={!selectedMonth || selectedEmployeeIds.length === 0 || loading}
-          >
-            {loading ? "Generando..." : "Generar reporte"}
-          </Button>
+            <Button
+              variant="primary"
+              className="shadow-primary/20 mt-4 w-full shadow-md"
+              onClick={handleGenerateReport}
+              disabled={selectedEmployeeIds.length === 0 || loading}
+            >
+              {loading ? (
+                <>
+                  <span className={LOADING_SPINNER_SM} />
+                  Analizando...
+                </>
+              ) : (
+                "Generar Informe"
+              )}
+            </Button>
+
+            {error && (
+              <Alert variant="error" className="text-xs">
+                {error}
+              </Alert>
+            )}
+          </div>
+        </div>
+
+        {/* Right Column: Results */}
+        <div className="space-y-6 lg:col-span-8">
+          {reportData.length === 0 ? (
+            <div className="border-base-300 bg-base-50/50 flex h-full min-h-100 flex-col items-center justify-center rounded-3xl border-2 border-dashed p-8 text-center">
+              <div className="bg-base-200 mb-6 flex h-20 w-20 items-center justify-center rounded-full">
+                <BarChart2 className="text-base-content/30 h-10 w-10" />
+              </div>
+              <h3 className="text-base-content text-xl font-bold">Sin datos para mostrar</h3>
+              <p className="text-base-content/60 mt-2 max-w-sm">
+                Selecciona el periodo y los empleados que deseas analizar para generar gráficas y estadísticas
+                detalladas.
+              </p>
+            </div>
+          ) : (
+            <>
+              {/* KPIs */}
+              {stats && (
+                <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                  {[
+                    { label: "Total Horas", value: stats.totalHours, icon: "⏱️", color: "text-primary" },
+                    { label: "Promedio", value: stats.averageHours, icon: "📊", color: "text-secondary" },
+                    {
+                      label: "Máximo",
+                      value: `${stats.maxEmployee.hours}h`,
+                      sub: stats.maxEmployee.name,
+                      icon: "🏆",
+                      color: "text-success",
+                    },
+                    {
+                      label: "Mínimo",
+                      value: `${stats.minEmployee.hours}h`,
+                      sub: stats.minEmployee.name,
+                      icon: "📉",
+                      color: "text-warning",
+                    },
+                  ].map((stat, i) => (
+                    <div
+                      key={i}
+                      className="bg-base-100 border-base-200 rounded-2xl border p-4 shadow-sm transition-shadow hover:shadow-md"
+                    >
+                      <div className="mb-2 flex items-start justify-between">
+                        <span className="text-base-content/50 text-xs font-bold tracking-wider uppercase">
+                          {stat.label}
+                        </span>
+                        <span className="text-lg grayscale">{stat.icon}</span>
+                      </div>
+                      <div className={cn("text-2xl font-black tracking-tight", stat.color)}>{stat.value}</div>
+                      {stat.sub && (
+                        <div className="text-base-content/60 mt-1 truncate text-xs" title={stat.sub}>
+                          {stat.sub}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Main Chart */}
+              <div className="bg-base-100 border-base-200 rounded-3xl border p-6 shadow-sm">
+                <div className="mb-6 flex items-center justify-between">
+                  <h3 className="flex items-center gap-2 text-lg font-bold">
+                    <BarChart2 className="text-primary h-5 w-5" />
+                    Comparativa Temporal
+                  </h3>
+                  <div className="badge badge-outline text-xs">
+                    {granularity === "day" ? "Diario" : granularity === "week" ? "Semanal" : "Mensual"}
+                  </div>
+                </div>
+
+                <div className="h-87.5 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    {granularity === "month" ? (
+                      <BarChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.3} />
+                        <XAxis dataKey="period" tick={{ fontSize: 12 }} stroke="hsl(var(--bc) / 0.4)" />
+                        <YAxis tick={{ fontSize: 12 }} stroke="hsl(var(--bc) / 0.4)" />
+                        <Tooltip
+                          contentStyle={{
+                            borderRadius: "12px",
+                            border: "none",
+                            boxShadow: "0 4px 6px -1px hsl(var(--b3) / 0.5)",
+                          }}
+                          cursor={{ fill: "hsl(var(--bc) / 0.05)" }}
+                        />
+                        <Legend />
+                        {reportData.map((emp, idx) => (
+                          <Bar
+                            key={emp.employeeId}
+                            dataKey={emp.fullName}
+                            fill={chartColors[idx % chartColors.length]}
+                            radius={[4, 4, 0, 0]}
+                            maxBarSize={50}
+                          />
+                        ))}
+                      </BarChart>
+                    ) : (
+                      <LineChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.3} />
+                        <XAxis dataKey="period" tick={{ fontSize: 12 }} stroke="hsl(var(--bc) / 0.4)" />
+                        <YAxis tick={{ fontSize: 12 }} stroke="hsl(var(--bc) / 0.4)" />
+                        <Tooltip
+                          contentStyle={{
+                            borderRadius: "12px",
+                            border: "none",
+                            boxShadow: "0 4px 6px -1px hsl(var(--b3) / 0.5)",
+                          }}
+                          cursor={{ fill: "hsl(var(--bc) / 0.05)" }}
+                        />
+                        <Legend iconType="circle" />
+                        {reportData.map((emp, idx) => (
+                          <Line
+                            key={emp.employeeId}
+                            type="monotone"
+                            dataKey={emp.fullName}
+                            stroke={chartColors[idx % chartColors.length]}
+                            strokeWidth={3}
+                            dot={{ r: 4, strokeWidth: 2 }}
+                            activeDot={{ r: 6 }}
+                            connectNulls
+                          />
+                        ))}
+                      </LineChart>
+                    )}
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Secondary Details Grid */}
+              <div className="grid gap-6 lg:grid-cols-2">
+                {/* Pie Chart */}
+                {reportData.length > 1 && (
+                  <div className="bg-base-100 border-base-200 rounded-3xl border p-6 shadow-sm">
+                    <h3 className="mb-6 flex items-center gap-2 text-lg font-bold">
+                      <PieChart className="text-secondary h-5 w-5" />
+                      Distribución Total
+                    </h3>
+                    <div className="relative h-62.5 w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={reportData.map((emp) => ({
+                              name: emp.fullName,
+                              value: parseFloat((emp.totalMinutes / 60).toFixed(1)),
+                            }))}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={60}
+                            outerRadius={80}
+                            paddingAngle={5}
+                            dataKey="value"
+                          >
+                            {reportData.map((_, idx) => (
+                              <Cell key={`cell-${idx}`} fill={chartColors[idx % chartColors.length]} stroke="none" />
+                            ))}
+                          </Pie>
+                          <Tooltip />
+                          <Legend verticalAlign="middle" align="right" layout="vertical" iconType="circle" />
+                        </PieChart>
+                      </ResponsiveContainer>
+                      {/* Center Text */}
+                      <div className="pointer-events-none absolute inset-0 -ml-24 flex items-center justify-center">
+                        <span className="text-2xl font-bold opacity-30">%</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Detailed Table */}
+                <div
+                  className={cn(
+                    "bg-base-100 border-base-200 flex flex-col rounded-3xl border p-6 shadow-sm",
+                    reportData.length <= 1 && "lg:col-span-2"
+                  )}
+                >
+                  <h3 className="mb-4 flex items-center gap-2 text-lg font-bold">
+                    <List className="text-accent h-5 w-5" />
+                    Detalle Numérico
+                  </h3>
+                  <div className="grow overflow-x-auto">
+                    <table className="table-sm table">
+                      <thead>
+                        <tr className="border-base-200 text-base-content/60 border-b">
+                          <th>Empleado</th>
+                          <th className="text-right">Horas</th>
+                          <th className="text-right">Extras</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {reportData.map((emp) => (
+                          <tr key={emp.employeeId} className="hover:bg-base-50/50 border-0 transition-colors">
+                            <td className="font-medium">
+                              <div className="flex items-center gap-2">
+                                <div className="bg-primary/20 h-6 w-1 rounded-full"></div>
+                                <div>
+                                  <div className="font-bold">{emp.fullName}</div>
+                                  <div className="text-[10px] tracking-widest uppercase opacity-50">{emp.role}</div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="text-right font-mono text-base">
+                              {parseFloat((emp.totalMinutes / 60).toFixed(1))}
+                            </td>
+                            <td className="text-warning text-right font-mono text-base">
+                              {parseFloat((emp.totalOvertimeMinutes / 60).toFixed(1))}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot className="border-base-200 border-t-2 border-double">
+                        <tr className="text-base-content font-bold">
+                          <td>Total</td>
+                          <td className="text-right">{stats?.totalHours}</td>
+                          <td className="text-right">-</td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
-
-      {error && <Alert variant="error">{error}</Alert>}
-
-      {/* Stats */}
-      {stats && (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="border-base-300 bg-base-100 rounded-xl border p-4">
-            <div className="text-base-content/70 text-sm">Total de horas</div>
-            <div className="text-primary mt-2 text-2xl font-bold">{stats.totalHours}</div>
-          </div>
-          <div className="border-base-300 bg-base-100 rounded-xl border p-4">
-            <div className="text-base-content/70 text-sm">Promedio por empleado</div>
-            <div className="text-base-content mt-2 text-2xl font-bold">{stats.averageHours}</div>
-          </div>
-          <div className="border-base-300 bg-base-100 rounded-xl border p-4">
-            <div className="text-base-content/70 text-sm">Máximo</div>
-            <div className="text-base-content mt-2 text-lg font-bold">{stats.maxEmployee.name}</div>
-            <div className="text-base-content/60 text-sm">{stats.maxEmployee.hours} horas</div>
-          </div>
-          <div className="border-base-300 bg-base-100 rounded-xl border p-4">
-            <div className="text-base-content/70 text-sm">Mínimo</div>
-            <div className="text-base-content mt-2 text-lg font-bold">{stats.minEmployee.name}</div>
-            <div className="text-base-content/60 text-sm">{stats.minEmployee.hours} horas</div>
-          </div>
-        </div>
-      )}
-
-      {/* Charts */}
-      {chartData.length > 0 && (
-        <div className="space-y-6">
-          {/* Comparison Chart */}
-          <div className="border-base-300 bg-base-100 rounded-2xl border p-6 shadow-sm">
-            <h2 className="text-base-content mb-4 text-lg font-semibold">
-              {granularity === "day" ? "Horas por día" : granularity === "week" ? "Horas por semana" : "Horas por mes"}
-            </h2>
-            <ResponsiveContainer width="100%" height={400}>
-              {granularity === "month" ? (
-                <BarChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="period" />
-                  <YAxis label={{ value: "Horas", angle: -90, position: "insideLeft" }} />
-                  <Tooltip />
-                  <Legend />
-                  {reportData.map((emp, idx) => (
-                    <Bar
-                      key={emp.employeeId}
-                      dataKey={emp.fullName}
-                      fill={chartColors[idx % chartColors.length]}
-                      radius={[8, 8, 0, 0]}
-                    />
-                  ))}
-                </BarChart>
-              ) : (
-                <LineChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="period" />
-                  <YAxis label={{ value: "Horas", angle: -90, position: "insideLeft" }} />
-                  <Tooltip />
-                  <Legend />
-                  {reportData.map((emp, idx) => (
-                    <Line
-                      key={emp.employeeId}
-                      type="monotone"
-                      dataKey={emp.fullName}
-                      stroke={chartColors[idx % chartColors.length]}
-                      strokeWidth={2}
-                      connectNulls
-                    />
-                  ))}
-                </LineChart>
-              )}
-            </ResponsiveContainer>
-          </div>
-
-          {/* Distribution by Employee */}
-          {reportData.length > 1 && (
-            <div className="border-base-300 bg-base-100 rounded-2xl border p-6 shadow-sm">
-              <h2 className="text-base-content mb-4 text-lg font-semibold">Distribución de horas</h2>
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={reportData.map((emp) => ({
-                      name: emp.fullName,
-                      value: parseFloat((emp.totalMinutes / 60).toFixed(2)),
-                    }))}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, value }) => `${name}: ${value}h`}
-                    outerRadius={80}
-                    fill="hsl(var(--p))"
-                    dataKey="value"
-                  >
-                    {reportData.map((_, idx) => (
-                      <Cell key={`cell-${idx}`} fill={chartColors[idx % chartColors.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-
-          {/* Detailed Table */}
-          <div className="border-base-300 bg-base-100 rounded-2xl border p-6 shadow-sm">
-            <h2 className="text-base-content mb-4 text-lg font-semibold">Detalle por empleado</h2>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-primary/10 text-primary">
-                  <tr>
-                    <th className="px-4 py-3 text-left font-semibold">Empleado</th>
-                    <th className="px-4 py-3 text-left font-semibold">Cargo</th>
-                    <th className="px-4 py-3 text-right font-semibold">Horas</th>
-                    <th className="px-4 py-3 text-right font-semibold">Horas extras</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {reportData.map((emp) => (
-                    <tr key={emp.employeeId} className="border-base-300 odd:bg-base-200/30 border-b">
-                      <td className="px-4 py-3 font-medium">{emp.fullName}</td>
-                      <td className="text-base-content/70 px-4 py-3">{emp.role}</td>
-                      <td className="px-4 py-3 text-right font-semibold">
-                        {parseFloat((emp.totalMinutes / 60).toFixed(2))}
-                      </td>
-                      <td className="text-warning px-4 py-3 text-right">
-                        {parseFloat((emp.totalOvertimeMinutes / 60).toFixed(2))}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Empty State */}
-      {reportData.length === 0 && selectedEmployeeIds.length > 0 && !loading && (
-        <div className="border-base-300 bg-base-100 rounded-2xl border p-12 text-center shadow-sm">
-          <TrendingUp className="text-base-content/30 mx-auto mb-4 h-12 w-12" />
-          <h3 className="text-base-content/70 text-lg font-semibold">Genera un reporte</h3>
-          <p className="text-base-content/50 mt-1 text-sm">
-            Haz clic en &quot;Generar reporte&quot; para ver los gráficos y estadísticas
-          </p>
-        </div>
-      )}
     </section>
   );
 }
