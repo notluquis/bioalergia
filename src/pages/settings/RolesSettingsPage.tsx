@@ -182,20 +182,41 @@ export default function RolesSettingsPage() {
   const sectionsWithPermissions = NAV_SECTIONS.map((section) => {
     const itemsWithPermissions = section.items
       .map((item) => {
-        if (!item.requiredPermission) return null;
+        // Helper to collect permissions recursively
+        const collectPermissions = (navItem: (typeof section.items)[number]): Permission[] => {
+          const perms: Permission[] = [];
 
-        const subject = item.requiredPermission.subject;
-        // Filter permissions matching this subject
-        const relatedPermissions = allPermissions.filter((p) => p.subject.toLowerCase() === subject.toLowerCase());
+          // 1. Direct permissions
+          if (navItem.requiredPermission) {
+            const subject = navItem.requiredPermission.subject;
+            const related = allPermissions.filter((p) => p.subject.toLowerCase() === subject.toLowerCase());
+            perms.push(...related);
+          }
 
-        relatedPermissions.forEach((p) => usedPermissionIds.add(p.id));
+          // 2. Sub-items permissions
+          if (navItem.subItems && Array.isArray(navItem.subItems)) {
+            navItem.subItems.forEach((subItem) => {
+              perms.push(...collectPermissions(subItem));
+            });
+          }
 
-        if (relatedPermissions.length === 0) return null;
+          return perms;
+        };
+
+        const relatedPermissions = collectPermissions(item);
+
+        // Deduplicate
+        const uniquePermissions = Array.from(new Map(relatedPermissions.map((p) => [p.id, p])).values());
+
+        // Mark as used
+        uniquePermissions.forEach((p) => usedPermissionIds.add(p.id));
+
+        if (uniquePermissions.length === 0) return null;
 
         return {
           ...item,
-          relatedPermissions,
-          permissionIds: relatedPermissions.map((p) => p.id),
+          relatedPermissions: uniquePermissions,
+          permissionIds: uniquePermissions.map((p) => p.id),
         };
       })
       .filter((item) => item !== null);

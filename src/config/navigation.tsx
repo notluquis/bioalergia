@@ -9,7 +9,7 @@ import {
   FileSpreadsheet,
 } from "lucide-react";
 import React from "react";
-import { NAV_DATA, NavCategory } from "../../shared/navigation-data";
+import { NAV_DATA, NavCategory, NavItemData } from "../../shared/navigation-data";
 
 export type NavItem = {
   to: string;
@@ -18,6 +18,7 @@ export type NavItem = {
   roles?: string[];
   requiredPermission?: { action: string; subject: string };
   exact?: boolean;
+  subItems?: NavItem[];
 };
 
 export type NavSection = {
@@ -37,10 +38,13 @@ const ICON_MAP: Record<string, React.ElementType> = {
   FileSpreadsheet,
 };
 
+const mapNavItem = (item: NavItemData): NavItem => ({
+  ...item,
+  icon: ICON_MAP[item.iconKey] || Box,
+  subItems: item.subItems?.map(mapNavItem),
+});
+
 export const NAV_SECTIONS: NavSection[] = NAV_DATA.map((section) => ({
   ...section,
-  items: section.items.map((item) => ({
-    ...item,
-    icon: ICON_MAP[item.iconKey] || Box, // Fallback icon
-  })),
+  items: section.items.map(mapNavItem),
 }));
