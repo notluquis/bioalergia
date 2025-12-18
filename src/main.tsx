@@ -221,11 +221,12 @@ const router = createBrowserRouter(
                 </Suspense>
               ),
             },
+            // Replacement 1: Service Create
             {
               path: "create",
               handle: { title: "Crear servicio" },
               element: (
-                <RequirePermission action="manage" subject="Service">
+                <RequirePermission action="create" subject="Service">
                   <Suspense fallback={<PageLoader />}>
                     <ServicesCreatePage />
                   </Suspense>
@@ -236,9 +237,74 @@ const router = createBrowserRouter(
               path: ":id/edit",
               handle: { title: "Editar servicio" },
               element: (
-                <RequirePermission action="manage" subject="Service">
+                <RequirePermission action="update" subject="Service">
                   <Suspense fallback={<PageLoader />}>
                     <ServiceEditPage />
+                  </Suspense>
+                </RequirePermission>
+              ),
+            },
+
+            // Replacement 2: Calendar Settings
+            {
+              path: "calendar",
+              handle: { title: "Accesos y conexiones" },
+              element: (
+                <RequirePermission action="update" subject="CalendarEvent">
+                  <Suspense fallback={<PageLoader />}>
+                    <CalendarSettingsPage />
+                  </Suspense>
+                </RequirePermission>
+              ),
+            },
+
+            // Replacement 3: Security Settings
+            {
+              path: "security",
+              handle: { title: "Seguridad" },
+              element: (
+                <RequirePermission action="update" subject="Setting">
+                  <Suspense fallback={<PageLoader />}>
+                    <SecuritySettingsPage />
+                  </Suspense>
+                </RequirePermission>
+              ),
+            },
+
+            // Replacement 4: Inventory Settings
+            {
+              path: "inventario",
+              handle: { title: "Parámetros de inventario" },
+              element: (
+                <RequirePermission action="update" subject="InventoryItem">
+                  <Suspense fallback={<PageLoader />}>
+                    <InventorySettingsPage />
+                  </Suspense>
+                </RequirePermission>
+              ),
+            },
+
+            // Replacement 5: Roles Settings
+            {
+              path: "roles",
+              handle: { title: "Roles y permisos" },
+              element: (
+                <RequirePermission action="update" subject="Role">
+                  <Suspense fallback={<PageLoader />}>
+                    <RolesSettingsPage />
+                  </Suspense>
+                </RequirePermission>
+              ),
+            },
+
+            // Replacement 6: CSV Upload
+            {
+              path: "csv-upload",
+              handle: { title: "Carga masiva de datos" },
+              element: (
+                <RequirePermission action="create" subject="BulkData">
+                  <Suspense fallback={<PageLoader />}>
+                    <CSVUploadPage />
                   </Suspense>
                 </RequirePermission>
               ),
@@ -478,7 +544,7 @@ const router = createBrowserRouter(
               path: "calendar",
               handle: { title: "Accesos y conexiones" },
               element: (
-                <RequirePermission action="manage" subject="CalendarEvent">
+                <RequirePermission action="update" subject="CalendarEvent">
                   <Suspense fallback={<PageLoader />}>
                     <CalendarSettingsPage />
                   </Suspense>
@@ -489,7 +555,7 @@ const router = createBrowserRouter(
               path: "security",
               handle: { title: "Seguridad" },
               element: (
-                <RequirePermission action="manage" subject="Setting">
+                <RequirePermission action="update" subject="Setting">
                   <Suspense fallback={<PageLoader />}>
                     <SecuritySettingsPage />
                   </Suspense>
@@ -500,7 +566,7 @@ const router = createBrowserRouter(
               path: "inventario",
               handle: { title: "Parámetros de inventario" },
               element: (
-                <RequirePermission action="manage" subject="InventoryItem">
+                <RequirePermission action="update" subject="InventoryItem">
                   <Suspense fallback={<PageLoader />}>
                     <InventorySettingsPage />
                   </Suspense>
@@ -511,7 +577,7 @@ const router = createBrowserRouter(
               path: "roles",
               handle: { title: "Roles y permisos" },
               element: (
-                <RequirePermission action="manage" subject="Role">
+                <RequirePermission action="update" subject="Role">
                   <Suspense fallback={<PageLoader />}>
                     <RolesSettingsPage />
                   </Suspense>
@@ -522,7 +588,7 @@ const router = createBrowserRouter(
               path: "csv-upload",
               handle: { title: "Carga masiva de datos" },
               element: (
-                <RequirePermission action="manage" subject="Setting">
+                <RequirePermission action="create" subject="BulkData">
                   <Suspense fallback={<PageLoader />}>
                     <CSVUploadPage />
                   </Suspense>

@@ -58,7 +58,7 @@ export function registerSettingsRoutes(app: express.Express) {
   app.get(
     "/api/settings/internal",
     authenticate,
-    authorize("manage", "Setting"),
+    authorize("update", "Setting"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       const upsertChunk = await getSetting("bioalergia_x.upsert_chunk_size");
       // Expose both DB value and effective value (env var overrides DB). Do not expose other secrets.

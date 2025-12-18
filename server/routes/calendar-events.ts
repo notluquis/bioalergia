@@ -125,7 +125,8 @@ export function registerCalendarEventRoutes(app: express.Express) {
 
   app.post(
     "/api/calendar/events/sync",
-    authorize("manage", "CalendarEvent"),
+    authenticate,
+    authorize("update", "CalendarEvent"),
     asyncHandler(async (req, res) => {
       // Create log entry first
       const logId = await createCalendarSyncLogEntry({

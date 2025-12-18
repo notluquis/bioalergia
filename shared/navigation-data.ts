@@ -170,13 +170,13 @@ export const NAV_DATA: NavSectionData[] = [
         to: "/settings/calendar",
         label: "Cfg. Calendario",
         iconKey: "Calendar",
-        requiredPermission: { action: "manage", subject: "CalendarEvent" },
+        requiredPermission: { action: "update", subject: "CalendarEvent" },
       },
       {
         to: "/settings/inventario",
         label: "Cfg. Inventario",
-        iconKey: "Box",
-        requiredPermission: { action: "manage", subject: "InventoryItem" },
+        iconKey: "PackagePlus",
+        requiredPermission: { action: "update", subject: "InventoryItem" },
       },
       {
         to: "/settings/general",
@@ -192,21 +192,10 @@ export const NAV_DATA: NavSectionData[] = [
       },
       {
         to: "/settings/csv-upload",
-        label: "Carga Masiva",
+        label: "Carga masiva",
         iconKey: "Upload",
+        roles: ["admin", "hr_manager"],
         requiredPermission: { action: "create", subject: "BulkData" },
-      },
-    ],
-  },
-  {
-    title: "Cuenta",
-    category: "Gestión",
-    items: [
-      {
-        to: "/settings/security",
-        label: "Seguridad",
-        iconKey: "Settings",
-        requiredPermission: { action: "read", subject: "Security" },
       },
     ],
   },

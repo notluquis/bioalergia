@@ -214,20 +214,9 @@ export function registerInventoryRoutes(app: express.Express) {
     })
   );
 
-  router.delete(
-    "/items/:id",
-    authorize("manage", "InventoryItem"),
-    asyncHandler(async (req, res) => {
-      const id = Number(req.params.id);
-      await deleteInventoryItem(id);
-      res.status(204).send();
-    })
-  );
-
-  // Movement Routes
   router.post(
     "/movements",
-    authorize("manage", "InventoryItem"),
+    authorize("update", "InventoryItem"),
     asyncHandler(async (req, res) => {
       const parsed = inventoryMovementSchema.safeParse(req.body);
       if (!parsed.success) {

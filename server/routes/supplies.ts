@@ -61,8 +61,9 @@ export function registerSuppliesRoutes(app: express.Express) {
   );
 
   router.put(
-    "/requests/:id/status",
-    authorize("manage", "SupplyRequest"),
+    "/:id/status",
+    authenticate,
+    authorize("update", "SupplyRequest"),
     asyncHandler(async (req, res) => {
       const id = Number(req.params.id);
       const parsed = updateStatusSchema.safeParse(req.body);

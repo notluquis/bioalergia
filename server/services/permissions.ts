@@ -10,6 +10,7 @@ export async function listPermissions() {
 
 export async function syncPermissions() {
   // Syncs permissionMap (Static) + NAV_DATA (Dynamic) with DB
+  const validPermissions = new Set<string>();
 
   // 1. Static Permissions from Map
   for (const [key, def] of Object.entries(permissionMap) as [string, { action: string; subject: string }][]) {
@@ -28,13 +29,14 @@ export async function syncPermissions() {
           description: `Generated from ${key}`,
         },
       });
+      validPermissions.add(`${def.action}:${def.subject}`);
     } catch (e) {
       console.error(`Error syncing ${key}:`, e);
     }
   }
 
   // 2. Dynamic Permissions from Navigation
-  // Strategy: For every page with a "requiredPermission.subject", ensure "read", "create", "update", "delete" exist.
+  // Strategy: For every page with a "requiredPermission.subject", ensure "manage", "read", "create", "update", "delete" exist.
   const subjects = new Set<string>();
 
   // Recursive helper to collect subjects including subItems
@@ -55,7 +57,7 @@ export async function syncPermissions() {
 
   for (const subject of subjects) {
     try {
-      // Exclude 'manage' based on user request to normalize to CRUD only
+      // Actions restricted to CRUD as per strict requirement (no 'manage')
       const actions = ["read", "create", "update", "delete"];
       for (const action of actions) {
         await prisma.permission.upsert({
@@ -63,10 +65,28 @@ export async function syncPermissions() {
           update: {},
           create: { action, subject, description: `Auto-generated ${action} for ${subject}` },
         });
+        validPermissions.add(`${action}:${subject}`);
       }
     } catch (e) {
       console.error(`Error syncing dynamic subject ${subject}:`, e);
     }
+  }
+
+  // 3. Cleanup Obsolete Permissions
+  try {
+    const allDbPermissions = await prisma.permission.findMany();
+    const toDeleteIds = allDbPermissions
+      .filter((p) => !validPermissions.has(`${p.action}:${p.subject}`))
+      .map((p) => p.id);
+
+    if (toDeleteIds.length > 0) {
+      console.log(`Cleaning up ${toDeleteIds.length} obsolete permissions...`);
+      await prisma.permission.deleteMany({
+        where: { id: { in: toDeleteIds } },
+      });
+    }
+  } catch (e) {
+    console.error("Error cleaning up permissions:", e);
   }
 
   return []; // Return empty or status

@@ -84,7 +84,8 @@ export function registerTimesheetRoutes(app: express.Express) {
 
   app.post(
     "/api/timesheets",
-    authorize("manage", "Timesheet"),
+    authenticate,
+    authorize("create", "Timesheet"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       const parsed = timesheetPayloadSchema.safeParse(req.body);
       if (!parsed.success) {

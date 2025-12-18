@@ -42,7 +42,7 @@ export function registerCounterpartRoutes(app: express.Express) {
   app.post(
     "/api/counterparts",
     authenticate,
-    authorize("manage", "Counterpart"),
+    authorize("create", "Counterpart"), // Changed from "manage" to "create"
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       const parsed = counterpartPayloadSchema.safeParse(req.body);
       if (!parsed.success) {
