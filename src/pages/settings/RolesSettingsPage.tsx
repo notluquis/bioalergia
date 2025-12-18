@@ -596,16 +596,18 @@ function PermissionCell({
   permissionId,
   isUpdating,
   onToggle,
+  className,
 }: {
   role: Role;
   permissionId: number;
   isUpdating: boolean;
   onToggle: (r: Role, i: number) => void;
+  className?: string;
 }) {
   const hasAccess = role.permissions.some((rp) => rp.permissionId === permissionId);
 
   return (
-    <td className="p-0 text-center align-middle">
+    <td className={`p-0 text-center align-middle ${className || ""}`}>
       <button
         onClick={() => onToggle(role, permissionId)}
         disabled={isUpdating}

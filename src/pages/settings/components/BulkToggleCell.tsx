@@ -6,22 +6,24 @@ export function BulkToggleCell({
   permissionIds,
   isUpdating,
   onToggle,
+  className,
 }: {
   role: Role;
   permissionIds: number[];
   isUpdating: boolean;
   onToggle: (role: Role, ids: number[]) => void;
   variant?: "section" | "page"; // Deprecated but kept for compatibility
+  className?: string;
 }) {
   const currentPermissionIds = role.permissions.map((p) => p.permissionId);
   const presentCount = permissionIds.filter((id) => currentPermissionIds.includes(id)).length;
   const allPresent = permissionIds.length > 0 && presentCount === permissionIds.length;
   const somePresent = presentCount > 0 && presentCount < permissionIds.length;
 
-  if (permissionIds.length === 0) return <td />;
+  if (permissionIds.length === 0) return <td className={className} />;
 
   return (
-    <td className="p-0 text-center align-middle">
+    <td className={`p-0 text-center align-middle ${className || ""}`}>
       <button
         onClick={() => onToggle(role, permissionIds)}
         disabled={isUpdating}
