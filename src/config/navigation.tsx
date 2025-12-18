@@ -7,6 +7,15 @@ import {
   Box,
   Settings,
   FileSpreadsheet,
+  ClipboardCheck,
+  Users,
+  Calendar,
+  Settings2,
+  ListChecks,
+  Upload,
+  PackagePlus,
+  Clock,
+  UserCog,
 } from "lucide-react";
 import React from "react";
 import { NAV_DATA, NavCategory, NavItemData } from "../../shared/navigation-data";
@@ -36,6 +45,15 @@ const ICON_MAP: Record<string, React.ElementType> = {
   Box,
   Settings,
   FileSpreadsheet,
+  ClipboardCheck,
+  Users,
+  Calendar,
+  Settings2,
+  ListChecks,
+  Upload,
+  PackagePlus,
+  Clock,
+  UserCog,
 };
 
 const mapNavItem = (item: NavItemData): NavItem => ({
