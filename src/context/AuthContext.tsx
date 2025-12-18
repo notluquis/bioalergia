@@ -1,8 +1,9 @@
-import { createContext, useCallback, useContext, useMemo, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useMemo, useState, useEffect, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { RawRuleOf, MongoAbility } from "@casl/ability";
 import { logger } from "@/lib/logger";
 import { apiClient, ApiError } from "@/lib/apiClient";
+import type { Role } from "@/types/roles";
 
 export type UserRole = string;
 
@@ -29,6 +30,9 @@ export type AuthContextType = {
   hasRole: (...roles: string[]) => boolean;
   can: (action: string, subject: string, field?: string) => boolean;
   refreshSession: () => Promise<void>;
+  impersonate: (role: Role) => void;
+  stopImpersonating: () => void;
+  impersonatedRole: Role | null;
 };
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -108,8 +112,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     retry: false,
   });
 
-  const user = sessionQuery.data?.user ?? null;
+  const [impersonatedRole, setImpersonatedRole] = useState<Role | null>(null);
+
+  const realUser = sessionQuery.data?.user ?? null;
   const initializing = sessionQuery.isPending;
+
+  const effectiveUser = useMemo(() => {
+    if (!realUser) return null;
+    if (impersonatedRole) {
+      return { ...realUser, roles: [impersonatedRole.name] };
+    }
+    return realUser;
+  }, [realUser, impersonatedRole]);
+
+  // Sync ability when session loads or when impersonation changes
+  useEffect(() => {
+    if (impersonatedRole) {
+      // Build rules from the role
+      const rules = impersonatedRole.permissions.map((rp) => ({
+        action: rp.permission.action,
+        subject: rp.permission.subject,
+      }));
+      updateAbility(rules);
+    } else if (sessionQuery.data) {
+      updateAbility(sessionQuery.data.abilityRules || []);
+    } else {
+      updateAbility([]);
+    }
+  }, [impersonatedRole, sessionQuery.data]);
+
+  const impersonate = useCallback((role: Role) => {
+    setImpersonatedRole(role);
+  }, []);
+
+  const stopImpersonating = useCallback(() => {
+    setImpersonatedRole(null);
+  }, []);
 
   const login = useCallback(
     async (email: string, password: string): Promise<LoginResult> => {
@@ -174,6 +212,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(async () => {
     logger.info("[auth] logout:start");
     try {
+      setImpersonatedRole(null);
       await apiClient.post("/api/auth/logout", {});
     } catch (error) {
       logger.error("[auth] logout:error", error);
@@ -187,13 +226,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const hasRole = useCallback(
     (...rolesToCheck: string[]) => {
-      if (!user) return false;
+      if (!effectiveUser) return false;
       if (!rolesToCheck.length) return true;
 
-      const userRoles = user.roles.map((r) => r.toUpperCase());
+      const userRoles = effectiveUser.roles.map((r) => r.toUpperCase());
       return rolesToCheck.some((r) => userRoles.includes(r.toUpperCase()));
     },
-    [user]
+    [effectiveUser]
   );
 
   const refreshSession = useCallback(async () => {
@@ -207,8 +246,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo<AuthContextType>(
-    () => ({ user, initializing, login, loginWithMfa, loginWithPasskey, logout, hasRole, refreshSession, can }),
-    [user, initializing, login, loginWithMfa, loginWithPasskey, logout, hasRole, refreshSession, can]
+    () => ({
+      user: effectiveUser,
+      initializing,
+      login,
+      loginWithMfa,
+      loginWithPasskey,
+      logout,
+      hasRole,
+      refreshSession,
+      can,
+      impersonate,
+      stopImpersonating,
+      impersonatedRole,
+    }),
+    [
+      effectiveUser,
+      initializing,
+      login,
+      loginWithMfa,
+      loginWithPasskey,
+      logout,
+      hasRole,
+      refreshSession,
+      can,
+      impersonate,
+      stopImpersonating,
+      impersonatedRole,
+    ]
   );
 
   return <AuthContext value={value}>{children}</AuthContext>;

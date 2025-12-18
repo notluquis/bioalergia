@@ -9,8 +9,10 @@ import { useSettings } from "./context/SettingsContext";
 import { UpdateNotification } from "./components/features/UpdateNotification";
 import { PerformanceIndicator } from "./components/features/PerformanceIndicator";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./components/ui/Tooltip";
+import { useAuth } from "./context/AuthContext";
 
 export default function App() {
+  const { impersonatedRole, stopImpersonating } = useAuth();
   const navigationState = useNavigation();
   const { settings } = useSettings();
 
@@ -95,6 +97,17 @@ export default function App() {
 
   return (
     <>
+      {impersonatedRole && (
+        <div className="bg-warning text-warning-content sticky top-0 z-[100] flex h-10 w-full items-center justify-center gap-4 px-4 text-xs font-bold shadow-md">
+          <span>VISTA PREVIA: {impersonatedRole.name}</span>
+          <button
+            onClick={stopImpersonating}
+            className="btn btn-neutral btn-xs border-none bg-black/20 text-current hover:bg-black/30"
+          >
+            Salir
+          </button>
+        </div>
+      )}
       {isNavigating && (
         <div className="bg-base-200 fixed top-0 right-0 left-0 z-50 h-1 overflow-hidden shadow-lg">
           <div className="nav-progress__indicator" />

@@ -1,9 +1,10 @@
-import { Loader2, Pencil, Trash2, Plus, RotateCw, Check, ChevronDown, ChevronRight } from "lucide-react";
+import { Loader2, Pencil, Trash2, Plus, RotateCw, Check, ChevronDown, ChevronRight, Eye } from "lucide-react";
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/apiClient";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/context/ToastContext";
+import { useAuth } from "@/context/AuthContext";
 import { NAV_SECTIONS } from "@/config/navigation";
 import { BulkToggleCell } from "./components/BulkToggleCell";
 import { RoleFormModal } from "./components/RoleFormModal";
@@ -14,6 +15,7 @@ import { SmoothCollapse } from "@/components/ui/SmoothCollapse";
 // --- Page Component ---
 
 export default function RolesSettingsPage() {
+  const { impersonate } = useAuth();
   const queryClient = useQueryClient();
   const toast = useToast();
   const [isSyncing, setIsSyncing] = useState(false);
@@ -277,6 +279,12 @@ export default function RolesSettingsPage() {
                             <ChevronDown className="h-3 w-3" />
                           </summary>
                           <ul className="menu dropdown-content bg-base-100 rounded-box border-base-200 z-1 w-40 border p-2 shadow-sm">
+                            <li>
+                              <button onClick={() => impersonate(role)} className="gap-2">
+                                <Eye className="h-4 w-4" />
+                                Previsualizar
+                              </button>
+                            </li>
                             <li>
                               <button onClick={() => handleEditRole(role)} className="gap-2">
                                 <Pencil className="h-4 w-4" />
