@@ -14,21 +14,25 @@ async function fixPermissions() {
   // 2. Define target roles and desired permissions
   const rolesToFix = [
     {
-      name: "EnfermeroUniversitario",
+      // Try multiple variations
+      names: ["EnfermeroUniversitario", "Enfermero Universitario", "Enfermero"],
       allowed: ["production_balance.read", "production_balance.manage"],
       forbidden: ["daily_balance.read", "daily_balance.manage", "transaction.read"],
     },
     {
-      name: "Tens",
+      names: ["Tens", "TENS"],
       allowed: ["production_balance.read", "production_balance.manage"],
       forbidden: ["daily_balance.read", "daily_balance.manage", "transaction.read"],
     },
   ];
 
   for (const roleDef of rolesToFix) {
-    const role = await prisma.role.findUnique({ where: { name: roleDef.name } });
+    const role = await prisma.role.findFirst({
+      where: { name: { in: roleDef.names } },
+    });
+
     if (!role) {
-      console.warn(`Role ${roleDef.name} not found. Skipping.`);
+      console.warn(`Role matching ${roleDef.names.join(", ")} not found. Skipping.`);
       continue;
     }
 

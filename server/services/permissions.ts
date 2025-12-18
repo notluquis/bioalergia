@@ -10,12 +10,11 @@ export async function listPermissions() {
 
 export async function syncPermissions() {
   // Syncs permissionMap (Static) + NAV_DATA (Dynamic) with DB
-  const operations = [];
 
   // 1. Static Permissions from Map
   for (const [key, def] of Object.entries(permissionMap) as [string, { action: string; subject: string }][]) {
-    operations.push(
-      prisma.permission.upsert({
+    try {
+      await prisma.permission.upsert({
         where: {
           action_subject: {
             action: def.action,
@@ -28,8 +27,10 @@ export async function syncPermissions() {
           subject: def.subject,
           description: `Generated from ${key}`,
         },
-      })
-    );
+      });
+    } catch (e) {
+      console.error(`Error syncing ${key}:`, e);
+    }
   }
 
   // 2. Dynamic Permissions from Navigation
@@ -45,23 +46,23 @@ export async function syncPermissions() {
   });
 
   for (const subject of subjects) {
-    // Read Permission
-    operations.push(
-      prisma.permission.upsert({
+    try {
+      // Read Permission
+      await prisma.permission.upsert({
         where: { action_subject: { action: "read", subject } },
         update: {},
         create: { action: "read", subject, description: `Auto-generated read for ${subject}` },
-      })
-    );
-    // Manage Permission
-    operations.push(
-      prisma.permission.upsert({
+      });
+      // Manage Permission
+      await prisma.permission.upsert({
         where: { action_subject: { action: "manage", subject } },
         update: {},
         create: { action: "manage", subject, description: `Auto-generated manage for ${subject}` },
-      })
-    );
+      });
+    } catch (e) {
+      console.error(`Error syncing dynamic subject ${subject}:`, e);
+    }
   }
 
-  return await prisma.$transaction(operations);
+  return []; // Return empty or status
 }
