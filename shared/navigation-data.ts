@@ -88,6 +88,12 @@ export const NAV_DATA: NavSectionData[] = [
         iconKey: "Briefcase",
         requiredPermission: { action: "read", subject: "Service" },
       },
+      {
+        to: "/services/agenda",
+        label: "Agenda",
+        iconKey: "CalendarDays",
+        requiredPermission: { action: "read", subject: "Service" },
+      },
     ],
   },
   {
@@ -130,6 +136,12 @@ export const NAV_DATA: NavSectionData[] = [
         iconKey: "Clock",
         requiredPermission: { action: "read", subject: "Timesheet" },
       },
+      {
+        to: "/hr/audit",
+        label: "Auditoría",
+        iconKey: "ClipboardCheck",
+        requiredPermission: { action: "read", subject: "Timesheet" },
+      },
     ],
   },
   {
@@ -147,6 +159,24 @@ export const NAV_DATA: NavSectionData[] = [
         label: "Usuarios",
         iconKey: "UserCog",
         requiredPermission: { action: "read", subject: "User" },
+      },
+      {
+        to: "/settings/people",
+        label: "Personas",
+        iconKey: "Users",
+        requiredPermission: { action: "read", subject: "Person" },
+      },
+      {
+        to: "/settings/calendar",
+        label: "Cfg. Calendario",
+        iconKey: "Calendar",
+        requiredPermission: { action: "manage", subject: "CalendarEvent" },
+      },
+      {
+        to: "/settings/inventario",
+        label: "Cfg. Inventario",
+        iconKey: "Box",
+        requiredPermission: { action: "manage", subject: "InventoryItem" },
       },
       {
         to: "/settings/general",

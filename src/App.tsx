@@ -48,9 +48,7 @@ export default function App() {
   const toggleSidebar = () => setSidebarOpen((open) => !open);
   const closeSidebar = () => setSidebarOpen(false);
 
-  // Desktop Sidebar Collapse State
-  const [isCollapsed, setIsCollapsed] = React.useState(false);
-  const toggleCollapse = () => setIsCollapsed((prev) => !prev);
+  // Desktop Sidebar Collapse State logic removed (handled internally by Sidebar hover)
 
   const isNavigating = navigationState.state === "loading";
   const buildLabel = React.useMemo(() => {
@@ -113,7 +111,7 @@ export default function App() {
           <div className="nav-progress__indicator" />
         </div>
       )}
-      <div className="layout-shell text-base-content relative mx-auto flex min-h-screen w-full gap-3 px-2 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] pr-[max(0.75rem,env(safe-area-inset-right))] pb-[max(0.75rem,env(safe-area-inset-bottom))] pl-[max(0.75rem,env(safe-area-inset-left))] transition-all duration-300 sm:px-4 lg:px-6">
+      <div className="layout-shell text-base-content relative mx-auto flex min-h-screen w-full gap-3 px-2 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] pr-[max(0.75rem,env(safe-area-inset-right))] pb-[max(0.75rem,env(safe-area-inset-bottom))] pl-[max(0.75rem,env(safe-area-inset-left))] transition-all duration-300 sm:px-4 md:pl-28 lg:px-6">
         {/* Hamburger button: accessible, compact, always visible on mobile */}
         <button
           type="button"
@@ -155,13 +153,7 @@ export default function App() {
         )}
 
         {/* Sidebar */}
-        <Sidebar
-          isOpen={sidebarOpen}
-          isMobile={isMobile}
-          onClose={closeSidebar}
-          isCollapsed={isCollapsed}
-          toggleCollapse={toggleCollapse}
-        />
+        <Sidebar isOpen={sidebarOpen} isMobile={isMobile} onClose={closeSidebar} />
 
         {/* Main content */}
         <div className="layout-container flex min-w-0 flex-1 flex-col gap-3 pb-[calc(110px+env(safe-area-inset-bottom))] md:pb-0">
