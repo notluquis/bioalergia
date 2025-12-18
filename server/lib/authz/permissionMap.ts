@@ -17,8 +17,11 @@ export const permissionMap = readonly({
   "transaction.update": { action: "update", subject: "Transaction" },
   "transaction.delete": { action: "delete", subject: "Transaction" },
 
-  "setting.manage": { action: "manage", subject: "Setting" },
+  "setting.read": { action: "read", subject: "Setting" },
+  "setting.update": { action: "update", subject: "Setting" },
+
   "manage.all": { action: "manage", subject: "all" },
+  "create.all": { action: "create", subject: "all" }, // Added for CSV upload convenience if needed
   "read.all": { action: "read", subject: "all" },
 
   "role.create": { action: "create", subject: "Role" },
@@ -27,43 +30,65 @@ export const permissionMap = readonly({
   "role.delete": { action: "delete", subject: "Role" },
 
   "permission.read": { action: "read", subject: "Permission" },
-  "permission.manage": { action: "manage", subject: "Permission" },
+  "permission.update": { action: "update", subject: "Permission" },
 
   "person.read": { action: "read", subject: "Person" },
-  "person.manage": { action: "manage", subject: "Person" },
+  "person.update": { action: "update", subject: "Person" },
+  "person.create": { action: "create", subject: "Person" },
+  "person.delete": { action: "delete", subject: "Person" },
 
   "counterpart.read": { action: "read", subject: "Counterpart" },
-  "counterpart.manage": { action: "manage", subject: "Counterpart" },
+  "counterpart.update": { action: "update", subject: "Counterpart" },
+  "counterpart.create": { action: "create", subject: "Counterpart" },
+  "counterpart.delete": { action: "delete", subject: "Counterpart" },
 
   "loan.read": { action: "read", subject: "Loan" },
-  "loan.manage": { action: "manage", subject: "Loan" },
+  "loan.update": { action: "update", subject: "Loan" },
+  "loan.create": { action: "create", subject: "Loan" },
+  "loan.delete": { action: "delete", subject: "Loan" },
 
   "service.read": { action: "read", subject: "Service" },
-  "service.manage": { action: "manage", subject: "Service" },
+  "service.update": { action: "update", subject: "Service" },
+  "service.create": { action: "create", subject: "Service" },
+  "service.delete": { action: "delete", subject: "Service" },
 
   "inventory.read": { action: "read", subject: "InventoryItem" },
-  "inventory.manage": { action: "manage", subject: "InventoryItem" },
+  "inventory.update": { action: "update", subject: "InventoryItem" },
+  "inventory.create": { action: "create", subject: "InventoryItem" },
+  "inventory.delete": { action: "delete", subject: "InventoryItem" },
 
   "production_balance.read": { action: "read", subject: "ProductionBalance" },
-  "production_balance.manage": { action: "manage", subject: "ProductionBalance" },
+  "production_balance.update": { action: "update", subject: "ProductionBalance" },
+  "production_balance.create": { action: "create", subject: "ProductionBalance" },
+  "production_balance.delete": { action: "delete", subject: "ProductionBalance" },
 
   "daily_balance.read": { action: "read", subject: "DailyBalance" },
-  "daily_balance.manage": { action: "manage", subject: "DailyBalance" },
+  "daily_balance.update": { action: "update", subject: "DailyBalance" },
+  "daily_balance.create": { action: "create", subject: "DailyBalance" },
+  "daily_balance.delete": { action: "delete", subject: "DailyBalance" },
 
   "calendar.read": { action: "read", subject: "CalendarEvent" },
-  "calendar.manage": { action: "manage", subject: "CalendarEvent" },
+  "calendar.update": { action: "update", subject: "CalendarEvent" },
+  "calendar.create": { action: "create", subject: "CalendarEvent" },
+  "calendar.delete": { action: "delete", subject: "CalendarEvent" },
 
   "employee.read": { action: "read", subject: "Employee" },
-  "employee.manage": { action: "manage", subject: "Employee" },
+  "employee.update": { action: "update", subject: "Employee" },
+  "employee.create": { action: "create", subject: "Employee" },
+  "employee.delete": { action: "delete", subject: "Employee" },
 
   "timesheet.read": { action: "read", subject: "Timesheet" },
-  "timesheet.manage": { action: "manage", subject: "Timesheet" },
+  "timesheet.update": { action: "update", subject: "Timesheet" },
+  "timesheet.create": { action: "create", subject: "Timesheet" },
+  "timesheet.delete": { action: "delete", subject: "Timesheet" },
 
   "report.read": { action: "read", subject: "Report" },
-  "report.manage": { action: "manage", subject: "Report" },
+  "report.update": { action: "update", subject: "Report" },
 
   "supply.read": { action: "read", subject: "SupplyRequest" },
-  "supply.manage": { action: "manage", subject: "SupplyRequest" },
+  "supply.update": { action: "update", subject: "SupplyRequest" },
+  "supply.create": { action: "create", subject: "SupplyRequest" },
+  "supply.delete": { action: "delete", subject: "SupplyRequest" },
 } as const);
 
 export type PermissionKey = keyof typeof permissionMap;
