@@ -36,11 +36,9 @@ export default function DailyProductionBalancesPage() {
   const queryClient = useQueryClient();
   // Settings unused
 
-  // Simple role-based access for now (matching sidebar)
-  const canView = true; // If they can reach this page, they can view
-
-  // Use permissions instead of role checks
-  const canEdit = can("manage", "ProductionBalance");
+  // Permissions
+  const canView = can("read", "ProductionBalance");
+  const canEdit = can("update", "ProductionBalance");
 
   const [currentDate, setCurrentDate] = useState(dayjs());
   const [selectedDate, setSelectedDate] = useState<string | null>(today());

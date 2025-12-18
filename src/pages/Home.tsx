@@ -12,30 +12,37 @@ import Alert from "@/components/ui/Alert";
 import { CARD_COMPACT, TITLE_MD } from "@/lib/styles";
 import { useWakeLock } from "../hooks/useWakeLock";
 import { useAppBadge } from "../hooks/useAppBadge";
+import { useAuth } from "@/context/AuthContext";
 
 const RANGE_DAYS = 30;
 
 export default function Home() {
-  useWakeLock(); // Keep screen active on dashboard
+  useWakeLock();
   const { clearBadge } = useAppBadge();
+  const { can } = useAuth();
 
-  // Clear notification badge when user visits dashboard
   useEffect(() => {
     clearBadge();
   }, [clearBadge]);
+
+  // Permissions
+  const canReadTransactions = can("read", "Transaction");
+  const canReadPersons = can("read", "Person");
+  const canReadDashboard = can("read", "Dashboard"); // Top level check?
 
   const from = useMemo(() => daysAgo(RANGE_DAYS), []);
   const to = useMemo(() => today(), []);
 
   const statsParams = useMemo(() => ({ from, to }), [from, to]);
-  const statsQuery = useDashboardStats(statsParams);
+  // Pass enabled to hooks if they support it to avoid 403s
+  const statsQuery = useDashboardStats(statsParams, { enabled: canReadTransactions });
 
   const leaderboardParams = useMemo(() => ({ from, to, limit: 5, mode: "outgoing" as const }), [from, to]);
   const participantsQuery = useParticipantLeaderboardQuery(leaderboardParams, {
-    enabled: Boolean(from && to),
+    enabled: Boolean(from && to) && canReadPersons,
   });
 
-  const recentMovementsQuery = useRecentMovements();
+  const recentMovementsQuery = useRecentMovements({ enabled: canReadTransactions });
 
   const stats = statsQuery.data ?? null;
   const statsLoading = statsQuery.isPending || statsQuery.isFetching;
@@ -58,6 +65,10 @@ export default function Home() {
     };
   }, [stats]);
 
+  if (!canReadDashboard) {
+    return <div className="text-base-content/60 p-8 text-center">No tienes permisos para ver el panel principal.</div>;
+  }
+
   return (
     <section className="space-y-4">
       <header className={CARD_COMPACT}>
@@ -67,27 +78,31 @@ export default function Home() {
         </div>
       </header>
 
-      <section className="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-3">
-        <MetricCard title="Ingresos" value={totals.in} accent="emerald" loading={statsLoading} />
-        <MetricCard title="Egresos" value={totals.out} accent="rose" loading={statsLoading} />
-        <MetricCard
-          title="Neto"
-          value={totals.net}
-          accent={totals.net >= 0 ? "emerald" : "rose"}
-          loading={statsLoading}
-        />
-      </section>
+      {canReadTransactions && (
+        <section className="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-3">
+          <MetricCard title="Ingresos" value={totals.in} accent="emerald" loading={statsLoading} />
+          <MetricCard title="Egresos" value={totals.out} accent="rose" loading={statsLoading} />
+          <MetricCard
+            title="Neto"
+            value={totals.net}
+            accent={totals.net >= 0 ? "emerald" : "rose"}
+            loading={statsLoading}
+          />
+        </section>
+      )}
 
-      {statsError && <Alert variant="error">{statsError}</Alert>}
+      {statsError && canReadTransactions && <Alert variant="error">{statsError}</Alert>}
 
       <div className="grid gap-4 lg:grid-cols-[1.5fr_1fr]">
         <div className="space-y-4">
-          <DashboardChart data={stats?.monthly ?? []} loading={statsLoading} />
-          <QuickLinksSection />
+          {canReadTransactions && <DashboardChart data={stats?.monthly ?? []} loading={statsLoading} />}
+          <QuickLinksSection can={can} />
         </div>
         <aside className="space-y-4">
-          <TopParticipantsWidget data={topParticipants} loading={participantsLoading} error={participantsError} />
-          <RecentMovementsWidget rows={recentMovements} />
+          {canReadPersons && (
+            <TopParticipantsWidget data={topParticipants} loading={participantsLoading} error={participantsError} />
+          )}
+          {canReadTransactions && <RecentMovementsWidget rows={recentMovements} />}
         </aside>
       </div>
     </section>
@@ -102,6 +117,8 @@ const QUICK_LINKS = [
     icon: Wallet,
     color: "text-emerald-500",
     bg: "bg-emerald-500/10",
+    subject: "DailyBalance",
+    action: "read", // Minimum requirement
   },
   {
     title: "Ver movimientos",
@@ -110,6 +127,8 @@ const QUICK_LINKS = [
     icon: ArrowRightLeft,
     color: "text-blue-500",
     bg: "bg-blue-500/10",
+    subject: "Transaction",
+    action: "read",
   },
   {
     title: "Participantes",
@@ -118,6 +137,8 @@ const QUICK_LINKS = [
     icon: Users,
     color: "text-violet-500",
     bg: "bg-violet-500/10",
+    subject: "Person",
+    action: "read",
   },
   {
     title: "Servicios",
@@ -126,16 +147,22 @@ const QUICK_LINKS = [
     icon: CalendarDays,
     color: "text-amber-500",
     bg: "bg-amber-500/10",
+    subject: "Service",
+    action: "read",
   },
-];
+] as const;
 
-function QuickLinksSection() {
+function QuickLinksSection({ can }: { can: (action: string, subject: string) => boolean }) {
+  const links = QUICK_LINKS.filter((link) => can(link.action, link.subject));
+
+  if (links.length === 0) return null;
+
   return (
     <div className="card card-compact bg-base-100 shadow-sm">
       <div className="card-body">
         <h3 className="text-base-content mb-2 text-sm font-semibold">Accesos rápidos</h3>
         <div className="grid gap-2 sm:grid-cols-2">
-          {QUICK_LINKS.map((link) => (
+          {links.map((link) => (
             <Link
               key={link.to}
               to={link.to}

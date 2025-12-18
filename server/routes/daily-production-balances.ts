@@ -1,6 +1,7 @@
 import express from "express";
 import dayjs from "dayjs";
 import { asyncHandler, authenticate } from "../lib/http.js";
+import { authorize } from "../middleware/authorize.js";
 import type { AuthenticatedRequest } from "../types.js";
 import { logEvent, requestContext } from "../lib/logger.js";
 import { productionBalancePayloadSchema, productionBalanceQuerySchema } from "../schemas.js";
@@ -67,6 +68,7 @@ export function registerDailyProductionBalanceRoutes(app: express.Express) {
   app.get(
     "/api/daily-production-balances",
     authenticate,
+    authorize("read", "ProductionBalance"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       const normalize = (value: unknown): string | undefined => {
         if (Array.isArray(value)) return value[0];
@@ -104,6 +106,7 @@ export function registerDailyProductionBalanceRoutes(app: express.Express) {
   app.post(
     "/api/daily-production-balances",
     authenticate,
+    authorize("create", "ProductionBalance"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       if (!req.auth?.userId) {
         return res.status(401).json({ status: "error", message: "No autorizado" });
@@ -128,6 +131,7 @@ export function registerDailyProductionBalanceRoutes(app: express.Express) {
   app.put(
     "/api/daily-production-balances/:id",
     authenticate,
+    authorize("update", "ProductionBalance"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       if (!req.auth?.userId) {
         return res.status(401).json({ status: "error", message: "No autorizado" });
