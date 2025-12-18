@@ -1,4 +1,4 @@
-import { CheckCheck, Loader2 } from "lucide-react";
+import { CheckCheck, Loader2, Minus } from "lucide-react";
 import { Role } from "@/types/roles";
 
 export function BulkToggleCell({
@@ -14,7 +14,9 @@ export function BulkToggleCell({
   variant?: "section" | "page"; // Deprecated but kept for compatibility
 }) {
   const currentPermissionIds = role.permissions.map((p) => p.permissionId);
-  const allPresent = permissionIds.every((id) => currentPermissionIds.includes(id));
+  const presentCount = permissionIds.filter((id) => currentPermissionIds.includes(id)).length;
+  const allPresent = permissionIds.length > 0 && presentCount === permissionIds.length;
+  const somePresent = presentCount > 0 && presentCount < permissionIds.length;
 
   if (permissionIds.length === 0) return <td />;
 
@@ -31,6 +33,10 @@ export function BulkToggleCell({
         ) : allPresent ? (
           <div className="bg-primary hover:bg-primary-focus flex h-5 w-5 items-center justify-center rounded shadow-sm transition-transform active:scale-95">
             <CheckCheck size={12} className="text-primary-content" />
+          </div>
+        ) : somePresent ? (
+          <div className="bg-primary/70 hover:bg-primary flex h-5 w-5 items-center justify-center rounded shadow-sm transition-transform active:scale-95">
+            <Minus size={12} className="text-primary-content" />
           </div>
         ) : (
           <div className="border-base-300 hover:border-primary/50 hover:bg-primary/5 h-5 w-5 rounded border-2 transition-colors" />
