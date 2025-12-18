@@ -122,7 +122,7 @@ router.get("/rut/:rut", requireAuth, authorize("read", "Person"), async (req, re
 });
 
 // POST /api/people - Create new person
-router.post("/", requireAuth, authorize("manage", "Person"), async (req, res) => {
+router.post("/", requireAuth, authorize("create", "Person"), async (req, res) => {
   try {
     const data = personSchema.parse(req.body);
     const authReq = req as AuthenticatedRequest;
