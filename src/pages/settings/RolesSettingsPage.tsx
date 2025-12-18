@@ -262,7 +262,7 @@ export default function RolesSettingsPage() {
                   Permiso / acción
                 </th>
                 {displayRoles.map((role) => (
-                  <th key={role.id} className="group relative w-48 min-w-48 p-2 text-center align-top">
+                  <th key={role.id} className="group relative w-32 min-w-32 p-2 text-center align-top">
                     <div className="flex flex-col items-center gap-1">
                       <span className="line-clamp-2 text-base leading-tight font-bold" title={role.name}>
                         {role.name}
@@ -371,18 +371,17 @@ export default function RolesSettingsPage() {
                                         </div>
                                       </td>
                                       {displayRoles.map((role) => (
-                                        <td key={role.id} className="w-48 min-w-48 p-2 text-center align-top">
-                                          <BulkToggleCell
-                                            role={role}
-                                            permissionIds={item.permissionIds}
-                                            isUpdating={
-                                              updateRolePermissionsMutation.isPending &&
-                                              updateRolePermissionsMutation.variables?.roleId === role.id
-                                            }
-                                            onToggle={handleBulkToggle}
-                                            variant="page"
-                                          />
-                                        </td>
+                                        <BulkToggleCell
+                                          key={role.id}
+                                          role={role}
+                                          permissionIds={item.permissionIds}
+                                          isUpdating={
+                                            updateRolePermissionsMutation.isPending &&
+                                            updateRolePermissionsMutation.variables?.roleId === role.id
+                                          }
+                                          onToggle={handleBulkToggle}
+                                          variant="page"
+                                        />
                                       ))}
                                     </tr>
 
@@ -418,17 +417,13 @@ export default function RolesSettingsPage() {
                                                       </div>
                                                     </td>
                                                     {displayRoles.map((role) => (
-                                                      <td
+                                                      <PermissionCell
                                                         key={role.id}
-                                                        className="w-48 min-w-48 p-0 text-center align-middle"
-                                                      >
-                                                        <PermissionCell
-                                                          role={role}
-                                                          permissionId={perm.id}
-                                                          isUpdating={false}
-                                                          onToggle={handlePermissionToggle}
-                                                        />
-                                                      </td>
+                                                        role={role}
+                                                        permissionId={perm.id}
+                                                        isUpdating={false}
+                                                        onToggle={handlePermissionToggle}
+                                                      />
                                                     ))}
                                                   </tr>
                                                 );
@@ -474,14 +469,13 @@ export default function RolesSettingsPage() {
                                     </div>
                                   </td>
                                   {displayRoles.map((role) => (
-                                    <td key={role.id} className="w-48 min-w-48 p-0 text-center align-middle">
-                                      <PermissionCell
-                                        role={role}
-                                        permissionId={perm.id}
-                                        isUpdating={false}
-                                        onToggle={handlePermissionToggle}
-                                      />
-                                    </td>
+                                    <PermissionCell
+                                      key={role.id}
+                                      role={role}
+                                      permissionId={perm.id}
+                                      isUpdating={false}
+                                      onToggle={handlePermissionToggle}
+                                    />
                                   ))}
                                 </tr>
                               );
@@ -558,14 +552,13 @@ export default function RolesSettingsPage() {
                                     </div>
                                   </td>
                                   {displayRoles.map((role) => (
-                                    <td key={role.id} className="w-48 min-w-48 p-0 text-center align-middle">
-                                      <PermissionCell
-                                        role={role}
-                                        permissionId={perm.id}
-                                        isUpdating={false}
-                                        onToggle={handlePermissionToggle}
-                                      />
-                                    </td>
+                                    <PermissionCell
+                                      key={role.id}
+                                      role={role}
+                                      permissionId={perm.id}
+                                      isUpdating={false}
+                                      onToggle={handlePermissionToggle}
+                                    />
                                   ))}
                                 </tr>
                               );
@@ -616,15 +609,15 @@ function PermissionCell({
       <button
         onClick={() => onToggle(role, permissionId)}
         disabled={isUpdating}
-        className="group mx-auto flex h-12 w-full items-center justify-center transition-colors"
+        className="group mx-auto flex h-8 w-full items-center justify-center transition-colors"
       >
         {/* Solid badge style for better visibility */}
         {hasAccess ? (
-          <div className="bg-primary hover:bg-primary-focus flex h-6 w-6 items-center justify-center rounded-md shadow-sm transition-transform active:scale-95">
-            <Check size={14} className="text-primary-content" />
+          <div className="bg-primary hover:bg-primary-focus flex h-4 w-4 items-center justify-center rounded-md shadow-sm transition-transform active:scale-95">
+            <Check size={10} className="text-primary-content" />
           </div>
         ) : (
-          <div className="border-base-300 group-hover:border-primary/50 group-hover:bg-primary/5 h-6 w-6 rounded-md border-2 transition-colors" />
+          <div className="border-base-300 group-hover:border-primary/50 group-hover:bg-primary/5 h-4 w-4 rounded-md border-2 transition-colors" />
         )}
       </button>
     </td>
