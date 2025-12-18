@@ -254,7 +254,7 @@ export default function RolesSettingsPage() {
         {/* Dynamic Grid Layout */}
         <div className="min-w-full">
           {/* Note: using displayRoles for rendering */}
-          <table className="table w-full table-fixed">
+          <table className="table w-auto table-fixed">
             {/* ... Header logic using displayRoles ... */}
             <thead>
               <tr>
