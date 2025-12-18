@@ -25,7 +25,7 @@ export function registerCounterpartRoutes(app: express.Express) {
   app.get(
     "/api/counterparts",
     authenticate,
-    authorize("manage", "Counterpart"),
+    authorize("read", "Counterpart"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       logEvent("counterparts:list", requestContext(req));
       const counterparts = await listCounterparts();

@@ -43,7 +43,7 @@ const personInclude = {
 } as const;
 
 // GET /api/people - List all people with their roles
-router.get("/", requireAuth, async (req, res) => {
+router.get("/", requireAuth, authorize("read", "Person"), async (req, res) => {
   try {
     const includeTest = req.query.includeTest === "true";
 
@@ -76,7 +76,7 @@ router.get("/", requireAuth, async (req, res) => {
 });
 
 // GET /api/people/:id - Get single person with all roles
-router.get("/:id", requireAuth, async (req, res) => {
+router.get("/:id", requireAuth, authorize("read", "Person"), async (req, res) => {
   try {
     const id = Number(req.params.id);
     if (isNaN(id)) return res.status(400).json({ status: "error", message: "Invalid ID" });
@@ -102,7 +102,7 @@ router.get("/:id", requireAuth, async (req, res) => {
 });
 
 // GET /api/people/rut/:rut - Get person by RUT
-router.get("/rut/:rut", requireAuth, async (req, res) => {
+router.get("/rut/:rut", requireAuth, authorize("read", "Person"), async (req, res) => {
   try {
     const rut = req.params.rut;
     const person = await prisma.person.findUnique({

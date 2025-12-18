@@ -11,6 +11,7 @@ export function registerEmployeeRoutes(app: express.Express) {
   app.get(
     "/api/employees",
     authenticate,
+    authorize("read", "Employee"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       const includeInactive = req.query.includeInactive === "true";
       const includeTest = req.query.includeTest === "true";

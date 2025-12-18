@@ -48,6 +48,7 @@ export function registerLoanRoutes(app: express.Express) {
   router.get(
     "/:id",
     authenticate,
+    authorize("read", "Loan"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       const id = Number(req.params.id);
       if (!Number.isFinite(id)) {
