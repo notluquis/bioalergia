@@ -20,7 +20,21 @@ export const NAV_DATA: NavSectionData[] = [
   {
     title: "Resumen",
     category: "Resumen",
-    items: [{ to: "/", label: "Panel", iconKey: "LayoutDashboard", exact: true }],
+    items: [
+      {
+        to: "/",
+        label: "Panel",
+        iconKey: "LayoutDashboard",
+        exact: true,
+        requiredPermission: { action: "read", subject: "Dashboard" },
+      },
+      {
+        to: "/reports",
+        label: "Reportes",
+        iconKey: "FileBarChart",
+        requiredPermission: { action: "read", subject: "Report" },
+      },
+    ],
   },
   {
     title: "Finanzas",
@@ -99,10 +113,22 @@ export const NAV_DATA: NavSectionData[] = [
         requiredPermission: { action: "read", subject: "InventoryItem" },
       },
       {
+        to: "/operations/supplies",
+        label: "Solicitudes",
+        iconKey: "PackagePlus",
+        requiredPermission: { action: "read", subject: "SupplyRequest" },
+      },
+      {
         to: "/hr/employees",
         label: "RRHH",
         iconKey: "Users2",
         requiredPermission: { action: "read", subject: "Employee" },
+      },
+      {
+        to: "/hr/timesheets",
+        label: "Control Horas",
+        iconKey: "Clock",
+        requiredPermission: { action: "read", subject: "Timesheet" },
       },
     ],
   },
@@ -115,6 +141,24 @@ export const NAV_DATA: NavSectionData[] = [
         label: "Roles y Permisos",
         iconKey: "Users2",
         requiredPermission: { action: "read", subject: "Role" },
+      },
+      {
+        to: "/settings/users",
+        label: "Usuarios",
+        iconKey: "UserCog",
+        requiredPermission: { action: "read", subject: "User" },
+      },
+      {
+        to: "/settings/general",
+        label: "Configuración",
+        iconKey: "Settings2",
+        requiredPermission: { action: "read", subject: "Setting" },
+      },
+      {
+        to: "/settings/permissions-list",
+        label: "Lista Permisos",
+        iconKey: "ListChecks",
+        requiredPermission: { action: "read", subject: "Permission" },
       },
       {
         to: "/settings/csv-upload",

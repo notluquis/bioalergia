@@ -1,6 +1,6 @@
 import { prisma } from "../prisma.js";
 import { permissionMap } from "../lib/authz/permissionMap.js";
-import { NAV_DATA } from "../../shared/navigation-data.js";
+import { NAV_DATA, NavItemData } from "../../shared/navigation-data.js";
 
 export async function listPermissions() {
   return await prisma.permission.findMany({
@@ -34,15 +34,23 @@ export async function syncPermissions() {
   }
 
   // 2. Dynamic Permissions from Navigation
-  // Strategy: For every page with a "requiredPermission.subject", ensure "read" and "manage" exist.
+  // Strategy: For every page with a "requiredPermission.subject", ensure "read", "create", "update", "delete" exist.
   const subjects = new Set<string>();
 
-  NAV_DATA.forEach((section) => {
-    section.items.forEach((item) => {
-      if (item.requiredPermission && item.requiredPermission.subject) {
+  // Recursive helper to collect subjects including subItems
+  const collectSubjects = (items: NavItemData[]) => {
+    items.forEach((item) => {
+      if (item.requiredPermission?.subject) {
         subjects.add(item.requiredPermission.subject);
       }
+      if (item.subItems && Array.isArray(item.subItems)) {
+        collectSubjects(item.subItems);
+      }
     });
+  };
+
+  NAV_DATA.forEach((section) => {
+    collectSubjects(section.items);
   });
 
   for (const subject of subjects) {

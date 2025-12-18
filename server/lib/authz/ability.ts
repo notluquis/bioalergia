@@ -40,7 +40,8 @@ export type AppSubjects =
   | "Setting"
   | "Report"
   | "BulkData"
-  | "Security";
+  | "Security"
+  | "Dashboard";
 
 export type AppAbility = PureAbility<[string, AppSubjects], PrismaQuery>;
 

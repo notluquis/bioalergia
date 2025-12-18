@@ -98,7 +98,7 @@ export default function App() {
   return (
     <>
       {impersonatedRole && (
-        <div className="bg-warning text-warning-content sticky top-0 z-[100] flex h-10 w-full items-center justify-center gap-4 px-4 text-xs font-bold shadow-md">
+        <div className="bg-warning text-warning-content sticky top-0 z-100 flex h-10 w-full items-center justify-center gap-4 px-4 text-xs font-bold shadow-md">
           <span>VISTA PREVIA: {impersonatedRole.name}</span>
           <button
             onClick={stopImpersonating}
