@@ -16,6 +16,7 @@ import {
   Person,
   DailyProductionBalance,
   InventoryItem,
+  DailyBalance,
 } from "@prisma/client";
 
 // Define Subjects including 'all' and Prisma models
@@ -35,6 +36,7 @@ export type AppSubjects =
       Person: Person;
       ProductionBalance: DailyProductionBalance;
       InventoryItem: InventoryItem;
+      DailyBalance: DailyBalance;
     }>
   | "all"
   | "Setting"

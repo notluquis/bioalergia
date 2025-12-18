@@ -26,6 +26,7 @@ export function registerSuppliesRoutes(app: express.Express) {
 
   router.get(
     "/requests",
+    authorize("read", "SupplyRequest"),
     asyncHandler(async (req, res) => {
       const requests = await getSupplyRequests();
       res.json(requests);
@@ -34,6 +35,7 @@ export function registerSuppliesRoutes(app: express.Express) {
 
   router.get(
     "/common",
+    authorize("read", "SupplyRequest"),
     asyncHandler(async (req, res) => {
       const supplies = await getCommonSupplies();
       res.json(supplies);
@@ -42,6 +44,7 @@ export function registerSuppliesRoutes(app: express.Express) {
 
   router.post(
     "/requests",
+    authorize("create", "SupplyRequest"),
     asyncHandler(async (req, res) => {
       const parsed = createSupplyRequestSchema.safeParse(req.body);
       if (!parsed.success) {

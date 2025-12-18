@@ -1,5 +1,6 @@
 import express from "express";
 import { asyncHandler, authenticate } from "../lib/http.js";
+import { authorize } from "../middleware/authorize.js";
 import {
   createInventoryCategory,
   listInventoryCategories,
@@ -25,6 +26,7 @@ export function registerInventoryRoutes(app: express.Express) {
   // GET /api/inventory/allergy-overview - Specialized view for allergy inventory
   router.get(
     "/allergy-overview",
+    authorize("read", "InventoryItem"),
     asyncHandler(async (_req, res) => {
       // Fetch all items with their categories
       const items = await listInventoryItems();
@@ -63,6 +65,7 @@ export function registerInventoryRoutes(app: express.Express) {
 
   router.get(
     "/categories",
+    authorize("read", "InventoryItem"),
     asyncHandler(async (_req, res) => {
       const categories = await listInventoryCategories();
       res.json({
@@ -78,6 +81,7 @@ export function registerInventoryRoutes(app: express.Express) {
 
   router.post(
     "/categories",
+    authorize("manage", "InventoryItem"),
     asyncHandler(async (req, res) => {
       const parsed = inventoryCategorySchema.safeParse(req.body);
       if (!parsed.success) {
@@ -98,6 +102,7 @@ export function registerInventoryRoutes(app: express.Express) {
   // Delete Category
   router.delete(
     "/categories/:id",
+    authorize("manage", "InventoryItem"),
     asyncHandler(async (req, res) => {
       const id = Number(req.params.id);
       try {
@@ -116,6 +121,7 @@ export function registerInventoryRoutes(app: express.Express) {
   // Item Routes
   router.get(
     "/items",
+    authorize("read", "InventoryItem"),
     asyncHandler(async (_req, res) => {
       const items = await listInventoryItems();
       res.json({
@@ -147,6 +153,7 @@ export function registerInventoryRoutes(app: express.Express) {
 
   router.post(
     "/items",
+    authorize("manage", "InventoryItem"),
     asyncHandler(async (req, res) => {
       const parsed = inventoryItemSchema.safeParse(req.body);
       if (!parsed.success) {
@@ -177,6 +184,7 @@ export function registerInventoryRoutes(app: express.Express) {
 
   router.put(
     "/items/:id",
+    authorize("manage", "InventoryItem"),
     asyncHandler(async (req, res) => {
       const id = Number(req.params.id);
       const parsed = inventoryItemUpdateSchema.safeParse(req.body);
@@ -208,6 +216,7 @@ export function registerInventoryRoutes(app: express.Express) {
 
   router.delete(
     "/items/:id",
+    authorize("manage", "InventoryItem"),
     asyncHandler(async (req, res) => {
       const id = Number(req.params.id);
       await deleteInventoryItem(id);
@@ -218,6 +227,7 @@ export function registerInventoryRoutes(app: express.Express) {
   // Movement Routes
   router.post(
     "/movements",
+    authorize("manage", "InventoryItem"),
     asyncHandler(async (req, res) => {
       const parsed = inventoryMovementSchema.safeParse(req.body);
       if (!parsed.success) {

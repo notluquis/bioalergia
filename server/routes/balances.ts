@@ -1,5 +1,6 @@
 import express from "express";
 import { asyncHandler, authenticate } from "../lib/http.js";
+import { authorize } from "../middleware/authorize.js";
 import { getBalancesReport, upsertDailyBalance } from "../services/balances.js";
 import { z } from "zod";
 
@@ -18,6 +19,7 @@ export function registerBalanceRoutes(app: express.Express) {
   app.get(
     "/api/balances",
     authenticate,
+    authorize("read", "DailyBalance"),
     asyncHandler(async (req, res) => {
       const { from, to } = querySchema.parse(req.query);
       const report = await getBalancesReport(from, to);
@@ -28,6 +30,7 @@ export function registerBalanceRoutes(app: express.Express) {
   app.post(
     "/api/balances",
     authenticate,
+    authorize("update", "DailyBalance"),
     asyncHandler(async (req, res) => {
       const { date, balance, note } = bodySchema.parse(req.body);
       await upsertDailyBalance(date, balance, note);

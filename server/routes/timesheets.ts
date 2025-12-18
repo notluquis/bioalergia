@@ -24,6 +24,7 @@ export function registerTimesheetRoutes(app: express.Express) {
   app.get(
     "/api/timesheets/months",
     authenticate,
+    authorize("read", "Timesheet"),
     asyncHandler(async (_req, res) => {
       // Generar lista de meses disponibles: 6 meses atrás hasta 3 meses adelante
       const now = new Date();
@@ -61,6 +62,7 @@ export function registerTimesheetRoutes(app: express.Express) {
   app.get(
     "/api/timesheets",
     authenticate,
+    authorize("read", "Timesheet"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       const parsed = z
         .object({
@@ -202,6 +204,7 @@ export function registerTimesheetRoutes(app: express.Express) {
   app.get(
     "/api/timesheets/summary",
     authenticate,
+    authorize("read", "Timesheet"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       const { month } = monthParamSchema.parse(req.query);
       const employeeId = req.query.employeeId ? Number(req.query.employeeId) : undefined;
@@ -215,6 +218,7 @@ export function registerTimesheetRoutes(app: express.Express) {
   app.get(
     "/api/timesheets/:employeeId/detail",
     authenticate,
+    authorize("read", "Timesheet"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       const { month } = monthParamSchema.parse(req.query);
       const employeeId = Number(req.params.employeeId);
@@ -230,6 +234,7 @@ export function registerTimesheetRoutes(app: express.Express) {
   app.get(
     "/api/timesheets/multi-detail",
     authenticate,
+    authorize("read", "Timesheet"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       const employeeIdsParam = req.query.employeeIds as string;
       const from = req.query.from as string;
