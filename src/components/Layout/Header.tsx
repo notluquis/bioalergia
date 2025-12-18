@@ -75,7 +75,9 @@ export default function Header() {
         </div>
       </div>
       <div className="flex items-center gap-2 md:gap-3">
-        <Clock />
+        <div className="hidden md:block">
+          <Clock />
+        </div>
         <ThemeToggle />
         <ConnectionIndicator />
         <button

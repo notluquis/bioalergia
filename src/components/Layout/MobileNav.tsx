@@ -12,7 +12,7 @@ const NAV_ITEMS: NavItem[] = [
   { path: "/", icon: Home, label: "Inicio" },
   { path: "/employees", icon: Users, label: "Personal" },
   { path: "/services", icon: Briefcase, label: "Servicios" },
-  { path: "/stats", icon: BarChart3, label: "Reportes" },
+  { path: "/hr/reports", icon: BarChart3, label: "Reportes" },
 ];
 
 export function BottomNav() {
@@ -30,8 +30,8 @@ export function BottomNav() {
   };
 
   return (
-    <nav className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] left-1/2 z-50 w-[calc(100%-2.5rem)] max-w-lg -translate-x-1/2 px-2 pr-[max(0.5rem,env(safe-area-inset-right))] pl-[max(0.5rem,env(safe-area-inset-left))] md:hidden">
-      <div className="bottom-bar-glass flex items-stretch gap-1 px-4 py-2">
+    <nav className="fixed bottom-6 left-1/2 z-50 w-[min(100%-2rem,400px)] -translate-x-1/2 md:hidden">
+      <div className="flex items-center justify-between gap-1 rounded-4xl border border-white/10 bg-black/80 p-2 shadow-2xl backdrop-blur-xl">
         {NAV_ITEMS.map(({ path, icon: Icon, label }) => {
           const active = isActive(path);
           return (
@@ -42,20 +42,29 @@ export function BottomNav() {
                 setPendingPath(path);
                 navigate(path);
               }}
-              className={`flex flex-1 flex-col items-center justify-center gap-1 rounded-full px-3 py-2 text-[10px] font-semibold transition-all select-none ${
-                active || pendingPath === path ? "nav-item-active scale-105" : "nav-item-inactive"
+              className={`relative flex flex-1 flex-col items-center justify-center gap-1 rounded-3xl px-1 py-3 text-[10px] font-medium transition-all duration-300 ${
+                active ? "text-white" : "text-white/50 hover:text-white/80"
               }`}
             >
-              <span className="relative flex items-center justify-center">
-                <Icon className="h-5 w-5" strokeWidth={active || pendingPath === path ? 2.6 : 2} />
-                {pendingPath === path && (
-                  <span className="bg-primary/80 absolute -right-3 h-2 w-2 animate-ping rounded-full" aria-hidden />
-                )}
+              {/* Active Background Pill */}
+              {active && <div className="absolute inset-0 rounded-3xl bg-white/20 shadow-inner" aria-hidden="true" />}
+
+              <span className="relative z-10 flex flex-col items-center gap-1">
+                <Icon
+                  className={`h-6 w-6 transition-transform duration-300 ${active ? "scale-110" : ""}`}
+                  strokeWidth={active ? 2.5 : 2}
+                />
+                <span
+                  className={`transition-opacity duration-300 ${active ? "font-semibold opacity-100" : "opacity-70"}`}
+                >
+                  {label}
+                </span>
               </span>
-              <span className="flex items-center gap-1">
-                {label}
-                {pendingPath === path && <span className="bg-primary/80 h-1.5 w-1.5 rounded-full" />}
-              </span>
+
+              {/* Notification Dot (Pending) */}
+              {pendingPath === path && !active && (
+                <span className="bg-primary shadow-primary/50 absolute top-2 right-1/4 h-2 w-2 rounded-full shadow-lg" />
+              )}
             </button>
           );
         })}

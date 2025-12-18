@@ -553,6 +553,8 @@ const router = createBrowserRouter(
         { path: "/supplies", element: <Navigate to="/operations/supplies" replace /> },
         { path: "/settings/inventory", element: <Navigate to="/settings/inventario" replace /> },
         { path: "/settings/finance", element: <Navigate to="/finanzas/production-balances" replace /> },
+        { path: "/reports", element: <Navigate to="/hr/reports" replace /> },
+        { path: "/settings/general", element: <Navigate to="/settings" replace /> },
       ],
     },
     { path: "*", element: <NotFoundPage /> },

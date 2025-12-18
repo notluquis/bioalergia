@@ -222,7 +222,7 @@ export function ConnectionIndicator() {
         aria-label={`Estado de la conexión: ${statusCopy.label}`}
       >
         <span className={cn("h-2.5 w-2.5 rounded-full shadow-inner transition", styles.dot)} />
-        <span>{statusCopy.label}</span>
+        <span className="hidden md:inline">{statusCopy.label}</span>
       </button>
 
       {open && (
