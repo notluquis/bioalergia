@@ -214,6 +214,16 @@ export function registerInventoryRoutes(app: express.Express) {
     })
   );
 
+  router.delete(
+    "/items/:id",
+    authorize("delete", "InventoryItem"),
+    asyncHandler(async (req, res) => {
+      const id = Number(req.params.id);
+      await deleteInventoryItem(id);
+      res.status(204).send();
+    })
+  );
+
   router.post(
     "/movements",
     authorize("update", "InventoryItem"),
