@@ -7,6 +7,7 @@ export type NavItemData = {
   roles?: string[];
   requiredPermission?: { action: string; subject: string };
   exact?: boolean;
+  subItems?: NavItemData[];
 };
 
 export type NavSectionData = {
@@ -102,6 +103,18 @@ export const NAV_DATA: NavSectionData[] = [
         label: "RRHH",
         iconKey: "Users2",
         requiredPermission: { action: "read", subject: "Employee" },
+      },
+    ],
+  },
+  {
+    title: "Sistema",
+    category: "Gestión",
+    items: [
+      {
+        to: "/settings/csv-upload",
+        label: "Carga Masiva",
+        iconKey: "Upload",
+        requiredPermission: { action: "create", subject: "all" },
       },
     ],
   },

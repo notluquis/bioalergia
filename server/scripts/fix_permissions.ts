@@ -1,100 +1,48 @@
 import "dotenv/config";
 import { prisma } from "../prisma.js";
 import { syncPermissions } from "../services/permissions.js";
-import { permissionMap } from "../lib/authz/permissionMap.js";
-import { logger } from "../lib/logger.js";
+import { NAV_DATA, NavItemData } from "../../shared/navigation-data.js";
 
 async function fixPermissions() {
   console.log("Starting permission fix...");
 
-  // 1. Sync Definitions
+  // 1. Sync Definitions (Generates CRUD only now)
   await syncPermissions();
   console.log("Permissions synced.");
 
-  // 2. Define target roles and desired permissions
-  const rolesToFix = [
-    {
-      // Try multiple variations
-      names: ["EnfermeroUniversitario", "Enfermero Universitario", "Enfermero"],
-      allowed: ["production_balance.read", "production_balance.manage"],
-      forbidden: ["daily_balance.read", "daily_balance.manage", "transaction.read"],
-    },
-    {
-      names: ["Tens", "TENS"],
-      allowed: ["production_balance.read", "production_balance.manage"],
-      forbidden: ["daily_balance.read", "daily_balance.manage", "transaction.read"],
-    },
-  ];
+  // 2. Remove 'manage' permissions for resources (Normalization cleanup)
+  console.log("Cleaning up redundant 'manage' permissions...");
+  const subjects = new Set<string>();
 
-  for (const roleDef of rolesToFix) {
-    const role = await prisma.role.findFirst({
-      where: { name: { in: roleDef.names } },
+  const collectSubjects = (items: NavItemData[]) => {
+    items.forEach((item) => {
+      if (item.requiredPermission?.subject) {
+        subjects.add(item.requiredPermission.subject);
+      }
+      if (item.subItems) {
+        collectSubjects(item.subItems);
+      }
+    });
+  };
+
+  NAV_DATA.forEach((section) => {
+    collectSubjects(section.items);
+  });
+
+  for (const subject of subjects) {
+    // Preserve 'manage all' as it is the super-admin privilege
+    if (subject === "all") continue;
+
+    // Check if permission exists before trying delete (optional, deleteMany is safe)
+    const result = await prisma.permission.deleteMany({
+      where: {
+        action: "manage",
+        subject: subject,
+      },
     });
 
-    if (!role) {
-      console.warn(`Role matching ${roleDef.names.join(", ")} not found. Skipping.`);
-      continue;
-    }
-
-    console.log(`Fixing role: ${role.name} (ID: ${role.id})`);
-
-    // Get permission IDs for allowed keys
-    const allowedPerms = [];
-    for (const key of roleDef.allowed) {
-      // @ts-ignore
-      const mapDef = permissionMap[key];
-      if (mapDef) {
-        const p = await prisma.permission.findUnique({
-          where: {
-            action_subject: {
-              action: mapDef.action,
-              subject: mapDef.subject,
-            },
-          },
-        });
-        if (p) allowedPerms.push(p);
-      }
-    }
-
-    // Get permission IDs for forbidden keys
-    const forbiddenPerms = [];
-    for (const key of roleDef.forbidden) {
-      // @ts-ignore
-      const mapDef = permissionMap[key];
-      if (mapDef) {
-        const p = await prisma.permission.findUnique({
-          where: {
-            action_subject: {
-              action: mapDef.action,
-              subject: mapDef.subject,
-            },
-          },
-        });
-        if (p) forbiddenPerms.push(p);
-      }
-    }
-
-    // Add Allowed
-    for (const p of allowedPerms) {
-      try {
-        await prisma.rolePermission.create({
-          data: { roleId: role.id, permissionId: p.id },
-        });
-        console.log(`  + Added ${p.action} ${p.subject}`);
-      } catch (e) {
-        // Ignore if exists
-      }
-    }
-
-    // Remove Forbidden
-    if (forbiddenPerms.length > 0) {
-      await prisma.rolePermission.deleteMany({
-        where: {
-          roleId: role.id,
-          permissionId: { in: forbiddenPerms.map((p) => p.id) },
-        },
-      });
-      console.log(`  - Removed ${forbiddenPerms.length} forbidden permissions`);
+    if (result.count > 0) {
+      console.log(`  - Removed 'manage' ${subject} (${result.count} records)`);
     }
   }
 

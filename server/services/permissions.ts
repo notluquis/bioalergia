@@ -47,18 +47,15 @@ export async function syncPermissions() {
 
   for (const subject of subjects) {
     try {
-      // Read Permission
-      await prisma.permission.upsert({
-        where: { action_subject: { action: "read", subject } },
-        update: {},
-        create: { action: "read", subject, description: `Auto-generated read for ${subject}` },
-      });
-      // Manage Permission
-      await prisma.permission.upsert({
-        where: { action_subject: { action: "manage", subject } },
-        update: {},
-        create: { action: "manage", subject, description: `Auto-generated manage for ${subject}` },
-      });
+      // Exclude 'manage' based on user request to normalize to CRUD only
+      const actions = ["read", "create", "update", "delete"];
+      for (const action of actions) {
+        await prisma.permission.upsert({
+          where: { action_subject: { action, subject } },
+          update: {},
+          create: { action, subject, description: `Auto-generated ${action} for ${subject}` },
+        });
+      }
     } catch (e) {
       console.error(`Error syncing dynamic subject ${subject}:`, e);
     }
