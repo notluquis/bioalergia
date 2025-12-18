@@ -111,10 +111,16 @@ export const NAV_DATA: NavSectionData[] = [
     category: "Gestión",
     items: [
       {
+        to: "/settings/roles",
+        label: "Roles y Permisos",
+        iconKey: "Users2",
+        requiredPermission: { action: "read", subject: "Role" },
+      },
+      {
         to: "/settings/csv-upload",
         label: "Carga Masiva",
         iconKey: "Upload",
-        requiredPermission: { action: "create", subject: "all" },
+        requiredPermission: { action: "create", subject: "BulkData" },
       },
     ],
   },
@@ -126,6 +132,7 @@ export const NAV_DATA: NavSectionData[] = [
         to: "/settings/security",
         label: "Seguridad",
         iconKey: "Settings",
+        requiredPermission: { action: "read", subject: "Security" },
       },
     ],
   },
