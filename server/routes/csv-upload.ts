@@ -155,7 +155,7 @@ import { authorize } from "../middleware/authorize.js";
 router.post(
   "/preview",
   authenticate,
-  authorize("manage", "Setting"),
+  authorize("create", "BulkData"),
   async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { table, data } = req.body;
@@ -254,7 +254,7 @@ router.post(
 router.post(
   "/import",
   authenticate,
-  authorize("manage", "Setting"),
+  authorize("create", "BulkData"),
   async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { table, data } = req.body;
