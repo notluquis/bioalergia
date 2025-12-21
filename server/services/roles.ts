@@ -15,12 +15,29 @@ export async function listRoles() {
 }
 
 export async function createRole(data: Prisma.RoleCreateInput) {
+  const existing = await prisma.role.findFirst({
+    where: { name: { equals: data.name, mode: "insensitive" } },
+  });
+  if (existing) {
+    throw new Error("El rol ya existe (nombre duplicado o muy similar)");
+  }
   return await prisma.role.create({
     data,
   });
 }
 
 export async function updateRole(id: number, data: Prisma.RoleUpdateInput) {
+  if (data.name && typeof data.name === "string") {
+    const existing = await prisma.role.findFirst({
+      where: {
+        name: { equals: data.name, mode: "insensitive" },
+        id: { not: id },
+      },
+    });
+    if (existing) {
+      throw new Error("El rol ya existe (nombre duplicado o muy similar)");
+    }
+  }
   return await prisma.role.update({
     where: { id },
     data,
