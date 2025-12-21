@@ -1,36 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
 import "dayjs/locale/es";
-import {
-  BarChart,
-  Bar,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-} from "recharts";
-import {
-  Filter,
-  Search,
-  X,
-  Check,
-  Calendar,
-  BarChart2,
-  List,
-  Clock,
-  TrendingUp,
-  BarChart3,
-  PieChart as PieChartIcon,
-  type LucideIcon,
-} from "lucide-react";
+import { Filter, Search, X, Check, Calendar, BarChart2, List, Clock, TrendingUp, BarChart3 } from "lucide-react";
 import { LOADING_SPINNER_SM } from "@/lib/styles";
 
 import { useAuth } from "@/context/AuthContext";
@@ -45,90 +17,16 @@ import { prepareComparisonData, calculateStats, minutesToTime } from "../utils";
 import type { EmployeeWorkData, ReportGranularity } from "../types";
 import { PAGE_CONTAINER, TITLE_LG } from "@/lib/styles";
 import { cn } from "@/lib/utils";
+import { StatCard } from "../components/StatCard";
+
+// Lazy-load chart components (Recharts ~400KB)
+const TemporalChart = lazy(() => import("../components/ReportCharts").then((m) => ({ default: m.TemporalChart })));
+const DistributionChart = lazy(() =>
+  import("../components/ReportCharts").then((m) => ({ default: m.DistributionChart }))
+);
 
 dayjs.extend(isoWeek);
 dayjs.locale("es");
-
-// Local Stat Card Component for Report specific metrics
-function StatCard({
-  title,
-  value,
-  subtext,
-  icon: Icon,
-  className,
-  suffix,
-}: {
-  title: string;
-  value: string | number;
-  subtext?: string;
-  icon: LucideIcon;
-  className?: string;
-  suffix?: string;
-}) {
-  return (
-    <div className="bg-base-100 border-base-200 relative overflow-hidden rounded-2xl border p-4 shadow-sm transition-shadow hover:shadow-md">
-      <div className="mb-2 flex items-start justify-between">
-        <span className="text-base-content/50 text-xs font-bold tracking-wider uppercase">{title}</span>
-        <div
-          className={cn(
-            "bg-base-200/50 rounded-full p-2",
-            className?.replace("text-", "bg-").replace("500", "100") + "/10"
-          )}
-        >
-          <Icon className={cn("h-4 w-4", className)} />
-        </div>
-      </div>
-      <div className="flex items-baseline gap-1">
-        <span className={cn("text-2xl font-black tracking-tight", className)}>{value}</span>
-        {suffix && <span className="text-base-content/40 text-sm font-medium">{suffix}</span>}
-      </div>
-      {subtext && (
-        <div className="text-base-content/60 mt-1 truncate text-xs" title={subtext}>
-          {subtext}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// Color palette with fallbacks
-const getChartColors = (): string[] => {
-  const defaultColors = [
-    "hsl(220 70% 50%)", // Blue
-    "hsl(160 70% 40%)", // Emerald
-    "hsl(30 80% 55%)", // Orange
-    "hsl(340 75% 55%)", // Pink
-    "hsl(270 70% 60%)", // Purple
-    "hsl(190 80% 40%)", // Cyan
-    "hsl(10 80% 55%)", // Red
-    "hsl(290 70% 55%)", // Magenta
-  ];
-
-  if (typeof window === "undefined") return defaultColors;
-
-  try {
-    const root = window.getComputedStyle(document.documentElement);
-    const getVar = (name: string) => {
-      const val = root.getPropertyValue(name).trim();
-      return val ? `hsl(${val})` : null;
-    };
-
-    const themeColors = [
-      getVar("--p"),
-      getVar("--s"),
-      getVar("--a"),
-      getVar("--n"),
-      getVar("--in"),
-      getVar("--su"),
-      getVar("--wa"),
-      getVar("--er"),
-    ].filter(Boolean) as string[];
-
-    return themeColors.length > 0 ? themeColors : defaultColors;
-  } catch {
-    return defaultColors;
-  }
-};
 
 type ViewMode = "month" | "range" | "all";
 
@@ -357,7 +255,6 @@ export default function ReportsPage() {
   }, [effectiveDateRange, granularity]);
 
   const stats = useMemo(() => calculateStats(reportData, periodCount), [reportData, periodCount]);
-  const chartColors = getChartColors();
 
   if (!canView) {
     return <Alert variant="error">No tienes permisos para ver reportería.</Alert>;
@@ -389,7 +286,7 @@ export default function ReportsPage() {
                 role="tab"
                 className={cn(
                   "tab transition-all duration-200",
-                  viewMode === "month" && "tab-active bg-white shadow-sm"
+                  viewMode === "month" && "tab-active bg-base-100 shadow-sm"
                 )}
                 onClick={() => setViewMode("month")}
               >
@@ -399,7 +296,7 @@ export default function ReportsPage() {
                 role="tab"
                 className={cn(
                   "tab transition-all duration-200",
-                  viewMode === "range" && "tab-active bg-white shadow-sm"
+                  viewMode === "range" && "tab-active bg-base-100 shadow-sm"
                 )}
                 onClick={() => setViewMode("range")}
               >
@@ -407,7 +304,10 @@ export default function ReportsPage() {
               </a>
               <a
                 role="tab"
-                className={cn("tab transition-all duration-200", viewMode === "all" && "tab-active bg-white shadow-sm")}
+                className={cn(
+                  "tab transition-all duration-200",
+                  viewMode === "all" && "tab-active bg-base-100 shadow-sm"
+                )}
                 onClick={() => setViewMode("all")}
               >
                 Todo
@@ -646,122 +546,29 @@ export default function ReportsPage() {
                 />
               </div>
 
-              {/* Main Chart */}
-              <div className="bg-base-100 border-base-200 rounded-3xl border p-6 shadow-sm">
-                <div className="mb-6 flex items-center justify-between">
-                  <h3 className="flex items-center gap-2 text-lg font-bold">
-                    <BarChart2 className="text-primary h-5 w-5" />
-                    Comparativa Temporal
-                  </h3>
-                  <div className="badge badge-outline text-xs">
-                    {granularity === "day" ? "Diario" : granularity === "week" ? "Semanal" : "Mensual"}
+              {/* Charts Section - Lazy Loaded */}
+              <Suspense
+                fallback={
+                  <div className="bg-base-100 border-base-200 flex h-96 items-center justify-center rounded-3xl border shadow-sm">
+                    <span className="loading loading-spinner loading-lg text-primary" />
                   </div>
-                </div>
-
-                <div className="w-full" style={{ height: 350, minHeight: 350 }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    {granularity === "month" ? (
-                      <BarChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.3} />
-                        <XAxis dataKey="period" tick={{ fontSize: 12 }} stroke="hsl(var(--bc) / 0.4)" />
-                        <YAxis tick={{ fontSize: 12 }} stroke="hsl(var(--bc) / 0.4)" />
-                        <Tooltip
-                          contentStyle={{
-                            borderRadius: "12px",
-                            border: "none",
-                            boxShadow: "0 4px 6px -1px hsl(var(--b3) / 0.5)",
-                          }}
-                          cursor={{ fill: "hsl(var(--bc) / 0.05)" }}
-                        />
-                        <Legend />
-                        {reportData.map((emp, idx) => (
-                          <Bar
-                            key={emp.employeeId}
-                            dataKey={emp.fullName}
-                            fill={chartColors[idx % chartColors.length]}
-                            radius={[4, 4, 0, 0]}
-                            maxBarSize={50}
-                          />
-                        ))}
-                      </BarChart>
-                    ) : (
-                      <LineChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.3} />
-                        <XAxis dataKey="period" tick={{ fontSize: 12 }} stroke="hsl(var(--bc) / 0.4)" />
-                        <YAxis tick={{ fontSize: 12 }} stroke="hsl(var(--bc) / 0.4)" />
-                        <Tooltip
-                          contentStyle={{
-                            borderRadius: "12px",
-                            border: "none",
-                            boxShadow: "0 4px 6px -1px hsl(var(--b3) / 0.5)",
-                          }}
-                          cursor={{ fill: "hsl(var(--bc) / 0.05)" }}
-                        />
-                        <Legend iconType="circle" />
-                        {reportData.map((emp, idx) => (
-                          <Line
-                            key={emp.employeeId}
-                            type="monotone"
-                            dataKey={emp.fullName}
-                            stroke={chartColors[idx % chartColors.length]}
-                            strokeWidth={3}
-                            dot={{ r: 4, strokeWidth: 2 }}
-                            activeDot={{ r: 6 }}
-                            connectNulls
-                          />
-                        ))}
-                      </LineChart>
-                    )}
-                  </ResponsiveContainer>
-                </div>
-              </div>
+                }
+              >
+                <TemporalChart chartData={chartData} reportData={reportData} granularity={granularity} />
+              </Suspense>
 
               {/* Secondary Details Grid */}
               <div className="grid gap-6 lg:grid-cols-2">
-                {/* Pie Chart */}
-                {reportData.length > 1 && (
-                  <div className="bg-base-100 border-base-200 rounded-3xl border p-6 shadow-sm">
-                    <h3 className="mb-2 flex items-center gap-2 text-lg font-bold">
-                      <PieChartIcon className="text-secondary h-5 w-5" />
-                      Distribución Total
-                    </h3>
-                    <div className="h-80 w-full">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie
-                            data={reportData.map((emp) => ({
-                              name: emp.fullName,
-                              value: parseFloat((emp.totalMinutes / 60).toFixed(1)),
-                            }))}
-                            cx="50%"
-                            cy="45%"
-                            innerRadius={70}
-                            outerRadius={90}
-                            paddingAngle={5}
-                            dataKey="value"
-                          >
-                            {reportData.map((_, idx) => (
-                              <Cell
-                                key={`cell-${idx}`}
-                                fill={chartColors[idx % chartColors.length]}
-                                stroke="hsl(var(--b1))"
-                                strokeWidth={2}
-                              />
-                            ))}
-                          </Pie>
-                          <Tooltip
-                            contentStyle={{
-                              borderRadius: "12px",
-                              border: "none",
-                              boxShadow: "0 4px 6px -1px hsl(var(--b3) / 0.5)",
-                            }}
-                          />
-                          <Legend verticalAlign="bottom" align="center" height={70} iconType="circle" />
-                        </PieChart>
-                      </ResponsiveContainer>
+                {/* Pie Chart - Lazy Loaded */}
+                <Suspense
+                  fallback={
+                    <div className="bg-base-100 border-base-200 flex h-80 items-center justify-center rounded-3xl border shadow-sm">
+                      <span className="loading loading-spinner loading-md text-secondary" />
                     </div>
-                  </div>
-                )}
+                  }
+                >
+                  <DistributionChart reportData={reportData} />
+                </Suspense>
 
                 {/* Detailed Table */}
                 <div
