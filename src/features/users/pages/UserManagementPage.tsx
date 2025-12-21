@@ -317,7 +317,7 @@ export default function UserManagementPage() {
             <option value="ALL">Todos los roles</option>
             {roles?.map((role) => (
               <option key={role.name} value={role.name}>
-                {role.description || role.name}
+                {role.name}
               </option>
             ))}
           </select>
@@ -501,7 +501,7 @@ export default function UserManagementPage() {
               </option>
               {roles?.map((role) => (
                 <option key={role.name} value={role.name}>
-                  {role.description || role.name}
+                  {role.name}
                 </option>
               ))}
             </select>
