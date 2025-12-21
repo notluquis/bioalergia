@@ -1,46 +1,32 @@
 import { useMemo, useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 
 import Button from "@/components/ui/Button";
-import { fetchCalendarSyncLogs } from "@/features/calendar/api";
-import { CALENDAR_SYNC_LOGS_QUERY_KEY, useCalendarEvents } from "@/features/calendar/hooks/useCalendarEvents";
-import type { CalendarSyncLog } from "@/features/calendar/types";
+import { useCalendarEvents } from "@/features/calendar/hooks/useCalendarEvents";
 import { SyncProgressPanel } from "@/features/calendar/components/SyncProgressPanel";
 import { numberFormatter } from "@/lib/format";
 import { TITLE_LG } from "@/lib/styles";
 
 export default function CalendarSyncHistoryPage() {
-  const { syncing, syncError, syncProgress, syncDurationMs, syncNow, hasRunningSyncFromOtherSource, lastSyncInfo } =
-    useCalendarEvents();
+  const {
+    syncing,
+    syncError,
+    syncProgress,
+    syncDurationMs,
+    syncNow,
+    hasRunningSyncFromOtherSource,
+    lastSyncInfo,
+    syncLogs: logs,
+    refetchSyncLogs: refetchLogs,
+    isLoadingSyncLogs,
+  } = useCalendarEvents();
   const [page, setPage] = useState(0);
   const pageSize = 5;
-
-  // Use React Query for auto-refresh only when RUNNING
-  const {
-    data: logs = [],
-    isLoading: loading,
-    refetch: refetchLogs,
-  } = useQuery<CalendarSyncLog[], Error>({
-    queryKey: CALENDAR_SYNC_LOGS_QUERY_KEY,
-    queryFn: () => fetchCalendarSyncLogs(50),
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
-    staleTime: 30_000,
-    retry: false,
-    refetchInterval: (query) => {
-      const data = query.state.data;
-      if (!data?.length) return false;
-      const running = data.find((log) => log.status === "RUNNING");
-      if (!running) return false;
-      const started = dayjs(running.startedAt);
-      return started.isValid() && Date.now() - started.valueOf() < 15 * 60 * 1000 ? 5000 : false;
-    },
-    placeholderData: [],
-  });
+  const loading = isLoadingSyncLogs;
 
   const hasRunningSyncInHistory = logs.some((log) => {
-    if (log.status !== "RUNNING") return false;
+    if (log.status !== "RUNNING") return false; // Fixed: was using log.status which might be TS error if not typed implicitly? No, typed in hook.
+    // Actually, hook types are imported.
     const started = dayjs(log.startedAt);
     return started.isValid() && Date.now() - started.valueOf() < 15 * 60 * 1000;
   });

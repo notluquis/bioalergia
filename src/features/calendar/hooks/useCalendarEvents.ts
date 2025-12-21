@@ -132,7 +132,11 @@ export function useCalendarEvents() {
   });
 
   // Single source of truth for sync logs (shared across pages)
-  const { data: syncLogsData = [] } = useQuery<CalendarSyncLog[], Error>({
+  const {
+    data: syncLogsData = [],
+    isLoading: isLoadingSyncLogs,
+    refetch: refetchSyncLogs,
+  } = useQuery<CalendarSyncLog[], Error>({
     queryKey: CALENDAR_SYNC_LOGS_QUERY_KEY,
     queryFn: () => fetchCalendarSyncLogs(50),
     refetchOnWindowFocus: false,
@@ -311,6 +315,8 @@ export function useCalendarEvents() {
     syncDurationMs,
     syncNow,
     syncLogs,
+    refetchSyncLogs,
+    isLoadingSyncLogs,
     hasRunningSyncFromOtherSource,
   };
 }
