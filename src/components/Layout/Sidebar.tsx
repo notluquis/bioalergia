@@ -3,7 +3,7 @@ import { NavLink, useLocation, useNavigation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useCan } from "@/hooks/useCan";
 import { cn } from "@/lib/utils";
-import { ChevronsLeft, ChevronsRight, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { NAV_SECTIONS } from "@/config/navigation";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/Tooltip";
 import { APP_CONFIG } from "@/config/app";
@@ -19,12 +19,16 @@ interface SidebarProps {
   toggleCollapse?: () => void;
 }
 
-export default function Sidebar({ isOpen, isMobile, onClose, isCollapsed = false, toggleCollapse }: SidebarProps) {
+export default function Sidebar({ isOpen, isMobile, onClose }: SidebarProps) {
   const { user } = useAuth();
   const { can } = useCan();
   const navigation = useNavigation();
   const location = useLocation();
   const [pendingPath, setPendingPath] = React.useState<string | null>(null);
+
+  // Local state for collapse behavior (Desktop only)
+  // Default to collapsed (true) as requested
+  const [isCollapsed, setIsCollapsed] = React.useState(true);
 
   // Use full name from backend, fallback to email prefix
   const displayName = user?.name || user?.email?.split("@")[0] || "Usuario";
@@ -34,14 +38,26 @@ export default function Sidebar({ isOpen, isMobile, onClose, isCollapsed = false
     setPendingPath(null);
   }, [location.pathname]);
 
+  const handleMouseEnter = () => {
+    if (!isMobile) setIsCollapsed(false);
+  };
+
+  const handleMouseLeave = () => {
+    if (!isMobile) setIsCollapsed(true);
+  };
+
   return (
     <TooltipProvider delayDuration={0}>
       <aside
         id="app-sidebar"
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
         className={cn(
-          "border-base-300/50 bg-base-200/80 text-base-content fixed inset-y-0 left-0 z-50 flex h-full shrink-0 flex-col rounded-3xl border text-sm shadow-2xl backdrop-blur-3xl transition-all duration-300 md:static md:h-[calc(100dvh-5rem)] md:translate-x-0",
+          "border-base-300/50 bg-base-200/80 text-base-content fixed inset-y-0 left-0 z-50 flex h-full shrink-0 flex-col rounded-3xl border text-sm shadow-2xl backdrop-blur-3xl transition-all duration-300 md:fixed md:top-4 md:bottom-4 md:left-4 md:h-[calc(100dvh-2rem)] md:translate-x-0",
           isOpen ? "translate-x-0" : "-translate-x-full",
-          !isOpen && !isMobile && "hidden",
+          !isOpen && !isMobile && "hidden", // This line might hide it on desktop if isOpen is false (from mobile logic).
+          // App.tsx passes sidebarOpen=true on desktop (line 44). So isOpen is true.
+
           isCollapsed ? "w-20" : "w-[min(300px,88vw)]",
           isCollapsed ? "px-1.5 py-2" : "p-2",
           "overflow-x-hidden" // Prevent horizontal scroll
@@ -199,22 +215,7 @@ export default function Sidebar({ isOpen, isMobile, onClose, isCollapsed = false
               isCollapsed ? "p-2" : "p-3"
             )}
           >
-            {!isMobile && toggleCollapse && (
-              <button
-                onClick={toggleCollapse}
-                className={cn(
-                  "group text-base-content/60 hover:text-base-content/80 hover:bg-base-300/20 flex w-full items-center justify-center rounded-lg py-2 transition-all duration-200 active:scale-95",
-                  !isCollapsed && "mb-2"
-                )}
-                aria-label={isCollapsed ? "Expandir menú" : "Colapsar menú"}
-              >
-                {isCollapsed ? (
-                  <ChevronsRight className="h-4 w-4 transition-transform group-hover:scale-110" />
-                ) : (
-                  <ChevronsLeft className="h-4 w-4 transition-transform group-hover:scale-110" />
-                )}
-              </button>
-            )}
+            {/* Toggle button removed as sidebar is now hover-controlled */}
           </div>
         </div>
       </aside>
