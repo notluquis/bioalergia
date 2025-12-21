@@ -78,3 +78,26 @@ export async function findUsersByRoleIds(roleIds: number[]) {
     },
   });
 }
+// ... existing imports
+
+export async function assignUserRole(userId: number, roleName: string) {
+  const role = await prisma.role.findUnique({ where: { name: roleName } });
+  if (!role) {
+    throw new Error(`Rol '${roleName}' no encontrado.`);
+  }
+
+  // Replace existing roles with the new one (Single Role Strategy for now)
+  await prisma.$transaction([
+    prisma.userRoleAssignment.deleteMany({
+      where: { userId },
+    }),
+    prisma.userRoleAssignment.create({
+      data: {
+        userId,
+        roleId: role.id,
+      },
+    }),
+  ]);
+
+  return role;
+}

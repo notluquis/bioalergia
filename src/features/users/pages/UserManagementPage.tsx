@@ -20,6 +20,8 @@ import relativeTime from "dayjs/plugin/relativeTime";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import Input from "@/components/ui/Input";
+import Modal from "@/components/ui/Modal";
+import Button from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 import { apiClient } from "@/lib/apiClient";
 import { getPersonInitials, getPersonFullName } from "@/lib/person";
@@ -52,6 +54,34 @@ export default function UserManagementPage() {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("ALL");
   const [availableRoles, setAvailableRoles] = useState<{ name: string; description: string }[]>([]);
+
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [selectedRole, setSelectedRole] = useState("");
+
+  const updateRoleMutation = useMutation({
+    mutationFn: async ({ userId, role }: { userId: number; role: string }) => {
+      return apiClient.put(`/api/users/${userId}/role`, { role });
+    },
+    onSuccess: () => {
+      success("Rol actualizado correctamente");
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      setEditingUser(null);
+    },
+    onError: (err: Error) => {
+      error(err.message || "Error al actualizar rol");
+    },
+  });
+
+  const handleEditRoleClick = (user: User) => {
+    setEditingUser(user);
+    setSelectedRole(user.role);
+  };
+
+  const handleSaveRole = () => {
+    if (editingUser) {
+      updateRoleMutation.mutate({ userId: editingUser.id, role: selectedRole });
+    }
+  };
 
   // Fetch roles for filter
   useQuery({
@@ -364,6 +394,12 @@ export default function UserManagementPage() {
                             className="dropdown-content menu bg-base-100 rounded-box border-base-200 z-50 w-56 border p-2 shadow-lg"
                           >
                             <li>
+                              <a onClick={() => handleEditRoleClick(user)}>
+                                <UserCog size={14} />
+                                Editar rol
+                              </a>
+                            </li>
+                            <li>
                               <a onClick={() => handleToggleMfa(user.id, user.mfaEnabled)}>
                                 <ShieldCheck size={14} />
                                 {user.mfaEnabled ? "Desactivar" : "Activar"} MFA
@@ -409,6 +445,53 @@ export default function UserManagementPage() {
           </table>
         </div>
       </div>
+
+      <Modal
+        isOpen={!!editingUser}
+        onClose={() => setEditingUser(null)}
+        title={`Editar Rol: ${editingUser ? getPersonFullName(editingUser.person) : ""}`}
+        className="max-w-md"
+      >
+        <div className="mt-4 flex flex-col gap-4">
+          <p className="text-base-content/70 text-sm">
+            Selecciona el nuevo rol para el usuario. Esto actualizará sus permisos inmediatamente.
+          </p>
+
+          <div className="form-control">
+            <label className="label">
+              <span className="label-text">Rol asignado</span>
+            </label>
+            <select
+              className="select select-bordered w-full"
+              value={selectedRole}
+              onChange={(e) => setSelectedRole(e.target.value)}
+            >
+              <option value="" disabled>
+                Seleccionar rol
+              </option>
+              {availableRoles.map((role) => (
+                <option key={role.name} value={role.name}>
+                  {role.description || role.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="modal-action mt-6">
+            <Button variant="ghost" onClick={() => setEditingUser(null)}>
+              Cancelar
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleSaveRole}
+              isLoading={updateRoleMutation.isPending}
+              disabled={!selectedRole || selectedRole === editingUser?.role}
+            >
+              Guardar cambios
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
