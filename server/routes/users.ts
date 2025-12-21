@@ -1,7 +1,7 @@
 import express from "express";
 import { asyncHandler, authenticate } from "../lib/http.js";
 import { authorize } from "../middleware/authorize.js";
-import { findUserById } from "../services/users.js";
+import { findUserById, assignUserRole } from "../services/users.js";
 import { prisma, Prisma } from "../prisma.js";
 
 import { logEvent } from "../lib/logger.js";
@@ -227,6 +227,38 @@ export function registerUserRoutes(app: express.Express) {
       });
 
       res.json({ status: "ok", message: `Usuario ${status === "ACTIVE" ? "reactivado" : "suspendido"}` });
+    })
+  );
+  // Update User Role
+  app.put(
+    "/api/users/:id/role",
+    authenticate,
+    authorize("update", "User"),
+    asyncHandler(async (req: AuthenticatedRequest, res) => {
+      const targetUserId = Number(req.params.id);
+      const { role } = req.body;
+
+      if (isNaN(targetUserId)) {
+        return res.status(400).json({ status: "error", message: "ID de usuario inválido" });
+      }
+      if (!role || typeof role !== "string") {
+        return res.status(400).json({ status: "error", message: "Rol requerido" });
+      }
+
+      try {
+        await assignUserRole(targetUserId, role);
+
+        logEvent("user:role_update", {
+          adminId: req.auth?.userId,
+          targetUserId,
+          newRole: role,
+        });
+
+        res.json({ status: "ok", message: "Rol actualizado correctamente" });
+      } catch (e) {
+        const message = e instanceof Error ? e.message : "Error desconocido al actualizar rol";
+        res.status(400).json({ status: "error", message });
+      }
     })
   );
 }
