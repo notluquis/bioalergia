@@ -261,4 +261,39 @@ export function registerUserRoutes(app: express.Express) {
       }
     })
   );
+
+  // Delete User
+  app.delete(
+    "/api/users/:id",
+    authenticate,
+    authorize("delete", "User"),
+    asyncHandler(async (req: AuthenticatedRequest, res) => {
+      const targetUserId = Number(req.params.id);
+
+      if (isNaN(targetUserId)) {
+        return res.status(400).json({ status: "error", message: "ID de usuario inválido" });
+      }
+
+      // Prevent deleting self
+      if (req.auth?.userId === targetUserId) {
+        return res.status(400).json({ status: "error", message: "No puedes eliminar tu propia cuenta" });
+      }
+
+      try {
+        await prisma.user.delete({
+          where: { id: targetUserId },
+        });
+
+        logEvent("user:delete", {
+          adminId: req.auth?.userId,
+          targetUserId,
+        });
+
+        res.json({ status: "ok", message: "Usuario eliminado correctamente" });
+      } catch (e) {
+        const message = e instanceof Error ? e.message : "Error al eliminar usuario";
+        res.status(500).json({ status: "error", message });
+      }
+    })
+  );
 }

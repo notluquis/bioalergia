@@ -159,6 +159,19 @@ export default function UserManagementPage() {
     },
   });
 
+  const deleteUserMutation = useMutation({
+    mutationFn: async (userId: number) => {
+      return apiClient.delete(`/api/users/${userId}`);
+    },
+    onSuccess: () => {
+      success("Usuario eliminado correctamente");
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+    },
+    onError: (err: Error) => {
+      error(err.message || "Error al eliminar usuario");
+    },
+  });
+
   const handleDeletePasskey = (userId: number) => {
     if (confirm("¿Estás seguro de eliminar el Passkey de este usuario?")) {
       deletePasskeyMutation.mutate(userId, {});
@@ -168,6 +181,14 @@ export default function UserManagementPage() {
   const handleResetPassword = (userId: number) => {
     if (confirm("¿Restablecer contraseña? Esto generará una clave temporal y requerirá configuración nueva.")) {
       resetPasswordMutation.mutate(userId);
+    }
+  };
+
+  const handleDeleteUser = (userId: number) => {
+    if (
+      confirm("¿Estás seguro de eliminar este usuario? Esta acción no se puede deshacer y borrará sus roles y accesos.")
+    ) {
+      deleteUserMutation.mutate(userId);
     }
   };
 
@@ -191,7 +212,12 @@ export default function UserManagementPage() {
       user.email.toLowerCase().includes(search.toLowerCase()) ||
       (user.person?.names?.toLowerCase() ?? "").includes(search.toLowerCase()) ||
       (user.person?.rut ?? "").includes(search);
-    const matchesRole = roleFilter === "ALL" || user.role === roleFilter;
+
+    const matchesRole =
+      roleFilter === "ALL" ||
+      user.role === roleFilter ||
+      (user.role || "").toUpperCase() === (roleFilter || "").toUpperCase();
+
     return matchesSearch && matchesRole;
   });
 
@@ -421,7 +447,7 @@ export default function UserManagementPage() {
                             )}
                             {user.status !== "SUSPENDED" ? (
                               <li>
-                                <a onClick={() => handleToggleStatus(user.id, user.status)} className="text-error">
+                                <a onClick={() => handleToggleStatus(user.id, user.status)} className="text-warning">
                                   <Lock size={14} />
                                   Suspender acceso
                                 </a>
@@ -434,6 +460,12 @@ export default function UserManagementPage() {
                                 </a>
                               </li>
                             )}
+                            <li>
+                              <a onClick={() => handleDeleteUser(user.id)} className="text-error">
+                                <Trash2 size={14} />
+                                Eliminar usuario
+                              </a>
+                            </li>
                           </ul>
                         </div>
                       </td>
@@ -450,7 +482,7 @@ export default function UserManagementPage() {
         isOpen={!!editingUser}
         onClose={() => setEditingUser(null)}
         title={`Editar Rol: ${editingUser ? getPersonFullName(editingUser.person) : ""}`}
-        className="max-w-md"
+        boxClassName="max-w-md"
       >
         <div className="mt-4 flex flex-col gap-4">
           <p className="text-base-content/70 text-sm">
