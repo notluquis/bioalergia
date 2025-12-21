@@ -53,7 +53,6 @@ export default function UserManagementPage() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("ALL");
-  const [availableRoles, setAvailableRoles] = useState<{ name: string; description: string }[]>([]);
 
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [selectedRole, setSelectedRole] = useState("");
@@ -84,12 +83,11 @@ export default function UserManagementPage() {
   };
 
   // Fetch roles for filter
-  useQuery({
+  const { data: roles } = useQuery({
     queryKey: ["roles"],
     queryFn: async () => {
       const res = await apiClient.get<{ roles: { name: string; description: string }[] }>("/api/roles");
-      setAvailableRoles(res.roles || []);
-      return res.roles;
+      return res.roles || [];
     },
   });
 
@@ -317,7 +315,7 @@ export default function UserManagementPage() {
             onChange={(e) => setRoleFilter(e.target.value)}
           >
             <option value="ALL">Todos los roles</option>
-            {availableRoles.map((role) => (
+            {roles?.map((role) => (
               <option key={role.name} value={role.name}>
                 {role.description || role.name}
               </option>
@@ -501,7 +499,7 @@ export default function UserManagementPage() {
               <option value="" disabled>
                 Seleccionar rol
               </option>
-              {availableRoles.map((role) => (
+              {roles?.map((role) => (
                 <option key={role.name} value={role.name}>
                   {role.description || role.name}
                 </option>
