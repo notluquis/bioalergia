@@ -5,7 +5,7 @@ import { authorize } from "../middleware/authorize.js";
 import { logEvent, requestContext } from "../lib/logger.js";
 import { createService, getServiceById, listServices, updateService, deleteService } from "../services/services.js";
 import type { AuthenticatedRequest } from "../types.js";
-import { serviceCreateSchema } from "../schemas.js";
+import { serviceCreateSchema } from "../schemas/index.js";
 
 import { mapService } from "../lib/mappers.js";
 import { ServiceType, ServiceFrequency } from "@prisma/client";

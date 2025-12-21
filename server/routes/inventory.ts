@@ -16,7 +16,7 @@ import {
   inventoryItemSchema,
   inventoryItemUpdateSchema,
   inventoryMovementSchema,
-} from "../schemas.js";
+} from "../schemas/index.js";
 
 export function registerInventoryRoutes(app: express.Express) {
   const router = express.Router();

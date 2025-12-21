@@ -10,14 +10,21 @@ import {
   upsertTimesheetEntry,
   updateTimesheetEntry,
   deleteTimesheetEntry,
+  buildMonthlySummary,
+  normalizeTimesheetPayload,
+  durationToMinutes,
 } from "../services/timesheets.js";
 import { generateTimesheetEml } from "../services/email.js";
-import { timesheetPayloadSchema, timesheetUpdateSchema, timesheetBulkSchema, monthParamSchema } from "../schemas.js";
+import {
+  timesheetPayloadSchema,
+  timesheetUpdateSchema,
+  timesheetBulkSchema,
+  monthParamSchema,
+} from "../schemas/index.js";
 import type { AuthenticatedRequest } from "../types.js";
-import { durationToMinutes, minutesToDuration } from "../../shared/time.js";
 import { roundCurrency } from "../../shared/currency.js";
 import { prisma } from "../prisma.js";
-import { formatDateOnly, getNthBusinessDay, getMonthRange } from "../lib/time.js";
+import { formatDateOnly, getMonthRange } from "../lib/time.js";
 
 export function registerTimesheetRoutes(app: express.Express) {
   // Endpoint para obtener meses registrados
@@ -414,175 +421,4 @@ export function registerTimesheetRoutes(app: express.Express) {
       });
     })
   );
-}
-
-function normalizeTimesheetPayload(data: {
-  employee_id: number;
-  work_date: string;
-  start_time?: string | null;
-  end_time?: string | null;
-  worked_minutes?: number;
-  overtime_minutes?: number;
-  comment?: string | null;
-}) {
-  let workedMinutes = data.worked_minutes ?? 0;
-  const overtimeMinutes = data.overtime_minutes ?? 0;
-
-  if (!workedMinutes && data.start_time && data.end_time) {
-    const start = durationToMinutes(data.start_time);
-    const end = durationToMinutes(data.end_time);
-    workedMinutes = Math.max(end - start, 0);
-  }
-
-  return {
-    employee_id: data.employee_id,
-    work_date: data.work_date,
-    start_time: data.start_time ?? null,
-    end_time: data.end_time ?? null,
-    worked_minutes: workedMinutes,
-    overtime_minutes: overtimeMinutes,
-    comment: data.comment ?? null,
-  };
-}
-
-async function buildMonthlySummary(from: string, to: string, employeeId?: number) {
-  const employees = await listEmployees();
-  // Map using ID to Employee object (which includes person)
-  const employeeMap = new Map(employees.map((employee) => [employee.id, employee]));
-
-  // Use Prisma groupBy instead of MySQL
-  const summaryData = await prisma.employeeTimesheet.groupBy({
-    by: ["employeeId"],
-    where: {
-      workDate: {
-        gte: new Date(from),
-        lte: new Date(to),
-      },
-      ...(employeeId && { employeeId }),
-    },
-    _sum: {
-      workedMinutes: true,
-      overtimeMinutes: true,
-    },
-  });
-
-  const results: Array<ReturnType<typeof buildEmployeeSummary>> = [];
-  let totals = {
-    workedMinutes: 0,
-    overtimeMinutes: 0,
-    subtotal: 0,
-    retention: 0,
-    net: 0,
-  };
-
-  for (const row of summaryData) {
-    const employee = employeeMap.get(row.employeeId);
-    if (!employee) continue;
-    const summary = buildEmployeeSummary(employee, {
-      workedMinutes: Number(row._sum.workedMinutes ?? 0),
-      overtimeMinutes: Number(row._sum.overtimeMinutes ?? 0),
-      periodStart: from,
-    });
-    results.push(summary);
-    totals.workedMinutes += summary.workedMinutes;
-    totals.overtimeMinutes += summary.overtimeMinutes;
-    totals.subtotal += summary.subtotal;
-    totals.retention += summary.retention;
-    totals.net += summary.net;
-  }
-
-  // Si se filtró por empleado específico pero no tiene datos, incluirlo con 0s
-  if (employeeId && results.length === 0) {
-    const employee = employeeMap.get(employeeId);
-    if (employee) {
-      const summary = buildEmployeeSummary(employee, {
-        workedMinutes: 0,
-        overtimeMinutes: 0,
-        periodStart: from,
-      });
-      results.push(summary);
-    }
-  }
-
-  results.sort((a, b) => a.fullName.localeCompare(b.fullName));
-
-  return {
-    employees: results,
-    totals: {
-      hours: minutesToDuration(totals.workedMinutes),
-      overtime: minutesToDuration(totals.overtimeMinutes),
-      subtotal: roundCurrency(totals.subtotal),
-      retention: roundCurrency(totals.retention),
-      net: roundCurrency(totals.net),
-    },
-  };
-}
-
-function buildEmployeeSummary(
-  employee: Awaited<ReturnType<typeof getEmployeeById>>,
-  data: {
-    workedMinutes: number;
-    overtimeMinutes: number;
-    periodStart: string;
-  }
-) {
-  if (!employee) {
-    // Should not happen if filtered correctly, but for safety
-    return {
-      employeeId: 0,
-      fullName: "Unknown",
-      role: "",
-      email: null,
-      workedMinutes: 0,
-      overtimeMinutes: 0,
-      hourlyRate: 0,
-      overtimeRate: 0,
-      retentionRate: 0,
-      subtotal: 0,
-      retention: 0,
-      net: 0,
-      payDate: "",
-      hoursFormatted: "00:00",
-      overtimeFormatted: "00:00",
-    };
-  }
-
-  const hourlyRate = Number(employee.hourlyRate ?? 0);
-  const overtimeRate = Number(employee.overtimeRate ?? 0) || hourlyRate * 1.5; // Use employee's rate or default 1.5x
-  const retentionRate = Number(employee.retentionRate ?? 0); // From employee profile
-  const basePay = roundCurrency((data.workedMinutes / 60) * hourlyRate);
-  const overtimePay = roundCurrency((data.overtimeMinutes / 60) * overtimeRate);
-  const subtotal = roundCurrency(basePay + overtimePay);
-  const retention = roundCurrency(subtotal * retentionRate);
-  const net = roundCurrency(subtotal - retention);
-  const payDate = computePayDate(employee.position, data.periodStart);
-
-  return {
-    employeeId: employee.id,
-    fullName: employee.person.names,
-    role: employee.position,
-    email: employee.person.email ?? null,
-    workedMinutes: data.workedMinutes,
-    overtimeMinutes: data.overtimeMinutes,
-    hourlyRate,
-    overtimeRate,
-    retentionRate,
-    subtotal,
-    retention,
-    net,
-    payDate,
-    hoursFormatted: minutesToDuration(data.workedMinutes),
-    overtimeFormatted: minutesToDuration(data.overtimeMinutes),
-  };
-}
-
-function computePayDate(role: string, periodStart: string) {
-  const startDate = new Date(periodStart);
-  const nextMonthFirstDay = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 1);
-  if (role.toUpperCase().includes("ENFER")) {
-    // Enfermeros: 5to día hábil del mes siguiente
-    return formatDateOnly(getNthBusinessDay(nextMonthFirstDay, 5));
-  }
-  // Otros: día 5 calendario del mes siguiente
-  return formatDateOnly(new Date(nextMonthFirstDay.getFullYear(), nextMonthFirstDay.getMonth(), 5));
 }

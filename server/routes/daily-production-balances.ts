@@ -4,7 +4,7 @@ import { asyncHandler, authenticate } from "../lib/http.js";
 import { authorize } from "../middleware/authorize.js";
 import type { AuthenticatedRequest } from "../types.js";
 import { logEvent, requestContext } from "../lib/logger.js";
-import { productionBalancePayloadSchema, productionBalanceQuerySchema } from "../schemas.js";
+import { productionBalancePayloadSchema, productionBalanceQuerySchema } from "../schemas/index.js";
 import {
   createProductionBalance,
   getProductionBalanceById,

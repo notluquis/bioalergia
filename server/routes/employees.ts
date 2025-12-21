@@ -3,7 +3,7 @@ import { asyncHandler, authenticate } from "../lib/http.js";
 import { authorize } from "../middleware/authorize.js";
 import { logEvent, logWarn, requestContext } from "../lib/logger.js";
 import { listEmployees, createEmployee, updateEmployee, deactivateEmployee } from "../services/employees.js";
-import { employeeSchema, employeeUpdateSchema } from "../schemas.js";
+import { employeeSchema, employeeUpdateSchema } from "../schemas/index.js";
 import type { AuthenticatedRequest } from "../types.js";
 import { mapEmployee } from "../lib/mappers.js";
 

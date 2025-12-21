@@ -16,7 +16,7 @@ import {
   counterpartPayloadSchema,
   counterpartAccountPayloadSchema,
   counterpartAccountUpdateSchema,
-} from "../schemas.js";
+} from "../schemas/index.js";
 import type { AuthenticatedRequest } from "../types.js";
 
 import { mapCounterpart, mapCounterpartAccount, type CounterpartWithAccounts } from "../lib/mappers.js";

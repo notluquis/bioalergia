@@ -1,5 +1,5 @@
 // Database utilities
-export * from "./schemas.js";
+export * from "../schemas/index.js";
 
 // HTTP utilities
 export { asyncHandler, authenticate, issueToken, sanitizeUser } from "./http.js";
