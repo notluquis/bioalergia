@@ -110,10 +110,49 @@ export function registerRoleRoutes(app: express.Express) {
         return res.status(400).json({ status: "error", message: "No puedes reasignar al mismo rol" });
       }
 
-      await prisma.userRoleAssignment.updateMany({
+      const targetId = Number(targetRoleId);
+
+      // 1. Find users who have the old role
+      const assignmentsToMove = await prisma.userRoleAssignment.findMany({
         where: { roleId: oldRoleId },
-        data: { roleId: Number(targetRoleId) },
+        select: { userId: true },
       });
+      const userIds = assignmentsToMove.map((a) => a.userId);
+
+      if (userIds.length > 0) {
+        // 2. Find which of these ALREADY have the target role to avoid duplicates
+        const existingTargetAssignments = await prisma.userRoleAssignment.findMany({
+          where: {
+            roleId: targetId,
+            userId: { in: userIds },
+          },
+          select: { userId: true },
+        });
+        const usersWithTarget = new Set(existingTargetAssignments.map((a) => a.userId));
+
+        // 3. For users who overlap (have both), just delete the old assignment since they already have the target
+        const usersToDeleteOld = userIds.filter((uid) => usersWithTarget.has(uid));
+        if (usersToDeleteOld.length > 0) {
+          await prisma.userRoleAssignment.deleteMany({
+            where: {
+              roleId: oldRoleId,
+              userId: { in: usersToDeleteOld },
+            },
+          });
+        }
+
+        // 4. For users who DON'T have target, update old -> target
+        const usersToUpdate = userIds.filter((uid) => !usersWithTarget.has(uid));
+        if (usersToUpdate.length > 0) {
+          await prisma.userRoleAssignment.updateMany({
+            where: {
+              roleId: oldRoleId,
+              userId: { in: usersToUpdate },
+            },
+            data: { roleId: targetId },
+          });
+        }
+      }
 
       res.json({ status: "ok", message: "Usuarios reasignados correctamente" });
     })
