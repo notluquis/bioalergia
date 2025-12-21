@@ -29,7 +29,7 @@ import {
   type QueryValue,
 } from "../lib/query-helpers.js";
 import { googleCalendarConfig } from "../config.js";
-import { updateClassificationSchema } from "../schemas.js";
+import { updateClassificationSchema } from "../schemas/index.js";
 
 function coerceMaxDays(value: QueryValue): number | undefined {
   return coercePositiveInteger(value);

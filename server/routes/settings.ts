@@ -6,7 +6,7 @@ import { logEvent, logWarn, requestContext } from "../lib/logger.js";
 import { getSettings, updateSettings, getSetting, updateSetting, deleteSetting } from "../services/settings.js";
 import { DEFAULT_SETTINGS, type AppSettings } from "../lib/settings.js";
 import type { AuthenticatedRequest } from "../types.js";
-import { settingsSchema } from "../schemas.js";
+import { settingsSchema } from "../schemas/index.js";
 import {
   BRANDING_LOGO_MAX_FILE_SIZE,
   isSupportedImageType,

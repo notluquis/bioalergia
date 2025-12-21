@@ -5,7 +5,7 @@ import { logEvent, logWarn, requestContext } from "../lib/logger.js";
 import { sessionCookieName, sessionCookieOptions } from "../config.js";
 import { findUserByEmail, findUserById, resolveUserRole } from "../services/users.js";
 import type { AuthenticatedRequest } from "../types.js";
-import { loginSchema, mfaVerifySchema } from "../schemas.js";
+import { loginSchema, mfaVerifySchema } from "../schemas/index.js";
 import { generateMfaSecret, verifyMfaToken } from "../services/mfa.js";
 import { updateUserMfa } from "../services/users.js";
 import { prisma } from "../prisma.js";

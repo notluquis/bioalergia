@@ -6,7 +6,7 @@ import { parseDateOnly } from "../lib/time.js";
 import { mapTransaction } from "../lib/mappers.js";
 
 import { coerceLimit } from "../lib/query-helpers.js";
-import { transactionsQuerySchema } from "../schemas.js";
+import { transactionsQuerySchema } from "../schemas/index.js";
 import type { AuthenticatedRequest } from "../types.js";
 import {
   listTransactions,

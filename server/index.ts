@@ -25,7 +25,7 @@ import { startDailyProductionReminderJob } from "./modules/dailyProductionRemind
 import { startCalendarCron, stopCalendarCron } from "./lib/calendar-cron.js";
 import shareTargetRouter from "./routes/share-target.js";
 import notificationsRouter from "./routes/notifications.js";
-import csvUploadRouter from "./routes/csv-upload.js";
+import csvUploadRouter from "./routes/csv-upload/index.js";
 
 export const app = express();
 
@@ -127,12 +127,8 @@ registerInventoryRoutes(app);
 import { registerBalanceRoutes } from "./routes/balances.js";
 registerBalanceRoutes(app);
 import personRouter from "./routes/person.routes.js";
-import userManagementRouter from "./routes/user-management.js";
-
-// ... existing imports ...
 
 app.use("/api/people", personRouter);
-app.use("/api/users", userManagementRouter);
 registerUserRoutes(app);
 registerLoanRoutes(app);
 registerServiceRoutes(app);

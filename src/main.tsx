@@ -1,21 +1,21 @@
-import { Suspense, lazy } from "react";
+import React, { Suspense, lazy } from "react";
 import ReactDOM from "react-dom/client";
 import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "./index.css";
 import "./i18n";
 import App from "./App";
-// RequireAuth is defined locally
 import { AuthProvider } from "./context/AuthContext";
 import { SettingsProvider } from "./context/SettingsContext";
 import { ToastProvider } from "./context/ToastContext";
-
 import { GlobalError } from "./components/ui/GlobalError";
 import { ChunkErrorBoundary } from "./components/ui/ChunkErrorBoundary";
 import RequireAuth from "@/components/common/RequireAuth";
 import RequirePermission from "@/components/common/RequirePermission";
 import PublicOnlyRoute from "@/components/common/PublicOnlyRoute";
 import RouteErrorBoundary from "@/components/common/RouteErrorBoundary";
+import { initPerformanceMonitoring } from "./lib/performance";
+import { AbilityProvider } from "./lib/authz/AbilityProvider";
 
 // Lazy loading de componentes principales
 const Home = lazy(() => import("./pages/Home"));
@@ -240,71 +240,6 @@ const router = createBrowserRouter(
                 <RequirePermission action="update" subject="Service">
                   <Suspense fallback={<PageLoader />}>
                     <ServiceEditPage />
-                  </Suspense>
-                </RequirePermission>
-              ),
-            },
-
-            // Replacement 2: Calendar Settings
-            {
-              path: "calendar",
-              handle: { title: "Accesos y conexiones" },
-              element: (
-                <RequirePermission action="update" subject="CalendarEvent">
-                  <Suspense fallback={<PageLoader />}>
-                    <CalendarSettingsPage />
-                  </Suspense>
-                </RequirePermission>
-              ),
-            },
-
-            // Replacement 3: Security Settings
-            {
-              path: "security",
-              handle: { title: "Seguridad" },
-              element: (
-                <RequirePermission action="update" subject="Setting">
-                  <Suspense fallback={<PageLoader />}>
-                    <SecuritySettingsPage />
-                  </Suspense>
-                </RequirePermission>
-              ),
-            },
-
-            // Replacement 4: Inventory Settings
-            {
-              path: "inventario",
-              handle: { title: "Parámetros de inventario" },
-              element: (
-                <RequirePermission action="update" subject="InventoryItem">
-                  <Suspense fallback={<PageLoader />}>
-                    <InventorySettingsPage />
-                  </Suspense>
-                </RequirePermission>
-              ),
-            },
-
-            // Replacement 5: Roles Settings
-            {
-              path: "roles",
-              handle: { title: "Roles y permisos" },
-              element: (
-                <RequirePermission action="update" subject="Role">
-                  <Suspense fallback={<PageLoader />}>
-                    <RolesSettingsPage />
-                  </Suspense>
-                </RequirePermission>
-              ),
-            },
-
-            // Replacement 6: CSV Upload
-            {
-              path: "csv-upload",
-              handle: { title: "Carga masiva de datos" },
-              element: (
-                <RequirePermission action="create" subject="BulkData">
-                  <Suspense fallback={<PageLoader />}>
-                    <CSVUploadPage />
                   </Suspense>
                 </RequirePermission>
               ),
@@ -637,9 +572,7 @@ const router = createBrowserRouter(
   }
 );
 
-import { initPerformanceMonitoring } from "./lib/performance";
-
-// Initialize performance mode (Low vs High end)
+// Initialize performance mode
 initPerformanceMonitoring();
 
 const queryClient = new QueryClient({
@@ -655,22 +588,22 @@ const queryClient = new QueryClient({
   },
 });
 
-import { AbilityProvider } from "./lib/authz/AbilityProvider";
-
 ReactDOM.createRoot(document.getElementById("root")!).render(
-  <GlobalError>
-    <ChunkErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <SettingsProvider>
-            <ToastProvider>
-              <AbilityProvider>
-                <RouterProvider router={router} />
-              </AbilityProvider>
-            </ToastProvider>
-          </SettingsProvider>
-        </AuthProvider>
-      </QueryClientProvider>
-    </ChunkErrorBoundary>
-  </GlobalError>
+  <React.StrictMode>
+    <GlobalError>
+      <ChunkErrorBoundary>
+        <QueryClientProvider client={queryClient}>
+          <AuthProvider>
+            <SettingsProvider>
+              <ToastProvider>
+                <AbilityProvider>
+                  <RouterProvider router={router} />
+                </AbilityProvider>
+              </ToastProvider>
+            </SettingsProvider>
+          </AuthProvider>
+        </QueryClientProvider>
+      </ChunkErrorBoundary>
+    </GlobalError>
+  </React.StrictMode>
 );

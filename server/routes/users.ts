@@ -1,12 +1,26 @@
 import express from "express";
+import { z } from "zod";
+import bcrypt from "bcryptjs";
 import { asyncHandler, authenticate } from "../lib/http.js";
 import { authorize } from "../middleware/authorize.js";
 import { findUserById, assignUserRole } from "../services/users.js";
 import { prisma, Prisma } from "../prisma.js";
-
 import { logEvent } from "../lib/logger.js";
+import { logAudit } from "../services/audit.js";
 import type { AuthenticatedRequest } from "../types.js";
 import { normalizeRut } from "../lib/rut.js";
+
+// Schema for inviting a user
+const inviteUserSchema = z.object({
+  email: z.string().email(),
+  role: z.string().min(1),
+  position: z
+    .string()
+    .optional()
+    .transform((val) => (val && val.trim().length > 0 ? val : "Por definir")),
+  mfaEnforced: z.boolean().default(true),
+  personId: z.number().optional(),
+});
 
 export function registerUserRoutes(app: express.Express) {
   // Toggle MFA for a specific user (Admin only)
@@ -294,6 +308,296 @@ export function registerUserRoutes(app: express.Express) {
         const message = e instanceof Error ? e.message : "Error al eliminar usuario";
         res.status(500).json({ status: "error", message });
       }
+    })
+  );
+
+  // ========================================
+  // User Management Endpoints (Consolidated)
+  // ========================================
+
+  // POST /api/users/invite - Create a user for an existing person OR create new person+user
+  app.post(
+    "/api/users/invite",
+    authenticate,
+    authorize("create", "User"),
+    asyncHandler(async (req: AuthenticatedRequest, res) => {
+      const { email, role, position, mfaEnforced, personId } = inviteUserSchema.parse(req.body);
+
+      // Check if user already exists
+      const existingUser = await prisma.user.findUnique({ where: { email } });
+      if (existingUser) {
+        return res.status(400).json({ status: "error", message: "User with this email already exists" });
+      }
+
+      // If personId provided, verify it exists
+      if (personId) {
+        const personExists = await prisma.person.findUnique({ where: { id: personId } });
+        if (!personExists) {
+          return res.status(400).json({ status: "error", message: "Person not found" });
+        }
+
+        const existingUserForPerson = await prisma.user.findFirst({ where: { personId } });
+        if (existingUserForPerson) {
+          return res.status(400).json({ status: "error", message: "This person already has a user account" });
+        }
+      }
+
+      // Generate temporary password
+      const tempPassword = await bcrypt.hash("Temp1234!", 10);
+
+      // Transaction to create Person, User, and Employee
+      const result = await prisma.$transaction(async (tx) => {
+        let targetPersonId: number;
+
+        if (personId) {
+          targetPersonId = personId;
+        } else {
+          let person = await tx.person.findFirst({ where: { email } });
+          if (!person) {
+            person = await tx.person.create({
+              data: {
+                names: "Nuevo Usuario",
+                email,
+                rut: `TEMP-${Date.now()}`,
+              },
+            });
+          }
+          targetPersonId = person.id;
+        }
+
+        const user = await tx.user.create({
+          data: {
+            personId: targetPersonId,
+            email: email.toLowerCase(),
+            passwordHash: tempPassword,
+            status: "PENDING_SETUP",
+            mfaEnforced,
+          },
+        });
+
+        // Assign Role
+        const roleRecord = await tx.role.findUnique({ where: { name: role } });
+        if (roleRecord) {
+          await tx.userRoleAssignment.create({
+            data: { userId: user.id, roleId: roleRecord.id },
+          });
+        } else {
+          const viewerRole = await tx.role.findUnique({ where: { name: "VIEWER" } });
+          if (viewerRole) {
+            await tx.userRoleAssignment.create({
+              data: { userId: user.id, roleId: viewerRole.id },
+            });
+          }
+        }
+
+        await tx.employee.upsert({
+          where: { personId: targetPersonId },
+          create: {
+            personId: targetPersonId,
+            position,
+            startDate: new Date(),
+            status: "ACTIVE",
+          },
+          update: { position },
+        });
+
+        return user;
+      });
+
+      await logAudit({
+        userId: req.auth!.userId,
+        action: "USER_INVITE",
+        entity: "User",
+        entityId: result.id,
+        details: { email, role, position, mfaEnforced, personId },
+        ipAddress: req.ip,
+      });
+
+      res.json({ status: "ok", message: "User created successfully", userId: result.id });
+    })
+  );
+
+  // GET /api/users/profile - Get current user's profile
+  app.get(
+    "/api/users/profile",
+    authenticate,
+    asyncHandler(async (req: AuthenticatedRequest, res) => {
+      const userId = req.auth!.userId;
+
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        include: {
+          person: {
+            include: { employee: true },
+          },
+        },
+      });
+
+      if (!user) {
+        return res.status(404).json({ status: "error", message: "User not found" });
+      }
+
+      res.json({
+        status: "ok",
+        data: {
+          names: user.person.names,
+          fatherName: user.person.fatherName,
+          motherName: user.person.motherName,
+          rut: normalizeRut(user.person.rut),
+          email: user.email,
+          phone: user.person.phone,
+          address: user.person.address,
+          bankName: user.person.employee?.bankName,
+          bankAccountType: user.person.employee?.bankAccountType,
+          bankAccountNumber: user.person.employee?.bankAccountNumber,
+        },
+      });
+    })
+  );
+
+  // POST /api/users/setup - Complete onboarding
+  app.post(
+    "/api/users/setup",
+    authenticate,
+    asyncHandler(async (req: AuthenticatedRequest, res) => {
+      const schema = z.object({
+        names: z.string().min(1),
+        fatherName: z.string().optional(),
+        motherName: z.string().optional(),
+        rut: z.string().min(1),
+        phone: z.string().optional(),
+        address: z.string().optional(),
+        bankName: z.string().optional(),
+        bankAccountType: z.string().optional(),
+        bankAccountNumber: z.string().optional(),
+        password: z.string().min(8),
+      });
+
+      const data = schema.parse(req.body);
+      const userId = req.auth!.userId;
+
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        include: { person: true },
+      });
+
+      if (!user) {
+        return res.status(404).json({ status: "error", message: "User not found" });
+      }
+
+      const hash = await bcrypt.hash(data.password, 10);
+
+      await prisma.$transaction(async (tx) => {
+        await tx.person.update({
+          where: { id: user.personId },
+          data: {
+            names: data.names,
+            fatherName: data.fatherName,
+            motherName: data.motherName,
+            rut: data.rut,
+            phone: data.phone,
+            address: data.address,
+          },
+        });
+
+        await tx.employee.upsert({
+          where: { personId: user.personId },
+          create: {
+            personId: user.personId,
+            position: "Por definir",
+            startDate: new Date(),
+            bankName: data.bankName,
+            bankAccountType: data.bankAccountType,
+            bankAccountNumber: data.bankAccountNumber,
+          },
+          update: {
+            bankName: data.bankName,
+            bankAccountType: data.bankAccountType,
+            bankAccountNumber: data.bankAccountNumber,
+          },
+        });
+
+        await tx.user.update({
+          where: { id: userId },
+          data: { passwordHash: hash, status: "ACTIVE" },
+        });
+      });
+
+      await logAudit({
+        userId,
+        action: "USER_SETUP",
+        entity: "User",
+        entityId: userId,
+        details: { status: "ACTIVE" },
+        ipAddress: req.ip,
+      });
+
+      res.json({ status: "ok", message: "Setup complete" });
+    })
+  );
+
+  // DELETE /api/users/:id/mfa - Admin disable MFA (Recovery)
+  app.delete(
+    "/api/users/:id/mfa",
+    authenticate,
+    authorize("manage", "User"),
+    asyncHandler(async (req: AuthenticatedRequest, res) => {
+      const targetUserId = Number(req.params.id);
+
+      if (isNaN(targetUserId)) {
+        return res.status(400).json({ status: "error", message: "ID de usuario inválido" });
+      }
+
+      await prisma.user.update({
+        where: { id: targetUserId },
+        data: { mfaEnabled: false, mfaSecret: null },
+      });
+
+      await logAudit({
+        userId: req.auth!.userId,
+        action: "USER_MFA_RESET",
+        entity: "User",
+        entityId: targetUserId,
+        ipAddress: req.ip,
+      });
+
+      res.json({ status: "ok", message: "MFA disabled for user" });
+    })
+  );
+
+  // DELETE /api/users/:id/passkey - Admin remove passkey
+  app.delete(
+    "/api/users/:id/passkey",
+    authenticate,
+    authorize("manage", "User"),
+    asyncHandler(async (req: AuthenticatedRequest, res) => {
+      const targetUserId = Number(req.params.id);
+
+      if (isNaN(targetUserId)) {
+        return res.status(400).json({ status: "error", message: "ID de usuario inválido" });
+      }
+
+      await prisma.user.update({
+        where: { id: targetUserId },
+        data: {
+          passkeyCredentialID: null,
+          passkeyPublicKey: null,
+          passkeyCounter: 0,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          passkeyTransports: Prisma.DbNull as any,
+        },
+      });
+
+      await logAudit({
+        userId: req.auth!.userId,
+        action: "USER_PASSKEY_DELETE",
+        entity: "User",
+        entityId: targetUserId,
+        details: { adminDelete: true },
+        ipAddress: req.ip,
+      });
+
+      res.json({ status: "ok", message: "Passkey removed" });
     })
   );
 }

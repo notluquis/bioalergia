@@ -9,7 +9,6 @@ async function main() {
   // 1. Ensure all permissions exist
   console.log("Syncing permissions...");
   for (const [key, def] of Object.entries(permissionMap)) {
-    const permName = `${def.action}:${def.subject}`;
     await prisma.permission.upsert({
       where: { action_subject: { action: def.action, subject: def.subject } },
       update: { description: key },
