@@ -1,5 +1,6 @@
 import { prisma } from "../server/prisma.ts";
 import bcrypt from "bcryptjs";
+import { INITIAL_ROLES } from "../server/config/initial-roles.ts";
 
 async function main() {
   console.log("🌱 Starting seed...");
@@ -15,43 +16,24 @@ async function main() {
   // to avoid complex imports if possible, but let's try to map the INITIAL_ROLES
   // Assuming keys are "action.subject"
 
-  // Hardcode roles/permissions here to avoid complex import issues with ts-node
-  const ROLES = [
-    {
-      name: "SystemAdministrator",
-      permissions: [{ action: "manage", subject: "all" }],
-    },
-    {
-      name: "OperationsManager",
-      permissions: [
-        { action: "create", subject: "Transaction" },
-        { action: "read", subject: "Transaction" },
-        { action: "manage", subject: "User" },
-        { action: "manage", subject: "Role" },
-        { action: "manage", subject: "Setting" },
-        // Add minimal set for admin
-      ],
-    },
-    {
-      name: "VIEWER",
-      permissions: [{ action: "read", subject: "CalendarEvent" }],
-    },
-  ];
-
-  for (const roleDef of ROLES) {
+  for (const roleDef of INITIAL_ROLES) {
     // Upsert Role
     const role = await prisma.role.upsert({
       where: { name: roleDef.name },
-      update: {},
-      create: { name: roleDef.name, description: "Seeded Role" },
+      update: {
+        description: roleDef.description,
+      },
+      create: { name: roleDef.name, description: roleDef.description },
     });
 
     // Sync Permissions
-    for (const perm of roleDef.permissions) {
+    for (const permKey of roleDef.permissions) {
+      const [action, subject] = permKey.split(".");
+
       const p = await prisma.permission.upsert({
-        where: { action_subject: { action: perm.action, subject: perm.subject } },
+        where: { action_subject: { action, subject } },
         update: {},
-        create: { action: perm.action, subject: perm.subject },
+        create: { action, subject },
       });
 
       // Upsert RolePermission

@@ -9,9 +9,10 @@ interface ModalProps {
   title: string;
   children: React.ReactNode;
   className?: string;
+  boxClassName?: string;
 }
 
-export default function Modal({ isOpen, onClose, title, children, className }: ModalProps) {
+export default function Modal({ isOpen, onClose, title, children, className, boxClassName }: ModalProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -50,7 +51,12 @@ export default function Modal({ isOpen, onClose, title, children, className }: M
       onCancel={handleCancel}
       onClick={handleClick}
     >
-      <div className="modal-box surface-elevated border-base-300/50 ring-base-300/30 relative w-full max-w-2xl rounded-[28px] border p-6 shadow-2xl ring-1">
+      <div
+        className={cn(
+          "modal-box surface-elevated border-base-300/50 ring-base-300/30 relative w-full max-w-2xl rounded-[28px] border p-6 shadow-2xl ring-1",
+          boxClassName
+        )}
+      >
         <div className="mb-4 flex items-start justify-between">
           <h2 className="text-primary text-xl font-bold">{title}</h2>
           <Button
