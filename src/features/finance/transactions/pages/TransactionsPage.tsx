@@ -150,7 +150,13 @@ export default function TransactionsMovements() {
               <h1 className="typ-title text-base-content">Movimientos en base</h1>
               <p className="typ-body text-base-content/70 max-w-2xl">
                 Los datos provienen de la tabla <code>mp_transactions</code>. Ajusta el saldo inicial para recalcular el
-                saldo acumulado. Para consultas o soporte escribe a<strong> {settings.supportEmail}</strong>.
+                saldo acumulado.
+                {settings.supportEmail && (
+                  <>
+                    {" "}
+                    Para consultas o soporte escribe a <strong>{settings.supportEmail}</strong>.
+                  </>
+                )}
               </p>
             </div>
             <div className="flex flex-wrap items-end gap-3">
