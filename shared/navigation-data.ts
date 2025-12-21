@@ -179,16 +179,10 @@ export const NAV_DATA: NavSectionData[] = [
         requiredPermission: { action: "update", subject: "InventoryItem" },
       },
       {
-        to: "/settings/general",
-        label: "Configuración",
+        to: "/settings/security",
+        label: "Seguridad",
         iconKey: "Settings2",
-        requiredPermission: { action: "read", subject: "Setting" },
-      },
-      {
-        to: "/settings/permissions-list",
-        label: "Lista Permisos",
-        iconKey: "ListChecks",
-        requiredPermission: { action: "read", subject: "Permission" },
+        requiredPermission: { action: "update", subject: "Setting" },
       },
       {
         to: "/settings/csv-upload",
