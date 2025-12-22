@@ -7,7 +7,8 @@ dayjs.extend(utc);
 dayjs.extend(timezone);
 
 const SUBCUT_PATTERNS = [
-  /cl[au]st[oau]id[eo]?/i, // Tolerant: clustoid, clastoid, clustoide, clusitoid, etc.
+  /cl[au]st[oau]id[eo]?/i, // Tolerant: clustoid, clastoid, clustoide, etc.
+  /clusitoid/i, // Specific: clusitoid (has "sit" not "st")
   /cl[au]st[io]d/i, // Common typos: clustid, clastid
   /clutoid/i, // Missing 's'
   /\bclust/i, // Starts with clust (cluster, clustoid, etc.)
