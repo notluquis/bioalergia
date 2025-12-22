@@ -331,6 +331,19 @@ function extractAmounts(summary: string, description: string) {
     }
   }
 
+  // 3.5. Keyword followed by amount (e.g. "clustoid 50", "cluxin 30")
+  if (amountExpected == null) {
+    const keywordPattern = /(?:clustoid|cluxin|alxoid|oral[-\s]?tec|vacuna)\s+(\d{2,3})\b/gi;
+    let kwMatch: RegExpExecArray | null;
+    while ((kwMatch = keywordPattern.exec(text)) !== null) {
+      const amount = normalizeAmountRaw(kwMatch[1]);
+      if (amount != null) {
+        amountExpected = amount;
+        break;
+      }
+    }
+  }
+
   // 4. Fallback: amount at end without parens (e.g., "clusitoid 50")
   if (amountExpected == null) {
     const endMatch = /\s(\d{2,3})\s*$/.exec(text);
@@ -389,16 +402,23 @@ function classifyCategory(summary: string, description: string): string | null {
     return null;
   }
 
-  // Priority order: Test (specific) → Subcutáneo (broad) → Roxair → Licencia → Control → Consulta
+  // Priority order: Test (specific) → Subcutáneo (explicit) → Roxair → Licencia → Control → Consulta → Subcutáneo (implicit/dosage)
   if (matchesAny(text, TEST_PATTERNS)) return "Test y exámenes";
 
-  if (matchesAny(text, SUBCUT_PATTERNS) || DECIMAL_DOSAGE_PATTERN.test(text)) {
+  // Explicit Subcutaneous keywords (strong signals)
+  if (matchesAny(text, SUBCUT_PATTERNS)) {
     return "Tratamiento subcutáneo";
   }
+
   if (matchesAny(text, ROXAIR_PATTERNS)) return "Roxair";
   if (matchesAny(text, LICENCIA_PATTERNS)) return "Licencia médica";
   if (matchesAny(text, CONTROL_PATTERNS)) return "Control médico";
   if (matchesAny(text, CONSULTA_PATTERNS)) return "Consulta médica";
+
+  // Implicit Subcutaneous: if it has a standalone decimal (e.g. 0,5) and wasn't caught by others, assume it's a dosage
+  if (DECIMAL_DOSAGE_PATTERN.test(text)) {
+    return "Tratamiento subcutáneo";
+  }
 
   return null;
 }
