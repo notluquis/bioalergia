@@ -19,7 +19,8 @@ const SUBCUT_PATTERNS = [
   /\bsubcut[áa]ne[oa]/i,
   /inmuno/i,
   /\d+[ªº]?\s*(ta|da|ra|va)?\s*dosis/i, // "4ta dosis", "3ra dosis", "2da dosis", "1 dosis"
-  /vi[eon]+[ie]?r?o?n?\s+a\s+buscar/i, // vinieron a buscarla, vino a buscar (pickup treatment)
+  /\bdosis\s+mensual/i, // "Dosis mensual Ácaros"
+  /v[ie]+n?[ie]?[eo]?r?o?n?\s+a\s+buscar/i, // vinieron, venieron, vino a buscar (pickup treatment)
   /\bmantenci[oó]n\b/i, // mantencion, mantención (maintenance treatment)
 ];
 
@@ -45,13 +46,21 @@ const ATTENDED_PATTERNS = [/\blleg[oó]\b/i, /\basist[ií]o\b/i];
 const MAINTENANCE_PATTERNS = [/\bmantenci[oó]n\b/i, /\bmant\b/i, /\bmensual\b/i];
 const DOSAGE_PATTERNS = [/(\d+(?:[.,]\d+)?)\s*ml\b/i, /(\d+(?:[.,]\d+)?)\s*cc\b/i, /(\d+(?:[.,]\d+)?)\s*mg\b/i];
 // Patterns for notes/reminders that should NOT be classified
-const IGNORE_PATTERNS = [
+export const IGNORE_PATTERNS = [
   /^recordar\b/i, // RECORDAR AL DOCTOR...
   /^semana\s+de\s+vacaciones$/i, // SEMANA DE VACACIONES
   /\brecordar\b.*\bdoctor\b/i, // recordar ... doctor
   /^feriado$/i, // FERIADO
   /^vacaciones$/i, // VACACIONES
+  /^elecciones$/i, // ELECCIONES
+  /^doctor\s+ocupado$/i, // DOCTOR OCUPADO
 ];
+
+// Helper to check if an event summary should be ignored
+export function isIgnoredEvent(summary: string | null | undefined): boolean {
+  const text = (summary ?? "").toLowerCase();
+  return IGNORE_PATTERNS.some((pattern) => pattern.test(text));
+}
 
 const NormalizedTextSchema = z
   .string()

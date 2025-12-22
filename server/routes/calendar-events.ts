@@ -30,7 +30,7 @@ import {
 } from "../lib/query-helpers.js";
 import { googleCalendarConfig } from "../config.js";
 import { updateClassificationSchema } from "../schemas/index.js";
-import { parseCalendarMetadata } from "../modules/calendar/parsers.js";
+import { parseCalendarMetadata, isIgnoredEvent } from "../modules/calendar/parsers.js";
 
 function coerceMaxDays(value: QueryValue): number | undefined {
   return coercePositiveInteger(value);
@@ -215,11 +215,34 @@ export function registerCalendarEventRoutes(app: express.Express) {
     asyncHandler(async (req, res) => {
       const limitParam = Array.isArray(req.query.limit) ? req.query.limit[0] : req.query.limit;
       const limitRaw = limitParam ? Number.parseInt(String(limitParam), 10) : 50;
-      const limit = Number.isFinite(limitRaw) ? Math.min(Math.max(limitRaw, 1), 200) : 50;
-      const rows = await listUnclassifiedCalendarEvents(limit);
+      const limit = Number.isFinite(limitRaw) ? Math.min(Math.max(limitRaw, 1), 500) : 50;
+
+      const offsetParam = Array.isArray(req.query.offset) ? req.query.offset[0] : req.query.offset;
+      const offsetRaw = offsetParam ? Number.parseInt(String(offsetParam), 10) : 0;
+      const offset = Number.isFinite(offsetRaw) ? Math.max(offsetRaw, 0) : 0;
+
+      // Parse filter params
+      const filters = {
+        category: req.query.missingCategory === "true",
+        amountExpected: req.query.missingAmount === "true",
+        attended: req.query.missingAttended === "true",
+      };
+
+      // If no filters specified, pass undefined so it checks all
+      const hasFilters = Object.values(filters).some(Boolean);
+      const { events: rows, totalCount } = await listUnclassifiedCalendarEvents(
+        limit,
+        offset,
+        hasFilters ? filters : undefined
+      );
+
+      // Filter out events matching IGNORE_PATTERNS (using shared helper)
+      const filteredRows = rows.filter((row: UnclassifiedEvent) => !isIgnoredEvent(row.summary));
+
       res.json({
         status: "ok",
-        events: rows.map((row: UnclassifiedEvent) => ({
+        totalCount,
+        events: filteredRows.map((row: UnclassifiedEvent) => ({
           calendarId: row.calendar.googleId,
           eventId: row.externalEventId,
           status: row.eventStatus ?? null,
@@ -425,7 +448,7 @@ export function registerCalendarEventRoutes(app: express.Express) {
       }
 
       // Batch update in smaller transactions to avoid timeout
-      const BATCH_SIZE = 50;
+      const BATCH_SIZE = 20;
       if (updates.length > 0) {
         for (let i = 0; i < updates.length; i += BATCH_SIZE) {
           const batch = updates.slice(i, i + BATCH_SIZE);
