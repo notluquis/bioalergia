@@ -51,6 +51,7 @@ function parseExcludePatterns(raw?: string | null) {
   const defaultPatterns = [
     "no disponible",
     "cumpleaños",
+    "almuerzo",
     "^\\s*$", // eventos vacíos
     "^\\d{1,2}\\s+(ene|feb|mar|abr|may|jun|jul|ago|sep|oct|nov|dic)", // solo fechas sin info
   ];
