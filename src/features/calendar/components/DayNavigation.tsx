@@ -69,7 +69,7 @@ export function DayNavigation({ selectedDate, onSelect, className }: DayNavigati
                 key={date.toString()}
                 onClick={() => onSelect(date.format("YYYY-MM-DD"))}
                 className={cn(
-                  "relative mx-0.5 flex min-w-[3.5rem] flex-1 flex-col items-center justify-center gap-1 rounded-lg px-1 py-2 transition-all duration-200",
+                  "relative mx-0.5 flex min-w-14 flex-1 flex-col items-center justify-center gap-1 rounded-lg px-1 py-2 transition-all duration-200",
                   isSelected
                     ? "bg-primary text-primary-content z-10 scale-105 font-semibold shadow-md"
                     : "hover:bg-base-200/50 text-base-content/60",
