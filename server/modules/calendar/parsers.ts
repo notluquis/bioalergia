@@ -154,12 +154,35 @@ function detectTreatmentStage(summary: string, description: string) {
   return null;
 }
 
+const MONEY_CONFIRMED_PATTERNS = [/\blleg[oó]\b/i, /\benv[ií][oó]\b/i, /\btransferencia\b/i, /\bpagado\b/i];
+
+// Helper to refine amounts based on text context
+function refineAmounts(
+  initialAmounts: { amountExpected: number | null; amountPaid: number | null },
+  summary: string,
+  description: string
+) {
+  const text = `${summary} ${description}`;
+  const isConfirmed = MONEY_CONFIRMED_PATTERNS.some((pattern) => pattern.test(text));
+
+  // Logic: "llegó" / "envio" -> Confirmed Money (Paid)
+  if (isConfirmed && initialAmounts.amountExpected != null && initialAmounts.amountPaid == null) {
+    return {
+      ...initialAmounts,
+      amountPaid: initialAmounts.amountExpected,
+    };
+  }
+
+  return initialAmounts;
+}
+
 export function parseCalendarMetadata(input: {
   summary?: string | null;
   description?: string | null;
 }): ParsedCalendarMetadata {
   const { summary, description } = CalendarEventTextSchema.parse(input);
-  const amounts = extractAmounts(summary, description);
+  const rawAmounts = extractAmounts(summary, description);
+  const amounts = refineAmounts(rawAmounts, summary, description);
   const category = classifyCategory(summary, description);
   const attended = detectAttendance(summary, description);
   const dosage = extractDosage(summary, description);
