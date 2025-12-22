@@ -424,16 +424,20 @@ export function registerCalendarEventRoutes(app: express.Express) {
         }
       }
 
-      // Batch update in transaction
+      // Batch update in smaller transactions to avoid timeout
+      const BATCH_SIZE = 50;
       if (updates.length > 0) {
-        await prisma.$transaction(
-          updates.map((u) =>
-            prisma.event.update({
-              where: { id: u.id },
-              data: u.data,
-            })
-          )
-        );
+        for (let i = 0; i < updates.length; i += BATCH_SIZE) {
+          const batch = updates.slice(i, i + BATCH_SIZE);
+          await prisma.$transaction(
+            batch.map((u) =>
+              prisma.event.update({
+                where: { id: u.id },
+                data: u.data,
+              })
+            )
+          );
+        }
       }
 
       res.json({
