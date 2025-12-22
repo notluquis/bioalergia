@@ -28,6 +28,7 @@ export const CATEGORY_CHOICES = [
   "Control médico",
   "Licencia médica",
   "Roxair",
+  "Servicio de inyección",
 ] as const;
 
 export const TREATMENT_STAGE_CHOICES = ["Mantención", "Inducción"] as const;
@@ -149,6 +150,22 @@ const CONSULTA_PATTERNS = [
  * - enviar roxair: "enviar roxair a Santino (pagado)"
  */
 const ROXAIR_PATTERNS = [/\broxair\b/i, /\bretira\s+roxair\b/i, /\benviar\s+roxair\b/i];
+
+/** Patterns for "Servicio de inyección" (Patient brings med or specific injection service) */
+const INJECTION_PATTERNS = [
+  /\bdacam\b/i, // DACAM
+  /\bcidoten\b/i, // CIDOTEN
+  /\bbetametasona\b/i, // BETAMETASONA
+  /\bneurobionta\b/i, // NEUROBIONTA
+  /\blo\s+trae\b/i, // "lo trae ella", "lo trae el paciente"
+  /\btrae\s+(?:su|el)\s+medicamento\b/i, // "trae su medicamento"
+  /\btrae\s+medicamento\b/i, // "trae medicamento" (generic)
+  /\bpaciente\s+trae\b/i, // "paciente trae"
+  /\binyecci[oó]n\b/i, // inyección
+  /\badministraci[oó]n\b/i, // administración (context sensitive, but usually implies service)
+  /\bim\b/i, // IM (Intramuscular)
+  /\btrae\s+el\s+medicamento\b/i,
+];
 
 /** Patterns for events to IGNORE (not classify)
  * - recordar: "RECORDAR AL DOCTOR..."
@@ -333,7 +350,8 @@ function extractAmounts(summary: string, description: string) {
 
   // 3.5. Keyword followed by amount (e.g. "clustoid 50", "cluxin 30")
   if (amountExpected == null) {
-    const keywordPattern = /(?:clustoid|cluxin|alxoid|oral[-\s]?tec|vacuna)\s+(\d{2,3})\b/gi;
+    // Note: this must match the robust SUBCUT_PATTERNS to catch typos like "clusitoid"
+    const keywordPattern = /(?:cl[au]s[i]?t[oau]?id[eo]?|cluxin|alxoid|oral[-\s]?tec|vacuna)\s+(\d{2,3})\b/gi;
     let kwMatch: RegExpExecArray | null;
     while ((kwMatch = keywordPattern.exec(text)) !== null) {
       const amount = normalizeAmountRaw(kwMatch[1]);
@@ -411,6 +429,10 @@ function classifyCategory(summary: string, description: string): string | null {
   }
 
   if (matchesAny(text, ROXAIR_PATTERNS)) return "Roxair";
+
+  // Injection service check
+  if (matchesAny(text, INJECTION_PATTERNS)) return "Servicio de inyección";
+
   if (matchesAny(text, LICENCIA_PATTERNS)) return "Licencia médica";
   if (matchesAny(text, CONTROL_PATTERNS)) return "Control médico";
   if (matchesAny(text, CONSULTA_PATTERNS)) return "Consulta médica";
