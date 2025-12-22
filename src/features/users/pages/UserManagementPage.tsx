@@ -7,6 +7,7 @@ import {
   updateUserStatus,
   deleteUser,
 } from "@/features/users/api";
+import { fetchRoles } from "@/features/roles/api";
 import type { User } from "@/features/users/types";
 import { useState } from "react";
 import { Link } from "react-router-dom";
@@ -33,7 +34,7 @@ import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
 import Button from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
-import { apiClient } from "@/lib/apiClient";
+
 import { getPersonInitials, getPersonFullName } from "@/lib/person";
 
 import { PAGE_CONTAINER, TITLE_LG, BADGE_SM } from "@/lib/styles";
@@ -77,10 +78,7 @@ export default function UserManagementPage() {
   // Fetch roles for filter
   const { data: roles } = useQuery({
     queryKey: ["roles"],
-    queryFn: async () => {
-      const res = await apiClient.get<{ roles: { name: string; description: string }[] }>("/api/roles");
-      return res.roles || [];
-    },
+    queryFn: fetchRoles,
   });
 
   const { data: users = [], isLoading } = useQuery({

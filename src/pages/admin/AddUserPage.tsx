@@ -2,8 +2,9 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/context/ToastContext";
-import { apiClient } from "@/lib/apiClient";
+
 import { inviteUser } from "@/features/users/api";
+import { fetchRoles } from "@/features/roles/api";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Checkbox from "@/components/ui/Checkbox";
@@ -12,7 +13,8 @@ import { getPersonFullName } from "@/lib/person";
 
 import { fetchPeople } from "@/features/people/api";
 
-type AvailableRole = { name: string; description: string };
+// type AvailableRole removed
+import type { Role } from "@/types/roles";
 
 export default function AddUserPage() {
   const navigate = useNavigate();
@@ -34,10 +36,7 @@ export default function AddUserPage() {
   // Fetch available roles
   const { data: rolesData } = useQuery({
     queryKey: ["available-roles"],
-    queryFn: async () => {
-      const res = await apiClient.get<{ roles: AvailableRole[] }>("/api/roles");
-      return res.roles;
-    },
+    queryFn: fetchRoles,
   });
   const availableRoles = rolesData ?? [];
 
@@ -209,7 +208,7 @@ export default function AddUserPage() {
               required
             >
               {availableRoles.length === 0 && <option value="VIEWER">VIEWER (Fallback)</option>}
-              {availableRoles.map((role: AvailableRole) => (
+              {availableRoles.map((role: Role) => (
                 <option key={role.name} value={role.name}>
                   {role.name} {role.description ? `- ${role.description}` : ""}
                 </option>

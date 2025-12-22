@@ -6,6 +6,7 @@ import type {
   CalendarSyncLog,
   CalendarUnclassifiedEvent,
   CalendarEventClassificationPayload,
+  CalendarData,
 } from "./types";
 
 type CalendarSummaryResponse = CalendarSummary & { status: "ok" };
@@ -112,4 +113,9 @@ export async function classifyCalendarEvent(payload: CalendarEventClassification
   if (response.status !== "ok") {
     throw new Error("No se pudo actualizar la clasificación del evento");
   }
+}
+
+export async function fetchCalendars(): Promise<CalendarData[]> {
+  const response = await apiClient.get<{ calendars: CalendarData[] }>("/api/calendar/calendars");
+  return response.calendars;
 }

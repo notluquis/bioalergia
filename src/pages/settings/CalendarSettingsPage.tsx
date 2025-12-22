@@ -2,29 +2,19 @@ import { useQuery } from "@tanstack/react-query";
 import { CheckCircle2, AlertCircle, RefreshCw, Calendar } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
-import { apiClient } from "@/lib/apiClient";
+import { fetchCalendars } from "@/features/calendar/api";
+import type { CalendarData } from "@/features/calendar/types";
 import { useCalendarEvents } from "@/features/calendar/hooks/useCalendarEvents";
 import { SyncProgressPanel } from "@/features/calendar/components/SyncProgressPanel";
-
-interface CalendarData {
-  id: number;
-  googleId: string;
-  name: string;
-  eventCount: number;
-  createdAt: string;
-  updatedAt: string;
-}
 
 export default function CalendarSettingsPage() {
   const { syncing, syncError, syncProgress, syncDurationMs, syncNow, syncLogs, hasRunningSyncFromOtherSource } =
     useCalendarEvents();
 
   // Fetch calendars
-  const { data: calendarsData, isLoading: calendarsLoading } = useQuery({
+  const { data: calendars = [], isLoading: calendarsLoading } = useQuery({
     queryKey: ["calendars"],
-    queryFn: async () => {
-      return await apiClient.get<{ calendars: CalendarData[] }>("/api/calendar/calendars");
-    },
+    queryFn: fetchCalendars,
   });
 
   const lastSync = syncLogs?.[0];
@@ -107,7 +97,7 @@ export default function CalendarSettingsPage() {
           <div className="flex items-center justify-between">
             <h3 className="text-base-content/80 font-medium">Calendarios conectados</h3>
             {!calendarsLoading && (
-              <span className="text-base-content/50 text-xs">{calendarsData?.calendars.length || 0} calendario(s)</span>
+              <span className="text-base-content/50 text-xs">{calendars.length || 0} calendario(s)</span>
             )}
           </div>
 
@@ -115,9 +105,9 @@ export default function CalendarSettingsPage() {
             <div className="flex justify-center p-8">
               <RefreshCw size={24} className="text-base-content/30 animate-spin" />
             </div>
-          ) : calendarsData?.calendars && calendarsData.calendars.length > 0 ? (
+          ) : calendars.length > 0 ? (
             <div className="grid gap-3">
-              {calendarsData.calendars.map((cal: CalendarData) => (
+              {calendars.map((cal: CalendarData) => (
                 <div
                   key={cal.id}
                   className="bg-base-200/50 border-base-200 flex items-center justify-between gap-4 rounded-lg border p-3"

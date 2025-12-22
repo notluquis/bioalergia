@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { apiClient } from "@/lib/apiClient";
+import { fetchTimesheetMonths } from "../api";
 
 export function useMonths() {
   const {
@@ -8,22 +8,7 @@ export function useMonths() {
     error: queryError,
   } = useQuery({
     queryKey: ["timesheet-months"],
-    queryFn: async () => {
-      try {
-        const response = await apiClient.get<{ status: string; months: string[]; monthsWithData: string[] }>(
-          "/api/timesheets/months"
-        );
-        if (response.status === "ok" && Array.isArray(response.months)) {
-          return {
-            months: response.months,
-            monthsWithData: new Set(response.monthsWithData || []),
-          };
-        }
-        return null; // Trigger fallback
-      } catch {
-        throw new Error("No se pudieron cargar los meses");
-      }
-    },
+    queryFn: fetchTimesheetMonths,
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
