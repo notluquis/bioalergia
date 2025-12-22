@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import Button from "@/components/ui/Button";
 import { today } from "@/lib/dates";
 import type { CreateServicePayload } from "../types";
 import { fetchCounterparts, fetchCounterpart } from "../../counterparts/api";
-import type { Counterpart, CounterpartAccount } from "../../counterparts/types";
 import {
   BasicInfoSection,
   ServiceClassificationSection,
@@ -63,12 +63,6 @@ export function ServiceForm({ onSubmit, onCancel, initialValues, submitLabel }: 
   const effectiveSubmitLabel = submitLabel ?? "Crear servicio";
   const submittingLabel = submitLabel ? "Guardando..." : "Creando...";
 
-  const [counterparts, setCounterparts] = useState<Counterpart[]>([]);
-  const [counterpartsLoading, setCounterpartsLoading] = useState(false);
-  const [counterpartsError, setCounterpartsError] = useState<string | null>(null);
-  const [accounts, setAccounts] = useState<CounterpartAccount[]>([]);
-  const [accountsLoading, setAccountsLoading] = useState(false);
-
   useEffect(() => {
     if (initialValues) {
       setForm({
@@ -97,6 +91,33 @@ export function ServiceForm({ onSubmit, onCancel, initialValues, submitLabel }: 
       });
     }
   }, [lateFeeMode]);
+
+  const {
+    data: counterparts = [],
+    isLoading: counterpartsLoading,
+    error: counterpartsQueryError,
+  } = useQuery({
+    queryKey: ["counterparts"],
+    queryFn: fetchCounterparts,
+  });
+
+  const { data: accounts = [], isLoading: accountsLoading } = useQuery({
+    queryKey: ["counterpart-accounts", form.counterpartId],
+    queryFn: async () => {
+      if (!form.counterpartId) return [];
+      const detail = await fetchCounterpart(form.counterpartId);
+      return detail.accounts;
+    },
+    enabled: !!form.counterpartId,
+  });
+
+  const counterpartsError = counterpartsQueryError
+    ? counterpartsQueryError instanceof Error
+      ? counterpartsQueryError.message
+      : "Error al cargar contrapartes"
+    : null;
+
+  // Sync error handling roughly to previous (though React Query handles this better naturally)
 
   // Adjust emission fields based on emission mode
   useEffect(() => {
@@ -150,52 +171,15 @@ export function ServiceForm({ onSubmit, onCancel, initialValues, submitLabel }: 
     });
   }, [emissionMode]);
 
-  useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
-      setCounterpartsLoading(true);
-      setCounterpartsError(null);
-      try {
-        const list = await fetchCounterparts();
-        if (!cancelled) {
-          setCounterparts(list);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          const message = err instanceof Error ? err.message : "No se pudo cargar las contrapartes";
-          setCounterpartsError(message);
-        }
-      } finally {
-        if (!cancelled) setCounterpartsLoading(false);
-      }
-    };
-    load().catch(() => undefined);
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
   const handleChange = <K extends keyof ServiceFormState>(key: K, value: ServiceFormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
-  const handleCounterpartSelect = async (value: string) => {
+  const handleCounterpartSelect = (value: string) => {
     const id = value ? Number(value) : null;
     handleChange("counterpartId", id);
     handleChange("counterpartAccountId", null);
-    setAccounts([]);
-    if (!id) return;
-    setAccountsLoading(true);
-    setCounterpartsError(null);
-    try {
-      const detail = await fetchCounterpart(id);
-      setAccounts(detail.accounts);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "No se pudo obtener las cuentas";
-      setCounterpartsError(message);
-    } finally {
-      setAccountsLoading(false);
-    }
+    // Accounts will reload automatically via useQuery dependency on form.counterpartId
   };
 
   const effectiveMonths = useMemo(() => {
@@ -244,7 +228,7 @@ export function ServiceForm({ onSubmit, onCancel, initialValues, submitLabel }: 
       await onSubmit(payload);
       if (!initialValues) {
         setForm(INITIAL_STATE);
-        setAccounts([]);
+        // setAccounts([]); // Handled by useQuery dependency
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : "No se pudo crear el servicio";
