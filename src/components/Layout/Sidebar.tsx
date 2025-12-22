@@ -45,13 +45,13 @@ const SidebarItem = React.memo(function SidebarItem({
           className={({ isActive }) => {
             const finalActive = isActive || isPending;
             return cn(
-              "group relative flex items-center rounded-xl transition-[width,transform,background-color] duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] outline-none select-none",
+              "group relative flex items-center rounded-lg transition-colors duration-150 ease-out outline-none select-none",
               // Mobile vs Desktop styling
               isMobile
                 ? "w-full justify-start px-4 py-3"
                 : isCollapsed
-                  ? "mx-auto h-9 w-9 justify-center p-0"
-                  : "w-full justify-start px-3 py-2.5",
+                  ? "mx-auto h-8 w-8 justify-center p-0"
+                  : "w-full justify-start px-3 py-2",
               finalActive
                 ? "bg-primary text-primary-content shadow-primary/30 font-medium shadow-md"
                 : "text-base-content/70 hover:bg-base-content/5 hover:text-base-content hover:shadow-sm"
@@ -65,9 +65,8 @@ const SidebarItem = React.memo(function SidebarItem({
                 {/* Icon Container */}
                 <div
                   className={cn(
-                    "relative flex items-center justify-center transition-transform duration-300 will-change-transform",
-                    isMobile ? "mr-4" : isCollapsed ? "mr-0" : "mr-4",
-                    finalActive && !isCollapsed ? "scale-105" : "group-hover:scale-110"
+                    "relative flex items-center justify-center",
+                    isMobile ? "mr-3" : isCollapsed ? "mr-0" : "mr-3"
                   )}
                 >
                   <item.icon className="h-5 w-5" strokeWidth={finalActive ? 2.5 : 2} />
@@ -79,13 +78,7 @@ const SidebarItem = React.memo(function SidebarItem({
 
                 {/* Label (Desktop Collapsed: Hidden / Expanded: Visible) */}
                 <span
-                  className={cn(
-                    "text-sm font-medium whitespace-nowrap transition-[opacity,transform,width] duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] will-change-transform",
-                    // Desktop Logic
-                    !isMobile && isCollapsed
-                      ? "absolute w-0 -translate-x-4 overflow-hidden opacity-0" // Absolute to remove from flow
-                      : "static w-auto translate-x-0 opacity-100"
-                  )}
+                  className={cn("text-sm font-medium whitespace-nowrap", !isMobile && isCollapsed ? "hidden" : "block")}
                 >
                   {item.label}
                 </span>
@@ -165,18 +158,18 @@ export default function Sidebar({ isOpen, isMobile, onClose }: SidebarProps) {
 
   // Sidebar Classes
   const sidebarClasses = cn(
-    // Base - optimized ease & height for MacOS/Safari (dvh)
-    "flex flex-col bg-base-100/95 backdrop-blur-2xl border-r border-base-200 transition-[width,transform] duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] z-50 will-change-transform",
+    // Base - GPU-accelerated transitions only (transform, opacity)
+    "flex flex-col bg-base-100/95 backdrop-blur-xl border-r border-base-200 transition-[width] duration-200 ease-out z-50",
     // Mobile
     isMobile
       ? cn(
-          "fixed inset-y-0 left-0 w-[280px] h-[100dvh] shadow-2xl safe-area-left",
+          "fixed inset-y-0 left-0 w-64 h-[100dvh] shadow-2xl safe-area-left",
           isOpen ? "translate-x-0" : "-translate-x-full"
         )
       : cn(
           // Desktop
-          "sticky top-0 h-[100dvh]", // Use 100dvh to handle dynamic viewport height correctly
-          isCollapsed ? "w-[80px]" : "w-[280px]", // Increased widths for breathing room
+          "sticky top-0 h-[100dvh]",
+          isCollapsed ? "w-16" : "w-64",
           "shadow-2xl"
         )
   );
@@ -201,8 +194,8 @@ export default function Sidebar({ isOpen, isMobile, onClose }: SidebarProps) {
             !isMobile && isCollapsed ? "justify-center px-0" : "gap-3 px-5"
           )}
         >
-          {/* Logo Container with Glow */}
-          <div className="from-primary/10 to-secondary/10 relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/5 bg-linear-to-br shadow-sm">
+          {/* Logo Container - Simple, no extra backgrounds */}
+          <div className="relative flex h-10 w-10 shrink-0 items-center justify-center">
             <img
               src="/logo_bimi.svg"
               alt="Logo"
@@ -225,9 +218,9 @@ export default function Sidebar({ isOpen, isMobile, onClose }: SidebarProps) {
         </div>
 
         {/* Navigation Content - The ONLY scrollable area */}
-        <div className="scrollbar-thin scrollbar-thumb-base-300 scrollbar-track-transparent flex-1 space-y-8 overflow-x-hidden overflow-y-auto px-3 py-2">
+        <div className="scrollbar-thin scrollbar-thumb-base-300 scrollbar-track-transparent flex-1 space-y-4 overflow-x-hidden overflow-y-auto px-2 py-2">
           {visibleSections.map((section) => (
-            <div key={section.title} className="space-y-2">
+            <div key={section.title} className="space-y-1">
               {/* Section Title */}
               <div
                 className={cn(
@@ -241,7 +234,7 @@ export default function Sidebar({ isOpen, isMobile, onClose }: SidebarProps) {
               </div>
 
               {/* Section Items */}
-              <div className="space-y-1">
+              <div className="space-y-0.5">
                 {section.items.map((item) => (
                   <SidebarItem
                     key={item.to}
