@@ -3,22 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/context/ToastContext";
 import { apiClient } from "@/lib/apiClient";
+import { inviteUser } from "@/features/users/api";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Checkbox from "@/components/ui/Checkbox";
 import { Shield, UserPlus, Users } from "lucide-react";
 import { getPersonFullName } from "@/lib/person";
 
-type Person = {
-  id: number;
-  names: string;
-  fatherName: string | null;
-  motherName: string | null;
-  rut: string;
-  email: string | null;
-  hasUser: boolean;
-  hasEmployee: boolean;
-};
+import { fetchPeople } from "@/features/people/api";
 
 type AvailableRole = { name: string; description: string };
 
@@ -52,20 +44,15 @@ export default function AddUserPage() {
   // Fetch people without users
   const { data: peopleData } = useQuery({
     queryKey: ["people"],
-    queryFn: async () => {
-      const res = await apiClient.get<{ status: string; people: Person[] }>("/api/people");
-      return res.people;
-    },
+    queryFn: fetchPeople,
   });
 
   // Filter people who don't have a user yet
-  const availablePeople = peopleData?.filter((p) => !p.hasUser) || [];
+  const availablePeople = peopleData?.filter((p) => !p.user && !p.hasUser) || [];
 
   // Create user mutation
   const createUserMutation = useMutation({
-    mutationFn: async (payload: Record<string, unknown>) => {
-      return apiClient.post("/api/users/invite", payload);
-    },
+    mutationFn: inviteUser,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
       queryClient.invalidateQueries({ queryKey: ["people"] });
@@ -222,7 +209,7 @@ export default function AddUserPage() {
               required
             >
               {availableRoles.length === 0 && <option value="VIEWER">VIEWER (Fallback)</option>}
-              {availableRoles.map((role) => (
+              {availableRoles.map((role: AvailableRole) => (
                 <option key={role.name} value={role.name}>
                   {role.name} {role.description ? `- ${role.description}` : ""}
                 </option>

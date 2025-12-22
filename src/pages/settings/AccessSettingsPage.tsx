@@ -3,7 +3,8 @@ import { ShieldCheck, Loader2, UserCog, Key, Shield, Lock } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
-import { apiClient } from "@/lib/apiClient";
+import { fetchUsers, toggleUserMfa } from "@/features/users/api";
+import type { User } from "@/features/users/types";
 import { BADGE_SM } from "@/lib/styles";
 
 export default function AccessSettingsPage() {
@@ -12,32 +13,14 @@ export default function AccessSettingsPage() {
   const queryClient = useQueryClient();
   const isAdmin = can("manage", "User");
 
-  // --- Users Query (for Admin MFA Control) ---
-  interface User {
-    id: number;
-    email: string;
-    role: string;
-    mfaEnabled: boolean;
-    passkeysCount: number;
-    hasPasskey: boolean;
-  }
-
-  const { data: usersData, isLoading: isLoadingUsers } = useQuery({
+  const { data: users = [], isLoading: isLoadingUsers } = useQuery({
     queryKey: ["users", "admin-list"],
-    queryFn: async () => {
-      return apiClient.get<{ users: User[] }>("/api/users");
-    },
+    queryFn: fetchUsers,
     enabled: isAdmin,
   });
 
   const toggleMfaMutation = useMutation({
-    mutationFn: async ({ userId, enabled }: { userId: number; enabled: boolean }) => {
-      const data = await apiClient.post<{ status: string; message?: string }>(`/api/users/${userId}/mfa/toggle`, {
-        enabled,
-      });
-      if (data.status !== "ok") throw new Error(data.message || "Error al cambiar estado MFA");
-      return data;
-    },
+    mutationFn: ({ userId, enabled }: { userId: number; enabled: boolean }) => toggleUserMfa(userId, enabled),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users", "admin-list"] });
       success("Estado MFA actualizado correctamente");
@@ -71,7 +54,7 @@ export default function AccessSettingsPage() {
       </div>
 
       {/* Security Overview Cards */}
-      {isAdmin && usersData?.users && (
+      {isAdmin && users && (
         <div className="grid gap-4 md:grid-cols-3">
           <div className="card bg-base-100 shadow-sm">
             <div className="card-body">
@@ -80,7 +63,7 @@ export default function AccessSettingsPage() {
                   <UserCog size={24} />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{usersData.users.length}</p>
+                  <p className="text-2xl font-bold">{users.length}</p>
                   <p className="text-base-content/60 text-sm">Usuarios totales</p>
                 </div>
               </div>
@@ -94,7 +77,7 @@ export default function AccessSettingsPage() {
                   <Shield size={24} />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{usersData.users.filter((u) => u.mfaEnabled).length}</p>
+                  <p className="text-2xl font-bold">{users.filter((u) => u.mfaEnabled).length}</p>
                   <p className="text-base-content/60 text-sm">Con MFA activo</p>
                 </div>
               </div>
@@ -108,7 +91,7 @@ export default function AccessSettingsPage() {
                   <Key size={24} />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{usersData.users.filter((u) => u.hasPasskey).length}</p>
+                  <p className="text-2xl font-bold">{users.filter((u) => u.hasPasskey).length}</p>
                   <p className="text-base-content/60 text-sm">Con passkey</p>
                 </div>
               </div>
@@ -150,7 +133,7 @@ export default function AccessSettingsPage() {
                       </td>
                     </tr>
                   ) : (
-                    usersData?.users?.map((user: User) => {
+                    users.map((user: User) => {
                       const securityScore = getSecurityScore(user);
                       const badge = getSecurityBadge(securityScore);
                       const BadgeIcon = badge.icon;
@@ -227,7 +210,7 @@ export default function AccessSettingsPage() {
             </div>
 
             {/* Security Recommendations */}
-            {usersData?.users && (
+            {users && (
               <div className="bg-info/10 mt-6 rounded-lg p-4">
                 <div className="flex items-start gap-3">
                   <ShieldCheck className="text-info mt-0.5 size-5" />

@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth, type UserRole } from "./AuthContext";
 import { logger } from "@/lib/logger";
 import { APP_CONFIG } from "@/config/app";
+import { apiClient } from "@/lib/apiClient";
 
 export type AppSettings = {
   orgName: string;
@@ -52,11 +53,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     enabled: Boolean(user),
     queryFn: async () => {
       logger.info("[settings] fetch:start", { userId: user?.id ?? null });
-      const res = await fetch("/api/settings", { credentials: "include" });
-      if (!res.ok) {
-        throw new Error("No se pudo obtener la configuración");
-      }
-      const payload = (await res.json()) as { status: string; settings?: AppSettings };
+      const payload = await apiClient.get<{ status: string; settings?: AppSettings }>("/api/settings");
       if (payload.status !== "ok" || !payload.settings) {
         throw new Error("Respuesta inválida de la API de configuración");
       }
@@ -83,15 +80,12 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const updateSettings = useCallback(
     async (next: AppSettings) => {
       logger.info("[settings] update:start", next);
-      const res = await fetch("/api/settings", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(next),
-      });
-      const payload = (await res.json()) as { status: string; settings?: AppSettings; message?: string };
-      if (!res.ok || payload.status !== "ok" || !payload.settings) {
-        logger.warn("[settings] update:error", { status: res.status, message: payload.message });
+      const payload = await apiClient.put<{ status: string; settings?: AppSettings; message?: string }>(
+        "/api/settings",
+        next
+      );
+      if (payload.status !== "ok" || !payload.settings) {
+        logger.warn("[settings] update:error", { message: payload.message });
         throw new Error(payload.message || "No se pudo actualizar la configuración");
       }
       applyBranding(payload.settings);

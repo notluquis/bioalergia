@@ -1,7 +1,9 @@
 import { apiClient } from "@/lib/apiClient";
-import type { InventoryCategory, InventoryItem, InventoryMovement } from "./types";
+import type { InventoryCategory, InventoryItem, InventoryMovement, AllergyInventoryOverview } from "./types";
 
 type ApiResponse<T> = {
+  status?: string;
+  message?: string;
   data: T;
 };
 
@@ -13,6 +15,10 @@ export async function getInventoryCategories(): Promise<InventoryCategory[]> {
 export async function createInventoryCategory(name: string): Promise<InventoryCategory> {
   const res = await apiClient.post<ApiResponse<InventoryCategory>>("/api/inventory/categories", { name });
   return res.data;
+}
+
+export async function deleteInventoryCategory(id: number): Promise<void> {
+  await apiClient.delete(`/api/inventory/categories/${id}`);
 }
 
 export async function getInventoryItems(): Promise<InventoryItem[]> {
@@ -39,4 +45,9 @@ export async function deleteInventoryItem(id: number): Promise<void> {
 
 export async function createInventoryMovement(movement: InventoryMovement): Promise<void> {
   await apiClient.post("/api/inventory/movements", movement);
+}
+
+export async function fetchAllergyOverview(): Promise<AllergyInventoryOverview[]> {
+  const payload = await apiClient.get<ApiResponse<AllergyInventoryOverview[]>>("/api/inventory/allergy-overview");
+  return payload.data ?? [];
 }

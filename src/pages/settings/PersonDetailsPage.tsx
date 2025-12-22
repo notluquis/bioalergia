@@ -5,6 +5,8 @@ import dayjs from "dayjs";
 import PageLoader from "@/components/ui/PageLoader";
 import { getPersonInitials, getPersonFullName } from "@/lib/person";
 
+import { fetchPerson } from "@/features/people/api";
+
 export default function PersonDetailsPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -15,15 +17,11 @@ export default function PersonDetailsPage() {
     error,
   } = useQuery({
     queryKey: ["person", id],
-    queryFn: async () => {
-      const res = await fetch(`/api/people/${id}`);
-      if (!res.ok) throw new Error("Failed to fetch person details");
-      return res.json();
-    },
+    queryFn: () => fetchPerson(id!),
     enabled: !!id,
   });
 
-  const person = response?.person;
+  const person = response;
 
   if (isLoading) return <PageLoader />;
   if (error || !person)

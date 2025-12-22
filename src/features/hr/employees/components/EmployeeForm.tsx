@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import { createEmployee, updateEmployee } from "../api";
-import type { Employee } from "../types";
+import type { Employee, EmployeePayload, EmployeeUpdatePayload } from "../types";
 import type { EmployeeSalaryType } from "@/types/schema";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
@@ -19,7 +20,20 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
   const { error: toastError, success: toastSuccess } = useToast();
   const canEdit = can("manage", "Employee");
 
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<{
+    fullName: string;
+    role: string;
+    email: string;
+    rut: string;
+    bankName: string;
+    bankAccountType: string;
+    bankAccountNumber: string;
+    salaryType: string;
+    hourlyRate: string;
+    fixedSalary: string;
+    overtimeRate: string;
+    retentionRate: string;
+  }>({
     fullName: "",
     role: "",
     email: "",
@@ -34,7 +48,6 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
     retentionRate: "0.145",
   });
 
-  const [saving, setSaving] = useState(false);
   const [rutError, setRutError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -88,7 +101,49 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
     }
   };
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleMutationError = (err: unknown) => {
+    const errObj = err as { details?: unknown; message?: string };
+    const details = errObj.details;
+    let message = err instanceof Error ? err.message : "No se pudo guardar el empleado";
+
+    if (Array.isArray(details)) {
+      const issues = details
+        .map((i: { path: (string | number)[]; message: string }) => `${i.path.join(".")}: ${i.message}`)
+        .join("\n");
+      message = `Datos inválidos:\n${issues}`;
+    }
+    toastError(message);
+  };
+
+  // Mutation for creating employee
+  const createMutation = useMutation({
+    mutationFn: createEmployee,
+    onSuccess: () => {
+      toastSuccess("Empleado creado");
+      onSave(); // Parent handles query invalidation via refetch (or we can invalidate here too)
+      onCancel();
+    },
+    onError: (err) => {
+      handleMutationError(err);
+    },
+  });
+
+  // Mutation for updating employee
+  const updateMutation = useMutation({
+    mutationFn: (data: { id: number; payload: EmployeeUpdatePayload }) => updateEmployee(data.id, data.payload),
+    onSuccess: () => {
+      toastSuccess("Empleado actualizado");
+      onSave();
+      onCancel();
+    },
+    onError: (err) => {
+      handleMutationError(err);
+    },
+  });
+
+  const isMutating = createMutation.isPending || updateMutation.isPending;
+
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!canEdit) return;
 
@@ -98,7 +153,7 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
       return;
     }
 
-    const payload = {
+    const payload: EmployeePayload = {
       full_name: form.fullName.trim(),
       role: form.role.trim(),
       email: form.email.trim() || null,
@@ -112,33 +167,11 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
       overtime_rate: form.overtimeRate ? Number(form.overtimeRate) : null,
       retention_rate: form.retentionRate ? Number(form.retentionRate) : 0,
     };
-    setSaving(true);
-    try {
-      if (employee?.id) {
-        await updateEmployee(employee.id, payload);
-        toastSuccess("Empleado actualizado");
-      } else {
-        await createEmployee(payload);
-        toastSuccess("Empleado creado");
-      }
-      onSave();
-      onCancel();
-    } catch (err) {
-      const errObj = err as { details?: unknown; message?: string };
-      const details = errObj.details;
-      let message = err instanceof Error ? err.message : "No se pudo guardar el empleado";
 
-      if (Array.isArray(details)) {
-        // It's a Zod issue array
-        const issues = details
-          .map((i: { path: (string | number)[]; message: string }) => `${i.path.join(".")}: ${i.message}`)
-          .join("\n");
-        message = `Datos inválidos:\n${issues}`;
-      }
-
-      toastError(message);
-    } finally {
-      setSaving(false);
+    if (employee?.id) {
+      updateMutation.mutate({ id: employee.id, payload });
+    } else {
+      createMutation.mutate(payload);
     }
   };
 
@@ -282,8 +315,8 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
         <Button type="button" variant="secondary" onClick={onCancel}>
           Cancelar
         </Button>
-        <Button type="submit" disabled={saving}>
-          {saving ? "Guardando..." : employee?.id ? "Actualizar empleado" : "Agregar empleado"}
+        <Button type="submit" disabled={isMutating}>
+          {isMutating ? "Guardando..." : employee?.id ? "Actualizar empleado" : "Agregar empleado"}
         </Button>
       </div>
     </form>

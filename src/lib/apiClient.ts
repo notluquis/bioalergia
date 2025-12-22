@@ -64,6 +64,7 @@ interface RequestOptions extends Omit<RequestInit, "body"> {
   query?: Record<string, unknown>;
   retry?: number;
   retryDelayMs?: number;
+  responseType?: "json" | "text" | "blob";
 }
 
 function buildUrlWithQuery(url: string, query?: Record<string, unknown>) {
@@ -100,8 +101,17 @@ export class ApiError extends Error {
   }
 }
 
-async function parseResponse<T>(response: Response, method: string, url: string): Promise<T> {
+async function parseResponse<T>(
+  response: Response,
+  method: string,
+  url: string,
+  responseType: "json" | "text" | "blob" = "json"
+): Promise<T> {
   const status = response.status;
+  if (responseType === "blob") {
+    return (await response.blob()) as unknown as T;
+  }
+
   const hasBody = status !== 204 && status !== 205 && status !== 304 && response.headers.get("content-length") !== "0";
   const rawBody = hasBody ? await response.text() : "";
 
@@ -137,7 +147,7 @@ async function parseResponse<T>(response: Response, method: string, url: string)
   let data: unknown = null;
   if (rawBody) {
     const contentType = response.headers.get("content-type") ?? "";
-    data = contentType.includes("application/json") ? JSON.parse(rawBody) : rawBody;
+    data = responseType === "json" || contentType.includes("application/json") ? JSON.parse(rawBody) : rawBody;
   }
 
   try {
@@ -153,11 +163,15 @@ async function request<T>(method: string, url: string, options?: RequestOptions)
   const { body, query, retry = 2, retryDelayMs = 350, ...restOptions } = options || {};
   const { headers: optionHeaders, ...fetchOverrides } = restOptions;
   const headers: HeadersInit = {
-    "Content-Type": "application/json",
     "Cache-Control": "no-cache",
     Pragma: "no-cache",
     ...(optionHeaders ?? {}),
   };
+
+  // Only set JSON content type if body is NOT FormData
+  if (!(body instanceof FormData)) {
+    (headers as Record<string, string>)["Content-Type"] = "application/json";
+  }
 
   const config: RequestInit = {
     method,
@@ -168,7 +182,7 @@ async function request<T>(method: string, url: string, options?: RequestOptions)
   };
 
   if (body) {
-    config.body = JSON.stringify(body);
+    config.body = body instanceof FormData ? body : JSON.stringify(body);
   }
 
   const finalUrl = buildUrlWithQuery(url, query);
@@ -180,7 +194,7 @@ async function request<T>(method: string, url: string, options?: RequestOptions)
       await sleep(waitMs);
       continue;
     }
-    return parseResponse<T>(response, method, url);
+    return parseResponse<T>(response, method, url, options?.responseType);
   }
 
   throw new Error("No se pudo completar la solicitud después de reintentos.");

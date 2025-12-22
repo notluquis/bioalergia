@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { formatRut, validateRut } from "@/lib/rut";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
+import { fetchUserProfile, setupUser } from "@/features/users/api";
 import { apiClient } from "@/lib/apiClient";
 
 const STEPS = [
@@ -61,18 +62,10 @@ export default function OnboardingWizard() {
   const { isLoading: profileLoading } = useQuery({
     queryKey: ["user-profile"],
     queryFn: async () => {
-      const { data } = await apiClient.get<{ data: Partial<ProfileData> }>("/api/users/profile");
+      const data = await fetchUserProfile();
       setProfile((prev) => ({
         ...prev,
-        names: data.names || "",
-        fatherName: data.fatherName || "",
-        motherName: data.motherName || "",
-        rut: data.rut || "",
-        phone: data.phone || "",
-        address: data.address || "",
-        bankName: data.bankName || "",
-        bankAccountType: data.bankAccountType || "",
-        bankAccountNumber: data.bankAccountNumber || "",
+        ...data,
       }));
       return data;
     },
@@ -126,7 +119,7 @@ export default function OnboardingWizard() {
       }
       cleanNames = cleanNames.trim();
 
-      await apiClient.post("/api/users/setup", {
+      await setupUser({
         ...profile,
         names: cleanNames,
         password,

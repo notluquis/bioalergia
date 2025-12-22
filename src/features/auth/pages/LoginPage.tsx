@@ -1,8 +1,9 @@
 import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 import type { ChangeEvent } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { startAuthentication } from "@simplewebauthn/browser";
-import type { PublicKeyCredentialCreationOptionsJSON } from "@simplewebauthn/browser";
+
 import { Fingerprint, Mail } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useSettings } from "@/context/SettingsContext";
@@ -11,7 +12,7 @@ import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import ConnectionIndicator from "@/components/features/ConnectionIndicator";
 import ThemeToggle from "@/components/ui/ThemeToggle";
-import { apiClient } from "@/lib/apiClient";
+import { fetchPasskeyLoginOptions } from "@/features/auth/api";
 
 export default function LoginPage() {
   const { login, loginWithMfa, loginWithPasskey } = useAuth();
@@ -77,14 +78,9 @@ export default function LoginPage() {
     }
   };
 
-  const handlePasskeyLogin = async () => {
-    setLoading(true);
-    setFormError(null);
-    try {
-      type PasskeyLoginOptions = PublicKeyCredentialCreationOptionsJSON & {
-        challenge: string;
-      };
-      const options = await apiClient.get<PasskeyLoginOptions>("/api/auth/passkey/login/options");
+  const passkeyLoginMutation = useMutation({
+    mutationFn: async () => {
+      const options = await fetchPasskeyLoginOptions();
 
       if (!options.challenge) {
         throw new Error("Error al obtener opciones de biometría");
@@ -92,15 +88,22 @@ export default function LoginPage() {
 
       const authResp = await startAuthentication({ optionsJSON: options });
       await loginWithPasskey(authResp, options.challenge);
-
+    },
+    onSuccess: () => {
       logger.info("[login-page] redirecting after successful passkey login", { to: from });
       navigate(from, { replace: true });
-    } catch (err) {
+    },
+    onError: (err) => {
       console.error(err);
       setFormError("No se pudo validar el acceso biométrico. Usa tu contraseña.");
       setStep("credentials");
-      setLoading(false);
-    }
+    },
+  });
+
+  const handlePasskeyLogin = () => {
+    setLoading(true); // Keep local loading for now or fallback to isPending
+    setFormError(null);
+    passkeyLoginMutation.mutate();
   };
 
   return (
@@ -143,7 +146,7 @@ export default function LoginPage() {
               type="button"
               className="h-14 w-full gap-2 text-base"
               onClick={handlePasskeyLogin}
-              disabled={loading}
+              disabled={loading || passkeyLoginMutation.isPending}
             >
               <Fingerprint className="size-5" />
               Ingresar con biometría

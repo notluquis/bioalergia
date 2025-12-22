@@ -1,12 +1,19 @@
 import { useState, useEffect } from "react";
 import { startRegistration } from "@simplewebauthn/browser";
-import type { PublicKeyCredentialCreationOptionsJSON } from "@simplewebauthn/browser";
 import { Smartphone, Fingerprint, Check, Loader2 } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
-import { apiClient } from "@/lib/apiClient";
+import {
+  setupMfa,
+  enableMfa,
+  disableMfa,
+  fetchPasskeyRegistrationOptions,
+  verifyPasskeyRegistration,
+  removePasskey,
+} from "@/features/auth/api";
 
 export default function SecuritySettingsPage() {
   const { user, refreshSession } = useAuth();
@@ -16,136 +23,110 @@ export default function SecuritySettingsPage() {
   const [mfaSecret, setMfaSecret] = useState<string | null>(null);
   const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
   const [mfaToken, setMfaToken] = useState("");
-  const [loadingMfa, setLoadingMfa] = useState(false);
   const [isMfaEnabled, setIsMfaEnabled] = useState(user?.mfaEnabled ?? false);
-
-  // Passkey State
-  const [loadingPasskey, setLoadingPasskey] = useState(false);
 
   useEffect(() => {
     if (user) setIsMfaEnabled(user.mfaEnabled ?? false);
   }, [user]);
 
   // --- MFA Handlers ---
-  const handleSetupMfa = async () => {
-    setLoadingMfa(true);
-    try {
-      const data = await apiClient.post<{ status: string; secret: string; qrCodeUrl: string; message?: string }>(
-        "/api/auth/mfa/setup",
-        {}
-      );
-      if (data.status === "ok") {
-        setMfaSecret(data.secret);
-        setQrCodeUrl(data.qrCodeUrl);
-      } else {
-        error(data.message || "Error al iniciar configuración MFA");
-      }
-    } catch {
-      error("Error de conexión");
-    } finally {
-      setLoadingMfa(false);
-    }
-  };
+  // --- MFA Mutations ---
+  const setupMfaMutation = useMutation({
+    mutationFn: () =>
+      setupMfa().then((res) => {
+        if (res.status !== "ok") throw new Error(res.message || "Error al iniciar configuración MFA");
+        return res;
+      }),
+    onSuccess: (data) => {
+      setMfaSecret(data.secret);
+      setQrCodeUrl(data.qrCodeUrl);
+    },
+    onError: (err) => {
+      error(err instanceof Error ? err.message : "Error al iniciar configuración MFA");
+    },
+  });
 
-  const handleEnableMfa = async () => {
-    setLoadingMfa(true);
-    try {
-      const data = await apiClient.post<{ status: string; message?: string }>("/api/auth/mfa/enable", {
-        token: mfaToken,
-        userId: user?.id,
-      });
+  const enableMfaMutation = useMutation({
+    mutationFn: (token: string) =>
+      enableMfa({ token, userId: user?.id }).then((res) => {
+        if (res.status !== "ok") throw new Error(res.message || "Código incorrecto");
+        return res;
+      }),
+    onSuccess: async () => {
+      success("MFA activado correctamente");
+      setIsMfaEnabled(true);
+      setMfaSecret(null);
+      setQrCodeUrl(null);
+      await refreshSession();
+    },
+    onError: (err) => {
+      error(err instanceof Error ? err.message : "Error al activar MFA");
+    },
+  });
 
-      if (data.status === "ok") {
-        success("MFA activado correctamente");
-        setIsMfaEnabled(true);
-        setMfaSecret(null);
-        setQrCodeUrl(null);
-        await refreshSession();
-      } else {
-        error(data.message || "Código incorrecto");
-      }
-    } catch {
-      error("Error al activar MFA");
-    } finally {
-      setLoadingMfa(false);
-    }
-  };
+  const disableMfaMutation = useMutation({
+    mutationFn: () =>
+      disableMfa().then((res) => {
+        if (res.status !== "ok") throw new Error("No se pudo desactivar MFA");
+        return res;
+      }),
+    onSuccess: async () => {
+      success("MFA desactivado");
+      setIsMfaEnabled(false);
+      await refreshSession();
+    },
+    onError: () => {
+      error("Error al desactivar MFA");
+    },
+  });
 
-  const handleDisableMfa = async () => {
+  const handleDisableMfa = () => {
     if (!confirm("¿Estás seguro de desactivar la autenticación de dos factores? Tu cuenta será menos segura.")) return;
-
-    setLoadingMfa(true);
-    try {
-      const data = await apiClient.post<{ status: string }>("/api/auth/mfa/disable", {});
-      if (data.status === "ok") {
-        success("MFA desactivado");
-        setIsMfaEnabled(false);
-        await refreshSession();
-      } else {
-        error("No se pudo desactivar MFA");
-      }
-    } catch {
-      error("Error de conexión");
-    } finally {
-      setLoadingMfa(false);
-    }
+    disableMfaMutation.mutate();
   };
 
   // --- Passkey Handlers ---
-  const handleRegisterPasskey = async () => {
-    setLoadingPasskey(true);
-    try {
-      // 1. Get options
-      // 1. Get options
-      // 1. Get options
-      type PasskeyOptionsResponse = PublicKeyCredentialCreationOptionsJSON & {
-        status?: string;
-        message?: string;
-      };
-
-      const options = await apiClient.get<PasskeyOptionsResponse>("/api/auth/passkey/register/options");
-
+  // --- Passkey Mutations ---
+  const registerPasskeyMutation = useMutation({
+    mutationFn: async () => {
+      const options = await fetchPasskeyRegistrationOptions();
       if (options.status === "error") throw new Error(options.message);
 
-      // 2. Create credential
       const attResp = await startRegistration({ optionsJSON: options });
 
-      // 3. Verify
-      const verifyData = await apiClient.post<{ status: string; message?: string }>(
-        "/api/auth/passkey/register/verify",
-        { body: attResp, challenge: options.challenge }
-      );
-      if (verifyData.status === "ok") {
-        success("Passkey registrado exitosamente");
-        await refreshSession();
-      } else {
-        error(verifyData.message || "Error al verificar passkey");
-      }
-    } catch (err) {
+      const verifyData = await verifyPasskeyRegistration({ body: attResp, challenge: options.challenge });
+      if (verifyData.status !== "ok") throw new Error(verifyData.message || "Error al verificar passkey");
+
+      return verifyData;
+    },
+    onSuccess: async () => {
+      success("Passkey registrado exitosamente");
+      await refreshSession();
+    },
+    onError: (err) => {
       console.error(err);
       error(err instanceof Error ? err.message : "Error al registrar passkey");
-    } finally {
-      setLoadingPasskey(false);
-    }
-  };
+    },
+  });
 
-  const handleDeletePasskey = async () => {
+  const deletePasskeyMutation = useMutation({
+    mutationFn: () =>
+      removePasskey().then((res) => {
+        if (res.status !== "ok") throw new Error(res.message || "Error al eliminar passkey");
+        return res;
+      }),
+    onSuccess: async () => {
+      success("Passkey eliminado");
+      await refreshSession();
+    },
+    onError: (err) => {
+      error(err instanceof Error ? err.message : "Error al eliminar passkey");
+    },
+  });
+
+  const handleDeletePasskey = () => {
     if (!confirm("¿Estás seguro de eliminar tu passkey? Tendrás que usar tu contraseña para iniciar sesión.")) return;
-
-    setLoadingPasskey(true);
-    try {
-      const data = await apiClient.delete<{ status: string; message?: string }>("/api/auth/passkey/remove");
-      if (data.status === "ok") {
-        success("Passkey eliminado");
-        await refreshSession();
-      } else {
-        error(data.message || "Error al eliminar passkey");
-      }
-    } catch {
-      error("Error de conexión");
-    } finally {
-      setLoadingPasskey(false);
-    }
+    deletePasskeyMutation.mutate();
   };
 
   return (
@@ -179,7 +160,7 @@ export default function SecuritySettingsPage() {
                     size="sm"
                     className="text-error hover:bg-error/10"
                     onClick={handleDisableMfa}
-                    disabled={loadingMfa}
+                    disabled={disableMfaMutation.isPending}
                   >
                     Desactivar
                   </Button>
@@ -188,8 +169,8 @@ export default function SecuritySettingsPage() {
             ) : (
               <div className="space-y-4">
                 {!qrCodeUrl ? (
-                  <Button onClick={handleSetupMfa} disabled={loadingMfa}>
-                    {loadingMfa ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
+                  <Button onClick={() => setupMfaMutation.mutate()} disabled={setupMfaMutation.isPending}>
+                    {setupMfaMutation.isPending ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
                     Configurar MFA
                   </Button>
                 ) : (
@@ -217,8 +198,11 @@ export default function SecuritySettingsPage() {
                           maxLength={6}
                           autoComplete="one-time-code"
                         />
-                        <Button onClick={handleEnableMfa} disabled={loadingMfa || mfaToken.length !== 6}>
-                          {loadingMfa ? <Loader2 className="size-4 animate-spin" /> : "Activar"}
+                        <Button
+                          onClick={() => enableMfaMutation.mutate(mfaToken)}
+                          disabled={enableMfaMutation.isPending || mfaToken.length !== 6}
+                        >
+                          {enableMfaMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : "Activar"}
                         </Button>
                       </div>
                       <Button
@@ -265,19 +249,28 @@ export default function SecuritySettingsPage() {
                     size="sm"
                     className="text-error hover:bg-error/10"
                     onClick={handleDeletePasskey}
-                    disabled={loadingPasskey}
+                    disabled={deletePasskeyMutation.isPending}
                   >
                     Eliminar
                   </Button>
-                  <Button variant="ghost" size="sm" onClick={handleRegisterPasskey} disabled={loadingPasskey}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => registerPasskeyMutation.mutate()}
+                    disabled={registerPasskeyMutation.isPending}
+                  >
                     Reemplazar
                   </Button>
                 </div>
               </div>
             ) : (
               <div className="flex items-center gap-4">
-                <Button onClick={handleRegisterPasskey} disabled={loadingPasskey} variant="outline">
-                  {loadingPasskey ? (
+                <Button
+                  variant="outline"
+                  onClick={() => registerPasskeyMutation.mutate()}
+                  disabled={registerPasskeyMutation.isPending}
+                >
+                  {registerPasskeyMutation.isPending ? (
                     <Loader2 className="mr-2 size-4 animate-spin" />
                   ) : (
                     <Fingerprint className="mr-2 size-4" />

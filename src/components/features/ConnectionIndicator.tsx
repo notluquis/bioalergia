@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
+import { apiClient } from "@/lib/apiClient";
 
 interface HealthResponse {
   status: "ok" | "degraded" | "error";
@@ -102,13 +103,11 @@ export function ConnectionIndicator() {
       const requestTimeoutId = window.setTimeout(() => controller.abort(), 5000);
       let nextDelay: number | null = BASE_DELAY_MS;
       try {
-        const res = await fetch("/api/health", {
-          credentials: "include",
+        const payload = await apiClient.get<HealthResponse>("/api/health", {
           signal: controller.signal,
         });
+
         const fetchedAt = new Date();
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const payload = (await res.json()) as HealthResponse;
         if (cancelled) return;
 
         const details: string[] = [];

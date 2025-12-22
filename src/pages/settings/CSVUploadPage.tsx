@@ -1,6 +1,8 @@
 import { useState } from "react";
 import Papa from "papaparse";
-import { Upload, CheckCircle, AlertCircle, ArrowRight } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
+import { Upload, CheckCircle, AlertCircle, ArrowRight, Loader2 } from "lucide-react";
+import { previewCsvImport, importCsvData, type CsvImportPayload } from "@/features/data-import/api";
 import Input from "@/components/ui/Input";
 import FileInput from "@/components/ui/FileInput";
 import Button from "@/components/ui/Button";
@@ -141,9 +143,8 @@ export default function CSVUploadPage() {
   const [csvData, setCsvData] = useState<Record<string, string>[]>([]);
   const [csvHeaders, setCsvHeaders] = useState<string[]>([]);
   const [columnMapping, setColumnMapping] = useState<Record<string, string>>({});
-  const [uploadStatus, setUploadStatus] = useState<"idle" | "parsing" | "ready" | "uploading" | "success" | "error">(
-    "idle"
-  );
+  // Status strictly for the parsing phase
+  const [parseStatus, setParseStatus] = useState<"idle" | "parsing" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [previewData, setPreviewData] = useState<{
     toInsert?: number;
@@ -155,21 +156,56 @@ export default function CSVUploadPage() {
     errors?: string[];
   } | null>(null);
 
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+
   const currentTable = TABLE_OPTIONS.find((t) => t.value === selectedTable);
+
+  // --- Mutations ---
+  const previewMutation = useMutation({
+    mutationFn: (payload: CsvImportPayload) => previewCsvImport(payload),
+    onSuccess: (data) => {
+      setPreviewData(data);
+    },
+    onError: (err) => {
+      setErrorMessage(err instanceof Error ? err.message : "Error al previsualizar datos");
+    },
+  });
+
+  const importMutation = useMutation({
+    mutationFn: (payload: CsvImportPayload) => importCsvData(payload),
+    onSuccess: (data) => {
+      setPreviewData(data);
+      setShowSuccessMessage(true);
+
+      // Reset logic
+      setTimeout(() => {
+        setShowSuccessMessage(false);
+        setCsvData([]);
+        setCsvHeaders([]);
+        setColumnMapping({});
+        setPreviewData(null);
+        setParseStatus("idle");
+      }, 3000);
+    },
+    onError: (err) => {
+      setErrorMessage(err instanceof Error ? err.message : "Error al importar datos");
+    },
+  });
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setUploadStatus("parsing");
+    setParseStatus("parsing");
     setErrorMessage("");
+    setShowSuccessMessage(false);
 
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
       complete: (results) => {
         if (results.errors.length > 0) {
-          setUploadStatus("error");
+          setParseStatus("error");
           setErrorMessage(`Error al parsear CSV: ${results.errors[0]?.message || "Error desconocido"}`);
           return;
         }
@@ -178,7 +214,7 @@ export default function CSVUploadPage() {
         setCsvHeaders(headers);
         setCsvData(results.data as Record<string, string>[]);
 
-        // Auto-mapeo si los nombres coinciden
+        // Auto-mapping
         const autoMapping: Record<string, string> = {};
         if (currentTable) {
           currentTable.fields.forEach((field) => {
@@ -193,10 +229,10 @@ export default function CSVUploadPage() {
           });
         }
         setColumnMapping(autoMapping);
-        setUploadStatus("ready");
+        setParseStatus("idle");
       },
       error: (error) => {
-        setUploadStatus("error");
+        setParseStatus("error");
         setErrorMessage(`Error al leer archivo: ${error.message}`);
       },
     });
@@ -209,97 +245,34 @@ export default function CSVUploadPage() {
     }));
   };
 
-  const handlePreview = async () => {
-    if (!selectedTable || csvData.length === 0) return;
-
-    setUploadStatus("uploading");
-    setErrorMessage("");
-
-    try {
-      // Transformar datos usando el mapeo
-      const transformedData = csvData.map((row) => {
-        const transformed: Record<string, string | number> = {};
-        Object.entries(columnMapping).forEach(([dbField, csvColumn]) => {
-          if (csvColumn && row[csvColumn] !== undefined) {
-            transformed[dbField] = row[csvColumn];
-          }
-        });
-        return transformed;
+  const transformData = () => {
+    return csvData.map((row) => {
+      const transformed: Record<string, string | number> = {};
+      Object.entries(columnMapping).forEach(([dbField, csvColumn]) => {
+        if (csvColumn && row[csvColumn] !== undefined) {
+          transformed[dbField] = row[csvColumn];
+        }
       });
-
-      const response = await fetch("/api/csv-upload/preview", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          table: selectedTable,
-          data: transformedData,
-        }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Error al previsualizar datos");
-      }
-
-      const result = await response.json();
-      setPreviewData(result);
-      setUploadStatus("ready");
-    } catch (error) {
-      setUploadStatus("error");
-      setErrorMessage(error instanceof Error ? error.message : "Error desconocido");
-    }
+      return transformed;
+    });
   };
 
-  const handleImport = async () => {
+  const handlePreview = () => {
     if (!selectedTable || csvData.length === 0) return;
-
-    setUploadStatus("uploading");
     setErrorMessage("");
+    previewMutation.mutate({
+      table: selectedTable,
+      data: transformData(),
+    });
+  };
 
-    try {
-      // Transformar datos usando el mapeo
-      const transformedData = csvData.map((row) => {
-        const transformed: Record<string, string | number> = {};
-        Object.entries(columnMapping).forEach(([dbField, csvColumn]) => {
-          if (csvColumn && row[csvColumn] !== undefined) {
-            transformed[dbField] = row[csvColumn];
-          }
-        });
-        return transformed;
-      });
-
-      const response = await fetch("/api/csv-upload/import", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          table: selectedTable,
-          data: transformedData,
-        }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Error al importar datos");
-      }
-
-      const result = await response.json();
-      setUploadStatus("success");
-      setPreviewData(result);
-
-      // Reset después de 3 segundos
-      setTimeout(() => {
-        setUploadStatus("idle");
-        setCsvData([]);
-        setCsvHeaders([]);
-        setColumnMapping({});
-        setPreviewData(null);
-      }, 3000);
-    } catch (error) {
-      setUploadStatus("error");
-      setErrorMessage(error instanceof Error ? error.message : "Error desconocido");
-    }
+  const handleImport = () => {
+    if (!selectedTable || csvData.length === 0) return;
+    setErrorMessage("");
+    importMutation.mutate({
+      table: selectedTable,
+      data: transformData(),
+    });
   };
 
   const isValidMapping = () => {
@@ -324,8 +297,9 @@ export default function CSVUploadPage() {
               setCsvData([]);
               setCsvHeaders([]);
               setColumnMapping({});
-              setUploadStatus("idle");
               setPreviewData(null);
+              setParseStatus("idle");
+              setErrorMessage("");
             }}
           >
             <option value="">-- Seleccionar tabla --</option>
@@ -363,25 +337,32 @@ export default function CSVUploadPage() {
             <FileInput
               accept=".csv"
               onChange={handleFileChange}
-              disabled={uploadStatus === "uploading"}
+              disabled={parseStatus === "parsing" || previewMutation.isPending || importMutation.isPending}
               label="Selecciona un archivo CSV"
             />
 
-            {uploadStatus === "parsing" && (
+            {parseStatus === "parsing" && (
               <div className="alert">
                 <span className="loading loading-spinner loading-sm"></span>
                 <span>Procesando archivo...</span>
               </div>
             )}
 
-            {uploadStatus === "error" && (
+            {parseStatus === "error" && (
               <div className="alert alert-error">
                 <AlertCircle size={20} />
                 <span>{errorMessage}</span>
               </div>
             )}
 
-            {uploadStatus === "success" && (
+            {(previewMutation.isError || importMutation.isError) && errorMessage && (
+              <div className="alert alert-error">
+                <AlertCircle size={20} />
+                <span>{errorMessage}</span>
+              </div>
+            )}
+
+            {showSuccessMessage && (
               <div className="alert alert-success">
                 <CheckCircle size={20} />
                 <span>Datos importados exitosamente</span>
@@ -472,7 +453,7 @@ export default function CSVUploadPage() {
       )}
 
       {/* Vista previa */}
-      {previewData && uploadStatus !== "success" && (
+      {previewData && !showSuccessMessage && (
         <div className="card bg-base-100 shadow">
           <div className="card-body p-4">
             <h2 className="card-title text-lg">Vista previa de importación</h2>
@@ -519,9 +500,9 @@ export default function CSVUploadPage() {
                 variant="outline"
                 className="gap-2"
                 onClick={handlePreview}
-                disabled={!isValidMapping() || uploadStatus === "uploading"}
+                disabled={!isValidMapping() || previewMutation.isPending || importMutation.isPending}
               >
-                <Upload size={16} />
+                {previewMutation.isPending ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
                 Vista previa
               </Button>
               <Button
@@ -529,10 +510,10 @@ export default function CSVUploadPage() {
                 variant="primary"
                 className="gap-2"
                 onClick={handleImport}
-                disabled={!isValidMapping() || uploadStatus === "uploading"}
+                disabled={!isValidMapping() || previewMutation.isPending || importMutation.isPending}
               >
-                <ArrowRight size={16} />
-                {uploadStatus === "uploading" ? "Importando..." : "Importar datos"}
+                {importMutation.isPending ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}
+                {importMutation.isPending ? "Importando..." : "Importar datos"}
               </Button>
             </div>
 

@@ -1,43 +1,49 @@
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { apiClient } from "@/lib/apiClient";
 
 export function useMonths() {
-  const [months, setMonths] = useState<string[]>([]);
-  const [monthsWithData, setMonthsWithData] = useState<Set<string>>(new Set());
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    setLoading(true);
-    fetch("/api/timesheets/months", { credentials: "include" })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.status === "ok" && Array.isArray(data.months) && data.months.length > 0) {
-          setMonths(data.months);
-          setMonthsWithData(new Set(data.monthsWithData || []));
-        } else {
-          // Fallback local: 6 meses atrás + mes actual + 3 adelante
-          const now = new Date();
-          const pad = (n: number) => String(n).padStart(2, "0");
-          const fallback = Array.from({ length: 10 }).map((_, i) => {
-            const d = new Date(now.getFullYear(), now.getMonth() - 6 + i, 1);
-            return `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
-          });
-          setMonths(fallback);
+  const {
+    data,
+    isLoading: loading,
+    error: queryError,
+  } = useQuery({
+    queryKey: ["timesheet-months"],
+    queryFn: async () => {
+      try {
+        const response = await apiClient.get<{ status: string; months: string[]; monthsWithData: string[] }>(
+          "/api/timesheets/months"
+        );
+        if (response.status === "ok" && Array.isArray(response.months)) {
+          return {
+            months: response.months,
+            monthsWithData: new Set(response.monthsWithData || []),
+          };
         }
-      })
-      .catch(() => {
-        // Fallback on error
-        const now = new Date();
-        const pad = (n: number) => String(n).padStart(2, "0");
-        const fallback = Array.from({ length: 10 }).map((_, i) => {
-          const d = new Date(now.getFullYear(), now.getMonth() - 6 + i, 1);
-          return `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
-        });
-        setMonths(fallback);
-        setError("No se pudieron cargar los meses");
-      })
-      .finally(() => setLoading(false));
-  }, []);
+        return null; // Trigger fallback
+      } catch {
+        throw new Error("No se pudieron cargar los meses");
+      }
+    },
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+
+  // Fallback constant
+  const fallbackData = (() => {
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const monthsFallback = Array.from({ length: 10 }).map((_, i) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - 6 + i, 1);
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
+    });
+    return {
+      months: monthsFallback,
+      monthsWithData: new Set<string>(),
+    };
+  })();
+
+  const months: string[] = data?.months || fallbackData.months;
+  const monthsWithData: Set<string> = data?.monthsWithData || fallbackData.monthsWithData;
+  const error = queryError instanceof Error ? queryError.message : null;
 
   return { months, monthsWithData, loading, error };
 }

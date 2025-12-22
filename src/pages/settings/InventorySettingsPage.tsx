@@ -4,32 +4,13 @@ import { Package, Plus, Trash2, Edit2, Loader2, ChevronDown, ChevronRight, Box }
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import { useToast } from "@/context/ToastContext";
-import { apiClient } from "@/lib/apiClient";
-
-type InventoryItem = {
-  id: number;
-  name: string;
-  description: string | null;
-  current_stock: number;
-  category_id: number | null;
-  category_name: string | null;
-};
-
-type Category = {
-  id: number;
-  name: string;
-  created_at: string;
-};
-
-type CategoriesResponse = {
-  status: string;
-  data: Category[];
-};
-
-type ItemsResponse = {
-  status: string;
-  data: InventoryItem[];
-};
+import {
+  getInventoryCategories,
+  getInventoryItems,
+  createInventoryCategory,
+  deleteInventoryCategory,
+} from "@/features/inventory/api";
+import type { InventoryItem } from "@/features/inventory/types";
 
 export default function InventorySettingsPage() {
   const [isCreating, setIsCreating] = useState(false);
@@ -39,27 +20,21 @@ export default function InventorySettingsPage() {
   const queryClient = useQueryClient();
 
   // Fetch Categories
-  const { data: categoriesData, isLoading: isLoadingCategories } = useQuery({
+  const { data: categories = [], isLoading: isLoadingCategories } = useQuery({
     queryKey: ["inventory-categories"],
-    queryFn: async () => {
-      const res = await apiClient.get<CategoriesResponse>("/api/inventory/categories");
-      return res.data;
-    },
+    queryFn: getInventoryCategories,
   });
 
   // Fetch Items
-  const { data: itemsData, isLoading: isLoadingItems } = useQuery({
+  const { data: items = [], isLoading: isLoadingItems } = useQuery({
     queryKey: ["inventory-items"],
-    queryFn: async () => {
-      const res = await apiClient.get<ItemsResponse>("/api/inventory/items");
-      return res.data;
-    },
+    queryFn: getInventoryItems,
   });
 
   const isLoading = isLoadingCategories || isLoadingItems;
 
   // Group items by category
-  const itemsByCategory = (itemsData ?? []).reduce(
+  const itemsByCategory = items.reduce(
     (acc, item) => {
       const catId = item.category_id ?? 0; // 0 for uncategorized
       if (!acc[catId]) acc[catId] = [];
@@ -71,9 +46,7 @@ export default function InventorySettingsPage() {
 
   // Create Category Mutation
   const createMutation = useMutation({
-    mutationFn: async (name: string) => {
-      await apiClient.post("/api/inventory/categories", { name });
-    },
+    mutationFn: (name: string) => createInventoryCategory(name),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["inventory-categories"] });
       success("Categoría creada");
@@ -83,12 +56,9 @@ export default function InventorySettingsPage() {
     onError: () => toastError("Error al crear categoría"),
   });
 
-  // Delete Category Mutation (stub - backend support pending)
-
+  // Delete Category Mutation
   const deleteMutation = useMutation({
-    mutationFn: async (id: number) => {
-      await apiClient.delete(`/api/inventory/categories/${id}`);
-    },
+    mutationFn: (id: number) => deleteInventoryCategory(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["inventory-categories"] });
       success("Categoría eliminada");
@@ -114,7 +84,6 @@ export default function InventorySettingsPage() {
     });
   };
 
-  const categories = categoriesData ?? [];
   const uncategorizedItems = itemsByCategory[0] ?? [];
 
   return (

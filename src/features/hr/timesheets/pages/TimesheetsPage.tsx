@@ -10,7 +10,9 @@ import {
   fetchTimesheetDetail,
   bulkUpsertTimesheets,
   deleteTimesheet,
+  prepareTimesheetEmail,
 } from "@/features/hr/timesheets/api";
+
 import type { BulkRow, TimesheetUpsertEntry } from "@/features/hr/timesheets/types";
 import { buildBulkRows, hasRowData, isRowDirty, parseDuration, formatDateLabel } from "@/features/hr/timesheets/utils";
 import { generateTimesheetPdfBase64 } from "@/features/hr/timesheets/pdfUtils";
@@ -309,6 +311,22 @@ export default function TimesheetsPage() {
     return generateTimesheetPdfBase64(selectedEmployee, employeeSummaryRow, bulkRows, monthLabel);
   }, [selectedEmployee, employeeSummaryRow, bulkRows, monthLabel]);
 
+  // ... existing imports
+
+  // --- Mutations ---
+
+  // Add new mutation for email preparation
+  const emailMutation = useMutation({
+    mutationFn: prepareTimesheetEmail,
+    onError: (err) => {
+      const message = err instanceof Error ? err.message : "Error al preparar el email";
+      setErrorLocal(message);
+      setEmailPrepareStatus(null);
+    },
+  });
+
+  // ... existing mutations
+
   async function handlePrepareEmail() {
     if (!selectedEmployee || !employeeSummaryRow || !month) return;
     setEmailPrepareStatus("generating-pdf");
@@ -319,20 +337,15 @@ export default function TimesheetsPage() {
       if (!pdfBase64) throw new Error("No se pudo generar el PDF");
 
       setEmailPrepareStatus("preparing");
-      const response = await fetch("/api/timesheets/prepare-email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          employeeId: selectedEmployee.id,
-          month,
-          monthLabel,
-          pdfBase64,
-        }),
+
+      const data = await emailMutation.mutateAsync({
+        employeeId: selectedEmployee.id,
+        month,
+        monthLabel,
+        pdfBase64,
       });
 
-      const data = await response.json();
-      if (!response.ok || data.status !== "ok") throw new Error(data.message || "Error al preparar el email");
+      if (data.status !== "ok") throw new Error(data.message || "Error al preparar el email");
 
       // Download .eml
       const emlBlob = new Blob([Uint8Array.from(atob(data.emlBase64), (c) => c.charCodeAt(0))], {
@@ -350,9 +363,13 @@ export default function TimesheetsPage() {
       setEmailPrepareStatus("done");
       toastSuccess(`Archivo descargado: ${data.filename}`);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Error al preparar el email";
-      setErrorLocal(message);
-      setEmailPrepareStatus(null);
+      // Error handled in mutation onError or caught here
+      if (!emailMutation.isError) {
+        // If error happened outside mutation (e.g. PDF gen or data processing)
+        const message = err instanceof Error ? err.message : "Error al preparar el email";
+        setErrorLocal(message);
+        setEmailPrepareStatus(null);
+      }
     }
   }
 

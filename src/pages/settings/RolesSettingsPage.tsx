@@ -1,7 +1,7 @@
 import { Loader2, Pencil, Trash2, Plus, RotateCw, Check, ChevronDown, ChevronRight, Eye } from "lucide-react";
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiClient } from "@/lib/apiClient";
+import { fetchRoles, fetchPermissions, syncPermissions, updateRolePermissions } from "@/features/roles/api";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/context/ToastContext";
 import { useAuth } from "@/context/AuthContext";
@@ -44,25 +44,19 @@ export default function RolesSettingsPage() {
   // Queries
   const rolesQuery = useQuery({
     queryKey: ["roles"],
-    queryFn: async () => {
-      const res = await apiClient.get<{ status: string; roles: Role[] }>("/api/roles");
-      return res.roles;
-    },
+    queryFn: fetchRoles,
   });
 
   const permissionsQuery = useQuery({
     queryKey: ["permissions"],
-    queryFn: async () => {
-      const res = await apiClient.get<{ status: string; permissions: Permission[] }>("/api/permissions");
-      return res.permissions;
-    },
+    queryFn: fetchPermissions,
   });
 
   // Mutations
   const syncMutation = useMutation({
     mutationFn: async () => {
       setIsSyncing(true);
-      await apiClient.post("/api/permissions/sync", {});
+      await syncPermissions();
     },
     onSuccess: () => {
       toast.success("Permisos sincronizados con el sistema");
@@ -75,9 +69,7 @@ export default function RolesSettingsPage() {
   });
 
   const updateRolePermissionsMutation = useMutation({
-    mutationFn: async ({ roleId, permissionIds }: { roleId: number; permissionIds: number[] }) => {
-      await apiClient.post(`/api/roles/${roleId}/permissions`, { permissionIds });
-    },
+    mutationFn: updateRolePermissions,
     onMutate: async ({ roleId, permissionIds }) => {
       await queryClient.cancelQueries({ queryKey: ["roles"] });
       const previousRoles = queryClient.getQueryData<Role[]>(["roles"]);

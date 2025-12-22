@@ -1,9 +1,11 @@
+import { apiClient } from "@/lib/apiClient";
 import type { ProductionBalance, ProductionBalanceHistoryEntry, ProductionBalancePayload } from "./types";
 
 type ListResponse = {
   status: string;
   from: string;
   to: string;
+  message?: string;
   items: Array<{
     id: number;
     date: string;
@@ -33,11 +35,13 @@ type ListResponse = {
 
 type SaveResponse = {
   status: string;
+  message?: string;
   item: ListResponse["items"][number];
 };
 
 type HistoryResponse = {
   status: string;
+  message?: string;
   items: Array<{
     id: number;
     balanceId: number;
@@ -75,16 +79,13 @@ const asBalance = (item: ListResponse["items"][number]): ProductionBalance => ({
 });
 
 export async function fetchProductionBalances(from: string, to: string): Promise<ProductionBalance[]> {
-  const res = await fetch(
-    `/api/daily-production-balances?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
-    {
-      credentials: "include",
-    }
-  );
-  if (!res.ok) {
-    throw new Error("No se pudieron obtener los balances diarios de prestaciones");
+  const payload = await apiClient.get<ListResponse>("/api/daily-production-balances", {
+    query: { from, to },
+  });
+
+  if (payload.status !== "ok") {
+    throw new Error(payload.message || "No se pudieron obtener los balances diarios de prestaciones");
   }
-  const payload: ListResponse = await res.json();
   return (payload.items ?? []).map(asBalance);
 }
 
@@ -92,30 +93,21 @@ export async function saveProductionBalance(
   payload: ProductionBalancePayload,
   id?: number | null
 ): Promise<ProductionBalance> {
-  const method = id ? "PUT" : "POST";
   const url = id ? `/api/daily-production-balances/${id}` : "/api/daily-production-balances";
-  const res = await fetch(url, {
-    method,
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  if (!res.ok) {
-    const message = await res.text();
-    throw new Error(message || "No se pudo guardar el balance diario de prestaciones");
+  const data = await (id ? apiClient.put<SaveResponse>(url, payload) : apiClient.post<SaveResponse>(url, payload));
+
+  if (data.status !== "ok") {
+    throw new Error(data.message || "No se pudo guardar el balance diario de prestaciones");
   }
-  const data: SaveResponse = await res.json();
   return asBalance(data.item);
 }
 
 export async function fetchProductionBalanceHistory(balanceId: number): Promise<ProductionBalanceHistoryEntry[]> {
-  const res = await fetch(`/api/daily-production-balances/${balanceId}/history`, {
-    credentials: "include",
-  });
-  if (!res.ok) {
-    throw new Error("No se pudo cargar el historial del balance");
+  const payload = await apiClient.get<HistoryResponse>(`/api/daily-production-balances/${balanceId}/history`);
+
+  if (payload.status !== "ok") {
+    throw new Error(payload.message || "No se pudo cargar el historial del balance");
   }
-  const payload: HistoryResponse = await res.json();
   return (payload.items ?? []).map((entry) => ({
     id: entry.id,
     balanceId: entry.balanceId,
