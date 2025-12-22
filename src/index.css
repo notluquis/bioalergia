@@ -172,11 +172,11 @@ html {
 }
 
 /* ============================================
-   Performance Optimization (Non-Invasive)
-   2025 Standards: Respect native behavior
+   Performance Optimization (Native 2024/2025)
+   Let the browser optimize - minimal hints only
    ============================================ */
 
-/* Reduced motion: Respect user preferences for accessibility (WCAG 2.1) */
+/* Reduced motion: Respect OS preferences (WCAG 2.1) */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -188,9 +188,20 @@ html {
   }
 }
 
-/* Layout containment for heavy components (opt-in, not forced) */
-.contain-layout {
-  contain: layout style;
+/* content-visibility: auto - Baseline 2024
+   Browser skips rendering off-screen content entirely */
+main,
+.page-content {
+  content-visibility: auto;
+  contain-intrinsic-block-size: auto 500px;
+}
+
+/* CSS Containment - Isolate component rendering
+   Browser doesn't recalculate entire page when these change */
+.card,
+.modal-box,
+aside {
+  contain: content;
 }
 
 a {
@@ -392,6 +403,29 @@ html[data-theme="bioalergia-dark"] .layout-shell {
 .muted-scrollbar {
   scrollbar-width: thin;
   scrollbar-color: oklch(var(--bc) / 0.15) transparent;
+}
+
+/* Hover-only scrollbar: hides until hover (for sidebar nav) */
+.hover-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.hover-scrollbar::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 9999px;
+  transition: background 0.2s ease;
+}
+.hover-scrollbar:hover::-webkit-scrollbar-thumb {
+  background: oklch(var(--bc) / 0.2);
+}
+.hover-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.hover-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+.hover-scrollbar:hover {
+  scrollbar-color: oklch(var(--bc) / 0.2) transparent;
 }
 
 /* === TABLE UTILITIES === */
