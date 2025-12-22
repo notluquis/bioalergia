@@ -71,7 +71,7 @@ const SUBCUT_PATTERNS = [
 ];
 
 /** Pattern for decimal dosage (indicates subcutaneous treatment) */
-const DECIMAL_DOSAGE_PATTERN = /\b(\d+[.,]\d+)\b/;
+const DECIMAL_DOSAGE_PATTERN = /\b(\d+[.,]\d{1,2})\b/;
 
 /** Patterns for "Test y exámenes" */
 const TEST_PATTERNS = [
@@ -177,12 +177,27 @@ export const IGNORE_PATTERNS = [
 /** Patterns for attendance confirmation */
 const ATTENDED_PATTERNS = [/\bllego\b/i, /\basist[ií]o\b/i];
 
+/** Patterns for induction stage (1st-5th dose) */
+const INDUCTION_PATTERNS = [
+  // 1st dose variants: 1era, 1ra, 1°, 1º, primera, primra, prmera
+  /\b1[º°]?(?:era|ra|er)?\s*dosis\b/i,
+  /\bprim(?:er)?a?\s*dosis\b/i,
+  /\bpr[im]+[er]*a\s*dosis\b/i, // catches primer, primra, prmera
+
+  // 2nd-5th dose variants (numeric)
+  /\b[2-5][º°]?(?:da|ra|ta|va|a)?\s*dosis\b/i,
+
+  // Text variants
+  /(?:segunda|tercera|cuarta|quinta)\s*dosis\b/i,
+];
+
 /** Patterns for maintenance stage */
 const MAINTENANCE_PATTERNS = [
   /\bmantenci[oó]n\b/i, // mantención, mantencion
   /\bmantencio\b/i, // typo: missing final 'n'
   /\bmant\b/i, // abbreviated
   /\bmensual\b/i, // monthly
+  /\bdosis\s+clust(?:oid)?\b/i, // 'dosis clustoid' implies maintenance/0.5ml
 ];
 
 /** Patterns for dosage extraction */
@@ -374,11 +389,12 @@ function classifyCategory(summary: string, description: string): string | null {
     return null;
   }
 
-  // Priority order: Subcutáneo → Test → Roxair → Licencia → Control → Consulta
+  // Priority order: Test (specific) → Subcutáneo (broad) → Roxair → Licencia → Control → Consulta
+  if (matchesAny(text, TEST_PATTERNS)) return "Test y exámenes";
+
   if (matchesAny(text, SUBCUT_PATTERNS) || DECIMAL_DOSAGE_PATTERN.test(text)) {
     return "Tratamiento subcutáneo";
   }
-  if (matchesAny(text, TEST_PATTERNS)) return "Test y exámenes";
   if (matchesAny(text, ROXAIR_PATTERNS)) return "Roxair";
   if (matchesAny(text, LICENCIA_PATTERNS)) return "Licencia médica";
   if (matchesAny(text, CONTROL_PATTERNS)) return "Control médico";
@@ -437,6 +453,11 @@ function extractDosage(summary: string, description: string): string | null {
 function detectTreatmentStage(summary: string, description: string): string | null {
   const text = `${summary} ${description}`;
 
+  // Induction takes priority (e.g. "2da dosis clustoid" is Induction, even if "dosis clustoid" looks like maintenance)
+  if (matchesAny(text, INDUCTION_PATTERNS)) {
+    return "Inducción";
+  }
+
   // Maintenance keywords or 0.5 (with or without ml) = Mantención
   if (matchesAny(text, MAINTENANCE_PATTERNS) || /0[.,]5(\s*ml)?\b/i.test(text)) {
     return "Mantención";
@@ -462,13 +483,15 @@ export function parseCalendarMetadata(input: {
   const dosage = extractDosage(summary, description);
   const treatmentStage = detectTreatmentStage(summary, description);
 
+  // Logic: Dosage and Treatment Stage only apply to "Tratamiento subcutáneo"
+  const isSubcut = category === "Tratamiento subcutáneo";
+
   return {
-    // If dosage found but no category, default to subcutaneous
-    category: category ?? (dosage ? "Tratamiento subcutáneo" : null),
+    category,
     amountExpected: amounts.amountExpected,
     amountPaid: amounts.amountPaid,
     attended,
-    dosage,
-    treatmentStage,
+    dosage: isSubcut ? dosage : null,
+    treatmentStage: isSubcut ? treatmentStage : null,
   };
 }
