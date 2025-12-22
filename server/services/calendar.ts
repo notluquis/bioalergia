@@ -94,18 +94,55 @@ export type UnclassifiedEvent = Prisma.EventGetPayload<{
   };
 }>;
 
-export async function listUnclassifiedCalendarEvents(limit: number) {
-  // Unclassified: category is null or empty
-  return await prisma.event.findMany({
-    where: {
-      OR: [{ category: null }, { category: "" }],
-    },
-    take: limit,
-    orderBy: { startDateTime: "desc" },
-    include: {
-      calendar: true,
-    },
-  });
+type MissingFieldFilter = {
+  category?: boolean;
+  amountExpected?: boolean;
+  amountPaid?: boolean;
+  attended?: boolean;
+};
+
+export async function listUnclassifiedCalendarEvents(limit: number, offset: number = 0, filters?: MissingFieldFilter) {
+  // Build OR conditions based on filters
+  const orConditions: Prisma.EventWhereInput[] = [];
+
+  // If no specific filters, default to show events missing ANY classifiable field
+  if (!filters || Object.keys(filters).length === 0) {
+    orConditions.push({ category: null }, { category: "" }, { amountExpected: null }, { attended: null });
+  } else {
+    if (filters.category) {
+      orConditions.push({ category: null }, { category: "" });
+    }
+    if (filters.amountExpected) {
+      orConditions.push({ amountExpected: null });
+    }
+    if (filters.amountPaid) {
+      orConditions.push({ amountPaid: null });
+    }
+    if (filters.attended) {
+      orConditions.push({ attended: null });
+    }
+  }
+
+  const whereClause = {
+    OR: orConditions.length > 0 ? orConditions : undefined,
+  };
+
+  const [events, totalCount] = await Promise.all([
+    prisma.event.findMany({
+      where: whereClause,
+      take: limit,
+      skip: offset,
+      orderBy: { startDateTime: "desc" },
+      include: {
+        calendar: true,
+      },
+    }),
+    prisma.event.count({
+      where: whereClause,
+    }),
+  ]);
+
+  return { events, totalCount };
 }
 
 export async function updateCalendarEventClassification(

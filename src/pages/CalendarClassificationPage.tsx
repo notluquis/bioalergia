@@ -78,8 +78,10 @@ function buildPayload(entry: z.infer<typeof classificationSchema>, event: Calend
 }
 
 function CalendarClassificationPage() {
-  const PAGE_SIZE = 10;
+  const PAGE_SIZE = 50;
   const queryClient = useQueryClient();
+
+  const [page, setPage] = useState(0);
 
   const {
     data,
@@ -87,16 +89,16 @@ function CalendarClassificationPage() {
     error: queryError,
     refetch,
   } = useQuery({
-    queryKey: ["calendar-unclassified"],
-    queryFn: () => fetchUnclassifiedCalendarEvents(200),
+    queryKey: ["calendar-unclassified", page, PAGE_SIZE],
+    queryFn: () => fetchUnclassifiedCalendarEvents(PAGE_SIZE, page * PAGE_SIZE),
   });
 
-  const events = data || EMPTY_EVENTS;
+  const events = data?.events || EMPTY_EVENTS;
+  const totalCount = data?.totalCount || 0;
 
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastOpen, setToastOpen] = useState(false);
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(classificationArraySchema),
@@ -111,7 +113,6 @@ function CalendarClassificationPage() {
   useEffect(() => {
     if (events) {
       reset({ entries: events.map(buildDefaultEntry) });
-      setVisibleCount(PAGE_SIZE);
     }
   }, [events, reset]);
 
@@ -167,7 +168,7 @@ function CalendarClassificationPage() {
           ? classifyMutation.error.message
           : null;
 
-  const pendingCount = events.length;
+  const pendingCount = totalCount;
 
   const handleResetEntry = useCallback(
     (index: number, event: CalendarUnclassifiedEvent) => {
@@ -240,7 +241,7 @@ function CalendarClassificationPage() {
           )}
 
           <div className="space-y-4">
-            {fields.slice(0, visibleCount).map((field, index) => {
+            {fields.map((field, index) => {
               const event = events[index];
               if (!event) return null;
               const key = eventKey(event);
@@ -259,17 +260,30 @@ function CalendarClassificationPage() {
               );
             })}
           </div>
-          {visibleCount < events.length ? (
-            <div className="flex justify-center">
+          {/* Pagination Controls */}
+          {totalCount > PAGE_SIZE && (
+            <div className="flex items-center justify-center gap-4 pt-4">
               <Button
                 type="button"
                 variant="secondary"
-                onClick={() => setVisibleCount((count) => Math.min(count + PAGE_SIZE, events.length))}
+                onClick={() => setPage((p) => Math.max(0, p - 1))}
+                disabled={page === 0 || loading}
               >
-                Ver más eventos ({events.length - visibleCount} restantes)
+                ← Anterior
+              </Button>
+              <span className="text-base-content/70 text-sm">
+                Página {page + 1} de {Math.ceil(totalCount / PAGE_SIZE)} ({totalCount} total)
+              </span>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setPage((p) => p + 1)}
+                disabled={(page + 1) * PAGE_SIZE >= totalCount || loading}
+              >
+                Siguiente →
               </Button>
             </div>
-          ) : null}
+          )}
         </section>
       </Tooltip.Provider>
       <Toast.Root

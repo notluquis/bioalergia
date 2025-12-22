@@ -98,14 +98,38 @@ export async function fetchCalendarSyncLogs(limit = 50): Promise<CalendarSyncLog
   return response.logs;
 }
 
-export async function fetchUnclassifiedCalendarEvents(limit = 50): Promise<CalendarUnclassifiedEvent[]> {
-  const response = await apiClient.get<{ status: "ok"; events: CalendarUnclassifiedEvent[] }>(
-    `/api/calendar/events/unclassified?limit=${limit}`
-  );
+export type MissingFieldFilters = {
+  missingCategory?: boolean;
+  missingAmount?: boolean;
+  missingAttended?: boolean;
+};
+
+export type UnclassifiedEventsResponse = {
+  events: CalendarUnclassifiedEvent[];
+  totalCount: number;
+};
+
+export async function fetchUnclassifiedCalendarEvents(
+  limit = 50,
+  offset = 0,
+  filters?: MissingFieldFilters
+): Promise<UnclassifiedEventsResponse> {
+  const params = new URLSearchParams();
+  params.set("limit", String(limit));
+  params.set("offset", String(offset));
+  if (filters?.missingCategory) params.set("missingCategory", "true");
+  if (filters?.missingAmount) params.set("missingAmount", "true");
+  if (filters?.missingAttended) params.set("missingAttended", "true");
+
+  const response = await apiClient.get<{
+    status: "ok";
+    events: CalendarUnclassifiedEvent[];
+    totalCount: number;
+  }>(`/api/calendar/events/unclassified?${params.toString()}`);
   if (response.status !== "ok") {
     throw new Error("No se pudo obtener la lista de eventos sin clasificar");
   }
-  return response.events;
+  return { events: response.events, totalCount: response.totalCount };
 }
 
 export async function classifyCalendarEvent(payload: CalendarEventClassificationPayload): Promise<void> {
