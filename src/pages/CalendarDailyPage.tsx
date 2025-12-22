@@ -114,11 +114,9 @@ function DaySection({ entry, defaultOpen = false }: DaySectionProps) {
                     <h3 className="text-base-content truncate font-semibold">
                       {event.summary?.trim() || "(Sin título)"}
                     </h3>
-                    {event.startDateTime && (
-                      <span className="text-secondary/80 text-xs font-medium whitespace-nowrap">
-                        {formatEventTime(event)}
-                      </span>
-                    )}
+                    <span className="text-secondary/80 text-xs font-medium whitespace-nowrap">
+                      {formatEventTime(event)}
+                    </span>
                   </div>
                   <div className="flex flex-wrap items-center gap-1 text-xs">
                     {event.category && (
