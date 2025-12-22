@@ -524,4 +524,93 @@ export function registerCalendarEventRoutes(app: express.Express) {
       });
     })
   );
+
+  // POST /api/calendar/events/reclassify-all - Re-apply classification to ALL events (overwrites existing)
+  app.post(
+    "/api/calendar/events/reclassify-all",
+    authenticate,
+    authorize("update", "CalendarEvent"),
+    asyncHandler(async (_req, res) => {
+      // Get ALL events
+      const events = await prisma.event.findMany({
+        select: {
+          id: true,
+          summary: true,
+          description: true,
+        },
+      });
+
+      type EventUpdate = {
+        id: number;
+        data: {
+          category: string | null;
+          dosage: string | null;
+          treatmentStage: string | null;
+          attended: boolean | null;
+          amountExpected: number | null;
+          amountPaid: number | null;
+        };
+      };
+
+      const updates: EventUpdate[] = [];
+
+      const fieldCounts = {
+        category: 0,
+        dosage: 0,
+        treatmentStage: 0,
+        attended: 0,
+        amountExpected: 0,
+        amountPaid: 0,
+      };
+
+      for (const event of events) {
+        const metadata = parseCalendarMetadata({
+          summary: event.summary,
+          description: event.description,
+        });
+
+        // Always update all fields (overwrite existing)
+        const updateData: EventUpdate["data"] = {
+          category: metadata.category,
+          dosage: metadata.dosage,
+          treatmentStage: metadata.treatmentStage,
+          attended: metadata.attended,
+          amountExpected: metadata.amountExpected,
+          amountPaid: metadata.amountPaid,
+        };
+
+        // Track non-null values for counts
+        if (metadata.category) fieldCounts.category++;
+        if (metadata.dosage) fieldCounts.dosage++;
+        if (metadata.treatmentStage) fieldCounts.treatmentStage++;
+        if (metadata.attended !== null) fieldCounts.attended++;
+        if (metadata.amountExpected !== null) fieldCounts.amountExpected++;
+        if (metadata.amountPaid !== null) fieldCounts.amountPaid++;
+
+        updates.push({ id: event.id, data: updateData });
+      }
+
+      // Batch update
+      const BATCH_SIZE = 20;
+      for (let i = 0; i < updates.length; i += BATCH_SIZE) {
+        const batch = updates.slice(i, i + BATCH_SIZE);
+        await prisma.$transaction(
+          batch.map((u) =>
+            prisma.event.update({
+              where: { id: u.id },
+              data: u.data,
+            })
+          )
+        );
+      }
+
+      res.json({
+        status: "ok",
+        message: `Reclassified all ${updates.length} events`,
+        totalChecked: events.length,
+        reclassified: updates.length,
+        fieldCounts,
+      });
+    })
+  );
 }

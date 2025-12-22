@@ -13,6 +13,7 @@ import {
   classifyCalendarEvent,
   fetchUnclassifiedCalendarEvents,
   reclassifyCalendarEvents,
+  reclassifyAllCalendarEvents,
   fetchClassificationOptions,
   type MissingFieldFilters,
 } from "@/features/calendar/api";
@@ -182,6 +183,31 @@ function CalendarClassificationPage() {
     },
   });
 
+  const reclassifyAllMutation = useMutation({
+    mutationFn: reclassifyAllCalendarEvents,
+    onSuccess: (result) => {
+      const { fieldCounts: fc } = result;
+      const details = [
+        fc.category > 0 ? `Categoría: ${fc.category}` : null,
+        fc.dosage > 0 ? `Dosis: ${fc.dosage}` : null,
+        fc.treatmentStage > 0 ? `Etapa: ${fc.treatmentStage}` : null,
+        fc.attended > 0 ? `Asistencia: ${fc.attended}` : null,
+        fc.amountExpected > 0 ? `Monto esperado: ${fc.amountExpected}` : null,
+        fc.amountPaid > 0 ? `Monto pagado: ${fc.amountPaid}` : null,
+      ]
+        .filter(Boolean)
+        .join(" | ");
+      const msg = `✓ TODOS: ${result.reclassified} eventos reclasificados. ${details}`;
+      setToastMessage(msg);
+      setToastOpen(true);
+      void queryClient.invalidateQueries({ queryKey: ["calendar-unclassified"] });
+    },
+    onError: (err) => {
+      setToastMessage(`Error: ${err instanceof Error ? err.message : "Error desconocido"}`);
+      setToastOpen(true);
+    },
+  });
+
   const { mutate } = classifyMutation;
 
   const error =
@@ -309,7 +335,22 @@ function CalendarClassificationPage() {
               onClick={() => reclassifyMutation.mutate()}
               disabled={reclassifyMutation.isPending}
             >
-              {reclassifyMutation.isPending ? "Reclasificando..." : "Reclasificar eventos"}
+              {reclassifyMutation.isPending ? "Reclasificando..." : "Reclasificar pendientes"}
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              className="text-warning"
+              onClick={() => {
+                if (
+                  window.confirm("¿Reclasificar TODOS los eventos? Esto sobrescribirá las clasificaciones existentes.")
+                ) {
+                  reclassifyAllMutation.mutate();
+                }
+              }}
+              disabled={reclassifyAllMutation.isPending}
+            >
+              {reclassifyAllMutation.isPending ? "Reclasificando..." : "Reclasificar TODO"}
             </Button>
           </div>
 
