@@ -254,8 +254,8 @@ export default function Sidebar({ isOpen, isMobile, onClose }: SidebarProps) {
         {/* User Footer - Pinned to bottom, aligned with main footer */}
         <div
           className={cn(
-            "border-base-200/50 bg-base-100/30 mt-auto shrink-0 border-t px-3 py-3 transition-all duration-300",
-            !isMobile && isCollapsed ? "items-center justify-center px-2 py-3" : ""
+            "border-base-200/50 bg-base-100/30 mt-auto shrink-0 border-t px-3 pt-3 pb-6 transition-all duration-300",
+            !isMobile && isCollapsed ? "items-center justify-center px-2 pt-3 pb-6" : ""
           )}
         >
           <div
@@ -272,8 +272,8 @@ export default function Sidebar({ isOpen, isMobile, onClose }: SidebarProps) {
 
             <div
               className={cn(
-                "flex min-w-35 flex-col transition-all duration-300",
-                !isMobile && isCollapsed ? "absolute w-0 overflow-hidden opacity-0" : "static w-auto opacity-100"
+                "flex min-w-0 flex-1 flex-col gap-0.5 transition-all duration-300",
+                !isMobile && isCollapsed ? "hidden" : "block"
               )}
             >
               <span className="text-base-content group-hover:text-primary truncate text-sm font-semibold transition-colors">
