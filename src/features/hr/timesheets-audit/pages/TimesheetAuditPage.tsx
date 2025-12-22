@@ -4,6 +4,7 @@
  */
 
 import { useEffect, useMemo, useState, useCallback, lazy, Suspense } from "react";
+import { useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
 import "dayjs/locale/es";
@@ -14,7 +15,6 @@ import { startOfMonth, endOfMonth, monthsAgoStart, monthsAgoEnd } from "@/lib/da
 import { useAuth } from "@/context/AuthContext";
 import Alert from "@/components/ui/Alert";
 import { fetchEmployees } from "@/features/hr/employees/api";
-import type { Employee } from "@/features/hr/employees/types";
 import { detectAllOverlaps } from "@/features/hr/timesheets-audit/utils/overlapDetection";
 import { useMonths } from "@/features/hr/timesheets/hooks/useMonths";
 import { useTimesheetAudit, type AuditDateRange } from "@/features/hr/timesheets-audit/hooks/useTimesheetAudit";
@@ -118,8 +118,12 @@ export default function TimesheetAuditPage() {
 
   // Data state
   const { months, loading: loadingMonths } = useMonths();
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [loadingEmployees, setLoadingEmployees] = useState(true);
+
+  const { data: employees = [], isLoading: loadingEmployees } = useQuery({
+    queryKey: ["employees", "active-only"], // We might want to be specific if we change the fetch param later
+    queryFn: () => fetchEmployees(false),
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
 
   // Selection state
   const [quickRange, setQuickRange] = useState<QuickRange>("last-week");
@@ -147,21 +151,6 @@ export default function TimesheetAuditPage() {
     const search = employeeSearch.toLowerCase();
     return activeEmployees.filter((emp) => emp.full_name.toLowerCase().includes(search));
   }, [activeEmployees, employeeSearch]);
-
-  // Load employees
-  useEffect(() => {
-    async function loadEmployees() {
-      try {
-        const data = await fetchEmployees(false);
-        setEmployees(data);
-      } catch (err) {
-        console.error("Error loading employees:", err);
-      } finally {
-        setLoadingEmployees(false);
-      }
-    }
-    loadEmployees();
-  }, []);
 
   // Set default month when months load
   useEffect(() => {
