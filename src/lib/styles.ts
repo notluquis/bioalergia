@@ -6,7 +6,7 @@
 // ===== LAYOUT CONTAINERS =====
 
 /** Main page container: centered, max-width, vertical spacing */
-export const PAGE_CONTAINER = "mx-auto max-w-7xl space-y-4";
+export const PAGE_CONTAINER = "w-full space-y-4";
 
 /** Looser spacing variant (for pages with larger sections) */
 export const PAGE_CONTAINER_RELAXED = "mx-auto max-w-7xl space-y-6";
