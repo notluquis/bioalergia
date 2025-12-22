@@ -50,8 +50,8 @@ const SidebarItem = React.memo(function SidebarItem({
               isMobile
                 ? "w-full justify-start px-4 py-3"
                 : isCollapsed
-                  ? "mx-auto h-11 w-11 justify-center p-0" // Increased impact target
-                  : "w-full justify-start px-3 py-3",
+                  ? "mx-auto h-9 w-9 justify-center p-0"
+                  : "w-full justify-start px-3 py-2.5",
               finalActive
                 ? "bg-primary text-primary-content shadow-primary/30 font-medium shadow-md"
                 : "text-base-content/70 hover:bg-base-content/5 hover:text-base-content hover:shadow-sm"
@@ -70,7 +70,7 @@ const SidebarItem = React.memo(function SidebarItem({
                     finalActive && !isCollapsed ? "scale-105" : "group-hover:scale-110"
                   )}
                 >
-                  <item.icon className="h-6 w-6" strokeWidth={finalActive ? 2.5 : 2} /> {/* Increased icon size */}
+                  <item.icon className="h-5 w-5" strokeWidth={finalActive ? 2.5 : 2} />
                   {/* Active Dot for Collapsed State */}
                   {!isMobile && isCollapsed && finalActive && (
                     <span className="bg-primary ring-base-100 absolute top-0 right-0 h-2.5 w-2.5 animate-pulse rounded-full ring-2" />
@@ -197,8 +197,8 @@ export default function Sidebar({ isOpen, isMobile, onClose }: SidebarProps) {
         {/* Header / Logo */}
         <div
           className={cn(
-            "flex h-20 shrink-0 items-center transition-all duration-300",
-            !isMobile && isCollapsed ? "justify-center px-0" : "gap-4 px-6"
+            "flex h-16 shrink-0 items-center transition-all duration-300",
+            !isMobile && isCollapsed ? "justify-center px-0" : "gap-3 px-5"
           )}
         >
           {/* Logo Container with Glow */}
@@ -220,9 +220,6 @@ export default function Sidebar({ isOpen, isMobile, onClose }: SidebarProps) {
           >
             <span className="text-base-content text-xl leading-none font-extrabold tracking-tight">
               {APP_CONFIG.name}
-            </span>
-            <span className="text-base-content/40 mt-0.5 ml-0.5 text-[10px] font-semibold tracking-widest uppercase">
-              v{APP_CONFIG.version}
             </span>
           </div>
         </div>

@@ -4,7 +4,7 @@ import { useDebounce } from "use-debounce";
 import Sidebar from "./components/Layout/Sidebar";
 import Header from "./components/Layout/Header";
 import { BottomNav } from "./components/Layout/MobileNav";
-import { APP_VERSION, BUILD_TIMESTAMP } from "./version";
+import { BUILD_TIMESTAMP } from "./version";
 import { useSettings } from "./context/SettingsContext";
 import { UpdateNotification } from "./components/features/UpdateNotification";
 import { PerformanceIndicator } from "./components/features/PerformanceIndicator";
@@ -170,8 +170,6 @@ export default function App() {
 
           <footer className="surface-elevated text-base-content hidden items-center justify-between px-6 py-3 text-sm md:flex">
             <div className="flex items-center gap-3 text-xs">
-              <span className="text-base-content/60">v{APP_VERSION}</span>
-              <span className="text-base-content/30">•</span>
               <span className="text-base-content/60">Build: {buildLabel}</span>
             </div>
 
