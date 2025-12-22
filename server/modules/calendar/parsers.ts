@@ -58,6 +58,7 @@ const SUBCUT_PATTERNS = [
   /cluxin/i, // Cluxin
   /oral[\s-]?tec/i, // ORAL-TEC
   /\bvacc?\b/i, // vac, vacc
+  /\bvac\.?\s*[aá]caros?\b/i, // "vac acaros", "vac. acaros", "confirmavac acaros"
   /vacuna/i, // VACUNA
   /\bsubcut[áa]ne[oa]/i, // subcutáneo
   /inmuno/i, // inmuno
@@ -98,13 +99,14 @@ const LICENCIA_PATTERNS = [
 /** Patterns for "Control médico"
  * - control: "control s/c", "control sin costo"
  * - date-prefixed: "03-10control"
- * - time-prefixed: "14:56control" (sin espacio)
+ * - time-prefixed: "14:56control" o "1632control" (sin espacio)
  * - confirmacontrol: "12:00confirmacontrol"
  * - ontrol: typo sin 'c' inicial
  */
 const CONTROL_PATTERNS = [
   /\bcontrol\b/i,
   /\d+-\d+control/i, // date-prefixed
+  /\d{3,4}control/i, // time without colon: 1632control
   /\d{1,2}:\d{2}control/i, // time-prefixed (14:56control)
   /confirma\s*control/i, // confirmacontrol, confirma control
   /\bontrol\b/i, // typo
@@ -112,12 +114,11 @@ const CONTROL_PATTERNS = [
 
 /** Patterns for "Consulta médica"
  * - consulta/consuta/consult: "1era consulta", "1era consult"
- * - telemedicina: "telemedicina (40) Javiera Mella"
+ * - telemedicina/doctoralia: "telemedicina (40)"
  * - confirma: "1era confirma 40 cristian"
- * - time+ordinal: "15:361era (40) berta correa"
- * - time+name: "13:37 reinaldo salas gallardo"
- * - reserva/reservado: "reserva Soledad", "reservado 964077959"
+ * - reserva/reservado: "reserva Soledad", "reservado +56 9"
  * - name+phone: "gonzalo calderon 981592361"
+ * - retirar documentos: "vendra a retirar documentos"
  */
 const CONSULTA_PATTERNS = [
   /\bconsulta\b/i,
@@ -134,8 +135,12 @@ const CONSULTA_PATTERNS = [
   /\d+(era|da|ra)?\s*confirma\b/i,
   /^\d{1,2}:\d{2}\s*\d+(era|da|ra)?\b/i,
   /\breserva\s+[a-záéíóúñ]+/i, // "reserva Soledad González"
+  /\breservado\s+\+?56/i, // "reservado +56 9 3206 6790"
   /\breservado\s+9\d{8}/i, // "reservado 964077959"
+  /\bno\s+contesta\s+reserva\b/i, // "no contesta reserva 996008484"
+  /\bretirar\s+documentos\b/i, // "vendra a retirar documentos"
   /^[a-záéíóúñ]+\s+[a-záéíóúñ]+\s+9\d{8}$/i, // "gonzalo calderon 981592361"
+  /^[a-záéíóúñ]+\s+[a-záéíóúñ]+\s+[a-záéíóúñ]+\s+9\d{8}$/i, // "maria de los angeles 931702057"
 ];
 
 /** Patterns for "Roxair" - Entrega de medicamento Roxair
@@ -150,6 +155,8 @@ const ROXAIR_PATTERNS = [/\broxair\b/i, /\bretira\s+roxair\b/i, /\benviar\s+roxa
  * - vacaciones/feriado: eventos administrativos
  * - publicidad/grabación: notas de marketing
  * - reunión/jornada: eventos internos
+ * - reservado solo: sin más info
+ * - name and name: "Jose Manuel Martinez and Carlota Arevalo"
  */
 export const IGNORE_PATTERNS = [
   /^recordar\b/i,
@@ -163,6 +170,8 @@ export const IGNORE_PATTERNS = [
   /\bgrabaci[oó]n\s+de\s+videos?\b/i,
   /^reuni[oó]n\b/i,
   /^jornada\s+de\s+invierno\b/i,
+  /^reservado$/i, // just "reservado" with nothing else
+  /\band\b.*\b[a-záéíóúñ]+$/i, // "name and name" pattern
 ];
 
 /** Patterns for attendance confirmation */
@@ -180,7 +189,7 @@ const MAINTENANCE_PATTERNS = [
 const DOSAGE_PATTERNS = [/(\d+(?:[.,]\d+)?)\s*ml\b/i, /(\d+(?:[.,]\d+)?)\s*cc\b/i, /(\d+(?:[.,]\d+)?)\s*mg\b/i];
 
 /** Pattern for S/C (sin costo) */
-const SIN_COSTO_PATTERN = /\bs\/?c\b/i;
+const SIN_COSTO_PATTERN = /\bs\/?c\b|sincosto|sin\s*costo/i;
 
 /** Patterns for money confirmation (paid) */
 const MONEY_CONFIRMED_PATTERNS = [/\blleg[oó]\b/i, /\benv[ií][oó]\b/i, /\btransferencia\b/i, /\bpagado\b/i];
