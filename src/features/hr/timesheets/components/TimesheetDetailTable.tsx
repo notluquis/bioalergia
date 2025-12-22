@@ -1,13 +1,13 @@
 import dayjs from "dayjs";
 import { useAuth } from "@/context/AuthContext";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Modal from "@/components/ui/Modal";
 import Button from "@/components/ui/Button";
-import TimeInput from "@/components/ui/TimeInput";
 import { LOADING_SPINNER_SM } from "@/lib/styles";
-import { computeStatus, isRowDirty, formatDateLabel } from "../utils";
+import { isRowDirty, formatDateLabel } from "../utils";
 import type { BulkRow } from "../types";
 import type { Employee } from "@/features/hr/employees/types";
+import TimesheetRow from "./TimesheetRow";
 
 interface TimesheetDetailTableProps {
   bulkRows: BulkRow[];
@@ -49,11 +49,11 @@ export default function TimesheetDetailTable({
   const [notWorkedDays, setNotWorkedDays] = useState<Set<string>>(new Set());
 
   // Toggle helper for per-row actions menu
-  const toggleMenu = (id: string) => {
+  const toggleMenu = useCallback((id: string) => {
     const el = document.getElementById(id);
     if (!el) return;
     el.classList.toggle("hidden");
-  };
+  }, []);
 
   // Función para calcular horas trabajadas entre entrada y salida
   const calculateWorkedHours = (startTime: string, endTime: string) => {
@@ -150,11 +150,9 @@ export default function TimesheetDetailTable({
               // Calcular duración del turno
               const worked = calculateWorkedHours(row.entrada, row.salida);
               const parts = worked.split(":").map(Number);
-
               const [h, m] = parts;
+              const totalHours = (h || 0) + (m || 0) / 60;
 
-              if (h === undefined || m === undefined) return "";
-              const totalHours = h + m / 60;
               let showWarning = false;
               let warningText = "";
               if (row.entrada && row.salida) {
@@ -166,226 +164,48 @@ export default function TimesheetDetailTable({
                   warningText = "Turno muy largo (más de 10 horas)";
                 }
               }
+
               const isSunday = dayjs(row.date).day() === 0;
               const canEditRow = canEdit && !isSunday;
-
-              // Unificado: un solo "!" para warning y comentario
-              const hasComment = Boolean(row.comment?.trim());
-              const showBang = showWarning || hasComment;
-              const bangColor = showWarning ? "text-error hover:text-error/80" : "text-primary hover:text-primary/80";
-              const tooltipParts: string[] = [];
-              if (showWarning && warningText) tooltipParts.push(warningText);
-              if (hasComment) tooltipParts.push(`Comentario: ${row.comment.trim()}`);
-
               const isMarkedNotWorked = notWorkedDays.has(row.date);
-              // determine whether this row is dirty compared to initial values
               const dirty = isRowDirty(row, initialRows?.[index]);
-              const status = computeStatus(row, dirty);
-              const statusColor =
-                status === "Registrado"
-                  ? "text-success"
-                  : status === "Sin guardar"
-                    ? "text-warning"
-                    : "text-base-content/50";
+              const hasComment = Boolean(row.comment?.trim());
+
               return (
-                <tr
+                <TimesheetRow
                   key={row.date}
-                  className={`odd:bg-base-200/60 hover:bg-base-300/80 transition-colors ${
-                    isMarkedNotWorked ? "pointer-events-none opacity-60" : ""
-                  }`}
-                >
-                  {/* Fecha */}
-                  <td className="text-base-content/70 px-3 py-2 whitespace-nowrap">
-                    {formatDateLabel(row.date)}
-                    {(() => {
-                      const dayIdx = dayjs(row.date).day();
-                      const labels = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
-                      const isSun = dayIdx === 0;
-                      return (
-                        <span
-                          className={`ml-2 rounded px-1.5 py-0.5 text-xs font-semibold uppercase ${
-                            isSun ? "bg-base-300 text-base-content/50" : "bg-base-200 text-base-content/60"
-                          }`}
-                        >
-                          {labels[dayIdx]}
-                        </span>
-                      );
-                    })()}
-                  </td>
-                  {/* Entrada */}
-                  <td className="px-3 py-2">
-                    <TimeInput
-                      value={row.entrada}
-                      onChange={(value) => onRowChange(index, "entrada", value)}
-                      placeholder="HH:MM"
-                      className="w-28"
-                      disabled={!canEditRow}
-                    />
-                  </td>
-                  {/* Salida */}
-                  <td className="px-3 py-2">
-                    <TimeInput
-                      value={row.salida}
-                      onChange={(value) => onRowChange(index, "salida", value)}
-                      onBlur={() => onSalidaBlur(index)}
-                      placeholder="HH:MM"
-                      className="w-28"
-                      disabled={!canEditRow}
-                    />
-                  </td>
-                  {/* Trabajadas */}
-                  <td className="text-base-content px-3 py-2 tabular-nums">{worked}</td>
-                  {/* Extras */}
-                  <td className="px-3 py-2">
-                    {!row.overtime?.trim() && !openOvertimeEditors.has(row.date) ? (
-                      canEditRow ? (
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="secondary"
-                          className="border-base-300 bg-base-200 text-primary hover:bg-base-200 inline-flex h-8 w-8 items-center justify-center rounded-full border shadow"
-                          aria-label="Agregar horas extra"
-                          title="Agregar horas extra"
-                          onClick={() =>
-                            setOpenOvertimeEditors((prev) => {
-                              const next = new Set(prev);
-                              next.add(row.date);
-                              return next;
-                            })
-                          }
-                        >
-                          +
-                        </Button>
-                      ) : (
-                        <span className="text-base-content/50">—</span>
-                      )
-                    ) : (
-                      <TimeInput
-                        value={row.overtime}
-                        onChange={(value) => {
-                          onRowChange(index, "overtime", value);
-                          // Si se borra el valor, cerrar el editor
-                          if (!value.trim()) {
-                            setOpenOvertimeEditors((prev) => {
-                              const next = new Set(prev);
-                              next.delete(row.date);
-                              return next;
-                            });
-                          }
-                        }}
-                        placeholder="HH:MM"
-                        className="w-28"
-                        disabled={!canEditRow}
-                      />
-                    )}
-                  </td>
-                  {/* Estado + indicador unificado "!" */}
-                  <td className={`px-3 py-2 text-xs font-semibold tracking-wide uppercase ${statusColor} relative`}>
-                    <span className="inline-flex items-center gap-1">
-                      {status}
-                      {showBang && (
-                        <span className="group relative">
-                          <span className={`cursor-help font-bold ${bangColor}`}>!</span>
-                          <span className="bg-neutral text-neutral-content invisible absolute bottom-full left-1/2 z-50 mb-2 max-w-xs -translate-x-1/2 rounded-lg px-3 py-2 text-xs font-normal tracking-normal whitespace-nowrap normal-case shadow-lg group-hover:visible">
-                            {tooltipParts.map((part, i) => (
-                              <span key={i} className="block">
-                                {part}
-                              </span>
-                            ))}
-                            <span className="border-t-neutral absolute top-full left-1/2 h-0 w-0 -translate-x-1/2 border-t-4 border-r-4 border-l-4 border-transparent"></span>
-                          </span>
-                        </span>
-                      )}
-                    </span>
-                  </td>
-                  {/* Acciones (menú de tres puntos) */}
-                  <td className="px-3 py-2">
-                    {canEditRow ? (
-                      <div className="relative inline-block text-left">
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          size="sm"
-                          className="dropdown-trigger"
-                          aria-haspopup="true"
-                          aria-expanded="false"
-                          onClick={() => toggleMenu(`menu-${row.date}`)}
-                          title="Acciones"
-                        >
-                          ⋯
-                        </Button>
-                        <div
-                          id={`menu-${row.date}`}
-                          className="dropdown-menu bg-base-100 absolute right-0 z-20 mt-2 hidden w-48 origin-top-right rounded-xl p-2 shadow-xl ring-1 ring-black/5"
-                          role="menu"
-                        >
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-base-content hover:bg-base-200 w-full justify-start rounded-lg px-3 py-2.5 text-left text-sm"
-                            role="menuitem"
-                            onClick={() => {
-                              toggleMenu(`menu-${row.date}`);
-                              setCommentPreview({ date: row.date, text: row.comment || "(Sin comentario)" });
-                            }}
-                          >
-                            Ver comentario
-                          </Button>
-                          {dirty && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-base-content hover:bg-base-200 w-full justify-start rounded-lg px-3 py-2.5 text-left text-sm"
-                              role="menuitem"
-                              onClick={() => {
-                                onResetRow(index);
-                                toggleMenu(`menu-${row.date}`);
-                              }}
-                            >
-                              Deshacer cambios
-                            </Button>
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-base-content hover:bg-base-200 w-full justify-start rounded-lg px-3 py-2.5 text-left text-sm"
-                            role="menuitem"
-                            onClick={() => {
-                              toggleMenu(`menu-${row.date}`);
-                              setNotWorkedDays((prev) => {
-                                const next = new Set(prev);
-                                if (next.has(row.date)) next.delete(row.date);
-                                else next.add(row.date);
-                                return next;
-                              });
-                            }}
-                          >
-                            {isMarkedNotWorked ? "Marcar como trabajado" : "Día no trabajado"}
-                          </Button>
-                          {row.entryId && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-error hover:bg-error/10 w-full justify-start rounded-lg px-3 py-2.5 text-left text-sm"
-                              role="menuitem"
-                              onClick={() => {
-                                toggleMenu(`menu-${row.date}`);
-                                onRemoveEntry(row);
-                              }}
-                            >
-                              Eliminar registro
-                            </Button>
-                          )}
-                          {!dirty && !row.entryId && (
-                            <div className="text-base-content/50 px-3 py-2.5 text-xs">Sin acciones</div>
-                          )}
-                        </div>
-                      </div>
-                    ) : (
-                      <span className="text-base-content/50 text-xs">—</span>
-                    )}
-                  </td>
-                </tr>
+                  index={index}
+                  row={row}
+                  dirty={dirty}
+                  canEditRow={canEditRow}
+                  isMarkedNotWorked={isMarkedNotWorked}
+                  onRowChange={onRowChange}
+                  onSalidaBlur={onSalidaBlur}
+                  onOpenOvertime={(date) =>
+                    setOpenOvertimeEditors((prev) => {
+                      const next = new Set(prev);
+                      next.add(date);
+                      return next;
+                    })
+                  }
+                  onCloseOvertime={(date) =>
+                    setOpenOvertimeEditors((prev) => {
+                      const next = new Set(prev);
+                      next.delete(date);
+                      return next;
+                    })
+                  }
+                  isOvertimeOpen={openOvertimeEditors.has(row.date)}
+                  showWarning={showWarning}
+                  warningText={warningText}
+                  hasComment={hasComment}
+                  toggleMenu={toggleMenu}
+                  setCommentPreview={setCommentPreview}
+                  onResetRow={onResetRow}
+                  setNotWorkedDays={setNotWorkedDays}
+                  onRemoveEntry={onRemoveEntry}
+                  worked={worked}
+                />
               );
             })}
             {loadingDetail && (

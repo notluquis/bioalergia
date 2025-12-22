@@ -154,29 +154,35 @@ export default function TimesheetsPage() {
 
   // --- Handlers ---
 
-  function handleRowChange(index: number, field: keyof Omit<BulkRow, "date" | "entryId">, value: string) {
-    setBulkRows((prev) => {
-      const currentRow = prev[index];
-      if (!currentRow || currentRow[field] === value) return prev;
-      return prev.map((row, i) => (i === index ? { ...row, [field]: value } : row));
-    });
-  }
+  const handleRowChange = useCallback(
+    (index: number, field: keyof Omit<BulkRow, "date" | "entryId">, value: string) => {
+      setBulkRows((prev) => {
+        const currentRow = prev[index];
+        if (!currentRow || currentRow[field] === value) return prev;
+        return prev.map((row, i) => (i === index ? { ...row, [field]: value } : row));
+      });
+    },
+    []
+  );
 
-  function handleResetRow(index: number) {
-    setBulkRows((prev) => {
-      const next = [...prev];
-      const initialRow = initialRows[index];
-      if (initialRow) next[index] = { ...initialRow };
-      return next;
-    });
-  }
+  const handleResetRow = useCallback(
+    (index: number) => {
+      setBulkRows((prev) => {
+        const next = [...prev];
+        const initialRow = initialRows[index];
+        if (initialRow) next[index] = { ...initialRow };
+        return next;
+      });
+    },
+    [initialRows]
+  );
 
   // Row Auto-Save
-  const { mutateAsync: upsertMutate } = upsertMutation;
+  const { mutateAsync: upsertMutate, isPending: isUpsertPending } = upsertMutation;
 
   const saveRowImmediately = useCallback(
     async (index: number) => {
-      if (!selectedEmployeeId || upsertMutation.isPending) return;
+      if (!selectedEmployeeId || isUpsertPending) return;
 
       const row = bulkRows[index];
       const initial = initialRows[index];
@@ -213,7 +219,7 @@ export default function TimesheetsPage() {
         // Error handled in mutation
       }
     },
-    [selectedEmployeeId, upsertMutate, upsertMutation.isPending, bulkRows, initialRows, toastSuccess]
+    [selectedEmployeeId, upsertMutate, isUpsertPending, bulkRows, initialRows, toastSuccess]
   );
 
   const handleSalidaBlur = useCallback(
@@ -225,13 +231,19 @@ export default function TimesheetsPage() {
     [saveRowImmediately]
   );
 
-  async function handleRemoveEntry(row: BulkRow) {
-    if (!row.entryId) return;
-    if (!confirm("¿Eliminar el registro de este día?")) return;
-    deleteMutation.mutate(row.entryId);
-  }
+  // Delete Mutation
+  const { mutate: deleteMutate } = deleteMutation;
 
-  async function handleBulkSave() {
+  const handleRemoveEntry = useCallback(
+    async (row: BulkRow) => {
+      if (!row.entryId) return;
+      if (!confirm("¿Eliminar el registro de este día?")) return;
+      deleteMutate(row.entryId);
+    },
+    [deleteMutate]
+  );
+
+  const handleBulkSave = useCallback(async () => {
     if (!selectedEmployeeId) {
       setErrorLocal("Selecciona un trabajador para guardar las horas");
       return;
@@ -287,7 +299,7 @@ export default function TimesheetsPage() {
     }
 
     try {
-      await upsertMutation.mutateAsync({
+      await upsertMutate({
         employeeId: selectedEmployeeId,
         entries,
         removeIds,
@@ -296,7 +308,7 @@ export default function TimesheetsPage() {
     } catch {
       // Error handled in mutation
     }
-  }
+  }, [bulkRows, initialRows, selectedEmployeeId, upsertMutate, toastSuccess]);
 
   // PDF & Email Logic (kept mostly as is but using state/deps)
   const monthLabel = useMemo(() => {
