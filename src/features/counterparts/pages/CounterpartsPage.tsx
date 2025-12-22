@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import {
   attachCounterpartRut,
@@ -9,13 +10,7 @@ import {
   updateCounterpart,
   type CounterpartUpsertPayload,
 } from "@/features/counterparts/api";
-import type {
-  Counterpart,
-  CounterpartAccount,
-  CounterpartSummary,
-  CounterpartPersonType,
-  CounterpartCategory,
-} from "@/features/counterparts/types";
+import type { Counterpart, CounterpartPersonType, CounterpartCategory } from "@/features/counterparts/types";
 import CounterpartList from "@/features/counterparts/components/CounterpartList";
 import CounterpartForm from "@/features/counterparts/components/CounterpartForm";
 import AssociatedAccounts from "@/features/counterparts/components/AssociatedAccounts";
@@ -27,36 +22,18 @@ import { normalizeRut } from "@/lib/rut";
 import Modal from "@/components/ui/Modal";
 
 export default function CounterpartsPage() {
-  const pendingDetailRequestRef = useRef(0);
-  const currentDetailRef = useRef<Counterpart | null>(null);
-  const selectedIdRef = useRef<number | null>(null);
-  const [counterparts, setCounterparts] = useState<Counterpart[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
-  const [detail, setDetail] = useState<{ counterpart: Counterpart; accounts: CounterpartAccount[] } | null>(null);
-  const [formStatus, setFormStatus] = useState<"idle" | "saving">("idle");
   const [error, setError] = useState<string | null>(null);
 
   const [summaryRange, setSummaryRange] = useState<{ from: string; to: string }>(() => ({
     from: dayjs().subtract(SUMMARY_RANGE_MONTHS, "month").startOf("month").format("YYYY-MM-DD"),
     to: dayjs().endOf("month").format("YYYY-MM-DD"),
   }));
-  const [summary, setSummary] = useState<CounterpartSummary | null>(null);
-  const [summaryLoading, setSummaryLoading] = useState(false);
-  const [detailLoading, setDetailLoading] = useState(false);
-  const abortControllerRef = useRef<AbortController | null>(null);
   const { success: toastSuccess, error: toastError, info: toastInfo } = useToast();
   const [personTypeFilter, setPersonTypeFilter] = useState<CounterpartPersonType | "ALL">("ALL");
   const [categoryFilter, setCategoryFilter] = useState<CounterpartCategory | "ALL">("ALL");
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [formCounterpart, setFormCounterpart] = useState<Counterpart | null>(null);
-
-  useEffect(() => {
-    currentDetailRef.current = detail?.counterpart ?? null;
-  }, [detail]);
-
-  useEffect(() => {
-    selectedIdRef.current = selectedId;
-  }, [selectedId]);
 
   const openFormModal = useCallback((target: Counterpart | null = null) => {
     setFormCounterpart(target);
@@ -68,181 +45,109 @@ export default function CounterpartsPage() {
     setFormCounterpart(null);
   }, []);
 
-  // Define selectCounterpart first (before any useEffect that depends on it)
-  const selectCounterpart = useCallback(
-    async (id: number | null, options: { force?: boolean } = {}) => {
-      setError(null);
-      setSelectedId(id);
-      if (!id) {
-        pendingDetailRequestRef.current += 1;
-        currentDetailRef.current = null;
-        selectedIdRef.current = null;
-        setDetail(null);
-        setSummary(null);
-        setDetailLoading(false);
-        return;
-      }
+  // Queries
+  const {
+    data: counterparts = [],
+    isLoading: listLoading,
+    error: listError,
+  } = useQuery({
+    queryKey: ["counterparts"],
+    queryFn: fetchCounterparts,
+  });
 
-      const currentDetail = currentDetailRef.current;
-      if (!options.force && currentDetail && currentDetail.id === id && selectedIdRef.current === id) {
-        return;
-      }
+  const {
+    data: detail,
+    isLoading: detailLoading,
+    error: detailError,
+  } = useQuery({
+    queryKey: ["counterpart-detail", selectedId],
+    queryFn: () => fetchCounterpart(selectedId!),
+    enabled: !!selectedId,
+  });
 
-      const requestId = pendingDetailRequestRef.current + 1;
-      pendingDetailRequestRef.current = requestId;
-      setDetailLoading(true);
-      try {
-        const data = await fetchCounterpart(id);
-        if (pendingDetailRequestRef.current === requestId) {
-          setDetail(data);
-        }
-      } catch (err) {
-        if (pendingDetailRequestRef.current === requestId) {
-          const message = err instanceof Error ? err.message : String(err);
-          setError(message);
-          toastError(message || "No se pudo cargar la contraparte");
-        }
-      } finally {
-        if (pendingDetailRequestRef.current === requestId) {
-          setDetailLoading(false);
-        }
-      }
-    },
-    [toastError]
-  );
+  const { data: summary, error: summaryError } = useQuery({
+    queryKey: ["counterpart-summary", selectedId, summaryRange],
+    queryFn: () => fetchCounterpartSummary(selectedId!, summaryRange),
+    enabled: !!selectedId,
+  });
 
-  const loadSummary = useCallback(
-    async (counterpartId: number, from: string, to: string) => {
-      // Cancel previous request if any
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
+  // Derived error state (combine/prioritize)
+  const displayError =
+    error ||
+    (listError instanceof Error ? listError.message : null) ||
+    (detailError instanceof Error ? detailError.message : null) ||
+    (summaryError instanceof Error ? summaryError.message : null);
 
-      const controller = new AbortController();
-      abortControllerRef.current = controller;
+  // Mutations
+  const queryClient = useQueryClient();
 
-      setSummaryLoading(true);
-      try {
-        const data = await fetchCounterpartSummary(counterpartId, { from, to });
-        if (!controller.signal.aborted) {
-          setSummary(data);
-        }
-      } catch (err) {
-        if (!controller.signal.aborted) {
-          setError(err instanceof Error ? err.message : String(err));
-          toastError("No se pudo calcular el resumen mensual");
-        }
-      } finally {
-        if (!controller.signal.aborted) {
-          setSummaryLoading(false);
-        }
-      }
-    },
-    [toastError]
-  );
-
-  // Load initial list of counterparts
-  useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      const list = await fetchCounterparts();
-      if (cancelled) return;
-      setCounterparts(list);
-    }
-    load().catch((err) => {
-      if (!cancelled) setError(err instanceof Error ? err.message : String(err));
-    });
-    return () => {
-      cancelled = true;
-      pendingDetailRequestRef.current += 1;
-    };
-  }, [selectCounterpart]);
-
-  // Load summary when selectedId or range changes
-  useEffect(() => {
-    if (selectedId) {
-      loadSummary(selectedId, summaryRange.from, summaryRange.to).catch((err) => {
-        setError(err instanceof Error ? err.message : String(err));
+  const createMutation = useMutation({
+    mutationFn: createCounterpart,
+    onSuccess: (data) => {
+      queryClient.setQueryData<Counterpart[]>(["counterparts"], (old) => {
+        return [...(old || []), data.counterpart].sort((a, b) => a.name.localeCompare(b.name));
       });
-    }
-    return () => {
-      // Cleanup: cancel any pending summary request
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-        abortControllerRef.current = null;
-      }
-    };
-  }, [selectedId, summaryRange.from, summaryRange.to, loadSummary]);
+      // also set detail?
+      setSelectedId(data.counterpart.id);
+      setIsFormModalOpen(false);
+      toastSuccess("Contraparte creada correctamente");
+    },
+    onError: (err: Error) => toastError(err.message),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: number; payload: Partial<CounterpartUpsertPayload> }) =>
+      updateCounterpart(id, payload),
+    onSuccess: (data) => {
+      queryClient.setQueryData<Counterpart[]>(["counterparts"], (old) => {
+        return (old || [])
+          .map((c) => (c.id === data.counterpart.id ? data.counterpart : c))
+          .sort((a, b) => a.name.localeCompare(b.name));
+      });
+      queryClient.setQueryData(["counterpart-detail", data.counterpart.id], data);
+      setIsFormModalOpen(false);
+      toastSuccess("Contraparte actualizada correctamente");
+    },
+    onError: (err: Error) => toastError(err.message),
+  });
 
   async function handleSaveCounterpart(payload: CounterpartUpsertPayload) {
-    setFormStatus("saving");
     setError(null);
     const normalizedRut = normalizeRut(payload.rut ?? null);
     const previousRut = normalizeRut(detail?.counterpart?.rut ?? null);
-    const previousSelectedId = selectedIdRef.current;
-    let saved = false;
-    try {
-      if (!payload.name) {
-        throw new Error("El nombre es obligatorio");
-      }
-      let id = selectedId;
-      let created = false;
-      if (id) {
-        const data = await updateCounterpart(id, payload);
-        setDetail(data);
-        id = data.counterpart.id!;
-        setCounterparts((prev) =>
-          prev.map((item) => (item.id === id ? data.counterpart : item)).sort((a, b) => a.name.localeCompare(b.name))
-        );
-        toastSuccess("Contraparte actualizada correctamente");
-      } else {
-        const data = await createCounterpart(payload);
-        setDetail(data);
-        id = data.counterpart.id;
-        created = true;
-        setCounterparts((prev) => [...prev, data.counterpart].sort((a, b) => a.name.localeCompare(b.name)));
-        toastSuccess("Contraparte creada correctamente");
-      }
-      saved = true;
 
-      if (id) {
-        const shouldAttachByRut = normalizedRut && (created || normalizedRut !== previousRut);
-        if (shouldAttachByRut) {
-          try {
-            const attachedAccounts = await attachCounterpartRut(id, normalizedRut);
-            setDetail((prev) => {
-              if (!prev || prev.counterpart.id !== id) return prev;
-              return { ...prev, accounts: attachedAccounts };
-            });
-            toastInfo("Cuentas detectadas vinculadas automáticamente");
-          } catch (attachError) {
-            const message =
-              attachError instanceof Error ? attachError.message : "No se pudieron vincular las cuentas detectadas";
-            toastError(message);
-          }
-        }
-        await selectCounterpart(id, { force: true });
-        if (previousSelectedId === id) {
-          await loadSummary(id, summaryRange.from, summaryRange.to);
+    try {
+      if (!payload.name) throw new Error("El nombre es obligatorio");
+
+      let savedId = selectedId;
+      let isNew = false;
+
+      if (selectedId) {
+        await updateMutation.mutateAsync({ id: selectedId, payload });
+      } else {
+        const res = await createMutation.mutateAsync(payload);
+        savedId = res.counterpart.id;
+        isNew = true;
+      }
+
+      // Handle RUT attachment auto-logic
+      if (savedId && normalizedRut && (isNew || normalizedRut !== previousRut)) {
+        try {
+          await attachCounterpartRut(savedId, normalizedRut);
+          queryClient.invalidateQueries({ queryKey: ["counterpart-detail", savedId] });
+          toastInfo("Cuentas detectadas vinculadas automáticamente");
+        } catch (attachError) {
+          console.warn("Auto-attach failed", attachError);
         }
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-      toastError(err instanceof Error ? err.message : "No se pudo guardar la contraparte");
-    } finally {
-      setFormStatus("idle");
-      if (saved) {
-        closeFormModal();
-      }
+    } catch {
+      // Handled by mutation onError but safe to catch here to prevent crash
     }
   }
 
-  const handleSelectCounterpart = useCallback(
-    (id: number | null) => {
-      void selectCounterpart(id);
-    },
-    [selectCounterpart]
-  );
+  const handleSelectCounterpart = useCallback((id: number | null) => {
+    setSelectedId(id);
+  }, []);
 
   const handleSummaryRangeChange = useCallback((update: Partial<{ from: string; to: string }>) => {
     setSummaryRange((prev) => ({ ...prev, ...update }));
@@ -402,10 +307,10 @@ export default function CounterpartsPage() {
             <AssociatedAccounts
               selectedId={selectedId}
               detail={detail}
-              summary={summary}
+              summary={summary ?? null}
               summaryRange={summaryRange}
-              summaryLoading={summaryLoading}
-              onLoadSummary={loadSummary}
+              // summaryLoading={summaryLoading} // We can pass this if needed, but the component handles it
+              // onLoadSummary={loadSummary} // Removed, handled by React Query invalidation
               onSummaryRangeChange={handleSummaryRangeChange}
             />
           )}
@@ -419,9 +324,9 @@ export default function CounterpartsPage() {
         <CounterpartForm
           counterpart={formCounterpart}
           onSave={handleSaveCounterpart}
-          error={error}
-          saving={formStatus === "saving"}
-          loading={Boolean(formCounterpart && formCounterpart.id === selectedId && detailLoading)}
+          error={error ?? displayError} // Show any global error here if relevant, or just local form error
+          saving={createMutation.isPending || updateMutation.isPending}
+          loading={listLoading || detailLoading}
         />
       </Modal>
     </section>
