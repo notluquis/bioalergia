@@ -6,6 +6,20 @@ import { z } from "zod";
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
+// === SINGLE SOURCE OF TRUTH FOR CATEGORIES ===
+export const CATEGORY_CHOICES = [
+  "Tratamiento subcutáneo",
+  "Test y exámenes",
+  "Consulta médica",
+  "Control médico",
+  "Licencia médica",
+] as const;
+
+export const TREATMENT_STAGE_CHOICES = ["Mantención", "Inducción"] as const;
+
+export type CategoryChoice = (typeof CATEGORY_CHOICES)[number];
+export type TreatmentStageChoice = (typeof TREATMENT_STAGE_CHOICES)[number];
+
 const SUBCUT_PATTERNS = [
   /cl[au]s[i]?t[oau]?id[eo]?/i, // Flexible: clustoid, clastoid, clusitoid, clustid, etc.
   /clutoid/i, // Missing 's'

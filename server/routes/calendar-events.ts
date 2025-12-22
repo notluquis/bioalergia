@@ -30,7 +30,12 @@ import {
 } from "../lib/query-helpers.js";
 import { googleCalendarConfig } from "../config.js";
 import { updateClassificationSchema } from "../schemas/index.js";
-import { parseCalendarMetadata, isIgnoredEvent } from "../modules/calendar/parsers.js";
+import {
+  parseCalendarMetadata,
+  isIgnoredEvent,
+  CATEGORY_CHOICES,
+  TREATMENT_STAGE_CHOICES,
+} from "../modules/calendar/parsers.js";
 
 function coerceMaxDays(value: QueryValue): number | undefined {
   return coercePositiveInteger(value);
@@ -205,6 +210,19 @@ export function registerCalendarEventRoutes(app: express.Express) {
             errorMessage: log.errorMessage ?? null,
           })
         ),
+      });
+    })
+  );
+
+  // GET /api/calendar/classification-options - Return available classification options
+  app.get(
+    "/api/calendar/classification-options",
+    authorize("read", "CalendarEvent"),
+    asyncHandler(async (_req, res) => {
+      res.json({
+        status: "ok",
+        categories: CATEGORY_CHOICES,
+        treatmentStages: TREATMENT_STAGE_CHOICES,
       });
     })
   );
@@ -394,7 +412,15 @@ export function registerCalendarEventRoutes(app: express.Express) {
       // Find ALL events that have any null parseable field
       const events = await prisma.event.findMany({
         where: {
-          OR: [{ category: null }, { category: "" }, { dosage: null }, { treatmentStage: null }, { attended: null }],
+          OR: [
+            { category: null },
+            { category: "" },
+            { dosage: null },
+            { treatmentStage: null },
+            { attended: null },
+            { amountExpected: null },
+            { amountPaid: null },
+          ],
         },
         select: {
           id: true,
@@ -404,6 +430,8 @@ export function registerCalendarEventRoutes(app: express.Express) {
           dosage: true,
           treatmentStage: true,
           attended: true,
+          amountExpected: true,
+          amountPaid: true,
         },
       });
 
@@ -414,6 +442,8 @@ export function registerCalendarEventRoutes(app: express.Express) {
           dosage?: string;
           treatmentStage?: string;
           attended?: boolean;
+          amountExpected?: number;
+          amountPaid?: number;
         };
       };
 
@@ -439,6 +469,12 @@ export function registerCalendarEventRoutes(app: express.Express) {
         }
         if (event.attended === null && metadata.attended !== null) {
           updateData.attended = metadata.attended;
+        }
+        if (event.amountExpected === null && metadata.amountExpected !== null) {
+          updateData.amountExpected = metadata.amountExpected;
+        }
+        if (event.amountPaid === null && metadata.amountPaid !== null) {
+          updateData.amountPaid = metadata.amountPaid;
         }
 
         // Only add if there's something to update

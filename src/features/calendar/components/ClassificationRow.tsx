@@ -2,7 +2,7 @@ import React, { type ChangeEvent } from "react";
 import { type Control, Controller, useWatch } from "react-hook-form";
 import dayjs from "dayjs";
 import { type CalendarUnclassifiedEvent } from "@/features/calendar/types";
-import { type FormValues, CATEGORY_CHOICES, TREATMENT_STAGE_CHOICES } from "../schemas"; // Adjust import path
+import { type FormValues } from "../schemas";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Checkbox from "@/components/ui/Checkbox";
@@ -14,7 +14,9 @@ interface ClassificationRowProps {
   isSaving: boolean;
   onSave: (event: CalendarUnclassifiedEvent, index: number) => void;
   onReset: (index: number, event: CalendarUnclassifiedEvent) => void;
-  initialValues: unknown; // Using unknown instead of any, or null if strictly defined
+  initialValues: unknown;
+  categoryChoices: readonly string[];
+  treatmentStageChoices: readonly string[];
 }
 
 // Helper to format date
@@ -46,6 +48,8 @@ export const ClassificationRow = React.memo(function ClassificationRow({
   isSaving,
   onSave,
   onReset,
+  categoryChoices,
+  treatmentStageChoices,
 }: ClassificationRowProps) {
   const description = event.description?.trim();
 
@@ -58,6 +62,8 @@ export const ClassificationRow = React.memo(function ClassificationRow({
       onSave={onSave}
       onReset={onReset}
       description={description}
+      categoryChoices={categoryChoices}
+      treatmentStageChoices={treatmentStageChoices}
     />
   );
 });
@@ -74,6 +80,8 @@ function ClassificationRowInner({
   onSave,
   onReset,
   description,
+  categoryChoices,
+  treatmentStageChoices,
 }: ClassificationRowInnerProps) {
   const category = useWatch({
     control,
@@ -123,7 +131,7 @@ function ClassificationRowInner({
               onChange={(event: ChangeEvent<HTMLSelectElement>) => formField.onChange(event.target.value)}
             >
               <option value="">Sin clasificación</option>
-              {CATEGORY_CHOICES.map((option) => (
+              {categoryChoices.map((option: string) => (
                 <option key={option} value={option}>
                   {option}
                 </option>
@@ -183,7 +191,7 @@ function ClassificationRowInner({
                 onChange={(event: ChangeEvent<HTMLSelectElement>) => formField.onChange(event.target.value)}
               >
                 <option value="">Sin etapa</option>
-                {TREATMENT_STAGE_CHOICES.map((option) => (
+                {treatmentStageChoices.map((option: string) => (
                   <option key={option} value={option}>
                     {option}
                   </option>
