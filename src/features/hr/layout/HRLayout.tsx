@@ -1,10 +1,10 @@
 import { Outlet } from "react-router-dom";
-import { PAGE_CONTAINER } from "@/lib/styles";
+// Removed in spirit, keeping line for diff but empty? No, remove import.
 
 export default function HRLayout() {
   return (
-    <div className={PAGE_CONTAINER}>
+    <>
       <Outlet />
-    </div>
+    </>
   );
 }
