@@ -1,3 +1,13 @@
+import {
+  fetchUsers,
+  toggleUserMfa,
+  updateUserRole,
+  deleteUserPasskey,
+  resetUserPassword,
+  updateUserStatus,
+  deleteUser,
+} from "@/features/users/api";
+import type { User } from "@/features/users/types";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -31,24 +41,8 @@ import { PAGE_CONTAINER, TITLE_LG, BADGE_SM } from "@/lib/styles";
 dayjs.extend(relativeTime);
 dayjs.locale("es");
 
-type User = {
-  id: number;
-  email: string;
-  role: string;
-  status: "ACTIVE" | "INACTIVE" | "PENDING_SETUP" | "SUSPENDED";
-  createdAt: string;
-  hasPasskey: boolean;
-  mfaEnabled: boolean;
-  person: {
-    names: string;
-    fatherName: string | null;
-    rut: string;
-  };
-};
-
 export default function UserManagementPage() {
   const { can } = useAuth();
-  // const { user } = useAuth(); // removed unused
   const { success, error } = useToast();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
@@ -58,9 +52,7 @@ export default function UserManagementPage() {
   const [selectedRole, setSelectedRole] = useState("");
 
   const updateRoleMutation = useMutation({
-    mutationFn: async ({ userId, role }: { userId: number; role: string }) => {
-      return apiClient.put(`/api/users/${userId}/role`, { role });
-    },
+    mutationFn: ({ userId, role }: { userId: number; role: string }) => updateUserRole(userId, role),
     onSuccess: () => {
       success("Rol actualizado correctamente");
       queryClient.invalidateQueries({ queryKey: ["users"] });
@@ -91,19 +83,13 @@ export default function UserManagementPage() {
     },
   });
 
-  const { data: users, isLoading } = useQuery({
+  const { data: users = [], isLoading } = useQuery({
     queryKey: ["users"],
-    queryFn: async () => {
-      const payload = await apiClient.get<{ users: User[] }>("/api/users");
-      // Use string type for users
-      return payload.users || [];
-    },
+    queryFn: fetchUsers,
   });
 
   const deletePasskeyMutation = useMutation({
-    mutationFn: async (userId: number) => {
-      return apiClient.delete(`/api/users/${userId}/passkey`);
-    },
+    mutationFn: deleteUserPasskey,
     onSuccess: () => {
       success("Passkey eliminado");
       queryClient.invalidateQueries({ queryKey: ["users"] });
@@ -114,13 +100,11 @@ export default function UserManagementPage() {
   });
 
   const resetPasswordMutation = useMutation({
-    mutationFn: async (userId: number) => {
-      return apiClient.post<{ tempPassword: string }>(`/api/users/${userId}/reset-password`, {});
-    },
-    onSuccess: (data) => {
-      success(`Contraseña restablecida. Temporal: ${data.tempPassword}`);
+    mutationFn: resetUserPassword,
+    onSuccess: (tempPassword) => {
+      success(`Contraseña restablecida. Temporal: ${tempPassword}`);
       queryClient.invalidateQueries({ queryKey: ["users"] });
-      alert(`Contraseña temporal: ${data.tempPassword}\n\nPor favor compártela con el usuario de forma segura.`);
+      alert(`Contraseña temporal: ${tempPassword}\n\nPor favor compártela con el usuario de forma segura.`);
     },
     onError: (err: Error) => {
       error(err.message || "Error al restablecer contraseña");
@@ -128,9 +112,7 @@ export default function UserManagementPage() {
   });
 
   const updateStatusMutation = useMutation({
-    mutationFn: async ({ userId, status }: { userId: number; status: "ACTIVE" | "SUSPENDED" }) => {
-      return apiClient.put(`/api/users/${userId}/status`, { status });
-    },
+    mutationFn: ({ userId, status }: { userId: number; status: string }) => updateUserStatus(userId, status),
     onSuccess: (_, variables) => {
       success(`Usuario ${variables.status === "ACTIVE" ? "reactivado" : "suspendido"}`);
       queryClient.invalidateQueries({ queryKey: ["users"] });
@@ -141,13 +123,7 @@ export default function UserManagementPage() {
   });
 
   const toggleMfaMutation = useMutation({
-    mutationFn: async ({ userId, enabled }: { userId: number; enabled: boolean }) => {
-      const data = await apiClient.post<{ status: string; message?: string }>(`/api/users/${userId}/mfa/toggle`, {
-        enabled,
-      });
-      if (data.status !== "ok") throw new Error(data.message || "Error al cambiar estado MFA");
-      return data;
-    },
+    mutationFn: ({ userId, enabled }: { userId: number; enabled: boolean }) => toggleUserMfa(userId, enabled),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
       success("Estado MFA actualizado correctamente");
@@ -158,9 +134,7 @@ export default function UserManagementPage() {
   });
 
   const deleteUserMutation = useMutation({
-    mutationFn: async (userId: number) => {
-      return apiClient.delete(`/api/users/${userId}`);
-    },
+    mutationFn: deleteUser,
     onSuccess: () => {
       success("Usuario eliminado correctamente");
       queryClient.invalidateQueries({ queryKey: ["users"] });

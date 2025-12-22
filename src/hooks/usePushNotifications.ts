@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
+import { useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
+import { apiClient } from "@/lib/apiClient";
+
 const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY;
 
 function urlBase64ToUint8Array(base64String: string) {
@@ -42,6 +45,47 @@ export function usePushNotifications() {
     }
   };
 
+  const subscribeMutation = useMutation({
+    mutationFn: async (subscription: PushSubscription) => {
+      if (!user) throw new Error("No authenticated user");
+      await apiClient.post("/api/notifications/subscribe", {
+        subscription,
+        userId: user.id,
+      });
+    },
+    onSuccess: () => {
+      setIsSubscribed(true);
+      setPermission("granted");
+      toastSuccess("¡Notificaciones activadas!");
+    },
+    onError: (error) => {
+      console.error("Error subscribing to push:", error);
+      toastError("Error al activar notificaciones. Verifica los permisos del navegador.");
+    },
+  });
+
+  const unsubscribeMutation = useMutation({
+    mutationFn: async (endpoint: string) => {
+      await apiClient.post("/api/notifications/unsubscribe", { endpoint });
+    },
+    onSuccess: () => {
+      setIsSubscribed(false);
+    },
+    onError: (error) => {
+      console.error("Error unsubscribing", error);
+    },
+  });
+
+  const sendTestMutation = useMutation({
+    mutationFn: async () => {
+      if (!user) return;
+      await apiClient.post("/api/notifications/send-test", { userId: user.id });
+    },
+    onError: (error) => {
+      console.error("Error sending test notification", error);
+    },
+  });
+
   const subscribeUser = async () => {
     if (!user) return;
 
@@ -52,21 +96,7 @@ export function usePushNotifications() {
         applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
       });
 
-      // Send subscription to server
-      await fetch("/api/notifications/subscribe", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          subscription,
-          userId: user.id,
-        }),
-      });
-
-      setIsSubscribed(true);
-      setPermission("granted");
-      toastSuccess("¡Notificaciones activadas!");
+      subscribeMutation.mutate(subscription);
     } catch (error) {
       console.error("Error subscribing to push:", error);
       toastError("Error al activar notificaciones. Verifica los permisos del navegador.");
@@ -79,12 +109,7 @@ export function usePushNotifications() {
       const subscription = await registration.pushManager.getSubscription();
       if (subscription) {
         await subscription.unsubscribe();
-        await fetch("/api/notifications/unsubscribe", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ endpoint: subscription.endpoint }),
-        });
-        setIsSubscribed(false);
+        unsubscribeMutation.mutate(subscription.endpoint);
       }
     } catch (error) {
       console.error("Error unsubscribing", error);
@@ -104,16 +129,7 @@ export function usePushNotifications() {
   };
 
   const sendTestNotification = async () => {
-    if (!user) return;
-    try {
-      await fetch("/api/notifications/send-test", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user.id }),
-      });
-    } catch (error) {
-      console.error("Error sending test notification", error);
-    }
+    sendTestMutation.mutate();
   };
 
   return {
@@ -121,5 +137,6 @@ export function usePushNotifications() {
     permission,
     toggleSubscription,
     sendTestNotification,
+    loading: subscribeMutation.isPending || unsubscribeMutation.isPending || sendTestMutation.isPending,
   };
 }

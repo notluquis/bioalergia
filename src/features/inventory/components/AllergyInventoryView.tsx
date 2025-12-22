@@ -6,14 +6,7 @@ import { fmtCLP } from "@/lib/format";
 import type { AllergyInventoryOverview } from "../types";
 import { formatDate } from "@/lib/format";
 
-async function fetchAllergyOverview(): Promise<AllergyInventoryOverview[]> {
-  const res = await fetch("/api/inventory/allergy-overview");
-  const payload = await res.json();
-  if (!res.ok) {
-    throw new Error(payload.message ?? "No se pudo cargar el catálogo");
-  }
-  return payload.data ?? [];
-}
+import { fetchAllergyOverview } from "../api";
 
 function AllergyInventoryView() {
   const {

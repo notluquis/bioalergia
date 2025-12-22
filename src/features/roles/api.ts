@@ -1,4 +1,7 @@
 import { apiClient } from "@/lib/apiClient";
+import type { Role, Permission } from "@/types/roles";
+
+// --- Role Mappings ---
 
 export type AppRole = string;
 
@@ -14,4 +17,73 @@ export async function getRoleMappings(): Promise<RoleMapping[]> {
 
 export async function saveRoleMapping(mapping: RoleMapping): Promise<void> {
   await apiClient.post("/api/roles/mappings", mapping);
+}
+
+// --- Roles & Permissions Management ---
+
+export async function fetchRoles() {
+  const res = await apiClient.get<{ status: string; roles: Role[] }>("/api/roles");
+  return res.roles;
+}
+
+export async function fetchPermissions() {
+  const res = await apiClient.get<{ status: string; permissions: Permission[] }>("/api/permissions");
+  return res.permissions;
+}
+
+export async function syncPermissions() {
+  return apiClient.post("/api/permissions/sync", {});
+}
+
+interface UpdateRolePermissionsParams {
+  roleId: number;
+  permissionIds: number[];
+}
+
+export async function updateRolePermissions({ roleId, permissionIds }: UpdateRolePermissionsParams) {
+  return apiClient.post(`/api/roles/${roleId}/permissions`, { permissionIds });
+}
+
+// --- CRUD & Users ---
+
+interface RoleFormData {
+  name: string;
+  description: string;
+}
+
+export async function createRole(data: RoleFormData) {
+  return apiClient.post("/api/roles", data);
+}
+
+export async function updateRole(id: number, data: RoleFormData) {
+  return apiClient.put(`/api/roles/${id}`, data);
+}
+
+export async function deleteRole(id: number) {
+  return apiClient.delete(`/api/roles/${id}`);
+}
+
+export interface RoleUser {
+  id: number;
+  email: string;
+  person: {
+    names: string;
+    fatherName: string;
+  } | null;
+}
+
+export async function fetchRoleUsers(roleId: number) {
+  const res = await apiClient.get<{ users: RoleUser[] }>(`/api/roles/${roleId}/users`);
+  return res.users;
+}
+
+interface ReassignParams {
+  roleId: number;
+  targetRoleId: number;
+}
+
+export async function reassignRoleUsers({ roleId, targetRoleId }: ReassignParams) {
+  return apiClient.post(`/api/roles/${roleId}/reassign`, {
+    targetRoleId,
+  });
 }

@@ -7,6 +7,7 @@ import Checkbox from "@/components/ui/Checkbox";
 import { useSettings } from "@/context/SettingsContext";
 import type { Employee } from "@/features/hr/employees/types";
 import type { BulkRow, TimesheetSummaryRow } from "../types";
+import { apiClient } from "@/lib/apiClient";
 import type { CellHookData } from "jspdf-autotable";
 
 type TimesheetColumnKey = "date" | "entrada" | "salida" | "worked" | "overtime";
@@ -78,17 +79,14 @@ export default function TimesheetExportPDF({
       // Helper: Cargar logo y normalizarlo a PNG (evitar "wrong PNG signature")
       async function loadLogoAsPng(url: string): Promise<string | null> {
         try {
-          let res: Response | null = null;
+          let blob: Blob | null = null;
           if (/^https?:\/\//i.test(url)) {
             const proxyUrl = `/api/assets/proxy-image?url=${encodeURIComponent(url)}`;
-            res = await fetch(proxyUrl, { credentials: "include", cache: "no-cache" });
-            if (!res.ok) res = null;
+            blob = await apiClient.get<Blob>(proxyUrl, { responseType: "blob" });
+          } else {
+            blob = await apiClient.get<Blob>(url, { responseType: "blob" });
           }
-          if (!res) {
-            res = await fetch(url, { cache: "no-cache" });
-          }
-          if (!res.ok) return null;
-          const blob = await res.blob();
+          if (!blob) return null;
           if (blob.type === "image/png") {
             return await new Promise((resolve) => {
               const reader = new FileReader();
@@ -364,7 +362,7 @@ export default function TimesheetExportPDF({
         <Button
           type="button"
           variant="primary"
-          className="px-4 py-2 rounded-xl text-sm font-semibold text-primary-content bg-primary hover:bg-primary/85 shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary/35"
+          className="text-primary-content bg-primary hover:bg-primary/85 focus-visible:outline-primary/35 rounded-xl px-4 py-2 text-sm font-semibold shadow-md focus-visible:outline-2 focus-visible:outline-offset-2"
           onClick={() => handleExport(true)}
         >
           Exportar PDF
@@ -373,17 +371,17 @@ export default function TimesheetExportPDF({
           type="button"
           size="sm"
           variant="secondary"
-          className="ml-1 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-base-300 bg-base-100 text-primary shadow hover:bg-base-100/90"
+          className="border-base-300 bg-base-100 text-primary hover:bg-base-100/90 ml-1 inline-flex h-9 w-9 items-center justify-center rounded-xl border shadow"
           title="Opciones"
           onClick={() => setShowOptions((v) => !v)}
         >
           ⋯
         </Button>
         {showOptions && (
-          <div className="absolute right-0 z-20 mt-2 w-56 rounded-xl bg-base-100 p-3 shadow-xl ring-1 ring-black/5">
-            <p className="mb-2 text-xs font-semibold text-base-content/80">Columnas del detalle</p>
+          <div className="bg-base-100 absolute right-0 z-20 mt-2 w-56 rounded-xl p-3 shadow-xl ring-1 ring-black/5">
+            <p className="text-base-content/80 mb-2 text-xs font-semibold">Columnas del detalle</p>
             {Array.from(defaultCols).map((key) => (
-              <label key={key} className="mb-1 flex items-center gap-2 text-sm text-base-content">
+              <label key={key} className="text-base-content mb-1 flex items-center gap-2 text-sm">
                 <Checkbox
                   checked={selectedCols.includes(key)}
                   onChange={(e) => {
@@ -410,7 +408,7 @@ export default function TimesheetExportPDF({
               <Button
                 size="sm"
                 variant="secondary"
-                className="text-xs text-base-content/60 hover:text-base-content"
+                className="text-base-content/60 hover:text-base-content text-xs"
                 onClick={() => setShowOptions(false)}
               >
                 Cerrar
@@ -418,7 +416,7 @@ export default function TimesheetExportPDF({
               <Button
                 size="sm"
                 variant="secondary"
-                className="text-xs text-primary hover:underline"
+                className="text-primary text-xs hover:underline"
                 onClick={() => handleExport(true)}
               >
                 Vista previa
@@ -426,7 +424,7 @@ export default function TimesheetExportPDF({
               <Button
                 size="sm"
                 variant="secondary"
-                className="text-xs text-primary hover:underline"
+                className="text-primary text-xs hover:underline"
                 onClick={() => handleExport(false)}
               >
                 Descargar

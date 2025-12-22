@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiClient } from "@/lib/apiClient";
+import { deleteRole, reassignRoleUsers, fetchRoleUsers, type RoleUser } from "@/features/roles/api";
 import { AlertCircle, AlertTriangle, Trash2, ArrowRight } from "lucide-react";
 import { useToast } from "@/context/ToastContext";
 import { Role } from "@/types/roles";
@@ -12,31 +12,18 @@ interface DeleteRoleModalProps {
   allRoles: Role[];
 }
 
-interface RoleUser {
-  id: number;
-  email: string;
-  person: {
-    names: string;
-    fatherName: string;
-  } | null;
-}
-
 export function DeleteRoleModal({ isOpen, onClose, role, allRoles }: DeleteRoleModalProps) {
   const [targetRoleId, setTargetRoleId] = useState<string>("");
   const toast = useToast();
   const queryClient = useQueryClient();
 
   // Fetch users assigned to this role
-  const { data: queryData, isLoading: isLoadingUsers } = useQuery<{ users: RoleUser[] }>({
+  const { data: users = [], isLoading: isLoadingUsers } = useQuery<RoleUser[]>({
     queryKey: ["role-users", role.id],
-    queryFn: async () => {
-      const res = await apiClient.get<{ users: RoleUser[] }>(`/api/roles/${role.id}/users`);
-      return res; // apiClient returns the data directly
-    },
+    queryFn: () => fetchRoleUsers(role.id),
     enabled: isOpen,
   });
 
-  const users = queryData?.users || [];
   const hasUsers = users.length > 0;
 
   // Filter out the role being deleted from potential targets
@@ -47,12 +34,10 @@ export function DeleteRoleModal({ isOpen, onClose, role, allRoles }: DeleteRoleM
       if (hasUsers) {
         if (!targetRoleId) throw new Error("Debes seleccionar un rol de destino");
         // Reassign users first
-        await apiClient.post(`/api/roles/${role.id}/reassign`, {
-          targetRoleId: Number(targetRoleId),
-        });
+        await reassignRoleUsers({ roleId: role.id, targetRoleId: Number(targetRoleId) });
       }
       // Then delete
-      await apiClient.delete(`/api/roles/${role.id}`);
+      await deleteRole(role.id);
     },
     onSuccess: () => {
       toast.success("El rol ha sido eliminado correctamente", "Rol eliminado");

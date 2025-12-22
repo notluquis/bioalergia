@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiClient } from "@/lib/apiClient";
+import { createRole, updateRole, fetchRoleUsers, type RoleUser } from "@/features/roles/api";
 import { useToast } from "@/context/ToastContext";
 import { Role } from "@/types/roles";
 import { AlertCircle, User as UserIcon } from "lucide-react";
@@ -15,15 +15,6 @@ interface RoleFormModalProps {
 interface RoleFormData {
   name: string;
   description: string;
-}
-
-interface RoleUser {
-  id: number;
-  email: string;
-  person: {
-    names: string;
-    fatherName: string;
-  } | null;
 }
 
 export function RoleFormModal({ role, isOpen, onClose }: RoleFormModalProps) {
@@ -46,9 +37,9 @@ export function RoleFormModal({ role, isOpen, onClose }: RoleFormModalProps) {
   }, [isOpen, role, reset]);
 
   // Fetch users for this role if editing
-  const { data: userData, isLoading: isLoadingUsers } = useQuery<{ users: RoleUser[] }>({
+  const { data: userData = [], isLoading: isLoadingUsers } = useQuery<RoleUser[]>({
     queryKey: ["role-users", role?.id],
-    queryFn: () => apiClient.get<{ users: RoleUser[] }>(`/api/roles/${role!.id}/users`).then((res) => res),
+    queryFn: () => fetchRoleUsers(role!.id),
     enabled: isOpen && !!role,
   });
 
@@ -56,10 +47,10 @@ export function RoleFormModal({ role, isOpen, onClose }: RoleFormModalProps) {
     mutationFn: async (data: RoleFormData) => {
       if (role) {
         // Edit
-        await apiClient.put(`/api/roles/${role.id}`, data);
+        await updateRole(role.id, data);
       } else {
         // Create
-        await apiClient.post("/api/roles", data);
+        await createRole(data);
       }
     },
     onSuccess: () => {
@@ -114,13 +105,13 @@ export function RoleFormModal({ role, isOpen, onClose }: RoleFormModalProps) {
             <div className="bg-base-200 rounded-lg p-3 text-sm">
               <div className="mb-2 flex items-center gap-2 font-medium opacity-70">
                 <UserIcon className="h-4 w-4" />
-                Usuarios afectados ({userData?.users?.length || 0})
+                Usuarios afectados ({userData.length})
               </div>
               {isLoadingUsers ? (
                 <div className="loading loading-spinner loading-xs"></div>
-              ) : (userData?.users?.length ?? 0) > 0 ? (
+              ) : userData.length > 0 ? (
                 <div className="max-h-32 space-y-1 overflow-y-auto">
-                  {userData?.users.map((u) => (
+                  {userData.map((u) => (
                     <div key={u.id} className="hover:bg-base-100 flex items-center justify-between rounded p-1 text-xs">
                       <span>{u.person ? `${u.person.names} ${u.person.fatherName}` : "Sin nombre"}</span>
                       <span className="opacity-50">{u.email}</span>
