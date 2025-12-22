@@ -1,5 +1,5 @@
 import { Fragment, useState, useMemo, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { ChangeEvent, FocusEvent } from "react";
 import dayjs from "dayjs";
 import { fmtCLP } from "@/lib/format";
@@ -9,7 +9,7 @@ import Input from "@/components/ui/Input";
 import Alert from "@/components/ui/Alert";
 import Modal from "@/components/ui/Modal";
 import { useToast } from "@/context/ToastContext";
-import { LOADING_SPINNER_LG, LOADING_SPINNER_XS } from "@/lib/styles";
+import { LOADING_SPINNER_XS } from "@/lib/styles";
 import { today } from "@/lib/dates";
 import type { Counterpart, CounterpartAccount, CounterpartAccountSuggestion, CounterpartSummary } from "../types";
 import type { DbMovement } from "@/features/finance/transactions/types";
@@ -21,8 +21,6 @@ interface AssociatedAccountsProps {
   detail: { counterpart: Counterpart; accounts: CounterpartAccount[] } | null;
   summary: CounterpartSummary | null;
   summaryRange: { from: string; to: string };
-  summaryLoading: boolean;
-  onLoadSummary: (counterpartId: number, from: string, to: string) => Promise<void>;
   onSummaryRangeChange: (update: Partial<DateRange>) => void;
 }
 
@@ -82,16 +80,10 @@ export default function AssociatedAccounts({
   detail,
   summary,
   summaryRange,
-  summaryLoading,
-  onLoadSummary,
   onSummaryRangeChange,
 }: AssociatedAccountsProps) {
   const [accountForm, setAccountForm] = useState<AccountForm>(ACCOUNT_FORM_DEFAULT);
-  const [accountStatus, setAccountStatus] = useState<"idle" | "saving">("idle");
-  const [accountSuggestions, setAccountSuggestions] = useState<CounterpartAccountSuggestion[]>([]);
   const [suggestionQuery, setSuggestionQuery] = useState("");
-  const [suggestionsLoading, setSuggestionsLoading] = useState(false);
-  const [attachLoading, setAttachLoading] = useState(false);
   const [quickViewGroup, setQuickViewGroup] = useState<AccountGroup | null>(null);
   const [isAddAccountModalOpen, setIsAddAccountModalOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -104,40 +96,44 @@ export default function AssociatedAccounts({
     []
   );
 
+  // Suggestions Query
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   useEffect(() => {
-    if (!suggestionQuery.trim()) {
-      setAccountSuggestions([]);
-      return;
-    }
-    const controller = new AbortController();
-    let timeoutId: number | null = null;
-
-    timeoutId = window.setTimeout(() => {
-      if (controller.signal.aborted) return;
-      setSuggestionsLoading(true);
-      fetchAccountSuggestions(suggestionQuery)
-        .then((suggestions) => {
-          if (!controller.signal.aborted) {
-            setAccountSuggestions(suggestions);
-          }
-        })
-        .catch(() => {
-          // Silently ignore errors on aborted requests
-        })
-        .finally(() => {
-          if (!controller.signal.aborted) {
-            setSuggestionsLoading(false);
-          }
-        });
-    }, 200);
-
-    return () => {
-      controller.abort();
-      if (timeoutId !== null) {
-        window.clearTimeout(timeoutId);
-      }
-    };
+    const handler = setTimeout(() => {
+      setDebouncedQuery(suggestionQuery);
+    }, 300);
+    return () => clearTimeout(handler);
   }, [suggestionQuery]);
+
+  const { data: suggestions = [], isFetching: suggestionsLoading } = useQuery({
+    queryKey: ["account-suggestions", debouncedQuery],
+    queryFn: () => fetchAccountSuggestions(debouncedQuery),
+    enabled: !!debouncedQuery.trim(),
+    staleTime: 1000 * 60,
+  });
+
+  // Sync query result to local state if needed, or just use `suggestions` directly in render.
+  // The original code set `accountSuggestions` state. We can use `suggestions` directly.
+  const accountSuggestions = suggestions;
+
+  const queryClient = useQueryClient();
+
+  const addAccountMutation = useMutation({
+    mutationFn: (payload: { id: number; data: Parameters<typeof addCounterpartAccount>[1] }) =>
+      addCounterpartAccount(payload.id, payload.data),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["counterpart-detail", variables.id] });
+      queryClient.invalidateQueries({ queryKey: ["counterpart-summary", variables.id] });
+      setAccountForm(ACCOUNT_FORM_DEFAULT);
+      setSuggestionQuery("");
+      setIsAddAccountModalOpen(false);
+      toastSuccess("Cuenta asociada agregada");
+    },
+    onError: (err: Error) => {
+      setError(err.message);
+      toastError(err.message);
+    },
+  });
 
   async function handleAddAccount() {
     if (!selectedId) {
@@ -150,10 +146,11 @@ export default function AssociatedAccounts({
       toastError("Ingresa un identificador de cuenta");
       return;
     }
-    setAccountStatus("saving");
     setError(null);
-    try {
-      await addCounterpartAccount(selectedId, {
+
+    addAccountMutation.mutate({
+      id: selectedId,
+      data: {
         accountIdentifier: accountForm.accountIdentifier.trim(),
         bankName: accountForm.bankName.trim() || null,
         accountType: accountForm.accountType.trim() || null,
@@ -163,48 +160,43 @@ export default function AssociatedAccounts({
           bankAccountNumber: accountForm.bankAccountNumber.trim() || null,
           withdrawId: accountForm.accountIdentifier.trim(),
         },
-      });
-      // setDetail((prev) => (prev ? { counterpart: prev.counterpart, accounts } : prev));
-      setAccountForm(ACCOUNT_FORM_DEFAULT);
-      setAccountSuggestions([]);
-      setSuggestionQuery("");
-      setIsAddAccountModalOpen(false);
-      await onLoadSummary(selectedId, summaryRange.from, summaryRange.to);
-      toastSuccess("Cuenta asociada agregada");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-      toastError(err instanceof Error ? err.message : "No se pudo agregar la cuenta");
-    } finally {
-      setAccountStatus("idle");
-    }
+      },
+    });
   }
+
+  const updateAccountMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: number; payload: Parameters<typeof updateCounterpartAccount>[1] }) =>
+      updateCounterpartAccount(id, payload),
+    onSuccess: () => {
+      if (selectedId) {
+        queryClient.invalidateQueries({ queryKey: ["counterpart-detail", selectedId] });
+        queryClient.invalidateQueries({ queryKey: ["counterpart-summary", selectedId] });
+      }
+      toastSuccess("Concepto actualizado");
+    },
+    onError: (err: Error) => {
+      setError(err.message);
+      toastError(err.message);
+    },
+  });
 
   async function handleGroupConceptChange(group: AccountGroup, concept: string) {
     const trimmed = concept.trim();
     const nextConcept = trimmed || null;
     setError(null);
+
+    // Using Promise.all for multiple accounts, but wrapping in a single verify/toast flow
     try {
       await Promise.all(
-        group.accounts.map((account) => updateCounterpartAccount(account.id, { concept: nextConcept }))
+        group.accounts.map((account) =>
+          updateAccountMutation.mutateAsync({ id: account.id, payload: { concept: nextConcept } })
+        )
       );
-      // const groupIds = new Set(group.accounts.map((account) => account.id));
-      // setDetail((prev) =>
-      //   prev
-      //     ? {
-      //         counterpart: prev.counterpart,
-      //         accounts: prev.accounts.map((account) =>
-      //           groupIds.has(account.id) ? { ...account, concept: nextConcept } : account
-      //         ),
-      //       }
-      //     : prev
-      // );
-      if (selectedId) {
-        await onLoadSummary(selectedId, summaryRange.from, summaryRange.to);
-      }
-      toastSuccess("Concepto actualizado");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-      toastError(err instanceof Error ? err.message : "No se pudo actualizar el concepto");
+      // Invalidation is handled by onSuccess, but since we do multiple, it might trigger multiple times.
+      // Ideally we'd have a bulk update API. For now, debounce invalidation or accept it.
+      // Actually updates are fast.
+    } catch {
+      // Error handled by mutation onError, but we catch here for Promise.all
     }
   }
 
@@ -245,6 +237,22 @@ export default function AssociatedAccounts({
     setSuggestionQuery(suggestion.accountIdentifier);
   }
 
+  const attachRutMutation = useMutation({
+    mutationFn: ({ id, rut }: { id: number; rut: string }) => attachCounterpartRut(id, rut),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["counterpart-detail", variables.id] });
+      queryClient.invalidateQueries({ queryKey: ["counterpart-summary", variables.id] });
+      // Account suggestions depend on global or other state? They are just a search.
+      // But we might want to clear them.
+      setSuggestionQuery("");
+      toastSuccess("RUT vinculado correctamente");
+    },
+    onError: (error: Error) => {
+      setError(error.message);
+      toastError(error.message);
+    },
+  });
+
   async function handleAttachRut(rut: string | null | undefined) {
     if (!selectedId) {
       setError("Selecciona una contraparte para vincular");
@@ -256,34 +264,8 @@ export default function AssociatedAccounts({
       toastError("La sugerencia no contiene un RUT válido");
       return;
     }
-    setAttachLoading(true);
     setError(null);
-    try {
-      await attachCounterpartRut(selectedId, rut);
-      // const updated = await fetchCounterpart(selectedId);
-      // setDetail(updated);
-      setAccountSuggestions([]);
-      // setCounterparts((prev) =>
-      //   prev
-      //     .map((item) => (item.id === selectedId ? updated.counterpart : item))
-      //     .sort((a, b) => a.name.localeCompare(b.name))
-      // );
-      // setForm({
-      //   rut: updated.counterpart.rut ?? "",
-      //   name: updated.counterpart.name,
-      //   personType: updated.counterpart.personType,
-      //   category: updated.counterpart.category,
-      //   email: updated.counterpart.email ?? "",
-      //   notes: updated.counterpart.notes ?? "",
-      // });
-      await onLoadSummary(selectedId, summaryRange.from, summaryRange.to);
-      toastSuccess("RUT vinculado correctamente");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-      toastError(err instanceof Error ? err.message : "No se pudo vincular el RUT");
-    } finally {
-      setAttachLoading(false);
-    }
+    attachRutMutation.mutate({ id: selectedId, rut });
   }
 
   const accountGrouping = useMemo(() => {
@@ -446,12 +428,7 @@ export default function AssociatedAccounts({
   }, [quickViewRows]);
 
   return (
-    <section className="surface-recessed relative space-y-5 p-6" aria-busy={summaryLoading}>
-      {summaryLoading && (
-        <div className="bg-base-100/60 absolute inset-0 z-10 flex items-center justify-center rounded-2xl backdrop-blur-sm">
-          <span className={LOADING_SPINNER_LG} aria-hidden="true" />
-        </div>
-      )}
+    <section className="surface-recessed relative space-y-5 p-6">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div className="space-y-1">
           <h2 className="text-primary text-lg font-semibold drop-shadow-sm">Cuentas asociadas</h2>
@@ -672,9 +649,9 @@ export default function AssociatedAccounts({
                         variant="secondary"
                         size="xs"
                         onClick={() => handleAttachRut(suggestion.rut)}
-                        disabled={attachLoading}
+                        disabled={attachRutMutation.isPending}
                       >
-                        {attachLoading ? "Vinculando..." : "Vincular por RUT"}
+                        {attachRutMutation.isPending ? "Vinculando..." : "Vincular por RUT"}
                       </Button>
                     )}
                     {!selectedId && (
@@ -728,8 +705,8 @@ export default function AssociatedAccounts({
             <Button variant="ghost" onClick={() => setIsAddAccountModalOpen(false)}>
               Cancelar
             </Button>
-            <Button onClick={() => void handleAddAccount()} disabled={accountStatus === "saving"}>
-              {accountStatus === "saving" ? "Guardando..." : "Agregar cuenta"}
+            <Button onClick={() => void handleAddAccount()} disabled={addAccountMutation.isPending}>
+              {addAccountMutation.isPending ? "Guardando..." : "Agregar cuenta"}
             </Button>
           </div>
         </div>
