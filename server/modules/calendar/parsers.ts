@@ -7,13 +7,16 @@ dayjs.extend(utc);
 dayjs.extend(timezone);
 
 const SUBCUT_PATTERNS = [
-  /\bclustoid\b/i,
-  /\bclust\b/i,
+  /cl[au]st[oau]id[eo]?/i, // Tolerant: clustoid, clastoid, clustoide, clustoida
+  /cl[au]st[io]d/i, // Common typos: clustid, clastid
+  /clutoid/i, // Missing 's'
+  /\bclust/i, // Starts with clust (cluster, clustoid, etc.)
   /\bdosis\s+clust/i,
   /\bvacc?\b/i,
   /\bvacuna\b/i,
   /\bvac\.?\b/i,
   /\bsubcut[áa]ne[oa]/i,
+  /inmuno/i,
 ];
 const TEST_PATTERNS = [/\bexamen\b/i, /\btest\b/i, /cut[áa]neo/i, /ambiental/i, /panel/i, /multitest/i];
 const ATTENDED_PATTERNS = [/\blleg[oó]\b/i, /\basist[ií]o\b/i];
