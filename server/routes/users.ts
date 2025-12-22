@@ -188,8 +188,7 @@ export function registerUserRoutes(app: express.Express) {
           passkeyCredentialID: null,
           passkeyPublicKey: null,
           passkeyCounter: 0,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          passkeyTransports: Prisma.DbNull as any,
+          passkeyTransports: Prisma.DbNull,
         },
       });
 
@@ -583,8 +582,7 @@ export function registerUserRoutes(app: express.Express) {
           passkeyCredentialID: null,
           passkeyPublicKey: null,
           passkeyCounter: 0,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          passkeyTransports: Prisma.DbNull as any,
+          passkeyTransports: Prisma.DbNull,
         },
       });
 

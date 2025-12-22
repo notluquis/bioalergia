@@ -23,6 +23,15 @@ export type TimesheetPayload = {
   comment?: string | null;
 };
 
+export type TimesheetUpsertEntry = {
+  work_date: string;
+  start_time: string | null;
+  end_time: string | null;
+  overtime_minutes: number;
+  extra_amount: number;
+  comment: string | null;
+};
+
 export type TimesheetSummaryRow = {
   employeeId: number;
   fullName: string;

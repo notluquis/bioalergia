@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState, type ChangeEvent } from "rea
 import dayjs, { type Dayjs } from "dayjs";
 import "dayjs/locale/es";
 import { useTranslation } from "react-i18next";
+import { useQuery } from "@tanstack/react-query";
 
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
@@ -72,56 +73,63 @@ function buildQuery(filters: HeatmapFilters): Record<string, unknown> {
 
 function CalendarHeatmapPage() {
   const initialFilters = useMemo(() => createInitialFilters(), []);
+  // filters = UI state (inputs)
   const [filters, setFilters] = useState<HeatmapFilters>(initialFilters);
+  // appliedFilters = Server state (what we are looking at)
   const [appliedFilters, setAppliedFilters] = useState<HeatmapFilters>(initialFilters);
-  const [summary, setSummary] = useState<CalendarSummary | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [initializing, setInitializing] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+
   const { t } = useTranslation();
   const tc = useCallback((key: string, options?: Record<string, unknown>) => t(`calendar.${key}`, options), [t]);
 
-  const fetchSummary = useCallback(async (target: HeatmapFilters) => {
-    setLoading(true);
-    setError(null);
-    try {
+  const {
+    data: summary,
+    isLoading: loading,
+    error: queryError,
+  } = useQuery({
+    queryKey: ["calendar-heatmap", appliedFilters],
+    queryFn: async () => {
       const response = await apiClient.get<CalendarSummaryResponse>("/api/calendar/events/summary", {
-        query: buildQuery(target),
+        query: buildQuery(appliedFilters),
       });
       if (response.status !== "ok") {
         throw new Error("No se pudo cargar el resumen de calendario");
       }
-      const normalizedServerFilters: HeatmapFilters = {
-        from: response.filters.from ?? "",
-        to: response.filters.to ?? "",
-        calendarIds: response.filters.calendarIds ?? [],
-        eventTypes: response.filters.eventTypes ?? [],
-        categories: response.filters.categories ?? [],
-        search: response.filters.search ?? "",
-      };
-
-      setSummary({
+      return {
         filters: response.filters,
         totals: response.totals,
         aggregates: response.aggregates,
         available: response.available,
-      });
-      setFilters(normalizedServerFilters);
-      setAppliedFilters(normalizedServerFilters);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "No se pudo obtener los datos";
-      setError(message);
-    } finally {
-      setLoading(false);
-      setInitializing(false);
-    }
-  }, []);
+      };
+    },
+    // Keep previous data while fetching new filter to avoid flicker
+    placeholderData: (prev) => prev,
+  });
 
+  const error = queryError instanceof Error ? queryError.message : queryError ? String(queryError) : null;
+  const initializing = loading && !summary;
+
+  // Sync server-normalized filters back to UI on successful fetch (e.g. date ranges adjusted by backend)
   useEffect(() => {
-    fetchSummary(initialFilters).catch(() => {
-      /* handled */
-    });
-  }, [fetchSummary, initialFilters]);
+    if (summary?.filters) {
+      const normalizedServerFilters: HeatmapFilters = {
+        from: summary.filters.from ?? "",
+        to: summary.filters.to ?? "",
+        calendarIds: summary.filters.calendarIds ?? [],
+        eventTypes: summary.filters.eventTypes ?? [],
+        categories: summary.filters.categories ?? [],
+        search: summary.filters.search ?? "",
+      };
+
+      // Only update if deeply different to avoid loops/unnecessary renders
+      if (!filtersEqual(appliedFilters, normalizedServerFilters)) {
+        setAppliedFilters(normalizedServerFilters);
+        setFilters(normalizedServerFilters);
+      } else if (!filtersEqual(filters, normalizedServerFilters)) {
+        // If just the UI form is out of sync (shouldn't happen on auto-apply but possible)
+        setFilters(normalizedServerFilters);
+      }
+    }
+  }, [summary, appliedFilters, filters]);
 
   const isDirty = useMemo(() => !filtersEqual(filters, appliedFilters), [filters, appliedFilters]);
 
@@ -216,14 +224,14 @@ function CalendarHeatmapPage() {
     }));
   };
 
-  const handleApply = async () => {
-    await fetchSummary(filters);
+  const handleApply = () => {
+    setAppliedFilters(filters);
   };
 
-  const handleReset = async () => {
+  const handleReset = () => {
     const defaults = createInitialFilters();
     setFilters(defaults);
-    await fetchSummary(defaults);
+    setAppliedFilters(defaults);
   };
 
   const busy = loading || initializing;
@@ -243,9 +251,7 @@ function CalendarHeatmapPage() {
         className="border-primary/15 bg-base-100 text-base-content/80 space-y-4 rounded-2xl border p-6 text-xs shadow-sm"
         onSubmit={(event) => {
           event.preventDefault();
-          handleApply().catch(() => {
-            /* handled */
-          });
+          handleApply();
         }}
       >
         <div className="grid gap-4 md:grid-cols-3">
@@ -311,9 +317,7 @@ function CalendarHeatmapPage() {
             size="lg"
             disabled={busy || !isDirty}
             onClick={() => {
-              handleReset().catch(() => {
-                /* handled */
-              });
+              handleReset();
             }}
           >
             {tc("resetFilters")}

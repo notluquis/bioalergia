@@ -120,7 +120,7 @@ export function prepareComparisonData(employees: EmployeeWorkData[], granularity
   const periods = Array.from(allPeriods).sort();
 
   return periods.map((period) => {
-    const dataPoint: Record<string, unknown> = { period };
+    const dataPoint: Record<string, string | number> = { period };
     employees.forEach((emp) => {
       const minutes = emp[breakdown][period] || 0;
       dataPoint[emp.fullName] = parseFloat((minutes / 60).toFixed(2));

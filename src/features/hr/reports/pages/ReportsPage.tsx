@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
 import "dayjs/locale/es";
@@ -10,14 +10,15 @@ import { fetchEmployees } from "@/features/hr/employees/api";
 import type { Employee } from "@/features/hr/employees/types";
 import { useMonths } from "@/features/hr/timesheets/hooks/useMonths";
 import { fetchGlobalTimesheetRange } from "../api";
-import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import { prepareComparisonData, calculateStats, minutesToTime } from "../utils";
 import type { EmployeeWorkData, ReportGranularity } from "../types";
 import { PAGE_CONTAINER, TITLE_LG } from "@/lib/styles";
 import { cn } from "@/lib/utils";
-import { StatCard } from "../components/StatCard";
+import StatCard from "@/components/ui/StatCard";
+import { useQuery } from "@tanstack/react-query";
+import Alert from "@/components/ui/Alert";
 
 // Lazy-load chart components (Recharts ~400KB)
 const TemporalChart = lazy(() => import("../components/ReportCharts").then((m) => ({ default: m.TemporalChart })));
@@ -30,35 +31,113 @@ dayjs.locale("es");
 
 type ViewMode = "month" | "range" | "all";
 
+// --- Helper Functions in Scope ---
+interface RawTimesheetEntry {
+  employee_id: number;
+  work_date: string;
+  worked_minutes: number;
+  overtime_minutes: number;
+}
+
+function processRawEntries(
+  entries: RawTimesheetEntry[],
+  employeeIds: number[],
+  employees: Employee[]
+): EmployeeWorkData[] {
+  const map = new Map<number, EmployeeWorkData>();
+
+  // Init map
+  employeeIds.forEach((id) => {
+    const emp = employees.find((e) => e.id === id);
+    if (emp) {
+      map.set(id, {
+        employeeId: id,
+        fullName: emp.full_name,
+        role: emp.position,
+        totalMinutes: 0,
+        totalOvertimeMinutes: 0,
+        totalDays: 0,
+        avgDailyMinutes: 0,
+        overtimePercentage: 0,
+        dailyBreakdown: {},
+        weeklyBreakdown: {},
+        monthlyBreakdown: {},
+      });
+    }
+  });
+
+  entries.forEach((entry) => {
+    if (!map.has(entry.employee_id)) return;
+    const data = map.get(entry.employee_id)!;
+
+    data.totalMinutes += entry.worked_minutes;
+    data.totalOvertimeMinutes += entry.overtime_minutes;
+
+    // Daily
+    const dateKey = entry.work_date;
+    data.dailyBreakdown[dateKey] = (data.dailyBreakdown[dateKey] || 0) + entry.worked_minutes;
+
+    // Weekly
+    const weekKey = dayjs(entry.work_date).startOf("isoWeek").format("YYYY-MM-DD");
+    data.weeklyBreakdown[weekKey] = (data.weeklyBreakdown[weekKey] || 0) + entry.worked_minutes;
+
+    // Monthly
+    const monthKey = dayjs(entry.work_date).format("YYYY-MM");
+    data.monthlyBreakdown[monthKey] = (data.monthlyBreakdown[monthKey] || 0) + entry.worked_minutes;
+  });
+
+  // Stats
+  for (const data of map.values()) {
+    const uniqueDays = Object.keys(data.dailyBreakdown).length;
+    data.totalDays = uniqueDays;
+    data.avgDailyMinutes = uniqueDays > 0 ? Math.round(data.totalMinutes / uniqueDays) : 0;
+    data.overtimePercentage =
+      data.totalMinutes > 0 ? parseFloat(((data.totalOvertimeMinutes / data.totalMinutes) * 100).toFixed(1)) : 0;
+  }
+
+  return Array.from(map.values());
+}
+// ---------------------------------
+
 export default function ReportsPage() {
   const { can } = useAuth();
   const canView = can("read", "Report");
 
-  // Data loading
-  const { months, monthsWithData } = useMonths();
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [, setLoadingEmployees] = useState(true); // removed loadingEmployees usage warning
-
   // Selection state
   const [viewMode, setViewMode] = useState<ViewMode>("month");
-  const [selectedMonth, setSelectedMonth] = useState<string>("");
   const [startDate, setStartDate] = useState<string>(() => dayjs().startOf("month").format("YYYY-MM-DD"));
   const [endDate, setEndDate] = useState<string>(() => dayjs().endOf("month").format("YYYY-MM-DD"));
-
-  const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<number[]>([]);
   const [granularity, setGranularity] = useState<ReportGranularity>("month");
+
+  // We need to manage "trigger" state manually or rely on effective params
+  const [isReportEnabled, setIsReportEnabled] = useState(false);
+  const [timestamp, setTimestamp] = useState(0); // To force re-fetch on click
 
   // UI State
   const [showEmployeeDropdown, setShowEmployeeDropdown] = useState(false);
   const [employeeSearch, setEmployeeSearch] = useState("");
+  const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<number[]>([]);
 
-  // Data state
-  const [reportData, setReportData] = useState<EmployeeWorkData[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // 1. Load Months and Employees
+  const { months, monthsWithData } = useMonths();
+  const [selectedMonth, setSelectedMonth] = useState<string>("");
 
-  // Track the actual date range used for the current report data to calculate stats correctly
-  const [effectiveDateRange, setEffectiveDateRange] = useState<{ start: string; end: string } | null>(null);
+  useEffect(() => {
+    if (months.length && !selectedMonth) {
+      setSelectedMonth(months[0] ?? "");
+    }
+  }, [months, selectedMonth]);
+
+  useEffect(() => {
+    if (viewMode === "month") setGranularity("week");
+    else if (viewMode === "all") setGranularity("month");
+  }, [viewMode]);
+
+  const { data: employees = [] } = useQuery({
+    queryKey: ["employees-list"],
+    queryFn: () => fetchEmployees(false),
+    staleTime: 5 * 60 * 1000,
+  });
 
   const activeEmployees = useMemo(() => employees.filter((emp) => emp.status === "ACTIVE"), [employees]);
 
@@ -68,180 +147,79 @@ export default function ReportsPage() {
     return activeEmployees.filter((emp) => emp.full_name.toLowerCase().includes(search));
   }, [activeEmployees, employeeSearch]);
 
-  // Load employees
-  useEffect(() => {
-    async function loadEmployees() {
-      try {
-        const data = await fetchEmployees(false);
-        setEmployees(data);
-      } catch (err) {
-        console.error("Error loading employees:", err);
-      } finally {
-        setLoadingEmployees(false);
-      }
-    }
-    loadEmployees();
-  }, []);
+  // 2. Report Query
+  const dateParams = useMemo(() => {
+    let start = startDate;
+    let end = endDate;
 
-  // Set default month
-  useEffect(() => {
-    if (months.length && !selectedMonth) {
-      setSelectedMonth(months[0] ?? "");
-    }
-  }, [months, selectedMonth]);
-
-  // Set granularity based on mode
-  useEffect(() => {
-    if (viewMode === "month") setGranularity("week");
-    else if (viewMode === "all") setGranularity("month");
-  }, [viewMode]);
-
-  // Core processing logic for raw entries
-  interface RawTimesheetEntry {
-    employee_id: number;
-    work_date: string;
-    worked_minutes: number;
-    overtime_minutes: number;
-    // other fields if needed
-  }
-
-  const processRawEntries = useCallback(
-    (entries: RawTimesheetEntry[], employeeIds: number[]) => {
-      const map = new Map<number, EmployeeWorkData>();
-
-      // Init map for selected employees
-      employeeIds.forEach((id) => {
-        const emp = employees.find((e) => e.id === id);
-        if (emp) {
-          map.set(id, {
-            employeeId: id,
-            fullName: emp.full_name,
-            role: emp.position,
-            totalMinutes: 0,
-            totalOvertimeMinutes: 0,
-            totalDays: 0,
-            avgDailyMinutes: 0,
-            overtimePercentage: 0,
-            dailyBreakdown: {},
-            weeklyBreakdown: {},
-            monthlyBreakdown: {},
-          });
-        }
-      });
-
-      // Populate data
-      entries.forEach((entry) => {
-        if (!map.has(entry.employee_id)) return;
-        const data = map.get(entry.employee_id)!;
-
-        data.totalMinutes += entry.worked_minutes;
-        data.totalOvertimeMinutes += entry.overtime_minutes;
-
-        // Daily
-        const dateKey = entry.work_date;
-        data.dailyBreakdown[dateKey] = (data.dailyBreakdown[dateKey] || 0) + entry.worked_minutes;
-
-        // Weekly
-        const weekKey = dayjs(entry.work_date).startOf("isoWeek").format("YYYY-MM-DD");
-        data.weeklyBreakdown[weekKey] = (data.weeklyBreakdown[weekKey] || 0) + entry.worked_minutes;
-
-        // Monthly
-        const monthKey = dayjs(entry.work_date).format("YYYY-MM");
-        data.monthlyBreakdown[monthKey] = (data.monthlyBreakdown[monthKey] || 0) + entry.worked_minutes;
-      });
-
-      // Calculate derived stats
-      for (const data of map.values()) {
-        const uniqueDays = Object.keys(data.dailyBreakdown).length;
-        data.totalDays = uniqueDays;
-        data.avgDailyMinutes = uniqueDays > 0 ? Math.round(data.totalMinutes / uniqueDays) : 0;
-        data.overtimePercentage =
-          data.totalMinutes > 0 ? parseFloat(((data.totalOvertimeMinutes / data.totalMinutes) * 100).toFixed(1)) : 0;
-      }
-
-      return Array.from(map.values());
-    },
-    [employees]
-  );
-
-  // Load report data
-  const handleGenerateReport = useCallback(async () => {
-    if (selectedEmployeeIds.length === 0) return;
-
-    setLoading(true);
-    setError(null);
-    try {
-      let data: EmployeeWorkData[] = [];
-
-      if (viewMode === "month") {
-        if (!selectedMonth) return;
-        // Fetch raw detail for the month to support granular charts
-        const start = dayjs(`${selectedMonth}-01`).startOf("month").format("YYYY-MM-DD");
-        const end = dayjs(`${selectedMonth}-01`).endOf("month").format("YYYY-MM-DD");
-        const entries = await fetchGlobalTimesheetRange(start, end);
-        data = processRawEntries(entries, selectedEmployeeIds);
-        setEffectiveDateRange({ start, end });
+    if (viewMode === "month") {
+      if (!selectedMonth) return null;
+      start = dayjs(`${selectedMonth}-01`).startOf("month").format("YYYY-MM-DD");
+      end = dayjs(`${selectedMonth}-01`).endOf("month").format("YYYY-MM-DD");
+    } else if (viewMode === "all") {
+      const available = Array.from(monthsWithData).sort();
+      if (available.length > 0) {
+        start = dayjs(`${available[0]}-01`).startOf("month").format("YYYY-MM-DD");
+        end = dayjs(`${available[available.length - 1]}-01`)
+          .endOf("month")
+          .format("YYYY-MM-DD");
       } else {
-        let start = startDate;
-        let end = endDate;
-
-        if (viewMode === "all") {
-          const available = Array.from(monthsWithData).sort();
-          if (available.length > 0) {
-            start = dayjs(`${available[0]}-01`).startOf("month").format("YYYY-MM-DD");
-            end = dayjs(`${available[available.length - 1]}-01`)
-              .endOf("month")
-              .format("YYYY-MM-DD");
-          } else {
-            // Fallback
-            start = dayjs().subtract(1, "year").format("YYYY-MM-DD");
-            end = dayjs().format("YYYY-MM-DD");
-          }
-        }
-
-        const entries = await fetchGlobalTimesheetRange(start, end);
-        data = processRawEntries(entries, selectedEmployeeIds);
-        setEffectiveDateRange({ start, end });
+        start = dayjs().subtract(1, "year").format("YYYY-MM-DD");
+        end = dayjs().format("YYYY-MM-DD");
       }
-
-      setReportData(data);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Error al generar el reporte";
-      setError(message);
-    } finally {
-      setLoading(false);
     }
-  }, [viewMode, selectedMonth, startDate, endDate, selectedEmployeeIds, monthsWithData, processRawEntries]);
+    return { start, end };
+  }, [viewMode, selectedMonth, startDate, endDate, monthsWithData]);
 
-  const handleEmployeeToggle = useCallback((employeeId: number) => {
+  const {
+    data: reportData = [],
+    isLoading: loading,
+    error: reportErrorObj,
+  } = useQuery({
+    queryKey: ["reports-data", dateParams, selectedEmployeeIds, timestamp, employees],
+    queryFn: async () => {
+      if (!dateParams) return [];
+      const entries = await fetchGlobalTimesheetRange(dateParams.start, dateParams.end);
+      return processRawEntries(entries as unknown as RawTimesheetEntry[], selectedEmployeeIds, employees);
+    },
+    enabled: isReportEnabled && selectedEmployeeIds.length > 0 && !!dateParams,
+  });
+
+  const error = reportErrorObj
+    ? reportErrorObj instanceof Error
+      ? reportErrorObj.message
+      : String(reportErrorObj)
+    : null;
+
+  const handleGenerateReport = () => {
+    setIsReportEnabled(true);
+    setTimestamp(Date.now());
+  };
+
+  const handleEmployeeToggle = (employeeId: number) => {
     setSelectedEmployeeIds((prev) => {
       if (prev.includes(employeeId)) return prev.filter((id) => id !== employeeId);
       return [...prev, employeeId];
     });
-  }, []);
+  };
 
-  const handleSelectAll = useCallback(() => {
+  const handleSelectAll = () => {
     if (filteredEmployees.length === selectedEmployeeIds.length) {
       setSelectedEmployeeIds([]);
     } else {
       setSelectedEmployeeIds(filteredEmployees.map((e) => e.id));
     }
-  }, [filteredEmployees, selectedEmployeeIds]);
+  };
 
-  // Prepare chart data
   const chartData = useMemo(
     () => (reportData.length > 0 ? prepareComparisonData(reportData, granularity) : []),
     [reportData, granularity]
   );
 
-  // Calculate period count for stats based on granularity
   const periodCount = useMemo(() => {
-    if (!effectiveDateRange) return 1;
-
-    const start = dayjs(effectiveDateRange.start);
-    const end = dayjs(effectiveDateRange.end);
-
-    // exact diff
+    if (!dateParams) return 1;
+    const start = dayjs(dateParams.start);
+    const end = dayjs(dateParams.end);
     let count = 1;
     if (granularity === "day") {
       count = end.diff(start, "day") + 1;
@@ -250,9 +228,8 @@ export default function ReportsPage() {
     } else {
       count = end.diff(start, "month", true);
     }
-
     return Math.max(1, Math.ceil(count));
-  }, [effectiveDateRange, granularity]);
+  }, [dateParams, granularity]);
 
   const stats = useMemo(() => calculateStats(reportData, periodCount), [reportData, periodCount]);
 
@@ -396,7 +373,6 @@ export default function ReportsPage() {
                     if (!emp) return null;
                     return (
                       <div key={id} className="badge badge-primary badge-sm gap-1 py-3 text-xs">
-                        {/* Fix: use fatherName derived or just fallback, keeping it simple */}
                         <span className="max-w-25 truncate">{emp.person?.names.split(" ")[0] ?? emp.full_name}</span>
                         <button
                           onClick={() => setSelectedEmployeeIds((p) => p.filter((x) => x !== id))}
@@ -498,7 +474,7 @@ export default function ReportsPage() {
 
         {/* Right Column: Results */}
         <div className="space-y-6 lg:col-span-8">
-          {reportData.length === 0 ? (
+          {reportData.length === 0 && !loading ? (
             <div className="border-base-300 bg-base-50/50 flex h-full min-h-100 flex-col items-center justify-center rounded-3xl border-2 border-dashed p-8 text-center">
               <div className="bg-base-200 mb-6 flex h-20 w-20 items-center justify-center rounded-full">
                 <BarChart2 className="text-base-content/30 h-10 w-10" />
@@ -519,14 +495,14 @@ export default function ReportsPage() {
                   value={stats?.averageHours ?? 0}
                   icon={BarChart3}
                   className="text-secondary"
-                  subtext={`Por ${granularity === "month" ? "mes" : granularity === "week" ? "sem" : "día"}`}
+                  subtitle={`Por ${granularity === "month" ? "mes" : granularity === "week" ? "sem" : "día"}`}
                 />
                 <StatCard
                   title="DÍAS TRAB."
                   value={reportData.reduce((acc, e) => acc + e.totalDays, 0)}
                   icon={Calendar}
                   className="text-accent"
-                  subtext="Total asistencias"
+                  subtitle="Total asistencias"
                 />
                 <StatCard
                   title="PROM. DIARIO"
@@ -542,7 +518,7 @@ export default function ReportsPage() {
                   suffix="h"
                   icon={TrendingUp}
                   className="text-success"
-                  subtext="Horas/día asis."
+                  subtitle="Horas/día asis."
                 />
               </div>
 

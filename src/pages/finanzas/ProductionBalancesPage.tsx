@@ -1,39 +1,32 @@
-import { useMemo, useState, useEffect } from "react";
-import type { FormEvent, ReactNode } from "react";
+import { useMemo, useState } from "react";
+import type { FormEvent } from "react";
 import dayjs from "dayjs";
-import "dayjs/locale/es"; // Import Spanish locale
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import "dayjs/locale/es";
+import { useQuery } from "@tanstack/react-query";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
 import Alert from "@/components/ui/Alert";
-import { INPUT_CURRENCY_SM } from "@/lib/styles";
+import { MoneyInput } from "@/components/ui/MoneyInput";
 import { today } from "@/lib/dates";
-import { useToast } from "@/context/ToastContext";
-// import { useSettings } from "@/context/SettingsContext";
-import { CreditCard, Banknote, Wallet, TrendingDown, FileText, ClipboardList, Save, MoreVertical } from "lucide-react";
-import {
-  fetchProductionBalanceHistory,
-  fetchProductionBalances,
-  saveProductionBalance,
-} from "@/features/dailyProductionBalances/api";
-import type {
-  ProductionBalancePayload,
-  ProductionBalanceStatus,
-  ProductionBalanceHistoryEntry,
-} from "@/features/dailyProductionBalances/types";
-import { deriveTotals } from "@/features/dailyProductionBalances/utils";
-import WeekView from "@/features/dailyProductionBalances/components/WeekView";
-import { useAuth } from "@/context/AuthContext";
-import { fmtCLP, coerceAmount, numberFormatter } from "@/lib/format";
 
-// Ensure Spanish locale is used for correct week start (Monday)
+import { CreditCard, Banknote, Wallet, TrendingDown, FileText, ClipboardList, Save, MoreVertical } from "lucide-react";
+import { fetchProductionBalanceHistory, fetchProductionBalances } from "@/features/dailyProductionBalances/api";
+
+import WeekView from "@/features/dailyProductionBalances/components/WeekView";
+import { HistoryItem } from "@/features/dailyProductionBalances/components/HistoryItem";
+
+import { useProductionBalanceForm } from "@/features/dailyProductionBalances/hooks/useProductionBalanceForm";
+import { useAuth } from "@/context/AuthContext";
+import { fmtCLP, coerceAmount } from "@/lib/format";
+
 dayjs.locale("es");
+
+// Compact stat display for summary sections
+import { StatMini } from "@/features/dailyProductionBalances/components/StatMini";
 
 export default function DailyProductionBalancesPage() {
   const { can } = useAuth();
-  const { success: toastSuccess, error: toastError } = useToast();
-  const queryClient = useQueryClient();
   // Settings unused
 
   // Permissions
@@ -58,18 +51,7 @@ export default function DailyProductionBalancesPage() {
   const from = startOfWeek.format("YYYY-MM-DD");
   const to = endOfWeek.format("YYYY-MM-DD");
 
-  const [form, setForm] = useState<FormState>(() => makeDefaultForm());
-  const [selectedId, setSelectedId] = useState<number | null>(null);
   const [showHistory, setShowHistory] = useState(false);
-  const handleGoToday = () => {
-    const now = dayjs();
-    const todayStr = now.format("YYYY-MM-DD");
-    setCurrentDate(now);
-    setSelectedDate(todayStr);
-    setSelectedId(null);
-    setShowHistory(false);
-    setForm(makeDefaultForm(todayStr));
-  };
 
   const balancesQuery = useQuery({
     queryKey: ["production-balances", from, to],
@@ -77,87 +59,39 @@ export default function DailyProductionBalancesPage() {
     enabled: canView,
   });
 
+  const balances = useMemo(() => balancesQuery.data ?? [], [balancesQuery.data]);
+
+  const {
+    form,
+    setForm,
+    selectedId,
+    setSelectedId,
+    wasFinal,
+    derived,
+    serviceTotals,
+    paymentMethodTotal,
+    hasDifference,
+    difference,
+    mutation,
+    proceedSave,
+    resetForm,
+  } = useProductionBalanceForm({ selectedDate, balances });
+
+  const handleGoToday = () => {
+    const now = dayjs();
+    const todayStr = now.format("YYYY-MM-DD");
+    setCurrentDate(now);
+    setSelectedDate(todayStr);
+    setSelectedId(null);
+    setShowHistory(false);
+    resetForm(todayStr);
+  };
+
   const historyQuery = useQuery({
     queryKey: ["production-balance-history", selectedId],
     enabled: selectedId != null && showHistory && canView,
     queryFn: () => fetchProductionBalanceHistory(selectedId ?? 0),
   });
-
-  const mutation = useMutation({
-    mutationFn: async (payload: ProductionBalancePayload) => {
-      return saveProductionBalance(payload, selectedId);
-    },
-    onSuccess: (saved) => {
-      toastSuccess("Balance guardado correctamente");
-      setSelectedId(saved.id);
-      setForm((prev) => ({ ...prev, status: saved.status, reason: "" }));
-      queryClient.invalidateQueries({ queryKey: ["production-balances"] });
-      queryClient.invalidateQueries({ queryKey: ["production-balance-history", saved.id] });
-    },
-    onError: (err: unknown) => {
-      const message = err instanceof Error ? err.message : "No se pudo guardar el balance";
-      toastError(message);
-    },
-  });
-
-  const balances = useMemo(() => balancesQuery.data ?? [], [balancesQuery.data]);
-
-  useEffect(() => {
-    if (!selectedDate) {
-      setSelectedId(null);
-      return;
-    }
-    const balance = balances.find((b) => b.date === selectedDate || dayjs(b.date).isSame(dayjs(selectedDate), "day"));
-    if (balance) {
-      setSelectedId(balance.id);
-      setForm({
-        date: balance.date,
-        status: balance.status,
-        ingresoTarjetas: String(balance.ingresoTarjetas),
-        ingresoTransferencias: String(balance.ingresoTransferencias),
-        ingresoEfectivo: String(balance.ingresoEfectivo),
-        gastosDiarios: String(balance.gastosDiarios),
-        otrosAbonos: String(balance.otrosAbonos),
-        consultas: String(balance.consultas),
-        controles: String(balance.controles),
-        tests: String(balance.tests),
-        vacunas: String(balance.vacunas),
-        licencias: String(balance.licencias),
-        roxair: String(balance.roxair),
-        comentarios: balance.comentarios ?? "",
-        reason: "",
-      });
-    } else {
-      setSelectedId(null);
-      setShowHistory(false);
-      setForm(makeDefaultForm(selectedDate));
-    }
-  }, [selectedDate, balances]);
-
-  const existingBalance = selectedDate
-    ? balances.find((b) => b.date === selectedDate || dayjs(b.date).isSame(dayjs(selectedDate), "day"))
-    : null;
-  const wasFinal = existingBalance?.status === "FINAL";
-
-  const derived = deriveTotals({
-    ingresoTarjetas: coerceAmount(form.ingresoTarjetas),
-    ingresoTransferencias: coerceAmount(form.ingresoTransferencias),
-    ingresoEfectivo: coerceAmount(form.ingresoEfectivo),
-    gastosDiarios: coerceAmount(form.gastosDiarios),
-  });
-
-  const serviceTotals =
-    coerceAmount(form.consultas) +
-    coerceAmount(form.controles) +
-    coerceAmount(form.tests) +
-    coerceAmount(form.vacunas) +
-    coerceAmount(form.licencias) +
-    coerceAmount(form.roxair) +
-    coerceAmount(form.otrosAbonos);
-
-  const paymentMethodTotal = derived.subtotal;
-  const hasDifference = serviceTotals !== paymentMethodTotal;
-  const difference = serviceTotals - paymentMethodTotal;
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -182,16 +116,6 @@ export default function DailyProductionBalancesPage() {
     }
 
     proceedSave({ forceFinal });
-  };
-
-  const proceedSave = (options: { forceFinal: boolean }) => {
-    const { forceFinal } = options;
-    if (forceFinal && form.status !== "FINAL") {
-      setForm((prev) => ({ ...prev, status: "FINAL" }));
-    }
-
-    const payload = toPayload({ ...form, status: forceFinal ? "FINAL" : form.status });
-    mutation.mutate(payload);
   };
 
   if (!canView) {
@@ -287,8 +211,7 @@ export default function DailyProductionBalancesPage() {
                           title: "Limpiar formulario",
                           message: "¿Estás seguro de limpiar todos los campos del balance seleccionado?",
                           onConfirm: () => {
-                            setForm(makeDefaultForm(selectedDate));
-                            setSelectedId(null);
+                            resetForm(selectedDate);
                             setConfirmConfig((prev) => ({ ...prev, open: false }));
                           },
                         });
@@ -632,150 +555,4 @@ export default function DailyProductionBalancesPage() {
       </Modal>
     </section>
   );
-}
-
-function HistoryItem({ entry }: { entry: ProductionBalanceHistoryEntry }) {
-  const status = entry.snapshot?.status ?? "DRAFT";
-  const badgeTone = status === "FINAL" ? "badge-success" : "badge-warning";
-  return (
-    <li className="content-auto border-base-200 rounded-lg border p-3">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-base-content font-semibold">{dayjs(entry.createdAt).format("DD MMM YYYY HH:mm")}</p>
-          <p className="text-base-content/60 text-xs">Por: {entry.changedByEmail || "Desconocido"}</p>
-        </div>
-        <span className={`badge ${badgeTone} badge-sm`}>{status}</span>
-      </div>
-      {entry.snapshot && (
-        <p className="text-base-content/70 mt-2 text-xs">
-          Snapshot: Ingresos {fmtCLP(entry.snapshot.ingresoTarjetas)} tarjetas,{" "}
-          {fmtCLP(entry.snapshot.ingresoTransferencias)} transferencias, {fmtCLP(entry.snapshot.ingresoEfectivo)}{" "}
-          efectivo.
-        </p>
-      )}
-      {entry.changeReason && <p className="text-base-content/70 mt-1 text-xs">Motivo: {entry.changeReason}</p>}
-    </li>
-  );
-}
-
-function toPayload(form: FormState): ProductionBalancePayload {
-  return {
-    date: form.date,
-    ingresoTarjetas: coerceAmount(form.ingresoTarjetas),
-    ingresoTransferencias: coerceAmount(form.ingresoTransferencias),
-    ingresoEfectivo: coerceAmount(form.ingresoEfectivo),
-    gastosDiarios: coerceAmount(form.gastosDiarios),
-    otrosAbonos: coerceAmount(form.otrosAbonos),
-    consultas: coerceAmount(form.consultas),
-    controles: coerceAmount(form.controles),
-    tests: coerceAmount(form.tests),
-    vacunas: coerceAmount(form.vacunas),
-    licencias: coerceAmount(form.licencias),
-    roxair: coerceAmount(form.roxair),
-    comentarios: form.comentarios.trim() ? form.comentarios.trim() : null,
-    status: form.status,
-    reason: form.reason.trim() ? form.reason.trim() : null,
-  };
-}
-
-function MoneyInput({
-  icon,
-  label,
-  value,
-  onChange,
-  hint,
-  disabled,
-}: {
-  icon?: ReactNode;
-  label: string;
-  value: string;
-  onChange: (next: string) => void;
-  hint?: string;
-  disabled?: boolean;
-}) {
-  return (
-    <div className="form-control">
-      <label className="label py-1">
-        <span className="label-text flex items-center gap-1.5 text-xs leading-tight font-medium sm:text-sm">
-          {icon}
-          {label}
-        </span>
-      </label>
-      <label className={INPUT_CURRENCY_SM}>
-        <span className="text-base-content/60 text-xs sm:text-sm">$</span>
-        <input
-          type="text"
-          inputMode="numeric"
-          value={value ? numberFormatter.format(Number(value)) : ""}
-          onChange={(e) => {
-            const raw = e.target.value.replace(/[^0-9-]/g, "");
-            onChange(raw);
-          }}
-          className="text-base-content placeholder:text-base-content/40 grow bg-transparent text-xs sm:text-sm md:text-base"
-          placeholder="0"
-          disabled={disabled}
-        />
-      </label>
-      {hint && <span className="text-base-content/60 mt-1 text-xs">{hint}</span>}
-    </div>
-  );
-}
-
-function StatMini({
-  label,
-  value,
-  tone,
-  bold,
-}: {
-  label: string;
-  value: string;
-  tone?: "primary" | "success" | "error";
-  bold?: boolean;
-}) {
-  const toneClass =
-    tone === "primary" ? "text-primary" : tone === "success" ? "text-success" : tone === "error" ? "text-error" : "";
-  return (
-    <div className="border-base-200 bg-base-100 rounded-lg border p-3 text-center">
-      <p className="text-base-content/60 text-xs">{label}</p>
-      <p className={`${toneClass} ${bold ? "text-lg font-bold" : "text-sm font-semibold"}`}>{value}</p>
-    </div>
-  );
-}
-
-interface FormState {
-  date: string;
-  status: ProductionBalanceStatus;
-  ingresoTarjetas: string;
-  ingresoTransferencias: string;
-  ingresoEfectivo: string;
-  gastosDiarios: string;
-  otrosAbonos: string;
-  consultas: string;
-  controles: string;
-  tests: string;
-  vacunas: string;
-  licencias: string;
-  roxair: string;
-  comentarios: string;
-  reason: string;
-}
-
-function makeDefaultForm(dateStr?: string): FormState {
-  return {
-    date: dateStr ?? dayjs().format("YYYY-MM-DD"),
-    status: "DRAFT",
-    ingresoTarjetas: "",
-    ingresoTransferencias: "",
-    ingresoEfectivo: "",
-    gastosDiarios: "",
-    otrosAbonos: "",
-    consultas: "",
-    controles: "",
-    tests: "",
-    vacunas: "",
-    licencias: "",
-    roxair: "",
-    comentarios: "",
-    reason: "",
-  };
 }

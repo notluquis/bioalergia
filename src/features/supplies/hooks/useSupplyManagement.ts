@@ -51,11 +51,13 @@ export function useSupplyManagement(): UseSupplyManagementResult {
     }, {});
   }, [commonSuppliesQuery.data]);
 
+  const { refetch: refetchRequests } = requestsQuery;
+  const { refetch: refetchSupplies } = commonSuppliesQuery;
+
   const fetchData = useCallback(async () => {
     setError(null);
-    await Promise.all([requestsQuery.refetch(), commonSuppliesQuery.refetch()]);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- refetch methods are stable by design
-  }, [requestsQuery.refetch, commonSuppliesQuery.refetch]);
+    await Promise.all([refetchRequests(), refetchSupplies()]);
+  }, [refetchRequests, refetchSupplies]);
 
   const updateStatusMutation = useMutation<
     void,
@@ -89,16 +91,17 @@ export function useSupplyManagement(): UseSupplyManagementResult {
     },
   });
 
+  const { mutateAsync: updateStatus } = updateStatusMutation;
+
   const handleStatusChange = useCallback(
     async (requestId: number, newStatus: SupplyRequest["status"]) => {
       try {
-        await updateStatusMutation.mutateAsync({ requestId, status: newStatus });
+        await updateStatus({ requestId, status: newStatus });
       } catch {
         // Error handled in mutation
       }
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- mutateAsync is stable by design
-    [updateStatusMutation.mutateAsync]
+    [updateStatus]
   );
 
   const loading =

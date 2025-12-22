@@ -21,8 +21,8 @@ import { BarChart2, PieChart as PieChartIcon } from "lucide-react";
 import type { EmployeeWorkData, ReportGranularity } from "../types";
 import { getChartColors } from "../utils/chartColors";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type ChartDataRecord = Record<string, any>;
+/** Chart data record with period key and dynamic employee name keys */
+type ChartDataRecord = Record<string, string | number>;
 
 interface TemporalChartProps {
   chartData: ChartDataRecord[];

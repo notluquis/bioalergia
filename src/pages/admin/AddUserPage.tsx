@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/context/ToastContext";
 import { apiClient } from "@/lib/apiClient";
 import Button from "@/components/ui/Button";
@@ -20,11 +20,12 @@ type Person = {
   hasEmployee: boolean;
 };
 
+type AvailableRole = { name: string; description: string };
+
 export default function AddUserPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { success, error } = useToast();
-  const [loading, setLoading] = useState(false);
+  const { success, error: toastError } = useToast();
   const [form, setForm] = useState({
     email: "",
     names: "",
@@ -38,15 +39,15 @@ export default function AddUserPage() {
     linkToPerson: false,
   });
 
-  const [availableRoles, setAvailableRoles] = useState<{ name: string; description: string }[]>([]);
-
-  useEffect(() => {
-    // Fetch available roles
-    apiClient
-      .get<{ roles: { name: string; description: string }[] }>("/api/roles")
-      .then((res) => setAvailableRoles(res.roles))
-      .catch(console.error);
-  }, []);
+  // Fetch available roles
+  const { data: rolesData } = useQuery({
+    queryKey: ["available-roles"],
+    queryFn: async () => {
+      const res = await apiClient.get<{ roles: AvailableRole[] }>("/api/roles");
+      return res.roles;
+    },
+  });
+  const availableRoles = rolesData ?? [];
 
   // Fetch people without users
   const { data: peopleData } = useQuery({
@@ -60,41 +61,44 @@ export default function AddUserPage() {
   // Filter people who don't have a user yet
   const availablePeople = peopleData?.filter((p) => !p.hasUser) || [];
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      const payload: Record<string, unknown> = {
-        email: form.email,
-        role: form.role,
-        position: form.position,
-        mfaEnforced: form.mfaEnforced,
-        passkeyOnly: form.passkeyOnly,
-      };
-
-      if (form.linkToPerson && form.personId) {
-        payload.personId = form.personId;
-      } else {
-        // If creating new person, include person details
-        payload.names = form.names;
-        payload.fatherName = form.fatherName;
-        // payload.motherName = ""; // Optional/omitted
-        payload.rut = form.rut;
-      }
-
-      await apiClient.post("/api/users/invite", payload);
-      await queryClient.invalidateQueries({ queryKey: ["users"] });
-      // Also invalidate people list as one person now has a user
-      await queryClient.invalidateQueries({ queryKey: ["people"] });
-
+  // Create user mutation
+  const createUserMutation = useMutation({
+    mutationFn: async (payload: Record<string, unknown>) => {
+      return apiClient.post("/api/users/invite", payload);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      queryClient.invalidateQueries({ queryKey: ["people"] });
       success("Usuario creado exitosamente");
       navigate("/settings/users");
-    } catch (err) {
-      error(err instanceof Error ? err.message : "Error al crear usuario");
-    } finally {
-      setLoading(false);
+    },
+    onError: (err) => {
+      toastError(err instanceof Error ? err.message : "Error al crear usuario");
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const payload: Record<string, unknown> = {
+      email: form.email,
+      role: form.role,
+      position: form.position,
+      mfaEnforced: form.mfaEnforced,
+      passkeyOnly: form.passkeyOnly,
+    };
+
+    if (form.linkToPerson && form.personId) {
+      payload.personId = form.personId;
+    } else {
+      payload.names = form.names;
+      payload.fatherName = form.fatherName;
+      payload.rut = form.rut;
     }
+
+    createUserMutation.mutate(payload);
   };
+
+  const loading = createUserMutation.isPending;
 
   return (
     <div className="mx-auto max-w-2xl space-y-8">
@@ -133,7 +137,7 @@ export default function AddUserPage() {
                         personId: pid,
                         linkToPerson: !!pid,
                         email: person?.email ?? form.email,
-                        names: pid ? "" : form.names, // Clear manual fields if linking
+                        names: pid ? "" : form.names,
                         fatherName: pid ? "" : form.fatherName,
                         rut: pid ? "" : form.rut,
                       });
@@ -179,7 +183,7 @@ export default function AddUserPage() {
                 required={!form.personId}
                 placeholder="12.345.678-9"
               />
-              <div className="md:col-span-1">{/* Spacer to align grid if needed, or just let email flow */}</div>
+              <div className="md:col-span-1">{/* Spacer */}</div>
 
               <div className="md:col-span-2">
                 <h3 className="text-base-content mt-2 mb-4 font-semibold">Datos de cuenta</h3>

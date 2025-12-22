@@ -169,7 +169,12 @@ export function mapEmployee(e: EmployeeWithPerson) {
 
 // --- Mappers ---
 
-export function mapCounterpart(c: CounterpartWithAccounts) {
+// Define a more flexible type for mapping that only requires person
+type CounterpartWithPerson = Prisma.CounterpartGetPayload<{
+  include: { person: true };
+}>;
+
+export function mapCounterpart(c: CounterpartWithPerson) {
   return {
     id: c.id,
     rut: normalizeRut(c.person.rut),

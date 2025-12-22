@@ -289,10 +289,11 @@ export function useCalendarEvents() {
     },
   });
 
+  const { mutate: sync } = syncMutation;
+
   const syncNow = useCallback(() => {
-    syncMutation.mutate();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- mutate is stable by design
-  }, [syncMutation.mutate]);
+    sync();
+  }, [sync]);
 
   return {
     filters,

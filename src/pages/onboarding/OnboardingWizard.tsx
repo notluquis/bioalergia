@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import type { PublicKeyCredentialCreationOptionsJSON } from "@simplewebauthn/browser";
 import { useAuth } from "@/context/AuthContext";
 import { Shield, Key, Check, ArrowRight, User, CreditCard, Smartphone, Loader2, Fingerprint } from "lucide-react";
@@ -34,7 +35,6 @@ export default function OnboardingWizard() {
   const { user, refreshSession } = useAuth();
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(0);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Form State
@@ -57,29 +57,96 @@ export default function OnboardingWizard() {
   const [mfaCode, setMfaCode] = useState("");
   const [mfaEnabled, setMfaEnabled] = useState(false);
 
-  // Fetch initial profile data
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const { data } = await apiClient.get<{ data: Partial<ProfileData> }>("/api/users/profile");
-        setProfile((prev) => ({
-          ...prev,
-          names: data.names || "",
-          fatherName: data.fatherName || "",
-          motherName: data.motherName || "",
-          rut: data.rut || "",
-          phone: data.phone || "",
-          address: data.address || "",
-          bankName: data.bankName || "",
-          bankAccountType: data.bankAccountType || "",
-          bankAccountNumber: data.bankAccountNumber || "",
-        }));
-      } catch (err) {
-        console.error("Error fetching profile", err);
+  // Queries
+  const { isLoading: profileLoading } = useQuery({
+    queryKey: ["user-profile"],
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ data: Partial<ProfileData> }>("/api/users/profile");
+      setProfile((prev) => ({
+        ...prev,
+        names: data.names || "",
+        fatherName: data.fatherName || "",
+        motherName: data.motherName || "",
+        rut: data.rut || "",
+        phone: data.phone || "",
+        address: data.address || "",
+        bankName: data.bankName || "",
+        bankAccountType: data.bankAccountType || "",
+        bankAccountNumber: data.bankAccountNumber || "",
+      }));
+      return data;
+    },
+    refetchOnWindowFocus: false,
+  });
+
+  // Mutations
+  const mfaSetupMutation = useMutation({
+    mutationFn: () => apiClient.post<{ secret: string; qrCodeUrl: string }>("/api/auth/mfa/setup", {}),
+    onSuccess: (data) => setMfaSecret(data),
+    onError: () => setError("Error de conexión"),
+  });
+
+  const mfaVerifyMutation = useMutation({
+    mutationFn: (token: string) => apiClient.post("/api/auth/mfa/enable", { token, secret: mfaSecret?.secret }),
+    onSuccess: () => {
+      setMfaEnabled(true);
+      handleNext();
+    },
+    onError: (err) => setError(err instanceof Error ? err.message : "Código incorrecto"),
+  });
+
+  const passkeyRegisterMutation = useMutation({
+    mutationFn: async () => {
+      const options = await apiClient.get<PublicKeyCredentialCreationOptionsJSON>("/api/auth/passkey/register/options");
+      const { startRegistration } = await import("@simplewebauthn/browser");
+      const attResp = await startRegistration({ optionsJSON: options });
+      await apiClient.post("/api/auth/passkey/register/verify", { body: attResp, challenge: options.challenge });
+    },
+    onSuccess: () => {
+      setMfaEnabled(true);
+      handleNext();
+    },
+    onError: (err) => {
+      console.error(err);
+      setError("No se pudo registrar el Passkey. Intenta nuevamente o usa la App Autenticadora.");
+    },
+  });
+
+  const finalSubmitMutation = useMutation({
+    mutationFn: async () => {
+      // Logic to prevent surname duplication in 'names' field
+      let cleanNames = profile.names.trim();
+      if (profile.motherName) {
+        const regex = new RegExp(`\\s+${profile.motherName.trim()}$`, "i");
+        cleanNames = cleanNames.replace(regex, "");
       }
-    };
-    fetchProfile();
-  }, []);
+      if (profile.fatherName) {
+        const regex = new RegExp(`\\s+${profile.fatherName.trim()}$`, "i");
+        cleanNames = cleanNames.replace(regex, "");
+      }
+      cleanNames = cleanNames.trim();
+
+      await apiClient.post("/api/users/setup", {
+        ...profile,
+        names: cleanNames,
+        password,
+      });
+      await refreshSession();
+    },
+    onSuccess: () => {
+      navigate("/");
+    },
+    onError: () => {
+      setError("Error al finalizar la configuración. Inténtalo de nuevo.");
+    },
+  });
+
+  const loading =
+    profileLoading ||
+    mfaSetupMutation.isPending ||
+    mfaVerifyMutation.isPending ||
+    passkeyRegisterMutation.isPending ||
+    finalSubmitMutation.isPending;
 
   const handleNext = () => {
     setError(null);
@@ -117,96 +184,19 @@ export default function OnboardingWizard() {
     handleNext();
   };
 
-  const generateMfa = async () => {
-    setLoading(true);
-    try {
-      const data = await apiClient.post<{ secret: string; qrCodeUrl: string }>("/api/auth/mfa/setup", {});
-      setMfaSecret(data);
-    } catch {
-      setError("Error de conexión");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const verifyMfa = () => mfaVerifyMutation.mutate(mfaCode);
+  const handlePasskeyRegister = () => passkeyRegisterMutation.mutate();
 
-  const verifyMfa = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      await apiClient.post("/api/auth/mfa/enable", { token: mfaCode, secret: mfaSecret?.secret });
-      setMfaEnabled(true);
-      handleNext();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Código incorrecto");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handlePasskeyRegister = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      // 1. Get options
-      const options = await apiClient.get<PublicKeyCredentialCreationOptionsJSON>("/api/auth/passkey/register/options");
-
-      // 2. Create credentials
-      const { startRegistration } = await import("@simplewebauthn/browser");
-      const attResp = await startRegistration({ optionsJSON: options });
-
-      // 3. Verify
-      await apiClient.post("/api/auth/passkey/register/verify", { body: attResp, challenge: options.challenge });
-
-      // Passkey registered successfully
-      setMfaEnabled(true); // Treat as enabled so they can skip/next
-      handleNext();
-    } catch (err) {
-      console.error(err);
-      setError("No se pudo registrar el Passkey. Intenta nuevamente o usa la App Autenticadora.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { mutate: setupMfa } = mfaSetupMutation;
 
   // Initialize MFA generation when entering step
   useEffect(() => {
     if (currentStep === 4 && !mfaSecret && !mfaEnabled) {
-      generateMfa();
+      setupMfa();
     }
-  }, [currentStep, mfaSecret, mfaEnabled]);
+  }, [currentStep, mfaSecret, mfaEnabled, setupMfa]);
 
-  const handleFinalSubmit = async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      // Logic to prevent surname duplication in 'names' field
-      let cleanNames = profile.names.trim();
-      if (profile.motherName) {
-        const regex = new RegExp(`\\s+${profile.motherName.trim()}$`, "i");
-        cleanNames = cleanNames.replace(regex, "");
-      }
-      if (profile.fatherName) {
-        const regex = new RegExp(`\\s+${profile.fatherName.trim()}$`, "i");
-        cleanNames = cleanNames.replace(regex, "");
-      }
-      cleanNames = cleanNames.trim();
-
-      // 1. Save Profile & Password
-      await apiClient.post("/api/users/setup", {
-        ...profile,
-        names: cleanNames,
-        password,
-      });
-
-      // 2. Refresh Session & Redirect
-      await refreshSession();
-      navigate("/");
-    } catch {
-      setError("Error al finalizar la configuración. Inténtalo de nuevo.");
-      setLoading(false);
-    }
-  };
+  const handleFinalSubmit = () => finalSubmitMutation.mutate();
 
   return (
     <div className="bg-base-200 flex min-h-screen items-center justify-center p-4">

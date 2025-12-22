@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
 import type { ChangeEvent } from "react";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/context/AuthContext";
 import { fetchEmployees, deactivateEmployee, updateEmployee } from "@/features/hr/employees/api";
 import type { Employee } from "@/features/hr/employees/types";
@@ -14,60 +15,58 @@ import { PAGE_CONTAINER, TITLE_LG } from "@/lib/styles";
 export default function EmployeesPage() {
   const { can } = useAuth();
   const canEdit = can("manage", "Employee");
+  const queryClient = useQueryClient();
 
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [includeInactive, setIncludeInactive] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [showForm, setShowForm] = useState(false);
 
-  const loadEmployees = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await fetchEmployees(includeInactive);
-      setEmployees(data);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "No se pudieron cargar los empleados";
-      setError(message);
-    } finally {
-      setLoading(false);
-    }
-  }, [includeInactive]);
+  // Query for employees
+  const {
+    data: employees = [],
+    isLoading: loading,
+    error: queryError,
+    refetch: loadEmployees,
+  } = useQuery({
+    queryKey: ["employees", includeInactive],
+    queryFn: () => fetchEmployees(includeInactive),
+  });
 
-  useEffect(() => {
-    loadEmployees();
-  }, [loadEmployees]);
+  // Mutation for deactivating
+  const deactivateMutation = useMutation({
+    mutationFn: deactivateEmployee,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["employees"] });
+    },
+  });
 
-  async function handleDeactivate(id: number) {
+  // Mutation for activating
+  const activateMutation = useMutation({
+    mutationFn: (id: number) => updateEmployee(id, { status: "ACTIVE" }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["employees"] });
+    },
+  });
+
+  const error =
+    queryError instanceof Error
+      ? queryError.message
+      : deactivateMutation.error instanceof Error
+        ? deactivateMutation.error.message
+        : activateMutation.error instanceof Error
+          ? activateMutation.error.message
+          : null;
+
+  const isMutating = deactivateMutation.isPending || activateMutation.isPending;
+
+  function handleDeactivate(id: number) {
     if (!canEdit) return;
-    setLoading(true);
-    setError(null);
-    try {
-      await deactivateEmployee(id);
-      await loadEmployees();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "No se pudo actualizar el estado";
-      setError(message);
-    } finally {
-      setLoading(false);
-    }
+    deactivateMutation.mutate(id);
   }
 
-  async function handleActivate(id: number) {
+  function handleActivate(id: number) {
     if (!canEdit) return;
-    setLoading(true);
-    setError(null);
-    try {
-      await updateEmployee(id, { status: "ACTIVE" });
-      await loadEmployees();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "No se pudo actualizar el estado";
-      setError(message);
-    } finally {
-      setLoading(false);
-    }
+    activateMutation.mutate(id);
   }
 
   function handleEdit(employee: Employee) {
@@ -148,7 +147,7 @@ export default function EmployeesPage() {
       <div className="border-base-300 bg-base-100 rounded-2xl border p-6 shadow-sm">
         <EmployeeTable
           employees={employees}
-          loading={loading}
+          loading={loading || isMutating}
           onEdit={handleEdit}
           onDeactivate={handleDeactivate}
           onActivate={handleActivate}
