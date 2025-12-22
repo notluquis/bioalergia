@@ -61,7 +61,7 @@ const SUBCUT_PATTERNS = [
   /vacuna/i, // VACUNA
   /\bsubcut[áa]ne[oa]/i, // subcutáneo
   /inmuno/i, // inmuno
-  /\d+[ªº]?\s*(ta|da|ra|va)?\s*dosis/i, // 4ta dosis, 3ra dosis
+  /\d+[ªº]?\s*(era|ta|da|ra|va)?\s*dosis/i, // 2era dosis, 4ta dosis, 3ra dosis
   /\bdosis\s+mensual/i, // Dosis mensual
   /v[ie]+n?[ie]?[eo]?r?o?n?\s+a\s+buscar/i, // vinieron a buscar
   /\bmantenci[oó]n\b/i, // mantención (maintenance treatment)
@@ -95,45 +95,74 @@ const LICENCIA_PATTERNS = [
   /\blicencia\b/i, // licencia médica
 ];
 
-/** Patterns for "Control médico" */
+/** Patterns for "Control médico"
+ * - control: "control s/c", "control sin costo"
+ * - date-prefixed: "03-10control"
+ * - time-prefixed: "14:56control" (sin espacio)
+ * - confirmacontrol: "12:00confirmacontrol"
+ * - ontrol: typo sin 'c' inicial
+ */
 const CONTROL_PATTERNS = [
-  /\bcontrol\b/i, // control s/c
-  /\d+-\d+control/i, // 03-10control (date-prefixed)
-  /\bontrol\b/i, // typo: missing 'c'
+  /\bcontrol\b/i,
+  /\d+-\d+control/i, // date-prefixed
+  /\d{1,2}:\d{2}control/i, // time-prefixed (14:56control)
+  /confirma\s*control/i, // confirmacontrol, confirma control
+  /\bontrol\b/i, // typo
 ];
 
-/** Patterns for "Consulta médica" */
+/** Patterns for "Consulta médica"
+ * - consulta/consuta/consult: "1era consulta", "1era consult"
+ * - telemedicina: "telemedicina (40) Javiera Mella"
+ * - confirma: "1era confirma 40 cristian"
+ * - time+ordinal: "15:361era (40) berta correa"
+ * - time+name: "13:37 reinaldo salas gallardo"
+ * - reserva/reservado: "reserva Soledad", "reservado 964077959"
+ * - name+phone: "gonzalo calderon 981592361"
+ */
 const CONSULTA_PATTERNS = [
-  /\bconsulta\b/i, // consulta
-  /\bconsuta\b/i, // typo: missing 'l'
-  /\d+(era|da|ra)?\s*consulta/i, // 1era consulta
-  /\d+(era|da|ra)?\s*consuta/i, // 1era consuta (typo)
-  /^\d{1,2}:\d{2}\s+[a-záéíóúñ]+\s+[a-záéíóúñ]+/i, // "13:37 nombre apellido"
-  /\btelemedicina\b/i, // telemedicina
-  /\d+(era|da|ra)?\s*confirma\b/i, // "1era confirma"
-  /^\d{1,2}:\d{2}\s*\d+(era|da|ra)?\b/i, // "15:361era (40)" - time + ordinal
+  /\bconsulta\b/i,
+  /\bconsuta\b/i, // typo missing 'l'
+  /\bconsult\b/i, // typo missing 'a'
+  /\bconsulto\b/i, // typo 'o' instead of 'a'
+  /\d+(era|da|ra)?\s*consulta/i,
+  /\d+(era|da|ra)?\s*consuta/i, // typo
+  /\d+(era|da|ra)?\s*consult\b/i, // typo "1era consult"
+  /\d+(era|da|ra)?\s*consulto/i, // typo "1era consulto"
+  /^\d{1,2}:\d{2}\s+[a-záéíóúñ]+\s+[a-záéíóúñ]+/i,
+  /\btelemedicina\b/i,
+  /\bdoctoralia\b/i, // reservado doctoralia
+  /\d+(era|da|ra)?\s*confirma\b/i,
+  /^\d{1,2}:\d{2}\s*\d+(era|da|ra)?\b/i,
+  /\breserva\s+[a-záéíóúñ]+/i, // "reserva Soledad González"
+  /\breservado\s+9\d{8}/i, // "reservado 964077959"
+  /^[a-záéíóúñ]+\s+[a-záéíóúñ]+\s+9\d{8}$/i, // "gonzalo calderon 981592361"
 ];
 
-/** Patterns for "Roxair" */
-const ROXAIR_PATTERNS = [
-  /\broxair\b/i, // roxair
-  /\bretira\s+roxair\b/i, // retira roxair
-  /\benviar\s+roxair\b/i, // enviar roxair
-];
+/** Patterns for "Roxair" - Entrega de medicamento Roxair
+ * - roxair: cualquier mención
+ * - retira roxair: "RETIRA ROXAIR (pagado): Alondra valenzuela"
+ * - enviar roxair: "enviar roxair a Santino (pagado)"
+ */
+const ROXAIR_PATTERNS = [/\broxair\b/i, /\bretira\s+roxair\b/i, /\benviar\s+roxair\b/i];
 
-/** Patterns for events to IGNORE (not classify) */
+/** Patterns for events to IGNORE (not classify)
+ * - recordar: "RECORDAR AL DOCTOR..."
+ * - vacaciones/feriado: eventos administrativos
+ * - publicidad/grabación: notas de marketing
+ * - reunión/jornada: eventos internos
+ */
 export const IGNORE_PATTERNS = [
-  /^recordar\b/i, // RECORDAR AL DOCTOR
+  /^recordar\b/i,
   /^semana\s+de\s+vacaciones$/i,
   /\brecordar\b.*\bdoctor\b/i,
-  /^feriado$/i,
+  /\bferiado\b/i, // FERIADO anywhere
   /^vacaciones$/i,
   /^elecciones$/i,
   /^doctor\s+ocupado$/i,
-  /\bpublicidad\b/i, // publicidad
-  /\bgrabaci[oó]n\s+de\s+videos?\b/i, // grabación de videos
-  /^reuni[oó]n\b/i, // REUNION
-  /^jornada\s+de\s+invierno\b/i, // JORNADA DE INVIERNO
+  /\bpublicidad\b/i,
+  /\bgrabaci[oó]n\s+de\s+videos?\b/i,
+  /^reuni[oó]n\b/i,
+  /^jornada\s+de\s+invierno\b/i,
 ];
 
 /** Patterns for attendance confirmation */
