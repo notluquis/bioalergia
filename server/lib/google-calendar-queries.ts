@@ -196,8 +196,8 @@ export async function getCalendarAggregates(filters: CalendarEventFilters): Prom
   >(Prisma.sql`
     SELECT EXTRACT(YEAR FROM ${EVENT_DATETIME})::INTEGER AS year,
            COUNT(*) AS total,
-           SUM(events.amount_expected) AS amountExpected,
-           SUM(events.amount_paid) AS amountPaid
+           SUM(events.amount_expected) AS "amountExpected",
+           SUM(events.amount_paid) AS "amountPaid"
       FROM events AS events
       ${where}
      GROUP BY EXTRACT(YEAR FROM ${EVENT_DATETIME})
@@ -210,8 +210,8 @@ export async function getCalendarAggregates(filters: CalendarEventFilters): Prom
     SELECT EXTRACT(YEAR FROM ${EVENT_DATETIME})::INTEGER AS year,
            EXTRACT(MONTH FROM ${EVENT_DATETIME})::INTEGER AS month,
            COUNT(*) AS total,
-           SUM(events.amount_expected) AS amountExpected,
-           SUM(events.amount_paid) AS amountPaid
+           SUM(events.amount_expected) AS "amountExpected",
+           SUM(events.amount_paid) AS "amountPaid"
       FROM events AS events
       ${where}
      GROUP BY EXTRACT(YEAR FROM ${EVENT_DATETIME}), EXTRACT(MONTH FROM ${EVENT_DATETIME})
@@ -224,8 +224,8 @@ export async function getCalendarAggregates(filters: CalendarEventFilters): Prom
     SELECT EXTRACT(ISOYEAR FROM ${EVENT_DATETIME})::INTEGER AS isoYear,
            EXTRACT(WEEK FROM ${EVENT_DATETIME})::INTEGER AS isoWeek,
            COUNT(*) AS total,
-           SUM(events.amount_expected) AS amountExpected,
-           SUM(events.amount_paid) AS amountPaid
+           SUM(events.amount_expected) AS "amountExpected",
+           SUM(events.amount_paid) AS "amountPaid"
       FROM events AS events
       ${where}
      GROUP BY isoYear, isoWeek
@@ -237,8 +237,8 @@ export async function getCalendarAggregates(filters: CalendarEventFilters): Prom
   >(Prisma.sql`
     SELECT EXTRACT(DOW FROM ${EVENT_DATETIME})::INTEGER AS weekday,
            COUNT(*) AS total,
-           SUM(events.amount_expected) AS amountExpected,
-           SUM(events.amount_paid) AS amountPaid
+           SUM(events.amount_expected) AS "amountExpected",
+           SUM(events.amount_paid) AS "amountPaid"
       FROM events AS events
       ${where}
      GROUP BY EXTRACT(DOW FROM ${EVENT_DATETIME})
@@ -250,8 +250,8 @@ export async function getCalendarAggregates(filters: CalendarEventFilters): Prom
   >(Prisma.sql`
     SELECT ${EVENT_DATE} AS date,
            COUNT(*) AS total,
-           SUM(events.amount_expected) AS amountExpected,
-           SUM(events.amount_paid) AS amountPaid
+           SUM(events.amount_expected) AS "amountExpected",
+           SUM(events.amount_paid) AS "amountPaid"
       FROM events AS events
       ${where}
      GROUP BY date
@@ -352,8 +352,8 @@ export async function getCalendarEventsByDate(
   >(Prisma.sql`
     SELECT ${EVENT_DATE} AS date,
            COUNT(*) AS total,
-           SUM(events.amount_expected) AS amountExpected,
-           SUM(events.amount_paid) AS amountPaid
+           SUM(events.amount_expected) AS "amountExpected",
+           SUM(events.amount_paid) AS "amountPaid"
       FROM events AS events
       ${where}
      GROUP BY date
@@ -389,27 +389,27 @@ export async function getCalendarEventsByDate(
         events.summary,
         events.description,
         events.category,
-        events.amount_expected AS amountExpected,
-        events.amount_paid AS amountPaid,
+        events.amount_expected AS "amountExpected",
+        events.amount_paid AS "amountPaid",
         events.attended,
         events.dosage,
-        events.treatment_stage AS treatmentStage,
-        events.start_date AS startDate,
-        events.start_date_time AS startDateTime,
-        events.start_time_zone AS startTimeZone,
-        events.end_date AS endDate,
-        events.end_date_time AS endDateTime,
-        events.end_time_zone AS endTimeZone,
-        events.event_created_at AS eventCreatedAt,
-        events.event_updated_at AS eventUpdatedAt,
-        events.color_id AS colorId,
+        events.treatment_stage AS "treatmentStage",
+        events.start_date AS "startDate",
+        events.start_date_time AS "startDateTime",
+        events.start_time_zone AS "startTimeZone",
+        events.end_date AS "endDate",
+        events.end_date_time AS "endDateTime",
+        events.end_time_zone AS "endTimeZone",
+        events.event_created_at AS "eventCreatedAt",
+        events.event_updated_at AS "eventUpdatedAt",
+        events.color_id AS "colorId",
         events.location,
         events.transparency,
         events.visibility,
-        events.hangout_link AS hangoutLink,
-        events.raw_event AS rawEvent,
-        ${EVENT_DATE} AS event_date,
-        TO_CHAR(${EVENT_DATETIME}, 'YYYY-MM-DD"T"HH24:MI:SS') AS event_date_time
+        events.hangout_link AS "hangoutLink",
+        events.raw_event AS "rawEvent",
+        ${EVENT_DATE} AS "event_date",
+        TO_CHAR(${EVENT_DATETIME}, 'YYYY-MM-DD"T"HH24:MI:SS') AS "event_date_time"
       FROM events AS events
       ${whereWithDates}
      ORDER BY event_date DESC, ${EVENT_DATETIME} ASC, events.external_event_id ASC
