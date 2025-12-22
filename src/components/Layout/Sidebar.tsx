@@ -159,7 +159,7 @@ export default function Sidebar({ isOpen, isMobile, onClose }: SidebarProps) {
   // Sidebar Classes
   const sidebarClasses = cn(
     // Base - GPU-accelerated transitions only (transform, opacity)
-    "flex flex-col bg-base-100/95 backdrop-blur-xl border-r border-base-200 transition-[width] duration-200 ease-out z-50",
+    "flex flex-col bg-base-100 backdrop-blur-xl border-r border-base-200 transition-[width] duration-200 ease-out z-50",
     // Mobile
     isMobile
       ? cn(
