@@ -251,11 +251,11 @@ export default function Sidebar({ isOpen, isMobile, onClose }: SidebarProps) {
           ))}
         </div>
 
-        {/* User Footer - Pinned to bottom */}
+        {/* User Footer - Pinned to bottom, aligned with main footer */}
         <div
           className={cn(
-            "border-base-200/50 bg-base-100/30 shrink-0 border-t p-4 transition-all duration-300",
-            !isMobile && isCollapsed ? "items-center justify-center px-0 py-4" : ""
+            "border-base-200/50 bg-base-100/30 mt-auto shrink-0 border-t px-3 py-3 transition-all duration-300",
+            !isMobile && isCollapsed ? "items-center justify-center px-2 py-3" : ""
           )}
         >
           <div
