@@ -1,16 +1,18 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchEmployees, type Employee } from "@/features/hr/employees/api";
-import { getRoleMappings, saveRoleMapping } from "../api";
-import { apiClient } from "@/lib/apiClient";
+import { getRoleMappings, saveRoleMapping, fetchRoles } from "../api";
+// import { apiClient } from "@/lib/apiClient";
 import type { RoleMapping } from "../api";
 import Button from "@/components/ui/Button";
 
-type AvailableRole = {
-  id: number;
-  name: string;
-  description: string | null;
-};
+import type { Role as AvailableRole } from "@/types/roles";
+
+// type AvailableRole = {
+//   id: number;
+//   name: string;
+//   description: string | null;
+// };
 
 type ExtendedRoleMapping = RoleMapping & { isNew?: boolean; isModified?: boolean };
 
@@ -30,12 +32,8 @@ export default function RoleMappingManager() {
   }>({
     queryKey: ["role-mappings-data"],
     queryFn: async () => {
-      const [employees, dbMappings, rolesRes] = await Promise.all([
-        fetchEmployees(true),
-        getRoleMappings(),
-        apiClient.get<{ roles: AvailableRole[] }>("/api/roles"),
-      ]);
-      return { employees, dbMappings, roles: rolesRes.roles };
+      const [employees, dbMappings, roles] = await Promise.all([fetchEmployees(true), getRoleMappings(), fetchRoles()]);
+      return { employees, dbMappings, roles };
     },
     refetchOnWindowFocus: false,
   });

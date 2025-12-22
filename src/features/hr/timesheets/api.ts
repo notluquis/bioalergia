@@ -100,3 +100,16 @@ export async function prepareTimesheetEmail(payload: {
 
   return data;
 }
+
+export async function fetchTimesheetMonths() {
+  const data = await apiClient.get<{ status: string; months: string[]; monthsWithData: string[] }>(
+    "/api/timesheets/months"
+  );
+  if (data.status !== "ok") {
+    throw new Error("No se pudieron cargar los meses");
+  }
+  return {
+    months: data.months,
+    monthsWithData: new Set(data.monthsWithData || []),
+  };
+}

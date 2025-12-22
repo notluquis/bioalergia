@@ -1,3 +1,12 @@
+export type CalendarData = {
+  id: number;
+  googleId: string;
+  name: string;
+  eventCount: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type CalendarFilters = {
   from: string;
   to: string;

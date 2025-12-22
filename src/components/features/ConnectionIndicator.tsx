@@ -1,28 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
-import { apiClient } from "@/lib/apiClient";
-
-interface HealthResponse {
-  status: "ok" | "degraded" | "error";
-  timestamp: string;
-  checks: {
-    db: {
-      status: "ok" | "error";
-      latency: number | null;
-      message?: string;
-    };
-  };
-}
+import { fetchSystemHealth } from "@/features/system/api";
 
 type IndicatorLevel = "online" | "degraded" | "offline" | "starting";
-
-type IndicatorState = {
-  level: IndicatorLevel;
-  fetchedAt: Date | null;
-  message: string;
-  details: string[];
-  retryCount: number;
-};
 
 const STATUS_COPY: Record<IndicatorLevel, { label: string; description: string }> = {
   online: {
@@ -67,144 +48,73 @@ const INDICATOR_STYLES: Record<IndicatorLevel, { dot: string; chip: string; pane
 };
 
 export function ConnectionIndicator() {
-  const [state, setState] = useState<IndicatorState>({
-    level: "starting",
-    fetchedAt: null,
-    message: STATUS_COPY.starting.description,
-    details: ["Intentando conectar al servidor..."],
-    retryCount: 0,
-  });
   const [open, setOpen] = useState(false);
 
-  // Use refs to persist retry state and connection status across effect reruns
-  const retryCountRef = useRef(0);
-  const delayRef = useRef<number | null>(120000);
-  const timeoutIdRef = useRef<number | null>(null);
-  const hasConnectedRef = useRef(false);
+  const {
+    data: health,
+    isLoading,
+    isError,
+    error,
+    isRefetching,
+  } = useQuery({
+    queryKey: ["system-health"],
+    queryFn: ({ signal }) => fetchSystemHealth(signal),
+    refetchInterval: (query) => {
+      const data = query.state.data;
+      if (!data) return 5000; // Poll while loading or error
+      if (data.status === "ok") return false; // Stop polling if healthy
+      return 120000; // Poll slow if degraded
+    },
+    refetchOnWindowFocus: true,
+    retry: 3,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+  });
 
-  useEffect(() => {
-    let cancelled = false;
-    const BASE_DELAY_MS = 120000;
-    const MAX_DELAY_MS = 300000;
+  const state = useMemo(() => {
+    let level: IndicatorLevel = "starting";
+    let message = STATUS_COPY.starting.description;
+    let details: string[] = ["Verificando estado..."];
+    let fetchedAt: Date | null = null;
 
-    const schedule = (delay: number | null) => {
-      if (timeoutIdRef.current) window.clearTimeout(timeoutIdRef.current);
-      if (delay == null) {
-        timeoutIdRef.current = null;
-        delayRef.current = null;
-        return;
-      }
-      delayRef.current = delay;
-      timeoutIdRef.current = window.setTimeout(fetchHealthWithBackoff, delay);
-    };
+    if (isLoading && !health) {
+      level = "starting";
+    } else if (isError) {
+      level = "offline";
+      message = STATUS_COPY.offline.description;
+      details = [error instanceof Error ? error.message : "Error de conexión"];
+      fetchedAt = new Date();
+    } else if (health) {
+      fetchedAt = new Date(health.timestamp || Date.now());
+      details = [];
 
-    async function fetchHealthWithBackoff() {
-      const controller = new AbortController();
-      const requestTimeoutId = window.setTimeout(() => controller.abort(), 5000);
-      let nextDelay: number | null = BASE_DELAY_MS;
-      try {
-        const payload = await apiClient.get<HealthResponse>("/api/health", {
-          signal: controller.signal,
-        });
-
-        const fetchedAt = new Date();
-        if (cancelled) return;
-
-        const details: string[] = [];
-        if (payload.checks?.db) {
-          const dbCheck = payload.checks.db;
-          if (dbCheck.status === "error") {
-            details.push(dbCheck.message ?? "No se pudo contactar la base de datos");
-          } else if (typeof dbCheck.latency === "number") {
-            details.push(`Base de datos OK · ${dbCheck.latency} ms`);
-          } else {
-            details.push("Base de datos OK");
-          }
-        }
-        if (payload.status === "ok") {
-          if (!cancelled)
-            setState({ level: "online", fetchedAt, message: STATUS_COPY.online.description, details, retryCount: 0 });
-          retryCountRef.current = 0;
-          hasConnectedRef.current = true;
-          nextDelay = null; // no polling while healthy
-        } else if (payload.status === "degraded") {
-          if (!cancelled)
-            setState({
-              level: "degraded",
-              fetchedAt,
-              message: STATUS_COPY.degraded.description,
-              details,
-              retryCount: 0,
-            });
-          retryCountRef.current = 0;
-          hasConnectedRef.current = true;
-          nextDelay = BASE_DELAY_MS;
+      // Parse details from health check
+      if (health.checks?.db) {
+        const dbCheck = health.checks.db;
+        if (dbCheck.status === "error") {
+          details.push(dbCheck.message ?? "No se pudo contactar la base de datos");
+        } else if (typeof dbCheck.latency === "number") {
+          details.push(`Base de datos OK · ${dbCheck.latency} ms`);
         } else {
-          if (!cancelled)
-            setState({ level: "offline", fetchedAt, message: STATUS_COPY.offline.description, details, retryCount: 0 });
-          retryCountRef.current++;
-          nextDelay = Math.min(MAX_DELAY_MS, BASE_DELAY_MS * Math.pow(2, retryCountRef.current));
+          details.push("Base de datos OK");
         }
-      } catch (error) {
-        if (cancelled) return;
-        const fetchedAt = new Date();
-        setState((prevState) => {
-          const newRetryCount = prevState.retryCount + 1;
-          const isStarting = !hasConnectedRef.current && newRetryCount < 4;
-          const detailMessage =
-            error instanceof Error
-              ? error.message === "The user aborted a request."
-                ? "Conexión agotada (timeout)"
-                : error.message
-              : "Error desconocido";
-          return {
-            level: isStarting ? "starting" : "offline",
-            fetchedAt,
-            message: isStarting ? STATUS_COPY.starting.description : STATUS_COPY.offline.description,
-            details: isStarting ? [`Intento ${newRetryCount}/4: ${detailMessage}`] : [detailMessage],
-            retryCount: newRetryCount,
-          };
-        });
-        retryCountRef.current++;
-        nextDelay = Math.min(MAX_DELAY_MS, BASE_DELAY_MS * Math.pow(2, retryCountRef.current));
-        if (!hasConnectedRef.current && retryCountRef.current > 2 && !cancelled) setOpen(true);
-      } finally {
-        window.clearTimeout(requestTimeoutId);
       }
-      if (!cancelled) {
-        schedule(nextDelay);
+
+      if (health.status === "ok") {
+        level = "online";
+        message = STATUS_COPY.online.description;
+      } else if (health.status === "degraded") {
+        level = "degraded";
+        message = STATUS_COPY.degraded.description;
+      } else {
+        level = "offline";
+        message = STATUS_COPY.offline.description;
       }
     }
 
-    // Initial delay before first health check
-    schedule(2000);
+    return { level, message, details, fetchedAt };
+  }, [health, isLoading, isError, error]);
 
-    // Recheck when tab becomes visible and we're not online
-    function handleVisibilityChange() {
-      if (document.visibilityState === "visible" && state.level !== "online") {
-        schedule(500);
-      }
-    }
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    window.addEventListener("beforeunload", () => {
-      if (timeoutIdRef.current) window.clearTimeout(timeoutIdRef.current);
-    });
-
-    return () => {
-      cancelled = true;
-      if (timeoutIdRef.current) window.clearTimeout(timeoutIdRef.current);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
-  }, [state.level]);
-
-  // Auto-cerrar después de un tiempo si no está online
-  useEffect(() => {
-    if (!open || state.level === "online") return;
-    const timer = window.setTimeout(() => setOpen(false), 8000);
-    return () => window.clearTimeout(timer);
-  }, [open, state.level]);
-
-  const statusCopy = useMemo(() => STATUS_COPY[state.level], [state.level]);
+  const statusCopy = STATUS_COPY[state.level];
   const styles = INDICATOR_STYLES[state.level];
 
   return (
@@ -215,7 +125,8 @@ export function ConnectionIndicator() {
         className={cn(
           "flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold backdrop-blur-sm transition-colors",
           "focus-visible:ring-primary/70 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none",
-          styles.chip
+          styles.chip,
+          isRefetching && !isLoading && "opacity-70"
         )}
         aria-pressed={open}
         aria-label={`Estado de la conexión: ${statusCopy.label}`}

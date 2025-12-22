@@ -2,10 +2,10 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Plus, Search, User, Briefcase, Building } from "lucide-react";
 
-import type { Person } from "@/types/schema";
+// import type { Person } from "@/types/schema";
 
 import { useNavigate } from "react-router-dom";
-import { apiClient } from "@/lib/apiClient";
+import { fetchPeople } from "@/features/people/api";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import { getPersonInitials, getPersonFullName } from "@/lib/person";
@@ -15,14 +15,12 @@ export default function PersonManagementPage() {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
 
-  const { data, isLoading } = useQuery({
+  const { data: people = [], isLoading } = useQuery({
     queryKey: ["people", "list"],
-    queryFn: async () => {
-      return apiClient.get<{ status: string; people: Person[] }>("/api/people");
-    },
+    queryFn: fetchPeople,
   });
 
-  const people = data?.people ?? [];
+  // const people = data?.people ?? [];
 
   const filteredPeople = people.filter(
     (p) => (p.names?.toLowerCase() ?? "").includes(search.toLowerCase()) || (p.rut ?? "").includes(search)

@@ -2,7 +2,11 @@ import { useState, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
-import { apiClient } from "@/lib/apiClient";
+import {
+  subscribeToNotifications,
+  unsubscribeFromNotifications,
+  sendTestNotification as sendTestNotificationApi,
+} from "@/features/notifications/api";
 
 const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY;
 
@@ -48,7 +52,7 @@ export function usePushNotifications() {
   const subscribeMutation = useMutation({
     mutationFn: async (subscription: PushSubscription) => {
       if (!user) throw new Error("No authenticated user");
-      await apiClient.post("/api/notifications/subscribe", {
+      await subscribeToNotifications({
         subscription,
         userId: user.id,
       });
@@ -66,7 +70,7 @@ export function usePushNotifications() {
 
   const unsubscribeMutation = useMutation({
     mutationFn: async (endpoint: string) => {
-      await apiClient.post("/api/notifications/unsubscribe", { endpoint });
+      await unsubscribeFromNotifications({ endpoint });
     },
     onSuccess: () => {
       setIsSubscribed(false);
@@ -79,7 +83,7 @@ export function usePushNotifications() {
   const sendTestMutation = useMutation({
     mutationFn: async () => {
       if (!user) return;
-      await apiClient.post("/api/notifications/send-test", { userId: user.id });
+      await sendTestNotificationApi({ userId: user.id });
     },
     onError: (error) => {
       console.error("Error sending test notification", error);
