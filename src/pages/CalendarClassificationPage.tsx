@@ -13,6 +13,7 @@ import {
   classifyCalendarEvent,
   fetchUnclassifiedCalendarEvents,
   reclassifyCalendarEvents,
+  type MissingFieldFilters,
 } from "@/features/calendar/api";
 import type { CalendarUnclassifiedEvent } from "@/features/calendar/types";
 import { TITLE_LG, SPACE_Y_TIGHT } from "@/lib/styles";
@@ -82,6 +83,7 @@ function CalendarClassificationPage() {
   const queryClient = useQueryClient();
 
   const [page, setPage] = useState(0);
+  const [filters, setFilters] = useState<MissingFieldFilters>({});
 
   const {
     data,
@@ -89,8 +91,8 @@ function CalendarClassificationPage() {
     error: queryError,
     refetch,
   } = useQuery({
-    queryKey: ["calendar-unclassified", page, PAGE_SIZE],
-    queryFn: () => fetchUnclassifiedCalendarEvents(PAGE_SIZE, page * PAGE_SIZE),
+    queryKey: ["calendar-unclassified", page, PAGE_SIZE, filters],
+    queryFn: () => fetchUnclassifiedCalendarEvents(PAGE_SIZE, page * PAGE_SIZE, filters),
   });
 
   const events = data?.events || EMPTY_EVENTS;
@@ -219,6 +221,60 @@ function CalendarClassificationPage() {
           </header>
 
           <ClassificationTotals control={control} events={events} pendingCount={pendingCount} />
+
+          {/* Filters */}
+          <div className="border-base-200 bg-base-100/50 flex flex-wrap items-center gap-4 rounded-lg border p-3">
+            <span className="text-base-content/70 text-sm font-medium">Filtrar por campo faltante:</span>
+            <label className="flex cursor-pointer items-center gap-2">
+              <input
+                type="checkbox"
+                className="checkbox checkbox-sm checkbox-primary"
+                checked={filters.missingCategory || false}
+                onChange={(e) => {
+                  setFilters((prev) => ({ ...prev, missingCategory: e.target.checked || undefined }));
+                  setPage(0);
+                }}
+              />
+              <span className="text-sm">Categoría</span>
+            </label>
+            <label className="flex cursor-pointer items-center gap-2">
+              <input
+                type="checkbox"
+                className="checkbox checkbox-sm checkbox-primary"
+                checked={filters.missingAmount || false}
+                onChange={(e) => {
+                  setFilters((prev) => ({ ...prev, missingAmount: e.target.checked || undefined }));
+                  setPage(0);
+                }}
+              />
+              <span className="text-sm">Monto</span>
+            </label>
+            <label className="flex cursor-pointer items-center gap-2">
+              <input
+                type="checkbox"
+                className="checkbox checkbox-sm checkbox-primary"
+                checked={filters.missingAttended || false}
+                onChange={(e) => {
+                  setFilters((prev) => ({ ...prev, missingAttended: e.target.checked || undefined }));
+                  setPage(0);
+                }}
+              />
+              <span className="text-sm">Asistencia</span>
+            </label>
+            {Object.values(filters).some(Boolean) && (
+              <Button
+                type="button"
+                variant="ghost"
+                className="text-xs"
+                onClick={() => {
+                  setFilters({});
+                  setPage(0);
+                }}
+              >
+                Limpiar filtros
+              </Button>
+            )}
+          </div>
 
           <div className="flex flex-wrap items-center gap-2">
             <Button type="button" variant="secondary" onClick={() => void refetch()} disabled={loading}>
