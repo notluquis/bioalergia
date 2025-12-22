@@ -76,6 +76,7 @@ const CONSULTA_PATTERNS = [
 // Patterns for Control médico
 const CONTROL_PATTERNS = [
   /\bcontrol\b/i, // "control s/c"
+  /\d+-\d+control/i, // "03-10control" date-prefixed
 ];
 
 // Pattern for S/C (sin costo) - amount = 0
@@ -171,11 +172,27 @@ function extractAmounts(summary: string, description: string) {
   let amountPaid: number | null = null;
   const text = `${summary} ${description}`;
 
+  // Pattern for (paid/expected) format like (25/50)
+  const slashPattern = /\((\d+)\s*\/\s*(\d+)\)/gi;
+  let slashMatch: RegExpExecArray | null;
+  while ((slashMatch = slashPattern.exec(text)) !== null) {
+    const paid = normalizeAmountRaw(slashMatch[1]);
+    const expected = normalizeAmountRaw(slashMatch[2]);
+    if (paid != null && amountPaid == null) {
+      amountPaid = paid;
+    }
+    if (expected != null && amountExpected == null) {
+      amountExpected = expected;
+    }
+  }
+
   // Standard pattern: (amount) with proper parentheses
   const regex = /\(([^)]+)\)/gi;
   let match: RegExpExecArray | null;
   while ((match = regex.exec(text)) !== null) {
     const content = match[1];
+    // Skip if already processed by slash pattern
+    if (/^\d+\s*\/\s*\d+$/.test(content)) continue;
     const amount = normalizeAmountRaw(content);
     if (amount == null) continue;
     if (/pagado/i.test(content)) {
