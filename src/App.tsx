@@ -111,8 +111,8 @@ export default function App() {
           <div className="nav-progress__indicator" />
         </div>
       )}
-      {/* Layout Shell: Main Flex Container - Height constrained to viewport */}
-      <div className="layout-shell text-base-content relative mx-auto flex h-screen w-full gap-0 overflow-hidden p-0 transition-all duration-300 md:gap-4 md:p-4">
+      {/* Layout Shell: Main Flex Container - Height constrained to dynamic viewport */}
+      <div className="layout-shell text-base-content relative mx-auto flex h-dvh w-full gap-0 overflow-hidden p-0 transition-all duration-300 md:gap-4 md:p-4">
         {/* Hamburger button: accessible, compact, always visible on mobile */}
         <button
           type="button"
