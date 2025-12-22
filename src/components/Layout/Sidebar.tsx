@@ -53,14 +53,11 @@ export default function Sidebar({ isOpen, isMobile, onClose }: SidebarProps) {
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         className={cn(
-          "border-base-300/50 bg-base-200/80 text-base-content fixed z-50 flex shrink-0 flex-col rounded-3xl border text-sm shadow-2xl backdrop-blur-3xl transition-all duration-300",
-          // Mobile: full height, left edge
-          "inset-y-0 left-0 h-full",
-          // Desktop: positioned with margins
-          "md:top-4 md:bottom-4 md:left-4 md:h-[calc(100dvh-2rem)]",
-          // Transform based on open state
-          isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0",
-          !isOpen && !isMobile && "md:hidden",
+          "border-base-300/50 bg-base-200/80 text-base-content z-50 flex shrink-0 flex-col rounded-3xl border text-sm shadow-2xl backdrop-blur-3xl transition-all duration-300",
+          // Mobile: Layout
+          isMobile ? "fixed inset-y-0 left-0 h-full" : "hidden md:sticky md:top-4 md:flex md:h-[calc(100dvh-2rem)]",
+          // Transform for mobile drawer
+          isMobile && !isOpen ? "-translate-x-full" : "translate-x-0",
           // Width based on collapsed state
           isCollapsed ? "w-20" : "w-[min(300px,88vw)]",
           isCollapsed ? "px-1.5 py-2" : "p-2",
