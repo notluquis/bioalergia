@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-export const CATEGORY_CHOICES = ["Tratamiento subcutáneo"];
-export const TREATMENT_STAGE_CHOICES = ["Mantención", "Inducción"];
+// Note: CATEGORY_CHOICES and TREATMENT_STAGE_CHOICES are fetched from
+// /api/calendar/classification-options (single source of truth in parsers.ts)
 
 export const classificationSchema = z.object({
   category: z.string().optional().nullable(),

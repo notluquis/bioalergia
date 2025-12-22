@@ -13,6 +13,7 @@ import {
   classifyCalendarEvent,
   fetchUnclassifiedCalendarEvents,
   reclassifyCalendarEvents,
+  fetchClassificationOptions,
   type MissingFieldFilters,
 } from "@/features/calendar/api";
 import type { CalendarUnclassifiedEvent } from "@/features/calendar/types";
@@ -94,6 +95,16 @@ function CalendarClassificationPage() {
     queryKey: ["calendar-unclassified", page, PAGE_SIZE, filters],
     queryFn: () => fetchUnclassifiedCalendarEvents(PAGE_SIZE, page * PAGE_SIZE, filters),
   });
+
+  // Fetch classification options from backend (single source of truth)
+  const { data: optionsData } = useQuery({
+    queryKey: ["classification-options"],
+    queryFn: fetchClassificationOptions,
+    staleTime: 1000 * 60 * 60, // Cache for 1 hour - options rarely change
+  });
+
+  const categoryChoices = optionsData?.categories ?? [];
+  const treatmentStageChoices = optionsData?.treatmentStages ?? [];
 
   const events = data?.events || EMPTY_EVENTS;
   const totalCount = data?.totalCount || 0;
@@ -312,6 +323,8 @@ function CalendarClassificationPage() {
                   onSave={handleSave}
                   onReset={handleResetEntry}
                   initialValues={null}
+                  categoryChoices={categoryChoices}
+                  treatmentStageChoices={treatmentStageChoices}
                 />
               );
             })}

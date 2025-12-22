@@ -166,3 +166,23 @@ export async function reclassifyCalendarEvents(): Promise<ReclassifyResult> {
     message: response.message,
   };
 }
+
+export type ClassificationOptions = {
+  categories: readonly string[];
+  treatmentStages: readonly string[];
+};
+
+export async function fetchClassificationOptions(): Promise<ClassificationOptions> {
+  const response = await apiClient.get<{
+    status: "ok";
+    categories: readonly string[];
+    treatmentStages: readonly string[];
+  }>("/api/calendar/classification-options");
+  if (response.status !== "ok") {
+    throw new Error("No se pudo obtener las opciones de clasificación");
+  }
+  return {
+    categories: response.categories,
+    treatmentStages: response.treatmentStages,
+  };
+}
