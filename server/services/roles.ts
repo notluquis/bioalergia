@@ -51,18 +51,22 @@ export async function deleteRole(id: number) {
 }
 
 export async function assignPermissionsToRole(roleId: number, permissionIds: number[]) {
-  // First clear existing permissions for the role
-  await prisma.rolePermission.deleteMany({
-    where: { roleId },
-  });
+  // Use transaction to ensure atomicity and prevent race conditions
+  return await prisma.$transaction(async (tx) => {
+    // First clear existing permissions for the role
+    await tx.rolePermission.deleteMany({
+      where: { roleId },
+    });
 
-  // Then add new ones
-  const data = permissionIds.map((permId) => ({
-    roleId,
-    permissionId: permId,
-  }));
+    // Then add new ones (skip duplicates just in case)
+    const data = permissionIds.map((permId) => ({
+      roleId,
+      permissionId: permId,
+    }));
 
-  return await prisma.rolePermission.createMany({
-    data,
+    return await tx.rolePermission.createMany({
+      data,
+      skipDuplicates: true, // Safety net for race conditions
+    });
   });
 }

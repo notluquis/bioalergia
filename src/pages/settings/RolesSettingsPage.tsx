@@ -11,6 +11,13 @@ import { RoleFormModal } from "./components/RoleFormModal";
 import { DeleteRoleModal } from "./components/DeleteRoleModal";
 import { Role, Permission } from "@/types/roles";
 import { SmoothCollapse } from "@/components/ui/SmoothCollapse";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/DropdownMenu";
 
 // --- Page Component ---
 
@@ -284,37 +291,32 @@ export default function RolesSettingsPage() {
                         {role.description || "Sin descripción"}
                       </span>
 
-                      {/* Role Actions - Dropdown for cleaner UI */}
+                      {/* Role Actions - Radix DropdownMenu for proper click-outside */}
                       <div className="mt-2 flex justify-center">
-                        <details className="dropdown dropdown-end dropdown-bottom">
-                          <summary className="btn btn-ghost btn-xs h-6 w-full gap-1 font-normal opacity-50 hover:opacity-100">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger className="btn btn-ghost btn-xs h-6 w-full gap-1 font-normal opacity-50 hover:opacity-100">
                             Opciones
                             <ChevronDown className="h-3 w-3" />
-                          </summary>
-                          <ul className="menu dropdown-content bg-base-100 rounded-box border-base-200 z-1 w-40 border p-2 shadow-sm">
-                            <li>
-                              <button onClick={() => impersonate(role)} className="gap-2">
-                                <Eye className="h-4 w-4" />
-                                Previsualizar
-                              </button>
-                            </li>
-                            <li>
-                              <button onClick={() => handleEditRole(role)} className="gap-2">
-                                <Pencil className="h-4 w-4" />
-                                Editar
-                              </button>
-                            </li>
-                            <li>
-                              <button
-                                onClick={() => handleDeleteRole(role)}
-                                className="text-error hover:text-error gap-2"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                                Eliminar
-                              </button>
-                            </li>
-                          </ul>
-                        </details>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" sideOffset={4}>
+                            <DropdownMenuItem onClick={() => impersonate(role)}>
+                              <Eye className="h-4 w-4" />
+                              Previsualizar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleEditRole(role)}>
+                              <Pencil className="h-4 w-4" />
+                              Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onClick={() => handleDeleteRole(role)}
+                              className="text-error focus:text-error"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              Eliminar
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </div>
                   </th>
