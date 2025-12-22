@@ -179,6 +179,26 @@ export async function reclassifyCalendarEvents(): Promise<ReclassifyResult> {
   };
 }
 
+/** Reclassify ALL events, overwriting existing values */
+export async function reclassifyAllCalendarEvents(): Promise<ReclassifyResult> {
+  const response = await apiClient.post<{
+    status: "ok";
+    totalChecked: number;
+    reclassified: number;
+    message: string;
+    fieldCounts: FieldCounts;
+  }>("/api/calendar/events/reclassify-all", {});
+  if (response.status !== "ok") {
+    throw new Error("No se pudo reclasificar todos los eventos");
+  }
+  return {
+    totalChecked: response.totalChecked,
+    reclassified: response.reclassified,
+    message: response.message,
+    fieldCounts: response.fieldCounts,
+  };
+}
+
 export type ClassificationOptions = {
   categories: readonly string[];
   treatmentStages: readonly string[];
