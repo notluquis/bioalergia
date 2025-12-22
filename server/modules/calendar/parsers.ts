@@ -7,36 +7,51 @@ dayjs.extend(utc);
 dayjs.extend(timezone);
 
 const SUBCUT_PATTERNS = [
-  /cl[au]st[oau]id[eo]?/i, // Tolerant: clustoid, clastoid, clustoide, etc.
-  /clusitoid/i, // Specific: clusitoid (has "sit" not "st")
-  /cl[au]st[io]d/i, // Common typos: clustid, clastid
+  /cl[au]s[i]?t[oau]?id[eo]?/i, // Flexible: clustoid, clastoid, clusitoid, clustid, etc.
   /clutoid/i, // Missing 's'
   /\bclust/i, // Starts with clust (cluster, clustoid, etc.)
   /\bdosis\s+clust/i,
   /alxoid/i, // Alxoid treatment
   /cluxin/i, // Cluxin treatment
+  /oral[\s-]?tec/i, // ORAL-TEC, ORALTEC, ORAL TEC
   /\bvacc?\b/i, // "vac" or "vacc"
   /vacuna/i, // VACUNA anywhere (handles "llegoVACUNA")
   /\bsubcut[áa]ne[oa]/i,
   /inmuno/i,
   /\d+[ªº]?\s*(ta|da|ra|va)?\s*dosis/i, // "4ta dosis", "3ra dosis", "2da dosis", "1 dosis"
+  /vi[eon]+[ie]?r?o?n?\s+a\s+buscar/i, // vinieron a buscarla, vino a buscar (pickup treatment)
+  /\bmantenci[oó]n\b/i, // mantencion, mantención (maintenance treatment)
 ];
 
 // Pattern to detect dosage values like "0,5" or "0.5" (decimal fractions without unit)
 const DECIMAL_DOSAGE_PATTERN = /\b(\d+[.,]\d+)\b/;
 
 const TEST_PATTERNS = [
-  /\bexamen\b/i,
+  /\bexam[eé]n(es)?\b/i, // examen, examenes, exámenes
+  /test\s*(de\s*)?parche/i, // test de parche, test parche, testparche
+  /lectura\s*(de\s*)?parche/i, // lectura de parche
+  /\d+(era|da|ra)?\s*test/i, // 1eratest, 2datest, 1era test, 2da test
+  /lleg[oó]\s*test/i, // llegotest, llegó test
+  /\d+(era|da|ra)?\s*lectura/i, // 2da lectura
   /\btest\b/i,
   /cut[áa]neo/i,
   /ambiental/i,
   /panel/i,
-  /multi\s*tes?t?/i, // Handles multitest, multites, multites (typo)
+  /multi\s*tes?t?/i, // Handles multitest, multites (typo)
   /prick/i, // prick to prick tests
+  /aeroal[eé]rgenos?/i, // aeroalergenos test
 ];
 const ATTENDED_PATTERNS = [/\blleg[oó]\b/i, /\basist[ií]o\b/i];
-const MAINTENANCE_PATTERNS = [/\bmantenci[oó]n\b/i, /\bmant\b/i];
+const MAINTENANCE_PATTERNS = [/\bmantenci[oó]n\b/i, /\bmant\b/i, /\bmensual\b/i];
 const DOSAGE_PATTERNS = [/(\d+(?:[.,]\d+)?)\s*ml\b/i, /(\d+(?:[.,]\d+)?)\s*cc\b/i, /(\d+(?:[.,]\d+)?)\s*mg\b/i];
+// Patterns for notes/reminders that should NOT be classified
+const IGNORE_PATTERNS = [
+  /^recordar\b/i, // RECORDAR AL DOCTOR...
+  /^semana\s+de\s+vacaciones$/i, // SEMANA DE VACACIONES
+  /\brecordar\b.*\bdoctor\b/i, // recordar ... doctor
+  /^feriado$/i, // FERIADO
+  /^vacaciones$/i, // VACACIONES
+];
 
 const NormalizedTextSchema = z
   .string()
@@ -71,9 +86,22 @@ export function normalizeEventDate(value: string | null | undefined): string | n
 const MAX_INT32 = 2147483647;
 const MAX_REASONABLE_AMOUNT = 100_000_000; // 100M CLP
 
+// Phone number patterns to exclude from amount parsing (Chilean format)
+const PHONE_PATTERNS = [
+  /^9\d{8}$/, // 9XXXXXXXX (Chilean mobile)
+  /^569\d{8}$/, // 569XXXXXXXX (with country code)
+  /^56\d{9}$/, // 56XXXXXXXXX (other Chilean)
+];
+
 function normalizeAmountRaw(raw: string) {
   const digits = raw.replace(/[^0-9]/g, "");
   if (!digits) return null;
+
+  // Skip phone numbers
+  if (PHONE_PATTERNS.some((p) => p.test(digits))) {
+    return null;
+  }
+
   const value = Number.parseInt(digits, 10);
   if (Number.isNaN(value) || value <= 0) return null;
 
@@ -124,14 +152,19 @@ function extractAmounts(summary: string, description: string) {
 
 function classifyCategory(summary: string, description: string) {
   const text = `${summary} ${description}`.toLowerCase();
+  const summaryOnly = (summary ?? "").toLowerCase();
+
+  // Skip notes/reminders
+  if (IGNORE_PATTERNS.some((pattern) => pattern.test(summaryOnly) || pattern.test(text))) {
+    return null;
+  }
+
   if (SUBCUT_PATTERNS.some((pattern) => pattern.test(text))) {
     return "Tratamiento subcutáneo";
   }
-  // Detect decimal dosage (0,5 or 0.5) combined with "dosis" or "mantencion"
+  // Detect decimal dosage (0,5 or 0.15 etc.) - alone is enough for subcutaneous
   const hasDecimalDosage = DECIMAL_DOSAGE_PATTERN.test(text);
-  const hasDosisKeyword = /\bdosis\b/i.test(text);
-  const hasMaintenanceKeyword = MAINTENANCE_PATTERNS.some((p) => p.test(text));
-  if (hasDecimalDosage && (hasDosisKeyword || hasMaintenanceKeyword)) {
+  if (hasDecimalDosage) {
     return "Tratamiento subcutáneo";
   }
   if (TEST_PATTERNS.some((pattern) => pattern.test(text))) {
