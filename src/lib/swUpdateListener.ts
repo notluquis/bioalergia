@@ -32,10 +32,10 @@ export function initSWUpdateListener() {
       // Chequear updates con menos frecuencia y solo si hay cambios reales
       setInterval(
         () => {
-          // Solo chequear si no hay un update pendiente
-          if (!registration.waiting && !registration.installing) {
+          // Solo chequear si no hay un update pendiente y el SW está activo
+          if (registration && !registration.waiting && !registration.installing) {
             registration.update().catch(() => {
-              // Silently fail - normal si no hay conexión
+              // Silently fail - normal state issues or offline
             });
           }
         },

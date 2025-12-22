@@ -147,13 +147,28 @@ async function parseResponse<T>(
   let data: unknown = null;
   if (rawBody) {
     const contentType = response.headers.get("content-type") ?? "";
-    data = responseType === "json" || contentType.includes("application/json") ? JSON.parse(rawBody) : rawBody;
+    const isJson = responseType === "json" || contentType.includes("application/json");
+
+    // Safety check: if we expect JSON but get HTML (common in 404/500 from proxies), treat as error text
+    const looksLikeHtml = typeof rawBody === "string" && rawBody.trimStart().startsWith("<");
+
+    if (isJson && !looksLikeHtml) {
+      try {
+        data = JSON.parse(rawBody);
+      } catch (e) {
+        console.warn("Failed to parse JSON response:", e);
+        // Fallback to text if JSON parsing fails but we expected JSON
+        data = rawBody;
+      }
+    } else {
+      data = rawBody;
+    }
   }
 
   try {
     window.dispatchEvent(new CustomEvent("api-success", { detail: { method, url, status: response.status } }));
   } catch {
-    // noop (SSR o ambientes sin window)
+    // noop
   }
 
   return data as T;
