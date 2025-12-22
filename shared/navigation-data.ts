@@ -86,6 +86,7 @@ export const NAV_DATA: NavSectionData[] = [
         to: "/services",
         label: "Servicios",
         iconKey: "Briefcase",
+        exact: true,
         requiredPermission: { action: "read", subject: "Service" },
       },
       {

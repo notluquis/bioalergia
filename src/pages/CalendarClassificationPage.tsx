@@ -21,6 +21,7 @@ dayjs.locale("es");
 
 const CATEGORY_CHOICES = ["Tratamiento subcutáneo"];
 const TREATMENT_STAGE_CHOICES = ["Mantención", "Inducción"];
+const EMPTY_EVENTS: CalendarUnclassifiedEvent[] = [];
 
 const classificationSchema = z.object({
   category: z.string().optional().nullable(),
@@ -114,7 +115,7 @@ function CalendarClassificationPage() {
   const queryClient = useQueryClient();
 
   const {
-    data: events = [],
+    data,
     isLoading: loading,
     error: queryError,
     refetch,
@@ -122,6 +123,8 @@ function CalendarClassificationPage() {
     queryKey: ["calendar-unclassified"],
     queryFn: () => fetchUnclassifiedCalendarEvents(200),
   });
+
+  const events = data || EMPTY_EVENTS;
 
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
