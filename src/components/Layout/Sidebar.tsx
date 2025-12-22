@@ -54,7 +54,7 @@ const SidebarItem = React.memo(function SidebarItem({
                   : "w-full justify-start px-3 py-2",
               finalActive
                 ? "bg-primary text-primary-content shadow-primary/30 font-medium shadow-md"
-                : "text-base-content/85 hover:bg-base-content/5 hover:text-base-content hover:shadow-sm"
+                : "text-base-content/90 hover:bg-base-content/5 hover:text-base-content hover:shadow-sm"
             );
           }}
         >
