@@ -18,7 +18,7 @@ export function DailyEventCard({ event }: DailyEventCardProps) {
   return (
     <article className="group bg-base-100 hover:bg-base-200/20 text-base-content border-base-200 relative flex gap-4 rounded-xl border p-4 shadow-sm transition-all hover:shadow-md">
       {/* Time Column */}
-      <div className="flex min-w-[3.5rem] flex-col items-center gap-1 pt-0.5">
+      <div className="flex min-w-14 flex-col items-center gap-1 pt-0.5">
         <span className="text-sm font-bold tabular-nums">
           {event.startDateTime ? dayjs(event.startDateTime).format("HH:mm") : "--:--"}
         </span>
