@@ -374,59 +374,11 @@ html[data-theme="bioalergia-dark"] .layout-shell {
   min-height: 0; /* Permite que el main se comporte correctamente en flex */
 }
 
-/* === SCROLLBAR UTILITIES === */
-/* Hide scrollbar completely */
-.hide-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-.hide-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-/* Semantic scrollbar (adapts to theme) */
-.muted-scrollbar::-webkit-scrollbar {
-  width: 0.45rem;
-  height: 0.45rem;
-}
-.muted-scrollbar::-webkit-scrollbar-thumb {
-  background: oklch(var(--bc) / 0.15);
-  border-radius: 9999px;
-  transition: background-color var(--duration-quick) ease;
-}
-.muted-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: oklch(var(--bc) / 0.25);
-}
-.muted-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-.muted-scrollbar {
-  scrollbar-width: thin;
-  scrollbar-color: oklch(var(--bc) / 0.15) transparent;
-}
-
-/* Hover-only scrollbar: hides until hover (for sidebar nav) */
-.hover-scrollbar::-webkit-scrollbar {
-  width: 4px;
-}
-.hover-scrollbar::-webkit-scrollbar-thumb {
-  background: transparent;
-  border-radius: 9999px;
-  transition: background 0.2s ease;
-}
-.hover-scrollbar:hover::-webkit-scrollbar-thumb {
-  background: oklch(var(--bc) / 0.2);
-}
-.hover-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-.hover-scrollbar {
-  scrollbar-width: thin;
-  scrollbar-color: transparent transparent;
-}
-.hover-scrollbar:hover {
-  scrollbar-color: oklch(var(--bc) / 0.2) transparent;
-}
+/* === SCROLLBAR BEHAVIOR === */
+/* Native OS scrollbar behavior is used (no custom overrides).
+   macOS: Overlay scrollbars that auto-hide
+   Windows: System-defined scrollbar appearance
+   This respects user preferences and accessibility settings. */
 
 /* === TABLE UTILITIES === */
 .table-responsive {
