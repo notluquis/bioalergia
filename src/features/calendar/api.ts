@@ -144,10 +144,20 @@ export async function fetchCalendars(): Promise<CalendarData[]> {
   return response.calendars;
 }
 
+export type FieldCounts = {
+  category: number;
+  dosage: number;
+  treatmentStage: number;
+  attended: number;
+  amountExpected: number;
+  amountPaid: number;
+};
+
 export type ReclassifyResult = {
   totalChecked: number;
   reclassified: number;
   message: string;
+  fieldCounts: FieldCounts;
 };
 
 export async function reclassifyCalendarEvents(): Promise<ReclassifyResult> {
@@ -156,6 +166,7 @@ export async function reclassifyCalendarEvents(): Promise<ReclassifyResult> {
     totalChecked: number;
     reclassified: number;
     message: string;
+    fieldCounts: FieldCounts;
   }>("/api/calendar/events/reclassify", {});
   if (response.status !== "ok") {
     throw new Error("No se pudo reclasificar los eventos");
@@ -164,6 +175,7 @@ export async function reclassifyCalendarEvents(): Promise<ReclassifyResult> {
     totalChecked: response.totalChecked,
     reclassified: response.reclassified,
     message: response.message,
+    fieldCounts: response.fieldCounts,
   };
 }
 
