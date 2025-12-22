@@ -131,10 +131,12 @@ export default function Sidebar({ isOpen, isMobile, onClose }: SidebarProps) {
 
                     <div className="space-y-0.5">
                       {visibleItems.map((item) => {
+                        const isExact = location.pathname === item.to;
+                        const isSubRoute = location.pathname.startsWith(item.to + "/");
+                        const active = isExact || isSubRoute;
                         const isPending =
                           pendingPath === item.to || (navigation.state === "loading" && pendingPath === item.to);
-                        const alreadyHere =
-                          location.pathname === item.to || location.pathname.startsWith(`${item.to}/`);
+                        const alreadyHere = active;
 
                         return (
                           <NavLink
@@ -146,18 +148,22 @@ export default function Sidebar({ isOpen, isMobile, onClose }: SidebarProps) {
                               if (isMobile && onClose) onClose();
                             }}
                             className={({ isActive }) => {
-                              const active = isActive;
+                              // isActive from NavLink might be true for partial matches depending on 'end' prop,
+                              // but we override with our custom 'active' logic for stricter control if needed,
+                              // or just rely on 'active' calculated above.
+                              const finalActive = active || isActive;
+
                               if (isCollapsed) {
                                 return cn(
                                   "mx-auto flex h-9 w-9 items-center justify-center rounded-xl transition-all active:scale-95",
-                                  active || isPending
+                                  finalActive || isPending
                                     ? "bg-primary text-primary-content"
                                     : "text-base-content/70 hover:bg-base-100/50 hover:text-base-content"
                                 );
                               }
                               return cn(
                                 "group relative flex items-center gap-3 rounded-lg px-3 py-1.5 text-xs font-medium active:scale-[0.98]",
-                                active || isPending
+                                finalActive || isPending
                                   ? "bg-primary text-primary-content"
                                   : "text-base-content/70 hover:bg-base-100/50 hover:text-base-content"
                               );
