@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type ChangeEvent } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
 import { useForm, Controller, useFieldArray } from "react-hook-form";
@@ -110,9 +111,18 @@ function buildPayload(entry: z.infer<typeof classificationSchema>, event: Calend
 
 function CalendarClassificationPage() {
   const PAGE_SIZE = 10;
-  const [events, setEvents] = useState<CalendarUnclassifiedEvent[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+
+  const {
+    data: events = [],
+    isLoading: loading,
+    error: queryError,
+    refetch,
+  } = useQuery({
+    queryKey: ["calendar-unclassified"],
+    queryFn: () => fetchUnclassifiedCalendarEvents(200),
+  });
+
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastOpen, setToastOpen] = useState(false);
@@ -128,25 +138,55 @@ function CalendarClassificationPage() {
   const { fields } = useFieldArray({ control, name: "entries" });
   const watchedEntries = watch("entries", []);
 
-  const loadEvents = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await fetchUnclassifiedCalendarEvents(200);
-      setEvents(data);
-      reset({ entries: data.map(buildDefaultEntry) });
-      setVisibleCount(PAGE_SIZE);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "No se pudieron obtener los eventos pendientes";
-      setError(message);
-    } finally {
-      setLoading(false);
-    }
-  }, [reset]);
-
+  // Sync form with data
   useEffect(() => {
-    void loadEvents();
-  }, [loadEvents]);
+    if (events) {
+      reset({ entries: events.map(buildDefaultEntry) });
+      setVisibleCount(PAGE_SIZE);
+    }
+  }, [events, reset]);
+
+  const classifyMutation = useMutation({
+    mutationFn: (params: { event: CalendarUnclassifiedEvent; payload: ParsedPayload }) => {
+      return classifyCalendarEvent({
+        calendarId: params.event.calendarId,
+        eventId: params.event.eventId,
+        category: params.payload.category,
+        amountExpected: params.payload.amountExpected,
+        amountPaid: params.payload.amountPaid,
+        attended: params.payload.attended,
+        dosage: params.payload.dosage,
+        treatmentStage: params.payload.treatmentStage,
+      });
+    },
+    onSuccess: () => {
+      setToastMessage("Clasificación actualizada");
+      setToastOpen(true);
+      queryClient.invalidateQueries({ queryKey: ["calendar-unclassified"] });
+      setSavingKey(null);
+    },
+    onError: (err) => {
+      const message = err instanceof Error ? err.message : "No se pudo guardar la clasificación";
+      setToastMessage(message); // Using toast for error instead of separate state for simplicity or keep error state?
+      // The original code used error state for the whole list or individual?
+      // It used 'setError' which was page level.
+      // Let's use page level error or toast. Original used setError(message).
+      // Actually let's use global toast or alert if possible, or keep local error.
+      // The original code shows <Alert>{error}</Alert> at top.
+    },
+    onSettled: () => {
+      setSavingKey(null);
+    },
+  });
+
+  const error =
+    queryError instanceof Error
+      ? queryError.message
+      : queryError
+        ? String(queryError)
+        : classifyMutation.error instanceof Error
+          ? classifyMutation.error.message
+          : null;
 
   const pendingCount = events.length;
 
@@ -174,39 +214,13 @@ function CalendarClassificationPage() {
     [setValue]
   );
 
-  const handleSave = useCallback(
-    async (event: CalendarUnclassifiedEvent, index: number) => {
-      const key = eventKey(event);
-      setSavingKey(key);
-      setError(null);
-      try {
-        const values = getValues(`entries.${index}` as const);
-        const payload = buildPayload(values, event);
-        await classifyCalendarEvent({
-          calendarId: event.calendarId,
-          eventId: event.eventId,
-          category: payload.category,
-          amountExpected: payload.amountExpected,
-          amountPaid: payload.amountPaid,
-          attended: payload.attended,
-          dosage: payload.dosage,
-          treatmentStage: payload.treatmentStage,
-        });
-        setToastMessage("Clasificación actualizada");
-        setToastOpen(true);
-        await loadEvents();
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "No se pudo guardar la clasificación";
-        if (err instanceof Error) {
-          console.error("[calendar:classify] error", err);
-        }
-        setError(message);
-      } finally {
-        setSavingKey(null);
-      }
-    },
-    [getValues, loadEvents]
-  );
+  const handleSave = async (event: CalendarUnclassifiedEvent, index: number) => {
+    const key = eventKey(event);
+    setSavingKey(key);
+    const values = getValues(`entries.${index}` as const);
+    const payload = buildPayload(values, event);
+    classifyMutation.mutate({ event, payload });
+  };
 
   return (
     <Toast.Provider swipeDirection="right">
@@ -258,7 +272,7 @@ function CalendarClassificationPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <Button type="button" variant="secondary" onClick={() => void loadEvents()} disabled={loading}>
+            <Button type="button" variant="secondary" onClick={() => void refetch()} disabled={loading}>
               {loading ? "Actualizando..." : "Recargar lista"}
             </Button>
           </div>

@@ -7,6 +7,7 @@ import "dayjs/locale/es";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import Alert from "@/components/ui/Alert";
+import { StatCard } from "@/components/ui/StatCard";
 import { PAGE_CONTAINER } from "@/lib/styles";
 import { MultiSelectFilter, type MultiSelectOption } from "@/features/calendar/components/MultiSelectFilter";
 import { useCalendarEvents } from "@/features/calendar/hooks/useCalendarEvents";
@@ -61,16 +62,6 @@ function AggregationCard({ title, rows }: { title: string; rows: AggregationRow[
         </ul>
       )}
     </section>
-  );
-}
-
-function StatCard({ label, value, hint }: { label: string; value: string; hint?: string }) {
-  return (
-    <div className="border-base-300 bg-base-100 rounded-2xl border p-4 text-sm shadow-sm">
-      <p className="text-base-content/70 text-xs font-semibold tracking-wide uppercase">{label}</p>
-      <p className="text-primary mt-2 text-2xl font-semibold">{value}</p>
-      {hint && <p className="text-base-content/60 text-xs">{hint}</p>}
-    </div>
   );
 }
 
@@ -385,10 +376,10 @@ function CalendarSummaryPage() {
       </section>
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Eventos en el rango" value={numberFormatter.format(totals.events)} />
-        <StatCard label="Días con eventos" value={numberFormatter.format(totals.days)} />
-        <StatCard label="Monto esperado" value={currencyFormatter.format(totals.amountExpected)} />
-        <StatCard label="Monto pagado" value={currencyFormatter.format(totals.amountPaid)} />
+        <StatCard title="Eventos en el rango" value={numberFormatter.format(totals.events)} tone="primary" />
+        <StatCard title="Días con eventos" value={numberFormatter.format(totals.days)} tone="primary" />
+        <StatCard title="Monto esperado" value={currencyFormatter.format(totals.amountExpected)} tone="primary" />
+        <StatCard title="Monto pagado" value={currencyFormatter.format(totals.amountPaid)} tone="primary" />
       </section>
 
       <section className="grid items-start gap-4 lg:grid-cols-3">

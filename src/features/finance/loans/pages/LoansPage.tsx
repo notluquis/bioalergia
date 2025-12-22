@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { ChangeEvent } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { logger } from "@/lib/logger";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Alert from "@/components/ui/Alert";
 import Modal from "@/components/ui/Modal";
 import Input from "@/components/ui/Input";
@@ -10,34 +10,24 @@ import LoanList from "@/features/finance/loans/components/LoanList";
 import LoanDetail from "@/features/finance/loans/components/LoanDetail";
 import LoanForm from "@/features/finance/loans/components/LoanForm";
 import {
-  createLoan,
-  fetchLoanDetail,
   fetchLoans,
+  fetchLoanDetail,
+  createLoan,
   registerLoanPayment,
   regenerateSchedules,
   unlinkLoanPayment,
 } from "@/features/finance/loans/api";
-import type {
-  CreateLoanPayload,
-  LoanSchedule,
-  LoanSummary,
-  LoanDetailResponse,
-  RegenerateSchedulePayload,
-} from "@/features/finance/loans/types";
+import type { LoanSchedule, CreateLoanPayload, RegenerateSchedulePayload } from "@/features/finance/loans/types";
 import { PAGE_CONTAINER, TITLE_LG } from "@/lib/styles";
 import { today } from "@/lib/dates";
 
 export default function LoansPage() {
   const { can } = useAuth();
+  const queryClient = useQueryClient();
   const canManage = useMemo(() => can("manage", "Loan"), [can]);
   const canView = useMemo(() => can("read", "Loan"), [can]);
 
-  const [loans, setLoans] = useState<LoanSummary[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [detail, setDetail] = useState<LoanDetailResponse | null>(null);
-  const [loadingList, setLoadingList] = useState(false);
-  const [loadingDetail, setLoadingDetail] = useState(false);
-  const [globalError, setGlobalError] = useState<string | null>(null);
 
   const [createOpen, setCreateOpen] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
@@ -48,88 +38,98 @@ export default function LoansPage() {
     paidAmount: "",
     paidDate: today(),
   });
-  const [processingPayment, setProcessingPayment] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
 
-  const loadLoans = useCallback(async () => {
-    if (!canView) return;
-    setLoadingList(true);
-    setGlobalError(null);
-    try {
-      const response = await fetchLoans();
-      setLoans(response.loans);
-      if (!selectedId && response.loans.length) {
-        const firstLoan = response.loans[0];
-        if (firstLoan) setSelectedId(firstLoan.public_id);
-      } else if (selectedId) {
-        const stillExists = response.loans.some((loan) => loan.public_id === selectedId);
-        if (!stillExists && response.loans.length) {
-          const firstLoan = response.loans[0];
-          if (firstLoan) setSelectedId(firstLoan.public_id);
-        }
-      }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "No se pudo cargar la lista de préstamos";
-      setGlobalError(message);
-      logger.error("[loans] list:error", message);
-    } finally {
-      setLoadingList(false);
-    }
-  }, [canView, selectedId]);
+  // 1. Fetch Loans List
+  const {
+    data: loansData,
+    isLoading: loadingList,
+    error: listError,
+  } = useQuery({
+    queryKey: ["loans-list"],
+    queryFn: fetchLoans,
+    enabled: canView,
+  });
 
-  const loadDetail = useCallback(async (publicId: string) => {
-    setLoadingDetail(true);
-    setGlobalError(null);
-    try {
-      const response = await fetchLoanDetail(publicId);
-      setDetail(response);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "No se pudo obtener el detalle";
-      setGlobalError(message);
-      logger.error("[loans] detail:error", message);
-    } finally {
-      setLoadingDetail(false);
-    }
-  }, []);
+  const loans = useMemo(() => loansData?.loans ?? [], [loansData]);
 
+  // Auto-selection
   useEffect(() => {
-    loadLoans().catch((error) => logger.error("[loans] list:effect", error));
-  }, [loadLoans]);
-
-  useEffect(() => {
-    if (selectedId) {
-      loadDetail(selectedId).catch((error) => logger.error("[loans] detail:effect", error));
-    } else {
-      setDetail(null);
+    if (loans.length > 0 && !selectedId) {
+      setSelectedId(loans[0]?.public_id ?? null);
+    } else if (loans.length === 0 && selectedId) {
+      setSelectedId(null);
+    } else if (selectedId && !loans.some((l) => l.public_id === selectedId) && loans.length > 0) {
+      setSelectedId(loans[0]?.public_id ?? null);
     }
-  }, [selectedId, loadDetail]);
+  }, [loans, selectedId]);
+
+  // 2. Fetch Detail
+  const { data: detail, isLoading: loadingDetail } = useQuery({
+    queryKey: ["loan-detail", selectedId],
+    queryFn: async () => {
+      if (!selectedId) return null;
+      return fetchLoanDetail(selectedId);
+    },
+    enabled: !!selectedId && canView,
+  });
+
+  // Mutations
+  const createMutation = useMutation({
+    mutationFn: createLoan,
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: ["loans-list"] });
+      setSelectedId(response.loan.public_id);
+      setCreateOpen(false);
+    },
+    onError: (err) => {
+      setCreateError(err instanceof Error ? err.message : "Error al crear préstamo");
+    },
+  });
+
+  const regenerateMutation = useMutation({
+    mutationFn: async (payload: RegenerateSchedulePayload) => {
+      if (!selectedId) throw new Error("No loan selected");
+      return regenerateSchedules(selectedId, payload);
+    },
+    onSuccess: () => {
+      // We need to invalidate both because the summary might change (e.g. pending amount)
+      queryClient.invalidateQueries({ queryKey: ["loans-list"] });
+      queryClient.invalidateQueries({ queryKey: ["loan-detail", selectedId] });
+    },
+  });
+
+  const paymentMutation = useMutation({
+    mutationFn: async (payload: {
+      scheduleId: number;
+      body: { transactionId: number; paidAmount: number; paidDate: string };
+    }) => {
+      return registerLoanPayment(payload.scheduleId, payload.body);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["loans-list"] });
+      queryClient.invalidateQueries({ queryKey: ["loan-detail", selectedId] });
+      setPaymentSchedule(null);
+    },
+    onError: (err) => {
+      setPaymentError(err instanceof Error ? err.message : "Error al registrar pago");
+    },
+  });
+
+  const unlinkMutation = useMutation({
+    mutationFn: unlinkLoanPayment,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["loans-list"] });
+      queryClient.invalidateQueries({ queryKey: ["loan-detail", selectedId] });
+    },
+  });
 
   const handleCreateLoan = async (payload: CreateLoanPayload) => {
     setCreateError(null);
-    try {
-      const response = await createLoan(payload);
-      await loadLoans();
-      setSelectedId(response.loan.public_id);
-      setDetail(response);
-      setCreateOpen(false);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "No se pudo crear el préstamo";
-      setCreateError(message);
-      logger.error("[loans] create:error", message);
-      throw error;
-    }
+    await createMutation.mutateAsync(payload);
   };
-
   const handleRegenerate = async (overrides: RegenerateSchedulePayload) => {
-    if (!detail) return;
-    setLoadingDetail(true);
-    try {
-      const response = await regenerateSchedules(detail.loan.public_id, overrides);
-      setDetail(response);
-      await loadLoans();
-    } finally {
-      setLoadingDetail(false);
-    }
+    await regenerateMutation.mutateAsync(overrides);
   };
 
   const openPaymentModal = (schedule: LoanSchedule) => {
@@ -145,59 +145,26 @@ export default function LoansPage() {
   const handlePaymentSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!paymentSchedule) return;
-    setProcessingPayment(true);
-    setPaymentError(null);
-    try {
-      const transactionId = Number(paymentForm.transactionId);
-      const paidAmount = Number(paymentForm.paidAmount);
-      if (!Number.isFinite(transactionId) || transactionId <= 0) {
-        throw new Error("Ingresa un ID de transacción válido");
-      }
-      if (!Number.isFinite(paidAmount) || paidAmount < 0) {
-        throw new Error("Ingresa un monto válido");
-      }
-      const response = await registerLoanPayment(paymentSchedule.id!, {
-        transactionId,
-        paidAmount,
-        paidDate: paymentForm.paidDate,
-      });
-      if (detail) {
-        setDetail({
-          ...detail,
-          schedules: detail.schedules.map((schedule) =>
-            schedule.id! === response.schedule.id ? response.schedule : schedule
-          ),
-        });
-      }
-      await loadLoans();
-      setPaymentSchedule(null);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "No se pudo registrar el pago";
-      setPaymentError(message);
-      logger.error("[loans] payment:error", message);
-    } finally {
-      setProcessingPayment(false);
+
+    const transactionId = Number(paymentForm.transactionId);
+    const paidAmount = Number(paymentForm.paidAmount);
+    if (!Number.isFinite(transactionId) || transactionId <= 0) {
+      setPaymentError("ID de transacción inválido");
+      return;
     }
+    await paymentMutation.mutateAsync({
+      scheduleId: paymentSchedule.id!,
+      body: { transactionId, paidAmount, paidDate: paymentForm.paidDate },
+    });
   };
 
   const handleUnlink = async (schedule: LoanSchedule) => {
-    try {
-      const response = await unlinkLoanPayment(schedule.id);
-      if (detail) {
-        setDetail({
-          ...detail,
-          schedules: detail.schedules.map((item) => (item.id === schedule.id ? response.schedule : item)),
-        });
-      }
-      await loadLoans();
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "No se pudo desvincular la transacción";
-      setGlobalError(message);
-      logger.error("[loans] unlink:error", message);
-    }
+    await unlinkMutation.mutateAsync(schedule.id);
   };
 
   const selectedLoan = detail?.loan ?? null;
+  const globalError = listError ? (listError instanceof Error ? listError.message : String(listError)) : null;
+
   const schedules = detail?.schedules ?? [];
   const summary = detail?.summary ?? null;
 
@@ -302,16 +269,11 @@ export default function LoansPage() {
             />
             {paymentError && <p className="rounded-lg bg-rose-100 px-4 py-2 text-sm text-rose-700">{paymentError}</p>}
             <div className="flex justify-end gap-3">
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => setPaymentSchedule(null)}
-                disabled={processingPayment}
-              >
+              <Button type="button" variant="secondary" onClick={() => setPaymentSchedule(null)}>
                 Cancelar
               </Button>
-              <Button type="submit" disabled={processingPayment}>
-                {processingPayment ? "Guardando..." : "Guardar pago"}
+              <Button type="submit" disabled={paymentMutation.isPending}>
+                {paymentMutation.isPending ? "Guardando..." : "Guardar pago"}
               </Button>
             </div>
           </form>

@@ -1,4 +1,5 @@
 import { prisma } from "../prisma.js";
+import { Prisma } from "@prisma/client";
 
 export type AuditAction =
   | "USER_INVITE"
@@ -28,8 +29,7 @@ export async function logAudit({ userId, action, entity, entityId, details, ipAd
         action,
         entity,
         entityId: entityId ? String(entityId) : null,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        details: details ? (details as any) : undefined,
+        details: details ? (details as Prisma.InputJsonValue) : undefined,
         ipAddress,
       },
     });

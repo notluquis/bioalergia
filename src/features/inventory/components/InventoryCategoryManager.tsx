@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getInventoryCategories, createInventoryCategory } from "../api";
 import type { InventoryCategory } from "../types";
 import { PlusCircle } from "lucide-react";
@@ -6,65 +7,60 @@ import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 
 export default function InventoryCategoryManager() {
-  const [categories, setCategories] = useState<InventoryCategory[]>([]);
   const [newCategoryName, setNewCategoryName] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    loadCategories();
-  }, []);
+  // Query for categories
+  const {
+    data: categories = [],
+    isLoading: loading,
+    error: queryError,
+  } = useQuery({
+    queryKey: ["inventory-categories"],
+    queryFn: getInventoryCategories,
+  });
 
-  async function loadCategories() {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await getInventoryCategories();
-      setCategories(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo cargar las categorías");
-    } finally {
-      setLoading(false);
-    }
-  }
+  // Mutation for creating category
+  const createMutation = useMutation({
+    mutationFn: createInventoryCategory,
+    onSuccess: () => {
+      setNewCategoryName("");
+      queryClient.invalidateQueries({ queryKey: ["inventory-categories"] });
+    },
+  });
 
-  async function handleAddCategory(e: React.FormEvent) {
+  const error =
+    queryError instanceof Error
+      ? queryError.message
+      : createMutation.error instanceof Error
+        ? createMutation.error.message
+        : null;
+
+  function handleAddCategory(e: React.FormEvent) {
     e.preventDefault();
     if (!newCategoryName.trim()) return;
-
-    setSaving(true);
-    setError(null);
-    try {
-      await createInventoryCategory(newCategoryName);
-      setNewCategoryName("");
-      await loadCategories(); // Refresh the list
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo guardar la categoría");
-    } finally {
-      setSaving(false);
-    }
+    createMutation.mutate(newCategoryName);
   }
 
   return (
-    <section className="space-y-5 p-6 bg-base-100">
+    <section className="bg-base-100 space-y-5 p-6">
       <div className="space-y-1">
-        <h2 className="text-lg font-semibold text-secondary drop-shadow-sm">Categorías de Inventario</h2>
-        <p className="text-sm text-base-content/70">
+        <h2 className="text-secondary text-lg font-semibold drop-shadow-sm">Categorías de Inventario</h2>
+        <p className="text-base-content/70 text-sm">
           Administra las categorías para organizar los items del inventario.
         </p>
       </div>
 
       <form onSubmit={handleAddCategory} className="flex flex-col gap-3 sm:flex-row sm:items-end">
         <label className="flex-1">
-          <span className="text-xs font-semibold uppercase tracking-wide text-base-content/60">Nueva Categoría</span>
+          <span className="text-base-content/60 text-xs font-semibold tracking-wide uppercase">Nueva Categoría</span>
           <Input
             type="text"
             value={newCategoryName}
             onChange={(e) => setNewCategoryName(e.target.value)}
             placeholder="Ej: Insumos Médicos"
             className="w-full"
-            disabled={saving}
+            disabled={createMutation.isPending}
             enterKeyHint="done"
           />
         </label>
@@ -72,24 +68,24 @@ export default function InventoryCategoryManager() {
           type="submit"
           variant="primary"
           size="sm"
-          disabled={saving || !newCategoryName.trim()}
+          disabled={createMutation.isPending || !newCategoryName.trim()}
           className="inline-flex items-center gap-2"
         >
           <PlusCircle size={16} />
-          {saving ? "Agregando..." : "Agregar"}
+          {createMutation.isPending ? "Agregando..." : "Agregar"}
         </Button>
       </form>
 
-      {error && <p className="text-sm text-error">{error}</p>}
+      {error && <p className="text-error text-sm">{error}</p>}
 
-      <div className="max-h-60 overflow-y-auto border border-base-300 bg-base-100 p-3">
-        {loading && <p className="text-sm text-base-content">Cargando categorías...</p>}
-        {!loading && !categories.length && <p className="text-sm text-base-content">No hay categorías definidas.</p>}
+      <div className="border-base-300 bg-base-100 max-h-60 overflow-y-auto border p-3">
+        {loading && <p className="text-base-content text-sm">Cargando categorías...</p>}
+        {!loading && !categories.length && <p className="text-base-content text-sm">No hay categorías definidas.</p>}
         <ul className="space-y-2">
-          {categories.map((cat) => (
+          {categories.map((cat: InventoryCategory) => (
             <li
               key={cat.id}
-              className="rounded-xl border border-base-300 bg-base-200 px-3 py-2 text-sm font-medium text-base-content shadow-sm"
+              className="border-base-300 bg-base-200 text-base-content rounded-xl border px-3 py-2 text-sm font-medium shadow-sm"
             >
               {cat.name}
             </li>

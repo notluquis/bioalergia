@@ -1,36 +1,33 @@
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
 import { fmtCLP } from "@/lib/format";
 import type { AllergyInventoryOverview } from "../types";
-
 import { formatDate } from "@/lib/format";
 
+async function fetchAllergyOverview(): Promise<AllergyInventoryOverview[]> {
+  const res = await fetch("/api/inventory/allergy-overview");
+  const payload = await res.json();
+  if (!res.ok) {
+    throw new Error(payload.message ?? "No se pudo cargar el catálogo");
+  }
+  return payload.data ?? [];
+}
+
 function AllergyInventoryView() {
-  const [data, setData] = useState<AllergyInventoryOverview[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    data = [],
+    isLoading: loading,
+    error: queryError,
+    refetch,
+    isFetching,
+  } = useQuery({
+    queryKey: ["allergy-inventory-overview"],
+    queryFn: fetchAllergyOverview,
+  });
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch("/api/inventory/allergy-overview");
-      const payload = await res.json();
-      if (!res.ok) {
-        throw new Error(payload.message ?? "No se pudo cargar el catálogo");
-      }
-      setData(payload.data ?? []);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Error desconocido");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void fetchData();
-  }, [fetchData]);
+  const error = queryError instanceof Error ? queryError.message : null;
 
   const grouped = useMemo(() => {
     const map = new Map<
@@ -64,8 +61,8 @@ function AllergyInventoryView() {
             Agrupados por tipo/categoría. Revisa stock, precio y cuentas disponibles.
           </p>
         </div>
-        <Button size="sm" variant="ghost" onClick={() => void fetchData()} disabled={loading}>
-          {loading ? "Actualizando…" : "Refrescar"}
+        <Button size="sm" variant="ghost" onClick={() => void refetch()} disabled={isFetching}>
+          {isFetching ? "Actualizando…" : "Refrescar"}
         </Button>
       </div>
       {error && <Alert variant="error">{error}</Alert>}

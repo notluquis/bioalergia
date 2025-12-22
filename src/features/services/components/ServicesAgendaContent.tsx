@@ -1,9 +1,10 @@
 import dayjs from "dayjs";
 import ServicesUnifiedAgenda from "@/features/services/components/ServicesUnifiedAgenda";
 import Button from "@/components/ui/Button";
+import { StatCard } from "@/components/ui/StatCard";
 import { LOADING_SPINNER_MD } from "@/lib/styles";
 import { useServicesOverview } from "@/features/services/hooks/useServicesOverview";
-import { ServicesHero, ServicesSurface, ServicesStatCard } from "@/features/services/components/ServicesShell";
+import { ServicesHero, ServicesSurface } from "@/features/services/components/ServicesShell";
 import { Link } from "react-router-dom";
 import { currencyFormatter } from "@/lib/format";
 
@@ -67,9 +68,9 @@ export default function ServicesAgendaContent() {
 
       <ServicesSurface>
         <div className="grid gap-4 sm:grid-cols-3">
-          <ServicesStatCard label="Pagos hoy" value={currencyFormatter.format(totals.day)} />
-          <ServicesStatCard label="Semana en curso" value={currencyFormatter.format(totals.week)} />
-          <ServicesStatCard label="Mes en curso" value={currencyFormatter.format(totals.month)} />
+          <StatCard title="Pagos hoy" value={currencyFormatter.format(totals.day)} />
+          <StatCard title="Semana en curso" value={currencyFormatter.format(totals.week)} />
+          <StatCard title="Mes en curso" value={currencyFormatter.format(totals.month)} />
         </div>
 
         <ServicesUnifiedAgenda

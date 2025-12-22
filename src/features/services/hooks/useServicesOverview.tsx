@@ -1,24 +1,16 @@
 import dayjs from "dayjs";
 import { today } from "@/lib/dates";
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type ChangeEvent,
-  createContext,
-  useContext,
-  type ReactNode,
-} from "react";
+import { useEffect, useMemo, useRef, useState, createContext, useContext, type ReactNode } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { logger } from "@/lib/logger";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type {
   CreateServicePayload,
   RegenerateServicePayload,
   ServiceDetailResponse,
   ServiceSchedule,
-  ServiceSummary,
+  ServiceListResponse,
+  ServicePaymentPayload,
 } from "../types";
 import type { DbMovement } from "@/features/finance/transactions/types";
 import { fetchTransactions } from "@/features/finance/transactions/api";
@@ -43,15 +35,13 @@ type SummaryTotals = {
 
 function useServicesController() {
   const { can } = useAuth();
+  const queryClient = useQueryClient();
   const canManage = useMemo(() => can("manage", "Service"), [can]);
   const canView = useMemo(() => can("read", "Service"), [can]);
 
-  const [services, setServices] = useState<ServiceSummary[]>([]);
+  // UI State
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [detail, setDetail] = useState<ServiceDetailResponse | null>(null);
-  const [loadingList, setLoadingList] = useState(false);
-  const [loadingDetail, setLoadingDetail] = useState(false);
-  const [globalError, setGlobalError] = useState<string | null>(null);
+  const selectedIdRef = useRef<string | null>(null);
 
   const [createOpen, setCreateOpen] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
@@ -64,11 +54,8 @@ function useServicesController() {
     paidDate: today(),
     note: "",
   });
-  const [processingPayment, setProcessingPayment] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
-  const [suggestedTransactions, setSuggestedTransactions] = useState<DbMovement[]>([]);
-  const [suggestedLoading, setSuggestedLoading] = useState(false);
-  const [suggestedError, setSuggestedError] = useState<string | null>(null);
+  const [paymentSuggestionsRequestId, setPaymentSuggestionsRequestId] = useState(0);
 
   const [filters, setFilters] = useState<ServicesFilterState>({
     search: "",
@@ -76,359 +63,290 @@ function useServicesController() {
     types: new Set(),
   });
 
-  const [allDetails, setAllDetails] = useState<Record<string, ServiceDetailResponse>>({});
-  const [aggregatedLoading, setAggregatedLoading] = useState(false);
-  const [aggregatedError, setAggregatedError] = useState<string | null>(null);
-  const selectedIdRef = useRef<string | null>(null);
-  const paymentSuggestionsRequestIdRef = useRef(0);
+  // 1. Fetch List
+  const {
+    data: servicesData,
+    isLoading: loadingList,
+    error: listError,
+  } = useQuery({
+    queryKey: ["services-list"],
+    queryFn: fetchServices,
+    enabled: canView,
+  });
 
-  const loadServices = useCallback(async () => {
-    if (!canView) return;
-    setLoadingList(true);
-    setGlobalError(null);
-    try {
-      const response = await fetchServices();
-      setServices(response.services);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "No se pudo cargar la lista de servicios";
-      setGlobalError(message);
-      logger.error("[services] list:error", message);
-    } finally {
-      setLoadingList(false);
-    }
-  }, [canView]);
+  const services = useMemo(() => servicesData?.services ?? [], [servicesData]);
 
-  const loadDetail = useCallback(async (publicId: string) => {
-    setLoadingDetail(true);
-    setGlobalError(null);
-    try {
-      const response = await fetchServiceDetail(publicId);
-      setDetail(response);
-      setAllDetails((prev) => ({ ...prev, [response.service.public_id]: response }));
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "No se pudo obtener el detalle";
-      setGlobalError(message);
-      logger.error("[services] detail:error", message);
-    } finally {
-      setLoadingDetail(false);
-    }
-  }, []);
+  // Memoize service IDs for the query key to avoid frequent updates if services are unchanged
+  const serviceIds = useMemo(() => services.map((s) => s.public_id).join(","), [services]);
 
+  // 2. Fetch All Details (Aggregated)
+  // We keep this pattern because the original code relied on having all details for the "Unified Agenda"
+  const {
+    data: allDetailsData,
+    isLoading: aggregatedLoading,
+    error: aggregatedErrorObj,
+  } = useQuery({
+    queryKey: ["services-details-all", serviceIds, services.length],
+    queryFn: async () => {
+      if (!services.length) return {};
+      const results = await Promise.allSettled(services.map((service) => fetchServiceDetail(service.public_id)));
+
+      const detailsMap: Record<string, ServiceDetailResponse> = {};
+      const failures: Array<{ id: string; reason: unknown }> = [];
+
+      results.forEach((result, index) => {
+        if (result.status === "fulfilled") {
+          detailsMap[result.value.service.public_id] = result.value;
+        } else {
+          const serviceId = services[index]?.public_id ?? "unknown";
+          failures.push({ id: serviceId, reason: result.reason });
+          logger.error("[services] aggregated:error", { serviceId, error: result.reason });
+        }
+      });
+
+      // We only log/warn here as the UI will handle partial display
+      if (failures.length > 0) {
+        console.warn(`Failed to load details for ${failures.length} services`);
+      }
+      return detailsMap;
+    },
+    enabled: services.length > 0 && canView,
+    staleTime: 5 * 60 * 1000, // 5 minutes cache for details
+  });
+
+  const allDetails = useMemo(() => allDetailsData ?? {}, [allDetailsData]);
+  const aggregatedError = aggregatedErrorObj
+    ? aggregatedErrorObj instanceof Error
+      ? aggregatedErrorObj.message
+      : String(aggregatedErrorObj)
+    : null;
+
+  // Sync selectedIdRef
   useEffect(() => {
     selectedIdRef.current = selectedId;
   }, [selectedId]);
 
-  // Consolidated effect: load services list, then load all details with graceful degradation
+  // Auto-select logic
   useEffect(() => {
-    if (!canView) return;
-
-    let cancelled = false;
-
-    async function loadAll() {
-      setLoadingList(true);
-      setGlobalError(null);
-      setAggregatedError(null);
-
-      try {
-        const response = await fetchServices();
-        if (cancelled) return;
-
-        setServices(response.services);
-
-        if (response.services.length === 0) {
-          setAllDetails({});
-          selectedIdRef.current = null;
-          setSelectedId(null);
-          setDetail(null);
-          return;
-        }
-
-        setAggregatedLoading(true);
-
-        const detailResults = await Promise.allSettled(
-          response.services.map((service) =>
-            fetchServiceDetail(service.public_id).then((detailResponse) => ({
-              id: service.public_id,
-              detail: detailResponse,
-            }))
-          )
-        );
-
-        if (cancelled) return;
-
-        const next: Record<string, ServiceDetailResponse> = {};
-        const failures: Array<{ id: string; reason: unknown }> = [];
-
-        detailResults.forEach((result, index) => {
-          if (result.status === "fulfilled") {
-            next[result.value.id] = result.value.detail;
-            return;
-          }
-
-          const failedService = response.services[index];
-          const serviceId = failedService?.public_id ?? `unknown-${index}`;
-          failures.push({ id: serviceId, reason: result.reason });
-          logger.error("[services] aggregated:error", {
-            serviceId,
-            error: result.reason,
-          });
-        });
-
-        setAllDetails(next);
-
-        if (failures.length) {
-          setAggregatedError(
-            failures.length === response.services.length
-              ? "No se pudo cargar el detalle de los servicios. Intenta refrescar la vista."
-              : `No se pudo cargar el detalle de ${failures.length} servicio(s).`
-          );
-        }
-
-        const currentSelection = selectedIdRef.current;
-        if (currentSelection) {
-          const selectedDetail = next[currentSelection];
-          if (selectedDetail) {
-            setDetail(selectedDetail);
-            return;
-          }
-        }
-
-        const firstWithDetail = response.services.find((service) => next[service.public_id]);
-        const fallbackService = firstWithDetail ?? response.services[0];
-
-        if (fallbackService) {
-          selectedIdRef.current = fallbackService.public_id;
-          setSelectedId(fallbackService.public_id);
-          const detailCandidate = next[fallbackService.public_id];
-          if (detailCandidate) {
-            setDetail(detailCandidate);
-          } else if (!cancelled) {
-            await loadDetail(fallbackService.public_id);
-          }
-        } else {
-          selectedIdRef.current = null;
-          setSelectedId(null);
-          setDetail(null);
-        }
-      } catch (error) {
-        if (cancelled) return;
-        const message = error instanceof Error ? error.message : "No se pudo cargar la lista de servicios";
-        setGlobalError(message);
-        logger.error("[services] list:error", message);
-      } finally {
-        if (!cancelled) {
-          setLoadingList(false);
-          setAggregatedLoading(false);
-        }
-      }
-    }
-
-    loadAll();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [canView, loadDetail]);
-
-  // Separate effect for selected detail (only runs when selection changes)
-  useEffect(() => {
-    if (!selectedId) {
-      setDetail(null);
+    if (!services.length) {
+      // If no services, clear selection
+      if (selectedId) setSelectedId(null);
       return;
     }
-    if (allDetails[selectedId]) {
-      setDetail(allDetails[selectedId]);
-    } else {
-      loadDetail(selectedId).catch((error) => logger.error("[services] detail:effect", error));
+    // If nothing selected, or selection not in list
+    if (!selectedId || !services.some((s) => s.public_id === selectedId)) {
+      if (services.length > 0) {
+        setSelectedId(services[0]?.public_id ?? null);
+      }
     }
-  }, [selectedId, allDetails, loadDetail]);
+  }, [services, selectedId]);
 
-  const handleCreateService = useCallback(
-    async (payload: CreateServicePayload) => {
-      setCreateError(null);
-      try {
-        const response = await createService(payload);
-        await loadServices();
-        setAllDetails((prev) => ({ ...prev, [response.service.public_id]: response }));
-        setSelectedId(response.service.public_id);
-        setDetail(response);
-        setCreateOpen(false);
-        setSelectedTemplate(null);
-      } catch (error) {
-        const message = error instanceof Error ? error.message : "No se pudo crear el servicio";
-        setCreateError(message);
-        logger.error("[services] create:error", message);
-        throw error;
-      }
+  const detail = selectedId && allDetails[selectedId] ? allDetails[selectedId] : null;
+
+  // Mutations
+  const createMutation = useMutation({
+    mutationFn: createService,
+    onSuccess: (response) => {
+      queryClient.setQueryData(["services-list"], (old: ServiceListResponse | undefined) => {
+        if (!old) return { status: "ok", services: [response.service] };
+        return { ...old, services: [...old.services, response.service] };
+      });
+      // Also update details cache
+      queryClient.setQueryData(
+        ["services-details-all", serviceIds + "," + response.service.public_id, services.length + 1],
+        (old: Record<string, ServiceDetailResponse> | undefined) => {
+          return { ...old, [response.service.public_id]: response };
+        }
+      );
+      // Invalidate to be safe
+      queryClient.invalidateQueries({ queryKey: ["services-list"] });
+      queryClient.invalidateQueries({ queryKey: ["services-details-all"] });
+
+      setSelectedId(response.service.public_id);
+      setCreateOpen(false);
+      setSelectedTemplate(null);
     },
-    [loadServices]
-  );
-
-  const handleRegenerate = useCallback(
-    async (overrides: RegenerateServicePayload) => {
-      if (!detail) return;
-      setLoadingDetail(true);
-      try {
-        const response = await regenerateServiceSchedules(detail.service.public_id, overrides);
-        setDetail(response);
-        setAllDetails((prev) => ({ ...prev, [response.service.public_id]: response }));
-        await loadServices();
-      } finally {
-        setLoadingDetail(false);
-      }
+    onError: (err) => {
+      const message = err instanceof Error ? err.message : "No se pudo crear el servicio";
+      setCreateError(message);
     },
-    [detail, loadServices]
-  );
+  });
 
-  const openPaymentModal = useCallback((schedule: ServiceSchedule) => {
-    const requestId = paymentSuggestionsRequestIdRef.current + 1;
-    paymentSuggestionsRequestIdRef.current = requestId;
+  const regenerateMutation = useMutation({
+    mutationFn: async ({ id, payload }: { id: string; payload: RegenerateServicePayload }) => {
+      return regenerateServiceSchedules(id, payload);
+    },
+    onSuccess: (response) => {
+      // Optimistic update local detail in cache if valid key exists
+      queryClient.setQueryData(
+        ["services-details-all", serviceIds, services.length],
+        (old: Record<string, ServiceDetailResponse> | undefined) => {
+          if (!old) return { [response.service.public_id]: response };
+          return { ...old, [response.service.public_id]: response };
+        }
+      );
+      queryClient.invalidateQueries({ queryKey: ["services-details-all"] });
+    },
+  });
+
+  const paymentMutation = useMutation({
+    mutationFn: async (payload: { scheduleId: number; body: ServicePaymentPayload }) => {
+      return registerServicePayment(payload.scheduleId, payload.body);
+    },
+    onSuccess: (response) => {
+      // We need to find which service this schedule belonged to, to update it.
+      // It's likely the selected service (detail).
+      if (!detail) {
+        queryClient.invalidateQueries({ queryKey: ["services-details-all"] });
+        queryClient.invalidateQueries({ queryKey: ["services-list"] });
+        return;
+      }
+
+      const updatedDetail: ServiceDetailResponse = {
+        ...detail,
+        schedules: detail.schedules.map((s) => (s.id === response.schedule.id ? response.schedule : s)),
+        service: {
+          ...detail.service,
+          // We might want to update totals here logically or just refetch
+        },
+      };
+
+      // Optimistic update of the specific detail
+      queryClient.setQueryData(
+        ["services-details-all", serviceIds, services.length],
+        (old: Record<string, ServiceDetailResponse> | undefined) => {
+          if (!old) return old;
+          return { ...old, [detail.service.public_id]: updatedDetail };
+        }
+      );
+
+      // Always invalidate to get fresh totals/status from backend
+      queryClient.invalidateQueries({ queryKey: ["services-list"] });
+      queryClient.invalidateQueries({ queryKey: ["services-details-all"] });
+
+      setPaymentSchedule(null);
+    },
+    onError: (err) => {
+      setPaymentError(err instanceof Error ? err.message : "Error al registrar pago");
+    },
+  });
+
+  const unlinkMutation = useMutation({
+    mutationFn: unlinkServicePayment,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["services-list"] });
+      queryClient.invalidateQueries({ queryKey: ["services-details-all"] });
+    },
+  });
+
+  // Handlers
+  const handleCreateService = async (payload: CreateServicePayload) => {
+    setCreateError(null);
+    await createMutation.mutateAsync(payload);
+  };
+
+  const handleRegenerate = async (overrides: RegenerateServicePayload) => {
+    if (!detail) return;
+    await regenerateMutation.mutateAsync({ id: detail.service.public_id, payload: overrides });
+  };
+
+  // Payment Suggestions (Autocomplete)
+  const {
+    data: suggestedTransactions = [],
+    isFetching: suggestedLoading,
+    error: suggestedErrorObj,
+  } = useQuery({
+    queryKey: [
+      "payment-suggestions",
+      paymentSchedule?.id,
+      paymentSuggestionsRequestId,
+      paymentSchedule?.expected_amount,
+      paymentSchedule?.due_date,
+      paymentSchedule,
+    ],
+    queryFn: async () => {
+      if (!paymentSchedule) return [];
+      const tolerance = Math.max(100, Math.round(paymentSchedule.expected_amount * 0.01));
+      const dueDate = paymentSchedule.due_date ? dayjs(paymentSchedule.due_date) : dayjs();
+      const from = dueDate.clone().subtract(45, "day").format("YYYY-MM-DD");
+      const to = dueDate.clone().add(45, "day").format("YYYY-MM-DD");
+
+      const payload = await fetchTransactions({
+        filters: {
+          from,
+          to,
+          description: "",
+          origin: "",
+          destination: "",
+          sourceId: "",
+          bankAccountNumber: "",
+          direction: "OUT",
+          includeAmounts: true,
+        },
+        page: 1,
+        pageSize: 50,
+      });
+
+      return payload.data
+        .filter(
+          (tx) =>
+            typeof tx.amount === "number" && Math.abs((tx.amount ?? 0) - paymentSchedule.expected_amount) <= tolerance
+        )
+        .slice(0, 8);
+    },
+    enabled: !!paymentSchedule && paymentSuggestionsRequestId > 0,
+  });
+
+  const suggestedError = suggestedErrorObj
+    ? suggestedErrorObj instanceof Error
+      ? suggestedErrorObj.message
+      : String(suggestedErrorObj)
+    : null;
+
+  const openPaymentModal = (schedule: ServiceSchedule) => {
     setPaymentSchedule(schedule);
     setPaymentForm({
-      transactionId: schedule.transaction!.id ? String(schedule.transaction!.id) : "",
+      transactionId: schedule.transaction?.id ? String(schedule.transaction.id) : "",
       paidAmount: schedule.paid_amount != null ? String(schedule.paid_amount) : String(schedule.effective_amount),
       paidDate: schedule.paid_date ?? today(),
       note: schedule.note ?? "",
     });
     setPaymentError(null);
-    setSuggestedError(null);
-    setSuggestedTransactions([]);
+    setPaymentSuggestionsRequestId((prev) => prev + 1);
+  };
 
-    const dueDate = schedule.due_date ? dayjs(schedule.due_date) : dayjs();
-    const from = dueDate.clone().subtract(45, "day").format("YYYY-MM-DD");
-    const to = dueDate.clone().add(45, "day").format("YYYY-MM-DD");
-
-    setSuggestedLoading(true);
-
-    fetchTransactions({
-      filters: {
-        from,
-        to,
-        description: "",
-        origin: "",
-        destination: "",
-        sourceId: "",
-        bankAccountNumber: "",
-        direction: "OUT",
-        includeAmounts: true,
-      },
-      page: 1,
-      pageSize: 50,
-    })
-      .then((payload) => {
-        if (paymentSuggestionsRequestIdRef.current !== requestId) return;
-        const tolerance = Math.max(100, Math.round(schedule.expected_amount * 0.01));
-        const matches = payload.data
-          .filter(
-            (tx) => typeof tx.amount === "number" && Math.abs((tx.amount ?? 0) - schedule.expected_amount) <= tolerance
-          )
-          .sort((a, b) => {
-            const diffA = Math.abs((a.amount ?? 0) - schedule.expected_amount);
-            const diffB = Math.abs((b.amount ?? 0) - schedule.expected_amount);
-            if (diffA !== diffB) return diffA - diffB;
-            return dayjs(b.timestamp).valueOf() - dayjs(a.timestamp).valueOf();
-          })
-          .slice(0, 8);
-        setSuggestedTransactions(matches);
-      })
-      .catch((err) => {
-        if (paymentSuggestionsRequestIdRef.current !== requestId) return;
-        const message = err instanceof Error ? err.message : "No se pudieron cargar sugerencias de transacciones";
-        setSuggestedError(message);
-        logger.error("[services] payment:suggestions:error", message);
-      })
-      .finally(() => {
-        if (paymentSuggestionsRequestIdRef.current !== requestId) return;
-        setSuggestedLoading(false);
-      });
-  }, []);
-
-  const handlePaymentFormChange = useCallback((key: keyof typeof paymentForm, value: string) => {
-    setPaymentForm((prev) => ({ ...prev, [key]: value }));
-  }, []);
-
-  const closePaymentModal = useCallback(() => {
+  const closePaymentModal = () => {
     setPaymentSchedule(null);
-    setSuggestedTransactions([]);
-    setSuggestedError(null);
-  }, []);
+  };
 
-  const handlePaymentSubmit = useCallback(
-    async (event: React.FormEvent<HTMLFormElement>) => {
-      event.preventDefault();
-      if (!paymentSchedule) return;
-      setProcessingPayment(true);
-      setPaymentError(null);
-      try {
-        const transactionId = Number(paymentForm.transactionId);
-        const paidAmount = Number(paymentForm.paidAmount);
-        if (!Number.isFinite(transactionId) || transactionId <= 0) {
-          throw new Error("Ingresa un ID de transacción válido");
-        }
-        if (!Number.isFinite(paidAmount) || paidAmount < 0) {
-          throw new Error("Ingresa un monto válido");
-        }
-        const response = await registerServicePayment(paymentSchedule.id, {
-          transactionId,
-          paidAmount,
-          paidDate: paymentForm.paidDate,
-          note: paymentForm.note.trim() ? paymentForm.note.trim() : undefined,
-        });
-        if (detail) {
-          const updatedDetail: ServiceDetailResponse = {
-            ...detail,
-            schedules: detail.schedules.map((schedule) =>
-              schedule.id === response.schedule.id ? response.schedule : schedule
-            ),
-          };
-          setDetail(updatedDetail);
-          setAllDetails((prev) => ({ ...prev, [updatedDetail.service.public_id]: updatedDetail }));
-        }
-        await loadServices();
-        setPaymentSchedule(null);
-      } catch (error) {
-        const message = error instanceof Error ? error.message : "No se pudo registrar el pago";
-        setPaymentError(message);
-        logger.error("[services] payment:error", message);
-      } finally {
-        setProcessingPayment(false);
-      }
-    },
-    [detail, loadServices, paymentForm, paymentSchedule]
-  );
+  const handlePaymentSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!paymentSchedule) return;
 
-  const applySuggestedTransaction = useCallback((tx: DbMovement) => {
-    if (!tx.amount) return;
-    setPaymentForm((prev) => ({
-      ...prev,
-      transactionId: String(tx.id),
-      paidAmount: String(tx.amount),
-      paidDate: tx.timestamp ? dayjs(tx.timestamp).format("YYYY-MM-DD") : prev.paidDate,
-    }));
-  }, []);
+    const transactionId = Number(paymentForm.transactionId);
+    const paidAmount = Number(paymentForm.paidAmount);
 
-  const handleUnlink = useCallback(
-    async (schedule: ServiceSchedule) => {
-      try {
-        const response = await unlinkServicePayment(schedule.id);
-        if (detail) {
-          const updatedDetail: ServiceDetailResponse = {
-            ...detail,
-            schedules: detail.schedules.map((item) => (item.id === schedule.id ? response.schedule : item)),
-          };
-          setDetail(updatedDetail);
-          setAllDetails((prev) => ({ ...prev, [updatedDetail.service.public_id]: updatedDetail }));
-        }
-        await loadServices();
-      } catch (error) {
-        const message = error instanceof Error ? error.message : "No se pudo desvincular la transacción";
-        setGlobalError(message);
-        logger.error("[services] unlink:error", message);
-      }
-    },
-    [detail, loadServices]
-  );
+    if (!Number.isFinite(transactionId) || transactionId <= 0) {
+      setPaymentError("ID de transacción inválido");
+      return;
+    }
 
+    await paymentMutation.mutateAsync({
+      scheduleId: paymentSchedule.id,
+      body: {
+        transactionId,
+        paidAmount,
+        paidDate: paymentForm.paidDate,
+        note: paymentForm.note || undefined,
+      },
+    });
+  };
+
+  const handleUnlink = async (schedule: ServiceSchedule) => {
+    await unlinkMutation.mutateAsync(schedule.id);
+  };
+
+  // Filter Logic
   const filteredServices = useMemo(() => {
     const searchTerm = filters.search.trim().toLowerCase();
     return services.filter((service) => {
@@ -443,26 +361,10 @@ function useServicesController() {
     });
   }, [services, filters]);
 
-  useEffect(() => {
-    if (!filteredServices.length) {
-      setSelectedId(null);
-      return;
-    }
-    if (!selectedId || !filteredServices.some((service) => service.public_id === selectedId)) {
-      const firstService = filteredServices[0];
-      if (firstService) setSelectedId(firstService.public_id);
-    }
-  }, [filteredServices]); // eslint-disable-line react-hooks/exhaustive-deps
-
+  // Summaries
   const summaryTotals: SummaryTotals = useMemo(() => {
     if (!filteredServices.length) {
-      return {
-        totalExpected: 0,
-        totalPaid: 0,
-        pendingCount: 0,
-        overdueCount: 0,
-        activeCount: 0,
-      };
+      return { totalExpected: 0, totalPaid: 0, pendingCount: 0, overdueCount: 0, activeCount: 0 };
     }
     return filteredServices.reduce(
       (acc, service) => {
@@ -473,13 +375,7 @@ function useServicesController() {
         if (service.status === "ACTIVE") acc.activeCount += 1;
         return acc;
       },
-      {
-        totalExpected: 0,
-        totalPaid: 0,
-        pendingCount: 0,
-        overdueCount: 0,
-        activeCount: 0,
-      }
+      { totalExpected: 0, totalPaid: 0, pendingCount: 0, overdueCount: 0, activeCount: 0 }
     );
   }, [filteredServices]);
 
@@ -493,67 +389,54 @@ function useServicesController() {
     [allDetails]
   );
 
-  const closeCreateModal = useCallback(() => {
-    setCreateOpen(false);
-    setSelectedTemplate(null);
-  }, []);
+  // Other props
+  const handlePaymentFieldChange = (key: keyof typeof paymentForm, value: string) => {
+    setPaymentForm((prev) => ({ ...prev, [key]: value }));
+  };
 
-  const openCreateModal = useCallback(() => {
-    setCreateOpen(true);
-    setCreateError(null);
-  }, []);
+  const applySuggestedTransaction = (tx: DbMovement) => {
+    if (!tx.amount) return;
+    setPaymentForm((prev) => ({
+      ...prev,
+      transactionId: String(tx.id),
+      paidAmount: String(tx.amount),
+      paidDate: tx.timestamp ? dayjs(tx.timestamp).format("YYYY-MM-DD") : prev.paidDate,
+    }));
+  };
 
-  const applyTemplate = useCallback((template: ServiceTemplate) => {
+  const applyTemplate = (template: ServiceTemplate) => {
     setSelectedTemplate(template);
     setCreateError(null);
     setCreateOpen(true);
-  }, []);
+  };
 
-  const handleFilterChange = useCallback((next: ServicesFilterState) => {
+  const handleFilterChange = (next: ServicesFilterState) => {
     setFilters({
       search: next.search,
       statuses: new Set(next.statuses),
       types: new Set(next.types),
     });
-  }, []);
+  };
 
-  const handleAgendaRegisterPayment = useCallback(
-    async (serviceId: string, schedule: ServiceSchedule) => {
-      setSelectedId(serviceId);
-      selectedIdRef.current = serviceId;
-      if (!allDetails[serviceId]) {
-        await loadDetail(serviceId);
-      } else {
-        setDetail(allDetails[serviceId]);
-      }
-      openPaymentModal(schedule);
-    },
-    [allDetails, loadDetail, openPaymentModal]
-  );
+  const openCreateModal = () => {
+    setCreateOpen(true);
+    setCreateError(null);
+  };
+  const closeCreateModal = () => {
+    setCreateOpen(false);
+    setSelectedTemplate(null);
+  };
 
-  const handleAgendaUnlinkPayment = useCallback(
-    async (serviceId: string, schedule: ServiceSchedule) => {
-      setSelectedId(serviceId);
-      selectedIdRef.current = serviceId;
-      if (!allDetails[serviceId]) {
-        await loadDetail(serviceId);
-      } else {
-        setDetail(allDetails[serviceId]);
-      }
-      await handleUnlink(schedule);
-    },
-    [allDetails, loadDetail, handleUnlink]
-  );
+  const handleAgendaRegisterPayment = async (serviceId: string, schedule: ServiceSchedule) => {
+    setSelectedId(serviceId);
+    openPaymentModal(schedule);
+  };
 
-  const handlePaymentFieldChange = useCallback(
-    (
-      field: "transactionId" | "paidAmount" | "paidDate" | "note",
-      event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-    ) => {
-      handlePaymentFormChange(field, event.target.value);
-    },
-    [handlePaymentFormChange]
-  );
+  const handleAgendaUnlinkPayment = async (serviceId: string, schedule: ServiceSchedule) => {
+    setSelectedId(serviceId);
+    await handleUnlink(schedule);
+  };
+
   return {
     canManage,
     services,
@@ -561,9 +444,9 @@ function useServicesController() {
     summaryTotals,
     collectionRate,
     unifiedAgendaItems,
-    globalError,
+    globalError: listError ? (listError instanceof Error ? listError.message : String(listError)) : null,
     loadingList,
-    loadingDetail,
+    loadingDetail: aggregatedLoading || regenerateMutation.isPending, // approximate
     aggregatedLoading,
     aggregatedError,
     selectedService: detail?.service ?? null,
@@ -580,7 +463,7 @@ function useServicesController() {
     paymentForm,
     handlePaymentFieldChange,
     paymentError,
-    processingPayment,
+    processingPayment: paymentMutation.isPending,
     suggestedTransactions,
     suggestedLoading,
     suggestedError,

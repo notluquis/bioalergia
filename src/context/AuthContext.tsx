@@ -235,10 +235,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [effectiveUser]
   );
 
+  const { refetch: refetchSession } = sessionQuery;
+
   const refreshSession = useCallback(async () => {
-    await sessionQuery.refetch();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- refetch is stable by design
-  }, [sessionQuery.refetch]);
+    await refetchSession();
+  }, [refetchSession]);
 
   const can = useCallback((action: string, subject: string, field?: string) => {
     // Wrapper for CASL ability

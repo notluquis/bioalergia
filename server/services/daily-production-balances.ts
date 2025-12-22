@@ -23,6 +23,7 @@ export type ProductionBalanceRecord = {
   total: number;
   comentarios: string | null;
   status: ProductionBalanceStatus;
+  changeReason: string | null;
   createdBy: number;
   updatedBy: number | null;
   createdByEmail: string | null;
@@ -101,6 +102,7 @@ function mapBalanceRecord(balance: BalanceWithRelations): ProductionBalanceRecor
     total,
     comentarios: balance.comentarios,
     status: balance.status as ProductionBalanceStatus,
+    changeReason: balance.changeReason,
     createdBy: balance.createdBy,
     updatedBy: null, // Not tracked in new schema
     createdByEmail: balance.user?.email ?? null,

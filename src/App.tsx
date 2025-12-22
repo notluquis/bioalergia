@@ -111,7 +111,7 @@ export default function App() {
           <div className="nav-progress__indicator" />
         </div>
       )}
-      <div className="layout-shell text-base-content relative mx-auto flex min-h-screen w-full gap-3 px-2 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] pr-[max(0.75rem,env(safe-area-inset-right))] pb-[max(0.75rem,env(safe-area-inset-bottom))] pl-[max(0.75rem,env(safe-area-inset-left))] transition-all duration-300 sm:px-4 md:pl-28 lg:px-6">
+      <div className="layout-shell text-base-content relative mx-auto flex min-h-screen w-full gap-3 px-2 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] pr-[max(0.75rem,env(safe-area-inset-right))] pb-[max(0.75rem,env(safe-area-inset-bottom))] pl-[max(0.75rem,env(safe-area-inset-left))] transition-all duration-300 sm:px-4 md:ml-24 md:pl-4 lg:ml-24 lg:px-6">
         {/* Hamburger button: accessible, compact, always visible on mobile */}
         <button
           type="button"

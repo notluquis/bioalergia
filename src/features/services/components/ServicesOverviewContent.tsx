@@ -165,7 +165,7 @@ export default function ServicesOverviewContent() {
         />
       )}
 
-      <div className="card card-compact bg-base-100 shadow-sm">
+      <div className={CARD_COMPACT}>
         <div className="card-body">
           <div className="mb-3 flex items-center justify-between">
             <div>
@@ -264,14 +264,18 @@ export default function ServicesOverviewContent() {
               label="ID transacción"
               type="number"
               value={paymentForm.transactionId}
-              onChange={(event: ChangeEvent<HTMLInputElement>) => handlePaymentFieldChange("transactionId", event)}
+              onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                handlePaymentFieldChange("transactionId", event.target.value)
+              }
               required
             />
             <Input
               label="Monto pagado"
               type="number"
               value={paymentForm.paidAmount}
-              onChange={(event: ChangeEvent<HTMLInputElement>) => handlePaymentFieldChange("paidAmount", event)}
+              onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                handlePaymentFieldChange("paidAmount", event.target.value)
+              }
               min={0}
               step="0.01"
               required
@@ -280,7 +284,9 @@ export default function ServicesOverviewContent() {
               label="Fecha de pago"
               type="date"
               value={paymentForm.paidDate}
-              onChange={(event: ChangeEvent<HTMLInputElement>) => handlePaymentFieldChange("paidDate", event)}
+              onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                handlePaymentFieldChange("paidDate", event.target.value)
+              }
               required
             />
             <Input
@@ -288,7 +294,9 @@ export default function ServicesOverviewContent() {
               as="textarea"
               rows={2}
               value={paymentForm.note}
-              onChange={(event: ChangeEvent<HTMLTextAreaElement>) => handlePaymentFieldChange("note", event)}
+              onChange={(event: ChangeEvent<HTMLTextAreaElement>) =>
+                handlePaymentFieldChange("note", event.target.value)
+              }
             />
             {paymentError && <p className="rounded-lg bg-rose-100 px-4 py-2 text-sm text-rose-700">{paymentError}</p>}
             <div className="flex justify-end gap-3">

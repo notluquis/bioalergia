@@ -11,6 +11,7 @@ import {
   listProductionBalances,
   updateProductionBalance,
   type ProductionBalancePayload,
+  type ProductionBalanceRecord,
 } from "../services/daily-production-balances.js";
 
 function sanitizePayload(
@@ -35,8 +36,7 @@ function sanitizePayload(
   };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapProductionBalance(p: any) {
+function mapProductionBalance(p: ProductionBalanceRecord) {
   return {
     id: p.id,
     date: p.balanceDate,
@@ -98,8 +98,7 @@ export function registerDailyProductionBalanceRoutes(app: express.Express) {
         })
       );
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      res.json({ status: "ok", from: fromDate, to: toDate, items: items.map((i) => mapProductionBalance(i as any)) });
+      res.json({ status: "ok", from: fromDate, to: toDate, items: items.map(mapProductionBalance) });
     })
   );
 
@@ -123,8 +122,7 @@ export function registerDailyProductionBalanceRoutes(app: express.Express) {
 
       logEvent("daily-production-balances/create", requestContext(req, { id: created.id, date: created.balanceDate }));
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      res.json({ status: "ok", item: mapProductionBalance(created as any) });
+      res.json({ status: "ok", item: mapProductionBalance(created) });
     })
   );
 
@@ -157,8 +155,7 @@ export function registerDailyProductionBalanceRoutes(app: express.Express) {
 
       logEvent("daily-production-balances/update", requestContext(req, { id, date: updated.balanceDate }));
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      res.json({ status: "ok", item: mapProductionBalance(updated as any) });
+      res.json({ status: "ok", item: mapProductionBalance(updated) });
     })
   );
 }

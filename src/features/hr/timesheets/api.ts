@@ -1,4 +1,4 @@
-import type { TimesheetEntry, TimesheetPayload, TimesheetSummaryResponse } from "./types";
+import type { TimesheetEntry, TimesheetPayload, TimesheetSummaryResponse, TimesheetUpsertEntry } from "./types";
 
 async function handleResponse<T>(res: Response) {
   const data = await res.json();
@@ -61,14 +61,7 @@ export async function deleteTimesheet(id: number) {
 
 export async function bulkUpsertTimesheets(
   employeeId: number,
-  entries: Array<{
-    work_date: string;
-    start_time: string | null;
-    end_time: string | null;
-    overtime_minutes: number;
-    extra_amount: number;
-    comment: string | null;
-  }> = [],
+  entries: TimesheetUpsertEntry[] = [],
   removeIds: number[] = []
 ) {
   const res = await fetch(`/api/timesheets/bulk`, {

@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import Button from "@/components/ui/Button";
 import Alert from "@/components/ui/Alert";
@@ -49,70 +50,65 @@ function mapServiceToForm(service: ServiceDetailResponse["service"]): Partial<Cr
 export default function ServiceEditPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [detail, setDetail] = useState<ServiceDetailResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
+  const queryClient = useQueryClient();
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    if (!id) return;
-    setLoading(true);
-    setError(null);
-    fetchServiceDetail(id)
-      .then((response) => {
-        if (!cancelled) setDetail(response);
-      })
-      .catch((err) => {
-        if (!cancelled) {
-          const message = err instanceof Error ? err.message : "No se pudo cargar el servicio";
-          setError(message);
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [id]);
+  const {
+    data: detail,
+    isLoading: loading,
+    error: fetchError,
+  } = useQuery({
+    queryKey: ["service-detail", id],
+    queryFn: () => {
+      if (!id) throw new Error("ID de servicio no proporcionado");
+      return fetchServiceDetail(id);
+    },
+    enabled: !!id,
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async (payload: CreateServicePayload) => {
+      if (!id) throw new Error("ID requerido");
+      return updateServiceRequest(id, payload);
+    },
+    onSuccess: (updated) => {
+      queryClient.setQueryData(["service-detail", id], updated);
+      queryClient.invalidateQueries({ queryKey: ["services-audit"] });
+      setSaveMessage("Servicio actualizado correctamente.");
+    },
+  });
+
+  const regenerateMutation = useMutation({
+    mutationFn: async ({ id, payload = {} }: { id: string; payload?: { months?: number; startDate?: string } }) => {
+      return regenerateServiceSchedules(id, payload);
+    },
+    onSuccess: (updated) => {
+      if (id) queryClient.setQueryData(["service-detail", id], updated);
+      setSaveMessage("Proyecciones regeneradas correctamente.");
+    },
+  });
+
+  const error = fetchError instanceof Error ? fetchError.message : fetchError ? String(fetchError) : null;
+  const updateError =
+    updateMutation.error instanceof Error
+      ? updateMutation.error.message
+      : updateMutation.error
+        ? String(updateMutation.error)
+        : null;
+  const regenerateError =
+    regenerateMutation.error instanceof Error
+      ? regenerateMutation.error.message
+      : regenerateMutation.error
+        ? String(regenerateMutation.error)
+        : null;
+
+  const displayError = error || updateError || regenerateError;
 
   const initialValues = useMemo(() => (detail ? mapServiceToForm(detail.service) : undefined), [detail]);
 
   const handleSubmit = async (payload: CreateServicePayload) => {
-    if (!id) return;
-    setSaving(true);
     setSaveMessage(null);
-    setError(null);
-    try {
-      const response = await updateServiceRequest(id, payload);
-      setDetail(response);
-      setSaveMessage("Servicio actualizado correctamente.");
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "No se pudo actualizar el servicio";
-      setError(message);
-      throw err;
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleRegenerate = async (schedulePayload: { months?: number; startDate?: string }) => {
-    if (!detail) return;
-    setSaving(true);
-    setSaveMessage(null);
-    setError(null);
-    try {
-      const response = await regenerateServiceSchedules(detail.service.public_id, schedulePayload);
-      setDetail(response);
-      setSaveMessage("Cronograma regenerado correctamente.");
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "No se pudo regenerar el cronograma";
-      setError(message);
-    } finally {
-      setSaving(false);
-    }
+    await updateMutation.mutateAsync(payload);
   };
 
   const summaryCards = useMemo(() => {
@@ -197,8 +193,8 @@ export default function ServiceEditPage() {
     );
   }
 
-  if (error && !detail) {
-    return <Alert variant="error">{error}</Alert>;
+  if (displayError && !detail) {
+    return <Alert variant="error">{displayError}</Alert>;
   }
 
   const service = detail?.service ?? null;
@@ -217,7 +213,7 @@ export default function ServiceEditPage() {
         }
       />
 
-      {error && <Alert variant="error">{error}</Alert>}
+      {displayError && <Alert variant="error">{displayError}</Alert>}
       {saveMessage && <Alert variant="success">{saveMessage}</Alert>}
 
       {service && (
@@ -278,12 +274,10 @@ export default function ServiceEditPage() {
                 <div className="flex justify-end">
                   <Button
                     variant="secondary"
-                    onClick={() =>
-                      handleRegenerate({ months: service.next_generation_months, startDate: service.start_date })
-                    }
-                    disabled={saving}
+                    onClick={() => regenerateMutation.mutate({ id: String(service.id) })}
+                    disabled={regenerateMutation.isPending}
                   >
-                    Regenerar cronograma
+                    {regenerateMutation.isPending ? "Regenerando..." : "Regenerar cronograma"}
                   </Button>
                 </div>
               </section>

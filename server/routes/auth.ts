@@ -8,7 +8,7 @@ import type { AuthenticatedRequest } from "../types.js";
 import { loginSchema, mfaVerifySchema } from "../schemas/index.js";
 import { generateMfaSecret, verifyMfaToken } from "../services/mfa.js";
 import { updateUserMfa } from "../services/users.js";
-import { prisma } from "../prisma.js";
+import { prisma, Prisma } from "../prisma.js";
 import {
   generatePasskeyRegistrationOptions,
   verifyPasskeyRegistration,
@@ -64,8 +64,7 @@ export function registerAuthRoutes(app: express.Express) {
           passkeyCredentialID: null,
           passkeyPublicKey: null,
           passkeyCounter: 0,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          passkeyTransports: null as any,
+          passkeyTransports: Prisma.DbNull,
         },
       });
 
@@ -304,10 +303,12 @@ export function registerAuthRoutes(app: express.Express) {
       const user = req.user;
 
       // --- Role Governance Logic ---
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const effectiveRole = await resolveUserRole(user as any);
+      // The user from middleware doesn't include roles, so we use users from findUserById which does
+      const userWithRoles = await findUserById(user.id);
+      const effectiveRole = userWithRoles ? await resolveUserRole(userWithRoles) : "VIEWER";
+      const rolesArray = Array.isArray(effectiveRole) ? effectiveRole : [effectiveRole];
       const finalUser = {
-        ...sanitizeUser({ ...user, roles: effectiveRole }),
+        ...sanitizeUser({ ...user, roles: rolesArray }),
         role: effectiveRole,
         mfaEnabled: user.mfaEnabled,
         mfaEnforced: user.mfaEnforced,
