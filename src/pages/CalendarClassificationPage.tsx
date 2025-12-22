@@ -160,7 +160,19 @@ function CalendarClassificationPage() {
   const reclassifyMutation = useMutation({
     mutationFn: reclassifyCalendarEvents,
     onSuccess: (result) => {
-      setToastMessage(`✓ ${result.message}`);
+      const { fieldCounts: fc } = result;
+      const details = [
+        fc.category > 0 ? `Categoría: ${fc.category}` : null,
+        fc.dosage > 0 ? `Dosis: ${fc.dosage}` : null,
+        fc.treatmentStage > 0 ? `Etapa: ${fc.treatmentStage}` : null,
+        fc.attended > 0 ? `Asistencia: ${fc.attended}` : null,
+        fc.amountExpected > 0 ? `Monto esperado: ${fc.amountExpected}` : null,
+        fc.amountPaid > 0 ? `Monto pagado: ${fc.amountPaid}` : null,
+      ]
+        .filter(Boolean)
+        .join(" | ");
+      const msg = details ? `✓ ${result.reclassified} eventos actualizados. ${details}` : `✓ ${result.message}`;
+      setToastMessage(msg);
       setToastOpen(true);
       void queryClient.invalidateQueries({ queryKey: ["calendar-unclassified"] });
     },

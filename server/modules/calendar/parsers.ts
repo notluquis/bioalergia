@@ -56,9 +56,31 @@ const TEST_PATTERNS = [
   /prick/i, // prick to prick tests
   /aeroal[eé]rgenos?/i, // aeroalergenos test
 ];
-const ATTENDED_PATTERNS = [/\blleg[oó]\b/i, /\basist[ií]o\b/i];
+const ATTENDED_PATTERNS = [/\bllego\b/i, /\basist[ií]o\b/i];
 const MAINTENANCE_PATTERNS = [/\bmantenci[oó]n\b/i, /\bmant\b/i, /\bmensual\b/i];
 const DOSAGE_PATTERNS = [/(\d+(?:[.,]\d+)?)\s*ml\b/i, /(\d+(?:[.,]\d+)?)\s*cc\b/i, /(\d+(?:[.,]\d+)?)\s*mg\b/i];
+
+// Patterns for Licencia médica
+const LICENCIA_PATTERNS = [
+  /\blic\b/i, // "lic remota", "lic"
+  /\blicencia\b/i, // "licencia médica"
+];
+
+// Patterns for Consulta médica
+const CONSULTA_PATTERNS = [
+  /\bconsulta\b/i, // "1era consulta", "consulta"
+  /\d+(era|da|ra)?\s*consulta/i, // "1era consulta", "2da consulta"
+  /^\d{1,2}:\d{2}\s+[a-záéíóúñ]+\s+[a-záéíóúñ]+/i, // Time + name pattern like "13:37 reinaldo salas"
+];
+
+// Patterns for Control médico
+const CONTROL_PATTERNS = [
+  /\bcontrol\b/i, // "control s/c"
+];
+
+// Pattern for S/C (sin costo) - amount = 0
+const SIN_COSTO_PATTERN = /\bs\/?c\b/i;
+
 // Patterns for notes/reminders that should NOT be classified
 export const IGNORE_PATTERNS = [
   /^recordar\b/i, // RECORDAR AL DOCTOR...
@@ -165,13 +187,26 @@ function extractAmounts(summary: string, description: string) {
   }
 
   // Fallback: typo pattern like "acaros820)" - missing opening paren
-  // Extract 2-3 digit numbers followed by ) without preceding (
+  // Only extract exactly 2 digits to avoid capturing accidental digits (e.g., "acaros8" + "20)")
+  // Common prices are 2 digits (20, 30, 50, 60), 3+ digits would normally have proper parens
   if (amountExpected == null) {
-    const typoPattern = /[a-z](\d{2,3})\)/gi;
+    const typoPattern = /[a-z](\d{2})\)/gi;
     let typoMatch: RegExpExecArray | null;
     while ((typoMatch = typoPattern.exec(text)) !== null) {
       const amount = normalizeAmountRaw(typoMatch[1]);
       if (amount != null && amountExpected == null) {
+        amountExpected = amount;
+      }
+    }
+  }
+
+  // Fallback: amount at end of text without parens (e.g., "clusitoid 50")
+  if (amountExpected == null) {
+    const endAmountPattern = /\s(\d{2,3})\s*$/;
+    const endMatch = endAmountPattern.exec(text);
+    if (endMatch) {
+      const amount = normalizeAmountRaw(endMatch[1]);
+      if (amount != null) {
         amountExpected = amount;
       }
     }
@@ -186,6 +221,13 @@ function extractAmounts(summary: string, description: string) {
       if (amountExpected == null) amountExpected = amount;
     }
   }
+
+  // S/C (sin costo) = 0
+  if (SIN_COSTO_PATTERN.test(text)) {
+    amountExpected = 0;
+    amountPaid = 0;
+  }
+
   return { amountExpected, amountPaid };
 }
 
@@ -198,6 +240,7 @@ function classifyCategory(summary: string, description: string) {
     return null;
   }
 
+  // Tratamiento subcutáneo (highest priority for treatment)
   if (SUBCUT_PATTERNS.some((pattern) => pattern.test(text))) {
     return "Tratamiento subcutáneo";
   }
@@ -206,9 +249,27 @@ function classifyCategory(summary: string, description: string) {
   if (hasDecimalDosage) {
     return "Tratamiento subcutáneo";
   }
+
+  // Test y exámenes
   if (TEST_PATTERNS.some((pattern) => pattern.test(text))) {
     return "Test y exámenes";
   }
+
+  // Licencia médica
+  if (LICENCIA_PATTERNS.some((pattern) => pattern.test(text))) {
+    return "Licencia médica";
+  }
+
+  // Control médico
+  if (CONTROL_PATTERNS.some((pattern) => pattern.test(text))) {
+    return "Control médico";
+  }
+
+  // Consulta médica
+  if (CONSULTA_PATTERNS.some((pattern) => pattern.test(text))) {
+    return "Consulta médica";
+  }
+
   return null;
 }
 
@@ -253,9 +314,18 @@ function extractDosage(summary: string, description: string) {
 
 function detectTreatmentStage(summary: string, description: string) {
   const text = `${summary} ${description}`;
+
+  // Check for maintenance keywords
   if (MAINTENANCE_PATTERNS.some((pattern) => pattern.test(text))) {
     return "Mantención";
   }
+
+  // 0.5ml dosage = Mantención
+  const halfMlPattern = /0[.,]5\s*ml/i;
+  if (halfMlPattern.test(text)) {
+    return "Mantención";
+  }
+
   return null;
 }
 

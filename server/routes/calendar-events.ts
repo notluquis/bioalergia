@@ -449,6 +449,16 @@ export function registerCalendarEventRoutes(app: express.Express) {
 
       const updates: EventUpdate[] = [];
 
+      // Track modifications per field
+      const fieldCounts = {
+        category: 0,
+        dosage: 0,
+        treatmentStage: 0,
+        attended: 0,
+        amountExpected: 0,
+        amountPaid: 0,
+      };
+
       for (const event of events) {
         const metadata = parseCalendarMetadata({
           summary: event.summary,
@@ -460,21 +470,27 @@ export function registerCalendarEventRoutes(app: express.Express) {
         // Only fill fields that are currently null/empty
         if ((event.category === null || event.category === "") && metadata.category) {
           updateData.category = metadata.category;
+          fieldCounts.category++;
         }
         if (event.dosage === null && metadata.dosage) {
           updateData.dosage = metadata.dosage;
+          fieldCounts.dosage++;
         }
         if (event.treatmentStage === null && metadata.treatmentStage) {
           updateData.treatmentStage = metadata.treatmentStage;
+          fieldCounts.treatmentStage++;
         }
         if (event.attended === null && metadata.attended !== null) {
           updateData.attended = metadata.attended;
+          fieldCounts.attended++;
         }
         if (event.amountExpected === null && metadata.amountExpected !== null) {
           updateData.amountExpected = metadata.amountExpected;
+          fieldCounts.amountExpected++;
         }
         if (event.amountPaid === null && metadata.amountPaid !== null) {
           updateData.amountPaid = metadata.amountPaid;
+          fieldCounts.amountPaid++;
         }
 
         // Only add if there's something to update
@@ -504,6 +520,7 @@ export function registerCalendarEventRoutes(app: express.Express) {
         message: `Reclassified ${updates.length} events`,
         totalChecked: events.length,
         reclassified: updates.length,
+        fieldCounts,
       });
     })
   );
