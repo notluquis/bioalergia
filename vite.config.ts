@@ -119,28 +119,25 @@ export default defineConfig(({ mode }) => ({
     "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV || "development"),
   },
   build: {
-    modulePreload: false, // Disable to eliminate preload warnings for lazy chunks
+    target: "esnext", // Native 2026 performance: No transpilation for modern browsers
+    modulePreload: {
+      polyfill: false, // Fix "unused preload" warning by relying on native browser preload
+    },
     outDir: "dist/client",
     chunkSizeWarningLimit: 1000,
     sourcemap: false,
-    minify: "esbuild",
+    minify: "esbuild", // 2026: esbuild is standard for speed/size balance
+    // 2026: Trust the graph! Manual chunks often hurt HTTP/3 multiplexing.
+    // We let Vite/Rollup split based on dynamic imports (React.lazy).
     rollupOptions: {
       output: {
-        manualChunks: {
-          "react-vendor": ["react", "react-dom", "react-router-dom"],
-          "query-vendor": ["@tanstack/react-query"],
-          "ui-vendor": ["lucide-react"],
-          "data-vendor": ["dayjs", "zod"],
-          "calendar-vendor": [
-            "@fullcalendar/core",
-            "@fullcalendar/react",
-            "@fullcalendar/daygrid",
-            "@fullcalendar/timegrid",
-            "@fullcalendar/interaction",
-          ],
-        },
+        // manualChunks removed to allow granular graph-based splitting
       },
     },
+  },
+  esbuild: {
+    // 2026: Clean logs in production automatically
+    drop: mode === "production" ? ["console", "debugger"] : [],
   },
   resolve: {
     alias: {
@@ -162,8 +159,22 @@ export default defineConfig(({ mode }) => ({
     setupFiles: "./test/setup.ts",
     exclude: [...configDefaults.exclude, "test/employees.integration.test.ts"],
     coverage: {
-      reporter: ["text", "lcov"],
-      exclude: [...(configDefaults.coverage?.exclude ?? []), "test/setup.ts"],
+      provider: "v8",
+      reporter: ["text", "lcov", "html"],
+      include: ["src/**/*.{ts,tsx}", "server/**/*.ts", "shared/**/*.ts"],
+      exclude: [
+        ...(configDefaults.coverage?.exclude ?? []),
+        "test/setup.ts",
+        "**/*.test.{ts,tsx}",
+        "**/types.ts",
+        "**/*.d.ts",
+      ],
+      thresholds: {
+        lines: 80,
+        functions: 80,
+        branches: 75,
+        statements: 80,
+      },
     },
   },
 }));

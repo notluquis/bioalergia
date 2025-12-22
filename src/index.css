@@ -175,6 +175,14 @@ a {
   text-underline-offset: 4px;
 }
 
+button,
+a,
+input[type="submit"],
+input[type="button"] {
+  /* 2026 Standard: Remove 300ms tap delay on mobile completely */
+  touch-action: manipulation;
+}
+
 html[data-theme="bioalergia-dark"] body,
 html.dark body {
   background: #000;
