@@ -2,6 +2,7 @@ import dayjs from "dayjs";
 import { type CalendarEventDetail } from "@/features/calendar/types";
 import { currencyFormatter } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { FormattedEventDescription } from "./FormattedEventDescription";
 
 interface DailyEventCardProps {
   event: CalendarEventDetail;
@@ -80,47 +81,7 @@ export function DailyEventCard({ event }: DailyEventCardProps) {
         </div>
 
         {/* Description */}
-        {event.description && (
-          <div
-            className="text-base-content/60 [&_a]:text-primary mt-2 text-xs leading-relaxed font-normal transition-all [&_a]:underline"
-            dangerouslySetInnerHTML={{
-              __html: (() => {
-                let html = event.description;
-
-                // 1. Highlight common keys for better readability
-                const keysToBold = [
-                  "Edad",
-                  "RUT",
-                  "Motivo de la consulta",
-                  "Tratamiento usado",
-                  "Previsión",
-                  "Comuna",
-                  "Contacto",
-                  "Fono",
-                ];
-
-                const pattern = new RegExp(`(${keysToBold.join("|")}):`, "gi");
-                html = html.replace(pattern, '<span class="font-bold text-base-content/80">$1:</span>');
-
-                // 2. Highlight and separate DATOS BOLETA specifically
-                html = html.replace(
-                  /DATOS BOLETA/g,
-                  '<div class="mt-3 mb-1 font-bold text-base-content uppercase tracking-wide border-t border-base-200 pt-2">Datos Boleta</div>'
-                );
-
-                // 3. Improve spacing around anchor tags if they lack breaks
-                // (Only if not already near a tag)
-                // html = html.replace(/(<\/a>)\s+(?=[^<])/g, '$1<br/>');
-
-                // 4. Clean up some potential mess from the source (optional)
-                // Remove empty spans
-                html = html.replace(/<span>\s*<\/span>/g, "");
-
-                return html;
-              })(),
-            }}
-          />
-        )}
+        {event.description && <FormattedEventDescription text={event.description} className="mt-2" />}
       </div>
     </article>
   );

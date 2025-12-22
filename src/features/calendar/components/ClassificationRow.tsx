@@ -6,6 +6,7 @@ import { type FormValues } from "../schemas";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Checkbox from "@/components/ui/Checkbox";
+import { FormattedEventDescription } from "./FormattedEventDescription";
 
 interface ClassificationRowProps {
   index: number;
@@ -113,10 +114,10 @@ function ClassificationRowInner({
       </header>
 
       {description && (
-        <p className="bg-base-200 text-base-content rounded-xl p-3 text-xs shadow-inner">
-          <span className="text-base-content font-semibold">Descripción:</span>{" "}
-          <span className="whitespace-pre-wrap">{description}</span>
-        </p>
+        <div className="bg-base-200 text-base-content rounded-xl p-3 shadow-inner">
+          <span className="text-base-content mb-1 block text-xs font-semibold">Descripción:</span>
+          <FormattedEventDescription text={description} />
+        </div>
       )}
 
       <div className="text-base-content grid gap-4 text-xs md:grid-cols-6">
