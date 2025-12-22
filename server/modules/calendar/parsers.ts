@@ -422,6 +422,12 @@ function extractDosage(summary: string, description: string): string | null {
     return `${formatter.format(value)} ${unit}`;
   }
 
+  // Fallback: standalone decimal (e.g. "0,5") implies "ml" in this context
+  const decimalMatch = /\b(0[.,]\d+)\b/.exec(text);
+  if (decimalMatch) {
+    return `${decimalMatch[1].replace(".", ",")} ml`;
+  }
+
   // Fallback: maintenance pattern implies 0.5 ml
   if (matchesAny(text, MAINTENANCE_PATTERNS)) return "0,5 ml";
 
@@ -431,8 +437,8 @@ function extractDosage(summary: string, description: string): string | null {
 function detectTreatmentStage(summary: string, description: string): string | null {
   const text = `${summary} ${description}`;
 
-  // Maintenance keywords or 0.5ml dosage = Mantención
-  if (matchesAny(text, MAINTENANCE_PATTERNS) || /0[.,]5\s*ml/i.test(text)) {
+  // Maintenance keywords or 0.5 (with or without ml) = Mantención
+  if (matchesAny(text, MAINTENANCE_PATTERNS) || /0[.,]5(\s*ml)?\b/i.test(text)) {
     return "Mantención";
   }
 
