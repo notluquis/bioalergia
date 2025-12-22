@@ -106,76 +106,66 @@ function DaySection({ entry, defaultOpen = false }: DaySectionProps) {
             return (
               <article
                 key={event.eventId}
-                className="border-base-300 bg-base-100 text-base-content hover:bg-base-200/30 rounded-xl border p-4 text-sm transition-colors"
+                className="border-base-300 bg-base-100 text-base-content hover:bg-base-200/30 rounded-lg border p-3 text-sm transition-colors"
               >
-                <header className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="flex flex-col gap-1">
-                    <h3 className="text-base-content text-base font-semibold">
+                {/* Header: Title + Time + Tags */}
+                <header className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex min-w-0 flex-1 items-center gap-2">
+                    <h3 className="text-base-content truncate font-semibold">
                       {event.summary?.trim() || "(Sin título)"}
                     </h3>
-                    <span className="text-secondary/70 text-xs font-semibold tracking-wide uppercase">
-                      {formatEventTime(event)}
-                    </span>
+                    {event.startDateTime && (
+                      <span className="text-secondary/80 text-xs font-medium whitespace-nowrap">
+                        {formatEventTime(event)}
+                      </span>
+                    )}
                   </div>
-                  <div className="text-base-content/60 flex flex-col items-end gap-1 text-xs">
-                    <span className="bg-base-200 text-base-content rounded-full px-2 py-1 font-semibold">
-                      {event.calendarId}
-                    </span>
+                  <div className="flex flex-wrap items-center gap-1 text-xs">
                     {event.category && (
-                      <span className="bg-secondary/15 text-secondary rounded-full px-2 py-1 font-semibold">
+                      <span className="bg-secondary/15 text-secondary rounded-full px-2 py-0.5 font-medium">
                         {event.category}
                       </span>
                     )}
                     {isSubcutaneous && event.treatmentStage && (
-                      <span className="bg-primary/10 text-primary rounded-full px-2 py-1 font-semibold">
+                      <span className="bg-primary/10 text-primary rounded-full px-2 py-0.5 font-medium">
                         {event.treatmentStage}
                       </span>
                     )}
-                    {event.eventType && (
-                      <span className="bg-base-200 text-base-content/80 rounded-full px-2 py-1 font-semibold">
-                        {event.eventType}
+                    {isSubcutaneous && event.dosage && (
+                      <span className="bg-accent/10 text-accent rounded-full px-2 py-0.5 font-medium">
+                        {event.dosage}
                       </span>
                     )}
                   </div>
                 </header>
 
-                <dl className="text-base-content/60 mt-3 grid gap-2 text-xs sm:grid-cols-2">
-                  {detailEntries
-                    .filter((entry) => entry.value)
-                    .map((entry) => (
-                      <div key={entry.label} className="flex flex-col">
-                        <dt className="text-base-content font-semibold">{entry.label}</dt>
-                        <dd className="text-base-content/80">{entry.value}</dd>
-                      </div>
-                    ))}
-                </dl>
+                {/* Compact details row */}
+                <div className="text-base-content/60 mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
+                  {event.amountExpected != null && (
+                    <span>
+                      <span className="text-base-content font-medium">Esperado:</span>{" "}
+                      {currencyFormatter.format(event.amountExpected)}
+                    </span>
+                  )}
+                  {event.amountPaid != null && (
+                    <span>
+                      <span className="text-base-content font-medium">Pagado:</span>{" "}
+                      {currencyFormatter.format(event.amountPaid)}
+                    </span>
+                  )}
+                  {event.attended != null && (
+                    <span className={event.attended ? "text-success" : "text-error"}>
+                      {event.attended ? "✓ Asistió" : "✗ No asistió"}
+                    </span>
+                  )}
+                  {event.status && event.status !== "confirmed" && <span className="text-warning">{event.status}</span>}
+                </div>
 
-                {event.location && (
-                  <p className="text-base-content/60 mt-3 text-xs">
-                    <span className="text-base-content font-semibold">Ubicación:</span> {event.location}
-                  </p>
-                )}
-
-                {event.hangoutLink && (
-                  <p className="mt-2 text-xs">
-                    <a href={event.hangoutLink} target="_blank" rel="noreferrer" className="text-primary underline">
-                      Enlace de videollamada
-                    </a>
-                  </p>
-                )}
-
+                {/* Description (collapsed for long text) */}
                 {event.description && (
-                  <p className="text-base-content mt-3 text-sm whitespace-pre-wrap">{event.description}</p>
-                )}
-
-                {event.rawEvent != null && (
-                  <details className="text-base-content/60 group mt-3 text-xs">
-                    <summary className="text-primary cursor-pointer font-semibold group-hover:underline">
-                      Ver payload completo
-                    </summary>
-                    <pre className="bg-base-300 text-base-content mt-2 max-h-64 overflow-x-auto rounded-lg p-3 text-xs">
-                      {JSON.stringify(event.rawEvent, null, 2)}
-                    </pre>
+                  <details className="mt-2 text-xs">
+                    <summary className="text-primary cursor-pointer font-medium">Ver descripción</summary>
+                    <p className="text-base-content/80 mt-1 text-xs whitespace-pre-wrap">{event.description}</p>
                   </details>
                 )}
               </article>
