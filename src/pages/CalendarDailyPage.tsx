@@ -1,183 +1,36 @@
-import { useMemo, useState } from "react";
-import type { ChangeEvent } from "react";
+import { useMemo, useState, useEffect } from "react";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
-import { ChevronDown } from "lucide-react";
+import { Filter, X } from "lucide-react";
+import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
+import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
 
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import Alert from "@/components/ui/Alert";
-import { SmoothCollapse } from "@/components/ui/SmoothCollapse";
-import { cn } from "@/lib/utils";
 import { today } from "@/lib/dates";
 import { MultiSelectFilter, type MultiSelectOption } from "@/features/calendar/components/MultiSelectFilter";
 import { CalendarSkeleton } from "@/features/calendar/components/CalendarSkeleton";
 import { useCalendarEvents } from "@/features/calendar/hooks/useCalendarEvents";
-import type { CalendarEventDetail, CalendarDayEvents } from "@/features/calendar/types";
-import { numberFormatter, currencyFormatter } from "@/lib/format";
-import { PAGE_CONTAINER, TITLE_LG, SPACE_Y_TIGHT } from "@/lib/styles";
+import { numberFormatter } from "@/lib/format";
+import { PAGE_CONTAINER } from "@/lib/styles";
+
+// New Components
+import { DailyStatsCards } from "@/features/calendar/components/DailyStatsCards";
+import { DayNavigation } from "@/features/calendar/components/DayNavigation";
+import { DailyEventCard } from "@/features/calendar/components/DailyEventCard";
 
 dayjs.locale("es");
+dayjs.extend(isSameOrBefore);
+dayjs.extend(isSameOrAfter);
+
 const NULL_EVENT_TYPE_VALUE = "__NULL__";
 const NULL_CATEGORY_VALUE = "__NULL_CATEGORY__";
-
-const formatEventTime = (event: CalendarEventDetail) => {
-  if (event.startDateTime) {
-    const start = dayjs(event.startDateTime);
-    const end = event.endDateTime ? dayjs(event.endDateTime) : null;
-    return end ? `${start.format("HH:mm")} – ${end.format("HH:mm")}` : start.format("HH:mm");
-  }
-  if (event.startDate) return "Todo el día";
-  return "Sin horario";
-};
-
-interface DaySectionProps {
-  entry: CalendarDayEvents;
-  defaultOpen?: boolean;
-}
-
-function DaySection({ entry, defaultOpen = false }: DaySectionProps) {
-  const [isOpen, setIsOpen] = useState(defaultOpen);
-
-  return (
-    <div className="border-base-300 bg-base-100 text-base-content rounded-2xl border text-sm shadow-sm transition-all hover:shadow-md">
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className="focus:ring-primary/20 flex w-full cursor-pointer flex-wrap items-center justify-between gap-3 rounded-2xl p-4 text-left font-semibold outline-none focus:ring-2 focus:ring-inset"
-      >
-        <span className="text-primary flex items-center gap-2">
-          <ChevronDown
-            className={cn("h-5 w-5 transition-transform duration-300", isOpen ? "rotate-180" : "rotate-0")}
-          />
-          {dayjs(entry.date).format("dddd DD MMM YYYY")}
-        </span>
-        <span className="text-base-content/60 flex flex-wrap items-center gap-2 text-xs">
-          <span>
-            {numberFormatter.format(entry.total)} evento{entry.total === 1 ? "" : "s"}
-          </span>
-          <span className="hidden sm:inline">·</span>
-          <span>Esperado {currencyFormatter.format(entry.amountExpected ?? 0)}</span>
-          <span className="hidden sm:inline">·</span>
-          <span>Pagado {currencyFormatter.format(entry.amountPaid ?? 0)}</span>
-        </span>
-      </button>
-
-      <SmoothCollapse isOpen={isOpen}>
-        <div className="space-y-3 px-4 pb-4">
-          <div className="bg-base-200 h-px w-full" />
-          {entry.events.map((event) => {
-            const isSubcutaneous = event.category === "Tratamiento subcutáneo";
-            const detailEntries = [
-              { label: "Estado", value: event.status },
-              { label: "Transparencia", value: event.transparency },
-              { label: "Visibilidad", value: event.visibility },
-              { label: "Color", value: event.colorId },
-              { label: "Zona horaria", value: event.startTimeZone ?? event.endTimeZone },
-              {
-                label: "Monto esperado",
-                value: event.amountExpected != null ? currencyFormatter.format(event.amountExpected) : null,
-              },
-              {
-                label: "Monto pagado",
-                value: event.amountPaid != null ? currencyFormatter.format(event.amountPaid) : null,
-              },
-              {
-                label: "Asistencia",
-                value: event.attended == null ? null : event.attended ? "Asistió" : "No asistió",
-              },
-            ];
-
-            if (isSubcutaneous && event.dosage) {
-              detailEntries.push({ label: "Dosis", value: event.dosage });
-            }
-
-            detailEntries.push(
-              {
-                label: "Creado",
-                value: event.eventCreatedAt ? dayjs(event.eventCreatedAt).format("DD MMM YYYY HH:mm") : null,
-              },
-              {
-                label: "Actualizado",
-                value: event.eventUpdatedAt ? dayjs(event.eventUpdatedAt).format("DD MMM YYYY HH:mm") : null,
-              }
-            );
-
-            return (
-              <article
-                key={event.eventId}
-                className="border-base-300 bg-base-100 text-base-content hover:bg-base-200/30 rounded-lg border p-3 text-sm transition-colors"
-              >
-                {/* Header: Title + Time + Tags */}
-                <header className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex min-w-0 flex-1 items-center gap-2">
-                    <h3 className="text-base-content truncate font-semibold">
-                      {event.summary?.trim() || "(Sin título)"}
-                    </h3>
-                    <span className="text-secondary/80 text-xs font-medium whitespace-nowrap">
-                      {formatEventTime(event)}
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-1 text-xs">
-                    {event.category && (
-                      <span className="bg-secondary/15 text-secondary rounded-full px-2 py-0.5 font-medium">
-                        {event.category}
-                      </span>
-                    )}
-                    {isSubcutaneous && event.treatmentStage && (
-                      <span className="bg-primary/10 text-primary rounded-full px-2 py-0.5 font-medium">
-                        {event.treatmentStage}
-                      </span>
-                    )}
-                    {isSubcutaneous && event.dosage && (
-                      <span className="bg-accent/10 text-accent rounded-full px-2 py-0.5 font-medium">
-                        {event.dosage}
-                      </span>
-                    )}
-                  </div>
-                </header>
-
-                {/* Compact details row */}
-                <div className="text-base-content/60 mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
-                  {event.amountExpected != null && (
-                    <span>
-                      <span className="text-base-content font-medium">Esperado:</span>{" "}
-                      {currencyFormatter.format(event.amountExpected)}
-                    </span>
-                  )}
-                  {event.amountPaid != null && (
-                    <span>
-                      <span className="text-base-content font-medium">Pagado:</span>{" "}
-                      {currencyFormatter.format(event.amountPaid)}
-                    </span>
-                  )}
-                  {event.attended != null && (
-                    <span className={event.attended ? "text-success" : "text-error"}>
-                      {event.attended ? "✓ Asistió" : "✗ No asistió"}
-                    </span>
-                  )}
-                  {event.status && event.status !== "confirmed" && <span className="text-warning">{event.status}</span>}
-                </div>
-
-                {/* Description (collapsed for long text) */}
-                {event.description && (
-                  <details className="mt-2 text-xs">
-                    <summary className="text-primary cursor-pointer font-medium">Ver descripción</summary>
-                    <p className="text-base-content/80 mt-1 text-xs whitespace-pre-wrap">{event.description}</p>
-                  </details>
-                )}
-              </article>
-            );
-          })}
-        </div>
-      </SmoothCollapse>
-    </div>
-  );
-}
 
 function CalendarDailyPage() {
   const {
     filters,
+    appliedFilters,
     daily,
     loading,
     error,
@@ -189,15 +42,47 @@ function CalendarDailyPage() {
     resetFilters,
   } = useCalendarEvents();
 
-  const totals = useMemo(
-    () => ({
-      days: daily?.totals.days ?? 0,
-      events: daily?.totals.events ?? 0,
-      amountExpected: daily?.totals.amountExpected ?? 0,
-      amountPaid: daily?.totals.amountPaid ?? 0,
-    }),
-    [daily?.totals.amountExpected, daily?.totals.amountPaid, daily?.totals.days, daily?.totals.events]
-  );
+  const [selectedDate, setSelectedDate] = useState(() => today());
+  const [showFilters, setShowFilters] = useState(false);
+
+  // Sync selectedDate filter range to ensure data is loaded
+  // We try to keep a month loaded around the selected date
+  useEffect(() => {
+    const current = dayjs(selectedDate);
+    const startOfMonth = current.startOf("month").format("YYYY-MM-DD");
+    const endOfMonth = current.endOf("month").format("YYYY-MM-DD");
+
+    // Only update if current view is drastically out of range to avoid loop
+    // or if we want to ensure "month view" behavior
+    const isOutOfRange = dayjs(appliedFilters.from).isAfter(current) || dayjs(appliedFilters.to).isBefore(current);
+
+    // Check if the current range covers the month of selected date
+    const rangeCoversMonth =
+      dayjs(appliedFilters.from).isSameOrBefore(startOfMonth) && dayjs(appliedFilters.to).isSameOrAfter(endOfMonth);
+
+    if (isOutOfRange || !rangeCoversMonth) {
+      updateFilters("from", startOfMonth);
+      updateFilters("to", endOfMonth);
+      // We need to apply filters to trigger fetch
+      // But updateFilters just updates "filters" state, applyFilters commits it to "appliedFilters"
+      // We can't call applyFilters directly here easily without causing rendering loops if not careful
+      // actually useCalendarEvents separates draft "filters" and "appliedFilters".
+
+      // Let's set both
+      updateFilters("from", startOfMonth);
+      updateFilters("to", endOfMonth);
+      // We defer the apply to the user or auto-apply?
+      // Ideally for navigation, it should be auto.
+      // For this redesign, let's auto-apply date range changes when navigating far.
+    }
+  }, [selectedDate, appliedFilters.from, appliedFilters.to, updateFilters]);
+
+  // Auto-apply filters when date range changes in the draft filters due to navigation
+  useEffect(() => {
+    if (filters.from !== appliedFilters.from || filters.to !== appliedFilters.to) {
+      applyFilters();
+    }
+  }, [filters.from, filters.to, appliedFilters.from, appliedFilters.to, applyFilters]);
 
   const toggleCalendar = (calendarId: string) => {
     updateFilters(
@@ -255,178 +140,129 @@ function CalendarDailyPage() {
     [availableCategories]
   );
 
-  const handleMaxDaysChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const parsed = Number.parseInt(event.target.value, 10);
-    if (Number.isNaN(parsed)) {
-      updateFilters("maxDays", 1);
-      return;
-    }
-    const bounded = Math.min(Math.max(parsed, 1), 365);
-    updateFilters("maxDays", bounded);
-  };
+  // Get data for selected Day
+  const selectedDayEntry = useMemo(() => {
+    return daily?.days.find((d) => d.date === selectedDate);
+  }, [daily, selectedDate]);
 
-  const todayKey = today();
-  const tomorrowKey = dayjs().add(1, "day").format("YYYY-MM-DD");
-
-  const todayEntry = daily?.days.find((day) => day.date === todayKey) ?? null;
-  const tomorrowEntry = daily?.days.find((day) => day.date === tomorrowKey) ?? null;
-
-  const usedDates = new Set<string>();
-  if (todayEntry) usedDates.add(todayEntry.date);
-  if (tomorrowEntry) usedDates.add(tomorrowEntry.date);
-
-  const pastDays = (daily?.days ?? [])
-    .filter((day) => !usedDates.has(day.date) && dayjs(day.date).isBefore(dayjs(todayKey)))
-    .sort((a, b) => (a.date < b.date ? 1 : -1));
-
-  const futureBeyond = (daily?.days ?? [])
-    .filter((day) => !usedDates.has(day.date) && dayjs(day.date).isAfter(dayjs(tomorrowKey)))
-    .sort((a, b) => (a.date > b.date ? 1 : -1));
+  const hasEvents = (selectedDayEntry?.events.length ?? 0) > 0;
 
   return (
     <section className={PAGE_CONTAINER}>
-      <header className={SPACE_Y_TIGHT}>
-        <h1 className={TITLE_LG}>Detalle diario</h1>
-        <p className="text-base-content/70 text-sm">Revisa el detalle de cada jornada con los eventos sincronizados.</p>
-      </header>
-
-      <form
-        className="border-primary/15 bg-base-100 text-base-content grid gap-4 rounded-2xl border p-6 text-xs shadow-sm md:grid-cols-6"
-        onSubmit={(event) => {
-          event.preventDefault();
-          applyFilters();
-        }}
-      >
-        <Input
-          label="Desde"
-          type="date"
-          value={filters.from}
-          onChange={(event: ChangeEvent<HTMLInputElement>) => updateFilters("from", event.target.value)}
-        />
-        <Input
-          label="Hasta"
-          type="date"
-          value={filters.to}
-          onChange={(event: ChangeEvent<HTMLInputElement>) => updateFilters("to", event.target.value)}
-        />
-        <MultiSelectFilter
-          label="Calendarios"
-          options={calendarOptions}
-          selected={filters.calendarIds}
-          onToggle={toggleCalendar}
-          placeholder="Todos"
-        />
-        <MultiSelectFilter
-          label="Tipos de evento"
-          options={eventTypeOptions}
-          selected={filters.eventTypes}
-          onToggle={toggleEventType}
-          placeholder="Todos"
-        />
-        <MultiSelectFilter
-          label="Clasificación"
-          options={categoryOptions}
-          selected={filters.categories}
-          onToggle={toggleCategory}
-          placeholder="Todas"
-        />
-        <Input
-          label="Buscar"
-          placeholder="Título o descripción"
-          value={filters.search}
-          onChange={(event: ChangeEvent<HTMLInputElement>) => updateFilters("search", event.target.value)}
-          enterKeyHint="search"
-        />
-        <Input
-          label="Días a listar"
-          type="number"
-          min={1}
-          max={120}
-          value={filters.maxDays}
-          onChange={handleMaxDaysChange}
-          inputMode="numeric"
-        />
-        <div className="flex items-end gap-2 md:col-span-2">
-          <Button type="submit" disabled={loading}>
-            {loading ? "Actualizando..." : "Aplicar filtros"}
-          </Button>
-          <Button type="button" variant="secondary" onClick={resetFilters} disabled={loading}>
-            Restablecer
+      {/* Header & Navigation */}
+      <header className="space-y-6">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <h1 className="text-base-content text-3xl font-bold tracking-tight">Detalle Diario</h1>
+          <Button
+            variant={showFilters ? "secondary" : "outline"}
+            onClick={() => setShowFilters(!showFilters)}
+            className="gap-2"
+          >
+            {showFilters ? <X className="h-4 w-4" /> : <Filter className="h-4 w-4" />}
+            {showFilters ? "Ocultar filtros" : "Filtros"}
           </Button>
         </div>
-      </form>
+
+        {/* Filters Panel (Collapsible) */}
+        {showFilters && (
+          <form
+            className="border-base-300 bg-base-100 animate-in slide-in-from-top-2 grid gap-4 rounded-2xl border p-6 text-xs shadow-sm duration-200 md:grid-cols-6"
+            onSubmit={(event) => {
+              event.preventDefault();
+              applyFilters();
+            }}
+          >
+            {/* Date range inputs are less relevant now as we auto-navigate, 
+                 but kept for explicit specific range override if needed 
+                 or maybe strictly for other filters */}
+            <div className="md:col-span-2 md:col-start-1">
+              <p className="mb-2 font-semibold">Opciones de visualización</p>
+              <Input
+                label="Días máximos a cargar"
+                type="number"
+                min={1}
+                max={120}
+                value={filters.maxDays}
+                onChange={(e) => updateFilters("maxDays", parseInt(e.target.value) || 31)}
+              />
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-3 md:col-span-6">
+              <MultiSelectFilter
+                label="Calendarios"
+                options={calendarOptions}
+                selected={filters.calendarIds}
+                onToggle={toggleCalendar}
+                placeholder="Todos"
+              />
+              <MultiSelectFilter
+                label="Tipos de evento"
+                options={eventTypeOptions}
+                selected={filters.eventTypes}
+                onToggle={toggleEventType}
+                placeholder="Todos"
+              />
+              <MultiSelectFilter
+                label="Clasificación"
+                options={categoryOptions}
+                selected={filters.categories}
+                onToggle={toggleCategory}
+                placeholder="Todas"
+              />
+            </div>
+
+            <div className="mt-2 flex justify-end gap-2 md:col-span-6">
+              <Button type="button" variant="ghost" onClick={resetFilters}>
+                Limpiar
+              </Button>
+              <Button type="submit">Aplicar cambios</Button>
+            </div>
+          </form>
+        )}
+
+        <DayNavigation selectedDate={selectedDate} onSelect={setSelectedDate} />
+      </header>
 
       {error && <Alert variant="error">{error}</Alert>}
 
-      {(totals.events > 0 || totals.days > 0) && (
-        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <div className="border-base-300 bg-base-100 rounded-2xl border p-4 text-sm shadow-sm transition-transform hover:scale-[1.01]">
-            <p className="text-base-content/80 text-xs font-semibold tracking-wide uppercase">Días listados</p>
-            <p className="text-primary mt-2 text-2xl font-semibold">{numberFormatter.format(totals.days)}</p>
-          </div>
-          <div className="border-base-300 bg-base-100 rounded-2xl border p-4 text-sm shadow-sm transition-transform hover:scale-[1.01]">
-            <p className="text-base-content/80 text-xs font-semibold tracking-wide uppercase">Eventos listados</p>
-            <p className="text-primary mt-2 text-2xl font-semibold">{numberFormatter.format(totals.events)}</p>
-          </div>
-          <div className="border-base-300 bg-base-100 rounded-2xl border p-4 text-sm shadow-sm transition-transform hover:scale-[1.01]">
-            <p className="text-base-content/80 text-xs font-semibold tracking-wide uppercase">Monto esperado</p>
-            <p className="text-primary mt-2 text-2xl font-semibold">
-              {currencyFormatter.format(totals.amountExpected)}
+      {/* Daily Stats */}
+      {selectedDayEntry && (
+        <DailyStatsCards
+          eventsCount={selectedDayEntry.total}
+          amountExpected={selectedDayEntry.amountExpected}
+          amountPaid={selectedDayEntry.amountPaid}
+          className="mt-6"
+        />
+      )}
+
+      {/* Main Content */}
+      <div className="mt-8 space-y-4">
+        {loading && !daily ? (
+          <CalendarSkeleton days={1} />
+        ) : !selectedDayEntry || !hasEvents ? (
+          <div className="border-base-200 bg-base-100/50 flex flex-col items-center justify-center rounded-3xl border-2 border-dashed py-16 text-center">
+            <div className="bg-base-200 mb-4 rounded-full p-4">
+              <Filter className="text-base-content/30 h-8 w-8" />
+            </div>
+            <h3 className="text-base-content/70 text-lg font-semibold">Sin eventos para este día</h3>
+            <p className="text-base-content/50 mt-1 max-w-xs text-sm">
+              No hay eventos registrados para el {dayjs(selectedDate).format("DD [de] MMMM")}.
             </p>
+            {/* Optional: Add "Create Event" button here later if needed */}
           </div>
-          <div className="border-base-300 bg-base-100 rounded-2xl border p-4 text-sm shadow-sm transition-transform hover:scale-[1.01]">
-            <p className="text-base-content/80 text-xs font-semibold tracking-wide uppercase">Monto pagado</p>
-            <p className="text-primary mt-2 text-2xl font-semibold">{currencyFormatter.format(totals.amountPaid)}</p>
+        ) : (
+          <div className="grid gap-3">
+            {selectedDayEntry.events.map((event) => (
+              <DailyEventCard key={event.eventId} event={event} />
+            ))}
+
+            {/* Summary Footer for the day */}
+            <div className="text-base-content/40 flex justify-end pt-4 text-xs">
+              Mostrando {selectedDayEntry.total} eventos
+            </div>
           </div>
-        </section>
-      )}
-
-      {loading && <CalendarSkeleton days={3} />}
-      {!loading && daily && daily.days.length === 0 && (
-        <Alert variant="warning">No se encontraron eventos con los filtros seleccionados.</Alert>
-      )}
-
-      {!loading && (
-        <div className="space-y-6">
-          {todayEntry && (
-            <section className="space-y-2">
-              <h2 className="text-base-content/80 pl-2 text-sm font-semibold tracking-wide uppercase">Hoy</h2>
-              <DaySection entry={todayEntry} defaultOpen={true} />
-            </section>
-          )}
-
-          {tomorrowEntry && (
-            <section className="space-y-2">
-              <h2 className="text-base-content/80 pl-2 text-sm font-semibold tracking-wide uppercase">Mañana</h2>
-              <DaySection entry={tomorrowEntry} />
-            </section>
-          )}
-
-          {futureBeyond.length > 0 && (
-            <section className="space-y-2">
-              <h2 className="text-base-content/80 pl-2 text-sm font-semibold tracking-wide uppercase">Próximos días</h2>
-              <div className="space-y-3">
-                {futureBeyond.map((entry) => (
-                  <DaySection key={entry.date} entry={entry} />
-                ))}
-              </div>
-            </section>
-          )}
-
-          {pastDays.length > 0 && (
-            <section className="space-y-2">
-              <h2 className="text-base-content/80 pl-2 text-sm font-semibold tracking-wide uppercase">
-                Días anteriores
-              </h2>
-              <div className="space-y-3">
-                {pastDays.map((entry) => (
-                  <DaySection key={entry.date} entry={entry} />
-                ))}
-              </div>
-            </section>
-          )}
-        </div>
-      )}
+        )}
+      </div>
     </section>
   );
 }
