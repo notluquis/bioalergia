@@ -7,18 +7,32 @@ dayjs.extend(utc);
 dayjs.extend(timezone);
 
 const SUBCUT_PATTERNS = [
-  /cl[au]st[oau]id[eo]?/i, // Tolerant: clustoid, clastoid, clustoide, clustoida
+  /cl[au]st[oau]id[eo]?/i, // Tolerant: clustoid, clastoid, clustoide, clusitoid, etc.
   /cl[au]st[io]d/i, // Common typos: clustid, clastid
   /clutoid/i, // Missing 's'
   /\bclust/i, // Starts with clust (cluster, clustoid, etc.)
   /\bdosis\s+clust/i,
-  /\bvacc?\b/i,
-  /\bvacuna\b/i,
-  /\bvac\.?\b/i,
+  /alxoid/i, // Alxoid treatment
+  /cluxin/i, // Cluxin treatment
+  /\bvacc?\b/i, // "vac" or "vacc"
+  /vacuna/i, // VACUNA anywhere (handles "llegoVACUNA")
   /\bsubcut[áa]ne[oa]/i,
   /inmuno/i,
+  /\d+[ªº]?\s*(ta|da|ra|va)?\s*dosis/i, // "4ta dosis", "3ra dosis", "2da dosis", "1 dosis"
 ];
-const TEST_PATTERNS = [/\bexamen\b/i, /\btest\b/i, /cut[áa]neo/i, /ambiental/i, /panel/i, /multitest/i];
+
+// Pattern to detect dosage values like "0,5" or "0.5" (decimal fractions without unit)
+const DECIMAL_DOSAGE_PATTERN = /\b(\d+[.,]\d+)\b/;
+
+const TEST_PATTERNS = [
+  /\bexamen\b/i,
+  /\btest\b/i,
+  /cut[áa]neo/i,
+  /ambiental/i,
+  /panel/i,
+  /multi\s*tes?t?/i, // Handles multitest, multites, multites (typo)
+  /prick/i, // prick to prick tests
+];
 const ATTENDED_PATTERNS = [/\blleg[oó]\b/i, /\basist[ií]o\b/i];
 const MAINTENANCE_PATTERNS = [/\bmantenci[oó]n\b/i, /\bmant\b/i];
 const DOSAGE_PATTERNS = [/(\d+(?:[.,]\d+)?)\s*ml\b/i, /(\d+(?:[.,]\d+)?)\s*cc\b/i, /(\d+(?:[.,]\d+)?)\s*mg\b/i];
@@ -110,6 +124,13 @@ function extractAmounts(summary: string, description: string) {
 function classifyCategory(summary: string, description: string) {
   const text = `${summary} ${description}`.toLowerCase();
   if (SUBCUT_PATTERNS.some((pattern) => pattern.test(text))) {
+    return "Tratamiento subcutáneo";
+  }
+  // Detect decimal dosage (0,5 or 0.5) combined with "dosis" or "mantencion"
+  const hasDecimalDosage = DECIMAL_DOSAGE_PATTERN.test(text);
+  const hasDosisKeyword = /\bdosis\b/i.test(text);
+  const hasMaintenanceKeyword = MAINTENANCE_PATTERNS.some((p) => p.test(text));
+  if (hasDecimalDosage && (hasDosisKeyword || hasMaintenanceKeyword)) {
     return "Tratamiento subcutáneo";
   }
   if (TEST_PATTERNS.some((pattern) => pattern.test(text))) {
