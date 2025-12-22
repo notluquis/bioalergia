@@ -54,7 +54,7 @@ const SidebarItem = React.memo(function SidebarItem({
                   : "w-full justify-start px-3 py-2",
               finalActive
                 ? "bg-primary text-primary-content shadow-primary/30 font-medium shadow-md"
-                : "text-base-content/70 hover:bg-base-content/5 hover:text-base-content hover:shadow-sm"
+                : "text-base-content/85 hover:bg-base-content/5 hover:text-base-content hover:shadow-sm"
             );
           }}
         >
@@ -228,7 +228,7 @@ export default function Sidebar({ isOpen, isMobile, onClose }: SidebarProps) {
                   !isMobile && isCollapsed ? "h-0 overflow-hidden opacity-0" : "h-auto opacity-100"
                 )}
               >
-                <h3 className="text-base-content/30 text-[10px] font-bold tracking-[0.2em] uppercase">
+                <h3 className="text-base-content/50 text-[10px] font-bold tracking-[0.2em] uppercase">
                   {section.title}
                 </h3>
               </div>
