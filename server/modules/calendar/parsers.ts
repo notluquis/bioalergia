@@ -134,6 +134,8 @@ function extractAmounts(summary: string, description: string) {
   let amountExpected: number | null = null;
   let amountPaid: number | null = null;
   const text = `${summary} ${description}`;
+
+  // Standard pattern: (amount) with proper parentheses
   const regex = /\(([^)]+)\)/gi;
   let match: RegExpExecArray | null;
   while ((match = regex.exec(text)) !== null) {
@@ -147,6 +149,20 @@ function extractAmounts(summary: string, description: string) {
       amountExpected = amount;
     }
   }
+
+  // Fallback: typo pattern like "acaros820)" - missing opening paren
+  // Extract 2-3 digit numbers followed by ) without preceding (
+  if (amountExpected == null) {
+    const typoPattern = /[a-z](\d{2,3})\)/gi;
+    let typoMatch: RegExpExecArray | null;
+    while ((typoMatch = typoPattern.exec(text)) !== null) {
+      const amount = normalizeAmountRaw(typoMatch[1]);
+      if (amount != null && amountExpected == null) {
+        amountExpected = amount;
+      }
+    }
+  }
+
   const paidOutside = /pagado\s*(\d+)/gi;
   let matchPaid: RegExpExecArray | null;
   while ((matchPaid = paidOutside.exec(text)) !== null) {
@@ -190,6 +206,8 @@ function detectAttendance(summary: string, description: string) {
 
 function extractDosage(summary: string, description: string) {
   const text = `${summary} ${description}`;
+
+  // First try to find explicit dosage (e.g., "0.5 ml", "1 cc")
   for (const pattern of DOSAGE_PATTERNS) {
     const match = pattern.exec(text);
     if (!match) continue;
@@ -210,6 +228,12 @@ function extractDosage(summary: string, description: string) {
     const formattedValue = formatter.format(normalizedValue);
     return `${formattedValue} ${unit}`;
   }
+
+  // Fallback: if maintenance pattern found, infer 0.5 ml
+  if (MAINTENANCE_PATTERNS.some((pattern) => pattern.test(text))) {
+    return "0,5 ml";
+  }
+
   return null;
 }
 
