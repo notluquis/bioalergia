@@ -25,12 +25,14 @@ export async function setupMfa() {
 export interface MfaEnableParams {
   token: string;
   userId?: number;
+  secret?: string;
 }
 
-export async function enableMfa({ token, userId }: MfaEnableParams) {
+export async function enableMfa({ token, userId, secret }: MfaEnableParams) {
   return apiClient.post<{ status: string; message?: string }>("/api/auth/mfa/enable", {
     token,
     userId,
+    secret,
   });
 }
 

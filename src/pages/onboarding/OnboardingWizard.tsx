@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import type { PublicKeyCredentialCreationOptionsJSON } from "@simplewebauthn/browser";
 import { useAuth } from "@/context/AuthContext";
 import { Shield, Key, Check, ArrowRight, User, CreditCard, Smartphone, Loader2, Fingerprint } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -9,7 +8,7 @@ import { formatRut, validateRut } from "@/lib/rut";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import { fetchUserProfile, setupUser } from "@/features/users/api";
-import { apiClient } from "@/lib/apiClient";
+import { setupMfa, enableMfa, fetchPasskeyRegistrationOptions, verifyPasskeyRegistration } from "@/features/auth/api";
 
 const STEPS = [
   { id: "welcome", title: "Bienvenida" },
@@ -74,13 +73,21 @@ export default function OnboardingWizard() {
 
   // Mutations
   const mfaSetupMutation = useMutation({
-    mutationFn: () => apiClient.post<{ secret: string; qrCodeUrl: string }>("/api/auth/mfa/setup", {}),
-    onSuccess: (data) => setMfaSecret(data),
+    mutationFn: () =>
+      setupMfa().then((res) => {
+        if (res.status !== "ok") throw new Error(res.message || "Error al iniciar configuración MFA");
+        return res;
+      }),
+    onSuccess: (data) => setMfaSecret({ secret: data.secret, qrCodeUrl: data.qrCodeUrl }),
     onError: () => setError("Error de conexión"),
   });
 
   const mfaVerifyMutation = useMutation({
-    mutationFn: (token: string) => apiClient.post("/api/auth/mfa/enable", { token, secret: mfaSecret?.secret }),
+    mutationFn: (token: string) =>
+      enableMfa({ token, secret: mfaSecret?.secret }).then((res) => {
+        if (res.status !== "ok") throw new Error(res.message || "Código incorrecto");
+        return res;
+      }),
     onSuccess: () => {
       setMfaEnabled(true);
       handleNext();
@@ -90,10 +97,14 @@ export default function OnboardingWizard() {
 
   const passkeyRegisterMutation = useMutation({
     mutationFn: async () => {
-      const options = await apiClient.get<PublicKeyCredentialCreationOptionsJSON>("/api/auth/passkey/register/options");
+      const options = await fetchPasskeyRegistrationOptions();
+      if (options.status === "error") throw new Error(options.message);
+
       const { startRegistration } = await import("@simplewebauthn/browser");
       const attResp = await startRegistration({ optionsJSON: options });
-      await apiClient.post("/api/auth/passkey/register/verify", { body: attResp, challenge: options.challenge });
+
+      const verifyData = await verifyPasskeyRegistration({ body: attResp, challenge: options.challenge });
+      if (verifyData.status !== "ok") throw new Error(verifyData.message || "Error al verificar passkey");
     },
     onSuccess: () => {
       setMfaEnabled(true);
@@ -180,14 +191,14 @@ export default function OnboardingWizard() {
   const verifyMfa = () => mfaVerifyMutation.mutate(mfaCode);
   const handlePasskeyRegister = () => passkeyRegisterMutation.mutate();
 
-  const { mutate: setupMfa } = mfaSetupMutation;
+  const { mutate: triggerSetupMfa } = mfaSetupMutation;
 
   // Initialize MFA generation when entering step
   useEffect(() => {
     if (currentStep === 4 && !mfaSecret && !mfaEnabled) {
-      setupMfa();
+      triggerSetupMfa();
     }
-  }, [currentStep, mfaSecret, mfaEnabled, setupMfa]);
+  }, [currentStep, mfaSecret, mfaEnabled, triggerSetupMfa]);
 
   const handleFinalSubmit = () => finalSubmitMutation.mutate();
 
