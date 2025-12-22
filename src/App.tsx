@@ -112,7 +112,7 @@ export default function App() {
         </div>
       )}
       {/* Layout Shell: Main Flex Container */}
-      <div className="layout-shell text-base-content relative mx-auto flex min-h-screen w-full gap-4 p-3 pt-[max(0.75rem,env(safe-area-inset-top))] pr-[max(0.75rem,env(safe-area-inset-right))] pb-[max(0.75rem,env(safe-area-inset-bottom))] pl-[max(0.75rem,env(safe-area-inset-left))] transition-all duration-300 sm:px-4 md:gap-4 lg:px-6">
+      <div className="layout-shell text-base-content relative mx-auto flex min-h-screen w-full gap-0 p-0 transition-all duration-300 md:gap-4 md:p-4">
         {/* Hamburger button: accessible, compact, always visible on mobile */}
         <button
           type="button"
@@ -160,9 +160,9 @@ export default function App() {
         <div className="layout-container flex min-w-0 flex-1 flex-col gap-3 pb-[calc(110px+env(safe-area-inset-bottom))] md:pb-0">
           <Header />
 
-          <main className="flex-1 rounded-3xl">
-            <div className="surface-recessed h-full rounded-3xl px-3 py-4 shadow-inner sm:px-5">
-              <div className="muted-scrollbar h-full overflow-auto">
+          <main className="flex-1 overflow-hidden rounded-3xl transition-all duration-300">
+            <div className="surface-recessed border-base-200/50 bg-base-100/50 h-full w-full overflow-hidden rounded-3xl border shadow-inner">
+              <div className="muted-scrollbar h-full w-full overflow-x-hidden overflow-y-auto p-3 md:p-5">
                 <Outlet />
               </div>
             </div>

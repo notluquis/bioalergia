@@ -8,15 +8,10 @@ import { NAV_SECTIONS } from "@/config/navigation";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/Tooltip";
 import { APP_CONFIG } from "@/config/app";
 
-// Removed local types definition in favor of types from config if needed,
-// though here we just consume the exported constant.
-
 interface SidebarProps {
   isOpen: boolean;
   isMobile: boolean;
   onClose?: () => void;
-  isCollapsed?: boolean;
-  toggleCollapse?: () => void;
 }
 
 export default function Sidebar({ isOpen, isMobile, onClose }: SidebarProps) {
@@ -27,7 +22,6 @@ export default function Sidebar({ isOpen, isMobile, onClose }: SidebarProps) {
   const [pendingPath, setPendingPath] = React.useState<string | null>(null);
 
   // Local state for collapse behavior (Desktop only)
-  // Default to collapsed (true) as requested
   const [isCollapsed, setIsCollapsed] = React.useState(true);
 
   // Use full name from backend, fallback to email prefix
@@ -53,63 +47,45 @@ export default function Sidebar({ isOpen, isMobile, onClose }: SidebarProps) {
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         className={cn(
-          "border-base-300/50 bg-base-200/80 text-base-content z-50 flex shrink-0 flex-col rounded-3xl border text-sm shadow-2xl backdrop-blur-3xl transition-all duration-300",
-          // Mobile: Layout
-          isMobile ? "fixed inset-y-0 left-0 h-full" : "hidden md:sticky md:top-4 md:flex md:h-[calc(100dvh-2rem)]",
-          // Transform for mobile drawer
+          "border-base-300/50 bg-base-200/80 text-base-content z-50 flex shrink-0 flex-col rounded-3xl border text-sm shadow-2xl backdrop-blur-3xl transition-all duration-300 ease-[cubic-bezier(0.2,0,0,1)]",
+          // Mobile: VS Desktop Layout
+          isMobile
+            ? "fixed inset-y-0 left-0 z-[100] h-full"
+            : "hidden md:sticky md:top-4 md:flex md:h-[calc(100dvh-2rem)]",
+          // Mobile: Drawer transform
           isMobile && !isOpen ? "-translate-x-full" : "translate-x-0",
-          // Width based on collapsed state
-          isCollapsed ? "w-20" : "w-[min(300px,88vw)]",
-          isCollapsed ? "px-1.5 py-2" : "p-2",
+          // Desktop: Width Transition
+          !isMobile && isCollapsed ? "w-20 px-2 py-2" : "w-[260px] p-3",
           "overflow-x-hidden"
         )}
         aria-label="Navegación principal"
       >
         <div className="flex h-full flex-col gap-2 overflow-hidden">
-          {/* User Profile Card */}
+          {/* User Profile / Brand Card */}
           <div
             className={cn(
-              "border-base-300/40 from-base-100/85 via-base-200/70 to-base-100/50 rounded-2xl border bg-linear-to-br shadow-inner transition-all",
-              isCollapsed ? "p-1.5" : "p-2"
+              "border-base-300/40 from-base-100/85 via-base-200/70 to-base-100/50 relative flex items-center overflow-hidden rounded-2xl border bg-linear-to-br shadow-inner transition-all duration-300",
+              !isMobile && isCollapsed ? "justify-center p-1.5" : "gap-3 p-2 px-3"
             )}
           >
-            {isCollapsed ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="flex items-center justify-center">
-                    <div className="bg-base-100/80 border-base-300 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border shadow-sm">
-                      <img src="/logo_bimi.svg" alt="Bioalergia" className="h-7 w-7 object-contain" loading="lazy" />
-                    </div>
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent side="right">
-                  <div className="text-left">
-                    <p className="font-semibold">{displayName}</p>
-                    <p className="text-base-content/70 text-xs">{user?.email}</p>
-                  </div>
-                </TooltipContent>
-              </Tooltip>
-            ) : (
-              <div className="flex items-center gap-2">
-                <div className="bg-base-100/80 border-base-300 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border shadow-sm">
-                  <img
-                    src="/logo_bimi.svg"
-                    alt="Bioalergia"
-                    className="h-7 w-7 object-contain"
-                    loading="lazy"
-                    decoding="async"
-                  />
-                </div>
-                <div className="min-w-0 overflow-hidden transition-all duration-300">
-                  <p className="text-base-content truncate text-sm leading-tight font-semibold">{displayName}</p>
-                  <p className="text-base-content/70 truncate text-xs">{APP_CONFIG.name}</p>
-                </div>
-              </div>
-            )}
+            <div className="bg-base-100/80 border-base-300 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border shadow-sm">
+              <img src="/logo_bimi.svg" alt="Bioalergia" className="h-7 w-7 object-contain" loading="lazy" />
+            </div>
+
+            {/* Text Content - Fluid Reveal */}
+            <div
+              className={cn(
+                "flex min-w-0 flex-col overflow-hidden whitespace-nowrap transition-all duration-300 ease-in-out",
+                !isMobile && isCollapsed ? "w-0 opacity-0 md:hidden" : "w-auto opacity-100"
+              )}
+            >
+              <span className="truncate text-sm leading-tight font-semibold">{displayName}</span>
+              <span className="text-base-content/60 truncate text-[10px]">{user?.email}</span>
+            </div>
           </div>
 
           {/* Navigation Links */}
-          <nav className="muted-scrollbar flex-1 space-y-0.5 overflow-y-auto px-2 py-2 contain-layout">
+          <nav className="muted-scrollbar flex-1 space-y-4 overflow-x-hidden overflow-y-auto py-2 contain-layout">
             <div className="space-y-1">
               {NAV_SECTIONS.map((section) => {
                 const visibleItems = section.items.filter((item) => {
@@ -120,92 +96,101 @@ export default function Sidebar({ isOpen, isMobile, onClose }: SidebarProps) {
                 if (!visibleItems.length) return null;
 
                 return (
-                  <section key={section.title} className={cn("space-y-0.5", isCollapsed && "text-center")}>
-                    {!isCollapsed && (
-                      <div className="mb-1 px-2">
-                        <p className="text-base-content/60 text-[9px] font-bold tracking-widest uppercase">
-                          {section.title}
-                        </p>
-                      </div>
-                    )}
+                  <section key={section.title} className="space-y-0.5">
+                    {/* Section Title - Fades out on collapse */}
+                    <div
+                      className={cn(
+                        "mb-1 overflow-hidden px-3 whitespace-nowrap transition-all duration-300",
+                        !isMobile && isCollapsed ? "h-0 py-0 opacity-0" : "h-auto opacity-100"
+                      )}
+                    >
+                      <p className="text-base-content/50 truncate text-[10px] font-bold tracking-widest uppercase">
+                        {section.title}
+                      </p>
+                    </div>
 
-                    <div className="space-y-0.5">
+                    <div className="space-y-1">
                       {visibleItems.map((item) => {
-                        const isExact = location.pathname === item.to;
-                        const isSubRoute = location.pathname.startsWith(item.to + "/");
-                        const active = isExact || isSubRoute;
                         const isPending =
                           pendingPath === item.to || (navigation.state === "loading" && pendingPath === item.to);
-                        const alreadyHere = active;
 
                         return (
-                          <NavLink
-                            key={item.to}
-                            to={item.to}
-                            end={item.exact}
-                            onClick={() => {
-                              if (!alreadyHere) setPendingPath(item.to);
-                              if (isMobile && onClose) onClose();
-                            }}
-                            className={({ isActive }) => {
-                              // isActive from NavLink might be true for partial matches depending on 'end' prop,
-                              // but we override with our custom 'active' logic for stricter control if needed,
-                              // or just rely on 'active' calculated above.
-                              const finalActive = active || isActive;
+                          <Tooltip key={item.to} delayDuration={300}>
+                            <TooltipTrigger asChild>
+                              <NavLink
+                                to={item.to}
+                                end={item.exact}
+                                onClick={() => {
+                                  if (location.pathname !== item.to) setPendingPath(item.to);
+                                  if (isMobile && onClose) onClose();
+                                }}
+                                className={({ isActive }) => {
+                                  const finalActive = isActive || isPending;
 
-                              if (isCollapsed) {
-                                return cn(
-                                  "mx-auto flex h-9 w-9 items-center justify-center rounded-xl transition-all active:scale-95",
-                                  finalActive || isPending
-                                    ? "bg-primary text-primary-content"
-                                    : "text-base-content/70 hover:bg-base-100/50 hover:text-base-content"
-                                );
-                              }
-                              return cn(
-                                "group relative flex items-center gap-3 rounded-lg px-3 py-1.5 text-xs font-medium active:scale-[0.98]",
-                                finalActive || isPending
-                                  ? "bg-primary text-primary-content"
-                                  : "text-base-content/70 hover:bg-base-100/50 hover:text-base-content"
-                              );
-                            }}
-                          >
-                            {({ isActive }) => {
-                              const active = isActive || isPending;
+                                  return cn(
+                                    "group relative my-0.5 flex items-center rounded-xl transition-all duration-200 outline-none",
+                                    !isMobile && isCollapsed
+                                      ? "mx-auto w-10 justify-center px-0 py-2.5"
+                                      : "w-full px-3 py-2.5",
+                                    finalActive
+                                      ? "bg-primary text-primary-content shadow-primary/80 shadow-md"
+                                      : "text-base-content/70 hover:bg-base-100 hover:text-base-content hover:shadow-sm"
+                                  );
+                                }}
+                              >
+                                {({ isActive }) => {
+                                  // NavLink's isActive + our local pending state
+                                  const finalActive = isActive || isPending;
 
-                              if (isCollapsed) {
-                                return (
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <span className="flex h-full w-full items-center justify-center">
-                                        <item.icon className="h-5 w-5" />
+                                  return (
+                                    <>
+                                      <div
+                                        className={cn(
+                                          "flex shrink-0 items-center justify-center transition-colors duration-200",
+                                          "h-5 w-5"
+                                        )}
+                                      >
+                                        <item.icon
+                                          className={cn(
+                                            "h-5 w-5 transition-transform duration-200",
+                                            finalActive ? "scale-110" : "group-hover:scale-110"
+                                          )}
+                                        />
+                                      </div>
+
+                                      <span
+                                        className={cn(
+                                          "overflow-hidden text-sm font-medium whitespace-nowrap transition-all duration-300 ease-[cubic-bezier(0.2,0,0,1)]",
+                                          !isMobile && isCollapsed
+                                            ? "w-0 translate-x-4 opacity-0"
+                                            : "ml-3 w-auto translate-x-0 opacity-100"
+                                        )}
+                                      >
+                                        {item.label}
                                       </span>
-                                    </TooltipTrigger>
-                                    <TooltipContent
-                                      side="right"
-                                      sideOffset={10}
-                                      className="bg-base-300 text-base-content border-base-200 z-50 border font-medium shadow-sm"
-                                    >
-                                      {item.label}
-                                    </TooltipContent>
-                                  </Tooltip>
-                                );
-                              }
-                              return (
-                                <>
-                                  <item.icon
-                                    className={cn(
-                                      "h-4 w-4 shrink-0",
-                                      active ? "text-primary-content" : "text-base-content/60 group-hover:text-primary"
-                                    )}
-                                  />
-                                  <span className="truncate">{item.label}</span>
-                                  {isPending && (
-                                    <Loader2 className="text-primary-content/80 h-3 w-3 shrink-0 animate-spin" />
-                                  )}
-                                </>
-                              );
-                            }}
-                          </NavLink>
+
+                                      {isPending && <Loader2 className="ml-auto h-3 w-3 animate-spin opacity-50" />}
+
+                                      {/* Active Indicator Dot (collapsed only) */}
+                                      {!isMobile && isCollapsed && finalActive && (
+                                        <div className="bg-primary shadow-primary/80 absolute top-1/2 right-1 h-1.5 w-1.5 -translate-y-1/2 rounded-full shadow-md" />
+                                      )}
+                                    </>
+                                  );
+                                }}
+                              </NavLink>
+                            </TooltipTrigger>
+                            {/* Only show tooltip content when collapsed */}
+                            {!isMobile && isCollapsed && (
+                              <TooltipContent
+                                side="right"
+                                className="bg-base-300 text-base-content border-base-200 font-medium"
+                                sideOffset={10}
+                              >
+                                {item.label}
+                              </TooltipContent>
+                            )}
+                          </Tooltip>
                         );
                       })}
                     </div>
@@ -215,14 +200,14 @@ export default function Sidebar({ isOpen, isMobile, onClose }: SidebarProps) {
             </div>
           </nav>
 
-          {/* Footer Info / Collapse Toggle */}
+          {/* Footer / Version Info */}
           <div
             className={cn(
-              "border-base-300/20 bg-base-100/20 mt-auto rounded-2xl border backdrop-blur-sm",
-              isCollapsed ? "p-2" : "p-3"
+              "text-base-content/40 mt-auto overflow-hidden text-center text-[10px] whitespace-nowrap transition-all duration-300",
+              !isMobile && isCollapsed ? "h-0 opacity-0" : "h-auto py-2 opacity-100"
             )}
           >
-            {/* Toggle button removed as sidebar is now hover-controlled */}
+            {APP_CONFIG.name} v{APP_CONFIG.version}
           </div>
         </div>
       </aside>
