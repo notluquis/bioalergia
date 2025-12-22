@@ -217,8 +217,8 @@ export default function Sidebar({ isOpen, isMobile, onClose }: SidebarProps) {
           </div>
         </div>
 
-        {/* Navigation Content - The ONLY scrollable area */}
-        <div className="scrollbar-thin scrollbar-thumb-base-300 scrollbar-track-transparent flex-1 space-y-4 overflow-x-hidden overflow-y-auto px-2 py-2">
+        {/* Navigation Content - Native scrollbar behavior */}
+        <div className="flex-1 space-y-4 overflow-x-hidden overflow-y-auto px-2 py-2">
           {visibleSections.map((section) => (
             <div key={section.title} className="space-y-1">
               {/* Section Title */}
