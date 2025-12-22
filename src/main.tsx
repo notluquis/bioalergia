@@ -1,6 +1,6 @@
 import React, { Suspense, lazy } from "react";
 import ReactDOM from "react-dom/client";
-import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom";
+import { createBrowserRouter, RouterProvider, Navigate, Outlet } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "./index.css";
 import "./i18n";
@@ -37,8 +37,6 @@ const CounterpartsPage = lazy(() => import("./pages/Counterparts"));
 // Lazy loading de layouts
 const CalendarLayout = lazy(() => import("./components/Layout/CalendarLayout"));
 const ServicesLayout = lazy(() => import("@/features/services/layout/ServicesLayout"));
-const InventoryLayout = lazy(() => import("@/features/operations/layout/OperationsLayout"));
-const HRLayout = lazy(() => import("@/features/hr/layout/HRLayout"));
 
 const ServicesOverviewPage = lazy(() => import("@/features/services/pages/OverviewPage"));
 const ServicesAgendaPage = lazy(() => import("@/features/services/pages/AgendaPage"));
@@ -330,9 +328,7 @@ const router = createBrowserRouter(
           handle: { title: "Operaciones" },
           element: (
             <RequirePermission action="read" subject="InventoryItem">
-              <Suspense fallback={<PageLoader />}>
-                <InventoryLayout />
-              </Suspense>
+              <Outlet />
             </RequirePermission>
           ),
           children: [
@@ -365,9 +361,7 @@ const router = createBrowserRouter(
           handle: { title: "RRHH" },
           element: (
             <RequirePermission action="read" subject="Employee">
-              <Suspense fallback={<PageLoader />}>
-                <HRLayout />
-              </Suspense>
+              <Outlet />
             </RequirePermission>
           ),
           children: [
