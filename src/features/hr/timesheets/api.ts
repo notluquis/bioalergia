@@ -113,3 +113,7 @@ export async function fetchTimesheetMonths() {
     monthsWithData: new Set(data.monthsWithData || []),
   };
 }
+
+export async function fetchImageBlob(url: string) {
+  return apiClient.get<Blob>(url, { responseType: "blob" });
+}

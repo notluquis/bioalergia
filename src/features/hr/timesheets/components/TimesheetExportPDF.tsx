@@ -7,7 +7,7 @@ import Checkbox from "@/components/ui/Checkbox";
 import { useSettings } from "@/context/SettingsContext";
 import type { Employee } from "@/features/hr/employees/types";
 import type { BulkRow, TimesheetSummaryRow } from "../types";
-import { apiClient } from "@/lib/apiClient";
+import { fetchImageBlob } from "../api";
 import type { CellHookData } from "jspdf-autotable";
 
 type TimesheetColumnKey = "date" | "entrada" | "salida" | "worked" | "overtime";
@@ -82,9 +82,9 @@ export default function TimesheetExportPDF({
           let blob: Blob | null = null;
           if (/^https?:\/\//i.test(url)) {
             const proxyUrl = `/api/assets/proxy-image?url=${encodeURIComponent(url)}`;
-            blob = await apiClient.get<Blob>(proxyUrl, { responseType: "blob" });
+            blob = await fetchImageBlob(proxyUrl);
           } else {
-            blob = await apiClient.get<Blob>(url, { responseType: "blob" });
+            blob = await fetchImageBlob(url);
           }
           if (!blob) return null;
           if (blob.type === "image/png") {
