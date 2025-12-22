@@ -7,7 +7,6 @@ import { currencyFormatter } from "@/lib/format";
 interface ClassificationTotalsProps {
   control: Control<FormValues>;
   events: CalendarUnclassifiedEvent[];
-  pendingCount: number;
 }
 
 function parseAmountInput(value: string | null | undefined): number | null {
@@ -21,7 +20,6 @@ function parseAmountInput(value: string | null | undefined): number | null {
 export const ClassificationTotals = React.memo(function ClassificationTotals({
   control,
   events,
-  pendingCount,
 }: ClassificationTotalsProps) {
   // Only subscribe to entries
   const watchedEntries = useWatch({
@@ -47,19 +45,17 @@ export const ClassificationTotals = React.memo(function ClassificationTotals({
   }, [watchedEntries, events]);
 
   return (
-    <div className="border-base-300 bg-base-100 grid gap-4 rounded-2xl border p-4 text-xs shadow-sm sm:grid-cols-3">
-      <div>
-        <p className="text-base-content/80 text-xs font-semibold tracking-wide uppercase">Pendientes</p>
-        <p className="text-primary mt-1 text-xl font-semibold">{pendingCount}</p>
+    <>
+      <div className="from-warning/10 to-warning/5 ring-warning/20 rounded-2xl bg-linear-to-br p-5 ring-1">
+        <div className="text-warning/70 text-xs font-medium tracking-wide uppercase">Esperado</div>
+        <div className="text-warning mt-1 text-2xl font-bold tabular-nums">
+          {currencyFormatter.format(totals.expected)}
+        </div>
       </div>
-      <div>
-        <p className="text-base-content/80 text-xs font-semibold tracking-wide uppercase">Monto esperado sugerido</p>
-        <p className="text-primary mt-1 text-xl font-semibold">{currencyFormatter.format(totals.expected)}</p>
+      <div className="from-info/10 to-info/5 ring-info/20 rounded-2xl bg-linear-to-br p-5 ring-1">
+        <div className="text-info/70 text-xs font-medium tracking-wide uppercase">Pagado</div>
+        <div className="text-info mt-1 text-2xl font-bold tabular-nums">{currencyFormatter.format(totals.paid)}</div>
       </div>
-      <div>
-        <p className="text-base-content/80 text-xs font-semibold tracking-wide uppercase">Monto pagado sugerido</p>
-        <p className="text-primary mt-1 text-xl font-semibold">{currencyFormatter.format(totals.paid)}</p>
-      </div>
-    </div>
+    </>
   );
 });
