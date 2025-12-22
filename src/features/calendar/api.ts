@@ -119,3 +119,26 @@ export async function fetchCalendars(): Promise<CalendarData[]> {
   const response = await apiClient.get<{ calendars: CalendarData[] }>("/api/calendar/calendars");
   return response.calendars;
 }
+
+export type ReclassifyResult = {
+  totalChecked: number;
+  reclassified: number;
+  message: string;
+};
+
+export async function reclassifyCalendarEvents(): Promise<ReclassifyResult> {
+  const response = await apiClient.post<{
+    status: "ok";
+    totalChecked: number;
+    reclassified: number;
+    message: string;
+  }>("/api/calendar/events/reclassify", {});
+  if (response.status !== "ok") {
+    throw new Error("No se pudo reclasificar los eventos");
+  }
+  return {
+    totalChecked: response.totalChecked,
+    reclassified: response.reclassified,
+    message: response.message,
+  };
+}

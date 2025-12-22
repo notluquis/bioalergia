@@ -9,7 +9,11 @@ import * as Toast from "@radix-ui/react-toast";
 
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
-import { classifyCalendarEvent, fetchUnclassifiedCalendarEvents } from "@/features/calendar/api";
+import {
+  classifyCalendarEvent,
+  fetchUnclassifiedCalendarEvents,
+  reclassifyCalendarEvents,
+} from "@/features/calendar/api";
 import type { CalendarUnclassifiedEvent } from "@/features/calendar/types";
 import { TITLE_LG, SPACE_Y_TIGHT } from "@/lib/styles";
 import { classificationArraySchema, type FormValues, classificationSchema } from "@/features/calendar/schemas";
@@ -139,6 +143,19 @@ function CalendarClassificationPage() {
     },
   });
 
+  const reclassifyMutation = useMutation({
+    mutationFn: reclassifyCalendarEvents,
+    onSuccess: (result) => {
+      setToastMessage(`✓ ${result.message}`);
+      setToastOpen(true);
+      void queryClient.invalidateQueries({ queryKey: ["calendar-unclassified"] });
+    },
+    onError: (err) => {
+      setToastMessage(`Error: ${err instanceof Error ? err.message : "Error desconocido"}`);
+      setToastOpen(true);
+    },
+  });
+
   const { mutate } = classifyMutation;
 
   const error =
@@ -205,6 +222,14 @@ function CalendarClassificationPage() {
           <div className="flex flex-wrap items-center gap-2">
             <Button type="button" variant="secondary" onClick={() => void refetch()} disabled={loading}>
               {loading ? "Actualizando..." : "Recargar lista"}
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => reclassifyMutation.mutate()}
+              disabled={reclassifyMutation.isPending}
+            >
+              {reclassifyMutation.isPending ? "Reclasificando..." : "Reclasificar eventos"}
             </Button>
           </div>
 

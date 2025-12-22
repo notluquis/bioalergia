@@ -30,6 +30,7 @@ import {
 } from "../lib/query-helpers.js";
 import { googleCalendarConfig } from "../config.js";
 import { updateClassificationSchema } from "../schemas/index.js";
+import { parseCalendarMetadata } from "../modules/calendar/parsers.js";
 
 function coerceMaxDays(value: QueryValue): number | undefined {
   return coercePositiveInteger(value);
@@ -358,6 +359,89 @@ export function registerCalendarEventRoutes(app: express.Express) {
       // Unknown state
       console.log("Unknown webhook resource state", { resourceState, channelId });
       res.status(200).end();
+    })
+  );
+
+  // POST /api/calendar/events/reclassify - Re-apply classification patterns to fill missing fields
+  app.post(
+    "/api/calendar/events/reclassify",
+    authenticate,
+    authorize("update", "CalendarEvent"),
+    asyncHandler(async (_req, res) => {
+      // Find ALL events that have any null parseable field
+      const events = await prisma.event.findMany({
+        where: {
+          OR: [{ category: null }, { category: "" }, { dosage: null }, { treatmentStage: null }, { attended: null }],
+        },
+        select: {
+          id: true,
+          summary: true,
+          description: true,
+          category: true,
+          dosage: true,
+          treatmentStage: true,
+          attended: true,
+        },
+      });
+
+      type EventUpdate = {
+        id: number;
+        data: {
+          category?: string;
+          dosage?: string;
+          treatmentStage?: string;
+          attended?: boolean;
+        };
+      };
+
+      const updates: EventUpdate[] = [];
+
+      for (const event of events) {
+        const metadata = parseCalendarMetadata({
+          summary: event.summary,
+          description: event.description,
+        });
+
+        const updateData: EventUpdate["data"] = {};
+
+        // Only fill fields that are currently null/empty
+        if ((event.category === null || event.category === "") && metadata.category) {
+          updateData.category = metadata.category;
+        }
+        if (event.dosage === null && metadata.dosage) {
+          updateData.dosage = metadata.dosage;
+        }
+        if (event.treatmentStage === null && metadata.treatmentStage) {
+          updateData.treatmentStage = metadata.treatmentStage;
+        }
+        if (event.attended === null && metadata.attended !== null) {
+          updateData.attended = metadata.attended;
+        }
+
+        // Only add if there's something to update
+        if (Object.keys(updateData).length > 0) {
+          updates.push({ id: event.id, data: updateData });
+        }
+      }
+
+      // Batch update in transaction
+      if (updates.length > 0) {
+        await prisma.$transaction(
+          updates.map((u) =>
+            prisma.event.update({
+              where: { id: u.id },
+              data: u.data,
+            })
+          )
+        );
+      }
+
+      res.json({
+        status: "ok",
+        message: `Reclassified ${updates.length} events`,
+        totalChecked: events.length,
+        reclassified: updates.length,
+      });
     })
   );
 }
