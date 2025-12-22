@@ -9,8 +9,8 @@ import Input from "@/components/ui/Input";
 import Alert from "@/components/ui/Alert";
 import { MultiSelectFilter, type MultiSelectOption } from "@/features/calendar/components/MultiSelectFilter";
 import { HeatmapMonth } from "@/features/calendar/components/HeatmapMonth";
-import { apiClient } from "@/lib/apiClient";
-import type { CalendarSummary } from "@/features/calendar/types";
+import { fetchCalendarSummary } from "@/features/calendar/api";
+import { type CalendarFilters } from "@/features/calendar/types";
 import { numberFormatter, currencyFormatter } from "@/lib/format";
 import { PAGE_CONTAINER, TITLE_LG, SPACE_Y_TIGHT } from "@/lib/styles";
 
@@ -26,8 +26,6 @@ type HeatmapFilters = {
   categories: string[];
   search: string;
 };
-
-type CalendarSummaryResponse = CalendarSummary & { status: "ok" };
 
 const createInitialFilters = (): HeatmapFilters => {
   const start = dayjs().startOf("month").subtract(2, "month");
@@ -60,17 +58,6 @@ function filtersEqual(a: HeatmapFilters, b: HeatmapFilters): boolean {
   );
 }
 
-function buildQuery(filters: HeatmapFilters): Record<string, unknown> {
-  const query: Record<string, unknown> = {};
-  if (filters.from) query.from = filters.from;
-  if (filters.to) query.to = filters.to;
-  if (filters.calendarIds.length) query.calendarId = filters.calendarIds;
-  if (filters.eventTypes.length) query.eventType = filters.eventTypes;
-  if (filters.categories.length) query.category = filters.categories;
-  if (filters.search.trim()) query.search = filters.search.trim();
-  return query;
-}
-
 function CalendarHeatmapPage() {
   const initialFilters = useMemo(() => createInitialFilters(), []);
   // filters = UI state (inputs)
@@ -87,19 +74,14 @@ function CalendarHeatmapPage() {
     error: queryError,
   } = useQuery({
     queryKey: ["calendar-heatmap", appliedFilters],
-    queryFn: async () => {
-      const response = await apiClient.get<CalendarSummaryResponse>("/api/calendar/events/summary", {
-        query: buildQuery(appliedFilters),
-      });
-      if (response.status !== "ok") {
-        throw new Error("No se pudo cargar el resumen de calendario");
-      }
-      return {
-        filters: response.filters,
-        totals: response.totals,
-        aggregates: response.aggregates,
-        available: response.available,
+    queryFn: () => {
+      // Map local HeatmapFilters to CalendarFilters
+      // They are identical in structure based on visual inspection, casting or simple object matching
+      const apiFilters: CalendarFilters = {
+        ...appliedFilters,
+        maxDays: 366, // Default or required by type
       };
+      return fetchCalendarSummary(apiFilters);
     },
     // Keep previous data while fetching new filter to avoid flicker
     placeholderData: (prev) => prev,

@@ -2,6 +2,7 @@
  * API client for timesheet audit features
  */
 
+import { apiClient } from "@/lib/apiClient";
 import type { TimesheetEntryWithEmployee } from "./types";
 
 /**
@@ -23,15 +24,9 @@ export async function fetchMultiEmployeeTimesheets(
     employeeIds: employeeIds.join(","),
   });
 
-  const response = await fetch(`/api/timesheets/multi-detail?${params}`, {
-    method: "GET",
-    credentials: "include",
-  });
+  const response = await apiClient.get<{ entries: TimesheetEntryWithEmployee[] }>(
+    `/api/timesheets/multi-detail?${params.toString()}`
+  );
 
-  if (!response.ok) {
-    throw new Error(`Failed to fetch timesheets: ${response.statusText}`);
-  }
-
-  const data = await response.json();
-  return data.entries || [];
+  return response.entries || [];
 }
