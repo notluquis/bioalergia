@@ -27,6 +27,7 @@ export const CATEGORY_CHOICES = [
   "Consulta médica",
   "Control médico",
   "Licencia médica",
+  "Roxair",
 ] as const;
 
 export const TREATMENT_STAGE_CHOICES = ["Mantención", "Inducción"] as const;
@@ -64,6 +65,8 @@ const SUBCUT_PATTERNS = [
   /\bdosis\s+mensual/i, // Dosis mensual
   /v[ie]+n?[ie]?[eo]?r?o?n?\s+a\s+buscar/i, // vinieron a buscar
   /\bmantenci[oó]n\b/i, // mantención (maintenance treatment)
+  /\bse\s+envio\s+dosis\b/i, // "se envio dosis"
+  /\benviado\b.*\bpagado\b/i, // "enviado (50/ pagado)"
 ];
 
 /** Pattern for decimal dosage (indicates subcutaneous treatment) */
@@ -96,13 +99,26 @@ const LICENCIA_PATTERNS = [
 const CONTROL_PATTERNS = [
   /\bcontrol\b/i, // control s/c
   /\d+-\d+control/i, // 03-10control (date-prefixed)
+  /\bontrol\b/i, // typo: missing 'c'
 ];
 
 /** Patterns for "Consulta médica" */
 const CONSULTA_PATTERNS = [
   /\bconsulta\b/i, // consulta
+  /\bconsuta\b/i, // typo: missing 'l'
   /\d+(era|da|ra)?\s*consulta/i, // 1era consulta
+  /\d+(era|da|ra)?\s*consuta/i, // 1era consuta (typo)
   /^\d{1,2}:\d{2}\s+[a-záéíóúñ]+\s+[a-záéíóúñ]+/i, // "13:37 nombre apellido"
+  /\btelemedicina\b/i, // telemedicina
+  /\d+(era|da|ra)?\s*confirma\b/i, // "1era confirma"
+  /^\d{1,2}:\d{2}\s*\d+(era|da|ra)?\b/i, // "15:361era (40)" - time + ordinal
+];
+
+/** Patterns for "Roxair" */
+const ROXAIR_PATTERNS = [
+  /\broxair\b/i, // roxair
+  /\bretira\s+roxair\b/i, // retira roxair
+  /\benviar\s+roxair\b/i, // enviar roxair
 ];
 
 /** Patterns for events to IGNORE (not classify) */
@@ -114,13 +130,22 @@ export const IGNORE_PATTERNS = [
   /^vacaciones$/i,
   /^elecciones$/i,
   /^doctor\s+ocupado$/i,
+  /\bpublicidad\b/i, // publicidad
+  /\bgrabaci[oó]n\s+de\s+videos?\b/i, // grabación de videos
+  /^reuni[oó]n\b/i, // REUNION
+  /^jornada\s+de\s+invierno\b/i, // JORNADA DE INVIERNO
 ];
 
 /** Patterns for attendance confirmation */
 const ATTENDED_PATTERNS = [/\bllego\b/i, /\basist[ií]o\b/i];
 
 /** Patterns for maintenance stage */
-const MAINTENANCE_PATTERNS = [/\bmantenci[oó]n\b/i, /\bmant\b/i, /\bmensual\b/i];
+const MAINTENANCE_PATTERNS = [
+  /\bmantenci[oó]n\b/i, // mantención, mantencion
+  /\bmantencio\b/i, // typo: missing final 'n'
+  /\bmant\b/i, // abbreviated
+  /\bmensual\b/i, // monthly
+];
 
 /** Patterns for dosage extraction */
 const DOSAGE_PATTERNS = [/(\d+(?:[.,]\d+)?)\s*ml\b/i, /(\d+(?:[.,]\d+)?)\s*cc\b/i, /(\d+(?:[.,]\d+)?)\s*mg\b/i];
@@ -238,12 +263,17 @@ function extractAmounts(summary: string, description: string) {
     }
   }
 
-  // 3. Fallback: typo like "acaros20)" (missing opening paren, 2 digits only)
+  // 3. Fallback: typo like "acaros20)" or "acaros820)" (missing opening paren)
+  // For 3+ digits like "820)", extract last 2 digits (assuming first is typo)
   if (amountExpected == null) {
-    const typoPattern = /[a-z](\d{2})\)/gi;
+    // Match letter followed by digits followed by ) - extract last 2 digits
+    const typoPattern = /[a-z](\d+)\)/gi;
     let typoMatch: RegExpExecArray | null;
     while ((typoMatch = typoPattern.exec(text)) !== null) {
-      const amount = normalizeAmountRaw(typoMatch[1]);
+      const digits = typoMatch[1];
+      // Take last 2 digits only (common amounts are 20, 30, 50, 60)
+      const lastTwo = digits.length >= 2 ? digits.slice(-2) : digits;
+      const amount = normalizeAmountRaw(lastTwo);
       if (amount != null && amountExpected == null) amountExpected = amount;
     }
   }
@@ -306,11 +336,12 @@ function classifyCategory(summary: string, description: string): string | null {
     return null;
   }
 
-  // Priority order: Subcutáneo → Test → Licencia → Control → Consulta
+  // Priority order: Subcutáneo → Test → Roxair → Licencia → Control → Consulta
   if (matchesAny(text, SUBCUT_PATTERNS) || DECIMAL_DOSAGE_PATTERN.test(text)) {
     return "Tratamiento subcutáneo";
   }
   if (matchesAny(text, TEST_PATTERNS)) return "Test y exámenes";
+  if (matchesAny(text, ROXAIR_PATTERNS)) return "Roxair";
   if (matchesAny(text, LICENCIA_PATTERNS)) return "Licencia médica";
   if (matchesAny(text, CONTROL_PATTERNS)) return "Control médico";
   if (matchesAny(text, CONSULTA_PATTERNS)) return "Consulta médica";
