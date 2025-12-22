@@ -45,7 +45,7 @@ const SidebarItem = React.memo(function SidebarItem({
           className={({ isActive }) => {
             const finalActive = isActive || isPending;
             return cn(
-              "group relative flex items-center rounded-xl transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] outline-none select-none",
+              "group relative flex items-center rounded-xl transition-[width,transform,background-color] duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] outline-none select-none",
               // Mobile vs Desktop styling
               isMobile
                 ? "w-full justify-start px-4 py-3"
@@ -65,7 +65,7 @@ const SidebarItem = React.memo(function SidebarItem({
                 {/* Icon Container */}
                 <div
                   className={cn(
-                    "relative flex items-center justify-center transition-transform duration-300",
+                    "relative flex items-center justify-center transition-transform duration-300 will-change-transform",
                     isMobile ? "mr-4" : isCollapsed ? "mr-0" : "mr-4",
                     finalActive && !isCollapsed ? "scale-105" : "group-hover:scale-110"
                   )}
@@ -80,7 +80,7 @@ const SidebarItem = React.memo(function SidebarItem({
                 {/* Label (Desktop Collapsed: Hidden / Expanded: Visible) */}
                 <span
                   className={cn(
-                    "text-sm font-medium whitespace-nowrap transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)]",
+                    "text-sm font-medium whitespace-nowrap transition-[opacity,transform,width] duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] will-change-transform",
                     // Desktop Logic
                     !isMobile && isCollapsed
                       ? "absolute w-0 -translate-x-4 overflow-hidden opacity-0" // Absolute to remove from flow
@@ -127,7 +127,6 @@ export default function Sidebar({ isOpen, isMobile, onClose }: SidebarProps) {
   const [isHovered, setIsHovered] = React.useState(false);
 
   // Debounced expansion to avoid flickering
-  // User wanted "faster", so we reduce delay
   React.useEffect(() => {
     let timer: NodeJS.Timeout;
     if (isHovered) {
@@ -166,14 +165,17 @@ export default function Sidebar({ isOpen, isMobile, onClose }: SidebarProps) {
 
   // Sidebar Classes
   const sidebarClasses = cn(
-    // Base - optimized ease
-    "flex flex-col bg-base-100/95 backdrop-blur-2xl border-r border-base-200 transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] z-50",
+    // Base - optimized ease & height for MacOS/Safari (dvh)
+    "flex flex-col bg-base-100/95 backdrop-blur-2xl border-r border-base-200 transition-[width,transform] duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] z-50 will-change-transform",
     // Mobile
     isMobile
-      ? cn("fixed inset-y-0 left-0 w-[280px] h-full shadow-2xl", isOpen ? "translate-x-0" : "-translate-x-full")
+      ? cn(
+          "fixed inset-y-0 left-0 w-[280px] h-[100dvh] shadow-2xl safe-area-left",
+          isOpen ? "translate-x-0" : "-translate-x-full"
+        )
       : cn(
           // Desktop
-          "sticky top-0 h-screen",
+          "sticky top-0 h-[100dvh]", // Use 100dvh to handle dynamic viewport height correctly
           isCollapsed ? "w-[80px]" : "w-[280px]", // Increased widths for breathing room
           "shadow-2xl"
         )
@@ -201,13 +203,18 @@ export default function Sidebar({ isOpen, isMobile, onClose }: SidebarProps) {
         >
           {/* Logo Container with Glow */}
           <div className="from-primary/10 to-secondary/10 relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/5 bg-linear-to-br shadow-sm">
-            <img src="/logo_bimi.svg" alt="Logo" className="z-10 h-7 w-7 object-contain" />
+            <img
+              src="/logo_bimi.svg"
+              alt="Logo"
+              className="brand-logo z-10 h-7 w-7 object-contain"
+              fetchPriority="high"
+            />
           </div>
 
           {/* Brand Text */}
           <div
             className={cn(
-              "flex min-w-37.5 flex-col overflow-hidden transition-all duration-300", // Fixed min-w ensures text doesn't wrap/jump
+              "flex min-w-37.5 flex-col overflow-hidden transition-all duration-300",
               !isMobile && isCollapsed ? "pointer-events-none absolute w-0 opacity-0" : "static w-auto opacity-100"
             )}
           >
