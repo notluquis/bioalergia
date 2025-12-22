@@ -1,42 +1,25 @@
-import { useCallback, useEffect, useMemo, useState, type ChangeEvent } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
-import { useForm, Controller, useFieldArray } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import * as Tooltip from "@radix-ui/react-tooltip";
 import * as Toast from "@radix-ui/react-toast";
 
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
-import Checkbox from "@/components/ui/Checkbox";
 import { classifyCalendarEvent, fetchUnclassifiedCalendarEvents } from "@/features/calendar/api";
 import type { CalendarUnclassifiedEvent } from "@/features/calendar/types";
-import { currencyFormatter } from "@/lib/format";
 import { TITLE_LG, SPACE_Y_TIGHT } from "@/lib/styles";
+import { classificationArraySchema, type FormValues, classificationSchema } from "@/features/calendar/schemas";
+import { ClassificationRow } from "@/features/calendar/components/ClassificationRow";
+import { ClassificationTotals } from "@/features/calendar/components/ClassificationTotals";
+import { z } from "zod";
 
 dayjs.locale("es");
 
-const CATEGORY_CHOICES = ["Tratamiento subcutáneo"];
-const TREATMENT_STAGE_CHOICES = ["Mantención", "Inducción"];
 const EMPTY_EVENTS: CalendarUnclassifiedEvent[] = [];
-
-const classificationSchema = z.object({
-  category: z.string().optional().nullable(),
-  amountExpected: z.string().optional().nullable(),
-  amountPaid: z.string().optional().nullable(),
-  attended: z.boolean(),
-  dosage: z.string().optional().nullable(),
-  treatmentStage: z.string().optional().nullable(),
-});
-
-const classificationArraySchema = z.object({
-  entries: z.array(classificationSchema),
-});
-
-type FormValues = z.infer<typeof classificationArraySchema>;
 
 type ParsedPayload = {
   category: string | null;
@@ -49,26 +32,6 @@ type ParsedPayload = {
 
 function eventKey(event: Pick<CalendarUnclassifiedEvent, "calendarId" | "eventId">) {
   return `${event.calendarId}:::${event.eventId}`;
-}
-
-function formatEventDate(event: CalendarUnclassifiedEvent) {
-  if (event.startDateTime) {
-    const start = dayjs(event.startDateTime);
-    if (event.endDateTime) {
-      const end = dayjs(event.endDateTime);
-      return `${start.format("DD MMM YYYY HH:mm")} – ${end.format("HH:mm")}`;
-    }
-    return start.format("DD MMM YYYY HH:mm");
-  }
-  if (event.startDate) {
-    const start = dayjs(event.startDate);
-    if (event.endDate && event.endDate !== event.startDate) {
-      const end = dayjs(event.endDate);
-      return `${start.format("DD MMM YYYY")} – ${end.format("DD MMM YYYY")}`;
-    }
-    return start.format("DD MMM YYYY");
-  }
-  return "Sin fecha";
 }
 
 function parseAmountInput(value: string | null | undefined): number | null {
@@ -137,9 +100,8 @@ function CalendarClassificationPage() {
     mode: "onChange",
   });
 
-  const { control, reset, getValues, setValue, watch } = form;
+  const { control, reset, getValues, setValue } = form;
   const { fields } = useFieldArray({ control, name: "entries" });
-  const watchedEntries = watch("entries", []);
 
   // Sync form with data
   useEffect(() => {
@@ -170,17 +132,14 @@ function CalendarClassificationPage() {
     },
     onError: (err) => {
       const message = err instanceof Error ? err.message : "No se pudo guardar la clasificación";
-      setToastMessage(message); // Using toast for error instead of separate state for simplicity or keep error state?
-      // The original code used error state for the whole list or individual?
-      // It used 'setError' which was page level.
-      // Let's use page level error or toast. Original used setError(message).
-      // Actually let's use global toast or alert if possible, or keep local error.
-      // The original code shows <Alert>{error}</Alert> at top.
+      setToastMessage(message);
     },
     onSettled: () => {
       setSavingKey(null);
     },
   });
+
+  const { mutate } = classifyMutation;
 
   const error =
     queryError instanceof Error
@@ -193,23 +152,6 @@ function CalendarClassificationPage() {
 
   const pendingCount = events.length;
 
-  const totals = useMemo(() => {
-    if (!watchedEntries || !watchedEntries.length) return { expected: 0, paid: 0 };
-    return watchedEntries.reduce(
-      (acc, entry, index) => {
-        const event = events[index];
-        if (!event) return acc;
-        const expected = parseAmountInput(entry?.amountExpected) ?? event.amountExpected ?? 0;
-        const paid = parseAmountInput(entry?.amountPaid) ?? event.amountPaid ?? 0;
-        return {
-          expected: acc.expected + expected,
-          paid: acc.paid + paid,
-        };
-      },
-      { expected: 0, paid: 0 }
-    );
-  }, [watchedEntries, events]);
-
   const handleResetEntry = useCallback(
     (index: number, event: CalendarUnclassifiedEvent) => {
       setValue(`entries.${index}`, buildDefaultEntry(event), { shouldDirty: true });
@@ -217,13 +159,16 @@ function CalendarClassificationPage() {
     [setValue]
   );
 
-  const handleSave = async (event: CalendarUnclassifiedEvent, index: number) => {
-    const key = eventKey(event);
-    setSavingKey(key);
-    const values = getValues(`entries.${index}` as const);
-    const payload = buildPayload(values, event);
-    classifyMutation.mutate({ event, payload });
-  };
+  const handleSave = useCallback(
+    async (event: CalendarUnclassifiedEvent, index: number) => {
+      const key = eventKey(event);
+      setSavingKey(key);
+      const values = getValues(`entries.${index}` as const);
+      const payload = buildPayload(values, event);
+      mutate({ event, payload });
+    },
+    [getValues, mutate]
+  );
 
   return (
     <Toast.Provider swipeDirection="right">
@@ -255,24 +200,7 @@ function CalendarClassificationPage() {
             </Tooltip.Root>
           </header>
 
-          <div className="border-base-300 bg-base-100 grid gap-4 rounded-2xl border p-4 text-xs shadow-sm sm:grid-cols-3">
-            <div>
-              <p className="text-base-content/80 text-xs font-semibold tracking-wide uppercase">Pendientes</p>
-              <p className="text-primary mt-1 text-xl font-semibold">{pendingCount}</p>
-            </div>
-            <div>
-              <p className="text-base-content/80 text-xs font-semibold tracking-wide uppercase">
-                Monto esperado sugerido
-              </p>
-              <p className="text-primary mt-1 text-xl font-semibold">{currencyFormatter.format(totals.expected)}</p>
-            </div>
-            <div>
-              <p className="text-base-content/80 text-xs font-semibold tracking-wide uppercase">
-                Monto pagado sugerido
-              </p>
-              <p className="text-primary mt-1 text-xl font-semibold">{currencyFormatter.format(totals.paid)}</p>
-            </div>
-          </div>
+          <ClassificationTotals control={control} events={events} pendingCount={pendingCount} />
 
           <div className="flex flex-wrap items-center gap-2">
             <Button type="button" variant="secondary" onClick={() => void refetch()} disabled={loading}>
@@ -290,155 +218,19 @@ function CalendarClassificationPage() {
             {fields.slice(0, visibleCount).map((field, index) => {
               const event = events[index];
               if (!event) return null;
-              const entry = watchedEntries?.[index] ?? buildDefaultEntry(event);
               const key = eventKey(event);
-              const isSubcutaneous = (entry.category || "") === "Tratamiento subcutáneo";
-              const description = event.description?.trim();
 
               return (
-                <article
+                <ClassificationRow
                   key={field.id}
-                  className="border-base-300 bg-base-100 space-y-4 rounded-2xl border p-5 text-sm shadow-sm"
-                >
-                  <header className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="flex flex-col gap-1">
-                      <span className="text-secondary/70 text-xs font-semibold tracking-wide uppercase">
-                        {event.calendarId}
-                      </span>
-                      <h2 className="text-base-content text-lg font-semibold">{event.summary ?? "(Sin título)"}</h2>
-                      <span className="text-base-content/60 text-xs">{formatEventDate(event)}</span>
-                    </div>
-                    <div className="text-base-content/60 flex flex-col items-end gap-2 text-xs">
-                      {event.eventType && (
-                        <span className="bg-base-200 text-base-content rounded-full px-2 py-1 font-semibold">
-                          {event.eventType}
-                        </span>
-                      )}
-                      {event.category && (
-                        <span className="bg-secondary/15 text-secondary rounded-full px-2 py-1 font-semibold">
-                          {event.category}
-                        </span>
-                      )}
-                    </div>
-                  </header>
-
-                  {description && (
-                    <p className="bg-base-200 text-base-content rounded-xl p-3 text-xs shadow-inner">
-                      <span className="text-base-content font-semibold">Descripción:</span>{" "}
-                      <span className="whitespace-pre-wrap">{description}</span>
-                    </p>
-                  )}
-
-                  <div className="text-base-content grid gap-4 text-xs md:grid-cols-6">
-                    <Controller
-                      control={control}
-                      name={`entries.${index}.category` as const}
-                      render={({ field: formField }) => (
-                        <Input
-                          label="Clasificación"
-                          as="select"
-                          value={formField.value ?? ""}
-                          onChange={(event: ChangeEvent<HTMLSelectElement>) => formField.onChange(event.target.value)}
-                        >
-                          <option value="">Sin clasificación</option>
-                          {CATEGORY_CHOICES.map((option) => (
-                            <option key={option} value={option}>
-                              {option}
-                            </option>
-                          ))}
-                        </Input>
-                      )}
-                    />
-                    <Controller
-                      control={control}
-                      name={`entries.${index}.amountExpected` as const}
-                      render={({ field: formField }) => (
-                        <Input
-                          label="Monto esperado"
-                          type="text"
-                          placeholder="50000"
-                          value={formField.value ?? ""}
-                          onChange={(event: ChangeEvent<HTMLInputElement>) => formField.onChange(event.target.value)}
-                        />
-                      )}
-                    />
-                    <Controller
-                      control={control}
-                      name={`entries.${index}.amountPaid` as const}
-                      render={({ field: formField }) => (
-                        <Input
-                          label="Monto pagado"
-                          type="text"
-                          placeholder="50000"
-                          value={formField.value ?? ""}
-                          onChange={(event: ChangeEvent<HTMLInputElement>) => formField.onChange(event.target.value)}
-                        />
-                      )}
-                    />
-                    {isSubcutaneous && (
-                      <Controller
-                        control={control}
-                        name={`entries.${index}.dosage` as const}
-                        render={({ field: formField }) => (
-                          <Input
-                            label="Dosis"
-                            placeholder="0.3 ml"
-                            value={formField.value ?? ""}
-                            onChange={(event: ChangeEvent<HTMLInputElement>) => formField.onChange(event.target.value)}
-                          />
-                        )}
-                      />
-                    )}
-                    {isSubcutaneous && (
-                      <Controller
-                        control={control}
-                        name={`entries.${index}.treatmentStage` as const}
-                        render={({ field: formField }) => (
-                          <Input
-                            label="Etapa tratamiento"
-                            as="select"
-                            value={formField.value ?? ""}
-                            onChange={(event: ChangeEvent<HTMLSelectElement>) => formField.onChange(event.target.value)}
-                          >
-                            <option value="">Sin etapa</option>
-                            {TREATMENT_STAGE_CHOICES.map((option) => (
-                              <option key={option} value={option}>
-                                {option}
-                              </option>
-                            ))}
-                          </Input>
-                        )}
-                      />
-                    )}
-                    <Controller
-                      control={control}
-                      name={`entries.${index}.attended` as const}
-                      render={({ field: formField }) => (
-                        <div className="flex items-end">
-                          <Checkbox
-                            label="Asistió / llegó"
-                            checked={formField.value ?? false}
-                            onChange={(event) => formField.onChange(event.target.checked)}
-                          />
-                        </div>
-                      )}
-                    />
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Button type="button" onClick={() => handleSave(event, index)} disabled={savingKey === key}>
-                      {savingKey === key ? "Guardando..." : "Guardar y continuar"}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      onClick={() => handleResetEntry(index, event)}
-                      disabled={savingKey === key}
-                    >
-                      Limpiar cambios
-                    </Button>
-                  </div>
-                </article>
+                  index={index}
+                  event={event}
+                  control={control}
+                  isSaving={savingKey === key}
+                  onSave={handleSave}
+                  onReset={handleResetEntry}
+                  initialValues={null}
+                />
               );
             })}
           </div>

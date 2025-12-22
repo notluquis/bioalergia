@@ -50,12 +50,12 @@ export default function Sidebar({ isOpen, isMobile, onClose }: SidebarProps) {
           "border-base-300/50 bg-base-200/80 text-base-content z-50 flex shrink-0 flex-col rounded-3xl border text-sm shadow-2xl backdrop-blur-3xl transition-all duration-300 ease-[cubic-bezier(0.2,0,0,1)]",
           // Mobile: VS Desktop Layout
           isMobile
-            ? "fixed inset-y-0 left-0 z-[100] h-full"
+            ? "fixed inset-y-0 left-0 z-100 h-full"
             : "hidden md:sticky md:top-4 md:flex md:h-[calc(100dvh-2rem)]",
           // Mobile: Drawer transform
           isMobile && !isOpen ? "-translate-x-full" : "translate-x-0",
           // Desktop: Width Transition
-          !isMobile && isCollapsed ? "w-20 px-2 py-2" : "w-[260px] p-3",
+          !isMobile && isCollapsed ? "w-20 px-2 py-2" : "w-65 p-3",
           "overflow-x-hidden"
         )}
         aria-label="Navegación principal"

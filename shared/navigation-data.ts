@@ -107,6 +107,12 @@ export const NAV_DATA: NavSectionData[] = [
         iconKey: "CalendarDays",
         requiredPermission: { action: "read", subject: "CalendarEvent" },
       },
+      {
+        to: "/calendar/classify",
+        label: "Clasificar",
+        iconKey: "ListChecks",
+        requiredPermission: { action: "update", subject: "CalendarEvent" },
+      },
     ],
   },
   {
