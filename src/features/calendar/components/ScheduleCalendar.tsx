@@ -150,7 +150,7 @@ export function ScheduleCalendar({ events, loading = false }: ScheduleCalendarPr
   }, [events]);
 
   return (
-    <div className="schedule-calendar border-base-300 bg-base-200/80 rounded-2xl border p-4 shadow-md">
+    <div className="schedule-calendar">
       <FullCalendar
         plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
         initialView="timeGridWeek"
@@ -159,7 +159,7 @@ export function ScheduleCalendar({ events, loading = false }: ScheduleCalendarPr
         headerToolbar={{
           left: "prev,next today",
           center: "title",
-          right: "dayGridMonth,timeGridWeek,timeGridDay",
+          right: "dayGridMonth,timeGridWeek",
         }}
         height="auto"
         dayMaxEventRows={4}
