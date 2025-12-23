@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect } from "react";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
-import { Filter, X } from "lucide-react";
+import { Filter } from "lucide-react";
 import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
 
@@ -33,7 +33,6 @@ function CalendarDailyPage() {
     daily,
     loading,
     error,
-    availableCalendars,
     availableEventTypes,
     availableCategories,
     updateFilters,
@@ -75,15 +74,6 @@ function CalendarDailyPage() {
     }
   }, [filters.from, filters.to, appliedFilters.from, appliedFilters.to, applyFilters]);
 
-  const toggleCalendar = (calendarId: string) => {
-    updateFilters(
-      "calendarIds",
-      filters.calendarIds.includes(calendarId)
-        ? filters.calendarIds.filter((id) => id !== calendarId)
-        : [...filters.calendarIds, calendarId]
-    );
-  };
-
   const toggleEventType = (value: string) => {
     updateFilters(
       "eventTypes",
@@ -101,15 +91,6 @@ function CalendarDailyPage() {
         : [...filters.categories, value]
     );
   };
-
-  const calendarOptions: MultiSelectOption[] = useMemo(
-    () =>
-      availableCalendars.map((entry) => ({
-        value: entry.calendarId,
-        label: `${entry.calendarId} · ${numberFormatter.format(entry.total)}`,
-      })),
-    [availableCalendars]
-  );
 
   const eventTypeOptions: MultiSelectOption[] = useMemo(
     () =>
@@ -140,39 +121,34 @@ function CalendarDailyPage() {
 
   return (
     <section className={PAGE_CONTAINER}>
-      {/* Compact Header with Navigation */}
-      <header className="space-y-4">
-        {/* Date Navigation - Primary focus */}
-        <div className="flex items-center justify-between gap-4">
-          <DayNavigation selectedDate={selectedDate} onSelect={setSelectedDate} />
-          <Button
-            variant={showFilters ? "secondary" : "ghost"}
-            size="sm"
-            onClick={() => setShowFilters(!showFilters)}
-            className="shrink-0 gap-2"
-          >
-            {showFilters ? <X className="h-4 w-4" /> : <Filter className="h-4 w-4" />}
-            <span className="hidden sm:inline">{showFilters ? "Cerrar" : "Filtros"}</span>
-          </Button>
-        </div>
+      {/* Header with Navigation */}
+      <header className="space-y-3">
+        <DayNavigation
+          selectedDate={selectedDate}
+          onSelect={setSelectedDate}
+          rightSlot={
+            <Button
+              variant={showFilters ? "secondary" : "ghost"}
+              size="sm"
+              onClick={() => setShowFilters(!showFilters)}
+              className="gap-1.5"
+            >
+              <Filter className="h-4 w-4" />
+              <span className="hidden sm:inline">{showFilters ? "Cerrar" : "Filtros"}</span>
+            </Button>
+          }
+        />
 
         {/* Filters Panel (Collapsible) */}
         {showFilters && (
           <form
-            className="border-base-300 bg-base-100 animate-in slide-in-from-top-2 rounded-xl border p-4 shadow-sm duration-200"
+            className="border-base-300 bg-base-100 animate-in slide-in-from-top-2 flex flex-wrap items-end gap-3 rounded-xl border p-3 shadow-sm duration-200"
             onSubmit={(event) => {
               event.preventDefault();
               applyFilters();
             }}
           >
-            <div className="grid gap-3 sm:grid-cols-3">
-              <MultiSelectFilter
-                label="Calendarios"
-                options={calendarOptions}
-                selected={filters.calendarIds}
-                onToggle={toggleCalendar}
-                placeholder="Todos"
-              />
+            <div className="min-w-35 flex-1">
               <MultiSelectFilter
                 label="Tipos de evento"
                 options={eventTypeOptions}
@@ -180,6 +156,8 @@ function CalendarDailyPage() {
                 onToggle={toggleEventType}
                 placeholder="Todos"
               />
+            </div>
+            <div className="min-w-35 flex-1">
               <MultiSelectFilter
                 label="Clasificación"
                 options={categoryOptions}
@@ -188,8 +166,7 @@ function CalendarDailyPage() {
                 placeholder="Todas"
               />
             </div>
-
-            <div className="border-base-200 mt-3 flex justify-end gap-2 border-t pt-3">
+            <div className="flex gap-2">
               <Button type="button" variant="ghost" size="sm" onClick={resetFilters}>
                 Limpiar
               </Button>

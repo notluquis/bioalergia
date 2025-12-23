@@ -1,24 +1,21 @@
 import dayjs from "dayjs";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { ReactNode } from "react";
 
 interface DayNavigationProps {
   selectedDate: string;
   onSelect: (date: string) => void;
   className?: string;
+  /** Optional slot for content to render on the right side of the header */
+  rightSlot?: ReactNode;
 }
 
-export function DayNavigation({ selectedDate, onSelect, className }: DayNavigationProps) {
+export function DayNavigation({ selectedDate, onSelect, className, rightSlot }: DayNavigationProps) {
   const current = dayjs(selectedDate);
   const today = dayjs();
 
-  // Generate range of dates (-3 to +3 around selected)
-  // Or maybe a wider range but fixed view?
-  // Let's do a wider range to allow some scrolling, e.g. -14 to +14
-  // But centering is key.
-
-  // Actually, to make it simple and robust, let's just generate -4 to +4 (9 days)
-  // and buttons to jump.
+  // Generate range of dates (-4 to +4 around selected = 9 days)
   const days = Array.from({ length: 9 }, (_, i) => {
     return current.add(i - 4, "day");
   });
@@ -28,32 +25,37 @@ export function DayNavigation({ selectedDate, onSelect, className }: DayNavigati
   const handleToday = () => onSelect(today.format("YYYY-MM-DD"));
 
   return (
-    <div className={cn("flex flex-col gap-4", className)}>
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold capitalize">{current.format("MMMM YYYY")}</h2>
-        <div className="bg-base-200 flex gap-1 rounded-lg p-1">
-          <button
-            onClick={handlePrev}
-            className="hover:bg-base-100 text-base-content/70 hover:text-primary rounded-md p-1.5 transition-colors"
-            aria-label="Día anterior"
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </button>
+    <div className={cn("flex flex-col gap-3", className)}>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="text-lg font-bold capitalize sm:text-xl">{current.format("MMMM YYYY")}</h2>
 
-          <button
-            onClick={handleToday}
-            className="hover:bg-base-100 rounded-md px-3 py-1.5 text-xs font-semibold tracking-wider uppercase transition-colors"
-          >
-            Hoy
-          </button>
+        {/* Right side: optional slot + navigation buttons */}
+        <div className="flex items-center gap-2">
+          {rightSlot}
+          <div className="bg-base-200 flex gap-0.5 rounded-lg p-1">
+            <button
+              onClick={handlePrev}
+              className="hover:bg-base-100 text-base-content/70 hover:text-primary rounded-md p-1.5 transition-colors"
+              aria-label="Día anterior"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
 
-          <button
-            onClick={handleNext}
-            className="hover:bg-base-100 text-base-content/70 hover:text-primary rounded-md p-1.5 transition-colors"
-            aria-label="Día siguiente"
-          >
-            <ChevronRight className="h-5 w-5" />
-          </button>
+            <button
+              onClick={handleToday}
+              className="hover:bg-base-100 rounded-md px-2 py-1 text-xs font-semibold uppercase transition-colors"
+            >
+              Hoy
+            </button>
+
+            <button
+              onClick={handleNext}
+              className="hover:bg-base-100 text-base-content/70 hover:text-primary rounded-md p-1.5 transition-colors"
+              aria-label="Día siguiente"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       </div>
 

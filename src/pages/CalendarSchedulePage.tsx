@@ -3,6 +3,7 @@ import type { ChangeEvent } from "react";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
 import { useTranslation } from "react-i18next";
+import { Filter, ChevronLeft, ChevronRight, Calendar } from "lucide-react";
 
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
@@ -10,7 +11,7 @@ import Alert from "@/components/ui/Alert";
 import { MultiSelectFilter, type MultiSelectOption } from "@/features/calendar/components/MultiSelectFilter";
 import { useCalendarEvents } from "@/features/calendar/hooks/useCalendarEvents";
 import { numberFormatter } from "@/lib/format";
-import { PAGE_CONTAINER, TITLE_LG, SPACE_Y_TIGHT } from "@/lib/styles";
+import { PAGE_CONTAINER } from "@/lib/styles";
 
 const ScheduleCalendar = lazy(() => import("@/features/calendar/components/ScheduleCalendar"));
 
@@ -19,51 +20,19 @@ dayjs.locale("es");
 const NULL_EVENT_TYPE_VALUE = "__NULL__";
 const NULL_CATEGORY_VALUE = "__NULL_CATEGORY__";
 
-const CALENDAR_COPY = {
-  scheduleTitle: "Calendario operativo",
-  scheduleDescription:
-    "Analiza la agenda sincronizada desde Google Calendar con filtros avanzados y totales por rango.",
-  searchPlaceholder: "Paciente, tratamiento o palabra clave",
-  loading: "Cargando…",
-  applyFilters: "Aplicar filtros",
-  resetFilters: "Restablecer",
-  activeRange: "Del {{from}} al {{to}} · {{events}} eventos",
-  filters: {
-    from: "Desde",
-    to: "Hasta",
-    calendars: "Calendarios",
-    eventTypes: "Tipos de evento",
-    categories: "Clasificación",
-    search: "Buscar",
-    all: "Todos",
-    allCategories: "Todas las categorías",
-  },
-} satisfies Record<string, unknown>;
-
-function getFallbackCopy(path: string): string {
-  const segments = path.split(".");
-  let current: unknown = CALENDAR_COPY;
-  for (const segment of segments) {
-    if (current && typeof current === "object" && segment in current) {
-      current = (current as Record<string, unknown>)[segment];
-    } else {
-      return path;
-    }
-  }
-  return typeof current === "string" ? current : path;
-}
-
 function CalendarSchedulePage() {
   const { t } = useTranslation();
-  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+
   const tc = useCallback(
     (key: string, options?: Record<string, unknown>) =>
       t(`calendar.${key}`, {
-        defaultValue: getFallbackCopy(key),
+        defaultValue: key,
         ...options,
       }),
     [t]
   );
+
   const {
     filters,
     daily,
@@ -71,22 +40,12 @@ function CalendarSchedulePage() {
     loading,
     error,
     isDirty,
-    availableCalendars,
     availableEventTypes,
     availableCategories,
     updateFilters,
     applyFilters,
     resetFilters,
   } = useCalendarEvents();
-
-  const calendarOptions: MultiSelectOption[] = useMemo(
-    () =>
-      availableCalendars.map((entry) => ({
-        value: entry.calendarId,
-        label: `${entry.calendarId} · ${numberFormatter.format(entry.total)}`,
-      })),
-    [availableCalendars]
-  );
 
   const eventTypeOptions: MultiSelectOption[] = useMemo(
     () =>
@@ -110,131 +69,190 @@ function CalendarSchedulePage() {
 
   const allEvents = useMemo(() => daily?.days.flatMap((day) => day.events) ?? [], [daily?.days]);
 
+  // Navigation helpers
+  const currentFrom = dayjs(filters.from);
+  const currentTo = dayjs(filters.to);
+  const rangeLabel =
+    currentFrom.isValid() && currentTo.isValid()
+      ? `${currentFrom.format("D MMM")} - ${currentTo.format("D MMM YYYY")}`
+      : "Seleccionar rango";
+
+  const goToPreviousWeek = () => {
+    const newFrom = currentFrom.subtract(1, "week").format("YYYY-MM-DD");
+    const newTo = currentTo.subtract(1, "week").format("YYYY-MM-DD");
+    updateFilters("from", newFrom);
+    updateFilters("to", newTo);
+    applyFilters();
+  };
+
+  const goToNextWeek = () => {
+    const newFrom = currentFrom.add(1, "week").format("YYYY-MM-DD");
+    const newTo = currentTo.add(1, "week").format("YYYY-MM-DD");
+    updateFilters("from", newFrom);
+    updateFilters("to", newTo);
+    applyFilters();
+  };
+
+  const goToThisWeek = () => {
+    const thisWeekStart = dayjs().startOf("week").add(1, "day"); // Monday
+    const thisWeekEnd = thisWeekStart.add(6, "day"); // Sunday
+    updateFilters("from", thisWeekStart.format("YYYY-MM-DD"));
+    updateFilters("to", thisWeekEnd.format("YYYY-MM-DD"));
+    applyFilters();
+  };
+
   return (
     <section className={PAGE_CONTAINER}>
-      <header className={SPACE_Y_TIGHT}>
-        <h1 className={TITLE_LG}>{tc("scheduleTitle")}</h1>
-        <p className="text-base-content/70 text-sm">{tc("scheduleDescription")}</p>
-      </header>
+      {/* Compact Header */}
+      <header className="space-y-3">
+        {/* Navigation Row */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          {/* Left: Week Navigation */}
+          <div className="flex items-center gap-2">
+            <div className="bg-base-200 flex items-center gap-0.5 rounded-lg p-1">
+              <button
+                type="button"
+                onClick={goToPreviousWeek}
+                className="hover:bg-base-100 text-base-content/70 hover:text-primary rounded-md p-1.5 transition-colors"
+                aria-label="Semana anterior"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={goToThisWeek}
+                className="hover:bg-base-100 rounded-md px-2 py-1 text-xs font-medium uppercase transition-colors"
+              >
+                Hoy
+              </button>
+              <button
+                type="button"
+                onClick={goToNextWeek}
+                className="hover:bg-base-100 text-base-content/70 hover:text-primary rounded-md p-1.5 transition-colors"
+                aria-label="Semana siguiente"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+            <span className="text-base-content/70 hidden text-sm font-medium sm:inline">{rangeLabel}</span>
+          </div>
 
-      <form
-        className="border-primary/15 bg-base-100 text-base-content space-y-4 rounded-2xl border p-6 text-xs shadow-sm"
-        onSubmit={(event) => {
-          event.preventDefault();
-          applyFilters();
-        }}
-      >
-        <div className="grid gap-4 md:grid-cols-3">
-          <Input
-            label={tc("filters.from")}
-            type="date"
-            value={filters.from}
-            onChange={(event: ChangeEvent<HTMLInputElement>) => updateFilters("from", event.target.value)}
-          />
-          <Input
-            label={tc("filters.to")}
-            type="date"
-            value={filters.to}
-            onChange={(event: ChangeEvent<HTMLInputElement>) => updateFilters("to", event.target.value)}
-          />
-          <MultiSelectFilter
-            label={tc("filters.calendars")}
-            options={calendarOptions}
-            selected={filters.calendarIds}
-            onToggle={(value) => {
-              updateFilters(
-                "calendarIds",
-                filters.calendarIds.includes(value)
-                  ? filters.calendarIds.filter((id) => id !== value)
-                  : [...filters.calendarIds, value]
-              );
-            }}
-            placeholder={tc("filters.all")}
-          />
+          {/* Right: Event count + Filter toggle */}
+          <div className="flex items-center gap-2">
+            {summary && (
+              <span className="text-base-content/50 text-xs">{numberFormatter.format(allEvents.length)} eventos</span>
+            )}
+            <Button
+              variant={showFilters ? "secondary" : "ghost"}
+              size="sm"
+              onClick={() => setShowFilters(!showFilters)}
+              className="gap-1.5"
+            >
+              <Filter className="h-4 w-4" />
+              <span className="hidden sm:inline">{showFilters ? "Cerrar" : "Filtros"}</span>
+            </Button>
+          </div>
         </div>
 
-        {showAdvanced && (
-          <div className="grid gap-4 md:grid-cols-3">
-            <MultiSelectFilter
-              label={tc("filters.eventTypes")}
-              options={eventTypeOptions}
-              selected={filters.eventTypes}
-              onToggle={(value) => {
-                updateFilters(
-                  "eventTypes",
-                  filters.eventTypes.includes(value)
-                    ? filters.eventTypes.filter((id) => id !== value)
-                    : [...filters.eventTypes, value]
-                );
-              }}
-              placeholder={tc("filters.all")}
-            />
-            <MultiSelectFilter
-              label={tc("filters.categories")}
-              options={categoryOptions}
-              selected={filters.categories}
-              onToggle={(value) => {
-                updateFilters(
-                  "categories",
-                  filters.categories.includes(value)
-                    ? filters.categories.filter((id) => id !== value)
-                    : [...filters.categories, value]
-                );
-              }}
-              placeholder={tc("filters.allCategories")}
-            />
-            <Input
-              label={tc("filters.search")}
-              placeholder={tc("searchPlaceholder")}
-              value={filters.search}
-              onChange={(event: ChangeEvent<HTMLInputElement>) => updateFilters("search", event.target.value)}
-              enterKeyHint="search"
-            />
-          </div>
-        )}
-
-        <div className="flex flex-wrap items-center gap-2">
-          <Button type="submit" size="lg" disabled={loading}>
-            {loading ? tc("loading") : tc("applyFilters")}
-          </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            size="lg"
-            disabled={loading || !isDirty}
-            onClick={() => {
-              resetFilters();
+        {/* Collapsible Filters */}
+        {showFilters && (
+          <form
+            className="border-base-300 bg-base-100 animate-in slide-in-from-top-2 flex flex-wrap items-end gap-3 rounded-xl border p-3 shadow-sm duration-200"
+            onSubmit={(event) => {
+              event.preventDefault();
+              applyFilters();
             }}
           >
-            {tc("resetFilters")}
-          </Button>
-          <Button type="button" variant="ghost" size="sm" onClick={() => setShowAdvanced((prev) => !prev)}>
-            {showAdvanced ? "Ocultar filtros avanzados" : "Más filtros"}
-          </Button>
-        </div>
-      </form>
+            <div className="min-w-28 flex-1">
+              <Input
+                label="Desde"
+                type="date"
+                value={filters.from}
+                onChange={(event: ChangeEvent<HTMLInputElement>) => updateFilters("from", event.target.value)}
+              />
+            </div>
+            <div className="min-w-28 flex-1">
+              <Input
+                label="Hasta"
+                type="date"
+                value={filters.to}
+                onChange={(event: ChangeEvent<HTMLInputElement>) => updateFilters("to", event.target.value)}
+              />
+            </div>
+            <div className="min-w-32 flex-1">
+              <MultiSelectFilter
+                label="Tipos de evento"
+                options={eventTypeOptions}
+                selected={filters.eventTypes}
+                onToggle={(value) => {
+                  updateFilters(
+                    "eventTypes",
+                    filters.eventTypes.includes(value)
+                      ? filters.eventTypes.filter((id) => id !== value)
+                      : [...filters.eventTypes, value]
+                  );
+                }}
+                placeholder="Todos"
+              />
+            </div>
+            <div className="min-w-32 flex-1">
+              <MultiSelectFilter
+                label="Clasificación"
+                options={categoryOptions}
+                selected={filters.categories}
+                onToggle={(value) => {
+                  updateFilters(
+                    "categories",
+                    filters.categories.includes(value)
+                      ? filters.categories.filter((id) => id !== value)
+                      : [...filters.categories, value]
+                  );
+                }}
+                placeholder="Todas"
+              />
+            </div>
+            <div className="min-w-40 flex-1">
+              <Input
+                label="Buscar"
+                placeholder="Paciente, tratamiento..."
+                value={filters.search}
+                onChange={(event: ChangeEvent<HTMLInputElement>) => updateFilters("search", event.target.value)}
+                enterKeyHint="search"
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button type="button" variant="ghost" size="sm" disabled={loading || !isDirty} onClick={resetFilters}>
+                Limpiar
+              </Button>
+              <Button type="submit" size="sm" disabled={loading}>
+                {loading ? "..." : "Aplicar"}
+              </Button>
+            </div>
+          </form>
+        )}
+      </header>
 
-      {error && <Alert variant="error">{error}</Alert>}
-
-      <Suspense
-        fallback={
-          <div className="flex h-96 items-center justify-center">
-            <span className="loading loading-spinner loading-lg text-primary" />
-          </div>
-        }
-      >
-        <ScheduleCalendar events={allEvents} loading={loading} />
-      </Suspense>
-
-      {summary && (
-        <p className="text-base-content/60 text-xs">
-          {tc("activeRange", {
-            from: dayjs(summary.filters.from).format("DD MMM YYYY"),
-            to: dayjs(summary.filters.to).format("DD MMM YYYY"),
-            events: numberFormatter.format(allEvents.length),
-          })}
-        </p>
+      {error && (
+        <Alert variant="error" className="mt-3">
+          {error}
+        </Alert>
       )}
+
+      {/* Calendar - Main Content */}
+      <div className="mt-4">
+        <Suspense
+          fallback={
+            <div className="bg-base-200/50 border-base-300 flex h-96 items-center justify-center rounded-2xl border">
+              <div className="flex flex-col items-center gap-2">
+                <Calendar className="text-primary h-8 w-8 animate-pulse" />
+                <span className="text-base-content/50 text-sm">Cargando calendario...</span>
+              </div>
+            </div>
+          }
+        >
+          <ScheduleCalendar events={allEvents} loading={loading} />
+        </Suspense>
+      </div>
     </section>
   );
 }
