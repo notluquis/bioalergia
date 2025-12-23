@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type ChangeEvent } from "react";
+import { useCallback, useMemo, useState, type ChangeEvent } from "react";
 import dayjs, { type Dayjs } from "dayjs";
 import clsx from "clsx";
 import "dayjs/locale/es";
@@ -77,24 +77,9 @@ function CalendarHeatmapPage() {
   const error = queryError instanceof Error ? queryError.message : queryError ? String(queryError) : null;
   const initializing = loading && !summary;
 
-  // Sync server-normalized filters back to UI on successful fetch
-  useEffect(() => {
-    if (summary?.filters) {
-      const normalizedServerFilters: HeatmapFilters = {
-        from: summary.filters.from ?? "",
-        to: summary.filters.to ?? "",
-        categories: summary.filters.categories ?? [],
-      };
-
-      // Only update if deeply different to avoid loops/unnecessary renders
-      if (!filtersEqual(appliedFilters, normalizedServerFilters)) {
-        setAppliedFilters(normalizedServerFilters);
-        setFilters(normalizedServerFilters);
-      } else if (!filtersEqual(filters, normalizedServerFilters)) {
-        setFilters(normalizedServerFilters);
-      }
-    }
-  }, [summary, appliedFilters, filters]);
+  // NOTE: We no longer sync server filters back to UI to avoid overwriting user changes.
+  // The user's `filters` state is the source of truth for the form.
+  // `appliedFilters` drives the query, and changes when user clicks "Apply".
 
   const isDirty = useMemo(() => !filtersEqual(filters, appliedFilters), [filters, appliedFilters]);
 
