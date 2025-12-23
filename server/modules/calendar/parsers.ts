@@ -69,6 +69,7 @@ const SUBCUT_PATTERNS = [
   /\bmantenci[oó]n\b/i, // mantención (maintenance treatment)
   /\bse\s+envio\s+dosis\b/i, // "se envio dosis"
   /\benviado\b.*\bpagado\b/i, // "enviado (50/ pagado)"
+  /\d+([.,]\d+)?\s*(ml|cc|mg)\b/i, // explicit dosage unit (e.g. 0.5ml, 1cc)
 ];
 
 /** Pattern for decimal dosage (indicates subcutaneous treatment) */
@@ -321,8 +322,13 @@ function extractAmounts(summary: string, description: string) {
   const parenPattern = /\(([^)]+)\)/gi;
   let match: RegExpExecArray | null;
   while ((match = parenPattern.exec(text)) !== null) {
-    const content = match[1];
+    let content = match[1]; // Use 'let' so we can modify it
     if (/^\d+\s*\/\s*\d+$/.test(content)) continue; // Skip slash format
+
+    // Fix: Remove date patterns to avoid merging them into the amount (e.g. "pagado el 21-11/ 30")
+    // Matches "21-11" or "21/11" (if surrounded by spaces or boundary)
+    content = content.replace(/\b\d{1,2}[-]\d{1,2}\b/g, "");
+
     const amount = normalizeAmountRaw(content);
     if (amount == null) continue;
     if (/pagado/i.test(content)) {

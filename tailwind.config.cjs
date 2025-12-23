@@ -42,6 +42,7 @@ module.exports = {
           "base-100": "#ffffff" /* Pure white background */,
           "base-200": "#f5f5f5" /* Light gray */,
           "base-300": "#e5e5e5" /* Medium gray */,
+          "base-content": "#1f2937" /* Gray-800 for proper text/icon contrast on light bg */,
           info: "#3abff8",
           success: "#16a34a", /* Darker green (emerald-600) for text accessibility on light bg */
           warning: "#d97706", /* Darker amber (amber-600) for text accessibility */
