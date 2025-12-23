@@ -45,16 +45,16 @@ const SidebarItem = React.memo(function SidebarItem({
           className={({ isActive }) => {
             const finalActive = isActive || isPending;
             return cn(
-              "group relative flex items-center rounded-lg transition-colors duration-150 ease-out outline-none select-none",
+              "group relative flex items-center rounded-xl transition-all duration-200 ease-in-out outline-none select-none",
               // Mobile vs Desktop styling
               isMobile
                 ? "w-full justify-start px-4 py-3"
                 : isCollapsed
-                  ? "mx-auto h-8 w-8 justify-center p-0"
-                  : "w-full justify-start px-3 py-2",
+                  ? "mx-auto h-9 w-9 justify-center p-0"
+                  : "w-full justify-start px-3 py-2.5",
               finalActive
-                ? "bg-primary text-primary-content shadow-primary/30 font-medium shadow-md"
-                : "text-base-content hover:bg-base-content/10 hover:shadow-sm"
+                ? "bg-primary/10 text-primary font-semibold"
+                : "text-base-content/60 hover:text-base-content hover:bg-base-content/5"
             );
           }}
         >
@@ -62,23 +62,38 @@ const SidebarItem = React.memo(function SidebarItem({
             const finalActive = isActive || isPending;
             return (
               <>
+                {/* Active Indicator (Vertical Bar for Expanded/Mobile) */}
+                {finalActive && (!isCollapsed || isMobile) && (
+                  <span className="bg-primary absolute top-1/2 left-0 h-5 w-1 -translate-y-1/2 rounded-r-full" />
+                )}
+
                 {/* Icon Container */}
                 <div
                   className={cn(
-                    "relative flex items-center justify-center",
-                    isMobile ? "mr-3" : isCollapsed ? "mr-0" : "mr-3"
+                    "relative flex items-center justify-center transition-colors duration-200",
+                    isMobile ? "mr-4" : isCollapsed ? "mr-0" : "mr-3"
                   )}
                 >
-                  <item.icon className="h-5 w-5" strokeWidth={finalActive ? 2.5 : 2} />
-                  {/* Active Dot for Collapsed State */}
+                  <item.icon
+                    className={cn(
+                      "h-5 w-5 transition-transform duration-200",
+                      finalActive ? "scale-105" : "group-hover:scale-105"
+                    )}
+                    strokeWidth={finalActive ? 2.5 : 2}
+                  />
+
+                  {/* Active Dot for Collapsed State (replaces bar when collapsed) */}
                   {!isMobile && isCollapsed && finalActive && (
-                    <span className="bg-primary ring-base-100 absolute top-0 right-0 h-2.5 w-2.5 animate-pulse rounded-full ring-2" />
+                    <span className="bg-primary absolute top-0 -right-1 h-2 w-2 rounded-full shadow-sm ring-2 ring-white dark:ring-black" />
                   )}
                 </div>
 
-                {/* Label (Desktop Collapsed: Hidden / Expanded: Visible) */}
+                {/* Label */}
                 <span
-                  className={cn("text-sm font-medium whitespace-nowrap", !isMobile && isCollapsed ? "hidden" : "block")}
+                  className={cn(
+                    "bg-transparent text-sm whitespace-nowrap",
+                    !isMobile && isCollapsed ? "hidden" : "block"
+                  )}
                 >
                   {item.label}
                 </span>
@@ -124,11 +139,11 @@ export default function Sidebar({ isOpen, isMobile, onClose }: SidebarProps) {
   React.useEffect(() => {
     let timer: NodeJS.Timeout;
     if (isHovered) {
-      // Expand quickly
-      timer = setTimeout(() => setIsCollapsed(false), 50);
+      // Expand quickly but not instantly
+      timer = setTimeout(() => setIsCollapsed(false), 150);
     } else {
       // Collapse
-      timer = setTimeout(() => setIsCollapsed(true), 200);
+      timer = setTimeout(() => setIsCollapsed(true), 300);
     }
     return () => clearTimeout(timer);
   }, [isHovered]);
