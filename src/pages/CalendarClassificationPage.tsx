@@ -362,72 +362,26 @@ function CalendarClassificationPage() {
             </div>
 
             {/* Reclassify Actions */}
-            <div className="flex flex-col gap-3">
-              {/* Progress Bar - Show when job is running */}
-              {isJobRunning && job && (
-                <div className="bg-base-300/50 rounded-xl p-4">
-                  <div className="mb-2 flex items-center justify-between">
-                    <span className="text-sm font-medium">{job.message}</span>
-                    <span className="text-primary text-sm font-bold tabular-nums">{progress}%</span>
-                  </div>
-                  <div className="bg-base-200 h-2.5 w-full overflow-hidden rounded-full">
-                    <div
-                      className="bg-primary h-2.5 rounded-full transition-all duration-300 ease-out"
-                      style={{ width: `${progress}%` }}
-                    />
-                  </div>
-                  <div className="text-base-content/60 mt-2 text-xs">
-                    {job.progress.toLocaleString("es-CL")} / {job.total.toLocaleString("es-CL")} eventos
-                  </div>
-                </div>
-              )}
-
+            <div className="flex items-center gap-3">
               {/* Action Buttons */}
-              <div className="flex items-center gap-2">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() => reclassifyMutation.mutate()}
-                  disabled={reclassifyMutation.isPending || isJobRunning}
-                  className="gap-2"
-                >
-                  <svg
-                    className={`h-4 w-4 ${isJobRunning ? "animate-spin" : ""}`}
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                    />
-                  </svg>
-                  {isJobRunning ? `Procesando ${progress}%...` : "Reclasificar pendientes"}
-                </Button>
-                <Tooltip.Root>
-                  <Tooltip.Trigger asChild>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (
-                          window.confirm(
-                            "¿Reclasificar TODOS los eventos? Esto sobrescribirá las clasificaciones existentes."
-                          )
-                        ) {
-                          reclassifyAllMutation.mutate();
-                        }
-                      }}
-                      disabled={reclassifyAllMutation.isPending || isJobRunning}
-                      className="text-warning/80 hover:text-warning hover:bg-warning/10 rounded-lg p-2 transition-colors disabled:opacity-50"
-                    >
-                      <svg
-                        className={`h-5 w-5 ${isJobRunning ? "animate-spin" : ""}`}
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => reclassifyMutation.mutate()}
+                disabled={reclassifyMutation.isPending || isJobRunning}
+                className="relative gap-2 overflow-hidden"
+              >
+                {/* Progress overlay inside button */}
+                {isJobRunning && (
+                  <div
+                    className="bg-primary/20 absolute inset-0 transition-all duration-300"
+                    style={{ width: `${progress}%` }}
+                  />
+                )}
+                <span className="relative z-10 flex items-center gap-2">
+                  {isJobRunning ? (
+                    <>
+                      <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path
                           strokeLinecap="round"
                           strokeLinejoin="round"
@@ -435,14 +389,70 @@ function CalendarClassificationPage() {
                           d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
                         />
                       </svg>
-                    </button>
-                  </Tooltip.Trigger>
-                  <Tooltip.Content className="bg-base-300 rounded-lg px-3 py-2 text-xs shadow-xl" side="bottom">
-                    Reclasificar TODO (sobrescribe existentes)
-                    <Tooltip.Arrow className="fill-base-300" />
-                  </Tooltip.Content>
-                </Tooltip.Root>
-              </div>
+                      <span className="tabular-nums">{progress}%</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                        />
+                      </svg>
+                      Reclasificar pendientes
+                    </>
+                  )}
+                </span>
+              </Button>
+
+              {/* Progress info pill - only when running */}
+              {isJobRunning && job && (
+                <div className="bg-primary/10 border-primary/20 flex items-center gap-2 rounded-full border px-3 py-1.5">
+                  <span className="text-primary/80 text-xs font-medium">{job.message}</span>
+                  <span className="text-primary text-xs font-bold tabular-nums">
+                    {job.progress.toLocaleString("es-CL")}/{job.total.toLocaleString("es-CL")}
+                  </span>
+                </div>
+              )}
+
+              <Tooltip.Root>
+                <Tooltip.Trigger asChild>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (
+                        window.confirm(
+                          "¿Reclasificar TODOS los eventos? Esto sobrescribirá las clasificaciones existentes."
+                        )
+                      ) {
+                        reclassifyAllMutation.mutate();
+                      }
+                    }}
+                    disabled={reclassifyAllMutation.isPending || isJobRunning}
+                    className="text-warning/80 hover:text-warning hover:bg-warning/10 rounded-lg p-2 transition-colors disabled:opacity-50"
+                  >
+                    <svg
+                      className={`h-5 w-5 ${isJobRunning ? "animate-spin" : ""}`}
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                      />
+                    </svg>
+                  </button>
+                </Tooltip.Trigger>
+                <Tooltip.Content className="bg-base-300 rounded-lg px-3 py-2 text-xs shadow-xl" side="bottom">
+                  Reclasificar TODO (sobrescribe existentes)
+                  <Tooltip.Arrow className="fill-base-300" />
+                </Tooltip.Content>
+              </Tooltip.Root>
             </div>
           </div>
 

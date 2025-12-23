@@ -54,7 +54,7 @@ const SidebarItem = React.memo(function SidebarItem({
                   : "w-full justify-start px-3 py-2",
               finalActive
                 ? "bg-primary text-primary-content shadow-primary/30 font-medium shadow-md"
-                : "text-base-content/90 hover:bg-base-content/5 hover:text-base-content hover:shadow-sm"
+                : "text-base-content hover:bg-base-content/10 hover:shadow-sm"
             );
           }}
         >
@@ -94,11 +94,12 @@ const SidebarItem = React.memo(function SidebarItem({
           }}
         </NavLink>
       </TooltipTrigger>
-      {/* Tooltip only on Desktop Collapsed */}
-      {!isMobile && isCollapsed && (
+      {/* Tooltip only on Desktop Collapsed - force close when expanded */}
+      {!isMobile && (
         <TooltipContent
           side="right"
           sideOffset={10}
+          hidden={!isCollapsed}
           className="bg-base-300 border-base-200 text-base-content z-100 px-3 py-1.5 font-semibold shadow-xl"
         >
           {item.label}
@@ -159,11 +160,13 @@ export default function Sidebar({ isOpen, isMobile, onClose }: SidebarProps) {
   // Sidebar Classes
   const sidebarClasses = cn(
     // Base - GPU-accelerated transitions only (transform, opacity)
+    // Rounded corners on the right side for modern look
     "flex flex-col bg-base-100 backdrop-blur-xl border-r border-base-200 transition-[width] duration-200 ease-out z-50",
+    "rounded-r-2xl",
     // Mobile
     isMobile
       ? cn(
-          "fixed inset-y-0 left-0 w-64 h-[100dvh] shadow-2xl safe-area-left",
+          "fixed inset-y-0 left-0 w-64 h-[100dvh] shadow-2xl safe-area-left rounded-r-3xl",
           isOpen ? "translate-x-0" : "-translate-x-full"
         )
       : cn(
