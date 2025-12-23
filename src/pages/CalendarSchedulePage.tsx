@@ -1,8 +1,8 @@
-import { useMemo, useState, lazy, Suspense } from "react";
+import { useMemo, useState } from "react";
 import type { ChangeEvent } from "react";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
-import { Filter, ChevronLeft, ChevronRight, Calendar } from "lucide-react";
+import { Filter, ChevronLeft, ChevronRight } from "lucide-react";
 
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
@@ -12,7 +12,7 @@ import { useCalendarEvents } from "@/features/calendar/hooks/useCalendarEvents";
 import { numberFormatter } from "@/lib/format";
 import { PAGE_CONTAINER } from "@/lib/styles";
 
-const ScheduleCalendar = lazy(() => import("@/features/calendar/components/ScheduleCalendar"));
+import ScheduleCalendar from "@/features/calendar/components/ScheduleCalendar";
 
 dayjs.locale("es");
 
@@ -229,18 +229,11 @@ function CalendarSchedulePage() {
 
       {/* Calendar - Main Content */}
       <div className="mt-4">
-        <Suspense
-          fallback={
-            <div className="bg-base-200/50 border-base-300 flex h-96 items-center justify-center rounded-2xl border">
-              <div className="flex flex-col items-center gap-2">
-                <Calendar className="text-primary h-8 w-8 animate-pulse" />
-                <span className="text-base-content/50 text-sm">Cargando calendario...</span>
-              </div>
-            </div>
-          }
-        >
-          <ScheduleCalendar events={allEvents} loading={loading} />
-        </Suspense>
+        <ScheduleCalendar
+          events={allEvents}
+          loading={loading}
+          weekStart={currentFrom.startOf("week").add(1, "day").format("YYYY-MM-DD")}
+        />
       </div>
     </section>
   );
