@@ -99,6 +99,8 @@ type MissingFieldFilter = {
   amountExpected?: boolean;
   amountPaid?: boolean;
   attended?: boolean;
+  dosage?: boolean;
+  treatmentStage?: boolean;
 };
 
 export async function listUnclassifiedCalendarEvents(limit: number, offset: number = 0, filters?: MissingFieldFilter) {
@@ -120,6 +122,20 @@ export async function listUnclassifiedCalendarEvents(limit: number, offset: numb
     }
     if (filters.attended) {
       orConditions.push({ attended: null });
+    }
+    // For dosage: events that are "Tratamiento subcutáneo" but missing dosage
+    if (filters.dosage) {
+      orConditions.push({
+        category: "Tratamiento subcutáneo",
+        OR: [{ dosage: null }, { dosage: "" }],
+      });
+    }
+    // For treatmentStage: events that are "Tratamiento subcutáneo" but missing stage
+    if (filters.treatmentStage) {
+      orConditions.push({
+        category: "Tratamiento subcutáneo",
+        OR: [{ treatmentStage: null }, { treatmentStage: "" }],
+      });
     }
   }
 
