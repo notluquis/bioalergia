@@ -102,6 +102,8 @@ export type MissingFieldFilters = {
   missingCategory?: boolean;
   missingAmount?: boolean;
   missingAttended?: boolean;
+  missingDosage?: boolean;
+  missingTreatmentStage?: boolean;
 };
 
 export type UnclassifiedEventsResponse = {
@@ -120,6 +122,8 @@ export async function fetchUnclassifiedCalendarEvents(
   if (filters?.missingCategory) params.set("missingCategory", "true");
   if (filters?.missingAmount) params.set("missingAmount", "true");
   if (filters?.missingAttended) params.set("missingAttended", "true");
+  if (filters?.missingDosage) params.set("missingDosage", "true");
+  if (filters?.missingTreatmentStage) params.set("missingTreatmentStage", "true");
 
   const response = await apiClient.get<{
     status: "ok";
