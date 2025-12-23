@@ -37,10 +37,10 @@ function normalizeFilters(filters: CalendarFilters): CalendarFilters {
   const unique = (values: string[]) => Array.from(new Set(values)).sort();
   return {
     ...filters,
-    calendarIds: unique(filters.calendarIds),
-    eventTypes: unique(filters.eventTypes),
+    calendarIds: unique(filters.calendarIds ?? []),
+    eventTypes: unique(filters.eventTypes ?? []),
     categories: unique(filters.categories),
-    search: filters.search.trim(),
+    search: (filters.search ?? "").trim(),
   };
 }
 
@@ -56,10 +56,10 @@ function filtersEqual(a: CalendarFilters, b: CalendarFilters) {
   return (
     a.from === b.from &&
     a.to === b.to &&
-    arraysEqual([...a.calendarIds].sort(), [...b.calendarIds].sort()) &&
-    arraysEqual([...a.eventTypes].sort(), [...b.eventTypes].sort()) &&
+    arraysEqual([...(a.calendarIds ?? [])].sort(), [...(b.calendarIds ?? [])].sort()) &&
+    arraysEqual([...(a.eventTypes ?? [])].sort(), [...(b.eventTypes ?? [])].sort()) &&
     arraysEqual([...a.categories].sort(), [...b.categories].sort()) &&
-    a.search.trim() === b.search.trim() &&
+    (a.search ?? "").trim() === (b.search ?? "").trim() &&
     a.maxDays === b.maxDays
   );
 }
