@@ -1,7 +1,8 @@
+import { useMemo } from "react";
 import dayjs, { type Dayjs } from "dayjs";
 import clsx from "clsx";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/Tooltip";
 import { fmtCLP } from "@/lib/format";
-
 import "./HeatmapMonth.css";
 
 export type HeatmapMonthProps = {
@@ -10,182 +11,142 @@ export type HeatmapMonthProps = {
   maxValue: number;
 };
 
-type WeekCell = {
-  dayNumber: number | null;
-  isoDate?: string;
-  count: number;
+// Colors based on intensity (0 to 4)
+const INTENSITY_COLORS = {
+  0: "bg-base-200/30 text-base-content/30", // Empty
+  1: "bg-primary/20 text-primary-content/80 dark:text-primary-content", // 1-2 events
+  2: "bg-primary/40 text-primary-content", // Low
+  3: "bg-primary/70 text-primary-content", // Medium
+  4: "bg-primary text-primary-content", // High
+};
+
+function getIntensity(count: number, max: number): 0 | 1 | 2 | 3 | 4 {
+  if (count === 0) return 0;
+  if (count <= 2) return 1; // Explicit low count check for visibility
+  if (max <= 0) return 1;
+  const ratio = count / max;
+  if (ratio > 0.75) return 4;
+  if (ratio > 0.45) return 3;
+  return 2;
+}
+
+const WEEKDAYS = ["Lu", "Ma", "Mi", "Ju", "Vi", "Sá", "Do"];
+
+type PaddingCell = {
+  key: string;
+  type: "padding";
+};
+
+type DayCell = {
+  key: string;
+  type: "day";
+  date: Dayjs;
+  dayNumber: number;
+  isoDate: string;
+  total: number;
   amountExpected: number;
   amountPaid: number;
-  isToday?: boolean;
+  isToday: boolean;
+  intensity: 0 | 1 | 2 | 3 | 4;
 };
 
-type WeekRow = {
-  cells: WeekCell[];
-  total: number;
-};
-
-const weekdayLabels = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
-
-const colorPalette = [
-  "oklch(var(--b2))",
-  "oklch(var(--p) / 0.2)",
-  "oklch(var(--p) / 0.4)",
-  "oklch(var(--p) / 0.6)",
-  "oklch(var(--p) / 0.8)",
-  "oklch(var(--p))",
-  "oklch(var(--p) / 1.2)",
-];
-
-function buildWeeks(
-  month: Dayjs,
-  statsByDate: Map<string, { total: number; amountExpected: number; amountPaid: number }>
-): WeekRow[] {
-  const start = month.startOf("month");
-  const end = month.endOf("month");
-  const today = dayjs().startOf("day");
-
-  const weeks: WeekRow[] = [];
-
-  let currentRow: WeekRow | null = null;
-  let cursor = start.clone();
-
-  while (cursor.isSame(end) || cursor.isBefore(end)) {
-    const weekday = (cursor.day() + 6) % 7; // Monday = 0
-    const isSunday = weekday === 6;
-    const isoDate = cursor.format("YYYY-MM-DD");
-    const stats = statsByDate.get(isoDate);
-    const count = stats?.total ?? 0;
-
-    if (!currentRow || weekday === 0) {
-      if (currentRow) {
-        weeks.push(currentRow);
-      }
-      currentRow = {
-        cells: Array.from({ length: 6 }, () => ({
-          dayNumber: null,
-          count: 0,
-          amountExpected: 0,
-          amountPaid: 0,
-        })),
-        total: 0,
-      };
-    }
-
-    if (!isSunday && currentRow) {
-      currentRow.cells[weekday] = {
-        dayNumber: cursor.date(),
-        isoDate,
-        count,
-        amountExpected: stats?.amountExpected ?? 0,
-        amountPaid: stats?.amountPaid ?? 0,
-        isToday: cursor.isSame(today),
-      };
-      currentRow.total += count;
-    } else if (isSunday && currentRow) {
-      currentRow.total += count;
-    }
-
-    cursor = cursor.add(1, "day");
-  }
-
-  if (currentRow) {
-    weeks.push(currentRow);
-  }
-
-  return weeks;
-}
-
-function colorForValue(count: number, max: number) {
-  if (count <= 0 || max <= 0) return colorPalette[0];
-  const ratio = count / max;
-  if (ratio >= 0.9) return colorPalette[6];
-  if (ratio >= 0.75) return colorPalette[5];
-  if (ratio >= 0.6) return colorPalette[4];
-  if (ratio >= 0.4) return colorPalette[3];
-  if (ratio >= 0.25) return colorPalette[2];
-  if (ratio >= 0.1) return colorPalette[1];
-  return colorPalette[0];
-}
-
-function buildTooltip(cell: WeekCell) {
-  if (!cell.dayNumber || !cell.isoDate) return "Sin datos";
-  const dateLabel = dayjs(cell.isoDate).format("DD MMM YYYY");
-  return [
-    `${dateLabel}`,
-    `${cell.count} evento${cell.count === 1 ? "" : "s"}`,
-    `Esperado: ${fmtCLP(cell.amountExpected)}`,
-    `Pagado: ${fmtCLP(cell.amountPaid)}`,
-  ].join("\n");
-}
+type DateCell = PaddingCell | DayCell;
 
 export function HeatmapMonth({ month, statsByDate, maxValue }: HeatmapMonthProps) {
-  const weeks = buildWeeks(month, statsByDate);
-  const monthTotal = weeks.reduce((acc, week) => acc + week.total, 0);
-  const maxCount = Math.max(maxValue, ...weeks.map((week) => Math.max(...week.cells.map((cell) => cell.count))), 1);
+  const dates = useMemo<DateCell[]>(() => {
+    const startOfMonth = month.startOf("month");
+    const endOfMonth = month.endOf("month");
+    const daysInMonth = endOfMonth.date();
+
+    // Adjust for Monday start (0=Mon, 6=Sun in our consistent handling)
+    const startDayOfWeek = (startOfMonth.day() + 6) % 7;
+
+    // Generate padding days for start grid alignment
+    const paddingStart: PaddingCell[] = Array.from({ length: startDayOfWeek }).map((_, i) => ({
+      key: `pad-start-${i}`,
+      type: "padding",
+    }));
+
+    // Generate actual days
+    const days: DayCell[] = Array.from({ length: daysInMonth }).map((_, i) => {
+      const date = startOfMonth.add(i, "day");
+      const isoDate = date.format("YYYY-MM-DD");
+      const stats = statsByDate.get(isoDate) || { total: 0, amountExpected: 0, amountPaid: 0 };
+
+      return {
+        key: isoDate,
+        type: "day",
+        date: date,
+        dayNumber: i + 1,
+        isoDate,
+        ...stats,
+        isToday: date.isSame(dayjs(), "day"),
+        intensity: getIntensity(stats.total, maxValue),
+      };
+    });
+
+    return [...paddingStart, ...days];
+  }, [month, statsByDate, maxValue]);
+
+  const monthTotal = useMemo(() => dates.reduce((acc, d) => (d.type === "day" ? acc + d.total : acc), 0), [dates]);
 
   return (
-    <section className="calendar-month-card">
-      <header className="calendar-month-card__header">
-        <div>
-          <p className="calendar-month-card__title">{month.format("MMMM YYYY")}</p>
-          <p className="calendar-month-card__subtitle">Σ total {monthTotal}</p>
-        </div>
-      </header>
-      <div className="calendar-month-card__grid" role="table" aria-label={`Mapa de calor ${month.format("MMMM YYYY")}`}>
-        <div className="calendar-month-card__grid-corner" role="columnheader">
-          Sem
-        </div>
-        {weekdayLabels.map((label) => (
-          <div key={label} className="calendar-month-card__column-header" role="columnheader">
-            {label}
-          </div>
-        ))}
-        <div
-          className="calendar-month-card__column-header calendar-month-card__column-header--total"
-          role="columnheader"
-        >
-          Σ
-        </div>
-        {weeks.map((week, index) => (
-          <div key={`week-${index}`} className="calendar-month-card__row" role="row">
-            <div className="calendar-month-card__row-label" role="rowheader">
-              Sem {index + 1}
+    <TooltipProvider delayDuration={0}>
+      <article className="heatmap-month">
+        <header className="heatmap-month__header">
+          <h3 className="heatmap-month__title">{month.format("MMMM")}</h3>
+          <span className="heatmap-month__subtitle">{month.format("YYYY")}</span>
+        </header>
+
+        <div className="heatmap-month__grid">
+          {/* Weekday headers */}
+          {WEEKDAYS.map((d) => (
+            <div key={d} className="heatmap-month__weekday">
+              {d}
             </div>
-            {week.cells.map((cell, cellIndex) => (
-              <div
-                key={`cell-${index}-${cellIndex}`}
-                className={clsx("calendar-month-card__cell", {
-                  "calendar-month-card__cell--empty": !cell.dayNumber,
-                  "calendar-month-card__cell--today": cell.isToday,
-                })}
-                style={{ backgroundColor: colorForValue(cell.count, maxCount) }}
-                title={cell.dayNumber ? buildTooltip(cell) : undefined}
-                role="gridcell"
-                aria-label={
-                  cell.dayNumber
-                    ? `${cell.dayNumber} de ${month.format("MMMM YYYY")}: ${cell.count} eventos`
-                    : "Sin datos"
-                }
-              >
-                {cell.dayNumber ? (
-                  <>
-                    <span className="calendar-month-card__cell-day">{cell.dayNumber}</span>
-                    <span className="calendar-month-card__cell-count">{cell.count}</span>
-                  </>
-                ) : null}
-              </div>
-            ))}
-            <div
-              className="calendar-month-card__week-total"
-              role="gridcell"
-              aria-label={`Total semana ${index + 1}: ${week.total}`}
-            >
-              {week.total}
-            </div>
-          </div>
-        ))}
-      </div>
-    </section>
+          ))}
+
+          {/* Days */}
+          {dates.map((cell) => {
+            if (cell.type === "padding") {
+              return <div key={cell.key} />;
+            }
+
+            return (
+              <Tooltip key={cell.key}>
+                <TooltipTrigger asChild>
+                  <div
+                    className={clsx("heatmap-cell", INTENSITY_COLORS[cell.intensity], {
+                      "heatmap-cell--today": cell.isToday,
+                      "heatmap-cell--has-data": cell.total > 0,
+                    })}
+                  >
+                    <span className="heatmap-cell__date">{cell.dayNumber}</span>
+                  </div>
+                </TooltipTrigger>
+                {cell.total > 0 && (
+                  <TooltipContent side="top" className="text-xs">
+                    <p className="mb-1 font-bold">{cell.date.format("dddd DD MMMM")}</p>
+                    <div className="space-y-0.5">
+                      <p>
+                        {cell.total} evento{cell.total !== 1 && "s"}
+                      </p>
+                      <p className="opacity-80">Esperado: {fmtCLP(cell.amountExpected)}</p>
+                      <p className="opacity-80">Pagado: {fmtCLP(cell.amountPaid)}</p>
+                    </div>
+                  </TooltipContent>
+                )}
+              </Tooltip>
+            );
+          })}
+        </div>
+
+        {/* Footer Summary */}
+        <div className="bg-base-100/30 text-base-content/40 border-base-200/50 border-t px-4 py-2 text-right text-[10px] font-medium">
+          Total: {monthTotal}
+        </div>
+      </article>
+    </TooltipProvider>
   );
 }
 

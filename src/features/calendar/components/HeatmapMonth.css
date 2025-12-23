@@ -1,183 +1,52 @@
-.calendar-month-card {
-  border-radius: 18px;
-  background: var(--fallback-b1, oklch(var(--b1)));
-  border: 1px solid var(--fallback-b2, oklch(var(--b2)));
-  box-shadow: var(--shadow);
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  width: 100%;
-  box-sizing: border-box;
-  /* Configurable minimum heatmap cell size */
-  --heatmap-cell-min: 40px;
+.heatmap-month {
+  @apply bg-base-100 border-base-200 flex flex-col overflow-hidden rounded-2xl border shadow-sm;
 }
 
-.calendar-month-card__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+.heatmap-month__header {
+  @apply border-base-200/50 bg-base-100/50 flex items-center justify-between border-b px-4 py-3 backdrop-blur-sm;
 }
 
-.calendar-month-card__title {
-  font-size: 1.05rem;
-  font-weight: 700;
-  text-transform: capitalize;
-  color: var(--fallback-p, oklch(var(--p)));
+.heatmap-month__title {
+  @apply text-base-content text-sm font-bold capitalize;
 }
 
-.calendar-month-card__subtitle {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--fallback-bc, oklch(var(--bc) / 0.65));
+.heatmap-month__subtitle {
+  @apply text-base-content/50 text-xs font-medium;
 }
 
-.calendar-month-card__grid {
-  display: grid;
-  /* Make the central 6 columns flexible so the heat boxes resize to the
-     available container width. The first and last columns (row label and
-     week total) are auto-sized. */
-  grid-template-columns: auto repeat(6, 1fr) auto;
-  gap: 10px;
-  align-items: start;
-  width: 100%;
+/* Grid Layout */
+.heatmap-month__grid {
+  @apply grid gap-1 p-4;
+  grid-template-columns: repeat(7, 1fr);
 }
 
-.calendar-month-card__grid-corner {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  color: var(--fallback-bc, oklch(var(--bc) / 0.7));
+/* Day Labels (Mon, Tue, etc.) */
+.heatmap-month__weekday {
+  @apply text-base-content/40 py-2 text-center text-[10px] font-bold tracking-widest uppercase select-none;
 }
 
-.calendar-month-card__column-header,
-.calendar-month-card__column-header--total,
-.calendar-month-card__row-label,
-.calendar-month-card__week-total {
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  color: var(--fallback-bc, oklch(var(--bc) / 0.7));
-  display: flex;
-  align-items: center;
-  justify-content: center;
+/* Date Cells */
+.heatmap-cell {
+  @apply relative flex aspect-square cursor-default items-center justify-center rounded-md transition-all duration-200;
+  /* Default empty state */
+  @apply bg-base-200/30 text-base-content/30;
 }
 
-.calendar-month-card__column-header--total,
-.calendar-month-card__week-total {
-  background: var(--fallback-b2, oklch(var(--b2) / 0.6));
-  border-radius: 12px;
-  color: var(--fallback-bc, oklch(var(--bc) / 0.8));
+.heatmap-cell:hover {
+  @apply ring-primary ring-offset-base-100 z-10 scale-110 shadow-lg ring-2 ring-offset-2;
 }
 
-.calendar-month-card__row {
-  display: contents;
+.heatmap-cell--has-data {
+  @apply cursor-pointer font-semibold;
 }
 
-.calendar-month-card__row-label {
-  align-self: center;
-  font-weight: 600;
-  color: var(--fallback-bc, oklch(var(--bc) / 0.75));
+.heatmap-cell--today {
+  @apply ring-primary/50 relative ring-1 ring-inset;
 }
 
-.calendar-month-card__cell {
-  position: relative;
-  border-radius: 14px;
-  /* Use aspect-ratio to keep boxes square and responsive to the grid column
-     width. This makes the heatmap scale naturally with container size. */
-  aspect-ratio: 1 / 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background: var(--fallback-b2, oklch(var(--b2)));
-  box-shadow: inset 0 0 0 1px var(--fallback-b1, oklch(var(--b1)));
-  transition:
-    transform 0.15s ease,
-    box-shadow 0.15s ease;
-  overflow: hidden;
-  box-sizing: border-box;
-  padding: 6px;
-  min-inline-size: var(--heatmap-cell-min);
-  min-width: var(--heatmap-cell-min);
-  z-index: 1;
+/* Day Number */
+.heatmap-cell__date {
+  @apply text-xs;
 }
 
-.calendar-month-card__cell:hover {
-  transform: translateY(-1px) scale(1.01);
-  box-shadow: var(--shadow-lg);
-  z-index: 3;
-}
-
-.calendar-month-card__cell--empty {
-  background: var(--fallback-b3, oklch(var(--b3) / 0.6));
-  box-shadow: none;
-}
-
-.calendar-month-card__cell-day {
-  position: absolute;
-  top: 6px;
-  left: 8px;
-  font-size: clamp(0.6rem, 1.2vw, 0.75rem);
-  font-weight: 600;
-  color: var(--fallback-bc, oklch(var(--bc) / 0.7));
-}
-
-.calendar-month-card__cell-count {
-  font-size: clamp(0.9rem, 2.4vw, 1.1rem);
-  font-weight: 700;
-  color: var(--fallback-bc, oklch(var(--bc) / 0.85));
-  display: block;
-  text-align: center;
-  max-width: calc(100% - 8px);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.calendar-month-card__cell--today {
-  outline: 2px solid var(--fallback-i, oklch(var(--i)));
-  outline-offset: 2px;
-}
-
-.calendar-month-card__week-total {
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: var(--fallback-bc, oklch(var(--bc) / 0.85));
-}
-
-@media (max-width: 1200px) {
-  .calendar-month-card__grid {
-    grid-template-columns: auto repeat(6, 1fr) auto;
-  }
-
-  .calendar-month-card__cell {
-    /* allow a slightly smaller aspect ratio on narrower screens */
-    aspect-ratio: 1 / 1;
-  }
-}
-
-@media (max-width: 640px) {
-  .calendar-month-card {
-    padding: 12px;
-    gap: 12px;
-  }
-
-  .calendar-month-card__title {
-    font-size: 0.95rem;
-  }
-
-  .calendar-month-card__grid {
-    gap: 6px;
-  }
-
-  .calendar-month-card__column-header,
-  .calendar-month-card__row-label,
-  .calendar-month-card__week-total {
-    font-size: 0.65rem;
-  }
-}
+/* Tooltip custom styling if needed beyond Radix Tooltip */
