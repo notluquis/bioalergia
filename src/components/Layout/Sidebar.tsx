@@ -6,7 +6,6 @@ import { cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
 import { NAV_SECTIONS, type NavItem } from "@/config/navigation";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/Tooltip";
-import { APP_CONFIG } from "@/config/app";
 
 interface SidebarProps {
   isOpen: boolean; // For mobile drawer state
@@ -212,26 +211,22 @@ export default function Sidebar({ isOpen, isMobile, onClose }: SidebarProps) {
             !isMobile && isCollapsed ? "justify-center px-0" : "gap-3 px-5"
           )}
         >
-          {/* Logo Container - Simple, no extra backgrounds */}
-          <div className="relative flex h-10 w-10 shrink-0 items-center justify-center">
-            <img
-              src="/logo_bimi.svg"
-              alt="Logo"
-              className="brand-logo z-10 h-7 w-7 object-contain"
-              fetchPriority="high"
-            />
-          </div>
-
-          {/* Brand Text */}
+          {/* Logo Container */}
           <div
             className={cn(
-              "flex min-w-37.5 flex-col overflow-hidden transition-all duration-300",
-              !isMobile && isCollapsed ? "pointer-events-none absolute w-0 opacity-0" : "static w-auto opacity-100"
+              "relative flex items-center transition-all duration-300",
+              !isMobile && isCollapsed ? "h-10 w-10 justify-center" : "h-12 w-full justify-start"
             )}
           >
-            <span className="text-base-content text-xl leading-none font-extrabold tracking-tight">
-              {APP_CONFIG.name}
-            </span>
+            <img
+              src="/logo.png"
+              alt="Bioalergia"
+              className={cn(
+                "object-contain transition-all duration-300",
+                !isMobile && isCollapsed ? "h-8 w-8" : "h-10 w-auto"
+              )}
+              fetchPriority="high"
+            />
           </div>
         </div>
 
