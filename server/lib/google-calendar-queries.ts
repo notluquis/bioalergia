@@ -289,11 +289,18 @@ export async function getCalendarAggregates(filters: CalendarEventFilters): Prom
      ORDER BY events.event_type IS NULL, events.event_type
   `);
 
+  // For available categories, we query WITHOUT the category filter so all options remain visible
+  // This prevents the dropdown from showing only the currently selected category
+  const whereWithoutCategory = buildWhereClause({
+    ...filters,
+    categories: undefined, // Exclude category filter
+  });
+
   const categoryRows = await prisma.$queryRaw<Array<{ category: string | null; total: bigint }>>(Prisma.sql`
     SELECT CASE WHEN events.category IS NULL OR events.category = '' THEN NULL ELSE events.category END AS category,
            COUNT(*) AS total
       FROM events AS events
-      ${where}
+      ${whereWithoutCategory}
      GROUP BY category
      ORDER BY category IS NULL, category
   `);
