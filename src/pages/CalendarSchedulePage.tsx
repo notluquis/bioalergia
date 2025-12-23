@@ -232,7 +232,7 @@ function CalendarSchedulePage() {
         <ScheduleCalendar
           events={allEvents}
           loading={loading}
-          weekStart={currentFrom.startOf("week").add(1, "day").format("YYYY-MM-DD")}
+          weekStart={currentFrom.isValid() ? currentFrom.format("YYYY-MM-DD") : dayjs().format("YYYY-MM-DD")}
         />
       </div>
     </section>

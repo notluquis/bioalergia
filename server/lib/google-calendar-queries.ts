@@ -251,14 +251,14 @@ export async function getCalendarAggregates(filters: CalendarEventFilters): Prom
   const dateRows = await prisma.$queryRaw<
     Array<{ date: string; total: bigint; amountExpected: number | null; amountPaid: number | null }>
   >(Prisma.sql`
-    SELECT ${EVENT_DATE} AS date,
+    SELECT TO_CHAR(${EVENT_DATE}, 'YYYY-MM-DD') AS date,
            COUNT(*) AS total,
            SUM(events.amount_expected) AS "amountExpected",
            SUM(events.amount_paid) AS "amountPaid"
       FROM events AS events
       ${where}
-     GROUP BY date
-     ORDER BY date
+     GROUP BY ${EVENT_DATE}
+     ORDER BY ${EVENT_DATE}
   `);
 
   const totalsRow = await prisma.$queryRaw<
