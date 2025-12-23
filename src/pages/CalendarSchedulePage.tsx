@@ -1,8 +1,11 @@
 import { useMemo, useState } from "react";
 import type { ChangeEvent } from "react";
 import dayjs from "dayjs";
+import isoWeek from "dayjs/plugin/isoWeek";
 import "dayjs/locale/es";
 import { Filter, ChevronLeft, ChevronRight } from "lucide-react";
+
+dayjs.extend(isoWeek);
 
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
@@ -58,36 +61,28 @@ function CalendarSchedulePage() {
 
   const allEvents = useMemo(() => daily?.days.flatMap((day) => day.events) ?? [], [daily?.days]);
 
+  // Separate state for which week is displayed (independent from data filter range)
+  const [displayedWeekStart, setDisplayedWeekStart] = useState(() => {
+    // Start on current week's Monday
+    return dayjs().isoWeekday(1).format("YYYY-MM-DD");
+  });
+
   // Navigation helpers
-  const currentFrom = dayjs(filters.from);
-  const currentTo = dayjs(filters.to);
-  const rangeLabel =
-    currentFrom.isValid() && currentTo.isValid()
-      ? `${currentFrom.format("D MMM")} - ${currentTo.format("D MMM YYYY")}`
-      : "Seleccionar rango";
+  const currentDisplayed = dayjs(displayedWeekStart);
+  const rangeLabel = currentDisplayed.isValid()
+    ? `${currentDisplayed.format("D MMM")} - ${currentDisplayed.add(5, "day").format("D MMM YYYY")}`
+    : "Seleccionar rango";
 
   const goToPreviousWeek = () => {
-    const newFrom = currentFrom.subtract(1, "week").format("YYYY-MM-DD");
-    const newTo = currentTo.subtract(1, "week").format("YYYY-MM-DD");
-    updateFilters("from", newFrom);
-    updateFilters("to", newTo);
-    applyFilters();
+    setDisplayedWeekStart(currentDisplayed.subtract(1, "week").format("YYYY-MM-DD"));
   };
 
   const goToNextWeek = () => {
-    const newFrom = currentFrom.add(1, "week").format("YYYY-MM-DD");
-    const newTo = currentTo.add(1, "week").format("YYYY-MM-DD");
-    updateFilters("from", newFrom);
-    updateFilters("to", newTo);
-    applyFilters();
+    setDisplayedWeekStart(currentDisplayed.add(1, "week").format("YYYY-MM-DD"));
   };
 
   const goToThisWeek = () => {
-    const thisWeekStart = dayjs().startOf("week").add(1, "day"); // Monday
-    const thisWeekEnd = thisWeekStart.add(6, "day"); // Sunday
-    updateFilters("from", thisWeekStart.format("YYYY-MM-DD"));
-    updateFilters("to", thisWeekEnd.format("YYYY-MM-DD"));
-    applyFilters();
+    setDisplayedWeekStart(dayjs().isoWeekday(1).format("YYYY-MM-DD"));
   };
 
   return (
@@ -229,11 +224,7 @@ function CalendarSchedulePage() {
 
       {/* Calendar - Main Content */}
       <div className="mt-4">
-        <ScheduleCalendar
-          events={allEvents}
-          loading={loading}
-          weekStart={currentFrom.isValid() ? currentFrom.format("YYYY-MM-DD") : dayjs().format("YYYY-MM-DD")}
-        />
+        <ScheduleCalendar events={allEvents} loading={loading} weekStart={displayedWeekStart} />
       </div>
     </section>
   );
