@@ -95,7 +95,10 @@ const EVENT_DATETIME = Prisma.sql`COALESCE(events.start_date_time, (events.start
 const EVENT_DATE = Prisma.sql`COALESCE(events.start_date, events.start_date_time::date)`;
 
 function buildWhereClause(filters: CalendarEventFilters) {
-  const conditions: Prisma.Sql[] = [Prisma.sql`${EVENT_DATETIME} IS NOT NULL`];
+  const conditions: Prisma.Sql[] = [
+    Prisma.sql`${EVENT_DATETIME} IS NOT NULL`,
+    Prisma.sql`events.event_status != 'cancelled'`,
+  ];
 
   if (filters.from) {
     conditions.push(Prisma.sql`${EVENT_DATETIME} >= ${filters.from} `);
