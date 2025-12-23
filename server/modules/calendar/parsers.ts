@@ -216,6 +216,8 @@ const MAINTENANCE_PATTERNS = [
   /\bmant\b/i, // abbreviated
   /\bmensual\b/i, // monthly
   /\bdosis\s+clust(?:oid)?\b/i, // 'dosis clustoid' implies maintenance/0.5ml
+  /\(\s*50\s*\)/i, // (50) - parenthesized 50 indicates maintenance dose
+  /\b50\s*(?:$|\))/i, // "50" at end of text or before closing paren
 ];
 
 /** Patterns for dosage extraction */
