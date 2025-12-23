@@ -403,13 +403,16 @@ export function registerCalendarEventRoutes(app: express.Express) {
     })
   );
 
-  // POST /api/calendar/events/reclassify - Re-apply classification patterns to fill missing fields
+  // POST /api/calendar/events/reclassify - Re-apply classification patterns to fill missing fields (async job)
   app.post(
     "/api/calendar/events/reclassify",
     authenticate,
     authorize("update", "CalendarEvent"),
     asyncHandler(async (_req, res) => {
-      // Find ALL events that have any null parseable field
+      // Import job queue
+      const { startJob, updateJobProgress, completeJob, failJob } = await import("../lib/jobQueue.js");
+
+      // Start job immediately
       const events = await prisma.event.findMany({
         where: {
           OR: [
@@ -435,102 +438,120 @@ export function registerCalendarEventRoutes(app: express.Express) {
         },
       });
 
-      type EventUpdate = {
-        id: number;
-        data: {
-          category?: string;
-          dosage?: string;
-          treatmentStage?: string;
-          attended?: boolean;
-          amountExpected?: number;
-          amountPaid?: number;
-        };
-      };
+      const jobId = startJob("reclassify", events.length);
 
-      const updates: EventUpdate[] = [];
+      // Return immediately with job ID
+      res.json({ status: "accepted", jobId, totalEvents: events.length });
 
-      // Track modifications per field
-      const fieldCounts = {
-        category: 0,
-        dosage: 0,
-        treatmentStage: 0,
-        attended: 0,
-        amountExpected: 0,
-        amountPaid: 0,
-      };
+      // Process in background (fire and forget)
+      (async () => {
+        try {
+          type EventUpdate = {
+            id: number;
+            data: {
+              category?: string;
+              dosage?: string;
+              treatmentStage?: string;
+              attended?: boolean;
+              amountExpected?: number;
+              amountPaid?: number;
+            };
+          };
 
-      for (const event of events) {
-        const metadata = parseCalendarMetadata({
-          summary: event.summary,
-          description: event.description,
-        });
+          const updates: EventUpdate[] = [];
+          const fieldCounts = {
+            category: 0,
+            dosage: 0,
+            treatmentStage: 0,
+            attended: 0,
+            amountExpected: 0,
+            amountPaid: 0,
+          };
 
-        const updateData: EventUpdate["data"] = {};
+          // Parse all events
+          for (let i = 0; i < events.length; i++) {
+            const event = events[i];
+            const metadata = parseCalendarMetadata({
+              summary: event.summary,
+              description: event.description,
+            });
 
-        // Only fill fields that are currently null/empty
-        if ((event.category === null || event.category === "") && metadata.category) {
-          updateData.category = metadata.category;
-          fieldCounts.category++;
-        }
-        if (event.dosage === null && metadata.dosage) {
-          updateData.dosage = metadata.dosage;
-          fieldCounts.dosage++;
-        }
-        if (event.treatmentStage === null && metadata.treatmentStage) {
-          updateData.treatmentStage = metadata.treatmentStage;
-          fieldCounts.treatmentStage++;
-        }
-        if (event.attended === null && metadata.attended !== null) {
-          updateData.attended = metadata.attended;
-          fieldCounts.attended++;
-        }
-        if (event.amountExpected === null && metadata.amountExpected !== null) {
-          updateData.amountExpected = metadata.amountExpected;
-          fieldCounts.amountExpected++;
-        }
-        if (event.amountPaid === null && metadata.amountPaid !== null) {
-          updateData.amountPaid = metadata.amountPaid;
-          fieldCounts.amountPaid++;
-        }
+            const updateData: EventUpdate["data"] = {};
 
-        // Only add if there's something to update
-        if (Object.keys(updateData).length > 0) {
-          updates.push({ id: event.id, data: updateData });
-        }
-      }
+            if ((event.category === null || event.category === "") && metadata.category) {
+              updateData.category = metadata.category;
+              fieldCounts.category++;
+            }
+            if (event.dosage === null && metadata.dosage) {
+              updateData.dosage = metadata.dosage;
+              fieldCounts.dosage++;
+            }
+            if (event.treatmentStage === null && metadata.treatmentStage) {
+              updateData.treatmentStage = metadata.treatmentStage;
+              fieldCounts.treatmentStage++;
+            }
+            if (event.attended === null && metadata.attended !== null) {
+              updateData.attended = metadata.attended;
+              fieldCounts.attended++;
+            }
+            if (event.amountExpected === null && metadata.amountExpected !== null) {
+              updateData.amountExpected = metadata.amountExpected;
+              fieldCounts.amountExpected++;
+            }
+            if (event.amountPaid === null && metadata.amountPaid !== null) {
+              updateData.amountPaid = metadata.amountPaid;
+              fieldCounts.amountPaid++;
+            }
 
-      // Batch update in smaller transactions to avoid timeout
-      const BATCH_SIZE = 20;
-      if (updates.length > 0) {
-        for (let i = 0; i < updates.length; i += BATCH_SIZE) {
-          const batch = updates.slice(i, i + BATCH_SIZE);
-          await prisma.$transaction(
-            batch.map((u) =>
-              prisma.event.update({
-                where: { id: u.id },
-                data: u.data,
-              })
-            )
-          );
-        }
-      }
+            if (Object.keys(updateData).length > 0) {
+              updates.push({ id: event.id, data: updateData });
+            }
 
-      res.json({
-        status: "ok",
-        message: `Reclassified ${updates.length} events`,
-        totalChecked: events.length,
-        reclassified: updates.length,
-        fieldCounts,
-      });
+            // Update progress every 50 events
+            if (i % 50 === 0 || i === events.length - 1) {
+              updateJobProgress(jobId, i + 1, `Analizando ${i + 1}/${events.length} eventos...`);
+            }
+          }
+
+          // Batch update
+          const BATCH_SIZE = 20;
+          let processed = 0;
+          for (let i = 0; i < updates.length; i += BATCH_SIZE) {
+            const batch = updates.slice(i, i + BATCH_SIZE);
+            await prisma.$transaction(
+              batch.map((u) =>
+                prisma.event.update({
+                  where: { id: u.id },
+                  data: u.data,
+                })
+              )
+            );
+            processed += batch.length;
+            updateJobProgress(jobId, events.length, `Guardando ${processed}/${updates.length} actualizaciones...`);
+          }
+
+          completeJob(jobId, {
+            message: `Reclassified ${updates.length} events`,
+            totalChecked: events.length,
+            reclassified: updates.length,
+            fieldCounts,
+          });
+        } catch (err) {
+          failJob(jobId, err instanceof Error ? err.message : "Unknown error");
+        }
+      })();
     })
   );
 
-  // POST /api/calendar/events/reclassify-all - Re-apply classification to ALL events (overwrites existing)
+  // POST /api/calendar/events/reclassify-all - Re-apply classification to ALL events (async job, overwrites existing)
   app.post(
     "/api/calendar/events/reclassify-all",
     authenticate,
     authorize("update", "CalendarEvent"),
     asyncHandler(async (_req, res) => {
+      // Import job queue
+      const { startJob, updateJobProgress, completeJob, failJob } = await import("../lib/jobQueue.js");
+
       // Get ALL events
       const events = await prisma.event.findMany({
         select: {
@@ -540,76 +561,128 @@ export function registerCalendarEventRoutes(app: express.Express) {
         },
       });
 
-      type EventUpdate = {
-        id: number;
-        data: {
-          category: string | null;
-          dosage: string | null;
-          treatmentStage: string | null;
-          attended: boolean | null;
-          amountExpected: number | null;
-          amountPaid: number | null;
-        };
-      };
+      const jobId = startJob("reclassify-all", events.length);
 
-      const updates: EventUpdate[] = [];
+      // Return immediately with job ID
+      res.json({ status: "accepted", jobId, totalEvents: events.length });
 
-      const fieldCounts = {
-        category: 0,
-        dosage: 0,
-        treatmentStage: 0,
-        attended: 0,
-        amountExpected: 0,
-        amountPaid: 0,
-      };
+      // Process in background (fire and forget)
+      (async () => {
+        try {
+          type EventUpdate = {
+            id: number;
+            data: {
+              category: string | null;
+              dosage: string | null;
+              treatmentStage: string | null;
+              attended: boolean | null;
+              amountExpected: number | null;
+              amountPaid: number | null;
+            };
+          };
 
-      for (const event of events) {
-        const metadata = parseCalendarMetadata({
-          summary: event.summary,
-          description: event.description,
-        });
+          const updates: EventUpdate[] = [];
+          const fieldCounts = {
+            category: 0,
+            dosage: 0,
+            treatmentStage: 0,
+            attended: 0,
+            amountExpected: 0,
+            amountPaid: 0,
+          };
 
-        // Always update all fields (overwrite existing)
-        const updateData: EventUpdate["data"] = {
-          category: metadata.category,
-          dosage: metadata.dosage,
-          treatmentStage: metadata.treatmentStage,
-          attended: metadata.attended,
-          amountExpected: metadata.amountExpected,
-          amountPaid: metadata.amountPaid,
-        };
+          // Parse all events
+          for (let i = 0; i < events.length; i++) {
+            const event = events[i];
+            const metadata = parseCalendarMetadata({
+              summary: event.summary,
+              description: event.description,
+            });
 
-        // Track non-null values for counts
-        if (metadata.category) fieldCounts.category++;
-        if (metadata.dosage) fieldCounts.dosage++;
-        if (metadata.treatmentStage) fieldCounts.treatmentStage++;
-        if (metadata.attended !== null) fieldCounts.attended++;
-        if (metadata.amountExpected !== null) fieldCounts.amountExpected++;
-        if (metadata.amountPaid !== null) fieldCounts.amountPaid++;
+            const updateData: EventUpdate["data"] = {
+              category: metadata.category,
+              dosage: metadata.dosage,
+              treatmentStage: metadata.treatmentStage,
+              attended: metadata.attended,
+              amountExpected: metadata.amountExpected,
+              amountPaid: metadata.amountPaid,
+            };
 
-        updates.push({ id: event.id, data: updateData });
-      }
+            if (metadata.category) fieldCounts.category++;
+            if (metadata.dosage) fieldCounts.dosage++;
+            if (metadata.treatmentStage) fieldCounts.treatmentStage++;
+            if (metadata.attended !== null) fieldCounts.attended++;
+            if (metadata.amountExpected !== null) fieldCounts.amountExpected++;
+            if (metadata.amountPaid !== null) fieldCounts.amountPaid++;
 
-      // Batch update
-      const BATCH_SIZE = 20;
-      for (let i = 0; i < updates.length; i += BATCH_SIZE) {
-        const batch = updates.slice(i, i + BATCH_SIZE);
-        await prisma.$transaction(
-          batch.map((u) =>
-            prisma.event.update({
-              where: { id: u.id },
-              data: u.data,
-            })
-          )
-        );
+            updates.push({ id: event.id, data: updateData });
+
+            // Update progress every 100 events
+            if (i % 100 === 0 || i === events.length - 1) {
+              updateJobProgress(jobId, i + 1, `Analizando ${i + 1}/${events.length} eventos...`);
+            }
+          }
+
+          // Batch update
+          const BATCH_SIZE = 20;
+          let processed = 0;
+          for (let i = 0; i < updates.length; i += BATCH_SIZE) {
+            const batch = updates.slice(i, i + BATCH_SIZE);
+            await prisma.$transaction(
+              batch.map((u) =>
+                prisma.event.update({
+                  where: { id: u.id },
+                  data: u.data,
+                })
+              )
+            );
+            processed += batch.length;
+
+            // Update progress every 5 batches (100 events)
+            if ((i / BATCH_SIZE) % 5 === 0 || i + BATCH_SIZE >= updates.length) {
+              updateJobProgress(jobId, events.length, `Guardando ${processed}/${updates.length} actualizaciones...`);
+            }
+          }
+
+          completeJob(jobId, {
+            message: `Reclassified all ${updates.length} events`,
+            totalChecked: events.length,
+            reclassified: updates.length,
+            fieldCounts,
+          });
+        } catch (err) {
+          failJob(jobId, err instanceof Error ? err.message : "Unknown error");
+        }
+      })();
+    })
+  );
+
+  // GET /api/calendar/events/job/:jobId - Get job status for polling
+  app.get(
+    "/api/calendar/events/job/:jobId",
+    authenticate,
+    asyncHandler(async (req, res) => {
+      const { getJobStatus } = await import("../lib/jobQueue.js");
+      const { jobId } = req.params;
+
+      const job = getJobStatus(jobId);
+
+      if (!job) {
+        return res.status(404).json({ status: "error", message: "Job not found or expired" });
       }
 
       res.json({
         status: "ok",
-        message: `Reclassified all ${updates.length} events`,
-        totalChecked: events.length,
-        reclassified: updates.length,
-        fieldCounts,
+        job: {
+          id: job.id,
+          type: job.type,
+          status: job.status,
+          progress: job.progress,
+          total: job.total,
+          message: job.message,
+          result: job.result,
+          error: job.error,
+        },
       });
     })
   );

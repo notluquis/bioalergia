@@ -160,42 +160,41 @@ export type ReclassifyResult = {
   fieldCounts: FieldCounts;
 };
 
-export async function reclassifyCalendarEvents(): Promise<ReclassifyResult> {
+/** Response for async reclassify jobs */
+export type ReclassifyJobResponse = {
+  jobId: string;
+  totalEvents: number;
+};
+
+/** Start reclassification job (returns immediately with jobId) */
+export async function reclassifyCalendarEvents(): Promise<ReclassifyJobResponse> {
   const response = await apiClient.post<{
-    status: "ok";
-    totalChecked: number;
-    reclassified: number;
-    message: string;
-    fieldCounts: FieldCounts;
+    status: "accepted";
+    jobId: string;
+    totalEvents: number;
   }>("/api/calendar/events/reclassify", {});
-  if (response.status !== "ok") {
-    throw new Error("No se pudo reclasificar los eventos");
+  if (response.status !== "accepted") {
+    throw new Error("No se pudo iniciar la reclasificación");
   }
   return {
-    totalChecked: response.totalChecked,
-    reclassified: response.reclassified,
-    message: response.message,
-    fieldCounts: response.fieldCounts,
+    jobId: response.jobId,
+    totalEvents: response.totalEvents,
   };
 }
 
-/** Reclassify ALL events, overwriting existing values */
-export async function reclassifyAllCalendarEvents(): Promise<ReclassifyResult> {
+/** Start reclassification of ALL events (returns immediately with jobId) */
+export async function reclassifyAllCalendarEvents(): Promise<ReclassifyJobResponse> {
   const response = await apiClient.post<{
-    status: "ok";
-    totalChecked: number;
-    reclassified: number;
-    message: string;
-    fieldCounts: FieldCounts;
+    status: "accepted";
+    jobId: string;
+    totalEvents: number;
   }>("/api/calendar/events/reclassify-all", {});
-  if (response.status !== "ok") {
-    throw new Error("No se pudo reclasificar todos los eventos");
+  if (response.status !== "accepted") {
+    throw new Error("No se pudo iniciar la reclasificación total");
   }
   return {
-    totalChecked: response.totalChecked,
-    reclassified: response.reclassified,
-    message: response.message,
-    fieldCounts: response.fieldCounts,
+    jobId: response.jobId,
+    totalEvents: response.totalEvents,
   };
 }
 
