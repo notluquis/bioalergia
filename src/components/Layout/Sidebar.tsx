@@ -176,7 +176,9 @@ export default function Sidebar({ isOpen, isMobile, onClose }: SidebarProps) {
   const sidebarClasses = cn(
     // Base - GPU-accelerated transitions only (transform, opacity)
     // Rounded corners on the right side for modern look
-    "flex flex-col bg-base-100 backdrop-blur-xl border-base-200 transition-[width] duration-200 ease-out z-50",
+    // Base - GPU-accelerated transitions
+    // Removed backdrop-blur-xl as it causes massive repaints during width animation
+    "flex flex-col bg-base-100 border-base-200 transition-[width] duration-300 ease-in-out z-50 will-change-[width] transform-gpu",
     // Mobile
     isMobile
       ? cn(
