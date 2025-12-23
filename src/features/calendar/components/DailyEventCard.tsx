@@ -73,11 +73,12 @@ export function DailyEventCard({ event }: DailyEventCardProps) {
           </div>
 
           {/* Attendance */}
-          {event.attended != null && (
-            <span className={cn("font-medium", event.attended ? "text-success" : "text-error")}>
-              {event.attended ? "✓ Asistió" : "✗ No asistió"}
-            </span>
-          )}
+          {event.attended != null &&
+            (event.attended || (event.startDateTime && dayjs(event.startDateTime).isBefore(dayjs()))) && (
+              <span className={cn("font-medium", event.attended ? "text-success" : "text-error")}>
+                {event.attended ? "✓ Asistió" : "✗ No asistió"}
+              </span>
+            )}
         </div>
 
         {/* Description */}
