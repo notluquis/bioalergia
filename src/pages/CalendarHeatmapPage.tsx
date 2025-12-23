@@ -96,7 +96,9 @@ function CalendarHeatmapPage() {
   const statsByDate = useMemo(() => {
     const map = new Map<string, { total: number; amountExpected: number; amountPaid: number }>();
     summary?.aggregates.byDate.forEach((entry) => {
-      const key = dayjs(entry.date).format("YYYY-MM-DD");
+      // Extract just YYYY-MM-DD from the date string to avoid timezone conversion issues
+      // entry.date can be "2024-12-23" or "2024-12-23T00:00:00.000Z"
+      const key = String(entry.date).slice(0, 10);
       map.set(key, {
         total: entry.total,
         amountExpected: entry.amountExpected ?? 0,
@@ -141,7 +143,9 @@ function CalendarHeatmapPage() {
     if (!summary) return 0;
     let max = 0;
     summary.aggregates.byDate.forEach((entry) => {
-      if (heatmapMonthKeys.has(dayjs(entry.date).format("YYYY-MM"))) {
+      // Extract YYYY-MM directly to avoid timezone issues
+      const monthKey = String(entry.date).slice(0, 7);
+      if (heatmapMonthKeys.has(monthKey)) {
         max = Math.max(max, entry.total);
       }
     });
