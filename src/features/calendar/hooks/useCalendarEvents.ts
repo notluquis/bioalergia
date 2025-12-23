@@ -75,10 +75,11 @@ export function useCalendarEvents() {
     const lookaheadRaw = Number(settings.calendarSyncLookaheadDays ?? "365");
     const lookahead =
       Number.isFinite(lookaheadRaw) && lookaheadRaw > 0 ? Math.min(Math.floor(lookaheadRaw), 1095) : 365;
-    const defaultMax = Number(settings.calendarDailyMaxDays ?? "365");
-    const configuredMax = Number.isFinite(defaultMax) && defaultMax > 0 ? Math.min(Math.floor(defaultMax), 365) : 365;
-    const defaultFrom = dayjs().startOf("month");
-    const defaultTo = dayjs().endOf("month");
+    const defaultMax = Number(settings.calendarDailyMaxDays ?? "28");
+    const configuredMax = Number.isFinite(defaultMax) && defaultMax > 0 ? Math.min(Math.floor(defaultMax), 365) : 28;
+    // Default to ±2 weeks from today for faster initial load
+    const defaultFrom = dayjs().subtract(2, "week");
+    const defaultTo = dayjs().add(2, "week");
     const startDate = dayjs(syncStart);
     const from = startDate.isValid() && startDate.isAfter(defaultFrom) ? startDate : defaultFrom;
     const maxForward = dayjs().add(lookahead, "day");

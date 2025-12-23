@@ -5,7 +5,6 @@ import { Filter, X } from "lucide-react";
 import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
 
-import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import Alert from "@/components/ui/Alert";
 import { today } from "@/lib/dates";
@@ -46,34 +45,26 @@ function CalendarDailyPage() {
   const [showFilters, setShowFilters] = useState(false);
 
   // Sync selectedDate filter range to ensure data is loaded
-  // We try to keep a month loaded around the selected date
+  // Load ±2 weeks around the selected date initially, extend when navigating outside
   useEffect(() => {
     const current = dayjs(selectedDate);
-    const startOfMonth = current.startOf("month").format("YYYY-MM-DD");
-    const endOfMonth = current.endOf("month").format("YYYY-MM-DD");
+    const currentFrom = dayjs(appliedFilters.from);
+    const currentTo = dayjs(appliedFilters.to);
 
-    // Only update if current view is drastically out of range to avoid loop
-    // or if we want to ensure "month view" behavior
-    const isOutOfRange = dayjs(appliedFilters.from).isAfter(current) || dayjs(appliedFilters.to).isBefore(current);
+    // Check if current date is within loaded range
+    const isWithinRange = current.isSameOrAfter(currentFrom) && current.isSameOrBefore(currentTo);
 
-    // Check if the current range covers the month of selected date
-    const rangeCoversMonth =
-      dayjs(appliedFilters.from).isSameOrBefore(startOfMonth) && dayjs(appliedFilters.to).isSameOrAfter(endOfMonth);
+    if (!isWithinRange) {
+      // Extend range to include the new date with ±2 weeks buffer
+      const twoWeeksBack = current.subtract(2, "week").format("YYYY-MM-DD");
+      const twoWeeksForward = current.add(2, "week").format("YYYY-MM-DD");
 
-    if (isOutOfRange || !rangeCoversMonth) {
-      updateFilters("from", startOfMonth);
-      updateFilters("to", endOfMonth);
-      // We need to apply filters to trigger fetch
-      // But updateFilters just updates "filters" state, applyFilters commits it to "appliedFilters"
-      // We can't call applyFilters directly here easily without causing rendering loops if not careful
-      // actually useCalendarEvents separates draft "filters" and "appliedFilters".
+      // Extend the range rather than replacing (to keep already loaded data context)
+      const newFrom = currentFrom.isValid() && currentFrom.isBefore(twoWeeksBack) ? appliedFilters.from : twoWeeksBack;
+      const newTo = currentTo.isValid() && currentTo.isAfter(twoWeeksForward) ? appliedFilters.to : twoWeeksForward;
 
-      // Let's set both
-      updateFilters("from", startOfMonth);
-      updateFilters("to", endOfMonth);
-      // We defer the apply to the user or auto-apply?
-      // Ideally for navigation, it should be auto.
-      // For this redesign, let's auto-apply date range changes when navigating far.
+      updateFilters("from", newFrom);
+      updateFilters("to", newTo);
     }
   }, [selectedDate, appliedFilters.from, appliedFilters.to, updateFilters]);
 
@@ -149,45 +140,32 @@ function CalendarDailyPage() {
 
   return (
     <section className={PAGE_CONTAINER}>
-      {/* Header & Navigation */}
-      <header className="space-y-6">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <h1 className="text-base-content text-3xl font-bold tracking-tight">Detalle Diario</h1>
+      {/* Compact Header with Navigation */}
+      <header className="space-y-4">
+        {/* Date Navigation - Primary focus */}
+        <div className="flex items-center justify-between gap-4">
+          <DayNavigation selectedDate={selectedDate} onSelect={setSelectedDate} />
           <Button
-            variant={showFilters ? "secondary" : "outline"}
+            variant={showFilters ? "secondary" : "ghost"}
+            size="sm"
             onClick={() => setShowFilters(!showFilters)}
-            className="gap-2"
+            className="shrink-0 gap-2"
           >
             {showFilters ? <X className="h-4 w-4" /> : <Filter className="h-4 w-4" />}
-            {showFilters ? "Ocultar filtros" : "Filtros"}
+            <span className="hidden sm:inline">{showFilters ? "Cerrar" : "Filtros"}</span>
           </Button>
         </div>
 
         {/* Filters Panel (Collapsible) */}
         {showFilters && (
           <form
-            className="border-base-300 bg-base-100 animate-in slide-in-from-top-2 grid gap-4 rounded-2xl border p-6 text-xs shadow-sm duration-200 md:grid-cols-6"
+            className="border-base-300 bg-base-100 animate-in slide-in-from-top-2 rounded-xl border p-4 shadow-sm duration-200"
             onSubmit={(event) => {
               event.preventDefault();
               applyFilters();
             }}
           >
-            {/* Date range inputs are less relevant now as we auto-navigate, 
-                 but kept for explicit specific range override if needed 
-                 or maybe strictly for other filters */}
-            <div className="md:col-span-2 md:col-start-1">
-              <p className="mb-2 font-semibold">Opciones de visualización</p>
-              <Input
-                label="Días máximos a cargar"
-                type="number"
-                min={1}
-                max={120}
-                value={filters.maxDays}
-                onChange={(e) => updateFilters("maxDays", parseInt(e.target.value) || 31)}
-              />
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-3 md:col-span-6">
+            <div className="grid gap-3 sm:grid-cols-3">
               <MultiSelectFilter
                 label="Calendarios"
                 options={calendarOptions}
@@ -211,56 +189,60 @@ function CalendarDailyPage() {
               />
             </div>
 
-            <div className="mt-2 flex justify-end gap-2 md:col-span-6">
-              <Button type="button" variant="ghost" onClick={resetFilters}>
+            <div className="border-base-200 mt-3 flex justify-end gap-2 border-t pt-3">
+              <Button type="button" variant="ghost" size="sm" onClick={resetFilters}>
                 Limpiar
               </Button>
-              <Button type="submit">Aplicar cambios</Button>
+              <Button type="submit" size="sm">
+                Aplicar
+              </Button>
             </div>
           </form>
         )}
-
-        <DayNavigation selectedDate={selectedDate} onSelect={setSelectedDate} />
       </header>
 
-      {error && <Alert variant="error">{error}</Alert>}
+      {error && (
+        <Alert variant="error" className="mt-4">
+          {error}
+        </Alert>
+      )}
 
-      {/* Daily Stats */}
+      {/* Stats Cards - Compact summary */}
       {selectedDayEntry && (
         <DailyStatsCards
           eventsCount={selectedDayEntry.total}
           amountExpected={selectedDayEntry.amountExpected}
           amountPaid={selectedDayEntry.amountPaid}
-          className="mt-6"
+          className="mt-4"
         />
       )}
 
-      {/* Main Content */}
-      <div className="mt-8 space-y-4">
+      {/* Main Content - Events List */}
+      <div className="mt-6 space-y-3">
         {loading && !daily ? (
           <CalendarSkeleton days={1} />
         ) : !selectedDayEntry || !hasEvents ? (
-          <div className="border-base-200 bg-base-100/50 flex flex-col items-center justify-center rounded-3xl border-2 border-dashed py-16 text-center">
-            <div className="bg-base-200 mb-4 rounded-full p-4">
-              <Filter className="text-base-content/30 h-8 w-8" />
+          <div className="border-base-200 bg-base-100/50 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed py-12 text-center">
+            <div className="bg-base-200 mb-3 rounded-full p-3">
+              <Filter className="text-base-content/30 h-6 w-6" />
             </div>
-            <h3 className="text-base-content/70 text-lg font-semibold">Sin eventos para este día</h3>
+            <h3 className="text-base-content/70 font-semibold">Sin eventos</h3>
             <p className="text-base-content/50 mt-1 max-w-xs text-sm">
-              No hay eventos registrados para el {dayjs(selectedDate).format("DD [de] MMMM")}.
+              No hay eventos para el {dayjs(selectedDate).format("DD [de] MMMM")}.
             </p>
-            {/* Optional: Add "Create Event" button here later if needed */}
           </div>
         ) : (
-          <div className="grid gap-3">
+          <>
             {selectedDayEntry.events.map((event) => (
               <DailyEventCard key={event.eventId} event={event} />
             ))}
 
-            {/* Summary Footer for the day */}
-            <div className="text-base-content/40 flex justify-end pt-4 text-xs">
-              Mostrando {selectedDayEntry.total} eventos
+            {/* Footer */}
+            <div className="text-base-content/40 flex justify-center pt-2 text-xs">
+              {selectedDayEntry.total} evento{selectedDayEntry.total !== 1 ? "s" : ""} ·{" "}
+              {dayjs(selectedDate).format("dddd, D [de] MMMM")}
             </div>
-          </div>
+          </>
         )}
       </div>
     </section>
