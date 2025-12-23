@@ -1,8 +1,7 @@
-import { useCallback, useMemo, useState, lazy, Suspense } from "react";
+import { useMemo, useState, lazy, Suspense } from "react";
 import type { ChangeEvent } from "react";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
-import { useTranslation } from "react-i18next";
 import { Filter, ChevronLeft, ChevronRight, Calendar } from "lucide-react";
 
 import Button from "@/components/ui/Button";
@@ -21,17 +20,7 @@ const NULL_EVENT_TYPE_VALUE = "__NULL__";
 const NULL_CATEGORY_VALUE = "__NULL_CATEGORY__";
 
 function CalendarSchedulePage() {
-  const { t } = useTranslation();
   const [showFilters, setShowFilters] = useState(false);
-
-  const tc = useCallback(
-    (key: string, options?: Record<string, unknown>) =>
-      t(`calendar.${key}`, {
-        defaultValue: key,
-        ...options,
-      }),
-    [t]
-  );
 
   const {
     filters,
