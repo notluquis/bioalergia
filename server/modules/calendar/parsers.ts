@@ -537,12 +537,39 @@ export function parseCalendarMetadata(input: {
   // Logic: Dosage and Treatment Stage only apply to "Tratamiento subcutáneo"
   const isSubcut = category === "Tratamiento subcutáneo";
 
+  // Determine treatment stage based on dosage value if available
+  let finalTreatmentStage = isSubcut ? treatmentStage : null;
+  if (isSubcut && dosage) {
+    const dosageValue = parseDosageToMl(dosage);
+    if (dosageValue !== null) {
+      // Business rule: < 0.5 ml = Inducción, >= 0.5 ml = Mantención
+      finalTreatmentStage = dosageValue < 0.5 ? "Inducción" : "Mantención";
+    }
+  }
+
   return {
     category,
     amountExpected: amounts.amountExpected,
     amountPaid: amounts.amountPaid,
     attended,
     dosage: isSubcut ? dosage : null,
-    treatmentStage: isSubcut ? treatmentStage : null,
+    treatmentStage: finalTreatmentStage,
   };
+}
+
+/**
+ * Parse a dosage string like "0,3 ml" or "0.5 cc" into a numeric value in ml.
+ * Returns null if parsing fails.
+ */
+function parseDosageToMl(dosage: string): number | null {
+  // Extract numeric value and unit from strings like "0,3 ml", "0.5 cc", "1 mg"
+  const match = dosage.match(/^([\d.,]+)\s*(ml|cc|mg)?/i);
+  if (!match) return null;
+
+  const valueStr = match[1].replace(",", ".");
+  const value = Number.parseFloat(valueStr);
+  if (!Number.isFinite(value)) return null;
+
+  // For simplicity, treat cc as equivalent to ml. mg would need conversion but we assume ml for now.
+  return value;
 }
