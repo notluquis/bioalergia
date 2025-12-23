@@ -85,6 +85,7 @@ function CalendarHeatmapPage() {
     },
     // Keep previous data while fetching new filter to avoid flicker
     placeholderData: (prev) => prev,
+    staleTime: 5 * 60 * 1000, // 5 minutes cache (2025 standard to reduce server load)
   });
 
   const error = queryError instanceof Error ? queryError.message : queryError ? String(queryError) : null;
