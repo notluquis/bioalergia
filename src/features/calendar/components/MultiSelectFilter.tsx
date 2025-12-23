@@ -50,7 +50,7 @@ export function MultiSelectFilter({
     return { displayText: preview || placeholder, fullText: full || placeholder };
   }, [options, placeholder, selected]);
 
-  const containerRef = useRef<HTMLLabelElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const { isOpen, toggle, close } = useDisclosure(false);
 
   useOutsideClick(
@@ -72,20 +72,25 @@ export function MultiSelectFilter({
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [close, isOpen]);
 
+  const labelClasses = "label pt-0 pb-2";
+  const labelTextClasses = "label-text text-xs font-semibold uppercase tracking-wider text-base-content/70 ml-1";
+
   return (
-    <label ref={containerRef} className="relative flex flex-col gap-2 text-xs text-base-content" data-multiselect>
-      <span className="font-semibold uppercase tracking-wide text-base-content/90">{label}</span>
+    <div ref={containerRef} className="form-control relative w-full" data-multiselect>
+      <label className={labelClasses}>
+        <span className={labelTextClasses}>{label}</span>
+      </label>
       <button
         type="button"
-        className="input input-bordered flex h-12 w-full cursor-pointer select-none items-center justify-between gap-3 text-sm text-base-content"
+        className="input input-bordered bg-base-100/50 text-base-content hover:bg-base-100 focus:bg-base-100 focus:ring-primary/20 focus:border-primary ease-apple flex h-10 w-full cursor-pointer items-center justify-between gap-3 text-sm transition-all duration-200 select-none focus:ring-2 focus:outline-none"
         aria-haspopup="true"
         aria-expanded={isOpen}
         onClick={toggle}
         title={fullText}
       >
-        <span className="truncate font-medium text-base-content">{displayText}</span>
+        <span className="text-base-content/90 truncate font-medium">{displayText}</span>
         <svg
-          className={`h-4 w-4 shrink-0 text-base-content/50 transition-transform ${isOpen ? "rotate-180" : ""}`}
+          className={`text-base-content/50 h-4 w-4 shrink-0 transition-transform ${isOpen ? "rotate-180" : ""}`}
           viewBox="0 0 20 20"
           fill="currentColor"
           aria-hidden="true"
@@ -98,9 +103,9 @@ export function MultiSelectFilter({
         </svg>
       </button>
       {isOpen && (
-        <div className="absolute z-20 mt-2 w-full space-y-2 rounded-2xl border border-base-300 bg-base-200 p-3 shadow-lg">
+        <div className="border-base-200 bg-base-100 absolute top-full left-0 z-20 mt-1 w-full space-y-2 rounded-2xl border p-2 shadow-xl">
           {options.length === 0 ? (
-            <p className="text-xs text-base-content/50">Sin datos disponibles</p>
+            <p className="text-base-content/50 text-xs">Sin datos disponibles</p>
           ) : (
             options.map((option) => {
               const [namePart = "", metaPart] = option.label.split(" · ");
@@ -113,11 +118,11 @@ export function MultiSelectFilter({
                   className="text-base-content"
                   label={
                     <span className="flex flex-col text-left">
-                      <span className="truncate font-medium text-base-content" title={namePart}>
+                      <span className="text-base-content truncate font-medium" title={namePart}>
                         {truncatedName || placeholder}
                       </span>
                       {metaPart && (
-                        <span className="text-xs text-base-content/50" title={metaPart}>
+                        <span className="text-base-content/50 text-xs" title={metaPart}>
                           · {metaPart}
                         </span>
                       )}
@@ -129,7 +134,7 @@ export function MultiSelectFilter({
           )}
         </div>
       )}
-    </label>
+    </div>
   );
 }
 

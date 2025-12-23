@@ -215,7 +215,7 @@ export default function Sidebar({ isOpen, isMobile, onClose }: SidebarProps) {
           <div
             className={cn(
               "relative flex items-center transition-all duration-300",
-              !isMobile && isCollapsed ? "h-10 w-10 justify-center" : "h-12 w-full justify-start"
+              !isMobile && isCollapsed ? "h-10 w-10 justify-center" : "h-12 w-full justify-center"
             )}
           >
             <img
