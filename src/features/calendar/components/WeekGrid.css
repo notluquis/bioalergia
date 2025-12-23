@@ -1,15 +1,21 @@
 /* Week Grid - Native CSS Calendar */
 
 .week-grid {
-  --grid-border: oklch(var(--b3) / 0.4);
+  --grid-border: oklch(var(--b3) / 0.35);
   --grid-bg: oklch(var(--b1));
-  --header-bg: oklch(var(--b2) / 0.5);
-  --today-bg: oklch(var(--p) / 0.08);
+  --header-bg: oklch(var(--b2) / 0.4);
+  --today-bg: oklch(var(--p) / 0.06);
   --now-color: oklch(var(--er));
-  --event-default: oklch(var(--b2) / 0.9);
-  --event-subcutaneous: oklch(var(--p) / 0.15);
-  --event-test: oklch(var(--su) / 0.15);
-  --event-injection: oklch(var(--wa) / 0.15);
+
+  /* Event colors - more vibrant */
+  --event-default-bg: oklch(var(--b2));
+  --event-default-border: oklch(var(--b3));
+  --event-subcutaneous-bg: oklch(var(--p) / 0.2);
+  --event-subcutaneous-border: oklch(var(--p) / 0.5);
+  --event-test-bg: oklch(var(--su) / 0.2);
+  --event-test-border: oklch(var(--su) / 0.5);
+  --event-injection-bg: oklch(var(--wa) / 0.2);
+  --event-injection-border: oklch(var(--wa) / 0.5);
 
   background: var(--grid-bg);
   border: 1px solid var(--grid-border);
@@ -25,7 +31,7 @@
 /* Header */
 .week-grid__header {
   display: grid;
-  grid-template-columns: 60px repeat(6, 1fr);
+  grid-template-columns: 56px repeat(6, 1fr);
   border-bottom: 1px solid var(--grid-border);
   background: var(--header-bg);
 }
@@ -39,7 +45,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 8px 4px;
+  padding: 10px 4px;
   border-right: 1px solid var(--grid-border);
   text-align: center;
 }
@@ -53,59 +59,63 @@
 }
 
 .week-grid__day-name {
-  font-size: 0.65rem;
+  font-size: 0.7rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.03em;
   color: oklch(var(--bc) / 0.5);
 }
 
 .week-grid__day-number {
-  font-size: 1.1rem;
+  font-size: 1.25rem;
   font-weight: 700;
   color: oklch(var(--bc));
   line-height: 1;
-  margin-top: 2px;
+  margin-top: 3px;
 }
 
 .week-grid__day-header--today .week-grid__day-number {
   background: oklch(var(--p));
   color: oklch(var(--pc));
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 1rem;
 }
 
 /* Body */
 .week-grid__body {
   display: grid;
-  grid-template-columns: 60px repeat(6, 1fr);
-  max-height: 600px;
+  grid-template-columns: 56px repeat(6, 1fr);
+  max-height: 650px;
   overflow-y: auto;
+  scrollbar-width: thin;
 }
 
 /* Time Axis */
 .week-grid__time-axis {
   border-right: 1px solid var(--grid-border);
+  background: oklch(var(--b2) / 0.2);
 }
 
 .week-grid__time-slot {
-  height: 48px;
+  height: 52px;
   display: flex;
   align-items: flex-start;
   justify-content: flex-end;
-  padding: 0 8px;
+  padding: 0 6px;
   border-bottom: 1px solid var(--grid-border);
 }
 
 .week-grid__time-label {
-  font-size: 0.65rem;
-  font-weight: 500;
-  color: oklch(var(--bc) / 0.5);
-  transform: translateY(-6px);
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: oklch(var(--bc) / 0.45);
+  transform: translateY(-8px);
+  font-variant-numeric: tabular-nums;
 }
 
 /* Day Columns */
@@ -124,7 +134,7 @@
 }
 
 .week-grid__hour-cell {
-  height: 48px;
+  height: 52px;
   border-bottom: 1px solid var(--grid-border);
 }
 
@@ -132,35 +142,34 @@
 .week-grid__events {
   position: absolute;
   inset: 0;
-  padding: 0 2px;
+  padding: 0 3px;
 }
 
-/* Event */
+/* Event Card */
 .week-grid__event {
   position: absolute;
-  left: 2px;
-  right: 2px;
-  min-height: 20px;
-  padding: 3px 6px;
-  border-radius: 6px;
-  border: 1px solid transparent;
-  background: var(--event-default);
+  left: 3px;
+  right: 3px;
+  min-height: 24px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  border-left: 3px solid var(--event-default-border);
+  background: var(--event-default-bg);
   cursor: pointer;
   text-align: left;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: 1px;
-  transition:
-    box-shadow 0.15s,
-    transform 0.15s;
+  gap: 2px;
+  transition: all 0.15s ease;
   z-index: 1;
+  box-shadow: 0 1px 3px oklch(var(--bc) / 0.08);
 }
 
 .week-grid__event:hover {
   z-index: 10;
-  box-shadow: 0 4px 12px -4px oklch(var(--bc) / 0.25);
-  transform: scale(1.02);
+  box-shadow: 0 6px 16px -4px oklch(var(--bc) / 0.2);
+  transform: translateY(-1px);
 }
 
 .week-grid__event:focus {
@@ -170,41 +179,45 @@
 
 /* Event Categories */
 .event--subcutaneous {
-  background: var(--event-subcutaneous);
-  border-color: oklch(var(--p) / 0.3);
+  background: var(--event-subcutaneous-bg);
+  border-left-color: var(--event-subcutaneous-border);
 }
 
 .event--test {
-  background: var(--event-test);
-  border-color: oklch(var(--su) / 0.3);
+  background: var(--event-test-bg);
+  border-left-color: var(--event-test-border);
 }
 
 .event--injection {
-  background: var(--event-injection);
-  border-color: oklch(var(--wa) / 0.3);
+  background: var(--event-injection-bg);
+  border-left-color: var(--event-injection-border);
 }
 
 /* Event Content */
 .week-grid__event-time {
-  font-size: 0.6rem;
-  font-weight: 600;
-  color: oklch(var(--bc) / 0.6);
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: oklch(var(--bc) / 0.7);
+  font-variant-numeric: tabular-nums;
 }
 
 .week-grid__event-title {
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   font-weight: 600;
   color: oklch(var(--bc));
-  line-height: 1.2;
+  line-height: 1.25;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 
 .week-grid__event-amount {
-  font-size: 0.6rem;
-  font-weight: 500;
-  color: oklch(var(--bc) / 0.7);
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: oklch(var(--su));
+  margin-top: auto;
 }
 
 /* Now Indicator */
@@ -214,19 +227,21 @@
   right: 0;
   z-index: 20;
   pointer-events: none;
+  display: flex;
+  align-items: center;
 }
 
 .week-grid__now-dot {
-  position: absolute;
-  left: -4px;
-  top: -4px;
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
   background: var(--now-color);
   border-radius: 50%;
+  margin-left: -5px;
+  box-shadow: 0 0 4px var(--now-color);
 }
 
 .week-grid__now-line {
+  flex: 1;
   height: 2px;
   background: var(--now-color);
 }
@@ -235,14 +250,38 @@
 @media (max-width: 768px) {
   .week-grid__header,
   .week-grid__body {
-    grid-template-columns: 45px repeat(6, 1fr);
+    grid-template-columns: 42px repeat(6, 1fr);
   }
 
   .week-grid__time-label {
-    font-size: 0.55rem;
+    font-size: 0.6rem;
+  }
+
+  .week-grid__event {
+    padding: 3px 5px;
+    border-left-width: 2px;
   }
 
   .week-grid__event-title {
-    font-size: 0.6rem;
+    font-size: 0.65rem;
+    -webkit-line-clamp: 1;
   }
+
+  .week-grid__day-number {
+    font-size: 1rem;
+  }
+}
+
+/* Scrollbar styling */
+.week-grid__body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.week-grid__body::-webkit-scrollbar-track {
+  background: oklch(var(--b2) / 0.3);
+}
+
+.week-grid__body::-webkit-scrollbar-thumb {
+  background: oklch(var(--b3));
+  border-radius: 3px;
 }
