@@ -1,9 +1,12 @@
 import { useMemo } from "react";
 import dayjs from "dayjs";
+import isoWeek from "dayjs/plugin/isoWeek";
 import type { CalendarEventDetail } from "../types";
 import { currencyFormatter } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import "./WeekGrid.css";
+
+dayjs.extend(isoWeek);
 
 interface WeekGridProps {
   events: CalendarEventDetail[];
@@ -74,7 +77,16 @@ function getCategoryClass(category: string | null | undefined): string {
 }
 
 export function WeekGrid({ events, weekStart, loading, onEventClick }: WeekGridProps) {
-  const monday = dayjs(weekStart).startOf("week").add(1, "day"); // Ensure Monday
+  // Parse weekStart and get Monday of that week using ISO week (Monday = 1)
+  const monday = useMemo(() => {
+    const parsed = dayjs(weekStart);
+    if (!parsed.isValid()) {
+      // Fallback to current week's Monday
+      return dayjs().isoWeekday(1);
+    }
+    // Get the Monday of the week containing this date
+    return parsed.isoWeekday(1);
+  }, [weekStart]);
 
   // Calculate time bounds based on events
   const { startHour, endHour } = useMemo(() => {

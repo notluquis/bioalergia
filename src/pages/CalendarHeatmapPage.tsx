@@ -96,8 +96,7 @@ function CalendarHeatmapPage() {
   const statsByDate = useMemo(() => {
     const map = new Map<string, { total: number; amountExpected: number; amountPaid: number }>();
     summary?.aggregates.byDate.forEach((entry) => {
-      // Extract just YYYY-MM-DD from the date string to avoid timezone conversion issues
-      // entry.date can be "2024-12-23" or "2024-12-23T00:00:00.000Z"
+      // Server now returns dates as "YYYY-MM-DD" strings via TO_CHAR in SQL
       const key = String(entry.date).slice(0, 10);
       map.set(key, {
         total: entry.total,
@@ -143,7 +142,7 @@ function CalendarHeatmapPage() {
     if (!summary) return 0;
     let max = 0;
     summary.aggregates.byDate.forEach((entry) => {
-      // Extract YYYY-MM directly to avoid timezone issues
+      // Server now returns "YYYY-MM-DD" strings, extract month portion
       const monthKey = String(entry.date).slice(0, 7);
       if (heatmapMonthKeys.has(monthKey)) {
         max = Math.max(max, entry.total);
