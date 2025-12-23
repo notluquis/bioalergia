@@ -244,6 +244,8 @@ export function registerCalendarEventRoutes(app: express.Express) {
         category: req.query.missingCategory === "true",
         amountExpected: req.query.missingAmount === "true",
         attended: req.query.missingAttended === "true",
+        dosage: req.query.missingDosage === "true",
+        treatmentStage: req.query.missingTreatmentStage === "true",
       };
 
       // If no filters specified, pass undefined so it checks all
