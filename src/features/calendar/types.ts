@@ -10,10 +10,10 @@ export type CalendarData = {
 export type CalendarFilters = {
   from: string;
   to: string;
-  calendarIds: string[];
-  eventTypes: string[];
+  calendarIds?: string[];
+  eventTypes?: string[];
   categories: string[];
-  search: string;
+  search?: string;
   maxDays: number;
 };
 

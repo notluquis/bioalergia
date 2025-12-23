@@ -13,11 +13,11 @@ export type HeatmapMonthProps = {
 // Colors based on intensity (0 to 4)
 // Colors based on intensity (0 to 4)
 const INTENSITY_COLORS = {
-  0: "bg-base-200/50 text-base-content/70", // Empty - darker text for readability
-  1: "bg-primary/30 text-primary-content hover:bg-primary/40",
-  2: "bg-primary/50 text-primary-content hover:bg-primary/60",
-  3: "bg-primary/75 text-primary-content hover:bg-primary/80",
-  4: "bg-primary text-primary-content shadow-md shadow-primary/20",
+  0: "bg-base-200/50 text-base-content/70", // Empty
+  1: "bg-primary/20 text-primary font-medium hover:bg-primary/30", // Low intensity: Darker text on light bg
+  2: "bg-primary/40 text-primary font-semibold hover:bg-primary/50", // Med intensity: Darker text on med bg
+  3: "bg-primary/70 text-primary-content hover:bg-primary/80", // High intensity: White text ok
+  4: "bg-primary text-primary-content shadow-md shadow-primary/20", // Max intensity
 };
 
 function getIntensity(count: number, max: number): 0 | 1 | 2 | 3 | 4 {

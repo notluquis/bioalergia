@@ -65,9 +65,6 @@ function CalendarHeatmapPage() {
     queryFn: () => {
       const apiFilters: CalendarFilters = {
         ...appliedFilters,
-        calendarIds: [], // Removed from UI but required by type
-        eventTypes: [], // Deprecated in UI but required by type
-        search: "", // Deprecated in UI but required by type
         maxDays: 366,
       };
       return fetchCalendarSummary(apiFilters);

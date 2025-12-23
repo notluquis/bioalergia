@@ -24,11 +24,11 @@ function buildQuery(filters: CalendarFilters, options?: { includeMaxDays?: boole
     to: filters.to,
   };
 
-  if (filters.calendarIds.length) {
+  if (filters.calendarIds?.length) {
     query.calendarId = filters.calendarIds;
   }
 
-  if (filters.eventTypes.length) {
+  if (filters.eventTypes?.length) {
     query.eventType = filters.eventTypes;
   }
 
@@ -36,7 +36,7 @@ function buildQuery(filters: CalendarFilters, options?: { includeMaxDays?: boole
     query.category = filters.categories;
   }
 
-  if (filters.search.trim()) {
+  if (filters.search?.trim()) {
     query.search = filters.search.trim();
   }
 
