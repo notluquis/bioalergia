@@ -288,15 +288,18 @@ function normalizeAmountRaw(raw: string): number | null {
   // Skip phone numbers
   if (PHONE_PATTERNS.some((p) => p.test(digits))) return null;
 
+  // Skip very long digit strings (likely RUTs, IDs, or multiple numbers merged)
+  // Valid amounts are typically 2-6 digits (e.g. 20, 50, 30000, 100000)
+  if (digits.length > 8) return null;
+
   const value = Number.parseInt(digits, 10);
   if (Number.isNaN(value) || value <= 0) return null;
 
   // Normalize: values < 1000 are multiplied by 1000 (e.g., 50 → 50000)
   const normalized = value >= 1000 ? value : value * 1000;
 
-  // Validate range
+  // Validate range (silently skip unreasonable amounts)
   if (normalized > MAX_INT32 || normalized > MAX_REASONABLE_AMOUNT) {
-    console.warn(`[parsers] Amount ${normalized} exceeds limits, skipping`);
     return null;
   }
 
