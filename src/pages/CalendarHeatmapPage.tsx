@@ -17,16 +17,12 @@ import { numberFormatter, currencyFormatter } from "@/lib/format";
 import { PAGE_CONTAINER, TITLE_LG, SPACE_Y_TIGHT } from "@/lib/styles";
 
 dayjs.locale("es");
-const NULL_EVENT_TYPE_VALUE = "__NULL__";
 const NULL_CATEGORY_VALUE = "__NULL_CATEGORY__";
 
 type HeatmapFilters = {
   from: string;
   to: string;
-  calendarIds: string[];
-  eventTypes: string[];
   categories: string[];
-  search: string;
 };
 
 const createInitialFilters = (): HeatmapFilters => {
@@ -35,10 +31,7 @@ const createInitialFilters = (): HeatmapFilters => {
   return {
     from: start.format("YYYY-MM-DD"),
     to: end.format("YYYY-MM-DD"),
-    calendarIds: [],
-    eventTypes: [],
     categories: [],
-    search: "",
   };
 };
 
@@ -50,14 +43,7 @@ function arraysEqual(a: string[], b: string[]): boolean {
 }
 
 function filtersEqual(a: HeatmapFilters, b: HeatmapFilters): boolean {
-  return (
-    a.from === b.from &&
-    a.to === b.to &&
-    a.search.trim() === b.search.trim() &&
-    arraysEqual(a.calendarIds, b.calendarIds) &&
-    arraysEqual(a.eventTypes, b.eventTypes) &&
-    arraysEqual(a.categories, b.categories)
-  );
+  return a.from === b.from && a.to === b.to && arraysEqual(a.categories, b.categories);
 }
 
 function CalendarHeatmapPage() {
@@ -77,32 +63,30 @@ function CalendarHeatmapPage() {
   } = useQuery({
     queryKey: ["calendar-heatmap", appliedFilters],
     queryFn: () => {
-      // Map local HeatmapFilters to CalendarFilters
-      // They are identical in structure based on visual inspection, casting or simple object matching
       const apiFilters: CalendarFilters = {
         ...appliedFilters,
-        maxDays: 366, // Default or required by type
+        calendarIds: [], // Removed from UI but required by type
+        eventTypes: [], // Deprecated in UI but required by type
+        search: "", // Deprecated in UI but required by type
+        maxDays: 366,
       };
       return fetchCalendarSummary(apiFilters);
     },
     // Keep previous data while fetching new filter to avoid flicker
     placeholderData: (prev) => prev,
-    staleTime: 5 * 60 * 1000, // 5 minutes cache (2025 standard to reduce server load)
+    staleTime: 5 * 60 * 1000, // 5 minutes cache
   });
 
   const error = queryError instanceof Error ? queryError.message : queryError ? String(queryError) : null;
   const initializing = loading && !summary;
 
-  // Sync server-normalized filters back to UI on successful fetch (e.g. date ranges adjusted by backend)
+  // Sync server-normalized filters back to UI on successful fetch
   useEffect(() => {
     if (summary?.filters) {
       const normalizedServerFilters: HeatmapFilters = {
         from: summary.filters.from ?? "",
         to: summary.filters.to ?? "",
-        calendarIds: summary.filters.calendarIds ?? [],
-        eventTypes: summary.filters.eventTypes ?? [],
         categories: summary.filters.categories ?? [],
-        search: summary.filters.search ?? "",
       };
 
       // Only update if deeply different to avoid loops/unnecessary renders
@@ -110,32 +94,12 @@ function CalendarHeatmapPage() {
         setAppliedFilters(normalizedServerFilters);
         setFilters(normalizedServerFilters);
       } else if (!filtersEqual(filters, normalizedServerFilters)) {
-        // If just the UI form is out of sync (shouldn't happen on auto-apply but possible)
         setFilters(normalizedServerFilters);
       }
     }
   }, [summary, appliedFilters, filters]);
 
   const isDirty = useMemo(() => !filtersEqual(filters, appliedFilters), [filters, appliedFilters]);
-
-  const availableCalendars: MultiSelectOption[] = useMemo(
-    () =>
-      (summary?.available.calendars ?? []).map((entry) => ({
-        value: entry.calendarId,
-        label: `${entry.calendarId} · ${numberFormatter.format(entry.total)}`,
-      })),
-    [summary?.available.calendars]
-  );
-
-  const availableEventTypes: MultiSelectOption[] = useMemo(
-    () =>
-      (summary?.available.eventTypes ?? []).map((entry) => {
-        const value = entry.eventType ?? NULL_EVENT_TYPE_VALUE;
-        const label = entry.eventType ?? "Sin tipo";
-        return { value, label: `${label} · ${numberFormatter.format(entry.total)}` };
-      }),
-    [summary?.available.eventTypes]
-  );
 
   const availableCategories: MultiSelectOption[] = useMemo(
     () =>
@@ -202,7 +166,7 @@ function CalendarHeatmapPage() {
     return max;
   }, [summary, heatmapMonthKeys]);
 
-  const handleToggle = (key: "calendarIds" | "eventTypes" | "categories", value: string) => {
+  const handleToggle = (key: "categories", value: string) => {
     setFilters((prev) => ({
       ...prev,
       [key]: prev[key].includes(value) ? prev[key].filter((item) => item !== value) : [...prev[key], value],
@@ -250,27 +214,6 @@ function CalendarHeatmapPage() {
                 <span className="font-medium">
                   {rangeStartLabel} - {rangeEndLabel}
                 </span>
-
-                {(filters.calendarIds.length > 0 || filters.eventTypes.length > 0) && (
-                  <>
-                    <span>•</span>
-                    <span>
-                      {[
-                        filters.calendarIds.length > 0 && `${filters.calendarIds.length} calendarios`,
-                        filters.eventTypes.length > 0 && `${filters.eventTypes.length} tipos`,
-                      ]
-                        .filter(Boolean)
-                        .join(", ")}
-                    </span>
-                  </>
-                )}
-
-                {filters.search && (
-                  <>
-                    <span>•</span>
-                    <span className="italic">&quot;{filters.search}&quot;</span>
-                  </>
-                )}
               </div>
             </div>
           </div>
@@ -298,7 +241,7 @@ function CalendarHeatmapPage() {
                 setShowAdvanced(false); // Auto-close on apply for cleaner UX
               }}
             >
-              <div className="grid gap-4 md:grid-cols-3">
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 <Input
                   label={tc("filters.from")}
                   type="date"
@@ -316,36 +259,11 @@ function CalendarHeatmapPage() {
                   }
                 />
                 <MultiSelectFilter
-                  label={tc("filters.calendars")}
-                  options={availableCalendars}
-                  selected={filters.calendarIds}
-                  onToggle={(value) => handleToggle("calendarIds", value)}
-                  placeholder={tc("filters.all")}
-                />
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-3">
-                <MultiSelectFilter
-                  label={tc("filters.eventTypes")}
-                  options={availableEventTypes}
-                  selected={filters.eventTypes}
-                  onToggle={(value) => handleToggle("eventTypes", value)}
-                  placeholder={tc("filters.all")}
-                />
-                <MultiSelectFilter
                   label={tc("filters.categories")}
                   options={availableCategories}
                   selected={filters.categories}
                   onToggle={(value) => handleToggle("categories", value)}
                   placeholder={tc("filters.allCategories")}
-                />
-                <Input
-                  label={tc("filters.search")}
-                  placeholder={tc("searchPlaceholder")}
-                  value={filters.search}
-                  onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                    setFilters((prev) => ({ ...prev, search: event.target.value }))
-                  }
                 />
               </div>
 
