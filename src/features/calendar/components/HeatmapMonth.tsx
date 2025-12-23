@@ -13,11 +13,11 @@ export type HeatmapMonthProps = {
 // Colors based on intensity (0 to 4)
 // Colors based on intensity (0 to 4)
 const INTENSITY_COLORS = {
-  0: "bg-base-200/50 text-base-content/20", // Empty - slightly clearer background
-  1: "bg-primary/30 text-primary-content hover:bg-primary/40", // 1-2 events - darker start
-  2: "bg-primary/50 text-primary-content hover:bg-primary/60", // Low
-  3: "bg-primary/75 text-primary-content hover:bg-primary/80", // Medium
-  4: "bg-primary text-primary-content shadow-md shadow-primary/20", // High - solid with shadow
+  0: "bg-base-200/50 text-base-content/70", // Empty - darker text for readability
+  1: "bg-primary/30 text-primary-content hover:bg-primary/40",
+  2: "bg-primary/50 text-primary-content hover:bg-primary/60",
+  3: "bg-primary/75 text-primary-content hover:bg-primary/80",
+  4: "bg-primary text-primary-content shadow-md shadow-primary/20",
 };
 
 function getIntensity(count: number, max: number): 0 | 1 | 2 | 3 | 4 {
@@ -129,25 +129,41 @@ export function HeatmapMonth({ month, statsByDate, maxValue }: HeatmapMonthProps
                 <TooltipTrigger asChild>
                   <div
                     className={clsx(
-                      "relative flex aspect-square cursor-default items-center justify-center rounded-md transition-all duration-200",
-                      // Default empty state
-                      "bg-base-200/30 text-base-content/30",
+                      "relative flex aspect-square w-full cursor-default flex-col items-center justify-center overflow-hidden rounded-md transition-all duration-200",
+                      // Default empty state - Use higher opacity text for visibility
+                      "bg-base-200/30 text-base-content/70",
                       // Intensity colors overlap default
                       INTENSITY_COLORS[cell.intensity],
                       {
                         "ring-primary/50 relative ring-1 ring-inset": cell.isToday,
                         "cursor-pointer font-semibold": cell.total > 0,
-                        "ring-primary ring-offset-base-100 z-10 scale-110 shadow-lg ring-2 ring-offset-2": false, // We need to handle hover state via group or just standard hover: classes if possible, but clsx doesn't handle hover state toggling logic easily without hover: prefix in class definition.
-                        // Actually better to put hover classes statically
                       },
                       "hover:ring-primary hover:ring-offset-base-100 hover:z-10 hover:scale-110 hover:shadow-lg hover:ring-2 hover:ring-offset-2"
                     )}
                   >
-                    <span className="text-xs">{cell.dayNumber}</span>
+                    {/* Day Number - Top Left, smaller */}
+                    <span
+                      className={clsx(
+                        "absolute top-0.5 left-1 text-[10px] leading-none opacity-60",
+                        cell.total > 0 && "text-[9px] font-normal opacity-80" // Adjust if has data
+                      )}
+                    >
+                      {cell.dayNumber}
+                    </span>
+
+                    {/* Event Count - Center, Bold */}
+                    {cell.total > 0 && (
+                      <span className="mt-1 text-sm font-bold tracking-tight shadow-sm drop-shadow-sm">
+                        {cell.total}
+                      </span>
+                    )}
                   </div>
                 </TooltipTrigger>
                 {cell.total > 0 && (
-                  <TooltipContent side="top" className="text-xs">
+                  <TooltipContent
+                    side="top"
+                    className="bg-base-300 border-base-content/10 text-base-content z-50 rounded-xl border p-3 text-xs shadow-xl"
+                  >
                     <p className="mb-1 font-bold">{cell.date.format("dddd DD MMMM")}</p>
                     <div className="space-y-0.5">
                       <p>
