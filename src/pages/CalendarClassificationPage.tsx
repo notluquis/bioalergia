@@ -343,6 +343,37 @@ function CalendarClassificationPage() {
                 >
                   Sin asistencia
                 </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFilters((prev) => ({ ...prev, missingDosage: !prev.missingDosage || undefined }));
+                    setPage(0);
+                  }}
+                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
+                    filters.missingDosage
+                      ? "bg-primary text-primary-content shadow-sm"
+                      : "bg-base-300/50 text-base-content/70 hover:bg-base-300"
+                  }`}
+                >
+                  Sin dosis
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFilters((prev) => ({
+                      ...prev,
+                      missingTreatmentStage: !prev.missingTreatmentStage || undefined,
+                    }));
+                    setPage(0);
+                  }}
+                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
+                    filters.missingTreatmentStage
+                      ? "bg-primary text-primary-content shadow-sm"
+                      : "bg-base-300/50 text-base-content/70 hover:bg-base-300"
+                  }`}
+                >
+                  Sin etapa
+                </button>
                 {hasActiveFilters && (
                   <button
                     type="button"
