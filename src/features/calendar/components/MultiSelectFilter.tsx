@@ -87,8 +87,10 @@ export function MultiSelectFilter({
                   <DropdownMenuCheckboxItem
                     key={option.value}
                     checked={selected.includes(option.value)}
-                    onCheckedChange={() => onToggle(option.value)}
-                    onSelect={(e) => e.preventDefault()}
+                    onSelect={(e) => {
+                      e.preventDefault();
+                      onToggle(option.value);
+                    }}
                   >
                     <span className="flex flex-col text-left">
                       <span className="text-base-content truncate font-medium" title={namePart}>
