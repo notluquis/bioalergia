@@ -154,6 +154,7 @@ const ROXAIR_PATTERNS = [/\broxair\b/i, /\bretira\s+roxair\b/i, /\benviar\s+roxa
 
 /** Patterns for "Servicio de inyección" (Patient brings med or specific injection service) */
 const INJECTION_PATTERNS = [
+  /\bdupixent\b/i, // DUPIXENT - biologic medication patient brings for injection
   /\bdacam\b/i, // DACAM
   /\bcidoten\b/i, // CIDOTEN
   /\bbetametasona\b/i, // BETAMETASONA
@@ -218,6 +219,7 @@ const MAINTENANCE_PATTERNS = [
   /\bdosis\s+clust(?:oid)?\b/i, // 'dosis clustoid' implies maintenance/0.5ml
   /\(\s*50\s*\)/i, // (50) - parenthesized 50 indicates maintenance dose
   /\b50\s*(?:$|\))/i, // "50" at end of text or before closing paren
+  /\brefuerzo\b/i, // refuerzo (booster) = maintenance
 ];
 
 /** Patterns for dosage extraction */
@@ -431,8 +433,11 @@ function classifyCategory(summary: string, description: string): string | null {
     return null;
   }
 
-  // Priority order: Test (specific) → Subcutáneo (explicit) → Roxair → Licencia → Control → Consulta → Subcutáneo (implicit/dosage)
+  // Priority order: Test → Injection Service (specific meds) → Subcutáneo (explicit) → Roxair → Licencia → Control → Consulta → Subcutáneo (implicit)
   if (matchesAny(text, TEST_PATTERNS)) return "Test y exámenes";
+
+  // Injection service check - must come BEFORE subcutaneous to prioritize specific meds like Dupixent
+  if (matchesAny(text, INJECTION_PATTERNS)) return "Servicio de inyección";
 
   // Explicit Subcutaneous keywords (strong signals)
   if (matchesAny(text, SUBCUT_PATTERNS)) {
@@ -440,9 +445,6 @@ function classifyCategory(summary: string, description: string): string | null {
   }
 
   if (matchesAny(text, ROXAIR_PATTERNS)) return "Roxair";
-
-  // Injection service check
-  if (matchesAny(text, INJECTION_PATTERNS)) return "Servicio de inyección";
 
   if (matchesAny(text, LICENCIA_PATTERNS)) return "Licencia médica";
   if (matchesAny(text, CONTROL_PATTERNS)) return "Control médico";
@@ -489,6 +491,12 @@ function extractDosage(summary: string, description: string): string | null {
       maximumFractionDigits: 2,
     });
     return `${formatter.format(value)} ${unit}`;
+  }
+
+  // Pattern for clustoid+dosage format without space: "clustoid0,3", "clustoid0,1"
+  const clustoidDosageMatch = /clust(?:oid)?\s*(0[.,]\d+)/i.exec(text);
+  if (clustoidDosageMatch) {
+    return `${clustoidDosageMatch[1].replace(".", ",")} ml`;
   }
 
   // Fallback: standalone decimal (e.g. "0,5") implies "ml" in this context
