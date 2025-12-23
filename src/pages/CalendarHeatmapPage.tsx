@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useState, type ChangeEvent } from "react";
 import dayjs, { type Dayjs } from "dayjs";
+import clsx from "clsx";
 import "dayjs/locale/es";
 import { useTranslation } from "react-i18next";
+import { Filter, ChevronDown } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
 import Button from "@/components/ui/Button";
@@ -230,86 +232,142 @@ function CalendarHeatmapPage() {
         <p className="text-base-content/70 text-sm">{tc("heatmapDescription")}</p>
       </header>
 
-      <form
-        className="border-primary/15 bg-base-100 text-base-content/80 space-y-4 rounded-2xl border p-6 text-xs shadow-sm"
-        onSubmit={(event) => {
-          event.preventDefault();
-          handleApply();
-        }}
-      >
-        <div className="grid gap-4 md:grid-cols-3">
-          <Input
-            label={tc("filters.from")}
-            type="date"
-            value={filters.from}
-            onChange={(event: ChangeEvent<HTMLInputElement>) =>
-              setFilters((prev) => ({ ...prev, from: event.target.value }))
-            }
-          />
-          <Input
-            label={tc("filters.to")}
-            type="date"
-            value={filters.to}
-            onChange={(event: ChangeEvent<HTMLInputElement>) =>
-              setFilters((prev) => ({ ...prev, to: event.target.value }))
-            }
-          />
-          <MultiSelectFilter
-            label={tc("filters.calendars")}
-            options={availableCalendars}
-            selected={filters.calendarIds}
-            onToggle={(value) => handleToggle("calendarIds", value)}
-            placeholder={tc("filters.all")}
-          />
-        </div>
+      {/* Collapsible Filter Toolbar */}
+      <div className="bg-base-100 border-base-200 overflow-hidden rounded-2xl border shadow-sm transition-all duration-300">
+        <button
+          type="button"
+          onClick={() => setShowAdvanced((prev) => !prev)}
+          className="hover:bg-base-200/50 flex w-full items-center justify-between px-6 py-4 text-left transition-colors"
+        >
+          <div className="flex items-center gap-4">
+            <div className="bg-primary/10 text-primary flex h-10 w-10 items-center justify-center rounded-full">
+              <Filter className="h-5 w-5" />
+            </div>
 
-        {showAdvanced && (
-          <div className="grid gap-4 md:grid-cols-3">
-            <MultiSelectFilter
-              label={tc("filters.eventTypes")}
-              options={availableEventTypes}
-              selected={filters.eventTypes}
-              onToggle={(value) => handleToggle("eventTypes", value)}
-              placeholder={tc("filters.all")}
-            />
-            <MultiSelectFilter
-              label={tc("filters.categories")}
-              options={availableCategories}
-              selected={filters.categories}
-              onToggle={(value) => handleToggle("categories", value)}
-              placeholder={tc("filters.allCategories")}
-            />
-            <Input
-              label={tc("filters.search")}
-              placeholder={tc("searchPlaceholder")}
-              value={filters.search}
-              onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                setFilters((prev) => ({ ...prev, search: event.target.value }))
-              }
-            />
+            <div>
+              <h3 className="text-base-content text-sm font-medium">Filtros y Visualización</h3>
+              <div className="text-base-content/60 mt-0.5 flex flex-wrap gap-2 text-xs">
+                <span className="font-medium">
+                  {rangeStartLabel} - {rangeEndLabel}
+                </span>
+
+                {(filters.calendarIds.length > 0 || filters.eventTypes.length > 0) && (
+                  <>
+                    <span>•</span>
+                    <span>
+                      {[
+                        filters.calendarIds.length > 0 && `${filters.calendarIds.length} calendarios`,
+                        filters.eventTypes.length > 0 && `${filters.eventTypes.length} tipos`,
+                      ]
+                        .filter(Boolean)
+                        .join(", ")}
+                    </span>
+                  </>
+                )}
+
+                {filters.search && (
+                  <>
+                    <span>•</span>
+                    <span className="italic">&quot;{filters.search}&quot;</span>
+                  </>
+                )}
+              </div>
+            </div>
           </div>
-        )}
 
-        <div className="flex flex-wrap items-center gap-2">
-          <Button type="submit" size="lg" disabled={busy}>
-            {loading ? tc("loading") : tc("applyFilters")}
-          </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            size="lg"
-            disabled={busy || !isDirty}
-            onClick={() => {
-              handleReset();
-            }}
-          >
-            {tc("resetFilters")}
-          </Button>
-          <Button type="button" variant="ghost" size="sm" onClick={() => setShowAdvanced((prev) => !prev)}>
-            {showAdvanced ? "Ocultar filtros avanzados" : "Más filtros"}
-          </Button>
+          <ChevronDown
+            className={clsx(
+              "text-base-content/40 h-5 w-5 transition-transform duration-300",
+              showAdvanced && "rotate-180"
+            )}
+          />
+        </button>
+
+        <div
+          className={clsx(
+            "grid transition-[grid-template-rows] duration-300 ease-in-out",
+            showAdvanced ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+          )}
+        >
+          <div className="overflow-hidden">
+            <form
+              className="border-base-200/50 space-y-6 border-t p-6 pt-2"
+              onSubmit={(event) => {
+                event.preventDefault();
+                handleApply();
+                setShowAdvanced(false); // Auto-close on apply for cleaner UX
+              }}
+            >
+              <div className="grid gap-4 md:grid-cols-3">
+                <Input
+                  label={tc("filters.from")}
+                  type="date"
+                  value={filters.from}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                    setFilters((prev) => ({ ...prev, from: event.target.value }))
+                  }
+                />
+                <Input
+                  label={tc("filters.to")}
+                  type="date"
+                  value={filters.to}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                    setFilters((prev) => ({ ...prev, to: event.target.value }))
+                  }
+                />
+                <MultiSelectFilter
+                  label={tc("filters.calendars")}
+                  options={availableCalendars}
+                  selected={filters.calendarIds}
+                  onToggle={(value) => handleToggle("calendarIds", value)}
+                  placeholder={tc("filters.all")}
+                />
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-3">
+                <MultiSelectFilter
+                  label={tc("filters.eventTypes")}
+                  options={availableEventTypes}
+                  selected={filters.eventTypes}
+                  onToggle={(value) => handleToggle("eventTypes", value)}
+                  placeholder={tc("filters.all")}
+                />
+                <MultiSelectFilter
+                  label={tc("filters.categories")}
+                  options={availableCategories}
+                  selected={filters.categories}
+                  onToggle={(value) => handleToggle("categories", value)}
+                  placeholder={tc("filters.allCategories")}
+                />
+                <Input
+                  label={tc("filters.search")}
+                  placeholder={tc("searchPlaceholder")}
+                  value={filters.search}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                    setFilters((prev) => ({ ...prev, search: event.target.value }))
+                  }
+                />
+              </div>
+
+              <div className="flex flex-wrap items-center justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => {
+                    handleReset();
+                  }}
+                  disabled={busy || !isDirty}
+                >
+                  {tc("resetFilters")}
+                </Button>
+                <Button type="submit" disabled={busy}>
+                  {loading ? tc("loading") : tc("applyFilters")}
+                </Button>
+              </div>
+            </form>
+          </div>
         </div>
-      </form>
+      </div>
 
       {error && <Alert variant="error">{error}</Alert>}
 
