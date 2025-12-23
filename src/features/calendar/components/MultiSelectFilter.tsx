@@ -1,8 +1,12 @@
 import { useMemo } from "react";
 import { ChevronDown } from "lucide-react";
 
-import Checkbox from "@/components/ui/Checkbox";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/DropdownMenu";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/DropdownMenu";
 
 type Option = { value: string; label: string };
 
@@ -80,30 +84,23 @@ export function MultiSelectFilter({
                 const [namePart = "", metaPart] = option.label.split(" · ");
                 const truncatedName = truncateLabel(namePart);
                 return (
-                  <DropdownMenuItem
+                  <DropdownMenuCheckboxItem
                     key={option.value}
+                    checked={selected.includes(option.value)}
+                    onCheckedChange={() => onToggle(option.value)}
                     onSelect={(e) => e.preventDefault()}
-                    className="cursor-pointer"
-                    onClick={() => onToggle(option.value)}
                   >
-                    <Checkbox
-                      checked={selected.includes(option.value)}
-                      readOnly // Controlled by parent click
-                      className="text-base-content pointer-events-none" // pointer-events-none to let the menu item handle the click
-                      label={
-                        <span className="flex flex-col text-left">
-                          <span className="text-base-content truncate font-medium" title={namePart}>
-                            {truncatedName || placeholder}
-                          </span>
-                          {metaPart && (
-                            <span className="text-base-content/50 text-xs" title={metaPart}>
-                              · {metaPart}
-                            </span>
-                          )}
+                    <span className="flex flex-col text-left">
+                      <span className="text-base-content truncate font-medium" title={namePart}>
+                        {truncatedName || placeholder}
+                      </span>
+                      {metaPart && (
+                        <span className="text-base-content/50 text-xs" title={metaPart}>
+                          · {metaPart}
                         </span>
-                      }
-                    />
-                  </DropdownMenuItem>
+                      )}
+                    </span>
+                  </DropdownMenuCheckboxItem>
                 );
               })
             )}
