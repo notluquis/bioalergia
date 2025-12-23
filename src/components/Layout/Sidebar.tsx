@@ -176,19 +176,17 @@ export default function Sidebar({ isOpen, isMobile, onClose }: SidebarProps) {
   const sidebarClasses = cn(
     // Base - GPU-accelerated transitions only (transform, opacity)
     // Rounded corners on the right side for modern look
-    "flex flex-col bg-base-100 backdrop-blur-xl border-r border-base-200 transition-[width] duration-200 ease-out z-50",
-    "rounded-r-2xl",
+    "flex flex-col bg-base-100 backdrop-blur-xl border-base-200 transition-[width] duration-200 ease-out z-50",
     // Mobile
     isMobile
       ? cn(
-          "fixed inset-y-0 left-0 w-64 h-[100dvh] shadow-2xl safe-area-left rounded-r-3xl",
+          "fixed inset-y-0 left-0 w-64 h-[100dvh] shadow-2xl safe-area-left rounded-r-3xl border-r",
           isOpen ? "translate-x-0" : "-translate-x-full"
         )
       : cn(
           // Desktop
-          "sticky top-0 h-[100dvh]",
-          isCollapsed ? "w-16" : "w-64",
-          "shadow-2xl"
+          "h-full rounded-2xl border shadow-xl",
+          isCollapsed ? "w-16" : "w-64"
         )
   );
 
