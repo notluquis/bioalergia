@@ -21,6 +21,7 @@ import type { CalendarUnclassifiedEvent } from "@/features/calendar/types";
 import { classificationArraySchema, type FormValues, classificationSchema } from "@/features/calendar/schemas";
 import { ClassificationRow } from "@/features/calendar/components/ClassificationRow";
 import { ClassificationTotals } from "@/features/calendar/components/ClassificationTotals";
+import { useJobProgress } from "@/hooks/useJobProgress";
 import { z } from "zod";
 
 dayjs.locale("es");
@@ -159,22 +160,10 @@ function CalendarClassificationPage() {
 
   const reclassifyMutation = useMutation({
     mutationFn: reclassifyCalendarEvents,
-    onSuccess: (result) => {
-      const { fieldCounts: fc } = result;
-      const details = [
-        fc.category > 0 ? `Categoría: ${fc.category}` : null,
-        fc.dosage > 0 ? `Dosis: ${fc.dosage}` : null,
-        fc.treatmentStage > 0 ? `Etapa: ${fc.treatmentStage}` : null,
-        fc.attended > 0 ? `Asistencia: ${fc.attended}` : null,
-        fc.amountExpected > 0 ? `Monto esperado: ${fc.amountExpected}` : null,
-        fc.amountPaid > 0 ? `Monto pagado: ${fc.amountPaid}` : null,
-      ]
-        .filter(Boolean)
-        .join(" | ");
-      const msg = details ? `✓ ${result.reclassified} eventos actualizados. ${details}` : `✓ ${result.message}`;
-      setToastMessage(msg);
+    onSuccess: (response) => {
+      setActiveJobId(response.jobId);
+      setToastMessage(`Iniciando reclasificación de ${response.totalEvents} eventos...`);
       setToastOpen(true);
-      void queryClient.invalidateQueries({ queryKey: ["calendar-unclassified"] });
     },
     onError: (err) => {
       setToastMessage(`Error: ${err instanceof Error ? err.message : "Error desconocido"}`);
@@ -184,28 +173,43 @@ function CalendarClassificationPage() {
 
   const reclassifyAllMutation = useMutation({
     mutationFn: reclassifyAllCalendarEvents,
-    onSuccess: (result) => {
-      const { fieldCounts: fc } = result;
-      const details = [
-        fc.category > 0 ? `Categoría: ${fc.category}` : null,
-        fc.dosage > 0 ? `Dosis: ${fc.dosage}` : null,
-        fc.treatmentStage > 0 ? `Etapa: ${fc.treatmentStage}` : null,
-        fc.attended > 0 ? `Asistencia: ${fc.attended}` : null,
-        fc.amountExpected > 0 ? `Monto esperado: ${fc.amountExpected}` : null,
-        fc.amountPaid > 0 ? `Monto pagado: ${fc.amountPaid}` : null,
-      ]
-        .filter(Boolean)
-        .join(" | ");
-      const msg = `✓ TODOS: ${result.reclassified} eventos reclasificados. ${details}`;
-      setToastMessage(msg);
+    onSuccess: (response) => {
+      setActiveJobId(response.jobId);
+      setToastMessage(`Iniciando reclasificación de TODOS los ${response.totalEvents} eventos...`);
       setToastOpen(true);
-      void queryClient.invalidateQueries({ queryKey: ["calendar-unclassified"] });
     },
     onError: (err) => {
       setToastMessage(`Error: ${err instanceof Error ? err.message : "Error desconocido"}`);
       setToastOpen(true);
     },
   });
+
+  // Track active job progress
+  const [activeJobId, setActiveJobId] = useState<string | null>(null);
+  const { job, progress, isComplete, isFailed } = useJobProgress(activeJobId, {
+    onComplete: (result) => {
+      const r = result as { message?: string; reclassified?: number; fieldCounts?: Record<string, number> };
+      const details = r.fieldCounts
+        ? Object.entries(r.fieldCounts)
+            .filter(([, v]) => v > 0)
+            .map(([k, v]) => `${k}: ${v}`)
+            .join(" | ")
+        : "";
+      const msg = details
+        ? `✓ ${r.reclassified ?? 0} eventos actualizados. ${details}`
+        : `✓ ${r.message ?? "Completado"}`;
+      setToastMessage(msg);
+      setToastOpen(true);
+      setActiveJobId(null);
+    },
+    onError: (error) => {
+      setToastMessage(`Error: ${error}`);
+      setToastOpen(true);
+      setActiveJobId(null);
+    },
+  });
+
+  const isJobRunning = !!activeJobId && !isComplete && !isFailed;
 
   const { mutate } = classifyMutation;
 
@@ -358,55 +362,87 @@ function CalendarClassificationPage() {
             </div>
 
             {/* Reclassify Actions */}
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => reclassifyMutation.mutate()}
-                disabled={reclassifyMutation.isPending}
-                className="gap-2"
-              >
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                  />
-                </svg>
-                {reclassifyMutation.isPending ? "Procesando..." : "Reclasificar pendientes"}
-              </Button>
-              <Tooltip.Root>
-                <Tooltip.Trigger asChild>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (
-                        window.confirm(
-                          "¿Reclasificar TODOS los eventos? Esto sobrescribirá las clasificaciones existentes."
-                        )
-                      ) {
-                        reclassifyAllMutation.mutate();
-                      }
-                    }}
-                    disabled={reclassifyAllMutation.isPending}
-                    className="text-warning/80 hover:text-warning hover:bg-warning/10 rounded-lg p-2 transition-colors disabled:opacity-50"
+            <div className="flex flex-col gap-3">
+              {/* Progress Bar - Show when job is running */}
+              {isJobRunning && job && (
+                <div className="bg-base-300/50 rounded-xl p-4">
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="text-sm font-medium">{job.message}</span>
+                    <span className="text-primary text-sm font-bold tabular-nums">{progress}%</span>
+                  </div>
+                  <div className="bg-base-200 h-2.5 w-full overflow-hidden rounded-full">
+                    <div
+                      className="bg-primary h-2.5 rounded-full transition-all duration-300 ease-out"
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+                  <div className="text-base-content/60 mt-2 text-xs">
+                    {job.progress.toLocaleString("es-CL")} / {job.total.toLocaleString("es-CL")} eventos
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => reclassifyMutation.mutate()}
+                  disabled={reclassifyMutation.isPending || isJobRunning}
+                  className="gap-2"
+                >
+                  <svg
+                    className={`h-4 w-4 ${isJobRunning ? "animate-spin" : ""}`}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
                   >
-                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                      />
-                    </svg>
-                  </button>
-                </Tooltip.Trigger>
-                <Tooltip.Content className="bg-base-300 rounded-lg px-3 py-2 text-xs shadow-xl" side="bottom">
-                  Reclasificar TODO (sobrescribe existentes)
-                  <Tooltip.Arrow className="fill-base-300" />
-                </Tooltip.Content>
-              </Tooltip.Root>
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                    />
+                  </svg>
+                  {isJobRunning ? `Procesando ${progress}%...` : "Reclasificar pendientes"}
+                </Button>
+                <Tooltip.Root>
+                  <Tooltip.Trigger asChild>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (
+                          window.confirm(
+                            "¿Reclasificar TODOS los eventos? Esto sobrescribirá las clasificaciones existentes."
+                          )
+                        ) {
+                          reclassifyAllMutation.mutate();
+                        }
+                      }}
+                      disabled={reclassifyAllMutation.isPending || isJobRunning}
+                      className="text-warning/80 hover:text-warning hover:bg-warning/10 rounded-lg p-2 transition-colors disabled:opacity-50"
+                    >
+                      <svg
+                        className={`h-5 w-5 ${isJobRunning ? "animate-spin" : ""}`}
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                        />
+                      </svg>
+                    </button>
+                  </Tooltip.Trigger>
+                  <Tooltip.Content className="bg-base-300 rounded-lg px-3 py-2 text-xs shadow-xl" side="bottom">
+                    Reclasificar TODO (sobrescribe existentes)
+                    <Tooltip.Arrow className="fill-base-300" />
+                  </Tooltip.Content>
+                </Tooltip.Root>
+              </div>
             </div>
           </div>
 
