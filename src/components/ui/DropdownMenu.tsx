@@ -85,14 +85,19 @@ const DropdownMenuCheckboxItem = React.forwardRef<
     checked={checked}
     {...props}
   >
-    <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
-      <DropdownMenuPrimitive.ItemIndicator>
-        <div className="bg-primary text-primary-content flex h-4 w-4 items-center justify-center rounded">
+    <span className="absolute left-2 flex h-4 w-4 items-center justify-center">
+      <div
+        className={cn(
+          "flex h-4 w-4 items-center justify-center rounded border transition-colors",
+          checked ? "border-primary bg-primary text-primary-content" : "border-base-content/30 bg-base-100"
+        )}
+      >
+        <DropdownMenuPrimitive.ItemIndicator>
           <svg viewBox="0 0 24 24" fill="none" className="h-3 w-3" stroke="currentColor" strokeWidth={3}>
             <path d="M20 6L9 17l-5-5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
-        </div>
-      </DropdownMenuPrimitive.ItemIndicator>
+        </DropdownMenuPrimitive.ItemIndicator>
+      </div>
     </span>
     {children}
   </DropdownMenuPrimitive.CheckboxItem>
