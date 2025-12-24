@@ -91,24 +91,46 @@ export function WeekGrid({ events, weekStart, loading, onEventClick }: WeekGridP
     return parsed.isoWeekday(1);
   }, [weekStart]);
 
-  // Calculate time bounds based on events
+  // Calculate time bounds based ONLY on events in this week
   const { startHour, endHour } = useMemo(() => {
-    let min = 8; // Default 8am
-    let max = 18; // Default 6pm
+    // Filter events to only those in the displayed week
+    const weekEnd = monday.add(5, "day").endOf("day");
+    const weekEvents = events.filter((event) => {
+      if (!event.startDateTime) return false;
+      const eventDate = dayjs(event.startDateTime);
+      return eventDate.isAfter(monday.startOf("day")) && eventDate.isBefore(weekEnd);
+    });
 
-    events.forEach((event) => {
+    // If no events in week, show reasonable default range
+    if (weekEvents.length === 0) {
+      return { startHour: 9, endHour: 18 };
+    }
+
+    let min = 23;
+    let max = 0;
+
+    weekEvents.forEach((event) => {
       if (event.startDateTime) {
         const hour = dayjs(event.startDateTime).hour();
         min = Math.min(min, hour);
       }
       if (event.endDateTime) {
-        const hour = dayjs(event.endDateTime).hour();
-        max = Math.max(max, hour + 1);
+        const endTime = dayjs(event.endDateTime);
+        // If event ends exactly on the hour, use that hour; otherwise, use next hour
+        const hour = endTime.minute() > 0 ? endTime.hour() + 1 : endTime.hour();
+        max = Math.max(max, hour);
+      } else if (event.startDateTime) {
+        // No end time, assume 1 hour duration
+        max = Math.max(max, dayjs(event.startDateTime).hour() + 1);
       }
     });
 
-    return { startHour: Math.max(0, min - 1), endHour: Math.min(23, max) };
-  }, [events]);
+    // Add padding: 1 hour before first event, show until last event ends
+    const paddedStart = Math.max(0, min - 1);
+    const paddedEnd = Math.min(23, max);
+
+    return { startHour: paddedStart, endHour: paddedEnd };
+  }, [events, monday]);
 
   const hours = useMemo(() => generateHours(startHour, endHour), [startHour, endHour]);
   const eventsByDay = useMemo(() => groupEventsByDay(events, monday), [events, monday]);
