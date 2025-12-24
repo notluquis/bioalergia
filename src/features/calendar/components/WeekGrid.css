@@ -293,34 +293,81 @@
   text-overflow: ellipsis;
 }
 
-/* === COMPACT MODE (short events < 45 min) === */
-.week-grid__event--compact {
-  flex-direction: row;
-  align-items: center;
-  padding: 0.15rem 0.4rem;
-  gap: 0.35rem;
+/* === DISPLAY MODES (based on event duration) === */
+
+/* Minimal mode: just title, very tight */
+.week-grid__event[data-mode="minimal"] {
+  padding: 0.1rem 0.3rem;
+  justify-content: center;
 }
 
-.week-grid__event-compact-content {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  min-width: 0;
-  overflow: hidden;
-}
-
-.week-grid__event--compact .week-grid__event-time {
-  flex-shrink: 0;
-  font-size: 0.6rem;
-}
-
-.week-grid__event--compact .week-grid__event-title {
+.week-grid__event[data-mode="minimal"] .week-grid__event-title {
+  font-size: 0.55rem;
   -webkit-line-clamp: 1;
   line-clamp: 1;
   white-space: nowrap;
   text-overflow: ellipsis;
-  display: block;
   overflow: hidden;
+}
+
+/* Compact mode: time + title inline */
+.week-grid__event[data-mode="compact"] {
+  padding: 0.15rem 0.35rem;
+}
+
+.week-grid__event-row {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.week-grid__event[data-mode="compact"] .week-grid__event-time {
+  flex-shrink: 0;
+  font-size: 0.55rem;
+}
+
+.week-grid__event[data-mode="compact"] .week-grid__event-title {
+  font-size: 0.55rem;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Normal mode: time + title stacked */
+.week-grid__event[data-mode="normal"] {
+  padding: 0.2rem 0.4rem;
+}
+
+.week-grid__event[data-mode="normal"] .week-grid__event-time {
+  font-size: 0.6rem;
+}
+
+.week-grid__event[data-mode="normal"] .week-grid__event-title {
+  font-size: 0.6rem;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+/* Detailed mode: full layout with amount */
+.week-grid__event[data-mode="detailed"] {
+  padding: 0.25rem 0.45rem;
+}
+
+.week-grid__event[data-mode="detailed"] .week-grid__event-time {
+  font-size: 0.65rem;
+}
+
+.week-grid__event[data-mode="detailed"] .week-grid__event-title {
+  font-size: 0.65rem;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+.week-grid__event[data-mode="detailed"] .week-grid__event-amount {
   font-size: 0.6rem;
 }
 

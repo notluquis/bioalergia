@@ -197,13 +197,29 @@ export function WeekGrid({ events, weekStart, loading, onEventClick }: WeekGridP
                 const position = getEventPosition(event, startHour, endHour);
                 if (!position) return null;
 
-                // Calculate duration to determine compact mode
+                // Calculate duration to determine display mode
                 const start = event.startDateTime ? dayjs(event.startDateTime) : null;
                 const end = event.endDateTime ? dayjs(event.endDateTime) : null;
                 const durationMinutes = start && end ? end.diff(start, "minute") : 30;
-                const isCompact = durationMinutes < 30; // Only compact for very short events
 
-                // Build tooltip text
+                // Display mode based on duration (prioritize showing TITLE, time is secondary)
+                // Minimal: just title (time shown via position/tooltip)
+                // Compact: time + title on one line
+                // Normal: time + title (multi-line)
+                // Detailed: time + title + amount
+                type DisplayMode = "minimal" | "compact" | "normal" | "detailed";
+                let displayMode: DisplayMode;
+                if (durationMinutes < 20) {
+                  displayMode = "minimal";
+                } else if (durationMinutes < 45) {
+                  displayMode = "compact";
+                } else if (durationMinutes < 90) {
+                  displayMode = "normal";
+                } else {
+                  displayMode = "detailed";
+                }
+
+                // Build tooltip text (always complete info)
                 const timeStr = start ? start.format("HH:mm") : "";
                 const endTimeStr = end ? end.format("HH:mm") : "";
                 const amountStr = event.amountExpected != null ? currencyFormatter.format(event.amountExpected) : "";
@@ -211,30 +227,39 @@ export function WeekGrid({ events, weekStart, loading, onEventClick }: WeekGridP
                   Boolean
                 );
 
+                // Title - prioritize this over time for readability
+                const title = event.summary?.trim() || "(Sin título)";
+
                 return (
                   <button
                     key={event.eventId}
-                    className={cn(
-                      "week-grid__event",
-                      getCategoryClass(event.category),
-                      isCompact && "week-grid__event--compact"
-                    )}
+                    className={cn("week-grid__event", getCategoryClass(event.category))}
                     style={{ top: position.top, height: position.height }}
                     onClick={() => onEventClick?.(event)}
                     type="button"
                     title={tooltipLines.join("\n")}
+                    data-mode={displayMode}
                   >
-                    {isCompact ? (
-                      // Compact: single line with time + title
-                      <span className="week-grid__event-compact-content">
+                    {displayMode === "minimal" ? (
+                      // Minimal: just title, very compact
+                      <span className="week-grid__event-title">{title}</span>
+                    ) : displayMode === "compact" ? (
+                      // Compact: time + title on one line
+                      <span className="week-grid__event-row">
                         <span className="week-grid__event-time">{timeStr}</span>
-                        <span className="week-grid__event-title">{event.summary?.slice(0, 25) || "—"}</span>
+                        <span className="week-grid__event-title">{title}</span>
                       </span>
-                    ) : (
-                      // Normal: multi-line layout
+                    ) : displayMode === "normal" ? (
+                      // Normal: time + title (stacked)
                       <>
                         <span className="week-grid__event-time">{timeStr}</span>
-                        <span className="week-grid__event-title">{event.summary?.slice(0, 35) || "(Sin título)"}</span>
+                        <span className="week-grid__event-title">{title}</span>
+                      </>
+                    ) : (
+                      // Detailed: time + title + amount
+                      <>
+                        <span className="week-grid__event-time">{timeStr}</span>
+                        <span className="week-grid__event-title">{title}</span>
                         {event.amountExpected != null && (
                           <span className="week-grid__event-amount">
                             {currencyFormatter.format(event.amountExpected)}
