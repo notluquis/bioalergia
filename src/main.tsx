@@ -44,7 +44,6 @@ const ServicesCreatePage = lazy(() => import("@/features/services/pages/CreateSe
 const ServicesTemplatesPage = lazy(() => import("@/features/services/pages/TemplatesPage"));
 const ServiceEditPage = lazy(() => import("@/features/services/pages/EditServicePage"));
 
-const CalendarSummaryPage = lazy(() => import("./pages/CalendarSummaryPage"));
 const CalendarSchedulePage = lazy(() => import("./pages/CalendarSchedulePage"));
 const CalendarDailyPage = lazy(() => import("./pages/CalendarDailyPage"));
 const CalendarHeatmapPage = lazy(() => import("./pages/CalendarHeatmapPage"));
@@ -265,15 +264,10 @@ const router = createBrowserRouter(
             </RequirePermission>
           ),
           children: [
-            { index: true, element: <Navigate to="summary" replace /> },
+            { index: true, element: <Navigate to="schedule" replace /> },
             {
               path: "summary",
-              handle: { title: "Eventos de calendario" },
-              element: (
-                <Suspense fallback={<PageLoader />}>
-                  <CalendarSummaryPage />
-                </Suspense>
-              ),
+              element: <Navigate to="/calendar/schedule" replace />,
             },
             {
               path: "schedule",
@@ -312,13 +306,17 @@ const router = createBrowserRouter(
               ),
             },
             {
-              path: "history",
+              path: "sync-history",
               handle: { title: "Historial de sincronización" },
               element: (
                 <Suspense fallback={<PageLoader />}>
                   <CalendarSyncHistoryPage />
                 </Suspense>
               ),
+            },
+            {
+              path: "history",
+              element: <Navigate to="/calendar/sync-history" replace />,
             },
           ],
         },
