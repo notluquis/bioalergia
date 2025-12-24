@@ -13,6 +13,8 @@
   --wg-today-accent: hsl(var(--p) / 0.08);
   --wg-now-color: hsl(var(--er));
   --wg-shadow: 0 1px 3px hsl(var(--bc) / 0.06), 0 4px 12px hsl(var(--bc) / 0.04);
+  /* Dynamic height: viewport - navbar - header - padding */
+  --wg-body-height: min(calc(100dvh - 220px), 800px);
 
   /* Event colors */
   --event-blue: hsl(210 100% 50%);
@@ -98,7 +100,9 @@
 .week-grid__body {
   display: grid;
   grid-template-columns: 52px repeat(6, 1fr);
-  max-block-size: 640px;
+  /* Use dynamic height based on viewport */
+  max-block-size: var(--wg-body-height);
+  min-block-size: 400px;
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: hsl(var(--bc) / 0.2) transparent;
