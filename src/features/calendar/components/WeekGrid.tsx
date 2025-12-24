@@ -201,7 +201,7 @@ export function WeekGrid({ events, weekStart, loading, onEventClick }: WeekGridP
                 const start = event.startDateTime ? dayjs(event.startDateTime) : null;
                 const end = event.endDateTime ? dayjs(event.endDateTime) : null;
                 const durationMinutes = start && end ? end.diff(start, "minute") : 30;
-                const isCompact = durationMinutes < 45;
+                const isCompact = durationMinutes < 30; // Only compact for very short events
 
                 // Build tooltip text
                 const timeStr = start ? start.format("HH:mm") : "";
