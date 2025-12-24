@@ -8,13 +8,12 @@ import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
 import Button from "@/components/ui/Button";
 import Alert from "@/components/ui/Alert";
 import { today } from "@/lib/dates";
-import { MultiSelectFilter, type MultiSelectOption } from "@/features/calendar/components/MultiSelectFilter";
 import { CalendarSkeleton } from "@/features/calendar/components/CalendarSkeleton";
+import { CalendarFilterPanel } from "@/features/calendar/components/CalendarFilterPanel";
 import { useCalendarEvents } from "@/features/calendar/hooks/useCalendarEvents";
-import { numberFormatter } from "@/lib/format";
 import { PAGE_CONTAINER } from "@/lib/styles";
 
-// New Components
+// Components
 import { DailyStatsCards } from "@/features/calendar/components/DailyStatsCards";
 import { DayNavigation } from "@/features/calendar/components/DayNavigation";
 import { DailyEventCard } from "@/features/calendar/components/DailyEventCard";
@@ -22,9 +21,6 @@ import { DailyEventCard } from "@/features/calendar/components/DailyEventCard";
 dayjs.locale("es");
 dayjs.extend(isSameOrBefore);
 dayjs.extend(isSameOrAfter);
-
-const NULL_EVENT_TYPE_VALUE = "__NULL__";
-const NULL_CATEGORY_VALUE = "__NULL_CATEGORY__";
 
 function CalendarDailyPage() {
   const {
@@ -74,44 +70,6 @@ function CalendarDailyPage() {
     }
   }, [filters.from, filters.to, appliedFilters.from, appliedFilters.to, applyFilters]);
 
-  const toggleEventType = (value: string) => {
-    updateFilters(
-      "eventTypes",
-      filters.eventTypes.includes(value)
-        ? filters.eventTypes.filter((id) => id !== value)
-        : [...filters.eventTypes, value]
-    );
-  };
-
-  const toggleCategory = (value: string) => {
-    updateFilters(
-      "categories",
-      filters.categories.includes(value)
-        ? filters.categories.filter((id) => id !== value)
-        : [...filters.categories, value]
-    );
-  };
-
-  const eventTypeOptions: MultiSelectOption[] = useMemo(
-    () =>
-      availableEventTypes.map((entry) => {
-        const value = entry.eventType ?? NULL_EVENT_TYPE_VALUE;
-        const label = entry.eventType ?? "Sin tipo";
-        return { value, label: `${label} · ${numberFormatter.format(entry.total)}` };
-      }),
-    [availableEventTypes]
-  );
-
-  const categoryOptions: MultiSelectOption[] = useMemo(
-    () =>
-      availableCategories.map((entry) => {
-        const value = entry.category ?? NULL_CATEGORY_VALUE;
-        const label = entry.category ?? "Sin clasificación";
-        return { value, label: `${label} · ${numberFormatter.format(entry.total)}` };
-      }),
-    [availableCategories]
-  );
-
   // Get data for selected Day
   const selectedDayEntry = useMemo(() => {
     return daily?.days.find((d) => d.date === selectedDate);
@@ -141,40 +99,15 @@ function CalendarDailyPage() {
 
         {/* Filters Panel (Collapsible) */}
         {showFilters && (
-          <form
-            className="border-base-300 bg-base-100 animate-in slide-in-from-top-2 flex flex-wrap items-end gap-3 rounded-xl border p-3 shadow-sm duration-200"
-            onSubmit={(event) => {
-              event.preventDefault();
-              applyFilters();
-            }}
-          >
-            <div className="min-w-35 flex-1">
-              <MultiSelectFilter
-                label="Tipos de evento"
-                options={eventTypeOptions}
-                selected={filters.eventTypes}
-                onToggle={toggleEventType}
-                placeholder="Todos"
-              />
-            </div>
-            <div className="min-w-35 flex-1">
-              <MultiSelectFilter
-                label="Clasificación"
-                options={categoryOptions}
-                selected={filters.categories}
-                onToggle={toggleCategory}
-                placeholder="Todas"
-              />
-            </div>
-            <div className="flex gap-2">
-              <Button type="button" variant="ghost" size="sm" onClick={resetFilters}>
-                Limpiar
-              </Button>
-              <Button type="submit" size="sm">
-                Aplicar
-              </Button>
-            </div>
-          </form>
+          <CalendarFilterPanel
+            filters={filters}
+            availableEventTypes={availableEventTypes}
+            availableCategories={availableCategories}
+            onFilterChange={updateFilters}
+            onApply={applyFilters}
+            onReset={resetFilters}
+            loading={loading}
+          />
         )}
       </header>
 

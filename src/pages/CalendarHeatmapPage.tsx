@@ -13,11 +13,11 @@ import { MultiSelectFilter, type MultiSelectOption } from "@/features/calendar/c
 import { HeatmapMonth } from "@/features/calendar/components/HeatmapMonth";
 import { fetchCalendarSummary } from "@/features/calendar/api";
 import { type CalendarFilters } from "@/features/calendar/types";
+import { NULL_CATEGORY_VALUE } from "@/features/calendar/constants";
 import { numberFormatter, currencyFormatter } from "@/lib/format";
 import { PAGE_CONTAINER, TITLE_LG, SPACE_Y_TIGHT } from "@/lib/styles";
 
 dayjs.locale("es");
-const NULL_CATEGORY_VALUE = "__NULL_CATEGORY__";
 
 type HeatmapFilters = {
   from: string;

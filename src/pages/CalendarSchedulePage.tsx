@@ -1,5 +1,4 @@
 import { useMemo, useState } from "react";
-import type { ChangeEvent } from "react";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
 import "dayjs/locale/es";
@@ -8,9 +7,8 @@ import { Filter, ChevronLeft, ChevronRight } from "lucide-react";
 dayjs.extend(isoWeek);
 
 import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
 import Alert from "@/components/ui/Alert";
-import { MultiSelectFilter, type MultiSelectOption } from "@/features/calendar/components/MultiSelectFilter";
+import { CalendarFilterPanel } from "@/features/calendar/components/CalendarFilterPanel";
 import { useCalendarEvents } from "@/features/calendar/hooks/useCalendarEvents";
 import { numberFormatter } from "@/lib/format";
 import { PAGE_CONTAINER } from "@/lib/styles";
@@ -18,9 +16,6 @@ import { PAGE_CONTAINER } from "@/lib/styles";
 import ScheduleCalendar from "@/features/calendar/components/ScheduleCalendar";
 
 dayjs.locale("es");
-
-const NULL_EVENT_TYPE_VALUE = "__NULL__";
-const NULL_CATEGORY_VALUE = "__NULL_CATEGORY__";
 
 function CalendarSchedulePage() {
   const [showFilters, setShowFilters] = useState(false);
@@ -38,26 +33,6 @@ function CalendarSchedulePage() {
     applyFilters,
     resetFilters,
   } = useCalendarEvents();
-
-  const eventTypeOptions: MultiSelectOption[] = useMemo(
-    () =>
-      availableEventTypes.map((entry) => {
-        const value = entry.eventType ?? NULL_EVENT_TYPE_VALUE;
-        const label = entry.eventType ?? "Sin tipo";
-        return { value, label: `${label} · ${numberFormatter.format(entry.total)}` };
-      }),
-    [availableEventTypes]
-  );
-
-  const categoryOptions: MultiSelectOption[] = useMemo(
-    () =>
-      availableCategories.map((entry) => {
-        const value = entry.category ?? NULL_CATEGORY_VALUE;
-        const label = entry.category ?? "Sin clasificación";
-        return { value, label: `${label} · ${numberFormatter.format(entry.total)}` };
-      }),
-    [availableCategories]
-  );
 
   const allEvents = useMemo(() => daily?.days.flatMap((day) => day.events) ?? [], [daily?.days]);
 
@@ -140,79 +115,18 @@ function CalendarSchedulePage() {
 
         {/* Collapsible Filters */}
         {showFilters && (
-          <form
-            className="border-base-300 bg-base-100 animate-in slide-in-from-top-2 flex flex-wrap items-end gap-3 rounded-xl border p-3 shadow-sm duration-200"
-            onSubmit={(event) => {
-              event.preventDefault();
-              applyFilters();
-            }}
-          >
-            <div className="min-w-28 flex-1">
-              <Input
-                label="Desde"
-                type="date"
-                value={filters.from}
-                onChange={(event: ChangeEvent<HTMLInputElement>) => updateFilters("from", event.target.value)}
-              />
-            </div>
-            <div className="min-w-28 flex-1">
-              <Input
-                label="Hasta"
-                type="date"
-                value={filters.to}
-                onChange={(event: ChangeEvent<HTMLInputElement>) => updateFilters("to", event.target.value)}
-              />
-            </div>
-            <div className="min-w-32 flex-1">
-              <MultiSelectFilter
-                label="Tipos de evento"
-                options={eventTypeOptions}
-                selected={filters.eventTypes}
-                onToggle={(value) => {
-                  updateFilters(
-                    "eventTypes",
-                    filters.eventTypes.includes(value)
-                      ? filters.eventTypes.filter((id) => id !== value)
-                      : [...filters.eventTypes, value]
-                  );
-                }}
-                placeholder="Todos"
-              />
-            </div>
-            <div className="min-w-32 flex-1">
-              <MultiSelectFilter
-                label="Clasificación"
-                options={categoryOptions}
-                selected={filters.categories}
-                onToggle={(value) => {
-                  updateFilters(
-                    "categories",
-                    filters.categories.includes(value)
-                      ? filters.categories.filter((id) => id !== value)
-                      : [...filters.categories, value]
-                  );
-                }}
-                placeholder="Todas"
-              />
-            </div>
-            <div className="min-w-40 flex-1">
-              <Input
-                label="Buscar"
-                placeholder="Paciente, tratamiento..."
-                value={filters.search}
-                onChange={(event: ChangeEvent<HTMLInputElement>) => updateFilters("search", event.target.value)}
-                enterKeyHint="search"
-              />
-            </div>
-            <div className="flex gap-2">
-              <Button type="button" variant="ghost" size="sm" disabled={loading || !isDirty} onClick={resetFilters}>
-                Limpiar
-              </Button>
-              <Button type="submit" size="sm" disabled={loading}>
-                {loading ? "..." : "Aplicar"}
-              </Button>
-            </div>
-          </form>
+          <CalendarFilterPanel
+            filters={filters}
+            availableEventTypes={availableEventTypes}
+            availableCategories={availableCategories}
+            showDateRange
+            showSearch
+            onFilterChange={updateFilters}
+            onApply={applyFilters}
+            onReset={resetFilters}
+            loading={loading}
+            isDirty={isDirty}
+          />
         )}
       </header>
 
