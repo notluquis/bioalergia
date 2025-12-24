@@ -5,6 +5,25 @@
  * All routes are generated automatically from shared/route-config.ts
  */
 
+// Global error handler for chunk load failures (runs before React mounts)
+// This catches stale cache issues and auto-reloads to get fresh assets
+window.addEventListener("error", (event) => {
+  const message = event.message || "";
+  if (/Loading chunk|Failed to fetch dynamically imported module|Importing a module script failed/i.test(message)) {
+    console.warn("Chunk load error detected, reloading for fresh assets...");
+    window.location.reload();
+  }
+});
+
+window.addEventListener("unhandledrejection", (event) => {
+  const message = event.reason?.message || String(event.reason) || "";
+  if (/Loading chunk|Failed to fetch dynamically imported module|Importing a module script failed/i.test(message)) {
+    console.warn("Chunk load error in promise, reloading for fresh assets...");
+    event.preventDefault();
+    window.location.reload();
+  }
+});
+
 import React, { Suspense, lazy } from "react";
 import ReactDOM from "react-dom/client";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
