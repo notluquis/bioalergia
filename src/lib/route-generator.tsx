@@ -13,6 +13,24 @@ import RequirePermission from "@/components/common/RequirePermission";
 import PageLoader from "@/components/ui/PageLoader";
 
 /**
+ * Pre-register all page and layout modules using Vite's import.meta.glob
+ * This allows dynamic imports to work correctly at build time
+ */
+const pageModules = import.meta.glob([
+  "../pages/**/*.tsx",
+  "../components/Layout/**/*.tsx",
+  "../features/**/pages/**/*.tsx",
+]) as Record<string, () => Promise<{ default: React.ComponentType }>>;
+
+/**
+ * Converts componentPath from route-data to actual module path
+ */
+function resolveModulePath(componentPath: string): string {
+  // componentPath format: "pages/SomePage" or "components/Layout/SomeLayout"
+  return `../${componentPath}.tsx`;
+}
+
+/**
  * Wraps an element with permission check if permission is specified
  */
 function withPermission(element: ReactNode, permission?: RoutePermission): ReactNode {
@@ -30,8 +48,15 @@ function withPermission(element: ReactNode, permission?: RoutePermission): React
 function createLazyElement(componentPath?: string): ReactNode {
   if (!componentPath) return <Outlet />;
 
-  // Dynamic import based on component path
-  const LazyComponent = lazy(() => import(`@/${componentPath}`));
+  const modulePath = resolveModulePath(componentPath);
+  const moduleLoader = pageModules[modulePath];
+
+  if (!moduleLoader) {
+    console.error(`Module not found for path: ${componentPath} (resolved: ${modulePath})`);
+    return <div>Page not found: {componentPath}</div>;
+  }
+
+  const LazyComponent = lazy(moduleLoader);
   return (
     <Suspense fallback={<PageLoader />}>
       <LazyComponent />
