@@ -4,7 +4,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useCan } from "@/hooks/useCan";
 import { cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
-import { NAV_SECTIONS, type NavItem } from "@/config/navigation";
+import { getNavSections, type NavItem } from "@/lib/nav-generator";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/Tooltip";
 
 interface SidebarProps {
@@ -158,15 +158,17 @@ export default function Sidebar({ isOpen, isMobile, onClose }: SidebarProps) {
   };
 
   const visibleSections = useMemo(() => {
-    return NAV_SECTIONS.map((section) => {
-      const filteredItems = section.items.filter((item) => {
-        if (item.requiredPermission && !can(item.requiredPermission.action, item.requiredPermission.subject)) {
-          return false;
-        }
-        return true;
-      });
-      return { ...section, items: filteredItems };
-    }).filter((section) => section.items.length > 0);
+    return getNavSections()
+      .map((section) => {
+        const filteredItems = section.items.filter((item) => {
+          if (item.requiredPermission && !can(item.requiredPermission.action, item.requiredPermission.subject)) {
+            return false;
+          }
+          return true;
+        });
+        return { ...section, items: filteredItems };
+      })
+      .filter((section) => section.items.length > 0);
   }, [can]);
 
   const displayName = user?.name || user?.email?.split("@")[0] || "Usuario";
