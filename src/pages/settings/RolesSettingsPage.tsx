@@ -5,7 +5,7 @@ import { fetchRoles, fetchPermissions, syncPermissions, updateRolePermissions } 
 import { cn } from "@/lib/utils";
 import { useToast } from "@/context/ToastContext";
 import { useAuth } from "@/context/AuthContext";
-import { NAV_SECTIONS } from "@/config/navigation";
+import { getNavSections, type NavItem, type NavSectionData } from "@/lib/nav-generator";
 import { BulkToggleCell } from "./components/BulkToggleCell";
 import { RoleFormModal } from "./components/RoleFormModal";
 import { DeleteRoleModal } from "./components/DeleteRoleModal";
@@ -178,57 +178,46 @@ export default function RolesSettingsPage() {
   // Track which permissions are "used" by pages so we can show the rest in "Advanced/System"
   const usedPermissionIds = new Set<number>();
 
-  const sectionsWithPermissions = NAV_SECTIONS.map((section) => {
-    const itemsWithPermissions = section.items
-      .map((item) => {
-        // Helper to collect permissions recursively
-        const collectPermissions = (navItem: (typeof section.items)[number]): Permission[] => {
+  const sectionsWithPermissions = getNavSections()
+    .map((section: NavSectionData) => {
+      const itemsWithPermissions = section.items
+        .map((item: NavItem) => {
+          // Collect permissions for this nav item
           const perms: Permission[] = [];
 
-          // 1. Direct permissions
-          if (navItem.requiredPermission) {
-            const subject = navItem.requiredPermission.subject;
+          // Direct permissions from requiredPermission
+          if (item.requiredPermission) {
+            const subject = item.requiredPermission.subject;
             const related = allPermissions.filter((p) => p.subject.toLowerCase() === subject.toLowerCase());
             perms.push(...related);
           }
 
-          // 2. Sub-items permissions
-          if (navItem.subItems && Array.isArray(navItem.subItems)) {
-            navItem.subItems.forEach((subItem) => {
-              perms.push(...collectPermissions(subItem));
-            });
-          }
+          // Deduplicate
+          const uniquePermissions = Array.from(new Map(perms.map((p) => [p.id, p])).values());
 
-          return perms;
-        };
+          // Mark as used
+          uniquePermissions.forEach((p) => usedPermissionIds.add(p.id));
 
-        const relatedPermissions = collectPermissions(item);
+          if (uniquePermissions.length === 0) return null;
 
-        // Deduplicate
-        const uniquePermissions = Array.from(new Map(relatedPermissions.map((p) => [p.id, p])).values());
+          return {
+            ...item,
+            relatedPermissions: uniquePermissions,
+            permissionIds: uniquePermissions.map((p) => p.id),
+          };
+        })
+        .filter((item): item is NonNullable<typeof item> => item !== null);
 
-        // Mark as used
-        uniquePermissions.forEach((p) => usedPermissionIds.add(p.id));
+      // Collect ALL permission IDs in this section for the section bulk toggle
+      const sectionPermissionIds = itemsWithPermissions.flatMap((item) => item.permissionIds);
 
-        if (uniquePermissions.length === 0) return null;
-
-        return {
-          ...item,
-          relatedPermissions: uniquePermissions,
-          permissionIds: uniquePermissions.map((p) => p.id),
-        };
-      })
-      .filter((item) => item !== null);
-
-    // Collect ALL permission IDs in this section for the section bulk toggle
-    const sectionPermissionIds = itemsWithPermissions.flatMap((item) => item!.permissionIds);
-
-    return {
-      ...section,
-      items: itemsWithPermissions as NonNullable<(typeof itemsWithPermissions)[number]>[],
-      permissionIds: sectionPermissionIds,
-    };
-  }).filter((section) => section.items.length > 0);
+      return {
+        ...section,
+        items: itemsWithPermissions,
+        permissionIds: sectionPermissionIds,
+      };
+    })
+    .filter((section) => section.items.length > 0);
 
   const otherPermissions = allPermissions.filter((p) => !usedPermissionIds.has(p.id));
   otherPermissions.sort((a, b) => a.subject.localeCompare(b.subject));

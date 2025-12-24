@@ -1,6 +1,6 @@
 import { prisma } from "../prisma.js";
 import { permissionMap } from "../lib/authz/permissionMap.js";
-import { NAV_DATA, NavItemData } from "../../shared/navigation-data.js";
+import { ROUTE_DATA, type RouteData } from "../../shared/route-data.js";
 
 export async function listPermissions() {
   return await prisma.permission.findMany({
@@ -9,7 +9,7 @@ export async function listPermissions() {
 }
 
 export async function syncPermissions() {
-  // Syncs permissionMap (Static) + NAV_DATA (Dynamic) with DB
+  // Syncs permissionMap (Static) + ROUTE_DATA (Dynamic) with DB
   const validPermissions = new Set<string>();
 
   // 1. Static Permissions from Map
@@ -35,25 +35,23 @@ export async function syncPermissions() {
     }
   }
 
-  // 2. Dynamic Permissions from Navigation
-  // Strategy: For every page with a "requiredPermission.subject", ensure "manage", "read", "create", "update", "delete" exist.
+  // 2. Dynamic Permissions from Route Data
+  // Strategy: For every route with a "permission.subject", ensure "read", "create", "update", "delete" exist.
   const subjects = new Set<string>();
 
-  // Recursive helper to collect subjects including subItems
-  const collectSubjects = (items: NavItemData[]) => {
-    items.forEach((item) => {
-      if (item.requiredPermission?.subject) {
-        subjects.add(item.requiredPermission.subject);
+  // Recursive helper to collect subjects from routes
+  const collectSubjects = (routes: RouteData[]) => {
+    routes.forEach((route) => {
+      if (route.permission?.subject) {
+        subjects.add(route.permission.subject);
       }
-      if (item.subItems && Array.isArray(item.subItems)) {
-        collectSubjects(item.subItems);
+      if (route.children && Array.isArray(route.children)) {
+        collectSubjects(route.children);
       }
     });
   };
 
-  NAV_DATA.forEach((section) => {
-    collectSubjects(section.items);
-  });
+  collectSubjects(ROUTE_DATA);
 
   for (const subject of subjects) {
     try {
