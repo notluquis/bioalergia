@@ -175,20 +175,50 @@ export function WeekGrid({ events, weekStart, loading, onEventClick }: WeekGridP
                 const position = getEventPosition(event, startHour, endHour);
                 if (!position) return null;
 
+                // Calculate duration to determine compact mode
+                const start = event.startDateTime ? dayjs(event.startDateTime) : null;
+                const end = event.endDateTime ? dayjs(event.endDateTime) : null;
+                const durationMinutes = start && end ? end.diff(start, "minute") : 30;
+                const isCompact = durationMinutes < 45;
+
+                // Build tooltip text
+                const timeStr = start ? start.format("HH:mm") : "";
+                const endTimeStr = end ? end.format("HH:mm") : "";
+                const amountStr = event.amountExpected != null ? currencyFormatter.format(event.amountExpected) : "";
+                const tooltipLines = [event.summary || "(Sin título)", `${timeStr} - ${endTimeStr}`, amountStr].filter(
+                  Boolean
+                );
+
                 return (
                   <button
                     key={event.eventId}
-                    className={cn("week-grid__event", getCategoryClass(event.category))}
+                    className={cn(
+                      "week-grid__event",
+                      getCategoryClass(event.category),
+                      isCompact && "week-grid__event--compact"
+                    )}
                     style={{ top: position.top, height: position.height }}
                     onClick={() => onEventClick?.(event)}
                     type="button"
+                    title={tooltipLines.join("\n")}
                   >
-                    <span className="week-grid__event-time">
-                      {event.startDateTime ? dayjs(event.startDateTime).format("HH:mm") : ""}
-                    </span>
-                    <span className="week-grid__event-title">{event.summary?.slice(0, 35) || "(Sin título)"}</span>
-                    {event.amountExpected != null && (
-                      <span className="week-grid__event-amount">{currencyFormatter.format(event.amountExpected)}</span>
+                    {isCompact ? (
+                      // Compact: single line with time + title
+                      <span className="week-grid__event-compact-content">
+                        <span className="week-grid__event-time">{timeStr}</span>
+                        <span className="week-grid__event-title">{event.summary?.slice(0, 25) || "—"}</span>
+                      </span>
+                    ) : (
+                      // Normal: multi-line layout
+                      <>
+                        <span className="week-grid__event-time">{timeStr}</span>
+                        <span className="week-grid__event-title">{event.summary?.slice(0, 35) || "(Sin título)"}</span>
+                        {event.amountExpected != null && (
+                          <span className="week-grid__event-amount">
+                            {currencyFormatter.format(event.amountExpected)}
+                          </span>
+                        )}
+                      </>
                     )}
                   </button>
                 );
