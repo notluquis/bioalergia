@@ -70,9 +70,12 @@ function groupEventsByDay(events: CalendarEventDetail[], weekStart: dayjs.Dayjs)
 
 // Get category color class
 function getCategoryClass(category: string | null | undefined): string {
-  if (category === "Tratamiento subcutáneo") return "event--subcutaneous";
-  if (category === "Test y exámenes") return "event--test";
-  if (category === "Servicio de inyección") return "event--injection";
+  if (!category) return "event--default";
+  const cat = category.toLowerCase();
+  if (cat.includes("subcutáneo") || cat.includes("subcutaneo")) return "event--subcutaneous";
+  if (cat.includes("test") || cat.includes("examen") || cat.includes("exámenes")) return "event--test";
+  if (cat.includes("inyección") || cat.includes("inyeccion")) return "event--injection";
+  if (cat.includes("mantención") || cat.includes("mantencion")) return "event--subcutaneous";
   return "event--default";
 }
 
@@ -116,7 +119,9 @@ export function WeekGrid({ events, weekStart, loading, onEventClick }: WeekGridP
       const date = monday.add(i, "day");
       return {
         key: date.format("YYYY-MM-DD"),
+        isoDate: date.format("YYYY-MM-DD"),
         dayName: date.format("ddd").toUpperCase(),
+        fullDayName: date.format("dddd"),
         dayNumber: date.format("D"),
         isToday: date.isSame(dayjs(), "day"),
       };
@@ -124,14 +129,23 @@ export function WeekGrid({ events, weekStart, loading, onEventClick }: WeekGridP
   }, [monday]);
 
   return (
-    <div className={cn("week-grid", loading && "week-grid--loading")}>
+    <div className={cn("week-grid", loading && "week-grid--loading")} role="grid" aria-label="Calendario semanal">
       {/* Header row */}
-      <div className="week-grid__header">
-        <div className="week-grid__time-header" />
+      <div className="week-grid__header" role="row">
+        <div className="week-grid__time-header" role="columnheader" aria-label="Hora" />
         {days.map((day) => (
-          <div key={day.key} className={cn("week-grid__day-header", day.isToday && "week-grid__day-header--today")}>
-            <span className="week-grid__day-name">{day.dayName}</span>
-            <span className="week-grid__day-number">{day.dayNumber}</span>
+          <div
+            key={day.key}
+            className={cn("week-grid__day-header", day.isToday && "week-grid__day-header--today")}
+            role="columnheader"
+            aria-current={day.isToday ? "date" : undefined}
+          >
+            <abbr className="week-grid__day-name" title={day.fullDayName}>
+              {day.dayName}
+            </abbr>
+            <time className="week-grid__day-number" dateTime={day.isoDate}>
+              {day.dayNumber}
+            </time>
           </div>
         ))}
       </div>
