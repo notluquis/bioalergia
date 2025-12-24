@@ -1,10 +1,14 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
 import "dayjs/locale/es";
+import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
+import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
 import { Filter, ChevronLeft, ChevronRight } from "lucide-react";
 
 dayjs.extend(isoWeek);
+dayjs.extend(isSameOrBefore);
+dayjs.extend(isSameOrAfter);
 
 import Button from "@/components/ui/Button";
 import Alert from "@/components/ui/Alert";
@@ -59,6 +63,29 @@ function CalendarSchedulePage() {
   const goToThisWeek = () => {
     setDisplayedWeekStart(dayjs().isoWeekday(1).format("YYYY-MM-DD"));
   };
+
+  // On-demand loading: extend date range when navigating to weeks outside current range
+  useEffect(() => {
+    const weekStart = dayjs(displayedWeekStart);
+    const weekEnd = weekStart.add(6, "day");
+    const currentFrom = dayjs(filters.from);
+    const currentTo = dayjs(filters.to);
+
+    // Check if displayed week is outside currently loaded range
+    const needsExtension = weekStart.isBefore(currentFrom) || weekEnd.isAfter(currentTo);
+
+    if (needsExtension) {
+      // Extend range to include displayed week with buffer
+      const newFrom = weekStart.isBefore(currentFrom)
+        ? weekStart.subtract(1, "week").format("YYYY-MM-DD")
+        : filters.from;
+      const newTo = weekEnd.isAfter(currentTo) ? weekEnd.add(2, "week").format("YYYY-MM-DD") : filters.to;
+
+      updateFilters("from", newFrom);
+      updateFilters("to", newTo);
+      applyFilters();
+    }
+  }, [displayedWeekStart, filters.from, filters.to, updateFilters, applyFilters]);
 
   return (
     <section className={PAGE_CONTAINER}>
@@ -119,7 +146,6 @@ function CalendarSchedulePage() {
             filters={filters}
             availableEventTypes={availableEventTypes}
             availableCategories={availableCategories}
-            showDateRange
             showSearch
             onFilterChange={updateFilters}
             onApply={applyFilters}
