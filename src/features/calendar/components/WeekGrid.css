@@ -100,8 +100,7 @@
 .week-grid__body {
   display: grid;
   grid-template-columns: 52px repeat(6, 1fr);
-  /* Use dynamic height based on viewport */
-  max-block-size: var(--wg-body-height);
+  /* Allow full height - no max constraint */
   min-block-size: 400px;
   overflow-y: auto;
   scrollbar-width: thin;
@@ -191,6 +190,25 @@
   box-shadow:
     0 8px 24px hsl(var(--bc) / 0.15),
     0 2px 8px hsl(var(--bc) / 0.1);
+  /* Expand to show full content */
+  height: auto !important;
+  min-height: fit-content;
+  overflow: visible;
+  padding: 0.4rem 0.5rem;
+}
+
+/* Show full text on hover - remove clipping */
+.week-grid__event:hover .week-grid__event-title {
+  -webkit-line-clamp: unset;
+  line-clamp: unset;
+  white-space: normal;
+  overflow: visible;
+  word-break: break-word;
+}
+
+.week-grid__event:hover .week-grid__event-amount {
+  white-space: normal;
+  overflow: visible;
 }
 
 .week-grid__event:focus-visible {
