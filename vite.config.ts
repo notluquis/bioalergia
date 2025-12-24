@@ -22,19 +22,28 @@ export default defineConfig(({ mode }) => ({
         gzipSize: true,
         brotliSize: true,
       }),
-    // PWA - generates manifest and minimal SW
+    // PWA - 2025 best practices configuration
     VitePWA({
-      registerType: "prompt",
+      registerType: "autoUpdate", // Auto-activate new SW immediately
       injectRegister: "auto",
       manifestFilename: "manifest.json",
       workbox: {
         cleanupOutdatedCaches: true,
-        clientsClaim: true,
-        skipWaiting: true, // Activate new SW immediately to prevent stale cache
-        // DON'T precache index.html - has modulepreload links that become stale
+        // No precaching - we use runtime caching only
         globPatterns: [],
-        // Runtime caching - assets have content hashes so stale-while-revalidate is safe
+        navigateFallbackDenylist: [/^\/api/, /^\/share-target/],
+        // Runtime caching strategies
         runtimeCaching: [
+          {
+            // Navigation requests (HTML) - NetworkFirst to always get fresh HTML
+            urlPattern: ({ request }) => request.mode === "navigate",
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "pages-cache",
+              expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 },
+              networkTimeoutSeconds: 3,
+            },
+          },
           {
             urlPattern: /\.(?:js|css)$/,
             handler: "StaleWhileRevalidate",
@@ -51,8 +60,16 @@ export default defineConfig(({ mode }) => ({
               expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 * 30 },
             },
           },
+          {
+            // Fonts - CacheFirst (rarely change)
+            urlPattern: /\.(?:woff|woff2|ttf|otf|eot)$/,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "fonts-cache",
+              expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 365 },
+            },
+          },
         ],
-        navigateFallbackDenylist: [/^\/api/, /^\/share-target/],
       },
       manifest: {
         name: "Bioalergia Suite",
