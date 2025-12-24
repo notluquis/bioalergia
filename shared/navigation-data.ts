@@ -1,4 +1,4 @@
-export type NavCategory = "Resumen" | "Finanzas" | "Gestión" | "Servicios" | "Calendario";
+export type NavCategory = "Finanzas" | "Gestión" | "Servicios" | "Calendario";
 
 export type NavItemData = {
   to: string;
@@ -18,21 +18,38 @@ export type NavSectionData = {
 
 export const NAV_DATA: NavSectionData[] = [
   {
-    title: "Resumen",
-    category: "Resumen",
+    title: "Calendario",
+    category: "Calendario",
     items: [
       {
-        to: "/",
-        label: "Panel",
-        iconKey: "LayoutDashboard",
-        exact: true,
-        requiredPermission: { action: "read", subject: "Dashboard" },
+        to: "/calendar/schedule",
+        label: "Calendario",
+        iconKey: "CalendarDays",
+        requiredPermission: { action: "read", subject: "CalendarEvent" },
       },
       {
-        to: "/reports",
-        label: "Reportes",
-        iconKey: "FileBarChart",
-        requiredPermission: { action: "read", subject: "Report" },
+        to: "/calendar/daily",
+        label: "Detalle Diario",
+        iconKey: "Calendar",
+        requiredPermission: { action: "read", subject: "CalendarEvent" },
+      },
+      {
+        to: "/calendar/heatmap",
+        label: "Mapa de Calor",
+        iconKey: "LayoutDashboard",
+        requiredPermission: { action: "read", subject: "CalendarEvent" },
+      },
+      {
+        to: "/calendar/classify",
+        label: "Clasificar",
+        iconKey: "ListChecks",
+        requiredPermission: { action: "update", subject: "CalendarEvent" },
+      },
+      {
+        to: "/calendar/sync-history",
+        label: "Historial Sync",
+        iconKey: "Clock",
+        requiredPermission: { action: "read", subject: "CalendarEvent" },
       },
     ],
   },
@@ -94,24 +111,6 @@ export const NAV_DATA: NavSectionData[] = [
         label: "Agenda",
         iconKey: "CalendarDays",
         requiredPermission: { action: "read", subject: "Service" },
-      },
-    ],
-  },
-  {
-    title: "Calendario",
-    category: "Calendario",
-    items: [
-      {
-        to: "/calendar/summary",
-        label: "Calendario",
-        iconKey: "CalendarDays",
-        requiredPermission: { action: "read", subject: "CalendarEvent" },
-      },
-      {
-        to: "/calendar/classify",
-        label: "Clasificar",
-        iconKey: "ListChecks",
-        requiredPermission: { action: "update", subject: "CalendarEvent" },
       },
     ],
   },
