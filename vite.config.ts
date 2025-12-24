@@ -30,11 +30,28 @@ export default defineConfig(({ mode }) => ({
       workbox: {
         cleanupOutdatedCaches: true,
         clientsClaim: true,
-        skipWaiting: false, // Defer update until user confirms via UpdateNotification
-        // Minimal precaching - only HTML
-        globPatterns: ["index.html"],
-        // No runtime caching - rely on HTTP cache + Vite hashes
-        runtimeCaching: [],
+        skipWaiting: true, // Activate new SW immediately to prevent stale cache
+        // DON'T precache index.html - has modulepreload links that become stale
+        globPatterns: [],
+        // Runtime caching - assets have content hashes so stale-while-revalidate is safe
+        runtimeCaching: [
+          {
+            urlPattern: /\.(?:js|css)$/,
+            handler: "StaleWhileRevalidate",
+            options: {
+              cacheName: "assets-cache",
+              expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 * 30 },
+            },
+          },
+          {
+            urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico)$/,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "images-cache",
+              expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 * 30 },
+            },
+          },
+        ],
         navigateFallbackDenylist: [/^\/api/, /^\/share-target/],
       },
       manifest: {

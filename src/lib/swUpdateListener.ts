@@ -49,15 +49,15 @@ export function initSWUpdateListener() {
 
 /**
  * Maneja errores de módulos dinámicos fallados
- * Redirige a página de error amigable en lugar de mostrar solo "Error loading app"
+ * Auto-recarga la página para obtener assets frescos
  */
 export function handleChunkLoadError(error: Error): void {
   const message = error.message;
   const isChunkError = /Failed to fetch dynamically imported module|Importing a module script failed/i.test(message);
 
   if (isChunkError) {
-    console.warn("Chunk load failed:", message);
-    // Redirigir a página de actualización
-    window.location.href = "/chunk-load-error";
+    console.warn("Chunk load failed, reloading for fresh assets:", message);
+    // Forzar recarga desde el servidor (no cache)
+    window.location.reload();
   }
 }
