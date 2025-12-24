@@ -93,12 +93,13 @@ export function WeekGrid({ events, weekStart, loading, onEventClick }: WeekGridP
 
   // Calculate time bounds based ONLY on events in this week
   const { startHour, endHour } = useMemo(() => {
-    // Filter events to only those in the displayed week
+    // Filter events to only those in the displayed week (Mon-Sat)
     const weekEnd = monday.add(5, "day").endOf("day");
     const weekEvents = events.filter((event) => {
       if (!event.startDateTime) return false;
       const eventDate = dayjs(event.startDateTime);
-      return eventDate.isAfter(monday.startOf("day")) && eventDate.isBefore(weekEnd);
+      // Use isSameOrAfter for start of week to include events on Monday
+      return eventDate.isSameOrAfter(monday.startOf("day")) && eventDate.isBefore(weekEnd);
     });
 
     // If no events in week, show reasonable default range
@@ -116,18 +117,19 @@ export function WeekGrid({ events, weekStart, loading, onEventClick }: WeekGridP
       }
       if (event.endDateTime) {
         const endTime = dayjs(event.endDateTime);
-        // If event ends exactly on the hour, use that hour; otherwise, use next hour
+        // Calculate end hour (can exceed 23 for display purposes)
         const hour = endTime.minute() > 0 ? endTime.hour() + 1 : endTime.hour();
-        max = Math.max(max, hour);
+        max = Math.max(max, Math.min(24, hour)); // Allow up to 24
       } else if (event.startDateTime) {
         // No end time, assume 1 hour duration
-        max = Math.max(max, dayjs(event.startDateTime).hour() + 1);
+        const startHour = dayjs(event.startDateTime).hour();
+        max = Math.max(max, Math.min(24, startHour + 1)); // Allow up to 24
       }
     });
 
-    // Add padding: 1 hour before first event, show until last event ends
+    // Add padding: 1 hour before first event, 1 hour after last event
     const paddedStart = Math.max(0, min - 1);
-    const paddedEnd = Math.min(23, max);
+    const paddedEnd = Math.min(24, max + 1); // Allow extending to 24 (midnight)
 
     return { startHour: paddedStart, endHour: paddedEnd };
   }, [events, monday]);

@@ -104,6 +104,8 @@ export type MissingFieldFilters = {
   missingAttended?: boolean;
   missingDosage?: boolean;
   missingTreatmentStage?: boolean;
+  /** Filter mode: AND requires all conditions, OR matches any (default: OR) */
+  filterMode?: "AND" | "OR";
 };
 
 export type UnclassifiedEventsResponse = {
@@ -124,6 +126,7 @@ export async function fetchUnclassifiedCalendarEvents(
   if (filters?.missingAttended) params.set("missingAttended", "true");
   if (filters?.missingDosage) params.set("missingDosage", "true");
   if (filters?.missingTreatmentStage) params.set("missingTreatmentStage", "true");
+  if (filters?.filterMode) params.set("filterMode", filters.filterMode);
 
   const response = await apiClient.get<{
     status: "ok";
