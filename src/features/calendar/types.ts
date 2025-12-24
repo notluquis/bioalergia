@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 export type CalendarData = {
   id: number;
   googleId: string;
@@ -227,4 +229,3 @@ export const calendarClassificationSchema = z.object({
   dosage: z.string().max(64).optional().nullable(),
   treatmentStage: z.string().max(64).optional().nullable(),
 });
-import { z } from "zod";
