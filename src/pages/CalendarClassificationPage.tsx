@@ -375,19 +375,53 @@ function CalendarClassificationPage() {
                   Sin etapa
                 </button>
                 {hasActiveFilters && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setFilters({});
-                      setPage(0);
-                    }}
-                    className="text-error/80 hover:text-error flex items-center gap-1 px-2 py-1.5 text-xs font-medium transition-colors"
-                  >
-                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                    Limpiar
-                  </button>
+                  <>
+                    {/* Filter Mode Toggle */}
+                    <div className="border-base-300/50 flex items-center gap-1 border-l pl-3">
+                      <span className="text-base-content/40 mr-1 text-xs">Coincide:</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFilters((prev) => ({ ...prev, filterMode: undefined }));
+                          setPage(0);
+                        }}
+                        className={`rounded-full px-2.5 py-1 text-xs font-medium transition-all ${
+                          !filters.filterMode || filters.filterMode === "OR"
+                            ? "bg-secondary text-secondary-content shadow-sm"
+                            : "text-base-content/60 hover:text-base-content bg-transparent"
+                        }`}
+                      >
+                        Cualquiera
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFilters((prev) => ({ ...prev, filterMode: "AND" }));
+                          setPage(0);
+                        }}
+                        className={`rounded-full px-2.5 py-1 text-xs font-medium transition-all ${
+                          filters.filterMode === "AND"
+                            ? "bg-secondary text-secondary-content shadow-sm"
+                            : "text-base-content/60 hover:text-base-content bg-transparent"
+                        }`}
+                      >
+                        Todos
+                      </button>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFilters({});
+                        setPage(0);
+                      }}
+                      className="text-error/80 hover:text-error flex items-center gap-1 px-2 py-1.5 text-xs font-medium transition-colors"
+                    >
+                      <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                      Limpiar
+                    </button>
+                  </>
                 )}
               </div>
             </div>

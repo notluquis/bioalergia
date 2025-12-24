@@ -136,6 +136,8 @@
   position: relative;
   border-inline-end: 1px solid hsl(var(--bc) / 0.06);
   min-block-size: 100%;
+  /* Allow hovered events to overflow */
+  overflow: visible;
 }
 
 .week-grid__day-column:last-child {
@@ -156,6 +158,8 @@
   position: absolute;
   inset: 0;
   padding-inline: 3px;
+  /* Allow events to overflow when hovered (scale effect) */
+  overflow: visible;
 }
 
 /* === EVENT CARD === */
@@ -182,9 +186,11 @@
 }
 
 .week-grid__event:hover {
-  z-index: 10;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px hsl(var(--bc) / 0.12);
+  z-index: 100;
+  transform: scale(1.02) translateY(-2px);
+  box-shadow:
+    0 8px 24px hsl(var(--bc) / 0.15),
+    0 2px 8px hsl(var(--bc) / 0.1);
 }
 
 .week-grid__event:focus-visible {
