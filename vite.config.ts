@@ -45,11 +45,14 @@ export default defineConfig(({ mode }) => ({
             },
           },
           {
+            // JS/CSS assets - NetworkFirst to ensure fresh after deploys
+            // Falls back to cache when offline
             urlPattern: /\.(?:js|css)$/,
-            handler: "StaleWhileRevalidate",
+            handler: "NetworkFirst",
             options: {
               cacheName: "assets-cache",
-              expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 * 30 },
+              expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 * 7 },
+              networkTimeoutSeconds: 3,
             },
           },
           {
