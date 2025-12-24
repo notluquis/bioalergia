@@ -189,50 +189,85 @@
 
 /* === EVENT CATEGORIES === */
 .event--subcutaneous {
-  background: hsl(210 100% 96%);
+  background: hsl(210 80% 92%);
   border-inline-start-color: var(--event-blue);
+  color: hsl(210 80% 25%);
 }
 
 .event--test {
-  background: hsl(145 50% 94%);
+  background: hsl(145 50% 90%);
   border-inline-start-color: var(--event-green);
+  color: hsl(145 60% 20%);
 }
 
 .event--injection {
-  background: hsl(38 100% 94%);
+  background: hsl(38 90% 90%);
   border-inline-start-color: var(--event-amber);
+  color: hsl(38 80% 25%);
 }
 
 .event--default {
   background: hsl(var(--b2));
-  border-inline-start-color: hsl(var(--bc) / 0.2);
+  border-inline-start-color: hsl(var(--bc) / 0.3);
+  color: hsl(var(--bc));
 }
 
-/* Dark mode adjustments */
-@media (prefers-color-scheme: dark) {
-  .event--subcutaneous {
-    background: hsl(210 60% 20% / 0.5);
-  }
-  .event--test {
-    background: hsl(145 40% 18% / 0.5);
-  }
-  .event--injection {
-    background: hsl(38 60% 20% / 0.5);
-  }
+/* Dark mode adjustments - using DaisyUI data-theme selectors */
+:root[data-theme="dark"] .event--subcutaneous,
+:root[data-theme="business"] .event--subcutaneous,
+:root[data-theme="night"] .event--subcutaneous,
+:root[data-theme="forest"] .event--subcutaneous,
+:root[data-theme="black"] .event--subcutaneous,
+:root[data-theme="luxury"] .event--subcutaneous,
+:root[data-theme="dracula"] .event--subcutaneous,
+:root[data-theme="coffee"] .event--subcutaneous,
+:root[data-theme="dim"] .event--subcutaneous,
+:root[data-theme="sunset"] .event--subcutaneous {
+  background: hsl(210 60% 25% / 0.6);
+  color: hsl(210 80% 85%);
+}
+
+:root[data-theme="dark"] .event--test,
+:root[data-theme="business"] .event--test,
+:root[data-theme="night"] .event--test,
+:root[data-theme="forest"] .event--test,
+:root[data-theme="black"] .event--test,
+:root[data-theme="luxury"] .event--test,
+:root[data-theme="dracula"] .event--test,
+:root[data-theme="coffee"] .event--test,
+:root[data-theme="dim"] .event--test,
+:root[data-theme="sunset"] .event--test {
+  background: hsl(145 40% 22% / 0.6);
+  color: hsl(145 60% 80%);
+}
+
+:root[data-theme="dark"] .event--injection,
+:root[data-theme="business"] .event--injection,
+:root[data-theme="night"] .event--injection,
+:root[data-theme="forest"] .event--injection,
+:root[data-theme="black"] .event--injection,
+:root[data-theme="luxury"] .event--injection,
+:root[data-theme="dracula"] .event--injection,
+:root[data-theme="coffee"] .event--injection,
+:root[data-theme="dim"] .event--injection,
+:root[data-theme="sunset"] .event--injection {
+  background: hsl(38 60% 25% / 0.6);
+  color: hsl(38 80% 85%);
 }
 
 /* === EVENT CONTENT === */
 .week-grid__event-time {
   font-size: 0.65rem;
   font-weight: 700;
-  color: hsl(var(--bc) / 0.65);
+  color: inherit;
+  opacity: 0.75;
   font-variant-numeric: tabular-nums;
 }
 
 .week-grid__event-title {
   font-size: 0.7rem;
   font-weight: 600;
-  color: hsl(var(--bc) / 0.9);
+  color: inherit;
   line-height: 1.35;
   overflow: hidden;
   text-overflow: ellipsis;
