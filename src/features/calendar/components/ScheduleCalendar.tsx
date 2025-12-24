@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import dayjs from "dayjs";
 import { X } from "lucide-react";
 
@@ -14,12 +14,26 @@ export type ScheduleCalendarProps = {
 
 export function ScheduleCalendar({ events, loading = false, weekStart }: ScheduleCalendarProps) {
   const [selectedEvent, setSelectedEvent] = useState<CalendarEventDetail | null>(null);
+  const detailPanelRef = useRef<HTMLDivElement>(null);
 
   // Default to current week's Monday
   const effectiveWeekStart = useMemo(() => {
     if (weekStart) return weekStart;
     return dayjs().startOf("week").add(1, "day").format("YYYY-MM-DD");
   }, [weekStart]);
+
+  // Auto-scroll to detail panel when event is selected
+  useEffect(() => {
+    if (selectedEvent && detailPanelRef.current) {
+      // Small delay to allow DOM to update
+      requestAnimationFrame(() => {
+        detailPanelRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "nearest",
+        });
+      });
+    }
+  }, [selectedEvent]);
 
   return (
     <div className="space-y-4">
@@ -29,7 +43,7 @@ export function ScheduleCalendar({ events, loading = false, weekStart }: Schedul
 
       {/* Event Detail Panel - Uses same card as Daily view */}
       {selectedEvent && (
-        <div className="animate-in slide-in-from-bottom-2 relative">
+        <div ref={detailPanelRef} className="animate-in slide-in-from-bottom-2 relative scroll-mt-4">
           <button
             type="button"
             className="bg-base-100 border-base-300 text-base-content/60 hover:text-base-content hover:bg-base-200 absolute -top-2 -right-2 z-10 flex h-7 w-7 items-center justify-center rounded-full border shadow-sm transition-colors"
