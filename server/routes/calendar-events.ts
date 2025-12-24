@@ -240,16 +240,22 @@ export function registerCalendarEventRoutes(app: express.Express) {
       const offset = Number.isFinite(offsetRaw) ? Math.max(offsetRaw, 0) : 0;
 
       // Parse filter params
+      const filterModeParam = req.query.filterMode;
+      const filterMode = filterModeParam === "AND" ? "AND" : "OR";
+
       const filters = {
         category: req.query.missingCategory === "true",
         amountExpected: req.query.missingAmount === "true",
         attended: req.query.missingAttended === "true",
         dosage: req.query.missingDosage === "true",
         treatmentStage: req.query.missingTreatmentStage === "true",
+        filterMode: filterMode as "AND" | "OR",
       };
 
       // If no filters specified, pass undefined so it checks all
-      const hasFilters = Object.values(filters).some(Boolean);
+      const hasFilters = Object.values(filters)
+        .filter((v) => typeof v === "boolean")
+        .some(Boolean);
       const { events: rows, totalCount } = await listUnclassifiedCalendarEvents(
         limit,
         offset,

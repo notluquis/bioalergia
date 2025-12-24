@@ -101,47 +101,60 @@ type MissingFieldFilter = {
   attended?: boolean;
   dosage?: boolean;
   treatmentStage?: boolean;
+  /** Filter mode: AND requires all conditions, OR matches any (default: OR) */
+  filterMode?: "AND" | "OR";
 };
 
 export async function listUnclassifiedCalendarEvents(limit: number, offset: number = 0, filters?: MissingFieldFilter) {
-  // Build OR conditions based on filters
-  const orConditions: Prisma.EventWhereInput[] = [];
+  const filterMode = filters?.filterMode || "OR";
+
+  // Build conditions based on filters
+  const conditions: Prisma.EventWhereInput[] = [];
 
   // If no specific filters, default to show events missing ANY classifiable field
-  if (!filters || Object.keys(filters).length === 0) {
-    orConditions.push({ category: null }, { category: "" }, { amountExpected: null }, { attended: null });
+  if (!filters || Object.keys(filters).filter((k) => k !== "filterMode").length === 0) {
+    conditions.push({ category: null }, { category: "" }, { amountExpected: null }, { attended: null });
   } else {
     if (filters.category) {
-      orConditions.push({ category: null }, { category: "" });
+      conditions.push({ OR: [{ category: null }, { category: "" }] });
     }
     if (filters.amountExpected) {
-      orConditions.push({ amountExpected: null });
+      conditions.push({ amountExpected: null });
     }
     if (filters.amountPaid) {
-      orConditions.push({ amountPaid: null });
+      conditions.push({ amountPaid: null });
     }
     if (filters.attended) {
-      orConditions.push({ attended: null });
+      conditions.push({ attended: null });
     }
     // For dosage: events that are "Tratamiento subcutáneo" but missing dosage
     if (filters.dosage) {
-      orConditions.push({
+      conditions.push({
         category: "Tratamiento subcutáneo",
         OR: [{ dosage: null }, { dosage: "" }],
       });
     }
     // For treatmentStage: events that are "Tratamiento subcutáneo" but missing stage
     if (filters.treatmentStage) {
-      orConditions.push({
+      conditions.push({
         category: "Tratamiento subcutáneo",
         OR: [{ treatmentStage: null }, { treatmentStage: "" }],
       });
     }
   }
 
-  const whereClause = {
-    OR: orConditions.length > 0 ? orConditions : undefined,
-  };
+  // Build where clause based on filter mode
+  let whereClause: Prisma.EventWhereInput = {};
+
+  if (conditions.length > 0) {
+    if (filterMode === "AND") {
+      // AND mode: event must match ALL conditions
+      whereClause = { AND: conditions };
+    } else {
+      // OR mode (default): event matches ANY condition
+      whereClause = { OR: conditions };
+    }
+  }
 
   const [events, totalCount] = await Promise.all([
     prisma.event.findMany({
