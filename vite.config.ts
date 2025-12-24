@@ -144,16 +144,7 @@ export default defineConfig(({ mode }) => ({
       "@": fileURLToPath(new URL("./src", import.meta.url)),
       "@shared": fileURLToPath(new URL("./shared", import.meta.url)),
       "~": fileURLToPath(new URL(".", import.meta.url)),
-      // Fix @react-pdf/renderer pako import resolution
-      // @react-pdf/pdfkit uses these internal pako paths that need to be aliased
-      "pako/lib/zlib/zstream.js": "pako",
-      "pako/lib/zlib/deflate.js": "pako",
-      "pako/lib/zlib/inflate.js": "pako",
-      "pako/lib/zlib/constants.js": "pako",
     },
-  },
-  optimizeDeps: {
-    include: ["pako"],
   },
   server: {
     proxy: {
