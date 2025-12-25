@@ -152,19 +152,7 @@
 
 .week-grid__hour-cell {
   block-size: 52px;
-  position: relative;
-}
-
-/* Grid line as pseudo-element so it renders UNDER events */
-.week-grid__hour-cell::after {
-  content: "";
-  position: absolute;
-  inset-inline: 0;
-  inset-block-end: 0;
-  block-size: 1px;
-  background: hsl(var(--bc) / 0.06);
-  z-index: -1;
-  pointer-events: none;
+  border-block-end: 1px solid hsl(var(--bc) / 0.06);
 }
 
 /* === EVENTS CONTAINER === */
@@ -301,6 +289,9 @@
   color: inherit;
   opacity: 0.75;
   font-variant-numeric: tabular-nums;
+  /* Never wrap or compress the time */
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .week-grid__event-title {
