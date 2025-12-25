@@ -186,29 +186,47 @@
 
 .week-grid__event:hover {
   z-index: 100;
-  transform: scale(1.02) translateY(-2px);
-  box-shadow:
-    0 8px 24px hsl(var(--bc) / 0.15),
-    0 2px 8px hsl(var(--bc) / 0.1);
-  /* Expand to show full content */
+  /* Expand width to cover more area */
+  inset-inline: -5px !important;
+  /* Remove fixed height, let content determine size */
   height: auto !important;
-  min-height: fit-content;
+  min-height: unset !important;
+  max-height: none !important;
+  /* Visual emphasis */
+  transform: translateY(-2px);
+  box-shadow:
+    0 8px 24px hsl(var(--bc) / 0.2),
+    0 2px 8px hsl(var(--bc) / 0.15);
+  /* Ensure all content is visible */
   overflow: visible;
-  padding: 0.4rem 0.5rem;
+  padding: 0.5rem 0.6rem;
 }
 
-/* Show full text on hover - remove clipping */
+/* Show full text on hover - remove all clipping */
 .week-grid__event:hover .week-grid__event-title {
-  -webkit-line-clamp: unset;
-  line-clamp: unset;
-  white-space: normal;
-  overflow: visible;
+  -webkit-line-clamp: unset !important;
+  line-clamp: unset !important;
+  white-space: normal !important;
+  overflow: visible !important;
   word-break: break-word;
+  display: block !important;
+}
+
+.week-grid__event:hover .week-grid__event-time {
+  display: block !important;
+  white-space: nowrap;
 }
 
 .week-grid__event:hover .week-grid__event-amount {
+  display: block !important;
   white-space: normal;
   overflow: visible;
+}
+
+/* Ensure row layout expands on hover */
+.week-grid__event:hover .week-grid__event-row {
+  flex-wrap: wrap;
+  gap: 0.25rem;
 }
 
 .week-grid__event:focus-visible {
