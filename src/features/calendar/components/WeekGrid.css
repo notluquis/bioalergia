@@ -193,47 +193,30 @@
 
 .week-grid__event:hover {
   z-index: 100;
-  /* Expand width to cover more area */
-  inset-inline: -5px !important;
-  /* Remove fixed height, let content determine size */
-  height: auto !important;
-  min-height: unset !important;
-  max-height: none !important;
-  /* Visual emphasis */
-  transform: translateY(-2px);
+  /* Visual emphasis without excessive expansion */
+  transform: translateY(-1px) scale(1.01);
   box-shadow:
-    0 8px 24px hsl(var(--bc) / 0.2),
-    0 2px 8px hsl(var(--bc) / 0.15);
-  /* Ensure all content is visible */
-  overflow: visible;
-  padding: 0.5rem 0.6rem;
+    0 6px 16px hsl(var(--bc) / 0.18),
+    0 2px 6px hsl(var(--bc) / 0.12);
+  /* Controlled expansion - max 150px to prevent runaway growth */
+  height: auto !important;
+  max-height: 150px;
+  /* Allow some overflow for shadow, but clip very long content */
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0.4rem 0.5rem;
 }
 
-/* Show full text on hover - remove all clipping */
+/* Show more text on hover - controlled expansion */
 .week-grid__event:hover .week-grid__event-title {
-  -webkit-line-clamp: unset !important;
-  line-clamp: unset !important;
-  white-space: normal !important;
-  overflow: visible !important;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
   word-break: break-word;
-  display: block !important;
 }
 
-.week-grid__event:hover .week-grid__event-time {
-  display: block !important;
-  white-space: nowrap;
-}
-
+.week-grid__event:hover .week-grid__event-time,
 .week-grid__event:hover .week-grid__event-amount {
-  display: block !important;
-  white-space: normal;
-  overflow: visible;
-}
-
-/* Ensure row layout expands on hover */
-.week-grid__event:hover .week-grid__event-row {
-  flex-wrap: wrap;
-  gap: 0.25rem;
+  display: block;
 }
 
 .week-grid__event:focus-visible {
