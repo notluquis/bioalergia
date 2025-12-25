@@ -8,21 +8,69 @@ interface DailyEventCardProps {
   event: CalendarEventDetail;
 }
 
+/**
+ * Get category-based indicator color (matches WeekGrid CSS)
+ */
+function getCategoryIndicatorColor(category: string | null | undefined): string {
+  switch (category) {
+    case "Tratamiento subcutáneo":
+      return "bg-blue-400";
+    case "Test y exámenes":
+      return "bg-emerald-400";
+    case "Inyección":
+      return "bg-amber-400";
+    default:
+      return "bg-gray-300";
+  }
+}
+
+/**
+ * Format duration for display
+ */
+function formatDuration(minutes: number): string {
+  if (minutes < 60) {
+    return `${minutes} min`;
+  }
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  if (remainingMinutes === 0) {
+    return `${hours}h`;
+  }
+  return `${hours}h ${remainingMinutes}m`;
+}
+
 export function DailyEventCard({ event }: DailyEventCardProps) {
   const isSubcutaneous = event.category === "Tratamiento subcutáneo";
 
-  // Determine border color based on status/category
-  const indicatorColor =
-    event.status === "confirmed" ? "bg-success" : event.status === "cancelled" ? "bg-error" : "bg-primary";
+  // Calculate times and duration
+  const start = event.startDateTime ? dayjs(event.startDateTime) : null;
+  const end = event.endDateTime ? dayjs(event.endDateTime) : null;
+  const durationMinutes = start && end ? end.diff(start, "minute") : null;
+
+  // Category-based indicator color
+  const indicatorColor = getCategoryIndicatorColor(event.category);
 
   return (
     <article className="group bg-base-100 hover:bg-base-200/20 text-base-content border-base-200 relative grid grid-cols-[auto_1fr_auto] gap-3 rounded-xl border p-3 shadow-sm transition-all hover:shadow-md sm:gap-4 sm:p-4">
-      {/* Time Column */}
-      <div className="flex flex-col items-center gap-1 pt-0.5">
-        <span className="text-sm font-bold tabular-nums">
-          {event.startDateTime ? dayjs(event.startDateTime).format("HH:mm") : "--:--"}
+      {/* Time Column - Start, Color Bar, Duration, End */}
+      <div className="flex flex-col items-center gap-0.5 text-center">
+        {/* Start Time */}
+        <span className="text-sm font-bold tabular-nums">{start ? start.format("HH:mm") : "--:--"}</span>
+
+        {/* Category Color Indicator */}
+        <div className={cn("min-h-6 w-1.5 flex-1 rounded-full", indicatorColor)} />
+
+        {/* Duration */}
+        {durationMinutes != null && durationMinutes > 0 && (
+          <span className="text-base-content/50 text-[10px] font-medium whitespace-nowrap">
+            {formatDuration(durationMinutes)}
+          </span>
+        )}
+
+        {/* End Time */}
+        <span className="text-base-content/60 text-xs font-medium tabular-nums">
+          {end ? end.format("HH:mm") : "--:--"}
         </span>
-        <div className={cn("h-6 w-1 rounded-full opacity-60 sm:h-8", indicatorColor)} />
       </div>
 
       {/* Content - Center Column */}
