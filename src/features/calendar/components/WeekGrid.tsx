@@ -266,8 +266,11 @@ export function WeekGrid({ events, weekStart, loading, onEventClick }: WeekGridP
                     data-mode={displayMode}
                   >
                     {displayMode === "minimal" ? (
-                      // Minimal: just title, very compact
-                      <span className="week-grid__event-title">{title}</span>
+                      // Minimal: time + title inline, very compact
+                      <span className="week-grid__event-row">
+                        <span className="week-grid__event-time">{timeStr}</span>
+                        <span className="week-grid__event-title">{title}</span>
+                      </span>
                     ) : displayMode === "compact" ? (
                       // Compact: time + title on one line
                       <span className="week-grid__event-row">
