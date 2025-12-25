@@ -248,47 +248,33 @@
   color: hsl(var(--bc));
 }
 
-/* Dark mode adjustments - using DaisyUI data-theme selectors */
-:root[data-theme="dark"] .event--subcutaneous,
-:root[data-theme="business"] .event--subcutaneous,
-:root[data-theme="night"] .event--subcutaneous,
-:root[data-theme="forest"] .event--subcutaneous,
-:root[data-theme="black"] .event--subcutaneous,
-:root[data-theme="luxury"] .event--subcutaneous,
-:root[data-theme="dracula"] .event--subcutaneous,
-:root[data-theme="coffee"] .event--subcutaneous,
-:root[data-theme="dim"] .event--subcutaneous,
-:root[data-theme="sunset"] .event--subcutaneous {
-  background: hsl(210 60% 25% / 0.6);
-  color: hsl(210 80% 85%);
-}
+/* Dark mode adjustments - using :is() for cleaner selectors (2025) */
+:root:is(
+  [data-theme="dark"],
+  [data-theme="business"],
+  [data-theme="night"],
+  [data-theme="forest"],
+  [data-theme="black"],
+  [data-theme="luxury"],
+  [data-theme="dracula"],
+  [data-theme="coffee"],
+  [data-theme="dim"],
+  [data-theme="sunset"]
+) {
+  & .event--subcutaneous {
+    background: hsl(210 60% 25% / 0.6);
+    color: hsl(210 80% 85%);
+  }
 
-:root[data-theme="dark"] .event--test,
-:root[data-theme="business"] .event--test,
-:root[data-theme="night"] .event--test,
-:root[data-theme="forest"] .event--test,
-:root[data-theme="black"] .event--test,
-:root[data-theme="luxury"] .event--test,
-:root[data-theme="dracula"] .event--test,
-:root[data-theme="coffee"] .event--test,
-:root[data-theme="dim"] .event--test,
-:root[data-theme="sunset"] .event--test {
-  background: hsl(145 40% 22% / 0.6);
-  color: hsl(145 60% 80%);
-}
+  & .event--test {
+    background: hsl(145 40% 22% / 0.6);
+    color: hsl(145 60% 80%);
+  }
 
-:root[data-theme="dark"] .event--injection,
-:root[data-theme="business"] .event--injection,
-:root[data-theme="night"] .event--injection,
-:root[data-theme="forest"] .event--injection,
-:root[data-theme="black"] .event--injection,
-:root[data-theme="luxury"] .event--injection,
-:root[data-theme="dracula"] .event--injection,
-:root[data-theme="coffee"] .event--injection,
-:root[data-theme="dim"] .event--injection,
-:root[data-theme="sunset"] .event--injection {
-  background: hsl(38 60% 25% / 0.6);
-  color: hsl(38 80% 85%);
+  & .event--injection {
+    background: hsl(38 60% 25% / 0.6);
+    color: hsl(38 80% 85%);
+  }
 }
 
 /* === EVENT CONTENT === */
@@ -440,6 +426,17 @@
   }
 }
 
+/* === ACCESSIBILITY: Reduced Motion === */
+@media (prefers-reduced-motion: reduce) {
+  .week-grid__now-dot {
+    animation: none;
+  }
+
+  .week-grid__event {
+    transition: none;
+  }
+}
+
 /* === RESPONSIVE === */
 @media (max-width: 768px) {
   .week-grid__header,
@@ -488,4 +485,67 @@
 
 .week-grid__body::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--bc) / 0.25);
+}
+
+/* === CONTAINER QUERIES (2025) === */
+/* Responsive event cards based on container width */
+@container (max-width: 80px) {
+  .week-grid__event-time {
+    display: none;
+  }
+
+  .week-grid__event-title {
+    -webkit-line-clamp: 1;
+    line-clamp: 1;
+    font-size: 0.5rem;
+  }
+}
+
+@container (min-width: 120px) {
+  .week-grid__event-title {
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+  }
+}
+
+/* === FORCED COLORS MODE (Windows High Contrast) === */
+@media (forced-colors: active) {
+  .week-grid__event {
+    border: 2px solid CanvasText;
+    background: Canvas;
+    color: CanvasText;
+    forced-color-adjust: none;
+  }
+
+  .week-grid__now-line,
+  .week-grid__now-dot {
+    background: Highlight;
+  }
+
+  .week-grid__day-header--today .week-grid__day-number {
+    background: Highlight;
+    color: HighlightText;
+  }
+
+  .event--subcutaneous,
+  .event--test,
+  .event--injection {
+    border-inline-start-color: Highlight;
+  }
+}
+
+/* === PRINT STYLES === */
+@media print {
+  .week-grid {
+    box-shadow: none;
+    border: 1px solid #ccc;
+  }
+
+  .week-grid__now-indicator {
+    display: none;
+  }
+
+  .week-grid__event {
+    break-inside: avoid;
+  }
 }
