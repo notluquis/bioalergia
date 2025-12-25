@@ -111,8 +111,6 @@
 .week-grid__time-axis {
   border-inline-end: 1px solid var(--wg-border);
   background: var(--wg-time-bg);
-  /* Add top padding so first label isn't clipped */
-  padding-block-start: 0.5rem;
 }
 
 .week-grid__time-slot {
@@ -122,17 +120,17 @@
   justify-content: end;
   padding-inline-end: 0.5rem;
   border-block-end: 1px solid hsl(var(--bc) / 0.06);
-  position: relative;
 }
 
+/* Time label at the grid line */
 .week-grid__time-label {
   font-size: 0.7rem;
   font-weight: 500;
   color: hsl(var(--bc) / 0.5);
   font-variant-numeric: tabular-nums;
-  /* Position label at the line, not above it */
   line-height: 1;
-  padding-block-start: 2px;
+  /* Position label centered on the line, not inside the slot */
+  transform: translateY(-50%);
 }
 
 /* === DAY COLUMNS === */
@@ -140,8 +138,6 @@
   position: relative;
   border-inline-end: 1px solid hsl(var(--bc) / 0.06);
   min-block-size: 100%;
-  /* Match time axis top padding */
-  padding-block-start: 0.5rem;
   /* Allow hovered events to overflow */
   overflow: visible;
 }
