@@ -171,7 +171,7 @@
 /* === EVENT CARD === */
 .week-grid__event {
   position: absolute;
-  inset-inline: 3px;
+  /* width and left are set via inline styles for overlap handling */
   min-block-size: 20px;
   padding: 0.2rem 0.4rem;
   border-radius: 6px;
