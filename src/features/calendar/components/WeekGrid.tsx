@@ -32,7 +32,14 @@ function getEventPosition(event: CalendarEventDetail, startHour: number, endHour
   if (!start) return null;
 
   const startMinutes = start.hour() * 60 + start.minute();
-  const endMinutes = end ? end.hour() * 60 + end.minute() : startMinutes + 30;
+  let endMinutes = end ? end.hour() * 60 + end.minute() : startMinutes + 30;
+
+  // Handle events that cross midnight (end time is "earlier" than start time)
+  // Treat them as ending at 24:00 for grid display purposes
+  if (end && endMinutes <= startMinutes) {
+    // End is on next day - cap at midnight (24:00 = 1440 minutes)
+    endMinutes = 24 * 60;
+  }
 
   const gridStartMinutes = startHour * 60;
   const gridEndMinutes = (endHour + 1) * 60;
@@ -41,9 +48,12 @@ function getEventPosition(event: CalendarEventDetail, startHour: number, endHour
   const top = ((startMinutes - gridStartMinutes) / totalMinutes) * 100;
   const height = ((endMinutes - startMinutes) / totalMinutes) * 100;
 
+  // Ensure minimum height for visibility (at least 3%)
+  const minHeight = 3;
+
   return {
     top: `${Math.max(0, top)}%`,
-    height: `${Math.min(100 - top, Math.max(height, 2))}%`,
+    height: `${Math.min(100 - Math.max(0, top), Math.max(height, minHeight))}%`,
   };
 }
 
