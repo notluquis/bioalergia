@@ -5,22 +5,46 @@
  * All routes are generated automatically from shared/route-config.ts
  */
 
+// Aggressive recovery from chunk load errors
+// Clears all caches, unregisters service workers, then reloads
+async function handleChunkLoadError() {
+  console.warn("Chunk load error detected, clearing caches and reloading...");
+
+  try {
+    // Unregister all service workers
+    if ("serviceWorker" in navigator) {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(registrations.map((r) => r.unregister()));
+      console.log("Service workers unregistered");
+    }
+
+    // Clear all caches
+    if ("caches" in window) {
+      const cacheNames = await caches.keys();
+      await Promise.all(cacheNames.map((name) => caches.delete(name)));
+      console.log("All caches cleared:", cacheNames);
+    }
+  } catch (e) {
+    console.error("Error during cache cleanup:", e);
+  }
+
+  // Force reload from network (bypass cache)
+  window.location.reload();
+}
+
 // Global error handler for chunk load failures (runs before React mounts)
-// This catches stale cache issues and auto-reloads to get fresh assets
 window.addEventListener("error", (event) => {
   const message = event.message || "";
   if (/Loading chunk|Failed to fetch dynamically imported module|Importing a module script failed/i.test(message)) {
-    console.warn("Chunk load error detected, reloading for fresh assets...");
-    window.location.reload();
+    handleChunkLoadError();
   }
 });
 
 window.addEventListener("unhandledrejection", (event) => {
   const message = event.reason?.message || String(event.reason) || "";
   if (/Loading chunk|Failed to fetch dynamically imported module|Importing a module script failed/i.test(message)) {
-    console.warn("Chunk load error in promise, reloading for fresh assets...");
     event.preventDefault();
-    window.location.reload();
+    handleChunkLoadError();
   }
 });
 
