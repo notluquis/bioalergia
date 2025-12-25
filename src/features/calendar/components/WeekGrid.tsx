@@ -114,16 +114,29 @@ export function WeekGrid({ events, weekStart, loading, onEventClick }: WeekGridP
       if (event.startDateTime) {
         const hour = dayjs(event.startDateTime).hour();
         min = Math.min(min, hour);
+        // Also track start hour for max (event needs to be visible)
+        max = Math.max(max, hour);
       }
       if (event.endDateTime) {
         const endTime = dayjs(event.endDateTime);
-        // Calculate end hour (can exceed 23 for display purposes)
-        const hour = endTime.minute() > 0 ? endTime.hour() + 1 : endTime.hour();
-        max = Math.max(max, Math.min(24, hour)); // Allow up to 24
+        const startTime = event.startDateTime ? dayjs(event.startDateTime) : null;
+
+        // Check if event crosses midnight (end is on different day or is midnight)
+        const crossesMidnight = startTime && endTime.isBefore(startTime);
+        const isMidnight = endTime.hour() === 0 && endTime.minute() === 0;
+
+        if (crossesMidnight || isMidnight) {
+          // Event ends at or after midnight - show grid until 24:00
+          max = 24;
+        } else {
+          // Normal case: round up to next hour if has minutes
+          const hour = endTime.minute() > 0 ? endTime.hour() + 1 : endTime.hour();
+          max = Math.max(max, Math.min(24, hour));
+        }
       } else if (event.startDateTime) {
         // No end time, assume 1 hour duration
         const startHour = dayjs(event.startDateTime).hour();
-        max = Math.max(max, Math.min(24, startHour + 1)); // Allow up to 24
+        max = Math.max(max, Math.min(24, startHour + 1));
       }
     });
 
