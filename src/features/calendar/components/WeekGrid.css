@@ -152,7 +152,19 @@
 
 .week-grid__hour-cell {
   block-size: 52px;
-  border-block-end: 1px solid hsl(var(--bc) / 0.06);
+  position: relative;
+}
+
+/* Grid line as pseudo-element so it renders UNDER events */
+.week-grid__hour-cell::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: 0;
+  block-size: 1px;
+  background: hsl(var(--bc) / 0.06);
+  z-index: -1;
+  pointer-events: none;
 }
 
 /* === EVENTS CONTAINER === */
@@ -160,7 +172,11 @@
   position: absolute;
   inset: 0;
   padding-inline: 3px;
-  /* Allow events to overflow when hovered (scale effect) */
+  /* Events layer above grid lines */
+  z-index: 5;
+  /* Create stacking context */
+  isolation: isolate;
+  /* Allow events to overflow when hovered */
   overflow: visible;
 }
 
@@ -224,26 +240,27 @@
 }
 
 /* === EVENT CATEGORIES === */
+/* All backgrounds must be SOLID (no transparency) to hide grid lines behind */
 .event--subcutaneous {
-  background: hsl(210 80% 92%);
+  background-color: hsl(210 80% 92%);
   border-inline-start-color: var(--event-blue);
   color: hsl(210 80% 25%);
 }
 
 .event--test {
-  background: hsl(145 50% 90%);
+  background-color: hsl(145 50% 90%);
   border-inline-start-color: var(--event-green);
   color: hsl(145 60% 20%);
 }
 
 .event--injection {
-  background: hsl(38 90% 90%);
+  background-color: hsl(38 90% 90%);
   border-inline-start-color: var(--event-amber);
   color: hsl(38 80% 25%);
 }
 
 .event--default {
-  background: hsl(var(--b2));
+  background-color: hsl(var(--b2));
   border-inline-start-color: hsl(var(--bc) / 0.3);
   color: hsl(var(--bc));
 }

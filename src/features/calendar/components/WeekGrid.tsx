@@ -275,16 +275,18 @@ export function WeekGrid({ events, weekStart, loading, onEventClick }: WeekGridP
                         <span className="week-grid__event-title">{title}</span>
                       </span>
                     ) : displayMode === "normal" ? (
-                      // Normal: time + title (stacked)
-                      <>
+                      // Normal: time + title inline
+                      <span className="week-grid__event-row">
                         <span className="week-grid__event-time">{timeStr}</span>
                         <span className="week-grid__event-title">{title}</span>
-                      </>
+                      </span>
                     ) : (
-                      // Detailed: time + title + amount
+                      // Detailed: time + title inline, then amount below
                       <>
-                        <span className="week-grid__event-time">{timeStr}</span>
-                        <span className="week-grid__event-title">{title}</span>
+                        <span className="week-grid__event-row">
+                          <span className="week-grid__event-time">{timeStr}</span>
+                          <span className="week-grid__event-title">{title}</span>
+                        </span>
                         {event.amountExpected != null && (
                           <span className="week-grid__event-amount">
                             {currencyFormatter.format(event.amountExpected)}
