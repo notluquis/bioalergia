@@ -196,18 +196,14 @@
 
 .week-grid__event:hover {
   z-index: 100;
-  /* Visual emphasis without excessive expansion */
-  transform: translateY(-1px) scale(1.01);
+  /* Visual emphasis only - don't change dimensions */
+  transform: translateY(-1px) scale(1.02);
   box-shadow:
     0 6px 16px hsl(var(--bc) / 0.18),
     0 2px 6px hsl(var(--bc) / 0.12);
-  /* Controlled expansion - max 150px to prevent runaway growth */
-  height: auto !important;
-  max-height: 150px;
-  /* Allow some overflow for shadow, but clip very long content */
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 0.4rem 0.5rem;
+  /* Keep original height, just allow content to show */
+  overflow: visible;
+  padding: 0.35rem 0.5rem;
 }
 
 /* Show more text on hover - controlled expansion */
