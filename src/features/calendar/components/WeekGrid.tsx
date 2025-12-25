@@ -78,6 +78,69 @@ function groupEventsByDay(events: CalendarEventDetail[], weekStart: dayjs.Dayjs)
   return days;
 }
 
+// Event with layout info for overlapping display
+interface EventWithLayout extends CalendarEventDetail {
+  column: number;
+  totalColumns: number;
+}
+
+// Calculate layout for overlapping events (greedy column assignment)
+function calculateEventLayout(events: CalendarEventDetail[]): EventWithLayout[] {
+  if (events.length === 0) return [];
+
+  // Helper to get event end time in ms
+  const getEndMs = (event: CalendarEventDetail): number => {
+    if (event.endDateTime) {
+      const end = dayjs(event.endDateTime);
+      const start = dayjs(event.startDateTime);
+      // Handle midnight crossing
+      if (end.isBefore(start) || end.isSame(start)) {
+        return start.add(1, "day").startOf("day").valueOf();
+      }
+      return end.valueOf();
+    }
+    return dayjs(event.startDateTime).valueOf() + 30 * 60 * 1000; // Default 30 min
+  };
+
+  // Sort by start time, then by duration (longer first for better visual)
+  const sorted = [...events].sort((a, b) => {
+    const startA = dayjs(a.startDateTime).valueOf();
+    const startB = dayjs(b.startDateTime).valueOf();
+    if (startA !== startB) return startA - startB;
+    // Longer events first (leftmost column)
+    const durationA = getEndMs(a) - startA;
+    const durationB = getEndMs(b) - startB;
+    return durationB - durationA;
+  });
+
+  // Columns track end time of last event in each column
+  const columns: number[] = [];
+  const result: (CalendarEventDetail & { column: number })[] = [];
+
+  for (const event of sorted) {
+    const start = dayjs(event.startDateTime).valueOf();
+    const end = getEndMs(event);
+
+    // Find first column where this event fits (no overlap)
+    let columnIndex = columns.findIndex((colEnd) => start >= colEnd);
+
+    if (columnIndex === -1) {
+      // No existing column available, create new
+      columnIndex = columns.length;
+      columns.push(end);
+    } else {
+      // Use this column, update its end time
+      columns[columnIndex] = end;
+    }
+
+    result.push({ ...event, column: columnIndex });
+  }
+
+  // Add totalColumns to each event
+  const totalColumns = columns.length;
+  return result.map((e) => ({ ...e, totalColumns }));
+}
+
 // Get category color class
 function getCategoryClass(category: string | null | undefined): string {
   if (!category) return "event--default";
@@ -218,7 +281,7 @@ export function WeekGrid({ events, weekStart, loading, onEventClick }: WeekGridP
 
             {/* Events */}
             <div className="week-grid__events">
-              {eventsByDay[day.key]?.map((event) => {
+              {calculateEventLayout(eventsByDay[day.key] || []).map((event) => {
                 const position = getEventPosition(event, startHour, endHour);
                 if (!position) return null;
 
@@ -255,11 +318,22 @@ export function WeekGrid({ events, weekStart, loading, onEventClick }: WeekGridP
                 // Title - prioritize this over time for readability
                 const title = event.summary?.trim() || "(Sin título)";
 
+                // Calculate width and left based on column layout
+                const padding = 3; // pixels on each side
+                const totalWidth = 100; // percentage
+                const columnWidth = totalWidth / event.totalColumns;
+                const leftPos = event.column * columnWidth;
+
                 return (
                   <button
                     key={event.eventId}
                     className={cn("week-grid__event", getCategoryClass(event.category))}
-                    style={{ top: position.top, height: position.height }}
+                    style={{
+                      top: position.top,
+                      height: position.height,
+                      width: `calc(${columnWidth}% - ${padding * 2}px)`,
+                      left: `calc(${leftPos}% + ${padding}px)`,
+                    }}
                     onClick={() => onEventClick?.(event)}
                     type="button"
                     title={tooltipLines.join("\n")}
