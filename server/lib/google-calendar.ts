@@ -89,7 +89,6 @@ async function getCalendarClient(): Promise<CalendarClient> {
     email: googleCalendarConfig.serviceAccountEmail,
     key: googleCalendarConfig.privateKey,
     scopes: CALENDAR_SCOPES,
-    subject: googleCalendarConfig.impersonateUser ?? undefined,
   });
 
   await auth.authorize();

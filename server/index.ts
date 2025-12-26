@@ -21,7 +21,7 @@ import { registerServiceRoutes } from "./routes/services.js";
 import { registerCalendarEventRoutes } from "./routes/calendar-events.js";
 import { getUploadsRootDir } from "./lib/uploads.js";
 import { registerDailyProductionBalanceRoutes } from "./routes/daily-production-balances.js";
-import { startDailyProductionReminderJob } from "./modules/dailyProductionReminders.js";
+
 import { startCalendarCron, stopCalendarCron } from "./lib/calendar-cron.js";
 import { setupAllWatchChannels } from "./lib/google-calendar-watch.js";
 import shareTargetRouter from "./routes/share-target.js";
@@ -143,7 +143,6 @@ registerSuppliesRoutes(app);
 import { registerRoleRoutes } from "./routes/roles.js";
 registerRoleRoutes(app);
 import { startGoogleCalendarScheduler } from "./lib/google-calendar-scheduler.js";
-startDailyProductionReminderJob();
 startGoogleCalendarScheduler();
 
 type HealthStatus = "ok" | "error";
