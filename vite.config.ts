@@ -154,6 +154,7 @@ export default defineConfig(({ mode }) => ({
   ].filter(Boolean),
   define: {
     "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV || "development"),
+    "import.meta.env.VITE_APP_BUILD_TIMESTAMP": JSON.stringify(new Date().toISOString()),
   },
   build: {
     target: "esnext", // Native 2026 performance: No transpilation for modern browsers

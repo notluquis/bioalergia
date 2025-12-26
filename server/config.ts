@@ -29,7 +29,6 @@ export type GoogleCalendarConfig = {
   timeZone: string;
   syncStartDate: string;
   syncLookAheadDays: number;
-  impersonateUser?: string | null;
   excludeSummarySources: string[];
 };
 
@@ -47,23 +46,13 @@ function parseCalendarIds(raw?: string | null) {
   return ids.length > 0 ? ids : null;
 }
 
-function parseExcludePatterns(raw?: string | null) {
-  const defaultPatterns = [
-    "no disponible",
-    "cumpleaños",
-    "almuerzo",
-    "^\\s*$", // eventos vacíos
-    "^\\d{1,2}\\s+(ene|feb|mar|abr|may|jun|jul|ago|sep|oct|nov|dic)", // solo fechas sin info
-  ];
-  if (!raw) {
-    return defaultPatterns;
-  }
-  const custom = raw
-    .split(",")
-    .map((value) => value.trim())
-    .filter(Boolean);
-  return [...new Set([...defaultPatterns, ...custom])];
-}
+const EXCLUDE_PATTERNS_DEFAULT = [
+  "no disponible",
+  "cumpleaños",
+  "almuerzo",
+  "^\\s*$", // eventos vacíos
+  "^\\d{1,2}\\s+(ene|feb|mar|abr|may|jun|jul|ago|sep|oct|nov|dic)", // solo fechas sin info
+];
 
 export function compileExcludePatterns(values: string[]): RegExp[] {
   const patterns = values.length ? values : ["no disponible"];
@@ -97,8 +86,6 @@ const syncLookAheadDaysParsed = Number(process.env.GOOGLE_CALENDAR_SYNC_LOOKAHEA
 const syncLookAheadDays =
   Number.isFinite(syncLookAheadDaysParsed) && syncLookAheadDaysParsed > 0 ? Math.floor(syncLookAheadDaysParsed) : 365;
 
-const excludePatternsSources = parseExcludePatterns(process.env.GOOGLE_CALENDAR_EXCLUDE_SUMMARIES ?? null);
-
 export const googleCalendarConfig: GoogleCalendarConfig | null =
   googleCalendarEnvMissing.length === 0
     ? {
@@ -108,8 +95,7 @@ export const googleCalendarConfig: GoogleCalendarConfig | null =
         timeZone: process.env.GOOGLE_CALENDAR_TIMEZONE ?? "America/Santiago",
         syncStartDate,
         syncLookAheadDays,
-        impersonateUser: process.env.GOOGLE_CALENDAR_IMPERSONATE_USER ?? null,
-        excludeSummarySources: excludePatternsSources,
+        excludeSummarySources: EXCLUDE_PATTERNS_DEFAULT,
       }
     : null;
 
@@ -118,7 +104,3 @@ if (googleCalendarEnvMissing.length > 0) {
     `[config] Google Calendar sync deshabilitado. Variables faltantes: ${googleCalendarEnvMissing.join(", ")}`
   );
 }
-
-// ============= Email Configuration =============
-// SMTP ya no se usa - ahora generamos archivos .eml que el usuario abre con Outlook
-// Las variables SMTP_* pueden eliminarse del .env
