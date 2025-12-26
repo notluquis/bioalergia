@@ -21,6 +21,7 @@ export default function CalendarSyncHistoryPage() {
     isLoadingSyncLogs,
   } = useCalendarEvents();
   const [page, setPage] = useState(0);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
   const pageSize = 5;
   const loading = isLoadingSyncLogs;
 
@@ -97,19 +98,82 @@ export default function CalendarSyncHistoryPage() {
                 const sourceLabel = log.triggerLabel ?? log.triggerSource;
                 const statusClass =
                   log.status === "SUCCESS" ? "text-success" : log.status === "RUNNING" ? "text-warning" : "text-error";
+                const hasDetails =
+                  log.changeDetails &&
+                  ((log.changeDetails.inserted?.length ?? 0) > 0 ||
+                    (log.changeDetails.updated?.length ?? 0) > 0 ||
+                    (log.changeDetails.excluded?.length ?? 0) > 0);
+                const isExpanded = expandedId === log.id;
                 return (
-                  <tr key={log.id} className="border-base-300 bg-base-200 border-t">
-                    <td className="text-base-content px-4 py-3 font-medium">{started}</td>
-                    <td className={`px-4 py-3 font-semibold ${statusClass}`}>
-                      {log.status === "SUCCESS" ? "Éxito" : log.status === "RUNNING" ? "En curso..." : "Error"}
-                    </td>
-                    <td className="px-4 py-3">{numberFormatter.format(log.inserted)}</td>
-                    <td className="px-4 py-3">{numberFormatter.format(log.updated)}</td>
-                    <td className="px-4 py-3">{numberFormatter.format(log.skipped)}</td>
-                    <td className="px-4 py-3">{numberFormatter.format(log.excluded)}</td>
-                    <td className="px-4 py-3">{sourceLabel}</td>
-                    <td className="px-4 py-3">{duration}</td>
-                  </tr>
+                  <>
+                    <tr
+                      key={log.id}
+                      className={`border-base-300 bg-base-200 border-t ${hasDetails ? "hover:bg-base-300/50 cursor-pointer" : ""}`}
+                      onClick={() => hasDetails && setExpandedId(isExpanded ? null : log.id)}
+                    >
+                      <td className="text-base-content px-4 py-3 font-medium">
+                        {hasDetails && (
+                          <span className="mr-1 inline-block w-4 text-center text-xs opacity-50">
+                            {isExpanded ? "▼" : "▶"}
+                          </span>
+                        )}
+                        {started}
+                      </td>
+                      <td className={`px-4 py-3 font-semibold ${statusClass}`}>
+                        {log.status === "SUCCESS" ? "Éxito" : log.status === "RUNNING" ? "En curso..." : "Error"}
+                      </td>
+                      <td className="px-4 py-3">{numberFormatter.format(log.inserted)}</td>
+                      <td className="px-4 py-3">{numberFormatter.format(log.updated)}</td>
+                      <td className="px-4 py-3">{numberFormatter.format(log.skipped)}</td>
+                      <td className="px-4 py-3">{numberFormatter.format(log.excluded)}</td>
+                      <td className="px-4 py-3">{sourceLabel}</td>
+                      <td className="px-4 py-3">{duration}</td>
+                    </tr>
+                    {isExpanded && log.changeDetails && (
+                      <tr key={`${log.id}-details`} className="bg-base-100">
+                        <td colSpan={8} className="px-6 py-3">
+                          <div className="flex flex-wrap gap-4 text-xs">
+                            {(log.changeDetails.inserted?.length ?? 0) > 0 && (
+                              <div className="min-w-48 flex-1">
+                                <p className="text-success mb-1 font-semibold">
+                                  Insertadas ({log.changeDetails.inserted?.length})
+                                </p>
+                                <ul className="text-base-content/70 space-y-0.5">
+                                  {log.changeDetails.inserted?.map((s, i) => (
+                                    <li key={i}>• {s}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                            {(log.changeDetails.updated?.length ?? 0) > 0 && (
+                              <div className="min-w-48 flex-1">
+                                <p className="text-info mb-1 font-semibold">
+                                  Actualizadas ({log.changeDetails.updated?.length})
+                                </p>
+                                <ul className="text-base-content/70 space-y-0.5">
+                                  {log.changeDetails.updated?.map((s, i) => (
+                                    <li key={i}>• {s}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                            {(log.changeDetails.excluded?.length ?? 0) > 0 && (
+                              <div className="min-w-48 flex-1">
+                                <p className="text-warning mb-1 font-semibold">
+                                  Filtradas ({log.changeDetails.excluded?.length})
+                                </p>
+                                <ul className="text-base-content/70 space-y-0.5">
+                                  {log.changeDetails.excluded?.map((s, i) => (
+                                    <li key={i}>• {s}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </>
                 );
               })
             )}
