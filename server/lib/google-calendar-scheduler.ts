@@ -34,6 +34,10 @@ export function startGoogleCalendarScheduler() {
         });
         try {
           const result = await syncGoogleCalendarOnce();
+          const excludedSummaries = result.payload.excludedEvents
+            .slice(0, 20)
+            .map((e) => e.summary?.slice(0, 50) || "(sin título)");
+
           await finalizeCalendarSyncLogEntry(logId, {
             status: "SUCCESS",
             fetchedAt: new Date(result.payload.fetchedAt),
@@ -41,6 +45,11 @@ export function startGoogleCalendarScheduler() {
             updated: result.upsertResult.updated,
             skipped: result.upsertResult.skipped,
             excluded: result.payload.excludedEvents.length,
+            changeDetails: {
+              inserted: result.upsertResult.details.inserted,
+              updated: result.upsertResult.details.updated,
+              excluded: excludedSummaries,
+            },
           });
           logEvent("googleCalendar.sync.success", {
             label: job.label,

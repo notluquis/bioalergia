@@ -31,11 +31,13 @@ async function getCalendarInternalId(googleId: string): Promise<number | null> {
 }
 
 export async function upsertGoogleCalendarEvents(events: CalendarEventRecord[]) {
-  if (events.length === 0) return { inserted: 0, updated: 0, skipped: 0 };
+  if (events.length === 0) return { inserted: 0, updated: 0, skipped: 0, details: { inserted: [], updated: [] } };
 
   let inserted = 0;
   let updated = 0;
   let skipped = 0;
+  const insertedSummaries: string[] = [];
+  const updatedSummaries: string[] = [];
 
   for (const event of events) {
     // Convertir googleId a ID interno de la BD
@@ -45,6 +47,17 @@ export async function upsertGoogleCalendarEvents(events: CalendarEventRecord[]) 
       skipped++;
       continue;
     }
+
+    // Check if event already exists to distinguish insert vs update
+    const existing = await prisma.event.findUnique({
+      where: {
+        calendarId_externalEventId: {
+          calendarId: calendarInternalId,
+          externalEventId: event.eventId,
+        },
+      },
+      select: { id: true },
+    });
 
     const data = {
       calendarId: calendarInternalId,
@@ -76,7 +89,6 @@ export async function upsertGoogleCalendarEvents(events: CalendarEventRecord[]) 
     };
 
     try {
-      // Usar upsert con la clave única compuesta [calendarId, externalEventId]
       await prisma.event.upsert({
         where: {
           calendarId_externalEventId: {
@@ -88,10 +100,20 @@ export async function upsertGoogleCalendarEvents(events: CalendarEventRecord[]) 
         create: data,
       });
 
-      // Para saber si fue insert o update, podríamos hacer un check previo,
-      // pero por eficiencia asumimos que es update si ya existe
-      // Por ahora incrementamos "updated" ya que upsert no nos dice cuál fue
-      updated++;
+      // Build summary string for tracking
+      const summaryText = event.summary?.slice(0, 50) || "(sin título)";
+
+      if (existing) {
+        updated++;
+        if (updatedSummaries.length < 20) {
+          updatedSummaries.push(summaryText);
+        }
+      } else {
+        inserted++;
+        if (insertedSummaries.length < 20) {
+          insertedSummaries.push(summaryText);
+        }
+      }
     } catch (error) {
       console.error(
         `Error upserting event ${event.eventId} (calendar: ${event.calendarId}, summary: "${event.summary?.slice(0, 50)}"):`,
@@ -105,7 +127,15 @@ export async function upsertGoogleCalendarEvents(events: CalendarEventRecord[]) 
     }
   }
 
-  return { inserted, updated, skipped };
+  return {
+    inserted,
+    updated,
+    skipped,
+    details: {
+      inserted: insertedSummaries,
+      updated: updatedSummaries,
+    },
+  };
 }
 
 export async function removeGoogleCalendarEvents(events: { calendarId: string; eventId: string }[]) {

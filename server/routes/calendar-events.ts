@@ -144,6 +144,11 @@ export function registerCalendarEventRoutes(app: express.Express) {
       // Start sync in background (don't await)
       syncGoogleCalendarOnce()
         .then(async (result) => {
+          // Build excluded summaries from payload
+          const excludedSummaries = result.payload.excludedEvents
+            .slice(0, 20)
+            .map((e) => e.summary?.slice(0, 50) || "(sin título)");
+
           await finalizeCalendarSyncLogEntry(logId, {
             status: "SUCCESS",
             fetchedAt: new Date(result.payload.fetchedAt),
@@ -151,6 +156,11 @@ export function registerCalendarEventRoutes(app: express.Express) {
             updated: result.upsertResult.updated,
             skipped: result.upsertResult.skipped,
             excluded: result.payload.excludedEvents.length,
+            changeDetails: {
+              inserted: result.upsertResult.details.inserted,
+              updated: result.upsertResult.details.updated,
+              excluded: excludedSummaries,
+            },
           });
           console.log(`✅ Sync completed successfully (logId: ${logId})`);
         })
@@ -379,6 +389,10 @@ export function registerCalendarEventRoutes(app: express.Express) {
       .then((logId) => {
         syncGoogleCalendarOnce()
           .then(async (result) => {
+            const excludedSummaries = result.payload.excludedEvents
+              .slice(0, 20)
+              .map((e) => e.summary?.slice(0, 50) || "(sin título)");
+
             await finalizeCalendarSyncLogEntry(logId, {
               status: "SUCCESS",
               fetchedAt: new Date(result.payload.fetchedAt),
@@ -386,6 +400,11 @@ export function registerCalendarEventRoutes(app: express.Express) {
               updated: result.upsertResult.updated,
               skipped: result.upsertResult.skipped,
               excluded: result.payload.excludedEvents.length,
+              changeDetails: {
+                inserted: result.upsertResult.details.inserted,
+                updated: result.upsertResult.details.updated,
+                excluded: excludedSummaries,
+              },
             });
             console.log(`[webhook] ✅ Sync completed: ${channelId.slice(0, 8)}...`);
           })

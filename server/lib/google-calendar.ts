@@ -55,7 +55,7 @@ export type GoogleCalendarSyncPayload = {
   timeZone: string;
   calendars: Array<{ calendarId: string; totalEvents: number }>;
   events: CalendarEventRecord[];
-  excludedEvents: Array<{ calendarId: string; eventId: string }>;
+  excludedEvents: Array<{ calendarId: string; eventId: string; summary?: string | null }>;
 };
 
 export type SyncMetrics = {
@@ -173,9 +173,12 @@ async function fetchCalendarEventsForId(
   calendarId: string,
   range: FetchRange,
   patterns: RegExp[]
-): Promise<{ events: CalendarEventRecord[]; excluded: Array<{ calendarId: string; eventId: string }> }> {
+): Promise<{
+  events: CalendarEventRecord[];
+  excluded: Array<{ calendarId: string; eventId: string; summary?: string | null }>;
+}> {
   const events: CalendarEventRecord[] = [];
-  const excluded: Array<{ calendarId: string; eventId: string }> = [];
+  const excluded: Array<{ calendarId: string; eventId: string; summary?: string | null }> = [];
   let pageToken: string | undefined;
   const MAX_PAGES = 100; // Safety guard to prevent infinite loop
   let pageCount = 0;
@@ -202,12 +205,12 @@ async function fetchCalendarEventsForId(
       }
 
       if (item.status === "cancelled") {
-        excluded.push({ calendarId, eventId: item.id });
+        excluded.push({ calendarId, eventId: item.id, summary: item.summary });
         continue;
       }
 
       if (isEventExcluded(item, patterns)) {
-        excluded.push({ calendarId, eventId: item.id });
+        excluded.push({ calendarId, eventId: item.id, summary: item.summary });
         continue;
       }
 
@@ -280,7 +283,7 @@ export async function fetchGoogleCalendarData(): Promise<GoogleCalendarSyncPaylo
 
   const events: CalendarEventRecord[] = [];
   const calendarsSummary: Array<{ calendarId: string; totalEvents: number }> = [];
-  const excludedEvents: Array<{ calendarId: string; eventId: string }> = [];
+  const excludedEvents: Array<{ calendarId: string; eventId: string; summary?: string | null }> = [];
 
   for (const calendarId of googleCalendarConfig.calendarIds) {
     try {
