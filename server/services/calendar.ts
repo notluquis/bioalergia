@@ -63,6 +63,11 @@ export async function finalizeCalendarSyncLogEntry(
     skipped?: number;
     excluded?: number;
     errorMessage?: string;
+    changeDetails?: {
+      inserted?: string[];
+      updated?: string[];
+      excluded?: string[];
+    };
   }
 ) {
   await prisma.syncLog.update({
@@ -76,6 +81,7 @@ export async function finalizeCalendarSyncLogEntry(
       skipped: data.skipped,
       excluded: data.excluded,
       errorMessage: data.errorMessage,
+      changeDetails: data.changeDetails,
     },
   });
 }

@@ -353,6 +353,7 @@ model SyncLog {
   skipped       Int?      @default(0)
   excluded      Int?      @default(0)
   errorMessage  String?   @map("error_message")
+  changeDetails Json?     @map("change_details") // Summaries of changed events
 
   @@map("sync_logs")
 }
