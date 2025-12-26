@@ -66,10 +66,11 @@
       }
     </script>
     <script>
-        const THEME_KEY = "bioalergia:theme";
-        let theme = "dark";
+      (function () {
+        var THEME_KEY = "bioalergia:theme";
+        var theme = "dark";
         try {
-          const stored = localStorage.getItem(THEME_KEY);
+          var stored = localStorage.getItem(THEME_KEY);
           if (stored === "light" || stored === "dark") {
             theme = stored;
           } else if (stored === "system" || !stored) {
@@ -80,7 +81,7 @@
             }
           }
         } catch (e) {}
-        const html = document.documentElement;
+        var html = document.documentElement;
         if (theme === "dark") {
           html.setAttribute("data-theme", "bioalergia-dark");
           html.classList.add("dark");
