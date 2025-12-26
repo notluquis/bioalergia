@@ -55,27 +55,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const sessionQuery = useQuery({
     queryKey: ["auth", "session"],
     queryFn: async (): Promise<AuthSessionData | null> => {
-      const timeoutSeconds = Number(import.meta.env?.VITE_AUTH_TIMEOUT ?? 8);
-      const controller = typeof AbortController !== "undefined" ? new AbortController() : undefined;
-      const timeoutId =
-        typeof window !== "undefined" && controller
-          ? window.setTimeout(() => {
-              if (!controller.signal.aborted) {
-                logger.warn("[auth] bootstrap: cancelado por timeout", { timeoutSeconds });
-                controller.abort();
-              }
-            }, timeoutSeconds * 1000)
-          : null;
-
       try {
         const payload = await apiClient.get<{
           status: string;
           user?: AuthUser;
           abilityRules?: RawRuleOf<MongoAbility>[];
           permissionVersion?: number;
-        }>("/api/auth/me/session", {
-          signal: controller?.signal,
-        });
+        }>("/api/auth/me/session");
 
         if (payload.status === "ok" && payload.user) {
           updateAbility(payload.abilityRules || []);
@@ -89,27 +75,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         updateAbility([]);
         return null;
       } catch (error) {
+        // 401 = not authenticated (expected, not an error)
         if (error instanceof ApiError && error.status === 401) {
           updateAbility([]);
           return null;
         }
-        if ((error as DOMException)?.name === "AbortError") {
-          logger.warn("[auth] bootstrap: abortado por timeout");
-          updateAbility([]);
-          return null;
-        }
-        logger.error("[auth] bootstrap: error", error);
-        updateAbility([]);
-        return null;
-      } finally {
-        if (typeof window !== "undefined" && timeoutId != null) {
-          window.clearTimeout(timeoutId);
-        }
+        // Re-throw for retry mechanism
+        throw error;
       }
     },
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
-    retry: false,
+    staleTime: 5 * 60 * 1000, // 5 min before refetch
+    gcTime: 10 * 60 * 1000, // 10 min cache
+    retry: 2, // Retry twice on network errors
+    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 8000), // Exponential backoff: 1s, 2s, 4s (max 8s)
   });
 
   const [impersonatedRole, setImpersonatedRole] = useState<Role | null>(null);
