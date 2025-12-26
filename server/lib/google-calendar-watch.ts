@@ -18,12 +18,50 @@ const RENEWAL_BUFFER_DAYS = 1; // Renew 1 day before expiration
 
 type CalendarClient = calendar_v3.Calendar;
 
-async function getCalendarClient(): Promise<CalendarClient> {
-  const credentials = JSON.parse(await fs.readFile(CREDENTIALS_PATH, "utf-8"));
+/**
+ * Get authenticated Google Calendar client
+ * Tries environment variables first, then falls back to credentials.json file
+ * Returns null if no credentials are available
+ */
+async function getCalendarClient(): Promise<CalendarClient | null> {
+  let clientEmail: string | undefined;
+  let privateKey: string | undefined;
+
+  // Try environment variables first (Railway approach)
+  if (process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL && process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY) {
+    clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+    // Railway may escape newlines as literal \n, convert them back
+    privateKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY.replace(/\\n/g, "\n");
+    logEvent("google_calendar_auth_from_env", { clientEmail });
+  } else {
+    // Fall back to credentials file
+    try {
+      await fs.access(CREDENTIALS_PATH);
+      const credentials = JSON.parse(await fs.readFile(CREDENTIALS_PATH, "utf-8"));
+      clientEmail = credentials.client_email;
+      privateKey = credentials.private_key;
+      logEvent("google_calendar_auth_from_file", { clientEmail, path: CREDENTIALS_PATH });
+    } catch {
+      logWarn("google_calendar_credentials_not_found", {
+        envMissing: "GOOGLE_SERVICE_ACCOUNT_EMAIL or GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY",
+        filePath: CREDENTIALS_PATH,
+        hint: "Set env vars or provide credentials.json file",
+      });
+      return null;
+    }
+  }
+
+  if (!clientEmail || !privateKey) {
+    logWarn("google_calendar_invalid_credentials", {
+      hasEmail: !!clientEmail,
+      hasKey: !!privateKey,
+    });
+    return null;
+  }
 
   const auth = new JWT({
-    email: credentials.client_email,
-    key: credentials.private_key,
+    email: clientEmail,
+    key: privateKey,
     scopes: CALENDAR_SCOPES,
   });
 
@@ -42,6 +80,12 @@ export async function registerWatchChannel(
 ): Promise<{ channelId: string; resourceId: string; expiration: Date } | null> {
   try {
     const client = await getCalendarClient();
+
+    // If no credentials available, skip registration silently
+    if (!client) {
+      return null;
+    }
+
     const channelId = randomUUID();
     const expiration = new Date(Date.now() + CHANNEL_TTL_DAYS * 24 * 60 * 60 * 1000);
 
@@ -115,6 +159,16 @@ export async function registerWatchChannel(
 export async function stopWatchChannel(channelId: string, resourceId: string): Promise<boolean> {
   try {
     const client = await getCalendarClient();
+
+    // If no credentials available, just delete from DB
+    if (!client) {
+      await prisma.calendarWatchChannel
+        .delete({
+          where: { channelId },
+        })
+        .catch(() => {}); // Ignore if not found
+      return true;
+    }
 
     logEvent("stop_watch_channel_start", { channelId, resourceId });
 
