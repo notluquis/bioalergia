@@ -152,7 +152,7 @@
 
 .week-grid__hour-cell {
   block-size: 52px;
-  border-block-end: 1px solid hsl(var(--bc) / 0.06);
+  border-block-end: 1px solid hsl(var(--bc) / 0.12);
 }
 
 /* === EVENTS CONTAINER === */
@@ -497,22 +497,54 @@
 
 /* === CONTAINER QUERIES (2025) === */
 /* Responsive event cards based on container width */
-@container (max-width: 80px) {
+
+/* Very narrow: hide time, minimal title */
+@container (max-width: 60px) {
   .week-grid__event-time {
     display: none;
   }
 
   .week-grid__event-title {
-    -webkit-line-clamp: 1;
-    line-clamp: 1;
-    font-size: 0.5rem;
+    font-size: 0.45rem;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    word-break: break-all;
+  }
+
+  .week-grid__event-row {
+    flex-direction: column;
+    gap: 0;
   }
 }
 
-@container (min-width: 120px) {
+/* Narrow: compact time + title */
+@container (min-width: 60px) and (max-width: 100px) {
+  .week-grid__event-time {
+    font-size: 0.5rem;
+  }
+
   .week-grid__event-title {
+    font-size: 0.5rem;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+  }
+}
+
+/* Medium: show more content */
+@container (min-width: 100px) {
+  .week-grid__event-title {
+    font-size: 0.6rem;
     -webkit-line-clamp: 3;
     line-clamp: 3;
+  }
+}
+
+/* Wide: full visibility */
+@container (min-width: 150px) {
+  .week-grid__event-title {
+    font-size: 0.65rem;
+    -webkit-line-clamp: 4;
+    line-clamp: 4;
   }
 }
 
