@@ -355,6 +355,53 @@ export function registerCalendarEventRoutes(app: express.Express) {
     })
   );
 
+  // ============================================================================
+  // WEBHOOK DEBOUNCING
+  // Google Calendar sends multiple notifications for the same change.
+  // We debounce to coalesce rapid-fire notifications into a single sync.
+  // ============================================================================
+  const WEBHOOK_DEBOUNCE_MS = 5000; // 5 seconds
+  let webhookSyncTimer: ReturnType<typeof setTimeout> | null = null;
+  let webhookSyncPending = false;
+  let lastWebhookChannelId: string | null = null;
+
+  function executeWebhookSync(channelId: string) {
+    webhookSyncPending = false;
+    webhookSyncTimer = null;
+
+    console.log(`[webhook] 🚀 Executing debounced sync: ${channelId.slice(0, 8)}...`);
+
+    createCalendarSyncLogEntry({
+      triggerSource: "webhook",
+      triggerUserId: null,
+      triggerLabel: `channel:${channelId.slice(0, 8)}`,
+    })
+      .then((logId) => {
+        syncGoogleCalendarOnce()
+          .then(async (result) => {
+            await finalizeCalendarSyncLogEntry(logId, {
+              status: "SUCCESS",
+              fetchedAt: new Date(result.payload.fetchedAt),
+              inserted: result.upsertResult.inserted,
+              updated: result.upsertResult.updated,
+              skipped: result.upsertResult.skipped,
+              excluded: result.payload.excludedEvents.length,
+            });
+            console.log(`[webhook] ✅ Sync completed: ${channelId.slice(0, 8)}...`);
+          })
+          .catch(async (err) => {
+            await finalizeCalendarSyncLogEntry(logId, {
+              status: "ERROR",
+              errorMessage: err instanceof Error ? err.message : String(err),
+            });
+            console.error(`[webhook] ❌ Sync failed: ${channelId.slice(0, 8)}...`, err.message);
+          });
+      })
+      .catch((err) => {
+        console.error(`[webhook] ❌ Failed to create log entry:`, err.message);
+      });
+  }
+
   // Webhook endpoint for Google Calendar push notifications
   // Does NOT require authentication (Google will call this)
   app.post(
@@ -382,40 +429,23 @@ export function registerCalendarEventRoutes(app: express.Express) {
       }
 
       if (resourceState === "exists") {
-        // Calendar has changes - trigger sync
-        console.log(`[webhook] 📥 Change detected: channel=${channelId.slice(0, 8)}... msg#${messageNumber || "?"}`);
+        // Calendar has changes - schedule debounced sync
+        console.log(
+          `[webhook] 📥 Change #${messageNumber || "?"}: channel=${channelId.slice(0, 8)}... (debouncing ${WEBHOOK_DEBOUNCE_MS}ms)`
+        );
 
-        // Create log entry for webhook sync
-        createCalendarSyncLogEntry({
-          triggerSource: "webhook",
-          triggerUserId: null,
-          triggerLabel: `channel:${channelId.slice(0, 8)}`,
-        })
-          .then((logId) => {
-            // Queue sync job (don't await - respond immediately to Google)
-            syncGoogleCalendarOnce()
-              .then(async (result) => {
-                await finalizeCalendarSyncLogEntry(logId, {
-                  status: "SUCCESS",
-                  fetchedAt: new Date(result.payload.fetchedAt),
-                  inserted: result.upsertResult.inserted,
-                  updated: result.upsertResult.updated,
-                  skipped: result.upsertResult.skipped,
-                  excluded: result.payload.excludedEvents.length,
-                });
-                console.log(`[webhook] ✅ Sync completed: ${channelId.slice(0, 8)}...`);
-              })
-              .catch(async (err) => {
-                await finalizeCalendarSyncLogEntry(logId, {
-                  status: "ERROR",
-                  errorMessage: err instanceof Error ? err.message : String(err),
-                });
-                console.error(`[webhook] ❌ Sync failed: ${channelId.slice(0, 8)}...`, err.message);
-              });
-          })
-          .catch((err) => {
-            console.error(`[webhook] ❌ Failed to create log entry:`, err.message);
-          });
+        // Clear existing timer and reschedule
+        if (webhookSyncTimer) {
+          clearTimeout(webhookSyncTimer);
+        }
+
+        lastWebhookChannelId = channelId;
+        webhookSyncPending = true;
+        webhookSyncTimer = setTimeout(() => {
+          if (lastWebhookChannelId) {
+            executeWebhookSync(lastWebhookChannelId);
+          }
+        }, WEBHOOK_DEBOUNCE_MS);
 
         res.status(200).end();
         return;
