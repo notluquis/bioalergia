@@ -157,6 +157,11 @@ export type CalendarSyncLog = {
   skipped: number;
   excluded: number;
   errorMessage: string | null;
+  changeDetails?: {
+    inserted?: string[];
+    updated?: string[];
+    excluded?: string[];
+  } | null;
 };
 
 export type CalendarSyncStep = {
