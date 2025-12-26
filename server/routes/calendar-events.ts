@@ -385,13 +385,36 @@ export function registerCalendarEventRoutes(app: express.Express) {
         // Calendar has changes - trigger sync
         console.log(`[webhook] 📥 Change detected: channel=${channelId.slice(0, 8)}... msg#${messageNumber || "?"}`);
 
-        // Queue sync job (don't await - respond immediately to Google)
-        syncGoogleCalendarOnce()
-          .then(() => {
-            console.log(`[webhook] ✅ Sync completed: ${channelId.slice(0, 8)}...`);
+        // Create log entry for webhook sync
+        createCalendarSyncLogEntry({
+          triggerSource: "webhook",
+          triggerUserId: null,
+          triggerLabel: `channel:${channelId.slice(0, 8)}`,
+        })
+          .then((logId) => {
+            // Queue sync job (don't await - respond immediately to Google)
+            syncGoogleCalendarOnce()
+              .then(async (result) => {
+                await finalizeCalendarSyncLogEntry(logId, {
+                  status: "SUCCESS",
+                  fetchedAt: new Date(result.payload.fetchedAt),
+                  inserted: result.upsertResult.inserted,
+                  updated: result.upsertResult.updated,
+                  skipped: result.upsertResult.skipped,
+                  excluded: result.payload.excludedEvents.length,
+                });
+                console.log(`[webhook] ✅ Sync completed: ${channelId.slice(0, 8)}...`);
+              })
+              .catch(async (err) => {
+                await finalizeCalendarSyncLogEntry(logId, {
+                  status: "ERROR",
+                  errorMessage: err instanceof Error ? err.message : String(err),
+                });
+                console.error(`[webhook] ❌ Sync failed: ${channelId.slice(0, 8)}...`, err.message);
+              });
           })
           .catch((err) => {
-            console.error(`[webhook] ❌ Sync failed: ${channelId.slice(0, 8)}...`, err.message);
+            console.error(`[webhook] ❌ Failed to create log entry:`, err.message);
           });
 
         res.status(200).end();
