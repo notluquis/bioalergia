@@ -10,7 +10,7 @@ import {
   type CalendarEventFilters,
 } from "../lib/google-calendar-queries.js";
 import { syncGoogleCalendarOnce } from "../lib/google-calendar.js";
-import { prisma } from "../prisma.js";
+import { prisma, Prisma } from "../prisma.js";
 
 import {
   loadSettings,
@@ -204,6 +204,7 @@ export function registerCalendarEventRoutes(app: express.Express) {
             skipped: number | null;
             excluded: number | null;
             errorMessage: string | null;
+            changeDetails: Prisma.JsonValue | null;
           }) => ({
             id: Number(log.id),
             triggerSource: log.triggerSource,
@@ -216,8 +217,8 @@ export function registerCalendarEventRoutes(app: express.Express) {
             inserted: Number(log.inserted ?? 0),
             updated: Number(log.updated ?? 0),
             skipped: Number(log.skipped ?? 0),
-            excluded: Number(log.excluded ?? 0),
             errorMessage: log.errorMessage ?? null,
+            changeDetails: log.changeDetails,
           })
         ),
       });
