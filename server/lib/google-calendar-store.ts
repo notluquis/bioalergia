@@ -37,7 +37,7 @@ export async function upsertGoogleCalendarEvents(events: CalendarEventRecord[]) 
   let updated = 0;
   let skipped = 0;
   const insertedSummaries: string[] = [];
-  const updatedSummaries: string[] = [];
+  const updatedSummaries: (string | { summary: string; changes: string[] })[] = [];
 
   for (const event of events) {
     // Convertir googleId a ID interno de la BD
@@ -56,7 +56,19 @@ export async function upsertGoogleCalendarEvents(events: CalendarEventRecord[]) 
           externalEventId: event.eventId,
         },
       },
-      select: { id: true },
+      select: {
+        id: true,
+        summary: true,
+        description: true,
+        location: true,
+        eventStatus: true,
+        startDateTime: true,
+        startDate: true,
+        endDateTime: true,
+        endDate: true,
+        transparency: true,
+        visibility: true,
+      },
     });
 
     const data = {
@@ -106,7 +118,11 @@ export async function upsertGoogleCalendarEvents(events: CalendarEventRecord[]) 
       if (existing) {
         updated++;
         if (updatedSummaries.length < 20) {
-          updatedSummaries.push(summaryText);
+          const changes = computeEventDiff(existing, data);
+
+          // Always push object structure for consistency in new logs
+          // If no visible changes, changes array will be empty
+          updatedSummaries.push({ summary: summaryText, changes });
         }
       } else {
         inserted++;
@@ -155,4 +171,58 @@ export async function removeGoogleCalendarEvents(events: { calendarId: string; e
       },
     });
   }
+}
+
+/**
+ * Helper to compute visible differences between existing and new event data.
+ */
+interface DiffableEvent {
+  summary?: string | null;
+  description?: string | null;
+  location?: string | null;
+  eventStatus?: string | null;
+  transparency?: string | null;
+  visibility?: string | null;
+  startDateTime?: Date | null;
+  startDate?: Date | null;
+  endDateTime?: Date | null;
+  endDate?: Date | null;
+}
+
+function computeEventDiff(existing: DiffableEvent, incoming: DiffableEvent): string[] {
+  const changes: string[] = [];
+
+  const normalize = (val: unknown) => (val === null || val === undefined ? "" : String(val).trim());
+
+  const diff = (label: string, oldVal: unknown, newVal: unknown) => {
+    const o = normalize(oldVal);
+    const n = normalize(newVal);
+    if (o !== n) {
+      // Truncate long values for log readability
+      const shortO = o.length > 30 ? o.slice(0, 30) + "..." : o;
+      const shortN = n.length > 30 ? n.slice(0, 30) + "..." : n;
+      // Only log if there is actual content to show
+      if (shortO || shortN) changes.push(`${label}: "${shortO}" -> "${shortN}"`);
+    }
+  };
+
+  const fmtDate = (d: Date | null | undefined) => (d ? d.toISOString().slice(0, 16).replace("T", " ") : "");
+
+  diff("Título", existing.summary, incoming.summary);
+  diff("Desc", existing.description, incoming.description);
+  diff("Lugar", existing.location, incoming.location);
+  diff("Estado", existing.eventStatus, incoming.eventStatus);
+  diff("Transparencia", existing.transparency, incoming.transparency);
+  diff("Visibilidad", existing.visibility, incoming.visibility);
+
+  // Compare unified times
+  const oldStart = fmtDate(existing.startDateTime || existing.startDate);
+  const newStart = fmtDate(incoming.startDateTime || incoming.startDate);
+  if (oldStart !== newStart) changes.push(`Inicio: ${oldStart} -> ${newStart}`);
+
+  const oldEnd = fmtDate(existing.endDateTime || existing.endDate);
+  const newEnd = fmtDate(incoming.endDateTime || incoming.endDate);
+  if (oldEnd !== newEnd) changes.push(`Fin: ${oldEnd} -> ${newEnd}`);
+
+  return changes;
 }

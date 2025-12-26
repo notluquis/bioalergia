@@ -217,6 +217,7 @@ export function registerCalendarEventRoutes(app: express.Express) {
             inserted: Number(log.inserted ?? 0),
             updated: Number(log.updated ?? 0),
             skipped: Number(log.skipped ?? 0),
+            excluded: Number(log.excluded ?? 0),
             errorMessage: log.errorMessage ?? null,
             changeDetails: log.changeDetails,
           })
@@ -373,11 +374,10 @@ export function registerCalendarEventRoutes(app: express.Express) {
   // ============================================================================
   const WEBHOOK_DEBOUNCE_MS = 5000; // 5 seconds
   let webhookSyncTimer: ReturnType<typeof setTimeout> | null = null;
-  let webhookSyncPending = false;
+
   let lastWebhookChannelId: string | null = null;
 
   function executeWebhookSync(channelId: string) {
-    webhookSyncPending = false;
     webhookSyncTimer = null;
 
     console.log(`[webhook] 🚀 Executing debounced sync: ${channelId.slice(0, 8)}...`);
@@ -460,7 +460,7 @@ export function registerCalendarEventRoutes(app: express.Express) {
         }
 
         lastWebhookChannelId = channelId;
-        webhookSyncPending = true;
+
         webhookSyncTimer = setTimeout(() => {
           if (lastWebhookChannelId) {
             executeWebhookSync(lastWebhookChannelId);

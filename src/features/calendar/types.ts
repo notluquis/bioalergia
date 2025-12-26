@@ -159,7 +159,7 @@ export type CalendarSyncLog = {
   errorMessage: string | null;
   changeDetails?: {
     inserted?: string[];
-    updated?: string[];
+    updated?: (string | { summary: string; changes: string[] })[];
     excluded?: string[];
   } | null;
 };
