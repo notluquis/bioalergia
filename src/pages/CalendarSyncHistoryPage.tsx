@@ -121,14 +121,11 @@ export default function CalendarSyncHistoryPage() {
               Página {page + 1} de {totalPages}
             </span>
             <div className="flex gap-2">
-              <Button
-                size="sm"
-                variant="secondary"
-                disabled={page === 0}
-                onClick={() => setPage((prev) => Math.max(0, prev - 1))}
-              >
-                Anterior
-              </Button>
+              {page > 0 && (
+                <Button size="sm" variant="secondary" onClick={() => setPage((prev) => Math.max(0, prev - 1))}>
+                  Anterior
+                </Button>
+              )}
               <Button
                 size="sm"
                 variant="secondary"
