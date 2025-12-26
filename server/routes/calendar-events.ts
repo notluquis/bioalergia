@@ -364,41 +364,34 @@ export function registerCalendarEventRoutes(app: express.Express) {
       const channelId = req.headers["x-goog-channel-id"] as string | undefined;
       const resourceState = req.headers["x-goog-resource-state"] as string | undefined;
       const resourceId = req.headers["x-goog-resource-id"] as string | undefined;
-
-      // Log webhook received
-      console.log("Calendar webhook received", {
-        channelId,
-        resourceState,
-        resourceId,
-        headers: req.headers,
-      });
+      const messageNumber = req.headers["x-goog-message-number"] as string | undefined;
 
       // Verify channel exists in database
       if (!channelId || !resourceId) {
-        console.warn("Missing channelId or resourceId in webhook headers");
+        console.warn("[webhook] ⚠️ Missing channelId or resourceId");
         res.status(400).json({ error: "Missing required headers" });
         return;
       }
 
       // Handle different resource states
       if (resourceState === "sync") {
-        // Initial verification request from Google
-        console.log("Webhook sync verification", { channelId });
+        // Initial verification from Google - acknowledge silently
+        console.log(`[webhook] ✓ Sync verified: ${channelId.slice(0, 8)}...`);
         res.status(200).end();
         return;
       }
 
       if (resourceState === "exists") {
         // Calendar has changes - trigger sync
-        console.log("Webhook exists notification - queueing sync", { channelId, resourceId });
+        console.log(`[webhook] 📥 Change detected: channel=${channelId.slice(0, 8)}... msg#${messageNumber || "?"}`);
 
         // Queue sync job (don't await - respond immediately to Google)
         syncGoogleCalendarOnce()
           .then(() => {
-            console.log("Webhook-triggered sync completed", { channelId });
+            console.log(`[webhook] ✅ Sync completed: ${channelId.slice(0, 8)}...`);
           })
           .catch((err) => {
-            console.error("Webhook-triggered sync failed", err, { channelId });
+            console.error(`[webhook] ❌ Sync failed: ${channelId.slice(0, 8)}...`, err.message);
           });
 
         res.status(200).end();
@@ -406,7 +399,7 @@ export function registerCalendarEventRoutes(app: express.Express) {
       }
 
       // Unknown state
-      console.log("Unknown webhook resource state", { resourceState, channelId });
+      console.log(`[webhook] ❓ Unknown state: ${resourceState}`);
       res.status(200).end();
     })
   );
