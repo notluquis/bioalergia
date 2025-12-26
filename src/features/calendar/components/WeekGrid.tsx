@@ -84,11 +84,19 @@ interface EventWithLayout extends CalendarEventDetail {
   totalColumns: number;
 }
 
-// Calculate layout for overlapping events (greedy column assignment)
+// Calculate layout for overlapping events
+// Each cluster of overlapping events gets its own column count
+// Non-overlapping events get full width (1 column)
+const MAX_COLUMNS = 6;
+
 function calculateEventLayout(events: CalendarEventDetail[]): EventWithLayout[] {
   if (events.length === 0) return [];
 
-  // Helper to get event end time in ms
+  // Helper to get event times in ms
+  const getStartMs = (event: CalendarEventDetail): number => {
+    return dayjs(event.startDateTime).valueOf();
+  };
+
   const getEndMs = (event: CalendarEventDetail): number => {
     if (event.endDateTime) {
       const end = dayjs(event.endDateTime);
@@ -99,46 +107,89 @@ function calculateEventLayout(events: CalendarEventDetail[]): EventWithLayout[] 
       }
       return end.valueOf();
     }
-    return dayjs(event.startDateTime).valueOf() + 30 * 60 * 1000; // Default 30 min
+    return dayjs(event.startDateTime).valueOf() + 30 * 60 * 1000;
   };
 
-  // Sort by start time, then by duration (longer first for better visual)
+  // Check if two events overlap
+  const eventsOverlap = (a: CalendarEventDetail, b: CalendarEventDetail): boolean => {
+    const startA = getStartMs(a);
+    const endA = getEndMs(a);
+    const startB = getStartMs(b);
+    const endB = getEndMs(b);
+    return startA < endB && endA > startB;
+  };
+
+  // Sort by start time, then by duration (longer first)
   const sorted = [...events].sort((a, b) => {
-    const startA = dayjs(a.startDateTime).valueOf();
-    const startB = dayjs(b.startDateTime).valueOf();
-    if (startA !== startB) return startA - startB;
-    // Longer events first (leftmost column)
-    const durationA = getEndMs(a) - startA;
-    const durationB = getEndMs(b) - startB;
-    return durationB - durationA;
+    const startDiff = getStartMs(a) - getStartMs(b);
+    if (startDiff !== 0) return startDiff;
+    return getEndMs(b) - getStartMs(b) - (getEndMs(a) - getStartMs(a));
   });
 
-  // Columns track end time of last event in each column
-  const columns: number[] = [];
-  const result: (CalendarEventDetail & { column: number })[] = [];
+  // Group events into overlapping clusters
+  const clusters: CalendarEventDetail[][] = [];
 
   for (const event of sorted) {
-    const start = dayjs(event.startDateTime).valueOf();
-    const end = getEndMs(event);
+    // Find a cluster this event overlaps with
+    let addedToCluster = false;
 
-    // Find first column where this event fits (no overlap)
-    let columnIndex = columns.findIndex((colEnd) => start >= colEnd);
-
-    if (columnIndex === -1) {
-      // No existing column available, create new
-      columnIndex = columns.length;
-      columns.push(end);
-    } else {
-      // Use this column, update its end time
-      columns[columnIndex] = end;
+    for (const cluster of clusters) {
+      // Check if event overlaps with ANY event in this cluster
+      if (cluster.some((e) => eventsOverlap(e, event))) {
+        cluster.push(event);
+        addedToCluster = true;
+        break;
+      }
     }
 
-    result.push({ ...event, column: columnIndex });
+    if (!addedToCluster) {
+      // Start a new cluster
+      clusters.push([event]);
+    }
   }
 
-  // Add totalColumns to each event
-  const totalColumns = columns.length;
-  return result.map((e) => ({ ...e, totalColumns }));
+  // Process each cluster independently
+  const result: EventWithLayout[] = [];
+
+  for (const cluster of clusters) {
+    // Sort cluster by start time
+    cluster.sort((a, b) => getStartMs(a) - getStartMs(b));
+
+    // Assign columns within this cluster
+    const columns: number[] = []; // end times per column
+    const clusterEvents: { event: CalendarEventDetail; column: number }[] = [];
+
+    for (const event of cluster) {
+      const start = getStartMs(event);
+      const end = getEndMs(event);
+
+      // Find first available column
+      let columnIndex = columns.findIndex((colEnd) => start >= colEnd);
+
+      if (columnIndex === -1) {
+        columnIndex = columns.length;
+        columns.push(end);
+      } else {
+        columns[columnIndex] = end;
+      }
+
+      clusterEvents.push({ event, column: columnIndex });
+    }
+
+    // Total columns for THIS cluster (capped at MAX)
+    const totalColumns = Math.min(columns.length, MAX_COLUMNS);
+
+    // Add to result with cluster-specific column count
+    for (const { event, column } of clusterEvents) {
+      result.push({
+        ...event,
+        column: Math.min(column, MAX_COLUMNS - 1),
+        totalColumns,
+      });
+    }
+  }
+
+  return result;
 }
 
 // Get category color class
