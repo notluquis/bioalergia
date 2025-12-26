@@ -151,9 +151,19 @@ export default function CalendarSyncHistoryPage() {
                                   Actualizadas ({log.changeDetails.updated?.length})
                                 </p>
                                 <ul className="text-base-content/70 space-y-0.5">
-                                  {log.changeDetails.updated?.map((s, i) => (
-                                    <li key={i}>• {s}</li>
-                                  ))}
+                                  {log.changeDetails.updated?.map((s, i) => {
+                                    if (typeof s === "string") return <li key={i}>• {s}</li>;
+                                    return (
+                                      <li key={i}>
+                                        <span className="font-medium">• {s.summary}</span>
+                                        <ul className="border-base-content/20 mt-0.5 ml-1 space-y-0.5 border-l-2 pl-3 text-xs opacity-80">
+                                          {s.changes.map((c, j) => (
+                                            <li key={j}>{c}</li>
+                                          ))}
+                                        </ul>
+                                      </li>
+                                    );
+                                  })}
                                 </ul>
                               </div>
                             )}

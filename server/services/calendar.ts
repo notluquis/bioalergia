@@ -65,7 +65,7 @@ export async function finalizeCalendarSyncLogEntry(
     errorMessage?: string;
     changeDetails?: {
       inserted?: string[];
-      updated?: string[];
+      updated?: (string | { summary: string; changes: string[] })[];
       excluded?: string[];
     };
   }
