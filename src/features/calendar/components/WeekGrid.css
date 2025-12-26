@@ -10,7 +10,7 @@
   --wg-bg: hsl(var(--b1));
   --wg-header-bg: hsl(var(--b2) / 0.6);
   --wg-time-bg: hsl(var(--b2) / 0.4);
-  --wg-today-accent: hsl(var(--p) / 0.08);
+  --wg-today-accent: hsl(var(--p) / 0.15);
   --wg-now-color: hsl(var(--er));
   --wg-shadow: 0 1px 3px hsl(var(--bc) / 0.06), 0 4px 12px hsl(var(--bc) / 0.04);
   /* Dynamic height: viewport - navbar - header - padding */
@@ -68,6 +68,7 @@
 
 .week-grid__day-header--today {
   background: var(--wg-today-accent);
+  box-shadow: inset 0 3px 0 0 hsl(var(--p));
 }
 
 .week-grid__day-name {
