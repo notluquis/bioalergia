@@ -20,6 +20,7 @@ const pageModules = import.meta.glob([
   "../pages/**/*.tsx",
   "../components/Layout/**/*.tsx",
   "../features/**/pages/**/*.tsx",
+  "../features/**/layout/**/*.tsx",
 ]) as Record<string, () => Promise<{ default: React.ComponentType }>>;
 
 /**
