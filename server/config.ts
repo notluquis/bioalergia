@@ -18,7 +18,7 @@ export const sessionCookieOptions: CookieOptions = {
   httpOnly: true,
   secure: isProduction,
   sameSite: isProduction ? "lax" : "lax",
-  maxAge: 24 * 60 * 60 * 1000, // 24 hours (1 day)
+  maxAge: 12 * 60 * 60 * 1000, // 12 hours
   path: "/",
 };
 
