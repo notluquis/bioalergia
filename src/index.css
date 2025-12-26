@@ -10,6 +10,10 @@
   Theme is declared in `tailwind.config.cjs`. */
 @plugin "daisyui";
 
+/* Feature module styles */
+@import "./features/finance/finance.css";
+@import "./features/calendar/components/WeekGrid.css";
+
 /* NOTE: daisyUI theme is defined in `tailwind.config.cjs` to avoid import resolution issues
    (we map daisyUI semantic colors to our CSS variables there). */
 @theme {
