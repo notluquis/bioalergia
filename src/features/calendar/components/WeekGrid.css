@@ -67,8 +67,14 @@
 }
 
 .week-grid__day-header--today {
-  background: var(--wg-today-accent);
-  box-shadow: inset 0 3px 0 0 hsl(var(--p));
+  background: hsl(var(--p) / 0.2);
+  box-shadow: inset 0 4px 0 0 hsl(var(--p));
+  position: relative;
+}
+
+.week-grid__day-header--today .week-grid__day-name {
+  color: hsl(var(--p));
+  font-weight: 800;
 }
 
 .week-grid__day-name {
@@ -89,12 +95,14 @@
 .week-grid__day-header--today .week-grid__day-number {
   background: hsl(var(--p));
   color: hsl(var(--pc));
-  inline-size: 2.25rem;
-  block-size: 2.25rem;
+  inline-size: 2.5rem;
+  block-size: 2.5rem;
   border-radius: 50%;
   display: grid;
   place-items: center;
-  font-size: 1.1rem;
+  font-size: 1.2rem;
+  font-weight: 900;
+  box-shadow: 0 2px 8px hsl(var(--p) / 0.4);
 }
 
 /* === BODY === */
@@ -148,7 +156,7 @@
 }
 
 .week-grid__day-column--today {
-  background: var(--wg-today-accent);
+  background: hsl(var(--p) / 0.12);
 }
 
 .week-grid__hour-cell {

@@ -6,40 +6,66 @@
       // Community 2025 Standard: Global Chunk Load Error Handler
       // Catches errors before React even mounts or during module evaluation
 
-      window.addEventListener("error", (e) => {
-        const msg = e.message || "";
+      // CAPTURE PHASE handler for script/link load failures (404s)
+      window.addEventListener(
+        "error",
+        function (e) {
+          if (e.target && (e.target.tagName === "SCRIPT" || e.target.tagName === "LINK")) {
+            console.warn("Resource load failure detected:", e.target.src || e.target.href);
+            attemptRecovery();
+          }
+        },
+        true
+      ); // CAPTURE PHASE is critical for resource errors
+
+      // BUBBLE PHASE handler for runtime errors (chunk imports)
+      window.addEventListener("error", function (e) {
+        var msg = e.message || "";
         if (
           /Failed to fetch dynamically imported module|Importing a module script failed|is not a valid JavaScript MIME type/i.test(
             msg
           )
         ) {
-          console.warn("Global chunk load error detected. Attempting recovery...");
-
-          // Prevent infinite reload loops (max 1 reload per 10 seconds)
-          const lastReload = sessionStorage.getItem("chunk_reload_ts");
-          const now = Date.now();
-          if (!lastReload || now - Number(lastReload) > 10000) {
-            sessionStorage.setItem("chunk_reload_ts", String(now));
-
-            // Nuclear cache clear
-            if ("serviceWorker" in navigator) {
-              navigator.serviceWorker.getRegistrations().then((regs) => {
-                regs.forEach((r) => r.unregister());
-              });
-            }
-            if ("caches" in window) {
-              caches
-                .keys()
-                .then((names) => Promise.all(names.map((n) => caches.delete(n))))
-                .then(() => window.location.reload());
-            } else {
-              window.location.reload();
-            }
-          }
+          console.warn("Dynamic import error detected:", msg);
+          attemptRecovery();
         }
       });
 
-      (function () {
+      function attemptRecovery() {
+        // Prevent infinite reload loops (max 1 reload per 10 seconds)
+        var lastReload = sessionStorage.getItem("chunk_reload_ts");
+        var now = Date.now();
+        if (!lastReload || now - Number(lastReload) > 10000) {
+          sessionStorage.setItem("chunk_reload_ts", String(now));
+
+          // Nuclear cache clear
+          if ("serviceWorker" in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function (regs) {
+              regs.forEach(function (r) {
+                r.unregister();
+              });
+            });
+          }
+          if ("caches" in window) {
+            caches
+              .keys()
+              .then(function (names) {
+                return Promise.all(
+                  names.map(function (n) {
+                    return caches.delete(n);
+                  })
+                );
+              })
+              .then(function () {
+                window.location.reload();
+              });
+          } else {
+            window.location.reload();
+          }
+        }
+      }
+    </script>
+    <script>
         const THEME_KEY = "bioalergia:theme";
         let theme = "dark";
         try {
