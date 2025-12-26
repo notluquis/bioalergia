@@ -23,6 +23,7 @@ import { getUploadsRootDir } from "./lib/uploads.js";
 import { registerDailyProductionBalanceRoutes } from "./routes/daily-production-balances.js";
 import { startDailyProductionReminderJob } from "./modules/dailyProductionReminders.js";
 import { startCalendarCron, stopCalendarCron } from "./lib/calendar-cron.js";
+import { setupAllWatchChannels } from "./lib/google-calendar-watch.js";
 import shareTargetRouter from "./routes/share-target.js";
 import notificationsRouter from "./routes/notifications.js";
 import csvUploadRouter from "./routes/csv-upload/index.js";
@@ -243,6 +244,11 @@ const server = app.listen(PORT, () => {
 
   // Start calendar cron jobs (webhook renewal + fallback sync)
   startCalendarCron();
+
+  // Setup webhook watch channels for all calendars (register if missing)
+  setupAllWatchChannels().catch((err) => {
+    logger.error({ event: "setup_watch_channels_error", error: err });
+  });
 });
 
 // Graceful Shutdown

@@ -223,3 +223,72 @@ export async function getActiveWatchChannels(): Promise<
     expiration: ch.expiration,
   }));
 }
+
+/**
+ * Setup watch channels for all calendars that don't have one
+ * Should be called on server startup
+ */
+export async function setupAllWatchChannels(): Promise<void> {
+  try {
+    // Get all calendars
+    const calendars = await prisma.calendar.findMany();
+
+    // Get existing active channels
+    const existingChannels = await prisma.calendarWatchChannel.findMany({
+      where: {
+        expiration: {
+          gt: new Date(),
+        },
+      },
+      select: {
+        calendarId: true,
+      },
+    });
+
+    const calendarsWithChannels = new Set(existingChannels.map((ch) => ch.calendarId));
+
+    // Find calendars without watch channels
+    const calendarsNeedingChannels = calendars.filter((cal) => !calendarsWithChannels.has(cal.id));
+
+    logEvent("setup_watch_channels_start", {
+      totalCalendars: calendars.length,
+      existingChannels: existingChannels.length,
+      needingChannels: calendarsNeedingChannels.length,
+    });
+
+    if (calendarsNeedingChannels.length === 0) {
+      logEvent("setup_watch_channels_skip", {
+        message: "All calendars already have active watch channels",
+      });
+      return;
+    }
+
+    // Register watch channels for calendars that need them
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const calendar of calendarsNeedingChannels) {
+      const result = await registerWatchChannel(calendar.googleId, calendar.id);
+      if (result) {
+        successCount++;
+        logEvent("setup_watch_channel_success", {
+          calendarGoogleId: calendar.googleId,
+          channelId: result.channelId,
+        });
+      } else {
+        failCount++;
+        logWarn("setup_watch_channel_failed", {
+          calendarGoogleId: calendar.googleId,
+        });
+      }
+    }
+
+    logEvent("setup_watch_channels_complete", {
+      successCount,
+      failCount,
+    });
+  } catch (error) {
+    console.error("setup_watch_channels_error", error);
+    logWarn("setup_watch_channels_error", {});
+  }
+}
