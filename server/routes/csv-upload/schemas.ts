@@ -85,16 +85,93 @@ export const TABLE_SCHEMAS = {
       .optional(),
     notes: z.string().optional(),
   }),
-  transactions: z.object({
-    timestamp: z.string().refine((d) => !isNaN(Date.parse(d))),
-    description: z.string().optional(),
-    amount: z.coerce.number(),
-    direction: z.enum(["IN", "OUT", "NEUTRO"]),
-    rut: z.string().optional(),
-    origin: z.string().optional(),
-    destination: z.string().optional(),
-    category: z.string().optional(),
-  }),
+  transactions: z
+    .object({
+      // Fechas
+      transaction_date: z.string(),
+      settlement_date: z.string().optional(),
+      money_release_date: z.string().optional(),
+
+      // Identificadores
+      external_reference: z.string().optional(),
+      source_id: z.string().optional(),
+      user_id: z.string().optional(),
+      site: z.string().optional(),
+
+      // Montos
+      transaction_amount: z.coerce.number(),
+      transaction_currency: z.string().optional(),
+      fee_amount: z.coerce.number().optional(),
+      settlement_net_amount: z.coerce.number().optional(),
+      settlement_currency: z.string().optional(),
+      real_amount: z.coerce.number().optional(),
+      coupon_amount: z.coerce.number().optional(),
+      total_coupon_amount: z.coerce.number().optional(),
+      seller_amount: z.coerce.number().optional(),
+      mkp_fee_amount: z.coerce.number().optional(),
+      financing_fee_amount: z.coerce.number().optional(),
+      shipping_fee_amount: z.coerce.number().optional(),
+      taxes_amount: z.coerce.number().optional(),
+      tip_amount: z.coerce.number().optional(),
+
+      // Estado y Tipo
+      transaction_type: z.string(),
+      payment_method_type: z.string().optional(),
+      payment_method: z.string().optional(),
+      status: z.string().optional(),
+      is_released: z
+        .union([z.boolean(), z.string(), z.number()])
+        .transform((val) => val === true || val === "true" || val === "1" || val === 1)
+        .optional(),
+
+      // Misc
+      description: z.string().optional(),
+      metadata: z.string().optional(),
+      tax_detail: z.string().optional(),
+      taxes_disaggregated: z.string().optional(),
+      operation_tags: z.string().optional(),
+
+      // Operation Details
+      installments: z.coerce.number().optional(),
+      card_initial_number: z.string().optional(),
+      last_four_digits: z.string().optional(),
+      franchise: z.string().optional(),
+      issuer_name: z.string().optional(),
+
+      // Business Unit
+      business_unit: z.string().optional(),
+      sub_unit: z.string().optional(),
+      product_sku: z.string().optional(),
+      sale_detail: z.string().optional(),
+
+      // IDs
+      transaction_intent_id: z.string().optional(),
+      order_mp: z.string().optional(),
+      purchase_id: z.string().optional(),
+      pay_bank_transfer_id: z.string().optional(),
+      shipping_order_id: z.string().optional(),
+      invoicing_period: z.string().optional(),
+
+      // POS/Store
+      pos_id: z.string().optional(),
+      store_id: z.string().optional(),
+      store_name: z.string().optional(),
+      external_pos_id: z.string().optional(),
+      pos_name: z.string().optional(),
+      external_store_id: z.string().optional(),
+      poi_id: z.string().optional(),
+
+      // Shipping
+      shipping_id: z.coerce.number().optional(),
+      shipment_mode: z.string().optional(),
+      order_id: z.coerce.number().optional(),
+      pack_id: z.coerce.number().optional(),
+
+      // Wallet
+      poi_wallet_name: z.string().optional(),
+      poi_bank_name: z.string().optional(),
+    })
+    .passthrough(),
   daily_balances: z.object({
     date: z.string().transform((val, ctx) => normalizeCsvDate(val, ctx)),
     amount: z.coerce.number(),

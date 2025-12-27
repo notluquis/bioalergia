@@ -16,18 +16,18 @@ export function TransactionsFilters({ filters, loading, onChange, onSubmit }: Tr
         event.preventDefault();
         onSubmit();
       }}
-      className="grid gap-4 p-6 text-xs text-base-content lg:grid-cols-4 bg-base-100"
+      className="text-base-content bg-base-100 grid gap-4 p-6 text-xs lg:grid-cols-4"
     >
       <div className="flex flex-col gap-2">
-        <span className="font-semibold uppercase tracking-wide text-base-content/60">Fecha desde</span>
+        <span className="text-base-content/60 font-semibold tracking-wide uppercase">Fecha desde</span>
         <Input type="date" value={filters.from} onChange={(event) => onChange({ from: event.target.value })} />
       </div>
       <div className="flex flex-col gap-2">
-        <span className="font-semibold uppercase tracking-wide text-base-content/60">Fecha hasta</span>
+        <span className="text-base-content/60 font-semibold tracking-wide uppercase">Fecha hasta</span>
         <Input type="date" value={filters.to} onChange={(event) => onChange({ to: event.target.value })} />
       </div>
       <div className="flex flex-col gap-2">
-        <span className="font-semibold uppercase tracking-wide text-base-content/60">Descripción</span>
+        <span className="text-base-content/60 font-semibold tracking-wide uppercase">Descripción</span>
         <Input
           type="text"
           value={filters.description}
@@ -37,7 +37,7 @@ export function TransactionsFilters({ filters, loading, onChange, onSubmit }: Tr
         />
       </div>
       <div className="flex flex-col gap-2">
-        <span className="font-semibold uppercase tracking-wide text-base-content/60">ID transacción</span>
+        <span className="text-base-content/60 font-semibold tracking-wide uppercase">Source ID</span>
         <Input
           type="text"
           value={filters.sourceId}
@@ -47,48 +47,34 @@ export function TransactionsFilters({ filters, loading, onChange, onSubmit }: Tr
         />
       </div>
       <div className="flex flex-col gap-2">
-        <span className="font-semibold uppercase tracking-wide text-base-content/60">Cuenta asociada</span>
+        <span className="text-base-content/60 font-semibold tracking-wide uppercase">Ref. Externa</span>
         <Input
           type="text"
-          value={filters.bankAccountNumber}
-          onChange={(event) => onChange({ bankAccountNumber: event.target.value })}
-          placeholder="Número de cuenta"
-          inputMode="numeric"
+          value={filters.externalReference}
+          onChange={(event) => onChange({ externalReference: event.target.value })}
+          placeholder="Referencia externa"
           enterKeyHint="search"
         />
       </div>
       <div className="flex flex-col gap-2">
-        <span className="font-semibold uppercase tracking-wide text-base-content/60">Desde</span>
+        <span className="text-base-content/60 font-semibold tracking-wide uppercase">Tipo Transacción</span>
         <Input
           type="text"
-          value={filters.origin}
-          onChange={(event) => onChange({ origin: event.target.value })}
-          placeholder="Origen"
+          value={filters.transactionType}
+          onChange={(event) => onChange({ transactionType: event.target.value })}
+          placeholder="Ej: payment, release"
           enterKeyHint="search"
         />
       </div>
       <div className="flex flex-col gap-2">
-        <span className="font-semibold uppercase tracking-wide text-base-content/60">Hacia</span>
+        <span className="text-base-content/60 font-semibold tracking-wide uppercase">Estado</span>
         <Input
           type="text"
-          value={filters.destination}
-          onChange={(event) => onChange({ destination: event.target.value })}
-          placeholder="Destino"
+          value={filters.status}
+          onChange={(event) => onChange({ status: event.target.value })}
+          placeholder="Ej: approved"
           enterKeyHint="search"
         />
-      </div>
-      <div className="flex flex-col gap-2">
-        <span className="font-semibold uppercase tracking-wide text-base-content/60">Tipo</span>
-        <Input
-          as="select"
-          value={filters.direction}
-          onChange={(event) => onChange({ direction: event.target.value as Filters["direction"] })}
-        >
-          <option value="">Todos</option>
-          <option value="IN">Ingreso</option>
-          <option value="OUT">Egreso</option>
-          <option value="NEUTRO">Neutro</option>
-        </Input>
       </div>
       <div className="flex items-end">
         <Button type="submit" disabled={loading} size="sm">

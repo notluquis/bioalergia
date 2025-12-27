@@ -1,10 +1,9 @@
 import { useMemo } from "react";
-import { isCashbackCandidate } from "~/shared/cashback";
-import type { DbMovement, LedgerRow } from "../types";
+import type { Transaction, LedgerRow } from "../types";
 import { coerceAmount } from "@/lib/format";
 
 interface UseLedgerProps {
-  rows: DbMovement[];
+  rows: Transaction[];
   initialBalance: string;
   hasAmounts: boolean;
 }
@@ -16,16 +15,11 @@ export function useLedger({ rows, initialBalance, hasAmounts }: UseLedgerProps):
     let balance = initialBalanceNumber;
     const chronological = rows
       .slice()
-      .sort((a, b) => (a.timestamp > b.timestamp ? 1 : -1))
+      .sort((a, b) => (new Date(a.transactionDate).getTime() > new Date(b.transactionDate).getTime() ? 1 : -1))
       .map((row) => {
-        const amount = row.amount ?? 0;
-        const delta = isCashbackCandidate(row)
-          ? 0
-          : row.direction === "IN"
-            ? amount
-            : row.direction === "OUT"
-              ? -amount
-              : 0;
+        // transactionAmount is signed: positive = income, negative = expense
+        const amount = row.transactionAmount ?? 0;
+        const delta = amount;
         if (hasAmounts) {
           balance += delta;
         }

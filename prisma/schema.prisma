@@ -21,7 +21,6 @@ model Person {
   updatedAt    DateTime      @default(now()) @updatedAt @map("updated_at")
   counterpart  Counterpart?
   employee     Employee?
-  transactions Transaction[]
   user         User?
 
   @@map("people")
@@ -177,21 +176,91 @@ model EmployeeTimesheet {
 }
 
 model Transaction {
-  id          Int                  @id @default(autoincrement())
-  timestamp   DateTime
-  description String?
-  amount      Decimal              @db.Decimal(15, 2)
-  direction   TransactionDirection
-  personId    Int?                 @map("person_id")
-  origin      String?
-  destination String?
-  sourceFile  String?              @map("source_file")
-  rawJson     String?              @map("raw_json")
-  createdAt   DateTime             @default(now()) @map("created_at")
-  category    String?
-  person      Person?              @relation(fields: [personId], references: [id])
+  id                      Int      @id @default(autoincrement())
+  
+  // Fechas
+  transactionDate         DateTime @map("transaction_date")
+  description             String?  @map("description")
+  settlementDate          DateTime? @map("settlement_date")
+  moneyReleaseDate        DateTime? @map("money_release_date")
+  
+  // Identificadores y referencias
+  externalReference       String?  @map("external_reference")
+  sourceId                String?  @map("source_id")
+  userId                  String?  @map("user_id")
+  site                    String?
+  
+  // Montos
+  transactionAmount       Decimal  @map("transaction_amount") @db.Decimal(17, 2)
+  transactionCurrency     String   @map("transaction_currency") @db.VarChar(10)
+  feeAmount               Decimal? @map("fee_amount") @db.Decimal(17, 2)
+  settlementNetAmount     Decimal? @map("settlement_net_amount") @db.Decimal(17, 2)
+  settlementCurrency      String?  @map("settlement_currency") @db.VarChar(10)
+  realAmount              Decimal? @map("real_amount") @db.Decimal(17, 2)
+  couponAmount            Decimal? @map("coupon_amount") @db.Decimal(17, 2)
+  totalCouponAmount       Decimal? @map("total_coupon_amount") @db.Decimal(17, 2)
+  sellerAmount            Decimal? @map("seller_amount") @db.Decimal(17, 2)
+  mkpFeeAmount            Decimal? @map("mkp_fee_amount") @db.Decimal(17, 2)
+  financingFeeAmount      Decimal? @map("financing_fee_amount") @db.Decimal(17, 2)
+  shippingFeeAmount       Decimal? @map("shipping_fee_amount") @db.Decimal(17, 2)
+  taxesAmount             Decimal? @map("taxes_amount") @db.Decimal(17, 2)
+  tipAmount               Decimal? @map("tip_amount") @db.Decimal(17, 2)
+
+  // Estado y Tipo
+  transactionType         String   @map("transaction_type")
+  paymentMethodType       String?  @map("payment_method_type")
+  paymentMethod           String?  @map("payment_method")
+  status                  String?  
+  isReleased              Boolean? @map("is_released")
+
+  // Metadatos y JSONs
+  metadata                Json?
+  taxDetail               String?  @map("tax_detail")
+  taxesDisaggregated      Json?    @map("taxes_disaggregated")
+  operationTags           Json?    @map("operation_tags")
+
+  // Detalles de operación
+  installments            Int?
+  cardInitialNumber       String?  @map("card_initial_number")
+  lastFourDigits          String?  @map("last_four_digits")
+  franchise               String?
+  issuerName              String?  @map("issuer_name")
+  
+  // Unidades de negocio
+  businessUnit            String?  @map("business_unit")
+  subUnit                 String?  @map("sub_unit")
+  productSku              String?  @map("product_sku")
+  saleDetail              String?  @map("sale_detail")
+  
+  // IDs adicionales
+  transactionIntentId     String?  @map("transaction_intent_id")
+  orderMp                 String?  @map("order_mp")
+  purchaseId              String?  @map("purchase_id")
+  payBankTransferId       String?  @map("pay_bank_transfer_id")
+  shippingOrderId         String?  @map("shipping_order_id")
+  invoicingPeriod         String?  @map("invoicing_period")
+
+  // Datos de caja y sucursal
+  posId                   String?  @map("pos_id")
+  storeId                 String?  @map("store_id")
+  storeName               String?  @map("store_name")
+  externalPosId           String?  @map("external_pos_id")
+  posName                 String?  @map("pos_name")
+  externalStoreId         String?  @map("external_store_id")
+  poiId                   String?  @map("poi_id")
+
+  // Datos de envío
+  shippingId              BigInt?  @map("shipping_id")
+  shipmentMode            String?  @map("shipment_mode")
+  orderId                 BigInt?  @map("order_id")
+  packId                  BigInt?  @map("pack_id")
+
+  // Wallet
+  poiWalletName           String?  @map("poi_wallet_name")
+  poiBankName             String?  @map("poi_bank_name")
 
   @@map("transactions")
+  @@unique([sourceId, transactionType], map: "unique_mp_tx")
 }
 
 model DailyBalance {
@@ -525,3 +594,4 @@ enum UserStatus {
   ACTIVE
   SUSPENDED
 }
+

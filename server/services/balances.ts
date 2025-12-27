@@ -22,7 +22,7 @@ export interface BalancesApiResponse {
 }
 
 export async function getBalancesReport(from: string, to: string): Promise<BalancesApiResponse> {
-  // 1. Get previous balance (last recorded balance before 'from')
+  // 1. Get previous balance
   const previous = await prisma.dailyBalance.findFirst({
     where: {
       date: { lt: new Date(from) },
@@ -33,20 +33,19 @@ export async function getBalancesReport(from: string, to: string): Promise<Balan
   // 2. Get all transactions in range
   const transactions = await prisma.transaction.findMany({
     where: {
-      timestamp: {
+      transactionDate: {
         gte: new Date(from),
         lte: new Date(dayjs(to).endOf("day").toISOString()),
       },
     },
     select: {
-      timestamp: true,
-      amount: true,
-      direction: true,
-      category: true, // Check for cashback
+      transactionDate: true,
+      transactionAmount: true,
+      transactionType: true,
     },
   });
 
-  // 3. Get existing daily balances in range
+  // 3. Get existing daily balances
   const existingBalances = await prisma.dailyBalance.findMany({
     where: {
       date: {
@@ -60,33 +59,25 @@ export async function getBalancesReport(from: string, to: string): Promise<Balan
 
   // 4. Calculate daily stats
   const days: DailyBalanceRecord[] = [];
-  let runningBalance = previous ? Number(previous.amount) : 0; // This is an approximation if we don't have full history
+  let runningBalance = previous ? Number(previous.amount) : 0;
 
-  // Iterate day by day
   let current = dayjs(from);
   const end = dayjs(to);
 
   while (current.isBefore(end) || current.isSame(end, "day")) {
     const dateStr = current.format("YYYY-MM-DD");
 
-    // Filter transactions for this day
-    const dayTx = transactions.filter((t) => dayjs(t.timestamp).format("YYYY-MM-DD") === dateStr);
+    const dayTx = transactions.filter((t) => dayjs(t.transactionDate).format("YYYY-MM-DD") === dateStr);
 
     let totalIn = 0;
     let totalOut = 0;
-    let hasCashback = false;
 
     for (const tx of dayTx) {
-      if (tx.category === "CASHBACK") {
-        hasCashback = true;
-        continue; // Exclude from totals? Logic depends on business rule.
-        // User said: "Cashback excluido" in UI. So we exclude it from net change.
-      }
-
-      if (tx.direction === "IN") {
-        totalIn += tx.amount.toNumber();
+      const amt = tx.transactionAmount.toNumber();
+      if (amt >= 0) {
+        totalIn += amt;
       } else {
-        totalOut += tx.amount.toNumber();
+        totalOut += Math.abs(amt);
       }
     }
 
@@ -106,12 +97,9 @@ export async function getBalancesReport(from: string, to: string): Promise<Balan
       recordedBalance,
       difference,
       note: record?.note ?? null,
-      hasCashback,
+      hasCashback: false,
     });
 
-    // Update running balance for next day
-    // If we have a recorded balance, should we use it as the truth for the next day?
-    // Usually yes, reconciliation resets the drift.
     if (recordedBalance !== null) {
       runningBalance = recordedBalance;
     } else {
