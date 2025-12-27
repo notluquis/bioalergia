@@ -24,7 +24,7 @@ import { today } from "@/lib/dates";
 export default function LoansPage() {
   const { can } = useAuth();
   const queryClient = useQueryClient();
-  const canManage = useMemo(() => can("manage", "Loan"), [can]);
+  const canManage = useMemo(() => can("update", "Loan"), [can]);
   const canView = useMemo(() => can("read", "Loan"), [can]);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);

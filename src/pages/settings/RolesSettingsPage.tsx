@@ -398,7 +398,6 @@ export default function RolesSettingsPage() {
                                               {item.relatedPermissions.map((perm) => {
                                                 const actionMap: Record<string, string> = {
                                                   read: "Ver",
-                                                  manage: "Administrar",
                                                   create: "Crear",
                                                   update: "Editar",
                                                   delete: "Eliminar",
@@ -448,7 +447,6 @@ export default function RolesSettingsPage() {
 
                               const actionMap: Record<string, string> = {
                                 read: "Ver",
-                                manage: "Administrar",
                                 create: "Crear",
                                 update: "Editar",
                                 delete: "Eliminar",
@@ -532,7 +530,6 @@ export default function RolesSettingsPage() {
                             {otherPermissions.map((perm) => {
                               const actionMap: Record<string, string> = {
                                 read: "Ver",
-                                manage: "Administrar",
                                 create: "Crear",
                                 update: "Editar",
                                 delete: "Eliminar",

@@ -305,7 +305,7 @@ export function registerCalendarEventRoutes(app: express.Express) {
   app.post(
     "/api/calendar/events/classify",
     authenticate,
-    authorize("manage", "CalendarEvent"),
+    authorize("update", "CalendarEvent"),
     asyncHandler(async (req, res) => {
       const parsed = updateClassificationSchema.safeParse(req.body);
       if (!parsed.success) {

@@ -25,7 +25,7 @@ export function registerEmployeeRoutes(app: express.Express) {
   app.post(
     "/api/employees",
     authenticate,
-    authorize("manage", "Employee"),
+    authorize("update", "Employee"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       const parsed = employeeSchema.safeParse(req.body);
       if (!parsed.success) {
@@ -53,7 +53,7 @@ export function registerEmployeeRoutes(app: express.Express) {
   app.put(
     "/api/employees/:id",
     authenticate,
-    authorize("manage", "Employee"),
+    authorize("update", "Employee"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       const parsed = employeeUpdateSchema.safeParse(req.body);
       if (!parsed.success) {
@@ -71,7 +71,7 @@ export function registerEmployeeRoutes(app: express.Express) {
   app.delete(
     "/api/employees/:id",
     authenticate,
-    authorize("manage", "Employee"),
+    authorize("update", "Employee"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       const employeeId = Number(req.params.id);
       await deactivateEmployee(employeeId);

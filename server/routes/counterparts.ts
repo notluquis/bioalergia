@@ -77,7 +77,7 @@ export function registerCounterpartRoutes(app: express.Express) {
   app.put(
     "/api/counterparts/:id",
     authenticate,
-    authorize("manage", "Counterpart"),
+    authorize("update", "Counterpart"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       const counterpartId = Number(req.params.id);
       if (!Number.isFinite(counterpartId)) {
@@ -134,7 +134,7 @@ export function registerCounterpartRoutes(app: express.Express) {
   app.post(
     "/api/counterparts/:id/accounts",
     authenticate,
-    authorize("manage", "Counterpart"),
+    authorize("update", "Counterpart"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       const counterpartId = Number(req.params.id);
       if (!Number.isFinite(counterpartId)) {
@@ -164,7 +164,7 @@ export function registerCounterpartRoutes(app: express.Express) {
   app.put(
     "/api/counterparts/accounts/:accountId",
     authenticate,
-    authorize("manage", "Counterpart"),
+    authorize("update", "Counterpart"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       const accountId = Number(req.params.accountId);
       if (!Number.isFinite(accountId)) {

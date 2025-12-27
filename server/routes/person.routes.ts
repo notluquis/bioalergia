@@ -150,7 +150,7 @@ router.post("/", requireAuth, authorize("create", "Person"), async (req, res) =>
 });
 
 // PUT /api/people/:id - Update person
-router.put("/:id", requireAuth, authorize("manage", "Person"), async (req, res) => {
+router.put("/:id", requireAuth, authorize("update", "Person"), async (req, res) => {
   try {
     const data = personSchema.partial().parse(req.body);
     const authReq = req as AuthenticatedRequest;

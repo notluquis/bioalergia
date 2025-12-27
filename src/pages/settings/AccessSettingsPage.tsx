@@ -11,7 +11,7 @@ export default function AccessSettingsPage() {
   const { success, error: toastError } = useToast();
   const { can } = useAuth();
   const queryClient = useQueryClient();
-  const isAdmin = can("manage", "User");
+  const isAdmin = can("update", "User");
 
   const { data: users = [], isLoading: isLoadingUsers } = useQuery({
     queryKey: ["users", "admin-list"],

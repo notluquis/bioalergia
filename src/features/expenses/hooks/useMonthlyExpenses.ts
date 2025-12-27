@@ -29,7 +29,7 @@ type UpdateMonthlyExpensePayload = CreateMonthlyExpensePayload;
 export function useMonthlyExpenses() {
   const { can } = useAuth();
   const queryClient = useQueryClient();
-  const canManage = useMemo(() => can("manage", "Expense"), [can]);
+  const canManage = useMemo(() => can("update", "Expense"), [can]);
   const canView = useMemo(() => can("read", "Expense"), [can]);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);

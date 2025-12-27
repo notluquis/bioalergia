@@ -173,7 +173,7 @@ export function registerRoleRoutes(app: express.Express) {
   app.post(
     "/api/permissions/sync",
     authenticate,
-    authorize("manage", "Permission"),
+    authorize("update", "Permission"),
     asyncHandler(async (req, res) => {
       await syncPermissions();
       const permissions = await listPermissions();

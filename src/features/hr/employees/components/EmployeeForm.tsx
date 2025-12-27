@@ -18,7 +18,7 @@ interface EmployeeFormProps {
 export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFormProps) {
   const { can } = useAuth();
   const { error: toastError, success: toastSuccess } = useToast();
-  const canEdit = can("manage", "Employee");
+  const canEdit = can("update", "Employee");
 
   const [form, setForm] = useState<{
     fullName: string;

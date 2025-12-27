@@ -9,19 +9,17 @@ async function fixPermissions() {
   await syncPermissions();
   console.log("Permissions synced.");
 
-  // 2. Remove 'manage' permissions for resources (Normalization cleanup)
-  console.log("Cleaning up redundant 'manage' permissions...");
+  // 2. Remove ALL 'manage' permissions (Normalization cleanup - we use granular CRUD only)
+  console.log("Cleaning up 'manage' permissions...");
 
-  // Delete ALL manage permissions where subject != 'all'
-  // This ensures we fully normalize to CRUD even for static subjects like 'User' or 'Role'
+  // Delete ALL manage permissions including 'manage all'
   const result = await prisma.permission.deleteMany({
     where: {
-      action: "manage", // Only delete 'manage' action
-      subject: { not: "all" }, // Preserve 'manage all' (Super Admin)
+      action: "manage",
     },
   });
 
-  console.log(`Removed ${result.count} redundant 'manage' permissions.`);
+  console.log(`Removed ${result.count} 'manage' permissions.`);
 
   console.log("Permission fix complete.");
 }
