@@ -5,7 +5,7 @@ import { coerceAmount } from "@/lib/format";
 import { useAuth } from "@/context/AuthContext";
 import { useSettings } from "@/context/SettingsContext";
 import { logger } from "@/lib/logger";
-import { isCashbackCandidate } from "~/shared/cashback";
+
 import { useTransactionsQuery } from "@/features/finance/transactions/hooks/useTransactionsQuery";
 import Button from "@/components/ui/Button";
 import Alert from "@/components/ui/Alert";
@@ -28,11 +28,14 @@ export default function TransactionsMovements() {
     to: today(),
     description: "",
     sourceId: "",
+    externalReference: "",
+    transactionType: "",
+    status: "",
+    bankAccountNumber: "",
     origin: "",
     destination: "",
     direction: "",
     includeAmounts: false,
-    bankAccountNumber: "",
   });
   const [appliedFilters, setAppliedFilters] = useState<Filters>(draftFilters);
   const [visibleColumns, setVisibleColumns] = useState<Set<ColumnKey>>(
@@ -88,16 +91,11 @@ export default function TransactionsMovements() {
     let balance = initialBalanceNumber;
     const chronological = rows
       .slice()
-      .sort((a, b) => (a.timestamp > b.timestamp ? 1 : -1))
+      .sort((a, b) => (new Date(a.transactionDate).getTime() > new Date(b.transactionDate).getTime() ? 1 : -1))
       .map((row) => {
-        const amount = row.amount ?? 0;
-        const delta = isCashbackCandidate(row)
-          ? 0
-          : row.direction === "IN"
-            ? amount
-            : row.direction === "OUT"
-              ? -amount
-              : 0;
+        const amount = row.transactionAmount ?? 0;
+        const delta = amount; // transactionAmount is signed: positive = income, negative = expense
+
         if (hasAmounts) {
           balance += delta;
         }
@@ -149,8 +147,8 @@ export default function TransactionsMovements() {
             <div className="space-y-2">
               <h1 className="typ-title text-base-content">Movimientos en base</h1>
               <p className="typ-body text-base-content/70 max-w-2xl">
-                Los datos provienen de la tabla <code>mp_transactions</code>. Ajusta el saldo inicial para recalcular el
-                saldo acumulado.
+                Los datos provienen de la tabla <code>transactions</code> (Mercado Pago). Ajusta el saldo inicial para
+                recalcular el saldo acumulado.
                 {settings.supportEmail && (
                   <>
                     {" "}

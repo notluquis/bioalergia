@@ -8,63 +8,11 @@ import { mapTransaction } from "../lib/mappers.js";
 import { coerceLimit } from "../lib/query-helpers.js";
 import { transactionsQuerySchema } from "../schemas/index.js";
 import type { AuthenticatedRequest } from "../types.js";
-import {
-  listTransactions,
-  getParticipantLeaderboard,
-  getParticipantInsight,
-  type TransactionFilters,
-} from "../services/transactions.js";
+import { listTransactions, type TransactionFilters } from "../services/transactions.js";
 
 import { authorize } from "../middleware/authorize.js";
 
-// ... (other imports)
-
 export function registerTransactionRoutes(app: express.Express) {
-  // Participant leaderboard endpoint
-  app.get(
-    "/api/transactions/participants",
-    authenticate,
-    authorize("read", "Transaction"),
-    asyncHandler(async (req: AuthenticatedRequest, res) => {
-      const from = req.query.from ? parseDateOnly(String(req.query.from)) : undefined;
-      const to = req.query.to ? parseDateOnly(String(req.query.to)) : undefined;
-      const limit = req.query.limit ? Number(req.query.limit) : 10;
-      const mode = (req.query.mode as "combined" | "incoming" | "outgoing") || "outgoing";
-
-      logEvent("transactions/participants/leaderboard", requestContext(req, { from, to, limit, mode }));
-
-      const participants = await getParticipantLeaderboard({
-        from: from ?? undefined,
-        to: to ?? undefined,
-        limit: Math.min(limit, 100),
-        mode,
-      });
-
-      res.json({ status: "ok", participants });
-    })
-  );
-
-  // Participant insight endpoint
-  app.get(
-    "/api/transactions/participants/:participantId",
-    authenticate,
-    authorize("read", "Transaction"),
-    asyncHandler(async (req: AuthenticatedRequest, res) => {
-      const participantId = decodeURIComponent(req.params.participantId);
-      const from = req.query.from ? parseDateOnly(String(req.query.from)) : undefined;
-      const to = req.query.to ? parseDateOnly(String(req.query.to)) : undefined;
-
-      logEvent("transactions/participants/insight", requestContext(req, { participantId, from, to }));
-
-      const insight = await getParticipantInsight(participantId, {
-        from: from ?? undefined,
-        to: to ?? undefined,
-      });
-
-      res.json({ status: "ok", participant: participantId, ...insight });
-    })
-  );
-
   app.get(
     "/api/transactions",
     authenticate,
@@ -93,9 +41,10 @@ export function registerTransactionRoutes(app: express.Express) {
         from: parsed.from ? (parseDateOnly(parsed.from) ?? undefined) : undefined,
         to: parsed.to ? (parseDateOnly(parsed.to) ?? undefined) : undefined,
         description: parsed.description,
-        origin: parsed.origin,
-        destination: parsed.destination,
-        direction: parsed.direction,
+        sourceId: parsed.sourceId,
+        externalReference: parsed.externalReference,
+        transactionType: parsed.transactionType,
+        status: parsed.status,
         search: parsed.search,
       };
 

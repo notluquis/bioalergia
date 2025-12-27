@@ -33,7 +33,7 @@ export const TransactionsTable = memo(function TransactionsTable({
   const table = useTable<ColumnKey>({
     columns: allColumns,
     initialPageSize: pageSize,
-    initialSortColumn: "date",
+    initialSortColumn: "transactionDate",
     initialSortDirection: "desc",
   });
 
@@ -69,12 +69,12 @@ export const TransactionsTable = memo(function TransactionsTable({
       let firstValue: unknown = a[column as keyof LedgerRow];
       let secondValue: unknown = b[column as keyof LedgerRow];
 
-      if (column === "date") {
-        firstValue = new Date(a.timestamp).getTime();
-        secondValue = new Date(b.timestamp).getTime();
-      } else if (column === "amount") {
-        firstValue = Number(a.amount ?? 0);
-        secondValue = Number(b.amount ?? 0);
+      if (column === "transactionDate") {
+        firstValue = new Date(a.transactionDate).getTime();
+        secondValue = new Date(b.transactionDate).getTime();
+      } else if (column === "transactionAmount" || column === "settlementNetAmount" || column === "runningBalance") {
+        firstValue = Number(a[column as keyof LedgerRow] ?? 0);
+        secondValue = Number(b[column as keyof LedgerRow] ?? 0);
       }
 
       const baseComparison = compare(firstValue, secondValue);
@@ -117,7 +117,7 @@ export const TransactionsTable = memo(function TransactionsTable({
     <div className="space-y-4">
       {/* Column visibility controls */}
       <div className="flex flex-wrap gap-2">
-        <span className="text-xs font-semibold text-base-content">Mostrar columnas:</span>
+        <span className="text-base-content text-xs font-semibold">Mostrar columnas:</span>
         {COLUMN_DEFS.map((column) => (
           <Checkbox
             key={column.key}
@@ -129,15 +129,15 @@ export const TransactionsTable = memo(function TransactionsTable({
         ))}
       </div>
 
-      <div className="overflow-hidden bg-base-100">
-        <div className="overflow-x-auto muted-scrollbar">
-          <table className="min-w-full text-sm text-base-content">
+      <div className="bg-base-100 overflow-hidden">
+        <div className="muted-scrollbar overflow-x-auto">
+          <table className="text-base-content min-w-full text-sm">
             <thead className="bg-base-100/55 text-primary backdrop-blur-md">
               <tr>
                 {visibleColumns.map((column) => (
                   <th
                     key={column.key}
-                    className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide cursor-pointer hover:bg-base-100/70 whitespace-nowrap"
+                    className="hover:bg-base-100/70 cursor-pointer px-4 py-3 text-left text-xs font-semibold tracking-wide whitespace-nowrap uppercase"
                     {...getSortProps(column.key)}
                   >
                     {column.label} {getSortIcon(column.key)}
@@ -149,10 +149,10 @@ export const TransactionsTable = memo(function TransactionsTable({
               {displayedRows.map((row) => (
                 <tr
                   key={row.id}
-                  className="border-b border-base-300 bg-base-200 text-base-content transition-colors last:border-none even:bg-base-300 hover:bg-primary/10"
+                  className="border-base-300 bg-base-200 text-base-content even:bg-base-300 hover:bg-primary/10 border-b transition-colors last:border-none"
                 >
                   {visibleColumns.map((column) => (
-                    <td key={column.key} className="px-4 py-3">
+                    <td key={column.key} className="px-4 py-3 whitespace-nowrap">
                       {renderCell(column.key, row, hasAmounts)}
                     </td>
                   ))}
@@ -160,14 +160,14 @@ export const TransactionsTable = memo(function TransactionsTable({
               ))}
               {!rows.length && !loading && (
                 <tr>
-                  <td colSpan={visibleColumns.length} className="px-4 py-6 text-center text-base-content/60">
+                  <td colSpan={visibleColumns.length} className="text-base-content/60 px-4 py-6 text-center">
                     No hay resultados con los filtros actuales.
                   </td>
                 </tr>
               )}
               {loading && (
                 <tr>
-                  <td colSpan={visibleColumns.length} className="px-4 py-6 text-center text-primary">
+                  <td colSpan={visibleColumns.length} className="text-primary px-4 py-6 text-center">
                     Cargando movimientos...
                   </td>
                 </tr>
@@ -177,8 +177,8 @@ export const TransactionsTable = memo(function TransactionsTable({
         </div>
 
         {/* Pagination */}
-        <div className="flex flex-wrap items-center justify-between gap-4 border-t border-base-300 bg-base-200 px-4 py-3 text-xs text-base-content">
-          <div className="font-semibold text-base-content/90">
+        <div className="border-base-300 bg-base-200 text-base-content flex flex-wrap items-center justify-between gap-4 border-t px-4 py-3 text-xs">
+          <div className="text-base-content/90 font-semibold">
             Página {pageInfo.start} - {pageInfo.end} de {pageInfo.total} movimientos
           </div>
           <div className="flex flex-wrap items-center gap-3">
@@ -227,52 +227,59 @@ export const TransactionsTable = memo(function TransactionsTable({
 });
 
 function renderCell(key: ColumnKey, row: LedgerRow, hasAmounts: boolean) {
-  switch (key) {
-    case "date":
-      return dayjs(row.timestamp).format("DD/MM");
-    case "time":
-      return dayjs(row.timestamp).format("HH:mm");
-    case "description":
-      return (
-        <span title={row.description || undefined} className="block max-w-xs truncate">
-          {row.description}
-        </span>
-      );
-    case "source_id":
-      return row.source_id || "—";
-    case "origin":
-      return (
-        <span title={row.origin || undefined} className="block max-w-xs truncate">
-          {row.origin || "—"}
-        </span>
-      );
-    case "destination":
-      return (
-        <span title={row.destination || undefined} className="block max-w-xs truncate">
-          {row.destination || "—"}
-        </span>
-      );
-    case "direction":
-      return (
-        <span
-          className={`inline-block rounded px-2 py-1 text-xs font-semibold ${
-            row.direction === "IN"
-              ? "bg-success/20 text-success"
-              : row.direction === "OUT"
-                ? "bg-error/20 text-error"
-                : "bg-base-200 text-base-content/60"
-          }`}
-        >
-          {row.direction === "IN" ? "Entrada" : row.direction === "OUT" ? "Salida" : "Neutro"}
-        </span>
-      );
-    case "amount":
-      if (!hasAmounts) return "—";
-      return <span className={row.direction === "IN" ? "text-success" : "text-error"}>{fmtCLP(row.amount || 0)}</span>;
-    case "runningBalance":
-      if (!hasAmounts || !row.runningBalance) return "—";
-      return <span className="font-medium text-base-content">{fmtCLP(row.runningBalance)}</span>;
-    default:
-      return "—";
+  if (!row) return "—";
+
+  // Format Amounts
+  if (
+    key === "transactionAmount" ||
+    key === "settlementNetAmount" ||
+    key === "feeAmount" ||
+    key === "taxesAmount" ||
+    key === "couponAmount" ||
+    key === "shippingFeeAmount" ||
+    key === "financingFeeAmount" ||
+    key === "totalCouponAmount" ||
+    key === "sellerAmount" ||
+    key === "mkpFeeAmount" ||
+    key === "tipAmount" ||
+    key === "realAmount"
+  ) {
+    if (!hasAmounts) return "—";
+    const value = row[key as keyof LedgerRow] as number | null;
+    if (value === null || value === undefined) return "—";
+    // Colorize main amount
+    if (key === "transactionAmount") {
+      return <span className={value >= 0 ? "text-success" : "text-error"}>{fmtCLP(value)}</span>;
+    }
+    return fmtCLP(value);
   }
+
+  // Format Running Balance
+  if (key === "runningBalance") {
+    if (!hasAmounts || !row.runningBalance) return "—";
+    return <span className="text-base-content font-medium">{fmtCLP(row.runningBalance)}</span>;
+  }
+
+  // Format Dates
+  if (key === "transactionDate" || key === "moneyReleaseDate" || key === "settlementDate") {
+    const val = row[key as keyof LedgerRow] as string | null;
+    if (!val) return "—";
+    return dayjs(val).format("DD/MM/YYYY HH:mm");
+  }
+
+  // Format Boolean
+  if (key === "isReleased") {
+    return row.isReleased ? "Sí" : "No";
+  }
+
+  // Default String rendering
+  const value = row[key as keyof LedgerRow];
+  if (value === null || value === undefined) return "—";
+
+  const strVal = String(value);
+  return (
+    <span title={strVal} className="block max-w-xs truncate">
+      {strVal}
+    </span>
+  );
 }

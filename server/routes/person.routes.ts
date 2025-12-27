@@ -83,17 +83,14 @@ router.get("/:id", requireAuth, authorize("read", "Person"), async (req, res) =>
 
     const person = await prisma.person.findUnique({
       where: { id },
-      include: {
-        ...personInclude,
-        transactions: { take: 10, orderBy: { timestamp: "desc" } },
-      },
+      include: personInclude,
     });
     if (!person) return res.status(404).json({ status: "error", message: "Person not found" });
 
     res.json({
       status: "ok",
       person: mapPerson(person as PersonWithRoles),
-      transactions: person.transactions,
+      transactions: [], // Transaction model no longer has person relation
     });
   } catch (error) {
     logger.error({ tag: "People", error }, "Error fetching person");

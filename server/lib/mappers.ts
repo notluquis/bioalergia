@@ -1,5 +1,4 @@
 import { Prisma } from "@prisma/client";
-import { normalizeTimestamp } from "./time.js";
 import { normalizeRut } from "./rut.js";
 
 // --- Types ---
@@ -29,9 +28,8 @@ export type ServiceWithCounterpart = Prisma.ServiceGetPayload<{
   include: { counterpart: { include: { person: true } } };
 }>;
 
-export type EnrichedTransaction = Prisma.TransactionGetPayload<{
-  include: { person: true };
-}>;
+// Transaction type - no longer has person relation
+export type TransactionRow = Prisma.TransactionGetPayload<{}>;
 
 export type EmployeeWithPerson = Prisma.EmployeeGetPayload<{
   include: { person: true };
@@ -214,17 +212,17 @@ export function mapService(s: ServiceWithCounterpart) {
   };
 }
 
-export function mapTransaction(row: EnrichedTransaction) {
+export function mapTransaction(row: TransactionRow) {
   return {
     id: Number(row.id),
-    timestamp: normalizeTimestamp(row.timestamp, null),
+    transactionDate: row.transactionDate.toISOString(),
     description: row.description,
-    origin: row.origin,
-    destination: row.destination,
-    direction: row.direction as "IN" | "OUT" | "NEUTRO",
-    amount: row.amount != null ? Number(row.amount) : null,
-    created_at: row.createdAt.toISOString(),
-    person_name: row.person?.names,
-    person_rut: row.person?.rut,
+    transactionType: row.transactionType,
+    transactionAmount: row.transactionAmount != null ? Number(row.transactionAmount) : null,
+    status: row.status,
+    externalReference: row.externalReference,
+    sourceId: row.sourceId,
+    paymentMethod: row.paymentMethod,
+    settlementNetAmount: row.settlementNetAmount != null ? Number(row.settlementNetAmount) : null,
   };
 }

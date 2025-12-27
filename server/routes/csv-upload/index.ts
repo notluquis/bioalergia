@@ -105,6 +105,21 @@ router.post(
           });
           if (exists) toUpdate++;
           else toInsert++;
+        } else if (table === "transactions") {
+          if (parsed.source_id && parsed.transaction_type) {
+            const exists = await prisma.transaction.findUnique({
+              where: {
+                sourceId_transactionType: {
+                  sourceId: parsed.source_id,
+                  transactionType: parsed.transaction_type,
+                },
+              },
+            });
+            if (exists) toUpdate++;
+            else toInsert++;
+          } else {
+            toInsert++;
+          }
         } else {
           toInsert++;
         }
@@ -234,25 +249,91 @@ router.post(
               inserted++;
             }
           } else if (table === "transactions") {
-            let personId = null;
-            if (parsed.rut) {
-              const person = await findPersonByRut(parsed.rut);
-              if (person) personId = person.id;
-            }
+            const txData = {
+              transactionDate: new Date(parsed.transaction_date),
+              settlementDate: parsed.settlement_date ? new Date(parsed.settlement_date) : null,
+              moneyReleaseDate: parsed.money_release_date ? new Date(parsed.money_release_date) : null,
+              externalReference: parsed.external_reference || null,
+              sourceId: parsed.source_id || null,
+              userId: parsed.user_id || null,
+              site: parsed.site || null,
+              transactionAmount: parsed.transaction_amount,
+              transactionCurrency: parsed.transaction_currency || "CLP",
+              feeAmount: parsed.fee_amount || null,
+              settlementNetAmount: parsed.settlement_net_amount || null,
+              settlementCurrency: parsed.settlement_currency || null,
+              realAmount: parsed.real_amount || null,
+              couponAmount: parsed.coupon_amount || null,
+              totalCouponAmount: parsed.total_coupon_amount || null,
+              sellerAmount: parsed.seller_amount || null,
+              mkpFeeAmount: parsed.mkp_fee_amount || null,
+              financingFeeAmount: parsed.financing_fee_amount || null,
+              shippingFeeAmount: parsed.shipping_fee_amount || null,
+              taxesAmount: parsed.taxes_amount || null,
+              tipAmount: parsed.tip_amount || null,
+              transactionType: parsed.transaction_type,
+              paymentMethodType: parsed.payment_method_type || null,
+              paymentMethod: parsed.payment_method || null,
+              status: parsed.status || null,
+              isReleased: parsed.is_released || null,
+              description: parsed.description || null,
+              metadata: parsed.metadata ? JSON.parse(JSON.stringify(parsed.metadata)) : undefined,
+              taxDetail: parsed.tax_detail || null,
+              taxesDisaggregated: parsed.taxes_disaggregated
+                ? JSON.parse(JSON.stringify(parsed.taxes_disaggregated))
+                : undefined,
+              operationTags: parsed.operation_tags ? JSON.parse(JSON.stringify(parsed.operation_tags)) : undefined,
+              installments: parsed.installments || null,
+              cardInitialNumber: parsed.card_initial_number || null,
+              lastFourDigits: parsed.last_four_digits || null,
+              franchise: parsed.franchise || null,
+              issuerName: parsed.issuer_name || null,
+              businessUnit: parsed.business_unit || null,
+              subUnit: parsed.sub_unit || null,
+              productSku: parsed.product_sku || null,
+              saleDetail: parsed.sale_detail || null,
+              transactionIntentId: parsed.transaction_intent_id || null,
+              orderMp: parsed.order_mp || null,
+              purchaseId: parsed.purchase_id || null,
+              payBankTransferId: parsed.pay_bank_transfer_id || null,
+              shippingOrderId: parsed.shipping_order_id || null,
+              invoicingPeriod: parsed.invoicing_period || null,
+              posId: parsed.pos_id || null,
+              storeId: parsed.store_id || null,
+              storeName: parsed.store_name || null,
+              externalPosId: parsed.external_pos_id || null,
+              posName: parsed.pos_name || null,
+              externalStoreId: parsed.external_store_id || null,
+              poiId: parsed.poi_id || null,
+              shippingId: parsed.shipping_id || null,
+              shipmentMode: parsed.shipment_mode || null,
+              orderId: parsed.order_id || null,
+              packId: parsed.pack_id || null,
+              poiWalletName: parsed.poi_wallet_name || null,
+              poiBankName: parsed.poi_bank_name || null,
+            };
 
-            await prisma.transaction.create({
-              data: {
-                timestamp: new Date(parsed.timestamp),
-                description: parsed.description || null,
-                amount: parsed.amount,
-                direction: parsed.direction,
-                personId,
-                origin: parsed.origin || null,
-                destination: parsed.destination || null,
-                category: parsed.category || null,
-              },
-            });
-            inserted++;
+            if (parsed.source_id && parsed.transaction_type) {
+              const existing = await prisma.transaction.findUnique({
+                where: {
+                  sourceId_transactionType: { sourceId: parsed.source_id, transactionType: parsed.transaction_type },
+                },
+              });
+
+              if (existing) {
+                await prisma.transaction.update({
+                  where: { id: existing.id },
+                  data: txData,
+                });
+                updated++;
+              } else {
+                await prisma.transaction.create({ data: txData });
+                inserted++;
+              }
+            } else {
+              await prisma.transaction.create({ data: txData });
+              inserted++;
+            }
           } else if (table === "daily_balances") {
             const dailyBalanceData = {
               amount: parsed.amount,
@@ -376,6 +457,98 @@ router.post(
                   ...timesheetData,
                 },
               });
+              inserted++;
+            }
+          } else if (table === "mercadopago_transactions") {
+            const txData = {
+              transactionDate: new Date(parsed.transaction_date),
+              settlementDate: parsed.settlement_date ? new Date(parsed.settlement_date) : null,
+              moneyReleaseDate: parsed.money_release_date ? new Date(parsed.money_release_date) : null,
+              externalReference: parsed.external_reference || null,
+              sourceId: parsed.source_id || null,
+              userId: parsed.user_id || null,
+              site: parsed.site || null,
+              transactionAmount: parsed.transaction_amount,
+              transactionCurrency: parsed.transaction_currency || "CLP",
+              feeAmount: parsed.fee_amount || null,
+              settlementNetAmount: parsed.settlement_net_amount || null,
+              settlementCurrency: parsed.settlement_currency || null,
+              realAmount: parsed.real_amount || null,
+              couponAmount: parsed.coupon_amount || null,
+              totalCouponAmount: parsed.total_coupon_amount || null,
+              sellerAmount: parsed.seller_amount || null,
+              mkpFeeAmount: parsed.mkp_fee_amount || null,
+              financingFeeAmount: parsed.financing_fee_amount || null,
+              shippingFeeAmount: parsed.shipping_fee_amount || null,
+              taxesAmount: parsed.taxes_amount || null,
+              tipAmount: parsed.tip_amount || null,
+              transactionType: parsed.transaction_type,
+              paymentMethodType: parsed.payment_method_type || null,
+              paymentMethod: parsed.payment_method || null,
+              status: parsed.status || null,
+              isReleased: parsed.is_released || null,
+              description: parsed.description || null,
+              metadata: parsed.metadata ? JSON.parse(JSON.stringify(parsed.metadata)) : undefined, // Simplify
+              taxDetail: parsed.tax_detail || null,
+              taxesDisaggregated: parsed.taxes_disaggregated
+                ? JSON.parse(JSON.stringify(parsed.taxes_disaggregated))
+                : undefined,
+              operationTags: parsed.operation_tags ? JSON.parse(JSON.stringify(parsed.operation_tags)) : undefined,
+              installments: parsed.installments || null,
+              cardInitialNumber: parsed.card_initial_number || null,
+              lastFourDigits: parsed.last_four_digits || null,
+              franchise: parsed.franchise || null,
+              issuerName: parsed.issuer_name || null,
+              businessUnit: parsed.business_unit || null,
+              subUnit: parsed.sub_unit || null,
+              productSku: parsed.product_sku || null,
+              saleDetail: parsed.sale_detail || null,
+              transactionIntentId: parsed.transaction_intent_id || null,
+              orderMp: parsed.order_mp || null,
+              purchaseId: parsed.purchase_id || null,
+              payBankTransferId: parsed.pay_bank_transfer_id || null,
+              shippingOrderId: parsed.shipping_order_id || null,
+              invoicingPeriod: parsed.invoicing_period || null,
+              posId: parsed.pos_id || null,
+              storeId: parsed.store_id || null,
+              storeName: parsed.store_name || null,
+              externalPosId: parsed.external_pos_id || null,
+              posName: parsed.pos_name || null,
+              externalStoreId: parsed.external_store_id || null,
+              poiId: parsed.poi_id || null,
+              // Shipping ID bigInt handling: JSON.stringify might fail if true BigInt.
+              // Prisma expects BigInt or number. Zod coerced to number?
+              // If ID > 2^53, number is unsafe. But for now using number.
+              shippingId: parsed.shipping_id || null,
+              shipmentMode: parsed.shipment_mode || null,
+              orderId: parsed.order_id || null,
+              packId: parsed.pack_id || null,
+              poiWalletName: parsed.poi_wallet_name || null,
+              poiBankName: parsed.poi_bank_name || null,
+            };
+
+            if (parsed.source_id && parsed.transaction_type) {
+              // Check existence first to increment updated/inserted correctly?
+              // Or just upsert and check result?
+              // Creating dedicated upsert logic to track counts
+              const existing = await prisma.transaction.findUnique({
+                where: {
+                  sourceId_transactionType: { sourceId: parsed.source_id, transactionType: parsed.transaction_type },
+                },
+              });
+
+              if (existing) {
+                await prisma.transaction.update({
+                  where: { id: existing.id },
+                  data: txData,
+                });
+                updated++;
+              } else {
+                await prisma.transaction.create({ data: txData });
+                inserted++;
+              }
+            } else {
+              await prisma.transaction.create({ data: txData });
               inserted++;
             }
           }

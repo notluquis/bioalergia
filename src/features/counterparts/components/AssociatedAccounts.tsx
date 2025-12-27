@@ -12,7 +12,7 @@ import { useToast } from "@/context/ToastContext";
 import { LOADING_SPINNER_XS } from "@/lib/styles";
 import { today } from "@/lib/dates";
 import type { Counterpart, CounterpartAccount, CounterpartAccountSuggestion, CounterpartSummary } from "../types";
-import type { DbMovement } from "@/features/finance/transactions/types";
+import type { Transaction } from "@/features/finance/transactions/types";
 import { fetchTransactions } from "@/features/finance/transactions/api";
 import { addCounterpartAccount, attachCounterpartRut, fetchAccountSuggestions, updateCounterpartAccount } from "../api";
 
@@ -349,6 +349,9 @@ export default function AssociatedAccounts({
         origin: "",
         destination: "",
         sourceId: filter.sourceId || "",
+        externalReference: "",
+        transactionType: "",
+        status: "",
       },
       page: 1,
       pageSize: 200,
@@ -390,7 +393,7 @@ export default function AssociatedAccounts({
       const merged = results.flat();
 
       // Deduplicate
-      const dedup = new Map<number, DbMovement>();
+      const dedup = new Map<number, Transaction>();
       merged.forEach((movement) => {
         if (!dedup.has(movement.id)) {
           dedup.set(movement.id, movement);
@@ -399,7 +402,7 @@ export default function AssociatedAccounts({
 
       // Sort
       const sorted = Array.from(dedup.values()).sort(
-        (a, b) => dayjs(b.timestamp).valueOf() - dayjs(a.timestamp).valueOf()
+        (a, b) => dayjs(b.transactionDate).valueOf() - dayjs(a.transactionDate).valueOf()
       );
 
       // Fallback logic: if empty and range is not fallback, try fallback?
@@ -423,7 +426,7 @@ export default function AssociatedAccounts({
     const rows = quickViewRows ?? [];
     return {
       count: rows.length,
-      total: rows.reduce((sum, row) => sum + (row.amount ?? 0), 0),
+      total: rows.reduce((sum, row) => sum + (row.transactionAmount ?? 0), 0),
     };
   }, [quickViewRows]);
 
@@ -586,13 +589,13 @@ export default function AssociatedAccounts({
                       {quickViewRows.map((movement) => (
                         <tr key={movement.id} className="border-base-200 border-t">
                           <td className="text-base-content px-3 py-2">
-                            {dayjs(movement.timestamp).format("DD MMM YYYY HH:mm")}
+                            {dayjs(movement.transactionDate).format("DD MMM YYYY HH:mm")}
                           </td>
                           <td className="text-base-content px-3 py-2">{movement.description ?? "-"}</td>
-                          <td className="text-base-content px-3 py-2">{movement.origin ?? "-"}</td>
-                          <td className="text-base-content px-3 py-2">{movement.destination ?? "-"}</td>
+                          <td className="text-base-content px-3 py-2">{movement.externalReference ?? "-"}</td>
+                          <td className="text-base-content px-3 py-2">{movement.transactionType ?? "-"}</td>
                           <td className="text-base-content px-3 py-2 text-right">
-                            {movement.amount != null ? fmtCLP(movement.amount) : "-"}
+                            {movement.transactionAmount != null ? fmtCLP(movement.transactionAmount) : "-"}
                           </td>
                         </tr>
                       ))}

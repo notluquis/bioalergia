@@ -1,9 +1,9 @@
 import { Link } from "react-router-dom";
 import dayjs from "dayjs";
 import { fmtCLP } from "@/lib/format";
-import type { DbMovement } from "@/features/finance/transactions/types";
+import type { Transaction } from "@/features/finance/transactions/types";
 
-export default function RecentMovementsWidget({ rows }: { rows: DbMovement[] }) {
+export default function RecentMovementsWidget({ rows }: { rows: Transaction[] }) {
   return (
     <article className="surface-recessed space-y-4 p-6">
       <div className="flex items-center justify-between">
@@ -24,22 +24,16 @@ export default function RecentMovementsWidget({ rows }: { rows: DbMovement[] }) 
             >
               <div>
                 <p className="text-base-content font-medium">
-                  {row.description ?? row.source_id ?? "(sin descripción)"}
+                  {row.description ?? row.sourceId ?? "(sin descripción)"}
                 </p>
                 <p className="text-base-content/50 text-xs tracking-wide uppercase">
-                  {dayjs(row.timestamp).format("DD MMM YYYY HH:mm")}
+                  {dayjs(row.transactionDate).format("DD MMM YYYY HH:mm")}
                 </p>
               </div>
               <span
-                className={`text-xs font-semibold ${
-                  row.direction === "IN"
-                    ? "text-success"
-                    : row.direction === "OUT"
-                      ? "text-error"
-                      : "text-base-content/70"
-                }`}
+                className={`text-xs font-semibold ${(row.transactionAmount ?? 0) >= 0 ? "text-success" : "text-error"}`}
               >
-                {row.direction === "OUT" ? `-${fmtCLP(row.amount ?? 0)}` : fmtCLP(row.amount ?? 0)}
+                {fmtCLP(row.transactionAmount ?? 0)}
               </span>
             </li>
           ))}

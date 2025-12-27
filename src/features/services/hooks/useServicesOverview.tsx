@@ -12,7 +12,7 @@ import type {
   ServiceListResponse,
   ServicePaymentPayload,
 } from "../types";
-import type { DbMovement } from "@/features/finance/transactions/types";
+import type { Transaction } from "@/features/finance/transactions/types";
 import { fetchTransactions } from "@/features/finance/transactions/api";
 import {
   createService,
@@ -282,6 +282,9 @@ function useServicesController() {
           bankAccountNumber: "",
           direction: "OUT",
           includeAmounts: true,
+          externalReference: "",
+          transactionType: "",
+          status: "",
         },
         page: 1,
         pageSize: 50,
@@ -290,7 +293,8 @@ function useServicesController() {
       return payload.data
         .filter(
           (tx) =>
-            typeof tx.amount === "number" && Math.abs((tx.amount ?? 0) - paymentSchedule.expected_amount) <= tolerance
+            typeof tx.transactionAmount === "number" &&
+            Math.abs((tx.transactionAmount ?? 0) - paymentSchedule.expected_amount) <= tolerance
         )
         .slice(0, 8);
     },
@@ -394,13 +398,13 @@ function useServicesController() {
     setPaymentForm((prev) => ({ ...prev, [key]: value }));
   };
 
-  const applySuggestedTransaction = (tx: DbMovement) => {
-    if (!tx.amount) return;
+  const applySuggestedTransaction = (tx: Transaction) => {
+    if (!tx.transactionAmount) return;
     setPaymentForm((prev) => ({
       ...prev,
       transactionId: String(tx.id),
-      paidAmount: String(tx.amount),
-      paidDate: tx.timestamp ? dayjs(tx.timestamp).format("YYYY-MM-DD") : prev.paidDate,
+      paidAmount: String(tx.transactionAmount),
+      paidDate: tx.transactionDate ? dayjs(tx.transactionDate).format("YYYY-MM-DD") : prev.paidDate,
     }));
   };
 

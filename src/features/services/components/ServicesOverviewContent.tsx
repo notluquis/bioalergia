@@ -238,10 +238,10 @@ export default function ServicesOverviewContent() {
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <div>
                           <p className="text-base-content text-sm font-semibold">
-                            {currencyFormatter.format(tx.amount ?? 0)}
+                            {currencyFormatter.format(tx.transactionAmount ?? 0)}
                           </p>
                           <p className="text-base-content/50 text-xs">
-                            {dayjs(tx.timestamp).format("DD MMM YYYY")} · ID #{tx.id}
+                            {dayjs(tx.transactionDate).format("DD MMM YYYY")} · ID #{tx.id}
                           </p>
                           {tx.description && <p className="text-base-content/60 text-xs">{tx.description}</p>}
                         </div>
