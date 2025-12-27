@@ -36,7 +36,7 @@ type SummaryTotals = {
 function useServicesController() {
   const { can } = useAuth();
   const queryClient = useQueryClient();
-  const canManage = useMemo(() => can("manage", "Service"), [can]);
+  const canManage = useMemo(() => can("update", "Service"), [can]);
   const canView = useMemo(() => can("read", "Service"), [can]);
 
   // UI State

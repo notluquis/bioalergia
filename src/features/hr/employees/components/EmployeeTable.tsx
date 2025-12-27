@@ -19,7 +19,7 @@ interface EmployeeTableProps {
 
 export default function EmployeeTable({ employees, loading, onEdit, onDeactivate, onActivate }: EmployeeTableProps) {
   const { can } = useAuth();
-  const canEdit = can("manage", "Employee");
+  const canEdit = can("update", "Employee");
 
   const columns: EmployeeColumn[] = [
     "name",

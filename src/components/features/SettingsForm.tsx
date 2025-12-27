@@ -102,7 +102,7 @@ export default function SettingsForm() {
     isFetching: internalLoading,
   } = useQuery({
     queryKey: ["settings-internal"],
-    enabled: !!can("manage", "Setting"),
+    enabled: !!can("update", "Setting"),
     queryFn: fetchInternalSettings,
     staleTime: 0,
   });

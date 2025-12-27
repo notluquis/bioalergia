@@ -330,18 +330,18 @@ export function registerAuthRoutes(app: express.Express) {
     authenticate,
     attachAbility, // Required to check permissions
     asyncHandler(async (req: AuthenticatedRequest, res) => {
-      // Logic: Only users with 'manage.all' permission can repair permissions.
-      // If the system is broken and no one has 'manage.all', this endpoint might be inaccessible
+      // Logic: Only users with 'role.update' permission can repair permissions.
+      // If the system is broken and no one has this, this endpoint might be inaccessible
       // without a fallback.
       // Check permissions
 
-      const hasPermission = req.ability?.can("manage", "all");
+      const hasPermission = req.ability?.can("update", "Role");
 
       if (!hasPermission) {
         logWarn("auth/repair:unauthorized-attempt", { userId: req.auth?.userId });
         return res.status(403).json({
           status: "error",
-          message: "Unauthorized: You need 'manage.all' permission.",
+          message: "Unauthorized: You need 'role.update' permission.",
         });
       }
 
@@ -352,8 +352,7 @@ export function registerAuthRoutes(app: express.Express) {
       const allDesiredPermissions = new Set<string>();
       INITIAL_ROLES.forEach((r) => r.permissions.forEach((p) => allDesiredPermissions.add(p)));
 
-      // Add fallback 'manage.all' just in case
-      allDesiredPermissions.add("manage.all");
+      // All desired permissions from config (no fallback to manage.all)
 
       for (const permKey of allDesiredPermissions) {
         // Fix split logic: permissionMap uses keys like "user.create" -> action=create, subject=User

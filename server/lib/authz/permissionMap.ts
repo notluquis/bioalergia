@@ -20,8 +20,6 @@ export const permissionMap = readonly({
   "setting.read": { action: "read", subject: "Setting" },
   "setting.update": { action: "update", subject: "Setting" },
 
-  "manage.all": { action: "manage", subject: "all" },
-  "create.all": { action: "create", subject: "all" }, // Added for CSV upload convenience if needed
   "read.all": { action: "read", subject: "all" },
 
   "role.create": { action: "create", subject: "Role" },

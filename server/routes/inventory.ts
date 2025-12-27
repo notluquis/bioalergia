@@ -81,7 +81,7 @@ export function registerInventoryRoutes(app: express.Express) {
 
   router.post(
     "/categories",
-    authorize("manage", "InventoryItem"),
+    authorize("update", "InventoryItem"),
     asyncHandler(async (req, res) => {
       const parsed = inventoryCategorySchema.safeParse(req.body);
       if (!parsed.success) {
@@ -102,7 +102,7 @@ export function registerInventoryRoutes(app: express.Express) {
   // Delete Category
   router.delete(
     "/categories/:id",
-    authorize("manage", "InventoryItem"),
+    authorize("update", "InventoryItem"),
     asyncHandler(async (req, res) => {
       const id = Number(req.params.id);
       try {
@@ -153,7 +153,7 @@ export function registerInventoryRoutes(app: express.Express) {
 
   router.post(
     "/items",
-    authorize("manage", "InventoryItem"),
+    authorize("update", "InventoryItem"),
     asyncHandler(async (req, res) => {
       const parsed = inventoryItemSchema.safeParse(req.body);
       if (!parsed.success) {
@@ -184,7 +184,7 @@ export function registerInventoryRoutes(app: express.Express) {
 
   router.put(
     "/items/:id",
-    authorize("manage", "InventoryItem"),
+    authorize("update", "InventoryItem"),
     asyncHandler(async (req, res) => {
       const id = Number(req.params.id);
       const parsed = inventoryItemUpdateSchema.safeParse(req.body);

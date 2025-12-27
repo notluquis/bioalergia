@@ -43,7 +43,7 @@ dayjs.extend(relativeTime);
 dayjs.locale("es");
 
 export default function UserManagementPage() {
-  const { can } = useAuth();
+  useAuth(); // Keep context mounted
   const { success, error } = useToast();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
@@ -340,10 +340,7 @@ export default function UserManagementPage() {
                         </div>
                       </td>
                       <td className="whitespace-nowrap">
-                        <div className="flex items-center gap-2">
-                          {can("manage", "all") && <Shield size={14} className="text-warning" />}
-                          <span className="badge badge-ghost badge-sm font-medium whitespace-nowrap">{user.role}</span>
-                        </div>
+                        <span className="badge badge-ghost badge-sm font-medium whitespace-nowrap">{user.role}</span>
                       </td>
                       <td className="whitespace-nowrap">
                         <div className={cn(BADGE_SM, "w-fit gap-2 whitespace-nowrap", getStatusColor(user.status))}>

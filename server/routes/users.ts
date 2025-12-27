@@ -27,7 +27,7 @@ export function registerUserRoutes(app: express.Express) {
   app.post(
     "/api/users/:id/mfa/toggle",
     authenticate,
-    authorize("manage", "User"),
+    authorize("update", "User"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       const targetUserId = Number(req.params.id);
       const { enabled } = req.body;
@@ -160,7 +160,7 @@ export function registerUserRoutes(app: express.Express) {
   app.post(
     "/api/users/:id/reset-password",
     authenticate,
-    authorize("manage", "User"),
+    authorize("update", "User"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       const targetUserId = Number(req.params.id);
       if (isNaN(targetUserId)) {
@@ -205,7 +205,7 @@ export function registerUserRoutes(app: express.Express) {
   app.put(
     "/api/users/:id/status",
     authenticate,
-    authorize("manage", "User"),
+    authorize("update", "User"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       const targetUserId = Number(req.params.id);
       const { status } = req.body;
@@ -539,7 +539,7 @@ export function registerUserRoutes(app: express.Express) {
   app.delete(
     "/api/users/:id/mfa",
     authenticate,
-    authorize("manage", "User"),
+    authorize("update", "User"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       const targetUserId = Number(req.params.id);
 
@@ -568,7 +568,7 @@ export function registerUserRoutes(app: express.Express) {
   app.delete(
     "/api/users/:id/passkey",
     authenticate,
-    authorize("manage", "User"),
+    authorize("update", "User"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       const targetUserId = Number(req.params.id);
 

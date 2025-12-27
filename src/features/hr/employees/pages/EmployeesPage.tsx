@@ -14,7 +14,7 @@ import { PAGE_CONTAINER, TITLE_LG } from "@/lib/styles";
 
 export default function EmployeesPage() {
   const { can } = useAuth();
-  const canEdit = can("manage", "Employee");
+  const canEdit = can("update", "Employee");
   const queryClient = useQueryClient();
 
   const [includeInactive, setIncludeInactive] = useState(false);

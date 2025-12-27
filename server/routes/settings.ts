@@ -57,7 +57,7 @@ export function registerSettingsRoutes(app: express.Express) {
   app.put(
     "/api/settings",
     authenticate,
-    authorize("manage", "Setting"),
+    authorize("update", "Setting"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       logEvent("settings:update:attempt", requestContext(req, { body: req.body }));
       const parsed = settingsSchema.safeParse(req.body);
@@ -91,7 +91,7 @@ export function registerSettingsRoutes(app: express.Express) {
   app.post(
     "/api/settings/logo/upload",
     authenticate,
-    authorize("manage", "Setting"),
+    authorize("update", "Setting"),
     logoUpload.single("logo"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       if (!req.file) {
@@ -106,7 +106,7 @@ export function registerSettingsRoutes(app: express.Express) {
   app.post(
     "/api/settings/favicon/upload",
     authenticate,
-    authorize("manage", "Setting"),
+    authorize("update", "Setting"),
     faviconUpload.single("favicon"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       if (!req.file) {
