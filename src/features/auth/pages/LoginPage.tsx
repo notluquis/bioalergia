@@ -101,7 +101,6 @@ export default function LoginPage() {
   });
 
   const handlePasskeyLogin = () => {
-    setLoading(true); // Keep local loading for now or fallback to isPending
     setFormError(null);
     passkeyLoginMutation.mutate();
   };
@@ -146,10 +145,10 @@ export default function LoginPage() {
               type="button"
               className="h-14 w-full gap-2 text-base"
               onClick={handlePasskeyLogin}
-              disabled={loading || passkeyLoginMutation.isPending}
+              disabled={passkeyLoginMutation.isPending}
             >
               <Fingerprint className="size-5" />
-              Ingresar con biometría
+              {passkeyLoginMutation.isPending ? "Verificando..." : "Ingresar con biometría"}
             </Button>
 
             <button
@@ -158,7 +157,7 @@ export default function LoginPage() {
                 setStep("credentials");
                 setFormError(null);
               }}
-              disabled={loading}
+              disabled={passkeyLoginMutation.isPending}
               className="border-base-300 hover:bg-base-200 flex h-12 w-full items-center justify-center gap-2 rounded-lg border transition-colors disabled:opacity-50"
             >
               <Mail className="size-4" />

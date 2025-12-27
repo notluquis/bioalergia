@@ -51,6 +51,7 @@ export default function Input(props: Props) {
     "input input-bordered bg-base-100/50 hover:bg-base-100 focus:bg-base-100",
     sizeClasses[size],
     error && "input-error focus:ring-error/20 focus:border-error",
+    (isPassword || props.rightElement) && "pr-14", // Extra padding for toggle + Safari autofill icon
     baseClasses,
     className
   );
@@ -116,7 +117,7 @@ export default function Input(props: Props) {
       {rightContent ? (
         <div className="relative flex items-center">
           {control}
-          <div className="absolute right-3 flex items-center justify-center">{rightContent}</div>
+          <div className="absolute right-10 flex items-center justify-center">{rightContent}</div>
         </div>
       ) : (
         control
