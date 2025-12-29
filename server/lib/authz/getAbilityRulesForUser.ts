@@ -1,7 +1,6 @@
 // server/lib/authz/getAbilityRulesForUser.ts
 
 import { prisma } from "../../prisma.js";
-import { PermissionKey, permissionMap } from "./permissionMap.js";
 
 /**
  * Fetches all permissions for a given user from the database and transforms them
@@ -42,17 +41,12 @@ export async function getAbilityRulesForUser(userId: number) {
 
   for (const roleAssignment of userWithRolesAndPermissions.roles) {
     for (const rolePermission of roleAssignment.role.permissions) {
-      const key = `${rolePermission.permission.action}.${rolePermission.permission.subject}` as PermissionKey;
-      const definition = permissionMap[key];
-
-      if (definition) {
-        // For now, we only support basic permissions. Conditions can be added later.
-        const rule = JSON.stringify({
-          action: definition.action,
-          subject: definition.subject,
-        });
-        rules.add(rule);
-      }
+      // Use action/subject directly from the database
+      const rule = JSON.stringify({
+        action: rolePermission.permission.action,
+        subject: rolePermission.permission.subject,
+      });
+      rules.add(rule);
     }
   }
 
