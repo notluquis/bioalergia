@@ -3,7 +3,6 @@ import { useLocation, useNavigation, useNavigate, useMatches } from "react-route
 import { Loader2, LogOut, ChevronRight } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import ThemeToggle from "../ui/ThemeToggle";
-import ConnectionIndicator from "../features/ConnectionIndicator";
 import Clock from "../features/Clock";
 
 type RouteHandle = {
@@ -79,7 +78,6 @@ export default function Header() {
           <Clock />
         </div>
         <ThemeToggle />
-        <ConnectionIndicator />
         <button
           type="button"
           onClick={handleLogout}

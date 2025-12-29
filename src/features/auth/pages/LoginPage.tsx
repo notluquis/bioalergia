@@ -10,7 +10,6 @@ import { useSettings } from "@/context/SettingsContext";
 import { logger } from "@/lib/logger";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
-import ConnectionIndicator from "@/components/features/ConnectionIndicator";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import { fetchPasskeyLoginOptions } from "@/features/auth/api";
 
@@ -107,9 +106,8 @@ export default function LoginPage() {
 
   return (
     <div className="bg-base-100 flex min-h-screen items-center justify-center px-4 py-10">
-      {/* Floating controls - top right */}
-      <div className="fixed top-4 right-4 z-10 flex items-center gap-2">
-        <ConnectionIndicator />
+      {/* Floating theme toggle - top right */}
+      <div className="fixed top-4 right-4 z-10">
         <ThemeToggle />
       </div>
 
