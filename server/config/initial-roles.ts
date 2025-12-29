@@ -11,6 +11,8 @@ export const INITIAL_ROLES: RoleDefinition[] = [
     name: "SystemAdministrator",
     description: "Administrador del sistema con acceso total",
     permissions: [
+      // Dashboard
+      "dashboard.read",
       // Users
       "user.create",
       "user.read",
