@@ -28,85 +28,85 @@ model Person {
 }
 
 model User {
-  id                       Int                      @id @default(autoincrement())
-  personId                 Int                      @unique @map("person_id")
-  email                    String                   @unique
-  passwordHash             String?                  @map("password_hash")
-  status                   UserStatus               @default(PENDING_SETUP)
-  mfaSecret                String?                  @map("mfa_secret")
-  mfaEnabled               Boolean                  @default(false) @map("mfa_enabled")
-  passkeyCredentialID      String?                  @unique @map("passkey_credential_id")
-  passkeyPublicKey         Bytes?                   @map("passkey_public_key")
-  passkeyCounter           BigInt                   @default(0) @map("passkey_counter")
-  passkeyTransports        Json?                    @map("passkey_transports")
-  createdAt                DateTime                 @default(now()) @map("created_at")
-  updatedAt                DateTime                 @default(now()) @updatedAt @map("updated_at")
-  mfaEnforced              Boolean                  @default(true) @map("mfa_enforced")
-  auditLogs                AuditLog[]
-  dailyProductionBalances  DailyProductionBalance[]
-  pushSubscriptions        PushSubscription[]
-  supplyRequests           SupplyRequest[]
-  user_permission_versions UserPermissionVersion?
-  user_role_assignments    UserRoleAssignment[]
-  person                   Person                   @relation(fields: [personId], references: [id], onDelete: Cascade)
+  id                      Int                      @id @default(autoincrement())
+  personId                Int                      @unique @map("person_id")
+  email                   String                   @unique
+  passwordHash            String?                  @map("password_hash")
+  status                  UserStatus               @default(PENDING_SETUP)
+  mfaSecret               String?                  @map("mfa_secret")
+  mfaEnabled              Boolean                  @default(false) @map("mfa_enabled")
+  passkeyCredentialID     String?                  @unique @map("passkey_credential_id")
+  passkeyPublicKey        Bytes?                   @map("passkey_public_key")
+  passkeyCounter          BigInt                   @default(0) @map("passkey_counter")
+  passkeyTransports       Json?                    @map("passkey_transports")
+  createdAt               DateTime                 @default(now()) @map("created_at")
+  updatedAt               DateTime                 @default(now()) @updatedAt @map("updated_at")
+  mfaEnforced             Boolean                  @default(true) @map("mfa_enforced")
+  auditLogs               AuditLog[]
+  dailyProductionBalances DailyProductionBalance[]
+  pushSubscriptions       PushSubscription[]
+  supplyRequests          SupplyRequest[]
+  permissionVersion       UserPermissionVersion?
+  roles                   UserRoleAssignment[]
+  person                  Person                   @relation(fields: [personId], references: [id], onDelete: Cascade)
 
   @@map("users")
 }
 
 model Role {
-  id                    Int                  @id @default(autoincrement())
-  name                  String               @unique
-  description           String?
-  createdAt             DateTime             @default(now()) @map("created_at")
-  updatedAt             DateTime             @default(now()) @updatedAt @map("updated_at")
-  isSystem              Boolean              @default(false) @map("is_system")
-  role_permissions      RolePermission[]
-  user_role_assignments UserRoleAssignment[]
+  id          Int                  @id @default(autoincrement())
+  name        String               @unique
+  description String?
+  createdAt   DateTime             @default(now()) @map("created_at")
+  updatedAt   DateTime             @default(now()) @updatedAt @map("updated_at")
+  isSystem    Boolean              @default(false) @map("is_system")
+  permissions RolePermission[]
+  users       UserRoleAssignment[]
 
   @@map("roles")
 }
 
 model Permission {
-  id               Int              @id @default(autoincrement())
-  action           String
-  subject          String
-  description      String?
-  createdAt        DateTime         @default(now()) @map("created_at")
-  updatedAt        DateTime         @default(now()) @updatedAt @map("updated_at")
-  role_permissions RolePermission[]
+  id          Int              @id @default(autoincrement())
+  action      String
+  subject     String
+  description String?
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @default(now()) @updatedAt @map("updated_at")
+  roles       RolePermission[]
 
   @@unique([action, subject])
   @@map("permissions")
 }
 
 model RolePermission {
-  roleId       Int
-  permissionId Int
+  roleId       Int        @map("role_id")
+  permissionId Int        @map("permission_id")
   conditions   Json?
   createdAt    DateTime   @default(now()) @map("created_at")
-  permissions  Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
-  roles        Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
 
   @@id([roleId, permissionId])
   @@map("role_permissions")
 }
 
 model UserRoleAssignment {
-  userId     Int
-  roleId     Int
+  userId     Int      @map("user_id")
+  roleId     Int      @map("role_id")
   assignedAt DateTime @default(now()) @map("assigned_at")
-  roles      Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  users      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role       Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([userId, roleId])
   @@map("user_role_assignments")
 }
 
 model UserPermissionVersion {
-  userId    Int      @id
+  userId    Int      @id @map("user_id")
   version   Int      @default(1)
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
-  users     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_permission_versions")
 }
