@@ -229,8 +229,9 @@ export default function BackupSettingsPage() {
             variant="primary"
             onClick={() => backupMutation.mutate()}
             disabled={isRunning || backupMutation.isPending}
+            isLoading={backupMutation.isPending}
           >
-            {backupMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : <Upload className="size-4" />}
+            <Upload className="size-4" />
             Crear Backup
           </Button>
         </div>
