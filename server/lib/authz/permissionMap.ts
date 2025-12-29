@@ -10,6 +10,9 @@ import { readonly } from "../readonly.js";
  * that declares it as a required permission. No orphan permissions allowed.
  */
 export const permissionMap = readonly({
+  // Dashboard - mapped to / (home page)
+  "dashboard.read": { action: "read", subject: "Dashboard" },
+
   // User management - mapped to /settings/users
   "user.create": { action: "create", subject: "User" },
   "user.read": { action: "read", subject: "User" },

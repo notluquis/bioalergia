@@ -23,6 +23,8 @@ import {
   PackagePlus,
   Clock,
   UserCog,
+  Database,
+  Home,
 } from "lucide-react";
 import { ROUTE_DATA, SECTION_ORDER, type RouteData, type NavSection } from "../../shared/route-data";
 
@@ -64,6 +66,8 @@ const ICON_MAP: Record<string, ComponentType<{ className?: string; strokeWidth?:
   PackagePlus,
   Clock,
   UserCog,
+  Database,
+  Home,
 };
 
 // ============================================================================

@@ -79,8 +79,8 @@ model Permission {
 }
 
 model RolePermission {
-  roleId       Int
-  permissionId Int
+  roleId       Int        @map("role_id")
+  permissionId Int        @map("permission_id")
   conditions   Json?
   createdAt    DateTime   @default(now()) @map("created_at")
   permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
@@ -91,8 +91,8 @@ model RolePermission {
 }
 
 model UserRoleAssignment {
-  userId     Int
-  roleId     Int
+  userId     Int      @map("user_id")
+  roleId     Int      @map("role_id")
   assignedAt DateTime @default(now()) @map("assigned_at")
   role       Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -102,7 +102,7 @@ model UserRoleAssignment {
 }
 
 model UserPermissionVersion {
-  userId    Int      @id
+  userId    Int      @id @map("user_id")
   version   Int      @default(1)
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
