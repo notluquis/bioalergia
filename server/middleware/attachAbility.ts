@@ -57,8 +57,9 @@ export async function attachAbility(req: AuthenticatedRequest, res: Response, ne
       setCachedRules(userId, version, rules);
     }
 
-    req.ability = createAbility(rules);
-    req.abilityRules = rules;
+    // Cast rules to work with CASL's strict types (subjects come from DB as strings)
+    req.ability = createAbility(rules as Parameters<typeof createAbility>[0]);
+    req.abilityRules = rules as typeof req.abilityRules;
     req.permissionVersion = version;
 
     next();

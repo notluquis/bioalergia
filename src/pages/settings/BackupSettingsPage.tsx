@@ -144,7 +144,7 @@ export default function BackupSettingsPage() {
     restore: null,
   });
   const [logs, setLogs] = useState<LogEntry[]>([]);
-  const [showLogs, setShowLogs] = useState(false);
+  const [logsExpanded, setLogsExpanded] = useState(false);
   const logsEndRef = useRef<HTMLDivElement>(null);
 
   // SSE connection
@@ -213,10 +213,6 @@ export default function BackupSettingsPage() {
           <p className="text-base-content/60 text-sm">Gestiona copias de seguridad y restauraciones.</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setShowLogs(!showLogs)}>
-            <Terminal className="size-4" />
-            {showLogs ? "Ocultar" : "Logs"}
-          </Button>
           <Button
             variant="outline"
             onClick={() => queryClient.invalidateQueries({ queryKey: ["backups"] })}
@@ -230,7 +226,7 @@ export default function BackupSettingsPage() {
             disabled={isRunning || backupMutation.isPending}
             isLoading={backupMutation.isPending}
           >
-            <Upload className="size-4" />
+            {!backupMutation.isPending && <Upload className="size-4" />}
             Crear Backup
           </Button>
         </div>
@@ -287,16 +283,23 @@ export default function BackupSettingsPage() {
         />
       </div>
 
-      {/* Logs Panel */}
-      {showLogs && (
-        <div className="bg-base-100 rounded-xl border">
-          <div className="flex items-center justify-between border-b p-4">
-            <h2 className="flex items-center gap-2 font-semibold">
-              <Terminal className="size-4" /> Logs en vivo
-            </h2>
-            <span className="text-base-content/40 text-xs">{logs.length} entradas</span>
+      {/* Logs Panel - Always visible but collapsible */}
+      <div className="bg-base-200/50 rounded-xl">
+        <button
+          className="flex w-full items-center justify-between p-4 text-left"
+          onClick={() => setLogsExpanded(!logsExpanded)}
+        >
+          <div className="flex items-center gap-2">
+            <Terminal className="text-base-content/60 size-4" />
+            <span className="font-medium">Logs en vivo</span>
+            <span className="text-base-content/40 text-xs">({logs.length} entradas)</span>
           </div>
-          <div className="bg-base-900 max-h-64 overflow-y-auto p-4 font-mono text-xs">
+          <ChevronDown
+            className={cn("text-base-content/40 size-4 transition-transform", logsExpanded && "rotate-180")}
+          />
+        </button>
+        {logsExpanded && (
+          <div className="bg-base-300/50 max-h-64 overflow-y-auto rounded-b-xl p-4 font-mono text-xs">
             {logs.length === 0 ? (
               <div className="text-base-content/40 text-center">Sin logs recientes</div>
             ) : (
@@ -304,15 +307,15 @@ export default function BackupSettingsPage() {
             )}
             <div ref={logsEndRef} />
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Backups List */}
-      <div className="bg-base-100 rounded-xl border">
-        <div className="border-b p-4">
+      <div className="bg-base-200/50 rounded-xl">
+        <div className="p-4">
           <h2 className="font-semibold">Backups disponibles</h2>
         </div>
-        <div className="divide-y">
+        <div className="divide-base-content/5 divide-y">
           {backupsQuery.isLoading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="text-primary size-6 animate-spin" />
@@ -334,15 +337,15 @@ export default function BackupSettingsPage() {
       </div>
 
       {/* History */}
-      <div className="bg-base-100 rounded-xl border">
-        <div className="flex items-center justify-between border-b p-4">
+      <div className="bg-base-200/50 rounded-xl">
+        <div className="flex items-center justify-between p-4">
           <h2 className="font-semibold">Historial de operaciones</h2>
           <div className="flex items-center gap-2">
             <Filter className="text-base-content/40 size-4" />
             <span className="text-base-content/40 text-sm">Últimas {historyQuery.data?.length || 0}</span>
           </div>
         </div>
-        <div className="divide-y">
+        <div className="divide-base-content/5 divide-y">
           {historyQuery.isLoading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="text-primary size-5 animate-spin" />
@@ -371,10 +374,17 @@ function StatCard({
   value: string;
   color: "primary" | "info" | "success" | "warning";
 }) {
+  const bgColors = {
+    primary: "bg-primary/10",
+    info: "bg-info/10",
+    success: "bg-success/10",
+    warning: "bg-warning/10",
+  };
+
   return (
-    <div className="bg-base-100 rounded-xl border p-4">
+    <div className="bg-base-200/50 rounded-xl p-4">
       <div className="flex items-center gap-3">
-        <div className={cn("rounded-lg p-2", `bg-${color}/10`)}>{icon}</div>
+        <div className={cn("rounded-lg p-2", bgColors[color])}>{icon}</div>
         <div>
           <p className="text-base-content/60 text-sm">{label}</p>
           <p className="text-xl font-bold">{value}</p>
@@ -429,7 +439,7 @@ function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () =>
   return (
     <div>
       <div
-        className="hover:bg-base-50 flex cursor-pointer items-center justify-between p-4 transition-colors"
+        className="hover:bg-base-content/5 flex cursor-pointer items-center justify-between p-4 transition-colors"
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <div className="flex items-center gap-4">
@@ -461,13 +471,13 @@ function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () =>
       </div>
 
       {isExpanded && (
-        <div className="bg-base-50 border-t px-6 py-4">
+        <div className="bg-base-300/30 px-6 py-4">
           <div className="bg-warning/10 text-warning mb-4 flex items-start gap-2 rounded-lg p-3 text-sm">
             <AlertTriangle className="mt-0.5 size-4 shrink-0" />
             <span>La restauración sobrescribirá datos existentes. Selecciona las tablas que deseas restaurar.</span>
           </div>
 
-          <div className="bg-base-100 rounded-lg border p-4">
+          <div className="bg-base-200/50 rounded-lg p-4">
             <h4 className="mb-3 text-sm font-medium">Selecciona tablas a restaurar</h4>
 
             {tablesQuery.isLoading ? (
@@ -484,8 +494,8 @@ function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () =>
                     <label
                       key={table}
                       className={cn(
-                        "flex cursor-pointer items-center gap-2 rounded-lg border p-2 text-sm transition-colors",
-                        selectedTables.includes(table) ? "border-primary bg-primary/5" : "hover:bg-base-200"
+                        "border-base-content/10 flex cursor-pointer items-center gap-2 rounded-lg border p-2 text-sm transition-colors",
+                        selectedTables.includes(table) ? "border-primary bg-primary/5" : "hover:bg-base-content/5"
                       )}
                     >
                       <input
@@ -505,8 +515,9 @@ function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () =>
                     size="sm"
                     onClick={() => restoreMutation.mutate(selectedTables)}
                     disabled={restoreMutation.isPending}
+                    isLoading={restoreMutation.isPending}
                   >
-                    <Play className="size-4" />
+                    {!restoreMutation.isPending && <Play className="size-4" />}
                     Restaurar {selectedTables.length} tabla{selectedTables.length > 1 ? "s" : ""}
                   </Button>
                 )}
@@ -520,42 +531,57 @@ function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () =>
 }
 
 function HistoryRow({ job }: { job: BackupJob | RestoreJob }) {
+  const [showError, setShowError] = useState(false);
   const isBackup = "type" in job;
   const isSuccess = job.status === "completed";
   const isFailed = job.status === "failed";
 
   return (
-    <div className="flex items-center justify-between p-4">
-      <div className="flex items-center gap-3">
-        {job.status === "running" ? (
-          <Loader2 className="text-primary size-5 animate-spin" />
-        ) : isSuccess ? (
-          <CheckCircle className="text-success size-5" />
-        ) : isFailed ? (
-          <XCircle className="text-error size-5" />
-        ) : (
-          <Clock className="text-base-content/40 size-5" />
-        )}
-        <div>
-          <p className="font-medium">
-            {isBackup ? "Backup" : "Restauración"}
-            {!isBackup && (job as RestoreJob).tables && (
-              <span className="text-base-content/60 ml-1 text-sm">({(job as RestoreJob).tables?.length} tablas)</span>
-            )}
-          </p>
-          <p className="text-base-content/60 text-sm">
-            {dayjs(job.startedAt).format("DD MMM, HH:mm")}
-            {job.completedAt &&
-              ` • ${((new Date(job.completedAt).getTime() - new Date(job.startedAt).getTime()) / 1000).toFixed(1)}s`}
-          </p>
+    <div className="p-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          {job.status === "running" ? (
+            <Loader2 className="text-primary size-5 animate-spin" />
+          ) : isSuccess ? (
+            <CheckCircle className="text-success size-5" />
+          ) : isFailed ? (
+            <XCircle className="text-error size-5" />
+          ) : (
+            <Clock className="text-base-content/40 size-5" />
+          )}
+          <div>
+            <p className="font-medium">
+              {isBackup ? "Backup" : "Restauración"}
+              {!isBackup && (job as RestoreJob).tables && (
+                <span className="text-base-content/60 ml-1 text-sm">({(job as RestoreJob).tables?.length} tablas)</span>
+              )}
+            </p>
+            <p className="text-base-content/60 text-sm">
+              {dayjs(job.startedAt).format("DD MMM, HH:mm")}
+              {job.completedAt &&
+                ` • ${((new Date(job.completedAt).getTime() - new Date(job.startedAt).getTime()) / 1000).toFixed(1)}s`}
+            </p>
+          </div>
+        </div>
+        <div className="text-right">
+          {isSuccess && isBackup && (job as BackupJob).result && (
+            <span className="text-base-content/60 text-sm">{formatBytes((job as BackupJob).result!.sizeBytes)}</span>
+          )}
+          {isFailed && (
+            <button
+              onClick={() => setShowError(!showError)}
+              className="text-error flex items-center gap-1 text-sm hover:underline"
+            >
+              <AlertCircle className="size-3" />
+              Ver error
+            </button>
+          )}
         </div>
       </div>
-      <div className="text-right">
-        {isSuccess && isBackup && (job as BackupJob).result && (
-          <span className="text-base-content/60 text-sm">{formatBytes((job as BackupJob).result!.sizeBytes)}</span>
-        )}
-        {isFailed && <span className="text-error text-sm">Error</span>}
-      </div>
+      {/* Error details */}
+      {isFailed && showError && job.error && (
+        <div className="bg-error/10 text-error mt-3 rounded-lg p-3 font-mono text-xs">{job.error}</div>
+      )}
     </div>
   );
 }

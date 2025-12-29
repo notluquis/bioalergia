@@ -59,7 +59,7 @@ export async function deleteInventoryItem(id: number) {
 }
 
 export async function createInventoryMovement(data: { itemId: number; quantityChange: number; reason?: string }) {
-  return await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+  return await prisma.$transaction(async (tx) => {
     await tx.inventoryMovement.create({
       data: {
         itemId: data.itemId,
