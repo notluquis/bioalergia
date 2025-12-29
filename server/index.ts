@@ -142,6 +142,8 @@ import { registerSuppliesRoutes } from "./routes/supplies.js";
 registerSuppliesRoutes(app);
 import { registerRoleRoutes } from "./routes/roles.js";
 registerRoleRoutes(app);
+import backupsRouter from "./routes/backups.js";
+app.use("/api/backups", backupsRouter);
 import { startGoogleCalendarScheduler } from "./lib/google-calendar-scheduler.js";
 startGoogleCalendarScheduler();
 

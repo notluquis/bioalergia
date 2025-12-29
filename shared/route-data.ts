@@ -339,6 +339,13 @@ export const ROUTE_DATA: RouteData[] = [
         permission: { action: "create", subject: "BulkData" },
         title: "Carga masiva de datos",
       },
+      {
+        path: "backups",
+        componentPath: "pages/settings/BackupSettingsPage",
+        nav: { label: "Backups", iconKey: "Database", section: "Sistema", order: 8 },
+        permission: { action: "update", subject: "Setting" },
+        title: "Backups de base de datos",
+      },
     ],
   },
 ];
