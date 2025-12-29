@@ -219,10 +219,6 @@ export default function RolesSettingsPage() {
     })
     .filter((section) => section.items.length > 0);
 
-  const otherPermissions = allPermissions.filter((p) => !usedPermissionIds.has(p.id));
-  otherPermissions.sort((a, b) => a.subject.localeCompare(b.subject));
-  const otherPermissionIds = otherPermissions.map((p) => p.id);
-
   const displayRoles = viewModeRole === "all" ? roles : roles.filter((r) => r.id.toString() === viewModeRole);
 
   return (
@@ -489,88 +485,6 @@ export default function RolesSettingsPage() {
                   </tr>
                 </React.Fragment>
               ))}
-
-              {/* Other Permissions (System) */}
-              {otherPermissions.length > 0 && (
-                <>
-                  <tr
-                    className="bg-base-200/30 hover:bg-base-200/50 cursor-pointer transition-colors"
-                    onClick={() => toggleSection("advanced")}
-                  >
-                    <td className="bg-base-200 border-base-300 sticky left-0 z-10 w-80 border-r py-2 text-xs font-bold tracking-widest uppercase opacity-70">
-                      <div className="flex items-center gap-2">
-                        {openSections["advanced"] ? (
-                          <ChevronDown className="h-4 w-4" />
-                        ) : (
-                          <ChevronRight className="h-4 w-4" />
-                        )}
-                        Sistema / avanzado
-                      </div>
-                    </td>
-                    {displayRoles.map((role) => (
-                      <BulkToggleCell
-                        key={role.id}
-                        role={role}
-                        permissionIds={otherPermissionIds}
-                        isUpdating={
-                          updateRolePermissionsMutation.isPending &&
-                          updateRolePermissionsMutation.variables?.roleId === role.id
-                        }
-                        onToggle={handleBulkToggle}
-                        variant="section"
-                      />
-                    ))}
-                  </tr>
-                  {/* Collapsible System Row */}
-                  <tr>
-                    <td colSpan={displayRoles.length + 1} className="border-0 p-0">
-                      <SmoothCollapse isOpen={!!openSections["advanced"]}>
-                        <table className="w-full table-fixed">
-                          <tbody>
-                            {otherPermissions.map((perm) => {
-                              const actionMap: Record<string, string> = {
-                                read: "Ver",
-                                create: "Crear",
-                                update: "Editar",
-                                delete: "Eliminar",
-                              };
-                              const actionLabel = actionMap[perm.action] || perm.action;
-                              const subjectLabel = perm.subject === "all" ? "Todo el sistema" : perm.subject;
-
-                              return (
-                                <tr
-                                  key={perm.id}
-                                  className="hover:bg-base-200/50 border-base-100 border-b transition-colors"
-                                >
-                                  <td className="bg-base-100 border-base-300 w-80 border-r py-3 pl-6">
-                                    <div className="flex flex-col">
-                                      <span className="font-medium">
-                                        {subjectLabel} ({actionLabel})
-                                      </span>
-                                      <span className="text-base-content/60 font-mono text-[10px]">
-                                        {perm.action} • {perm.subject}
-                                      </span>
-                                    </div>
-                                  </td>
-                                  {displayRoles.map((role) => (
-                                    <PermissionCell
-                                      key={role.id}
-                                      role={role}
-                                      permissionId={perm.id}
-                                      isUpdating={false}
-                                      onToggle={handlePermissionToggle}
-                                    />
-                                  ))}
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
-                      </SmoothCollapse>
-                    </td>
-                  </tr>
-                </>
-              )}
             </tbody>
           </table>
         </div>

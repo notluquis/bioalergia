@@ -29,8 +29,6 @@ export const INITIAL_ROLES: RoleDefinition[] = [
       "role.read",
       "role.update",
       "role.delete",
-      "permission.read",
-      "permission.update",
       // Person
       "person.read",
       "person.update",
@@ -61,11 +59,6 @@ export const INITIAL_ROLES: RoleDefinition[] = [
       "production_balance.update",
       "production_balance.create",
       "production_balance.delete",
-      // Daily Balance
-      "daily_balance.read",
-      "daily_balance.update",
-      "daily_balance.create",
-      "daily_balance.delete",
       // Calendar
       "calendar.read",
       "calendar.update",
