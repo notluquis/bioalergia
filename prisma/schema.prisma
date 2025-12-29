@@ -21,91 +21,92 @@ model Person {
   updatedAt    DateTime      @default(now()) @updatedAt @map("updated_at")
   counterpart  Counterpart?
   employee     Employee?
+  transactions Transaction[]
   user         User?
 
   @@map("people")
 }
 
 model User {
-  id                      Int                      @id @default(autoincrement())
-  personId                Int                      @unique @map("person_id")
-  email                   String                   @unique
-  passwordHash            String?                  @map("password_hash")
-  status                  UserStatus               @default(PENDING_SETUP)
-  mfaSecret               String?                  @map("mfa_secret")
-  mfaEnabled              Boolean                  @default(false) @map("mfa_enabled")
-  passkeyCredentialID     String?                  @unique @map("passkey_credential_id")
-  passkeyPublicKey        Bytes?                   @map("passkey_public_key")
-  passkeyCounter          BigInt                   @default(0) @map("passkey_counter")
-  passkeyTransports       Json?                    @map("passkey_transports")
-  createdAt               DateTime                 @default(now()) @map("created_at")
-  updatedAt               DateTime                 @default(now()) @updatedAt @map("updated_at")
-  mfaEnforced             Boolean                  @default(true) @map("mfa_enforced")
-  auditLogs               AuditLog[]
-  dailyProductionBalances DailyProductionBalance[]
-  pushSubscriptions       PushSubscription[]
-  supplyRequests          SupplyRequest[]
-  permissionVersion       UserPermissionVersion?
-  roles                   UserRoleAssignment[]
-  person                  Person                   @relation(fields: [personId], references: [id], onDelete: Cascade)
+  id                       Int                      @id @default(autoincrement())
+  personId                 Int                      @unique @map("person_id")
+  email                    String                   @unique
+  passwordHash             String?                  @map("password_hash")
+  status                   UserStatus               @default(PENDING_SETUP)
+  mfaSecret                String?                  @map("mfa_secret")
+  mfaEnabled               Boolean                  @default(false) @map("mfa_enabled")
+  passkeyCredentialID      String?                  @unique @map("passkey_credential_id")
+  passkeyPublicKey         Bytes?                   @map("passkey_public_key")
+  passkeyCounter           BigInt                   @default(0) @map("passkey_counter")
+  passkeyTransports        Json?                    @map("passkey_transports")
+  createdAt                DateTime                 @default(now()) @map("created_at")
+  updatedAt                DateTime                 @default(now()) @updatedAt @map("updated_at")
+  mfaEnforced              Boolean                  @default(true) @map("mfa_enforced")
+  auditLogs                AuditLog[]
+  dailyProductionBalances  DailyProductionBalance[]
+  pushSubscriptions        PushSubscription[]
+  supplyRequests           SupplyRequest[]
+  user_permission_versions UserPermissionVersion?
+  user_role_assignments    UserRoleAssignment[]
+  person                   Person                   @relation(fields: [personId], references: [id], onDelete: Cascade)
 
   @@map("users")
 }
 
 model Role {
-  id          Int                  @id @default(autoincrement())
-  name        String               @unique
-  description String?
-  isSystem    Boolean              @default(false) @map("is_system")
-  createdAt   DateTime             @default(now()) @map("created_at")
-  updatedAt   DateTime             @default(now()) @updatedAt @map("updated_at")
-  permissions RolePermission[]
-  users       UserRoleAssignment[]
+  id                    Int                  @id @default(autoincrement())
+  name                  String               @unique
+  description           String?
+  createdAt             DateTime             @default(now()) @map("created_at")
+  updatedAt             DateTime             @default(now()) @updatedAt @map("updated_at")
+  isSystem              Boolean              @default(false) @map("is_system")
+  role_permissions      RolePermission[]
+  user_role_assignments UserRoleAssignment[]
 
   @@map("roles")
 }
 
 model Permission {
-  id          Int              @id @default(autoincrement())
-  action      String
-  subject     String
-  description String?
-  createdAt   DateTime         @default(now()) @map("created_at")
-  updatedAt   DateTime         @default(now()) @updatedAt @map("updated_at")
-  roles       RolePermission[]
+  id               Int              @id @default(autoincrement())
+  action           String
+  subject          String
+  description      String?
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @default(now()) @updatedAt @map("updated_at")
+  role_permissions RolePermission[]
 
   @@unique([action, subject])
   @@map("permissions")
 }
 
 model RolePermission {
-  roleId       Int        @map("role_id")
-  permissionId Int        @map("permission_id")
+  roleId       Int
+  permissionId Int
   conditions   Json?
   createdAt    DateTime   @default(now()) @map("created_at")
-  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
-  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permissions  Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  roles        Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
 
   @@id([roleId, permissionId])
   @@map("role_permissions")
 }
 
 model UserRoleAssignment {
-  userId     Int      @map("user_id")
-  roleId     Int      @map("role_id")
+  userId     Int
+  roleId     Int
   assignedAt DateTime @default(now()) @map("assigned_at")
-  role       Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roles      Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  users      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([userId, roleId])
   @@map("user_role_assignments")
 }
 
 model UserPermissionVersion {
-  userId    Int      @id @map("user_id")
+  userId    Int      @id
   version   Int      @default(1)
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  users     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_permission_versions")
 }
@@ -176,91 +177,72 @@ model EmployeeTimesheet {
 }
 
 model Transaction {
-  id                      Int      @id @default(autoincrement())
-  
-  // Fechas
-  transactionDate         DateTime @map("transaction_date")
-  description             String?  @map("description")
-  settlementDate          DateTime? @map("settlement_date")
-  moneyReleaseDate        DateTime? @map("money_release_date")
-  
-  // Identificadores y referencias
-  externalReference       String?  @map("external_reference")
-  sourceId                String?  @map("source_id")
-  userId                  String?  @map("user_id")
-  site                    String?
-  
-  // Montos
-  transactionAmount       Decimal  @map("transaction_amount") @db.Decimal(17, 2)
-  transactionCurrency     String   @map("transaction_currency") @db.VarChar(10)
-  feeAmount               Decimal? @map("fee_amount") @db.Decimal(17, 2)
-  settlementNetAmount     Decimal? @map("settlement_net_amount") @db.Decimal(17, 2)
-  settlementCurrency      String?  @map("settlement_currency") @db.VarChar(10)
-  realAmount              Decimal? @map("real_amount") @db.Decimal(17, 2)
-  couponAmount            Decimal? @map("coupon_amount") @db.Decimal(17, 2)
-  totalCouponAmount       Decimal? @map("total_coupon_amount") @db.Decimal(17, 2)
-  sellerAmount            Decimal? @map("seller_amount") @db.Decimal(17, 2)
-  mkpFeeAmount            Decimal? @map("mkp_fee_amount") @db.Decimal(17, 2)
-  financingFeeAmount      Decimal? @map("financing_fee_amount") @db.Decimal(17, 2)
-  shippingFeeAmount       Decimal? @map("shipping_fee_amount") @db.Decimal(17, 2)
-  taxesAmount             Decimal? @map("taxes_amount") @db.Decimal(17, 2)
-  tipAmount               Decimal? @map("tip_amount") @db.Decimal(17, 2)
+  id                  Int       @id @default(autoincrement())
+  description         String?   @map("description")
+  person_id           Int?
+  created_at          DateTime  @default(now())
+  businessUnit        String?   @map("business_unit")
+  cardInitialNumber   String?   @map("card_initial_number")
+  couponAmount        Decimal?  @map("coupon_amount") @db.Decimal(17, 2)
+  externalPosId       String?   @map("external_pos_id")
+  externalReference   String?   @map("external_reference")
+  externalStoreId     String?   @map("external_store_id")
+  feeAmount           Decimal?  @map("fee_amount") @db.Decimal(17, 2)
+  financingFeeAmount  Decimal?  @map("financing_fee_amount") @db.Decimal(17, 2)
+  franchise           String?
+  installments        Int?
+  invoicingPeriod     String?   @map("invoicing_period")
+  isReleased          Boolean?  @map("is_released")
+  issuerName          String?   @map("issuer_name")
+  lastFourDigits      String?   @map("last_four_digits")
+  metadata            Json?
+  mkpFeeAmount        Decimal?  @map("mkp_fee_amount") @db.Decimal(17, 2)
+  moneyReleaseDate    DateTime? @map("money_release_date")
+  operationTags       Json?     @map("operation_tags")
+  orderId             BigInt?   @map("order_id")
+  orderMp             String?   @map("order_mp")
+  packId              BigInt?   @map("pack_id")
+  payBankTransferId   String?   @map("pay_bank_transfer_id")
+  paymentMethod       String?   @map("payment_method")
+  paymentMethodType   String?   @map("payment_method_type")
+  poiBankName         String?   @map("poi_bank_name")
+  poiId               String?   @map("poi_id")
+  poiWalletName       String?   @map("poi_wallet_name")
+  posId               String?   @map("pos_id")
+  posName             String?   @map("pos_name")
+  productSku          String?   @map("product_sku")
+  purchaseId          String?   @map("purchase_id")
+  realAmount          Decimal?  @map("real_amount") @db.Decimal(17, 2)
+  saleDetail          String?   @map("sale_detail")
+  sellerAmount        Decimal?  @map("seller_amount") @db.Decimal(17, 2)
+  settlementCurrency  String?   @map("settlement_currency") @db.VarChar(10)
+  settlementDate      DateTime? @map("settlement_date")
+  settlementNetAmount Decimal?  @map("settlement_net_amount") @db.Decimal(17, 2)
+  shipmentMode        String?   @map("shipment_mode")
+  shippingFeeAmount   Decimal?  @map("shipping_fee_amount") @db.Decimal(17, 2)
+  shippingId          BigInt?   @map("shipping_id")
+  shippingOrderId     String?   @map("shipping_order_id")
+  site                String?
+  sourceId            String?   @map("source_id")
+  status              String?
+  storeId             String?   @map("store_id")
+  storeName           String?   @map("store_name")
+  subUnit             String?   @map("sub_unit")
+  taxDetail           String?   @map("tax_detail")
+  taxesAmount         Decimal?  @map("taxes_amount") @db.Decimal(17, 2)
+  taxesDisaggregated  Json?     @map("taxes_disaggregated")
+  tipAmount           Decimal?  @map("tip_amount") @db.Decimal(17, 2)
+  totalCouponAmount   Decimal?  @map("total_coupon_amount") @db.Decimal(17, 2)
+  transactionAmount   Decimal   @map("transaction_amount") @db.Decimal(17, 2)
+  transactionCurrency String    @map("transaction_currency") @db.VarChar(10)
+  transactionDate     DateTime  @map("transaction_date")
+  transactionIntentId String?   @map("transaction_intent_id")
+  transactionType     String    @map("transaction_type")
+  userId              String?   @map("user_id")
+  people              Person?   @relation(fields: [person_id], references: [id])
 
-  // Estado y Tipo
-  transactionType         String   @map("transaction_type")
-  paymentMethodType       String?  @map("payment_method_type")
-  paymentMethod           String?  @map("payment_method")
-  status                  String?  
-  isReleased              Boolean? @map("is_released")
-
-  // Metadatos y JSONs
-  metadata                Json?
-  taxDetail               String?  @map("tax_detail")
-  taxesDisaggregated      Json?    @map("taxes_disaggregated")
-  operationTags           Json?    @map("operation_tags")
-
-  // Detalles de operación
-  installments            Int?
-  cardInitialNumber       String?  @map("card_initial_number")
-  lastFourDigits          String?  @map("last_four_digits")
-  franchise               String?
-  issuerName              String?  @map("issuer_name")
-  
-  // Unidades de negocio
-  businessUnit            String?  @map("business_unit")
-  subUnit                 String?  @map("sub_unit")
-  productSku              String?  @map("product_sku")
-  saleDetail              String?  @map("sale_detail")
-  
-  // IDs adicionales
-  transactionIntentId     String?  @map("transaction_intent_id")
-  orderMp                 String?  @map("order_mp")
-  purchaseId              String?  @map("purchase_id")
-  payBankTransferId       String?  @map("pay_bank_transfer_id")
-  shippingOrderId         String?  @map("shipping_order_id")
-  invoicingPeriod         String?  @map("invoicing_period")
-
-  // Datos de caja y sucursal
-  posId                   String?  @map("pos_id")
-  storeId                 String?  @map("store_id")
-  storeName               String?  @map("store_name")
-  externalPosId           String?  @map("external_pos_id")
-  posName                 String?  @map("pos_name")
-  externalStoreId         String?  @map("external_store_id")
-  poiId                   String?  @map("poi_id")
-
-  // Datos de envío
-  shippingId              BigInt?  @map("shipping_id")
-  shipmentMode            String?  @map("shipment_mode")
-  orderId                 BigInt?  @map("order_id")
-  packId                  BigInt?  @map("pack_id")
-
-  // Wallet
-  poiWalletName           String?  @map("poi_wallet_name")
-  poiBankName             String?  @map("poi_bank_name")
-
-  @@map("transactions")
   @@unique([sourceId, transactionType], map: "unique_mp_tx")
+  @@map("transactions")
 }
 
 model DailyBalance {
@@ -422,7 +404,7 @@ model SyncLog {
   skipped       Int?      @default(0)
   excluded      Int?      @default(0)
   errorMessage  String?   @map("error_message")
-  changeDetails Json?     @map("change_details") // Summaries of changed events
+  changeDetails Json?     @map("change_details")
 
   @@map("sync_logs")
 }
@@ -594,4 +576,3 @@ enum UserStatus {
   ACTIVE
   SUSPENDED
 }
-
