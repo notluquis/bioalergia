@@ -7,6 +7,7 @@
 import express from "express";
 import { asyncHandler, authenticate as requireAuth } from "../lib/http.js";
 import { authorize } from "../middleware/authorize.js";
+import { prisma } from "../prisma.js";
 import {
   getRecentChanges,
   getChangesByTable,
@@ -36,14 +37,28 @@ router.get(
 );
 
 /**
- * Get tables that have pending changes (for restore UI).
+ * Get tables that have changes since a specific date (for restore UI).
+ * If no 'since' param provided, returns all tables with any changes.
  */
 router.get(
   "/tables-with-changes",
-  asyncHandler(async (_, res) => {
-    const stats = await getAuditStats();
-    const tablesWithChanges = stats.byTable.map((t) => t.table_name);
-    res.json({ tables: tablesWithChanges });
+  asyncHandler(async (req, res) => {
+    const since = req.query.since as string | undefined;
+
+    if (since) {
+      // Query tables with changes after the given date
+      const result = await prisma.$queryRaw<Array<{ table_name: string }>>`
+        SELECT DISTINCT table_name 
+        FROM audit.data_changes 
+        WHERE created_at > ${new Date(since)}
+      `;
+      res.json({ tables: result.map((r) => r.table_name) });
+    } else {
+      // Return all tables with any changes
+      const stats = await getAuditStats();
+      const tablesWithChanges = stats.byTable.map((t) => t.table_name);
+      res.json({ tables: tablesWithChanges });
+    }
   })
 );
 
