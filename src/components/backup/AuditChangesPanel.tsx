@@ -239,7 +239,21 @@ export default function AuditChangesPanel() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => revertMutation.mutate(change.id)}
+                    onClick={() => {
+                      const opText =
+                        change.operation === "INSERT"
+                          ? "eliminar este registro"
+                          : change.operation === "DELETE"
+                            ? "recrear este registro"
+                            : "restaurar los valores anteriores";
+                      if (
+                        window.confirm(
+                          `¿Estás seguro de que deseas ${opText}?\n\nTabla: ${change.table_name}\nID: ${change.row_id}`
+                        )
+                      ) {
+                        revertMutation.mutate(change.id);
+                      }
+                    }}
                     disabled={revertMutation.isPending}
                     title="Revertir este cambio"
                   >

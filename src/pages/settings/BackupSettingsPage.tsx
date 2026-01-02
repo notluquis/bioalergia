@@ -20,7 +20,7 @@ import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import "dayjs/locale/es";
 
-import { PAGE_CONTAINER, TITLE_LG } from "@/lib/styles";
+import { PAGE_CONTAINER } from "@/lib/styles";
 import { cn } from "@/lib/utils";
 import { formatFileSize } from "@/lib/format";
 import Button from "@/components/ui/Button";
@@ -171,33 +171,24 @@ export default function BackupSettingsPage() {
 
   return (
     <div className={cn(PAGE_CONTAINER, "space-y-6")}>
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <div className="flex items-center gap-2">
-            <Database className="text-primary size-6" />
-            <h1 className={TITLE_LG}>Backup de Base de Datos</h1>
-          </div>
-          <p className="text-base-content/60 text-sm">Gestiona copias de seguridad y restauraciones.</p>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={() => queryClient.invalidateQueries({ queryKey: ["backups"] })}
-            disabled={backupsQuery.isFetching}
-          >
-            <RefreshCw className={cn("size-4", backupsQuery.isFetching && "animate-spin")} />
-          </Button>
-          <Button
-            variant="primary"
-            onClick={() => backupMutation.mutate()}
-            disabled={isRunning || backupMutation.isPending}
-            isLoading={backupMutation.isPending}
-          >
-            {!backupMutation.isPending && <Upload className="size-4" />}
-            Crear Backup
-          </Button>
-        </div>
+      {/* Actions Row */}
+      <div className="flex justify-end gap-2">
+        <Button
+          variant="outline"
+          onClick={() => queryClient.invalidateQueries({ queryKey: ["backups"] })}
+          disabled={backupsQuery.isFetching}
+        >
+          <RefreshCw className={cn("size-4", backupsQuery.isFetching && "animate-spin")} />
+        </Button>
+        <Button
+          variant="primary"
+          onClick={() => backupMutation.mutate()}
+          disabled={isRunning || backupMutation.isPending}
+          isLoading={backupMutation.isPending}
+        >
+          {!backupMutation.isPending && <Upload className="size-4" />}
+          Crear Backup
+        </Button>
       </div>
 
       {/* Progress Bar */}
