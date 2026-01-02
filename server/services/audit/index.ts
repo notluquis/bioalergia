@@ -11,8 +11,19 @@
 import { prisma, Prisma } from "../../prisma.js";
 import { logEvent, logWarn } from "../../lib/logger.js";
 
-// List of valid Prisma model names (prevents injection)
-const VALID_MODELS = new Set(Prisma.dmmf.datamodel.models.map((m) => m.name.toLowerCase()));
+// Map actual table names (dbName) to Prisma Client model property names (camelCase)
+const TABLE_TO_MODEL_PROP: Record<string, string> = {};
+
+Prisma.dmmf.datamodel.models.forEach((m) => {
+  const tableName = m.dbName || m.name;
+  // Prisma Client exposes models as camelCase property (e.g. model User -> prisma.user)
+  const modelProp = m.name.charAt(0).toLowerCase() + m.name.slice(1);
+  TABLE_TO_MODEL_PROP[tableName] = modelProp;
+  // Also handle lowercased table name just in case
+  if (tableName.toLowerCase() !== tableName) {
+    TABLE_TO_MODEL_PROP[tableName.toLowerCase()] = modelProp;
+  }
+});
 
 export interface AuditChange {
   id: bigint;
@@ -137,17 +148,19 @@ export async function revertChange(changeId: bigint): Promise<{ success: boolean
   const change = changes[0];
 
   // Security: Validate table name against known models
-  if (!VALID_MODELS.has(change.table_name.toLowerCase())) {
+  const modelProp = TABLE_TO_MODEL_PROP[change.table_name] || TABLE_TO_MODEL_PROP[change.table_name.toLowerCase()];
+
+  if (!modelProp) {
     logWarn("audit.revert_invalid_table", { table: change.table_name });
     return { success: false, message: `Invalid table: ${change.table_name}` };
   }
 
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const model = (prisma as any)[change.table_name];
+    const model = (prisma as any)[modelProp];
 
     if (!model) {
-      return { success: false, message: `Model ${change.table_name} not found` };
+      return { success: false, message: `Model property ${modelProp} not found on Prisma Client` };
     }
 
     // Parse row_id - could be int, UUID, or string
