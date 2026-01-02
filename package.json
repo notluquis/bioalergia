@@ -33,6 +33,7 @@
     "security:check": "npm audit && npx @dotenvx/dotenvx run --quiet -- echo '✅ Variables de entorno cargadas de forma segura'",
     "test:employees": "node test/employees.integration.test.ts",
     "db:deploy": "prisma migrate deploy",
+    "google:auth": "npx tsx scripts/google-oauth-setup.ts",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "lint:fix": "eslint . --ext ts,tsx --fix",
     "format": "prettier --write \"src/**/*.{js,jsx,ts,tsx,css,md,json}\"",

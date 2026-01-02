@@ -1,26 +1,26 @@
 /**
  * Google Core - Shared Google API authentication and utilities
  *
- * Centralizes Google API auth for Calendar and Drive services.
- * Uses the same service account credentials as calendar sync.
+ * Supports two authentication methods:
+ * - Service Account (JWT): Used for Calendar sync
+ * - OAuth 2.0: Used for Drive backups to personal account
  */
 
 import { drive, drive_v3 } from "@googleapis/drive";
-import { JWT } from "google-auth-library";
+import { OAuth2Client } from "google-auth-library";
 import { googleCalendarConfig } from "../config.js";
 import { logEvent, logWarn } from "./logger.js";
-
-// Scopes for Drive file operations
-const DRIVE_SCOPES = [
-  "https://www.googleapis.com/auth/drive.file", // Create/edit files created by this app
-];
+import { parseGoogleError } from "./google-errors.js";
 
 // Cached clients
 let cachedDriveClient: drive_v3.Drive | null = null;
+let cachedOAuthClient: OAuth2Client | null = null;
+
+// ==================== SERVICE ACCOUNT (Calendar) ====================
 
 /**
  * Gets the shared Google credentials from the existing calendar config.
- * Throws if not configured.
+ * Used for Calendar sync - NOT for Drive backups.
  */
 export function getGoogleCredentials(): { email: string; privateKey: string } {
   if (!googleCalendarConfig) {
@@ -41,48 +41,109 @@ export function isGoogleConfigured(): boolean {
   return googleCalendarConfig !== null;
 }
 
+// ==================== OAUTH 2.0 (Drive) ====================
+
+interface OAuthConfig {
+  clientId: string;
+  clientSecret: string;
+  refreshToken: string;
+}
+
 /**
- * Gets an authenticated Google Drive client.
- * Reuses the same service account as calendar sync.
+ * Gets OAuth2 configuration from environment variables.
+ */
+function getOAuthConfig(): OAuthConfig | null {
+  const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_OAUTH_CLIENT_SECRET;
+  const refreshToken = process.env.GOOGLE_OAUTH_REFRESH_TOKEN;
+
+  if (!clientId || !clientSecret || !refreshToken) {
+    return null;
+  }
+
+  return { clientId, clientSecret, refreshToken };
+}
+
+/**
+ * Checks if OAuth is configured for Drive backups.
+ */
+export function isOAuthConfigured(): boolean {
+  return getOAuthConfig() !== null;
+}
+
+/**
+ * Gets an OAuth2 client for Drive operations.
+ */
+async function getOAuthClient(): Promise<OAuth2Client> {
+  if (cachedOAuthClient) {
+    return cachedOAuthClient;
+  }
+
+  const config = getOAuthConfig();
+  if (!config) {
+    throw new Error("OAuth no configurado. Ejecuta 'npm run google:auth' para autorizar tu cuenta de Google Drive.");
+  }
+
+  const oauth2Client = new OAuth2Client(
+    config.clientId,
+    config.clientSecret,
+    "urn:ietf:wg:oauth:2.0:oob" // Desktop app redirect
+  );
+
+  oauth2Client.setCredentials({
+    refresh_token: config.refreshToken,
+  });
+
+  // Verify the token works by getting a new access token
+  try {
+    await oauth2Client.getAccessToken();
+    logEvent("google.oauth.authenticated", { clientId: config.clientId.substring(0, 20) + "..." });
+  } catch (error) {
+    const parsed = parseGoogleError(error);
+    logWarn("google.oauth.auth_failed", { error: parsed.message });
+    throw new Error(`Error de autenticación OAuth: ${parsed.message}`);
+  }
+
+  cachedOAuthClient = oauth2Client;
+  return cachedOAuthClient;
+}
+
+/**
+ * Gets an authenticated Google Drive client using OAuth2.
+ * Uses user's personal Google account for backup storage.
  */
 export async function getDriveClient(): Promise<drive_v3.Drive> {
   if (cachedDriveClient) {
     return cachedDriveClient;
   }
 
-  const creds = getGoogleCredentials();
-
-  const auth = new JWT({
-    email: creds.email,
-    key: creds.privateKey,
-    scopes: DRIVE_SCOPES,
-  });
-
-  await auth.authorize();
+  const auth = await getOAuthClient();
   cachedDriveClient = drive({ version: "v3", auth });
   return cachedDriveClient;
+}
+
+/**
+ * Clears cached clients (useful for re-authentication).
+ */
+export function clearDriveClientCache(): void {
+  cachedDriveClient = null;
+  cachedOAuthClient = null;
 }
 
 // ==================== BACKUP FOLDER MANAGEMENT ====================
 
 /**
  * Gets the backup folder ID from environment variable.
- * For personal Drive usage, the user should:
- * 1. Create a folder in their personal Drive
- * 2. Share it with the service account email (as Editor)
- * 3. Set GOOGLE_BACKUP_FOLDER_ID with the folder ID
  */
 export async function getOrCreateBackupFolder(): Promise<string> {
-  // Use env var if provided (recommended for personal Drive)
   const envFolderId = process.env.GOOGLE_BACKUP_FOLDER_ID;
   if (envFolderId) {
     logEvent("google.backup.folder.using_env", { folderId: envFolderId });
     return envFolderId;
   }
 
-  // Fallback: try to create folder (only works with Shared Drives or domain delegation)
   throw new Error(
-    "GOOGLE_BACKUP_FOLDER_ID is required. Create a folder in your Drive, share it with the service account, and set this env var."
+    "GOOGLE_BACKUP_FOLDER_ID no configurado. Crea una carpeta en tu Drive y agrega el ID como variable de entorno."
   );
 }
 
@@ -92,13 +153,13 @@ export async function getOrCreateBackupFolder(): Promise<string> {
 export async function verifyBackupFolder(): Promise<{
   ok: boolean;
   folderId?: string;
+  folderName?: string;
   error?: string;
 }> {
   try {
     const folderId = await getOrCreateBackupFolder();
     const driveClient = await getDriveClient();
 
-    // Verify we can access it
     const response = await driveClient.files.get({
       fileId: folderId,
       fields: "id, name, webViewLink",
@@ -107,13 +168,14 @@ export async function verifyBackupFolder(): Promise<{
     return {
       ok: true,
       folderId: response.data.id!,
+      folderName: response.data.name!,
     };
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    logWarn("google.backup.folder.verify_failed", { error: message });
+    const parsed = parseGoogleError(error);
+    logWarn("google.backup.folder.verify_failed", { error: parsed.message });
     return {
       ok: false,
-      error: message,
+      error: parsed.message,
     };
   }
 }
