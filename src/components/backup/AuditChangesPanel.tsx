@@ -248,15 +248,50 @@ export default function AuditChangesPanel() {
                 </div>
               </div>
 
-              {/* Diff viewer */}
-              {expanded === change.id && change.diff && (
+              {/* Diff viewer - shows old → new */}
+              {expanded === change.id && (
                 <div className="bg-base-300/50 mt-2 overflow-x-auto rounded-lg p-3 font-mono text-xs">
-                  {Object.entries(change.diff).map(([key, value]) => (
-                    <div key={key} className="flex gap-2">
-                      <span className="text-warning">{key}:</span>
-                      <span className="text-success">{JSON.stringify(value)}</span>
+                  {change.operation === "INSERT" && change.new_data && (
+                    <div className="text-success">
+                      <span className="text-base-content/60 mr-2">+ Creado:</span>
+                      {Object.entries(change.new_data)
+                        .slice(0, 5)
+                        .map(([k, v]) => (
+                          <span key={k} className="mr-3">
+                            <span className="text-base-content/40">{k}=</span>
+                            {JSON.stringify(v)}
+                          </span>
+                        ))}
+                      {Object.keys(change.new_data).length > 5 && <span className="text-base-content/40">...</span>}
                     </div>
-                  ))}
+                  )}
+                  {change.operation === "DELETE" && change.old_data && (
+                    <div className="text-error">
+                      <span className="text-base-content/60 mr-2">- Eliminado:</span>
+                      {Object.entries(change.old_data)
+                        .slice(0, 5)
+                        .map(([k, v]) => (
+                          <span key={k} className="mr-3">
+                            <span className="text-base-content/40">{k}=</span>
+                            {JSON.stringify(v)}
+                          </span>
+                        ))}
+                    </div>
+                  )}
+                  {change.operation === "UPDATE" && change.diff && change.old_data && (
+                    <div className="space-y-1">
+                      {Object.entries(change.diff).map(([key, newValue]) => (
+                        <div key={key} className="flex items-center gap-2">
+                          <span className="text-warning min-w-[100px]">{key}:</span>
+                          <span className="text-error line-through opacity-60">
+                            {JSON.stringify(change.old_data?.[key])}
+                          </span>
+                          <span className="text-base-content/40">→</span>
+                          <span className="text-success">{JSON.stringify(newValue)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
