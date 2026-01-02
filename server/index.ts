@@ -144,8 +144,11 @@ import { registerRoleRoutes } from "./routes/roles.js";
 registerRoleRoutes(app);
 import backupsRouter from "./routes/backups.js";
 app.use("/api/backups", backupsRouter);
+import auditRouter from "./routes/audit.js";
+app.use("/api/audit", auditRouter);
 import { startGoogleCalendarScheduler } from "./lib/google-calendar-scheduler.js";
 startGoogleCalendarScheduler();
+import { initializeBackupScheduler, stopBackupScheduler } from "./services/backup/scheduler.js";
 
 type HealthStatus = "ok" | "error";
 type HealthChecks = { db: { status: HealthStatus; latency: number | null } };
@@ -250,6 +253,9 @@ const server = app.listen(PORT, () => {
   setupAllWatchChannels().catch((err) => {
     logger.error({ event: "setup_watch_channels_error", error: err });
   });
+
+  // Start backup scheduler (hourly Mon-Sat 10-22, daily at 03:00)
+  initializeBackupScheduler();
 });
 
 // Graceful Shutdown
@@ -263,6 +269,7 @@ const shutdown = async (signal: string) => {
     try {
       // 2. Stop cron jobs
       stopCalendarCron();
+      stopBackupScheduler();
       logger.info({ event: "shutdown:cron_stopped" });
 
       // 3. Disconnect Database

@@ -135,7 +135,7 @@ export function clearDriveClientCache(): void {
 /**
  * Gets the backup folder ID from environment variable.
  */
-export async function getOrCreateBackupFolder(): Promise<string> {
+export async function getBackupFolderId(): Promise<string> {
   const envFolderId = process.env.GOOGLE_BACKUP_FOLDER_ID;
   if (envFolderId) {
     logEvent("google.backup.folder.using_env", { folderId: envFolderId });
@@ -157,7 +157,7 @@ export async function verifyBackupFolder(): Promise<{
   error?: string;
 }> {
   try {
-    const folderId = await getOrCreateBackupFolder();
+    const folderId = await getBackupFolderId();
     const driveClient = await getDriveClient();
 
     const response = await driveClient.files.get({

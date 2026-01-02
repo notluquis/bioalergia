@@ -6,7 +6,7 @@
  */
 
 import { createReadStream, createWriteStream } from "fs";
-import { getDriveClient, getOrCreateBackupFolder } from "../../lib/google-core.js";
+import { getDriveClient, getBackupFolderId } from "../../lib/google-core.js";
 import { parseGoogleError, GoogleApiError } from "../../lib/google-errors.js";
 
 export interface DriveFile {
@@ -29,7 +29,7 @@ export interface UploadResult {
 export async function uploadToDrive(filepath: string, filename: string): Promise<UploadResult> {
   try {
     const drive = await getDriveClient();
-    const folderId = await getOrCreateBackupFolder();
+    const folderId = await getBackupFolderId();
 
     const response = await drive.files.create({
       requestBody: {
@@ -78,7 +78,7 @@ export async function downloadFromDrive(fileId: string, destPath: string): Promi
 export async function listBackups(): Promise<DriveFile[]> {
   try {
     const drive = await getDriveClient();
-    const folderId = await getOrCreateBackupFolder();
+    const folderId = await getBackupFolderId();
 
     const response = await drive.files.list({
       q: `'${folderId}' in parents and trashed = false`,
@@ -112,7 +112,7 @@ export async function cleanupOldBackups(retentionDays: number): Promise<{
 
   try {
     const drive = await getDriveClient();
-    const folderId = await getOrCreateBackupFolder();
+    const folderId = await getBackupFolderId();
 
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
