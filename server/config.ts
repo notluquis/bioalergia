@@ -11,7 +11,13 @@ if (!rawJwtSecret) {
   throw new Error("Debes definir JWT_SECRET en tu archivo .env");
 }
 
+const rawMpAccessToken = process.env.MP_ACCESS_TOKEN;
+if (!rawMpAccessToken) {
+  console.warn("⚠️ MP_ACCESS_TOKEN no está definido en .env. Las funciones de Mercado Pago no funcionarán.");
+}
+
 export const JWT_SECRET = rawJwtSecret;
+export const MP_ACCESS_TOKEN = rawMpAccessToken;
 export const PORT = Number(process.env.PORT ?? 3000);
 export const sessionCookieName = "mp_session";
 export const sessionCookieOptions: CookieOptions = {

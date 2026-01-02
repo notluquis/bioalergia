@@ -18,7 +18,13 @@ import PageLoader from "@/components/ui/PageLoader";
  */
 const pageModules = import.meta.glob([
   "../pages/**/*.tsx",
+  "!../pages/NotFoundPage.tsx", // Exclude static error page
+  "!../pages/**/components/**/*.tsx", // Exclude co-located components in pages
   "../components/Layout/**/*.tsx",
+  "!../components/Layout/Sidebar.tsx", // Exclude shell components used in App.tsx
+  "!../components/Layout/Header.tsx",
+  "!../components/Layout/MobileNav.tsx",
+  "!../components/Layout/CollapsibleNavSection.tsx", // Exclude internal layout component
   "../features/**/pages/**/*.tsx",
   "../features/**/layout/**/*.tsx",
 ]) as Record<string, () => Promise<{ default: React.ComponentType }>>;

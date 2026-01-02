@@ -346,6 +346,13 @@ export const ROUTE_DATA: RouteData[] = [
         permission: { action: "update", subject: "Setting" },
         title: "Backups de base de datos",
       },
+      {
+        path: "mercadopago",
+        componentPath: "pages/settings/MercadoPagoSettingsPage",
+        nav: { label: "Mercado Pago", iconKey: "CreditCard", section: "Sistema", order: 5 },
+        permission: { action: "manage", subject: "Setting" },
+        title: "Reportes Mercado Pago",
+      },
     ],
   },
 ];

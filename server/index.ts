@@ -146,6 +146,10 @@ import backupsRouter from "./routes/backups.js";
 app.use("/api/backups", backupsRouter);
 import auditRouter from "./routes/audit.js";
 app.use("/api/audit", auditRouter);
+
+import mercadopagoRouter from "./routes/mercadopago.js";
+app.use("/api/mercadopago", mercadopagoRouter);
+
 import { startGoogleCalendarScheduler } from "./lib/google-calendar-scheduler.js";
 startGoogleCalendarScheduler();
 import { initializeBackupScheduler, stopBackupScheduler } from "./services/backup/scheduler.js";
