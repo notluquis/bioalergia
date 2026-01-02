@@ -296,7 +296,7 @@ export default function AuditChangesPanel() {
                     <div className="space-y-1">
                       {Object.entries(change.diff).map(([key, newValue]) => (
                         <div key={key} className="flex items-center gap-2">
-                          <span className="text-warning min-w-[100px]">{key}:</span>
+                          <span className="text-warning min-w-25">{key}:</span>
                           <span className="text-error line-through opacity-60">
                             {JSON.stringify(change.old_data?.[key])}
                           </span>
