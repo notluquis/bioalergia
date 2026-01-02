@@ -174,48 +174,44 @@ export default function BackupSettingsPage() {
 
   return (
     <div className={cn(PAGE_CONTAINER, "space-y-6")}>
-      {/* Header & Actions */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="text-base-content text-lg font-semibold">Resumen de Backups</h2>
-          <p className="text-base-content/60 text-sm">Gestiona copias de seguridad, restauraciones y auditoría.</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            onClick={() => queryClient.invalidateQueries({ queryKey: ["backups"] })}
-            disabled={backupsQuery.isFetching}
-            title="Actualizar lista"
-          >
-            <RefreshCw className={cn("size-4", backupsQuery.isFetching && "animate-spin")} />
-          </Button>
-          <Button
-            variant="primary"
-            onClick={() => backupMutation.mutate()}
-            disabled={isRunning || backupMutation.isPending}
-            isLoading={backupMutation.isPending}
-          >
-            {!backupMutation.isPending && <Upload className="size-4" />}
-            Crear Backup
-          </Button>
-        </div>
+      {/* Actions Toolbar */}
+      <div className="flex items-center justify-end gap-2">
+        <Button
+          variant="outline"
+          onClick={() => queryClient.invalidateQueries({ queryKey: ["backups"] })}
+          disabled={backupsQuery.isFetching}
+          title="Actualizar lista"
+          className="h-9"
+        >
+          <RefreshCw className={cn("size-4", backupsQuery.isFetching && "animate-spin")} />
+        </Button>
+        <Button
+          variant="primary"
+          onClick={() => backupMutation.mutate()}
+          disabled={isRunning || backupMutation.isPending}
+          isLoading={backupMutation.isPending}
+          className="h-9"
+        >
+          {!backupMutation.isPending && <Upload className="size-4" />}
+          Crear Backup
+        </Button>
       </div>
 
       {/* Progress Bar */}
       {isRunning && (
-        <div className="bg-base-200 rounded-xl p-6">
+        <div className="bg-base-200 rounded-xl p-6 shadow-sm">
           <div className="mb-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Loader2 className="text-primary size-5 animate-spin" />
-              <span className="font-semibold">
+              <span className="font-medium">
                 {currentBackup?.status === "running" ? "Backup en progreso" : "Restauración en progreso"}
               </span>
             </div>
-            <span className="text-base-content/60 text-sm">
+            <span className="text-base-content/60 font-mono text-sm">
               {currentBackup?.currentStep || currentRestore?.currentStep}
             </span>
           </div>
-          <div className="bg-base-300 h-3 overflow-hidden rounded-full">
+          <div className="bg-base-300 h-2 overflow-hidden rounded-full">
             <div
               className="bg-primary h-full transition-all duration-300"
               style={{ width: `${currentBackup?.progress || currentRestore?.progress || 0}%` }}
@@ -247,7 +243,7 @@ export default function BackupSettingsPage() {
         <StatCard
           icon={<Clock className="text-warning size-5" />}
           label="Último backup"
-          value={fullBackups[0] ? dayjs(fullBackups[0].createdTime).fromNow() : "-"}
+          value={fullBackups[0] ? dayjs(fullBackups[0].createdTime).fromNow(true) : "-"}
           color="warning"
         />
       </div>
@@ -340,7 +336,7 @@ function StatCard({
         <div className={cn("rounded-lg p-2", bgColors[color])}>{icon}</div>
         <div>
           <p className="text-base-content/60 text-sm">{label}</p>
-          <p className="text-xl font-bold">{value}</p>
+          <p className="text-2xl font-bold">{value}</p>
         </div>
       </div>
     </div>
