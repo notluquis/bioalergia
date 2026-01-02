@@ -84,8 +84,11 @@ const fetchTables = async (fileId: string): Promise<string[]> => {
   return (await res.json()).tables;
 };
 
-const fetchTablesWithChanges = async (): Promise<string[]> => {
-  const res = await fetch("/api/audit/tables-with-changes");
+const fetchTablesWithChanges = async (since?: string): Promise<string[]> => {
+  const url = since
+    ? `/api/audit/tables-with-changes?since=${encodeURIComponent(since)}`
+    : "/api/audit/tables-with-changes";
+  const res = await fetch(url);
   if (!res.ok) return [];
   return (await res.json()).tables;
 };
@@ -349,9 +352,10 @@ function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () =>
     enabled: isExpanded,
   });
 
+  // Fetch tables that have changes AFTER this backup was created
   const tablesWithChangesQuery = useQuery({
-    queryKey: ["tables-with-changes"],
-    queryFn: fetchTablesWithChanges,
+    queryKey: ["tables-with-changes", backup.createdTime],
+    queryFn: () => fetchTablesWithChanges(backup.createdTime),
     enabled: isExpanded,
     staleTime: 30000,
   });
