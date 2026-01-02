@@ -4,10 +4,12 @@
  * Manages job state, progress broadcasting via SSE, and history.
  */
 
-import { createBackup, cleanupLocalBackup, formatBytes, restoreFromBackup } from "./backup.js";
+import { createBackup, cleanupLocalBackup, restoreFromBackup, extractTablesFromBackup } from "./backup.js";
+import { prisma, Prisma } from "../../prisma.js";
 import { uploadToDrive, cleanupOldBackups, listBackups, downloadFromDrive, getBackupInfo, DriveFile } from "./drive.js";
 import { unlinkSync } from "fs";
 import { isGoogleConfigured } from "../../lib/google-core.js";
+import { formatFileSize } from "../../../shared/format.js";
 
 // Types
 export interface BackupJob {
@@ -50,41 +52,56 @@ export interface LogEntry {
   context?: Record<string, unknown>;
 }
 
-// Ring buffer for logs (in-memory, last 500 entries)
-const logs: LogEntry[] = [];
-const MAX_LOGS = 500;
+// ==================== LOG COLLECTION ====================
 
-function addLog(level: LogEntry["level"], message: string, context?: Record<string, unknown>) {
-  const entry: LogEntry = {
-    id: `log_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-    timestamp: new Date(),
-    level,
-    message,
-    context,
-  };
-  logs.unshift(entry);
-  if (logs.length > MAX_LOGS) {
-    logs.pop();
+// Persist log to database and broadcast
+async function addLog(
+  level: "info" | "warn" | "error" | "success",
+  message: string,
+  context?: Record<string, unknown>
+) {
+  try {
+    const entry = await prisma.backupLog.create({
+      data: {
+        level,
+        message,
+        context: context ?? Prisma.JsonNull,
+      },
+    });
+
+    // Broadcast log to SSE clients
+    broadcastLog({
+      id: entry.id,
+      timestamp: entry.timestamp,
+      level: entry.level as LogEntry["level"],
+      message: entry.message,
+      context: entry.context as LogEntry["context"],
+    });
+
+    return entry;
+  } catch (error) {
+    console.error("Failed to persist log:", error);
+    // Fallback: broadcast anyway so UI updates
+    broadcastLog({
+      id: "volatile_" + Date.now(),
+      timestamp: new Date(),
+      level,
+      message,
+      context,
+    });
   }
-  // Broadcast log to SSE clients
-  broadcastLog(entry);
-  return entry;
 }
 
-export function getLogs(limit = 100): LogEntry[] {
-  return logs.slice(0, limit);
+export async function getLogs(limit = 100) {
+  return prisma.backupLog.findMany({
+    orderBy: { timestamp: "desc" },
+    take: limit,
+  });
 }
 
-export function clearLogs(): void {
-  logs.length = 0;
+export async function clearLogs(): Promise<void> {
+  await prisma.backupLog.deleteMany();
 }
-
-// ==================== IN-MEMORY STATE ====================
-
-let currentBackupJob: BackupJob | null = null;
-let currentRestoreJob: RestoreJob | null = null;
-const jobHistory: (BackupJob | RestoreJob)[] = [];
-const MAX_HISTORY = 50;
 
 // SSE clients for real-time updates
 const sseClients: Set<(data: string) => void> = new Set();
@@ -103,6 +120,13 @@ export function subscribeToProgress(sendEvent: (data: string) => void) {
   sseClients.add(sendEvent);
   return () => sseClients.delete(sendEvent);
 }
+
+// ==================== IN-MEMORY STATE ====================
+
+let currentBackupJob: BackupJob | null = null;
+let currentRestoreJob: RestoreJob | null = null;
+const jobHistory: (BackupJob | RestoreJob)[] = [];
+const MAX_HISTORY = 50;
 
 // ==================== BACKUP CONFIG ====================
 
@@ -162,8 +186,8 @@ async function runBackupJob(config: BackupConfig, job: BackupJob) {
 
   try {
     // Step 1: Create local backup
-    addLog("info", "Starting pg_dump...");
-    job.currentStep = "Running pg_dump...";
+    addLog("info", "Starting Prisma backup...");
+    job.currentStep = "Exporting data...";
     job.progress = 10;
     broadcastProgress("backup", job);
 
@@ -174,7 +198,7 @@ async function runBackupJob(config: BackupConfig, job: BackupJob) {
     });
 
     // Step 2: Upload to Drive
-    addLog("info", `pg_dump completed: ${formatBytes(backup.sizeBytes)}`, { tables: backup.tables.length });
+    addLog("info", `Export completed: ${formatFileSize(backup.sizeBytes)}`, { tables: backup.tables.length });
     job.currentStep = "Uploading to Google Drive...";
     job.progress = 65;
     broadcastProgress("backup", job);
@@ -208,13 +232,13 @@ async function runBackupJob(config: BackupConfig, job: BackupJob) {
       tables: backup.tables,
     };
 
-    addLog("success", `Backup completed: ${formatBytes(backup.sizeBytes)} in ${job.result.durationMs}ms`, {
+    addLog("success", `Backup completed: ${formatFileSize(backup.sizeBytes)} in ${job.result.durationMs}ms`, {
       filename: backup.filename,
       sizeBytes: backup.sizeBytes,
       durationMs: job.result.durationMs,
       tablesCount: backup.tables.length,
     });
-    console.log(`✅ Backup completed: ${formatBytes(backup.sizeBytes)} in ${job.result.durationMs}ms`);
+    console.log(`✅ Backup completed: ${formatFileSize(backup.sizeBytes)} in ${job.result.durationMs}ms`);
   } catch (error) {
     job.status = "failed";
     job.completedAt = new Date();
@@ -259,7 +283,7 @@ export async function startRestore(backupFileId: string, tables?: string[]): Pro
 }
 
 async function runRestoreJob(config: BackupConfig, job: RestoreJob) {
-  const localPath = `/tmp/restore_${Date.now()}.dump`;
+  const localPath = `/tmp/restore_${Date.now()}.json.gz`;
 
   try {
     // Step 1: Download from Drive
@@ -344,23 +368,13 @@ export async function getBackupDetails(fileId: string): Promise<DriveFile | null
 
 export async function getBackupTables(fileId: string): Promise<string[]> {
   getConfig(); // Validates configuration
-  const localPath = `/tmp/inspect_${Date.now()}.dump`;
+  const localPath = `/tmp/inspect_${Date.now()}.json.gz`;
 
   try {
     await downloadFromDrive(fileId, localPath);
-
-    // Use pg_restore to list contents
-    const { execSync } = await import("child_process");
-    const output = execSync(`pg_restore -l "${localPath}" 2>/dev/null | grep "TABLE " | awk '{print $6}'`, {
-      encoding: "utf-8",
-    });
-
+    const tables = await extractTablesFromBackup(localPath);
     unlinkSync(localPath);
-
-    return output
-      .split("\n")
-      .map((t) => t.trim())
-      .filter(Boolean);
+    return tables;
   } catch (error) {
     try {
       unlinkSync(localPath);

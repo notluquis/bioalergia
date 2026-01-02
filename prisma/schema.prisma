@@ -409,6 +409,18 @@ model SyncLog {
   @@map("sync_logs")
 }
 
+model BackupLog {
+  id        String   @id @default(cuid())
+  timestamp DateTime @default(now())
+  level     String   // info, warn, error, success
+  message   String
+  context   Json?
+  jobId     String?  @map("job_id") // Optional relation to specific backup job
+
+  @@index([timestamp(sort: Desc)])
+  @@map("backup_logs")
+}
+
 model InventoryCategory {
   id        Int             @id @default(autoincrement())
   name      String          @unique

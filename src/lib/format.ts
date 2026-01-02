@@ -1,4 +1,5 @@
 // === CURRENCY FORMATTING ===
+import { formatFileSize } from "../../shared/format";
 
 export const fmtCLP = (n: number | string | null | undefined) => {
   // Handle null/undefined
@@ -115,17 +116,4 @@ export function formatPercentage(value: number, decimals = 1): string {
 
 // === FILE SIZE FORMATTING ===
 
-export function formatFileSize(bytes: number): string {
-  if (!Number.isFinite(bytes) || bytes < 0) return "0 B";
-
-  const units = ["B", "KB", "MB", "GB", "TB"];
-  let size = bytes;
-  let unitIndex = 0;
-
-  while (size >= 1024 && unitIndex < units.length - 1) {
-    size /= 1024;
-    unitIndex++;
-  }
-
-  return `${size.toFixed(unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
-}
+export { formatFileSize };
