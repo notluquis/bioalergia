@@ -435,8 +435,6 @@ function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () =>
           </div>
 
           <div className="bg-base-200/50 rounded-lg p-4">
-            <h4 className="mb-3 text-sm font-medium">Restaurar tablas específicas</h4>
-
             {tablesQuery.isLoading ? (
               <div className="flex items-center gap-2 py-4">
                 <Loader2 className="size-4 animate-spin" />
@@ -446,34 +444,123 @@ function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () =>
               <p className="text-error text-sm">Error al cargar tablas</p>
             ) : (
               <>
-                <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
-                  {tablesQuery.data?.map((table) => {
-                    const hasChanges = tablesWithChanges.has(table);
+                <div className="mb-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-sm font-medium">Tablas con cambios recientes</h4>
+                  </div>
+                  {/* Toggle moved to render logic or just implied by logic above; keeping it simple */}
+                </div>
+
+                <div className="mb-3">
+                  {tablesQuery.data?.length === 0 && (
+                    <p className="text-base-content/60 text-sm">No hay tablas en este backup.</p>
+                  )}
+
+                  {(() => {
+                    const allTables = tablesQuery.data || [];
+                    const changedTables = allTables.filter((t) => tablesWithChanges.has(t));
+                    const unchangedTables = allTables.filter((t) => !tablesWithChanges.has(t));
+
+                    if (changedTables.length === 0) {
+                      return (
+                        <div className="border-base-content/10 bg-base-200/30 rounded-lg border py-4 text-center">
+                          <p className="text-base-content/60 text-sm">
+                            No hay tablas con cambios registrados desde este backup.
+                          </p>
+                          <button
+                            className="text-primary mt-2 text-xs hover:underline"
+                            onClick={() => {
+                              const el = document.getElementById(`unchanged-tables-${backup.id}`);
+                              if (el) el.style.display = el.style.display === "none" ? "grid" : "none";
+                            }}
+                          >
+                            Ver todas las tablas de todas formas
+                          </button>
+                          <div
+                            id={`unchanged-tables-${backup.id}`}
+                            className="mt-3 grid grid-cols-2 gap-2 text-left sm:grid-cols-3 md:grid-cols-4"
+                            style={{ display: "none" }}
+                          >
+                            {allTables.map((table) => (
+                              <label
+                                key={table}
+                                className={cn(
+                                  "border-base-content/10 hover:bg-base-content/5 flex cursor-pointer items-center gap-2 rounded-lg border p-2 text-sm transition-colors",
+                                  selectedTables.includes(table) ? "border-primary bg-primary/5" : ""
+                                )}
+                              >
+                                <input
+                                  type="checkbox"
+                                  className="checkbox checkbox-primary checkbox-sm"
+                                  checked={selectedTables.includes(table)}
+                                  onChange={() => toggleTable(table)}
+                                />
+                                <span className="flex-1 truncate">{table}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    }
+
                     return (
-                      <label
-                        key={table}
-                        className={cn(
-                          "border-base-content/10 flex cursor-pointer items-center gap-2 rounded-lg border p-2 text-sm transition-colors",
-                          selectedTables.includes(table)
-                            ? "border-primary bg-primary/5"
-                            : hasChanges
-                              ? "border-warning/50 bg-warning/5"
-                              : "hover:bg-base-content/5"
+                      <>
+                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
+                          {changedTables.map((table) => (
+                            <label
+                              key={table}
+                              className={cn(
+                                "border-warning/50 bg-warning/5 flex cursor-pointer items-center gap-2 rounded-lg border p-2 text-sm transition-colors",
+                                selectedTables.includes(table) ? "border-primary bg-primary/5" : ""
+                              )}
+                            >
+                              <input
+                                type="checkbox"
+                                className="checkbox checkbox-primary checkbox-sm"
+                                checked={selectedTables.includes(table)}
+                                onChange={() => toggleTable(table)}
+                              />
+                              <span className="flex-1 truncate">{table}</span>
+                              <span
+                                className="bg-warning size-2 shrink-0 rounded-full"
+                                title="Tiene cambios recientes"
+                              />
+                            </label>
+                          ))}
+                        </div>
+
+                        {unchangedTables.length > 0 && (
+                          <div className="mt-4">
+                            <details className="group">
+                              <summary className="text-base-content/60 hover:text-base-content flex cursor-pointer items-center gap-2 text-xs">
+                                <ChevronRight className="size-3 transition-transform group-open:rotate-90" />
+                                Mostrar tablas sin cambios ({unchangedTables.length})
+                              </summary>
+                              <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
+                                {unchangedTables.map((table) => (
+                                  <label
+                                    key={table}
+                                    className={cn(
+                                      "border-base-content/10 hover:bg-base-content/5 flex cursor-pointer items-center gap-2 rounded-lg border p-2 text-sm transition-colors",
+                                      selectedTables.includes(table) ? "border-primary bg-primary/5" : ""
+                                    )}
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      className="checkbox checkbox-primary checkbox-sm"
+                                      checked={selectedTables.includes(table)}
+                                      onChange={() => toggleTable(table)}
+                                    />
+                                    <span className="flex-1 truncate">{table}</span>
+                                  </label>
+                                ))}
+                              </div>
+                            </details>
+                          </div>
                         )}
-                      >
-                        <input
-                          type="checkbox"
-                          className="checkbox checkbox-primary checkbox-sm"
-                          checked={selectedTables.includes(table)}
-                          onChange={() => toggleTable(table)}
-                        />
-                        <span className="flex-1 truncate">{table}</span>
-                        {hasChanges && (
-                          <span className="bg-warning size-2 shrink-0 rounded-full" title="Tiene cambios recientes" />
-                        )}
-                      </label>
+                      </>
                     );
-                  })}
+                  })()}
                 </div>
 
                 {selectedTables.length > 0 && (
