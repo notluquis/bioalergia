@@ -174,29 +174,6 @@ export default function BackupSettingsPage() {
 
   return (
     <div className={cn(PAGE_CONTAINER, "space-y-6")}>
-      {/* Actions Toolbar */}
-      <div className="flex items-center justify-end gap-2">
-        <Button
-          variant="outline"
-          onClick={() => queryClient.invalidateQueries({ queryKey: ["backups"] })}
-          disabled={backupsQuery.isFetching}
-          title="Actualizar lista"
-          className="h-9"
-        >
-          <RefreshCw className={cn("size-4", backupsQuery.isFetching && "animate-spin")} />
-        </Button>
-        <Button
-          variant="primary"
-          onClick={() => backupMutation.mutate()}
-          disabled={isRunning || backupMutation.isPending}
-          isLoading={backupMutation.isPending}
-          className="h-9"
-        >
-          {!backupMutation.isPending && <Upload className="size-4" />}
-          Crear Backup
-        </Button>
-      </div>
-
       {/* Progress Bar */}
       {isRunning && (
         <div className="bg-base-200 rounded-xl p-6 shadow-sm">
@@ -248,61 +225,111 @@ export default function BackupSettingsPage() {
         />
       </div>
 
-      {/* Full Backups List */}
-      <div className="bg-base-200/50 rounded-xl">
-        <div className="p-4">
-          <h2 className="text-lg font-semibold">Backups Completos</h2>
-          <p className="text-base-content/60 text-sm">Snapshots completos de la base de datos (domingos 3am)</p>
-        </div>
-        <div className="divide-base-content/5 divide-y">
-          {backupsQuery.isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="text-primary size-6 animate-spin" />
+      <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
+        {/* Full Backups List */}
+        <div className="bg-base-200/50 rounded-xl">
+          <div className="border-base-content/5 flex items-center justify-between border-b p-4">
+            <div>
+              <h2 className="text-lg font-semibold">Backups Completos</h2>
+              <p className="text-base-content/60 text-sm">Snapshots completos</p>
             </div>
-          ) : backupsQuery.error ? (
-            <div className="text-error py-12 text-center">Error al cargar backups</div>
-          ) : fullBackups.length === 0 ? (
-            <div className="text-base-content/60 py-12 text-center">No hay backups disponibles</div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => queryClient.invalidateQueries({ queryKey: ["backups"] })}
+                disabled={backupsQuery.isFetching}
+                title="Actualizar lista"
+                className="h-8 w-8 p-0"
+              >
+                <RefreshCw className={cn("size-4", backupsQuery.isFetching && "animate-spin")} />
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => backupMutation.mutate()}
+                disabled={isRunning || backupMutation.isPending}
+                isLoading={backupMutation.isPending}
+                className="h-8 text-xs"
+              >
+                {!backupMutation.isPending && <Upload className="mr-1.5 size-3.5" />}
+                Crear Backup
+              </Button>
+            </div>
+          </div>
+          <div className="divide-base-content/5 divide-y">
+            {backupsQuery.isLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="text-primary size-6 animate-spin" />
+              </div>
+            ) : backupsQuery.error ? (
+              <div className="text-error py-12 text-center">Error al cargar backups</div>
+            ) : fullBackups.length === 0 ? (
+              <div className="text-base-content/60 py-12 text-center">No hay backups disponibles</div>
+            ) : (
+              fullBackups.map((backup) => (
+                <BackupRow
+                  key={backup.id}
+                  backup={backup}
+                  onSuccess={() => queryClient.invalidateQueries({ queryKey: ["backups"] })}
+                />
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Incremental Exports */}
+        <div className="bg-base-200/50 rounded-xl">
+          <div className="border-base-content/5 border-b p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold">Exports Incrementales</h2>
+                <p className="text-base-content/60 text-sm">Cambios por hora</p>
+              </div>
+              <span className="bg-base-content/10 rounded-full px-2 py-1 text-xs font-medium">
+                {auditExports.length}
+              </span>
+            </div>
+          </div>
+          {auditExports.length > 0 ? (
+            <div className="divide-base-content/5 max-h-125 divide-y overflow-y-auto">
+              {auditExports.slice(0, 50).map((backup) => (
+                <div
+                  key={backup.id}
+                  className="hover:bg-base-content/5 flex items-center justify-between px-4 py-3 text-sm transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="bg-info/10 text-info rounded-lg p-1.5">
+                      <FileText className="size-4" />
+                    </div>
+                    <div>
+                      <p className="font-medium">{backup.name}</p>
+                      <p className="text-base-content/60 text-xs">{dayjs(backup.createdTime).format("DD MMM HH:mm")}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="bg-base-100/50 rounded px-1.5 py-0.5 font-mono text-xs opacity-60">
+                      {formatFileSize(Number(backup.size))}
+                    </span>
+                    {backup.webViewLink && (
+                      <a
+                        href={backup.webViewLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-ghost btn-xs btn-square"
+                      >
+                        <Download className="size-4" />
+                      </a>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
           ) : (
-            fullBackups.map((backup) => (
-              <BackupRow
-                key={backup.id}
-                backup={backup}
-                onSuccess={() => queryClient.invalidateQueries({ queryKey: ["backups"] })}
-              />
-            ))
+            <div className="text-base-content/60 py-12 text-center text-sm">No hay exports incrementales</div>
           )}
         </div>
       </div>
-
-      {/* Incremental Exports (collapsible) */}
-      {auditExports.length > 0 && (
-        <details className="bg-base-200/50 rounded-xl">
-          <summary className="cursor-pointer p-4">
-            <span className="font-semibold">Exports Incrementales ({auditExports.length})</span>
-            <span className="text-base-content/60 ml-2 text-sm">Cambios exportados cada hora</span>
-          </summary>
-          <div className="divide-base-content/5 max-h-64 divide-y overflow-y-auto">
-            {auditExports.slice(0, 20).map((backup) => (
-              <div key={backup.id} className="flex items-center justify-between px-4 py-2 text-sm">
-                <div className="flex items-center gap-2">
-                  <FileText className="text-info size-4" />
-                  <span>{backup.name}</span>
-                </div>
-                <div className="text-base-content/60 flex items-center gap-3">
-                  <span>{formatFileSize(Number(backup.size))}</span>
-                  <span>{dayjs(backup.createdTime).format("DD MMM HH:mm")}</span>
-                  {backup.webViewLink && (
-                    <a href={backup.webViewLink} target="_blank" rel="noopener noreferrer">
-                      <Download className="hover:text-primary size-4" />
-                    </a>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </details>
-      )}
 
       {/* Audit Changes Panel */}
       <AuditChangesPanel />
