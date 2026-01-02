@@ -29,6 +29,7 @@ import { cn } from "@/lib/utils";
 import { formatFileSize } from "@/lib/format";
 import Button from "@/components/ui/Button";
 import { useToast } from "@/context/ToastContext";
+import AuditChangesPanel from "@/components/backup/AuditChangesPanel";
 
 dayjs.extend(relativeTime);
 dayjs.locale("es");
@@ -349,6 +350,9 @@ export default function BackupSettingsPage() {
           )}
         </div>
       </div>
+
+      {/* Audit Changes Panel */}
+      <AuditChangesPanel />
     </div>
   );
 }
