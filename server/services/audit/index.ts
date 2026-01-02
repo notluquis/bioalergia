@@ -12,6 +12,14 @@ import { prisma, Prisma } from "../../prisma.js";
 import { logEvent, logWarn } from "../../lib/logger.js";
 
 // Map actual table names (dbName) to Prisma Client model property names (camelCase)
+// Define a generic delegate interface for the methods we use
+interface GenericPrismaDelegate {
+  delete(args: { where: { id: number | string } }): Promise<unknown>;
+  update(args: { where: { id: number | string }; data: unknown }): Promise<unknown>;
+  create(args: { data: unknown }): Promise<unknown>;
+  findMany(): Promise<unknown[]>;
+}
+
 const TABLE_TO_MODEL_PROP: Record<string, string> = {};
 
 Prisma.dmmf.datamodel.models.forEach((m) => {
@@ -156,72 +164,93 @@ export async function revertChange(changeId: bigint): Promise<{ success: boolean
   }
 
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const model = (prisma as any)[modelProp];
+    // 3. Execute Revert in Transaction
+    // usage of explicit any for dynamic model access is required but scoped
+    await prisma.$transaction(async (tx) => {
+      // Organic type safety: Cast transaction client to a record of generic delegates
+      const txClient = tx as unknown as Record<string, GenericPrismaDelegate>;
+      const model = txClient[modelProp];
 
-    if (!model) {
-      return { success: false, message: `Model property ${modelProp} not found on Prisma Client` };
-    }
-
-    // Parse row_id - could be int, UUID, or string
-    const rowId = /^\d+$/.test(change.row_id) ? parseInt(change.row_id, 10) : change.row_id;
-
-    switch (change.operation) {
-      case "INSERT":
-        // Revert INSERT = DELETE the row
-        await model.delete({ where: { id: rowId } });
-        break;
-
-      case "UPDATE": {
-        // Revert UPDATE: Use 'diff' to identify ONLY the fields that changed,
-        // and restore their values from 'old_data'.
-        // This prevents overwriting other fields that might have changed since then.
-        if (!change.old_data) {
-          return { success: false, message: "No old_data to restore" };
-        }
-
-        let dataToRestore: Record<string, unknown> = {};
-
-        if (change.diff && Object.keys(change.diff).length > 0) {
-          // Smart Revert: Only restore fields that were actually changed in this event
-          const changedKeys = Object.keys(change.diff);
-          const oldData = change.old_data as Record<string, unknown>;
-
-          changedKeys.forEach((key) => {
-            if (key !== "id" && key !== "updated_at") {
-              // skip ID and timestamps if automanaged
-              dataToRestore[key] = oldData[key];
-            }
-          });
-
-          if (Object.keys(dataToRestore).length === 0) {
-            return { success: false, message: "No valid fields to revert in this update" };
-          }
-        } else {
-          // Fallback: If no diff stored (legacy?), restore full row excluding ID
-          dataToRestore = { ...(change.old_data as Record<string, unknown>) };
-          delete dataToRestore.id;
-        }
-
-        await model.update({
-          where: { id: rowId },
-          data: dataToRestore,
-        });
-        break;
+      if (!model) {
+        throw new Error(`Model property '${modelProp}' not found on Prisma Client`);
       }
 
-      case "DELETE":
-        // Revert DELETE = recreate the row
-        if (!change.old_data) {
-          return { success: false, message: "No old_data to restore" };
+      // Parse row_id
+      const rowId = /^\d+$/.test(change.row_id) ? parseInt(change.row_id, 10) : change.row_id;
+
+      switch (change.operation) {
+        case "INSERT":
+          // Revert INSERT = DELETE
+          await model.delete({ where: { id: rowId } });
+          break;
+
+        case "UPDATE": {
+          // Revert UPDATE: Use 'diff' to identify ONLY the fields that changed,
+          // and restore their values from 'old_data'.
+          if (!change.old_data) {
+            throw new Error("No old_data available to restore");
+          }
+
+          const oldData = change.old_data as Record<string, unknown>;
+          const dataToRestore: Record<string, unknown> = {};
+
+          if (change.diff && Object.keys(change.diff).length > 0) {
+            const changedKeys = Object.keys(change.diff);
+            changedKeys.forEach((key) => {
+              // Skip ID and timestamps if they are managed by DB/Prisma
+              if (key !== "id" && key !== "updated_at" && key !== "updatedAt") {
+                // Ensure we retrieve the value from old_data, even if it's null
+                if (Object.prototype.hasOwnProperty.call(oldData, key)) {
+                  dataToRestore[key] = oldData[key];
+                }
+              }
+            });
+          } else {
+            // Fallback for legacy records without diff
+            Object.assign(dataToRestore, oldData);
+            delete dataToRestore.id;
+          }
+
+          if (Object.keys(dataToRestore).length === 0) {
+            throw new Error("No valid fields to revert (change might be empty or restricted)");
+          }
+
+          await model.update({
+            where: { id: rowId },
+            data: dataToRestore,
+          });
+          break;
         }
-        await model.create({ data: change.old_data });
-        break;
-    }
+
+        case "DELETE":
+          // Revert DELETE = CREATE
+          if (!change.old_data) {
+            throw new Error("No old_data available to restore");
+          }
+          await model.create({ data: change.old_data });
+          break;
+      }
+    });
 
     logEvent("audit.reverted", { changeId: changeId.toString(), table: change.table_name, op: change.operation });
     return { success: true, message: `Reverted ${change.operation} on ${change.table_name}` };
   } catch (error) {
+    // Native Prisma Error Handling
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      // P2003: Foreign key constraint failed
+      if (error.code === "P2003") {
+        const field = error.meta?.field_name || "relation";
+        return {
+          success: false,
+          message: `Cannot revert: Linked record is missing (Foreign Key constraint on ${field})`,
+        };
+      }
+      // P2025: Record not found
+      if (error.code === "P2025") {
+        return { success: false, message: "Cannot revert: The target record no longer exists." };
+      }
+    }
+
     logWarn("audit.revert_failed", { changeId: changeId.toString(), error: String(error) });
     return { success: false, message: String(error) };
   }

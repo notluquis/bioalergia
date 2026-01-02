@@ -240,7 +240,7 @@ export default function BackupSettingsPage() {
                 onClick={() => queryClient.invalidateQueries({ queryKey: ["backups"] })}
                 disabled={backupsQuery.isFetching}
                 title="Actualizar lista"
-                className="h-8 w-8 rounded-full p-0"
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full p-0"
               >
                 <RefreshCw className={cn("size-5", backupsQuery.isFetching && "animate-spin")} />
               </Button>

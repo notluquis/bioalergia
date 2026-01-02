@@ -165,7 +165,7 @@ export default function AuditChangesPanel() {
               size="sm"
               onClick={() => queryClient.invalidateQueries({ queryKey: ["audit-changes"] })}
               disabled={changesQuery.isFetching}
-              className="h-8 w-8 rounded-full p-0"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full p-0"
               title="Actualizar lista"
             >
               <RefreshCw className={cn("size-5", changesQuery.isFetching && "animate-spin")} />
@@ -179,7 +179,7 @@ export default function AuditChangesPanel() {
               className="h-8 text-xs font-medium"
             >
               {!exportMutation.isPending && <Upload className="mr-1.5 size-4" />}
-              Exportar ({stats?.pendingExport || 0})
+              Respaldar Ahora
             </Button>
           </div>
         </div>

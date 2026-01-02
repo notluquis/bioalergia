@@ -69,11 +69,21 @@ export async function createBackup(_databaseUrl: string, onProgress?: ProgressCa
           });
 
           try {
-            // Dynamic access to Prisma model using any to bypass strict typing
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const model = (tx as any)[modelName];
-            if (model && typeof model.findMany === "function") {
+            // Organic type safety: Cast transaction client to a record of unknown values
+            // We verify the existence of the method before calling it, avoiding 'any'
+            const txRecords = tx as unknown as Record<string, unknown>;
+            const candidate = txRecords[modelName];
+
+            // Type guard to ensure candidate has findMany
+            if (
+              candidate &&
+              typeof candidate === "object" &&
+              "findMany" in candidate &&
+              typeof (candidate as Record<string, unknown>).findMany === "function"
+            ) {
+              const model = candidate as { findMany: () => Promise<unknown[]> };
               const data = await model.findMany();
+
               if (Array.isArray(data) && data.length > 0) {
                 backupData[modelName] = data;
                 tables.push(modelName);
