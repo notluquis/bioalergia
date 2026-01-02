@@ -51,36 +51,46 @@ export async function createBackup(_databaseUrl: string, onProgress?: ProgressCa
   const backupData: Record<string, unknown[]> = {};
 
   try {
-    // Get all models dynamically from Prisma schema
-    const allModels = getAllPrismaModels();
-    const totalModels = allModels.length;
+    // executeTransactionalBackup: Ensure consistent snapshot across all tables
+    await prisma.$transaction(
+      async (tx) => {
+        // Get all models dynamically from Prisma schema
+        const allModels = getAllPrismaModels();
+        const totalModels = allModels.length;
 
-    for (let i = 0; i < totalModels; i++) {
-      const modelName = allModels[i];
-      const progress = Math.round(10 + (i / totalModels) * 50);
+        for (let i = 0; i < totalModels; i++) {
+          const modelName = allModels[i];
+          const progress = Math.round(10 + (i / totalModels) * 50);
 
-      onProgress?.({
-        step: "exporting",
-        progress,
-        message: `Exporting ${modelName}...`,
-      });
+          onProgress?.({
+            step: "exporting",
+            progress,
+            message: `Exporting ${modelName}...`,
+          });
 
-      try {
-        // Dynamic access to Prisma model using any to bypass strict typing
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const model = (prisma as any)[modelName];
-        if (model && typeof model.findMany === "function") {
-          const data = await model.findMany();
-          if (Array.isArray(data) && data.length > 0) {
-            backupData[modelName] = data;
-            tables.push(modelName);
+          try {
+            // Dynamic access to Prisma model using any to bypass strict typing
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const model = (tx as any)[modelName];
+            if (model && typeof model.findMany === "function") {
+              const data = await model.findMany();
+              if (Array.isArray(data) && data.length > 0) {
+                backupData[modelName] = data;
+                tables.push(modelName);
+              }
+            }
+          } catch (error) {
+            // Some models might not exist or have issues - log and continue
+            console.warn(`⚠️ Skipping ${modelName}: ${error}`);
           }
         }
-      } catch (error) {
-        // Some models might not exist or have issues - log and continue
-        console.warn(`⚠️ Skipping ${modelName}: ${error}`);
+      },
+      {
+        isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead,
+        maxWait: 5000,
+        timeout: 60000 * 5, // 5 minutes max for backup
       }
-    }
+    );
 
     onProgress?.({ step: "compressing", progress: 65, message: "Writing JSON..." });
 
@@ -206,6 +216,8 @@ export async function restoreFromBackup(
 
   try {
     // Decompress and parse backup
+    // NOTE: For very large backups (>500MB), consider using a streaming JSON parser
+    // to avoid loading the entire file into memory.
     const chunks: Buffer[] = [];
     const gunzip = createGunzip();
     const stream = createReadStream(backupPath).pipe(gunzip);
@@ -226,48 +238,66 @@ export async function restoreFromBackup(
     const totalTables = tablesToRestore.length;
     let restoredCount = 0;
 
-    for (let i = 0; i < totalTables; i++) {
-      const tableName = tablesToRestore[i];
-      const tableData = data[tableName];
-
-      if (!tableData || tableData.length === 0) continue;
-
-      const progress = Math.round(20 + (i / totalTables) * 70);
-      onProgress?.({
-        step: "exporting",
-        progress,
-        message: `Restoring ${tableName} (${tableData.length} records)...`,
-      });
-
-      if (dryRun) {
-        console.log(`[DRY RUN] Would restore ${tableData.length} records to ${tableName}`);
+    if (dryRun) {
+      for (const tableName of tablesToRestore) {
+        const count = data[tableName]?.length || 0;
+        console.log(`[DRY RUN] Would restore ${count} records to ${tableName}`);
         restoredCount++;
-        continue;
       }
-
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const model = (prisma as any)[tableName];
-
-        if (model && typeof model.createMany === "function") {
-          // Clear existing data first
-          await model.deleteMany();
-
-          // Insert data in batches of 1000
-          const batchSize = 1000;
-          for (let j = 0; j < tableData.length; j += batchSize) {
-            const batch = tableData.slice(j, j + batchSize);
-            await model.createMany({
-              data: batch,
-              skipDuplicates: true,
-            });
-          }
-          restoredCount++;
-        }
-      } catch (error) {
-        console.error(`❌ Failed to restore ${tableName}: ${error}`);
-      }
+      return { success: true, message: `[DRY RUN] Would restore ${restoredCount} tables` };
     }
+
+    // executeTransactionalRestore: Wraps the entire restore in a transaction
+    await prisma.$transaction(
+      async (tx) => {
+        // 1. Disable Foreign Key constraints for this transaction
+        // "SET LOCAL" scopes the change to the current transaction only.
+        try {
+          await tx.$executeRawUnsafe("SET LOCAL session_replication_role = 'replica';");
+        } catch (e) {
+          console.warn("⚠️ Could not set session_replication_role. Ensure DB user has sufficient privileges.", e);
+          // Fallback: Proceed, hoping for best (or constraints are deferred)
+        }
+
+        for (let i = 0; i < totalTables; i++) {
+          const tableName = tablesToRestore[i];
+          const tableData = data[tableName];
+
+          if (!tableData || tableData.length === 0) continue;
+
+          const progress = Math.round(20 + (i / totalTables) * 70);
+          onProgress?.({
+            step: "exporting",
+            progress,
+            message: `Restoring ${tableName} (${tableData.length} records)...`,
+          });
+
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const model = (tx as any)[tableName];
+
+          if (model && typeof model.createMany === "function") {
+            // 2. Clear existing data
+            // Since FKs are disabled/deferred, we can delete safely
+            await model.deleteMany();
+
+            // 3. Insert data in batches
+            const batchSize = 1000;
+            for (let j = 0; j < tableData.length; j += batchSize) {
+              const batch = tableData.slice(j, j + batchSize);
+              await model.createMany({
+                data: batch,
+                skipDuplicates: true,
+              });
+            }
+            restoredCount++;
+          }
+        }
+      },
+      {
+        maxWait: 5000, // Wait for lock
+        timeout: 60000 * 5, // 5 minutes max for restore
+      }
+    );
 
     onProgress?.({ step: "done", progress: 100, message: "Restore completed" });
 
@@ -278,6 +308,7 @@ export async function restoreFromBackup(
         : `Full restore completed (${restoredCount} tables)`,
     };
   } catch (error) {
+    console.error("Restore failed:", error);
     return {
       success: false,
       message: String(error),

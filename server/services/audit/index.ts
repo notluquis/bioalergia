@@ -172,16 +172,19 @@ export async function revertChange(changeId: bigint): Promise<{ success: boolean
         await model.delete({ where: { id: rowId } });
         break;
 
-      case "UPDATE":
-        // Revert UPDATE = restore old_data
+      case "UPDATE": {
+        // Revert UPDATE = restore old_data, excluding 'id' since we use it in 'where'
         if (!change.old_data) {
           return { success: false, message: "No old_data to restore" };
         }
+        const dataToRestore = { ...(change.old_data as Record<string, unknown>) };
+        delete dataToRestore.id;
         await model.update({
           where: { id: rowId },
-          data: change.old_data,
+          data: dataToRestore,
         });
         break;
+      }
 
       case "DELETE":
         // Revert DELETE = recreate the row
