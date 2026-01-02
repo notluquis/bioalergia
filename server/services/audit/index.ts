@@ -194,17 +194,33 @@ export async function revertChange(changeId: bigint): Promise<{ success: boolean
           const oldData = change.old_data as Record<string, unknown>;
           const dataToRestore: Record<string, unknown> = {};
 
-          if (change.diff && Object.keys(change.diff).length > 0) {
+          if (change.diff && typeof change.diff === "object" && Object.keys(change.diff).length > 0) {
             const changedKeys = Object.keys(change.diff);
+            const skippedKeys: string[] = [];
+
             changedKeys.forEach((key) => {
               // Skip ID and timestamps if they are managed by DB/Prisma
-              if (key !== "id" && key !== "updated_at" && key !== "updatedAt") {
-                // Ensure we retrieve the value from old_data, even if it's null
-                if (Object.prototype.hasOwnProperty.call(oldData, key)) {
-                  dataToRestore[key] = oldData[key];
-                }
+              if (key === "id" || key === "updated_at" || key === "updatedAt") {
+                skippedKeys.push(key);
+                return;
+              }
+
+              // Ensure we retrieve the value from old_data, even if it's null
+              if (Object.prototype.hasOwnProperty.call(oldData, key)) {
+                dataToRestore[key] = oldData[key];
               }
             });
+
+            if (Object.keys(dataToRestore).length === 0) {
+              if (skippedKeys.length === changedKeys.length) {
+                // All changed fields were system fields (ignored) -> Consider this a success (no-op)
+                logEvent("audit.revert_skipped", { changeId: changeId.toString(), reason: "only_system_fields" });
+                return { success: true, message: "No revertable fields changed (only system fields like updated_at)" };
+              } else {
+                // Valid fields were changed but missing in old_data
+                throw new Error("Cannot revert: Original data is missing for the changed fields");
+              }
+            }
           } else {
             // Fallback for legacy records without diff
             Object.assign(dataToRestore, oldData);
