@@ -103,6 +103,12 @@ const fetchTables = async (fileId: string): Promise<string[]> => {
   return (await res.json()).tables;
 };
 
+const fetchTablesWithChanges = async (): Promise<string[]> => {
+  const res = await fetch("/api/audit/tables-with-changes");
+  if (!res.ok) return [];
+  return (await res.json()).tables;
+};
+
 const triggerBackup = async (): Promise<{ job: BackupJob }> => {
   const res = await fetch("/api/backups", { method: "POST" });
   if (!res.ok) throw new Error("Failed to start backup");
@@ -412,6 +418,7 @@ function LogLine({ log }: { log: LogEntry }) {
 
 function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () => void }) {
   const { success, error: showError } = useToast();
+  const queryClient = useQueryClient();
   const [isExpanded, setIsExpanded] = useState(false);
   const [selectedTables, setSelectedTables] = useState<string[]>([]);
 
@@ -421,15 +428,26 @@ function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () =>
     enabled: isExpanded,
   });
 
+  // Fetch tables that have pending changes in audit
+  const tablesWithChangesQuery = useQuery({
+    queryKey: ["tables-with-changes"],
+    queryFn: fetchTablesWithChanges,
+    enabled: isExpanded,
+    staleTime: 30000,
+  });
+
   const restoreMutation = useMutation({
     mutationFn: (tables?: string[]) => triggerRestore(backup.id, tables),
     onSuccess: () => {
       success("Restauración iniciada");
+      // Invalidate history to show the new restore job
+      queryClient.invalidateQueries({ queryKey: ["backup-history"] });
       onSuccess();
     },
     onError: (e) => showError(e.message),
   });
 
+  const tablesWithChanges = new Set(tablesWithChangesQuery.data || []);
   const toggleTable = (table: string) =>
     setSelectedTables((prev) => (prev.includes(table) ? prev.filter((t) => t !== table) : [...prev, table]));
 
@@ -503,23 +521,33 @@ function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () =>
             ) : (
               <>
                 <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
-                  {tablesQuery.data?.map((table) => (
-                    <label
-                      key={table}
-                      className={cn(
-                        "border-base-content/10 flex cursor-pointer items-center gap-2 rounded-lg border p-2 text-sm transition-colors",
-                        selectedTables.includes(table) ? "border-primary bg-primary/5" : "hover:bg-base-content/5"
-                      )}
-                    >
-                      <input
-                        type="checkbox"
-                        className="checkbox checkbox-primary checkbox-sm"
-                        checked={selectedTables.includes(table)}
-                        onChange={() => toggleTable(table)}
-                      />
-                      <span className="truncate">{table}</span>
-                    </label>
-                  ))}
+                  {tablesQuery.data?.map((table) => {
+                    const hasChanges = tablesWithChanges.has(table);
+                    return (
+                      <label
+                        key={table}
+                        className={cn(
+                          "border-base-content/10 flex cursor-pointer items-center gap-2 rounded-lg border p-2 text-sm transition-colors",
+                          selectedTables.includes(table)
+                            ? "border-primary bg-primary/5"
+                            : hasChanges
+                              ? "border-warning/50 bg-warning/5"
+                              : "hover:bg-base-content/5"
+                        )}
+                      >
+                        <input
+                          type="checkbox"
+                          className="checkbox checkbox-primary checkbox-sm"
+                          checked={selectedTables.includes(table)}
+                          onChange={() => toggleTable(table)}
+                        />
+                        <span className="flex-1 truncate">{table}</span>
+                        {hasChanges && (
+                          <span className="bg-warning size-2 shrink-0 rounded-full" title="Tiene cambios recientes" />
+                        )}
+                      </label>
+                    );
+                  })}
                 </div>
 
                 {selectedTables.length > 0 && (

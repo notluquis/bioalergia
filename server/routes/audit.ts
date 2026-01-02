@@ -36,6 +36,18 @@ router.get(
 );
 
 /**
+ * Get tables that have pending changes (for restore UI).
+ */
+router.get(
+  "/tables-with-changes",
+  asyncHandler(async (_, res) => {
+    const stats = await getAuditStats();
+    const tablesWithChanges = stats.byTable.map((t) => t.table_name);
+    res.json({ tables: tablesWithChanges });
+  })
+);
+
+/**
  * Get recent changes (paginated).
  */
 router.get(
