@@ -34,11 +34,12 @@ router.get(
     res.setHeader("X-Accel-Buffering", "no"); // Disable nginx buffering
 
     // Send initial state with jobs and recent logs
+    const logs = await getLogs(50);
     res.write(
       `data: ${JSON.stringify({
         type: "init",
         jobs: getCurrentJobs(),
-        logs: getLogs(50),
+        logs,
       })}\n\n`
     );
 
@@ -65,7 +66,7 @@ router.get(
   "/logs",
   asyncHandler(async (req, res) => {
     const limit = Math.min(parseInt(req.query.limit as string, 10) || 100, 500);
-    res.json({ logs: getLogs(limit) });
+    res.json({ logs: await getLogs(limit) });
   })
 );
 

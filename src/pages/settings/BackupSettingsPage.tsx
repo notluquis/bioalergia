@@ -26,6 +26,7 @@ import "dayjs/locale/es";
 
 import { PAGE_CONTAINER, TITLE_LG } from "@/lib/styles";
 import { cn } from "@/lib/utils";
+import { formatFileSize } from "@/lib/format";
 import Button from "@/components/ui/Button";
 import { useToast } from "@/context/ToastContext";
 
@@ -117,15 +118,6 @@ const triggerRestore = async (fileId: string, tables?: string[]): Promise<{ job:
 };
 
 // ==================== HELPERS ====================
-
-function formatBytes(bytes: number | string): string {
-  const b = typeof bytes === "string" ? parseInt(bytes, 10) : bytes;
-  if (b === 0) return "0 B";
-  const k = 1024;
-  const sizes = ["B", "KB", "MB", "GB"];
-  const i = Math.floor(Math.log(b) / Math.log(k));
-  return `${parseFloat((b / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
-}
 
 function formatDuration(ms: number): string {
   if (ms < 1000) return `${ms}ms`;
@@ -266,7 +258,7 @@ export default function BackupSettingsPage() {
         <StatCard
           icon={<Database className="text-info size-5" />}
           label="Almacenamiento total"
-          value={formatBytes(totalSize)}
+          value={formatFileSize(totalSize)}
           color="info"
         />
         <StatCard
@@ -451,7 +443,7 @@ function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () =>
           <div>
             <p className="font-medium">{backup.name}</p>
             <p className="text-base-content/60 text-sm">
-              {dayjs(backup.createdTime).format("DD MMM YYYY, HH:mm")} • {formatBytes(backup.size)}
+              {dayjs(backup.createdTime).format("DD MMM YYYY, HH:mm")} • {formatFileSize(Number(backup.size))}
             </p>
           </div>
         </div>
@@ -565,7 +557,7 @@ function HistoryRow({ job }: { job: BackupJob | RestoreJob }) {
         </div>
         <div className="text-right">
           {isSuccess && isBackup && (job as BackupJob).result && (
-            <span className="text-base-content/60 text-sm">{formatBytes((job as BackupJob).result!.sizeBytes)}</span>
+            <span className="text-base-content/60 text-sm">{formatFileSize((job as BackupJob).result!.sizeBytes)}</span>
           )}
           {isFailed && (
             <button
