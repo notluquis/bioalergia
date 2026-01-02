@@ -19,6 +19,7 @@ import {
   Info,
   AlertCircle,
   Timer,
+  RotateCcw,
 } from "lucide-react";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
@@ -470,11 +471,27 @@ function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () =>
         <div className="bg-base-300/30 px-6 py-4">
           <div className="bg-warning/10 text-warning mb-4 flex items-start gap-2 rounded-lg p-3 text-sm">
             <AlertTriangle className="mt-0.5 size-4 shrink-0" />
-            <span>La restauración sobrescribirá datos existentes. Selecciona las tablas que deseas restaurar.</span>
+            <span>
+              La restauración sobrescribirá datos existentes. Puedes restaurar todo o seleccionar tablas específicas.
+            </span>
+          </div>
+
+          {/* Quick restore all button */}
+          <div className="mb-4 flex gap-3">
+            <Button
+              variant="primary"
+              onClick={() => restoreMutation.mutate(undefined)}
+              disabled={restoreMutation.isPending}
+              isLoading={restoreMutation.isPending}
+            >
+              {!restoreMutation.isPending && <RotateCcw className="size-4" />}
+              Restaurar Todo
+            </Button>
+            <span className="text-base-content/60 self-center text-sm">o selecciona tablas específicas abajo</span>
           </div>
 
           <div className="bg-base-200/50 rounded-lg p-4">
-            <h4 className="mb-3 text-sm font-medium">Selecciona tablas a restaurar</h4>
+            <h4 className="mb-3 text-sm font-medium">Restaurar tablas específicas</h4>
 
             {tablesQuery.isLoading ? (
               <div className="flex items-center gap-2 py-4">
@@ -507,7 +524,7 @@ function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () =>
 
                 {selectedTables.length > 0 && (
                   <Button
-                    variant="primary"
+                    variant="outline"
                     size="sm"
                     onClick={() => restoreMutation.mutate(selectedTables)}
                     disabled={restoreMutation.isPending}
