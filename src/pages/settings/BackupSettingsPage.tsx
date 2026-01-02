@@ -240,9 +240,9 @@ export default function BackupSettingsPage() {
                 onClick={() => queryClient.invalidateQueries({ queryKey: ["backups"] })}
                 disabled={backupsQuery.isFetching}
                 title="Actualizar lista"
-                className="h-8 w-8 p-0"
+                className="h-8 w-8 rounded-full p-0"
               >
-                <RefreshCw className={cn("size-4", backupsQuery.isFetching && "animate-spin")} />
+                <RefreshCw className={cn("size-5", backupsQuery.isFetching && "animate-spin")} />
               </Button>
               <Button
                 variant="primary"
@@ -250,9 +250,9 @@ export default function BackupSettingsPage() {
                 onClick={() => backupMutation.mutate()}
                 disabled={isRunning || backupMutation.isPending}
                 isLoading={backupMutation.isPending}
-                className="h-8 text-xs"
+                className="h-8 text-xs font-medium"
               >
-                {!backupMutation.isPending && <Upload className="mr-1.5 size-3.5" />}
+                {!backupMutation.isPending && <Upload className="mr-1.5 size-4" />}
                 Crear Backup
               </Button>
             </div>
