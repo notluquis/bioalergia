@@ -9,7 +9,7 @@ import { lazy, Suspense, type ReactNode } from "react";
 import { Navigate, Outlet } from "react-router-dom";
 import type { RouteObject } from "react-router-dom";
 import { ROUTE_DATA, type RouteData, type RoutePermission } from "../../shared/route-data";
-import RequirePermission from "@/components/common/RequirePermission";
+import RequirePermission from "@/components/guards/RequirePermission";
 import PageLoader from "@/components/ui/PageLoader";
 
 /**
