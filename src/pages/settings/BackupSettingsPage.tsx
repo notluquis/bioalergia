@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Database,
@@ -7,19 +7,14 @@ import {
   RefreshCw,
   Clock,
   CheckCircle,
-  XCircle,
   Loader2,
   HardDrive,
   ChevronDown,
   ChevronRight,
   AlertTriangle,
   Play,
-  Terminal,
-  Filter,
-  Info,
-  AlertCircle,
-  Timer,
   RotateCcw,
+  FileText,
 } from "lucide-react";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
@@ -75,26 +70,12 @@ interface RestoreJob {
   error?: string;
 }
 
-interface LogEntry {
-  id: string;
-  timestamp: string;
-  level: "info" | "warn" | "error" | "success";
-  message: string;
-  context?: Record<string, unknown>;
-}
-
 // ==================== API ====================
 
 const fetchBackups = async (): Promise<BackupFile[]> => {
   const res = await fetch("/api/backups");
   if (!res.ok) throw new Error("Failed to fetch backups");
   return (await res.json()).backups;
-};
-
-const fetchHistory = async (): Promise<(BackupJob | RestoreJob)[]> => {
-  const res = await fetch("/api/backups/history");
-  if (!res.ok) throw new Error("Failed to fetch history");
-  return (await res.json()).history;
 };
 
 const fetchTables = async (fileId: string): Promise<string[]> => {
@@ -125,29 +106,19 @@ const triggerRestore = async (fileId: string, tables?: string[]): Promise<{ job:
   return res.json();
 };
 
-// ==================== HELPERS ====================
-
-function formatDuration(ms: number): string {
-  if (ms < 1000) return `${ms}ms`;
-  return `${(ms / 1000).toFixed(1)}s`;
-}
-
 // ==================== MAIN COMPONENT ====================
 
 export default function BackupSettingsPage() {
   const { success, error: showError } = useToast();
   const queryClient = useQueryClient();
 
-  // SSE state
+  // SSE state for live progress only
   const [liveJobs, setLiveJobs] = useState<{ backup: BackupJob | null; restore: RestoreJob | null }>({
     backup: null,
     restore: null,
   });
-  const [logs, setLogs] = useState<LogEntry[]>([]);
-  const [logsExpanded, setLogsExpanded] = useState(false);
-  const logsEndRef = useRef<HTMLDivElement>(null);
 
-  // SSE connection
+  // SSE connection for real-time progress
   useEffect(() => {
     const eventSource = new EventSource("/api/backups/progress");
 
@@ -156,20 +127,16 @@ export default function BackupSettingsPage() {
         const data = JSON.parse(event.data);
         if (data.type === "init") {
           setLiveJobs(data.jobs);
-          if (data.logs) setLogs(data.logs);
         } else if (data.type === "backup") {
           setLiveJobs((prev) => ({ ...prev, backup: data.job }));
           if (data.job.status === "completed" || data.job.status === "failed") {
             queryClient.invalidateQueries({ queryKey: ["backups"] });
-            queryClient.invalidateQueries({ queryKey: ["backup-history"] });
           }
         } else if (data.type === "restore") {
           setLiveJobs((prev) => ({ ...prev, restore: data.job }));
           if (data.job.status === "completed" || data.job.status === "failed") {
-            queryClient.invalidateQueries({ queryKey: ["backup-history"] });
+            queryClient.invalidateQueries({ queryKey: ["backups"] });
           }
-        } else if (data.type === "log") {
-          setLogs((prev) => [data.entry, ...prev].slice(0, 100));
         }
       } catch {
         // Ignore parse errors
@@ -182,7 +149,6 @@ export default function BackupSettingsPage() {
 
   // Queries
   const backupsQuery = useQuery({ queryKey: ["backups"], queryFn: fetchBackups, refetchInterval: 30000 });
-  const historyQuery = useQuery({ queryKey: ["backup-history"], queryFn: fetchHistory });
 
   // Mutations
   const backupMutation = useMutation({
@@ -196,10 +162,12 @@ export default function BackupSettingsPage() {
   const currentRestore = liveJobs.restore;
   const isRunning = currentBackup?.status === "running" || currentRestore?.status === "running";
   const backups = backupsQuery.data || [];
+
+  // Separate full backups from audit exports
+  const fullBackups = backups.filter((b) => !b.name.startsWith("audit_"));
+  const auditExports = backups.filter((b) => b.name.startsWith("audit_"));
+
   const totalSize = backups.reduce((acc, b) => acc + parseInt(b.size || "0", 10), 0);
-  const avgDuration = historyQuery.data
-    ?.filter((j): j is BackupJob => "result" in j && j.result?.durationMs != null)
-    .reduce((acc, j, _, arr) => acc + (j.result?.durationMs || 0) / arr.length, 0);
 
   return (
     <div className={cn(PAGE_CONTAINER, "space-y-6")}>
@@ -259,61 +227,35 @@ export default function BackupSettingsPage() {
       <div className="grid gap-4 md:grid-cols-4">
         <StatCard
           icon={<HardDrive className="text-primary size-5" />}
-          label="Backups guardados"
-          value={String(backups.length)}
+          label="Backups completos"
+          value={String(fullBackups.length)}
           color="primary"
         />
         <StatCard
-          icon={<Database className="text-info size-5" />}
-          label="Almacenamiento total"
-          value={formatFileSize(totalSize)}
+          icon={<FileText className="text-info size-5" />}
+          label="Exports incrementales"
+          value={String(auditExports.length)}
           color="info"
         />
         <StatCard
-          icon={<Clock className="text-success size-5" />}
-          label="Último backup"
-          value={backups[0] ? dayjs(backups[0].createdTime).fromNow() : "-"}
+          icon={<Database className="text-success size-5" />}
+          label="Almacenamiento total"
+          value={formatFileSize(totalSize)}
           color="success"
         />
         <StatCard
-          icon={<Timer className="text-warning size-5" />}
-          label="Duración promedio"
-          value={avgDuration ? formatDuration(avgDuration) : "-"}
+          icon={<Clock className="text-warning size-5" />}
+          label="Último backup"
+          value={fullBackups[0] ? dayjs(fullBackups[0].createdTime).fromNow() : "-"}
           color="warning"
         />
       </div>
 
-      {/* Logs Panel - Always visible but collapsible */}
-      <div className="bg-base-200/50 rounded-xl">
-        <button
-          className="flex w-full items-center justify-between p-4 text-left"
-          onClick={() => setLogsExpanded(!logsExpanded)}
-        >
-          <div className="flex items-center gap-2">
-            <Terminal className="text-base-content/60 size-4" />
-            <span className="font-medium">Logs en vivo</span>
-            <span className="text-base-content/40 text-xs">({logs.length} entradas)</span>
-          </div>
-          <ChevronDown
-            className={cn("text-base-content/40 size-4 transition-transform", logsExpanded && "rotate-180")}
-          />
-        </button>
-        {logsExpanded && (
-          <div className="bg-base-300/50 max-h-64 overflow-y-auto rounded-b-xl p-4 font-mono text-xs">
-            {logs.length === 0 ? (
-              <div className="text-base-content/40 text-center">Sin logs recientes</div>
-            ) : (
-              logs.map((log) => <LogLine key={log.id} log={log} />)
-            )}
-            <div ref={logsEndRef} />
-          </div>
-        )}
-      </div>
-
-      {/* Backups List */}
+      {/* Full Backups List */}
       <div className="bg-base-200/50 rounded-xl">
         <div className="p-4">
-          <h2 className="font-semibold">Backups disponibles</h2>
+          <h2 className="font-semibold">Backups Completos</h2>
+          <p className="text-base-content/60 text-sm">Snapshots completos de la base de datos (domingos 3am)</p>
         </div>
         <div className="divide-base-content/5 divide-y">
           {backupsQuery.isLoading ? (
@@ -322,41 +264,48 @@ export default function BackupSettingsPage() {
             </div>
           ) : backupsQuery.error ? (
             <div className="text-error py-12 text-center">Error al cargar backups</div>
-          ) : backups.length === 0 ? (
+          ) : fullBackups.length === 0 ? (
             <div className="text-base-content/60 py-12 text-center">No hay backups disponibles</div>
           ) : (
-            backups.map((backup) => (
+            fullBackups.map((backup) => (
               <BackupRow
                 key={backup.id}
                 backup={backup}
-                onSuccess={() => queryClient.invalidateQueries({ queryKey: ["backup-history"] })}
+                onSuccess={() => queryClient.invalidateQueries({ queryKey: ["backups"] })}
               />
             ))
           )}
         </div>
       </div>
 
-      {/* History */}
-      <div className="bg-base-200/50 rounded-xl">
-        <div className="flex items-center justify-between p-4">
-          <h2 className="font-semibold">Historial de operaciones</h2>
-          <div className="flex items-center gap-2">
-            <Filter className="text-base-content/40 size-4" />
-            <span className="text-base-content/40 text-sm">Últimas {historyQuery.data?.length || 0}</span>
+      {/* Incremental Exports (collapsible) */}
+      {auditExports.length > 0 && (
+        <details className="bg-base-200/50 rounded-xl">
+          <summary className="cursor-pointer p-4">
+            <span className="font-semibold">Exports Incrementales ({auditExports.length})</span>
+            <span className="text-base-content/60 ml-2 text-sm">Cambios exportados cada hora</span>
+          </summary>
+          <div className="divide-base-content/5 max-h-64 divide-y overflow-y-auto">
+            {auditExports.slice(0, 20).map((backup) => (
+              <div key={backup.id} className="flex items-center justify-between px-4 py-2 text-sm">
+                <div className="flex items-center gap-2">
+                  <FileText className="text-info size-4" />
+                  <span>{backup.name}</span>
+                </div>
+                <div className="text-base-content/60 flex items-center gap-3">
+                  <span>{formatFileSize(Number(backup.size))}</span>
+                  <span>{dayjs(backup.createdTime).format("DD MMM HH:mm")}</span>
+                  {backup.webViewLink && (
+                    <a href={backup.webViewLink} target="_blank" rel="noopener noreferrer">
+                      <Download className="hover:text-primary size-4" />
+                    </a>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
-        </div>
-        <div className="divide-base-content/5 divide-y">
-          {historyQuery.isLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="text-primary size-5 animate-spin" />
-            </div>
-          ) : historyQuery.data?.length === 0 ? (
-            <div className="text-base-content/60 py-8 text-center text-sm">Sin operaciones</div>
-          ) : (
-            historyQuery.data?.slice(0, 15).map((job) => <HistoryRow key={job.id} job={job} />)
-          )}
-        </div>
-      </div>
+        </details>
+      )}
 
       {/* Audit Changes Panel */}
       <AuditChangesPanel />
@@ -397,25 +346,6 @@ function StatCard({
   );
 }
 
-function LogLine({ log }: { log: LogEntry }) {
-  const iconMap = {
-    info: <Info className="size-3 text-blue-400" />,
-    warn: <AlertTriangle className="size-3 text-yellow-400" />,
-    error: <AlertCircle className="size-3 text-red-400" />,
-    success: <CheckCircle className="size-3 text-green-400" />,
-  };
-  const time = dayjs(log.timestamp).format("HH:mm:ss");
-  return (
-    <div className="flex items-start gap-2 py-1">
-      <span className="text-base-content/40 shrink-0">{time}</span>
-      {iconMap[log.level]}
-      <span className={cn(log.level === "error" && "text-red-400", log.level === "success" && "text-green-400")}>
-        {log.message}
-      </span>
-    </div>
-  );
-}
-
 function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () => void }) {
   const { success, error: showError } = useToast();
   const queryClient = useQueryClient();
@@ -428,7 +358,6 @@ function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () =>
     enabled: isExpanded,
   });
 
-  // Fetch tables that have pending changes in audit
   const tablesWithChangesQuery = useQuery({
     queryKey: ["tables-with-changes"],
     queryFn: fetchTablesWithChanges,
@@ -440,8 +369,7 @@ function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () =>
     mutationFn: (tables?: string[]) => triggerRestore(backup.id, tables),
     onSuccess: () => {
       success("Restauración iniciada");
-      // Invalidate history to show the new restore job
-      queryClient.invalidateQueries({ queryKey: ["backup-history"] });
+      queryClient.invalidateQueries({ queryKey: ["backups"] });
       onSuccess();
     },
     onError: (e) => showError(e.message),
@@ -464,7 +392,10 @@ function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () =>
             <ChevronRight className="text-base-content/40 size-4" />
           )}
           <div>
-            <p className="font-medium">{backup.name}</p>
+            <div className="flex items-center gap-2">
+              <CheckCircle className="text-success size-4" />
+              <p className="font-medium">{backup.name}</p>
+            </div>
             <p className="text-base-content/60 text-sm">
               {dayjs(backup.createdTime).format("DD MMM YYYY, HH:mm")} • {formatFileSize(Number(backup.size))}
             </p>
@@ -566,62 +497,6 @@ function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () =>
             )}
           </div>
         </div>
-      )}
-    </div>
-  );
-}
-
-function HistoryRow({ job }: { job: BackupJob | RestoreJob }) {
-  const [showError, setShowError] = useState(false);
-  const isBackup = "type" in job;
-  const isSuccess = job.status === "completed";
-  const isFailed = job.status === "failed";
-
-  return (
-    <div className="p-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          {job.status === "running" ? (
-            <Loader2 className="text-primary size-5 animate-spin" />
-          ) : isSuccess ? (
-            <CheckCircle className="text-success size-5" />
-          ) : isFailed ? (
-            <XCircle className="text-error size-5" />
-          ) : (
-            <Clock className="text-base-content/40 size-5" />
-          )}
-          <div>
-            <p className="font-medium">
-              {isBackup ? "Backup" : "Restauración"}
-              {!isBackup && (job as RestoreJob).tables && (
-                <span className="text-base-content/60 ml-1 text-sm">({(job as RestoreJob).tables?.length} tablas)</span>
-              )}
-            </p>
-            <p className="text-base-content/60 text-sm">
-              {dayjs(job.startedAt).format("DD MMM, HH:mm")}
-              {job.completedAt &&
-                ` • ${((new Date(job.completedAt).getTime() - new Date(job.startedAt).getTime()) / 1000).toFixed(1)}s`}
-            </p>
-          </div>
-        </div>
-        <div className="text-right">
-          {isSuccess && isBackup && (job as BackupJob).result && (
-            <span className="text-base-content/60 text-sm">{formatFileSize((job as BackupJob).result!.sizeBytes)}</span>
-          )}
-          {isFailed && (
-            <button
-              onClick={() => setShowError(!showError)}
-              className="text-error flex items-center gap-1 text-sm hover:underline"
-            >
-              <AlertCircle className="size-3" />
-              Ver error
-            </button>
-          )}
-        </div>
-      </div>
-      {/* Error details */}
-      {isFailed && showError && job.error && (
-        <div className="bg-error/10 text-error mt-3 rounded-lg p-3 font-mono text-xs">{job.error}</div>
       )}
     </div>
   );
