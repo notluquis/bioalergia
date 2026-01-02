@@ -173,12 +173,36 @@ export async function revertChange(changeId: bigint): Promise<{ success: boolean
         break;
 
       case "UPDATE": {
-        // Revert UPDATE = restore old_data, excluding 'id' since we use it in 'where'
+        // Revert UPDATE: Use 'diff' to identify ONLY the fields that changed,
+        // and restore their values from 'old_data'.
+        // This prevents overwriting other fields that might have changed since then.
         if (!change.old_data) {
           return { success: false, message: "No old_data to restore" };
         }
-        const dataToRestore = { ...(change.old_data as Record<string, unknown>) };
-        delete dataToRestore.id;
+
+        let dataToRestore: Record<string, unknown> = {};
+
+        if (change.diff && Object.keys(change.diff).length > 0) {
+          // Smart Revert: Only restore fields that were actually changed in this event
+          const changedKeys = Object.keys(change.diff);
+          const oldData = change.old_data as Record<string, unknown>;
+
+          changedKeys.forEach((key) => {
+            if (key !== "id" && key !== "updated_at") {
+              // skip ID and timestamps if automanaged
+              dataToRestore[key] = oldData[key];
+            }
+          });
+
+          if (Object.keys(dataToRestore).length === 0) {
+            return { success: false, message: "No valid fields to revert in this update" };
+          }
+        } else {
+          // Fallback: If no diff stored (legacy?), restore full row excluding ID
+          dataToRestore = { ...(change.old_data as Record<string, unknown>) };
+          delete dataToRestore.id;
+        }
+
         await model.update({
           where: { id: rowId },
           data: dataToRestore,
