@@ -25,6 +25,7 @@ import {
   UserCog,
   Database,
   Home,
+  CreditCard,
 } from "lucide-react";
 import { ROUTE_DATA, SECTION_ORDER, type RouteData, type NavSection } from "../../shared/route-data";
 
@@ -68,6 +69,7 @@ const ICON_MAP: Record<string, ComponentType<{ className?: string; strokeWidth?:
   UserCog,
   Database,
   Home,
+  CreditCard,
 };
 
 // ============================================================================
