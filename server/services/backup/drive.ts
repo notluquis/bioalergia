@@ -38,6 +38,7 @@ export async function uploadToDrive(filepath: string, filename: string): Promise
       body: createReadStream(filepath),
     },
     fields: "id,name,size,md5Checksum,webViewLink",
+    supportsAllDrives: true, // Required for shared folders
   });
 
   return {
