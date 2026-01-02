@@ -174,24 +174,31 @@ export default function BackupSettingsPage() {
 
   return (
     <div className={cn(PAGE_CONTAINER, "space-y-6")}>
-      {/* Actions Row */}
-      <div className="flex justify-end gap-2">
-        <Button
-          variant="outline"
-          onClick={() => queryClient.invalidateQueries({ queryKey: ["backups"] })}
-          disabled={backupsQuery.isFetching}
-        >
-          <RefreshCw className={cn("size-4", backupsQuery.isFetching && "animate-spin")} />
-        </Button>
-        <Button
-          variant="primary"
-          onClick={() => backupMutation.mutate()}
-          disabled={isRunning || backupMutation.isPending}
-          isLoading={backupMutation.isPending}
-        >
-          {!backupMutation.isPending && <Upload className="size-4" />}
-          Crear Backup
-        </Button>
+      {/* Header & Actions */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="text-base-content text-lg font-semibold">Resumen de Backups</h2>
+          <p className="text-base-content/60 text-sm">Gestiona copias de seguridad, restauraciones y auditoría.</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={() => queryClient.invalidateQueries({ queryKey: ["backups"] })}
+            disabled={backupsQuery.isFetching}
+            title="Actualizar lista"
+          >
+            <RefreshCw className={cn("size-4", backupsQuery.isFetching && "animate-spin")} />
+          </Button>
+          <Button
+            variant="primary"
+            onClick={() => backupMutation.mutate()}
+            disabled={isRunning || backupMutation.isPending}
+            isLoading={backupMutation.isPending}
+          >
+            {!backupMutation.isPending && <Upload className="size-4" />}
+            Crear Backup
+          </Button>
+        </div>
       </div>
 
       {/* Progress Bar */}
@@ -248,7 +255,7 @@ export default function BackupSettingsPage() {
       {/* Full Backups List */}
       <div className="bg-base-200/50 rounded-xl">
         <div className="p-4">
-          <h2 className="font-semibold">Backups Completos</h2>
+          <h2 className="text-lg font-semibold">Backups Completos</h2>
           <p className="text-base-content/60 text-sm">Snapshots completos de la base de datos (domingos 3am)</p>
         </div>
         <div className="divide-base-content/5 divide-y">
