@@ -84,7 +84,7 @@ export async function createBackup(_databaseUrl: string, onProgress?: ProgressCa
 
     onProgress?.({ step: "compressing", progress: 65, message: "Writing JSON..." });
 
-    // Write JSON file
+    // Write JSON file (with BigInt support)
     const jsonContent = JSON.stringify(
       {
         version: "1.0",
@@ -93,7 +93,7 @@ export async function createBackup(_databaseUrl: string, onProgress?: ProgressCa
         tables,
         data: backupData,
       },
-      null,
+      (_, value) => (typeof value === "bigint" ? value.toString() : value),
       0
     ); // No pretty print to save space
 
