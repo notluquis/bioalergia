@@ -6,6 +6,8 @@ import dayjs from "dayjs";
 import { PAGE_CONTAINER } from "@/lib/styles";
 import { cn } from "@/lib/utils";
 import Button from "@/components/ui/Button";
+import { Table } from "@/components/ui/Table";
+import StatCard from "@/components/ui/StatCard";
 import { useToast } from "@/context/ToastContext";
 import { MPService } from "@/services/mercadopago";
 import ConfigModal from "@/components/mercadopago/ConfigModal";
@@ -84,12 +86,16 @@ export default function MercadoPagoSettingsPage() {
 
       {/* Overview Cards */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-        {/* Status Card */}
-        <div className="bg-base-200/50 border-base-300 rounded-xl border p-6">
-          <div className="flex items-start justify-between">
+        {/* Status Card (Custom due to interactivity) */}
+        <article className="bg-base-100 border-base-300 relative overflow-hidden rounded-2xl border p-6 shadow-sm">
+          <div className="relative z-10 flex items-start justify-between">
             <div>
-              <p className="text-base-content/60 text-sm font-medium">Estado Automático</p>
-              <h3 className="mt-2 text-2xl font-bold">{isScheduled ? "Activo" : "Inactivo"}</h3>
+              <p className="text-base-content/60 flex items-center gap-1.5 text-xs font-semibold tracking-wide uppercase">
+                Estado Automático
+              </p>
+              <h3 className={cn("mt-2 text-2xl font-semibold", isScheduled ? "text-success" : "text-warning")}>
+                {isScheduled ? "Activo" : "Inactivo"}
+              </h3>
             </div>
             <div
               className={cn(
@@ -97,11 +103,11 @@ export default function MercadoPagoSettingsPage() {
                 isScheduled ? "bg-success/10 text-success" : "bg-warning/10 text-warning"
               )}
             >
-              {isScheduled ? <CheckCircle className="h-6 w-6" /> : <AlertTriangle className="h-6 w-6" />}
+              {isScheduled ? <CheckCircle className="h-5 w-5" /> : <AlertTriangle className="h-5 w-5" />}
             </div>
           </div>
-          <div className="border-base-300 mt-4 flex items-center justify-between border-t pt-4">
-            <span className="text-base-content/60 text-xs">Generación periódica</span>
+          <div className="border-base-300/50 relative z-10 mt-4 flex items-center justify-between border-t pt-4">
+            <span className="text-base-content/50 text-xs">Generación periódica</span>
             <button
               className="text-primary text-xs font-medium hover:underline"
               onClick={() => (isScheduled ? disableScheduleMutation.mutate() : enableScheduleMutation.mutate())}
@@ -110,105 +116,103 @@ export default function MercadoPagoSettingsPage() {
               {isScheduled ? "Desactivar" : "Activar"}
             </button>
           </div>
-        </div>
+        </article>
 
-        {/* Last Report Card */}
-        <div className="bg-base-200/50 border-base-300 rounded-xl border p-6">
+        {/* Last Report Card (Custom content structure) */}
+        <article className="bg-base-100 border-base-300 rounded-2xl border p-6 shadow-sm">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-base-content/60 text-sm font-medium">Último Reporte</p>
-              <h3 className="mt-2 line-clamp-1 text-lg font-bold">
+              <p className="text-base-content/60 flex items-center gap-1.5 text-xs font-semibold tracking-wide uppercase">
+                Último Reporte
+              </p>
+              <h3 className="mt-2 line-clamp-1 text-lg font-semibold">
                 {reportsQuery.data?.[0]?.date_created
-                  ? dayjs(reportsQuery.data[0].date_created).format("D MMMM, HH:mm")
+                  ? dayjs(reportsQuery.data[0].date_created).format("D MMM, HH:mm")
                   : "N/A"}
               </h3>
             </div>
             <div className="bg-primary/10 text-primary rounded-lg p-2">
-              <Clock className="h-6 w-6" />
+              <Clock className="h-5 w-5" />
             </div>
           </div>
-          <p className="text-base-content/60 border-base-300 mt-4 border-t pt-4 text-xs">
+          <p
+            className="text-base-content/50 border-base-300/50 mt-4 truncate border-t pt-4 text-xs"
+            title={reportsQuery.data?.[0]?.file_name}
+          >
             {reportsQuery.data?.[0]?.file_name || "Sin reportes recientes"}
           </p>
-        </div>
+        </article>
 
-        {/* Total Reports Card */}
-        <div className="bg-base-200/50 border-base-300 rounded-xl border p-6">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-base-content/60 text-sm font-medium">Total Reportes</p>
-              <h3 className="mt-2 text-2xl font-bold">{reportsQuery.data?.length || 0}</h3>
-            </div>
-            <div className="bg-secondary/10 text-secondary rounded-lg p-2">
-              <FileText className="h-6 w-6" />
-            </div>
-          </div>
-          <p className="text-base-content/60 border-base-300 mt-4 border-t pt-4 text-xs">Disponibles para descargar</p>
-        </div>
+        {/* Total Reports Card (Using Shared Component) */}
+        <StatCard
+          title="Total Reportes"
+          value={reportsQuery.data?.length || 0}
+          icon={FileText}
+          tone="default"
+          subtitle="Disponibles para descargar"
+          className="h-full"
+        />
       </div>
 
       {/* Reports List */}
-      <div className="bg-base-100 border-base-300 overflow-hidden rounded-xl border shadow-sm">
-        <div className="border-base-300 bg-base-200/30 flex items-center justify-between border-b p-4">
-          <h3 className="flex items-center gap-2 font-semibold">
-            <FileText className="text-primary h-4 w-4" />
-            Historial de Reportes
-          </h3>
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 px-1">
+          <FileText className="text-primary h-4 w-4" />
+          <h3 className="text-lg font-semibold">Historial de Reportes</h3>
         </div>
-        <div className="overflow-x-auto">
-          <table className="table w-full">
-            <thead className="bg-base-200/50">
-              <tr>
-                <th>Fecha Creación</th>
-                <th>Archivo</th>
-                <th>Origen</th>
-                <th>Estado</th>
-                <th className="text-right">Acciones</th>
+
+        <Table
+          columns={[
+            { key: "date", label: "Fecha Creación" },
+            { key: "file", label: "Archivo" },
+            { key: "source", label: "Origen" },
+            { key: "status", label: "Estado" },
+            { key: "actions", label: "Acciones", align: "right" },
+          ]}
+          variant="default"
+        >
+          <Table.Body
+            loading={reportsQuery.isLoading}
+            columnsCount={5}
+            emptyMessage="No se encontraron reportes generados."
+          >
+            {reportsQuery.data?.map((report) => (
+              <tr key={report.id} className="hover:bg-base-200/50 group transition-colors">
+                <td className="font-medium whitespace-nowrap">
+                  {dayjs(report.date_created).format("DD/MM/YYYY HH:mm")}
+                </td>
+                <td className="text-base-content/70 font-mono text-xs">{report.file_name}</td>
+                <td>
+                  <span
+                    className={cn(
+                      "badge badge-sm font-medium",
+                      report.created_from === "schedule" ? "badge-outline opacity-80" : "badge-ghost"
+                    )}
+                  >
+                    {report.created_from === "schedule" ? "Automático" : "Manual"}
+                  </span>
+                </td>
+                <td>
+                  <span className="text-success bg-success/10 inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium">
+                    <span className="bg-success h-1.5 w-1.5 rounded-full"></span>
+                    Disponible
+                  </span>
+                </td>
+                <td className="text-right">
+                  <a
+                    href={`/api/mercadopago/reports/download/${report.file_name}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="btn btn-ghost btn-sm btn-square opacity-0 transition-opacity group-hover:opacity-100"
+                    title="Descargar"
+                  >
+                    <Download className="h-4 w-4" />
+                  </a>
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {reportsQuery.data?.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="text-base-content/50 py-8 text-center">
-                    No se encontraron reportes.
-                  </td>
-                </tr>
-              ) : (
-                reportsQuery.data?.map((report) => (
-                  <tr key={report.id} className="hover:bg-base-200/30 transition-colors">
-                    <td className="font-medium">{dayjs(report.date_created).format("DD/MM/YYYY HH:mm")}</td>
-                    <td className="font-mono text-sm">{report.file_name}</td>
-                    <td>
-                      <span
-                        className={cn(
-                          "badge badge-sm",
-                          report.created_from === "schedule" ? "badge-outline" : "badge-ghost"
-                        )}
-                      >
-                        {report.created_from === "schedule" ? "Automático" : "Manual"}
-                      </span>
-                    </td>
-                    <td>
-                      {/* Usually 'processed' or 'pending' - assuming available logic */}
-                      <span className="text-success text-xs font-semibold">Disponible</span>
-                    </td>
-                    <td className="text-right">
-                      <a
-                        href={`/api/mercadopago/reports/download/${report.file_name}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="btn btn-ghost btn-sm btn-square"
-                        title="Descargar"
-                      >
-                        <Download className="h-4 w-4" />
-                      </a>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+            ))}
+          </Table.Body>
+        </Table>
       </div>
 
       {/* Modals */}
