@@ -186,7 +186,7 @@ async function runBackupJob(config: BackupConfig, job: BackupJob) {
 
   try {
     // Step 1: Create local backup
-    addLog("info", "Starting Prisma backup...");
+    await addLog("info", "Starting Prisma backup...");
     job.currentStep = "Exporting data...";
     job.progress = 10;
     broadcastProgress("backup", job);
@@ -198,13 +198,13 @@ async function runBackupJob(config: BackupConfig, job: BackupJob) {
     });
 
     // Step 2: Upload to Drive
-    addLog("info", `Export completed: ${formatFileSize(backup.sizeBytes)}`, { tables: backup.tables.length });
+    await addLog("info", `Export completed: ${formatFileSize(backup.sizeBytes)}`, { tables: backup.tables.length });
     job.currentStep = "Uploading to Google Drive...";
     job.progress = 65;
     broadcastProgress("backup", job);
 
     const upload = await uploadToDrive(backup.path, backup.filename);
-    addLog("info", "Uploaded to Google Drive", { fileId: upload.fileId });
+    await addLog("info", "Uploaded to Google Drive", { fileId: upload.fileId });
 
     // Step 3: Cleanup local
     job.currentStep = "Cleaning up local files...";
@@ -232,7 +232,7 @@ async function runBackupJob(config: BackupConfig, job: BackupJob) {
       tables: backup.tables,
     };
 
-    addLog("success", `Backup completed: ${formatFileSize(backup.sizeBytes)} in ${job.result.durationMs}ms`, {
+    await addLog("success", `Backup completed: ${formatFileSize(backup.sizeBytes)} in ${job.result.durationMs}ms`, {
       filename: backup.filename,
       sizeBytes: backup.sizeBytes,
       durationMs: job.result.durationMs,
@@ -245,7 +245,7 @@ async function runBackupJob(config: BackupConfig, job: BackupJob) {
     job.currentStep = "Failed";
     job.error = String(error);
 
-    addLog("error", `Backup failed: ${String(error)}`);
+    await addLog("error", `Backup failed: ${String(error)}`);
     console.error("❌ Backup failed:", error);
   }
 
