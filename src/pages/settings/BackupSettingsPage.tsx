@@ -209,9 +209,9 @@ export default function BackupSettingsPage() {
           <Button
             variant="outline"
             onClick={() => queryClient.invalidateQueries({ queryKey: ["backups"] })}
-            disabled={backupsQuery.isLoading}
+            disabled={backupsQuery.isFetching}
           >
-            <RefreshCw className={cn("size-4", backupsQuery.isLoading && "animate-spin")} />
+            <RefreshCw className={cn("size-4", backupsQuery.isFetching && "animate-spin")} />
           </Button>
           <Button
             variant="primary"

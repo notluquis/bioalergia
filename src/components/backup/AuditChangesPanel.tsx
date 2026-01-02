@@ -162,9 +162,9 @@ export default function AuditChangesPanel() {
             variant="outline"
             size="sm"
             onClick={() => queryClient.invalidateQueries({ queryKey: ["audit-changes"] })}
-            disabled={changesQuery.isLoading}
+            disabled={changesQuery.isFetching}
           >
-            <RefreshCw className={cn("size-4", changesQuery.isLoading && "animate-spin")} />
+            <RefreshCw className={cn("size-4", changesQuery.isFetching && "animate-spin")} />
           </Button>
           <Button
             variant="primary"
