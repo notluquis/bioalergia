@@ -65,48 +65,25 @@ export async function getDriveClient(): Promise<drive_v3.Drive> {
 
 // ==================== BACKUP FOLDER MANAGEMENT ====================
 
-const BACKUP_FOLDER_NAME = "finanzas-app-backups";
-let cachedBackupFolderId: string | null = null;
-
 /**
- * Gets or creates the backup folder in Google Drive.
- * The folder is created at the root of the service account's Drive.
+ * Gets the backup folder ID from environment variable.
+ * For personal Drive usage, the user should:
+ * 1. Create a folder in their personal Drive
+ * 2. Share it with the service account email (as Editor)
+ * 3. Set GOOGLE_BACKUP_FOLDER_ID with the folder ID
  */
 export async function getOrCreateBackupFolder(): Promise<string> {
-  if (cachedBackupFolderId) {
-    return cachedBackupFolderId;
+  // Use env var if provided (recommended for personal Drive)
+  const envFolderId = process.env.GOOGLE_BACKUP_FOLDER_ID;
+  if (envFolderId) {
+    logEvent("google.backup.folder.using_env", { folderId: envFolderId });
+    return envFolderId;
   }
 
-  const driveClient = await getDriveClient();
-
-  // Search for existing folder
-  const searchResponse = await driveClient.files.list({
-    q: `name = '${BACKUP_FOLDER_NAME}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
-    fields: "files(id, name)",
-    pageSize: 1,
-  });
-
-  if (searchResponse.data.files && searchResponse.data.files.length > 0) {
-    cachedBackupFolderId = searchResponse.data.files[0].id!;
-    logEvent("google.backup.folder.found", { folderId: cachedBackupFolderId });
-    return cachedBackupFolderId;
-  }
-
-  // Create folder if not exists
-  logEvent("google.backup.folder.creating", { name: BACKUP_FOLDER_NAME });
-
-  const createResponse = await driveClient.files.create({
-    requestBody: {
-      name: BACKUP_FOLDER_NAME,
-      mimeType: "application/vnd.google-apps.folder",
-    },
-    fields: "id",
-  });
-
-  cachedBackupFolderId = createResponse.data.id!;
-  logEvent("google.backup.folder.created", { folderId: cachedBackupFolderId });
-
-  return cachedBackupFolderId;
+  // Fallback: try to create folder (only works with Shared Drives or domain delegation)
+  throw new Error(
+    "GOOGLE_BACKUP_FOLDER_ID is required. Create a folder in your Drive, share it with the service account, and set this env var."
+  );
 }
 
 /**
