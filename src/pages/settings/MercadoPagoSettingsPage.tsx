@@ -12,12 +12,42 @@ import { useToast } from "@/context/ToastContext";
 import { MPService } from "@/services/mercadopago";
 import ConfigModal from "@/components/mercadopago/ConfigModal";
 import GenerateReportModal from "@/components/mercadopago/GenerateReportModal";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/DropdownMenu";
+
+const ALL_TABLE_COLUMNS = [
+  { key: "id", label: "ID" },
+  { key: "date", label: "Fecha Creación" },
+  { key: "file", label: "Archivo" },
+  { key: "source", label: "Origen" },
+  { key: "status", label: "Estado" },
+  { key: "actions", label: "Acciones" },
+];
 
 export default function MercadoPagoSettingsPage() {
   const queryClient = useQueryClient();
   const { success: showSuccess, error: showError } = useToast();
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
   const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false);
+  const [visibleColumns, setVisibleColumns] = useState<Set<string>>(
+    new Set(["date", "file", "source", "status", "actions"])
+  );
+
+  const toggleColumn = (key: string) => {
+    const newSet = new Set(visibleColumns);
+    if (newSet.has(key)) {
+      newSet.delete(key);
+    } else {
+      newSet.add(key);
+    }
+    setVisibleColumns(newSet);
+  };
 
   // Queries
   const configQuery = useQuery({
@@ -157,59 +187,92 @@ export default function MercadoPagoSettingsPage() {
 
       {/* Reports List */}
       <div className="space-y-4">
-        <div className="flex items-center gap-2 px-1">
-          <FileText className="text-primary h-4 w-4" />
-          <h3 className="text-lg font-semibold">Historial de Reportes</h3>
+        <div className="flex items-center justify-between px-1">
+          <div className="flex items-center gap-2">
+            <FileText className="text-primary h-4 w-4" />
+            <h3 className="text-lg font-semibold">Historial de Reportes</h3>
+          </div>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8">
+                <Settings className="mr-2 h-3.5 w-3.5" />
+                Columnas
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-45">
+              <DropdownMenuLabel>Columnas Visibles</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {ALL_TABLE_COLUMNS.filter((c) => c.key !== "actions").map((column) => (
+                <DropdownMenuCheckboxItem
+                  key={column.key}
+                  checked={visibleColumns.has(column.key)}
+                  onCheckedChange={() => toggleColumn(column.key)}
+                >
+                  {column.label}
+                </DropdownMenuCheckboxItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         <Table
-          columns={[
-            { key: "date", label: "Fecha Creación" },
-            { key: "file", label: "Archivo" },
-            { key: "source", label: "Origen" },
-            { key: "status", label: "Estado" },
-            { key: "actions", label: "Acciones", align: "right" },
-          ]}
+          columns={ALL_TABLE_COLUMNS.filter((col) => visibleColumns.has(col.key)).map((col) =>
+            col.key === "actions" ? { ...col, align: "right" } : col
+          )}
           variant="default"
         >
           <Table.Body
             loading={reportsQuery.isLoading}
-            columnsCount={5}
+            columnsCount={visibleColumns.size}
             emptyMessage="No se encontraron reportes generados."
           >
             {reportsQuery.data?.map((report) => (
               <tr key={report.id} className="hover:bg-base-200/50 group transition-colors">
-                <td className="font-medium whitespace-nowrap">
-                  {dayjs(report.generation_date || report.begin_date).format("DD/MM/YYYY HH:mm")}
-                </td>
-                <td className="text-base-content/70 font-mono text-xs">{report.file_name}</td>
-                <td>
-                  <span
-                    className={cn(
-                      "badge badge-sm font-medium",
-                      report.created_from === "schedule" ? "badge-outline opacity-80" : "badge-ghost"
+                {visibleColumns.has("id") && <td className="text-base-content/60 font-mono text-xs">#{report.id}</td>}
+                {visibleColumns.has("date") && (
+                  <td className="font-medium whitespace-nowrap">
+                    {dayjs(report.date_created || report.generation_date || report.begin_date).format(
+                      "DD/MM/YYYY HH:mm"
                     )}
-                  >
-                    {report.created_from === "schedule" ? "Automático" : "Manual"}
-                  </span>
-                </td>
-                <td>
-                  <span className="text-success bg-success/10 inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium">
-                    <span className="bg-success h-1.5 w-1.5 rounded-full"></span>
-                    Disponible
-                  </span>
-                </td>
-                <td className="text-right">
-                  <a
-                    href={`/api/mercadopago/reports/download/${report.file_name}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="btn btn-ghost btn-sm btn-square opacity-0 transition-opacity group-hover:opacity-100"
-                    title="Descargar"
-                  >
-                    <Download className="h-4 w-4" />
-                  </a>
-                </td>
+                  </td>
+                )}
+                {visibleColumns.has("file") && (
+                  <td className="text-base-content/70 font-mono text-xs">{report.file_name}</td>
+                )}
+                {visibleColumns.has("source") && (
+                  <td>
+                    <span
+                      className={cn(
+                        "badge badge-sm font-medium",
+                        report.created_from === "schedule" ? "badge-outline opacity-80" : "badge-ghost"
+                      )}
+                    >
+                      {report.created_from === "schedule" ? "Automático" : "Manual"}
+                    </span>
+                  </td>
+                )}
+                {visibleColumns.has("status") && (
+                  <td>
+                    <span className="text-success bg-success/10 inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium">
+                      <span className="bg-success h-1.5 w-1.5 rounded-full"></span>
+                      Disponible
+                    </span>
+                  </td>
+                )}
+                {visibleColumns.has("actions") && (
+                  <td className="text-right">
+                    <a
+                      href={`/api/mercadopago/reports/download/${report.file_name}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="btn btn-ghost btn-sm btn-square opacity-0 transition-opacity group-hover:opacity-100"
+                      title="Descargar"
+                    >
+                      <Download className="h-4 w-4" />
+                    </a>
+                  </td>
+                )}
               </tr>
             ))}
           </Table.Body>

@@ -1,52 +1,13 @@
-import { useEffect } from "react";
-import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
-import { useForm, useFieldArray, Controller } from "react-hook-form";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useFieldArray, Controller } from "react-hook-form";
 import { Loader2, Plus, Trash, Info, CheckSquare, Square, RotateCcw } from "lucide-react";
 
 import Modal from "@/components/ui/Modal";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
-import { MPService } from "@/services/mercadopago";
-import { useToast } from "@/context/ToastContext";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/Tooltip";
 
 import { MP_REPORT_COLUMNS, MP_WEEKDAYS, MP_REPORT_LANGUAGES, MP_DEFAULT_COLUMNS } from "../../../shared/mercadopago";
-
-// Zod Schema mirroring backend
-const ConfigSchema = z.object({
-  file_name_prefix: z.string().min(1, "Prefijo requerido"),
-  columns: z
-    .array(z.object({ key: z.string().min(1) }))
-    .min(1, "Al menos una columna requerida")
-    .max(MP_REPORT_COLUMNS.length, `Máximo ${MP_REPORT_COLUMNS.length} columnas permitidas`)
-    .refine((cols) => new Set(cols.map((c) => c.key)).size === cols.length, "No se permiten columnas duplicadas"),
-  frequency: z.object({
-    type: z.enum(["daily", "weekly", "monthly"]),
-    value: z.union([z.number().int().min(0).max(31), z.enum(MP_WEEKDAYS)]),
-    hour: z.number().int().min(0).max(23),
-  }),
-  sftp_info: z
-    .object({
-      server: z.string().optional(),
-      username: z.string().optional(),
-      password: z.string().optional(),
-      remote_dir: z.string().optional(),
-      port: z.number().int().optional(),
-    })
-    .optional(),
-  separator: z.string().optional(),
-  display_timezone: z.string().optional(),
-  report_translation: z.enum(MP_REPORT_LANGUAGES).optional(),
-  notification_email_list: z.array(z.string().email()).optional(),
-  include_withdrawal_at_end: z.boolean().optional(),
-  check_available_balance: z.boolean().optional(),
-  compensate_detail: z.boolean().optional(),
-  execute_after_withdrawal: z.boolean().optional(),
-});
-
-type FormData = z.infer<typeof ConfigSchema>;
+import { useMercadoPagoConfig } from "@/hooks/useMercadoPago";
 
 // Timezone groupings
 const TIMEZONES = {
@@ -75,36 +36,15 @@ interface Props {
 }
 
 export default function ConfigModal({ open, onClose }: Props) {
-  const queryClient = useQueryClient();
-  const { success: showSuccess, error: showError } = useToast();
-
-  const { data: currentConfig, isLoading } = useQuery({
-    queryKey: ["mp-config"],
-    queryFn: MPService.getConfig,
-    enabled: open,
-  });
+  const { form, isLoading, isPending, currentConfig, onSubmit } = useMercadoPagoConfig(open, onClose);
 
   const {
     register,
     control,
-    handleSubmit,
     reset,
     watch,
     formState: { errors },
-  } = useForm<FormData>({
-    resolver: zodResolver(ConfigSchema),
-    defaultValues: {
-      file_name_prefix: "release-report",
-      frequency: { type: "daily", value: 0, hour: 8 },
-      columns: MP_DEFAULT_COLUMNS.map((key) => ({ key })),
-      display_timezone: "America/Santiago",
-      report_translation: "es",
-      include_withdrawal_at_end: true,
-      check_available_balance: true,
-      compensate_detail: true,
-      execute_after_withdrawal: false,
-    },
-  });
+  } = form;
 
   const frequencyType = watch("frequency.type");
   const currentColumns = watch("columns");
@@ -120,77 +60,6 @@ export default function ConfigModal({ open, onClose }: Props) {
   const maxColumns = MP_REPORT_COLUMNS.length;
   const canAddColumn = fields.length < maxColumns && availableColumns.length > 0;
 
-  // Load existing config into form (deduplicating columns if needed)
-  useEffect(() => {
-    if (currentConfig) {
-      // Remove duplicate columns from existing config
-      const seen = new Set<string>();
-      const uniqueColumns = currentConfig.columns
-        .filter((col) => {
-          if (seen.has(col.key)) return false;
-          seen.add(col.key);
-          return true;
-        })
-        .slice(0, maxColumns); // Limit to maxColumns
-
-      reset({
-        file_name_prefix: currentConfig.file_name_prefix,
-        frequency: currentConfig.frequency as FormData["frequency"],
-        columns: uniqueColumns,
-        sftp_info: currentConfig.sftp_info,
-        separator: currentConfig.separator,
-        display_timezone: currentConfig.display_timezone || "America/Santiago",
-        report_translation: currentConfig.report_translation as "en" | "es" | "pt",
-        include_withdrawal_at_end: currentConfig.include_withdrawal_at_end,
-        check_available_balance: currentConfig.check_available_balance,
-        compensate_detail: currentConfig.compensate_detail,
-        execute_after_withdrawal: currentConfig.execute_after_withdrawal,
-      });
-    }
-  }, [currentConfig, reset, maxColumns]);
-
-  const createMutation = useMutation({
-    mutationFn: MPService.createConfig,
-    onSuccess: () => {
-      showSuccess("Configuración creada");
-      queryClient.invalidateQueries({ queryKey: ["mp-config"] });
-      onClose();
-    },
-    onError: (e: Error) => showError(e.message),
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: MPService.updateConfig,
-    onSuccess: () => {
-      showSuccess("Configuración actualizada");
-      queryClient.invalidateQueries({ queryKey: ["mp-config"] });
-      onClose();
-    },
-    onError: (e: Error) => showError(e.message),
-  });
-
-  const onSubmit = (data: FormData) => {
-    if (currentConfig) {
-      updateMutation.mutate(data);
-    } else {
-      createMutation.mutate(data);
-    }
-  };
-
-  const handleSelectAllColumns = () => {
-    replace(MP_REPORT_COLUMNS.map((key) => ({ key })));
-  };
-
-  const handleClearAllColumns = () => {
-    replace([]);
-  };
-
-  const handleDefaultColumns = () => {
-    replace(MP_DEFAULT_COLUMNS.map((key) => ({ key })));
-  };
-
-  const isPending = createMutation.isPending || updateMutation.isPending;
-
   return (
     <Modal title="Configuración de Reportes MercadoPago" isOpen={open} onClose={onClose}>
       {isLoading ? (
@@ -198,7 +67,7 @@ export default function ConfigModal({ open, onClose }: Props) {
           <Loader2 className="animate-spin" />
         </div>
       ) : (
-        <form onSubmit={handleSubmit(onSubmit)} className="max-h-[70vh] space-y-4 overflow-y-auto pr-2">
+        <form onSubmit={onSubmit} className="max-h-[70vh] space-y-4 overflow-y-auto pr-2">
           {/* Prefix & Timezone */}
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
@@ -230,9 +99,11 @@ export default function ConfigModal({ open, onClose }: Props) {
               <span className="label-text">Idioma del Reporte</span>
             </label>
             <select {...register("report_translation")} className="select select-bordered w-full">
-              <option value="es">Español</option>
-              <option value="en">English</option>
-              <option value="pt">Português</option>
+              {MP_REPORT_LANGUAGES.map((lang) => (
+                <option key={lang} value={lang}>
+                  {lang === "es" ? "Español" : lang === "en" ? "English" : "Português"}
+                </option>
+              ))}
             </select>
             <p className="text-base-content/60 mt-1 text-xs">Idioma de los encabezados de columnas</p>
           </div>
@@ -329,19 +200,43 @@ export default function ConfigModal({ open, onClose }: Props) {
           </div>
 
           {/* Columns Section - Selector */}
-          <div className="bg-base-200/50 rounded-lg border p-4">
+          {/* Columns Section - Selector */}
+          <div className="bg-base-200/50 rounded-lg p-4">
             <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <h4 className="flex items-center gap-2 text-sm font-medium">
-                Columnas
-                <span className="badge badge-info badge-xs">Requerido</span>
-              </h4>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex items-center gap-2">
+                <h4 className="flex items-center gap-2 text-sm font-medium">
+                  Columnas
+                  <span className="badge badge-info badge-xs">Requerido</span>
+                </h4>
+                <TooltipProvider delayDuration={0}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button type="button" className="cursor-help transition-opacity hover:opacity-80">
+                        <Info className="text-base-content/40 h-4 w-4" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right" className="max-w-xs text-xs">
+                      <p>
+                        Selecciona y ordena las columnas que deseas incluir en el reporte.
+                        <br />
+                        Algunas columnas son obligatorias para el correcto funcionamiento del sistema.
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+
+              <div className="flex justify-end gap-2">
                 <Button
                   type="button"
                   size="xs"
                   variant="outline"
-                  onClick={handleSelectAllColumns}
-                  title="Seleccionar todas las columnas disponibles"
+                  onClick={() => {
+                    const currentKeys = new Set(fields.map((f) => f.key));
+                    const missing = MP_REPORT_COLUMNS.filter((k) => !currentKeys.has(k));
+                    append(missing.map((key) => ({ key })));
+                  }}
+                  disabled={fields.length >= maxColumns}
                 >
                   <CheckSquare className="mr-1 h-3 w-3" /> Todas
                 </Button>
@@ -349,8 +244,8 @@ export default function ConfigModal({ open, onClose }: Props) {
                   type="button"
                   size="xs"
                   variant="outline"
-                  onClick={handleClearAllColumns}
-                  title="Limpiar selección"
+                  onClick={() => remove()}
+                  disabled={fields.length === 0}
                 >
                   <Square className="mr-1 h-3 w-3" /> Ninguna
                 </Button>
@@ -358,21 +253,19 @@ export default function ConfigModal({ open, onClose }: Props) {
                   type="button"
                   size="xs"
                   variant="outline"
-                  onClick={handleDefaultColumns}
-                  title="Restaurar columnas por defecto"
+                  onClick={() => {
+                    replace(MP_DEFAULT_COLUMNS.map((key) => ({ key })));
+                  }}
                 >
                   <RotateCcw className="mr-1 h-3 w-3" /> Por defecto
                 </Button>
               </div>
             </div>
 
-            {errors.columns && (
-              <p className="text-error mb-2 text-xs">{errors.columns.message || errors.columns.root?.message}</p>
-            )}
-
             <div className="mb-3 flex items-center justify-between text-xs">
               <p className="text-base-content/60">
                 Seleccionadas: <span className="text-base-content font-medium">{fields.length}</span> / {maxColumns}
+                {fields.length >= maxColumns && <span className="text-success ml-1">(Todas)</span>}
               </p>
               <Button
                 type="button"
@@ -391,23 +284,29 @@ export default function ConfigModal({ open, onClose }: Props) {
               </Button>
             </div>
 
-            <div className="max-h-56 space-y-2 overflow-y-auto pr-1">
+            {errors.columns && (
+              <p className="text-error mb-2 text-xs">{errors.columns.message || errors.columns.root?.message}</p>
+            )}
+
+            <div className="max-h-96 space-y-2 overflow-y-auto pr-1">
               {fields.map((field, index) => {
-                // Get columns available for this specific row (current value + unselected)
                 const currentValue = currentColumns?.[index]?.key;
                 const rowAvailableColumns = MP_REPORT_COLUMNS.filter(
                   (col) => col === currentValue || !selectedColumnKeys.has(col)
                 );
                 return (
-                  <div key={field.id} className="flex gap-2">
-                    <span className="bg-base-300 text-base-content/50 flex h-8 w-8 items-center justify-center rounded font-mono text-xs">
+                  <div key={field.id} className="bg-base-200/30 flex items-center gap-2 rounded-md p-1">
+                    <div className="bg-base-300 flex h-6 w-6 shrink-0 items-center justify-center rounded font-mono text-xs opacity-50">
                       {index + 1}
-                    </span>
+                    </div>
                     <Controller
                       name={`columns.${index}.key`}
                       control={control}
                       render={({ field: selectField }) => (
-                        <select {...selectField} className="select select-bordered select-sm flex-1">
+                        <select
+                          {...selectField}
+                          className="select select-bordered select-sm flex-1 bg-transparent focus:outline-none"
+                        >
                           {rowAvailableColumns.map((col) => (
                             <option key={col} value={col}>
                               {col}
@@ -420,7 +319,7 @@ export default function ConfigModal({ open, onClose }: Props) {
                       type="button"
                       size="sm"
                       variant="ghost"
-                      className="text-error hover:bg-error/10 hover:text-error"
+                      className="text-error btn-square btn-sm hover:bg-error/10 h-8 w-8"
                       onClick={() => remove(index)}
                       disabled={fields.length <= 1}
                     >
@@ -430,11 +329,6 @@ export default function ConfigModal({ open, onClose }: Props) {
                 );
               })}
             </div>
-            {fields.length >= maxColumns && (
-              <p className="text-warning mt-2 text-center text-xs font-medium">
-                Has seleccionado el máximo de columnas disponibles.
-              </p>
-            )}
           </div>
 
           {/* Boolean Options */}
