@@ -1,54 +1,10 @@
 import { Router } from "express";
-import { z } from "zod";
+import { createReportSchema, mpConfigSchema } from "../schemas/index.js";
 import * as MPService from "../services/mercadopago.js";
 import { logger } from "../lib/logger.js";
 import { AuthenticatedRequest } from "../types.js";
 
 const router = Router();
-
-// --- Zod Schemas ---
-
-// --- Zod schemas for Actions ---
-
-const CreateReportSchema = z.object({
-  begin_date: z.string(), // ISO String expected e.g. "2023-01-01T00:00:00Z"
-  end_date: z.string(),
-});
-
-const FrequencySchema = z.object({
-  type: z.enum(["daily", "weekly", "monthly"]),
-  value: z.number().int().min(1),
-  hour: z.number().int().min(0).max(23),
-});
-
-const ColumnSchema = z.object({
-  key: z.string().min(1),
-});
-
-const SftpInfoSchema = z
-  .object({
-    server: z.string().optional(),
-    password: z.string().optional(),
-    remote_dir: z.string().optional(),
-    port: z.number().optional(),
-    username: z.string().optional(),
-  })
-  .optional();
-
-const ConfigSchema = z.object({
-  file_name_prefix: z.string().min(1),
-  columns: z.array(ColumnSchema).min(1),
-  frequency: FrequencySchema,
-  sftp_info: SftpInfoSchema,
-  separator: z.string().optional(),
-  display_timezone: z.string().optional(),
-  report_translation: z.string().optional(),
-  notification_email_list: z.array(z.string().email().or(z.null())).optional(),
-  include_withdrawal_at_end: z.boolean().optional(),
-  check_available_balance: z.boolean().optional(),
-  compensate_detail: z.boolean().optional(),
-  execute_after_withdrawal: z.boolean().optional(),
-});
 
 // --- Middleware ---
 
@@ -79,7 +35,7 @@ router.get("/config", async (_req, res, next) => {
 router.post("/config", async (req, res, next) => {
   try {
     const authReq = req as AuthenticatedRequest;
-    const data = ConfigSchema.parse(req.body);
+    const data = mpConfigSchema.parse(req.body);
     const config = await MPService.createReportConfig(data);
     logger.info({ event: "mp_config_created", user: authReq.user?.email });
     res.status(201).json(config);
@@ -91,7 +47,7 @@ router.post("/config", async (req, res, next) => {
 router.put("/config", async (req, res, next) => {
   try {
     const authReq = req as AuthenticatedRequest;
-    const data = ConfigSchema.parse(req.body);
+    const data = mpConfigSchema.parse(req.body);
     const config = await MPService.updateReportConfig(data);
     logger.info({ event: "mp_config_updated", user: authReq.user?.email });
     res.json(config);
@@ -103,7 +59,7 @@ router.put("/config", async (req, res, next) => {
 router.post("/reports", async (req, res, next) => {
   try {
     const authReq = req as AuthenticatedRequest;
-    const { begin_date, end_date } = CreateReportSchema.parse(req.body);
+    const { begin_date, end_date } = createReportSchema.parse(req.body);
     const result = await MPService.createReport(begin_date, end_date);
     logger.info({ event: "mp_report_triggered", user: authReq.user?.email });
     res.status(201).json(result);
