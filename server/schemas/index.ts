@@ -55,3 +55,6 @@ export { serviceCreateSchema, serviceRegenerateSchema, servicePaymentSchema } fr
 
 // Auth & Calendar
 export { loginSchema, mfaVerifySchema, monthParamSchema, updateClassificationSchema } from "./auth.js";
+
+// MercadoPago
+export { createReportSchema, frequencySchema, columnSchema, sftpInfoSchema, mpConfigSchema } from "./mercadopago.js";
