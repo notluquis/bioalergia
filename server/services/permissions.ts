@@ -1,5 +1,33 @@
+import crypto from "crypto";
 import { prisma } from "../prisma.js";
 import { ROUTE_DATA, API_PERMISSIONS, type RouteData } from "../../shared/route-data.js";
+
+const PERMISSIONS_HASH_KEY = "permissions_sync_hash";
+
+/**
+ * Generate a hash of the current permission configuration.
+ * Used to detect if permissions need to be re-synced.
+ */
+function generatePermissionsHash(): string {
+  const subjects = new Set<string>();
+  const collectSubjects = (routes: RouteData[]) => {
+    routes.forEach((route) => {
+      if (route.permission?.subject) subjects.add(route.permission.subject);
+      if (route.children) collectSubjects(route.children);
+    });
+  };
+  collectSubjects(ROUTE_DATA);
+
+  // Create a deterministic string of all permissions
+  const permissionList = [
+    ...Array.from(subjects)
+      .sort()
+      .flatMap((s) => ["read", "create", "update", "delete"].map((a) => `${a}:${s}`)),
+    ...API_PERMISSIONS.map((p) => `${p.action}:${p.subject}`).sort(),
+  ].join("|");
+
+  return crypto.createHash("md5").update(permissionList).digest("hex");
+}
 
 export async function listPermissions() {
   return await prisma.permission.findMany({
@@ -10,35 +38,42 @@ export async function listPermissions() {
 /**
  * Syncs permissions from route-data.ts to the database.
  *
- * Sources:
- * 1. ROUTE_DATA - UI routes with permission field (generates CRUD for each subject)
- * 2. API_PERMISSIONS - API-only permissions (direct action/subject pairs)
+ * Uses hash-based change detection to skip sync if nothing changed.
+ * This is important for serverless environments where cold starts are frequent.
  *
- * Also auto-assigns ALL permissions to the SystemAdministrator role.
+ * @param force - If true, skip hash check and always sync
+ * @returns { synced: boolean, reason: string }
  */
-export async function syncPermissions() {
+export async function syncPermissions(force = false): Promise<{ synced: boolean; reason: string }> {
+  const currentHash = generatePermissionsHash();
+
+  // Check if sync is needed (unless forced)
+  if (!force) {
+    try {
+      const stored = await prisma.setting.findUnique({ where: { key: PERMISSIONS_HASH_KEY } });
+      if (stored?.value === currentHash) {
+        return { synced: false, reason: "Permissions unchanged (hash match)" };
+      }
+    } catch {
+      // Setting table might not exist, continue with sync
+    }
+  }
+
   const validPermissions = new Set<string>();
 
   // 1. Collect subjects from UI routes
   const subjects = new Set<string>();
-
   const collectSubjects = (routes: RouteData[]) => {
     routes.forEach((route) => {
-      if (route.permission?.subject) {
-        subjects.add(route.permission.subject);
-      }
-      if (route.children && Array.isArray(route.children)) {
-        collectSubjects(route.children);
-      }
+      if (route.permission?.subject) subjects.add(route.permission.subject);
+      if (route.children) collectSubjects(route.children);
     });
   };
-
   collectSubjects(ROUTE_DATA);
 
   // 2. Create CRUD permissions for each discovered subject
   for (const subject of subjects) {
-    const actions = ["read", "create", "update", "delete"];
-    for (const action of actions) {
+    for (const action of ["read", "create", "update", "delete"]) {
       try {
         await prisma.permission.upsert({
           where: { action_subject: { action, subject } },
@@ -75,9 +110,7 @@ export async function syncPermissions() {
 
     if (toDeleteIds.length > 0) {
       console.log(`Cleaning up ${toDeleteIds.length} obsolete permissions...`);
-      await prisma.permission.deleteMany({
-        where: { id: { in: toDeleteIds } },
-      });
+      await prisma.permission.deleteMany({ where: { id: { in: toDeleteIds } } });
     }
   } catch (e) {
     console.error("Error cleaning up permissions:", e);
@@ -101,5 +134,16 @@ export async function syncPermissions() {
     console.error("Error auto-assigning permissions to admin:", e);
   }
 
-  return [];
+  // 6. Store the current hash to skip future syncs
+  try {
+    await prisma.setting.upsert({
+      where: { key: PERMISSIONS_HASH_KEY },
+      update: { value: currentHash },
+      create: { key: PERMISSIONS_HASH_KEY, value: currentHash },
+    });
+  } catch (e) {
+    console.error("Error storing permissions hash:", e);
+  }
+
+  return { synced: true, reason: force ? "Forced sync" : "Permissions changed (hash mismatch)" };
 }
