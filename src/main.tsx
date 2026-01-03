@@ -29,7 +29,11 @@ async function handleChunkLoadError() {
   }
 
   // Force reload from network (bypass cache)
-  window.location.reload();
+  if (!import.meta.env.DEV) {
+    window.location.reload();
+  } else {
+    console.debug("Development mode: preventing automatic reload for chunk error");
+  }
 }
 
 // Global error handler for chunk load failures (runs before React mounts)
