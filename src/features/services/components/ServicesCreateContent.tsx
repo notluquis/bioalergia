@@ -1,10 +1,11 @@
+import { Link } from "react-router-dom";
+
 import Alert from "@/components/ui/Alert";
+import Button from "@/components/ui/Button";
 import ServiceForm from "@/features/services/components/ServiceForm";
 import { ServicesHero, ServicesSurface } from "@/features/services/components/ServicesShell";
 import { SERVICE_TEMPLATES } from "@/features/services/components/ServiceTemplateGallery";
 import { useServicesOverview } from "@/features/services/hooks/useServicesOverview";
-import Button from "@/components/ui/Button";
-import { Link } from "react-router-dom";
 
 export default function ServicesCreateContent() {
   const { canManage, applyTemplate, createError, selectedTemplate, handleCreateService } = useServicesOverview();
@@ -30,8 +31,8 @@ export default function ServicesCreateContent() {
         <div className="space-y-3">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-sm font-semibold text-base-content">Plantillas rápidas</p>
-              <p className="text-xs text-base-content/60">
+              <p className="text-base-content text-sm font-semibold">Plantillas rápidas</p>
+              <p className="text-base-content/60 text-xs">
                 Aplica una plantilla sugerida y ajusta los datos antes de guardar.
               </p>
             </div>
@@ -47,7 +48,7 @@ export default function ServicesCreateContent() {
                 key={template.id}
                 type="button"
                 onClick={() => applyTemplate(template)}
-                className="rounded-full border border-base-300 bg-base-200 px-3 py-1 text-xs font-semibold text-base-content transition hover:border-primary/40 hover:bg-primary/10 hover:text-primary"
+                className="border-base-300 bg-base-200 text-base-content hover:border-primary/40 hover:bg-primary/10 hover:text-primary rounded-full border px-3 py-1 text-xs font-semibold transition"
               >
                 {template.name}
               </button>
@@ -58,7 +59,7 @@ export default function ServicesCreateContent() {
 
       <ServicesSurface>
         <div className="space-y-4">
-          <p className="text-sm font-semibold text-base-content">Formulario de creación</p>
+          <p className="text-base-content text-sm font-semibold">Formulario de creación</p>
           <ServiceForm
             onSubmit={async (payload) => {
               await handleCreateService(payload);

@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useCallback, useState } from "react";
 
 /**
  * Hook reutilizable para manejar estado asíncrono común (loading, error, data).

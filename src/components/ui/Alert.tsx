@@ -1,5 +1,7 @@
 import React from "react";
+
 import { cn } from "@/lib/utils";
+
 import Button from "./Button";
 
 interface AlertProps {
@@ -18,8 +20,8 @@ export default function Alert({ variant = "error", children, className = "", onC
   };
 
   return (
-    <div className={cn("alert shadow-lg rounded-2xl", variantMap[variant], className)} role="alert">
-      <div className="flex-1 flex items-center gap-2">{children}</div>
+    <div className={cn("alert rounded-2xl shadow-lg", variantMap[variant], className)} role="alert">
+      <div className="flex flex-1 items-center gap-2">{children}</div>
       {onClose && (
         <div className="flex-none">
           <Button
@@ -27,7 +29,7 @@ export default function Alert({ variant = "error", children, className = "", onC
             size="sm"
             aria-label="Cerrar"
             onClick={onClose}
-            className="btn-circle btn-xs bg-white/20 hover:bg-white/30 border-none text-current"
+            className="btn-circle btn-xs border-none bg-white/20 text-current hover:bg-white/30"
           >
             ✕
           </Button>

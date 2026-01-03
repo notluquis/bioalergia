@@ -1,14 +1,13 @@
+import { ServiceFrequency, ServiceType } from "@prisma/client";
 import express from "express";
+
 import { asyncHandler, authenticate } from "../lib/http.js";
-import { authorize } from "../middleware/authorize.js";
-
 import { logEvent, requestContext } from "../lib/logger.js";
-import { createService, getServiceById, listServices, updateService, deleteService } from "../services/services.js";
-import type { AuthenticatedRequest } from "../types.js";
-import { serviceCreateSchema } from "../schemas/index.js";
-
 import { mapService } from "../lib/mappers.js";
-import { ServiceType, ServiceFrequency } from "@prisma/client";
+import { authorize } from "../middleware/authorize.js";
+import { serviceCreateSchema } from "../schemas/index.js";
+import { createService, deleteService, getServiceById, listServices, updateService } from "../services/services.js";
+import type { AuthenticatedRequest } from "../types.js";
 
 export function registerServiceRoutes(app: express.Express) {
   const router = express.Router();

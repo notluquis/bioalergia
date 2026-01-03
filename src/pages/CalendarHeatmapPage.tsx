@@ -1,21 +1,22 @@
-import { useCallback, useMemo, useState, type ChangeEvent } from "react";
-import dayjs, { type Dayjs } from "dayjs";
-import clsx from "clsx";
 import "dayjs/locale/es";
-import { useTranslation } from "react-i18next";
-import { Filter, ChevronDown } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
 
-import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
+import { useQuery } from "@tanstack/react-query";
+import clsx from "clsx";
+import dayjs, { type Dayjs } from "dayjs";
+import { ChevronDown, Filter } from "lucide-react";
+import { type ChangeEvent, useCallback, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
+
 import Alert from "@/components/ui/Alert";
+import Button from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { MultiSelectFilter, type MultiSelectOption } from "@/features/calendar/components/MultiSelectFilter";
-import { HeatmapMonth } from "@/features/calendar/components/HeatmapMonth";
+import Input from "@/components/ui/Input";
 import { fetchCalendarSummary } from "@/features/calendar/api";
-import { type CalendarFilters } from "@/features/calendar/types";
+import { HeatmapMonth } from "@/features/calendar/components/HeatmapMonth";
+import { MultiSelectFilter, type MultiSelectOption } from "@/features/calendar/components/MultiSelectFilter";
 import { NULL_CATEGORY_VALUE } from "@/features/calendar/constants";
-import { numberFormatter, currencyFormatter } from "@/lib/format";
+import { type CalendarFilters } from "@/features/calendar/types";
+import { currencyFormatter, numberFormatter } from "@/lib/format";
 import { PAGE_CONTAINER } from "@/lib/styles";
 
 dayjs.locale("es");

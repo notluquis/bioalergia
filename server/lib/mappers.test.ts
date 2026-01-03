@@ -1,6 +1,7 @@
-import { describe, it, expect } from "vitest";
-import { mapPerson } from "./mappers.js";
 import { PersonType } from "@prisma/client";
+import { describe, expect, it } from "vitest";
+
+import { mapPerson } from "./mappers.js";
 
 describe("mapPerson", () => {
   it("should properly concatenate full_name from names + fatherName + motherName", () => {

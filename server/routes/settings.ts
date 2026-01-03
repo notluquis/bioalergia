@@ -1,19 +1,20 @@
 import express from "express";
 import multer from "multer";
+
 import { asyncHandler, authenticate, softAuthenticate } from "../lib/http.js";
-import { authorize } from "../middleware/authorize.js";
 import { logEvent, logWarn, requestContext } from "../lib/logger.js";
-import { getSettings, updateSettings } from "../services/settings.js";
-import { DEFAULT_SETTINGS, type AppSettings } from "../lib/settings.js";
-import type { AuthenticatedRequest } from "../types.js";
-import { settingsSchema } from "../schemas/index.js";
+import { type AppSettings, DEFAULT_SETTINGS } from "../lib/settings.js";
 import {
   BRANDING_LOGO_MAX_FILE_SIZE,
   isSupportedImageType,
-  saveBrandingLogoFile,
   saveBrandingFaviconFile,
+  saveBrandingLogoFile,
 } from "../lib/uploads.js";
+import { authorize } from "../middleware/authorize.js";
+import { settingsSchema } from "../schemas/index.js";
 import { logAudit } from "../services/audit.js";
+import { getSettings, updateSettings } from "../services/settings.js";
+import type { AuthenticatedRequest } from "../types.js";
 
 const logoUpload = multer({
   storage: multer.memoryStorage(),

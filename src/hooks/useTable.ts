@@ -1,6 +1,6 @@
-import { usePagination, type PaginationState } from "./usePagination";
-import { useSorting, type SortState } from "./useSorting";
-import { useColumnVisibility, type ColumnVisibility } from "./useColumnVisibility";
+import { type ColumnVisibility, useColumnVisibility } from "./useColumnVisibility";
+import { type PaginationState, usePagination } from "./usePagination";
+import { type SortState, useSorting } from "./useSorting";
 
 export interface TableState<T extends string = string> {
   pagination: PaginationState;

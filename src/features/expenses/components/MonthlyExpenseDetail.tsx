@@ -1,6 +1,8 @@
 import dayjs from "dayjs";
-import Button from "@/components/ui/Button";
+
 import Alert from "@/components/ui/Alert";
+import Button from "@/components/ui/Button";
+
 import type { MonthlyExpenseDetail as MonthlyExpenseDetailData } from "../types";
 
 interface MonthlyExpenseDetailProps {
@@ -21,7 +23,7 @@ export default function MonthlyExpenseDetail({
   onUnlinkTransaction,
 }: MonthlyExpenseDetailProps) {
   if (loading) {
-    return <p className="text-xs text-base-content/60">Cargando gasto…</p>;
+    return <p className="text-base-content/60 text-xs">Cargando gasto…</p>;
   }
 
   if (!expense) {
@@ -29,11 +31,11 @@ export default function MonthlyExpenseDetail({
   }
 
   return (
-    <section className="space-y-4 border border-base-300 p-4 text-sm text-base-content bg-base-100">
+    <section className="border-base-300 text-base-content bg-base-100 space-y-4 border p-4 text-sm">
       <header className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h2 className="text-xl font-semibold text-primary break-all">{expense.name}</h2>
-          <p className="text-xs text-base-content/50">
+          <h2 className="text-primary text-xl font-semibold break-all">{expense.name}</h2>
+          <p className="text-base-content/50 text-xs">
             {expense.category || "Sin categoría"} · {dayjs(expense.expenseDate).format("DD MMM YYYY")}
           </p>
         </div>
@@ -62,21 +64,21 @@ export default function MonthlyExpenseDetail({
         />
       </div>
 
-      {expense.notes && <p className="rounded-xl bg-base-100/60 p-3 text-xs text-base-content/60">{expense.notes}</p>}
+      {expense.notes && <p className="bg-base-100/60 text-base-content/60 rounded-xl p-3 text-xs">{expense.notes}</p>}
 
       <section className="space-y-2">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-base-content/60">Transacciones</h3>
+        <h3 className="text-base-content/60 text-xs font-semibold tracking-wide uppercase">Transacciones</h3>
         <div className="muted-scrollbar max-h-72 space-y-2 overflow-y-auto pr-1">
           {expense.transactions.map((tx) => (
-            <article key={tx.transactionId} className="rounded-xl border border-base-300 bg-base-200 p-3 shadow-inner">
+            <article key={tx.transactionId} className="border-base-300 bg-base-200 rounded-xl border p-3 shadow-inner">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <p className="text-sm font-semibold text-base-content">ID #{tx.transactionId}</p>
-                  <p className="text-xs text-base-content/50">{tx.description ?? "(sin descripción)"}</p>
+                  <p className="text-base-content text-sm font-semibold">ID #{tx.transactionId}</p>
+                  <p className="text-base-content/50 text-xs">{tx.description ?? "(sin descripción)"}</p>
                 </div>
-                <span className="text-sm font-semibold text-base-content">${tx.amount.toLocaleString("es-CL")}</span>
+                <span className="text-base-content text-sm font-semibold">${tx.amount.toLocaleString("es-CL")}</span>
               </div>
-              <div className="mt-1 text-xs text-base-content/50">
+              <div className="text-base-content/50 mt-1 text-xs">
                 {dayjs(tx.timestamp).format("DD MMM YYYY HH:mm")} · {tx.direction}
               </div>
               {canManage && (
@@ -89,7 +91,7 @@ export default function MonthlyExpenseDetail({
             </article>
           ))}
           {!expense.transactions.length && (
-            <p className="rounded-xl border border-dashed border-base-300 bg-base-200 p-3 text-xs text-base-content/60">
+            <p className="border-base-300 bg-base-200 text-base-content/60 rounded-xl border border-dashed p-3 text-xs">
               Aún no se han vinculado transacciones a este gasto.
             </p>
           )}
@@ -101,10 +103,10 @@ export default function MonthlyExpenseDetail({
 
 function DetailCard({ title, value, helper }: { title: string; value: string; helper?: string }) {
   return (
-    <article className="rounded-xl border border-base-300 bg-base-200 p-3 shadow-sm">
-      <p className="text-xs font-semibold uppercase tracking-wide text-base-content/60">{title}</p>
-      <p className="mt-1 text-lg font-semibold text-base-content">{value}</p>
-      {helper && <p className="text-xs text-base-content/50">{helper}</p>}
+    <article className="border-base-300 bg-base-200 rounded-xl border p-3 shadow-sm">
+      <p className="text-base-content/60 text-xs font-semibold tracking-wide uppercase">{title}</p>
+      <p className="text-base-content mt-1 text-lg font-semibold">{value}</p>
+      {helper && <p className="text-base-content/50 text-xs">{helper}</p>}
     </article>
   );
 }

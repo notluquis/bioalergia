@@ -1,22 +1,23 @@
 import express from "express";
+
 import { asyncHandler, authenticate } from "../lib/http.js";
 import { authorize } from "../middleware/authorize.js";
-import {
-  createInventoryCategory,
-  listInventoryCategories,
-  listInventoryItems,
-  createInventoryItem,
-  updateInventoryItem,
-  deleteInventoryItem,
-  createInventoryMovement,
-  deleteInventoryCategory,
-} from "../services/inventory.js";
 import {
   inventoryCategorySchema,
   inventoryItemSchema,
   inventoryItemUpdateSchema,
   inventoryMovementSchema,
 } from "../schemas/index.js";
+import {
+  createInventoryCategory,
+  createInventoryItem,
+  createInventoryMovement,
+  deleteInventoryCategory,
+  deleteInventoryItem,
+  listInventoryCategories,
+  listInventoryItems,
+  updateInventoryItem,
+} from "../services/inventory.js";
 
 export function registerInventoryRoutes(app: express.Express) {
   const router = express.Router();

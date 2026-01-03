@@ -1,8 +1,9 @@
 // src/lib/authz/AbilityProvider.tsx
-import React, { createContext } from "react";
-import { createContextualCan } from "@casl/react";
-import { ability } from "./ability";
 import { Ability } from "@casl/ability";
+import { createContextualCan } from "@casl/react";
+import React, { createContext } from "react";
+
+import { ability } from "./ability";
 
 export const AbilityContext = createContext<Ability>(ability);
 export const Can = createContextualCan(AbilityContext.Consumer);

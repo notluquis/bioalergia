@@ -1,9 +1,11 @@
 import { useCallback, useState } from "react";
+
 import { useAuth } from "@/context/AuthContext";
 import { logger } from "@/lib/logger";
-import { parseBalanceInput } from "../utils";
+
 import { saveBalance } from "../api";
 import type { BalanceDraft } from "../types";
+import { parseBalanceInput } from "../utils";
 
 interface UseDailyBalanceManagementProps {
   loadBalances: () => Promise<void>;

@@ -1,5 +1,6 @@
 import { apiClient } from "@/lib/apiClient";
-import type { InventoryCategory, InventoryItem, InventoryMovement, AllergyInventoryOverview } from "./types";
+
+import type { AllergyInventoryOverview, InventoryCategory, InventoryItem, InventoryMovement } from "./types";
 
 type ApiResponse<T> = {
   status?: string;

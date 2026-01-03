@@ -1,12 +1,11 @@
+import { randomBytes } from "node:crypto";
+
 import fs from "fs";
 import path from "path";
-import { randomBytes } from "node:crypto";
 import sharp from "sharp";
 
 const defaultUploadsRoot = path.resolve(process.cwd(), "storage/uploads");
-const uploadsRoot = process.env.UPLOADS_ROOT_DIR
-  ? path.resolve(process.env.UPLOADS_ROOT_DIR)
-  : defaultUploadsRoot;
+const uploadsRoot = process.env.UPLOADS_ROOT_DIR ? path.resolve(process.env.UPLOADS_ROOT_DIR) : defaultUploadsRoot;
 const brandingUploadsDir = path.join(uploadsRoot, "branding");
 
 export const BRANDING_LOGO_MAX_WIDTH = 1600;

@@ -1,8 +1,10 @@
 import dayjs from "dayjs";
 import { CheckCircle2, Clock3, XCircle } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { ProductionBalance } from "../types";
+
 import { currencyFormatter } from "@/lib/format";
+import { cn } from "@/lib/utils";
+
+import { ProductionBalance } from "../types";
 
 type DayCardProps = {
   date: dayjs.Dayjs;

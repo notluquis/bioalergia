@@ -1,29 +1,29 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useState, type ChangeEvent } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import { useToast } from "@/context/ToastContext";
-import { useAuth } from "@/context/AuthContext";
+import { type ChangeEvent, lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
+
+import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
+import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/context/ToastContext";
 import { fetchEmployees } from "@/features/hr/employees/api";
 import {
-  fetchTimesheetSummary,
-  fetchTimesheetDetail,
   bulkUpsertTimesheets,
   deleteTimesheet,
+  fetchTimesheetDetail,
+  fetchTimesheetSummary,
   prepareTimesheetEmail,
 } from "@/features/hr/timesheets/api";
-
-import type { BulkRow, TimesheetUpsertEntry } from "@/features/hr/timesheets/types";
-import { buildBulkRows, hasRowData, isRowDirty, parseDuration, formatDateLabel } from "@/features/hr/timesheets/utils";
-import { generateTimesheetPdfBase64 } from "@/features/hr/timesheets/pdfUtils";
-import TimesheetSummaryTable from "@/features/hr/timesheets/components/TimesheetSummaryTable";
-import TimesheetDetailTable from "@/features/hr/timesheets/components/TimesheetDetailTable";
 import EmailPreviewModal from "@/features/hr/timesheets/components/EmailPreviewModal";
-import Alert from "@/components/ui/Alert";
+import TimesheetDetailTable from "@/features/hr/timesheets/components/TimesheetDetailTable";
+import TimesheetSummaryTable from "@/features/hr/timesheets/components/TimesheetSummaryTable";
 import { useMonths } from "@/features/hr/timesheets/hooks/useMonths";
+import { generateTimesheetPdfBase64 } from "@/features/hr/timesheets/pdfUtils";
+import type { BulkRow, TimesheetUpsertEntry } from "@/features/hr/timesheets/types";
+import { buildBulkRows, formatDateLabel, hasRowData, isRowDirty, parseDuration } from "@/features/hr/timesheets/utils";
 import { useWakeLock } from "@/hooks/useWakeLock";
 import { PAGE_CONTAINER, TITLE_LG } from "@/lib/styles";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 const TimesheetExportPDF = lazy(() => import("@/features/hr/timesheets/components/TimesheetExportPDF"));
 
@@ -159,6 +159,7 @@ export default function TimesheetsPage() {
       setBulkRows((prev) => {
         const currentRow = prev[index];
         if (!currentRow || currentRow[field] === value) return prev;
+
         return prev.map((row, i) => (i === index ? { ...row, [field]: value } : row));
       });
     },
@@ -183,7 +184,6 @@ export default function TimesheetsPage() {
   const saveRowImmediately = useCallback(
     async (index: number) => {
       if (!selectedEmployeeId || isUpsertPending) return;
-
       const row = bulkRows[index];
       const initial = initialRows[index];
       if (!row || !initial) return;

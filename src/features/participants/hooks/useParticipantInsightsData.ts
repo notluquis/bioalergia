@@ -1,13 +1,15 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
 import dayjs from "dayjs";
+import { useCallback, useEffect, useMemo, useState } from "react";
+
+import { formatRut } from "@/lib/rut";
+
 import { fetchParticipantInsight, fetchParticipantLeaderboard } from "../api";
 import type {
+  LeaderboardDisplayRow,
   ParticipantCounterpartRow,
   ParticipantMonthlyRow,
   ParticipantSummaryRow,
-  LeaderboardDisplayRow,
 } from "../types";
-import { formatRut } from "@/lib/rut";
 
 const MAX_MONTHS = 12;
 

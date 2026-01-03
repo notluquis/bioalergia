@@ -1,9 +1,11 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useAuth, type UserRole } from "./AuthContext";
-import { logger } from "@/lib/logger";
+import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useRef } from "react";
+
 import { APP_CONFIG } from "@/config/app";
 import { apiClient } from "@/lib/apiClient";
+import { logger } from "@/lib/logger";
+
+import { useAuth, type UserRole } from "./AuthContext";
 
 export type AppSettings = {
   orgName: string;
@@ -143,11 +145,12 @@ function applyBranding(next: AppSettings) {
   root.style.setProperty("--brand-secondary-rgb", colorToRgb(next.secondaryColor));
 }
 
+const DEFAULT_RGB_BLACK = "0 0 0";
+
 function colorToRgb(color: string) {
   // If it's a CSS variable or CSS function, return as-is for CSS to handle
-  if (!color) return "0 0 0";
-  // eslint-disable-next-line no-restricted-syntax
-  if (color.includes("var(") || color.includes("oklch(") || color.includes("hsl(") || color.includes("rgb(")) {
+  if (!color) return DEFAULT_RGB_BLACK;
+  if (/^(var|oklch|hsl|rgb|rgba)\(/.test(color)) {
     return color;
   }
   // Otherwise, convert hex to rgb

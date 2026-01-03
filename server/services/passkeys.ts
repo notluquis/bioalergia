@@ -1,14 +1,15 @@
 import {
-  generateRegistrationOptions,
-  verifyRegistrationResponse,
-  generateAuthenticationOptions,
-  verifyAuthenticationResponse,
-  type RegistrationResponseJSON,
   type AuthenticationResponseJSON,
   type AuthenticatorTransportFuture,
+  generateAuthenticationOptions,
+  generateRegistrationOptions,
+  type RegistrationResponseJSON,
+  verifyAuthenticationResponse,
+  verifyRegistrationResponse,
 } from "@simplewebauthn/server";
-import { prisma } from "../prisma.js";
+
 import { logEvent } from "../lib/logger.js";
+import { prisma } from "../prisma.js";
 
 const RP_NAME = "Finanzas App";
 const RP_ID = process.env.RP_ID || "intranet.bioalergia.cl";
@@ -49,8 +50,7 @@ export async function generatePasskeyRegistrationOptions(user: { id: number; ema
   // The library should return JSON, but we enforce it to be safe against serialization issues
   // We use standard 'base64' because some client-side decoders (like atob) fail with 'base64url' (no padding, -_)
   if (typeof options.user.id !== "string") {
-    // @ts-ignore - Handle potential type mismatch if library returns Buffer
-    options.user.id = Buffer.from(options.user.id).toString("base64");
+    options.user.id = Buffer.from(options.user.id).toString("base64") as unknown as string;
   }
 
   return options;

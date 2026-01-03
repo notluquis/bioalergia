@@ -1,11 +1,12 @@
 import express from "express";
+
 import { asyncHandler, authenticate } from "../lib/http.js";
-import { authorize } from "../middleware/authorize.js";
 import { logEvent, logWarn, requestContext } from "../lib/logger.js";
-import { listEmployees, createEmployee, updateEmployee, deactivateEmployee } from "../services/employees.js";
-import { employeeSchema, employeeUpdateSchema } from "../schemas/index.js";
-import type { AuthenticatedRequest } from "../types.js";
 import { mapEmployee } from "../lib/mappers.js";
+import { authorize } from "../middleware/authorize.js";
+import { employeeSchema, employeeUpdateSchema } from "../schemas/index.js";
+import { createEmployee, deactivateEmployee, listEmployees, updateEmployee } from "../services/employees.js";
+import type { AuthenticatedRequest } from "../types.js";
 
 export function registerEmployeeRoutes(app: express.Express) {
   app.get(

@@ -1,17 +1,11 @@
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { FileText, Settings, Download, Plus, Loader2, CheckCircle, AlertTriangle, Clock } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
+import { AlertTriangle, CheckCircle, Clock, Download, FileText, Loader2, Plus, Settings } from "lucide-react";
+import { useState } from "react";
 
-import { PAGE_CONTAINER } from "@/lib/styles";
-import { cn } from "@/lib/utils";
-import Button from "@/components/ui/Button";
-import { Table } from "@/components/ui/Table";
-import StatCard from "@/components/ui/StatCard";
-import { useToast } from "@/context/ToastContext";
-import { MPService } from "@/services/mercadopago";
 import ConfigModal from "@/components/mercadopago/ConfigModal";
 import GenerateReportModal from "@/components/mercadopago/GenerateReportModal";
+import Button from "@/components/ui/Button";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -20,6 +14,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/DropdownMenu";
+import StatCard from "@/components/ui/StatCard";
+import { Table } from "@/components/ui/Table";
+import { useToast } from "@/context/ToastContext";
+import { PAGE_CONTAINER } from "@/lib/styles";
+import { cn } from "@/lib/utils";
+import { MPService } from "@/services/mercadopago";
 
 const ALL_TABLE_COLUMNS = [
   { key: "id", label: "ID" },

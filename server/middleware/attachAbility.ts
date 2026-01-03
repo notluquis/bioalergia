@@ -1,11 +1,12 @@
 // server/middleware/attachAbility.ts
 
-import { Response, NextFunction } from "express";
-import { prisma } from "../prisma.js";
-import { getAbilityRulesForUser } from "../lib/authz/getAbilityRulesForUser.js";
-import { getCachedRules, setCachedRules } from "../lib/authz/rulesCache.js";
+import { NextFunction, Response } from "express";
+
 import { sessionCookieName, sessionCookieOptions } from "../config.js";
 import { createAbility } from "../lib/authz/ability.js";
+import { getAbilityRulesForUser } from "../lib/authz/getAbilityRulesForUser.js";
+import { getCachedRules, setCachedRules } from "../lib/authz/rulesCache.js";
+import { prisma } from "../prisma.js";
 import { AuthenticatedRequest } from "../types.js";
 
 export async function attachAbility(req: AuthenticatedRequest, res: Response, next: NextFunction) {

@@ -74,7 +74,7 @@ export function formatRelativeDate(date: string | Date): string {
 
 // === DURATION FORMATTING ===
 
-export { durationToMinutes, minutesToDuration, parseTimeToMinutes, minutesToTime } from "~/shared/time";
+export { durationToMinutes, minutesToDuration, minutesToTime, parseTimeToMinutes } from "~/shared/time";
 
 // === NUMERIC FORMATTING ===
 

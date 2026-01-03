@@ -1,11 +1,16 @@
 // Flat ESLint config migrated from .eslintrc.js for ESLint v9
 import js from "@eslint/js";
+import reactQuery from "@tanstack/eslint-plugin-query";
 import tseslint from "@typescript-eslint/eslint-plugin";
 import tsParser from "@typescript-eslint/parser";
+import jestDom from "eslint-plugin-jest-dom";
+import jsxA11y from "eslint-plugin-jsx-a11y";
 import react from "eslint-plugin-react";
 import reactHooks from "eslint-plugin-react-hooks";
 import reactRefresh from "eslint-plugin-react-refresh";
-import reactQuery from "@tanstack/eslint-plugin-query";
+import security from "eslint-plugin-security";
+import simpleImportSort from "eslint-plugin-simple-import-sort";
+import vitest from "eslint-plugin-vitest";
 import globals from "globals";
 
 export default [
@@ -34,6 +39,14 @@ export default [
       "no-undef": "off",
     },
   },
+  // Imports & Formatting
+  {
+    plugins: { "simple-import-sort": simpleImportSort },
+    rules: {
+      "simple-import-sort/imports": "error",
+      "simple-import-sort/exports": "error",
+    },
+  },
   // React recommended via plugin flat config recommended.recommended
   {
     plugins: { react },
@@ -55,6 +68,10 @@ export default [
     },
     settings: { react: { version: "detect" } },
   },
+  // Accessibility
+  jsxA11y.flatConfigs.recommended,
+  // Security
+  security.configs.recommended,
   // React Query best practices
   ...reactQuery.configs["flat/recommended"],
   // Overrides for TypeScript files only (ensure core rules remain off)
@@ -63,8 +80,14 @@ export default [
     rules: {
       "no-undef": "off",
       "no-unused-vars": "off",
+      "security/detect-object-injection": "off",
+      "security/detect-unsafe-regex": "off",
+      "security/detect-non-literal-regexp": "off",
+      "security/detect-possible-timing-attacks": "off",
+      "security/detect-non-literal-fs-filename": "off",
     },
   },
+
   // Repository pattern enforcement: prohibit direct DB imports in route handlers
   {
     files: ["server/routes/**/*.ts", "server/routes/**/*.js"],
@@ -116,6 +139,15 @@ export default [
     ],
     rules: {
       "no-restricted-imports": "off",
+    },
+  },
+  // Testing (Vitest + Jest DOM)
+  {
+    files: ["**/__tests__/**/*.[jt]s?(x)", "**/?(*.)+(spec|test).[jt]s?(x)"],
+    plugins: { vitest, "jest-dom": jestDom },
+    rules: {
+      ...vitest.configs.recommended.rules,
+      ...jestDom.configs.recommended.rules,
     },
   },
 ];

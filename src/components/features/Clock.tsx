@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export default function Clock() {
   const [time, setTime] = useState(new Date());
@@ -19,8 +19,8 @@ export default function Clock() {
   }, []);
 
   return (
-    <div className="inline-flex items-center gap-2 rounded-full border border-base-300/60 bg-base-100/80 px-3 py-1 text-xs font-mono text-base-content shadow-sm backdrop-blur">
-      <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary/70" aria-hidden="true" />
+    <div className="border-base-300/60 bg-base-100/80 text-base-content inline-flex items-center gap-2 rounded-full border px-3 py-1 font-mono text-xs shadow-sm backdrop-blur">
+      <span className="bg-primary/70 inline-block h-1.5 w-1.5 rounded-full" aria-hidden="true" />
       <span>
         {time.toLocaleTimeString("es-CL", {
           hour: "2-digit",

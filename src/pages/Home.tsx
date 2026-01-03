@@ -1,18 +1,20 @@
-import { useMemo, useEffect } from "react";
+import { ArrowRightLeft, ArrowUpRight, CalendarDays, Users, Wallet } from "lucide-react";
+import { useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { Wallet, ArrowRightLeft, Users, CalendarDays, ArrowUpRight } from "lucide-react";
-import { daysAgo, today } from "@/lib/dates";
+
+import Alert from "@/components/ui/Alert";
+import { useAuth } from "@/context/AuthContext";
+import DashboardChart from "@/features/dashboard/components/DashboardChart";
+import MetricCard from "@/features/dashboard/components/MetricCard";
+import RecentMovementsWidget from "@/features/dashboard/components/RecentMovementsWidget";
+import TopParticipantsWidget from "@/features/dashboard/components/TopParticipantsWidget";
 import { useDashboardStats, useRecentMovements } from "@/features/dashboard/hooks";
 import { useParticipantLeaderboardQuery } from "@/features/participants/hooks";
-import MetricCard from "@/features/dashboard/components/MetricCard";
-import DashboardChart from "@/features/dashboard/components/DashboardChart";
-import TopParticipantsWidget from "@/features/dashboard/components/TopParticipantsWidget";
-import RecentMovementsWidget from "@/features/dashboard/components/RecentMovementsWidget";
-import Alert from "@/components/ui/Alert";
+import { daysAgo, today } from "@/lib/dates";
 import { CARD_COMPACT, TITLE_MD } from "@/lib/styles";
-import { useWakeLock } from "../hooks/useWakeLock";
+
 import { useAppBadge } from "../hooks/useAppBadge";
-import { useAuth } from "@/context/AuthContext";
+import { useWakeLock } from "../hooks/useWakeLock";
 
 const RANGE_DAYS = 30;
 

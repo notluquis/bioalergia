@@ -1,5 +1,7 @@
 import dayjs from "dayjs";
+
 import { fmtCLP } from "@/lib/format";
+
 import type { BalancesApiResponse } from "../types";
 
 export type BalanceSummaryProps = {

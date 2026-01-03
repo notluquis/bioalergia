@@ -1,7 +1,8 @@
-import { prisma } from "../prisma.js";
-import { Prisma } from "@prisma/client";
 import { accessibleBy } from "@casl/prisma";
+import { Prisma } from "@prisma/client";
+
 import type { AppAbility } from "../lib/authz/ability.js";
+import { prisma } from "../prisma.js";
 
 export type TransactionFilters = {
   from?: Date;

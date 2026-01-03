@@ -1,8 +1,9 @@
 import express from "express";
+
 import { asyncHandler, authenticate } from "../lib/http.js";
 import { authorize } from "../middleware/authorize.js";
+import { balancesQuerySchema, balanceUpsertSchema } from "../schemas/index.js";
 import { getBalancesReport, upsertDailyBalance } from "../services/balances.js";
-import { balanceUpsertSchema, balancesQuerySchema } from "../schemas/index.js";
 
 export function registerBalanceRoutes(app: express.Express) {
   app.get(

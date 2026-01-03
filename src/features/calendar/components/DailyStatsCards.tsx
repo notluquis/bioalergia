@@ -1,6 +1,6 @@
 import { StatCard } from "@/components/ui/StatCard";
-import { cn } from "@/lib/utils";
 import { currencyFormatter, numberFormatter } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 interface DailyStatsCardsProps {
   eventsCount: number;

@@ -1,12 +1,13 @@
-import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
+
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
 import { fmtCLP } from "@/lib/format";
-import type { AllergyInventoryOverview } from "../types";
 import { formatDate } from "@/lib/format";
 
 import { fetchAllergyOverview } from "../api";
+import type { AllergyInventoryOverview } from "../types";
 
 function AllergyInventoryView() {
   const {

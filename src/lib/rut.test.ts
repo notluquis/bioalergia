@@ -1,5 +1,6 @@
-import { describe, it, expect } from "vitest";
-import { normalizeRut, formatRut, validateRut } from "./rut";
+import { describe, expect, it } from "vitest";
+
+import { formatRut, normalizeRut, validateRut } from "./rut";
 
 describe("RUT Utilities", () => {
   describe("normalizeRut", () => {

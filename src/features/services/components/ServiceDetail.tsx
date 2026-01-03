@@ -1,23 +1,25 @@
+import dayjs from "dayjs";
+import type { ChangeEvent } from "react";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import type { ChangeEvent } from "react";
-import dayjs from "dayjs";
+
 import Button from "@/components/ui/Button";
-import Modal from "@/components/ui/Modal";
 import Input from "@/components/ui/Input";
+import Modal from "@/components/ui/Modal";
+
 import type {
   RegenerateServicePayload,
-  ServiceSchedule,
-  ServiceSummary,
   ServiceFrequency,
   ServiceLateFeeMode,
-  ServiceType,
-  ServiceOwnership,
   ServiceObligationType,
+  ServiceOwnership,
   ServiceRecurrenceType,
+  ServiceSchedule,
+  ServiceSummary,
+  ServiceType,
 } from "../types";
-import ServiceScheduleTable from "./ServiceScheduleTable";
 import ServiceScheduleAccordion from "./ServiceScheduleAccordion";
+import ServiceScheduleTable from "./ServiceScheduleTable";
 
 interface ServiceDetailProps {
   service: ServiceSummary | null;
@@ -160,21 +162,21 @@ export function ServiceDetail({
 
   if (!service) {
     return (
-      <section className="flex h-full flex-col items-center justify-center rounded-3xl p-10 text-sm text-base-content/60 bg-base-100">
+      <section className="text-base-content/60 bg-base-100 flex h-full flex-col items-center justify-center rounded-3xl p-10 text-sm">
         <p>Selecciona un servicio para ver el detalle.</p>
       </section>
     );
   }
 
   return (
-    <section className="relative flex h-full min-w-0 flex-col gap-6 rounded-3xl bg-base-100 p-6">
+    <section className="bg-base-100 relative flex h-full min-w-0 flex-col gap-6 rounded-3xl p-6">
       <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="space-y-1">
-          <h1 className="text-2xl font-bold text-primary drop-shadow-sm break-all">{service.name}</h1>
-          <p className="text-sm text-base-content">
+          <h1 className="text-primary text-2xl font-bold break-all drop-shadow-sm">{service.name}</h1>
+          <p className="text-base-content text-sm">
             {service.detail || "Gasto"} · {serviceTypeLabel} · {ownershipLabel}
           </p>
-          <div className="flex flex-wrap items-center gap-3 text-xs text-base-content/60">
+          <div className="text-base-content/60 flex flex-wrap items-center gap-3 text-xs">
             <span>Inicio {dayjs(service.start_date).format("DD MMM YYYY")}</span>
             <span>Frecuencia {frequencyLabel.toLowerCase()}</span>
             {service.due_day && <span>Vence día {service.due_day}</span>}
@@ -183,7 +185,7 @@ export function ServiceDetail({
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
           <span
-            className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${statusBadge.className}`}
+            className={`rounded-full px-3 py-1 text-xs font-semibold tracking-wide uppercase ${statusBadge.className}`}
           >
             {statusBadge.label}
           </span>
@@ -200,55 +202,55 @@ export function ServiceDetail({
         </div>
       </header>
 
-      <section className="grid gap-4 rounded-2xl border border-base-300 bg-base-200 p-4 text-sm text-base-content sm:grid-cols-3 lg:grid-cols-5">
+      <section className="border-base-300 bg-base-200 text-base-content grid gap-4 rounded-2xl border p-4 text-sm sm:grid-cols-3 lg:grid-cols-5">
         <div>
-          <p className="text-xs uppercase tracking-wide text-base-content/50">Monto base</p>
-          <p className="text-lg font-semibold text-base-content">${service.default_amount.toLocaleString("es-CL")}</p>
+          <p className="text-base-content/50 text-xs tracking-wide uppercase">Monto base</p>
+          <p className="text-base-content text-lg font-semibold">${service.default_amount.toLocaleString("es-CL")}</p>
         </div>
         <div>
-          <p className="text-xs uppercase tracking-wide text-base-content/50">Pendientes</p>
-          <p className="text-lg font-semibold text-base-content">{service.pending_count}</p>
+          <p className="text-base-content/50 text-xs tracking-wide uppercase">Pendientes</p>
+          <p className="text-base-content text-lg font-semibold">{service.pending_count}</p>
         </div>
         <div>
-          <p className="text-xs uppercase tracking-wide text-base-content/50">Vencidos</p>
+          <p className="text-base-content/50 text-xs tracking-wide uppercase">Vencidos</p>
           <p className="text-lg font-semibold text-rose-600">{service.overdue_count}</p>
         </div>
         <div>
-          <p className="text-xs uppercase tracking-wide text-base-content/50">Total pagado</p>
+          <p className="text-base-content/50 text-xs tracking-wide uppercase">Total pagado</p>
           <p className="text-lg font-semibold text-emerald-600">
             ${Number(service.total_paid ?? 0).toLocaleString("es-CL")}
           </p>
         </div>
         <div>
-          <p className="text-xs uppercase tracking-wide text-base-content/50">Modo de cálculo</p>
-          <p className="text-sm font-semibold text-base-content">{amountModeLabel}</p>
+          <p className="text-base-content/50 text-xs tracking-wide uppercase">Modo de cálculo</p>
+          <p className="text-base-content text-sm font-semibold">{amountModeLabel}</p>
         </div>
         <div>
-          <p className="text-xs uppercase tracking-wide text-base-content/50">Recargo</p>
-          <p className="text-sm font-semibold text-base-content">{lateFeeLabel}</p>
+          <p className="text-base-content/50 text-xs tracking-wide uppercase">Recargo</p>
+          <p className="text-base-content text-sm font-semibold">{lateFeeLabel}</p>
           {service.late_fee_grace_days != null && service.late_fee_mode !== "NONE" && (
-            <p className="text-xs text-base-content/50">Tras {service.late_fee_grace_days} días</p>
+            <p className="text-base-content/50 text-xs">Tras {service.late_fee_grace_days} días</p>
           )}
         </div>
       </section>
 
-      <section className="grid gap-4 rounded-2xl border border-base-300 bg-base-200 p-4 text-sm text-base-content md:grid-cols-3">
+      <section className="border-base-300 bg-base-200 text-base-content grid gap-4 rounded-2xl border p-4 text-sm md:grid-cols-3">
         <div>
-          <p className="text-xs uppercase tracking-wide text-base-content/50">Contraparte</p>
-          <p className="font-semibold text-base-content">{counterpartSummary}</p>
+          <p className="text-base-content/50 text-xs tracking-wide uppercase">Contraparte</p>
+          <p className="text-base-content font-semibold">{counterpartSummary}</p>
           {service.counterpart_account_identifier && (
-            <p className="text-xs text-base-content/60">
+            <p className="text-base-content/60 text-xs">
               Cuenta {service.counterpart_account_identifier}
               {service.counterpart_account_bank_name ? ` · ${service.counterpart_account_bank_name}` : ""}
             </p>
           )}
           {service.account_reference && (
-            <p className="text-xs text-base-content/60">Referencia: {service.account_reference}</p>
+            <p className="text-base-content/60 text-xs">Referencia: {service.account_reference}</p>
           )}
         </div>
         <div>
-          <p className="text-xs uppercase tracking-wide text-base-content/50">Emisión</p>
-          <p className="font-semibold text-base-content">
+          <p className="text-base-content/50 text-xs tracking-wide uppercase">Emisión</p>
+          <p className="text-base-content font-semibold">
             {service.emission_mode === "FIXED_DAY" && service.emission_day
               ? `Día ${service.emission_day}`
               : service.emission_mode === "DATE_RANGE" && service.emission_start_day && service.emission_end_day
@@ -259,9 +261,9 @@ export function ServiceDetail({
           </p>
         </div>
         <div>
-          <p className="text-xs uppercase tracking-wide text-base-content/50">Clasificación</p>
-          <p className="font-semibold text-base-content">{obligationLabel}</p>
-          <p className="text-xs text-base-content/60">{recurrenceLabel}</p>
+          <p className="text-base-content/50 text-xs tracking-wide uppercase">Clasificación</p>
+          <p className="text-base-content font-semibold">{obligationLabel}</p>
+          <p className="text-base-content/60 text-xs">{recurrenceLabel}</p>
         </div>
       </section>
 
@@ -281,8 +283,8 @@ export function ServiceDetail({
       />
 
       {service.notes && (
-        <div className="rounded-2xl border border-base-300 bg-base-200 p-4 text-sm text-base-content">
-          <p className="text-xs uppercase tracking-wide text-base-content/50">Notas</p>
+        <div className="border-base-300 bg-base-200 text-base-content rounded-2xl border p-4 text-sm">
+          <p className="text-base-content/50 text-xs tracking-wide uppercase">Notas</p>
           <p>{service.notes}</p>
         </div>
       )}
@@ -381,8 +383,8 @@ export function ServiceDetail({
       </Modal>
 
       {loading && (
-        <div className="absolute inset-0 z-30 flex items-center justify-center bg-base-100/40 backdrop-blur-sm">
-          <p className="rounded-full bg-base-100 px-4 py-2 text-sm font-semibold text-primary shadow">
+        <div className="bg-base-100/40 absolute inset-0 z-30 flex items-center justify-center backdrop-blur-sm">
+          <p className="bg-base-100 text-primary rounded-full px-4 py-2 text-sm font-semibold shadow">
             Cargando servicio...
           </p>
         </div>

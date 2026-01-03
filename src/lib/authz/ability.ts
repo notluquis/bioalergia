@@ -1,5 +1,5 @@
 // src/lib/authz/ability.ts
-import { Ability, AbilityBuilder, RawRuleOf, MongoAbility } from "@casl/ability";
+import { Ability, AbilityBuilder, MongoAbility, RawRuleOf } from "@casl/ability";
 
 export const ability = new Ability();
 

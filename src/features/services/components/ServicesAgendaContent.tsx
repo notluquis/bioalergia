@@ -1,12 +1,13 @@
 import dayjs from "dayjs";
-import ServicesUnifiedAgenda from "@/features/services/components/ServicesUnifiedAgenda";
+import { Link } from "react-router-dom";
+
 import Button from "@/components/ui/Button";
 import { StatCard } from "@/components/ui/StatCard";
-import { LOADING_SPINNER_MD } from "@/lib/styles";
-import { useServicesOverview } from "@/features/services/hooks/useServicesOverview";
 import { ServicesHero, ServicesSurface } from "@/features/services/components/ServicesShell";
-import { Link } from "react-router-dom";
+import ServicesUnifiedAgenda from "@/features/services/components/ServicesUnifiedAgenda";
+import { useServicesOverview } from "@/features/services/hooks/useServicesOverview";
 import { currencyFormatter } from "@/lib/format";
+import { LOADING_SPINNER_MD } from "@/lib/styles";
 
 export default function ServicesAgendaContent() {
   const {

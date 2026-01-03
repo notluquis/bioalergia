@@ -1,5 +1,6 @@
-import { apiClient } from "@/lib/apiClient";
 import type { PublicKeyCredentialCreationOptionsJSON } from "@simplewebauthn/browser";
+
+import { apiClient } from "@/lib/apiClient";
 
 export type PasskeyLoginOptions = PublicKeyCredentialCreationOptionsJSON & {
   challenge: string;

@@ -1,6 +1,7 @@
 import { Navigate, useLocation } from "react-router-dom";
-import { useAuth } from "@/context/AuthContext";
+
 import PageLoader from "@/components/ui/PageLoader";
+import { useAuth } from "@/context/AuthContext";
 
 export default function PublicOnlyRoute({ children }: { children: React.ReactNode }) {
   const { user, initializing } = useAuth();

@@ -1,7 +1,9 @@
-import { useMemo, type ChangeEvent } from "react";
-import type { ServiceSummary, ServiceType } from "../types";
-import Input from "@/components/ui/Input";
+import { type ChangeEvent, useMemo } from "react";
+
 import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
+
+import type { ServiceSummary, ServiceType } from "../types";
 
 export type ServicesFilterState = {
   search: string;
@@ -61,18 +63,18 @@ export default function ServicesFilterPanel({ services, filters, onChange }: Ser
   };
 
   return (
-    <section className="flex flex-col gap-4 border border-base-300 p-4 text-sm text-base-content bg-base-100">
+    <section className="border-base-300 text-base-content bg-base-100 flex flex-col gap-4 border p-4 text-sm">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-sm font-semibold text-base-content">Filtros rápidos</p>
-          <p className="text-xs text-base-content/50">Filtra por estado, tipo o busca por nombre/detalle.</p>
+          <p className="text-base-content text-sm font-semibold">Filtros rápidos</p>
+          <p className="text-base-content/50 text-xs">Filtra por estado, tipo o busca por nombre/detalle.</p>
         </div>
         <Button
           type="button"
           variant="secondary"
           size="sm"
           onClick={resetFilters}
-          className="text-xs font-semibold uppercase tracking-wide text-primary hover:underline"
+          className="text-primary text-xs font-semibold tracking-wide uppercase hover:underline"
         >
           Limpiar filtros
         </Button>
@@ -89,7 +91,7 @@ export default function ServicesFilterPanel({ services, filters, onChange }: Ser
         </div>
 
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-base-content/60">Estado</p>
+          <p className="text-base-content/60 text-xs font-semibold tracking-wide uppercase">Estado</p>
           <div className="mt-2 flex flex-wrap gap-2">
             {STATUS_ORDER.map((status) => (
               <Button
@@ -111,7 +113,7 @@ export default function ServicesFilterPanel({ services, filters, onChange }: Ser
         </div>
 
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-base-content/60">Tipo de servicio</p>
+          <p className="text-base-content/60 text-xs font-semibold tracking-wide uppercase">Tipo de servicio</p>
           <div className="mt-2 flex flex-wrap gap-2">
             {typeOptions.map(([type, count]) => {
               const isActive = filters.types.size === 0 || filters.types.has(type);

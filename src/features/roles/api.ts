@@ -1,5 +1,5 @@
 import { apiClient } from "@/lib/apiClient";
-import type { Role, Permission } from "@/types/roles";
+import type { Permission, Role } from "@/types/roles";
 
 // --- Role Mappings ---
 

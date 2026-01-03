@@ -1,9 +1,10 @@
-import ServiceTemplateGallery from "@/features/services/components/ServiceTemplateGallery";
-import Alert from "@/components/ui/Alert";
-import { useServicesOverview } from "@/features/services/hooks/useServicesOverview";
-import { ServicesHero, ServicesSurface } from "@/features/services/components/ServicesShell";
-import Button from "@/components/ui/Button";
 import { Link } from "react-router-dom";
+
+import Alert from "@/components/ui/Alert";
+import Button from "@/components/ui/Button";
+import { ServicesHero, ServicesSurface } from "@/features/services/components/ServicesShell";
+import ServiceTemplateGallery from "@/features/services/components/ServiceTemplateGallery";
+import { useServicesOverview } from "@/features/services/hooks/useServicesOverview";
 
 export default function ServicesTemplatesContent() {
   const { canManage, applyTemplate } = useServicesOverview();

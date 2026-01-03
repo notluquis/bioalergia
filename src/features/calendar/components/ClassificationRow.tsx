@@ -1,14 +1,15 @@
+import dayjs from "dayjs";
 import React, { type ChangeEvent } from "react";
 import { type Control, Controller, useWatch } from "react-hook-form";
-import dayjs from "dayjs";
-import { type CalendarUnclassifiedEvent } from "@/features/calendar/types";
-import { type FormValues } from "../schemas";
-import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
-import Checkbox from "@/components/ui/Checkbox";
-import { FormattedEventDescription } from "./FormattedEventDescription";
 
-import { Card, CardHeader, CardContent } from "@/components/ui/Card";
+import Button from "@/components/ui/Button";
+import { Card, CardContent, CardHeader } from "@/components/ui/Card";
+import Checkbox from "@/components/ui/Checkbox";
+import Input from "@/components/ui/Input";
+import { type CalendarUnclassifiedEvent } from "@/features/calendar/types";
+
+import { type FormValues } from "../schemas";
+import { FormattedEventDescription } from "./FormattedEventDescription";
 interface ClassificationRowProps {
   index: number;
   event: CalendarUnclassifiedEvent;

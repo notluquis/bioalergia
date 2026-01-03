@@ -1,4 +1,5 @@
 import { useAbility } from "@casl/react";
+
 import { AbilityContext } from "../lib/authz/AbilityProvider";
 
 export function useCan() {

@@ -1,12 +1,13 @@
 import { apiClient } from "@/lib/apiClient";
+
 import type {
+  CalendarDaily,
+  CalendarData,
+  CalendarEventClassificationPayload,
   CalendarFilters,
   CalendarSummary,
-  CalendarDaily,
   CalendarSyncLog,
   CalendarUnclassifiedEvent,
-  CalendarEventClassificationPayload,
-  CalendarData,
 } from "./types";
 
 type CalendarSummaryResponse = CalendarSummary & { status: "ok" };

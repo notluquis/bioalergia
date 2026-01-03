@@ -5,12 +5,14 @@
  * the RouteObject[] array needed by createBrowserRouter.
  */
 
-import { lazy, Suspense, type ReactNode } from "react";
-import { Navigate, Outlet } from "react-router-dom";
+import { lazy, type ReactNode, Suspense } from "react";
 import type { RouteObject } from "react-router-dom";
-import { ROUTE_DATA, type RouteData, type RoutePermission } from "../../shared/route-data";
+import { Navigate, Outlet } from "react-router-dom";
+
 import RequirePermission from "@/components/guards/RequirePermission";
 import PageLoader from "@/components/ui/PageLoader";
+
+import { ROUTE_DATA, type RouteData, type RoutePermission } from "../../shared/route-data";
 
 /**
  * Pre-register all page and layout modules using Vite's import.meta.glob
@@ -129,4 +131,4 @@ export function generateRoutes(): RouteObject[] {
 /**
  * Re-export types for convenience
  */
-export type { RouteData, RoutePermission, NavConfig, NavSection } from "../../shared/route-data";
+export type { NavConfig, NavSection, RouteData, RoutePermission } from "../../shared/route-data";

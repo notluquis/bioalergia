@@ -1,18 +1,19 @@
-import { useState, useEffect } from "react";
 import { startRegistration } from "@simplewebauthn/browser";
-import { Smartphone, Fingerprint, Check, Loader2 } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
-import { useAuth } from "@/context/AuthContext";
-import { useToast } from "@/context/ToastContext";
+import { Check, Fingerprint, Loader2, Smartphone } from "lucide-react";
+import { useEffect, useState } from "react";
+
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
+import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/context/ToastContext";
 import {
-  setupMfa,
-  enableMfa,
   disableMfa,
+  enableMfa,
   fetchPasskeyRegistrationOptions,
-  verifyPasskeyRegistration,
   removePasskey,
+  setupMfa,
+  verifyPasskeyRegistration,
 } from "@/features/auth/api";
 
 export default function AccountSettingsPage() {

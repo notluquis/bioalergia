@@ -1,24 +1,26 @@
-import { Pencil, Trash2, Plus, RotateCw, Check, ChevronDown, ChevronRight, Eye } from "lucide-react";
-import React, { useState, useCallback } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchRoles, fetchPermissions, syncPermissions, updateRolePermissions } from "@/features/roles/api";
-import { cn } from "@/lib/utils";
-import { useToast } from "@/context/ToastContext";
-import { useAuth } from "@/context/AuthContext";
-import { getNavSections, type NavItem, type NavSectionData } from "@/lib/nav-generator";
-import { BulkToggleCell } from "./components/BulkToggleCell";
-import { RoleFormModal } from "./components/RoleFormModal";
-import { DeleteRoleModal } from "./components/DeleteRoleModal";
-import { Role, Permission } from "@/types/roles";
-import { SmoothCollapse } from "@/components/ui/SmoothCollapse";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Check, ChevronDown, ChevronRight, Eye, Pencil, Plus, RotateCw, Trash2 } from "lucide-react";
+import React, { useCallback, useState } from "react";
+
 import { Card, CardContent, CardHeader } from "@/components/ui/Card";
 import {
   DropdownMenu,
-  DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from "@/components/ui/DropdownMenu";
+import { SmoothCollapse } from "@/components/ui/SmoothCollapse";
+import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/context/ToastContext";
+import { fetchPermissions, fetchRoles, syncPermissions, updateRolePermissions } from "@/features/roles/api";
+import { getNavSections, type NavItem, type NavSectionData } from "@/lib/nav-generator";
+import { cn } from "@/lib/utils";
+import { Permission, Role } from "@/types/roles";
+
+import { BulkToggleCell } from "./components/BulkToggleCell";
+import { DeleteRoleModal } from "./components/DeleteRoleModal";
+import { RoleFormModal } from "./components/RoleFormModal";
 
 // --- Page Component ---
 

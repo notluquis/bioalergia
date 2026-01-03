@@ -1,43 +1,49 @@
+import "dayjs/locale/es";
+
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
 import {
-  fetchUsers,
-  toggleUserMfa,
-  updateUserRole,
-  deleteUserPasskey,
-  resetUserPassword,
-  updateUserStatus,
-  deleteUser,
-} from "@/features/users/api";
-import { fetchRoles } from "@/features/roles/api";
-import type { User } from "@/features/users/types";
-import { useState } from "react";
-import { Link } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  Search,
-  Shield,
-  MoreVertical,
+  Fingerprint,
   Key,
   Lock,
-  Fingerprint,
-  Trash2,
-  UserPlus,
+  MoreVertical,
+  Search,
+  Shield,
   ShieldCheck,
+  Trash2,
   UserCog,
+  UserPlus,
 } from "lucide-react";
-import dayjs from "dayjs";
-import "dayjs/locale/es";
-import relativeTime from "dayjs/plugin/relativeTime";
+import { useState } from "react";
+import { Link } from "react-router-dom";
 
-import { useAuth } from "@/context/AuthContext";
-import { useToast } from "@/context/ToastContext";
+import Button from "@/components/ui/Button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/DropdownMenu";
 import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
-import Button from "@/components/ui/Button";
+import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/context/ToastContext";
+import { fetchRoles } from "@/features/roles/api";
+import {
+  deleteUser,
+  deleteUserPasskey,
+  fetchUsers,
+  resetUserPassword,
+  toggleUserMfa,
+  updateUserRole,
+  updateUserStatus,
+} from "@/features/users/api";
+import type { User } from "@/features/users/types";
+import { getPersonFullName, getPersonInitials } from "@/lib/person";
+import { BADGE_SM, PAGE_CONTAINER, TITLE_LG } from "@/lib/styles";
 import { cn } from "@/lib/utils";
-
-import { getPersonInitials, getPersonFullName } from "@/lib/person";
-
-import { PAGE_CONTAINER, TITLE_LG, BADGE_SM } from "@/lib/styles";
 
 dayjs.extend(relativeTime);
 dayjs.locale("es");
@@ -378,63 +384,61 @@ export default function UserManagementPage() {
                       </td>
                       <td className="text-base-content/70 text-sm">{dayjs(user.createdAt).format("DD MMM YYYY")}</td>
                       <td>
-                        <div className="dropdown dropdown-end">
-                          <div tabIndex={0} role="button" className="btn btn-ghost btn-xs">
-                            <MoreVertical size={16} />
-                          </div>
-                          <ul
-                            tabIndex={0}
-                            className="dropdown-content menu bg-base-100 rounded-box border-base-200 z-50 w-56 border p-2 shadow-lg"
-                          >
-                            <li>
-                              <a onClick={() => handleEditRoleClick(user)}>
-                                <UserCog size={14} />
-                                Editar rol
-                              </a>
-                            </li>
-                            <li>
-                              <a onClick={() => handleToggleMfa(user.id, user.mfaEnabled)}>
-                                <ShieldCheck size={14} />
-                                {user.mfaEnabled ? "Desactivar" : "Activar"} MFA
-                              </a>
-                            </li>
-                            <li>
-                              <a onClick={() => handleResetPassword(user.id)}>
-                                <Key size={14} />
-                                Restablecer contraseña
-                              </a>
-                            </li>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button type="button" className="btn btn-ghost btn-xs">
+                              <MoreVertical size={16} />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-56">
+                            <DropdownMenuItem onClick={() => handleEditRoleClick(user)}>
+                              <UserCog className="mr-2 h-4 w-4" />
+                              Editar rol
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleToggleMfa(user.id, user.mfaEnabled)}>
+                              <ShieldCheck className="mr-2 h-4 w-4" />
+                              {user.mfaEnabled ? "Desactivar" : "Activar"} MFA
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleResetPassword(user.id)}>
+                              <Key className="mr-2 h-4 w-4" />
+                              Restablecer contraseña
+                            </DropdownMenuItem>
                             {user.hasPasskey && (
-                              <li>
-                                <a onClick={() => handleDeletePasskey(user.id)} className="text-warning">
-                                  <Trash2 size={14} />
-                                  Eliminar passkey
-                                </a>
-                              </li>
+                              <DropdownMenuItem
+                                onClick={() => handleDeletePasskey(user.id)}
+                                className="text-warning focus:text-warning"
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Eliminar passkey
+                              </DropdownMenuItem>
                             )}
                             {user.status !== "SUSPENDED" ? (
-                              <li>
-                                <a onClick={() => handleToggleStatus(user.id, user.status)} className="text-warning">
-                                  <Lock size={14} />
-                                  Suspender acceso
-                                </a>
-                              </li>
+                              <DropdownMenuItem
+                                onClick={() => handleToggleStatus(user.id, user.status)}
+                                className="text-warning focus:text-warning"
+                              >
+                                <Lock className="mr-2 h-4 w-4" />
+                                Suspender acceso
+                              </DropdownMenuItem>
                             ) : (
-                              <li>
-                                <a onClick={() => handleToggleStatus(user.id, user.status)} className="text-success">
-                                  <Shield size={14} />
-                                  Reactivar acceso
-                                </a>
-                              </li>
+                              <DropdownMenuItem
+                                onClick={() => handleToggleStatus(user.id, user.status)}
+                                className="text-success focus:text-success"
+                              >
+                                <Shield className="mr-2 h-4 w-4" />
+                                Reactivar acceso
+                              </DropdownMenuItem>
                             )}
-                            <li>
-                              <a onClick={() => handleDeleteUser(user.id)} className="text-error">
-                                <Trash2 size={14} />
-                                Eliminar usuario
-                              </a>
-                            </li>
-                          </ul>
-                        </div>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onClick={() => handleDeleteUser(user.id)}
+                              className="text-error focus:text-error"
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Eliminar usuario
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </td>
                     </tr>
                   );
@@ -457,10 +461,11 @@ export default function UserManagementPage() {
           </p>
 
           <div className="form-control">
-            <label className="label">
+            <label className="label" htmlFor="role-select">
               <span className="label-text">Rol asignado</span>
             </label>
             <select
+              id="role-select"
               className="select select-bordered w-full"
               value={selectedRole}
               onChange={(e) => setSelectedRole(e.target.value)}

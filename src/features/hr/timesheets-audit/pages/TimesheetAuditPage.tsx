@@ -3,22 +3,24 @@
  * A more ergonomic, user-friendly interface for auditing employee schedules
  */
 
-import { useEffect, useMemo, useState, useCallback, lazy, Suspense } from "react";
+import "dayjs/locale/es";
+
 import { useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
-import "dayjs/locale/es";
-import { Users, ChevronDown, ChevronUp, Search, X, Check } from "lucide-react";
-import { INPUT_SEARCH_SM, LOADING_SPINNER_SM } from "@/lib/styles";
-import { startOfMonth, endOfMonth, monthsAgoStart, monthsAgoEnd } from "@/lib/dates";
+import { Check, ChevronDown, ChevronUp, Search, Users, X } from "lucide-react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
 
-import { useAuth } from "@/context/AuthContext";
 import Alert from "@/components/ui/Alert";
-import { fetchEmployees } from "@/features/hr/employees/api";
-import { detectAllOverlaps } from "@/features/hr/timesheets-audit/utils/overlapDetection";
-import { useMonths } from "@/features/hr/timesheets/hooks/useMonths";
-import { useTimesheetAudit, type AuditDateRange } from "@/features/hr/timesheets-audit/hooks/useTimesheetAudit";
+import Backdrop from "@/components/ui/Backdrop";
 import { SmoothCollapse } from "@/components/ui/SmoothCollapse";
+import { useAuth } from "@/context/AuthContext";
+import { fetchEmployees } from "@/features/hr/employees/api";
+import { useMonths } from "@/features/hr/timesheets/hooks/useMonths";
+import { type AuditDateRange, useTimesheetAudit } from "@/features/hr/timesheets-audit/hooks/useTimesheetAudit";
+import { detectAllOverlaps } from "@/features/hr/timesheets-audit/utils/overlapDetection";
+import { endOfMonth, monthsAgoEnd, monthsAgoStart, startOfMonth } from "@/lib/dates";
+import { INPUT_SEARCH_SM, LOADING_SPINNER_SM } from "@/lib/styles";
 import { cn } from "@/lib/utils";
 
 const TimesheetAuditCalendar = lazy(() => import("@/features/hr/timesheets-audit/components/TimesheetAuditCalendar"));
@@ -284,8 +286,9 @@ export default function TimesheetAuditPage() {
         {/* Custom Week Picker (collapsible) */}
         {quickRange === "custom" && (
           <div className="bg-base-200/50 mt-4 rounded-xl">
-            <div
-              className="flex w-full cursor-pointer items-center justify-between px-4 py-3 font-medium select-none"
+            <button
+              type="button"
+              className="flex w-full cursor-pointer items-center justify-between px-4 py-3 text-left font-medium select-none"
               onClick={() => setCustomWeeksOpen(!customWeeksOpen)}
             >
               <span>Personalizar semanas específicas</span>
@@ -293,7 +296,7 @@ export default function TimesheetAuditPage() {
                 size={16}
                 className={cn("transform transition-transform duration-300", customWeeksOpen && "rotate-180")}
               />
-            </div>
+            </button>
             <SmoothCollapse isOpen={customWeeksOpen}>
               <div className="space-y-4 px-4 pt-0 pb-4">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
@@ -406,7 +409,7 @@ export default function TimesheetAuditPage() {
             {showEmployeeDropdown && (
               <>
                 {/* Backdrop to close dropdown */}
-                <div className="fixed inset-0 z-40" onClick={() => setShowEmployeeDropdown(false)} />
+                <Backdrop isVisible={true} onClose={() => setShowEmployeeDropdown(false)} />
                 {/* Dropdown Content */}
                 <div className="border-base-300 bg-base-100 absolute top-full right-0 left-0 z-50 mt-2 rounded-xl border shadow-xl">
                   {/* Search */}
@@ -548,8 +551,9 @@ export default function TimesheetAuditPage() {
       {/* Legend (collapsible) */}
       {canShowCalendar && entries.length > 0 && (
         <div className="border-base-300 bg-base-100 rounded-2xl border shadow-sm">
-          <div
-            className="flex w-full cursor-pointer items-center justify-between px-4 py-3 font-medium select-none"
+          <button
+            type="button"
+            className="flex w-full cursor-pointer items-center justify-between px-4 py-3 text-left font-medium select-none"
             onClick={() => setLegendOpen(!legendOpen)}
           >
             <span>📋 Guía de interpretación</span>
@@ -557,7 +561,7 @@ export default function TimesheetAuditPage() {
               size={16}
               className={cn("transform transition-transform duration-300", legendOpen && "rotate-180")}
             />
-          </div>
+          </button>
           <SmoothCollapse isOpen={legendOpen}>
             <div className="px-4 pt-0 pb-4">
               <div className="grid gap-6 pt-4 sm:grid-cols-2">

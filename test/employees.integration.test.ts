@@ -1,5 +1,6 @@
 import http from "node:http";
-import { describe, it, expect } from "vitest";
+
+import { describe, expect, it } from "vitest";
 
 // Minimal integration test harness using http requests to the running dev server
 // Note: Requires server to be running locally on :4000 with valid session cookie.

@@ -1,16 +1,16 @@
-import express from "express";
 import bcrypt from "bcryptjs";
-import { asyncHandler, authenticate } from "../lib/http.js";
-import { authorize } from "../middleware/authorize.js";
-import { findUserById, assignUserRole } from "../services/users.js";
-import { prisma, Prisma } from "../prisma.js";
-import { logEvent } from "../lib/logger.js";
-import { logAudit } from "../services/audit.js";
-import type { AuthenticatedRequest } from "../types.js";
-import { normalizeRut } from "../lib/rut.js";
+import express from "express";
 
+import { asyncHandler, authenticate } from "../lib/http.js";
+import { logEvent } from "../lib/logger.js";
+import { normalizeRut } from "../lib/rut.js";
+import { authorize } from "../middleware/authorize.js";
+import { Prisma, prisma } from "../prisma.js";
 // Schema for inviting a user
 import { inviteUserSchema, setupUserSchema } from "../schemas/index.js";
+import { logAudit } from "../services/audit.js";
+import { assignUserRole, findUserById } from "../services/users.js";
+import type { AuthenticatedRequest } from "../types.js";
 
 export function registerUserRoutes(app: express.Express) {
   // Toggle MFA for a specific user (Admin only)

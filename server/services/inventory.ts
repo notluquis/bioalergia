@@ -1,5 +1,6 @@
-import { prisma } from "../prisma.js";
 import { Prisma } from "@prisma/client";
+
+import { prisma } from "../prisma.js";
 
 export async function listInventoryCategories() {
   return await prisma.inventoryCategory.findMany({

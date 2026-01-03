@@ -1,24 +1,26 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import "dayjs/locale/es";
+
+import { useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
-import "dayjs/locale/es";
-import { Filter, Search, X, Check, Calendar, BarChart2, List, Clock, TrendingUp, BarChart3 } from "lucide-react";
-import { LOADING_SPINNER_SM } from "@/lib/styles";
+import { BarChart2, BarChart3, Calendar, Check, Clock, Filter, List, Search, TrendingUp, X } from "lucide-react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 
+import Alert from "@/components/ui/Alert";
+import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
+import StatCard from "@/components/ui/StatCard";
 import { useAuth } from "@/context/AuthContext";
 import { fetchEmployees } from "@/features/hr/employees/api";
 import type { Employee } from "@/features/hr/employees/types";
 import { useMonths } from "@/features/hr/timesheets/hooks/useMonths";
-import { fetchGlobalTimesheetRange } from "../api";
-import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
-import { prepareComparisonData, calculateStats, minutesToTime } from "../utils";
-import type { EmployeeWorkData, ReportGranularity } from "../types";
+import { LOADING_SPINNER_SM } from "@/lib/styles";
 import { PAGE_CONTAINER, TITLE_LG } from "@/lib/styles";
 import { cn } from "@/lib/utils";
-import StatCard from "@/components/ui/StatCard";
-import { useQuery } from "@tanstack/react-query";
-import Alert from "@/components/ui/Alert";
+
+import { fetchGlobalTimesheetRange } from "../api";
+import type { EmployeeWorkData, ReportGranularity } from "../types";
+import { calculateStats, minutesToTime, prepareComparisonData } from "../utils";
 
 // Lazy-load chart components (Recharts ~400KB)
 const TemporalChart = lazy(() => import("../components/ReportCharts").then((m) => ({ default: m.TemporalChart })));
@@ -75,15 +77,18 @@ function processRawEntries(
 
     // Daily
     const dateKey = entry.work_date;
-    data.dailyBreakdown[dateKey] = (data.dailyBreakdown[dateKey] || 0) + entry.worked_minutes;
+    const currentDaily = data.dailyBreakdown[dateKey] ?? 0;
+    Object.assign(data.dailyBreakdown, { [dateKey]: currentDaily + entry.worked_minutes });
 
     // Weekly
     const weekKey = dayjs(entry.work_date).startOf("isoWeek").format("YYYY-MM-DD");
-    data.weeklyBreakdown[weekKey] = (data.weeklyBreakdown[weekKey] || 0) + entry.worked_minutes;
+    const currentWeekly = data.weeklyBreakdown[weekKey] ?? 0;
+    Object.assign(data.weeklyBreakdown, { [weekKey]: currentWeekly + entry.worked_minutes });
 
     // Monthly
     const monthKey = dayjs(entry.work_date).format("YYYY-MM");
-    data.monthlyBreakdown[monthKey] = (data.monthlyBreakdown[monthKey] || 0) + entry.worked_minutes;
+    const currentMonthly = data.monthlyBreakdown[monthKey] ?? 0;
+    Object.assign(data.monthlyBreakdown, { [monthKey]: currentMonthly + entry.worked_minutes });
   });
 
   // Stats
@@ -259,7 +264,8 @@ export default function ReportsPage() {
 
             {/* View Mode Tabs */}
             <div role="tablist" className="tabs tabs-boxed bg-base-200/50 p-1">
-              <a
+              <button
+                type="button"
                 role="tab"
                 className={cn(
                   "tab transition-all duration-200",
@@ -268,8 +274,9 @@ export default function ReportsPage() {
                 onClick={() => setViewMode("month")}
               >
                 Mensual
-              </a>
-              <a
+              </button>
+              <button
+                type="button"
                 role="tab"
                 className={cn(
                   "tab transition-all duration-200",
@@ -278,8 +285,9 @@ export default function ReportsPage() {
                 onClick={() => setViewMode("range")}
               >
                 Rango
-              </a>
-              <a
+              </button>
+              <button
+                type="button"
                 role="tab"
                 className={cn(
                   "tab transition-all duration-200",
@@ -288,15 +296,18 @@ export default function ReportsPage() {
                 onClick={() => setViewMode("all")}
               >
                 Todo
-              </a>
+              </button>
             </div>
 
             {/* Date Controls */}
             <div className="space-y-4">
               {viewMode === "month" && (
                 <div className="form-control">
-                  <label className="label text-sm font-medium">Seleccionar Mes</label>
+                  <label className="label text-sm font-medium" htmlFor="month-select">
+                    Seleccionar Mes
+                  </label>
                   <select
+                    id="month-select"
                     value={selectedMonth}
                     onChange={(e) => setSelectedMonth(e.target.value)}
                     className="select select-bordered w-full"
@@ -313,8 +324,11 @@ export default function ReportsPage() {
               {viewMode === "range" && (
                 <div className="grid grid-cols-2 gap-3">
                   <div className="form-control">
-                    <label className="label text-sm font-medium">Desde</label>
+                    <label className="label text-sm font-medium" htmlFor="start-date">
+                      Desde
+                    </label>
                     <Input
+                      id="start-date"
                       type="date"
                       value={startDate}
                       onChange={(e) => setStartDate(e.target.value)}
@@ -322,8 +336,11 @@ export default function ReportsPage() {
                     />
                   </div>
                   <div className="form-control">
-                    <label className="label text-sm font-medium">Hasta</label>
+                    <label className="label text-sm font-medium" htmlFor="end-date">
+                      Hasta
+                    </label>
                     <Input
+                      id="end-date"
                       type="date"
                       value={endDate}
                       onChange={(e) => setEndDate(e.target.value)}
@@ -341,8 +358,11 @@ export default function ReportsPage() {
               )}
 
               <div className="form-control">
-                <label className="label text-sm font-medium">Agrupación temporal</label>
+                <label className="label text-sm font-medium" htmlFor="granularity-select">
+                  Agrupación temporal
+                </label>
                 <select
+                  id="granularity-select"
                   value={granularity}
                   onChange={(e) => setGranularity(e.target.value as ReportGranularity)}
                   className="select select-bordered w-full"
@@ -404,7 +424,16 @@ export default function ReportsPage() {
 
                 {showEmployeeDropdown && (
                   <>
-                    <div className="fixed inset-0 z-40" onClick={() => setShowEmployeeDropdown(false)} />
+                    <div
+                      role="button"
+                      tabIndex={-1}
+                      aria-label="Cerrar búsqueda"
+                      className="fixed inset-0 z-40"
+                      onClick={() => setShowEmployeeDropdown(false)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Escape") setShowEmployeeDropdown(false);
+                      }}
+                    />
                     <div className="bg-base-100 border-base-200 absolute top-full right-0 left-0 z-50 mt-2 flex max-h-80 flex-col overflow-hidden rounded-xl border shadow-xl">
                       <div className="border-base-200 bg-base-50 border-b p-2">
                         <label className="input input-sm input-bordered flex items-center gap-2 bg-white">
@@ -415,7 +444,6 @@ export default function ReportsPage() {
                             placeholder="Buscar..."
                             value={employeeSearch}
                             onChange={(e) => setEmployeeSearch(e.target.value)}
-                            autoFocus
                           />
                         </label>
                       </div>
@@ -424,6 +452,7 @@ export default function ReportsPage() {
                           const isSelected = selectedEmployeeIds.includes(emp.id);
                           return (
                             <button
+                              type="button"
                               key={emp.id}
                               onClick={() => handleEmployeeToggle(emp.id)}
                               className={cn(

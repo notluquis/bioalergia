@@ -1,16 +1,17 @@
-import { promises as fs } from "fs";
-import path from "path";
 import { performance } from "node:perf_hooks";
-import { calendar, calendar_v3 } from "@googleapis/calendar";
-import { JWT } from "google-auth-library";
-import dayjs from "dayjs";
 
-import { googleCalendarConfig, compileExcludePatterns } from "../config.js";
-import { logEvent, logWarn } from "./logger.js";
-import { upsertGoogleCalendarEvents, removeGoogleCalendarEvents } from "./google-calendar-store.js";
-import { loadSettings } from "../services/settings.js";
+import { calendar, calendar_v3 } from "@googleapis/calendar";
+import dayjs from "dayjs";
+import { promises as fs } from "fs";
+import { JWT } from "google-auth-library";
+import path from "path";
+
+import { compileExcludePatterns, googleCalendarConfig } from "../config.js";
 import { parseCalendarMetadata } from "../modules/calendar/parsers.js";
 import { prisma } from "../prisma.js";
+import { loadSettings } from "../services/settings.js";
+import { removeGoogleCalendarEvents, upsertGoogleCalendarEvents } from "./google-calendar-store.js";
+import { logEvent, logWarn } from "./logger.js";
 
 const CALENDAR_SCOPES = ["https://www.googleapis.com/auth/calendar.readonly"];
 const STORAGE_ROOT = path.resolve(process.cwd(), "storage", "google-calendar");

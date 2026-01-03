@@ -1,14 +1,14 @@
-import { useFieldArray, Controller } from "react-hook-form";
-import { cn } from "@/lib/utils";
-import { Loader2, Plus, Trash, Info, CheckSquare, Square, RotateCcw } from "lucide-react";
+import { CheckSquare, Info, Loader2, Plus, RotateCcw, Square, Trash } from "lucide-react";
+import { Controller, useFieldArray } from "react-hook-form";
 
-import Modal from "@/components/ui/Modal";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
+import Modal from "@/components/ui/Modal";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/Tooltip";
-
-import { MP_REPORT_COLUMNS, MP_WEEKDAYS, MP_REPORT_LANGUAGES, MP_DEFAULT_COLUMNS } from "../../../shared/mercadopago";
 import { useMercadoPagoConfig } from "@/hooks/useMercadoPago";
+import { cn } from "@/lib/utils";
+
+import { MP_DEFAULT_COLUMNS, MP_REPORT_COLUMNS, MP_REPORT_LANGUAGES, MP_WEEKDAYS } from "../../../shared/mercadopago";
 
 // Timezone groupings
 const TIMEZONES = {
@@ -81,10 +81,11 @@ export default function ConfigModal({ open, onClose }: Props) {
               <p className="text-base-content/60 mt-1 text-xs">Nombre base para los archivos generados</p>
             </div>
             <div>
-              <label className="label">
+              <label className="label" htmlFor="display_timezone">
                 <span className="label-text">Zona Horaria</span>
               </label>
               <select
+                id="display_timezone"
                 {...register("display_timezone")}
                 className={cn(
                   "select select-bordered focus:ring-primary/20 focus:border-primary w-full focus:ring-2 focus:outline-none",
@@ -112,10 +113,11 @@ export default function ConfigModal({ open, onClose }: Props) {
 
           {/* Report Language - Selector */}
           <div>
-            <label className="label">
+            <label className="label" htmlFor="report_translation">
               <span className="label-text">Idioma del Reporte</span>
             </label>
             <select
+              id="report_translation"
               {...register("report_translation")}
               className={cn(
                 "select select-bordered focus:ring-primary/20 focus:border-primary w-full focus:ring-2 focus:outline-none",
@@ -140,10 +142,11 @@ export default function ConfigModal({ open, onClose }: Props) {
             <div className="grid grid-cols-3 gap-3">
               {/* Type - Selector */}
               <div>
-                <label className="label py-1">
+                <label className="label py-1" htmlFor="frequency_type">
                   <span className="label-text text-xs">Tipo</span>
                 </label>
                 <select
+                  id="frequency_type"
                   {...register("frequency.type")}
                   className={cn(
                     "select select-bordered select-sm focus:ring-primary/20 focus:border-primary w-full focus:ring-2 focus:outline-none",
@@ -172,11 +175,12 @@ export default function ConfigModal({ open, onClose }: Props) {
 
               {/* Value - Dynamic based on type */}
               <div>
-                <label className="label py-1">
+                <label className="label py-1" htmlFor="frequency_value">
                   <span className="label-text text-xs">Valor</span>
                 </label>
                 {frequencyType === "weekly" ? (
                   <select
+                    id="frequency_value"
                     className={cn(
                       "select select-bordered select-sm focus:ring-primary/20 focus:border-primary w-full focus:ring-2 focus:outline-none",
                       errors.frequency?.value && "select-error focus:ring-error/20 focus:border-error"
@@ -191,6 +195,7 @@ export default function ConfigModal({ open, onClose }: Props) {
                   </select>
                 ) : frequencyType === "monthly" ? (
                   <Input
+                    id="frequency_value"
                     type="number"
                     containerClassName="mt-0"
                     {...register("frequency.value", { valueAsNumber: true })}
@@ -202,6 +207,7 @@ export default function ConfigModal({ open, onClose }: Props) {
                   />
                 ) : (
                   <input
+                    id="frequency_value"
                     type="number"
                     className="input input-bordered input-sm w-full"
                     value={0}
@@ -213,10 +219,11 @@ export default function ConfigModal({ open, onClose }: Props) {
 
               {/* Hour - Selector */}
               <div>
-                <label className="label py-1">
+                <label className="label py-1" htmlFor="frequency_hour">
                   <span className="label-text text-xs">Hora (UTC)</span>
                 </label>
                 <select
+                  id="frequency_hour"
                   {...register("frequency.hour", { valueAsNumber: true })}
                   className={cn(
                     "select select-bordered select-sm focus:ring-primary/20 focus:border-primary w-full focus:ring-2 focus:outline-none",

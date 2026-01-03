@@ -1,10 +1,12 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { MpConfigSchema, MpConfigFormData, MP_DEFAULT_COLUMNS, MP_REPORT_COLUMNS } from "../../shared/mercadopago";
-import { MPService } from "@/services/mercadopago";
-import { useToast } from "@/context/ToastContext";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
+import { useForm } from "react-hook-form";
+
+import { useToast } from "@/context/ToastContext";
+import { MPService } from "@/services/mercadopago";
+
+import { MP_DEFAULT_COLUMNS, MP_REPORT_COLUMNS, MpConfigFormData, MpConfigSchema } from "../../shared/mercadopago";
 
 export function useMercadoPagoConfig(isOpen: boolean, onClose: () => void) {
   const queryClient = useQueryClient();
@@ -123,8 +125,8 @@ export function useMercadoPagoConfig(isOpen: boolean, onClose: () => void) {
     // Sanitize Frequency: Daily should not have a 'value'.
     const frequency = { ...data.frequency };
     if (frequency.type === "daily") {
-      // @ts-expect-error - value is optional/unneeded for daily but typed as required in form
-      frequency.value = undefined;
+      // Daily frequency has value 0 per schema
+      frequency.value = 0;
     } else {
       // Ensure value is integer
       frequency.value = Number(frequency.value);

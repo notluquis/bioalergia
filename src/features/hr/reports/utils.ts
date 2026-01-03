@@ -1,5 +1,6 @@
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
+
 import type { TimesheetEntry } from "../timesheets/types";
 import type { EmployeeWorkData, ReportGranularity } from "./types";
 
@@ -18,39 +19,42 @@ export function minutesToTime(minutes: number): string {
  * Agrupa entradas por día
  */
 export function groupByDay(entries: TimesheetEntry[]): Record<string, number> {
-  const grouped: Record<string, number> = {};
+  const map = new Map<string, number>();
   entries.forEach((entry) => {
     const date = entry.work_date;
-    grouped[date] = (grouped[date] || 0) + entry.worked_minutes;
+    const current = map.get(date) ?? 0;
+    map.set(date, current + entry.worked_minutes);
   });
-  return grouped;
+  return Object.fromEntries(map);
 }
 
 /**
  * Agrupa entradas por semana (ISO Week)
  */
 export function groupByWeek(entries: TimesheetEntry[]): Record<string, number> {
-  const grouped: Record<string, number> = {};
+  const map = new Map<string, number>();
   entries.forEach((entry) => {
     const date = dayjs(entry.work_date);
     const week = date.isoWeek();
     const year = date.isoWeekYear();
     const key = `${year}-W${String(week).padStart(2, "0")}`;
-    grouped[key] = (grouped[key] || 0) + entry.worked_minutes;
+    const current = map.get(key) ?? 0;
+    map.set(key, current + entry.worked_minutes);
   });
-  return grouped;
+  return Object.fromEntries(map);
 }
 
 /**
  * Agrupa entradas por mes
  */
 export function groupByMonth(entries: TimesheetEntry[]): Record<string, number> {
-  const grouped: Record<string, number> = {};
+  const map = new Map<string, number>();
   entries.forEach((entry) => {
     const month = dayjs(entry.work_date).format("YYYY-MM");
-    grouped[month] = (grouped[month] || 0) + entry.worked_minutes;
+    const current = map.get(month) ?? 0;
+    map.set(month, current + entry.worked_minutes);
   });
-  return grouped;
+  return Object.fromEntries(map);
 }
 
 /**
@@ -97,6 +101,7 @@ export function prepareChartData(data: EmployeeWorkData, granularity: ReportGran
 
   return Object.entries(breakdown).map(([period, minutes]) => ({
     period,
+
     [data.fullName]: parseFloat((minutes / 60).toFixed(2)), // Convertir a horas
     minutes,
   }));
@@ -123,6 +128,7 @@ export function prepareComparisonData(employees: EmployeeWorkData[], granularity
     const dataPoint: Record<string, string | number> = { period };
     employees.forEach((emp) => {
       const minutes = emp[breakdown][period] || 0;
+
       dataPoint[emp.fullName] = parseFloat((minutes / 60).toFixed(2));
     });
     return dataPoint;

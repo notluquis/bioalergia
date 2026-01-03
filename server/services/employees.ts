@@ -1,5 +1,6 @@
+import { EmployeeSalaryType, EmployeeStatus, Prisma } from "@prisma/client";
+
 import { prisma } from "../prisma.js";
-import { Prisma, EmployeeSalaryType, EmployeeStatus } from "@prisma/client";
 
 // Type for the frontend payload (snake_case)
 interface EmployeePayload {

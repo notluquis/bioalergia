@@ -1,8 +1,10 @@
 import type { ChangeEvent } from "react";
+
+import Input from "@/components/ui/Input";
 import { useAuth } from "@/context/AuthContext";
+
 import type { SupplyRequest } from "../types";
 import { translateStatus } from "../utils";
-import Input from "@/components/ui/Input";
 
 interface SupplyRequestsTableProps {
   requests: SupplyRequest[];

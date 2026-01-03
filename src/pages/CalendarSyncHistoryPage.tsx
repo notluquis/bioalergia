@@ -1,12 +1,12 @@
-import { useMemo, useState, useEffect } from "react";
 import dayjs from "dayjs";
 import { AlertTriangle, ChevronDown, ChevronRight } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 
 import Button from "@/components/ui/Button";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/Card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Table } from "@/components/ui/Table";
-import { useCalendarEvents } from "@/features/calendar/hooks/useCalendarEvents";
 import { SyncProgressPanel } from "@/features/calendar/components/SyncProgressPanel";
+import { useCalendarEvents } from "@/features/calendar/hooks/useCalendarEvents";
 import { numberFormatter } from "@/lib/format";
 import { cn } from "@/lib/utils";
 

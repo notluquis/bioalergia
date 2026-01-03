@@ -1,6 +1,8 @@
 import type { ChangeEvent } from "react";
+
 import Input from "@/components/ui/Input";
-import type { ServiceType, ServiceOwnership, ServiceObligationType, ServiceRecurrenceType } from "../../types";
+
+import type { ServiceObligationType, ServiceOwnership, ServiceRecurrenceType, ServiceType } from "../../types";
 import type { ServiceFormState } from "../ServiceForm";
 
 interface ServiceClassificationSectionProps {

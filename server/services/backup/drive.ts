@@ -6,8 +6,9 @@
  */
 
 import { createReadStream, createWriteStream } from "fs";
-import { getDriveClient, getBackupFolderId } from "../../lib/google-core.js";
-import { parseGoogleError, GoogleApiError } from "../../lib/google-errors.js";
+
+import { getBackupFolderId, getDriveClient } from "../../lib/google-core.js";
+import { GoogleApiError, parseGoogleError } from "../../lib/google-errors.js";
 
 export interface DriveFile {
   id: string;

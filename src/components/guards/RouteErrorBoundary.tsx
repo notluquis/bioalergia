@@ -1,8 +1,9 @@
-import { useRouteError, isRouteErrorResponse, useNavigate } from "react-router-dom";
+import { AlertTriangle, Home, LogIn, RefreshCw } from "lucide-react";
 import { lazy, Suspense } from "react";
-import { AlertTriangle, RefreshCw, LogIn, Home } from "lucide-react";
-import NotFoundPage from "@/pages/NotFoundPage";
+import { isRouteErrorResponse, useNavigate, useRouteError } from "react-router-dom";
+
 import Button from "@/components/ui/Button";
+import NotFoundPage from "@/pages/NotFoundPage";
 
 const ChunkLoadErrorPage = lazy(() => import("@/pages/ChunkLoadErrorPage"));
 

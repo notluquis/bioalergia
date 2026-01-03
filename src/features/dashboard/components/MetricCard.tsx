@@ -1,5 +1,6 @@
+import { type LucideIcon, TrendingDown, TrendingUp, Wallet } from "lucide-react";
+
 import { fmtCLP } from "@/lib/format";
-import { TrendingUp, TrendingDown, Wallet, type LucideIcon } from "lucide-react";
 
 type Accent = "emerald" | "rose" | "primary";
 

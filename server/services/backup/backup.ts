@@ -1,8 +1,9 @@
-import { createWriteStream, createReadStream, unlinkSync, statSync, writeFileSync } from "fs";
 import { createHash } from "crypto";
-import { createGzip, createGunzip } from "zlib";
+import { createReadStream, createWriteStream, statSync, unlinkSync, writeFileSync } from "fs";
 import { pipeline } from "stream/promises";
-import { prisma, Prisma } from "../../prisma.js";
+import { createGunzip, createGzip } from "zlib";
+
+import { Prisma, prisma } from "../../prisma.js";
 
 export interface BackupResult {
   filename: string;
@@ -282,8 +283,12 @@ export async function restoreFromBackup(
             message: `Restoring ${tableName} (${tableData.length} records)...`,
           });
 
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const model = (tx as any)[tableName];
+          // Define a generic delegate interface for the methods we need
+          interface PrismaDelegate {
+            createMany(args: { data: unknown[]; skipDuplicates?: boolean }): Promise<void>;
+            deleteMany(): Promise<void>;
+          }
+          const model = (tx as unknown as Record<string, PrismaDelegate>)[tableName];
 
           if (model && typeof model.createMany === "function") {
             // 2. Clear existing data

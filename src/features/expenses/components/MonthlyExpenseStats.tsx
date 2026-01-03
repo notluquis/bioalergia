@@ -1,5 +1,6 @@
-import type { MonthlyExpenseStatsRow } from "../types";
 import { currencyFormatter } from "@/lib/format";
+
+import type { MonthlyExpenseStatsRow } from "../types";
 
 interface MonthlyExpenseStatsProps {
   stats: MonthlyExpenseStatsRow[];

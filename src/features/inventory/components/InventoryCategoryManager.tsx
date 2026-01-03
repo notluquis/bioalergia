@@ -1,10 +1,12 @@
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getInventoryCategories, createInventoryCategory } from "../api";
-import type { InventoryCategory } from "../types";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { PlusCircle } from "lucide-react";
+import { useState } from "react";
+
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
+
+import { createInventoryCategory, getInventoryCategories } from "../api";
+import type { InventoryCategory } from "../types";
 
 export default function InventoryCategoryManager() {
   const [newCategoryName, setNewCategoryName] = useState("");
@@ -52,9 +54,10 @@ export default function InventoryCategoryManager() {
       </div>
 
       <form onSubmit={handleAddCategory} className="flex flex-col gap-3 sm:flex-row sm:items-end">
-        <label className="flex-1">
+        <label className="flex-1" htmlFor="new-category-name">
           <span className="text-base-content/60 text-xs font-semibold tracking-wide uppercase">Nueva Categoría</span>
           <Input
+            id="new-category-name"
             type="text"
             value={newCategoryName}
             onChange={(e) => setNewCategoryName(e.target.value)}

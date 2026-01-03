@@ -1,12 +1,13 @@
 import { fileURLToPath, URL } from "node:url";
-import { defineConfig } from "vite";
-import { configDefaults } from "vitest/config";
-import react from "@vitejs/plugin-react-swc";
+
 import tailwindcss from "@tailwindcss/vite";
+import react from "@vitejs/plugin-react-swc";
 import { visualizer } from "rollup-plugin-visualizer";
-import { VitePWA } from "vite-plugin-pwa";
+import { defineConfig } from "vite";
 import checker from "vite-plugin-checker";
 import viteCompression from "vite-plugin-compression";
+import { VitePWA } from "vite-plugin-pwa";
+import { configDefaults } from "vitest/config";
 
 export default defineConfig(({ mode }) => ({
   plugins: [

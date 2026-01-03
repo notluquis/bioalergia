@@ -1,7 +1,9 @@
 import React, { useState } from "react";
-import { InventoryItem, InventoryMovement } from "../types";
+
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
+
+import { InventoryItem, InventoryMovement } from "../types";
 
 interface AdjustStockFormProps {
   item: InventoryItem;
@@ -26,7 +28,7 @@ export default function AdjustStockForm({ item, onSave, onCancel, saving }: Adju
   return (
     <form onSubmit={handleSubmit} className="space-y-4 text-sm">
       <div>
-        <h3 className="font-bold text-lg">{item.name}</h3>
+        <h3 className="text-lg font-bold">{item.name}</h3>
         <p className="text-base-content/60">Stock actual: {item.current_stock}</p>
       </div>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">

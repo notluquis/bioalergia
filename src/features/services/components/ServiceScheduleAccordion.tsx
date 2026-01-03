@@ -1,9 +1,11 @@
-import { memo, useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
-import type { ServiceSchedule, ServiceSummary } from "../types";
+import { memo, useEffect, useMemo, useState } from "react";
+
 import Button from "@/components/ui/Button";
-import { currencyFormatter } from "@/lib/format";
 import { today } from "@/lib/dates";
+import { currencyFormatter } from "@/lib/format";
+
+import type { ServiceSchedule, ServiceSummary } from "../types";
 
 type ServiceScheduleAccordionProps = {
   service: ServiceSummary;

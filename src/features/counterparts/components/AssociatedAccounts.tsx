@@ -1,20 +1,22 @@
-import { Fragment, useState, useMemo, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import type { ChangeEvent, FocusEvent } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import { fmtCLP } from "@/lib/format";
-import { formatRut } from "@/lib/rut";
+import type { ChangeEvent, FocusEvent } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
+
+import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
-import Alert from "@/components/ui/Alert";
 import Modal from "@/components/ui/Modal";
 import { useToast } from "@/context/ToastContext";
-import { LOADING_SPINNER_XS } from "@/lib/styles";
-import { today } from "@/lib/dates";
-import type { Counterpart, CounterpartAccount, CounterpartAccountSuggestion, CounterpartSummary } from "../types";
-import type { Transaction } from "@/features/finance/transactions/types";
 import { fetchTransactions } from "@/features/finance/transactions/api";
+import type { Transaction } from "@/features/finance/transactions/types";
+import { today } from "@/lib/dates";
+import { fmtCLP } from "@/lib/format";
+import { formatRut } from "@/lib/rut";
+import { LOADING_SPINNER_XS } from "@/lib/styles";
+
 import { addCounterpartAccount, attachCounterpartRut, fetchAccountSuggestions, updateCounterpartAccount } from "../api";
+import type { Counterpart, CounterpartAccount, CounterpartAccountSuggestion, CounterpartSummary } from "../types";
 
 interface AssociatedAccountsProps {
   selectedId: number | null;

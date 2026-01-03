@@ -1,6 +1,8 @@
 import type { ChangeEvent } from "react";
+
 import Input from "@/components/ui/Input";
-import type { ServiceLateFeeMode, ServiceAmountIndexation } from "../../types";
+
+import type { ServiceAmountIndexation, ServiceLateFeeMode } from "../../types";
 import type { ServiceFormState } from "../ServiceForm";
 
 interface FinancialSectionProps {

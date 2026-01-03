@@ -1,10 +1,11 @@
 import React, { useMemo } from "react";
 import { type Control, useWatch } from "react-hook-form";
-import { type FormValues } from "../schemas";
+
+import { StatCard } from "@/components/ui/StatCard";
 import { type CalendarUnclassifiedEvent } from "@/features/calendar/types";
 import { currencyFormatter } from "@/lib/format";
 
-import { StatCard } from "@/components/ui/StatCard";
+import { type FormValues } from "../schemas";
 
 interface ClassificationTotalsProps {
   control: Control<FormValues>;

@@ -1,6 +1,8 @@
 import dayjs from "dayjs";
 import { memo } from "react";
+
 import { fmtCLP } from "@/lib/format";
+
 import type { TimesheetSummaryRow } from "../types";
 
 interface TimesheetSummaryTableProps {
@@ -26,8 +28,8 @@ const TimesheetSummaryTable = memo(function TimesheetSummaryTable({
   onSelectEmployee,
 }: TimesheetSummaryTableProps) {
   return (
-    <div className="overflow-hidden rounded-2xl border border-primary/15 bg-base-100 shadow-sm">
-      <div className="overflow-x-auto muted-scrollbar">
+    <div className="border-primary/15 bg-base-100 overflow-hidden rounded-2xl border shadow-sm">
+      <div className="muted-scrollbar overflow-x-auto">
         <table className="min-w-full text-sm">
           <thead className="bg-primary/10 text-primary">
             <tr>
@@ -46,7 +48,7 @@ const TimesheetSummaryTable = memo(function TimesheetSummaryTable({
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={10} className="px-4 py-6 text-center text-primary">
+                <td colSpan={10} className="text-primary px-4 py-6 text-center">
                   Cargando resumen...
                 </td>
               </tr>
@@ -57,8 +59,8 @@ const TimesheetSummaryTable = memo(function TimesheetSummaryTable({
                   key={row.employeeId}
                   role="button"
                   tabIndex={0}
-                  className={`cursor-pointer odd:bg-base-200/60 hover:bg-primary/5 transition-colors will-change-auto ${
-                    row.employeeId === selectedEmployeeId ? "bg-primary/10 outline-2 outline-primary/30" : ""
+                  className={`odd:bg-base-200/60 hover:bg-primary/5 cursor-pointer transition-colors will-change-auto ${
+                    row.employeeId === selectedEmployeeId ? "bg-primary/10 outline-primary/30 outline-2" : ""
                   }`}
                   onClick={() => {
                     // Si ya está seleccionado, deseleccionar; si no, seleccionar
@@ -71,21 +73,21 @@ const TimesheetSummaryTable = memo(function TimesheetSummaryTable({
                     }
                   }}
                 >
-                  <td className="px-4 py-3 font-medium text-base-content">{row.fullName}</td>
-                  <td className="px-4 py-3 text-base-content/60">{row.role}</td>
-                  <td className="px-4 py-3 text-base-content">{row.hoursFormatted}</td>
-                  <td className="px-4 py-3 text-base-content">{fmtCLP(row.hourlyRate)}</td>
+                  <td className="text-base-content px-4 py-3 font-medium">{row.fullName}</td>
+                  <td className="text-base-content/60 px-4 py-3">{row.role}</td>
+                  <td className="text-base-content px-4 py-3">{row.hoursFormatted}</td>
+                  <td className="text-base-content px-4 py-3">{fmtCLP(row.hourlyRate)}</td>
                   {/* Extras deben venir del detalle (overtime) */}
-                  <td className="px-4 py-3 text-base-content">{row.overtimeFormatted}</td>
-                  <td className="px-4 py-3 text-base-content">{fmtCLP(row.subtotal)}</td>
-                  <td className="px-4 py-3 text-base-content">{fmtCLP(row.retention)}</td>
-                  <td className="px-4 py-3 text-base-content">{fmtCLP(row.net)}</td>
-                  <td className="px-4 py-3 text-base-content">{dayjs(row.payDate).format("DD-MM-YYYY")}</td>
+                  <td className="text-base-content px-4 py-3">{row.overtimeFormatted}</td>
+                  <td className="text-base-content px-4 py-3">{fmtCLP(row.subtotal)}</td>
+                  <td className="text-base-content px-4 py-3">{fmtCLP(row.retention)}</td>
+                  <td className="text-base-content px-4 py-3">{fmtCLP(row.net)}</td>
+                  <td className="text-base-content px-4 py-3">{dayjs(row.payDate).format("DD-MM-YYYY")}</td>
                 </tr>
               ))}
             {!loading && summary?.employees.length === 0 && (
               <tr>
-                <td colSpan={10} className="px-4 py-6 text-center text-base-content/60">
+                <td colSpan={10} className="text-base-content/60 px-4 py-6 text-center">
                   Aún no registras horas en este periodo.
                 </td>
               </tr>

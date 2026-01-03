@@ -1,0 +1,81 @@
+
+> finanzas-app@0.1.0 lint
+> eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0
+
+
+/Users/notluquis/finanzas-app/scripts/disaster-recovery.ts
+  63:18  warning  Found createReadStream from package "fs" with non literal argument at index 0  security/detect-non-literal-fs-filename
+
+/Users/notluquis/finanzas-app/scripts/validate-routes.ts
+  29:19  warning  Found readdirSync from package "fs" with non literal argument at index 0  security/detect-non-literal-fs-filename
+
+/Users/notluquis/finanzas-app/server/lib/google-calendar.ts
+  329:9  warning  Found writeFile from package "fs" with non literal argument at index 0  security/detect-non-literal-fs-filename
+
+/Users/notluquis/finanzas-app/server/lib/uploads.ts
+   30:3  warning  Found mkdirSync from package "fs" with non literal argument at index 0      security/detect-non-literal-fs-filename
+   82:3  warning  Found writeFileSync from package "fs" with non literal argument at index 0  security/detect-non-literal-fs-filename
+  110:3  warning  Found writeFileSync from package "fs" with non literal argument at index 0  security/detect-non-literal-fs-filename
+
+/Users/notluquis/finanzas-app/server/services/backup/backup.ts
+  121:5   warning  Found writeFileSync from package "fs" with non literal argument at index 0      security/detect-non-literal-fs-filename
+  126:20  warning  Found createReadStream from package "fs" with non literal argument at index 0   security/detect-non-literal-fs-filename
+  126:74  warning  Found createWriteStream from package "fs" with non literal argument at index 0  security/detect-non-literal-fs-filename
+  129:5   warning  Found unlinkSync from package "fs" with non literal argument at index 0         security/detect-non-literal-fs-filename
+  134:19  warning  Found statSync from package "fs" with non literal argument at index 0           security/detect-non-literal-fs-filename
+  155:7   warning  Found unlinkSync from package "fs" with non literal argument at index 0         security/detect-non-literal-fs-filename
+  160:7   warning  Found unlinkSync from package "fs" with non literal argument at index 0         security/detect-non-literal-fs-filename
+  174:20  warning  Found createReadStream from package "fs" with non literal argument at index 0   security/detect-non-literal-fs-filename
+  187:5   warning  Found unlinkSync from package "fs" with non literal argument at index 0         security/detect-non-literal-fs-filename
+  200:20  warning  Found createReadStream from package "fs" with non literal argument at index 0   security/detect-non-literal-fs-filename
+  234:20  warning  Found createReadStream from package "fs" with non literal argument at index 0   security/detect-non-literal-fs-filename
+
+/Users/notluquis/finanzas-app/server/services/backup/drive.ts
+  42:15  warning  Found createReadStream from package "fs" with non literal argument at index 0   security/detect-non-literal-fs-filename
+  64:18  warning  Found createWriteStream from package "fs" with non literal argument at index 0  security/detect-non-literal-fs-filename
+
+/Users/notluquis/finanzas-app/server/services/backup/manager.ts
+  315:7  warning  Found unlinkSync from package "fs" with non literal argument at index 0  security/detect-non-literal-fs-filename
+  336:7  warning  Found unlinkSync from package "fs" with non literal argument at index 0  security/detect-non-literal-fs-filename
+  377:5  warning  Found unlinkSync from package "fs" with non literal argument at index 0  security/detect-non-literal-fs-filename
+  381:7  warning  Found unlinkSync from package "fs" with non literal argument at index 0  security/detect-non-literal-fs-filename
+
+/Users/notluquis/finanzas-app/server/services/backup/scheduler.ts
+  50:5  warning  Found writeFileSync from package "fs" with non literal argument at index 0  security/detect-non-literal-fs-filename
+  70:7  warning  Found unlinkSync from package "fs" with non literal argument at index 0     security/detect-non-literal-fs-filename
+
+/Users/notluquis/finanzas-app/src/components/ui/Card.tsx
+  24:5  error  Headings must have content and the content must be accessible by a screen reader  jsx-a11y/heading-has-content
+
+/Users/notluquis/finanzas-app/src/features/hr/reports/utils.ts
+  122:5  error  Unused eslint-disable directive (no problems were reported from 'security/detect-object-injection')
+  131:7  error  Unused eslint-disable directive (no problems were reported from 'security/detect-object-injection')
+
+/Users/notluquis/finanzas-app/src/features/hr/timesheets/components/TimesheetDetailTable.tsx
+  173:15  error  Unused eslint-disable directive (no problems were reported from 'security/detect-object-injection')
+
+/Users/notluquis/finanzas-app/src/features/hr/timesheets/components/TimesheetExportPDF.tsx
+  316:11  error  Unused eslint-disable directive (no problems were reported from 'security/detect-object-injection')
+  335:15  error  Unused eslint-disable directive (no problems were reported from 'security/detect-object-injection')
+
+/Users/notluquis/finanzas-app/src/features/hr/timesheets/pages/TimesheetsPage.tsx
+  160:9  error  Unused eslint-disable directive (no problems were reported from 'security/detect-object-injection')
+  162:9  error  Unused eslint-disable directive (no problems were reported from 'security/detect-object-injection')
+  175:9  error  Unused eslint-disable directive (no problems were reported from 'security/detect-object-injection')
+  177:9  error  Unused eslint-disable directive (no problems were reported from 'security/detect-object-injection')
+  191:7  error  Unused eslint-disable directive (no problems were reported from 'security/detect-object-injection')
+  193:7  error  Unused eslint-disable directive (no problems were reported from 'security/detect-object-injection')
+  263:7  error  Unused eslint-disable directive (no problems were reported from 'security/detect-object-injection')
+  265:7  error  Unused eslint-disable directive (no problems were reported from 'security/detect-object-injection')
+  407:5  error  Unused eslint-disable directive (no problems were reported from 'security/detect-object-injection')
+
+/Users/notluquis/finanzas-app/src/pages/settings/BackupSettingsPage.tsx
+  364:10  error  Unused eslint-disable directive (no problems were reported from 'security/detect-object-injection')
+
+/Users/notluquis/finanzas-app/src/pages/settings/InventorySettingsPage.tsx
+  42:7  error  Unused eslint-disable directive (no problems were reported from 'security/detect-object-injection')
+  44:7  error  Unused eslint-disable directive (no problems were reported from 'security/detect-object-injection')
+
+✖ 43 problems (18 errors, 25 warnings)
+  17 errors and 0 warnings potentially fixable with the `--fix` option.
+

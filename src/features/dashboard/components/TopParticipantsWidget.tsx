@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
+
 import { fmtCLP } from "@/lib/format";
 import { formatRut } from "@/lib/rut";
+
 import type { ParticipantSummaryRow } from "../../participants/types";
 
 export default function TopParticipantsWidget({

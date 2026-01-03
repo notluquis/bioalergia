@@ -4,8 +4,9 @@
  */
 
 import { useMemo, useState } from "react";
-import type { Employee } from "@/features/hr/employees/types";
+
 import Checkbox from "@/components/ui/Checkbox";
+import type { Employee } from "@/features/hr/employees/types";
 
 interface EmployeeAuditSelectorProps {
   employees: Employee[];
@@ -50,7 +51,7 @@ export default function EmployeeAuditSelector({
 
   return (
     <div className="relative flex flex-col gap-2">
-      <label className="text-xs font-semibold uppercase tracking-wide text-base-content/80">
+      <label className="text-base-content/80 text-xs font-semibold tracking-wide uppercase">
         Empleados a auditar{" "}
         <span className="text-primary">
           ({selectedIds.length}/{MAX_EMPLOYEES})
@@ -62,11 +63,11 @@ export default function EmployeeAuditSelector({
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         disabled={loading}
-        className="input input-bordered flex h-12 w-full cursor-pointer select-none items-center justify-between gap-3 text-sm text-base-content disabled:opacity-50"
+        className="input input-bordered text-base-content flex h-12 w-full cursor-pointer items-center justify-between gap-3 text-sm select-none disabled:opacity-50"
       >
         <span className="truncate font-medium">{displayText}</span>
         <svg
-          className={`h-4 w-4 shrink-0 text-base-content/50 transition-transform ${isOpen ? "rotate-180" : ""}`}
+          className={`text-base-content/50 h-4 w-4 shrink-0 transition-transform ${isOpen ? "rotate-180" : ""}`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -77,10 +78,10 @@ export default function EmployeeAuditSelector({
 
       {/* Dropdown */}
       {isOpen && (
-        <div className="surface-recessed absolute top-full left-0 right-0 z-50 mt-2 shadow-lg">
-          <div className="max-h-80 overflow-y-auto p-3 space-y-2">
+        <div className="surface-recessed absolute top-full right-0 left-0 z-50 mt-2 shadow-lg">
+          <div className="max-h-80 space-y-2 overflow-y-auto p-3">
             {activeEmployees.length === 0 ? (
-              <p className="text-xs text-base-content/50 p-2">Sin empleados disponibles</p>
+              <p className="text-base-content/50 p-2 text-xs">Sin empleados disponibles</p>
             ) : (
               activeEmployees.map((emp) => {
                 const isSelected = selectedIds.includes(emp.id);
@@ -93,8 +94,8 @@ export default function EmployeeAuditSelector({
                     onChange={() => handleToggle(emp.id)}
                     disabled={isDisabled}
                     label={emp.full_name}
-                    className={`p-2 rounded text-sm transition-colors ${
-                      isDisabled ? "opacity-50 cursor-not-allowed" : "hover:bg-base-100/60"
+                    className={`rounded p-2 text-sm transition-colors ${
+                      isDisabled ? "cursor-not-allowed opacity-50" : "hover:bg-base-100/60"
                     }`}
                   />
                 );
@@ -103,8 +104,8 @@ export default function EmployeeAuditSelector({
           </div>
 
           {isMaxed && (
-            <div className="border-t border-base-300 bg-warning/10 px-3 py-2">
-              <p className="text-xs text-warning">
+            <div className="border-base-300 bg-warning/10 border-t px-3 py-2">
+              <p className="text-warning text-xs">
                 Máximo {MAX_EMPLOYEES} empleados pueden ser auditados simultáneamente
               </p>
             </div>
@@ -125,7 +126,7 @@ export default function EmployeeAuditSelector({
                 <button
                   type="button"
                   onClick={() => handleToggle(id)}
-                  className="text-xs hover:text-error transition-colors"
+                  className="hover:text-error text-xs transition-colors"
                   aria-label={`Remove ${emp.full_name}`}
                 >
                   ✕

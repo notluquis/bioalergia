@@ -1,5 +1,6 @@
-import { logger } from "./logger";
 import { z } from "zod";
+
+import { logger } from "./logger";
 
 const UploadSummarySchema = z.object({
   status: z.string(),

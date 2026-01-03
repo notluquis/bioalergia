@@ -1,9 +1,10 @@
-import { useState } from "react";
 import { ChevronDown } from "lucide-react";
+import { useState } from "react";
 import React from "react";
+
 import Button from "@/components/ui/Button";
-import { cn } from "@/lib/utils";
 import { SmoothCollapse } from "@/components/ui/SmoothCollapse";
+import { cn } from "@/lib/utils";
 
 interface CollapsibleNavSectionProps {
   title: string;

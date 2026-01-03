@@ -1,8 +1,8 @@
-import { promises as fs } from "fs";
-import path from "path";
-import { randomUUID } from "crypto";
 import { calendar, calendar_v3 } from "@googleapis/calendar";
+import { randomUUID } from "crypto";
+import { promises as fs } from "fs";
 import { JWT } from "google-auth-library";
+import path from "path";
 
 import { prisma } from "../prisma.js";
 import { logEvent, logWarn } from "./logger.js";

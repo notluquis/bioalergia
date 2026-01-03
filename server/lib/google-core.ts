@@ -8,9 +8,10 @@
 
 import { drive, drive_v3 } from "@googleapis/drive";
 import { OAuth2Client } from "google-auth-library";
+
 import { googleCalendarConfig } from "../config.js";
-import { logEvent, logWarn } from "./logger.js";
 import { parseGoogleError } from "./google-errors.js";
+import { logEvent, logWarn } from "./logger.js";
 
 // Cached clients
 let cachedDriveClient: drive_v3.Drive | null = null;

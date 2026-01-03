@@ -1,13 +1,14 @@
 import dayjs from "dayjs";
 import { ChangeEvent, memo, useCallback, useMemo } from "react";
-import { fmtCLP } from "@/lib/format";
-import { formatRut } from "@/lib/rut";
-import { useParticipantInsightsData } from "@/features/participants/hooks/useParticipantInsightsData";
+
 import Alert from "@/components/ui/Alert";
-import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
+import Input from "@/components/ui/Input";
 import { Table, TableBody } from "@/components/ui/Table";
+import { useParticipantInsightsData } from "@/features/participants/hooks/useParticipantInsightsData";
+import { fmtCLP } from "@/lib/format";
+import { formatRut } from "@/lib/rut";
 import { PAGE_CONTAINER } from "@/lib/styles";
 import { cn } from "@/lib/utils";
 

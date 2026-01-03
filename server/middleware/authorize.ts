@@ -1,10 +1,11 @@
 // server/middleware/authorize.ts
 
 import { ForbiddenError } from "@casl/ability";
-import { AuthenticatedRequest } from "../types.js";
-import { AppSubjects } from "../lib/authz/ability.js";
 import { ExtractSubjectType } from "@casl/ability";
-import { Response, NextFunction } from "express";
+import { NextFunction, Response } from "express";
+
+import { AppSubjects } from "../lib/authz/ability.js";
+import { AuthenticatedRequest } from "../types.js";
 
 export function authorize(action: string, subject: ExtractSubjectType<AppSubjects>) {
   return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {

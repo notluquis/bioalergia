@@ -1,5 +1,5 @@
+import { type AppSettings, dbKeyToSettingsKey, DEFAULT_SETTINGS } from "../lib/settings.js";
 import { prisma } from "../prisma.js";
-import { type AppSettings, DEFAULT_SETTINGS, dbKeyToSettingsKey } from "../lib/settings.js";
 
 export async function loadSettings(): Promise<AppSettings> {
   const settings = await prisma.setting.findMany();

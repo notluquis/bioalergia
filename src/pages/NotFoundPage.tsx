@@ -1,5 +1,5 @@
+import { AlertTriangle, ArrowLeft, Home } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { AlertTriangle, Home, ArrowLeft } from "lucide-react";
 
 export default function NotFoundPage() {
   const location = useLocation();
@@ -7,12 +7,12 @@ export default function NotFoundPage() {
 
   return (
     <div className="flex min-h-[80vh] flex-col items-center justify-center p-6 text-center">
-      <div className="mb-6 rounded-full bg-warning/10 p-6 text-warning">
+      <div className="bg-warning/10 text-warning mb-6 rounded-full p-6">
         <AlertTriangle size={48} />
       </div>
-      <h1 className="mb-2 text-3xl font-bold text-base-content">Página no encontrada</h1>
-      <p className="mb-8 max-w-md text-base-content/60">
-        La ruta <code className="rounded bg-base-200 px-2 py-1 font-mono text-sm">{location.pathname}</code> no existe o
+      <h1 className="text-base-content mb-2 text-3xl font-bold">Página no encontrada</h1>
+      <p className="text-base-content/60 mb-8 max-w-md">
+        La ruta <code className="bg-base-200 rounded px-2 py-1 font-mono text-sm">{location.pathname}</code> no existe o
         no está disponible.
       </p>
       <div className="flex gap-4">

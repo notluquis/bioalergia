@@ -1,5 +1,6 @@
-import { describe, it, expect } from "vitest";
-import { fmtCLP, formatCurrency, coerceAmount, formatDate, formatFileSize, formatRelativeDate } from "./format";
+import { describe, expect, it } from "vitest";
+
+import { coerceAmount, fmtCLP, formatCurrency, formatDate, formatFileSize, formatRelativeDate } from "./format";
 
 describe("Format Utilities", () => {
   describe("fmtCLP", () => {

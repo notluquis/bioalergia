@@ -1,13 +1,15 @@
-import React, { useEffect, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { useAuth } from "@/context/AuthContext";
-import { useToast } from "@/context/ToastContext";
-import { createEmployee, updateEmployee } from "../api";
-import type { Employee, EmployeePayload, EmployeeUpdatePayload } from "../types";
-import type { EmployeeSalaryType } from "@/types/schema";
+import React, { useEffect, useState } from "react";
+
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
+import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/context/ToastContext";
 import { formatRut, normalizeRut, validateRut } from "@/lib/rut";
+import type { EmployeeSalaryType } from "@/types/schema";
+
+import { createEmployee, updateEmployee } from "../api";
+import type { Employee, EmployeePayload, EmployeeUpdatePayload } from "../types";
 
 interface EmployeeFormProps {
   employee?: Employee | null;

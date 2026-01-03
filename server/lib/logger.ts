@@ -1,6 +1,8 @@
 import { randomUUID } from "node:crypto";
-import pino from "pino";
+
 import type express from "express";
+import pino from "pino";
+
 import type { AuthenticatedRequest } from "../types.js";
 
 interface RequestWithLogger extends express.Request {

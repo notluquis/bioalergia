@@ -1,7 +1,8 @@
 import express from "express";
+import fs from "fs";
 import multer from "multer";
 import path from "path";
-import fs from "fs";
+
 import { authenticate } from "../lib/http.js";
 import { logger } from "../lib/logger.js";
 import type { AuthenticatedRequest } from "../types.js";

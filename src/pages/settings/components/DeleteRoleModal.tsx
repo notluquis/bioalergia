@@ -1,8 +1,9 @@
-import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { deleteRole, reassignRoleUsers, fetchRoleUsers, type RoleUser } from "@/features/roles/api";
-import { AlertCircle, AlertTriangle, Trash2, ArrowRight } from "lucide-react";
+import { AlertCircle, AlertTriangle, ArrowRight, Trash2 } from "lucide-react";
+import { useState } from "react";
+
 import { useToast } from "@/context/ToastContext";
+import { deleteRole, fetchRoleUsers, reassignRoleUsers, type RoleUser } from "@/features/roles/api";
 import { Role } from "@/types/roles";
 
 interface DeleteRoleModalProps {
@@ -105,13 +106,14 @@ export function DeleteRoleModal({ isOpen, onClose, role, allRoles }: DeleteRoleM
                   </ul>
 
                   <div className="form-control w-full">
-                    <label className="label">
+                    <label className="label" htmlFor="target-role-select">
                       <span className="label-text flex items-center gap-2 font-medium">
                         <ArrowRight className="h-4 w-4" />
                         Mover usuarios a:
                       </span>
                     </label>
                     <select
+                      id="target-role-select"
                       className="select select-bordered w-full"
                       value={targetRoleId}
                       onChange={(e) => setTargetRoleId(e.target.value)}

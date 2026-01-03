@@ -1,25 +1,26 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ChangeEvent } from "react";
-import { useAuth } from "@/context/AuthContext";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
+
 import Alert from "@/components/ui/Alert";
-import Modal from "@/components/ui/Modal";
-import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
-import LoanList from "@/features/finance/loans/components/LoanList";
-import LoanDetail from "@/features/finance/loans/components/LoanDetail";
-import LoanForm from "@/features/finance/loans/components/LoanForm";
+import Input from "@/components/ui/Input";
+import Modal from "@/components/ui/Modal";
+import { useAuth } from "@/context/AuthContext";
 import {
-  fetchLoans,
-  fetchLoanDetail,
   createLoan,
-  registerLoanPayment,
+  fetchLoanDetail,
+  fetchLoans,
   regenerateSchedules,
+  registerLoanPayment,
   unlinkLoanPayment,
 } from "@/features/finance/loans/api";
-import type { LoanSchedule, CreateLoanPayload, RegenerateSchedulePayload } from "@/features/finance/loans/types";
-import { PAGE_CONTAINER, TITLE_LG } from "@/lib/styles";
+import LoanDetail from "@/features/finance/loans/components/LoanDetail";
+import LoanForm from "@/features/finance/loans/components/LoanForm";
+import LoanList from "@/features/finance/loans/components/LoanList";
+import type { CreateLoanPayload, LoanSchedule, RegenerateSchedulePayload } from "@/features/finance/loans/types";
 import { today } from "@/lib/dates";
+import { PAGE_CONTAINER, TITLE_LG } from "@/lib/styles";
 
 export default function LoansPage() {
   const { can } = useAuth();
