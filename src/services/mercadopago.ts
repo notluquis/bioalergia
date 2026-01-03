@@ -37,6 +37,7 @@ export interface MPReport {
   begin_date: string;
   end_date: string;
   created_from: "manual" | "schedule";
+  date_created?: string; // Added from API response
   // Optional fields
   account_id?: number;
   currency_id?: string;
