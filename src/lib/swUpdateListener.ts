@@ -58,6 +58,10 @@ export function handleChunkLoadError(error: Error): void {
   if (isChunkError) {
     console.warn("Chunk load failed, reloading for fresh assets:", message);
     // Forzar recarga desde el servidor (no cache)
-    window.location.reload();
+    if (!import.meta.env.DEV) {
+      window.location.reload();
+    } else {
+      console.debug("Development mode: preventing automatic reload for chunk error (swListener)");
+    }
   }
 }
