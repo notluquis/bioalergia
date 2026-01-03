@@ -124,9 +124,12 @@ export default function MercadoPagoSettingsPage() {
                 Último Reporte
               </p>
               <h3 className="mt-2 line-clamp-1 text-lg font-semibold">
-                {reportsQuery.data?.[0]?.generation_date
-                  ? dayjs(reportsQuery.data[0].generation_date).format("D MMM, HH:mm")
-                  : "N/A"}
+                {(() => {
+                  const lastReport = reportsQuery.data?.[0];
+                  if (!lastReport) return "N/A";
+                  const date = lastReport.date_created || lastReport.generation_date || lastReport.begin_date;
+                  return date ? dayjs(date).format("D MMM, HH:mm") : "N/A";
+                })()}
               </h3>
             </div>
             <div className="bg-primary/10 text-primary rounded-lg p-2">

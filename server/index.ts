@@ -40,13 +40,17 @@ app.use(
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 app.use(cookieParser());
+import compression from "compression";
 import { softAuthenticate } from "./lib/http.js";
 import { attachAbility } from "./middleware/attachAbility.js";
 import helmet from "helmet";
-import rateLimit from "express-rate-limit";
+import { CSP_HEADER_VALUE, apiLimiter, authLimiter } from "./config/security.js";
 
 // Cloudflare Proxy Trust
 app.set("trust proxy", 1); // Trust the first proxy (Cloudflare)
+
+// Compression
+app.use(compression());
 
 // Security Headers
 app.use(
@@ -56,48 +60,12 @@ app.use(
   })
 );
 
-// Rate Limiting (Basic DDoS Prevention)
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 1000, // Limit each IP to 1000 requests per window
-  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-  message: "Too many requests from this IP, please try again later.",
-});
-app.use("/api", limiter);
-
-// Stricter Auth Rate Limiting
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 50, // 50 login attempts per 15 min
-  standardHeaders: true,
-  legacyHeaders: false,
-});
+// Rate Limiting
+app.use("/api", apiLimiter);
 app.use("/api/auth", authLimiter);
 
 app.use(softAuthenticate);
 app.use(attachAbility);
-
-const CSP_HEADER_VALUE = [
-  "default-src 'self'",
-  [
-    "script-src",
-    "'self'",
-    "https://intranet.bioalergia.cl",
-    "https://intranet.bioalergia.cl/assets/",
-    "https://intranet.bioalergia.cl/cdn-cgi/scripts/7d0fa10a/cloudflare-static/",
-    "https://intranet.bioalergia.cl/cdn-cgi/rum",
-    "https://static.cloudflareinsights.com",
-    "'unsafe-inline'",
-  ].join(" "),
-  ["worker-src", "'self'", "https://intranet.bioalergia.cl"].join(" "),
-  ["connect-src", "'self'", "https://intranet.bioalergia.cl", "https://static.cloudflareinsights.com"].join(" "),
-  "img-src 'self' data:",
-  "style-src 'self' 'unsafe-inline'",
-  "font-src 'self' data:",
-  "base-uri 'self'",
-  "frame-ancestors 'self'",
-].join("; ");
 
 app.use((_req: Request, res: Response, next: NextFunction) => {
   res.setHeader("Content-Security-Policy", CSP_HEADER_VALUE);
