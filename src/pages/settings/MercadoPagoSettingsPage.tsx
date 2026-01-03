@@ -65,10 +65,8 @@ export default function MercadoPagoSettingsPage() {
       {/* Header */}
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
         <div>
-          <h1 className="from-primary to-secondary bg-linear-to-r bg-clip-text text-2xl font-bold text-transparent">
-            Reportes de Mercado Pago
-          </h1>
-          <p className="text-base-content/60 mt-1">
+          <h1 className="text-2xl font-bold tracking-tight">Reportes de Mercado Pago</h1>
+          <p className="text-base-content/60 text-sm">
             Gestiona la generación y descarga de reportes de liberación de fondos
           </p>
         </div>

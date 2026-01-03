@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Package, Plus, Trash2, Edit2, Loader2, ChevronDown, ChevronRight, Box } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/Card";
 import { useToast } from "@/context/ToastContext";
 import {
   getInventoryCategories,
@@ -88,193 +89,196 @@ export default function InventorySettingsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-base-content text-2xl font-bold">Parámetros de inventario</h1>
-          <p className="text-base-content/60 text-sm">Gestiona las categorías y productos del inventario.</p>
-        </div>
-        <Button onClick={() => setIsCreating(true)} className="gap-2">
-          <Plus size={16} />
-          Nueva Categoría
-        </Button>
-      </div>
-
-      {isCreating && (
-        <div className="surface-elevated animate-in fade-in slide-in-from-top-2 rounded-xl p-4">
-          <form onSubmit={handleCreate} className="flex items-end gap-3">
-            <div className="flex-1">
-              <label className="label py-1">
-                <span className="label-text text-xs">Nombre de la categoría</span>
-              </label>
-              <Input
-                autoFocus
-                value={newCategoryName}
-                onChange={(e) => setNewCategoryName(e.target.value)}
-                placeholder="Ej: Antibióticos"
-              />
-            </div>
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setIsCreating(false)}
-                disabled={createMutation.isPending}
-              >
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={createMutation.isPending || !newCategoryName.trim()}>
-                {createMutation.isPending ? <Loader2 className="animate-spin" /> : "Guardar"}
-              </Button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      <div className="surface-elevated overflow-hidden rounded-2xl">
-        {isLoading ? (
-          <div className="text-base-content/50 py-8 text-center">
-            <Loader2 className="mx-auto animate-spin" />
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between pb-4">
+          <div className="space-y-1">
+            <CardTitle>Parámetros de inventario</CardTitle>
+            <CardDescription>Gestiona las categorías y productos del inventario.</CardDescription>
           </div>
-        ) : categories.length === 0 && uncategorizedItems.length === 0 ? (
-          <div className="text-base-content/50 py-8 text-center">No hay categorías ni items registrados.</div>
-        ) : (
-          <div className="divide-base-200 divide-y">
-            {categories.map((category) => {
-              const items = itemsByCategory[category.id] ?? [];
-              const isExpanded = expandedCategories.has(category.id);
-
-              return (
-                <div key={category.id}>
-                  {/* Category Row */}
-                  <div
-                    className="hover:bg-base-200/50 group flex cursor-pointer items-center gap-3 p-4"
-                    onClick={() => toggleCategory(category.id)}
-                  >
-                    <button
-                      type="button"
-                      className="text-base-content/50 flex h-6 w-6 items-center justify-center"
-                      aria-label={isExpanded ? "Colapsar" : "Expandir"}
-                    >
-                      {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
-                    </button>
-                    <div className="bg-primary/10 text-primary flex h-8 w-8 items-center justify-center rounded-lg">
-                      <Package size={16} />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <span className="font-medium">{category.name}</span>
-                    </div>
-                    <span className="badge badge-ghost badge-sm">{items.length} items</span>
-                    <div
-                      className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <Button size="sm" variant="ghost" className="btn-square btn-xs">
-                        <Edit2 size={14} />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="btn-square btn-xs text-error hover:bg-error/10"
-                        onClick={() => {
-                          if (confirm("¿Estás seguro de eliminar esta categoría?")) {
-                            deleteMutation.mutate(category.id);
-                          }
-                        }}
-                      >
-                        <Trash2 size={14} />
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* Items List (Expanded) */}
-                  {isExpanded && items.length > 0 && (
-                    <div className="bg-base-200/30 border-base-200 border-t">
-                      {items.map((item) => (
-                        <div
-                          key={item.id}
-                          className="hover:bg-base-200/50 border-base-200/50 flex items-center gap-3 border-b py-3 pr-4 pl-14 last:border-b-0"
-                        >
-                          <div className="bg-base-300/50 text-base-content/40 flex h-6 w-6 items-center justify-center rounded">
-                            <Box size={12} />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-medium">{item.name}</p>
-                            {item.description && (
-                              <p className="text-base-content/50 truncate text-xs">{item.description}</p>
-                            )}
-                          </div>
-                          <span
-                            className={`text-xs font-medium ${item.current_stock <= 0 ? "text-error" : item.current_stock < 10 ? "text-warning" : "text-success"}`}
-                          >
-                            Stock: {item.current_stock}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {isExpanded && items.length === 0 && (
-                    <div className="bg-base-200/30 border-base-200 text-base-content/50 border-t py-4 pl-14 text-sm italic">
-                      Sin items en esta categoría
-                    </div>
-                  )}
+          <Button onClick={() => setIsCreating(true)} className="gap-2">
+            <Plus size={16} />
+            Nueva Categoría
+          </Button>
+        </CardHeader>
+        <CardContent className="p-0">
+          {isCreating && (
+            <div className="bg-base-200/30 animate-in fade-in slide-in-from-top-2 border-b p-4">
+              <form onSubmit={handleCreate} className="flex items-end gap-3">
+                <div className="flex-1">
+                  <label className="label py-1">
+                    <span className="label-text text-xs">Nombre de la categoría</span>
+                  </label>
+                  <Input
+                    autoFocus
+                    value={newCategoryName}
+                    onChange={(e) => setNewCategoryName(e.target.value)}
+                    placeholder="Ej: Antibióticos"
+                  />
                 </div>
-              );
-            })}
-
-            {/* Uncategorized Items */}
-            {uncategorizedItems.length > 0 && (
-              <div>
-                <div
-                  className="hover:bg-base-200/50 group flex cursor-pointer items-center gap-3 p-4"
-                  onClick={() => toggleCategory(0)}
-                >
-                  <button
+                <div className="flex gap-2">
+                  <Button
                     type="button"
-                    className="text-base-content/50 flex h-6 w-6 items-center justify-center"
-                    aria-label={expandedCategories.has(0) ? "Colapsar" : "Expandir"}
+                    variant="ghost"
+                    onClick={() => setIsCreating(false)}
+                    disabled={createMutation.isPending}
                   >
-                    {expandedCategories.has(0) ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
-                  </button>
-                  <div className="bg-base-300 text-base-content/50 flex h-8 w-8 items-center justify-center rounded-lg">
-                    <Package size={16} />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <span className="text-base-content/70 font-medium">Sin categoría</span>
-                  </div>
-                  <span className="badge badge-ghost badge-sm">{uncategorizedItems.length} items</span>
+                    Cancelar
+                  </Button>
+                  <Button type="submit" disabled={createMutation.isPending || !newCategoryName.trim()}>
+                    {createMutation.isPending ? <Loader2 className="animate-spin" /> : "Guardar"}
+                  </Button>
                 </div>
+              </form>
+            </div>
+          )}
 
-                {expandedCategories.has(0) && (
-                  <div className="bg-base-200/30 border-base-200 border-t">
-                    {uncategorizedItems.map((item) => (
+          <div>
+            {isLoading ? (
+              <div className="text-base-content/50 py-12 text-center">
+                <Loader2 className="mx-auto animate-spin" />
+              </div>
+            ) : categories.length === 0 && uncategorizedItems.length === 0 ? (
+              <div className="text-base-content/50 py-12 text-center">No hay categorías ni items registrados.</div>
+            ) : (
+              <div className="divide-base-200 divide-y border-t">
+                {categories.map((category) => {
+                  const items = itemsByCategory[category.id] ?? [];
+                  const isExpanded = expandedCategories.has(category.id);
+
+                  return (
+                    <div key={category.id}>
+                      {/* Category Row */}
                       <div
-                        key={item.id}
-                        className="hover:bg-base-200/50 border-base-200/50 flex items-center gap-3 border-b py-3 pr-4 pl-14 last:border-b-0"
+                        className="hover:bg-base-200/50 group flex cursor-pointer items-center gap-3 p-4 transition-colors"
+                        onClick={() => toggleCategory(category.id)}
                       >
-                        <div className="bg-base-300/50 text-base-content/40 flex h-6 w-6 items-center justify-center rounded">
-                          <Box size={12} />
+                        <button
+                          type="button"
+                          className="text-base-content/50 flex h-6 w-6 items-center justify-center transition-transform"
+                          aria-label={isExpanded ? "Colapsar" : "Expandir"}
+                        >
+                          {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+                        </button>
+                        <div className="bg-primary/10 text-primary flex h-8 w-8 items-center justify-center rounded-lg">
+                          <Package size={16} />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium">{item.name}</p>
-                          {item.description && (
-                            <p className="text-base-content/50 truncate text-xs">{item.description}</p>
-                          )}
+                          <span className="font-medium">{category.name}</span>
                         </div>
-                        <span
-                          className={`text-xs font-medium ${item.current_stock <= 0 ? "text-error" : item.current_stock < 10 ? "text-warning" : "text-success"}`}
+                        <span className="badge badge-ghost badge-sm">{items.length} items</span>
+                        <div
+                          className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100"
+                          onClick={(e) => e.stopPropagation()}
                         >
-                          Stock: {item.current_stock}
-                        </span>
+                          <Button size="sm" variant="ghost" className="btn-square btn-xs">
+                            <Edit2 size={14} />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="btn-square btn-xs text-error hover:bg-error/10"
+                            onClick={() => {
+                              if (confirm("¿Estás seguro de eliminar esta categoría?")) {
+                                deleteMutation.mutate(category.id);
+                              }
+                            }}
+                          >
+                            <Trash2 size={14} />
+                          </Button>
+                        </div>
                       </div>
-                    ))}
+
+                      {/* Items List (Expanded) */}
+                      {isExpanded && items.length > 0 && (
+                        <div className="bg-base-200/30 border-base-200 border-t">
+                          {items.map((item) => (
+                            <div
+                              key={item.id}
+                              className="hover:bg-base-200/50 border-base-200/50 flex items-center gap-3 border-b py-3 pr-4 pl-14 last:border-b-0"
+                            >
+                              <div className="bg-base-300/50 text-base-content/40 flex h-6 w-6 items-center justify-center rounded">
+                                <Box size={12} />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="truncate text-sm font-medium">{item.name}</p>
+                                {item.description && (
+                                  <p className="text-base-content/50 truncate text-xs">{item.description}</p>
+                                )}
+                              </div>
+                              <span
+                                className={`text-xs font-medium ${item.current_stock <= 0 ? "text-error" : item.current_stock < 10 ? "text-warning" : "text-success"}`}
+                              >
+                                Stock: {item.current_stock}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {isExpanded && items.length === 0 && (
+                        <div className="bg-base-200/30 border-base-200 text-base-content/50 border-t py-4 pl-14 text-sm italic">
+                          Sin items en esta categoría
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+
+                {/* Uncategorized Items */}
+                {uncategorizedItems.length > 0 && (
+                  <div>
+                    <div
+                      className="hover:bg-base-200/50 group flex cursor-pointer items-center gap-3 p-4 transition-colors"
+                      onClick={() => toggleCategory(0)}
+                    >
+                      <button
+                        type="button"
+                        className="text-base-content/50 flex h-6 w-6 items-center justify-center"
+                        aria-label={expandedCategories.has(0) ? "Colapsar" : "Expandir"}
+                      >
+                        {expandedCategories.has(0) ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+                      </button>
+                      <div className="bg-base-300 text-base-content/50 flex h-8 w-8 items-center justify-center rounded-lg">
+                        <Package size={16} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <span className="text-base-content/70 font-medium">Sin categoría</span>
+                      </div>
+                      <span className="badge badge-ghost badge-sm">{uncategorizedItems.length} items</span>
+                    </div>
+
+                    {expandedCategories.has(0) && (
+                      <div className="bg-base-200/30 border-base-200 border-t">
+                        {uncategorizedItems.map((item) => (
+                          <div
+                            key={item.id}
+                            className="hover:bg-base-200/50 border-base-200/50 flex items-center gap-3 border-b py-3 pr-4 pl-14 last:border-b-0"
+                          >
+                            <div className="bg-base-300/50 text-base-content/40 flex h-6 w-6 items-center justify-center rounded">
+                              <Box size={12} />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm font-medium">{item.name}</p>
+                              {item.description && (
+                                <p className="text-base-content/50 truncate text-xs">{item.description}</p>
+                              )}
+                            </div>
+                            <span
+                              className={`text-xs font-medium ${item.current_stock <= 0 ? "text-error" : item.current_stock < 10 ? "text-warning" : "text-success"}`}
+                            >
+                              Stock: {item.current_stock}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
             )}
           </div>
-        )}
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
