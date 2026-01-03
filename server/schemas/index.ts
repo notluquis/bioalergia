@@ -57,4 +57,23 @@ export { serviceCreateSchema, serviceRegenerateSchema, servicePaymentSchema } fr
 export { loginSchema, mfaVerifySchema, monthParamSchema, updateClassificationSchema } from "./auth.js";
 
 // MercadoPago
-export { createReportSchema, frequencySchema, columnSchema, sftpInfoSchema, mpConfigSchema } from "./mercadopago.js";
+export {
+  // Constants
+  MP_REPORT_COLUMNS,
+  // Schemas
+  columnSchema,
+  frequencySchema,
+  sftpInfoSchema,
+  createReportSchema,
+  reportSchema,
+  listReportsResponseSchema,
+  mpConfigSchema,
+  mpConfigResponseSchema,
+  // Types
+  type MpReportColumn,
+  type MpFrequency,
+  type MpConfig,
+  type MpConfigResponse,
+  type MpReport,
+  type CreateReportRequest,
+} from "./mercadopago.js";
