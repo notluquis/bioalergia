@@ -55,8 +55,8 @@ const ConfigSchema = z.object({
 import { NextFunction, Response } from "express";
 
 const checkPermissions = (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-  // Assuming 'manage' 'Setting' is the appropriate permission for MP config
-  if (req.ability?.cannot("manage", "Setting")) {
+  // Permission for MP config is 'update Setting' (same as other settings pages)
+  if (req.ability?.cannot("update", "Setting")) {
     res.status(403).json({ error: "Forbidden", message: "No tienes permisos para configurar Mercado Pago" });
     return;
   }
