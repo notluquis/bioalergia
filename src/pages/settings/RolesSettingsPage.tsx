@@ -236,15 +236,15 @@ export default function RolesSettingsPage() {
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between pb-4">
+        <CardHeader className="flex flex-col gap-4 pb-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1">
             <h2 className="text-lg font-semibold">Listado de roles</h2>
             <p className="text-base-content/70 text-sm">Gestiona los permisos y roles del sistema</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <button className="btn btn-ghost btn-sm gap-2" onClick={() => syncMutation.mutate()} disabled={isSyncing}>
+            <button className="btn btn-outline btn-sm gap-2" onClick={() => syncMutation.mutate()} disabled={isSyncing}>
               <RotateCw className={cn("h-4 w-4", isSyncing && "animate-spin")} />
-              <span className="hidden sm:inline">Sincronizar</span>
+              Sincronizar
             </button>
 
             {/* Role Filter Selector */}
@@ -268,11 +268,11 @@ export default function RolesSettingsPage() {
           </div>
         </CardHeader>
         <CardContent className="overflow-hidden p-0">
-          <div className="border-base-300 w-full overflow-x-auto pb-6">
+          <div className="border-base-300 w-full overflow-x-auto border-t">
             {/* Dynamic Grid Layout */}
             <div className="min-w-full">
               {/* Note: using displayRoles for rendering */}
-              <table className="table w-auto table-fixed">
+              <table className="table w-auto table-fixed border-collapse">
                 {/* ... Header logic using displayRoles ... */}
                 <thead>
                   <tr>
@@ -326,10 +326,10 @@ export default function RolesSettingsPage() {
                     <React.Fragment key={section.title}>
                       {/* Section Title & Bulk Toggle */}
                       <tr
-                        className="bg-base-200/30 hover:bg-base-200/50 cursor-pointer transition-colors"
+                        className="bg-base-200/50 hover:bg-base-200/70 border-base-300 cursor-pointer border-b transition-colors"
                         onClick={() => toggleSection(section.title)}
                       >
-                        <td className="bg-base-200 border-base-300 sticky left-0 z-10 w-80 border-r py-2 pl-4 text-xs font-bold tracking-widest uppercase opacity-70">
+                        <td className="bg-base-200 border-base-300 sticky left-0 z-10 w-80 border-r py-3 pl-4 text-xs font-bold tracking-widest uppercase">
                           <div className="flex items-center gap-2">
                             {openSections[section.title] ? (
                               <ChevronDown className="h-4 w-4" />
