@@ -1,11 +1,19 @@
 import React, { useMemo } from "react";
-import { NavLink, useLocation, useNavigation } from "react-router-dom";
+import { NavLink, useLocation, useNavigation, Link } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useCan } from "@/hooks/useCan";
 import { cn } from "@/lib/utils";
-import { Loader2 } from "lucide-react";
+import { User, LogOut, Settings } from "lucide-react";
 import { getNavSections, type NavItem } from "@/lib/nav-generator";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/Tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/DropdownMenu";
 
 interface SidebarProps {
   isOpen: boolean; // For mobile drawer state
@@ -96,13 +104,6 @@ const SidebarItem = React.memo(function SidebarItem({
                 >
                   {item.label}
                 </span>
-
-                {/* Loading Spinner - hidden when collapsed (active dot shows pending state) */}
-                {isPending && !(!isMobile && isCollapsed) && (
-                  <div className="absolute right-3">
-                    <Loader2 className="h-3 w-3 animate-spin opacity-50" />
-                  </div>
-                )}
               </>
             );
           }}
@@ -124,7 +125,7 @@ const SidebarItem = React.memo(function SidebarItem({
 });
 
 export default function Sidebar({ isOpen, isMobile, onClose }: SidebarProps) {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { can } = useCan();
   const location = useLocation();
   const [pendingPath, setPendingPath] = React.useState<string | null>(null);
@@ -266,37 +267,70 @@ export default function Sidebar({ isOpen, isMobile, onClose }: SidebarProps) {
           ))}
         </div>
 
-        {/* User Footer - Pinned to bottom, aligned with main footer */}
+        {/* User Footer - Pinned to bottom, with dropdown menu */}
         <div
           className={cn(
             "border-base-200/50 bg-base-100/30 mt-auto shrink-0 border-t px-3 pt-3 pb-6 transition-all duration-300",
             !isMobile && isCollapsed ? "items-center justify-center px-2 pt-3 pb-6" : ""
           )}
         >
-          <div
-            className={cn(
-              "hover:bg-base-200/50 group flex cursor-pointer items-center gap-3 rounded-2xl p-2 transition-all",
-              !isMobile && isCollapsed ? "justify-center p-0 hover:bg-transparent" : "px-3 py-2"
-            )}
-          >
-            <div className="bg-base-200 border-base-300 h-10 w-10 shrink-0 overflow-hidden rounded-full border">
-              <div className="bg-base-100 text-primary flex h-full w-full items-center justify-center font-bold">
-                {displayName.substring(0, 2).toUpperCase()}
-              </div>
-            </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className={cn(
+                  "hover:bg-base-200/50 group flex w-full cursor-pointer items-center gap-3 rounded-2xl p-2 transition-all outline-none",
+                  !isMobile && isCollapsed ? "justify-center p-0 hover:bg-transparent" : "px-3 py-2"
+                )}
+              >
+                <div className="bg-base-200 border-base-300 h-10 w-10 shrink-0 overflow-hidden rounded-full border">
+                  <div className="bg-base-100 text-primary flex h-full w-full items-center justify-center font-bold">
+                    {displayName.substring(0, 2).toUpperCase()}
+                  </div>
+                </div>
 
-            <div
-              className={cn(
-                "flex min-w-0 flex-1 flex-col gap-0.5 transition-all duration-300",
-                !isMobile && isCollapsed ? "hidden" : "block"
-              )}
-            >
-              <span className="text-base-content group-hover:text-primary truncate text-sm font-semibold transition-colors">
-                {displayName}
-              </span>
-              <span className="text-base-content/50 truncate text-xs">{user?.email}</span>
-            </div>
-          </div>
+                <div
+                  className={cn(
+                    "flex min-w-0 flex-1 flex-col gap-0.5 text-left transition-all duration-300",
+                    !isMobile && isCollapsed ? "hidden" : "block"
+                  )}
+                >
+                  <span className="text-base-content group-hover:text-primary truncate text-sm font-semibold transition-colors">
+                    {displayName}
+                  </span>
+                  <span className="text-base-content/50 truncate text-xs">{user?.email}</span>
+                </div>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent side="top" align="start" className="w-56">
+              <DropdownMenuLabel className="font-normal">
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm leading-none font-medium">{displayName}</p>
+                  <p className="text-base-content/60 text-xs leading-none">{user?.email}</p>
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link to="/account" className="flex cursor-pointer items-center">
+                  <User className="mr-2 size-4" />
+                  Mi Cuenta
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link to="/settings/security" className="flex cursor-pointer items-center">
+                  <Settings className="mr-2 size-4" />
+                  Configuración
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => logout()}
+                className="text-error focus:bg-error/10 focus:text-error cursor-pointer"
+              >
+                <LogOut className="mr-2 size-4" />
+                Cerrar sesión
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </aside>
     </TooltipProvider>
