@@ -15,6 +15,9 @@ export const MP_REPORT_COLUMNS = [
   "SELLER_AMOUNT",
   "GROSS_AMOUNT",
   "METADATA",
+  "TRANSACTION_TYPE",
+  "TRANSACTION_AMOUNT",
+  "MARKETPLACE_FEE_AMOUNT",
   "MP_FEE_AMOUNT",
   "FINANCING_FEE_AMOUNT",
   "SHIPPING_FEE_AMOUNT",
@@ -78,3 +81,57 @@ export const MP_DEFAULT_COLUMNS: MpReportColumn[] = [
   "PAYMENT_METHOD",
   "PAYMENT_METHOD_TYPE",
 ];
+
+// ----------------------------------------------------------------------
+// ZOD SCHEMAS (Shared for Frontend & Backend)
+// ----------------------------------------------------------------------
+import { z } from "zod";
+
+export const MpColumnSchema = z.object({ key: z.string().min(1) });
+
+/**
+ * Frequency for automatic report generation
+ * - daily: value = 0, hour = 0-23
+ * - weekly: value = "monday"|"tuesday"|...|"sunday", hour = 0-23
+ * - monthly: value = 1-31 (day of month), hour = 0-23
+ */
+export const MpFrequencySchema = z.object({
+  type: z.enum(["daily", "weekly", "monthly"]),
+  value: z.union([z.number().int().min(0).max(31), z.enum(MP_WEEKDAYS)]),
+  hour: z.number().int().min(0).max(23),
+});
+
+export const MpSftpInfoSchema = z
+  .object({
+    server: z.string().optional(),
+    username: z.string().optional(),
+    password: z.string().optional(),
+    remote_dir: z.string().optional(),
+    port: z.number().int().optional(),
+  })
+  .optional();
+
+/** POST/PUT /v1/account/release_report/config - Create/Update config */
+export const MpConfigSchema = z.object({
+  // Required
+  file_name_prefix: z.string().min(1, "Prefijo requerido"),
+  columns: z
+    .array(MpColumnSchema)
+    .min(1, "Al menos una columna requerida")
+    // Note: Backend might not validate max length or exact keys strictly, but frontend should
+    .refine((cols) => new Set(cols.map((c) => c.key)).size === cols.length, "No se permiten columnas duplicadas"),
+  frequency: MpFrequencySchema,
+  // Optional
+  sftp_info: MpSftpInfoSchema,
+  separator: z.string().optional(),
+  display_timezone: z.string().optional(),
+  report_translation: z.enum(MP_REPORT_LANGUAGES).optional(),
+  notification_email_list: z.array(z.string().email().or(z.null())).optional(),
+  include_withdrawal_at_end: z.boolean().optional(),
+  check_available_balance: z.boolean().optional(),
+  compensate_detail: z.boolean().optional(),
+  execute_after_withdrawal: z.boolean().optional(),
+  scheduled: z.boolean().optional(),
+});
+
+export type MpConfigFormData = z.infer<typeof MpConfigSchema>;
