@@ -3,7 +3,7 @@ import { NavLink, useLocation, useNavigation, Link } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useCan } from "@/hooks/useCan";
 import { cn } from "@/lib/utils";
-import { User, LogOut, Settings } from "lucide-react";
+import { User, LogOut } from "lucide-react";
 import { getNavSections, type NavItem } from "@/lib/nav-generator";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/Tooltip";
 import {
@@ -313,12 +313,6 @@ export default function Sidebar({ isOpen, isMobile, onClose }: SidebarProps) {
                 <Link to="/account" className="flex cursor-pointer items-center">
                   <User className="mr-2 size-4" />
                   Mi Cuenta
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link to="/settings/security" className="flex cursor-pointer items-center">
-                  <Settings className="mr-2 size-4" />
-                  Configuración
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
