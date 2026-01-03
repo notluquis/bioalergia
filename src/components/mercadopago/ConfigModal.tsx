@@ -109,7 +109,7 @@ export default function ConfigModal({ open, onClose }: Props) {
           </div>
 
           {/* Frequency Section */}
-          <div className="bg-base-200/50 rounded-lg border p-4">
+          <div className="bg-base-200/50 rounded-lg p-4">
             <h4 className="mb-3 flex items-center gap-2 text-sm font-medium">
               Frecuencia de Generación
               <span className="badge badge-info badge-xs">Requerido</span>
@@ -199,7 +199,6 @@ export default function ConfigModal({ open, onClose }: Props) {
             </p>
           </div>
 
-          {/* Columns Section - Selector */}
           {/* Columns Section - Selector */}
           <div className="bg-base-200/50 rounded-lg p-4">
             <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -332,7 +331,7 @@ export default function ConfigModal({ open, onClose }: Props) {
           </div>
 
           {/* Boolean Options */}
-          <div className="bg-base-200/50 rounded-lg border p-4">
+          <div className="bg-base-200/50 rounded-lg p-4">
             <h4 className="mb-3 text-sm font-medium">Opciones Adicionales</h4>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <TooltipProvider>
@@ -346,8 +345,10 @@ export default function ConfigModal({ open, onClose }: Props) {
                     <span className="label-text text-sm">Incluir retiros al final</span>
                   </label>
                   <Tooltip>
-                    <TooltipTrigger>
-                      <Info className="text-base-content/40 h-4 w-4" />
+                    <TooltipTrigger asChild>
+                      <button type="button" className="cursor-help transition-opacity hover:opacity-80">
+                        <Info className="text-base-content/40 h-4 w-4" />
+                      </button>
                     </TooltipTrigger>
                     <TooltipContent>
                       <p>Agrega un resumen de los retiros de dinero al final del reporte.</p>
@@ -361,8 +362,10 @@ export default function ConfigModal({ open, onClose }: Props) {
                     <span className="label-text text-sm">Mostrar balance disponible</span>
                   </label>
                   <Tooltip>
-                    <TooltipTrigger>
-                      <Info className="text-base-content/40 h-4 w-4" />
+                    <TooltipTrigger asChild>
+                      <button type="button" className="cursor-help transition-opacity hover:opacity-80">
+                        <Info className="text-base-content/40 h-4 w-4" />
+                      </button>
                     </TooltipTrigger>
                     <TooltipContent>
                       <p>Incluye una columna con el saldo acumulado después de cada movimiento.</p>
@@ -376,8 +379,10 @@ export default function ConfigModal({ open, onClose }: Props) {
                     <span className="label-text text-sm">Detalle compensaciones</span>
                   </label>
                   <Tooltip>
-                    <TooltipTrigger>
-                      <Info className="text-base-content/40 h-4 w-4" />
+                    <TooltipTrigger asChild>
+                      <button type="button" className="cursor-help transition-opacity hover:opacity-80">
+                        <Info className="text-base-content/40 h-4 w-4" />
+                      </button>
                     </TooltipTrigger>
                     <TooltipContent>
                       <p>Muestra el detalle de disputas y contracargos asociados.</p>
@@ -391,8 +396,10 @@ export default function ConfigModal({ open, onClose }: Props) {
                     <span className="label-text text-sm">Ejecutar post-retiro</span>
                   </label>
                   <Tooltip>
-                    <TooltipTrigger>
-                      <Info className="text-base-content/40 h-4 w-4" />
+                    <TooltipTrigger asChild>
+                      <button type="button" className="cursor-help transition-opacity hover:opacity-80">
+                        <Info className="text-base-content/40 h-4 w-4" />
+                      </button>
                     </TooltipTrigger>
                     <TooltipContent>
                       <p>Genera automáticamente un reporte cada vez que realizas un retiro de dinero.</p>
@@ -404,7 +411,7 @@ export default function ConfigModal({ open, onClose }: Props) {
           </div>
 
           {/* SFTP (Optional) */}
-          <details className="bg-base-200/50 rounded-lg border">
+          <details className="bg-base-200/50 rounded-lg">
             <summary className="cursor-pointer p-4 text-sm font-medium">
               Configuración SFTP <span className="text-base-content/60">(Opcional)</span>
             </summary>
