@@ -3,13 +3,16 @@ import { logger } from "../lib/logger.js";
 
 const MP_API_URL = "https://api.mercadopago.com/v1/account/release_report";
 
-// Types derived from API documentation
+// Weekday values for weekly frequency
+type Weekday = "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday";
+
+// Types derived from MercadoPago API documentation
 export interface ReportConfig {
   file_name_prefix: string;
   columns: { key: string }[];
   frequency: {
     type: "daily" | "weekly" | "monthly";
-    value: number;
+    value: number | Weekday; // daily=0, weekly=Weekday, monthly=1-31
     hour: number;
   };
   sftp_info?: {
@@ -20,14 +23,14 @@ export interface ReportConfig {
     username?: string;
   };
   separator?: string;
-  display_timezone?: string; // e.g. "GMT-04"
-  report_translation?: string; // e.g. "es"
+  display_timezone?: string; // Default: "GMT-04"
+  report_translation?: "en" | "es" | "pt";
   notification_email_list?: (string | null)[];
-  include_withdrawal_at_end?: boolean;
-  check_available_balance?: boolean;
-  compensate_detail?: boolean;
-  execute_after_withdrawal?: boolean;
-  scheduled?: boolean;
+  include_withdrawal_at_end?: boolean; // Default: true
+  check_available_balance?: boolean; // Default: true
+  compensate_detail?: boolean; // Default: true
+  execute_after_withdrawal?: boolean; // Default: false
+  scheduled?: boolean; // Default: false
 }
 
 export interface CreateReportResponse {
