@@ -9,6 +9,7 @@ import { useQuery } from "@tanstack/react-query";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Alert from "@/components/ui/Alert";
+import { Card } from "@/components/ui/Card";
 import { MultiSelectFilter, type MultiSelectOption } from "@/features/calendar/components/MultiSelectFilter";
 import { HeatmapMonth } from "@/features/calendar/components/HeatmapMonth";
 import { fetchCalendarSummary } from "@/features/calendar/api";
@@ -182,7 +183,7 @@ function CalendarHeatmapPage() {
       </header>
 
       {/* Collapsible Filter Toolbar */}
-      <div className="bg-base-100 border-base-200 overflow-hidden rounded-2xl border shadow-sm transition-all duration-300">
+      <Card className="overflow-hidden transition-all duration-300">
         <button
           type="button"
           onClick={() => setShowAdvanced((prev) => !prev)}
@@ -270,7 +271,7 @@ function CalendarHeatmapPage() {
             </form>
           </div>
         </div>
-      </div>
+      </Card>
 
       {error && <Alert variant="error">{error}</Alert>}
 
