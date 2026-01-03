@@ -75,6 +75,7 @@ export const ROUTE_DATA: RouteData[] = [
   {
     path: "",
     componentPath: "pages/Home",
+    nav: { label: "Inicio", iconKey: "Home", section: "Calendario", order: 0 },
     permission: { action: "read", subject: "Dashboard" },
     title: "Inicio",
     exact: true,
@@ -360,9 +361,16 @@ export const ROUTE_DATA: RouteData[] = [
       {
         path: "mercadopago",
         componentPath: "pages/settings/MercadoPagoSettingsPage",
-        nav: { label: "Mercado Pago", iconKey: "CreditCard", section: "Sistema", order: 5 },
+        nav: { label: "Mercado Pago", iconKey: "CreditCard", section: "Sistema", order: 6 },
         permission: { action: "update", subject: "Setting" },
         title: "Reportes Mercado Pago",
+      },
+      {
+        path: "access",
+        componentPath: "pages/settings/AccessSettingsPage",
+        nav: { label: "Control Acceso", iconKey: "ShieldCheck", section: "Sistema", order: 9 },
+        permission: { action: "update", subject: "User" },
+        title: "Control de acceso y MFA",
       },
     ],
   },
@@ -374,6 +382,15 @@ export const ROUTE_DATA: RouteData[] = [
     componentPath: "pages/AccountSettingsPage",
     title: "Mi Cuenta",
     // No permission required - all authenticated users can access their own account
+  },
+  // ══════════════════════════════════════════════════════════════════════════
+  // ONBOARDING (new user setup wizard - no permission required)
+  // ══════════════════════════════════════════════════════════════════════════
+  {
+    path: "onboarding",
+    componentPath: "pages/onboarding/OnboardingWizard",
+    title: "Configuración inicial",
+    // No permission required - new users need to complete onboarding
   },
 ];
 
