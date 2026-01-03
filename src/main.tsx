@@ -28,12 +28,8 @@ async function handleChunkLoadError() {
     console.error("Error during cache cleanup:", e);
   }
 
-  // Force reload from network (bypass cache)
-  if (!import.meta.env.DEV) {
-    window.location.reload();
-  } else {
-    console.debug("Development mode: preventing automatic reload for chunk error");
-  }
+  // No forcing reload automatically. Use Error Boundary or Toast.
+  console.debug("Preventing automatic reload for chunk error (manual reload required)");
 }
 
 // Global error handler for chunk load failures (runs before React mounts)

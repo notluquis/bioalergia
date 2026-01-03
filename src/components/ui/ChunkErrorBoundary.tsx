@@ -50,7 +50,7 @@ export class ChunkErrorBoundary extends Component<Props, State> {
     } catch (error) {
       console.error("Error clearing cache:", error);
     } finally {
-      // 3. Recargar la página
+      // 3. Recargar la página (Manual action)
       window.location.reload();
     }
   };

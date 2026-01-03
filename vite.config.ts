@@ -24,7 +24,7 @@ export default defineConfig(({ mode }) => ({
       }),
     // PWA - 2025 best practices configuration
     VitePWA({
-      registerType: "autoUpdate", // Auto-activate new SW immediately
+      registerType: "prompt", // Let the app control when to update (UX best practice)
       injectRegister: "auto",
       manifestFilename: "manifest.json",
       workbox: {
