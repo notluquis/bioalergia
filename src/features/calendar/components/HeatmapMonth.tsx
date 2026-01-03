@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import React, { useMemo } from "react";
 import dayjs, { type Dayjs } from "dayjs";
 import clsx from "clsx";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/Tooltip";
@@ -61,7 +61,7 @@ type DayCell = {
 
 type DateCell = PaddingCell | DayCell;
 
-export function HeatmapMonth({ month, statsByDate, maxValue }: HeatmapMonthProps) {
+function HeatmapMonthComponent({ month, statsByDate, maxValue }: HeatmapMonthProps) {
   const dates = useMemo<DateCell[]>(() => {
     const startOfMonth = month.startOf("month");
     const endOfMonth = month.endOf("month");
@@ -97,7 +97,19 @@ export function HeatmapMonth({ month, statsByDate, maxValue }: HeatmapMonthProps
     return [...paddingStart, ...days];
   }, [month, statsByDate, maxValue]);
 
-  const monthTotal = useMemo(() => dates.reduce((acc, d) => (d.type === "day" ? acc + d.total : acc), 0), [dates]);
+  const monthTotals = useMemo(() => {
+    let events = 0;
+    let expected = 0;
+    let paid = 0;
+    for (const d of dates) {
+      if (d.type === "day") {
+        events += d.total;
+        expected += d.amountExpected;
+        paid += d.amountPaid;
+      }
+    }
+    return { events, expected, paid };
+  }, [dates]);
 
   return (
     <TooltipProvider delayDuration={0}>
@@ -180,12 +192,23 @@ export function HeatmapMonth({ month, statsByDate, maxValue }: HeatmapMonthProps
         </div>
 
         {/* Footer Summary */}
-        <div className="bg-base-100/30 text-base-content/40 border-base-200/50 border-t px-4 py-2 text-right text-[10px] font-medium">
-          Total: {monthTotal}
+        <div className="bg-base-100/30 border-base-200/50 border-t px-4 py-2 text-[10px]">
+          <div className="text-base-content/60 flex flex-wrap items-center justify-between gap-2">
+            <span className="font-semibold">Σ {monthTotals.events} eventos</span>
+            <div className="flex gap-3">
+              <span>
+                Esperado: <span className="font-medium">{fmtCLP(monthTotals.expected)}</span>
+              </span>
+              <span>
+                Pagado: <span className="font-medium">{fmtCLP(monthTotals.paid)}</span>
+              </span>
+            </div>
+          </div>
         </div>
       </article>
     </TooltipProvider>
   );
 }
 
+export const HeatmapMonth = React.memo(HeatmapMonthComponent);
 export default HeatmapMonth;
