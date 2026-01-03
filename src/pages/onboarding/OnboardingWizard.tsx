@@ -37,6 +37,13 @@ export default function OnboardingWizard() {
   const [currentStep, setCurrentStep] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
+  // Security: Redirect if user already completed onboarding
+  useEffect(() => {
+    if (user && user.status !== "PENDING_SETUP") {
+      navigate("/", { replace: true });
+    }
+  }, [user, navigate]);
+
   // Form State
   const [profile, setProfile] = useState<ProfileData>({
     names: "",

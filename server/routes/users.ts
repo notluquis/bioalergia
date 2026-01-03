@@ -484,6 +484,14 @@ export function registerUserRoutes(app: express.Express) {
         return res.status(404).json({ status: "error", message: "User not found" });
       }
 
+      // Security: Only allow setup for users who haven't completed onboarding
+      if (user.status !== "PENDING_SETUP") {
+        return res.status(403).json({
+          status: "error",
+          message: "Tu cuenta ya está configurada. Usa la página de cuenta para cambiar tu contraseña.",
+        });
+      }
+
       const hash = await bcrypt.hash(data.password, 10);
 
       await prisma.$transaction(async (tx) => {
