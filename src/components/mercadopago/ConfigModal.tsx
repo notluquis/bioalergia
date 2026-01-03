@@ -1,4 +1,5 @@
 import { useFieldArray, Controller } from "react-hook-form";
+import { cn } from "@/lib/utils";
 import { Loader2, Plus, Trash, Info, CheckSquare, Square, RotateCcw } from "lucide-react";
 
 import Modal from "@/components/ui/Modal";
@@ -71,14 +72,22 @@ export default function ConfigModal({ open, onClose }: Props) {
           {/* Prefix & Timezone */}
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
-              <Input label="Prefijo Archivo" {...register("file_name_prefix")} placeholder="release-report" />
+              <Input
+                label="Prefijo Archivo"
+                {...register("file_name_prefix")}
+                placeholder="release-report"
+                error={errors.file_name_prefix?.message}
+              />
               <p className="text-base-content/60 mt-1 text-xs">Nombre base para los archivos generados</p>
             </div>
             <div>
               <label className="label">
                 <span className="label-text">Zona Horaria</span>
               </label>
-              <select {...register("display_timezone")} className="select select-bordered w-full">
+              <select
+                {...register("display_timezone")}
+                className={cn("select select-bordered w-full", errors.display_timezone && "select-error")}
+              >
                 {Object.entries(TIMEZONES).map(([region, zones]) => (
                   <optgroup key={region} label={region}>
                     {zones.map((tz) => (
@@ -89,6 +98,11 @@ export default function ConfigModal({ open, onClose }: Props) {
                   </optgroup>
                 ))}
               </select>
+              {errors.display_timezone && (
+                <label className="label">
+                  <span className="label-text-alt text-error">{errors.display_timezone.message}</span>
+                </label>
+              )}
               <p className="text-base-content/60 mt-1 text-xs">Zona horaria para las fechas del reporte</p>
             </div>
           </div>
@@ -98,7 +112,10 @@ export default function ConfigModal({ open, onClose }: Props) {
             <label className="label">
               <span className="label-text">Idioma del Reporte</span>
             </label>
-            <select {...register("report_translation")} className="select select-bordered w-full">
+            <select
+              {...register("report_translation")}
+              className={cn("select select-bordered w-full", errors.report_translation && "select-error")}
+            >
               {MP_REPORT_LANGUAGES.map((lang) => (
                 <option key={lang} value={lang}>
                   {lang === "es" ? "Español" : lang === "en" ? "English" : "Português"}
@@ -122,14 +139,17 @@ export default function ConfigModal({ open, onClose }: Props) {
                 </label>
                 <select
                   {...register("frequency.type")}
-                  className="select select-bordered select-sm w-full"
+                  className={cn("select select-bordered select-sm w-full", errors.frequency?.type && "select-error")}
                   onChange={(e) => {
                     register("frequency.type").onChange(e);
                     // Reset value when type changes
                     if (e.target.value === "daily") {
                       reset({ ...watch(), frequency: { ...watch("frequency"), type: "daily", value: 0 } });
                     } else if (e.target.value === "weekly") {
-                      reset({ ...watch(), frequency: { ...watch("frequency"), type: "weekly", value: "monday" } });
+                      reset({
+                        ...watch(),
+                        frequency: { ...watch("frequency"), type: "weekly", value: "monday" },
+                      });
                     } else if (e.target.value === "monthly") {
                       reset({ ...watch(), frequency: { ...watch("frequency"), type: "monthly", value: 1 } });
                     }
@@ -147,7 +167,10 @@ export default function ConfigModal({ open, onClose }: Props) {
                   <span className="label-text text-xs">Valor</span>
                 </label>
                 {frequencyType === "weekly" ? (
-                  <select className="select select-bordered select-sm w-full" {...register("frequency.value")}>
+                  <select
+                    className={cn("select select-bordered select-sm w-full", errors.frequency?.value && "select-error")}
+                    {...register("frequency.value")}
+                  >
                     {MP_WEEKDAYS.map((day) => (
                       <option key={day} value={day}>
                         {day.charAt(0).toUpperCase() + day.slice(1)}
@@ -162,6 +185,8 @@ export default function ConfigModal({ open, onClose }: Props) {
                     min={1}
                     max={31}
                     placeholder="1-31"
+                    error={errors.frequency?.value?.message}
+                    size="sm"
                   />
                 ) : (
                   <input
@@ -181,7 +206,7 @@ export default function ConfigModal({ open, onClose }: Props) {
                 </label>
                 <select
                   {...register("frequency.hour", { valueAsNumber: true })}
-                  className="select select-bordered select-sm w-full"
+                  className={cn("select select-bordered select-sm w-full", errors.frequency?.hour && "select-error")}
                 >
                   {Array.from({ length: 24 }, (_, i) => (
                     <option key={i} value={i}>
@@ -191,6 +216,7 @@ export default function ConfigModal({ open, onClose }: Props) {
                 </select>
               </div>
             </div>
+            {errors.frequency?.message && <p className="text-error mt-1 text-xs">{errors.frequency.message}</p>}
             <p className="text-base-content/60 mt-2 flex items-center gap-1 text-xs">
               <Info className="h-3 w-3" />
               {frequencyType === "daily" && "Se generará todos los días a la hora indicada"}
@@ -416,19 +442,41 @@ export default function ConfigModal({ open, onClose }: Props) {
               Configuración SFTP <span className="text-base-content/60">(Opcional)</span>
             </summary>
             <div className="space-y-3 border-t p-4">
-              <Input label="Servidor" {...register("sftp_info.server")} placeholder="sftp.ejemplo.com" />
+              <Input
+                label="Servidor"
+                {...register("sftp_info.server")}
+                placeholder="sftp.ejemplo.com"
+                error={errors.sftp_info?.server?.message}
+              />
               <div className="grid grid-cols-2 gap-3">
-                <Input label="Usuario" {...register("sftp_info.username")} />
-                <Input label="Contraseña" {...register("sftp_info.password")} type="password" />
+                <Input
+                  label="Usuario"
+                  {...register("sftp_info.username")}
+                  error={errors.sftp_info?.username?.message}
+                />
+                <Input
+                  label="Contraseña"
+                  {...register("sftp_info.password")}
+                  type="password"
+                  error={errors.sftp_info?.password?.message}
+                />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <Input
                   label="Puerto"
-                  {...register("sftp_info.port", { valueAsNumber: true })}
+                  {...register("sftp_info.port", {
+                    setValueAs: (v) => (v === "" ? undefined : Number(v)),
+                  })}
                   type="number"
                   placeholder="22"
+                  error={errors.sftp_info?.port?.message}
                 />
-                <Input label="Directorio Remoto" {...register("sftp_info.remote_dir")} placeholder="/reports" />
+                <Input
+                  label="Directorio Remoto"
+                  {...register("sftp_info.remote_dir")}
+                  placeholder="/reports"
+                  error={errors.sftp_info?.remote_dir?.message}
+                />
               </div>
             </div>
           </details>
