@@ -1,6 +1,8 @@
 import dayjs from "dayjs";
+
 import Button from "@/components/ui/Button";
-import type { ServiceSummary, ServiceFrequency, ServiceType } from "../types";
+
+import type { ServiceFrequency, ServiceSummary, ServiceType } from "../types";
 
 interface ServiceListProps {
   services: ServiceSummary[];
@@ -22,11 +24,11 @@ export function ServiceList({
   const skeletons = Array.from({ length: 5 }, (_, index) => index);
 
   return (
-    <aside className="flex h-full min-h-80 flex-col gap-4 rounded-2xl border border-base-300/60 bg-base-100/80 p-5 text-sm text-base-content shadow-inner">
+    <aside className="border-base-300/60 bg-base-100/80 text-base-content flex h-full min-h-80 flex-col gap-4 rounded-2xl border p-5 text-sm shadow-inner">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-base-content/60">Servicios</h2>
-          <p className="text-xs text-base-content/60">Suscripciones y gastos recurrentes.</p>
+          <h2 className="text-base-content/60 text-xs font-semibold tracking-wide uppercase">Servicios</h2>
+          <p className="text-base-content/60 text-xs">Suscripciones y gastos recurrentes.</p>
         </div>
         {canManage && (
           <Button type="button" variant="primary" size="sm" onClick={onCreateRequest}>
@@ -38,9 +40,9 @@ export function ServiceList({
         {loading &&
           !services.length &&
           skeletons.map((value) => (
-            <div key={value} className="rounded-2xl border border-base-300/60 bg-base-200/60 p-4 shadow-sm">
+            <div key={value} className="border-base-300/60 bg-base-200/60 rounded-2xl border p-4 shadow-sm">
               <div className="skeleton-line mb-3 w-3/4" />
-              <div className="flex gap-2 text-xs text-base-content/50">
+              <div className="text-base-content/50 flex gap-2 text-xs">
                 <span className="skeleton-line w-20" />
                 <span className="skeleton-line w-16" />
               </div>
@@ -78,43 +80,44 @@ export function ServiceList({
           };
 
           return (
-            <div
+            <button
+              type="button"
               key={service.public_id}
               onClick={() => onSelect(service.public_id)}
               className={`w-full cursor-pointer rounded-2xl border px-4 py-3 text-left transition-all ${
                 isActive
                   ? "border-base-300 bg-primary/20 text-primary"
-                  : "border-transparent bg-base-100/45 text-base-content hover:border-base-300 hover:bg-base-100/65"
+                  : "bg-base-100/45 text-base-content hover:border-base-300 hover:bg-base-100/65 border-transparent"
               }`}
             >
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-sm font-semibold tracking-tight">{service.name}</p>
                   {service.detail && (
-                    <p className="text-xs uppercase tracking-wide text-base-content/50">{service.detail}</p>
+                    <p className="text-base-content/50 text-xs tracking-wide uppercase">{service.detail}</p>
                   )}
                 </div>
                 <span className={`h-2.5 w-2.5 rounded-full ${indicatorColor} shadow-inner`} aria-hidden="true" />
               </div>
               <div className="mt-2 flex flex-wrap items-center gap-4 text-xs">
-                <span className="font-semibold text-base-content">
+                <span className="text-base-content font-semibold">
                   ${service.default_amount.toLocaleString("es-CL")}
                 </span>
                 <span className="text-base-content/60">{frequencyLabels[service.frequency]}</span>
                 <span className="text-base-content/60">{typeLabels[service.service_type]}</span>
               </div>
-              <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-base-content/50">
+              <div className="text-base-content/50 mt-1 flex flex-wrap items-center gap-3 text-xs">
                 <span>Inicio {dayjs(service.start_date).format("DD MMM YYYY")}</span>
                 {service.counterpart_name && <span>{service.counterpart_name}</span>}
               </div>
-              <div className="mt-2 text-xs text-base-content/50">
+              <div className="text-base-content/50 mt-2 text-xs">
                 Pendientes {service.pending_count} · Vencidos {service.overdue_count}
               </div>
-            </div>
+            </button>
           );
         })}
         {!services.length && (
-          <p className="rounded-2xl border border-dashed border-base-300 bg-base-100/40 p-4 text-xs text-base-content/60">
+          <p className="border-base-300 bg-base-100/40 text-base-content/60 rounded-2xl border border-dashed p-4 text-xs">
             Aún no registras servicios recurrentes. Crea el primero para controlar gastos mensuales.
           </p>
         )}

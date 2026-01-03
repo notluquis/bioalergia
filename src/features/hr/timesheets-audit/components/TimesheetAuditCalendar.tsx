@@ -4,18 +4,19 @@
  * Optimized for production with proper type safety and performance
  */
 
-import { useEffect, useMemo, useRef } from "react";
-import { LOADING_SPINNER_MD } from "@/lib/styles";
-import FullCalendar from "@fullcalendar/react";
-import type { CalendarApi } from "@fullcalendar/core";
-import dayGridPlugin from "@fullcalendar/daygrid";
-import timeGridPlugin from "@fullcalendar/timegrid";
-import esLocale from "@fullcalendar/core/locales/es";
-
-import type { TimesheetEntryWithEmployee, CalendarEventData } from "../types";
-import { calculateDurationHours, formatDuration, getOverlappingEmployeesForDate } from "../utils/overlapDetection";
-
 import "./TimesheetAuditCalendar.css";
+
+import type { CalendarApi } from "@fullcalendar/core";
+import esLocale from "@fullcalendar/core/locales/es";
+import dayGridPlugin from "@fullcalendar/daygrid";
+import FullCalendar from "@fullcalendar/react";
+import timeGridPlugin from "@fullcalendar/timegrid";
+import { useEffect, useMemo, useRef } from "react";
+
+import { LOADING_SPINNER_MD } from "@/lib/styles";
+
+import type { CalendarEventData, TimesheetEntryWithEmployee } from "../types";
+import { calculateDurationHours, formatDuration, getOverlappingEmployeesForDate } from "../utils/overlapDetection";
 
 interface TimesheetAuditCalendarProps {
   entries: TimesheetEntryWithEmployee[];

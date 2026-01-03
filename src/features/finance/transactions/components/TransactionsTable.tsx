@@ -1,9 +1,11 @@
 import dayjs from "dayjs";
 import { memo, useMemo } from "react";
-import { useTable } from "@/hooks/useTable";
+
 import Button from "@/components/ui/Button";
 import Checkbox from "@/components/ui/Checkbox";
+import { useTable } from "@/hooks/useTable";
 import { fmtCLP } from "@/lib/format";
+
 import { COLUMN_DEFS, type ColumnKey } from "../constants";
 import type { LedgerRow } from "../types";
 

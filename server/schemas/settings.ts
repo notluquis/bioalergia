@@ -2,7 +2,8 @@
  * Settings schemas
  */
 import { z } from "zod";
-import { colorRegex, dateRegex, brandAssetUrlSchema, optionalHttpsUrl } from "./shared.js";
+
+import { brandAssetUrlSchema, colorRegex, dateRegex, optionalHttpsUrl } from "./shared.js";
 
 export const settingsSchema = z.object({
   orgName: z.string().min(1).max(120),

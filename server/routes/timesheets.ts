@@ -1,31 +1,32 @@
-import express from "express";
-import { asyncHandler, authenticate } from "../lib/http.js";
-import { authorize } from "../middleware/authorize.js";
 import { Prisma } from "@prisma/client";
+import express from "express";
+
+import { roundCurrency } from "../../shared/currency.js";
+import { asyncHandler, authenticate } from "../lib/http.js";
 import { logEvent, logWarn, requestContext } from "../lib/logger.js";
-import { listEmployees, getEmployeeById } from "../services/employees.js";
+import { formatDateOnly, getMonthRange } from "../lib/time.js";
+import { authorize } from "../middleware/authorize.js";
+import { prisma } from "../prisma.js";
 import {
-  listTimesheetEntries,
-  upsertTimesheetEntry,
-  updateTimesheetEntry,
-  deleteTimesheetEntry,
-  buildMonthlySummary,
-  normalizeTimesheetPayload,
-  durationToMinutes,
-} from "../services/timesheets.js";
-import { generateTimesheetEml } from "../services/email.js";
-import {
+  monthParamSchema,
+  prepareEmailSchema,
+  timesheetBulkSchema,
+  timesheetListQuerySchema,
   timesheetPayloadSchema,
   timesheetUpdateSchema,
-  timesheetBulkSchema,
-  monthParamSchema,
-  timesheetListQuerySchema,
-  prepareEmailSchema,
 } from "../schemas/index.js";
+import { generateTimesheetEml } from "../services/email.js";
+import { getEmployeeById, listEmployees } from "../services/employees.js";
+import {
+  buildMonthlySummary,
+  deleteTimesheetEntry,
+  durationToMinutes,
+  listTimesheetEntries,
+  normalizeTimesheetPayload,
+  updateTimesheetEntry,
+  upsertTimesheetEntry,
+} from "../services/timesheets.js";
 import type { AuthenticatedRequest } from "../types.js";
-import { roundCurrency } from "../../shared/currency.js";
-import { prisma } from "../prisma.js";
-import { formatDateOnly, getMonthRange } from "../lib/time.js";
 
 export function registerTimesheetRoutes(app: express.Express) {
   // Endpoint para obtener meses registrados

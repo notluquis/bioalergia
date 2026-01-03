@@ -1,16 +1,18 @@
-import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
+
 import Button from "@/components/ui/Button";
 import { today } from "@/lib/dates";
+
+import { fetchCounterpart, fetchCounterparts } from "../../counterparts/api";
 import type { CreateServicePayload } from "../types";
-import { fetchCounterparts, fetchCounterpart } from "../../counterparts/api";
 import {
   BasicInfoSection,
-  ServiceClassificationSection,
   CounterpartSection,
-  SchedulingSection,
   EmissionSection,
   FinancialSection,
+  SchedulingSection,
+  ServiceClassificationSection,
 } from "./ServiceForm/index";
 
 interface ServiceFormProps {

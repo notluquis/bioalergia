@@ -1,14 +1,15 @@
-import { useState, useEffect } from "react";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { ArrowRight, Check, CreditCard, Fingerprint, Key, Loader2, Shield, Smartphone, User } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { useAuth } from "@/context/AuthContext";
-import { Shield, Key, Check, ArrowRight, User, CreditCard, Smartphone, Loader2, Fingerprint } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { formatRut, validateRut } from "@/lib/rut";
-import Input from "@/components/ui/Input";
+
 import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
+import { useAuth } from "@/context/AuthContext";
+import { enableMfa, fetchPasskeyRegistrationOptions, setupMfa, verifyPasskeyRegistration } from "@/features/auth/api";
 import { fetchUserProfile, setupUser } from "@/features/users/api";
-import { setupMfa, enableMfa, fetchPasskeyRegistrationOptions, verifyPasskeyRegistration } from "@/features/auth/api";
+import { formatRut, validateRut } from "@/lib/rut";
+import { cn } from "@/lib/utils";
 
 const STEPS = [
   { id: "welcome", title: "Bienvenida" },

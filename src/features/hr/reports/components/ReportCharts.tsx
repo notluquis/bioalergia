@@ -2,22 +2,23 @@
  * Lazy-loaded Chart Components for Reports
  * These are separated to enable code-splitting of Recharts (~400KB)
  */
+import { BarChart2, PieChart as PieChartIcon } from "lucide-react";
 import {
-  BarChart,
   Bar,
-  LineChart,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Legend,
   Line,
+  LineChart,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
 } from "recharts";
-import { BarChart2, PieChart as PieChartIcon } from "lucide-react";
+
 import type { EmployeeWorkData, ReportGranularity } from "../types";
 import { getChartColors } from "../utils/chartColors";
 

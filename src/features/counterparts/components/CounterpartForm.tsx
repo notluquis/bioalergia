@@ -1,17 +1,19 @@
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useMemo } from "react";
+import { type Resolver, useForm } from "react-hook-form";
 import { Link } from "react-router-dom";
 import { z } from "zod";
-import { useForm, type Resolver } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { formatRut, validateRut } from "@/lib/rut";
+
+import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
-import Alert from "@/components/ui/Alert";
-import { LOADING_SPINNER_LG, GRID_2_COL_MD } from "@/lib/styles";
-import type { Counterpart } from "../types";
-import { CATEGORY_OPTIONS, EMPTY_FORM } from "../constants";
+import { formatRut, validateRut } from "@/lib/rut";
+import { GRID_2_COL_MD, LOADING_SPINNER_LG } from "@/lib/styles";
+import type { CounterpartCategory, PersonType } from "@/types/schema";
+
 import type { CounterpartUpsertPayload } from "../api";
-import type { PersonType, CounterpartCategory } from "@/types/schema";
+import { CATEGORY_OPTIONS, EMPTY_FORM } from "../constants";
+import type { Counterpart } from "../types";
 
 const counterpartFormSchema = z.object({
   rut: z

@@ -1,7 +1,8 @@
+import { ChevronDown, ChevronUp } from "lucide-react";
 import React from "react";
-import { ChevronUp, ChevronDown } from "lucide-react";
-import { cn } from "@/lib/utils";
+
 import { LOADING_SPINNER_MD } from "@/lib/styles";
+import { cn } from "@/lib/utils";
 
 interface TableColumn<T extends string> {
   key: T;
@@ -149,5 +150,5 @@ export function Table<T extends string>({
 Table.Header = TableHeader;
 Table.Body = TableBody;
 
-export { TableHeader, TableBody };
+export { TableBody, TableHeader };
 export default Table;

@@ -1,19 +1,13 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import { today } from "@/lib/dates";
-import { useEffect, useMemo, useRef, useState, createContext, useContext, type ReactNode } from "react";
+import { createContext, type ReactNode, useContext, useEffect, useMemo, useRef, useState } from "react";
+
 import { useAuth } from "@/context/AuthContext";
-import { logger } from "@/lib/logger";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import type {
-  CreateServicePayload,
-  RegenerateServicePayload,
-  ServiceDetailResponse,
-  ServiceSchedule,
-  ServiceListResponse,
-  ServicePaymentPayload,
-} from "../types";
-import type { Transaction } from "@/features/finance/transactions/types";
 import { fetchTransactions } from "@/features/finance/transactions/api";
+import type { Transaction } from "@/features/finance/transactions/types";
+import { today } from "@/lib/dates";
+import { logger } from "@/lib/logger";
+
 import {
   createService,
   fetchServiceDetail,
@@ -22,8 +16,16 @@ import {
   registerServicePayment,
   unlinkServicePayment,
 } from "../api";
-import type { ServiceTemplate } from "../components/ServiceTemplateGallery";
 import type { ServicesFilterState } from "../components/ServicesFilterPanel";
+import type { ServiceTemplate } from "../components/ServiceTemplateGallery";
+import type {
+  CreateServicePayload,
+  RegenerateServicePayload,
+  ServiceDetailResponse,
+  ServiceListResponse,
+  ServicePaymentPayload,
+  ServiceSchedule,
+} from "../types";
 
 type SummaryTotals = {
   totalExpected: number;

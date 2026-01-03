@@ -1,4 +1,5 @@
 import { Prisma } from "@prisma/client";
+
 import { normalizeRut } from "./rut.js";
 
 // --- Types ---

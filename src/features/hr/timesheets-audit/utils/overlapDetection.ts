@@ -3,7 +3,7 @@
  * Optimized for production use with memoization and efficient algorithms
  */
 
-import type { TimesheetEntryWithEmployee, OverlapInfo } from "../types";
+import type { OverlapInfo, TimesheetEntryWithEmployee } from "../types";
 
 function normalizeRole(role: string | null | undefined): string {
   return role

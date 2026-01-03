@@ -1,8 +1,8 @@
-import dayjs from "dayjs";
 import { Prisma } from "@prisma/client";
-import { prisma } from "./prisma.js";
+import dayjs from "dayjs";
 
 import { googleCalendarConfig } from "../config.js";
+import { prisma } from "./prisma.js";
 
 export type CalendarEventFilters = {
   from?: string;

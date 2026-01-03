@@ -1,12 +1,14 @@
 import dayjs from "dayjs";
-import { useAuth } from "@/context/AuthContext";
 import { useCallback, useEffect, useState } from "react";
-import Modal from "@/components/ui/Modal";
+
 import Button from "@/components/ui/Button";
-import { LOADING_SPINNER_SM } from "@/lib/styles";
-import { isRowDirty, formatDateLabel } from "../utils";
-import type { BulkRow } from "../types";
+import Modal from "@/components/ui/Modal";
+import { useAuth } from "@/context/AuthContext";
 import type { Employee } from "@/features/hr/employees/types";
+import { LOADING_SPINNER_SM } from "@/lib/styles";
+
+import type { BulkRow } from "../types";
+import { formatDateLabel, isRowDirty } from "../utils";
 import TimesheetRow from "./TimesheetRow";
 
 interface TimesheetDetailTableProps {

@@ -1,6 +1,8 @@
 import dayjs from "dayjs";
-import type { BulkRow, TimesheetSummaryRow } from "./types";
+
 import type { Employee } from "@/features/hr/employees/types";
+
+import type { BulkRow, TimesheetSummaryRow } from "./types";
 
 /**
  * Generates a PDF document as base64 string for a timesheet

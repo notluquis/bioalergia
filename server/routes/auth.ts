@@ -1,21 +1,22 @@
-import express from "express";
 import bcrypt from "bcryptjs";
-import { asyncHandler, authenticate, softAuthenticate, issueToken, sanitizeUser } from "../lib/http.js";
-import { logEvent, logWarn, requestContext } from "../lib/logger.js";
+import express from "express";
+
 import { sessionCookieName, sessionCookieOptions } from "../config.js";
-import { findUserByEmail, findUserById, resolveUserRole } from "../services/users.js";
-import type { AuthenticatedRequest } from "../types.js";
+import { asyncHandler, authenticate, issueToken, sanitizeUser, softAuthenticate } from "../lib/http.js";
+import { logEvent, logWarn, requestContext } from "../lib/logger.js";
+import { attachAbility } from "../middleware/attachAbility.js";
+import { Prisma, prisma } from "../prisma.js";
 import { loginSchema, mfaVerifySchema } from "../schemas/index.js";
 import { generateMfaSecret, verifyMfaToken } from "../services/mfa.js";
-import { updateUserMfa } from "../services/users.js";
-import { prisma, Prisma } from "../prisma.js";
 import {
-  generatePasskeyRegistrationOptions,
-  verifyPasskeyRegistration,
   generatePasskeyLoginOptions,
+  generatePasskeyRegistrationOptions,
   verifyPasskeyLogin,
+  verifyPasskeyRegistration,
 } from "../services/passkeys.js";
-import { attachAbility } from "../middleware/attachAbility.js";
+import { findUserByEmail, findUserById, resolveUserRole } from "../services/users.js";
+import { updateUserMfa } from "../services/users.js";
+import type { AuthenticatedRequest } from "../types.js";
 
 export function registerAuthRoutes(app: express.Express) {
   // --- Passkey Registration ---

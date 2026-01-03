@@ -1,21 +1,22 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import dayjs from "dayjs";
 import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import dayjs from "dayjs";
-import Button from "@/components/ui/Button";
+
 import Alert from "@/components/ui/Alert";
-import { LOADING_SPINNER_MD } from "@/lib/styles";
-import { fmtCLP } from "@/lib/format";
-import { ServicesHero, ServicesSurface } from "@/features/services/components/ServicesShell";
+import Button from "@/components/ui/Button";
+import {
+  fetchServiceDetail,
+  regenerateServiceSchedules,
+  updateService as updateServiceRequest,
+} from "@/features/services/api";
 import ServiceForm from "@/features/services/components/ServiceForm";
 import ServiceScheduleAccordion from "@/features/services/components/ServiceScheduleAccordion";
 import ServiceScheduleTable from "@/features/services/components/ServiceScheduleTable";
-import {
-  fetchServiceDetail,
-  updateService as updateServiceRequest,
-  regenerateServiceSchedules,
-} from "@/features/services/api";
+import { ServicesHero, ServicesSurface } from "@/features/services/components/ServicesShell";
 import type { CreateServicePayload, ServiceDetailResponse } from "@/features/services/types";
+import { fmtCLP } from "@/lib/format";
+import { LOADING_SPINNER_MD } from "@/lib/styles";
 
 function mapServiceToForm(service: ServiceDetailResponse["service"]): Partial<CreateServicePayload> {
   return {

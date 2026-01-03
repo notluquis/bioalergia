@@ -1,16 +1,17 @@
 import express from "express";
+
 import { asyncHandler, authenticate as requireAuth } from "../lib/http.js";
 import { authorize } from "../middleware/authorize.js";
 import {
-  startBackup,
-  startRestore,
+  getBackupDetails,
+  getBackups,
+  getBackupTables,
   getCurrentJobs,
   getJobHistory,
-  getBackups,
-  getBackupDetails,
-  getBackupTables,
-  subscribeToProgress,
   getLogs,
+  startBackup,
+  startRestore,
+  subscribeToProgress,
 } from "../services/backup/manager.js";
 
 const router = express.Router();

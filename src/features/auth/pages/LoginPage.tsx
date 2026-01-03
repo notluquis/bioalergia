@@ -1,17 +1,17 @@
-import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
-import type { ChangeEvent } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
 import { startAuthentication } from "@simplewebauthn/browser";
-
+import { useMutation } from "@tanstack/react-query";
 import { Fingerprint, Mail } from "lucide-react";
-import { useAuth } from "@/context/AuthContext";
-import { useSettings } from "@/context/SettingsContext";
-import { logger } from "@/lib/logger";
+import type { ChangeEvent } from "react";
+import { useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import ThemeToggle from "@/components/ui/ThemeToggle";
+import { useAuth } from "@/context/AuthContext";
+import { useSettings } from "@/context/SettingsContext";
 import { fetchPasskeyLoginOptions } from "@/features/auth/api";
+import { logger } from "@/lib/logger";
 
 export default function LoginPage() {
   const { login, loginWithMfa, loginWithPasskey } = useAuth();
@@ -227,7 +227,6 @@ export default function LoginPage() {
               placeholder="000000"
               autoComplete="one-time-code"
               className="text-center text-2xl tracking-widest"
-              autoFocus
               required
             />
 

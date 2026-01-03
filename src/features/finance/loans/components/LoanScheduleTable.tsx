@@ -1,7 +1,9 @@
 import dayjs from "dayjs";
+
 import Button from "@/components/ui/Button";
-import type { LoanSchedule } from "../types";
 import { currencyFormatter } from "@/lib/format";
+
+import type { LoanSchedule } from "../types";
 
 interface LoanScheduleTableProps {
   schedules: LoanSchedule[];

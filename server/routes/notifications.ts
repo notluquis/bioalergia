@@ -1,8 +1,9 @@
 import express from "express";
 import webpush from "web-push";
-import { prisma, Prisma } from "../prisma.js";
-import { logger } from "../lib/logger.js";
+
 import { authenticate } from "../lib/http.js";
+import { logger } from "../lib/logger.js";
+import { Prisma, prisma } from "../prisma.js";
 import type { AuthenticatedRequest } from "../types.js";
 
 type DbSubscription = Prisma.PushSubscriptionGetPayload<{}>;

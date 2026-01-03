@@ -1,23 +1,24 @@
-import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  getInventoryItems,
-  createInventoryItem,
-  updateInventoryItem,
-  createInventoryMovement,
-} from "@/features/inventory/api";
-import type { InventoryItem, InventoryMovement } from "@/features/inventory/types";
 import { PlusCircle } from "lucide-react";
-import Modal from "@/components/ui/Modal";
-import InventoryItemForm from "@/features/inventory/components/InventoryItemForm";
-import AdjustStockForm from "@/features/inventory/components/AdjustStockForm";
-import InventoryTable from "@/features/inventory/components/InventoryTable";
+import { useState } from "react";
+
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
-import { queryKeys } from "@/lib/queryKeys";
+import Modal from "@/components/ui/Modal";
 import { useToast } from "@/context/ToastContext";
-import { ServicesHero, ServicesSurface } from "@/features/services/components/ServicesShell";
+import {
+  createInventoryItem,
+  createInventoryMovement,
+  getInventoryItems,
+  updateInventoryItem,
+} from "@/features/inventory/api";
+import AdjustStockForm from "@/features/inventory/components/AdjustStockForm";
 import AllergyInventoryView from "@/features/inventory/components/AllergyInventoryView";
+import InventoryItemForm from "@/features/inventory/components/InventoryItemForm";
+import InventoryTable from "@/features/inventory/components/InventoryTable";
+import type { InventoryItem, InventoryMovement } from "@/features/inventory/types";
+import { ServicesHero, ServicesSurface } from "@/features/services/components/ServicesShell";
+import { queryKeys } from "@/lib/queryKeys";
 
 export default function InventoryPage() {
   const queryClient = useQueryClient();

@@ -1,10 +1,11 @@
-import dayjs from "dayjs";
 import "dayjs/locale/es";
 
+import dayjs from "dayjs";
+
 import Button from "@/components/ui/Button";
-import { LOADING_SPINNER_SM } from "@/lib/styles";
-import { numberFormatter } from "@/lib/format";
 import type { CalendarSyncStep } from "@/features/calendar/types";
+import { numberFormatter } from "@/lib/format";
+import { LOADING_SPINNER_SM } from "@/lib/styles";
 
 type SyncProgressStatus = "pending" | "in_progress" | "completed" | "error";
 

@@ -1,5 +1,6 @@
+import { CounterpartCategory, PersonType } from "@prisma/client";
+
 import { prisma } from "../prisma.js";
-import { PersonType, CounterpartCategory } from "@prisma/client";
 
 export type CreateCounterpartPayload = {
   rut: string;

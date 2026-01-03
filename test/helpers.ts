@@ -1,6 +1,7 @@
-import { prisma } from "../server/prisma.js";
-import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+
+import { prisma } from "../server/prisma.js";
 
 export const JWT_SECRET = process.env.JWT_SECRET || "test-secret";
 

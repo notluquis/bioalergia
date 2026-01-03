@@ -1,25 +1,26 @@
-import { useCallback, useMemo, useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
+import { useCallback, useMemo, useState } from "react";
+
+import Button from "@/components/ui/Button";
+import Modal from "@/components/ui/Modal";
+import { useToast } from "@/context/ToastContext";
 import {
   attachCounterpartRut,
+  type CounterpartUpsertPayload,
   createCounterpart,
   fetchCounterpart,
-  fetchCounterpartSummary,
   fetchCounterparts,
+  fetchCounterpartSummary,
   updateCounterpart,
-  type CounterpartUpsertPayload,
 } from "@/features/counterparts/api";
-import type { Counterpart, CounterpartPersonType, CounterpartCategory } from "@/features/counterparts/types";
-import CounterpartList from "@/features/counterparts/components/CounterpartList";
-import CounterpartForm from "@/features/counterparts/components/CounterpartForm";
 import AssociatedAccounts from "@/features/counterparts/components/AssociatedAccounts";
-import Button from "@/components/ui/Button";
-import { ServicesHero, ServicesSurface, ServicesGrid } from "@/features/services/components/ServicesShell";
+import CounterpartForm from "@/features/counterparts/components/CounterpartForm";
+import CounterpartList from "@/features/counterparts/components/CounterpartList";
 import { SUMMARY_RANGE_MONTHS } from "@/features/counterparts/constants";
-import { useToast } from "@/context/ToastContext";
+import type { Counterpart, CounterpartCategory, CounterpartPersonType } from "@/features/counterparts/types";
+import { ServicesGrid, ServicesHero, ServicesSurface } from "@/features/services/components/ServicesShell";
 import { normalizeRut } from "@/lib/rut";
-import Modal from "@/components/ui/Modal";
 
 export default function CounterpartsPage() {
   const [selectedId, setSelectedId] = useState<number | null>(null);

@@ -1,6 +1,7 @@
-import { prisma } from "../server/prisma.ts";
 import bcrypt from "bcryptjs";
+
 import { INITIAL_ROLES } from "../server/config/initial-roles.ts";
+import { prisma } from "../server/prisma.ts";
 
 async function main() {
   console.log("🌱 Starting seed...");

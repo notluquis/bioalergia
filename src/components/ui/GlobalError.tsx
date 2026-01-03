@@ -1,6 +1,8 @@
 import { Component, ErrorInfo, ReactNode } from "react";
-import Button from "./Button";
+
 import { logger } from "@/lib/logger";
+
+import Button from "./Button";
 
 interface Props {
   children: ReactNode;

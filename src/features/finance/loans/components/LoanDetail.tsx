@@ -1,9 +1,11 @@
-import { useMemo, useState } from "react";
-import type { ChangeEvent } from "react";
 import dayjs from "dayjs";
+import type { ChangeEvent } from "react";
+import { useMemo, useState } from "react";
+
 import Button from "@/components/ui/Button";
-import Modal from "@/components/ui/Modal";
 import Input from "@/components/ui/Input";
+import Modal from "@/components/ui/Modal";
+
 import type { LoanSchedule, LoanSummary, RegenerateSchedulePayload } from "../types";
 import LoanScheduleTable from "./LoanScheduleTable";
 
@@ -70,21 +72,21 @@ export function LoanDetail({
 
   if (!loan) {
     return (
-      <section className="flex h-full flex-col items-center justify-center rounded-3xl p-10 text-sm text-base-content/60 bg-base-100">
+      <section className="text-base-content/60 bg-base-100 flex h-full flex-col items-center justify-center rounded-3xl p-10 text-sm">
         <p>Selecciona un préstamo para ver el detalle.</p>
       </section>
     );
   }
 
   return (
-    <section className="relative flex h-full flex-col gap-6 rounded-3xl p-6 bg-base-100">
+    <section className="bg-base-100 relative flex h-full flex-col gap-6 rounded-3xl p-6">
       <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="space-y-1">
-          <h1 className="text-2xl font-bold text-primary drop-shadow-sm">{loan.title}</h1>
-          <p className="text-sm text-base-content/90">
+          <h1 className="text-primary text-2xl font-bold drop-shadow-sm">{loan.title}</h1>
+          <p className="text-base-content/90 text-sm">
             {loan.borrower_name} · {loan.borrower_type === "PERSON" ? "Persona natural" : "Empresa"}
           </p>
-          <div className="flex flex-wrap items-center gap-3 text-xs text-base-content/60">
+          <div className="text-base-content/60 flex flex-wrap items-center gap-3 text-xs">
             <span>Inicio {dayjs(loan.start_date).format("DD MMM YYYY")}</span>
             <span>
               {loan.total_installments} cuotas ·{" "}
@@ -95,7 +97,7 @@ export function LoanDetail({
         </div>
         <div className="flex items-center gap-3">
           <span
-            className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${statusBadge.className}`}
+            className={`rounded-full px-3 py-1 text-xs font-semibold tracking-wide uppercase ${statusBadge.className}`}
           >
             {statusBadge.label}
           </span>
@@ -107,24 +109,24 @@ export function LoanDetail({
         </div>
       </header>
 
-      <section className="grid gap-4 rounded-2xl border border-base-300 bg-base-200 p-4 text-sm text-base-content sm:grid-cols-4">
+      <section className="border-base-300 bg-base-200 text-base-content grid gap-4 rounded-2xl border p-4 text-sm sm:grid-cols-4">
         <div>
-          <p className="text-xs uppercase tracking-wide text-base-content/50">Capital</p>
-          <p className="text-lg font-semibold text-base-content">${loan.principal_amount.toLocaleString("es-CL")}</p>
+          <p className="text-base-content/50 text-xs tracking-wide uppercase">Capital</p>
+          <p className="text-base-content text-lg font-semibold">${loan.principal_amount.toLocaleString("es-CL")}</p>
         </div>
         <div>
-          <p className="text-xs uppercase tracking-wide text-base-content/50">Total esperado</p>
-          <p className="text-lg font-semibold text-base-content">
+          <p className="text-base-content/50 text-xs tracking-wide uppercase">Total esperado</p>
+          <p className="text-base-content text-lg font-semibold">
             ${(summary?.total_expected ?? 0).toLocaleString("es-CL")}
           </p>
         </div>
         <div>
-          <p className="text-xs uppercase tracking-wide text-base-content/50">Pagado</p>
-          <p className="text-lg font-semibold text-success">${(summary?.total_paid ?? 0).toLocaleString("es-CL")}</p>
+          <p className="text-base-content/50 text-xs tracking-wide uppercase">Pagado</p>
+          <p className="text-success text-lg font-semibold">${(summary?.total_paid ?? 0).toLocaleString("es-CL")}</p>
         </div>
         <div>
-          <p className="text-xs uppercase tracking-wide text-base-content/50">Saldo</p>
-          <p className="text-lg font-semibold text-error">
+          <p className="text-base-content/50 text-xs tracking-wide uppercase">Saldo</p>
+          <p className="text-error text-lg font-semibold">
             ${(summary?.remaining_amount ?? 0).toLocaleString("es-CL")}
           </p>
         </div>
@@ -138,8 +140,8 @@ export function LoanDetail({
       />
 
       {loan.notes && (
-        <div className="rounded-2xl border border-base-300 bg-base-200 p-4 text-sm text-base-content">
-          <p className="text-xs uppercase tracking-wide text-base-content/50">Notas</p>
+        <div className="border-base-300 bg-base-200 text-base-content rounded-2xl border p-4 text-sm">
+          <p className="text-base-content/50 text-xs tracking-wide uppercase">Notas</p>
           <p>{loan.notes}</p>
         </div>
       )}
@@ -204,8 +206,8 @@ export function LoanDetail({
       </Modal>
 
       {loading && (
-        <div className="absolute inset-0 z-30 flex items-center justify-center bg-base-100/40 backdrop-blur-sm">
-          <p className="rounded-full bg-base-100 px-4 py-2 text-sm font-semibold text-primary shadow">
+        <div className="bg-base-100/40 absolute inset-0 z-30 flex items-center justify-center backdrop-blur-sm">
+          <p className="bg-base-100 text-primary rounded-full px-4 py-2 text-sm font-semibold shadow">
             Cargando préstamo...
           </p>
         </div>

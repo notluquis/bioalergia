@@ -1,10 +1,11 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import request from "supertest";
-import express from "express";
-import { prisma } from "../server/prisma";
-import { createTestUser } from "./helpers";
 import cookieParser from "cookie-parser";
+import express from "express";
+import request from "supertest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+
+import { prisma } from "../server/prisma";
 import { registerAuthRoutes } from "../server/routes/auth";
+import { createTestUser } from "./helpers";
 
 // Setup express app for testing
 const app = express();

@@ -1,23 +1,23 @@
-import { useEffect, useMemo, useState } from "react";
+import "dayjs/locale/es";
+
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
-import "dayjs/locale/es";
-import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
-import { Filter, ChevronLeft, ChevronRight } from "lucide-react";
+import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
+import { ChevronLeft, ChevronRight, Filter } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 
 dayjs.extend(isoWeek);
 dayjs.extend(isSameOrBefore);
 dayjs.extend(isSameOrAfter);
 
-import Button from "@/components/ui/Button";
 import Alert from "@/components/ui/Alert";
+import Button from "@/components/ui/Button";
 import { CalendarFilterPanel } from "@/features/calendar/components/CalendarFilterPanel";
+import ScheduleCalendar from "@/features/calendar/components/ScheduleCalendar";
 import { useCalendarEvents } from "@/features/calendar/hooks/useCalendarEvents";
 import { numberFormatter } from "@/lib/format";
 import { PAGE_CONTAINER } from "@/lib/styles";
-
-import ScheduleCalendar from "@/features/calendar/components/ScheduleCalendar";
 
 dayjs.locale("es");
 

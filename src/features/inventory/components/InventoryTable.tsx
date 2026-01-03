@@ -1,4 +1,5 @@
 import Button from "@/components/ui/Button";
+
 import type { InventoryItem } from "../types";
 
 interface InventoryTableProps {

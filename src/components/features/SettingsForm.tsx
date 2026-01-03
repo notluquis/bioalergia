@@ -1,12 +1,14 @@
+import { useMutation, useQuery } from "@tanstack/react-query";
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { useSettings, type AppSettings } from "@/context/SettingsContext";
+
 import { useAuth } from "@/context/AuthContext";
+import { type AppSettings, useSettings } from "@/context/SettingsContext";
+import { fetchInternalSettings, updateInternalSettings, uploadBrandingAsset } from "@/features/settings/api";
+import { GRID_2_COL_MD } from "@/lib/styles";
+
+import Alert from "../ui/Alert";
 import Button from "../ui/Button";
 import Input from "../ui/Input";
-import Alert from "../ui/Alert";
-import { GRID_2_COL_MD } from "@/lib/styles";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { fetchInternalSettings, updateInternalSettings, uploadBrandingAsset } from "@/features/settings/api";
 
 const FALLBACK_LOGO_PATH = "/logo192.png";
 const FALLBACK_FAVICON_PATH = "/logo_bimi.svg";

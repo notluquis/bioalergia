@@ -1,9 +1,11 @@
 import dayjs from "dayjs";
 import { memo } from "react";
+
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import { fmtCLP } from "@/lib/format";
+
 import type { BalanceDraft, BalancesApiResponse } from "../types";
 import { formatBalanceInput } from "../utils";
 

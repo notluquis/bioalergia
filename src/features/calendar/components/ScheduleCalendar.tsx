@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from "react";
 import dayjs from "dayjs";
 import { X } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { CalendarEventDetail } from "../types";
-import WeekGrid from "./WeekGrid";
 import { DailyEventCard } from "./DailyEventCard";
+import WeekGrid from "./WeekGrid";
 
 export type ScheduleCalendarProps = {
   events: CalendarEventDetail[];

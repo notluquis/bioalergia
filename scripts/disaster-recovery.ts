@@ -8,13 +8,14 @@
  * Usage: npx tsx scripts/disaster-recovery.ts --date 2026-01-02
  */
 
-import { prisma } from "../server/prisma.js";
-import { listBackups, downloadFromDrive } from "../server/services/backup/drive.js";
-import { restoreFromBackup } from "../server/services/backup/backup.js";
 import { createReadStream } from "fs";
-import { createInterface } from "readline";
 import { tmpdir } from "os";
 import { join } from "path";
+import { createInterface } from "readline";
+
+import { prisma } from "../server/prisma.js";
+import { restoreFromBackup } from "../server/services/backup/backup.js";
+import { downloadFromDrive, listBackups } from "../server/services/backup/drive.js";
 
 interface AuditLogEntry {
   id: string;
@@ -70,8 +71,12 @@ async function applyIncrementalLog(filepath: string): Promise<number> {
     try {
       const entry: AuditLogEntry = JSON.parse(line);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const model = (prisma as any)[entry.table];
+      interface PrismaDelegate {
+        upsert(args: { where: unknown; create: unknown; update: unknown }): Promise<void>;
+        update(args: { where: unknown; data: unknown }): Promise<void>;
+        delete(args: { where: unknown }): Promise<void>;
+      }
+      const model = (prisma as unknown as Record<string, PrismaDelegate>)[entry.table];
       if (!model) continue;
 
       // Parse ID (could be int or string)
@@ -141,7 +146,8 @@ async function runRecovery() {
   await downloadFromDrive(fullBackup.id, tempPath);
 
   console.log("   Restoring from full backup...");
-  await restoreFromBackup(tempPath);
+  if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL is not set");
+  await restoreFromBackup(process.env.DATABASE_URL, tempPath);
   console.log("   ✅ Full backup restored");
 
   // Step 3: Find and apply incrementals
@@ -178,4 +184,4 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   });
 }
 
-export { runRecovery, findLatestFullBackup, findIncrementalsSince, applyIncrementalLog };
+export { applyIncrementalLog, findIncrementalsSince, findLatestFullBackup, runRecovery };

@@ -1,5 +1,7 @@
 import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
+import { Link } from "react-router-dom";
+
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
@@ -10,9 +12,8 @@ import ServiceList from "@/features/services/components/ServiceList";
 import ServicesFilterPanel from "@/features/services/components/ServicesFilterPanel";
 import ServicesUnifiedAgenda from "@/features/services/components/ServicesUnifiedAgenda";
 import { useServicesOverview } from "@/features/services/hooks/useServicesOverview";
-import { Link } from "react-router-dom";
-import { numberFormatter, currencyFormatter } from "@/lib/format";
-import { CARD_COMPACT, TITLE_MD, LOADING_SPINNER_MD, LOADING_SPINNER_XS } from "@/lib/styles";
+import { currencyFormatter, numberFormatter } from "@/lib/format";
+import { CARD_COMPACT, LOADING_SPINNER_MD, LOADING_SPINNER_XS, TITLE_MD } from "@/lib/styles";
 
 export default function ServicesOverviewContent() {
   const overview = useServicesOverview();

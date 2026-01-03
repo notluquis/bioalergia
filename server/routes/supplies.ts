@@ -1,13 +1,14 @@
 import express from "express";
+
 import { asyncHandler, authenticate } from "../lib/http.js";
 import { authorize } from "../middleware/authorize.js";
+import { supplyRequestSchema, updateSupplyRequestStatusSchema } from "../schemas/index.js";
 import {
-  getSupplyRequests,
-  getCommonSupplies,
   createSupplyRequest,
+  getCommonSupplies,
+  getSupplyRequests,
   updateSupplyRequestStatus,
 } from "../services/supplies.js";
-import { supplyRequestSchema, updateSupplyRequestStatusSchema } from "../schemas/index.js";
 
 export function registerSuppliesRoutes(app: express.Express) {
   const router = express.Router();

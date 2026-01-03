@@ -1,8 +1,9 @@
-import { createContext, useCallback, useContext, useMemo, useState, useEffect, type ReactNode } from "react";
+import { MongoAbility, RawRuleOf } from "@casl/ability";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { RawRuleOf, MongoAbility } from "@casl/ability";
-import { logger } from "@/lib/logger";
+import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useState } from "react";
+
 import { apiClient, ApiError } from "@/lib/apiClient";
+import { logger } from "@/lib/logger";
 import type { Role } from "@/types/roles";
 
 export type UserRole = string;
@@ -37,7 +38,7 @@ export type AuthContextType = {
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-import { updateAbility, ability } from "@/lib/authz/ability";
+import { ability, updateAbility } from "@/lib/authz/ability";
 
 // ... (existing imports)
 

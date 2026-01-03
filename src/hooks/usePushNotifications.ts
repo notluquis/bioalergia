@@ -1,11 +1,12 @@
-import { useState, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import {
+  sendTestNotification as sendTestNotificationApi,
   subscribeToNotifications,
   unsubscribeFromNotifications,
-  sendTestNotification as sendTestNotificationApi,
 } from "@/features/notifications/api";
 
 const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY;

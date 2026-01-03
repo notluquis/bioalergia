@@ -1,15 +1,16 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ChevronUp, Plus } from "lucide-react";
 import type { ChangeEvent } from "react";
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+
+import Alert from "@/components/ui/Alert";
+import Button from "@/components/ui/Button";
+import Checkbox from "@/components/ui/Checkbox";
 import { useAuth } from "@/context/AuthContext";
-import { fetchEmployees, deactivateEmployee, updateEmployee } from "@/features/hr/employees/api";
-import type { Employee } from "@/features/hr/employees/types";
+import { deactivateEmployee, fetchEmployees, updateEmployee } from "@/features/hr/employees/api";
 import EmployeeForm from "@/features/hr/employees/components/EmployeeForm";
 import EmployeeTable from "@/features/hr/employees/components/EmployeeTable";
-import Alert from "@/components/ui/Alert";
-import Checkbox from "@/components/ui/Checkbox";
-import Button from "@/components/ui/Button";
-import { ChevronUp, Plus } from "lucide-react";
+import type { Employee } from "@/features/hr/employees/types";
 import { PAGE_CONTAINER, TITLE_LG } from "@/lib/styles";
 
 export default function EmployeesPage() {

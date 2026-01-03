@@ -1,4 +1,5 @@
 import { apiClient } from "@/lib/apiClient";
+
 import type { ParticipantInsightResponse, ParticipantLeaderboardResponse } from "./types";
 
 export async function fetchParticipantInsight(

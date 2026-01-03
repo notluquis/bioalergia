@@ -1,4 +1,5 @@
 import { apiClient } from "@/lib/apiClient";
+
 import type { User, UserProfile } from "./types";
 
 export interface UsersResponse {

@@ -1,9 +1,10 @@
 import express from "express";
+
 import { asyncHandler, authenticate } from "../lib/http.js";
-import { authorize } from "../middleware/authorize.js";
 import { logEvent, requestContext } from "../lib/logger.js";
-import { createLoan, getLoanById, listLoans, updateLoan, deleteLoan } from "../services/loans.js";
+import { authorize } from "../middleware/authorize.js";
 import { loanCreateSchema } from "../schemas/index.js";
+import { createLoan, deleteLoan, getLoanById, listLoans, updateLoan } from "../services/loans.js";
 import type { AuthenticatedRequest } from "../types.js";
 
 export function registerLoanRoutes(app: express.Express) {

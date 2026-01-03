@@ -1,6 +1,7 @@
 import { z } from "zod";
-import type { CalendarUnclassifiedEvent } from "@/features/calendar/types";
+
 import { classificationSchema } from "@/features/calendar/schemas";
+import type { CalendarUnclassifiedEvent } from "@/features/calendar/types";
 
 export type ParsedPayload = {
   category: string | null;

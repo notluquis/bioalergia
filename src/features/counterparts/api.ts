@@ -1,11 +1,12 @@
 import { apiClient } from "@/lib/apiClient";
+
 import type {
   Counterpart,
   CounterpartAccount,
   CounterpartAccountSuggestion,
-  CounterpartSummary,
-  CounterpartPersonType,
   CounterpartCategory,
+  CounterpartPersonType,
+  CounterpartSummary,
 } from "./types";
 
 export type CounterpartUpsertPayload = {

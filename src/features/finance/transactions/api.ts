@@ -1,5 +1,6 @@
 import { apiClient } from "@/lib/apiClient";
-import type { Filters, DbMovement } from "./types";
+
+import type { DbMovement, Filters } from "./types";
 
 export type TransactionsApiResponse = {
   status: "ok" | "error";

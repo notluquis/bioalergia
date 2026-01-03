@@ -1,18 +1,16 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Shield, UserPlus, Users } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useToast } from "@/context/ToastContext";
 
-import { inviteUser } from "@/features/users/api";
-import { fetchRoles } from "@/features/roles/api";
 import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
 import Checkbox from "@/components/ui/Checkbox";
-import { Shield, UserPlus, Users } from "lucide-react";
-import { getPersonFullName } from "@/lib/person";
-
+import Input from "@/components/ui/Input";
+import { useToast } from "@/context/ToastContext";
 import { fetchPeople } from "@/features/people/api";
-
+import { fetchRoles } from "@/features/roles/api";
+import { inviteUser } from "@/features/users/api";
+import { getPersonFullName } from "@/lib/person";
 // type AvailableRole removed
 import type { Role } from "@/types/roles";
 

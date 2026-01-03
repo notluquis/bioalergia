@@ -1,12 +1,13 @@
 import { Router } from "express";
-import { prisma } from "../prisma.js";
 import { z } from "zod";
+
 import { authenticate as requireAuth } from "../lib/http.js";
-import { authorize } from "../middleware/authorize.js";
 import { logger } from "../lib/logger.js";
-import type { AuthenticatedRequest } from "../types.js";
-import { logAudit } from "../services/audit.js";
 import { mapPerson, type PersonWithRoles } from "../lib/mappers.js";
+import { authorize } from "../middleware/authorize.js";
+import { prisma } from "../prisma.js";
+import { logAudit } from "../services/audit.js";
+import type { AuthenticatedRequest } from "../types.js";
 
 const router = Router();
 

@@ -1,10 +1,11 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { AlertCircle, User as UserIcon } from "lucide-react";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createRole, updateRole, fetchRoleUsers, type RoleUser } from "@/features/roles/api";
+
 import { useToast } from "@/context/ToastContext";
+import { createRole, fetchRoleUsers, type RoleUser, updateRole } from "@/features/roles/api";
 import { Role } from "@/types/roles";
-import { AlertCircle, User as UserIcon } from "lucide-react";
 
 interface RoleFormModalProps {
   role?: Role | null; // If present, Edit mode. If null, Create mode.
@@ -76,10 +77,11 @@ export function RoleFormModal({ role, isOpen, onClose }: RoleFormModalProps) {
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
           <div className="form-control w-full">
-            <label className="label">
+            <label className="label" htmlFor="role-name">
               <span className="label-text">Nombre del Rol</span>
             </label>
             <input
+              id="role-name"
               type="text"
               placeholder="Ej. Supervisor de Finanzas"
               className={`input input-bordered w-full ${errors.name ? "input-error" : ""}`}
@@ -89,10 +91,11 @@ export function RoleFormModal({ role, isOpen, onClose }: RoleFormModalProps) {
           </div>
 
           <div className="form-control w-full">
-            <label className="label">
+            <label className="label" htmlFor="role-description">
               <span className="label-text">Descripción</span>
             </label>
             <input
+              id="role-description"
               type="text"
               placeholder="Descripción breve de las responsabilidades"
               className="input input-bordered w-full"

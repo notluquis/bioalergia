@@ -2,21 +2,21 @@
 import { PureAbility, RawRuleOf } from "@casl/ability";
 import { createPrismaAbility, PrismaQuery, Subjects } from "@casl/prisma";
 import {
-  User,
-  Transaction,
-  Role,
-  Permission,
-  Loan,
-  Service,
-  Employee,
   Counterpart,
-  EmployeeTimesheet,
-  SupplyRequest,
-  Event,
-  Person,
-  DailyProductionBalance,
-  InventoryItem,
   DailyBalance,
+  DailyProductionBalance,
+  Employee,
+  EmployeeTimesheet,
+  Event,
+  InventoryItem,
+  Loan,
+  Permission,
+  Person,
+  Role,
+  Service,
+  SupplyRequest,
+  Transaction,
+  User,
 } from "@prisma/client";
 
 // Define Subjects including 'all' and Prisma models

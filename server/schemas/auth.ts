@@ -1,4 +1,5 @@
 import { z } from "zod";
+
 import { validateRut } from "../lib/rut.js";
 
 export const loginSchema = z.object({

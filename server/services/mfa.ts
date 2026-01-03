@@ -1,5 +1,6 @@
 import { authenticator } from "otplib";
 import qrcode from "qrcode";
+
 import { logEvent } from "../lib/logger.js";
 
 /**

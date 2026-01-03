@@ -8,8 +8,8 @@
  * - Revert changes (granular)
  */
 
-import { prisma, Prisma } from "../../prisma.js";
 import { logEvent, logWarn } from "../../lib/logger.js";
+import { Prisma, prisma } from "../../prisma.js";
 
 // Map actual table names (dbName) to Prisma Client model property names (camelCase)
 // Define a generic delegate interface for the methods we use

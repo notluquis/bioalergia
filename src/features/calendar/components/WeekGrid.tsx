@@ -1,10 +1,13 @@
-import { useMemo } from "react";
+import "./WeekGrid.css";
+
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
-import type { CalendarEventDetail } from "../types";
+import { useMemo } from "react";
+
 import { currencyFormatter } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import "./WeekGrid.css";
+
+import type { CalendarEventDetail } from "../types";
 
 dayjs.extend(isoWeek);
 

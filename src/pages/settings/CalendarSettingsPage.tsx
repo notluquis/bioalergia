@@ -1,11 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
-import { CheckCircle2, AlertCircle, RefreshCw, Calendar } from "lucide-react";
+import { AlertCircle, Calendar, CheckCircle2, RefreshCw } from "lucide-react";
+
 import Button from "@/components/ui/Button";
-import { cn } from "@/lib/utils";
 import { fetchCalendars } from "@/features/calendar/api";
-import type { CalendarData } from "@/features/calendar/types";
-import { useCalendarEvents } from "@/features/calendar/hooks/useCalendarEvents";
 import { SyncProgressPanel } from "@/features/calendar/components/SyncProgressPanel";
+import { useCalendarEvents } from "@/features/calendar/hooks/useCalendarEvents";
+import type { CalendarData } from "@/features/calendar/types";
+import { cn } from "@/lib/utils";
 
 export default function CalendarSettingsPage() {
   const { syncing, syncError, syncProgress, syncDurationMs, syncNow, syncLogs, hasRunningSyncFromOtherSource } =

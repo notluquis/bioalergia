@@ -1,11 +1,12 @@
 import { useMemo } from "react";
 
+import Alert from "@/components/ui/Alert";
+import Button from "@/components/ui/Button";
+import Checkbox from "@/components/ui/Checkbox";
 import { useAuth } from "@/context/AuthContext";
 import { useTable } from "@/hooks";
+
 import type { Employee } from "../types";
-import Button from "@/components/ui/Button";
-import Alert from "@/components/ui/Alert";
-import Checkbox from "@/components/ui/Checkbox";
 
 type EmployeeColumn = "name" | "role" | "email" | "rut" | "bank" | "retentionRate" | "status" | "actions";
 

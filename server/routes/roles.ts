@@ -1,9 +1,10 @@
 import express from "express";
+
 import { asyncHandler, authenticate } from "../lib/index.js";
 import { authorize } from "../middleware/authorize.js";
-import { listRoles, createRole, updateRole, deleteRole, assignPermissionsToRole } from "../services/roles.js";
-import { listPermissions, syncPermissions } from "../services/permissions.js";
 import { prisma } from "../prisma.js";
+import { listPermissions, syncPermissions } from "../services/permissions.js";
+import { assignPermissionsToRole, createRole, deleteRole, listRoles, updateRole } from "../services/roles.js";
 
 export function registerRoleRoutes(app: express.Express) {
   // --- Roles ---

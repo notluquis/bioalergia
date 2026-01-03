@@ -1,13 +1,16 @@
-import React from "react";
-import { fmtCLP } from "@/lib/format";
-import dayjs from "dayjs";
 import "dayjs/locale/es";
+
+import dayjs from "dayjs";
+import type { CellHookData } from "jspdf-autotable";
+import React from "react";
+
 import Button from "@/components/ui/Button";
 import Checkbox from "@/components/ui/Checkbox";
 import { useSettings } from "@/context/SettingsContext";
 import type { Employee } from "@/features/hr/employees/types";
+import { fmtCLP } from "@/lib/format";
+
 import type { BulkRow, TimesheetSummaryRow } from "../types";
-import type { CellHookData } from "jspdf-autotable";
 
 type TimesheetColumnKey = "date" | "entrada" | "salida" | "worked" | "overtime";
 

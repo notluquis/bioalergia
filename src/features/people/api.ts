@@ -1,5 +1,5 @@
 import { apiClient } from "@/lib/apiClient";
-import type { Person, Counterpart } from "@/types/schema";
+import type { Counterpart, Person } from "@/types/schema";
 
 export interface CounterpartWithExtras extends Counterpart {
   institution?: { name: string };

@@ -1,15 +1,16 @@
 import React from "react";
 import { Outlet, useNavigation } from "react-router-dom";
 import { useDebounce } from "use-debounce";
-import Sidebar from "./components/Layout/Sidebar";
+
+import { PerformanceIndicator } from "./components/features/PerformanceIndicator";
+import { UpdateNotification } from "./components/features/UpdateNotification";
 import Header from "./components/Layout/Header";
 import { BottomNav } from "./components/Layout/MobileNav";
-import { BUILD_TIMESTAMP } from "./version";
-import { useSettings } from "./context/SettingsContext";
-import { UpdateNotification } from "./components/features/UpdateNotification";
-import { PerformanceIndicator } from "./components/features/PerformanceIndicator";
+import Sidebar from "./components/Layout/Sidebar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./components/ui/Tooltip";
 import { useAuth } from "./context/AuthContext";
+import { useSettings } from "./context/SettingsContext";
+import { BUILD_TIMESTAMP } from "./version";
 
 export default function App() {
   const { impersonatedRole, stopImpersonating } = useAuth();

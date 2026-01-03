@@ -48,28 +48,30 @@ window.addEventListener("unhandledrejection", (event) => {
   }
 });
 
-import React, { Suspense, lazy } from "react";
-import ReactDOM from "react-dom/client";
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "./index.css";
 import "./i18n";
+
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import React, { lazy, Suspense } from "react";
+import ReactDOM from "react-dom/client";
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
+
+import PublicOnlyRoute from "@/components/guards/PublicOnlyRoute";
+import RequireAuth from "@/components/guards/RequireAuth";
+import RouteErrorBoundary from "@/components/guards/RouteErrorBoundary";
+
 import App from "./App";
+import { ChunkErrorBoundary } from "./components/ui/ChunkErrorBoundary";
+import { GlobalError } from "./components/ui/GlobalError";
+import PageLoader from "./components/ui/PageLoader";
 import { AuthProvider } from "./context/AuthContext";
 import { SettingsProvider } from "./context/SettingsContext";
 import { ToastProvider } from "./context/ToastContext";
-import { GlobalError } from "./components/ui/GlobalError";
-import { ChunkErrorBoundary } from "./components/ui/ChunkErrorBoundary";
-import RequireAuth from "@/components/guards/RequireAuth";
-import PublicOnlyRoute from "@/components/guards/PublicOnlyRoute";
-import RouteErrorBoundary from "@/components/guards/RouteErrorBoundary";
-import { initPerformanceMonitoring } from "./lib/performance";
 import { AbilityProvider } from "./lib/authz/AbilityProvider";
-import PageLoader from "./components/ui/PageLoader";
-import NotFoundPage from "./pages/NotFoundPage";
-
+import { initPerformanceMonitoring } from "./lib/performance";
 // Generate routes from unified config
 import { generateRoutes } from "./lib/route-generator";
+import NotFoundPage from "./pages/NotFoundPage";
 
 // Pages that are outside the main route config
 const Login = lazy(() => import("@/features/auth/pages/LoginPage"));

@@ -1,5 +1,4 @@
 import type { DbMovement } from "@/features/finance/transactions/types";
-
 import { CounterpartCategory, PersonType } from "@/types/schema";
 
 export type CounterpartPersonType = PersonType;

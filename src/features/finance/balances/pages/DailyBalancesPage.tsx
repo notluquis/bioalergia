@@ -1,20 +1,21 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import type { ChangeEvent } from "react";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import { useQuery, keepPreviousData } from "@tanstack/react-query";
+import type { ChangeEvent } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+
+import Alert from "@/components/ui/Alert";
+import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
 import { useAuth } from "@/context/AuthContext";
-import { logger } from "@/lib/logger";
-import { DailyBalancesPanel } from "@/features/finance/balances/components/DailyBalancesPanel";
+import { fetchBalances } from "@/features/finance/balances/api";
 import { BalanceSummary } from "@/features/finance/balances/components/BalanceSummary";
+import { DailyBalancesPanel } from "@/features/finance/balances/components/DailyBalancesPanel";
+import { useDailyBalanceManagement } from "@/features/finance/balances/hooks/useDailyBalanceManagement";
+import { useQuickDateRange } from "@/features/finance/balances/hooks/useQuickDateRange";
 import type { BalanceDraft, BalancesApiResponse } from "@/features/finance/balances/types";
 import { deriveInitialBalance, formatBalanceInput } from "@/features/finance/balances/utils";
-import { useQuickDateRange } from "@/features/finance/balances/hooks/useQuickDateRange";
-import { useDailyBalanceManagement } from "@/features/finance/balances/hooks/useDailyBalanceManagement";
-import { fetchBalances } from "@/features/finance/balances/api";
-import Alert from "@/components/ui/Alert";
-import Input from "@/components/ui/Input";
-import Button from "@/components/ui/Button";
 import { today } from "@/lib/dates";
+import { logger } from "@/lib/logger";
 
 export default function DailyBalances() {
   const { can } = useAuth();

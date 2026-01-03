@@ -1,5 +1,6 @@
 import http from "node:http";
-import { describe, it, expect } from "vitest";
+
+import { describe, expect, it } from "vitest";
 
 // Minimal integration test for preview -> import flow
 // Run with: RUN_WITHDRAWALS_IT=1 TEST_COOKIE="mp_session=..." node test/withdrawals.integration.test.ts

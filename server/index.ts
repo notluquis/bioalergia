@@ -1,32 +1,31 @@
-import express from "express";
-import type { NextFunction, Request, Response } from "express";
-import cors from "cors";
 import cookieParser from "cookie-parser";
+import cors from "cors";
+import type { NextFunction, Request, Response } from "express";
+import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
 
 import { PORT } from "./config.js";
-import { prisma } from "./prisma.js";
-import { logger, bindRequestLogger, getRequestLogger } from "./lib/logger.js";
-import { registerAuthRoutes } from "./routes/auth.js";
-import { registerSettingsRoutes } from "./routes/settings.js";
-import { registerTransactionRoutes } from "./routes/transactions.js";
-import { registerEmployeeRoutes } from "./routes/employees.js";
-import { registerTimesheetRoutes } from "./routes/timesheets.js";
-import { registerCounterpartRoutes } from "./routes/counterparts.js";
-import { registerInventoryRoutes } from "./routes/inventory.js";
-import { registerUserRoutes } from "./routes/users.js";
-import { registerLoanRoutes } from "./routes/loans.js";
-import { registerServiceRoutes } from "./routes/services.js";
-import { registerCalendarEventRoutes } from "./routes/calendar-events.js";
-import { getUploadsRootDir } from "./lib/uploads.js";
-import { registerDailyProductionBalanceRoutes } from "./routes/daily-production-balances.js";
-
 import { startCalendarCron, stopCalendarCron } from "./lib/calendar-cron.js";
 import { setupAllWatchChannels } from "./lib/google-calendar-watch.js";
-import shareTargetRouter from "./routes/share-target.js";
-import notificationsRouter from "./routes/notifications.js";
+import { bindRequestLogger, getRequestLogger, logger } from "./lib/logger.js";
+import { getUploadsRootDir } from "./lib/uploads.js";
+import { prisma } from "./prisma.js";
+import { registerAuthRoutes } from "./routes/auth.js";
+import { registerCalendarEventRoutes } from "./routes/calendar-events.js";
+import { registerCounterpartRoutes } from "./routes/counterparts.js";
 import csvUploadRouter from "./routes/csv-upload/index.js";
+import { registerDailyProductionBalanceRoutes } from "./routes/daily-production-balances.js";
+import { registerEmployeeRoutes } from "./routes/employees.js";
+import { registerInventoryRoutes } from "./routes/inventory.js";
+import { registerLoanRoutes } from "./routes/loans.js";
+import notificationsRouter from "./routes/notifications.js";
+import { registerServiceRoutes } from "./routes/services.js";
+import { registerSettingsRoutes } from "./routes/settings.js";
+import shareTargetRouter from "./routes/share-target.js";
+import { registerTimesheetRoutes } from "./routes/timesheets.js";
+import { registerTransactionRoutes } from "./routes/transactions.js";
+import { registerUserRoutes } from "./routes/users.js";
 
 export const app = express();
 
@@ -41,10 +40,11 @@ app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 app.use(cookieParser());
 import compression from "compression";
+import helmet from "helmet";
+
+import { apiLimiter, authLimiter, CSP_HEADER_VALUE } from "./config/security.js";
 import { softAuthenticate } from "./lib/http.js";
 import { attachAbility } from "./middleware/attachAbility.js";
-import helmet from "helmet";
-import { CSP_HEADER_VALUE, apiLimiter, authLimiter } from "./config/security.js";
 
 // Cloudflare Proxy Trust
 app.set("trust proxy", 1); // Trust the first proxy (Cloudflare)

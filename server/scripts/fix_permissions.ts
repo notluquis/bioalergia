@@ -1,4 +1,5 @@
 import "dotenv/config";
+
 import { prisma } from "../prisma.js";
 import { syncPermissions } from "../services/permissions.js";
 

@@ -1,11 +1,8 @@
+import { LogOut, User } from "lucide-react";
 import React, { useMemo } from "react";
-import { NavLink, useLocation, useNavigation, Link } from "react-router-dom";
-import { useAuth } from "@/context/AuthContext";
-import { useCan } from "@/hooks/useCan";
-import { cn } from "@/lib/utils";
-import { User, LogOut } from "lucide-react";
-import { getNavSections, type NavItem } from "@/lib/nav-generator";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/Tooltip";
+import { Link, NavLink, useLocation, useNavigation } from "react-router-dom";
+
+import Backdrop from "@/components/ui/Backdrop";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,6 +11,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/DropdownMenu";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/Tooltip";
+import { useAuth } from "@/context/AuthContext";
+import { useCan } from "@/hooks/useCan";
+import { getNavSections, type NavItem } from "@/lib/nav-generator";
+import { cn } from "@/lib/utils";
 
 interface SidebarProps {
   isOpen: boolean; // For mobile drawer state
@@ -196,10 +198,7 @@ export default function Sidebar({ isOpen, isMobile, onClose }: SidebarProps) {
 
   return (
     <TooltipProvider delayDuration={0}>
-      {/* Mobile Overlay */}
-      {isMobile && isOpen && (
-        <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm transition-opacity" onClick={onClose} />
-      )}
+      <Backdrop isVisible={isMobile && isOpen} onClose={onClose} zIndex={40} />
 
       <aside
         className={sidebarClasses}

@@ -1,7 +1,10 @@
-import React, { useEffect } from "react";
 import { X } from "lucide-react";
+import React, { useEffect } from "react";
 import { createPortal } from "react-dom";
+
 import { cn } from "@/lib/utils";
+
+import Backdrop from "./Backdrop";
 import Button from "./Button";
 
 interface ModalProps {
@@ -40,15 +43,12 @@ export default function Modal({ isOpen, onClose, title, children, className, box
   if (!isOpen) return null;
 
   return createPortal(
-    <div
-      className={cn("modal modal-open bg-base-content/20 backdrop-blur-md transition-all duration-300", className)}
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
+    <div className={cn("modal modal-open flex items-center justify-center", className)}>
+      <Backdrop isVisible={isOpen} onClose={onClose} className="z-0" />
+
       <div
         className={cn(
-          "modal-box surface-elevated border-base-300/50 ring-base-300/30 relative w-full max-w-2xl rounded-[28px] border p-6 shadow-2xl ring-1",
+          "modal-box surface-elevated border-base-300/50 ring-base-300/30 relative z-10 w-full max-w-2xl rounded-[28px] border p-6 shadow-2xl ring-1",
           boxClassName
         )}
       >

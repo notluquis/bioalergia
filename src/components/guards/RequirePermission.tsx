@@ -1,8 +1,9 @@
 import { Navigate, useLocation } from "react-router-dom";
+
+import Alert from "@/components/ui/Alert";
 import { useAuth } from "@/context/AuthContext";
 import { useAbility } from "@/lib/authz/AbilityProvider";
 import { LOADING_SPINNER_MD } from "@/lib/styles";
-import Alert from "@/components/ui/Alert";
 
 interface RequirePermissionProps {
   children: React.ReactNode;

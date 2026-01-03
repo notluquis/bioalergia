@@ -1,10 +1,12 @@
-import { useMemo, useState } from "react";
 import dayjs from "dayjs";
-import type { ServiceSchedule, ServiceSummary } from "../types";
+import { useMemo, useState } from "react";
+
 import Button from "@/components/ui/Button";
+import { today } from "@/lib/dates";
 import { currencyFormatter } from "@/lib/format";
 import { LOADING_SPINNER_XS } from "@/lib/styles";
-import { today } from "@/lib/dates";
+
+import type { ServiceSchedule, ServiceSummary } from "../types";
 
 type ServicesUnifiedAgendaProps = {
   items: Array<{ service: ServiceSummary; schedule: ServiceSchedule }>;

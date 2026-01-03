@@ -1,41 +1,40 @@
+import dayjs from "dayjs";
 import express from "express";
 import type { ParsedQs } from "qs";
-import dayjs from "dayjs";
 
-import { asyncHandler, authenticate } from "../lib/index.js";
-import { authorize } from "../middleware/authorize.js";
+import { googleCalendarConfig } from "../config.js";
+import { syncGoogleCalendarOnce } from "../lib/google-calendar.js";
 import {
+  type CalendarEventFilters,
   getCalendarAggregates,
   getCalendarEventsByDate,
-  type CalendarEventFilters,
 } from "../lib/google-calendar-queries.js";
-import { syncGoogleCalendarOnce } from "../lib/google-calendar.js";
-import { prisma, Prisma } from "../prisma.js";
-
+import { asyncHandler, authenticate } from "../lib/index.js";
 import {
-  loadSettings,
+  coercePositiveInteger,
+  ensureArray,
+  normalizeDate,
+  normalizeSearch,
+  type QueryValue,
+} from "../lib/query-helpers.js";
+import { authorize } from "../middleware/authorize.js";
+import {
+  CATEGORY_CHOICES,
+  isIgnoredEvent,
+  parseCalendarMetadata,
+  TREATMENT_STAGE_CHOICES,
+} from "../modules/calendar/parsers.js";
+import { Prisma, prisma } from "../prisma.js";
+import { updateClassificationSchema } from "../schemas/index.js";
+import {
   createCalendarSyncLogEntry,
   finalizeCalendarSyncLogEntry,
   listCalendarSyncLogs,
   listUnclassifiedCalendarEvents,
-  updateCalendarEventClassification,
+  loadSettings,
   type UnclassifiedEvent,
+  updateCalendarEventClassification,
 } from "../services/calendar.js";
-import {
-  ensureArray,
-  normalizeSearch,
-  coercePositiveInteger,
-  normalizeDate,
-  type QueryValue,
-} from "../lib/query-helpers.js";
-import { googleCalendarConfig } from "../config.js";
-import { updateClassificationSchema } from "../schemas/index.js";
-import {
-  parseCalendarMetadata,
-  isIgnoredEvent,
-  CATEGORY_CHOICES,
-  TREATMENT_STAGE_CHOICES,
-} from "../modules/calendar/parsers.js";
 
 function coerceMaxDays(value: QueryValue): number | undefined {
   return coercePositiveInteger(value);

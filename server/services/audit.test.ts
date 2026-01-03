@@ -1,6 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { logAudit } from "./audit.js";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
 import { prisma } from "../prisma.js";
+import { logAudit } from "./audit.js";
 
 vi.mock("../prisma.js", () => ({
   prisma: {

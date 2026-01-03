@@ -1,6 +1,7 @@
-import type { Counterpart, CounterpartCategory } from "../types";
 import Button from "@/components/ui/Button";
 import { formatRut } from "@/lib/rut";
+
+import type { Counterpart, CounterpartCategory } from "../types";
 
 interface CounterpartListProps {
   counterparts: Counterpart[];
@@ -31,7 +32,7 @@ export default function CounterpartList({
 }: CounterpartListProps) {
   return (
     <aside
-      className={`surface-recessed flex h-full min-h-0 flex-col gap-4 overflow-hidden p-5 text-sm text-base-content ${className ?? ""}`}
+      className={`surface-recessed text-base-content flex h-full min-h-0 flex-col gap-4 overflow-hidden p-5 text-sm ${className ?? ""}`}
     >
       <header className="flex items-center justify-between gap-3">
         <h2 className="typ-caption text-base-content/80">Contrapartes</h2>
@@ -44,31 +45,32 @@ export default function CounterpartList({
           const isActive = selectedId === item.id;
           return (
             <li key={item.id}>
-              <div
+              <button
+                type="button"
                 onClick={() => onSelectCounterpart(item.id)}
                 className={`group w-full cursor-pointer rounded-2xl border px-3 py-2 text-left transition-all ${
                   isActive
                     ? "border-primary/40 bg-primary/10 text-primary shadow-sm"
-                    : "border-transparent bg-base-200/60 text-base-content hover:border-base-300 hover:bg-base-200"
+                    : "bg-base-200/60 text-base-content hover:border-base-300 hover:bg-base-200 border-transparent"
                 }`}
               >
                 <span className="flex items-center justify-between gap-2">
                   <span className="block font-medium tracking-tight">{item.name}</span>
                   <span
-                    className={`rounded-full px-2 py-0.5 text-xs font-semibold uppercase tracking-wide ${
+                    className={`rounded-full px-2 py-0.5 text-xs font-semibold tracking-wide uppercase ${
                       isActive ? "bg-primary/15 text-primary" : "bg-base-300/60 text-base-content/60"
                     }`}
                   >
                     {CATEGORY_LABELS[item.category] ?? item.category}
                   </span>
                 </span>
-                {item.rut && <span className="mt-1 block text-xs text-base-content/90">RUT {formatRut(item.rut)}</span>}
-              </div>
+                {item.rut && <span className="text-base-content/90 mt-1 block text-xs">RUT {formatRut(item.rut)}</span>}
+              </button>
             </li>
           );
         })}
         {!counterparts.length && (
-          <li className="rounded-xl border border-base-300 bg-base-200 px-3 py-2 text-xs text-base-content/60">
+          <li className="border-base-300 bg-base-200 text-base-content/60 rounded-xl border px-3 py-2 text-xs">
             No hay registros aún.
           </li>
         )}

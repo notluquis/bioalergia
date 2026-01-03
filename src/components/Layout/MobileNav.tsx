@@ -1,6 +1,6 @@
+import { BarChart3, Briefcase, Home, type LucideIcon, Users } from "lucide-react";
 import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Home, Users, Briefcase, BarChart3, type LucideIcon } from "lucide-react";
 
 interface NavItem {
   path: string;

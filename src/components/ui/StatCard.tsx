@@ -1,4 +1,5 @@
 import type { LucideIcon } from "lucide-react";
+
 import { cn } from "@/lib/utils";
 
 type StatCardTone = "default" | "primary" | "success" | "error" | "warning";

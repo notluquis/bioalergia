@@ -1,9 +1,12 @@
-import { fmtCLP } from "@/lib/format";
-import dayjs from "dayjs";
 import "dayjs/locale/es";
+
+import dayjs from "dayjs";
+
 import Button from "@/components/ui/Button";
-import { LOADING_SPINNER_SM } from "@/lib/styles";
 import type { Employee } from "@/features/hr/employees/types";
+import { fmtCLP } from "@/lib/format";
+import { LOADING_SPINNER_SM } from "@/lib/styles";
+
 import type { TimesheetSummaryRow } from "../types";
 
 interface EmailPreviewModalProps {

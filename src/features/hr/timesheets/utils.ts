@@ -1,4 +1,5 @@
 import dayjs from "dayjs";
+
 import type { BulkRow, TimesheetEntry, TimesheetSummaryRow } from "./types";
 
 export function buildBulkRows(month: string, entries: TimesheetEntry[]): BulkRow[] {

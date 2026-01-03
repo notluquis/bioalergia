@@ -1,7 +1,8 @@
-import { expect, afterEach, beforeAll } from "vitest";
-import { cleanup } from "@testing-library/react";
 import "@testing-library/jest-dom/vitest";
+
+import { cleanup } from "@testing-library/react";
 import dotenv from "dotenv";
+import { afterEach, beforeAll, expect } from "vitest";
 
 dotenv.config();
 

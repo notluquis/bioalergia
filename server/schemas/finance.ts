@@ -2,8 +2,9 @@
  * Finance & Transactions schemas
  */
 import { z } from "zod";
+
 import { validateRut } from "../lib/rut.js";
-import { dateRegex, clpInt, moneySchema } from "./shared.js";
+import { clpInt, dateRegex, moneySchema } from "./shared.js";
 
 export const transactionsQuerySchema = z.object({
   limit: z.coerce.number().int().positive().max(2000).optional(),

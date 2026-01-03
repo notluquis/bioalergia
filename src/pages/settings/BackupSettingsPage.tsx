@@ -1,31 +1,32 @@
-import { useState, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  Database,
-  Download,
-  Upload,
-  RefreshCw,
-  Clock,
-  CheckCircle,
-  Loader2,
-  HardDrive,
-  ChevronDown,
-  ChevronRight,
-  AlertTriangle,
-  Play,
-  RotateCcw,
-  FileText,
-} from "lucide-react";
-import dayjs from "dayjs";
-import relativeTime from "dayjs/plugin/relativeTime";
 import "dayjs/locale/es";
 
-import { PAGE_CONTAINER } from "@/lib/styles";
-import { cn } from "@/lib/utils";
-import { formatFileSize } from "@/lib/format";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
+import {
+  AlertTriangle,
+  CheckCircle,
+  ChevronDown,
+  ChevronRight,
+  Clock,
+  Database,
+  Download,
+  FileText,
+  HardDrive,
+  Loader2,
+  Play,
+  RefreshCw,
+  RotateCcw,
+  Upload,
+} from "lucide-react";
+import { useEffect, useState } from "react";
+
+import AuditChangesPanel from "@/components/backup/AuditChangesPanel";
 import Button from "@/components/ui/Button";
 import { useToast } from "@/context/ToastContext";
-import AuditChangesPanel from "@/components/backup/AuditChangesPanel";
+import { formatFileSize } from "@/lib/format";
+import { PAGE_CONTAINER } from "@/lib/styles";
+import { cn } from "@/lib/utils";
 
 dayjs.extend(relativeTime);
 dayjs.locale("es");
@@ -406,8 +407,9 @@ function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () =>
 
   return (
     <div>
-      <div
-        className="hover:bg-base-content/5 flex cursor-pointer items-center justify-between p-4 transition-colors"
+      <button
+        type="button"
+        className="hover:bg-base-content/5 focus:ring-primary/20 flex w-full cursor-pointer items-center justify-between p-4 px-4 text-left transition-colors focus:ring-2 focus:outline-none focus:ring-inset"
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <div className="flex items-center gap-4">
@@ -439,7 +441,7 @@ function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () =>
             </a>
           )}
         </div>
-      </div>
+      </button>
 
       {isExpanded && (
         <div className="bg-base-300/30 px-6 py-4">

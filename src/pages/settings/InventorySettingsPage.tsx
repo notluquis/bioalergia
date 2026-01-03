@@ -1,15 +1,16 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Box, ChevronDown, ChevronRight, Edit2, Loader2, Package, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Package, Plus, Trash2, Edit2, Loader2, ChevronDown, ChevronRight, Box } from "lucide-react";
+
 import Button from "@/components/ui/Button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import Input from "@/components/ui/Input";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/Card";
 import { useToast } from "@/context/ToastContext";
 import {
-  getInventoryCategories,
-  getInventoryItems,
   createInventoryCategory,
   deleteInventoryCategory,
+  getInventoryCategories,
+  getInventoryItems,
 } from "@/features/inventory/api";
 import type { InventoryItem } from "@/features/inventory/types";
 
@@ -105,11 +106,11 @@ export default function InventorySettingsPage() {
             <div className="bg-base-200/30 animate-in fade-in slide-in-from-top-2 border-b p-4">
               <form onSubmit={handleCreate} className="flex items-end gap-3">
                 <div className="flex-1">
-                  <label className="label py-1">
+                  <label className="label py-1" htmlFor="category-name">
                     <span className="label-text text-xs">Nombre de la categoría</span>
                   </label>
                   <Input
-                    autoFocus
+                    id="category-name"
                     value={newCategoryName}
                     onChange={(e) => setNewCategoryName(e.target.value)}
                     placeholder="Ej: Antibióticos"
@@ -148,28 +149,27 @@ export default function InventorySettingsPage() {
                   return (
                     <div key={category.id}>
                       {/* Category Row */}
-                      <div
-                        className="hover:bg-base-200/50 group flex cursor-pointer items-center gap-3 p-4 transition-colors"
-                        onClick={() => toggleCategory(category.id)}
-                      >
+                      <div className="hover:bg-base-200/50 group flex items-center gap-3 p-4 transition-colors">
                         <button
                           type="button"
-                          className="text-base-content/50 flex h-6 w-6 items-center justify-center transition-transform"
-                          aria-label={isExpanded ? "Colapsar" : "Expandir"}
+                          className="flex flex-1 items-center gap-3 text-left focus:outline-none"
+                          onClick={() => toggleCategory(category.id)}
                         >
-                          {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+                          <span
+                            className="text-base-content/50 flex h-6 w-6 items-center justify-center transition-transform"
+                            aria-label={isExpanded ? "Colapsar" : "Expandir"}
+                          >
+                            {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+                          </span>
+                          <div className="bg-primary/10 text-primary flex h-8 w-8 items-center justify-center rounded-lg">
+                            <Package size={16} />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <span className="font-medium">{category.name}</span>
+                          </div>
+                          <span className="badge badge-ghost badge-sm">{items.length} items</span>
                         </button>
-                        <div className="bg-primary/10 text-primary flex h-8 w-8 items-center justify-center rounded-lg">
-                          <Package size={16} />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <span className="font-medium">{category.name}</span>
-                        </div>
-                        <span className="badge badge-ghost badge-sm">{items.length} items</span>
-                        <div
-                          className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100"
-                          onClick={(e) => e.stopPropagation()}
-                        >
+                        <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                           <Button size="sm" variant="ghost" className="btn-square btn-xs">
                             <Edit2 size={14} />
                           </Button>
@@ -227,24 +227,26 @@ export default function InventorySettingsPage() {
                 {/* Uncategorized Items */}
                 {uncategorizedItems.length > 0 && (
                   <div>
-                    <div
-                      className="hover:bg-base-200/50 group flex cursor-pointer items-center gap-3 p-4 transition-colors"
-                      onClick={() => toggleCategory(0)}
-                    >
+                    <div className="hover:bg-base-200/50 group flex items-center gap-3 p-4 transition-colors">
                       <button
                         type="button"
-                        className="text-base-content/50 flex h-6 w-6 items-center justify-center"
-                        aria-label={expandedCategories.has(0) ? "Colapsar" : "Expandir"}
+                        className="flex flex-1 items-center gap-3 text-left focus:outline-none"
+                        onClick={() => toggleCategory(0)}
                       >
-                        {expandedCategories.has(0) ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+                        <span
+                          className="text-base-content/50 flex h-6 w-6 items-center justify-center"
+                          aria-label={expandedCategories.has(0) ? "Colapsar" : "Expandir"}
+                        >
+                          {expandedCategories.has(0) ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+                        </span>
+                        <div className="bg-base-300 text-base-content/50 flex h-8 w-8 items-center justify-center rounded-lg">
+                          <Package size={16} />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <span className="text-base-content/70 font-medium">Sin categoría</span>
+                        </div>
+                        <span className="badge badge-ghost badge-sm">{uncategorizedItems.length} items</span>
                       </button>
-                      <div className="bg-base-300 text-base-content/50 flex h-8 w-8 items-center justify-center rounded-lg">
-                        <Package size={16} />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <span className="text-base-content/70 font-medium">Sin categoría</span>
-                      </div>
-                      <span className="badge badge-ghost badge-sm">{uncategorizedItems.length} items</span>
                     </div>
 
                     {expandedCategories.has(0) && (

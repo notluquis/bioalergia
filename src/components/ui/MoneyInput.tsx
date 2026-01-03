@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
-import { INPUT_CURRENCY_SM } from "@/lib/styles";
+
 import { numberFormatter } from "@/lib/format";
+import { INPUT_CURRENCY_SM } from "@/lib/styles";
 
 interface MoneyInputProps {
   icon?: ReactNode;

@@ -1,7 +1,9 @@
 import dayjs from "dayjs";
+
 import { type CalendarEventDetail } from "@/features/calendar/types";
 import { currencyFormatter } from "@/lib/format";
 import { cn } from "@/lib/utils";
+
 import { FormattedEventDescription } from "./FormattedEventDescription";
 
 interface DailyEventCardProps {

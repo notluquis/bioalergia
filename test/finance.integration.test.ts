@@ -1,13 +1,14 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import request from "supertest";
-import express from "express";
-import { prisma } from "../server/prisma";
-import { createTestUser, generateToken } from "./helpers";
 import cookieParser from "cookie-parser";
+import express from "express";
+import request from "supertest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+
+import { prisma } from "../server/prisma";
 // We need to register finance routes.
 // Assuming server/routes/finance.ts exists and exports registerFinanceRoutes or similar.
 // Let's check if we can import the router or registration function.
 import { registerTransactionRoutes } from "../server/routes/transactions";
+import { createTestUser, generateToken } from "./helpers";
 
 // Setup express app
 const app = express();

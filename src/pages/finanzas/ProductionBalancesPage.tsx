@@ -1,24 +1,23 @@
-import { useMemo, useState } from "react";
-import type { FormEvent } from "react";
-import dayjs from "dayjs";
 import "dayjs/locale/es";
+
 import { useQuery } from "@tanstack/react-query";
+import dayjs from "dayjs";
+import { Banknote, ClipboardList, CreditCard, FileText, MoreVertical, Save, TrendingDown, Wallet } from "lucide-react";
+import type { FormEvent } from "react";
+import { useMemo, useState } from "react";
+
+import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
-import Alert from "@/components/ui/Alert";
 import { MoneyInput } from "@/components/ui/MoneyInput";
-import { today } from "@/lib/dates";
-
-import { CreditCard, Banknote, Wallet, TrendingDown, FileText, ClipboardList, Save, MoreVertical } from "lucide-react";
-import { fetchProductionBalanceHistory, fetchProductionBalances } from "@/features/dailyProductionBalances/api";
-
-import WeekView from "@/features/dailyProductionBalances/components/WeekView";
-import { HistoryItem } from "@/features/dailyProductionBalances/components/HistoryItem";
-
-import { useProductionBalanceForm } from "@/features/dailyProductionBalances/hooks/useProductionBalanceForm";
 import { useAuth } from "@/context/AuthContext";
-import { fmtCLP, coerceAmount } from "@/lib/format";
+import { fetchProductionBalanceHistory, fetchProductionBalances } from "@/features/dailyProductionBalances/api";
+import { HistoryItem } from "@/features/dailyProductionBalances/components/HistoryItem";
+import WeekView from "@/features/dailyProductionBalances/components/WeekView";
+import { useProductionBalanceForm } from "@/features/dailyProductionBalances/hooks/useProductionBalanceForm";
+import { today } from "@/lib/dates";
+import { coerceAmount, fmtCLP } from "@/lib/format";
 
 dayjs.locale("es");
 

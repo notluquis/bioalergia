@@ -3,23 +3,20 @@
  * Extracts duplicated filter logic from CalendarDailyPage, CalendarSchedulePage, etc.
  */
 
-import { useMemo, type FormEvent } from "react";
 import type { ChangeEvent } from "react";
+import { type FormEvent, useMemo } from "react";
+
 import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
-import { MultiSelectFilter, type MultiSelectOption } from "./MultiSelectFilter";
-import { NULL_EVENT_TYPE_VALUE, NULL_CATEGORY_VALUE } from "../constants";
+import Input from "@/components/ui/Input";
 import { numberFormatter } from "@/lib/format";
 
+import { NULL_CATEGORY_VALUE, NULL_EVENT_TYPE_VALUE } from "../constants";
+import { CalendarFilters } from "../types";
+import { MultiSelectFilter, type MultiSelectOption } from "./MultiSelectFilter";
+
 /** Filter state used by the filter panel - subset of CalendarFilters */
-export interface FilterPanelState {
-  from: string;
-  to: string;
-  eventTypes: string[];
-  categories: string[];
-  search?: string;
-}
+export type FilterPanelState = Pick<CalendarFilters, "from" | "to" | "eventTypes" | "categories" | "search">;
 
 export interface CalendarFilterPanelProps {
   /** Current filter state */
@@ -33,8 +30,7 @@ export interface CalendarFilterPanelProps {
   /** Show search input */
   showSearch?: boolean;
   /** Callback when a filter value changes - compatible with useCalendarEvents updateFilters */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  onFilterChange: (key: any, value: any) => void;
+  onFilterChange: <K extends keyof FilterPanelState>(key: K, value: CalendarFilters[K]) => void;
   /** Callback when filters should be applied */
   onApply: () => void;
   /** Callback when filters should be reset */
@@ -85,11 +81,10 @@ export function CalendarFilterPanel({
   );
 
   const toggleEventType = (value: string) => {
+    const currentTypes = filters.eventTypes ?? [];
     onFilterChange(
       "eventTypes",
-      filters.eventTypes.includes(value)
-        ? filters.eventTypes.filter((id) => id !== value)
-        : [...filters.eventTypes, value]
+      currentTypes.includes(value) ? currentTypes.filter((id) => id !== value) : [...currentTypes, value]
     );
   };
 
@@ -138,7 +133,7 @@ export function CalendarFilterPanel({
             <MultiSelectFilter
               label="Tipos de evento"
               options={eventTypeOptions}
-              selected={filters.eventTypes}
+              selected={filters.eventTypes ?? []}
               onToggle={toggleEventType}
               placeholder="Todos"
             />

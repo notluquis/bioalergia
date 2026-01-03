@@ -1,6 +1,7 @@
-import { useRegisterSW } from "virtual:pwa-register/react";
 import { X } from "lucide-react";
 import { useState } from "react";
+import { useRegisterSW } from "virtual:pwa-register/react";
+
 import Button from "@/components/ui/Button";
 
 export function UpdateNotification() {

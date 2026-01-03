@@ -1,9 +1,9 @@
 import cron from "node-cron";
 
 import { googleCalendarConfig } from "../config.js";
-import { logEvent, logWarn } from "./logger.js";
-import { syncGoogleCalendarOnce } from "./google-calendar.js";
 import { createCalendarSyncLogEntry, finalizeCalendarSyncLogEntry } from "../services/calendar.js";
+import { syncGoogleCalendarOnce } from "./google-calendar.js";
+import { logEvent, logWarn } from "./logger.js";
 
 const CRON_JOBS = [
   { expression: "0 9 * * *", label: "morning" },

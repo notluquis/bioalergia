@@ -1,6 +1,7 @@
 import crypto from "crypto";
+
+import { API_PERMISSIONS, ROUTE_DATA, type RouteData } from "../../shared/route-data.js";
 import { prisma } from "../prisma.js";
-import { ROUTE_DATA, API_PERMISSIONS, type RouteData } from "../../shared/route-data.js";
 
 const PERMISSIONS_HASH_KEY = "permissions_sync_hash";
 

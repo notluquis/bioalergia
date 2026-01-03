@@ -1,22 +1,22 @@
-import { useMemo, useState, useEffect } from "react";
-import dayjs from "dayjs";
 import "dayjs/locale/es";
-import { Filter } from "lucide-react";
-import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
+
+import dayjs from "dayjs";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
+import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
+import { Filter } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 
-import Button from "@/components/ui/Button";
 import Alert from "@/components/ui/Alert";
-import { today } from "@/lib/dates";
-import { CalendarSkeleton } from "@/features/calendar/components/CalendarSkeleton";
+import Button from "@/components/ui/Button";
 import { CalendarFilterPanel } from "@/features/calendar/components/CalendarFilterPanel";
-import { useCalendarEvents } from "@/features/calendar/hooks/useCalendarEvents";
-import { PAGE_CONTAINER } from "@/lib/styles";
-
+import { CalendarSkeleton } from "@/features/calendar/components/CalendarSkeleton";
+import { DailyEventCard } from "@/features/calendar/components/DailyEventCard";
 // Components
 import { DailyStatsCards } from "@/features/calendar/components/DailyStatsCards";
 import { DayNavigation } from "@/features/calendar/components/DayNavigation";
-import { DailyEventCard } from "@/features/calendar/components/DailyEventCard";
+import { useCalendarEvents } from "@/features/calendar/hooks/useCalendarEvents";
+import { today } from "@/lib/dates";
+import { PAGE_CONTAINER } from "@/lib/styles";
 
 dayjs.locale("es");
 dayjs.extend(isSameOrBefore);

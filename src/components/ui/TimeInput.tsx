@@ -1,5 +1,6 @@
-import { cn } from "@/lib/utils";
 import { useCallback, useRef } from "react";
+
+import { cn } from "@/lib/utils";
 
 interface TimeInputProps {
   value: string;
@@ -93,7 +94,7 @@ export default function TimeInput({ value, onChange, onBlur, placeholder, classN
       onChange={(e) => onChange(e.target.value)}
       onBlur={handleBlur}
       placeholder={placeholder || "HH:MM"}
-      className={cn("input input-bordered input-sm w-full font-mono text-center", className)}
+      className={cn("input input-bordered input-sm w-full text-center font-mono", className)}
       disabled={disabled}
       inputMode="numeric"
       maxLength={5}

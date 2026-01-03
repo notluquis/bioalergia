@@ -1,7 +1,8 @@
 import { Router } from "express";
+
+import { logger } from "../lib/logger.js";
 import { createReportSchema, mpConfigSchema } from "../schemas/index.js";
 import * as MPService from "../services/mercadopago.js";
-import { logger } from "../lib/logger.js";
 import { AuthenticatedRequest } from "../types.js";
 
 const router = Router();
@@ -108,22 +109,14 @@ router.get("/reports/download/:fileName", async (req, res, next) => {
     res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
 
     // Node 20+ fetch body is a ReadableStream, we need to convert to Node stream or consume
-    // @ts-ignore - ReadableStream/Node stream mismatch typing common in Express+Fetch
-    const reader = fileResponse.body?.getReader();
-    if (!reader) {
-      throw new Error("Failed to read file stream");
-    }
+    // Node 18+ way to handle Web Streams -> Node Streams
+    const { Readable } = await import("stream");
+    const { pipeline } = await import("stream/promises");
 
-    // Manual streaming
-    const streamRead = async () => {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        res.write(value);
-      }
-      res.end();
-    };
-    await streamRead();
+    if (!fileResponse.body) throw new Error("No body");
+    // @ts-expect-error - Readable.fromWeb is available in recent Node versions
+    const nodeStream = Readable.fromWeb(fileResponse.body);
+    await pipeline(nodeStream, res);
   } catch (error) {
     next(error);
   }

@@ -5,29 +5,30 @@
  * and groups them by section for the sidebar.
  */
 
-import type { ComponentType } from "react";
 import {
-  LayoutDashboard,
-  PiggyBank,
-  Users2,
-  Briefcase,
-  CalendarDays,
   Box,
-  FileSpreadsheet,
-  ClipboardCheck,
-  Users,
+  Briefcase,
   Calendar,
-  Settings2,
-  ListChecks,
-  Upload,
-  PackagePlus,
+  CalendarDays,
+  ClipboardCheck,
   Clock,
-  UserCog,
-  Database,
-  Home,
   CreditCard,
+  Database,
+  FileSpreadsheet,
+  Home,
+  LayoutDashboard,
+  ListChecks,
+  PackagePlus,
+  PiggyBank,
+  Settings2,
+  Upload,
+  UserCog,
+  Users,
+  Users2,
 } from "lucide-react";
-import { ROUTE_DATA, SECTION_ORDER, type RouteData, type NavSection } from "../../shared/route-data";
+import type { ComponentType } from "react";
+
+import { type NavSection, ROUTE_DATA, type RouteData, SECTION_ORDER } from "../../shared/route-data";
 
 // ============================================================================
 // TYPES

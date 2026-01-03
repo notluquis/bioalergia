@@ -1,25 +1,24 @@
+import { CounterpartCategory, PersonType } from "@prisma/client";
 import express from "express";
-import { asyncHandler, authenticate } from "../lib/index.js";
-import { authorize } from "../middleware/authorize.js";
-import { requestContext, logEvent } from "../lib/logger.js";
-import {
-  listCounterparts,
-  getCounterpartById,
-  createCounterpart,
-  updateCounterpart,
-  upsertCounterpartAccount,
-  updateCounterpartAccount,
-} from "../services/counterparts.js";
-import { PersonType, CounterpartCategory } from "@prisma/client";
 
+import { asyncHandler, authenticate } from "../lib/index.js";
+import { logEvent, requestContext } from "../lib/logger.js";
+import { type CounterpartWithAccounts, mapCounterpart, mapCounterpartAccount } from "../lib/mappers.js";
+import { authorize } from "../middleware/authorize.js";
 import {
-  counterpartPayloadSchema,
   counterpartAccountPayloadSchema,
   counterpartAccountUpdateSchema,
+  counterpartPayloadSchema,
 } from "../schemas/index.js";
+import {
+  createCounterpart,
+  getCounterpartById,
+  listCounterparts,
+  updateCounterpart,
+  updateCounterpartAccount,
+  upsertCounterpartAccount,
+} from "../services/counterparts.js";
 import type { AuthenticatedRequest } from "../types.js";
-
-import { mapCounterpart, mapCounterpartAccount, type CounterpartWithAccounts } from "../lib/mappers.js";
 
 export function registerCounterpartRoutes(app: express.Express) {
   app.get(

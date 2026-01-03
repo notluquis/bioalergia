@@ -6,9 +6,10 @@ export type AuthSession = {
   roles: string[];
 };
 
-import type { User } from "@prisma/client";
-import { AppAbility } from "./lib/authz/ability.js";
 import { RawRuleOf } from "@casl/ability";
+import type { User } from "@prisma/client";
+
+import { AppAbility } from "./lib/authz/ability.js";
 
 export type AuthenticatedRequest = Request & {
   auth?: AuthSession;

@@ -1,9 +1,11 @@
+import { ChevronRight, Loader2, LogOut } from "lucide-react";
 import React from "react";
-import { useLocation, useNavigation, useNavigate, useMatches } from "react-router-dom";
-import { Loader2, LogOut, ChevronRight } from "lucide-react";
+import { useLocation, useMatches, useNavigate, useNavigation } from "react-router-dom";
+
 import { useAuth } from "@/context/AuthContext";
-import ThemeToggle from "../ui/ThemeToggle";
+
 import Clock from "../features/Clock";
+import ThemeToggle from "../ui/ThemeToggle";
 
 type RouteHandle = {
   title?: string;
