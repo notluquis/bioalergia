@@ -175,9 +175,10 @@ export function registerRoleRoutes(app: express.Express) {
     authenticate,
     authorize("update", "Permission"),
     asyncHandler(async (req, res) => {
-      await syncPermissions();
+      // Force sync when manually triggered (bypass hash check)
+      const result = await syncPermissions(true);
       const permissions = await listPermissions();
-      res.json({ status: "ok", permissions });
+      res.json({ status: "ok", ...result, permissions });
     })
   );
 
