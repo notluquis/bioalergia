@@ -83,18 +83,21 @@ export const ROUTE_DATA: RouteData[] = [
         path: "schedule",
         componentPath: "pages/CalendarSchedulePage",
         nav: { label: "Calendario", iconKey: "CalendarDays", section: "Calendario", order: 1 },
+        permission: { action: "read", subject: "CalendarEvent" },
         title: "Calendario interactivo",
       },
       {
         path: "daily",
         componentPath: "pages/CalendarDailyPage",
         nav: { label: "Detalle Diario", iconKey: "Calendar", section: "Calendario", order: 2 },
+        permission: { action: "read", subject: "CalendarEvent" },
         title: "Detalle diario",
       },
       {
         path: "heatmap",
         componentPath: "pages/CalendarHeatmapPage",
         nav: { label: "Mapa de Calor", iconKey: "LayoutDashboard", section: "Calendario", order: 3 },
+        permission: { action: "read", subject: "CalendarEvent" },
         title: "Mapa de calor",
       },
       {
@@ -108,6 +111,7 @@ export const ROUTE_DATA: RouteData[] = [
         path: "sync-history",
         componentPath: "pages/CalendarSyncHistoryPage",
         nav: { label: "Historial Sync", iconKey: "Clock", section: "Calendario", order: 5 },
+        permission: { action: "read", subject: "CalendarEvent" },
         title: "Historial de sincronización",
       },
     ],
@@ -179,6 +183,7 @@ export const ROUTE_DATA: RouteData[] = [
         index: true,
         componentPath: "features/services/pages/OverviewPage",
         nav: { label: "Servicios", iconKey: "Briefcase", section: "Servicios", order: 1 },
+        permission: { action: "read", subject: "Service" },
         exact: true,
         title: "Servicios recurrentes",
       },
@@ -186,6 +191,7 @@ export const ROUTE_DATA: RouteData[] = [
         path: "agenda",
         componentPath: "features/services/pages/AgendaPage",
         nav: { label: "Agenda", iconKey: "CalendarDays", section: "Servicios", order: 2 },
+        permission: { action: "read", subject: "Service" },
         title: "Agenda de servicios",
       },
       {
@@ -221,6 +227,7 @@ export const ROUTE_DATA: RouteData[] = [
         path: "inventory",
         componentPath: "features/operations/inventory/pages/InventoryPage",
         nav: { label: "Inventario", iconKey: "Box", section: "Operaciones", order: 1 },
+        permission: { action: "read", subject: "InventoryItem" },
         title: "Gestión de Inventario",
       },
       {
@@ -244,6 +251,7 @@ export const ROUTE_DATA: RouteData[] = [
         path: "employees",
         componentPath: "features/hr/employees/pages/EmployeesPage",
         nav: { label: "RRHH", iconKey: "Users2", section: "Operaciones", order: 3 },
+        permission: { action: "read", subject: "Employee" },
         title: "Trabajadores",
       },
       {
