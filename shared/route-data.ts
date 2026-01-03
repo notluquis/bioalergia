@@ -350,7 +350,7 @@ export const ROUTE_DATA: RouteData[] = [
         path: "mercadopago",
         componentPath: "pages/settings/MercadoPagoSettingsPage",
         nav: { label: "Mercado Pago", iconKey: "CreditCard", section: "Sistema", order: 5 },
-        permission: { action: "manage", subject: "Setting" },
+        permission: { action: "update", subject: "Setting" },
         title: "Reportes Mercado Pago",
       },
     ],
