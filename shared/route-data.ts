@@ -355,6 +355,15 @@ export const ROUTE_DATA: RouteData[] = [
       },
     ],
   },
+  // ══════════════════════════════════════════════════════════════════════════
+  // ACCOUNT PAGE (User's own account settings - no permission required)
+  // ══════════════════════════════════════════════════════════════════════════
+  {
+    path: "account",
+    componentPath: "pages/AccountSettingsPage",
+    title: "Mi Cuenta",
+    // No permission required - all authenticated users can access their own account
+  },
 ];
 
 // ============================================================================
