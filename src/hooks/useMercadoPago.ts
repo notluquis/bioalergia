@@ -80,10 +80,50 @@ export function useMercadoPagoConfig(isOpen: boolean, onClose: () => void) {
   });
 
   const onSubmit = (data: MpConfigFormData) => {
+    // Sanitize and Validate SFTP info
+    const sftp = data.sftp_info;
+    let sanitizedData = { ...data };
+
+    if (sftp) {
+      // Check if any field has content
+      const hasAnyContent =
+        !!sftp.server ||
+        !!sftp.username ||
+        !!sftp.password ||
+        !!sftp.remote_dir ||
+        (sftp.port !== undefined && !isNaN(sftp.port));
+
+      if (!hasAnyContent) {
+        // Case 1: All empty -> Send undefined (disable SFTP)
+        sanitizedData.sftp_info = undefined;
+      } else {
+        // Case 2: Partial content -> Validate required fields
+        const missingFields = [];
+        if (!sftp.server) missingFields.push("Servidor");
+        if (!sftp.username) missingFields.push("Usuario");
+        if (!sftp.password) missingFields.push("Contraseña");
+
+        if (missingFields.length > 0) {
+          showError(`Configuración SFTP incompleta. Faltan: ${missingFields.join(", ")}`);
+          return; // Stop submission
+        }
+
+        // Case 3: Valid -> Clean and format
+        sanitizedData.sftp_info = {
+          ...sftp,
+          server: sftp.server,
+          username: sftp.username,
+          password: sftp.password,
+          remote_dir: sftp.remote_dir || "/", // Default to root if missing
+          port: sftp.port || 22, // Default to 22 if missing
+        };
+      }
+    }
+
     if (currentConfig) {
-      updateMutation.mutate(data);
+      updateMutation.mutate(sanitizedData);
     } else {
-      createMutation.mutate(data);
+      createMutation.mutate(sanitizedData);
     }
   };
 

@@ -763,3 +763,16 @@ html.perf-low .gpu-accelerated {
   perspective: none;
   will-change: auto;
 }
+
+/* === MOBILE/TOUCH OPTIMIZATIONS === */
+/* Prevent text zoom on input focus for iOS (requires 16px min) but keep compact sizing */
+@media screen and (max-width: 768px) {
+  input,
+  select,
+  textarea,
+  .input,
+  .select,
+  .textarea {
+    font-size: 16px !important;
+  }
+}
