@@ -6,8 +6,8 @@ export type MPReportRow = Record<string, string>;
 
 export async function createReleasedMoneyReport(
   accessToken: string,
-  dateFromISO: string, // e.g., "2025-09-01T00:00:00Z"
-  dateToISO: string // e.g., "2025-09-19T23:59:59Z"
+  beginDateISO: string, // e.g., "2025-09-01T00:00:00Z"
+  endDateISO: string // e.g., "2025-09-19T23:59:59Z"
 ) {
   const res = await fetch("https://api.mercadopago.com/v1/account/release_report", {
     method: "POST",
@@ -15,7 +15,7 @@ export async function createReleasedMoneyReport(
       Authorization: `Bearer ${accessToken}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ date_from: dateFromISO, date_to: dateToISO }),
+    body: JSON.stringify({ begin_date: beginDateISO, end_date: endDateISO }),
   });
   if (!res.ok) throw new Error(`Release report create failed: ${res.status}`);
   const schema = z.object({ file_name: z.string(), url: z.string() });
