@@ -59,11 +59,12 @@ describe("Finance Integration", () => {
       // Seed transaction
       await prisma.transaction.create({
         data: {
-          amount: 10000,
-          timestamp: new Date(),
-          direction: "OUT",
+          transactionAmount: 10000,
+          transactionCurrency: "CLP",
+          transactionDate: new Date(),
+          transactionType: "SALE",
           description: "Test Transaction",
-          personId: user.personId,
+          person_id: user.personId,
         },
       });
 

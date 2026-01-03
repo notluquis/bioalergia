@@ -25,10 +25,6 @@ export default [
       parser: tsParser,
       ecmaVersion: "latest",
       sourceType: "module",
-      globals: {
-        ...globals.browser,
-        ...globals.node,
-      },
     },
     rules: {
       "@typescript-eslint/no-unused-vars": "warn",
@@ -37,6 +33,23 @@ export default [
       // Disable core rules that conflict with TS awareness
       "no-unused-vars": "off",
       "no-undef": "off",
+    },
+  },
+  // Environment-specific globals
+  {
+    files: ["src/**/*.{ts,tsx}"],
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+      },
+    },
+  },
+  {
+    files: ["server/**/*.{ts,js}", "scripts/**/*.{ts,js}", "*.config.{js,ts}", "eslint.config.js"],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+      },
     },
   },
   // Imports & Formatting
