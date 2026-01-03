@@ -3,12 +3,11 @@ import dayjs from "dayjs";
 import { AlertTriangle, ChevronDown, ChevronRight } from "lucide-react";
 
 import Button from "@/components/ui/Button";
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/Card";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/Card";
 import { Table } from "@/components/ui/Table";
 import { useCalendarEvents } from "@/features/calendar/hooks/useCalendarEvents";
 import { SyncProgressPanel } from "@/features/calendar/components/SyncProgressPanel";
 import { numberFormatter } from "@/lib/format";
-import { TITLE_LG } from "@/lib/styles";
 import { cn } from "@/lib/utils";
 
 export default function CalendarSyncHistoryPage() {
@@ -65,24 +64,21 @@ export default function CalendarSyncHistoryPage() {
 
   return (
     <section className="space-y-6">
-      <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="space-y-1">
-          <h1 className={TITLE_LG}>Historial de sincronización</h1>
-          <p className="text-base-content/70 text-sm">
-            Consulta las sincronizaciones ejecutadas (manuales y programadas) y sus resultados.
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="secondary" onClick={handleRefresh} disabled={loading || isSyncing}>
-            {loading ? "Actualizando..." : "Actualizar"}
-          </Button>
-          <Button onClick={syncNow} disabled={isSyncing || loading}>
-            {isSyncing ? "Sincronizando..." : "Sincronizar ahora"}
-          </Button>
-        </div>
-      </header>
-
       <Card>
+        <CardHeader className="flex flex-row items-center justify-between pb-4">
+          <div className="space-y-1">
+            <CardTitle className="text-lg font-semibold">Ejecuciones</CardTitle>
+            <CardDescription className="text-sm">Historial de sincronizaciones capturadas</CardDescription>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="ghost" size="sm" onClick={handleRefresh} disabled={loading || isSyncing}>
+              {loading ? "Actualizando..." : "Actualizar"}
+            </Button>
+            <Button size="sm" onClick={syncNow} disabled={isSyncing || loading}>
+              {isSyncing ? "Sincronizando..." : "Sincronizar ahora"}
+            </Button>
+          </div>
+        </CardHeader>
         <CardContent className="p-0">
           <Table columns={tableColumns} variant="minimal" className="border-0 shadow-none">
             <Table.Body loading={loading} columnsCount={8}>
