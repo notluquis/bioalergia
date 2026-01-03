@@ -11,12 +11,8 @@ export function UpdateNotification() {
   } = useRegisterSW({
     onRegistered(r) {
       if (r) {
-        // Check for updates when page becomes visible
-        document.addEventListener("visibilitychange", () => {
-          if (!document.hidden) r.update();
-        });
-        // Check for updates periodically (every 5 minutes) without forcing reload
-        setInterval(() => r.update(), 5 * 60 * 1000);
+        // Check for updates periodically (every 1 hour) without forcing reload
+        setInterval(() => r.update(), 60 * 60 * 1000);
       }
     },
     onNeedRefresh() {
