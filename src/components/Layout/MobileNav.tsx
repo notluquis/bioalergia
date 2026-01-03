@@ -31,7 +31,7 @@ export function BottomNav() {
 
   return (
     <nav className="fixed bottom-6 left-1/2 z-50 w-[min(100%-2rem,400px)] -translate-x-1/2 md:hidden">
-      <div className="flex items-center justify-between gap-1 rounded-4xl border border-white/10 bg-black/80 p-2 shadow-2xl backdrop-blur-xl">
+      <div className="bg-base-100/80 border-base-200 flex items-center justify-between gap-1 rounded-4xl border p-2 shadow-2xl backdrop-blur-xl">
         {NAV_ITEMS.map(({ path, icon: Icon, label }) => {
           const active = isActive(path);
           return (
@@ -43,11 +43,11 @@ export function BottomNav() {
                 navigate(path);
               }}
               className={`relative flex flex-1 flex-col items-center justify-center gap-1 rounded-3xl px-1 py-3 text-[10px] font-medium transition-all duration-300 ${
-                active ? "text-white" : "text-white/50 hover:text-white/80"
+                active ? "text-primary" : "text-base-content/50 hover:text-base-content/80"
               }`}
             >
               {/* Active Background Pill */}
-              {active && <div className="absolute inset-0 rounded-3xl bg-white/20 shadow-inner" aria-hidden="true" />}
+              {active && <div className="bg-primary/10 absolute inset-0 rounded-3xl" aria-hidden="true" />}
 
               <span className="relative z-10 flex flex-col items-center gap-1">
                 <Icon
