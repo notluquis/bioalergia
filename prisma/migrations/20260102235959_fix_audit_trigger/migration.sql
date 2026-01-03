@@ -1,6 +1,9 @@
 -- Fix for audit trigger bug (column "old" does not exist or "id" missing)
 
--- 1. Create a safe ID extraction function
+-- 1.-- Create schema if not exists
+CREATE SCHEMA IF NOT EXISTS audit;
+
+-- Create function to safe get ID extraction function
 CREATE OR REPLACE FUNCTION audit.get_safe_id(record_json JSONB)
 RETURNS TEXT AS $$
 BEGIN
