@@ -124,8 +124,8 @@ export default function MercadoPagoSettingsPage() {
                 Último Reporte
               </p>
               <h3 className="mt-2 line-clamp-1 text-lg font-semibold">
-                {reportsQuery.data?.[0]?.date_created
-                  ? dayjs(reportsQuery.data[0].date_created).format("D MMM, HH:mm")
+                {reportsQuery.data?.[0]?.generation_date
+                  ? dayjs(reportsQuery.data[0].generation_date).format("D MMM, HH:mm")
                   : "N/A"}
               </h3>
             </div>
@@ -177,7 +177,7 @@ export default function MercadoPagoSettingsPage() {
             {reportsQuery.data?.map((report) => (
               <tr key={report.id} className="hover:bg-base-200/50 group transition-colors">
                 <td className="font-medium whitespace-nowrap">
-                  {dayjs(report.date_created).format("DD/MM/YYYY HH:mm")}
+                  {dayjs(report.generation_date || report.begin_date).format("DD/MM/YYYY HH:mm")}
                 </td>
                 <td className="text-base-content/70 font-mono text-xs">{report.file_name}</td>
                 <td>

@@ -1,9 +1,17 @@
+/**
+ * MercadoPago Frontend Service
+ * Types aligned with backend: server/schemas/mercadopago.ts
+ */
+
+// Weekday type for weekly frequency
+type Weekday = "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday";
+
 export interface MPReportConfig {
   file_name_prefix: string;
   columns: { key: string }[];
   frequency: {
     type: "daily" | "weekly" | "monthly";
-    value: number;
+    value: number | Weekday; // daily=0, weekly=Weekday, monthly=1-31
     hour: number;
   };
   sftp_info?: {
@@ -14,25 +22,37 @@ export interface MPReportConfig {
     username?: string;
   };
   separator?: string;
-  display_timezone?: string;
-  report_translation?: string;
+  display_timezone?: string; // default: "GMT-04"
+  report_translation?: "en" | "es" | "pt";
   notification_email_list?: (string | null)[];
-  include_withdrawal_at_end?: boolean;
-  check_available_balance?: boolean;
-  compensate_detail?: boolean;
-  execute_after_withdrawal?: boolean;
-  scheduled?: boolean;
+  include_withdrawal_at_end?: boolean; // default: true
+  check_available_balance?: boolean; // default: true
+  compensate_detail?: boolean; // default: true
+  execute_after_withdrawal?: boolean; // default: false
+  scheduled?: boolean; // default: false
 }
 
 export interface MPReport {
   id: number;
-  date_created: string;
-  created_from: string;
-  file_name: string;
-  mode: string;
-  generated: boolean;
-  report_type: string;
-  external_id: string;
+  begin_date: string;
+  end_date: string;
+  created_from: "manual" | "schedule";
+  // Optional fields
+  account_id?: number;
+  currency_id?: string;
+  generation_date?: string;
+  last_modified?: string;
+  report_id?: number;
+  retries?: number;
+  status?: string;
+  sub_type?: "release";
+  user_id?: number;
+  format?: string;
+  file_name?: string;
+  mode?: string;
+  generated?: boolean;
+  report_type?: string;
+  external_id?: string;
 }
 
 export const MPService = {
@@ -78,13 +98,19 @@ export const MPService = {
     return res.json();
   },
 
-  enableSchedule: async (): Promise<unknown> => {
+  downloadReport: async (fileName: string): Promise<Blob> => {
+    const res = await fetch(`/api/mercadopago/reports/${fileName}`);
+    if (!res.ok) throw new Error("Failed to download report");
+    return res.blob();
+  },
+
+  enableSchedule: async (): Promise<MPReport> => {
     const res = await fetch("/api/mercadopago/schedule", { method: "POST" });
     if (!res.ok) throw new Error("Failed to enable schedule");
     return res.json();
   },
 
-  disableSchedule: async (): Promise<unknown> => {
+  disableSchedule: async (): Promise<MPReport> => {
     const res = await fetch("/api/mercadopago/schedule", { method: "DELETE" });
     if (!res.ok) throw new Error("Failed to disable schedule");
     return res.json();
