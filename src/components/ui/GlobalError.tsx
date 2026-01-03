@@ -49,10 +49,10 @@ export class GlobalError extends Component<Props, State> {
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     logger.error("Uncaught error:", { error, errorInfo });
 
-    // Si es un error de deploy, recargar automáticamente
+    // Si es un error de deploy, no recargar automáticamente.
+    // Dejar que el render muestre la UI de "Nueva versión" con un botón manual.
     if (isDeployError(error)) {
-      logger.info("[GlobalError] 🔄 Deploy error detected, auto-reloading...");
-      this.handleAutoReload();
+      logger.info("[GlobalError] 🔄 Deploy error detected, waiting for user action...");
     }
   }
 
@@ -63,7 +63,12 @@ export class GlobalError extends Component<Props, State> {
     try {
       await clearCaches();
       await new Promise((r) => setTimeout(r, 500));
-      window.location.reload();
+      if (!import.meta.env.DEV) {
+        window.location.reload();
+      } else {
+        console.debug("Dev mode: preventing reload in GlobalError");
+        this.setState({ isReloading: false });
+      }
     } catch {
       this.setState({ isReloading: false });
     }
