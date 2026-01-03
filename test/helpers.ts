@@ -24,16 +24,28 @@ export async function createTestUser(
     },
   });
 
+  // Ensure role exists
+  const roleName = overrides.role || "VIEWER";
+  const role = await prisma.role.upsert({
+    where: { name: roleName },
+    update: {},
+    create: { name: roleName },
+  });
+
   // Create user
   const user = await prisma.user.create({
     data: {
       personId: person.id,
       email,
       passwordHash,
-      role: overrides.role || "VIEWER",
       status: "ACTIVE",
+      roles: {
+        create: {
+          roleId: role.id,
+        },
+      },
     },
   });
 
-  return user;
+  return { ...user, role: roleName };
 }
