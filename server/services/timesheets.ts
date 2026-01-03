@@ -57,11 +57,12 @@ function timeToMinutes(time: string): number | null {
 
 /**
  * Convert "HH:MM" string to Date object for Prisma @db.Time
+ * Uses reference date to set the correct year/month/day
  */
-function timeStringToDate(time: string | null): Date | null {
+function timeStringToDate(time: string | null, referenceDate: Date = new Date()): Date | null {
   if (!time) return null;
   const [hours, minutes] = time.split(":").map(Number);
-  const date = new Date();
+  const date = new Date(referenceDate);
   date.setHours(hours || 0, minutes || 0, 0, 0);
   return date;
 }
@@ -138,8 +139,9 @@ export async function getTimesheetEntryByEmployeeAndDate(
 }
 
 export async function upsertTimesheetEntry(payload: UpsertTimesheetPayload): Promise<TimesheetEntry> {
-  const startTime = timeStringToDate(payload.start_time ?? null);
-  const endTime = timeStringToDate(payload.end_time ?? null);
+  const workDateObj = new Date(payload.work_date);
+  const startTime = timeStringToDate(payload.start_time ?? null, workDateObj);
+  const endTime = timeStringToDate(payload.end_time ?? null, workDateObj);
 
   // Calculate worked_minutes from start_time and end_time if not provided
   let workedMinutes = payload.worked_minutes ?? 0;
@@ -180,13 +182,27 @@ export async function upsertTimesheetEntry(payload: UpsertTimesheetPayload): Pro
 }
 
 export async function updateTimesheetEntry(id: number, data: UpdateTimesheetPayload): Promise<TimesheetEntry> {
+  let workDateObj: Date | undefined;
+
+  // If we are updating times, we should ideally fetch the entry to get the workDate
+  // to keep dates consistent.
+  if (data.start_time !== undefined || data.end_time !== undefined) {
+    const existing = await prisma.employeeTimesheet.findUnique({
+      where: { id: BigInt(id) },
+      select: { workDate: true },
+    });
+    if (existing) {
+      workDateObj = existing.workDate;
+    }
+  }
+
   const updateData: Prisma.EmployeeTimesheetUpdateInput = {};
 
   if (data.start_time !== undefined) {
-    updateData.startTime = timeStringToDate(data.start_time);
+    updateData.startTime = timeStringToDate(data.start_time, workDateObj);
   }
   if (data.end_time !== undefined) {
-    updateData.endTime = timeStringToDate(data.end_time);
+    updateData.endTime = timeStringToDate(data.end_time, workDateObj);
   }
   if (data.worked_minutes != null) {
     updateData.workedMinutes = data.worked_minutes;

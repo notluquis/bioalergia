@@ -37,6 +37,8 @@ export {
   timesheetUpdateSchema,
   timesheetBulkSchema,
   roleMappingSchema,
+  timesheetListQuerySchema,
+  prepareEmailSchema,
 } from "./hr.js";
 
 // Inventory & Supplies
@@ -54,7 +56,14 @@ export {
 export { serviceCreateSchema, serviceRegenerateSchema, servicePaymentSchema } from "./services.js";
 
 // Auth & Calendar
-export { loginSchema, mfaVerifySchema, monthParamSchema, updateClassificationSchema } from "./auth.js";
+export {
+  loginSchema,
+  mfaVerifySchema,
+  monthParamSchema,
+  updateClassificationSchema,
+  inviteUserSchema,
+  setupUserSchema,
+} from "./auth.js";
 
 // MercadoPago
 export {

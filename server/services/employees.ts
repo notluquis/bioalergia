@@ -15,7 +15,7 @@ interface EmployeePayload {
   fixed_salary?: number | null;
   overtime_rate?: number | null;
   retention_rate?: number;
-  status?: "ACTIVE" | "INACTIVE";
+  status?: "ACTIVE" | "INACTIVE" | "TERMINATED";
   metadata?: Record<string, unknown> | null;
 }
 

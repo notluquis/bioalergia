@@ -159,6 +159,7 @@ model CounterpartAccount {
   counterpart   Counterpart @relation(fields: [counterpartId], references: [id], onDelete: Cascade)
 
   @@map("counterpart_accounts")
+  @@index([counterpartId])
 }
 
 model EmployeeTimesheet {
@@ -173,6 +174,7 @@ model EmployeeTimesheet {
   employee        Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
   @@unique([employeeId, workDate])
+  @@index([employeeId])
   @@map("employee_timesheets")
 }
 
@@ -242,6 +244,8 @@ model Transaction {
   people              Person?   @relation(fields: [person_id], references: [id])
 
   @@unique([sourceId, transactionType], map: "unique_mp_tx")
+  @@index([person_id])
+  @@index([transactionDate])
   @@map("transactions")
 }
 
@@ -267,6 +271,7 @@ model Service {
   updatedAt     DateTime         @default(now()) @updatedAt @map("updated_at")
   counterpart   Counterpart?     @relation(fields: [counterpartId], references: [id])
 
+  @@index([counterpartId])
   @@map("services")
 }
 
@@ -293,6 +298,7 @@ model LoanSchedule {
   status            LoanScheduleStatus @default(PENDING)
   loan              Loan               @relation(fields: [loanId], references: [id], onDelete: Cascade)
 
+  @@index([loanId])
   @@map("loan_schedules")
 }
 
@@ -307,6 +313,8 @@ model AuditLog {
   createdAt DateTime @default(now()) @map("created_at")
   user      User?    @relation(fields: [userId], references: [id])
 
+  @@index([userId])
+  @@index([entity, entityId])
   @@map("audit_logs")
 }
 
@@ -326,6 +334,7 @@ model PushSubscription {
   createdAt DateTime @default(now()) @map("created_at")
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
   @@map("push_subscriptions")
 }
 
@@ -352,6 +361,7 @@ model CalendarWatchChannel {
   updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
   calendar   Calendar @relation(fields: [calendarId], references: [id], onDelete: Cascade)
 
+  @@index([calendarId])
   @@map("calendar_watch_channels")
 }
 
@@ -387,6 +397,7 @@ model Event {
   calendar        Calendar  @relation(fields: [calendarId], references: [id])
 
   @@unique([calendarId, externalEventId])
+  @@index([calendarId])
   @@map("events")
 }
 
@@ -442,6 +453,7 @@ model InventoryItem {
   category     InventoryCategory?  @relation(fields: [categoryId], references: [id])
   movements    InventoryMovement[]
 
+  @@index([categoryId])
   @@map("inventory_items")
 }
 
@@ -453,6 +465,7 @@ model InventoryMovement {
   createdAt      DateTime      @default(now()) @map("created_at")
   item           InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
 
+  @@index([itemId])
   @@map("inventory_movements")
 }
 
@@ -478,6 +491,7 @@ model DailyProductionBalance {
   vacunasMonto          Int      @default(0) @map("vacunas_monto")
   user                  User     @relation(fields: [createdBy], references: [id])
 
+  @@index([createdBy])
   @@map("daily_production_balances")
 }
 
@@ -494,6 +508,7 @@ model SupplyRequest {
   updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
   user       User     @relation(fields: [userId], references: [id])
 
+  @@index([userId])
   @@map("supply_requests")
 }
 

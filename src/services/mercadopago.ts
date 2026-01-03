@@ -55,36 +55,62 @@ export interface MPReport {
   external_id?: string;
 }
 
+/**
+ * Helper to extract error message from API response
+ */
+async function handleApiError(res: Response, fallbackMessage: string): Promise<never> {
+  let errorMessage = fallbackMessage;
+  try {
+    const body = await res.json();
+    // MercadoPago API error format: { message: string, error: string, cause: [] }
+    if (body.message) {
+      errorMessage = body.message;
+    } else if (body.error) {
+      errorMessage = body.error;
+    }
+  } catch {
+    // If JSON parsing fails, use the status text
+    errorMessage = `${fallbackMessage}: ${res.status} ${res.statusText}`;
+  }
+  throw new Error(errorMessage);
+}
+
 export const MPService = {
   getConfig: async (): Promise<MPReportConfig> => {
     const res = await fetch("/api/mercadopago/config");
-    if (!res.ok) throw new Error("Failed to fetch configuration");
+    if (!res.ok) {
+      // Config might not exist yet (404), return null-ish or throw
+      if (res.status === 404) {
+        throw new Error("No hay configuración de MercadoPago. Crea una nueva.");
+      }
+      await handleApiError(res, "Error al obtener configuración");
+    }
     return res.json();
   },
 
-  updateConfig: async (config: Partial<MPReportConfig>): Promise<MPReportConfig> => {
+  updateConfig: async (data: Partial<MPReportConfig>): Promise<MPReportConfig> => {
     const res = await fetch("/api/mercadopago/config", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(config),
+      body: JSON.stringify(data),
     });
-    if (!res.ok) throw new Error("Failed to update configuration");
+    if (!res.ok) await handleApiError(res, "Error al actualizar configuración");
     return res.json();
   },
 
-  createConfig: async (config: Partial<MPReportConfig>): Promise<MPReportConfig> => {
+  createConfig: async (data: Partial<MPReportConfig>): Promise<MPReportConfig> => {
     const res = await fetch("/api/mercadopago/config", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(config),
+      body: JSON.stringify(data),
     });
-    if (!res.ok) throw new Error("Failed to create configuration");
+    if (!res.ok) await handleApiError(res, "Error al crear configuración");
     return res.json();
   },
 
   listReports: async (): Promise<MPReport[]> => {
     const res = await fetch("/api/mercadopago/reports");
-    if (!res.ok) throw new Error("Failed to fetch reports");
+    if (!res.ok) await handleApiError(res, "Error al obtener reportes");
     return res.json();
   },
 
@@ -94,25 +120,25 @@ export const MPService = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ begin_date: beginDate, end_date: endDate }),
     });
-    if (!res.ok) throw new Error("Failed to create report");
+    if (!res.ok) await handleApiError(res, "Error al crear reporte");
     return res.json();
   },
 
   downloadReport: async (fileName: string): Promise<Blob> => {
-    const res = await fetch(`/api/mercadopago/reports/${fileName}`);
-    if (!res.ok) throw new Error("Failed to download report");
+    const res = await fetch(`/api/mercadopago/reports/download/${encodeURIComponent(fileName)}`);
+    if (!res.ok) await handleApiError(res, "Error al descargar reporte");
     return res.blob();
   },
 
   enableSchedule: async (): Promise<MPReport> => {
     const res = await fetch("/api/mercadopago/schedule", { method: "POST" });
-    if (!res.ok) throw new Error("Failed to enable schedule");
+    if (!res.ok) await handleApiError(res, "Error al activar programación");
     return res.json();
   },
 
   disableSchedule: async (): Promise<MPReport> => {
     const res = await fetch("/api/mercadopago/schedule", { method: "DELETE" });
-    if (!res.ok) throw new Error("Failed to disable schedule");
+    if (!res.ok) await handleApiError(res, "Error al desactivar programación");
     return res.json();
   },
 };

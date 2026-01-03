@@ -1,5 +1,4 @@
 import express from "express";
-import { z } from "zod";
 import { asyncHandler, authenticate } from "../lib/http.js";
 import { authorize } from "../middleware/authorize.js";
 import { Prisma } from "@prisma/client";
@@ -20,6 +19,8 @@ import {
   timesheetUpdateSchema,
   timesheetBulkSchema,
   monthParamSchema,
+  timesheetListQuerySchema,
+  prepareEmailSchema,
 } from "../schemas/index.js";
 import type { AuthenticatedRequest } from "../types.js";
 import { roundCurrency } from "../../shared/currency.js";
@@ -71,13 +72,7 @@ export function registerTimesheetRoutes(app: express.Express) {
     authenticate,
     authorize("read", "Timesheet"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
-      const parsed = z
-        .object({
-          employeeId: z.coerce.number().int().positive().optional(),
-          from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-          to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-        })
-        .parse(req.query);
+      const parsed = timesheetListQuerySchema.parse(req.query);
 
       const entries = await listTimesheetEntries({
         employee_id: parsed.employeeId,
@@ -326,14 +321,7 @@ export function registerTimesheetRoutes(app: express.Express) {
     authenticate,
     authorize("update", "Timesheet"),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
-      const schema = z.object({
-        employeeId: z.number().int().positive(),
-        month: z.string().regex(/^\d{4}-\d{2}$/), // YYYY-MM
-        monthLabel: z.string(), // "Diciembre 2025"
-        pdfBase64: z.string(), // PDF en base64
-      });
-
-      const parsed = schema.safeParse(req.body);
+      const parsed = prepareEmailSchema.safeParse(req.body);
       if (!parsed.success) {
         logWarn("timesheets:prepare-email:invalid", requestContext(req, { issues: parsed.error.issues }));
         return res.status(400).json({ status: "error", message: "Datos inválidos", issues: parsed.error.issues });
