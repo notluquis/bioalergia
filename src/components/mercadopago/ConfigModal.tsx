@@ -86,7 +86,10 @@ export default function ConfigModal({ open, onClose }: Props) {
               </label>
               <select
                 {...register("display_timezone")}
-                className={cn("select select-bordered w-full", errors.display_timezone && "select-error")}
+                className={cn(
+                  "select select-bordered focus:ring-primary/20 focus:border-primary w-full focus:ring-2 focus:outline-none",
+                  errors.display_timezone && "select-error focus:ring-error/20 focus:border-error"
+                )}
               >
                 {Object.entries(TIMEZONES).map(([region, zones]) => (
                   <optgroup key={region} label={region}>
@@ -114,7 +117,10 @@ export default function ConfigModal({ open, onClose }: Props) {
             </label>
             <select
               {...register("report_translation")}
-              className={cn("select select-bordered w-full", errors.report_translation && "select-error")}
+              className={cn(
+                "select select-bordered focus:ring-primary/20 focus:border-primary w-full focus:ring-2 focus:outline-none",
+                errors.report_translation && "select-error focus:ring-error/20 focus:border-error"
+              )}
             >
               {MP_REPORT_LANGUAGES.map((lang) => (
                 <option key={lang} value={lang}>
@@ -139,7 +145,10 @@ export default function ConfigModal({ open, onClose }: Props) {
                 </label>
                 <select
                   {...register("frequency.type")}
-                  className={cn("select select-bordered select-sm w-full", errors.frequency?.type && "select-error")}
+                  className={cn(
+                    "select select-bordered select-sm focus:ring-primary/20 focus:border-primary w-full focus:ring-2 focus:outline-none",
+                    errors.frequency?.type && "select-error focus:ring-error/20 focus:border-error"
+                  )}
                   onChange={(e) => {
                     register("frequency.type").onChange(e);
                     // Reset value when type changes
@@ -168,7 +177,10 @@ export default function ConfigModal({ open, onClose }: Props) {
                 </label>
                 {frequencyType === "weekly" ? (
                   <select
-                    className={cn("select select-bordered select-sm w-full", errors.frequency?.value && "select-error")}
+                    className={cn(
+                      "select select-bordered select-sm focus:ring-primary/20 focus:border-primary w-full focus:ring-2 focus:outline-none",
+                      errors.frequency?.value && "select-error focus:ring-error/20 focus:border-error"
+                    )}
                     {...register("frequency.value")}
                   >
                     {MP_WEEKDAYS.map((day) => (
@@ -206,7 +218,10 @@ export default function ConfigModal({ open, onClose }: Props) {
                 </label>
                 <select
                   {...register("frequency.hour", { valueAsNumber: true })}
-                  className={cn("select select-bordered select-sm w-full", errors.frequency?.hour && "select-error")}
+                  className={cn(
+                    "select select-bordered select-sm focus:ring-primary/20 focus:border-primary w-full focus:ring-2 focus:outline-none",
+                    errors.frequency?.hour && "select-error focus:ring-error/20 focus:border-error"
+                  )}
                 >
                   {Array.from({ length: 24 }, (_, i) => (
                     <option key={i} value={i}>
@@ -330,7 +345,7 @@ export default function ConfigModal({ open, onClose }: Props) {
                       render={({ field: selectField }) => (
                         <select
                           {...selectField}
-                          className="select select-bordered select-sm flex-1 bg-transparent focus:outline-none"
+                          className="select select-bordered select-sm focus:ring-primary/20 focus:border-primary flex-1 bg-transparent focus:ring-2 focus:outline-none"
                         >
                           {rowAvailableColumns.map((col) => (
                             <option key={col} value={col}>
