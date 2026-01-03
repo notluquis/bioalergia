@@ -35,6 +35,10 @@ export const permissionMap = readonly({
   "role.update": { action: "update", subject: "Role" },
   "role.delete": { action: "delete", subject: "Role" },
 
+  // Permissions - used by role management endpoints
+  "permission.read": { action: "read", subject: "Permission" },
+  "permission.update": { action: "update", subject: "Permission" },
+
   // Persons - mapped to /settings/people and /finanzas/participants
   "person.read": { action: "read", subject: "Person" },
   "person.update": { action: "update", subject: "Person" },

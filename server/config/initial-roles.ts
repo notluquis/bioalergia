@@ -31,6 +31,9 @@ export const INITIAL_ROLES: RoleDefinition[] = [
       "role.read",
       "role.update",
       "role.delete",
+      // Permissions (for permission management UI)
+      "permission.read",
+      "permission.update",
       // Person
       "person.read",
       "person.update",

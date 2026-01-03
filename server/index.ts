@@ -245,10 +245,20 @@ app.get("/*path", (req: Request, res: Response) => {
   sendIndexHtml(req, res);
 });
 
-const server = app.listen(PORT, () => {
+import { syncPermissions } from "./services/permissions.js";
+
+const server = app.listen(PORT, async () => {
   logger.info(`🚀 Server ready at http://localhost:${PORT}`);
   logger.info(`📦 Serving static files from: ${clientDir}`);
   logger.info(`📤 Uploads directory: ${uploadsDir}`);
+
+  // Auto-sync permissions on startup (ensures new permissions from code are in DB)
+  try {
+    await syncPermissions();
+    logger.info({ event: "permissions_synced" });
+  } catch (err) {
+    logger.error({ event: "permissions_sync_error", error: err });
+  }
 
   // Start calendar cron jobs (webhook renewal + fallback sync)
   startCalendarCron();
