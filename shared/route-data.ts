@@ -70,6 +70,16 @@ export interface RouteData {
 
 export const ROUTE_DATA: RouteData[] = [
   // ══════════════════════════════════════════════════════════════════════════
+  // HOME / DASHBOARD
+  // ══════════════════════════════════════════════════════════════════════════
+  {
+    path: "",
+    componentPath: "pages/Home",
+    permission: { action: "read", subject: "Dashboard" },
+    title: "Inicio",
+    exact: true,
+  },
+  // ══════════════════════════════════════════════════════════════════════════
   // CALENDAR SECTION
   // ══════════════════════════════════════════════════════════════════════════
   {
