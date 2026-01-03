@@ -149,4 +149,5 @@ export function Table<T extends string>({
 Table.Header = TableHeader;
 Table.Body = TableBody;
 
+export { TableHeader, TableBody };
 export default Table;
