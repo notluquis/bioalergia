@@ -11,8 +11,7 @@ import { RoleFormModal } from "./components/RoleFormModal";
 import { DeleteRoleModal } from "./components/DeleteRoleModal";
 import { Role, Permission } from "@/types/roles";
 import { SmoothCollapse } from "@/components/ui/SmoothCollapse";
-import { Card, CardContent } from "@/components/ui/Card";
-import { TITLE_LG } from "@/lib/styles";
+import { Card, CardContent, CardHeader } from "@/components/ui/Card";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -236,39 +235,38 @@ export default function RolesSettingsPage() {
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="space-y-1">
-          <h1 className={TITLE_LG}>Roles y permisos</h1>
-          <p className="text-base-content/70 text-sm">Gestiona el acceso por secciones y páginas.</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <button className="btn btn-outline btn-sm gap-2" onClick={() => syncMutation.mutate()} disabled={isSyncing}>
-            <RotateCw className={cn("h-4 w-4", isSyncing && "animate-spin")} />
-            Sincronizar
-          </button>
-
-          {/* Role Filter Selector */}
-          <select
-            className="select select-bordered select-sm max-w-xs"
-            value={viewModeRole}
-            onChange={(e) => setViewModeRole(e.target.value)}
-          >
-            <option value="all">Ver todos los roles</option>
-            {roles.map((r) => (
-              <option key={r.id} value={r.id}>
-                {r.name}
-              </option>
-            ))}
-          </select>
-
-          <button className="btn btn-primary btn-sm gap-2" onClick={handleCreateRole}>
-            <Plus className="h-4 w-4" />
-            Nuevo rol
-          </button>
-        </div>
-      </header>
-
       <Card>
+        <CardHeader className="flex flex-row items-center justify-between pb-4">
+          <div className="space-y-1">
+            <h2 className="text-lg font-semibold">Listado de roles</h2>
+            <p className="text-base-content/70 text-sm">Gestiona los permisos y roles del sistema</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <button className="btn btn-ghost btn-sm gap-2" onClick={() => syncMutation.mutate()} disabled={isSyncing}>
+              <RotateCw className={cn("h-4 w-4", isSyncing && "animate-spin")} />
+              <span className="hidden sm:inline">Sincronizar</span>
+            </button>
+
+            {/* Role Filter Selector */}
+            <select
+              className="select select-bordered select-sm max-w-xs"
+              value={viewModeRole}
+              onChange={(e) => setViewModeRole(e.target.value)}
+            >
+              <option value="all">Ver todos los roles</option>
+              {roles.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.name}
+                </option>
+              ))}
+            </select>
+
+            <button className="btn btn-primary btn-sm gap-2" onClick={handleCreateRole}>
+              <Plus className="h-4 w-4" />
+              Nuevo rol
+            </button>
+          </div>
+        </CardHeader>
         <CardContent className="overflow-hidden p-0">
           <div className="border-base-300 w-full overflow-x-auto pb-6">
             {/* Dynamic Grid Layout */}
