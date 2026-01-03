@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import Alert from "@/components/ui/Alert";
 import { Table, TableHeader, TableBody } from "@/components/ui/Table";
 import { cn } from "@/lib/utils";
-import { PAGE_CONTAINER, TITLE_LG } from "@/lib/styles";
+import { PAGE_CONTAINER } from "@/lib/styles";
 
 type TableOption = {
   value: string;
@@ -321,11 +321,6 @@ export default function CSVUploadPage() {
 
   return (
     <div className={PAGE_CONTAINER}>
-      <header className="space-y-1">
-        <h1 className={TITLE_LG}>Importación de Datos</h1>
-        <p className="text-base-content/70 text-sm">Carga masiva de datos mediante archivos CSV.</p>
-      </header>
-
       {/* Selector de tabla */}
       <Card>
         <CardHeader>

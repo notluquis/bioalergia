@@ -8,7 +8,7 @@ import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Table, TableBody } from "@/components/ui/Table";
-import { PAGE_CONTAINER, TITLE_LG } from "@/lib/styles";
+import { PAGE_CONTAINER } from "@/lib/styles";
 import { cn } from "@/lib/utils";
 
 // Define interface for row types to avoid "any"
@@ -104,14 +104,6 @@ export default function ParticipantInsightsPage() {
 
   return (
     <section className={PAGE_CONTAINER}>
-      <header className="space-y-2">
-        <h1 className={TITLE_LG}>Participantes en transacciones</h1>
-        <p className="text-base-content/70 max-w-2xl text-sm">
-          Revisa la actividad de un identificador en los campos <strong>Desde</strong> y <strong>Hacia</strong>, con un
-          resumen mensual y las contrapartes más frecuentes.
-        </p>
-      </header>
-
       <Card>
         <CardContent className="p-6">
           <form onSubmit={handleSubmit} className="grid items-end gap-6 sm:grid-cols-2 lg:grid-cols-4">

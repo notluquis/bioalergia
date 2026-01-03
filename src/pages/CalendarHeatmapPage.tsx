@@ -16,7 +16,7 @@ import { fetchCalendarSummary } from "@/features/calendar/api";
 import { type CalendarFilters } from "@/features/calendar/types";
 import { NULL_CATEGORY_VALUE } from "@/features/calendar/constants";
 import { numberFormatter, currencyFormatter } from "@/lib/format";
-import { PAGE_CONTAINER, TITLE_LG, SPACE_Y_TIGHT } from "@/lib/styles";
+import { PAGE_CONTAINER } from "@/lib/styles";
 
 dayjs.locale("es");
 
@@ -177,11 +177,6 @@ function CalendarHeatmapPage() {
 
   return (
     <section className={PAGE_CONTAINER}>
-      <header className={SPACE_Y_TIGHT}>
-        <h1 className={TITLE_LG}>{tc("heatmapTitle")}</h1>
-        <p className="text-base-content/70 text-sm">{tc("heatmapDescription")}</p>
-      </header>
-
       {/* Collapsible Filter Toolbar */}
       <Card className="overflow-hidden transition-all duration-300">
         <button
