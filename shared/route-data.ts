@@ -277,7 +277,7 @@ export const ROUTE_DATA: RouteData[] = [
     componentPath: "components/Layout/SettingsLayout",
     title: "Configuración",
     children: [
-      { index: true, redirectTo: "/settings/security" },
+      { index: true, redirectTo: "/settings/roles" },
       {
         path: "roles",
         componentPath: "pages/settings/RolesSettingsPage",
@@ -324,13 +324,6 @@ export const ROUTE_DATA: RouteData[] = [
         nav: { label: "Cfg. Inventario", iconKey: "PackagePlus", section: "Sistema", order: 5 },
         permission: { action: "update", subject: "InventoryItem" },
         title: "Parámetros de inventario",
-      },
-      {
-        path: "security",
-        componentPath: "pages/settings/SecuritySettingsPage",
-        nav: { label: "Seguridad", iconKey: "Settings2", section: "Sistema", order: 6 },
-        permission: { action: "update", subject: "Setting" },
-        title: "Seguridad",
       },
       {
         path: "csv-upload",
