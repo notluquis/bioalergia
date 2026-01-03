@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ShieldCheck, Loader2, UserCog, Key, Shield, Lock } from "lucide-react";
+import { Shield, UserCog, Key, ShieldCheck, Lock } from "lucide-react";
 import Button from "@/components/ui/Button";
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/Card";
+import { Table } from "@/components/ui/Table";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import { fetchUsers, toggleUserMfa } from "@/features/users/api";
@@ -43,6 +45,15 @@ export default function AccessSettingsPage() {
     return { label: "Básica", color: "badge-error", icon: Lock };
   };
 
+  const tableColumns = [
+    { key: "user", label: "Usuario" },
+    { key: "role", label: "Rol" },
+    { key: "security", label: "Seguridad", align: "center" as const },
+    { key: "mfa", label: "MFA", align: "center" as const },
+    { key: "passkey", label: "Passkey", align: "center" as const },
+    { key: "actions", label: "Acciones", align: "right" as const },
+  ];
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -56,8 +67,8 @@ export default function AccessSettingsPage() {
       {/* Security Overview Cards */}
       {isAdmin && users && (
         <div className="grid gap-4 md:grid-cols-3">
-          <div className="card bg-base-100 shadow-sm">
-            <div className="card-body">
+          <Card>
+            <CardContent className="p-6">
               <div className="flex items-center gap-3">
                 <div className="bg-primary/10 text-primary flex h-12 w-12 items-center justify-center rounded-full">
                   <UserCog size={24} />
@@ -67,11 +78,11 @@ export default function AccessSettingsPage() {
                   <p className="text-base-content/60 text-sm">Usuarios totales</p>
                 </div>
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
-          <div className="card bg-base-100 shadow-sm">
-            <div className="card-body">
+          <Card>
+            <CardContent className="p-6">
               <div className="flex items-center gap-3">
                 <div className="bg-success/10 text-success flex h-12 w-12 items-center justify-center rounded-full">
                   <Shield size={24} />
@@ -81,11 +92,11 @@ export default function AccessSettingsPage() {
                   <p className="text-base-content/60 text-sm">Con MFA activo</p>
                 </div>
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
-          <div className="card bg-base-100 shadow-sm">
-            <div className="card-body">
+          <Card>
+            <CardContent className="p-6">
               <div className="flex items-center gap-3">
                 <div className="bg-info/10 text-info flex h-12 w-12 items-center justify-center rounded-full">
                   <Key size={24} />
@@ -95,119 +106,98 @@ export default function AccessSettingsPage() {
                   <p className="text-base-content/60 text-sm">Con passkey</p>
                 </div>
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         </div>
       )}
 
       {/* User Management Section */}
       {isAdmin && (
-        <div className="card bg-base-100 shadow-sm">
-          <div className="card-body">
-            <div className="mb-4 flex items-center justify-between">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-bold">Gestión de usuarios</h2>
-                <p className="text-base-content/60 text-sm">
-                  Administra el nivel de seguridad de cada cuenta de usuario
-                </p>
+                <CardTitle className="text-xl">Gestión de usuarios</CardTitle>
+                <CardDescription>Administra el nivel de seguridad de cada cuenta de usuario</CardDescription>
               </div>
             </div>
+          </CardHeader>
+          <CardContent>
+            <Table columns={tableColumns}>
+              <Table.Body loading={isLoadingUsers} columnsCount={6}>
+                {users.map((user: User) => {
+                  const securityScore = getSecurityScore(user);
+                  const badge = getSecurityBadge(securityScore);
+                  const BadgeIcon = badge.icon;
 
-            <div className="overflow-x-auto">
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>Usuario</th>
-                    <th>Rol</th>
-                    <th className="text-center">Seguridad</th>
-                    <th className="text-center">MFA</th>
-                    <th className="text-center">Passkey</th>
-                    <th className="text-right">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {isLoadingUsers ? (
-                    <tr>
-                      <td colSpan={6} className="py-12 text-center">
-                        <Loader2 className="text-base-content/30 mx-auto size-8 animate-spin" />
+                  return (
+                    <tr key={user.id} className="hover">
+                      <td>
+                        <div className="flex items-center gap-3">
+                          <div className="avatar placeholder">
+                            <div className="bg-neutral text-neutral-content flex h-10 w-10 items-center justify-center rounded-full">
+                              <span className="text-xs">
+                                {user.email?.split("@")[0]?.substring(0, 2)?.toUpperCase() || "??"}
+                              </span>
+                            </div>
+                          </div>
+                          <div>
+                            <div className="font-medium">{user.email}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <span className={`${BADGE_SM} badge-ghost`}>{user.role}</span>
+                      </td>
+                      <td className="text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          <span className={`${BADGE_SM} ${badge.color} gap-1`}>
+                            <BadgeIcon className="size-3" />
+                            {badge.label}
+                          </span>
+                          <span className="text-base-content/50 text-xs">{securityScore}%</span>
+                        </div>
+                      </td>
+                      <td className="text-center">
+                        {user.mfaEnabled ? (
+                          <div className="flex items-center justify-center gap-1">
+                            <ShieldCheck className="text-success size-4" />
+                            <span className="text-success text-xs font-medium">Activo</span>
+                          </div>
+                        ) : (
+                          <span className="text-base-content/30 text-xs">Inactivo</span>
+                        )}
+                      </td>
+                      <td className="text-center">
+                        {user.hasPasskey ? (
+                          <div className="flex items-center justify-center gap-1">
+                            <Key className="text-info size-4" />
+                            <span className="text-info text-xs font-medium">Sí</span>
+                          </div>
+                        ) : (
+                          <span className="text-base-content/30 text-xs">No</span>
+                        )}
+                      </td>
+                      <td className="text-right">
+                        <Button
+                          size="sm"
+                          variant={user.mfaEnabled ? "ghost" : "primary"}
+                          onClick={() =>
+                            toggleMfaMutation.mutate({
+                              userId: user.id,
+                              enabled: !user.mfaEnabled,
+                            })
+                          }
+                          disabled={toggleMfaMutation.isPending}
+                        >
+                          {user.mfaEnabled ? "Desactivar MFA" : "Activar MFA"}
+                        </Button>
                       </td>
                     </tr>
-                  ) : (
-                    users.map((user: User) => {
-                      const securityScore = getSecurityScore(user);
-                      const badge = getSecurityBadge(securityScore);
-                      const BadgeIcon = badge.icon;
-
-                      return (
-                        <tr key={user.id} className="hover">
-                          <td>
-                            <div className="flex items-center gap-3">
-                              <div className="avatar placeholder">
-                                <div className="bg-neutral text-neutral-content flex h-10 w-10 items-center justify-center rounded-full">
-                                  <span className="text-xs">
-                                    {user.email?.split("@")[0]?.substring(0, 2)?.toUpperCase() || "??"}
-                                  </span>
-                                </div>
-                              </div>
-                              <div>
-                                <div className="font-medium">{user.email}</div>
-                              </div>
-                            </div>
-                          </td>
-                          <td>
-                            <span className={`${BADGE_SM} badge-ghost`}>{user.role}</span>
-                          </td>
-                          <td className="text-center">
-                            <div className="flex items-center justify-center gap-2">
-                              <span className={`${BADGE_SM} ${badge.color} gap-1`}>
-                                <BadgeIcon className="size-3" />
-                                {badge.label}
-                              </span>
-                              <span className="text-base-content/50 text-xs">{securityScore}%</span>
-                            </div>
-                          </td>
-                          <td className="text-center">
-                            {user.mfaEnabled ? (
-                              <div className="flex items-center justify-center gap-1">
-                                <ShieldCheck className="text-success size-4" />
-                                <span className="text-success text-xs font-medium">Activo</span>
-                              </div>
-                            ) : (
-                              <span className="text-base-content/30 text-xs">Inactivo</span>
-                            )}
-                          </td>
-                          <td className="text-center">
-                            {user.hasPasskey ? (
-                              <div className="flex items-center justify-center gap-1">
-                                <Key className="text-info size-4" />
-                                <span className="text-info text-xs font-medium">Sí</span>
-                              </div>
-                            ) : (
-                              <span className="text-base-content/30 text-xs">No</span>
-                            )}
-                          </td>
-                          <td className="text-right">
-                            <Button
-                              size="sm"
-                              variant={user.mfaEnabled ? "ghost" : "primary"}
-                              onClick={() =>
-                                toggleMfaMutation.mutate({
-                                  userId: user.id,
-                                  enabled: !user.mfaEnabled,
-                                })
-                              }
-                              disabled={toggleMfaMutation.isPending}
-                            >
-                              {user.mfaEnabled ? "Desactivar MFA" : "Activar MFA"}
-                            </Button>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
+                  );
+                })}
+              </Table.Body>
+            </Table>
 
             {/* Security Recommendations */}
             {users && (
@@ -231,21 +221,21 @@ export default function AccessSettingsPage() {
                 </div>
               </div>
             )}
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Non-admin message */}
       {!isAdmin && (
-        <div className="card bg-base-100 shadow-sm">
-          <div className="card-body text-center">
+        <Card>
+          <CardContent className="p-8 text-center">
             <Lock className="text-base-content/30 mx-auto size-12" />
-            <h3 className="text-lg font-semibold">Acceso restringido</h3>
+            <h3 className="mt-4 text-lg font-semibold">Acceso restringido</h3>
             <p className="text-base-content/60 text-sm">
               Solo los administradores pueden gestionar la seguridad de usuarios.
             </p>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   );
