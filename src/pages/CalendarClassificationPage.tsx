@@ -18,67 +18,21 @@ import {
   type MissingFieldFilters,
 } from "@/features/calendar/api";
 import type { CalendarUnclassifiedEvent } from "@/features/calendar/types";
-import { classificationArraySchema, type FormValues, classificationSchema } from "@/features/calendar/schemas";
+import { classificationArraySchema, type FormValues } from "@/features/calendar/schemas";
 import { ClassificationRow } from "@/features/calendar/components/ClassificationRow";
 import { ClassificationTotals } from "@/features/calendar/components/ClassificationTotals";
 import { useJobProgress } from "@/hooks/useJobProgress";
-import { z } from "zod";
+
+import {
+  eventKey,
+  buildDefaultEntry,
+  buildPayload,
+  type ParsedPayload,
+} from "@/features/calendar/utils/classification";
 
 dayjs.locale("es");
 
 const EMPTY_EVENTS: CalendarUnclassifiedEvent[] = [];
-
-type ParsedPayload = {
-  category: string | null;
-  amountExpected: number | null;
-  amountPaid: number | null;
-  attended: boolean | null;
-  dosage: string | null;
-  treatmentStage: string | null;
-};
-
-function eventKey(event: Pick<CalendarUnclassifiedEvent, "calendarId" | "eventId">) {
-  return `${event.calendarId}:::${event.eventId}`;
-}
-
-function parseAmountInput(value: string | null | undefined): number | null {
-  if (!value) return null;
-  const normalized = value.replace(/[^0-9]/g, "");
-  if (!normalized.length) return null;
-  const parsed = Number.parseInt(normalized, 10);
-  return Number.isNaN(parsed) ? null : parsed;
-}
-
-function buildDefaultEntry(event: CalendarUnclassifiedEvent) {
-  return {
-    category: event.category ?? "",
-    amountExpected: event.amountExpected != null ? String(event.amountExpected) : "",
-    amountPaid: event.amountPaid != null ? String(event.amountPaid) : "",
-    attended: event.attended ?? false,
-    dosage: event.dosage ?? "",
-    treatmentStage: event.treatmentStage ?? "",
-  };
-}
-
-function buildPayload(entry: z.infer<typeof classificationSchema>, event: CalendarUnclassifiedEvent): ParsedPayload {
-  const category = entry.category?.trim() || null;
-  const resolvedCategory = category ?? event.category ?? null;
-  const amountExpected = parseAmountInput(entry.amountExpected) ?? event.amountExpected ?? null;
-  const amountPaid = parseAmountInput(entry.amountPaid) ?? event.amountPaid ?? null;
-  const attended = entry.attended ?? event.attended ?? null;
-  const dosage = entry.dosage?.trim() ? entry.dosage.trim() : null;
-  const treatmentStage =
-    resolvedCategory === "Tratamiento subcutáneo" && entry.treatmentStage?.trim() ? entry.treatmentStage.trim() : null;
-
-  return {
-    category: resolvedCategory,
-    amountExpected,
-    amountPaid,
-    attended,
-    dosage,
-    treatmentStage,
-  };
-}
 
 function CalendarClassificationPage() {
   const PAGE_SIZE = 50;
