@@ -1,5 +1,6 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect } from "react";
 import { X } from "lucide-react";
+import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 import Button from "./Button";
 
@@ -13,43 +14,37 @@ interface ModalProps {
 }
 
 export default function Modal({ isOpen, onClose, title, children, className, boxClassName }: ModalProps) {
-  const dialogRef = useRef<HTMLDialogElement>(null);
-
+  // Lock body scroll when open
   useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-
     if (isOpen) {
-      if (!dialog.open) {
-        dialog.showModal();
-      }
+      document.body.style.overflow = "hidden";
     } else {
-      if (dialog.open) {
-        dialog.close();
-      }
+      document.body.style.overflow = "unset";
     }
+    return () => {
+      document.body.style.overflow = "unset";
+    };
   }, [isOpen]);
 
-  // Handle native "cancel" event (Escape key) to sync state
-  const handleCancel = (e: React.SyntheticEvent) => {
-    e.preventDefault(); // Prevent default close to control it via props if needed, or just allow it and call onClose
-    onClose();
-  };
+  // Handle native "cancel" event (Escape key)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isOpen) {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
 
-  // Handle backdrop click
-  const handleClick = (e: React.MouseEvent<HTMLDialogElement>) => {
-    const dialog = dialogRef.current;
-    if (e.target === dialog) {
-      onClose();
-    }
-  };
+  if (!isOpen) return null;
 
-  return (
-    <dialog
-      ref={dialogRef}
-      className={cn("modal bg-base-content/20 backdrop-blur-md transition-all duration-300", className)}
-      onCancel={handleCancel}
-      onClick={handleClick}
+  return createPortal(
+    <div
+      className={cn("modal modal-open bg-base-content/20 backdrop-blur-md transition-all duration-300", className)}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
       <div
         className={cn(
@@ -71,6 +66,7 @@ export default function Modal({ isOpen, onClose, title, children, className, box
         </div>
         <div className="mt-2">{children}</div>
       </div>
-    </dialog>
+    </div>,
+    document.body
   );
 }

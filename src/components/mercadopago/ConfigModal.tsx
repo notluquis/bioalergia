@@ -334,7 +334,7 @@ export default function ConfigModal({ open, onClose }: Props) {
           <div className="bg-base-200/50 rounded-lg p-4">
             <h4 className="mb-3 text-sm font-medium">Opciones Adicionales</h4>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <TooltipProvider>
+              <TooltipProvider delayDuration={0}>
                 <div className="flex items-center justify-between gap-2">
                   <label className="label cursor-pointer justify-start gap-2 p-0">
                     <input
