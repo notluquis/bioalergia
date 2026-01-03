@@ -350,7 +350,7 @@ export default function ConfigModal({ open, onClose }: Props) {
                         <Info className="text-base-content/40 h-4 w-4" />
                       </button>
                     </TooltipTrigger>
-                    <TooltipContent>
+                    <TooltipContent side="bottom" className="max-w-xs text-xs">
                       <p>Agrega un resumen de los retiros de dinero al final del reporte.</p>
                     </TooltipContent>
                   </Tooltip>
@@ -367,7 +367,7 @@ export default function ConfigModal({ open, onClose }: Props) {
                         <Info className="text-base-content/40 h-4 w-4" />
                       </button>
                     </TooltipTrigger>
-                    <TooltipContent>
+                    <TooltipContent side="bottom" className="max-w-xs text-xs">
                       <p>Incluye una columna con el saldo acumulado después de cada movimiento.</p>
                     </TooltipContent>
                   </Tooltip>
@@ -384,7 +384,7 @@ export default function ConfigModal({ open, onClose }: Props) {
                         <Info className="text-base-content/40 h-4 w-4" />
                       </button>
                     </TooltipTrigger>
-                    <TooltipContent>
+                    <TooltipContent side="bottom" className="max-w-xs text-xs">
                       <p>Muestra el detalle de disputas y contracargos asociados.</p>
                     </TooltipContent>
                   </Tooltip>
@@ -401,7 +401,7 @@ export default function ConfigModal({ open, onClose }: Props) {
                         <Info className="text-base-content/40 h-4 w-4" />
                       </button>
                     </TooltipTrigger>
-                    <TooltipContent>
+                    <TooltipContent side="bottom" className="max-w-xs text-xs">
                       <p>Genera automáticamente un reporte cada vez que realizas un retiro de dinero.</p>
                     </TooltipContent>
                   </Tooltip>
