@@ -7,6 +7,7 @@ import { useMemo, type FormEvent } from "react";
 import type { ChangeEvent } from "react";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
+import { Card } from "@/components/ui/Card";
 import { MultiSelectFilter, type MultiSelectOption } from "./MultiSelectFilter";
 import { NULL_EVENT_TYPE_VALUE, NULL_CATEGORY_VALUE } from "../constants";
 import { numberFormatter } from "@/lib/format";
@@ -60,6 +61,7 @@ export function CalendarFilterPanel({
   loading = false,
   isDirty = true,
 }: CalendarFilterPanelProps) {
+  // ... (keep logic)
   // Build event type options for MultiSelect
   const eventTypeOptions: MultiSelectOption[] = useMemo(
     () =>
@@ -106,80 +108,79 @@ export function CalendarFilterPanel({
   };
 
   return (
-    <form
-      className="border-base-300 bg-base-100 animate-in slide-in-from-top-2 flex flex-wrap items-end gap-3 rounded-xl border p-3 shadow-sm duration-200"
-      onSubmit={handleSubmit}
-    >
-      {/* Date Range Inputs */}
-      {showDateRange && (
-        <>
-          <div className="min-w-28 flex-1">
-            <Input
-              label="Desde"
-              type="date"
-              value={filters.from}
-              onChange={(e: ChangeEvent<HTMLInputElement>) => onFilterChange("from", e.target.value)}
+    <Card className="animate-in slide-in-from-top-2 duration-200">
+      <form className="flex flex-wrap items-end gap-3 p-3" onSubmit={handleSubmit}>
+        {/* Date Range Inputs */}
+        {showDateRange && (
+          <>
+            <div className="min-w-28 flex-1">
+              <Input
+                label="Desde"
+                type="date"
+                value={filters.from}
+                onChange={(e: ChangeEvent<HTMLInputElement>) => onFilterChange("from", e.target.value)}
+              />
+            </div>
+            <div className="min-w-28 flex-1">
+              <Input
+                label="Hasta"
+                type="date"
+                value={filters.to}
+                onChange={(e: ChangeEvent<HTMLInputElement>) => onFilterChange("to", e.target.value)}
+              />
+            </div>
+          </>
+        )}
+
+        {/* Event Types Filter */}
+        {availableEventTypes.length > 0 && (
+          <div className="min-w-35 flex-1">
+            <MultiSelectFilter
+              label="Tipos de evento"
+              options={eventTypeOptions}
+              selected={filters.eventTypes}
+              onToggle={toggleEventType}
+              placeholder="Todos"
             />
           </div>
-          <div className="min-w-28 flex-1">
-            <Input
-              label="Hasta"
-              type="date"
-              value={filters.to}
-              onChange={(e: ChangeEvent<HTMLInputElement>) => onFilterChange("to", e.target.value)}
+        )}
+
+        {/* Categories Filter */}
+        {availableCategories.length > 0 && (
+          <div className="min-w-35 flex-1">
+            <MultiSelectFilter
+              label="Clasificación"
+              options={categoryOptions}
+              selected={filters.categories}
+              onToggle={toggleCategory}
+              placeholder="Todas"
             />
           </div>
-        </>
-      )}
+        )}
 
-      {/* Event Types Filter */}
-      {availableEventTypes.length > 0 && (
-        <div className="min-w-35 flex-1">
-          <MultiSelectFilter
-            label="Tipos de evento"
-            options={eventTypeOptions}
-            selected={filters.eventTypes}
-            onToggle={toggleEventType}
-            placeholder="Todos"
-          />
+        {/* Search Input */}
+        {showSearch && (
+          <div className="min-w-40 flex-1">
+            <Input
+              label="Buscar"
+              placeholder="Paciente, tratamiento..."
+              value={filters.search ?? ""}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => onFilterChange("search", e.target.value)}
+              enterKeyHint="search"
+            />
+          </div>
+        )}
+
+        {/* Action Buttons */}
+        <div className="flex gap-2">
+          <Button type="button" variant="ghost" size="sm" disabled={loading || !isDirty} onClick={onReset}>
+            Limpiar
+          </Button>
+          <Button type="submit" size="sm" disabled={loading}>
+            {loading ? "..." : "Aplicar"}
+          </Button>
         </div>
-      )}
-
-      {/* Categories Filter */}
-      {availableCategories.length > 0 && (
-        <div className="min-w-35 flex-1">
-          <MultiSelectFilter
-            label="Clasificación"
-            options={categoryOptions}
-            selected={filters.categories}
-            onToggle={toggleCategory}
-            placeholder="Todas"
-          />
-        </div>
-      )}
-
-      {/* Search Input */}
-      {showSearch && (
-        <div className="min-w-40 flex-1">
-          <Input
-            label="Buscar"
-            placeholder="Paciente, tratamiento..."
-            value={filters.search ?? ""}
-            onChange={(e: ChangeEvent<HTMLInputElement>) => onFilterChange("search", e.target.value)}
-            enterKeyHint="search"
-          />
-        </div>
-      )}
-
-      {/* Action Buttons */}
-      <div className="flex gap-2">
-        <Button type="button" variant="ghost" size="sm" disabled={loading || !isDirty} onClick={onReset}>
-          Limpiar
-        </Button>
-        <Button type="submit" size="sm" disabled={loading}>
-          {loading ? "..." : "Aplicar"}
-        </Button>
-      </div>
-    </form>
+      </form>
+    </Card>
   );
 }

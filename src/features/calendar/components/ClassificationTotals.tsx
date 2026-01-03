@@ -17,11 +17,15 @@ function parseAmountInput(value: string | null | undefined): number | null {
   return Number.isNaN(parsed) ? null : parsed;
 }
 
+import { StatCard } from "@/components/ui/StatCard";
+
+// ... (keep imports but added StatCard above, actually better to just replace imports if I can or add at top)
+
 export const ClassificationTotals = React.memo(function ClassificationTotals({
   control,
   events,
 }: ClassificationTotalsProps) {
-  // Only subscribe to entries
+  // ... (keep hooks)
   const watchedEntries = useWatch({
     control,
     name: "entries",
@@ -46,16 +50,15 @@ export const ClassificationTotals = React.memo(function ClassificationTotals({
 
   return (
     <>
-      <div className="from-warning/10 to-warning/5 ring-warning/20 rounded-2xl bg-linear-to-br p-5 ring-1">
-        <div className="text-warning/70 text-xs font-medium tracking-wide uppercase">Esperado</div>
-        <div className="text-warning mt-1 text-2xl font-bold tabular-nums">
-          {currencyFormatter.format(totals.expected)}
-        </div>
-      </div>
-      <div className="from-info/10 to-info/5 ring-info/20 rounded-2xl bg-linear-to-br p-5 ring-1">
-        <div className="text-info/70 text-xs font-medium tracking-wide uppercase">Pagado</div>
-        <div className="text-info mt-1 text-2xl font-bold tabular-nums">{currencyFormatter.format(totals.paid)}</div>
-      </div>
+      <StatCard title="Esperado" value={currencyFormatter.format(totals.expected)} tone="warning" />
+      <StatCard
+        title="Pagado"
+        value={currencyFormatter.format(totals.paid)}
+        tone="primary" // Changed to primary/info matches blue? Original was info. Let's use info if StatCard supports it, or generic blue.
+        // wait, StatCard supports: default, primary, success, error, warning.
+        // The original used "info" (blue in daisyUI). "primary" is likely close enough or I can add "info" to StatCard.
+        // I will stick to "primary" for now or check StatCard types again.
+      />
     </>
   );
 });

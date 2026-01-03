@@ -22,6 +22,7 @@ import { classificationArraySchema, type FormValues } from "@/features/calendar/
 import { ClassificationRow } from "@/features/calendar/components/ClassificationRow";
 import { ClassificationTotals } from "@/features/calendar/components/ClassificationTotals";
 import { useJobProgress } from "@/hooks/useJobProgress";
+import { StatCard } from "@/components/ui/StatCard";
 
 import {
   eventKey,
@@ -236,16 +237,8 @@ function CalendarClassificationPage() {
 
           {/* Stats Cards */}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="from-primary/10 to-primary/5 ring-primary/20 rounded-2xl bg-linear-to-br p-5 ring-1">
-              <div className="text-primary/70 text-xs font-medium tracking-wide uppercase">Pendientes</div>
-              <div className="text-primary mt-1 text-3xl font-bold tabular-nums">
-                {loading ? "—" : totalCount.toLocaleString("es-CL")}
-              </div>
-            </div>
-            <div className="from-success/10 to-success/5 ring-success/20 rounded-2xl bg-linear-to-br p-5 ring-1">
-              <div className="text-success/70 text-xs font-medium tracking-wide uppercase">Página actual</div>
-              <div className="text-success mt-1 text-3xl font-bold tabular-nums">{loading ? "—" : events.length}</div>
-            </div>
+            <StatCard title="Pendientes" value={loading ? "—" : totalCount.toLocaleString("es-CL")} tone="primary" />
+            <StatCard title="Página actual" value={loading ? "—" : events.length} tone="success" />
             <ClassificationTotals control={control} events={events} />
           </div>
 
