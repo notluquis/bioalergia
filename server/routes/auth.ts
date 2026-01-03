@@ -330,11 +330,7 @@ export function registerAuthRoutes(app: express.Express) {
     authenticate,
     attachAbility, // Required to check permissions
     asyncHandler(async (req: AuthenticatedRequest, res) => {
-      // Logic: Only users with 'role.update' permission can repair permissions.
-      // If the system is broken and no one has this, this endpoint might be inaccessible
-      // without a fallback.
-      // Check permissions
-
+      // Only users with 'role.update' permission can repair permissions.
       const hasPermission = req.ability?.can("update", "Role");
 
       if (!hasPermission) {
@@ -345,70 +341,24 @@ export function registerAuthRoutes(app: express.Express) {
         });
       }
 
-      console.log("Repairing permissions via HTTP endpoint using CONFIG...");
-      const { INITIAL_ROLES } = await import("../config/initial-roles.js");
+      console.log("Repairing permissions via HTTP endpoint...");
 
-      // 1. Ensure all Permissions exist
-      const allDesiredPermissions = new Set<string>();
-      INITIAL_ROLES.forEach((r) => r.permissions.forEach((p) => allDesiredPermissions.add(p)));
+      // Use the centralized syncPermissions function which:
+      // 1. Creates permissions from ROUTE_DATA subjects
+      // 2. Creates permissions from API_PERMISSIONS
+      // 3. Cleans up obsolete permissions
+      // 4. Auto-assigns ALL permissions to SystemAdministrator
+      const { syncPermissions } = await import("../services/permissions.js");
+      await syncPermissions();
 
-      // All desired permissions from config (no fallback to manage.all)
-
-      for (const permKey of allDesiredPermissions) {
-        // Fix split logic: permissionMap uses keys like "user.create" -> action=create, subject=User
-        // But here we are iterating KEYS from config.
-        // Actually, we should use permissionMap to resolve the real Action/Subject.
-        const { permissionMap } = await import("../lib/authz/permissionMap.js");
-        const def = permissionMap[permKey as keyof typeof permissionMap];
-
-        if (def) {
-          await prisma.permission.upsert({
-            where: { action_subject: { action: def.action, subject: def.subject } },
-            create: { action: def.action, subject: def.subject, description: `Auto-generated for ${permKey}` },
-            update: {},
-          });
-        }
-      }
-
-      // 2. Ensure Roles exist and have Permissions
-      for (const roleDef of INITIAL_ROLES) {
-        let role = await prisma.role.findUnique({ where: { name: roleDef.name } });
-        if (!role) {
-          role = await prisma.role.create({ data: { name: roleDef.name, description: roleDef.description } });
-        }
-
-        // Assign permissions to Role
-        const { permissionMap } = await import("../lib/authz/permissionMap.js");
-        const permissionIds: number[] = [];
-
-        for (const permKey of roleDef.permissions) {
-          const def = permissionMap[permKey];
-          if (def) {
-            const p = await prisma.permission.findUnique({
-              where: { action_subject: { action: def.action, subject: def.subject } },
-            });
-            if (p) permissionIds.push(p.id);
-          }
-        }
-
-        // Sync RolePermissions
-        for (const pId of permissionIds) {
-          await prisma.rolePermission.upsert({
-            where: { roleId_permissionId: { roleId: role.id, permissionId: pId } },
-            create: { roleId: role.id, permissionId: pId },
-            update: {},
-          });
-        }
-      }
-
-      // 3. Increment Version for all users to force refresh
+      // Increment version for all users to force refresh
       await prisma.userPermissionVersion.updateMany({
         data: { version: { increment: 1 } },
       });
 
       res.json({
         status: "ok",
-        message: `Permissions repaired using Configuration. Roles synced: ${INITIAL_ROLES.map((r) => r.name).join(", ")}`,
+        message: "Permissions repaired and synced from route-data.ts",
       });
     })
   );

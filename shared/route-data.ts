@@ -362,3 +362,17 @@ export const ROUTE_DATA: RouteData[] = [
 // ============================================================================
 
 export const SECTION_ORDER: NavSection[] = ["Calendario", "Finanzas", "Servicios", "Operaciones", "Sistema"];
+
+// ============================================================================
+// API-ONLY PERMISSIONS (no UI page, used by API endpoints directly)
+// ============================================================================
+
+/**
+ * Permissions for API endpoints that don't have a corresponding UI page.
+ * These are synced to the database alongside route-derived permissions.
+ */
+export const API_PERMISSIONS: RoutePermission[] = [
+  // Permission management endpoints (/api/roles/permissions)
+  { action: "read", subject: "Permission" },
+  { action: "update", subject: "Permission" },
+];
