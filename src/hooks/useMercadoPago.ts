@@ -120,6 +120,17 @@ export function useMercadoPagoConfig(isOpen: boolean, onClose: () => void) {
       }
     }
 
+    // Sanitize Frequency: Daily should not have a 'value'.
+    const frequency = { ...data.frequency };
+    if (frequency.type === "daily") {
+      // @ts-expect-error - value is optional/unneeded for daily but typed as required in form
+      frequency.value = undefined;
+    } else {
+      // Ensure value is integer
+      frequency.value = Number(frequency.value);
+    }
+    sanitizedData.frequency = frequency;
+
     if (currentConfig) {
       updateMutation.mutate(sanitizedData);
     } else {
