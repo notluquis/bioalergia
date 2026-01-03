@@ -97,9 +97,9 @@ const SidebarItem = React.memo(function SidebarItem({
                   {item.label}
                 </span>
 
-                {/* Loading Spinner */}
-                {isPending && (
-                  <div className={cn("absolute right-3", !isMobile && isCollapsed ? "top-1 right-1" : "")}>
+                {/* Loading Spinner - hidden when collapsed (active dot shows pending state) */}
+                {isPending && !(!isMobile && isCollapsed) && (
+                  <div className="absolute right-3">
                     <Loader2 className="h-3 w-3 animate-spin opacity-50" />
                   </div>
                 )}
