@@ -100,7 +100,7 @@ export default function MercadoPagoSettingsPage() {
             Gestiona la generación y descarga de reportes de liberación de fondos
           </p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           <Button variant="outline" onClick={() => setIsConfigModalOpen(true)}>
             <Settings className="mr-2 h-4 w-4" />
             Configuración
