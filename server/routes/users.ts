@@ -1,5 +1,4 @@
 import express from "express";
-import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { asyncHandler, authenticate } from "../lib/http.js";
 import { authorize } from "../middleware/authorize.js";
@@ -11,16 +10,7 @@ import type { AuthenticatedRequest } from "../types.js";
 import { normalizeRut } from "../lib/rut.js";
 
 // Schema for inviting a user
-const inviteUserSchema = z.object({
-  email: z.string().email(),
-  role: z.string().min(1),
-  position: z
-    .string()
-    .optional()
-    .transform((val) => (val && val.trim().length > 0 ? val : "Por definir")),
-  mfaEnforced: z.boolean().default(true),
-  personId: z.number().optional(),
-});
+import { inviteUserSchema, setupUserSchema } from "../schemas/index.js";
 
 export function registerUserRoutes(app: express.Express) {
   // Toggle MFA for a specific user (Admin only)
@@ -459,20 +449,7 @@ export function registerUserRoutes(app: express.Express) {
     "/api/users/setup",
     authenticate,
     asyncHandler(async (req: AuthenticatedRequest, res) => {
-      const schema = z.object({
-        names: z.string().min(1),
-        fatherName: z.string().optional(),
-        motherName: z.string().optional(),
-        rut: z.string().min(1),
-        phone: z.string().optional(),
-        address: z.string().optional(),
-        bankName: z.string().optional(),
-        bankAccountType: z.string().optional(),
-        bankAccountNumber: z.string().optional(),
-        password: z.string().min(8),
-      });
-
-      const data = schema.parse(req.body);
+      const data = setupUserSchema.parse(req.body);
       const userId = req.auth!.userId;
 
       const user = await prisma.user.findUnique({

@@ -11,70 +11,21 @@ import Input from "@/components/ui/Input";
 import { MPService } from "@/services/mercadopago";
 import { useToast } from "@/context/ToastContext";
 
-// Valid column keys from MercadoPago API
-const VALID_COLUMNS = [
-  "DATE",
-  "SOURCE_ID",
-  "EXTERNAL_REFERENCE",
-  "RECORD_TYPE",
-  "DESCRIPTION",
-  "NET_CREDIT_AMOUNT",
-  "NET_DEBIT_AMOUNT",
-  "SELLER_AMOUNT",
-  "GROSS_AMOUNT",
-  "METADATA",
-  "MP_FEE_AMOUNT",
-  "FINANCING_FEE_AMOUNT",
-  "SHIPPING_FEE_AMOUNT",
-  "TAXES_AMOUNT",
-  "COUPON_AMOUNT",
-  "INSTALLMENTS",
-  "PAYMENT_METHOD",
-  "PAYMENT_METHOD_TYPE",
-  "TAX_DETAIL",
-  "TAX_AMOUNT_TELCO",
-  "TRANSACTION_APPROVAL_DATE",
-  "POS_ID",
-  "POS_NAME",
-  "EXTERNAL_POS_ID",
-  "STORE_ID",
-  "STORE_NAME",
-  "EXTERNAL_STORE_ID",
-  "ORDER_ID",
-  "SHIPPING_ID",
-  "SHIPMENT_MODE",
-  "PACK_ID",
-  "TAXES_DISAGGREGATED",
-  "EFFECTIVE_COUPON_AMOUNT",
-  "POI_ID",
-  "CARD_INITIAL_NUMBER",
-  "OPERATION_TAGS",
-  "ITEM_ID",
-  "BALANCE_AMOUNT",
-  "PAYOUT_BANK_ACCOUNT_NUMBER",
-  "PRODUCT_SKU",
-  "SALE_DETAIL",
-  "CURRENCY",
-  "FRANCHISE",
-  "LAST_FOUR_DIGITS",
-  "ORDER_MP",
-  "TRANSACTION_INTENT_ID",
-  "PURCHASE_ID",
-  "IS_RELEASED",
-  "SHIPPING_ORDER_ID",
-  "ISSUER_NAME",
-] as const;
+import { MP_REPORT_COLUMNS, MP_WEEKDAYS, MP_REPORT_LANGUAGES } from "../../../shared/mercadopago";
 
-const WEEKDAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"] as const;
-const REPORT_LANGUAGES = ["en", "es", "pt"] as const;
+// Use constants from shared/mercadopago.ts for Single Source of Truth
 
 // Zod Schema mirroring backend
 const ConfigSchema = z.object({
   file_name_prefix: z.string().min(1, "Prefijo requerido"),
-  columns: z.array(z.object({ key: z.string().min(1) })).min(1, "Al menos una columna requerida"),
+  columns: z
+    .array(z.object({ key: z.string().min(1) }))
+    .min(1, "Al menos una columna requerida")
+    .max(MP_REPORT_COLUMNS.length, `Máximo ${MP_REPORT_COLUMNS.length} columnas permitidas`)
+    .refine((cols) => new Set(cols.map((c) => c.key)).size === cols.length, "No se permiten columnas duplicadas"),
   frequency: z.object({
     type: z.enum(["daily", "weekly", "monthly"]),
-    value: z.union([z.number().int().min(0).max(31), z.enum(WEEKDAYS)]),
+    value: z.union([z.number().int().min(0).max(31), z.enum(MP_WEEKDAYS)]),
     hour: z.number().int().min(0).max(23),
   }),
   sftp_info: z
@@ -88,7 +39,7 @@ const ConfigSchema = z.object({
     .optional(),
   separator: z.string().optional(),
   display_timezone: z.string().optional(),
-  report_translation: z.enum(REPORT_LANGUAGES).optional(),
+  report_translation: z.enum(MP_REPORT_LANGUAGES).optional(),
   notification_email_list: z.array(z.string().email()).optional(),
   include_withdrawal_at_end: z.boolean().optional(),
   check_available_balance: z.boolean().optional(),
@@ -127,7 +78,14 @@ export default function ConfigModal({ open, onClose }: Props) {
     enabled: open,
   });
 
-  const { register, control, handleSubmit, reset, watch } = useForm<FormData>({
+  const {
+    register,
+    control,
+    handleSubmit,
+    reset,
+    watch,
+    formState: { errors },
+  } = useForm<FormData>({
     resolver: zodResolver(ConfigSchema),
     defaultValues: {
       file_name_prefix: "release-report",
@@ -143,19 +101,36 @@ export default function ConfigModal({ open, onClose }: Props) {
   });
 
   const frequencyType = watch("frequency.type");
+  const currentColumns = watch("columns");
 
   const { fields, append, remove } = useFieldArray({
     control,
     name: "columns",
   });
 
-  // Load existing config into form
+  // Get available columns (not already selected)
+  const selectedColumnKeys = new Set(currentColumns?.map((c) => c.key) || []);
+  const availableColumns = MP_REPORT_COLUMNS.filter((col) => !selectedColumnKeys.has(col));
+  const maxColumns = MP_REPORT_COLUMNS.length;
+  const canAddColumn = fields.length < maxColumns && availableColumns.length > 0;
+
+  // Load existing config into form (deduplicating columns if needed)
   useEffect(() => {
     if (currentConfig) {
+      // Remove duplicate columns from existing config
+      const seen = new Set<string>();
+      const uniqueColumns = currentConfig.columns
+        .filter((col) => {
+          if (seen.has(col.key)) return false;
+          seen.add(col.key);
+          return true;
+        })
+        .slice(0, maxColumns); // Limit to maxColumns
+
       reset({
         file_name_prefix: currentConfig.file_name_prefix,
         frequency: currentConfig.frequency as FormData["frequency"],
-        columns: currentConfig.columns,
+        columns: uniqueColumns,
         sftp_info: currentConfig.sftp_info,
         separator: currentConfig.separator,
         display_timezone: currentConfig.display_timezone || "GMT-04",
@@ -166,7 +141,7 @@ export default function ConfigModal({ open, onClose }: Props) {
         execute_after_withdrawal: currentConfig.execute_after_withdrawal,
       });
     }
-  }, [currentConfig, reset]);
+  }, [currentConfig, reset, maxColumns]);
 
   const createMutation = useMutation({
     mutationFn: MPService.createConfig,
@@ -243,7 +218,21 @@ export default function ConfigModal({ open, onClose }: Props) {
                 <label className="label py-1">
                   <span className="label-text text-xs">Tipo</span>
                 </label>
-                <select {...register("frequency.type")} className="select select-bordered select-sm w-full">
+                <select
+                  {...register("frequency.type")}
+                  className="select select-bordered select-sm w-full"
+                  onChange={(e) => {
+                    register("frequency.type").onChange(e);
+                    // Reset value when type changes
+                    if (e.target.value === "daily") {
+                      reset({ ...watch(), frequency: { ...watch("frequency"), type: "daily", value: 0 } });
+                    } else if (e.target.value === "weekly") {
+                      reset({ ...watch(), frequency: { ...watch("frequency"), type: "weekly", value: "monday" } });
+                    } else if (e.target.value === "monthly") {
+                      reset({ ...watch(), frequency: { ...watch("frequency"), type: "monthly", value: 1 } });
+                    }
+                  }}
+                >
                   <option value="daily">Diaria</option>
                   <option value="weekly">Semanal</option>
                   <option value="monthly">Mensual</option>
@@ -256,25 +245,13 @@ export default function ConfigModal({ open, onClose }: Props) {
                   <span className="label-text text-xs">Valor</span>
                 </label>
                 {frequencyType === "weekly" ? (
-                  <Controller
-                    name="frequency.value"
-                    control={control}
-                    render={({ field }) => (
-                      <select
-                        {...field}
-                        className="select select-bordered select-sm w-full"
-                        onChange={(e) => field.onChange(e.target.value)}
-                      >
-                        <option value="monday">Lunes</option>
-                        <option value="tuesday">Martes</option>
-                        <option value="wednesday">Miércoles</option>
-                        <option value="thursday">Jueves</option>
-                        <option value="friday">Viernes</option>
-                        <option value="saturday">Sábado</option>
-                        <option value="sunday">Domingo</option>
-                      </select>
-                    )}
-                  />
+                  <select className="select select-bordered select-sm w-full" {...register("frequency.value")}>
+                    {MP_WEEKDAYS.map((day) => (
+                      <option key={day} value={day}>
+                        {day.charAt(0).toUpperCase() + day.slice(1)}
+                      </option>
+                    ))}
+                  </select>
                 ) : frequencyType === "monthly" ? (
                   <Input
                     type="number"
@@ -327,41 +304,64 @@ export default function ConfigModal({ open, onClose }: Props) {
                 Columnas del Reporte
                 <span className="badge badge-info badge-xs">Requerido</span>
               </h4>
-              <Button type="button" size="sm" variant="ghost" onClick={() => append({ key: "DATE" })}>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  const firstAvailable = availableColumns[0];
+                  if (firstAvailable) {
+                    append({ key: firstAvailable });
+                  }
+                }}
+                disabled={!canAddColumn}
+                title={!canAddColumn ? `Máximo ${maxColumns} columnas o todas ya seleccionadas` : ""}
+              >
                 <Plus className="mr-1 h-3 w-3" /> Agregar
               </Button>
             </div>
+            {errors.columns && (
+              <p className="text-error mb-2 text-xs">{errors.columns.message || errors.columns.root?.message}</p>
+            )}
             <div className="max-h-48 space-y-2 overflow-y-auto">
-              {fields.map((field, index) => (
-                <div key={field.id} className="flex gap-2">
-                  <Controller
-                    name={`columns.${index}.key`}
-                    control={control}
-                    render={({ field: selectField }) => (
-                      <select {...selectField} className="select select-bordered select-sm flex-1">
-                        {VALID_COLUMNS.map((col) => (
-                          <option key={col} value={col}>
-                            {col}
-                          </option>
-                        ))}
-                      </select>
-                    )}
-                  />
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    className="text-error"
-                    onClick={() => remove(index)}
-                    disabled={fields.length <= 1}
-                  >
-                    <Trash className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
+              {fields.map((field, index) => {
+                // Get columns available for this specific row (current value + unselected)
+                const currentValue = currentColumns?.[index]?.key;
+                const rowAvailableColumns = MP_REPORT_COLUMNS.filter(
+                  (col) => col === currentValue || !selectedColumnKeys.has(col)
+                );
+                return (
+                  <div key={field.id} className="flex gap-2">
+                    <Controller
+                      name={`columns.${index}.key`}
+                      control={control}
+                      render={({ field: selectField }) => (
+                        <select {...selectField} className="select select-bordered select-sm flex-1">
+                          {rowAvailableColumns.map((col) => (
+                            <option key={col} value={col}>
+                              {col}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                    />
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      className="text-error"
+                      onClick={() => remove(index)}
+                      disabled={fields.length <= 1}
+                    >
+                      <Trash className="h-4 w-4" />
+                    </Button>
+                  </div>
+                );
+              })}
             </div>
             <p className="text-base-content/60 mt-2 text-xs">
-              {fields.length} columna{fields.length !== 1 ? "s" : ""} seleccionada{fields.length !== 1 ? "s" : ""}
+              {fields.length} / {maxColumns} columnas seleccionadas
+              {fields.length >= maxColumns && <span className="text-warning ml-1">(Todas seleccionadas)</span>}
             </p>
           </div>
 

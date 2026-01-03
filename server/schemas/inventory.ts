@@ -31,7 +31,7 @@ export const supplyRequestSchema = z.object({
 });
 
 export const updateSupplyRequestStatusSchema = z.object({
-  status: z.enum(["pending", "ordered", "in_transit", "delivered", "rejected"]),
+  status: z.enum(["PENDING", "APPROVED", "REJECTED", "FULFILLED"]),
   adminNotes: z.string().max(500).optional().nullable(),
 });
 

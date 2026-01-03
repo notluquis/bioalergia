@@ -3,67 +3,24 @@
  * Documentation: https://www.mercadopago.com/developers/es/docs/checkout-pro/additional-content/reports/released-money
  */
 import { z } from "zod";
+export {
+  MP_REPORT_COLUMNS,
+  MP_WEEKDAYS,
+  MP_REPORT_LANGUAGES,
+  MP_DEFAULT_COLUMNS,
+  type MpReportColumn,
+  type MpWeekday,
+  type MpReportLanguage,
+} from "../../shared/mercadopago.js";
+
+// Import locally for use in schemas below
+import { MP_REPORT_COLUMNS, MP_WEEKDAYS, MP_REPORT_LANGUAGES } from "../../shared/mercadopago.js";
 
 // ═══════════════════════════════════════════════════════════════════
 // CONSTANTS
 // ═══════════════════════════════════════════════════════════════════
 
-/** Valid column keys for Release Report - 53 columns */
-export const MP_REPORT_COLUMNS = [
-  "DATE",
-  "SOURCE_ID",
-  "EXTERNAL_REFERENCE",
-  "RECORD_TYPE",
-  "DESCRIPTION",
-  "NET_CREDIT_AMOUNT",
-  "NET_DEBIT_AMOUNT",
-  "SELLER_AMOUNT",
-  "GROSS_AMOUNT",
-  "METADATA",
-  "MP_FEE_AMOUNT",
-  "FINANCING_FEE_AMOUNT",
-  "SHIPPING_FEE_AMOUNT",
-  "TAXES_AMOUNT",
-  "COUPON_AMOUNT",
-  "INSTALLMENTS",
-  "PAYMENT_METHOD",
-  "PAYMENT_METHOD_TYPE",
-  "TAX_DETAIL",
-  "TAX_AMOUNT_TELCO",
-  "TRANSACTION_APPROVAL_DATE",
-  "POS_ID",
-  "POS_NAME",
-  "EXTERNAL_POS_ID",
-  "STORE_ID",
-  "STORE_NAME",
-  "EXTERNAL_STORE_ID",
-  "ORDER_ID",
-  "SHIPPING_ID",
-  "SHIPMENT_MODE",
-  "PACK_ID",
-  "TAXES_DISAGGREGATED",
-  "EFFECTIVE_COUPON_AMOUNT",
-  "POI_ID",
-  "CARD_INITIAL_NUMBER",
-  "OPERATION_TAGS",
-  "ITEM_ID",
-  "BALANCE_AMOUNT",
-  "PAYOUT_BANK_ACCOUNT_NUMBER",
-  "PRODUCT_SKU",
-  "SALE_DETAIL",
-  "CURRENCY",
-  "FRANCHISE",
-  "LAST_FOUR_DIGITS",
-  "ORDER_MP",
-  "TRANSACTION_INTENT_ID",
-  "PURCHASE_ID",
-  "IS_RELEASED",
-  "SHIPPING_ORDER_ID",
-  "ISSUER_NAME",
-] as const;
-
-const WEEKDAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"] as const;
-const REPORT_LANGUAGES = ["en", "es", "pt"] as const;
+// Constants are now imported from shared/mercadopago.ts to simplify maintenance
 
 // ═══════════════════════════════════════════════════════════════════
 // SHARED SCHEMAS (reused across endpoints)
@@ -79,7 +36,7 @@ export const columnSchema = z.object({ key: z.enum(MP_REPORT_COLUMNS) });
  */
 export const frequencySchema = z.object({
   type: z.enum(["daily", "weekly", "monthly"]),
-  value: z.union([z.number().int().min(0).max(31), z.enum(WEEKDAYS)]),
+  value: z.union([z.number().int().min(0).max(31), z.enum(MP_WEEKDAYS)]),
   hour: z.number().int().min(0).max(23),
 });
 
@@ -158,7 +115,7 @@ export const mpConfigSchema = z.object({
   sftp_info: sftpInfoSchema,
   separator: z.string().optional(), // default: ","
   display_timezone: z.string().optional(), // default: "GMT-04"
-  report_translation: z.enum(REPORT_LANGUAGES).optional(),
+  report_translation: z.enum(MP_REPORT_LANGUAGES).optional(),
   notification_email_list: z.array(z.string().email().or(z.null())).optional(),
   include_withdrawal_at_end: z.boolean().optional(), // default: true
   check_available_balance: z.boolean().optional(), // default: true
@@ -171,9 +128,7 @@ export const mpConfigSchema = z.object({
 export const mpConfigResponseSchema = z.object({
   file_name_prefix: z.string(),
   columns: z.array(columnSchema),
-  frequency: frequencySchema,
-  report_translation: z.enum(REPORT_LANGUAGES).optional(),
-  notification_email_list: z.array(z.string().email().or(z.null())).optional(),
+  report_translation: z.enum(MP_REPORT_LANGUAGES).optional(),
   display_timezone: z.string().optional(),
   include_withdrawal_at_end: z.boolean(),
   execute_after_withdrawal: z.boolean(),
@@ -184,7 +139,6 @@ export const mpConfigResponseSchema = z.object({
 // TYPE EXPORTS
 // ═══════════════════════════════════════════════════════════════════
 
-export type MpReportColumn = (typeof MP_REPORT_COLUMNS)[number];
 export type MpFrequency = z.infer<typeof frequencySchema>;
 export type MpConfig = z.infer<typeof mpConfigSchema>;
 export type MpConfigResponse = z.infer<typeof mpConfigResponseSchema>;

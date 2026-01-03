@@ -53,8 +53,17 @@ async function mpFetch(endpoint: string, options: RequestInit = {}) {
   const headers = {
     Authorization: `Bearer ${MP_ACCESS_TOKEN}`,
     "Content-Type": "application/json",
+    Accept: "application/json",
     ...options.headers,
   };
+
+  // Debug logging
+  logger.info({
+    event: "mp_api_request",
+    url,
+    method: options.method || "GET",
+    body: options.body,
+  });
 
   const response = await fetch(url, { ...options, headers });
 
@@ -107,12 +116,14 @@ export async function createReportConfig(config: Partial<ReportConfig>): Promise
  * POST /v1/account/release_report
  */
 export async function createReport(beginDate: string, endDate: string): Promise<CreateReportResponse> {
+  const body = {
+    begin_date: beginDate,
+    end_date: endDate,
+  };
+  logger.info({ event: "mp_create_report_request", body });
   return mpFetch("", {
     method: "POST",
-    body: JSON.stringify({
-      begin_date: beginDate,
-      end_date: endDate,
-    }),
+    body: JSON.stringify(body),
   });
 }
 

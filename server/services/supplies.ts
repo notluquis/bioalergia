@@ -29,9 +29,9 @@ export async function createSupplyRequest(data: {
   userId: number;
   supplyName: string;
   quantity: number;
-  brand?: string;
-  model?: string;
-  notes?: string;
+  brand?: string | null;
+  model?: string | null;
+  notes?: string | null;
 }) {
   return await prisma.supplyRequest.create({
     data: {

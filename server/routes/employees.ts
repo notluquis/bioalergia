@@ -43,7 +43,7 @@ export function registerEmployeeRoutes(app: express.Express) {
       const employee = await createEmployee({
         ...parsed.data,
         rut: parsed.data.rut,
-        full_name: parsed.data.full_name,
+        full_name: parsed.data.names,
       });
       logEvent("employees:create", requestContext(req, { employeeId: employee?.id }));
       res.status(201).json({ status: "ok", employee: mapEmployee(employee) });
