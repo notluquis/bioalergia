@@ -39,8 +39,9 @@
     "format": "prettier --write \"src/**/*.{js,jsx,ts,tsx,css,md,json}\"",
     "format:check": "prettier --check \"src/**/*.{js,jsx,ts,tsx,css,md,json}\"",
     "type-check": "tsc --noEmit && tsc --noEmit -p tsconfig.server.json",
+    "validate-routes": "npx tsx scripts/validate-routes.ts",
     "test": "vitest",
-    "ci:check": "npm run type-check && npm run lint && npm run format:check",
+    "ci:check": "npm run type-check && npm run lint && npm run format:check && npm run validate-routes",
     "prepare": "husky || true"
   },
   "dependencies": {
