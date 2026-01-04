@@ -38,7 +38,7 @@ function toJsonValue(
   return value as any;
 }
 
-// Map frontend payload to Prisma Employee update data
+// Map frontend payload to ZenStack Employee update data
 function mapToEmployeeData(payload: EmployeePayload): EmployeeUpdateInput {
   const data: EmployeeUpdateInput = {};
 
