@@ -36,6 +36,7 @@ app.use(
 );
 
 // Health check
+app.get("/health", (c) => c.json({ status: "ok" }));
 app.get("/", (c) => {
   return c.json({
     status: "ok",
