@@ -36,18 +36,21 @@ COPY . .
 
 # 3. Build Process: 
 # - Generate ZenStack Client (Pure Kysely, ZERO Prisma at runtime)
-# - Compile TypeScript (tsc)
-RUN pnpm --filter @finanzas/db generate && \
+# - Compile TypeScript (tsc) for BOTH db and api
+RUN pnpm --filter @finanzas/db build && \
     pnpm --filter @finanzas/api build
 
 # 4. Supreme Isolation: 'pnpm deploy'
 # Extracts only the production dependencies and files for the API.
 RUN pnpm deploy --filter=@finanzas/api --prod /app/deploy
 
-# Extra: Ensure build artifacts and DB schema are copied to the deploy folder
+# Extra: Ensure build artifacts are correctly placed for the runtime
+# We manually copy the 'dist' folders to ensure the latest built code is used.
+# For @finanzas/db, we inject it directly into node_modules where Node.js expects it.
 RUN cp -r apps/api/dist /app/deploy/dist && \
-    mkdir -p /app/deploy/packages/db && \
-    cp -r packages/db/zenstack /app/deploy/packages/db/zenstack
+    mkdir -p /app/deploy/node_modules/@finanzas/db && \
+    cp -r packages/db/dist /app/deploy/node_modules/@finanzas/db/dist && \
+    cp packages/db/package.json /app/deploy/node_modules/@finanzas/db/package.json
 
 # 5. Veto Prisma: Physically remove any Prisma artifacts created during build
 # to ensure zero Prisma footprint in the production image.
