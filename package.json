@@ -13,7 +13,8 @@
       "husky",
       "@zenstackhq/runtime",
       "protobufjs",
-      "lmdb"
+      "lmdb",
+      "@swc/core"
     ]
   },
   "packageManager": "pnpm@10.27.0",
