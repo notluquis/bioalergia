@@ -1,7 +1,7 @@
-import bcrypt from "bcryptjs";
 import express from "express";
 
 import { sessionCookieName, sessionCookieOptions } from "../config.js";
+import { hashPassword, verifyPassword } from "../lib/crypto.js";
 import { asyncHandler, authenticate, issueToken, sanitizeUser, softAuthenticate } from "../lib/http.js";
 import { logEvent, logWarn, requestContext } from "../lib/logger.js";
 import { attachAbility } from "../middleware/attachAbility.js";
@@ -145,10 +145,14 @@ export function registerAuthRoutes(app: express.Express) {
           // Allow proceed without password check
         } else if (user.passwordHash) {
           // If they provided a password and have a hash, validate it
-          const valid = await bcrypt.compare(password, user.passwordHash);
+          const { valid, needsRehash } = await verifyPassword(password, user.passwordHash);
           if (!valid) {
             logWarn("auth/login:bad-password", requestContext(req, { email }));
             return res.status(401).json({ status: "error", message: "El correo o la contraseña no son correctos" });
+          }
+          if (needsRehash) {
+            const newHash = await hashPassword(password);
+            await prisma.user.update({ where: { id: user.id }, data: { passwordHash: newHash } });
           }
         } else {
           // User has no password hash but tried to provide password - reject
@@ -170,10 +174,22 @@ export function registerAuthRoutes(app: express.Express) {
           logWarn("auth/login:empty-password", requestContext(req, { email }));
           return res.status(401).json({ status: "error", message: "La contraseña es requerida" });
         }
-        const valid = await bcrypt.compare(password, user.passwordHash);
+
+        const { valid, needsRehash } = await verifyPassword(password, user.passwordHash);
+
         if (!valid) {
           logWarn("auth/login:bad-password", requestContext(req, { email }));
           return res.status(401).json({ status: "error", message: "El correo o la contraseña no son correctos" });
+        }
+
+        // Automatic security upgrade: Rehash legacy bcrypt hashes to Argon2
+        if (needsRehash) {
+          const newHash = await hashPassword(password);
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { passwordHash: newHash },
+          });
+          logEvent("auth/security:password-upgraded", { userId: user.id });
         }
       }
 

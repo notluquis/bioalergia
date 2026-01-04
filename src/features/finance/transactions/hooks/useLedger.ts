@@ -14,25 +14,28 @@ export function useLedger({ rows, initialBalance, hasAmounts }: UseLedgerProps):
   const initialBalanceNumber = useMemo(() => coerceAmount(initialBalance), [initialBalance]);
 
   const ledger = useMemo<LedgerRow[]>(() => {
-    let balance = initialBalanceNumber;
-    const chronological = rows
-      .slice()
-      .sort((a, b) => (new Date(a.transactionDate).getTime() > new Date(b.transactionDate).getTime() ? 1 : -1))
-      .map((row) => {
-        // transactionAmount is signed: positive = income, negative = expense
-        const amount = row.transactionAmount ?? 0;
-        const delta = amount;
-        if (hasAmounts) {
-          balance += delta;
-        }
-        return {
-          ...row,
-          runningBalance: hasAmounts ? balance : 0,
-          delta,
-        };
-      });
+    const sorted = rows.slice().sort((a, b) => {
+      if (a.transactionDate === b.transactionDate) return 0;
+      return a.transactionDate > b.transactionDate ? 1 : -1;
+    });
 
-    return chronological.reverse();
+    let balance = initialBalanceNumber;
+    const result: LedgerRow[] = [];
+
+    for (const row of sorted) {
+      const amount = row.transactionAmount ?? 0;
+      const delta = amount;
+      if (hasAmounts) {
+        balance += delta;
+      }
+      result.push({
+        ...row,
+        runningBalance: hasAmounts ? balance : 0,
+        delta,
+      });
+    }
+
+    return result.reverse();
   }, [rows, initialBalanceNumber, hasAmounts]);
 
   return ledger;

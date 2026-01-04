@@ -45,7 +45,7 @@ describe("Auth Integration", () => {
       const rawCookies = response.headers["set-cookie"];
       const cookies = Array.isArray(rawCookies) ? rawCookies : rawCookies ? [rawCookies] : [];
       expect(cookies.length).toBeGreaterThan(0);
-      expect(cookies.some((c: string) => c.includes("token"))).toBe(true);
+      expect(cookies.some((c: string) => c.includes("mp_session"))).toBe(true);
     });
 
     it("should fail with invalid password", async () => {
@@ -78,7 +78,7 @@ describe("Auth Integration", () => {
       const cookies = Array.isArray(rawCookies) ? rawCookies : rawCookies ? [rawCookies] : [];
       expect(cookies.length).toBeGreaterThan(0);
       // Expect token to be cleared (empty value or past expiry)
-      expect(cookies.some((c: string) => c.includes("token=;"))).toBe(true);
+      expect(cookies.some((c: string) => c.includes("mp_session=;"))).toBe(true);
     });
   });
 });

@@ -1,6 +1,6 @@
-import bcrypt from "bcryptjs";
 import express from "express";
 
+import { hashPassword } from "../lib/crypto.js";
 import { asyncHandler, authenticate } from "../lib/http.js";
 import { logEvent } from "../lib/logger.js";
 import { normalizeRut } from "../lib/rut.js";
@@ -163,10 +163,10 @@ export function registerUserRoutes(app: express.Express) {
       }
 
       // Generate random temporary password
-      const bcrypt = await import("bcryptjs");
-      const tempPassword = "temp" + Math.floor(1000 + Math.random() * 9000);
-      const salt = await bcrypt.genSalt(10);
-      const passwordHash = await bcrypt.hash(tempPassword, salt);
+      // Generate random temporary password
+      const crypto = await import("crypto");
+      const tempPassword = crypto.randomBytes(12).toString("hex");
+      const passwordHash = await hashPassword(tempPassword);
 
       await prisma.user.update({
         where: { id: targetUserId },
@@ -332,7 +332,8 @@ export function registerUserRoutes(app: express.Express) {
       }
 
       // Generate temporary password
-      const tempPassword = await bcrypt.hash("Temp1234!", 10);
+      const crypto = await import("crypto");
+      const tempPassword = await hashPassword(crypto.randomBytes(12).toString("hex"));
 
       // Transaction to create Person, User, and Employee
       const result = await prisma.$transaction(async (tx) => {
@@ -469,7 +470,7 @@ export function registerUserRoutes(app: express.Express) {
         });
       }
 
-      const hash = await bcrypt.hash(data.password, 10);
+      const hash = await hashPassword(data.password);
 
       await prisma.$transaction(async (tx) => {
         await tx.person.update({

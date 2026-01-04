@@ -6,11 +6,11 @@ import tsParser from "@typescript-eslint/parser";
 import jestDom from "eslint-plugin-jest-dom";
 import jsxA11y from "eslint-plugin-jsx-a11y";
 import react from "eslint-plugin-react";
+import reactCompiler from "eslint-plugin-react-compiler";
 import reactHooks from "eslint-plugin-react-hooks";
 import reactRefresh from "eslint-plugin-react-refresh";
 import security from "eslint-plugin-security";
 import simpleImportSort from "eslint-plugin-simple-import-sort";
-import vitest from "eslint-plugin-vitest";
 import globals from "globals";
 
 export default [
@@ -67,7 +67,7 @@ export default [
   },
   // React hooks + refresh additions and overrides
   {
-    plugins: { "react-hooks": reactHooks, "react-refresh": reactRefresh },
+    plugins: { "react-hooks": reactHooks, "react-refresh": reactRefresh, "react-compiler": reactCompiler },
     rules: {
       // Re-enabled for safer component export patterns (warn for now)
       "react-refresh/only-export-components": "off", // Allow hooks to be exported from context files
@@ -78,6 +78,7 @@ export default [
       // Note: React Query methods (refetch, mutate, mutateAsync) are stable by design,
       // so we use eslint-disable-next-line when destructuring them from query/mutation objects
       "react-hooks/exhaustive-deps": "error",
+      "react-compiler/react-compiler": "error",
     },
     settings: { react: { version: "detect" } },
   },
@@ -154,12 +155,11 @@ export default [
       "no-restricted-imports": "off",
     },
   },
-  // Testing (Vitest + Jest DOM)
+  // Testing (Jest DOM)
   {
     files: ["**/__tests__/**/*.[jt]s?(x)", "**/?(*.)+(spec|test).[jt]s?(x)"],
-    plugins: { vitest, "jest-dom": jestDom },
+    plugins: { "jest-dom": jestDom },
     rules: {
-      ...vitest.configs.recommended.rules,
       ...jestDom.configs.recommended.rules,
     },
   },
