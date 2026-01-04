@@ -37,9 +37,9 @@ type ProgressCallback = (progress: BackupProgress) => void;
 
 /**
  * Gets model names statically or from schema.
- * ZenStack doesn't expose DMMF directly like Prisma via the client,
+ * ZenStack doesn't expose DMMF directly via the client,
  * so we maintain a list of critical models or try to infer.
- * For now, using a static list of known models is safer and cleaner for this migration.
+ * For now, using a static list of known models is safer and cleaner.
  */
 function getAllModelNames(): string[] {
   // Ordered by dependency if possible, though not strictly required for JSON export
