@@ -1,0 +1,318 @@
+import { db } from "@finanzas/db";
+
+import { CalendarEventRecord } from "../lib/google/google-calendar";
+import { logEvent, logWarn } from "../lib/logger";
+
+export async function loadSettings() {
+  const settings = await db.setting.findMany();
+  return settings.reduce(
+    (
+      acc: Record<string, string>,
+      curr: { key: string; value: string | null },
+    ) => {
+      acc[curr.key] = curr.value || "";
+      return acc;
+    },
+    {} as Record<string, string>,
+  );
+}
+
+export async function createCalendarSyncLogEntry(data: {
+  triggerSource: string;
+  triggerUserId?: number | null;
+  triggerLabel?: string | null;
+}) {
+  // Check for existing running syncs
+  const running = await db.syncLog.findFirst({
+    where: { status: "RUNNING" },
+  });
+
+  if (running) {
+    // Check if it's stale (> 15 minutes old) to avoid permanent lock
+    const diff = new Date().getTime() - running.startedAt.getTime();
+    const STALE_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes
+    if (diff < STALE_TIMEOUT_MS) {
+      throw new Error("Sincronización ya en curso");
+    }
+    // If stale (>15min), mark as ERROR and proceed
+    console.warn(
+      `⚠ Cleaning up stale sync log ${running.id} (${Math.round(diff / 1000 / 60)}min old)`,
+    );
+    await db.syncLog.update({
+      where: { id: running.id },
+      data: {
+        status: "ERROR",
+        finishedAt: new Date(),
+        errorMessage: `Sync timeout - marked as stale after ${Math.round(diff / 1000 / 60)} minutes`,
+      },
+    });
+  }
+
+  const log = await db.syncLog.create({
+    data: {
+      triggerSource: data.triggerSource,
+      triggerUserId: data.triggerUserId,
+      triggerLabel: data.triggerLabel,
+      status: "RUNNING",
+      startedAt: new Date(),
+    },
+  });
+  return Number(log.id);
+}
+
+export async function finalizeCalendarSyncLogEntry(
+  id: number,
+  data: {
+    status: "SUCCESS" | "ERROR";
+    fetchedAt?: Date;
+    inserted?: number;
+    updated?: number;
+    skipped?: number;
+    excluded?: number;
+    errorMessage?: string;
+    changeDetails?: {
+      inserted?: string[];
+      updated?: (string | { summary: string; changes: string[] })[];
+      excluded?: string[];
+    };
+  },
+) {
+  await db.syncLog.update({
+    where: { id: BigInt(id) },
+    data: {
+      status: data.status,
+      finishedAt: new Date(),
+      fetchedAt: data.fetchedAt,
+      inserted: data.inserted,
+      updated: data.updated,
+      skipped: data.skipped,
+      excluded: data.excluded,
+      errorMessage: data.errorMessage,
+      changeDetails: data.changeDetails,
+    },
+  });
+}
+
+// Export UnclassifiedEvent type inferred from the query result
+// ... (UnclassifiedEvent type definition is skipped in this replace block range? No I should include it or strict range)
+// I will just replace the function bodies where prisma is used.
+
+// Wait, I should do this in chunks or smart replace.
+// The file is small enough for full replace but I should be careful not to overwrite types I just fixed.
+// I will use replace_file_content with targeted chunks.
+
+// Export UnclassifiedEvent type
+// Export UnclassifiedEvent type inferred from the query result
+
+export async function listCalendarSyncLogs(
+  limitOrOptions?:
+    | number
+    | {
+        start?: Date;
+        end?: Date;
+        limit?: number;
+      },
+) {
+  let options =
+    typeof limitOrOptions === "number"
+      ? { limit: limitOrOptions }
+      : limitOrOptions;
+  const { start, end, limit = 50 } = options || {};
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const where: any = {};
+  if (start) {
+    where.startedAt = { gte: start };
+  }
+  if (end) {
+    where.startedAt = { lte: end };
+  }
+
+  // Correction: Query SyncLog, not Event
+  const logs = await db.syncLog.findMany({
+    where,
+    orderBy: { startedAt: "desc" },
+    take: limit,
+  });
+  return logs;
+}
+
+type MissingFieldFilter = {
+  category?: boolean;
+  amountExpected?: boolean;
+  amountPaid?: boolean;
+  attended?: boolean;
+  dosage?: boolean;
+  treatmentStage?: boolean;
+  /** Filter mode: AND requires all conditions, OR matches any (default: OR) */
+  filterMode?: "AND" | "OR";
+};
+
+export async function listUnclassifiedCalendarEvents(
+  limit: number,
+  offset: number = 0,
+  filters?: MissingFieldFilter,
+) {
+  const filterMode = filters?.filterMode || "OR";
+
+  // Build conditions based on filters
+  const conditions: any[] = [];
+
+  // If no specific filters, default to show events missing ANY classifiable field
+  if (
+    !filters ||
+    Object.keys(filters).filter((k) => k !== "filterMode").length === 0
+  ) {
+    conditions.push(
+      { category: null },
+      { category: "" },
+      { amountExpected: null },
+      { attended: null },
+    );
+  } else {
+    if (filters.category) {
+      conditions.push({ OR: [{ category: null }, { category: "" }] });
+    }
+    if (filters.amountExpected) {
+      conditions.push({ amountExpected: null });
+    }
+    if (filters.amountPaid) {
+      conditions.push({ amountPaid: null });
+    }
+    if (filters.attended) {
+      conditions.push({ attended: null });
+    }
+    // For dosage: events that are "Tratamiento subcutáneo" but missing dosage
+    if (filters.dosage) {
+      conditions.push({
+        category: "Tratamiento subcutáneo",
+        OR: [{ dosage: null }, { dosage: "" }],
+      });
+    }
+    // For treatmentStage: events that are "Tratamiento subcutáneo" but missing stage
+    if (filters.treatmentStage) {
+      conditions.push({
+        category: "Tratamiento subcutáneo",
+        OR: [{ treatmentStage: null }, { treatmentStage: "" }],
+      });
+    }
+  }
+
+  // Build where clause based on filter mode
+  let whereClause: any = {};
+
+  if (conditions.length > 0) {
+    if (filterMode === "AND") {
+      // AND mode: event must match ALL conditions
+      whereClause = { AND: conditions };
+    } else {
+      // OR mode (default): event matches ANY condition
+      whereClause = { OR: conditions };
+    }
+  }
+
+  const [events, totalCount] = await Promise.all([
+    db.event.findMany({
+      where: whereClause,
+      take: limit,
+      skip: offset,
+      orderBy: { startDateTime: "desc" },
+      include: {
+        calendar: true,
+      },
+    }),
+    db.event.count({
+      where: whereClause,
+    }),
+  ]);
+
+  return { events, totalCount };
+}
+
+export type UnclassifiedEvent = Awaited<
+  ReturnType<typeof listUnclassifiedCalendarEvents>
+>["events"][number];
+
+export async function updateCalendarEventClassification(
+  calendarId: string, // Google Calendar ID (string)
+  eventId: string, // Google Event ID
+  data: {
+    category?: string | null;
+    amountExpected?: number | null;
+    amountPaid?: number | null;
+    attended?: boolean | null;
+    dosage?: string | null;
+    treatmentStage?: string | null;
+  },
+) {
+  // ... (function body of createCalendarEvent moved out)
+  // We need to find the internal Calendar ID first
+  const calendar = await db.calendar.findUnique({
+    where: { googleId: calendarId },
+  });
+
+  if (!calendar) {
+    throw new Error(`Calendar not found: ${calendarId}`);
+  }
+
+  await db.event.update({
+    where: {
+      calendarId_externalEventId: {
+        calendarId: calendar.id,
+        externalEventId: eventId,
+      },
+    },
+    data: {
+      category: data.category,
+      amountExpected: data.amountExpected,
+      amountPaid: data.amountPaid,
+      attended: data.attended,
+      dosage: data.dosage,
+      treatmentStage: data.treatmentStage,
+    },
+  });
+}
+
+import { EventCreateInput } from "../lib/db-types";
+
+export async function createCalendarEvent(data: CalendarEventRecord) {
+  // Look up internal calendar ID
+  const calendar = await db.calendar.findUnique({
+    where: { googleId: data.calendarId },
+  });
+
+  if (!calendar) {
+    throw new Error(`Calendar not found for googleId: ${data.calendarId}`);
+  }
+
+  const createData: EventCreateInput = {
+    calendarId: calendar.id,
+    externalEventId: data.eventId,
+    eventStatus: data.status, // Mapped status -> eventStatus
+    eventType: data.eventType,
+    summary: data.summary,
+    description: data.description,
+    startDate: data.start?.date ? new Date(data.start.date) : undefined,
+    startDateTime: data.start?.dateTime
+      ? new Date(data.start.dateTime)
+      : undefined,
+    startTimeZone: data.start?.timeZone,
+    endDate: data.end?.date ? new Date(data.end.date) : undefined,
+    endDateTime: data.end?.dateTime ? new Date(data.end.dateTime) : undefined,
+    endTimeZone: data.end?.timeZone,
+    eventCreatedAt: data.created ? new Date(data.created) : undefined,
+    eventUpdatedAt: data.updated ? new Date(data.updated) : undefined,
+    colorId: data.colorId,
+    location: data.location,
+    transparency: data.transparency,
+    visibility: data.visibility,
+    hangoutLink: data.hangoutLink,
+    category: data.category,
+    amountPaid: data.amountPaid || 0,
+    lastSyncedAt: new Date(),
+  };
+
+  return db.event.create({
+    data: createData,
+  });
+}
