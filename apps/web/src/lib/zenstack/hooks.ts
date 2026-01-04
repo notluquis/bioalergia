@@ -107,3 +107,27 @@ export const inventoryCategoryHooks = createModelHooks("inventoryCategory");
 export const inventoryMovementHooks = createModelHooks("inventoryMovement");
 export const supplyRequestHooks = createModelHooks("supplyRequest");
 export const commonSupplyHooks = createModelHooks("commonSupply");
+
+// Finance
+export const counterpartHooks = createModelHooks("counterpart");
+export const loanHooks = createModelHooks("loan");
+export const loanScheduleHooks = createModelHooks("loanSchedule");
+export const dailyBalanceHooks = createModelHooks("dailyBalance");
+export const productionBalanceHooks = createModelHooks("dailyProductionBalance");
+
+// Services
+export const serviceHooks = createModelHooks("service");
+export const serviceTemplateHooks = createModelHooks("serviceTemplate");
+
+// HR
+export const timesheetHooks = createModelHooks("timesheet");
+export const timesheetEntryHooks = createModelHooks("timesheetEntry");
+
+// Calendar
+export const calendarEventHooks = createModelHooks("calendarEvent");
+export const calendarAccountHooks = createModelHooks("calendarAccount");
+
+// System
+export const settingHooks = createModelHooks("setting");
+export const auditLogHooks = createModelHooks("auditLog");
+export const permissionHooks = createModelHooks("permission");

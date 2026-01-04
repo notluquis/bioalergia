@@ -1,10 +1,8 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useMemo, useState } from "react";
 
 import { useToast } from "@/context/ToastContext";
-import { queryKeys } from "@/lib/queryKeys";
+import { commonSupplyHooks, supplyRequestHooks } from "@/lib/zenstack/hooks";
 
-import { getCommonSupplies, getSupplyRequests, updateSupplyRequestStatus } from "../api";
 import type { CommonSupply, StructuredSupplies, SupplyRequest } from "../types";
 
 interface UseSupplyManagementResult {
@@ -19,25 +17,51 @@ interface UseSupplyManagementResult {
 }
 
 export function useSupplyManagement(): UseSupplyManagementResult {
-  const queryClient = useQueryClient();
   const { success: toastSuccess, error: toastError } = useToast();
   const [error, setError] = useState<string | null>(null);
 
-  const requestsQuery = useQuery<SupplyRequest[], Error>({
-    queryKey: queryKeys.supplies.requests(),
-    queryFn: getSupplyRequests,
-    staleTime: 2 * 60 * 1000,
+  // ZenStack hooks for supply requests
+  const {
+    data: requestsData,
+    isPending: requestsPending,
+    isFetching: requestsFetching,
+    error: requestsError,
+    refetch: refetchRequests,
+  } = supplyRequestHooks.useFindMany({
+    include: { inventoryItem: true },
+    orderBy: { createdAt: "desc" },
   });
 
-  const commonSuppliesQuery = useQuery<CommonSupply[], Error>({
-    queryKey: queryKeys.supplies.common(),
-    queryFn: getCommonSupplies,
-    staleTime: 5 * 60 * 1000,
+  // ZenStack hooks for common supplies
+  const {
+    data: commonSuppliesData,
+    isPending: suppliesPending,
+    isFetching: suppliesFetching,
+    error: suppliesError,
+    refetch: refetchSupplies,
+  } = commonSupplyHooks.useFindMany({
+    orderBy: { name: "asc" },
   });
+
+  // Map requests to expected format with useMemo for stable reference
+  const requests = useMemo(() => {
+    if (!requestsData) return [];
+    return (requestsData as SupplyRequest[]).map((r) => ({
+      ...r,
+      item_id: (r as unknown as { inventoryItemId: number }).inventoryItemId,
+      quantity: r.quantity,
+      status: r.status,
+      notes: r.notes,
+    }));
+  }, [requestsData]);
+
+  // Wrap commonSupplies in useMemo for stable reference
+  const commonSupplies = useMemo(() => {
+    return (commonSuppliesData as CommonSupply[]) ?? [];
+  }, [commonSuppliesData]);
 
   const structuredSupplies = useMemo(() => {
-    const supplies = commonSuppliesQuery.data ?? [];
-    return supplies.reduce<StructuredSupplies>((acc, supply) => {
+    return commonSupplies.reduce<StructuredSupplies>((acc, supply) => {
       if (!supply.name) return acc;
       if (!acc[supply.name]) {
         acc[supply.name] = {};
@@ -51,75 +75,44 @@ export function useSupplyManagement(): UseSupplyManagementResult {
       }
       return acc;
     }, {});
-  }, [commonSuppliesQuery.data]);
-
-  const { refetch: refetchRequests } = requestsQuery;
-  const { refetch: refetchSupplies } = commonSuppliesQuery;
+  }, [commonSupplies]);
 
   const fetchData = useCallback(async () => {
     setError(null);
     await Promise.all([refetchRequests(), refetchSupplies()]);
   }, [refetchRequests, refetchSupplies]);
 
-  const updateStatusMutation = useMutation<
-    void,
-    Error,
-    { requestId: number; status: SupplyRequest["status"] },
-    { previousRequests?: SupplyRequest[] }
-  >({
-    mutationFn: ({ requestId, status }) => updateSupplyRequestStatus(requestId, status),
-    onMutate: async ({ requestId, status }) => {
-      setError(null);
-      await queryClient.cancelQueries({ queryKey: queryKeys.supplies.requests() });
-      const previousRequests = queryClient.getQueryData<SupplyRequest[]>(queryKeys.supplies.requests());
-      queryClient.setQueryData<SupplyRequest[]>(queryKeys.supplies.requests(), (old = []) =>
-        old.map((request) => (request.id === requestId ? { ...request, status } : request))
-      );
-      return { previousRequests };
-    },
-    onError: (err, _variables, context) => {
-      const message = err.message || "Error al actualizar el estado";
-      setError(message);
-      toastError(message);
-      if (context?.previousRequests) {
-        queryClient.setQueryData(queryKeys.supplies.requests(), context.previousRequests);
-      }
-    },
-    onSuccess: () => {
-      toastSuccess("Estado de solicitud actualizado");
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.supplies.requests() });
-    },
-  });
-
-  const { mutateAsync: updateStatus } = updateStatusMutation;
+  // ZenStack mutation for updating supply request status
+  const updateMutation = supplyRequestHooks.useUpdate();
 
   const handleStatusChange = useCallback(
     async (requestId: number, newStatus: SupplyRequest["status"]) => {
+      setError(null);
       try {
-        await updateStatus({ requestId, status: newStatus });
-      } catch {
-        // Error handled in mutation
+        await updateMutation.mutateAsync({
+          where: { id: requestId },
+          data: { status: newStatus },
+        });
+        toastSuccess("Estado de solicitud actualizado");
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Error al actualizar el estado";
+        setError(message);
+        toastError(message);
       }
     },
-    [updateStatus]
+    [updateMutation, toastSuccess, toastError]
   );
 
-  const loading =
-    requestsQuery.isPending ||
-    requestsQuery.isFetching ||
-    commonSuppliesQuery.isPending ||
-    commonSuppliesQuery.isFetching;
+  const loading = requestsPending || requestsFetching || suppliesPending || suppliesFetching;
 
   const combinedError =
     error ||
-    (requestsQuery.error ? requestsQuery.error.message : null) ||
-    (commonSuppliesQuery.error ? commonSuppliesQuery.error.message : null);
+    (requestsError instanceof Error ? requestsError.message : null) ||
+    (suppliesError instanceof Error ? suppliesError.message : null);
 
   return {
-    requests: requestsQuery.data ?? [],
-    commonSupplies: commonSuppliesQuery.data ?? [],
+    requests,
+    commonSupplies,
     loading,
     error: combinedError,
     structuredSupplies,

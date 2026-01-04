@@ -1,6 +1,6 @@
 import "dayjs/locale/es";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import {
@@ -30,20 +30,12 @@ import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
-import { fetchRoles } from "@/features/roles/api";
-import {
-  deleteUser,
-  deleteUserPasskey,
-  fetchUsers,
-  resetUserPassword,
-  toggleUserMfa,
-  updateUserRole,
-  updateUserStatus,
-} from "@/features/users/api";
+import { deleteUserPasskey, resetUserPassword, toggleUserMfa } from "@/features/users/api";
 import type { User } from "@/features/users/types";
 import { getPersonFullName, getPersonInitials } from "@/lib/person";
 import { BADGE_SM, PAGE_CONTAINER, TITLE_LG } from "@/lib/styles";
 import { cn } from "@/lib/utils";
+import { roleHooks, userHooks } from "@/lib/zenstack/hooks";
 
 dayjs.extend(relativeTime);
 dayjs.locale("es");
@@ -58,128 +50,116 @@ export default function UserManagementPage() {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [selectedRole, setSelectedRole] = useState("");
 
-  const updateRoleMutation = useMutation({
-    mutationFn: ({ userId, role }: { userId: number; role: string }) => updateUserRole(userId, role),
-    onSuccess: () => {
-      success("Rol actualizado correctamente");
-      queryClient.invalidateQueries({ queryKey: ["users"] });
-      setEditingUser(null);
-    },
-    onError: (err: Error) => {
-      error(err.message || "Error al actualizar rol");
-    },
+  // ZenStack hooks for users
+  const { data: usersData, isLoading } = userHooks.useFindMany({
+    include: { person: true },
+    orderBy: { createdAt: "desc" },
   });
+
+  /* eslint-disable @typescript-eslint/no-explicit-any */
+  const users = ((usersData as any[]) ?? []).map((u) => ({
+    ...u,
+    mfaEnabled: u.mfaEnabled ?? false,
+    hasPasskey: u.hasPasskey ?? false,
+  })) as User[];
+  /* eslint-enable @typescript-eslint/no-explicit-any */
+
+  // ZenStack hooks for roles (for filter dropdown)
+  const { data: rolesData } = roleHooks.useFindMany({
+    orderBy: { name: "asc" },
+  });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const roles = (rolesData as any[]) ?? [];
+
+  // ZenStack mutations
+  const updateUserMutation = userHooks.useUpdate();
+  const deleteUserMutation = userHooks.useDelete();
 
   const handleEditRoleClick = (user: User) => {
     setEditingUser(user);
     setSelectedRole(user.role);
   };
 
-  const handleSaveRole = () => {
-    if (editingUser) {
-      updateRoleMutation.mutate({ userId: editingUser.id, role: selectedRole });
+  const handleSaveRole = async () => {
+    if (!editingUser) return;
+    try {
+      await updateUserMutation.mutateAsync({
+        where: { id: editingUser.id },
+        data: { role: selectedRole },
+      });
+      success("Rol actualizado correctamente");
+      setEditingUser(null);
+    } catch (err) {
+      error(err instanceof Error ? err.message : "Error al actualizar rol");
     }
   };
 
-  // Fetch roles for filter
-  const { data: roles } = useQuery({
-    queryKey: ["roles"],
-    queryFn: fetchRoles,
-  });
-
-  const { data: users = [], isLoading } = useQuery({
-    queryKey: ["users"],
-    queryFn: fetchUsers,
-  });
-
-  const deletePasskeyMutation = useMutation({
-    mutationFn: deleteUserPasskey,
-    onSuccess: () => {
-      success("Passkey eliminado");
-      queryClient.invalidateQueries({ queryKey: ["users"] });
-    },
-    onError: () => {
-      error("Error al eliminar Passkey");
-    },
-  });
-
-  const resetPasswordMutation = useMutation({
-    mutationFn: resetUserPassword,
-    onSuccess: (tempPassword) => {
-      success(`Contraseña restablecida. Temporal: ${tempPassword}`);
-      queryClient.invalidateQueries({ queryKey: ["users"] });
-      alert(`Contraseña temporal: ${tempPassword}\n\nPor favor compártela con el usuario de forma segura.`);
-    },
-    onError: (err: Error) => {
-      error(err.message || "Error al restablecer contraseña");
-    },
-  });
-
-  const updateStatusMutation = useMutation({
-    mutationFn: ({ userId, status }: { userId: number; status: string }) => updateUserStatus(userId, status),
-    onSuccess: (_, variables) => {
-      success(`Usuario ${variables.status === "ACTIVE" ? "reactivado" : "suspendido"}`);
-      queryClient.invalidateQueries({ queryKey: ["users"] });
-    },
-    onError: (err: Error) => {
-      error(err.message || "Error al actualizar estado");
-    },
-  });
-
-  const toggleMfaMutation = useMutation({
-    mutationFn: ({ userId, enabled }: { userId: number; enabled: boolean }) => toggleUserMfa(userId, enabled),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["users"] });
-      success("Estado MFA actualizado correctamente");
-    },
-    onError: (err) => {
-      error(err instanceof Error ? err.message : "Error desconocido");
-    },
-  });
-
-  const deleteUserMutation = useMutation({
-    mutationFn: deleteUser,
-    onSuccess: () => {
-      success("Usuario eliminado correctamente");
-      queryClient.invalidateQueries({ queryKey: ["users"] });
-    },
-    onError: (err: Error) => {
-      error(err.message || "Error al eliminar usuario");
-    },
-  });
-
-  const handleDeletePasskey = (userId: number) => {
+  const handleDeletePasskey = async (userId: number) => {
     if (confirm("¿Estás seguro de eliminar el Passkey de este usuario?")) {
-      deletePasskeyMutation.mutate(userId, {});
+      try {
+        await deleteUserPasskey(userId);
+        success("Passkey eliminado");
+        queryClient.invalidateQueries({ queryKey: ["user"] });
+      } catch {
+        error("Error al eliminar Passkey");
+      }
     }
   };
 
-  const handleResetPassword = (userId: number) => {
+  const handleResetPassword = async (userId: number) => {
     if (confirm("¿Restablecer contraseña? Esto generará una clave temporal y requerirá configuración nueva.")) {
-      resetPasswordMutation.mutate(userId);
+      try {
+        const tempPassword = await resetUserPassword(userId);
+        success(`Contraseña restablecida. Temporal: ${tempPassword}`);
+        queryClient.invalidateQueries({ queryKey: ["user"] });
+        alert(`Contraseña temporal: ${tempPassword}\n\nPor favor compártela con el usuario de forma segura.`);
+      } catch (err) {
+        error(err instanceof Error ? err.message : "Error al restablecer contraseña");
+      }
     }
   };
 
-  const handleDeleteUser = (userId: number) => {
+  const handleDeleteUser = async (userId: number) => {
     if (
       confirm("¿Estás seguro de eliminar este usuario? Esta acción no se puede deshacer y borrará sus roles y accesos.")
     ) {
-      deleteUserMutation.mutate(userId);
+      try {
+        await deleteUserMutation.mutateAsync({
+          where: { id: userId },
+        });
+        success("Usuario eliminado correctamente");
+      } catch (err) {
+        error(err instanceof Error ? err.message : "Error al eliminar usuario");
+      }
     }
   };
 
-  const handleToggleStatus = (userId: number, currentStatus: string) => {
+  const handleToggleStatus = async (userId: number, currentStatus: string) => {
     const newStatus = currentStatus === "SUSPENDED" ? "ACTIVE" : "SUSPENDED";
     const action = newStatus === "ACTIVE" ? "reactivar" : "suspender";
     if (confirm(`¿Estás seguro de ${action} a este usuario?`)) {
-      updateStatusMutation.mutate({ userId, status: newStatus });
+      try {
+        await updateUserMutation.mutateAsync({
+          where: { id: userId },
+          data: { status: newStatus },
+        });
+        success(`Usuario ${newStatus === "ACTIVE" ? "reactivado" : "suspendido"}`);
+      } catch (err) {
+        error(err instanceof Error ? err.message : "Error al actualizar estado");
+      }
     }
   };
 
-  const handleToggleMfa = (userId: number, currentMfa: boolean) => {
+  const handleToggleMfa = async (userId: number, currentMfa: boolean) => {
     const action = currentMfa ? "desactivar" : "activar";
     if (confirm(`¿Estás seguro de ${action} MFA para este usuario?`)) {
-      toggleMfaMutation.mutate({ userId, enabled: !currentMfa });
+      try {
+        await toggleUserMfa(userId, !currentMfa);
+        queryClient.invalidateQueries({ queryKey: ["user"] });
+        success("Estado MFA actualizado correctamente");
+      } catch (err) {
+        error(err instanceof Error ? err.message : "Error desconocido");
+      }
     }
   };
 
@@ -308,7 +288,6 @@ export default function UserManagementPage() {
                 <th>Usuario</th>
                 <th>Rol</th>
                 <th>Estado</th>
-                {/* Security column removed as per request */}
                 <th className="w-16 text-center">MFA</th>
                 <th className="w-16 text-center">Passkey</th>
                 <th>Creado</th>
@@ -488,7 +467,7 @@ export default function UserManagementPage() {
             <Button
               variant="primary"
               onClick={handleSaveRole}
-              isLoading={updateRoleMutation.isPending}
+              isLoading={updateUserMutation.isPending}
               disabled={!selectedRole || selectedRole === editingUser?.role}
             >
               Guardar cambios

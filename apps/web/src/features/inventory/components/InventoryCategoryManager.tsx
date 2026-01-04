@@ -1,35 +1,30 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { PlusCircle } from "lucide-react";
 import { useState } from "react";
 
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
+import { inventoryCategoryHooks } from "@/lib/zenstack/hooks";
 
-import { createInventoryCategory, getInventoryCategories } from "../api";
 import type { InventoryCategory } from "../types";
 
 export default function InventoryCategoryManager() {
   const [newCategoryName, setNewCategoryName] = useState("");
-  const queryClient = useQueryClient();
 
-  // Query for categories
+  // ZenStack hooks for categories
   const {
-    data: categories = [],
+    data: categoriesData,
     isLoading: loading,
     error: queryError,
-  } = useQuery({
-    queryKey: ["inventory-categories"],
-    queryFn: getInventoryCategories,
+  } = inventoryCategoryHooks.useFindMany({
+    orderBy: { name: "asc" },
   });
 
-  // Mutation for creating category
-  const createMutation = useMutation({
-    mutationFn: createInventoryCategory,
-    onSuccess: () => {
-      setNewCategoryName("");
-      queryClient.invalidateQueries({ queryKey: ["inventory-categories"] });
-    },
-  });
+  /* eslint-disable @typescript-eslint/no-explicit-any */
+  const categories = (categoriesData as any[]) ?? [];
+  /* eslint-enable @typescript-eslint/no-explicit-any */
+
+  // ZenStack mutation for creating category
+  const createMutation = inventoryCategoryHooks.useCreate();
 
   const error =
     queryError instanceof Error
@@ -41,7 +36,14 @@ export default function InventoryCategoryManager() {
   function handleAddCategory(e: React.FormEvent) {
     e.preventDefault();
     if (!newCategoryName.trim()) return;
-    createMutation.mutate(newCategoryName);
+    createMutation.mutate(
+      { name: newCategoryName.trim() },
+      {
+        onSuccess: () => {
+          setNewCategoryName("");
+        },
+      }
+    );
   }
 
   return (

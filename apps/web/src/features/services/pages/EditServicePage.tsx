@@ -1,15 +1,11 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
-import {
-  fetchServiceDetail,
-  regenerateServiceSchedules,
-  updateService as updateServiceRequest,
-} from "@/features/services/api";
+import { fetchServiceDetail, regenerateServiceSchedules } from "@/features/services/api";
 import ServiceForm from "@/features/services/components/ServiceForm";
 import ServiceScheduleAccordion from "@/features/services/components/ServiceScheduleAccordion";
 import ServiceScheduleTable from "@/features/services/components/ServiceScheduleTable";
@@ -17,6 +13,7 @@ import { ServicesHero, ServicesSurface } from "@/features/services/components/Se
 import type { CreateServicePayload, ServiceDetailResponse } from "@/features/services/types";
 import { fmtCLP } from "@/lib/format";
 import { LOADING_SPINNER_MD } from "@/lib/styles";
+import { serviceHooks } from "@/lib/zenstack/hooks";
 
 function mapServiceToForm(service: ServiceDetailResponse["service"]): Partial<CreateServicePayload> {
   return {
@@ -54,6 +51,7 @@ export default function ServiceEditPage() {
   const queryClient = useQueryClient();
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
+  // Keep fetchServiceDetail as it provides aggregated data with schedules
   const {
     data: detail,
     isLoading: loading,
@@ -67,27 +65,18 @@ export default function ServiceEditPage() {
     enabled: !!id,
   });
 
-  const updateMutation = useMutation({
-    mutationFn: async (payload: CreateServicePayload) => {
-      if (!id) throw new Error("ID requerido");
-      return updateServiceRequest(id, payload);
-    },
-    onSuccess: (updated) => {
-      queryClient.setQueryData(["service-detail", id], updated);
-      queryClient.invalidateQueries({ queryKey: ["services-audit"] });
-      setSaveMessage("Servicio actualizado correctamente.");
-    },
-  });
+  // ZenStack mutation for updates
+  const updateMutation = serviceHooks.useUpdate();
 
-  const regenerateMutation = useMutation({
-    mutationFn: async ({ id, payload = {} }: { id: string; payload?: { months?: number; startDate?: string } }) => {
-      return regenerateServiceSchedules(id, payload);
-    },
-    onSuccess: (updated) => {
-      if (id) queryClient.setQueryData(["service-detail", id], updated);
+  const handleRegenerate = async (serviceId: string, payload?: { months?: number; startDate?: string }) => {
+    try {
+      const updated = await regenerateServiceSchedules(serviceId, payload ?? {});
+      queryClient.setQueryData(["service-detail", id], updated);
       setSaveMessage("Proyecciones regeneradas correctamente.");
-    },
-  });
+    } catch (err) {
+      console.error("Regenerate failed:", err);
+    }
+  };
 
   const error = fetchError instanceof Error ? fetchError.message : fetchError ? String(fetchError) : null;
   const updateError =
@@ -96,20 +85,52 @@ export default function ServiceEditPage() {
       : updateMutation.error
         ? String(updateMutation.error)
         : null;
-  const regenerateError =
-    regenerateMutation.error instanceof Error
-      ? regenerateMutation.error.message
-      : regenerateMutation.error
-        ? String(regenerateMutation.error)
-        : null;
 
-  const displayError = error || updateError || regenerateError;
+  const displayError = error || updateError;
 
   const initialValues = useMemo(() => (detail ? mapServiceToForm(detail.service) : undefined), [detail]);
 
   const handleSubmit = async (payload: CreateServicePayload) => {
     setSaveMessage(null);
-    await updateMutation.mutateAsync(payload);
+    if (!id) return;
+
+    try {
+      await updateMutation.mutateAsync({
+        where: { id: Number(id) },
+        data: {
+          name: payload.name,
+          detail: payload.detail,
+          category: payload.category,
+          serviceType: payload.serviceType,
+          ownership: payload.ownership,
+          obligationType: payload.obligationType,
+          recurrenceType: payload.recurrenceType,
+          frequency: payload.frequency,
+          defaultAmount: payload.defaultAmount,
+          amountIndexation: payload.amountIndexation,
+          counterpartId: payload.counterpartId,
+          counterpartAccountId: payload.counterpartAccountId,
+          accountReference: payload.accountReference,
+          emissionMode: payload.emissionMode,
+          emissionDay: payload.emissionDay,
+          emissionStartDay: payload.emissionStartDay,
+          emissionEndDay: payload.emissionEndDay,
+          emissionExactDate: payload.emissionExactDate,
+          dueDay: payload.dueDay,
+          startDate: payload.startDate,
+          monthsToGenerate: payload.monthsToGenerate,
+          lateFeeMode: payload.lateFeeMode,
+          lateFeeValue: payload.lateFeeValue,
+          lateFeeGraceDays: payload.lateFeeGraceDays,
+          notes: payload.notes,
+        },
+      });
+      queryClient.invalidateQueries({ queryKey: ["service-detail", id] });
+      queryClient.invalidateQueries({ queryKey: ["services-audit"] });
+      setSaveMessage("Servicio actualizado correctamente.");
+    } catch {
+      // Error handled by mutation state
+    }
   };
 
   const summaryCards = useMemo(() => {
@@ -275,10 +296,10 @@ export default function ServiceEditPage() {
                 <div className="flex justify-end">
                   <Button
                     variant="secondary"
-                    onClick={() => regenerateMutation.mutate({ id: String(service.id) })}
-                    disabled={regenerateMutation.isPending}
+                    onClick={() => handleRegenerate(String(service.id))}
+                    disabled={updateMutation.isPending}
                   >
-                    {regenerateMutation.isPending ? "Regenerando..." : "Regenerar cronograma"}
+                    Regenerar cronograma
                   </Button>
                 </div>
               </section>
