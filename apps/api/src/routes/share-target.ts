@@ -29,7 +29,7 @@ if (!fs.existsSync(UPLOAD_ROOT)) {
 
 // Auth middleware
 shareTargetRoutes.use("*", async (c, next) => {
-  const user = getSessionUser(c);
+  const user = await getSessionUser(c);
   if (!user) {
     return c.text("Unauthorized", 401);
   }
@@ -95,5 +95,5 @@ shareTargetRoutes.post(
       console.error("[ShareTarget] Error:", err);
       return c.text("Error processing share", 500);
     }
-  },
+  }
 );

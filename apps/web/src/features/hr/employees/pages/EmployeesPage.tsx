@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { ChevronUp, Plus } from "lucide-react";
 import type { ChangeEvent } from "react";
 import { useState } from "react";
@@ -7,11 +7,11 @@ import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
 import Checkbox from "@/components/ui/Checkbox";
 import { useAuth } from "@/context/AuthContext";
-import { deactivateEmployee, fetchEmployees, updateEmployee } from "@/features/hr/employees/api";
 import EmployeeForm from "@/features/hr/employees/components/EmployeeForm";
 import EmployeeTable from "@/features/hr/employees/components/EmployeeTable";
 import type { Employee } from "@/features/hr/employees/types";
 import { PAGE_CONTAINER, TITLE_LG } from "@/lib/styles";
+import { employeeHooks } from "@/lib/zenstack/hooks";
 
 export default function EmployeesPage() {
   const { can } = useAuth();
@@ -24,50 +24,55 @@ export default function EmployeesPage() {
 
   // Query for employees
   const {
-    data: employees = [],
+    data: rawEmployees = [],
     isLoading: loading,
     error: queryError,
-    refetch: loadEmployees,
-  } = useQuery({
-    queryKey: ["employees", includeInactive],
-    queryFn: () => fetchEmployees(includeInactive),
+    // refetch: loadEmployees, // ZenStack hooks handle invalidation automatically via queryClient
+  } = employeeHooks.useFindMany({
+    where: includeInactive ? undefined : { status: "ACTIVE" },
+    include: { person: true },
+    orderBy: { createdAt: "desc" },
   });
 
-  // Mutation for deactivating
-  const deactivateMutation = useMutation({
-    mutationFn: deactivateEmployee,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["employees"] });
-    },
-  });
+  // Calculate full_name for display compatibility
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const employees = (rawEmployees as any[]).map((e) => ({
+    ...e,
+    full_name: e.person
+      ? `${e.person.names} ${e.person.fatherName || ""} ${e.person.motherName || ""}`.trim()
+      : "Sin nombre",
+  }));
 
-  // Mutation for activating
-  const activateMutation = useMutation({
-    mutationFn: (id: number) => updateEmployee(id, { status: "ACTIVE" }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["employees"] });
-    },
-  });
+  // Mutation for deactivating (Soft Delete)
+  // We use useUpdate instead of manual fetch.
+  // Assuming "deactivate" means setting status to INACTIVE.
+  const updateStatusMutation = employeeHooks.useUpdate();
+
+  // Clean up legacy mutations if they exist, but for now we map new logic:
 
   const error =
     queryError instanceof Error
       ? queryError.message
-      : deactivateMutation.error instanceof Error
-        ? deactivateMutation.error.message
-        : activateMutation.error instanceof Error
-          ? activateMutation.error.message
-          : null;
+      : updateStatusMutation.error instanceof Error
+        ? updateStatusMutation.error.message
+        : null;
 
-  const isMutating = deactivateMutation.isPending || activateMutation.isPending;
+  const isMutating = updateStatusMutation.isPending;
 
   function handleDeactivate(id: number) {
     if (!canEdit) return;
-    deactivateMutation.mutate(id);
+    updateStatusMutation.mutate({
+      where: { id },
+      data: { status: "INACTIVE" },
+    });
   }
 
   function handleActivate(id: number) {
     if (!canEdit) return;
-    activateMutation.mutate(id);
+    updateStatusMutation.mutate({
+      where: { id },
+      data: { status: "ACTIVE" },
+    });
   }
 
   function handleEdit(employee: Employee) {
@@ -81,7 +86,8 @@ export default function EmployeesPage() {
   }
 
   function handleSaveSuccess() {
-    loadEmployees();
+    // loadEmployees(); // Handled by mutation invalidation
+    queryClient.invalidateQueries({ queryKey: ["employee"] });
     handleCancel();
   }
 

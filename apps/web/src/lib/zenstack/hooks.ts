@@ -55,6 +55,12 @@ export function createModelHooks<T>(model: string) {
         queryFn: () => zenFetch<T | null>(model, "findUnique", args),
       }),
 
+    useCount: (args?: Record<string, unknown>) =>
+      useQuery({
+        queryKey: [model, "count", args],
+        queryFn: () => zenFetch<number>(model, "count", args),
+      }),
+
     useCreate: () => {
       const queryClient = useQueryClient();
       return useMutation({
@@ -93,3 +99,11 @@ export const transactionHooks = createModelHooks("transaction");
 export const userHooks = createModelHooks("user");
 export const personHooks = createModelHooks("person");
 export const roleHooks = createModelHooks("role");
+export const employeeHooks = createModelHooks("employee");
+
+// Inventory & Supplies
+export const inventoryItemHooks = createModelHooks("inventoryItem");
+export const inventoryCategoryHooks = createModelHooks("inventoryCategory");
+export const inventoryMovementHooks = createModelHooks("inventoryMovement");
+export const supplyRequestHooks = createModelHooks("supplyRequest");
+export const commonSupplyHooks = createModelHooks("commonSupply");

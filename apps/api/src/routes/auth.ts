@@ -6,10 +6,9 @@
 
 import { Hono } from "hono";
 import { setCookie, getCookie, deleteCookie } from "hono/cookie";
-import jwt from "jsonwebtoken";
+import { signToken, verifyToken } from "../lib/paseto";
 import { db } from "@finanzas/db";
 
-const JWT_SECRET = process.env.JWT_SECRET || "";
 const COOKIE_NAME = "finanzas_session";
 const COOKIE_OPTIONS = {
   httpOnly: true,
@@ -28,15 +27,14 @@ interface AuthSession {
   roles: string[];
 }
 
-function issueToken(session: AuthSession): string {
-  return jwt.sign(
+async function issueToken(session: AuthSession): Promise<string> {
+  return signToken(
     {
       sub: session.userId.toString(),
       email: session.email,
       roles: session.roles,
     },
-    JWT_SECRET,
-    { expiresIn: "2d" },
+    "2d"
   );
 }
 
@@ -51,7 +49,7 @@ authRoutes.post("/login", async (c) => {
   if (!email || !password) {
     return c.json(
       { status: "error", message: "Email y contraseña requeridos" },
-      400,
+      400
     );
   }
 
@@ -69,7 +67,7 @@ authRoutes.post("/login", async (c) => {
   if (!user || !user.passwordHash) {
     return c.json(
       { status: "error", message: "Credenciales incorrectas" },
-      401,
+      401
     );
   }
 
@@ -77,13 +75,13 @@ authRoutes.post("/login", async (c) => {
   const { verifyPassword, hashPassword } = await import("../lib/crypto.js");
   const { valid, needsRehash } = await verifyPassword(
     password,
-    user.passwordHash,
+    user.passwordHash
   );
 
   if (!valid) {
     return c.json(
       { status: "error", message: "Credenciales incorrectas" },
-      401,
+      401
     );
   }
 
@@ -105,7 +103,7 @@ authRoutes.post("/login", async (c) => {
   const roles = user.roles.map((r) => r.role.name);
 
   // Issue token and set cookie
-  const token = issueToken({ userId: user.id, email: user.email, roles });
+  const token = await issueToken({ userId: user.id, email: user.email, roles });
   setCookie(c, COOKIE_NAME, token, COOKIE_OPTIONS);
 
   return c.json({
@@ -132,7 +130,7 @@ authRoutes.post("/login/mfa", async (c) => {
   if (!userId || !mfaToken) {
     return c.json(
       { status: "error", message: "userId y token requeridos" },
-      400,
+      400
     );
   }
 
@@ -157,7 +155,7 @@ authRoutes.post("/login/mfa", async (c) => {
   }
 
   const roles = user.roles.map((r) => r.role.name);
-  const token = issueToken({ userId: user.id, email: user.email, roles });
+  const token = await issueToken({ userId: user.id, email: user.email, roles });
   setCookie(c, COOKIE_NAME, token, COOKIE_OPTIONS);
 
   return c.json({
@@ -194,7 +192,7 @@ authRoutes.get("/me/session", async (c) => {
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as jwt.JwtPayload;
+    const decoded = await verifyToken(token);
     const userId = Number(decoded.sub);
 
     const user = await db.user.findUnique({
@@ -241,7 +239,7 @@ authRoutes.post("/mfa/setup", async (c) => {
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as jwt.JwtPayload;
+    const decoded = await verifyToken(token);
     const userId = Number(decoded.sub);
     const email = String(decoded.email);
 
@@ -266,7 +264,7 @@ authRoutes.post("/mfa/enable", async (c) => {
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as jwt.JwtPayload;
+    const decoded = await verifyToken(token);
     const userId = Number(decoded.sub);
 
     const body = await c.req.json<{ token: string }>();
@@ -301,7 +299,7 @@ authRoutes.post("/mfa/disable", async (c) => {
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as jwt.JwtPayload;
+    const decoded = await verifyToken(token);
     const userId = Number(decoded.sub);
 
     await db.user.update({

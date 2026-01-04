@@ -5,11 +5,10 @@
  */
 
 import { Hono } from "hono";
-import jwt from "jsonwebtoken";
+import { verifyToken } from "../lib/paseto";
 import { db } from "@finanzas/db";
 import { Decimal } from "decimal.js";
 
-const JWT_SECRET = process.env.JWT_SECRET || "";
 const COOKIE_NAME = "finanzas_session";
 
 export const csvUploadRoutes = new Hono();
@@ -23,16 +22,18 @@ type TableName =
   | "transactions";
 
 // Helper to get auth
-function getAuth(c: { req: { header: (name: string) => string | undefined } }) {
+async function getAuth(c: {
+  req: { header: (name: string) => string | undefined };
+}) {
   const cookieHeader = c.req.header("Cookie");
   if (!cookieHeader) return null;
   const cookies = Object.fromEntries(
-    cookieHeader.split(";").map((c) => c.trim().split("=")),
+    cookieHeader.split(";").map((c) => c.trim().split("="))
   );
   const token = cookies[COOKIE_NAME];
   if (!token) return null;
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as jwt.JwtPayload;
+    const decoded = await verifyToken(token);
     return { userId: Number(decoded.sub), email: String(decoded.email) };
   } catch {
     return null;
@@ -52,7 +53,7 @@ async function findPersonByRut(rut: string) {
 // ============================================================
 
 csvUploadRoutes.post("/preview", async (c) => {
-  const auth = getAuth(c);
+  const auth = await getAuth(c);
   if (!auth) return c.json({ status: "error", message: "No autorizado" }, 401);
 
   const { table, data } = await c.req.json<{
@@ -63,7 +64,7 @@ csvUploadRoutes.post("/preview", async (c) => {
   if (!table || !data || !Array.isArray(data)) {
     return c.json(
       { status: "error", message: "Table and data array required" },
-      400,
+      400
     );
   }
 
@@ -122,7 +123,7 @@ csvUploadRoutes.post("/preview", async (c) => {
 // ============================================================
 
 csvUploadRoutes.post("/import", async (c) => {
-  const auth = getAuth(c);
+  const auth = await getAuth(c);
   if (!auth) return c.json({ status: "error", message: "No autorizado" }, 401);
 
   const { table, data } = await c.req.json<{
@@ -133,7 +134,7 @@ csvUploadRoutes.post("/import", async (c) => {
   if (!table || !data || !Array.isArray(data)) {
     return c.json(
       { status: "error", message: "Table and data array required" },
-      400,
+      400
     );
   }
 
@@ -226,7 +227,6 @@ csvUploadRoutes.post("/import", async (c) => {
         // DailyBalance schema only has date, amount, note
         const amountNum = Number(row.amount) || Number(row.closingBalance) || 0;
         const balanceData = {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           amount: new Decimal(amountNum.toFixed(2)),
           note: row.note ? String(row.note) : undefined,
         };
@@ -259,7 +259,7 @@ csvUploadRoutes.post("/import", async (c) => {
     "updated:",
     updated,
     "skipped:",
-    skipped,
+    skipped
   );
   return c.json({
     status: "ok",

@@ -3,7 +3,7 @@
  * Logs audit events to the database
  */
 
-import { db } from "@finanzas/db";
+import { db, JsonObject } from "@finanzas/db";
 
 export type AuditAction =
   | "USER_INVITE"
@@ -40,9 +40,8 @@ export async function logAudit({
         action,
         entity,
         entityId: entityId ? String(entityId) : null,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         details: details
-          ? (JSON.parse(JSON.stringify(details)) as any)
+          ? (JSON.parse(JSON.stringify(details)) as JsonObject)
           : undefined,
         ipAddress,
       },

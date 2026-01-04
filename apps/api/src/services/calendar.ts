@@ -8,12 +8,12 @@ export async function loadSettings() {
   return settings.reduce(
     (
       acc: Record<string, string>,
-      curr: { key: string; value: string | null },
+      curr: { key: string; value: string | null }
     ) => {
       acc[curr.key] = curr.value || "";
       return acc;
     },
-    {} as Record<string, string>,
+    {} as Record<string, string>
   );
 }
 
@@ -23,7 +23,7 @@ export async function createCalendarSyncLogEntry(data: {
   triggerLabel?: string | null;
 }) {
   // Check for existing running syncs
-  const running = await db.syncLog.findFirst({
+  const running = await db.calendarSyncLog.findFirst({
     where: { status: "RUNNING" },
   });
 
@@ -36,23 +36,20 @@ export async function createCalendarSyncLogEntry(data: {
     }
     // If stale (>15min), mark as ERROR and proceed
     console.warn(
-      `⚠ Cleaning up stale sync log ${running.id} (${Math.round(diff / 1000 / 60)}min old)`,
+      `⚠ Cleaning up stale sync log ${running.id} (${Math.round(diff / 1000 / 60)}min old)`
     );
-    await db.syncLog.update({
+    await db.calendarSyncLog.update({
       where: { id: running.id },
       data: {
         status: "ERROR",
-        finishedAt: new Date(),
         errorMessage: `Sync timeout - marked as stale after ${Math.round(diff / 1000 / 60)} minutes`,
       },
     });
   }
 
-  const log = await db.syncLog.create({
+  const log = await db.calendarSyncLog.create({
     data: {
       triggerSource: data.triggerSource,
-      triggerUserId: data.triggerUserId,
-      triggerLabel: data.triggerLabel,
       status: "RUNNING",
       startedAt: new Date(),
     },
@@ -75,34 +72,18 @@ export async function finalizeCalendarSyncLogEntry(
       updated?: (string | { summary: string; changes: string[] })[];
       excluded?: string[];
     };
-  },
+  }
 ) {
-  await db.syncLog.update({
-    where: { id: BigInt(id) },
+  await db.calendarSyncLog.update({
+    where: { id: id },
     data: {
       status: data.status,
-      finishedAt: new Date(),
-      fetchedAt: data.fetchedAt,
-      inserted: data.inserted,
-      updated: data.updated,
-      skipped: data.skipped,
-      excluded: data.excluded,
+      endedAt: new Date(),
+      eventsSynced: (data.inserted || 0) + (data.updated || 0),
       errorMessage: data.errorMessage,
-      changeDetails: data.changeDetails,
     },
   });
 }
-
-// Export UnclassifiedEvent type inferred from the query result
-// ... (UnclassifiedEvent type definition is skipped in this replace block range? No I should include it or strict range)
-// I will just replace the function bodies where prisma is used.
-
-// Wait, I should do this in chunks or smart replace.
-// The file is small enough for full replace but I should be careful not to overwrite types I just fixed.
-// I will use replace_file_content with targeted chunks.
-
-// Export UnclassifiedEvent type
-// Export UnclassifiedEvent type inferred from the query result
 
 export async function listCalendarSyncLogs(
   limitOrOptions?:
@@ -111,7 +92,7 @@ export async function listCalendarSyncLogs(
         start?: Date;
         end?: Date;
         limit?: number;
-      },
+      }
 ) {
   let options =
     typeof limitOrOptions === "number"
@@ -119,8 +100,9 @@ export async function listCalendarSyncLogs(
       : limitOrOptions;
   const { start, end, limit = 50 } = options || {};
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const where: any = {};
+  const where: NonNullable<
+    Parameters<typeof db.calendarSyncLog.findMany>[0]
+  >["where"] = {};
   if (start) {
     where.startedAt = { gte: start };
   }
@@ -129,7 +111,7 @@ export async function listCalendarSyncLogs(
   }
 
   // Correction: Query SyncLog, not Event
-  const logs = await db.syncLog.findMany({
+  const logs = await db.calendarSyncLog.findMany({
     where,
     orderBy: { startedAt: "desc" },
     take: limit,
@@ -151,7 +133,7 @@ type MissingFieldFilter = {
 export async function listUnclassifiedCalendarEvents(
   limit: number,
   offset: number = 0,
-  filters?: MissingFieldFilter,
+  filters?: MissingFieldFilter
 ) {
   const filterMode = filters?.filterMode || "OR";
 
@@ -167,7 +149,7 @@ export async function listUnclassifiedCalendarEvents(
       { category: null },
       { category: "" },
       { amountExpected: null },
-      { attended: null },
+      { attended: null }
     );
   } else {
     if (filters.category) {
@@ -243,7 +225,7 @@ export async function updateCalendarEventClassification(
     attended?: boolean | null;
     dosage?: string | null;
     treatmentStage?: string | null;
-  },
+  }
 ) {
   // ... (function body of createCalendarEvent moved out)
   // We need to find the internal Calendar ID first

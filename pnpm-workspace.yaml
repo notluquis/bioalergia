@@ -1,3 +1,10 @@
 packages:
   - "apps/*"
   - "packages/*"
+
+# pnpm v10 Advantages & Optimizations
+verifyDepsBeforeRun: install
+optimisticRepeatInstall: true
+dedupePeerDependents: true
+injectWorkspacePackages: true
+

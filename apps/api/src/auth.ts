@@ -6,7 +6,7 @@
  */
 
 import type { Context } from "hono";
-import jwt from "jsonwebtoken";
+import { verifyToken } from "./lib/paseto";
 
 // User session type matching ZenStack auth model
 export interface AuthSession {
@@ -16,14 +16,15 @@ export interface AuthSession {
   roles: Array<{ role: { name: string } }>;
 }
 
-const JWT_SECRET = process.env.JWT_SECRET || "";
 const COOKIE_NAME = "finanzas_session";
 
 /**
- * Extract and verify JWT token from request
+ * Extract and verify PASETO token from request
  * Supports both Authorization header and cookie
  */
-export function getSessionUser(ctx: Context): AuthSession | null {
+export async function getSessionUser(
+  ctx: Context
+): Promise<AuthSession | null> {
   // 1. Check Authorization header
   let token = ctx.req.header("Authorization")?.replace("Bearer ", "");
 
@@ -32,7 +33,7 @@ export function getSessionUser(ctx: Context): AuthSession | null {
     const cookieHeader = ctx.req.header("Cookie");
     if (cookieHeader) {
       const cookies = Object.fromEntries(
-        cookieHeader.split(";").map((c) => c.trim().split("=")),
+        cookieHeader.split(";").map((c) => c.trim().split("="))
       );
       token = cookies[COOKIE_NAME];
     }
@@ -43,7 +44,7 @@ export function getSessionUser(ctx: Context): AuthSession | null {
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as jwt.JwtPayload;
+    const decoded = await verifyToken(token);
 
     if (!decoded || typeof decoded.sub !== "string") {
       return null;

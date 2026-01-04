@@ -1,0 +1,88 @@
+/**
+ * Supplies Routes
+ * Migrated from apps/web/server/routes/supplies.ts
+ */
+import { Hono } from "hono";
+import {
+  createSupplyRequest,
+  getCommonSupplies,
+  getSupplyRequests,
+  updateSupplyRequestStatus,
+} from "../services/supplies";
+import {
+  supplyRequestSchema,
+  updateSupplyRequestStatusSchema,
+} from "../lib/inventory-schemas";
+import { getSessionUser } from "../auth";
+
+export const suppliesRoutes = new Hono();
+
+// Middleware to ensure user is authenticated
+suppliesRoutes.use("*", async (c, next) => {
+  const user = await getSessionUser(c);
+  if (!user) {
+    return c.json({ status: "error", message: "No autorizado" }, 401);
+  }
+  await next();
+});
+
+// GET /api/supplies/requests
+suppliesRoutes.get("/requests", async (c) => {
+  const requests = await getSupplyRequests();
+  return c.json(requests);
+});
+
+// GET /api/supplies/common
+suppliesRoutes.get("/common", async (c) => {
+  const supplies = await getCommonSupplies();
+  return c.json(supplies);
+});
+
+// POST /api/supplies/requests
+suppliesRoutes.post("/requests", async (c) => {
+  const user = await getSessionUser(c);
+  if (!user) return c.json({ status: "error", message: "No autorizado" }, 401);
+
+  const body = await c.req.json();
+  const parsed = supplyRequestSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json(
+      {
+        status: "error",
+        message: "Datos inválidos",
+        issues: parsed.error.issues,
+      },
+      400
+    );
+  }
+
+  await createSupplyRequest({
+    userId: user.id,
+    ...parsed.data,
+  });
+
+  return c.json({ status: "ok" }, 201);
+});
+
+// PUT /api/supplies/:id/status
+suppliesRoutes.put("/:id/status", async (c) => {
+  const id = Number(c.req.param("id"));
+  const body = await c.req.json();
+  const parsed = updateSupplyRequestStatusSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json({ status: "error", message: "Estado inválido" }, 400);
+  }
+
+  const user = await getSessionUser(c);
+  if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+
+  const hasAdminRole = user.roles.some(
+    (r) => r.role.name === "ADMIN" || r.role.name === "SUPERADMIN"
+  );
+
+  if (!hasAdminRole) {
+    return c.json({ status: "error", message: "Forbidden" }, 403);
+  }
+  await updateSupplyRequestStatus(id, parsed.data.status);
+  return c.json({ status: "ok" });
+});

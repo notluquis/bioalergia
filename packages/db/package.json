@@ -9,6 +9,7 @@
     "./schema": "./zenstack/schema.ts"
   },
   "scripts": {
+    "build": "zen generate",
     "generate": "zen generate",
     "db:push": "zen db push",
     "migrate:dev": "zen migrate dev",

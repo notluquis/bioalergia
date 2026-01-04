@@ -1,0 +1,147 @@
+import { db } from "@finanzas/db";
+import dayjs from "dayjs";
+
+export interface DailyBalanceRecord {
+  date: string;
+  totalIn: number;
+  totalOut: number;
+  netChange: number;
+  expectedBalance: number;
+  recordedBalance: number | null;
+  difference: number | null;
+  note: string | null;
+  hasCashback: boolean;
+}
+
+export interface BalancesApiResponse {
+  days: DailyBalanceRecord[];
+  previous: {
+    date: string;
+    balance: number;
+  } | null;
+}
+
+export async function getBalancesReport(
+  from: string,
+  to: string
+): Promise<BalancesApiResponse> {
+  const previous = await db.dailyBalance.findFirst({
+    where: {
+      date: { lt: new Date(from) },
+    },
+    orderBy: { date: "desc" },
+  });
+
+  const transactions = await db.transaction.findMany({
+    where: {
+      transactionDate: {
+        gte: new Date(from),
+        lte: new Date(dayjs(to).endOf("day").toISOString()),
+      },
+    },
+    select: {
+      transactionDate: true,
+      transactionAmount: true,
+      transactionType: true,
+    },
+  });
+
+  const existingBalances = await db.dailyBalance.findMany({
+    where: {
+      date: {
+        gte: new Date(from),
+        lte: new Date(to),
+      },
+    },
+  });
+
+  const balanceMap = new Map(
+    existingBalances.map((b) => [dayjs(b.date).format("YYYY-MM-DD"), b])
+  );
+
+  const days: DailyBalanceRecord[] = [];
+  let runningBalance = previous ? Number(previous.amount) : 0;
+
+  let current = dayjs(from);
+  const end = dayjs(to);
+
+  while (current.isBefore(end) || current.isSame(end, "day")) {
+    const dateStr = current.format("YYYY-MM-DD");
+    const dayTx = transactions.filter(
+      (t) => dayjs(t.transactionDate).format("YYYY-MM-DD") === dateStr
+    );
+
+    let totalIn = 0;
+    let totalOut = 0;
+
+    for (const tx of dayTx) {
+      const amt = Number(tx.transactionAmount);
+      if (amt >= 0) {
+        totalIn += amt;
+      } else {
+        totalOut += Math.abs(amt);
+      }
+    }
+
+    const netChange = totalIn - totalOut;
+    const expectedBalance = runningBalance + netChange;
+
+    const record = balanceMap.get(dateStr);
+    // @ts-ignore - ZenStack types vs Date object
+    const recordedBalance = record ? Number(record.amount) : null;
+    const difference =
+      recordedBalance !== null ? recordedBalance - expectedBalance : null;
+
+    days.push({
+      date: dateStr,
+      totalIn,
+      totalOut,
+      netChange,
+      expectedBalance,
+      recordedBalance,
+      difference,
+      note: record?.note ?? null,
+      hasCashback: false,
+    });
+
+    if (recordedBalance !== null) {
+      runningBalance = recordedBalance;
+    } else {
+      runningBalance = expectedBalance;
+    }
+
+    current = current.add(1, "day");
+  }
+
+  return {
+    days,
+    previous: previous
+      ? {
+          date: dayjs(previous.date).format("YYYY-MM-DD"),
+          balance: Number(previous.amount),
+        }
+      : null,
+  };
+}
+
+import { Decimal } from "decimal.js";
+
+export async function upsertDailyBalance(
+  date: string,
+  amount: number,
+  note?: string
+) {
+  return db.dailyBalance.upsert({
+    where: { date: new Date(date) },
+    update: {
+      amount: new Decimal(amount),
+      note,
+      updatedAt: new Date(),
+    },
+    create: {
+      date: new Date(date),
+      amount: new Decimal(amount),
+      note,
+    },
+  });
+}

@@ -1,6 +1,22 @@
 {
   "name": "finanzas-monorepo",
   "private": true,
+  "engines": {
+    "node": ">=25.0.0",
+    "pnpm": ">=10.27.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "argon2",
+      "sharp",
+      "husky",
+      "@zenstackhq/runtime",
+      "protobufjs",
+      "lmdb"
+    ]
+  },
+  "packageManager": "pnpm@10.27.0",
   "scripts": {
     "dev": "pnpm -r dev",
     "build": "pnpm -r build",
@@ -9,6 +25,5 @@
   },
   "devDependencies": {
     "turbo": "^2.0.0"
-  },
-  "packageManager": "pnpm@9.0.0"
+  }
 }

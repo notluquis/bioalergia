@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { PlusCircle } from "lucide-react";
 import { useState } from "react";
 
@@ -6,34 +6,37 @@ import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import { useToast } from "@/context/ToastContext";
-import {
-  createInventoryItem,
-  createInventoryMovement,
-  getInventoryItems,
-  updateInventoryItem,
-} from "@/features/inventory/api";
 import AdjustStockForm from "@/features/inventory/components/AdjustStockForm";
 import AllergyInventoryView from "@/features/inventory/components/AllergyInventoryView";
 import InventoryItemForm from "@/features/inventory/components/InventoryItemForm";
 import InventoryTable from "@/features/inventory/components/InventoryTable";
 import type { InventoryItem, InventoryMovement } from "@/features/inventory/types";
 import { ServicesHero, ServicesSurface } from "@/features/services/components/ServicesShell";
-import { queryKeys } from "@/lib/queryKeys";
+import { inventoryItemHooks, inventoryMovementHooks } from "@/lib/zenstack/hooks";
 
 export default function InventoryPage() {
   const queryClient = useQueryClient();
   const { success: toastSuccess, error: toastError } = useToast();
+
+  // ZenStack hooks for inventory items
   const {
     data: itemsData,
     isPending,
     isFetching,
     error: itemsError,
-  } = useQuery<InventoryItem[], Error>({
-    queryKey: queryKeys.inventory.items(),
-    queryFn: getInventoryItems,
-    staleTime: 2 * 60 * 1000,
+  } = inventoryItemHooks.useFindMany({
+    include: { category: true },
+    orderBy: { name: "asc" },
   });
-  const items = itemsData ?? [];
+
+  /* eslint-disable @typescript-eslint/no-explicit-any */
+  const items =
+    (itemsData as any[])?.map((item) => ({
+      ...item,
+      current_stock: item.currentStock, // Map to frontend expected field
+      category_id: item.categoryId,
+    })) ?? [];
+  /* eslint-enable @typescript-eslint/no-explicit-any */
 
   const [error, setError] = useState<string | null>(null);
   const [isItemModalOpen, setIsItemModalOpen] = useState(false);
@@ -65,127 +68,60 @@ export default function InventoryPage() {
     setItemForStockAdjust(null);
   }
 
-  const createItemMutation = useMutation<
-    InventoryItem,
-    Error,
-    Omit<InventoryItem, "id">,
-    { previousItems?: InventoryItem[]; optimisticId?: number }
-  >({
-    mutationFn: createInventoryItem,
-    onMutate: async (newItem) => {
-      setError(null);
-      await queryClient.cancelQueries({ queryKey: queryKeys.inventory.items() });
-      const previousItems = queryClient.getQueryData<InventoryItem[]>(queryKeys.inventory.items());
-      const optimisticItem: InventoryItem = {
-        id: Date.now() * -1,
-        ...newItem,
-      };
-      queryClient.setQueryData<InventoryItem[]>(queryKeys.inventory.items(), (old = []) => [...old, optimisticItem]);
-      return { previousItems, optimisticId: optimisticItem.id };
-    },
-    onError: (err, _variables, context) => {
-      const message = err.message || "No se pudo guardar el item";
-      setError(message);
-      toastError(message);
-      if (context?.previousItems) {
-        queryClient.setQueryData(queryKeys.inventory.items(), context.previousItems);
-      }
-    },
-    onSuccess: (createdItem, _variables, context) => {
-      queryClient.setQueryData<InventoryItem[]>(queryKeys.inventory.items(), (old = []) =>
-        old.map((item) => (item.id === context?.optimisticId ? createdItem : item))
-      );
-      toastSuccess("Item creado correctamente");
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.inventory.items() });
-    },
-  });
+  // ZenStack mutations for CRUD
+  const createItemMutation = inventoryItemHooks.useCreate();
+  const updateItemMutation = inventoryItemHooks.useUpdate();
+  const createMovementMutation = inventoryMovementHooks.useCreate();
 
-  const updateItemMutation = useMutation<
-    InventoryItem,
-    Error,
-    { id: number; data: Partial<Omit<InventoryItem, "id">> },
-    { previousItems?: InventoryItem[] }
-  >({
-    mutationFn: ({ id, data }) => updateInventoryItem(id, data),
-    onMutate: async ({ id, data }) => {
-      setError(null);
-      await queryClient.cancelQueries({ queryKey: queryKeys.inventory.items() });
-      const previousItems = queryClient.getQueryData<InventoryItem[]>(queryKeys.inventory.items());
-      queryClient.setQueryData<InventoryItem[]>(queryKeys.inventory.items(), (old = []) =>
-        old.map((item) => (item.id === id ? { ...item, ...data } : item))
-      );
-      return { previousItems };
-    },
-    onError: (err, _variables, context) => {
-      const message = err.message || "No se pudo actualizar el item";
-      setError(message);
-      toastError(message);
-      if (context?.previousItems) {
-        queryClient.setQueryData(queryKeys.inventory.items(), context.previousItems);
-      }
-    },
-    onSuccess: () => {
-      toastSuccess("Item actualizado");
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.inventory.items() });
-    },
-  });
-
-  const adjustStockMutation = useMutation<void, Error, InventoryMovement, { previousItems?: InventoryItem[] }>({
-    mutationFn: createInventoryMovement,
-    onMutate: async (movement) => {
-      setError(null);
-      await queryClient.cancelQueries({ queryKey: queryKeys.inventory.items() });
-      const previousItems = queryClient.getQueryData<InventoryItem[]>(queryKeys.inventory.items());
-      queryClient.setQueryData<InventoryItem[]>(queryKeys.inventory.items(), (old = []) =>
-        old.map((item) =>
-          item.id === movement.item_id
-            ? { ...item, current_stock: item.current_stock + movement.quantity_change }
-            : item
-        )
-      );
-      return { previousItems };
-    },
-    onError: (err, _variables, context) => {
-      const message = err.message || "No se pudo ajustar el stock";
-      setError(message);
-      toastError(message);
-      if (context?.previousItems) {
-        queryClient.setQueryData(queryKeys.inventory.items(), context.previousItems);
-      }
-    },
-    onSuccess: () => {
-      toastSuccess("Stock ajustado correctamente");
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.inventory.items() });
-    },
-  });
-
-  const saving = createItemMutation.isPending || updateItemMutation.isPending || adjustStockMutation.isPending;
+  const saving = createItemMutation.isPending || updateItemMutation.isPending || createMovementMutation.isPending;
 
   async function handleSaveItem(itemData: Omit<InventoryItem, "id">) {
+    setError(null);
     try {
       if (editingItem) {
-        await updateItemMutation.mutateAsync({ id: editingItem.id, data: itemData });
+        await updateItemMutation.mutateAsync({
+          where: { id: editingItem.id },
+          data: {
+            name: itemData.name,
+            description: itemData.description,
+            categoryId: itemData.category_id,
+            currentStock: itemData.current_stock,
+          },
+        });
+        toastSuccess("Item actualizado");
       } else {
-        await createItemMutation.mutateAsync(itemData);
+        await createItemMutation.mutateAsync({
+          name: itemData.name,
+          description: itemData.description,
+          categoryId: itemData.category_id,
+          currentStock: itemData.current_stock ?? 0,
+        });
+        toastSuccess("Item creado correctamente");
       }
       closeModal();
-    } catch {
-      // Error handled in mutations
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "No se pudo guardar el item";
+      setError(message);
+      toastError(message);
     }
   }
 
   async function handleAdjustStock(movement: InventoryMovement) {
+    setError(null);
     try {
-      await adjustStockMutation.mutateAsync(movement);
+      await createMovementMutation.mutateAsync({
+        itemId: movement.item_id,
+        quantityChange: movement.quantity_change,
+        reason: movement.reason,
+      });
+      // Refetch items to get updated stock
+      queryClient.invalidateQueries({ queryKey: ["inventoryItem"] });
+      toastSuccess("Stock ajustado correctamente");
       closeModal();
-    } catch {
-      // Error handled in mutation
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "No se pudo ajustar el stock";
+      setError(message);
+      toastError(message);
     }
   }
 

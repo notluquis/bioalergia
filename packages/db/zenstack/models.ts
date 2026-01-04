@@ -37,6 +37,7 @@ export type InventoryMovement = $ModelResult<$Schema, "InventoryMovement">;
 export type DailyProductionBalance = $ModelResult<$Schema, "DailyProductionBalance">;
 export type SupplyRequest = $ModelResult<$Schema, "SupplyRequest">;
 export type CommonSupply = $ModelResult<$Schema, "CommonSupply">;
+export type CalendarSyncLog = $ModelResult<$Schema, "CalendarSyncLog">;
 export const PersonType = $schema.enums.PersonType.values;
 export type PersonType = (typeof PersonType)[keyof typeof PersonType];
 export const CounterpartCategory = $schema.enums.CounterpartCategory.values;
