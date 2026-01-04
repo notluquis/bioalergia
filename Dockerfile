@@ -1,55 +1,79 @@
-# syntax=docker/dockerfile:1
+# ============================================================================
+# STAGE 1: Build - Node.js 25 (Debian Slim)
+# ============================================================================
+FROM node:25-slim AS build
 
-# ============================================================================
-# STAGE 1: Build - Node.js 25 on Alpine
-# ============================================================================
-FROM node:current-alpine AS build
+# Production and CI optimizations
+ENV CI=true
+ENV NODE_ENV=production
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
 
 WORKDIR /app
 
-# Build dependencies for native modules (argon2)
-RUN apk add --no-cache libc6-compat build-base python3
+# Build-time system dependencies (for argon2 and other native modules)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    python3 \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install pnpm globally (corepack removed in Node.js 25)
-RUN npm install -g pnpm
-ENV CI=true
+# Install specific pnpm version for consistency
+RUN npm install -g pnpm@10.27.0
 
-# Copy all package.json files for the monorepo
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+# 1. First Layer: Manifests & Fetch dependencies
+# This creates a solid layer and leverages Railway's cache mount perfectly.
+COPY .npmrc package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/api/package.json ./apps/api/
 COPY packages/db/package.json ./packages/db/
 
-# Install all dependencies with Railway cache
+# Optimized Install: --prod=false is MANDATORY during build to get devDeps
+# (tsc, zenstack, etc.) needed to compile the project.
 RUN --mount=type=cache,id=s/cc493466-c691-4384-8199-99f757a14014-/root/.local/share/pnpm/store,target=/root/.local/share/pnpm/store \
-    pnpm install --frozen-lockfile
+    pnpm install --frozen-lockfile --prod=false
 
-# Copy all source code
-COPY apps/api ./apps/api
-COPY packages/db ./packages/db
+# 2. Second Layer: Source Code
+COPY . .
 
-# Generate ZenStack and build API
+# 3. Build Process: 
+# - Generate ZenStack Client (Pure Kysely, ZERO Prisma at runtime)
+# - Compile TypeScript (tsc)
 RUN pnpm --filter @finanzas/db generate && \
-    pnpm --filter @finanzas/api build && \
-    pnpm prune --prod
+    pnpm --filter @finanzas/api build
+
+# 4. Supreme Isolation: 'pnpm deploy'
+# Extracts only the production dependencies and files for the API.
+RUN pnpm deploy --filter=@finanzas/api --prod /app/deploy
+
+# Extra: Ensure build artifacts and DB schema are copied to the deploy folder
+RUN cp -r apps/api/dist /app/deploy/dist && \
+    mkdir -p /app/deploy/packages/db && \
+    cp -r packages/db/zenstack /app/deploy/packages/db/zenstack
+
+# 5. Veto Prisma: Physically remove any Prisma artifacts created during build
+# to ensure zero Prisma footprint in the production image.
+RUN find /app/deploy -name "prisma" -type d -exec rm -rf {} + || true
 
 # ============================================================================
-# STAGE 2: Runtime - Distroless Debian 13
+# STAGE 2: Runtime - Distroless Node.js 24 (Debian 13)
 # ============================================================================
 FROM gcr.io/distroless/nodejs24-debian13
 
 WORKDIR /app
 
-COPY --from=build /app/node_modules ./node_modules
-COPY --from=build /app/apps/api/dist ./apps/api/dist
-COPY --from=build /app/apps/api/package.json ./apps/api/
-COPY --from=build /app/packages/db ./packages/db
-COPY --from=build /app/package.json ./
+# Copy ONLY the isolated production items from Stage 1
+COPY --from=build /app/deploy ./
 
+# Production runtime optimizations
 ENV NODE_ENV=production
 ENV CI=true
-ENV NODE_COMPILE_CACHE=/app/.cache
 ENV PORT=3000
+
+# Node 25/24 V8 Bytecode cache for instant cold starts
+ENV NODE_COMPILE_CACHE=/app/.cache
+# Enable source maps for clean logs (zero performance cost in modern Node)
+ENV NODE_OPTIONS="--enable-source-maps"
 
 EXPOSE 3000
 
-CMD ["apps/api/dist/index.js"]
+# Direct execution (no shell). Absolute best for speed and security.
+CMD ["dist/index.js"]
