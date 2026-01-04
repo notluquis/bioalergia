@@ -79,7 +79,7 @@ export default function TransactionsMovements() {
     [appliedFilters, page, pageSize]
   );
 
-  const transactionsQuery = useTransactionsQuery(queryParams, canView);
+  const transactionsQuery = useTransactionsQuery(queryParams);
 
   const rows = useMemo(() => transactionsQuery.data?.data ?? [], [transactionsQuery.data?.data]);
   const hasAmounts = Boolean(transactionsQuery.data?.hasAmounts);
