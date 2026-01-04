@@ -44,7 +44,7 @@ export default function Modal({ isOpen, onClose, title, children, className, box
 
   return createPortal(
     <div className={cn("modal modal-open flex items-center justify-center", className)}>
-      <Backdrop isVisible={isOpen} onClose={onClose} className="z-0" />
+      <Backdrop isVisible={isOpen} onClose={onClose} className="z-0" zIndex={0} />
 
       <div
         className={cn(
