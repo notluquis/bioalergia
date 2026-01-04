@@ -12,7 +12,7 @@ const CREDENTIALS_PATH = path.resolve(
   process.cwd(),
   "storage",
   "google-calendar",
-  "credentials.json",
+  "credentials.json"
 );
 const WEBHOOK_BASE_URL = process.env.PUBLIC_URL || "http://localhost:5000";
 const WEBHOOK_ENDPOINT = `${WEBHOOK_BASE_URL}/api/calendar/webhook`;
@@ -41,7 +41,7 @@ async function getCalendarClient(): Promise<CalendarClient | null> {
     // Railway may escape newlines as literal \n, convert them back
     privateKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY.replace(
       /\\n/g,
-      "\n",
+      "\n"
     );
     logEvent("google_calendar_auth_from_env", { clientEmail });
   } else {
@@ -49,7 +49,7 @@ async function getCalendarClient(): Promise<CalendarClient | null> {
     try {
       await fs.access(CREDENTIALS_PATH);
       const credentials = JSON.parse(
-        await fs.readFile(CREDENTIALS_PATH, "utf-8"),
+        await fs.readFile(CREDENTIALS_PATH, "utf-8")
       );
       clientEmail = credentials.client_email;
       privateKey = credentials.private_key;
@@ -93,7 +93,7 @@ async function getCalendarClient(): Promise<CalendarClient | null> {
  */
 export async function registerWatchChannel(
   calendarGoogleId: string,
-  calendarDbId: number,
+  calendarDbId: number
 ): Promise<{ channelId: string; resourceId: string; expiration: Date } | null> {
   try {
     const client = await getCalendarClient();
@@ -105,7 +105,7 @@ export async function registerWatchChannel(
 
     const channelId = randomUUID();
     const expiration = new Date(
-      Date.now() + CHANNEL_TTL_DAYS * 24 * 60 * 60 * 1000,
+      Date.now() + CHANNEL_TTL_DAYS * 24 * 60 * 60 * 1000
     );
 
     logEvent("register_watch_channel_start", {
@@ -180,7 +180,7 @@ export async function registerWatchChannel(
  */
 export async function stopWatchChannel(
   channelId: string,
-  resourceId: string,
+  resourceId: string
 ): Promise<boolean> {
   try {
     const client = await getCalendarClient();
@@ -225,7 +225,7 @@ export async function stopWatchChannel(
 export async function renewWatchChannels(): Promise<void> {
   try {
     const expirationThreshold = new Date(
-      Date.now() + RENEWAL_BUFFER_DAYS * 24 * 60 * 60 * 1000,
+      Date.now() + RENEWAL_BUFFER_DAYS * 24 * 60 * 60 * 1000
     );
 
     // Find channels expiring soon
@@ -252,7 +252,7 @@ export async function renewWatchChannels(): Promise<void> {
       // Register new channel
       const result = await registerWatchChannel(
         channel.calendar.googleId,
-        channel.calendarId,
+        channel.calendarId
       );
 
       if (result) {
@@ -298,8 +298,7 @@ export async function getActiveWatchChannels(): Promise<
     include: { calendar: true },
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return channels.map((ch: any) => ({
+  return channels.map((ch) => ({
     channelId: ch.channelId,
     resourceId: ch.resourceId,
     calendarGoogleId: ch.calendar.googleId,
@@ -328,15 +327,13 @@ export async function setupAllWatchChannels(): Promise<void> {
       },
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const calendarsWithChannels = new Set(
-      existingChannels.map((ch: any) => ch.calendarId),
+      existingChannels.map((ch) => ch.calendarId)
     );
 
     // Find calendars without watch channels
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const calendarsNeedingChannels = calendars.filter(
-      (cal: any) => !calendarsWithChannels.has(cal.id),
+      (cal) => !calendarsWithChannels.has(cal.id)
     );
 
     logEvent("setup_watch_channels_start", {

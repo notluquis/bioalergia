@@ -28,14 +28,14 @@ interface EmployeePayload {
   metadata?: Record<string, unknown> | null;
 }
 
-// Helper to convert metadata to Prisma-compatible JSON
+// Helper to convert metadata to compatible JSON
 function toJsonValue(
-  value: Record<string, unknown> | null | undefined,
+  value: Record<string, unknown> | null | undefined
 ): any | undefined {
-  // Changed return type from Prisma.InputJsonValue | typeof Prisma.JsonNull | undefined
+  // Changed return type from JsonNull | undefined
   if (value === undefined) return undefined;
-  if (value === null) return null; // Changed from Prisma.JsonNull
-  return value as any; // Changed from Prisma.InputJsonValue
+  if (value === null) return null;
+  return value as any;
 }
 
 // Map frontend payload to Prisma Employee update data
@@ -79,7 +79,7 @@ function mapToEmployeeData(payload: EmployeePayload): EmployeeUpdateInput {
   return data;
 }
 
-// Map frontend payload to Prisma Person update data
+// Map frontend payload to Person update data
 function mapToPersonData(payload: EmployeePayload): PersonUpdateInput {
   const data: PersonUpdateInput = {};
 
@@ -143,7 +143,7 @@ export async function findEmployeeByEmail(email: string) {
 
 // Create employee from frontend payload - requires creating Person first
 export async function createEmployee(
-  payload: EmployeePayload & { rut: string; full_name: string },
+  payload: EmployeePayload & { rut: string; full_name: string }
 ) {
   return await db.$transaction(async (tx) => {
     // First create or find Person by RUT
@@ -235,7 +235,7 @@ export async function deactivateEmployee(id: number) {
 export async function listEmployeeTimesheets(
   employeeId: number,
   from?: Date,
-  to?: Date,
+  to?: Date
 ) {
   const where: EmployeeTimesheetWhereInput = {
     employeeId,
@@ -254,7 +254,7 @@ export async function listEmployeeTimesheets(
 }
 
 export async function createEmployeeTimesheet(
-  data: EmployeeTimesheetCreateInput,
+  data: EmployeeTimesheetCreateInput
 ) {
   return await db.employeeTimesheet.create({
     data,
@@ -263,7 +263,7 @@ export async function createEmployeeTimesheet(
 
 export async function updateEmployeeTimesheet(
   id: number,
-  data: EmployeeTimesheetUpdateInput,
+  data: EmployeeTimesheetUpdateInput
 ) {
   return await db.employeeTimesheet.update({
     where: { id: BigInt(id) },

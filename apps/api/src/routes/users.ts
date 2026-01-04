@@ -6,27 +6,28 @@
 
 import { Hono } from "hono";
 import { getCookie } from "hono/cookie";
-import jwt from "jsonwebtoken";
+import { verifyToken } from "../lib/paseto";
 import { db } from "@finanzas/db";
 import { hashPassword } from "../lib/crypto";
 import { normalizeRut } from "../lib/rut";
 
-const JWT_SECRET = process.env.JWT_SECRET || "";
 const COOKIE_NAME = "finanzas_session";
 
 export const userRoutes = new Hono();
 
 // Helper to get auth from cookie
-function getAuth(c: { req: { header: (name: string) => string | undefined } }) {
+async function getAuth(c: {
+  req: { header: (name: string) => string | undefined };
+}) {
   const cookieHeader = c.req.header("Cookie");
   if (!cookieHeader) return null;
   const cookies = Object.fromEntries(
-    cookieHeader.split(";").map((c) => c.trim().split("=")),
+    cookieHeader.split(";").map((c) => c.trim().split("="))
   );
   const token = cookies[COOKIE_NAME];
   if (!token) return null;
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as jwt.JwtPayload;
+    const decoded = await verifyToken(token);
     return {
       userId: Number(decoded.sub),
       email: String(decoded.email),
@@ -42,7 +43,7 @@ function getAuth(c: { req: { header: (name: string) => string | undefined } }) {
 // ============================================================
 
 userRoutes.get("/", async (c) => {
-  const auth = getAuth(c);
+  const auth = await getAuth(c);
   if (!auth) return c.json({ status: "error", message: "No autorizado" }, 401);
 
   const includeTest = c.req.query("includeTest") === "true";
@@ -90,7 +91,7 @@ userRoutes.get("/", async (c) => {
 // ============================================================
 
 userRoutes.get("/profile", async (c) => {
-  const auth = getAuth(c);
+  const auth = await getAuth(c);
   if (!auth) return c.json({ status: "error", message: "No autorizado" }, 401);
 
   const user = await db.user.findUnique({
@@ -123,7 +124,7 @@ userRoutes.get("/profile", async (c) => {
 // ============================================================
 
 userRoutes.post("/invite", async (c) => {
-  const auth = getAuth(c);
+  const auth = await getAuth(c);
   if (!auth) return c.json({ status: "error", message: "No autorizado" }, 401);
 
   const body = await c.req.json<{
@@ -138,7 +139,7 @@ userRoutes.post("/invite", async (c) => {
   if (!email || !role || !position) {
     return c.json(
       { status: "error", message: "Campos requeridos: email, role, position" },
-      400,
+      400
     );
   }
 
@@ -150,7 +151,7 @@ userRoutes.post("/invite", async (c) => {
   // Generate temp password
   const crypto = await import("crypto");
   const tempPasswordHash = await hashPassword(
-    crypto.randomBytes(12).toString("hex"),
+    crypto.randomBytes(12).toString("hex")
   );
 
   // Create user
@@ -201,7 +202,7 @@ userRoutes.post("/invite", async (c) => {
 // ============================================================
 
 userRoutes.post("/setup", async (c) => {
-  const auth = getAuth(c);
+  const auth = await getAuth(c);
   if (!auth) return c.json({ status: "error", message: "No autorizado" }, 401);
 
   const body = await c.req.json<{
@@ -273,7 +274,7 @@ userRoutes.post("/setup", async (c) => {
 // ============================================================
 
 userRoutes.post("/:id/reset-password", async (c) => {
-  const auth = getAuth(c);
+  const auth = await getAuth(c);
   if (!auth) return c.json({ status: "error", message: "No autorizado" }, 401);
 
   const targetUserId = Number(c.req.param("id"));
@@ -306,7 +307,7 @@ userRoutes.post("/:id/reset-password", async (c) => {
 // ============================================================
 
 userRoutes.put("/:id/status", async (c) => {
-  const auth = getAuth(c);
+  const auth = await getAuth(c);
   if (!auth) return c.json({ status: "error", message: "No autorizado" }, 401);
 
   const targetUserId = Number(c.req.param("id"));
@@ -319,7 +320,7 @@ userRoutes.put("/:id/status", async (c) => {
   if (targetUserId === auth.userId) {
     return c.json(
       { status: "error", message: "No puedes suspender tu propia cuenta" },
-      400,
+      400
     );
   }
 
@@ -334,7 +335,7 @@ userRoutes.put("/:id/status", async (c) => {
     ":",
     targetUserId,
     "->",
-    status,
+    status
   );
   return c.json({ status: "ok" });
 });
@@ -344,7 +345,7 @@ userRoutes.put("/:id/status", async (c) => {
 // ============================================================
 
 userRoutes.put("/:id/role", async (c) => {
-  const auth = getAuth(c);
+  const auth = await getAuth(c);
   if (!auth) return c.json({ status: "error", message: "No autorizado" }, 401);
 
   const targetUserId = Number(c.req.param("id"));
@@ -367,7 +368,7 @@ userRoutes.put("/:id/role", async (c) => {
     ":",
     targetUserId,
     "->",
-    role,
+    role
   );
   return c.json({ status: "ok" });
 });
@@ -377,7 +378,7 @@ userRoutes.put("/:id/role", async (c) => {
 // ============================================================
 
 userRoutes.delete("/:id", async (c) => {
-  const auth = getAuth(c);
+  const auth = await getAuth(c);
   if (!auth) return c.json({ status: "error", message: "No autorizado" }, 401);
 
   const targetUserId = Number(c.req.param("id"));
@@ -385,7 +386,7 @@ userRoutes.delete("/:id", async (c) => {
   if (targetUserId === auth.userId) {
     return c.json(
       { status: "error", message: "No puedes eliminar tu propia cuenta" },
-      400,
+      400
     );
   }
 
@@ -400,7 +401,7 @@ userRoutes.delete("/:id", async (c) => {
 // ============================================================
 
 userRoutes.post("/:id/mfa/toggle", async (c) => {
-  const auth = getAuth(c);
+  const auth = await getAuth(c);
   if (!auth) return c.json({ status: "error", message: "No autorizado" }, 401);
 
   const targetUserId = Number(c.req.param("id"));
@@ -417,7 +418,7 @@ userRoutes.post("/:id/mfa/toggle", async (c) => {
     ":",
     targetUserId,
     "->",
-    enabled,
+    enabled
   );
   return c.json({ status: "ok", mfaEnabled: enabled });
 });
@@ -427,7 +428,7 @@ userRoutes.post("/:id/mfa/toggle", async (c) => {
 // ============================================================
 
 userRoutes.delete("/:id/mfa", async (c) => {
-  const auth = getAuth(c);
+  const auth = await getAuth(c);
   if (!auth) return c.json({ status: "error", message: "No autorizado" }, 401);
 
   const targetUserId = Number(c.req.param("id"));
@@ -446,7 +447,7 @@ userRoutes.delete("/:id/mfa", async (c) => {
 // ============================================================
 
 userRoutes.delete("/:id/passkey", async (c) => {
-  const auth = getAuth(c);
+  const auth = await getAuth(c);
   if (!auth) return c.json({ status: "error", message: "No autorizado" }, 401);
 
   const targetUserId = Number(c.req.param("id"));

@@ -7,25 +7,26 @@
 import { Hono } from "hono";
 import { stream } from "hono/streaming";
 import { getCookie } from "hono/cookie";
-import jwt from "jsonwebtoken";
+import { verifyToken } from "../lib/paseto";
 
-const JWT_SECRET = process.env.JWT_SECRET || "";
 const MP_ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN || "";
 const COOKIE_NAME = "finanzas_session";
 
 export const mercadopagoRoutes = new Hono();
 
 // Helper to get auth
-function getAuth(c: { req: { header: (name: string) => string | undefined } }) {
+async function getAuth(c: {
+  req: { header: (name: string) => string | undefined };
+}) {
   const cookieHeader = c.req.header("Cookie");
   if (!cookieHeader) return null;
   const cookies = Object.fromEntries(
-    cookieHeader.split(";").map((c) => c.trim().split("=")),
+    cookieHeader.split(";").map((c) => c.trim().split("="))
   );
   const token = cookies[COOKIE_NAME];
   if (!token) return null;
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as jwt.JwtPayload;
+    const decoded = await verifyToken(token);
     return { userId: Number(decoded.sub), email: String(decoded.email) };
   } catch {
     return null;
@@ -64,7 +65,7 @@ async function mpFetch(path: string, options: RequestInit = {}) {
 // ============================================================
 
 mercadopagoRoutes.get("/config", async (c) => {
-  const auth = getAuth(c);
+  const auth = await getAuth(c);
   if (!auth) return c.json({ status: "error", message: "No autorizado" }, 401);
 
   try {
@@ -81,7 +82,7 @@ mercadopagoRoutes.get("/config", async (c) => {
 // ============================================================
 
 mercadopagoRoutes.post("/config", async (c) => {
-  const auth = getAuth(c);
+  const auth = await getAuth(c);
   if (!auth) return c.json({ status: "error", message: "No autorizado" }, 401);
 
   const body = await c.req.json();
@@ -100,7 +101,7 @@ mercadopagoRoutes.post("/config", async (c) => {
 });
 
 mercadopagoRoutes.put("/config", async (c) => {
-  const auth = getAuth(c);
+  const auth = await getAuth(c);
   if (!auth) return c.json({ status: "error", message: "No autorizado" }, 401);
 
   const body = await c.req.json();
@@ -123,7 +124,7 @@ mercadopagoRoutes.put("/config", async (c) => {
 // ============================================================
 
 mercadopagoRoutes.get("/reports", async (c) => {
-  const auth = getAuth(c);
+  const auth = await getAuth(c);
   if (!auth) return c.json({ status: "error", message: "No autorizado" }, 401);
 
   try {
@@ -136,7 +137,7 @@ mercadopagoRoutes.get("/reports", async (c) => {
 });
 
 mercadopagoRoutes.post("/reports", async (c) => {
-  const auth = getAuth(c);
+  const auth = await getAuth(c);
   if (!auth) return c.json({ status: "error", message: "No autorizado" }, 401);
 
   const { begin_date, end_date } = await c.req.json<{
@@ -156,7 +157,7 @@ mercadopagoRoutes.post("/reports", async (c) => {
       ":",
       begin_date,
       "-",
-      end_date,
+      end_date
     );
     return c.json(data, 201);
   } catch (e) {
@@ -165,7 +166,7 @@ mercadopagoRoutes.post("/reports", async (c) => {
 });
 
 mercadopagoRoutes.get("/reports/:id", async (c) => {
-  const auth = getAuth(c);
+  const auth = await getAuth(c);
   if (!auth) return c.json({ status: "error", message: "No autorizado" }, 401);
 
   const id = c.req.param("id");
@@ -184,7 +185,7 @@ mercadopagoRoutes.get("/reports/:id", async (c) => {
 // ============================================================
 
 mercadopagoRoutes.get("/reports/download/:fileName", async (c) => {
-  const auth = getAuth(c);
+  const auth = await getAuth(c);
   if (!auth) return c.json({ status: "error", message: "No autorizado" }, 401);
 
   const fileName = c.req.param("fileName");
@@ -195,14 +196,14 @@ mercadopagoRoutes.get("/reports/download/:fileName", async (c) => {
       `https://api.mercadopago.com/v1/account/release_report/${fileName}`,
       {
         headers: { Authorization: `Bearer ${MP_ACCESS_TOKEN}` },
-      },
+      }
     );
 
     if (!res.ok) throw new Error(`Download failed: ${res.status}`);
 
     c.header(
       "Content-Type",
-      res.headers.get("Content-Type") || "application/octet-stream",
+      res.headers.get("Content-Type") || "application/octet-stream"
     );
     c.header("Content-Disposition", `attachment; filename="${fileName}"`);
 
@@ -225,7 +226,7 @@ mercadopagoRoutes.get("/reports/download/:fileName", async (c) => {
 // ============================================================
 
 mercadopagoRoutes.post("/schedule", async (c) => {
-  const auth = getAuth(c);
+  const auth = await getAuth(c);
   if (!auth) return c.json({ status: "error", message: "No autorizado" }, 401);
 
   try {
@@ -242,7 +243,7 @@ mercadopagoRoutes.post("/schedule", async (c) => {
 });
 
 mercadopagoRoutes.delete("/schedule", async (c) => {
-  const auth = getAuth(c);
+  const auth = await getAuth(c);
   if (!auth) return c.json({ status: "error", message: "No autorizado" }, 401);
 
   try {

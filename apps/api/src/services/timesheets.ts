@@ -63,12 +63,12 @@ function timeToMinutes(time: string): number | null {
 }
 
 /**
- * Convert "HH:MM" string to Date object for Prisma @db.Time
+ * Convert "HH:MM" string to Date object
  * Uses reference date to set the correct year/month/day
  */
 function timeStringToDate(
   time: string | null,
-  referenceDate: Date = new Date(),
+  referenceDate: Date = new Date()
 ): Date | null {
   if (!time) return null;
   const [hours, minutes] = time.split(":").map(Number);
@@ -78,7 +78,7 @@ function timeStringToDate(
 }
 
 /**
- * Format Date object from Prisma to "HH:MM" string
+ * Format Date object to "HH:MM" string
  */
 function dateToTimeString(date: Date | null): string | null {
   if (!date) return null;
@@ -86,7 +86,7 @@ function dateToTimeString(date: Date | null): string | null {
 }
 
 /**
- * Map Prisma timesheet to TimesheetEntry type.
+ * Map timesheet to TimesheetEntry type.
  */
 function mapTimesheetEntry(entry: EmployeeTimesheet): TimesheetEntry {
   if (!entry) throw new Error("Entry is null");
@@ -105,7 +105,7 @@ function mapTimesheetEntry(entry: EmployeeTimesheet): TimesheetEntry {
 // Repository Functions
 
 export async function listTimesheetEntries(
-  options: ListTimesheetOptions,
+  options: ListTimesheetOptions
 ): Promise<TimesheetEntry[]> {
   const where: EmployeeTimesheetWhereInput = {
     workDate: {
@@ -127,10 +127,9 @@ export async function listTimesheetEntries(
 }
 
 export async function getTimesheetEntryById(
-  id: number,
+  id: number
 ): Promise<TimesheetEntry> {
   const entry = await db.employeeTimesheet.findUnique({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     where: { id: BigInt(id) },
   });
 
@@ -140,7 +139,7 @@ export async function getTimesheetEntryById(
 
 export async function getTimesheetEntryByEmployeeAndDate(
   employeeId: number,
-  workDate: string,
+  workDate: string
 ): Promise<TimesheetEntry | null> {
   const entry = await db.employeeTimesheet.findUnique({
     where: {
@@ -155,7 +154,7 @@ export async function getTimesheetEntryByEmployeeAndDate(
 }
 
 export async function upsertTimesheetEntry(
-  payload: UpsertTimesheetPayload,
+  payload: UpsertTimesheetPayload
 ): Promise<TimesheetEntry> {
   const workDateObj = new Date(payload.work_date);
   const startTime = timeStringToDate(payload.start_time ?? null, workDateObj);
@@ -201,7 +200,7 @@ export async function upsertTimesheetEntry(
 
 export async function updateTimesheetEntry(
   id: number,
-  data: UpdateTimesheetPayload,
+  data: UpdateTimesheetPayload
 ): Promise<TimesheetEntry> {
   let workDateObj: Date | undefined;
 
@@ -209,7 +208,6 @@ export async function updateTimesheetEntry(
   // to keep dates consistent.
   if (data.start_time !== undefined || data.end_time !== undefined) {
     const existing = await db.employeeTimesheet.findUnique({
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       where: { id: BigInt(id) },
       select: { workDate: true },
     });
@@ -241,7 +239,6 @@ export async function updateTimesheetEntry(
   }
 
   const entry = await db.employeeTimesheet.update({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     where: { id: BigInt(id) },
     data: updateData,
   });
@@ -251,7 +248,6 @@ export async function updateTimesheetEntry(
 
 export async function deleteTimesheetEntry(id: number): Promise<void> {
   await db.employeeTimesheet.delete({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     where: { id: BigInt(id) },
   });
 }
@@ -317,7 +313,7 @@ export function computePayDate(role: string, periodStart: string): string {
   const nextMonthFirstDay = new Date(
     startDate.getFullYear(),
     startDate.getMonth() + 1,
-    1,
+    1
   );
   if (role.toUpperCase().includes("ENFER")) {
     // Enfermeros: 5to día hábil del mes siguiente
@@ -325,7 +321,7 @@ export function computePayDate(role: string, periodStart: string): string {
   }
   // Otros: día 5 calendario del mes siguiente
   return formatDateOnly(
-    new Date(nextMonthFirstDay.getFullYear(), nextMonthFirstDay.getMonth(), 5),
+    new Date(nextMonthFirstDay.getFullYear(), nextMonthFirstDay.getMonth(), 5)
   );
 }
 
@@ -338,7 +334,7 @@ export function buildEmployeeSummary(
     workedMinutes: number;
     overtimeMinutes: number;
     periodStart: string;
-  },
+  }
 ) {
   if (!employee) {
     return {
@@ -395,11 +391,11 @@ export function buildEmployeeSummary(
 export async function buildMonthlySummary(
   from: string,
   to: string,
-  employeeId?: number,
+  employeeId?: number
 ) {
   const employees = await listEmployees();
   const employeeMap = new Map(
-    employees.map((employee) => [employee.id, employee]),
+    employees.map((employee) => [employee.id, employee])
   );
 
   const summaryData = await db.employeeTimesheet.groupBy({
