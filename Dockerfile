@@ -12,6 +12,7 @@ RUN apk add --no-cache libc6-compat build-base python3
 
 # Install pnpm globally (corepack removed in Node.js 25)
 RUN npm install -g pnpm
+ENV CI=true
 
 # Copy all package.json files for the monorepo
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
@@ -45,6 +46,8 @@ COPY --from=build /app/packages/db ./packages/db
 COPY --from=build /app/package.json ./
 
 ENV NODE_ENV=production
+ENV CI=true
+ENV NODE_COMPILE_CACHE=/app/.cache
 ENV PORT=3000
 
 EXPOSE 3000
