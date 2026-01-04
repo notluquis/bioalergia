@@ -20,5 +20,9 @@
     "typescript",
     "typescriptreact"
   ],
-  "eslint.useFlatConfig": true
+  "eslint.useFlatConfig": true,
+  "editor.formatOnSave": true,
+  "[zmodel-v3]": {
+    "editor.defaultFormatter": "zenstack.zenstack-v3"
+  }
 }
