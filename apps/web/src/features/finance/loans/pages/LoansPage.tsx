@@ -84,11 +84,14 @@ export default function LoansPage() {
     try {
       await createMutation.mutateAsync({
         publicId: crypto.randomUUID().slice(0, 8),
-        lenderName: payload.lenderName,
+        title: payload.title,
         borrowerName: payload.borrowerName,
-        principal: payload.principal,
+        borrowerType: payload.borrowerType,
+        principalAmount: payload.principalAmount,
         interestRate: payload.interestRate,
-        termMonths: payload.termMonths,
+        interestType: payload.interestType,
+        frequency: payload.frequency,
+        totalInstallments: payload.totalInstallments,
         startDate: payload.startDate,
         notes: payload.notes,
       });
