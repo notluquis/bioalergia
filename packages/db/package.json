@@ -2,14 +2,22 @@
   "name": "@finanzas/db",
   "version": "0.0.1",
   "type": "module",
-  "main": "./zenstack/schema.ts",
-  "types": "./zenstack/schema.ts",
+  "main": "./dist/zenstack/schema.js",
+  "types": "./dist/zenstack/schema.d.ts",
   "exports": {
-    ".": "./src/client.ts",
-    "./schema": "./zenstack/schema.ts"
+    ".": {
+      "types": "./dist/src/client.d.ts",
+      "import": "./dist/src/client.js",
+      "default": "./dist/src/client.js"
+    },
+    "./schema": {
+      "types": "./dist/zenstack/schema.d.ts",
+      "import": "./dist/zenstack/schema.js",
+      "default": "./dist/zenstack/schema.js"
+    }
   },
   "scripts": {
-    "build": "zen generate",
+    "build": "zen generate && tsc",
     "generate": "zen generate",
     "db:push": "zen db push",
     "migrate:dev": "zen migrate dev",
