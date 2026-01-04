@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { useCallback, useMemo, useState } from "react";
 
@@ -8,11 +8,8 @@ import { useToast } from "@/context/ToastContext";
 import {
   attachCounterpartRut,
   type CounterpartUpsertPayload,
-  createCounterpart,
   fetchCounterpart,
-  fetchCounterparts,
   fetchCounterpartSummary,
-  updateCounterpart,
 } from "@/features/counterparts/api";
 import AssociatedAccounts from "@/features/counterparts/components/AssociatedAccounts";
 import CounterpartForm from "@/features/counterparts/components/CounterpartForm";
@@ -21,8 +18,10 @@ import { SUMMARY_RANGE_MONTHS } from "@/features/counterparts/constants";
 import type { Counterpart, CounterpartCategory, CounterpartPersonType } from "@/features/counterparts/types";
 import { ServicesGrid, ServicesHero, ServicesSurface } from "@/features/services/components/ServicesShell";
 import { normalizeRut } from "@/lib/rut";
+import { counterpartHooks } from "@/lib/zenstack/hooks";
 
 export default function CounterpartsPage() {
+  const queryClient = useQueryClient();
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -46,16 +45,21 @@ export default function CounterpartsPage() {
     setFormCounterpart(null);
   }, []);
 
-  // Queries
+  // ZenStack hooks for counterparts
   const {
-    data: counterparts = [],
+    data: counterpartsData,
     isLoading: listLoading,
     error: listError,
-  } = useQuery({
-    queryKey: ["counterparts"],
-    queryFn: fetchCounterparts,
+  } = counterpartHooks.useFindMany({
+    orderBy: { name: "asc" },
   });
 
+  // Wrap counterparts in useMemo for stable reference
+  const counterparts = useMemo(() => {
+    return (counterpartsData as Counterpart[]) ?? [];
+  }, [counterpartsData]);
+
+  // Detail query for selected counterpart with accounts (using original API for complete data)
   const {
     data: detail,
     isLoading: detailLoading,
@@ -66,6 +70,7 @@ export default function CounterpartsPage() {
     enabled: !!selectedId,
   });
 
+  // Summary query (kept as manual since it's a custom aggregation endpoint)
   const { data: summary, error: summaryError } = useQuery({
     queryKey: ["counterpart-summary", selectedId, summaryRange],
     queryFn: () => fetchCounterpartSummary(selectedId!, summaryRange),
@@ -79,38 +84,9 @@ export default function CounterpartsPage() {
     (detailError instanceof Error ? detailError.message : null) ||
     (summaryError instanceof Error ? summaryError.message : null);
 
-  // Mutations
-  const queryClient = useQueryClient();
-
-  const createMutation = useMutation({
-    mutationFn: createCounterpart,
-    onSuccess: (data) => {
-      queryClient.setQueryData<Counterpart[]>(["counterparts"], (old) => {
-        return [...(old || []), data.counterpart].sort((a, b) => a.name.localeCompare(b.name));
-      });
-      // also set detail?
-      setSelectedId(data.counterpart.id);
-      setIsFormModalOpen(false);
-      toastSuccess("Contraparte creada correctamente");
-    },
-    onError: (err: Error) => toastError(err.message),
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: ({ id, payload }: { id: number; payload: Partial<CounterpartUpsertPayload> }) =>
-      updateCounterpart(id, payload),
-    onSuccess: (data) => {
-      queryClient.setQueryData<Counterpart[]>(["counterparts"], (old) => {
-        return (old || [])
-          .map((c) => (c.id === data.counterpart.id ? data.counterpart : c))
-          .sort((a, b) => a.name.localeCompare(b.name));
-      });
-      queryClient.setQueryData(["counterpart-detail", data.counterpart.id], data);
-      setIsFormModalOpen(false);
-      toastSuccess("Contraparte actualizada correctamente");
-    },
-    onError: (err: Error) => toastError(err.message),
-  });
+  // ZenStack mutations
+  const createMutation = counterpartHooks.useCreate();
+  const updateMutation = counterpartHooks.useUpdate();
 
   async function handleSaveCounterpart(payload: CounterpartUpsertPayload) {
     setError(null);
@@ -124,25 +100,48 @@ export default function CounterpartsPage() {
       let isNew = false;
 
       if (selectedId) {
-        await updateMutation.mutateAsync({ id: selectedId, payload });
+        await updateMutation.mutateAsync({
+          where: { id: selectedId },
+          data: {
+            name: payload.name,
+            rut: payload.rut,
+            email: payload.email,
+            category: payload.category,
+            personType: payload.personType,
+          },
+        });
+        toastSuccess("Contraparte actualizada correctamente");
       } else {
-        const res = await createMutation.mutateAsync(payload);
-        savedId = res.counterpart.id;
+        const result = await createMutation.mutateAsync({
+          name: payload.name,
+          rut: payload.rut,
+          email: payload.email,
+          category: payload.category,
+          personType: payload.personType,
+        });
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        savedId = (result as any)?.id;
         isNew = true;
+        toastSuccess("Contraparte creada correctamente");
       }
+
+      setSelectedId(savedId);
+      setIsFormModalOpen(false);
 
       // Handle RUT attachment auto-logic
       if (savedId && normalizedRut && (isNew || normalizedRut !== previousRut)) {
         try {
           await attachCounterpartRut(savedId, normalizedRut);
-          queryClient.invalidateQueries({ queryKey: ["counterpart-detail", savedId] });
+          queryClient.invalidateQueries({ queryKey: ["counterpart"] });
           toastInfo("Cuentas detectadas vinculadas automáticamente");
         } catch (attachError) {
           console.warn("Auto-attach failed", attachError);
         }
       }
-    } catch {
-      // Handled by mutation onError but safe to catch here to prevent crash
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Error al guardar contraparte";
+      setError(message);
+      toastError(message);
     }
   }
 
@@ -310,8 +309,6 @@ export default function CounterpartsPage() {
               detail={detail}
               summary={summary ?? null}
               summaryRange={summaryRange}
-              // summaryLoading={summaryLoading} // We can pass this if needed, but the component handles it
-              // onLoadSummary={loadSummary} // Removed, handled by React Query invalidation
               onSummaryRangeChange={handleSummaryRangeChange}
             />
           )}
@@ -325,7 +322,7 @@ export default function CounterpartsPage() {
         <CounterpartForm
           counterpart={formCounterpart}
           onSave={handleSaveCounterpart}
-          error={error ?? displayError} // Show any global error here if relevant, or just local form error
+          error={error ?? displayError}
           saving={createMutation.isPending || updateMutation.isPending}
           loading={listLoading || detailLoading}
         />
