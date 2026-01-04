@@ -22,8 +22,8 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/api/package.json ./apps/api/
 COPY packages/db/package.json ./packages/db/
 
-# Install with BuildKit cache mount for faster rebuilds
-RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
+# Install dependencies with Railway cache mount for faster rebuilds
+RUN --mount=type=cache,id=s/cc493466-c691-4384-8199-99f757a14014-/root/.local/share/pnpm/store,target=/root/.local/share/pnpm/store \
     pnpm install --frozen-lockfile
 
 # Copy source code
