@@ -14,8 +14,8 @@ WORKDIR /app
 # python3: required by node-gyp
 RUN apk add --no-cache libc6-compat build-base python3
 
-# Enable pnpm via corepack (Node.js 25 has improved corepack)
-RUN corepack enable && corepack prepare pnpm@latest --activate
+# Install pnpm globally (corepack not available in Alpine)
+RUN npm install -g pnpm
 
 # Copy lockfiles first for optimal layer caching
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
