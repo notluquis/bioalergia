@@ -12,10 +12,10 @@ import { TransactionsColumnToggles } from "@/features/finance/transactions/compo
 import { TransactionsFilters } from "@/features/finance/transactions/components/TransactionsFilters";
 import { TransactionsTable } from "@/features/finance/transactions/components/TransactionsTable";
 import { COLUMN_DEFS, type ColumnKey } from "@/features/finance/transactions/constants";
+import { useLedger } from "@/features/finance/transactions/hooks/useLedger";
 import { useTransactionsQuery } from "@/features/finance/transactions/hooks/useTransactionsQuery";
-import type { Filters, LedgerRow } from "@/features/finance/transactions/types";
+import type { Filters } from "@/features/finance/transactions/types";
 import { today } from "@/lib/dates";
-import { coerceAmount } from "@/lib/format";
 import { logger } from "@/lib/logger";
 
 const DEFAULT_PAGE_SIZE = 50;
@@ -68,7 +68,7 @@ export default function TransactionsMovements() {
   const { settings } = useSettings();
   const canView = can("read", "Transaction");
 
-  const initialBalanceNumber = useMemo(() => coerceAmount(debouncedInitialBalance), [debouncedInitialBalance]);
+  // const initialBalanceNumber = useMemo(() => coerceAmount(debouncedInitialBalance), [debouncedInitialBalance]); // handled inside useLedger
 
   const queryParams = useMemo(
     () => ({
@@ -87,27 +87,11 @@ export default function TransactionsMovements() {
   const loading = transactionsQuery.isPending || transactionsQuery.isFetching;
   const error = transactionsQuery.error?.message ?? null;
 
-  const ledger = useMemo<LedgerRow[]>(() => {
-    let balance = initialBalanceNumber;
-    const chronological = rows
-      .slice()
-      .sort((a, b) => (new Date(a.transactionDate).getTime() > new Date(b.transactionDate).getTime() ? 1 : -1))
-      .map((row) => {
-        const amount = row.transactionAmount ?? 0;
-        const delta = amount; // transactionAmount is signed: positive = income, negative = expense
-
-        if (hasAmounts) {
-          balance += delta;
-        }
-        return {
-          ...row,
-          runningBalance: hasAmounts ? balance : 0,
-          delta,
-        };
-      });
-
-    return chronological.reverse();
-  }, [rows, initialBalanceNumber, hasAmounts]);
+  const ledger = useLedger({
+    rows,
+    initialBalance: debouncedInitialBalance,
+    hasAmounts,
+  });
 
   const handleFilterChange = (update: Partial<Filters>) => {
     setDraftFilters((prev) => ({ ...prev, ...update }));

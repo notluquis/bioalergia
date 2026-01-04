@@ -29,6 +29,11 @@ vi.mock("../server/lib/http.js", async () => {
   };
 });
 
+// Mock Authorize Middleware
+vi.mock("../server/middleware/authorize.js", () => ({
+  authorize: () => (req: unknown, res: unknown, next: () => void) => next(),
+}));
+
 import { logAudit } from "../server/services/audit.js";
 import { updateSettings } from "../server/services/settings.js";
 

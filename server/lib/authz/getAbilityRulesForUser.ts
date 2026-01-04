@@ -68,8 +68,13 @@ export async function getAbilityRulesForUser(userId: number): Promise<CASLRule[]
   });
 
   if (!userWithRolesAndPermissions) {
+    console.warn(`[getAbilityRulesForUser] User ${userId} not found in DB`);
     return [];
   }
+  // console.warn(
+  //   `[getAbilityRulesForUser] User ${userId} roles found:`,
+  //   JSON.stringify(userWithRolesAndPermissions.roles, null, 2)
+  // );
 
   const context = {
     userId: userWithRolesAndPermissions.id,
@@ -102,7 +107,10 @@ export async function getAbilityRulesForUser(userId: number): Promise<CASLRule[]
   }
 
   const finalRules = Array.from(rulesMap.values());
-  // console.log(`[getAbilityRulesForUser] Generated ${finalRules.length} rules for user ${userId}`);
+  console.error(
+    `[getAbilityRulesForUser] Generated ${finalRules.length} rules for user ${userId}`,
+    JSON.stringify(finalRules, null, 2)
+  );
 
   return finalRules;
 }

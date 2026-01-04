@@ -112,6 +112,7 @@ export function authenticate(req: AuthenticatedRequest, res: express.Response, n
 export function softAuthenticate(req: AuthenticatedRequest, res: express.Response, next: express.NextFunction) {
   const token = req.cookies?.[sessionCookieName];
   if (!token) {
+    console.error("[softAuthenticate] No token found. Cookies:", req.cookies, "Headers:", req.headers);
     return next();
   }
 
@@ -124,7 +125,8 @@ export function softAuthenticate(req: AuthenticatedRequest, res: express.Respons
         roles: (decoded.roles as string[]) || [],
       };
     }
-  } catch {
+  } catch (error) {
+    console.error("[softAuthenticate] verification failed:", error);
     // Ignore error, just don't set req.auth
   }
   next();
