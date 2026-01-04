@@ -10,6 +10,7 @@
   "dependencies": {
     "@finanzas/db": "workspace:*",
     "@googleapis/calendar": "^14.2.0",
+    "@googleapis/drive": "^8.0.0",
     "@hono/node-server": "^1.19.7",
     "@paralleldrive/cuid2": "^3.0.6",
     "@types/web-push": "^3.6.4",
@@ -18,14 +19,18 @@
     "argon2": "^0.44.0",
     "dayjs": "^1.11.19",
     "decimal.js": "^10.6.0",
+    "gaxios": "^6.0.0",
     "google-auth-library": "^10.5.0",
     "hono": "^4.11.3",
     "jsonwebtoken": "^9.0.3",
     "kysely": "^0.28.9",
+    "node-cron": "^3.0.3",
     "otplib": "^12.0.1",
     "paseto": "^3.1.4",
     "qrcode": "^1.5.4",
-    "web-push": "^3.6.7"
+    "qs": "^6.13.0",
+    "web-push": "^3.6.7",
+    "zod": "^4.0.0"
   },
   "devDependencies": {
     "@types/jsonwebtoken": "^9.0.10",
