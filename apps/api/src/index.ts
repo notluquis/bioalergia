@@ -38,10 +38,12 @@ app.use(
   })
 );
 
-// Health check (at /api/health for consistency)
+// Health check (at root for Railway healthcheck)
+app.get("/health", (c) => c.json({ status: "ok" }));
 app.get("/api/health", (c) => c.json({ status: "ok" }));
 
 // Auth routes (login, logout, session, MFA)
+
 app.route("/api/auth", authRoutes);
 
 // User routes (CRUD, roles, MFA, passkeys)
