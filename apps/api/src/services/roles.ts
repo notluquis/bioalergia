@@ -80,3 +80,56 @@ export async function listPermissions() {
     orderBy: { subject: "asc" },
   });
 }
+
+/**
+ * Sync permissions by ensuring standard CRUD permissions exist for major subjects
+ */
+export async function syncPermissions() {
+  const subjects = [
+    "User",
+    "Transaction",
+    "Setting",
+    "Role",
+    "Permission",
+    "Person",
+    "Counterpart",
+    "Loan",
+    "Service",
+    "InventoryItem",
+    "ProductionBalance",
+    "CalendarEvent",
+    "Employee",
+    "Timesheet",
+    "Report",
+    "SupplyRequest",
+    "Dashboard",
+    "Backup",
+    "BulkData",
+  ];
+
+  const actions = ["create", "read", "update", "delete"];
+
+  const created: string[] = [];
+
+  for (const subject of subjects) {
+    for (const action of actions) {
+      // Check if permission exists
+      const existing = await db.permission.findFirst({
+        where: { action, subject },
+      });
+
+      if (!existing) {
+        await db.permission.create({
+          data: {
+            action,
+            subject,
+            description: `Auto-generated ${action} for ${subject}`,
+          },
+        });
+        created.push(`${action}:${subject}`);
+      }
+    }
+  }
+
+  return { synced: created.length, created };
+}
