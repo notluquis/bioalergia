@@ -25,6 +25,7 @@ import counterpartRoutes from "./routes/counterparts";
 import serviceRoutes from "./routes/services";
 import roleRoutes from "./routes/roles";
 import { settingsRoutes } from "./routes/settings";
+import employeeRoutes from "./routes/employees";
 import { readFile } from "fs/promises";
 import { join } from "path";
 
@@ -79,6 +80,7 @@ app.route("/api/counterparts", counterpartRoutes);
 app.route("/api/services", serviceRoutes);
 app.route("/api/roles", roleRoutes);
 app.route("/api/settings", settingsRoutes);
+app.route("/api/employees", employeeRoutes);
 
 // ZenStack Query-as-a-Service (auto CRUD for all models)
 app.use(
