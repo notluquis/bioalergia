@@ -19,11 +19,10 @@ ENV CI=true
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 
-# 1. Copy everything (simpler, avoids node_modules corruption issues)
+# 1. Copy everything
 COPY . .
 
 # 2. Install all dependencies (with cache mount for speed)
-# Note: Railway requires id=s/<service-id>-<path> format for persistent cache
 RUN --mount=type=cache,id=s/cc493466-c691-4384-8199-99f757a14014-/pnpm/store,target=/pnpm/store \
     pnpm install --frozen-lockfile
 
@@ -32,7 +31,7 @@ RUN pnpm --filter @finanzas/db build && \
     pnpm --filter @finanzas/api build
 
 # 4. Deploy: Extract only production deps for @finanzas/api
-# pnpm deploy handles workspace deps (@finanzas/db) automatically
+# Note: tsx is now a production dependency for runtime
 RUN --mount=type=cache,id=s/cc493466-c691-4384-8199-99f757a14014-/pnpm/store,target=/pnpm/store \
     pnpm deploy --filter=@finanzas/api --prod /app/deploy
 
@@ -44,9 +43,9 @@ RUN cp -r apps/api/dist /app/deploy/dist && \
 RUN find /app/deploy -name "prisma" -type d -exec rm -rf {} + 2>/dev/null || true
 
 # ============================================================================
-# STAGE 2: Runtime - Distroless Node.js 24 (Debian 13)
+# STAGE 2: Runtime - Node.js Current Slim (tsx requires Node runtime)
 # ============================================================================
-FROM gcr.io/distroless/nodejs24-debian13
+FROM node:current-slim
 
 WORKDIR /app
 
@@ -63,5 +62,5 @@ ENV NODE_OPTIONS="--enable-source-maps"
 
 EXPOSE 3000
 
-# Direct execution (distroless has no shell)
-CMD ["dist/index.js"]
+# Use tsx for runtime (handles ESM/CJS interop)
+CMD ["node_modules/.bin/tsx", "dist/index.js"]
