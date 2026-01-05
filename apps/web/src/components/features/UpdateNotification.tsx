@@ -25,27 +25,21 @@ export function UpdateNotification() {
   const handleUpdate = async () => {
     setIsUpdating(true);
 
-    // Fallback de seguridad: recargar después de 4 segundos si el evento controllerchange no se dispara
-    const fallbackId = setTimeout(() => {
-      window.location.reload();
-    }, 4000);
-
-    // Registrar el listener para recargar solo cuando el worker cambie realmente
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.addEventListener(
-        "controllerchange",
-        () => {
-          clearTimeout(fallbackId);
-          window.location.reload();
-        },
-        { once: true }
-      );
-    }
-
     try {
+      // Skip waiting on new service worker and activate immediately
       await updateServiceWorker(true);
+
+      // Clear all caches for a completely fresh start
+      if ("caches" in window) {
+        const cacheNames = await caches.keys();
+        await Promise.all(cacheNames.map((name) => caches.delete(name)));
+      }
+
+      // Hard refresh - bypasses browser cache completely
+      window.location.href = window.location.href.split("?")[0] + "?v=" + Date.now();
     } catch (error) {
       console.error("Update failed", error);
+      // Fallback: force reload anyway
       window.location.reload();
     }
   };
