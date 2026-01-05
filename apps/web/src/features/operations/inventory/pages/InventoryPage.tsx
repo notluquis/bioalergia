@@ -5,12 +5,13 @@ import {
   useUpdateInventoryItem,
 } from "@finanzas/db/hooks";
 import { useQueryClient } from "@tanstack/react-query";
-import { PlusCircle } from "lucide-react";
+import { Lock, PlusCircle } from "lucide-react";
 import { useState } from "react";
 
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
+import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import AdjustStockForm from "@/features/inventory/components/AdjustStockForm";
 import AllergyInventoryView from "@/features/inventory/components/AllergyInventoryView";
@@ -20,8 +21,14 @@ import type { InventoryItem, InventoryMovement } from "@/features/inventory/type
 import { ServicesHero, ServicesSurface } from "@/features/services/components/ServicesShell";
 
 export default function InventoryPage() {
+  const { can } = useAuth();
   const queryClient = useQueryClient();
   const { success: toastSuccess, error: toastError } = useToast();
+
+  const canCreateItem = can("create", "InventoryItem");
+  const canUpdateItem = can("update", "InventoryItem");
+  // Adjusting stock creates a movement
+  const canAdjustStock = can("create", "InventoryMovement");
 
   // ZenStack hooks for inventory items
   const {
@@ -139,8 +146,12 @@ export default function InventoryPage() {
         title="Inventario"
         description="Gestiona insumos, materiales y stock del centro con controles rápidos para crear y ajustar."
         actions={
-          <Button onClick={openCreateModal}>
-            <PlusCircle size={16} />
+          <Button
+            onClick={openCreateModal}
+            disabled={!canCreateItem}
+            title={!canCreateItem ? "Requiere permiso para crear ítems" : undefined}
+          >
+            {!canCreateItem ? <Lock size={16} /> : <PlusCircle size={16} />}
             Agregar item
           </Button>
         }
@@ -154,6 +165,8 @@ export default function InventoryPage() {
           loading={loading}
           openAdjustStockModal={openAdjustStockModal}
           openEditModal={openEditModal}
+          canUpdate={canUpdateItem}
+          canAdjust={canAdjustStock}
         />
       </ServicesSurface>
 

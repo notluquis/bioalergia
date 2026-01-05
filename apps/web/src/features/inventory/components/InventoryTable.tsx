@@ -1,3 +1,5 @@
+import { Lock } from "lucide-react";
+
 import Button from "@/components/ui/Button";
 
 import type { InventoryItem } from "../types";
@@ -7,9 +9,18 @@ interface InventoryTableProps {
   loading: boolean;
   openAdjustStockModal: (item: InventoryItem) => void;
   openEditModal: (item: InventoryItem) => void;
+  canUpdate?: boolean;
+  canAdjust?: boolean;
 }
 
-export default function InventoryTable({ items, loading, openAdjustStockModal, openEditModal }: InventoryTableProps) {
+export default function InventoryTable({
+  items,
+  loading,
+  openAdjustStockModal,
+  openEditModal,
+  canUpdate = false,
+  canAdjust = false,
+}: InventoryTableProps) {
   return (
     <div className="border-base-300 bg-base-100 overflow-hidden rounded-2xl border shadow-sm">
       <div className="muted-scrollbar overflow-x-auto">
@@ -31,10 +42,23 @@ export default function InventoryTable({ items, loading, openAdjustStockModal, o
                 <td className="text-base-content/60 px-4 py-3">{item.description ?? "—"}</td>
                 <td className="text-base-content px-4 py-3">{item.current_stock}</td>
                 <td className="px-4 py-3 text-right text-xs font-semibold tracking-wide uppercase">
-                  <Button variant="secondary" onClick={() => openAdjustStockModal(item)} className="mr-3">
+                  <Button
+                    variant="secondary"
+                    onClick={() => openAdjustStockModal(item)}
+                    className="mr-3"
+                    disabled={!canAdjust}
+                    title={!canAdjust ? "Sin permiso" : undefined}
+                  >
+                    {!canAdjust && <Lock size={12} className="mr-1" />}
                     Ajustar stock
                   </Button>
-                  <Button variant="secondary" onClick={() => openEditModal(item)}>
+                  <Button
+                    variant="secondary"
+                    onClick={() => openEditModal(item)}
+                    disabled={!canUpdate}
+                    title={!canUpdate ? "Sin permiso" : undefined}
+                  >
+                    {!canUpdate && <Lock size={12} className="mr-1" />}
                     Editar
                   </Button>
                 </td>

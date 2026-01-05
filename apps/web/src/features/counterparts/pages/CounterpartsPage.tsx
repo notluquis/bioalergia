@@ -1,10 +1,12 @@
 import { useCreateCounterpart, useFindManyCounterpart, useUpdateCounterpart } from "@finanzas/db/hooks";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
+import { Lock } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
+import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import {
   attachCounterpartRut,
@@ -21,8 +23,12 @@ import { ServicesGrid, ServicesHero, ServicesSurface } from "@/features/services
 import { normalizeRut } from "@/lib/rut";
 
 export default function CounterpartsPage() {
+  const { can } = useAuth();
   const queryClient = useQueryClient();
   const [selectedId, setSelectedId] = useState<number | null>(null);
+
+  const canCreate = can("create", "Counterpart");
+  const canUpdate = can("update", "Counterpart");
   const [error, setError] = useState<string | null>(null);
 
   const [summaryRange, setSummaryRange] = useState<{ from: string; to: string }>(() => ({
@@ -193,7 +199,7 @@ export default function CounterpartsPage() {
       <ServicesHero
         title="Contrapartes"
         description="Gestiona proveedores, prestamistas y clientes con sus cuentas asociadas y movimientos históricos."
-        actions={<Button onClick={() => openFormModal(null)}>+ Nueva contraparte</Button>}
+        actions={canCreate ? <Button onClick={() => openFormModal(null)}>+ Nueva contraparte</Button> : null}
       />
       <ServicesSurface>
         <div className="space-y-4">
@@ -273,9 +279,11 @@ export default function CounterpartsPage() {
               <Button
                 size="sm"
                 variant="ghost"
-                disabled={!detail}
+                disabled={!detail || !canUpdate}
                 onClick={() => detail && openFormModal(detail.counterpart)}
+                title={!canUpdate ? "No tienes permisos para editar" : undefined}
               >
+                {!canUpdate && <Lock className="mr-2 h-3 w-3" />}
                 {detail ? "Editar contraparte" : "Selecciona para editar"}
               </Button>
             </div>

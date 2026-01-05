@@ -246,6 +246,7 @@ export function startBackup() {
   createBackup((p) => {
     jobs[jobId].progress = p.progress;
     jobs[jobId].status = p.step === "done" ? "completed" : "running";
+    jobs[jobId].currentStep = p.message; // Expose granular step to UI
     if (p.message) logs.push({ timestamp: new Date(), message: p.message });
   })
     .then((res) => {
