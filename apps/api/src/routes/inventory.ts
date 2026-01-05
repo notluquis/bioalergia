@@ -19,7 +19,7 @@ import {
   inventoryItemUpdateSchema,
   inventoryMovementSchema,
 } from "../lib/inventory-schemas";
-import { getSessionUser } from "../auth";
+import { getSessionUser, hasPermission } from "../auth";
 
 export const inventoryRoutes = new Hono();
 
@@ -29,17 +29,16 @@ inventoryRoutes.use("*", async (c, next) => {
   if (!user) {
     return c.json({ status: "error", message: "No autorizado" }, 401);
   }
-  // Check for inventory management permissions
-  const hasInventoryPermission = user.roles.some(
-    (r) =>
-      r.role.name === "ADMIN" ||
-      r.role.name === "SUPERADMIN" ||
-      r.role.name === "INVENTORY_MANAGER"
-  );
 
-  // For non-GET requests, enforce permissions
-  if (c.req.method !== "GET" && !hasInventoryPermission) {
-    return c.json({ status: "error", message: "Forbidden" }, 403);
+  // For non-GET requests, check for inventory write permissions
+  if (c.req.method !== "GET") {
+    const canModify =
+      (await hasPermission(user.id, "create", "InventoryItem")) ||
+      (await hasPermission(user.id, "update", "InventoryItem")) ||
+      (await hasPermission(user.id, "delete", "InventoryItem"));
+    if (!canModify) {
+      return c.json({ status: "error", message: "Forbidden" }, 403);
+    }
   }
 
   await next();

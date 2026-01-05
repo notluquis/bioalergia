@@ -13,7 +13,7 @@ import {
   supplyRequestSchema,
   updateSupplyRequestStatusSchema,
 } from "../lib/inventory-schemas";
-import { getSessionUser } from "../auth";
+import { getSessionUser, hasPermission } from "../auth";
 
 export const suppliesRoutes = new Hono();
 
@@ -76,11 +76,9 @@ suppliesRoutes.put("/:id/status", async (c) => {
   const user = await getSessionUser(c);
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
 
-  const hasAdminRole = user.roles.some(
-    (r) => r.role.name === "ADMIN" || r.role.name === "SUPERADMIN"
-  );
-
-  if (!hasAdminRole) {
+  // Check for permission to update supply requests
+  const canUpdate = await hasPermission(user.id, "update", "SupplyRequest");
+  if (!canUpdate) {
     return c.json({ status: "error", message: "Forbidden" }, 403);
   }
   await updateSupplyRequestStatus(id, parsed.data.status);

@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { getSessionUser } from "../auth";
+import { getSessionUser, hasPermission } from "../auth";
 import {
   getCurrentJobs,
   getJobHistory,
@@ -14,20 +14,27 @@ app.get("/", async (c) => {
   const user = await getSessionUser(c);
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
 
-  const hasAdminRole = user.roles.some(
-    (r) => r.role.name === "ADMIN" || r.role.name === "SUPERADMIN"
-  );
-  if (!hasAdminRole) {
+  // Check for "manage Backup" or "read Backup" permission
+  const canAccess =
+    (await hasPermission(user.id, "read", "Backup")) ||
+    (await hasPermission(user.id, "manage", "Backup"));
+  if (!canAccess) {
     return c.json({ status: "error", message: "Forbidden" }, 403);
   }
 
   const jobs = getCurrentJobs();
-  return c.json({ jobs });
+  return c.json({ jobs, backups: [] });
 });
 
 app.post("/", async (c) => {
   const user = await getSessionUser(c);
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+
+  // Check for "create Backup" permission
+  const canCreate = await hasPermission(user.id, "create", "Backup");
+  if (!canCreate) {
+    return c.json({ status: "error", message: "Forbidden" }, 403);
+  }
 
   const job = startBackup();
   return c.json({ message: "Backup started", job });
@@ -37,6 +44,12 @@ app.get("/logs", async (c) => {
   const user = await getSessionUser(c);
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
 
+  // Check for "read Backup" permission
+  const canRead = await hasPermission(user.id, "read", "Backup");
+  if (!canRead) {
+    return c.json({ status: "error", message: "Forbidden" }, 403);
+  }
+
   const logs = getLogs(100);
   return c.json({ logs });
 });
@@ -44,6 +57,12 @@ app.get("/logs", async (c) => {
 app.get("/history", async (c) => {
   const user = await getSessionUser(c);
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+
+  // Check for "read Backup" permission
+  const canRead = await hasPermission(user.id, "read", "Backup");
+  if (!canRead) {
+    return c.json({ status: "error", message: "Forbidden" }, 403);
+  }
 
   const history = getJobHistory();
   return c.json({ history });
@@ -54,6 +73,12 @@ app.get("/progress", async (c) => {
   const user = await getSessionUser(c);
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
 
+  // Check for "read Backup" permission
+  const canRead = await hasPermission(user.id, "read", "Backup");
+  if (!canRead) {
+    return c.json({ status: "error", message: "Forbidden" }, 403);
+  }
+
   return streamSSE(c, async (stream) => {
     // Initial state
     await stream.writeSSE({
@@ -63,9 +88,7 @@ app.get("/progress", async (c) => {
       }),
     });
 
-    // In a real implementation, we'd subscribe to an event emitter here
-    // For now, client polls or we push updates if we had a global emitter
-    // Keeping it simple: minimal keepalive
+    // Keepalive
     while (true) {
       await stream.sleep(5000);
       await stream.writeSSE({

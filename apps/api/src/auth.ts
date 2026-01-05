@@ -81,3 +81,38 @@ export function createAuthContext(user: AuthSession | null) {
     roles: user.roles,
   };
 }
+
+/**
+ * Check if user has a specific permission
+ * Uses existing authz service to get CASL rules from database
+ * @param userId - The user's ID
+ * @param action - The permission action (e.g., "read", "create", "update", "delete", "manage")
+ * @param subject - The permission subject (e.g., "Backup", "Setting", "all")
+ */
+export async function hasPermission(
+  userId: number,
+  action: string,
+  subject: string
+): Promise<boolean> {
+  // Use existing authz service
+  const { getAbilityRulesForUser } = await import("./services/authz");
+
+  const rules = await getAbilityRulesForUser(userId);
+
+  // Check if any rule grants the required permission
+  for (const rule of rules) {
+    // Check for exact match
+    if (
+      rule.action === action &&
+      rule.subject.toLowerCase() === subject.toLowerCase()
+    ) {
+      return true;
+    }
+    // Check for "manage all" which grants everything
+    if (rule.action === "manage" && rule.subject === "all") {
+      return true;
+    }
+  }
+
+  return false;
+}
