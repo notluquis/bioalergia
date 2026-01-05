@@ -137,13 +137,6 @@ if (process.env.NODE_ENV === "production") {
 }
 
 const port = Number(process.env.PORT) || 3000;
-console.log(`🚀 Finanzas API running on http://localhost:${port}`);
-console.log(
-  `📡 Query-as-a-Service: http://localhost:${port}/api/[model]/[operation]`
-);
-console.log(`🔐 Auth routes: http://localhost:${port}/api/auth/*`);
-if (process.env.NODE_ENV === "production") {
-  console.log(`🌐 Frontend: http://localhost:${port}/`);
-}
+console.log(`🚀 Finanzas API starting on port ${port}`);
 
 serve({ fetch: app.fetch, port });
