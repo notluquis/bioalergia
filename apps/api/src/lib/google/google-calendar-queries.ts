@@ -119,22 +119,33 @@ function applyFilters(query: any, filters: CalendarEventFilters) {
   let q = query;
 
   if (filters.from) {
-    const fromDate = new Date(filters.from);
-    q = q.where((eb: any) =>
-      eb.or([
-        eb("start_date", ">=", fromDate),
-        eb("start_date_time", ">=", fromDate),
-      ])
-    );
+    // Validar y formatear a ISO string para Postgres
+    const fromDate = dayjs(filters.from).isValid()
+      ? dayjs(filters.from).toISOString()
+      : null;
+
+    if (fromDate) {
+      q = q.where((eb: any) =>
+        eb.or([
+          eb("start_date", ">=", fromDate),
+          eb("start_date_time", ">=", fromDate),
+        ])
+      );
+    }
   }
   if (filters.to) {
-    const toDate = new Date(filters.to);
-    q = q.where((eb: any) =>
-      eb.or([
-        eb("start_date", "<=", toDate),
-        eb("start_date_time", "<=", toDate),
-      ])
-    );
+    const toDate = dayjs(filters.to).isValid()
+      ? dayjs(filters.to).toISOString()
+      : null;
+
+    if (toDate) {
+      q = q.where((eb: any) =>
+        eb.or([
+          eb("start_date", "<=", toDate),
+          eb("start_date_time", "<=", toDate),
+        ])
+      );
+    }
   }
 
   // Implementation note: The caller should handle joining if needed.
@@ -276,10 +287,18 @@ export async function getCalendarAggregates(
     .leftJoin("calendars as c", "e.calendar_id", "c.id");
 
   let initialQ = dateRangeQuery;
-  if (filters.from)
-    initialQ = initialQ.where("start_date", ">=", new Date(filters.from));
-  if (filters.to)
-    initialQ = initialQ.where("start_date", "<=", new Date(filters.to));
+  if (filters.from && dayjs(filters.from).isValid())
+    initialQ = initialQ.where(
+      "start_date",
+      ">=",
+      dayjs(filters.from).toISOString()
+    );
+  if (filters.to && dayjs(filters.to).isValid())
+    initialQ = initialQ.where(
+      "start_date",
+      "<=",
+      dayjs(filters.to).toISOString()
+    );
 
   const [availCalendars, availEventTypes, availCategories] = await Promise.all([
     initialQ
