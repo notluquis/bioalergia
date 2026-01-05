@@ -7,14 +7,15 @@
   },
   "pnpm": {
     "onlyBuiltDependencies": [
-      "esbuild",
-      "argon2",
-      "sharp",
-      "husky",
+      "@swc/core",
       "@zenstackhq/runtime",
-      "protobufjs",
+      "argon2",
+      "core-js",
+      "esbuild",
+      "husky",
       "lmdb",
-      "@swc/core"
+      "protobufjs",
+      "sharp"
     ]
   },
   "packageManager": "pnpm@10.27.0",
