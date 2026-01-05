@@ -85,4 +85,21 @@ app.delete("/:id", async (c) => {
   return c.json({ status: "ok" });
 });
 
+// POST /:id/schedules - Regenerate service schedules
+// NOTE: ServiceSchedule model does not exist in the database schema.
+// This is a placeholder to prevent 400 errors until the feature is implemented.
+app.post("/:id/schedules", async (c) => {
+  const user = getSessionUser(c);
+  if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+
+  const id = Number(c.req.param("id"));
+  if (isNaN(id)) return c.json({ status: "error", message: "Invalid ID" }, 400);
+
+  // TODO: Implement when ServiceSchedule model is added to schema
+  return c.json(
+    { status: "error", message: "ServiceSchedule feature not yet implemented" },
+    501
+  );
+});
+
 export default app;
