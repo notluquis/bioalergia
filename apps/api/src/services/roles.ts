@@ -105,6 +105,11 @@ export async function syncPermissions() {
     "Dashboard",
     "Backup",
     "BulkData",
+    // New dedicated subjects for specific pages
+    "Balance",
+    "CalendarSetting",
+    "InventorySetting",
+    "Integration",
   ];
 
   const actions = ["create", "read", "update", "delete"];
