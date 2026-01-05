@@ -83,7 +83,7 @@ model User {
   // Access policies
   @@deny('all', auth() == null)
   @@allow('read', true)
-  @@allow('update', auth() == this)
+  @@allow('update', auth().id == id)
   @@allow('all', auth().status == 'ACTIVE')
 
   @@map("users")
@@ -106,7 +106,7 @@ model Passkey {
   user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Access policies
-  @@allow('create,read,delete', auth() == user)
+  @@allow('create,read,delete', auth().id == userId)
   @@allow('read', auth().roles?[role.name == 'ADMIN' || role.name == 'GOD'])
 
   @@index([userId])
