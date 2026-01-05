@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
-import { AlertCircle, ArrowRight, CheckCircle, FileUp, Loader2, Upload } from "lucide-react";
+import { AlertCircle, ArrowRight, CheckCircle, FileUp, Loader2, Lock, Upload } from "lucide-react";
 import Papa from "papaparse";
 import { useCallback, useMemo, useState } from "react";
 
@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import FileInput from "@/components/ui/FileInput";
 import Input from "@/components/ui/Input";
 import { Table, TableBody, TableHeader } from "@/components/ui/Table";
+import { useAuth } from "@/context/AuthContext";
 import { type CsvImportPayload, importCsvData, previewCsvImport } from "@/features/data-import/api";
 import { PAGE_CONTAINER } from "@/lib/styles";
 import { cn } from "@/lib/utils";
@@ -144,7 +145,20 @@ const TABLE_OPTIONS: TableOption[] = [
   },
 ];
 
+// Backend only supports these tables
+const SUPPORTED_TABLES = ["people", "employees", "counterparts", "daily_balances", "transactions"];
+
+// Permission mapping
+const PERMISSION_MAP: Record<string, { action: string; subject: string }> = {
+  people: { action: "create", subject: "Person" },
+  employees: { action: "create", subject: "Employee" },
+  counterparts: { action: "create", subject: "Counterpart" },
+  daily_balances: { action: "create", subject: "Balance" },
+  transactions: { action: "create", subject: "Transaction" },
+};
+
 export default function CSVUploadPage() {
+  const { can } = useAuth();
   const [selectedTable, setSelectedTable] = useState<string>("");
   const [csvData, setCsvData] = useState<Record<string, string>[]>([]);
   const [csvHeaders, setCsvHeaders] = useState<string[]>([]);
@@ -166,7 +180,21 @@ export default function CSVUploadPage() {
 
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
 
-  const currentTable = useMemo(() => TABLE_OPTIONS.find((t) => t.value === selectedTable), [selectedTable]);
+  const allowedTableOptions = useMemo(() => {
+    return TABLE_OPTIONS.filter((t) => {
+      // 1. Must be supported by backend
+      if (!SUPPORTED_TABLES.includes(t.value)) return false;
+      // 2. Must have permission
+      const perm = PERMISSION_MAP[t.value];
+      if (!perm) return false;
+      return can(perm.action, perm.subject);
+    });
+  }, [can]);
+
+  const currentTable = useMemo(
+    () => allowedTableOptions.find((t) => t.value === selectedTable),
+    [selectedTable, allowedTableOptions]
+  );
 
   // Mutations
   const {
@@ -322,246 +350,263 @@ export default function CSVUploadPage() {
 
   return (
     <div className={PAGE_CONTAINER}>
-      {/* Selector de tabla */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileUp className="text-primary h-5 w-5" />
-            1. Seleccionar destino
-          </CardTitle>
-          <CardDescription>Elige la tabla donde deseas importar los datos.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-            <div className="w-full sm:w-1/3">
-              <Input as="select" value={selectedTable} onChange={handleTableChange} className="w-full">
-                <option value="">-- Seleccionar tabla --</option>
-                {TABLE_OPTIONS.map((table) => (
-                  <option key={table.value} value={table.value}>
-                    {table.label}
-                  </option>
-                ))}
-              </Input>
-            </div>
-
-            {currentTable && (
-              <div className="bg-base-200/50 flex-1 rounded-lg p-4">
-                <h3 className="mb-2 text-xs font-bold tracking-wide uppercase opacity-70">Campos requeridos</h3>
-                <div className="flex flex-wrap gap-2">
-                  {currentTable.fields.map((field) => (
-                    <span
-                      key={field.name}
-                      className={cn("badge badge-sm", field.required ? "badge-primary" : "badge-ghost opacity-60")}
-                    >
-                      {field.name}
-                      {field.required && "*"}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
+      {/* Access Denied State */}
+      {allowedTableOptions.length === 0 ? (
+        <Alert variant="warning">
+          <Lock className="h-4 w-4" />
+          <div className="flex flex-col">
+            <span className="font-bold">Acceso restringido</span>
+            <span>No tienes permisos para importar datos en ninguna tabla disponible.</span>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Subida de archivo */}
-      {selectedTable && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">2. Cargar archivo</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <FileInput
-              accept=".csv"
-              onChange={handleFileChange}
-              disabled={parseStatus === "parsing" || isPreviewPending || isImportPending}
-              label="Arrastra un archivo CSV aquí o haz clic para seleccionar"
-            />
-
-            {parseStatus === "parsing" && (
-              <Alert>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span>Procesando archivo...</span>
-              </Alert>
-            )}
-
-            {parseStatus === "error" && (
-              <Alert variant="error">
-                <AlertCircle className="h-4 w-4" />
-                <span>{errorMessage}</span>
-              </Alert>
-            )}
-
-            {(isPreviewError || isImportError) && errorMessage && (
-              <Alert variant="error">
-                <AlertCircle className="h-4 w-4" />
-                <span>{errorMessage}</span>
-              </Alert>
-            )}
-
-            {showSuccessMessage && (
-              <Alert variant="success">
-                <CheckCircle className="h-4 w-4" />
-                <div className="flex flex-col gap-1">
-                  <span className="font-medium">Importación completada</span>
-                  {previewData && (
-                    <span className="text-xs opacity-90">
-                      {previewData.inserted || 0} insertados · {previewData.updated || 0} actualizados ·{" "}
-                      {previewData.skipped || 0} omitidos
-                    </span>
-                  )}
-                </div>
-              </Alert>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Mapeo de columnas */}
-      {csvHeaders.length > 0 && currentTable && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">3. Mapeo de columnas</CardTitle>
-            <CardDescription>
-              Relaciona las columnas de tu CSV con los campos de la base de datos.
-              <br />
-              <span className="text-xs opacity-70">Detectadas {csvData.length} filas.</span>
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <Table
-                columns={[
-                  { key: "dbField", label: "Campo BD" },
-                  { key: "type", label: "Tipo" },
-                  { key: "csvColumn", label: "Columna CSV" },
-                  { key: "preview", label: "Ejemplo (Fila 1)" },
-                ]}
-              >
-                <TableHeader
-                  columns={[
-                    { key: "dbField", label: "Campo BD", width: "25%" },
-                    { key: "type", label: "Tipo", width: "15%" },
-                    { key: "csvColumn", label: "Columna CSV", width: "35%" },
-                    { key: "preview", label: "Ejemplo (Fila 1)", width: "25%" },
-                  ]}
-                />
-                <TableBody columnsCount={4}>
-                  {currentTable.fields.map((field) => (
-                    <tr key={field.name} className="hover:bg-base-200/30">
-                      <td className="pl-6 font-medium">
-                        <div className="flex items-center gap-1.5">
-                          {field.name}
-                          {field.required && (
-                            <span className="text-error text-xs" title="Requerido">
-                              *
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td>
-                        <span className="badge badge-xs badge-ghost font-mono">{field.type}</span>
-                      </td>
-                      <td>
-                        <Input
-                          as="select"
-                          size="sm"
-                          className={cn(
-                            "w-full max-w-xs transition-colors",
-                            field.required && !columnMapping[field.name]
-                              ? "border-error focus:border-error text-error"
-                              : ""
-                          )}
-                          value={columnMapping[field.name] || ""}
-                          onChange={(e) => handleColumnMapChange(field.name, e.target.value)}
-                        >
-                          <option value="">-- Ignorar / Sin mapear --</option>
-                          {csvHeaders.map((header) => (
-                            <option key={`${field.name}-${header}`} value={header}>
-                              {header}
-                            </option>
-                          ))}
-                        </Input>
-                      </td>
-                      <td className="text-base-content/60 max-w-37.5 truncate font-mono text-xs">
-                        {(() => {
-                          const mappedColumn = columnMapping[field.name];
-                          return (mappedColumn && csvData[0]?.[mappedColumn]) || "-";
-                        })()}
-                      </td>
-                    </tr>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Vista previa */}
-      {previewData && !showSuccessMessage && (
-        <Card className="border-primary/20 bg-primary/5">
-          <CardContent className="p-6">
-            <h3 className="mb-4 text-lg font-semibold">Resumen de Importación</h3>
-            <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
-              <div className="bg-base-100 border-base-200 rounded-lg border p-3 shadow-sm">
-                <div className="mb-1 text-xs tracking-wider uppercase opacity-70">Insertar</div>
-                <div className="text-success text-2xl font-bold">{previewData.toInsert || 0}</div>
-              </div>
-              <div className="bg-base-100 border-base-200 rounded-lg border p-3 shadow-sm">
-                <div className="mb-1 text-xs tracking-wider uppercase opacity-70">Actualizar</div>
-                <div className="text-info text-2xl font-bold">{previewData.toUpdate || 0}</div>
-              </div>
-              <div className="bg-base-100 border-base-200 rounded-lg border p-3 shadow-sm">
-                <div className="mb-1 text-xs tracking-wider uppercase opacity-70">Omitir</div>
-                <div className="text-warning text-2xl font-bold">{previewData.toSkip || 0}</div>
-              </div>
-            </div>
-
-            {previewData.errors && previewData.errors.length > 0 && (
-              <Alert variant="warning" className="mb-0">
-                <div className="flex w-full flex-col gap-2">
-                  <div className="flex items-center gap-2 font-medium">
-                    <AlertCircle className="h-4 w-4" />
-                    Errores de validación ({previewData.errors.length})
-                  </div>
-                  <ul className="bg-base-100/50 max-h-32 list-inside list-disc overflow-y-auto rounded p-2 text-xs opacity-90">
-                    {previewData.errors.map((err, i) => (
-                      <li key={i}>{err}</li>
+        </Alert>
+      ) : (
+        <>
+          {/* Selector de tabla */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileUp className="text-primary h-5 w-5" />
+                1. Seleccionar destino
+              </CardTitle>
+              <CardDescription>Elige la tabla donde deseas importar los datos.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+                <div className="w-full sm:w-1/3">
+                  <Input as="select" value={selectedTable} onChange={handleTableChange} className="w-full">
+                    <option value="">-- Seleccionar tabla --</option>
+                    {allowedTableOptions.map((table) => (
+                      <option key={table.value} value={table.value}>
+                        {table.label}
+                      </option>
                     ))}
-                  </ul>
+                  </Input>
                 </div>
-              </Alert>
-            )}
-          </CardContent>
-        </Card>
-      )}
 
-      {/* Acciones */}
-      {csvData.length > 0 && (
-        <div className="bg-base-100/80 border-base-200 sticky bottom-0 z-10 -mx-4 flex justify-end gap-3 border-t p-4 shadow-lg backdrop-blur-md sm:mx-0 sm:rounded-xl sm:border">
-          <Button
-            variant="outline"
-            onClick={handlePreview}
-            disabled={!isValidMapping || isPreviewPending || isImportPending}
-          >
-            {isPreviewPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
-            Visualizar cambios
-          </Button>
+                {currentTable && (
+                  <div className="bg-base-200/50 flex-1 rounded-lg p-4">
+                    <h3 className="mb-2 text-xs font-bold tracking-wide uppercase opacity-70">Campos requeridos</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {currentTable.fields.map((field) => (
+                        <span
+                          key={field.name}
+                          className={cn("badge badge-sm", field.required ? "badge-primary" : "badge-ghost opacity-60")}
+                        >
+                          {field.name}
+                          {field.required && "*"}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
 
-          <Button
-            variant="primary"
-            onClick={handleImport}
-            disabled={!isValidMapping || isPreviewPending || isImportPending}
-          >
-            {isImportPending ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <ArrowRight className="mr-2 h-4 w-4" />
-            )}
-            Confirmar Importación
-          </Button>
-        </div>
+          {/* Subida de archivo */}
+          {selectedTable && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">2. Cargar archivo</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <FileInput
+                  accept=".csv"
+                  onChange={handleFileChange}
+                  disabled={parseStatus === "parsing" || isPreviewPending || isImportPending}
+                  label="Arrastra un archivo CSV aquí o haz clic para seleccionar"
+                />
+
+                {parseStatus === "parsing" && (
+                  <Alert>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>Procesando archivo...</span>
+                  </Alert>
+                )}
+
+                {parseStatus === "error" && (
+                  <Alert variant="error">
+                    <AlertCircle className="h-4 w-4" />
+                    <span>{errorMessage}</span>
+                  </Alert>
+                )}
+
+                {(isPreviewError || isImportError) && errorMessage && (
+                  <Alert variant="error">
+                    <AlertCircle className="h-4 w-4" />
+                    <span>{errorMessage}</span>
+                  </Alert>
+                )}
+
+                {showSuccessMessage && (
+                  <Alert variant="success">
+                    <CheckCircle className="h-4 w-4" />
+                    <div className="flex flex-col gap-1">
+                      <span className="font-medium">Importación completada</span>
+                      {previewData && (
+                        <span className="text-xs opacity-90">
+                          {previewData.inserted || 0} insertados · {previewData.updated || 0} actualizados ·{" "}
+                          {previewData.skipped || 0} omitidos
+                        </span>
+                      )}
+                    </div>
+                  </Alert>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Mapeo de columnas */}
+          {csvHeaders.length > 0 && currentTable && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">3. Mapeo de columnas</CardTitle>
+                <CardDescription>
+                  Relaciona las columnas de tu CSV con los campos de la base de datos.
+                  <br />
+                  <span className="text-xs opacity-70">Detectadas {csvData.length} filas.</span>
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <Table
+                    columns={[
+                      { key: "dbField", label: "Campo BD" },
+                      { key: "type", label: "Tipo" },
+                      { key: "csvColumn", label: "Columna CSV" },
+                      { key: "preview", label: "Ejemplo (Fila 1)" },
+                    ]}
+                  >
+                    <TableHeader
+                      columns={[
+                        { key: "dbField", label: "Campo BD", width: "25%" },
+                        { key: "type", label: "Tipo", width: "15%" },
+                        { key: "csvColumn", label: "Columna CSV", width: "35%" },
+                        { key: "preview", label: "Ejemplo (Fila 1)", width: "25%" },
+                      ]}
+                    />
+                    <TableBody columnsCount={4}>
+                      {currentTable.fields.map((field) => (
+                        <tr key={field.name} className="hover:bg-base-200/30">
+                          <td className="pl-6 font-medium">
+                            <div className="flex items-center gap-1.5">
+                              {field.name}
+                              {field.required && (
+                                <span className="text-error text-xs" title="Requerido">
+                                  *
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td>
+                            <span className="badge badge-xs badge-ghost font-mono">{field.type}</span>
+                          </td>
+                          <td>
+                            <Input
+                              as="select"
+                              size="sm"
+                              className={cn(
+                                "w-full max-w-xs transition-colors",
+                                field.required && !columnMapping[field.name]
+                                  ? "border-error focus:border-error text-error"
+                                  : ""
+                              )}
+                              value={columnMapping[field.name] || ""}
+                              onChange={(e) => handleColumnMapChange(field.name, e.target.value)}
+                            >
+                              <option value="">-- Ignorar / Sin mapear --</option>
+                              {csvHeaders.map((header) => (
+                                <option key={`${field.name}-${header}`} value={header}>
+                                  {header}
+                                </option>
+                              ))}
+                            </Input>
+                          </td>
+                          <td className="text-base-content/60 max-w-37.5 truncate font-mono text-xs">
+                            {(() => {
+                              const mappedColumn = columnMapping[field.name];
+                              return (mappedColumn && csvData[0]?.[mappedColumn]) || "-";
+                            })()}
+                          </td>
+                        </tr>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Vista previa */}
+          {previewData && !showSuccessMessage && (
+            <Card className="border-primary/20 bg-primary/5">
+              <CardContent className="p-6">
+                <h3 className="mb-4 text-lg font-semibold">Resumen de Importación</h3>
+                <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
+                  <div className="bg-base-100 border-base-200 rounded-lg border p-3 shadow-sm">
+                    <div className="mb-1 text-xs tracking-wider uppercase opacity-70">Insertar</div>
+                    <div className="text-success text-2xl font-bold">{previewData.toInsert || 0}</div>
+                  </div>
+                  <div className="bg-base-100 border-base-200 rounded-lg border p-3 shadow-sm">
+                    <div className="mb-1 text-xs tracking-wider uppercase opacity-70">Actualizar</div>
+                    <div className="text-info text-2xl font-bold">{previewData.toUpdate || 0}</div>
+                  </div>
+                  <div className="bg-base-100 border-base-200 rounded-lg border p-3 shadow-sm">
+                    <div className="mb-1 text-xs tracking-wider uppercase opacity-70">Omitir</div>
+                    <div className="text-warning text-2xl font-bold">{previewData.toSkip || 0}</div>
+                  </div>
+                </div>
+
+                {previewData.errors && previewData.errors.length > 0 && (
+                  <Alert variant="warning" className="mb-0">
+                    <div className="flex w-full flex-col gap-2">
+                      <div className="flex items-center gap-2 font-medium">
+                        <AlertCircle className="h-4 w-4" />
+                        Errores de validación ({previewData.errors.length})
+                      </div>
+                      <ul className="bg-base-100/50 max-h-32 list-inside list-disc overflow-y-auto rounded p-2 text-xs opacity-90">
+                        {previewData.errors.map((err, i) => (
+                          <li key={i}>{err}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </Alert>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Acciones */}
+          {csvData.length > 0 && (
+            <div className="bg-base-100/80 border-base-200 sticky bottom-0 z-10 -mx-4 flex justify-end gap-3 border-t p-4 shadow-lg backdrop-blur-md sm:mx-0 sm:rounded-xl sm:border">
+              <Button
+                variant="outline"
+                onClick={handlePreview}
+                disabled={!isValidMapping || isPreviewPending || isImportPending}
+              >
+                {isPreviewPending ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Upload className="mr-2 h-4 w-4" />
+                )}
+                Visualizar cambios
+              </Button>
+
+              <Button
+                variant="primary"
+                onClick={handleImport}
+                disabled={!isValidMapping || isPreviewPending || isImportPending}
+              >
+                {isImportPending ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <ArrowRight className="mr-2 h-4 w-4" />
+                )}
+                Confirmar Importación
+              </Button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

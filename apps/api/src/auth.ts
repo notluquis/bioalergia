@@ -100,10 +100,10 @@ export async function hasPermission(
   const rules = await getAbilityRulesForUser(userId);
 
   // Debug: Log what rules exist for this user
-  console.log(`[hasPermission] User ${userId} checking ${action}:${subject}`);
-  console.log(
-    `[hasPermission] User has ${rules.length} rules: ${JSON.stringify(rules.map((r) => `${r.action}:${r.subject}`))}`
-  );
+  // console.log(`[hasPermission] User ${userId} checking ${action}:${subject}`);
+  // console.log(
+  //   `[hasPermission] User has ${rules.length} rules: ${JSON.stringify(rules.map((r) => `${r.action}:${r.subject}`))}`
+  // );
 
   // Check if any rule grants the required permission
   for (const rule of rules) {
@@ -112,11 +112,11 @@ export async function hasPermission(
       rule.action === action &&
       rule.subject.toLowerCase() === subject.toLowerCase()
     ) {
-      console.log(`[hasPermission] MATCH: ${rule.action}:${rule.subject}`);
+      // console.log(`[hasPermission] MATCH: ${rule.action}:${rule.subject}`);
       return true;
     }
   }
 
-  console.log(`[hasPermission] No match found for ${action}:${subject}`);
+  // console.log(`[hasPermission] No match found for ${action}:${subject}`);
   return false;
 }
