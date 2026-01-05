@@ -436,7 +436,7 @@ export async function getCalendarEventsByDate(
 
   type DateOnlyRow = { date: string | Date };
   const targetDates = (dates as unknown as DateOnlyRow[]).map(
-    (d: DateOnlyRow) => String(d.date)
+    (d: DateOnlyRow) => dayjs(d.date).format("YYYY-MM-DD")
   );
 
   if (targetDates.length === 0) {
