@@ -201,6 +201,7 @@ authRoutes.get("/me/session", async (c) => {
       include: {
         person: true,
         roles: { include: { role: true } },
+        passkeys: { select: { id: true } },
       },
     });
 
@@ -219,7 +220,7 @@ authRoutes.get("/me/session", async (c) => {
         status: user.status,
         mfaEnabled: user.mfaEnabled,
         mfaEnforced: user.mfaEnforced,
-        hasPasskey: !!user.passkeyCredentialID,
+        hasPasskey: user.passkeys.length > 0,
       },
     });
   } catch {
