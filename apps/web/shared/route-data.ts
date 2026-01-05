@@ -147,7 +147,7 @@ export const ROUTE_DATA: RouteData[] = [
         path: "balances",
         componentPath: "features/finance/balances/pages/DailyBalancesPage",
         nav: { label: "Saldos Diarios", iconKey: "PiggyBank", section: "Finanzas", order: 2 },
-        permission: { action: "read", subject: "Transaction" },
+        permission: { action: "read", subject: "Balance" },
         title: "Saldos diarios",
       },
       {
@@ -334,14 +334,14 @@ export const ROUTE_DATA: RouteData[] = [
         path: "calendar",
         componentPath: "pages/settings/CalendarSettingsPage",
         nav: { label: "Cfg. Calendario", iconKey: "Calendar", section: "Sistema", order: 4 },
-        permission: { action: "update", subject: "CalendarEvent" },
+        permission: { action: "update", subject: "CalendarSetting" },
         title: "Accesos y conexiones",
       },
       {
         path: "inventario",
         componentPath: "pages/settings/InventorySettingsPage",
         nav: { label: "Cfg. Inventario", iconKey: "PackagePlus", section: "Sistema", order: 5 },
-        permission: { action: "update", subject: "InventoryItem" },
+        permission: { action: "update", subject: "InventorySetting" },
         title: "Parámetros de inventario",
       },
       {
@@ -362,7 +362,7 @@ export const ROUTE_DATA: RouteData[] = [
         path: "mercadopago",
         componentPath: "pages/settings/MercadoPagoSettingsPage",
         nav: { label: "Mercado Pago", iconKey: "CreditCard", section: "Sistema", order: 6 },
-        permission: { action: "update", subject: "Setting" },
+        permission: { action: "read", subject: "Integration" },
         title: "Reportes Mercado Pago",
       },
       {
