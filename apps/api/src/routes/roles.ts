@@ -21,7 +21,7 @@ app.get("/", async (c) => {
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
 
   const items = await listRoles();
-  return c.json(items);
+  return c.json({ status: "ok", roles: items });
 });
 
 app.get("/permissions", async (c) => {
@@ -29,7 +29,7 @@ app.get("/permissions", async (c) => {
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
 
   const items = await listPermissions();
-  return c.json(items);
+  return c.json({ status: "ok", permissions: items });
 });
 
 app.post("/", async (c) => {
