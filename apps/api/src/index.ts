@@ -12,6 +12,7 @@ import { userRoutes } from "./routes/users";
 import { mercadopagoRoutes } from "./routes/mercadopago";
 import backupRoutes from "./routes/backups";
 import notificationRoutes from "./routes/notifications";
+import auditRoutes from "./routes/audit";
 import { csvUploadRoutes } from "./routes/csv-upload";
 import { calendarRoutes } from "./routes/calendar";
 import { shareTargetRoutes } from "./routes/share-target";
@@ -61,6 +62,9 @@ app.route("/api/mercadopago", mercadopagoRoutes);
 
 // Backup routes (backup, restore, SSE progress)
 app.route("/api/backups", backupRoutes);
+
+// Audit routes (incremental changes)
+app.route("/api/audit", auditRoutes);
 
 // Notification routes (push subscriptions)
 app.route("/api/notifications", notificationRoutes);

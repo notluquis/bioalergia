@@ -217,13 +217,25 @@ app.get("/progress", async (c) => {
       }),
     });
 
-    // Keepalive
+    // Keepalive and Progress Loop
     while (true) {
-      await stream.sleep(5000);
-      await stream.writeSSE({
-        event: "ping",
-        data: "keepalive",
-      });
+      const activeJobs = getCurrentJobs();
+
+      if (activeJobs.length > 0) {
+        for (const job of activeJobs) {
+          await stream.writeSSE({
+            data: JSON.stringify({
+              type: job.type, // 'backup' or 'restore'
+              job,
+            }),
+          });
+        }
+      }
+
+      await stream.sleep(1000); // Poll every second for smooth UI
+
+      // Optional keepalive if needed by load balancers, but data events serve same purpose
+      // await stream.writeSSE({ event: "ping", data: "keepalive" });
     }
   });
 });
