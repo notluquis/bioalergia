@@ -11,6 +11,8 @@ import { createGunzip, createGzip } from "zlib";
 
 import { db, schema } from "@finanzas/db";
 
+import { uploadToDrive } from "./drive";
+
 export interface BackupResult {
   filename: string;
   path: string;
@@ -286,18 +288,48 @@ export function startBackup() {
   // Run async
   createBackup((p) => {
     jobs[jobId].progress = p.progress;
-    jobs[jobId].status = p.step === "done" ? "completed" : "running";
+    jobs[jobId].status = p.step === "done" ? "uploading" : "running"; // Don't mark as done until upload finishes
     jobs[jobId].currentStep = p.message; // Expose granular step to UI
     if (p.message) logs.push({ timestamp: new Date(), message: p.message });
   })
-    .then((res) => {
-      jobs[jobId].status = "completed";
-      jobs[jobId].progress = 100;
-      jobs[jobId].currentStep = "Backup completed";
-      jobs[jobId].result = res;
-      history.push(jobs[jobId]);
+    .then(async (res) => {
+      // Upload to Drive
+      jobs[jobId].currentStep = "Uploading to Google Drive...";
+      jobs[jobId].status = "uploading";
 
-      // Delay cleanup to allow SSE to broadcast the completed state
+      try {
+        const driveFile = await uploadToDrive(res.path, res.filename);
+
+        // Add Drive info to result
+        const finalResult = {
+          ...res,
+          driveFileId: driveFile.fileId,
+          webViewLink: driveFile.webViewLink,
+        };
+
+        jobs[jobId].status = "completed";
+        jobs[jobId].progress = 100;
+        jobs[jobId].currentStep = "Backup completed and uploaded";
+        jobs[jobId].result = finalResult;
+        history.push(jobs[jobId]);
+
+        // Clean up local compressed file after successful upload
+        try {
+          unlinkSync(res.path);
+        } catch (e) {
+          console.warn(`Failed to cleanup local backup file: ${res.path}`, e);
+        }
+      } catch (uploadError) {
+        console.error("Upload failed", uploadError);
+        jobs[jobId].status = "failed";
+        jobs[jobId].error =
+          `Upload failed: ${uploadError instanceof Error ? uploadError.message : "Unknown error"}`;
+
+        // Even if upload fails, we might want to keep the local file or log it?
+        // For now, treat as failure.
+      }
+
+      // Delay cleanup to allow SSE to broadcast the state
       setTimeout(() => {
         delete jobs[jobId];
       }, 5000);
