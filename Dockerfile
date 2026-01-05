@@ -1,10 +1,7 @@
 # ============================================================================
-# STAGE 1: Build - Node.js 25 (Debian Slim)
+# STAGE 1: Build - Node.js Current (Debian Slim)
 # ============================================================================
-FROM node:25-slim AS build
-
-# Enable pnpm via corepack (Node.js 25+ best practice, no npm install needed)
-RUN corepack enable && corepack prepare pnpm@10.27.0 --activate
+FROM node:current-slim AS build
 
 # Build-time system dependencies (for argon2 and other native modules)
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -12,25 +9,28 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
     && rm -rf /var/lib/apt/lists/*
 
+# Install pnpm (corepack was removed from Node.js 25+)
+RUN npm install -g pnpm@10.27.0
+
 WORKDIR /app
 
-# Environment: CI mode but NOT production (need devDeps for tsc/zenstack)
+# Environment: CI mode (NOT production - need devDeps for tsc/zenstack)
 ENV CI=true
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 
 # 1. Lockfile & manifests first (optimal layer caching)
-COPY pnpm-lock.yaml ./
-COPY package.json pnpm-workspace.yaml ./
+COPY pnpm-lock.yaml package.json pnpm-workspace.yaml ./
 COPY apps/api/package.json ./apps/api/
 COPY packages/db/package.json ./packages/db/
 
-# 2. Fetch dependencies into store (cacheable, no install)
-RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
+# 2. Fetch dependencies into store (cacheable, no install yet)
+# Note: Railway requires id=s/<service-id>-<path> format for persistent cache
+RUN --mount=type=cache,id=s/cc493466-c691-4384-8199-99f757a14014-/pnpm/store,target=/pnpm/store \
     pnpm fetch
 
 # 3. Install from cached store
-RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
+RUN --mount=type=cache,id=s/cc493466-c691-4384-8199-99f757a14014-/pnpm/store,target=/pnpm/store \
     pnpm install --offline --frozen-lockfile
 
 # 4. Copy source code
@@ -42,7 +42,7 @@ RUN pnpm --filter @finanzas/db build && \
 
 # 6. Deploy: Extract only production deps for @finanzas/api
 # pnpm deploy handles workspace deps (@finanzas/db) automatically
-RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
+RUN --mount=type=cache,id=s/cc493466-c691-4384-8199-99f757a14014-/pnpm/store,target=/pnpm/store \
     pnpm deploy --filter=@finanzas/api --prod /app/deploy
 
 # 7. Copy compiled dist (pnpm deploy copies source, not build artifacts)
@@ -66,7 +66,7 @@ COPY --from=build /app/deploy ./
 ENV NODE_ENV=production
 ENV PORT=3000
 
-# Node.js 25 performance optimizations
+# Node.js performance optimizations
 ENV NODE_COMPILE_CACHE=/app/.cache
 ENV NODE_OPTIONS="--enable-source-maps"
 
