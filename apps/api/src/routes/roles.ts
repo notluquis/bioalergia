@@ -6,6 +6,7 @@ import {
   deleteRole,
   listPermissions,
   listRoles,
+  syncPermissions,
   updateRole,
 } from "../services/roles";
 import {
@@ -107,6 +108,19 @@ app.post("/:id/permissions", async (c) => {
 
   await assignPermissionsToRole(id, parsed.data.permissionIds);
   return c.json({ status: "ok" });
+});
+
+// Sync permissions - generates CRUD permissions for all subjects
+app.post("/permissions/sync", async (c) => {
+  const user = getSessionUser(c);
+  if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+
+  try {
+    const result = await syncPermissions();
+    return c.json({ status: "ok", ...result });
+  } catch (e: any) {
+    return c.json({ status: "error", message: e.message }, 500);
+  }
 });
 
 export default app;

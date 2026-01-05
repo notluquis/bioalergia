@@ -27,12 +27,12 @@ export async function fetchRoles() {
 }
 
 export async function fetchPermissions() {
-  const res = await apiClient.get<{ status: string; permissions: Permission[] }>("/api/permissions");
+  const res = await apiClient.get<{ status: string; permissions: Permission[] }>("/api/roles/permissions");
   return res.permissions;
 }
 
 export async function syncPermissions() {
-  return apiClient.post("/api/permissions/sync", {});
+  return apiClient.post("/api/roles/permissions/sync", {});
 }
 
 interface UpdateRolePermissionsParams {
