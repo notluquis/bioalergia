@@ -16,21 +16,14 @@ app.get("/", async (c) => {
 
   // Check for "read Backup" permission
   const canAccess = await hasPermission(user.id, "read", "Backup");
-
-  // Debug: Log permission check result
-  console.log(
-    `[Backup] User ${user.id} (${user.email}) - read Backup permission: ${canAccess}`
-  );
-  console.log(
-    `[Backup] User roles: ${JSON.stringify(user.roles.map((r) => r.role.name))}`
-  );
-
   if (!canAccess) {
-    // Log more details for debugging
-    console.log(
-      `[Backup] Permission denied for user ${user.id}. Run syncPermissions and assign "read Backup" to their role.`
+    return c.json(
+      {
+        status: "error",
+        message: "Forbidden - missing 'read Backup' permission",
+      },
+      403
     );
-    return c.json({ status: "error", message: "Forbidden" }, 403);
   }
 
   const jobs = getCurrentJobs();
@@ -44,7 +37,13 @@ app.post("/", async (c) => {
   // Check for "create Backup" permission
   const canCreate = await hasPermission(user.id, "create", "Backup");
   if (!canCreate) {
-    return c.json({ status: "error", message: "Forbidden" }, 403);
+    return c.json(
+      {
+        status: "error",
+        message: "Forbidden - missing 'create Backup' permission",
+      },
+      403
+    );
   }
 
   const job = startBackup();
@@ -55,9 +54,8 @@ app.get("/logs", async (c) => {
   const user = await getSessionUser(c);
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
 
-  // Check for "read Backup" permission
-  const canRead = await hasPermission(user.id, "read", "Backup");
-  if (!canRead) {
+  const canAccess = await hasPermission(user.id, "read", "Backup");
+  if (!canAccess) {
     return c.json({ status: "error", message: "Forbidden" }, 403);
   }
 
@@ -69,9 +67,8 @@ app.get("/history", async (c) => {
   const user = await getSessionUser(c);
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
 
-  // Check for "read Backup" permission
-  const canRead = await hasPermission(user.id, "read", "Backup");
-  if (!canRead) {
+  const canAccess = await hasPermission(user.id, "read", "Backup");
+  if (!canAccess) {
     return c.json({ status: "error", message: "Forbidden" }, 403);
   }
 
@@ -84,14 +81,12 @@ app.get("/progress", async (c) => {
   const user = await getSessionUser(c);
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
 
-  // Check for "read Backup" permission
-  const canRead = await hasPermission(user.id, "read", "Backup");
-  if (!canRead) {
+  const canAccess = await hasPermission(user.id, "read", "Backup");
+  if (!canAccess) {
     return c.json({ status: "error", message: "Forbidden" }, 403);
   }
 
   return streamSSE(c, async (stream) => {
-    // Initial state
     await stream.writeSSE({
       data: JSON.stringify({
         type: "init",
@@ -99,7 +94,6 @@ app.get("/progress", async (c) => {
       }),
     });
 
-    // Keepalive
     while (true) {
       await stream.sleep(5000);
       await stream.writeSSE({
