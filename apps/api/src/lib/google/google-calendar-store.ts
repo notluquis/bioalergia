@@ -35,7 +35,7 @@ async function getCalendarInternalId(googleId: string): Promise<number | null> {
 }
 
 export async function upsertGoogleCalendarEvents(
-  events: CalendarEventRecord[],
+  events: CalendarEventRecord[]
 ) {
   if (events.length === 0)
     return {
@@ -52,112 +52,128 @@ export async function upsertGoogleCalendarEvents(
   const updatedSummaries: (string | { summary: string; changes: string[] })[] =
     [];
 
-  for (const event of events) {
-    // Convertir googleId a ID interno de la BD
-    const calendarInternalId = await getCalendarInternalId(event.calendarId);
-    if (!calendarInternalId) {
-      console.warn(
-        `Skipping event ${event.eventId}: Could not resolve calendar ${event.calendarId}`,
-      );
-      skipped++;
-      continue;
-    }
+  // 1. Pre-resolve all calendars
+  const distinctCalendarIds = Array.from(
+    new Set(events.map((e) => e.calendarId))
+  );
 
-    // Check if event already exists to distinguish insert vs update
-    const existing = await db.event.findUnique({
-      where: {
-        calendarId_externalEventId: {
+  // Ensure all calendars exist and cache their IDs
+  for (const googleId of distinctCalendarIds) {
+    if (!calendarIdCache.has(googleId)) {
+      await getCalendarInternalId(googleId);
+    }
+  }
+
+  // 2. Process in batches to avoid overwhelming the DB
+  const BATCH_SIZE = 50;
+  for (let i = 0; i < events.length; i += BATCH_SIZE) {
+    const batch = events.slice(i, i + BATCH_SIZE);
+
+    // Process batch in parallel
+    await Promise.all(
+      batch.map(async (event) => {
+        const calendarInternalId = calendarIdCache.get(event.calendarId);
+
+        if (!calendarInternalId) {
+          console.warn(
+            `Skipping event ${event.eventId}: Could not resolve calendar ${event.calendarId}`
+          );
+          skipped++;
+          return;
+        }
+
+        const data = {
           calendarId: calendarInternalId,
           externalEventId: event.eventId,
-        },
-      },
-      select: {
-        id: true,
-        summary: true,
-        description: true,
-        location: true,
-        eventStatus: true,
-        startDateTime: true,
-        startDate: true,
-        endDateTime: true,
-        endDate: true,
-        transparency: true,
-        visibility: true,
-      },
-    });
-
-    const data = {
-      calendarId: calendarInternalId,
-      externalEventId: event.eventId,
-      eventStatus: event.status,
-      eventType: event.eventType,
-      summary: event.summary,
-      description: event.description,
-      startDate: event.start?.date ? new Date(event.start.date) : null,
-      startDateTime: event.start?.dateTime
-        ? new Date(event.start.dateTime)
-        : null,
-      startTimeZone: event.start?.timeZone,
-      endDate: event.end?.date ? new Date(event.end.date) : null,
-      endDateTime: event.end?.dateTime ? new Date(event.end.dateTime) : null,
-      endTimeZone: event.end?.timeZone,
-      eventCreatedAt: event.created ? new Date(event.created) : null,
-      eventUpdatedAt: event.updated ? new Date(event.updated) : null,
-      colorId: event.colorId,
-      location: event.location,
-      transparency: event.transparency,
-      visibility: event.visibility,
-      hangoutLink: event.hangoutLink,
-      category: event.category,
-      amountExpected: event.amountExpected,
-      amountPaid: event.amountPaid,
-      attended: event.attended,
-      dosage: event.dosage,
-      treatmentStage: event.treatmentStage,
-      lastSyncedAt: new Date(),
-    };
-
-    try {
-      await db.event.upsert({
-        where: {
-          calendarId_externalEventId: {
-            calendarId: calendarInternalId,
-            externalEventId: event.eventId,
-          },
-        },
-        update: data,
-        create: data,
-      });
-
-      // Build summary string for tracking
-      const summaryText = event.summary?.slice(0, 50) || "(sin título)";
-
-      if (existing) {
-        updated++;
-        if (updatedSummaries.length < 20) {
-          const changes = computeEventDiff(existing, data);
-
-          // Always push object structure for consistency in new logs
-          // If no visible changes, changes array will be empty
-          updatedSummaries.push({ summary: summaryText, changes });
-        }
-      } else {
-        inserted++;
-        if (insertedSummaries.length < 20) {
-          insertedSummaries.push(summaryText);
-        }
-      }
-    } catch (error) {
-      console.error(
-        `Error upserting event ${event.eventId} (calendar: ${event.calendarId}, summary: "${event.summary?.slice(0, 50)}"):`,
-        {
+          eventStatus: event.status,
+          eventType: event.eventType,
+          summary: event.summary,
+          description: event.description,
+          startDate: event.start?.date ? new Date(event.start.date) : null,
+          startDateTime: event.start?.dateTime
+            ? new Date(event.start.dateTime)
+            : null,
+          startTimeZone: event.start?.timeZone,
+          endDate: event.end?.date ? new Date(event.end.date) : null,
+          endDateTime: event.end?.dateTime
+            ? new Date(event.end.dateTime)
+            : null,
+          endTimeZone: event.end?.timeZone,
+          eventCreatedAt: event.created ? new Date(event.created) : null,
+          eventUpdatedAt: event.updated ? new Date(event.updated) : null,
+          colorId: event.colorId,
+          location: event.location,
+          transparency: event.transparency,
+          visibility: event.visibility,
+          hangoutLink: event.hangoutLink,
+          category: event.category,
           amountExpected: event.amountExpected,
           amountPaid: event.amountPaid,
-          error: error instanceof Error ? error.message : String(error),
-        },
-      );
-      skipped++;
-    }
+          attended: event.attended,
+          dosage: event.dosage,
+          treatmentStage: event.treatmentStage,
+          lastSyncedAt: new Date(),
+        };
+
+        try {
+          // Check for existence first to compute diffs (optional but good for logs)
+          const existing = await db.event.findUnique({
+            where: {
+              calendarId_externalEventId: {
+                calendarId: calendarInternalId,
+                externalEventId: event.eventId,
+              },
+            },
+            select: {
+              id: true,
+              summary: true,
+              description: true,
+              location: true,
+              eventStatus: true,
+              startDateTime: true,
+              startDate: true,
+              endDateTime: true,
+              endDate: true,
+              transparency: true,
+              visibility: true,
+            },
+          });
+
+          await db.event.upsert({
+            where: {
+              calendarId_externalEventId: {
+                calendarId: calendarInternalId,
+                externalEventId: event.eventId,
+              },
+            },
+            update: data,
+            create: data,
+          });
+
+          const summaryText = event.summary?.slice(0, 50) || "(sin título)";
+
+          if (existing) {
+            updated++;
+            // Only log detailed changes for the first 20 to save memory/logs
+            if (updatedSummaries.length < 20) {
+              const changes = computeEventDiff(existing, data);
+              updatedSummaries.push({ summary: summaryText, changes });
+            }
+          } else {
+            inserted++;
+            if (insertedSummaries.length < 20) {
+              insertedSummaries.push(summaryText);
+            }
+          }
+        } catch (error) {
+          console.error(
+            `Error upserting event ${event.eventId}:`,
+            error instanceof Error ? error.message : String(error)
+          );
+          skipped++;
+        }
+      })
+    );
   }
 
   return {
@@ -172,7 +188,7 @@ export async function upsertGoogleCalendarEvents(
 }
 
 export async function removeGoogleCalendarEvents(
-  events: { calendarId: string; eventId: string }[],
+  events: { calendarId: string; eventId: string }[]
 ) {
   if (events.length === 0) return;
 
@@ -180,7 +196,7 @@ export async function removeGoogleCalendarEvents(
     const calendarInternalId = await getCalendarInternalId(event.calendarId);
     if (!calendarInternalId) {
       console.warn(
-        `Cannot delete event ${event.eventId}: Could not resolve calendar ${event.calendarId}`,
+        `Cannot delete event ${event.eventId}: Could not resolve calendar ${event.calendarId}`
       );
       continue;
     }
@@ -212,7 +228,7 @@ interface DiffableEvent {
 
 function computeEventDiff(
   existing: DiffableEvent,
-  incoming: DiffableEvent,
+  incoming: DiffableEvent
 ): string[] {
   const changes: string[] = [];
 
