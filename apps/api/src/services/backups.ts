@@ -163,17 +163,29 @@ export async function createBackup(
 
     writeFileSync(jsonPath, jsonContent, "utf-8");
 
+    const jsonStats = statSync(jsonPath);
+    console.log(
+      `[Backup] JSON file generated at ${jsonPath}, size: ${jsonStats.size} bytes`
+    );
+
     onProgress?.({
       step: "compressing",
       progress: 75,
-      message: "Compressing...",
+      message: `Compressing (${(jsonStats.size / 1024 / 1024).toFixed(2)} MB)...`,
     });
 
-    await pipeline(
-      createReadStream(jsonPath),
-      createGzip({ level: 6 }),
-      createWriteStream(filepath)
-    );
+    try {
+      await pipeline(
+        createReadStream(jsonPath),
+        createGzip({ level: 6 }),
+        createWriteStream(filepath)
+      );
+    } catch (pipelineError) {
+      console.error("[Backup] Compression pipeline failed:", pipelineError);
+      throw new Error(`Compression failed: ${pipelineError}`);
+    }
+
+    console.log(`[Backup] Compression completed: ${filepath}`);
 
     unlinkSync(jsonPath);
 

@@ -2,7 +2,7 @@ import { useCreateCounterpart, useFindManyCounterpart, useUpdateCounterpart } fr
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { Lock } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { useState } from "react";
 
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
@@ -41,15 +41,15 @@ export default function CounterpartsPage() {
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [formCounterpart, setFormCounterpart] = useState<Counterpart | null>(null);
 
-  const openFormModal = useCallback((target: Counterpart | null = null) => {
+  const openFormModal = (target: Counterpart | null = null) => {
     setFormCounterpart(target);
     setIsFormModalOpen(true);
-  }, []);
+  };
 
-  const closeFormModal = useCallback(() => {
+  const closeFormModal = () => {
     setIsFormModalOpen(false);
     setFormCounterpart(null);
-  }, []);
+  };
 
   // ZenStack hooks for counterparts
   const {
@@ -61,9 +61,7 @@ export default function CounterpartsPage() {
   });
 
   // Wrap counterparts in useMemo for stable reference
-  const counterparts = useMemo(() => {
-    return (counterpartsData as Counterpart[]) ?? [];
-  }, [counterpartsData]);
+  const counterparts = (counterpartsData as Counterpart[]) ?? [];
 
   // Detail query for selected counterpart with accounts (using original API for complete data)
   const {
@@ -151,13 +149,13 @@ export default function CounterpartsPage() {
     }
   }
 
-  const handleSelectCounterpart = useCallback((id: number | null) => {
+  const handleSelectCounterpart = (id: number | null) => {
     setSelectedId(id);
-  }, []);
+  };
 
-  const handleSummaryRangeChange = useCallback((update: Partial<{ from: string; to: string }>) => {
+  const handleSummaryRangeChange = (update: Partial<{ from: string; to: string }>) => {
     setSummaryRange((prev) => ({ ...prev, ...update }));
-  }, []);
+  };
 
   const PERSON_FILTERS: Array<{ label: string; value: CounterpartPersonType | "ALL" }> = [
     { label: "Todas las personas", value: "ALL" },
@@ -173,7 +171,7 @@ export default function CounterpartsPage() {
     { label: "Ocasionales", value: "OCCASIONAL" },
   ];
 
-  const deduplicatedCounterparts = useMemo(() => {
+  const deduplicatedCounterparts = (() => {
     const map = new Map<string, Counterpart>();
     for (const item of counterparts) {
       const rutKey = item.rut ? normalizeRut(item.rut) : null;
@@ -184,15 +182,13 @@ export default function CounterpartsPage() {
       }
     }
     return Array.from(map.values());
-  }, [counterparts]);
+  })();
 
-  const visibleCounterparts = useMemo(() => {
-    return deduplicatedCounterparts.filter((item) => {
-      const matchesPersonType = personTypeFilter === "ALL" || item.personType === personTypeFilter;
-      const matchesCategory = categoryFilter === "ALL" || item.category === categoryFilter;
-      return matchesPersonType && matchesCategory;
-    });
-  }, [deduplicatedCounterparts, personTypeFilter, categoryFilter]);
+  const visibleCounterparts = deduplicatedCounterparts.filter((item) => {
+    const matchesPersonType = personTypeFilter === "ALL" || item.personType === personTypeFilter;
+    const matchesCategory = categoryFilter === "ALL" || item.category === categoryFilter;
+    return matchesPersonType && matchesCategory;
+  });
 
   return (
     <section className="space-y-8">
