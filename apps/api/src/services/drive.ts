@@ -188,6 +188,8 @@ export async function getBackupInfo(
 export async function getBackupTables(fileId: string): Promise<string[]> {
   try {
     const drive = await getDriveClient();
+    const { createGunzip } = await import("zlib");
+    const streamModule = await import("stream");
 
     // Get file as stream and read just enough to get the tables list
     const response = await drive.files.get(
@@ -195,29 +197,59 @@ export async function getBackupTables(fileId: string): Promise<string[]> {
       { responseType: "stream" }
     );
 
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       const chunks: Buffer[] = [];
       let bytesRead = 0;
       const maxBytes = 50 * 1024; // Read max 50KB to find tables
+      let stopped = false;
 
-      const stream = response.data as NodeJS.ReadableStream;
+      // Cast to Node.js Readable stream using the imported module type
+      const dataStream = response.data as InstanceType<
+        typeof streamModule.Readable
+      >;
 
-      stream.on("data", (chunk: Buffer) => {
+      const onData = (chunk: Buffer) => {
+        if (stopped) return;
         if (bytesRead < maxBytes) {
           chunks.push(chunk);
           bytesRead += chunk.length;
         }
-        if (bytesRead >= maxBytes) {
-          stream.destroy();
+        if (bytesRead >= maxBytes && !stopped) {
+          stopped = true;
+          cleanup();
+          processChunks();
         }
-      });
+      };
 
-      stream.on("end", () => {
+      const onEnd = () => {
+        if (!stopped) {
+          cleanup();
+          processChunks();
+        }
+      };
+
+      const onError = () => {
+        cleanup();
+        resolve([]);
+      };
+
+      const cleanup = () => {
+        dataStream.removeListener("data", onData);
+        dataStream.removeListener("end", onEnd);
+        dataStream.removeListener("error", onError);
+        // Safely check and call destroy if it exists (it should on Node streams)
+        if (typeof (dataStream as any).destroy === "function") {
+          (dataStream as any).destroy();
+        }
+      };
+
+      dataStream.on("data", onData);
+      dataStream.on("end", onEnd);
+      dataStream.on("error", onError);
+
+      function processChunks() {
         try {
-          const { createGunzip } = require("zlib");
           const buffer = Buffer.concat(chunks);
-
-          // Decompress and parse
           const gunzip = createGunzip();
           const decompressed: Buffer[] = [];
 
@@ -235,9 +267,7 @@ export async function getBackupTables(fileId: string): Promise<string[]> {
         } catch {
           resolve([]);
         }
-      });
-
-      stream.on("error", reject);
+      }
     });
   } catch (error) {
     throw parseGoogleError(error);
