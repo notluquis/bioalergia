@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useRef } from "react";
+import { createContext, type ReactNode, useContext, useEffect, useRef } from "react";
 
 import { APP_CONFIG } from "@/config/app";
 import { apiClient } from "@/lib/apiClient";
@@ -100,23 +100,20 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     }
   }, [settingsQuery.isError, settingsQuery.error]);
 
-  const updateSettings = useCallback(
-    async (next: AppSettings) => {
-      logger.info("[settings] update:start", next);
-      const payload = await apiClient.put<{ status: string; settings?: AppSettings; message?: string }>(
-        "/api/settings/internal",
-        next
-      );
-      if (payload.status !== "ok" || !payload.settings) {
-        logger.warn("[settings] update:error", { message: payload.message });
-        throw new Error(payload.message || "No se pudo actualizar la configuración");
-      }
-      applyBranding(payload.settings);
-      logger.info("[settings] update:success", payload.settings);
-      queryClient.setQueryData<AppSettings>(["settings"], payload.settings);
-    },
-    [queryClient]
-  );
+  const updateSettings = async (next: AppSettings) => {
+    logger.info("[settings] update:start", next);
+    const payload = await apiClient.put<{ status: string; settings?: AppSettings; message?: string }>(
+      "/api/settings/internal",
+      next
+    );
+    if (payload.status !== "ok" || !payload.settings) {
+      logger.warn("[settings] update:error", { message: payload.message });
+      throw new Error(payload.message || "No se pudo actualizar la configuración");
+    }
+    applyBranding(payload.settings);
+    logger.info("[settings] update:success", payload.settings);
+    queryClient.setQueryData<AppSettings>(["settings"], payload.settings);
+  };
 
   const currentSettings = user ? (settingsQuery.data ?? DEFAULT_SETTINGS) : DEFAULT_SETTINGS;
 
@@ -142,10 +139,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
   const loading = Boolean(user) && settingsQuery.isFetching;
 
-  const value = useMemo<SettingsContextType>(
-    () => ({ settings: currentSettings, loading, updateSettings, canEdit: hasRole }),
-    [currentSettings, loading, hasRole, updateSettings]
-  );
+  const value: SettingsContextType = { settings: currentSettings, loading, updateSettings, canEdit: hasRole };
 
   return <SettingsContext value={value}>{children}</SettingsContext>;
 }

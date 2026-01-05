@@ -1,6 +1,6 @@
 import { MongoAbility, RawRuleOf } from "@casl/ability";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, type ReactNode, useContext, useEffect, useState } from "react";
 
 import { apiClient, ApiError } from "@/lib/apiClient";
 import { logger } from "@/lib/logger";
@@ -96,13 +96,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const realUser = sessionQuery.data?.user ?? null;
   const initializing = sessionQuery.isPending;
 
-  const effectiveUser = useMemo(() => {
+  const effectiveUser = (() => {
     if (!realUser) return null;
     if (impersonatedRole) {
       return { ...realUser, roles: [impersonatedRole.name] };
     }
     return realUser;
-  }, [realUser, impersonatedRole]);
+  })();
 
   // Sync ability when session loads or when impersonation changes
   useEffect(() => {
@@ -120,75 +120,66 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [impersonatedRole, sessionQuery.data]);
 
-  const impersonate = useCallback((role: Role) => {
+  const impersonate = (role: Role) => {
     setImpersonatedRole(role);
-  }, []);
+  };
 
-  const stopImpersonating = useCallback(() => {
+  const stopImpersonating = () => {
     setImpersonatedRole(null);
-  }, []);
+  };
 
-  const login = useCallback(
-    async (email: string, password: string): Promise<LoginResult> => {
-      logger.info("[auth] login:start", { email });
-      const payload = await apiClient.post<{ status: string; user?: AuthUser; userId: number; message?: string }>(
-        "/api/auth/login",
-        { email, password }
-      );
+  const login = async (email: string, password: string): Promise<LoginResult> => {
+    logger.info("[auth] login:start", { email });
+    const payload = await apiClient.post<{ status: string; user?: AuthUser; userId: number; message?: string }>(
+      "/api/auth/login",
+      { email, password }
+    );
 
-      if (payload.status === "mfa_required") {
-        logger.info("[auth] login:mfa_required", { userId: payload.userId });
-        return { status: "mfa_required", userId: payload.userId };
-      }
+    if (payload.status === "mfa_required") {
+      logger.info("[auth] login:mfa_required", { userId: payload.userId });
+      return { status: "mfa_required", userId: payload.userId };
+    }
 
-      if (payload.status === "ok" && payload.user) {
-        queryClient.invalidateQueries({ queryKey: ["auth", "session"] });
-        logger.info("[auth] login:success", payload.user);
-        return { status: "ok", user: payload.user };
-      }
-
-      throw new Error("Respuesta inesperada del servidor");
-    },
-    [queryClient]
-  );
-
-  const loginWithMfa = useCallback(
-    async (userId: number, token: string) => {
-      logger.info("[auth] mfa:start", { userId });
-      const payload = await apiClient.post<{ status: string; user?: AuthUser; message?: string }>(
-        "/api/auth/login/mfa",
-        { userId, token }
-      );
-
-      if (payload.status !== "ok" || !payload.user) {
-        throw new Error(payload.message || "Código MFA inválido");
-      }
-
+    if (payload.status === "ok" && payload.user) {
       queryClient.invalidateQueries({ queryKey: ["auth", "session"] });
-      logger.info("[auth] mfa:success", payload.user);
-    },
-    [queryClient]
-  );
+      logger.info("[auth] login:success", payload.user);
+      return { status: "ok", user: payload.user };
+    }
 
-  const loginWithPasskey = useCallback(
-    async (authResponse: unknown, challenge: string) => {
-      logger.info("[auth] passkey:start");
-      const payload = await apiClient.post<{ status: string; user?: AuthUser; message?: string }>(
-        "/api/auth/passkey/login/verify",
-        { body: authResponse, challenge }
-      );
+    throw new Error("Respuesta inesperada del servidor");
+  };
 
-      if (payload.status !== "ok" || !payload.user) {
-        throw new Error(payload.message || "Error validando Passkey");
-      }
+  const loginWithMfa = async (userId: number, token: string) => {
+    logger.info("[auth] mfa:start", { userId });
+    const payload = await apiClient.post<{ status: string; user?: AuthUser; message?: string }>("/api/auth/login/mfa", {
+      userId,
+      token,
+    });
 
-      queryClient.invalidateQueries({ queryKey: ["auth", "session"] });
-      logger.info("[auth] passkey:success", payload.user);
-    },
-    [queryClient]
-  );
+    if (payload.status !== "ok" || !payload.user) {
+      throw new Error(payload.message || "Código MFA inválido");
+    }
 
-  const logout = useCallback(async () => {
+    queryClient.invalidateQueries({ queryKey: ["auth", "session"] });
+    logger.info("[auth] mfa:success", payload.user);
+  };
+
+  const loginWithPasskey = async (authResponse: unknown, challenge: string) => {
+    logger.info("[auth] passkey:start");
+    const payload = await apiClient.post<{ status: string; user?: AuthUser; message?: string }>(
+      "/api/auth/passkey/login/verify",
+      { body: authResponse, challenge }
+    );
+
+    if (payload.status !== "ok" || !payload.user) {
+      throw new Error(payload.message || "Error validando Passkey");
+    }
+
+    queryClient.invalidateQueries({ queryKey: ["auth", "session"] });
+    logger.info("[auth] passkey:success", payload.user);
+  };
+
+  const logout = async () => {
     logger.info("[auth] logout:start");
     try {
       setImpersonatedRole(null);
@@ -201,60 +192,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await queryClient.invalidateQueries({ queryKey: ["settings"] });
       logger.info("[auth] logout:done");
     }
-  }, [queryClient]);
+  };
 
-  const hasRole = useCallback(
-    (...rolesToCheck: string[]) => {
-      if (!effectiveUser) return false;
-      if (!rolesToCheck.length) return true;
+  const hasRole = (...rolesToCheck: string[]) => {
+    if (!effectiveUser) return false;
+    if (!rolesToCheck.length) return true;
 
-      const userRoles = effectiveUser.roles.map((r) => r.toUpperCase());
-      return rolesToCheck.some((r) => userRoles.includes(r.toUpperCase()));
-    },
-    [effectiveUser]
-  );
+    const userRoles = effectiveUser.roles.map((r) => r.toUpperCase());
+    return rolesToCheck.some((r) => userRoles.includes(r.toUpperCase()));
+  };
 
   const { refetch: refetchSession } = sessionQuery;
 
-  const refreshSession = useCallback(async () => {
+  const refreshSession = async () => {
     await refetchSession();
-  }, [refetchSession]);
+  };
 
-  const can = useCallback((action: string, subject: string, field?: string) => {
+  const can = (action: string, subject: string, field?: string) => {
     // Wrapper for CASL ability
     return ability.can(action, subject, field);
-  }, []);
+  };
 
-  const value = useMemo<AuthContextType>(
-    () => ({
-      user: effectiveUser,
-      initializing,
-      login,
-      loginWithMfa,
-      loginWithPasskey,
-      logout,
-      hasRole,
-      refreshSession,
-      can,
-      impersonate,
-      stopImpersonating,
-      impersonatedRole,
-    }),
-    [
-      effectiveUser,
-      initializing,
-      login,
-      loginWithMfa,
-      loginWithPasskey,
-      logout,
-      hasRole,
-      refreshSession,
-      can,
-      impersonate,
-      stopImpersonating,
-      impersonatedRole,
-    ]
-  );
+  const value: AuthContextType = {
+    user: effectiveUser,
+    initializing,
+    login,
+    loginWithMfa,
+    loginWithPasskey,
+    logout,
+    hasRole,
+    refreshSession,
+    can,
+    impersonate,
+    stopImpersonating,
+    impersonatedRole,
+  };
 
   return <AuthContext value={value}>{children}</AuthContext>;
 }
