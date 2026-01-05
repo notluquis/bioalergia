@@ -9,6 +9,7 @@ import { schema as $schema, type SchemaType as $Schema } from "./schema-lite.js"
 import { type ModelResult as $ModelResult } from "@zenstackhq/orm";
 export type Person = $ModelResult<$Schema, "Person">;
 export type User = $ModelResult<$Schema, "User">;
+export type Passkey = $ModelResult<$Schema, "Passkey">;
 export type Role = $ModelResult<$Schema, "Role">;
 export type Permission = $ModelResult<$Schema, "Permission">;
 export type RolePermission = $ModelResult<$Schema, "RolePermission">;

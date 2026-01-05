@@ -397,22 +397,27 @@ authRoutes.post("/passkey/login/verify", async (c) => {
       );
     }
 
-    // Find user by credential ID
+    // Find passkey by credential ID
     const credentialID = authResponse.id;
-    const user = await db.user.findFirst({
-      where: { passkeyCredentialID: credentialID },
+    const passkey = await db.passkey.findUnique({
+      where: { credentialId: credentialID },
       include: {
-        person: true,
-        roles: { include: { role: true } },
+        user: {
+          include: {
+            person: true,
+            roles: { include: { role: true } },
+          },
+        },
       },
     });
 
-    if (!user || !user.passkeyPublicKey) {
+    if (!passkey || !passkey.user) {
       return c.json(
         { status: "error", message: "Credencial no encontrada" },
         401
       );
     }
+    const user = passkey.user;
 
     // Verify the authentication response
     const verification = await verifyAuthenticationResponse({
@@ -421,11 +426,11 @@ authRoutes.post("/passkey/login/verify", async (c) => {
       expectedOrigin: ORIGIN,
       expectedRPID: RP_ID,
       credential: {
-        id: user.passkeyCredentialID!,
-        publicKey: new Uint8Array(user.passkeyPublicKey),
-        counter: Number(user.passkeyCounter),
+        id: passkey.credentialId,
+        publicKey: new Uint8Array(passkey.publicKey),
+        counter: Number(passkey.counter),
         transports:
-          (user.passkeyTransports as AuthenticatorTransportFuture[] | null) ||
+          (passkey.transports as AuthenticatorTransportFuture[] | null) ||
           undefined,
       },
     });
@@ -435,10 +440,11 @@ authRoutes.post("/passkey/login/verify", async (c) => {
     }
 
     // Update counter
-    await db.user.update({
-      where: { id: user.id },
+    await db.passkey.update({
+      where: { id: passkey.id },
       data: {
-        passkeyCounter: BigInt(verification.authenticationInfo.newCounter),
+        counter: BigInt(verification.authenticationInfo.newCounter),
+        lastUsedAt: new Date(),
       },
     });
 
@@ -556,16 +562,21 @@ authRoutes.post("/passkey/register/verify", async (c) => {
       return c.json({ status: "error", message: "Verificación fallida" }, 400);
     }
 
-    const { credential } = verification.registrationInfo;
+    const { credential, credentialDeviceType, credentialBackedUp } =
+      verification.registrationInfo;
 
-    // Save credential to user
-    await db.user.update({
-      where: { id: userId },
+    // Save credential to Passkey table
+    await db.passkey.create({
       data: {
-        passkeyCredentialID: credential.id,
-        passkeyPublicKey: Buffer.from(credential.publicKey),
-        passkeyCounter: BigInt(credential.counter),
-        passkeyTransports: regResponse.response.transports || null,
+        userId,
+        credentialId: credential.id,
+        publicKey: Buffer.from(credential.publicKey),
+        counter: BigInt(credential.counter),
+        transports: regResponse.response.transports || undefined,
+        webAuthnUserID: String(userId),
+        deviceType: credentialDeviceType,
+        backedUp: credentialBackedUp,
+        friendlyName: "Passkey (" + new Date().toLocaleDateString() + ")",
       },
     });
 
@@ -587,14 +598,9 @@ authRoutes.delete("/passkey/remove", async (c) => {
     const decoded = await verifyToken(token);
     const userId = Number(decoded.sub);
 
-    await db.user.update({
-      where: { id: userId },
-      data: {
-        passkeyCredentialID: null,
-        passkeyPublicKey: null,
-        passkeyCounter: BigInt(0),
-        passkeyTransports: undefined,
-      },
+    // Remove all passkeys for the user (or specific one if ID provided in query? For now Wipe All)
+    await db.passkey.deleteMany({
+      where: { userId },
     });
 
     return c.json({ status: "ok", message: "Passkey eliminado" });
