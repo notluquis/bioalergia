@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { getSessionUser } from "../auth";
 import { db } from "@finanzas/db";
+import { Decimal } from "decimal.js";
 import {
   createLoan,
   deleteLoan,
@@ -139,7 +140,7 @@ app.post("/:id/schedules", async (c) => {
       loanId: id,
       installmentNumber: i,
       dueDate,
-      expectedAmount: installmentAmount,
+      expectedAmount: new Decimal(installmentAmount),
       status: "PENDING" as const,
     });
   }
