@@ -292,9 +292,15 @@ export function startBackup() {
   })
     .then((res) => {
       jobs[jobId].status = "completed";
+      jobs[jobId].progress = 100;
+      jobs[jobId].currentStep = "Backup completed";
       jobs[jobId].result = res;
       history.push(jobs[jobId]);
-      delete jobs[jobId];
+
+      // Delay cleanup to allow SSE to broadcast the completed state
+      setTimeout(() => {
+        delete jobs[jobId];
+      }, 5000);
     })
     .catch((err) => {
       jobs[jobId].status = "failed";
