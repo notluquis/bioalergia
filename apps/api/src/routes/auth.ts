@@ -319,8 +319,8 @@ authRoutes.post("/mfa/disable", async (c) => {
 // ============================================================
 
 // WebAuthn configuration
-const RP_NAME = process.env.RP_NAME || "Finanzas Bioalergia";
-const RP_ID = process.env.RP_ID || "bioalergia.cl";
+const RP_NAME = process.env.RP_NAME || "Finanzas App";
+const RP_ID = process.env.RP_ID || "intranet.bioalergia.cl";
 const ORIGIN = process.env.ORIGIN || "https://intranet.bioalergia.cl";
 
 // In-memory challenge store (for simplicity - should use Redis in production)
@@ -356,33 +356,11 @@ authRoutes.get("/passkey/login/options", async (c) => {
     const { generateAuthenticationOptions } =
       await import("@simplewebauthn/server");
 
-    // Get all users with passkeys for discoverable credentials
-    const usersWithPasskeys = await db.user.findMany({
-      where: {
-        passkeyCredentialID: { not: null },
-        status: "ACTIVE",
-      },
-      select: {
-        id: true,
-        passkeyCredentialID: true,
-        passkeyTransports: true,
-      },
-    });
-
-    const allowCredentials = usersWithPasskeys
-      .filter((u) => u.passkeyCredentialID)
-      .map((u) => ({
-        id: u.passkeyCredentialID!,
-        transports:
-          (u.passkeyTransports as AuthenticatorTransportFuture[] | null) ||
-          undefined,
-      }));
-
+    // Use empty allowCredentials for discoverable (usernameless) login
     const options = await generateAuthenticationOptions({
       rpID: RP_ID,
-      allowCredentials:
-        allowCredentials.length > 0 ? allowCredentials : undefined,
       userVerification: "preferred",
+      allowCredentials: [], // Allow any discoverable credential (usernameless)
     });
 
     // Store challenge for verification
@@ -516,16 +494,16 @@ authRoutes.get("/passkey/register/options", async (c) => {
     const options = await generateRegistrationOptions({
       rpName: RP_NAME,
       rpID: RP_ID,
+      userID: new Uint8Array(Buffer.from(String(userId))),
       userName: email,
       userDisplayName: user.person?.names || email,
       attestationType: "none",
       authenticatorSelection: {
-        residentKey: "preferred",
+        residentKey: "required", // Force discoverable credential (Passkey)
         userVerification: "preferred",
+        authenticatorAttachment: "platform", // Prefer built-in (TouchID/FaceID)
       },
-      excludeCredentials: user.passkeyCredentialID
-        ? [{ id: user.passkeyCredentialID }]
-        : undefined,
+      // Allow overwriting - don't exclude existing credentials
     });
 
     // Store challenge
