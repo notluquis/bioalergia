@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { getSessionUser, type AuthSession } from "../auth";
+import { getSessionUser, hasPermission, type AuthSession } from "../auth";
 import fs from "node:fs";
 import path from "node:path";
 import { bodyLimit } from "hono/body-limit";
@@ -32,6 +32,10 @@ shareTargetRoutes.use("*", async (c, next) => {
   const user = await getSessionUser(c);
   if (!user) {
     return c.text("Unauthorized", 401);
+  }
+  const canCreate = await hasPermission(user.id, "create", "Transaction");
+  if (!canCreate) {
+    return c.text("Forbidden", 403);
   }
   c.set("user", user);
   await next();

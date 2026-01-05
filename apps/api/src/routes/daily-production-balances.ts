@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import dayjs from "dayjs";
-import { getSessionUser } from "../auth";
+import { getSessionUser, hasPermission } from "../auth";
 import {
   createProductionBalance,
   getProductionBalanceById,
@@ -61,6 +61,9 @@ app.get("/", async (c) => {
   const user = await getSessionUser(c);
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
 
+  const canRead = await hasPermission(user.id, "read", "Balance");
+  if (!canRead) return c.json({ status: "error", message: "Forbidden" }, 403);
+
   const query = c.req.query();
   const parsed = productionBalanceQuerySchema.safeParse(query);
 
@@ -92,6 +95,9 @@ app.get("/", async (c) => {
 app.post("/", async (c) => {
   const user = await getSessionUser(c);
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+
+  const canCreate = await hasPermission(user.id, "create", "Balance");
+  if (!canCreate) return c.json({ status: "error", message: "Forbidden" }, 403);
 
   const body = await c.req.json();
   const parsed = productionBalancePayloadSchema.safeParse(body);
@@ -126,6 +132,9 @@ app.post("/", async (c) => {
 app.put("/:id", async (c) => {
   const user = await getSessionUser(c);
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+
+  const canUpdate = await hasPermission(user.id, "update", "Balance");
+  if (!canUpdate) return c.json({ status: "error", message: "Forbidden" }, 403);
 
   const id = Number(c.req.param("id"));
   if (!Number.isFinite(id)) {

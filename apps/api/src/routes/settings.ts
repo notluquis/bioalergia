@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { getSessionUser } from "../auth";
+import { getSessionUser, hasPermission } from "../auth";
 import { db } from "@finanzas/db";
 
 export type Variables = {
@@ -10,7 +10,7 @@ export const settingsRoutes = new Hono<{ Variables: Variables }>();
 
 // Middleware to require auth
 const requireAuth = async (c: any, next: any) => {
-  const user = getSessionUser(c);
+  const user = await getSessionUser(c);
   if (!user) {
     return c.json({ status: "error", message: "No autorizado" }, 401);
   }
@@ -21,9 +21,9 @@ const requireAuth = async (c: any, next: any) => {
 // GET /internal
 settingsRoutes.get("/internal", requireAuth, async (c) => {
   const user = c.get("user");
-  // Only admin
-  // Check role... skip for now or trust frontend policies?
-  // Ideally check role.
+
+  const canRead = await hasPermission(user.id, "read", "Setting");
+  if (!canRead) return c.json({ status: "error", message: "Forbidden" }, 403);
 
   // Fetch settings from DB
   const settings = await db.setting.findMany({
@@ -43,7 +43,13 @@ settingsRoutes.get("/internal", requireAuth, async (c) => {
 });
 
 // PUT /internal
+// PUT /internal
 settingsRoutes.put("/internal", requireAuth, async (c) => {
+  const user = c.get("user");
+
+  const canUpdate = await hasPermission(user.id, "update", "Setting");
+  if (!canUpdate) return c.json({ status: "error", message: "Forbidden" }, 403);
+
   const body = await c.req.json();
   const { upsertChunkSize } = body; // expect object { upsertChunkSize: number | undefined }
 
@@ -67,12 +73,21 @@ settingsRoutes.put("/internal", requireAuth, async (c) => {
 });
 
 // Upload endpoints (Placeholder for now to avoid 404/400 if called)
+// Upload endpoints
 settingsRoutes.post("/logo/upload", requireAuth, async (c) => {
+  const user = c.get("user");
+  const canUpdate = await hasPermission(user.id, "update", "Setting");
+  if (!canUpdate) return c.json({ status: "error", message: "Forbidden" }, 403);
+
   // Todo: Implement upload
   return c.json({ status: "error", message: "Not implemented yet" }, 501);
 });
 
 settingsRoutes.post("/favicon/upload", requireAuth, async (c) => {
+  const user = c.get("user");
+  const canUpdate = await hasPermission(user.id, "update", "Setting");
+  if (!canUpdate) return c.json({ status: "error", message: "Forbidden" }, 403);
+
   // Todo: Implement upload
   return c.json({ status: "error", message: "Not implemented yet" }, 501);
 });

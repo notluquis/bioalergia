@@ -6,6 +6,7 @@
 
 import { Hono } from "hono";
 import { verifyToken } from "../lib/paseto";
+import { hasPermission } from "../auth";
 import { db } from "@finanzas/db";
 import { Decimal } from "decimal.js";
 
@@ -48,6 +49,18 @@ async function findPersonByRut(rut: string) {
   });
 }
 
+// Permission mapping
+const TABLE_PERMISSIONS: Record<
+  TableName,
+  { action: string; subject: string }
+> = {
+  people: { action: "create", subject: "Person" },
+  employees: { action: "create", subject: "Employee" },
+  counterparts: { action: "create", subject: "Counterpart" },
+  daily_balances: { action: "create", subject: "Balance" },
+  transactions: { action: "create", subject: "Transaction" },
+};
+
 // ============================================================
 // PREVIEW (VALIDATE WITHOUT INSERTING)
 // ============================================================
@@ -66,6 +79,17 @@ csvUploadRoutes.post("/preview", async (c) => {
       { status: "error", message: "Table and data array required" },
       400
     );
+  }
+
+  // Check permissions
+  const required = TABLE_PERMISSIONS[table];
+  if (required) {
+    const hasPerm = await hasPermission(
+      auth.userId,
+      required.action,
+      required.subject
+    );
+    if (!hasPerm) return c.json({ status: "error", message: "Forbidden" }, 403);
   }
 
   const errors: string[] = [];
@@ -136,6 +160,17 @@ csvUploadRoutes.post("/import", async (c) => {
       { status: "error", message: "Table and data array required" },
       400
     );
+  }
+
+  // Check permissions
+  const required = TABLE_PERMISSIONS[table];
+  if (required) {
+    const hasPerm = await hasPermission(
+      auth.userId,
+      required.action,
+      required.subject
+    );
+    if (!hasPerm) return c.json({ status: "error", message: "Forbidden" }, 403);
   }
 
   let inserted = 0;

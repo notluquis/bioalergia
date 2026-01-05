@@ -10,6 +10,7 @@ import { verifyToken } from "../lib/paseto";
 import { db } from "@finanzas/db";
 import { hashPassword } from "../lib/crypto";
 import { normalizeRut } from "../lib/rut";
+import { hasPermission } from "../auth";
 
 const COOKIE_NAME = "finanzas_session";
 
@@ -42,9 +43,13 @@ async function getAuth(c: {
 // LIST USERS
 // ============================================================
 
+// LIST USERS
 userRoutes.get("/", async (c) => {
   const auth = await getAuth(c);
   if (!auth) return c.json({ status: "error", message: "No autorizado" }, 401);
+
+  const canRead = await hasPermission(auth.userId, "read", "User");
+  if (!canRead) return c.json({ status: "error", message: "Forbidden" }, 403);
 
   const includeTest = c.req.query("includeTest") === "true";
 
@@ -127,6 +132,9 @@ userRoutes.get("/profile", async (c) => {
 userRoutes.post("/invite", async (c) => {
   const auth = await getAuth(c);
   if (!auth) return c.json({ status: "error", message: "No autorizado" }, 401);
+
+  const canCreate = await hasPermission(auth.userId, "create", "User");
+  if (!canCreate) return c.json({ status: "error", message: "Forbidden" }, 403);
 
   const body = await c.req.json<{
     email: string;
@@ -278,6 +286,9 @@ userRoutes.post("/:id/reset-password", async (c) => {
   const auth = await getAuth(c);
   if (!auth) return c.json({ status: "error", message: "No autorizado" }, 401);
 
+  const canUpdate = await hasPermission(auth.userId, "update", "User");
+  if (!canUpdate) return c.json({ status: "error", message: "Forbidden" }, 403);
+
   const targetUserId = Number(c.req.param("id"));
   if (isNaN(targetUserId))
     return c.json({ status: "error", message: "ID inválido" }, 400);
@@ -307,6 +318,9 @@ userRoutes.post("/:id/reset-password", async (c) => {
 userRoutes.put("/:id/status", async (c) => {
   const auth = await getAuth(c);
   if (!auth) return c.json({ status: "error", message: "No autorizado" }, 401);
+
+  const canUpdate = await hasPermission(auth.userId, "update", "User");
+  if (!canUpdate) return c.json({ status: "error", message: "Forbidden" }, 403);
 
   const targetUserId = Number(c.req.param("id"));
   const { status } = await c.req.json<{ status: string }>();
@@ -346,6 +360,9 @@ userRoutes.put("/:id/role", async (c) => {
   const auth = await getAuth(c);
   if (!auth) return c.json({ status: "error", message: "No autorizado" }, 401);
 
+  const canUpdate = await hasPermission(auth.userId, "update", "User");
+  if (!canUpdate) return c.json({ status: "error", message: "Forbidden" }, 403);
+
   const targetUserId = Number(c.req.param("id"));
   const { role } = await c.req.json<{ role: string }>();
 
@@ -379,6 +396,9 @@ userRoutes.delete("/:id", async (c) => {
   const auth = await getAuth(c);
   if (!auth) return c.json({ status: "error", message: "No autorizado" }, 401);
 
+  const canDelete = await hasPermission(auth.userId, "delete", "User");
+  if (!canDelete) return c.json({ status: "error", message: "Forbidden" }, 403);
+
   const targetUserId = Number(c.req.param("id"));
 
   if (targetUserId === auth.userId) {
@@ -401,6 +421,9 @@ userRoutes.delete("/:id", async (c) => {
 userRoutes.post("/:id/mfa/toggle", async (c) => {
   const auth = await getAuth(c);
   if (!auth) return c.json({ status: "error", message: "No autorizado" }, 401);
+
+  const canUpdate = await hasPermission(auth.userId, "update", "User");
+  if (!canUpdate) return c.json({ status: "error", message: "Forbidden" }, 403);
 
   const targetUserId = Number(c.req.param("id"));
   const { enabled } = await c.req.json<{ enabled: boolean }>();
@@ -429,6 +452,9 @@ userRoutes.delete("/:id/mfa", async (c) => {
   const auth = await getAuth(c);
   if (!auth) return c.json({ status: "error", message: "No autorizado" }, 401);
 
+  const canUpdate = await hasPermission(auth.userId, "update", "User");
+  if (!canUpdate) return c.json({ status: "error", message: "Forbidden" }, 403);
+
   const targetUserId = Number(c.req.param("id"));
 
   await db.user.update({
@@ -447,6 +473,9 @@ userRoutes.delete("/:id/mfa", async (c) => {
 userRoutes.delete("/:id/passkey", async (c) => {
   const auth = await getAuth(c);
   if (!auth) return c.json({ status: "error", message: "No autorizado" }, 401);
+
+  const canUpdate = await hasPermission(auth.userId, "update", "User");
+  if (!canUpdate) return c.json({ status: "error", message: "Forbidden" }, 403);
 
   const targetUserId = Number(c.req.param("id"));
 

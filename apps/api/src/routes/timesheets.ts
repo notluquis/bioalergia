@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { getSessionUser } from "../auth";
+import { getSessionUser, hasPermission } from "../auth";
 import dayjs from "dayjs";
 import {
   buildMonthlySummary,
@@ -15,8 +15,11 @@ const app = new Hono();
 
 // GET /summary - Get monthly summary for all employees or filtered
 app.get("/summary", async (c) => {
-  const user = getSessionUser(c);
+  const user = await getSessionUser(c);
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+
+  const canRead = await hasPermission(user.id, "read", "Timesheet");
+  if (!canRead) return c.json({ status: "error", message: "Forbidden" }, 403);
 
   try {
     const query = c.req.query();
@@ -44,8 +47,11 @@ app.get("/summary", async (c) => {
 
 // GET /months - Get available months
 app.get("/months", async (c) => {
-  const user = getSessionUser(c);
+  const user = await getSessionUser(c);
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+
+  const canRead = await hasPermission(user.id, "read", "Timesheet");
+  if (!canRead) return c.json({ status: "error", message: "Forbidden" }, 403);
 
   try {
     // Generate last 24 months as available options
@@ -71,8 +77,11 @@ app.get("/months", async (c) => {
 
 // GET /multi-month - Get timesheets for multiple employees across multiple months
 app.get("/multi-month", async (c) => {
-  const user = getSessionUser(c);
+  const user = await getSessionUser(c);
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+
+  const canRead = await hasPermission(user.id, "read", "Timesheet");
+  if (!canRead) return c.json({ status: "error", message: "Forbidden" }, 403);
 
   try {
     const query = c.req.query();
@@ -113,8 +122,11 @@ app.get("/multi-month", async (c) => {
 
 // GET /multi-detail - Get timesheet entries for multiple employees in a date range
 app.get("/multi-detail", async (c) => {
-  const user = getSessionUser(c);
+  const user = await getSessionUser(c);
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+
+  const canRead = await hasPermission(user.id, "read", "Timesheet");
+  if (!canRead) return c.json({ status: "error", message: "Forbidden" }, 403);
 
   try {
     const query = c.req.query();
@@ -150,8 +162,11 @@ app.get("/multi-detail", async (c) => {
 
 // GET /:employeeId/range - Get timesheet entries for an employee in a date range
 app.get("/:employeeId/range", async (c) => {
-  const user = getSessionUser(c);
+  const user = await getSessionUser(c);
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+
+  const canRead = await hasPermission(user.id, "read", "Timesheet");
+  if (!canRead) return c.json({ status: "error", message: "Forbidden" }, 403);
 
   try {
     const employeeId = Number(c.req.param("employeeId"));
@@ -185,8 +200,11 @@ app.get("/:employeeId/range", async (c) => {
 
 // GET /:employeeId/detail - Get detailed timesheet entries for an employee
 app.get("/:employeeId/detail", async (c) => {
-  const user = getSessionUser(c);
+  const user = await getSessionUser(c);
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+
+  const canRead = await hasPermission(user.id, "read", "Timesheet");
+  if (!canRead) return c.json({ status: "error", message: "Forbidden" }, 403);
 
   try {
     const employeeId = Number(c.req.param("employeeId"));
@@ -220,8 +238,11 @@ app.get("/:employeeId/detail", async (c) => {
 
 // POST / - Create or update timesheet entry
 app.post("/", async (c) => {
-  const user = getSessionUser(c);
+  const user = await getSessionUser(c);
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+
+  const canCreate = await hasPermission(user.id, "create", "Timesheet");
+  if (!canCreate) return c.json({ status: "error", message: "Forbidden" }, 403);
 
   try {
     const body = await c.req.json();
@@ -240,8 +261,11 @@ app.post("/", async (c) => {
 
 // POST /bulk - Bulk upsert timesheet entries
 app.post("/bulk", async (c) => {
-  const user = getSessionUser(c);
+  const user = await getSessionUser(c);
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+
+  const canCreate = await hasPermission(user.id, "create", "Timesheet");
+  if (!canCreate) return c.json({ status: "error", message: "Forbidden" }, 403);
 
   try {
     const body = await c.req.json();
@@ -277,8 +301,11 @@ app.post("/bulk", async (c) => {
 
 // PUT /:id - Update timesheet entry
 app.put("/:id", async (c) => {
-  const user = getSessionUser(c);
+  const user = await getSessionUser(c);
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+
+  const canUpdate = await hasPermission(user.id, "update", "Timesheet");
+  if (!canUpdate) return c.json({ status: "error", message: "Forbidden" }, 403);
 
   const id = Number(c.req.param("id"));
   if (!Number.isFinite(id)) {
@@ -299,8 +326,11 @@ app.put("/:id", async (c) => {
 
 // DELETE /:id - Delete timesheet entry
 app.delete("/:id", async (c) => {
-  const user = getSessionUser(c);
+  const user = await getSessionUser(c);
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+
+  const canDelete = await hasPermission(user.id, "delete", "Timesheet");
+  if (!canDelete) return c.json({ status: "error", message: "Forbidden" }, 403);
 
   const id = Number(c.req.param("id"));
   if (!Number.isFinite(id)) {
@@ -320,8 +350,11 @@ app.delete("/:id", async (c) => {
 
 // POST /prepare-email - Prepare email with PDF attachment
 app.post("/prepare-email", async (c) => {
-  const user = getSessionUser(c);
+  const user = await getSessionUser(c);
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+
+  const canRead = await hasPermission(user.id, "read", "Timesheet");
+  if (!canRead) return c.json({ status: "error", message: "Forbidden" }, 403);
 
   try {
     const body = await c.req.json();

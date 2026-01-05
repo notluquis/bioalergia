@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { getSessionUser } from "../auth";
+import { getSessionUser, hasPermission } from "../auth";
 import { listTransactions, TransactionFilters } from "../services/transactions";
 import { transactionsQuerySchema } from "../lib/financial-schemas";
 import { mapTransaction } from "../lib/mappers";
@@ -7,8 +7,11 @@ import { mapTransaction } from "../lib/mappers";
 const app = new Hono();
 
 app.get("/", async (c) => {
-  const user = getSessionUser(c);
+  const user = await getSessionUser(c);
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+
+  const canRead = await hasPermission(user.id, "read", "Transaction");
+  if (!canRead) return c.json({ status: "error", message: "Forbidden" }, 403);
 
   const query = c.req.query();
   const parsed = transactionsQuerySchema.safeParse(query);
@@ -59,8 +62,11 @@ app.get("/", async (c) => {
 });
 
 app.get("/participants", async (c) => {
-  const user = getSessionUser(c);
+  const user = await getSessionUser(c);
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+
+  const canRead = await hasPermission(user.id, "read", "Transaction");
+  if (!canRead) return c.json({ status: "error", message: "Forbidden" }, 403);
 
   const query = c.req.query();
   const from = query.from ? new Date(query.from) : undefined;
@@ -79,8 +85,11 @@ app.get("/participants", async (c) => {
 });
 
 app.get("/participants/:id", async (c) => {
-  const user = getSessionUser(c);
+  const user = await getSessionUser(c);
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+
+  const canRead = await hasPermission(user.id, "read", "Transaction");
+  if (!canRead) return c.json({ status: "error", message: "Forbidden" }, 403);
 
   const id = c.req.param("id");
   const query = c.req.query();

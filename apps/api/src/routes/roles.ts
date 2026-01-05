@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { getSessionUser } from "../auth";
+import { getSessionUser, hasPermission } from "../auth";
 import {
   assignPermissionsToRole,
   createRole,
@@ -18,24 +18,33 @@ import {
 const app = new Hono();
 
 app.get("/", async (c) => {
-  const user = getSessionUser(c);
+  const user = await getSessionUser(c);
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+
+  const canRead = await hasPermission(user.id, "read", "Role");
+  if (!canRead) return c.json({ status: "error", message: "Forbidden" }, 403);
 
   const items = await listRoles();
   return c.json({ status: "ok", roles: items });
 });
 
 app.get("/permissions", async (c) => {
-  const user = getSessionUser(c);
+  const user = await getSessionUser(c);
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+
+  const canRead = await hasPermission(user.id, "read", "Permission");
+  if (!canRead) return c.json({ status: "error", message: "Forbidden" }, 403);
 
   const items = await listPermissions();
   return c.json({ status: "ok", permissions: items });
 });
 
 app.post("/", async (c) => {
-  const user = getSessionUser(c);
+  const user = await getSessionUser(c);
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+
+  const canCreate = await hasPermission(user.id, "create", "Role");
+  if (!canCreate) return c.json({ status: "error", message: "Forbidden" }, 403);
 
   const body = await c.req.json();
   const parsed = roleCreateSchema.safeParse(body);
@@ -56,8 +65,11 @@ app.post("/", async (c) => {
 });
 
 app.put("/:id", async (c) => {
-  const user = getSessionUser(c);
+  const user = await getSessionUser(c);
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+
+  const canUpdate = await hasPermission(user.id, "update", "Role");
+  if (!canUpdate) return c.json({ status: "error", message: "Forbidden" }, 403);
 
   const id = Number(c.req.param("id"));
   if (isNaN(id)) return c.json({ status: "error", message: "Invalid ID" }, 400);
@@ -81,8 +93,11 @@ app.put("/:id", async (c) => {
 });
 
 app.delete("/:id", async (c) => {
-  const user = getSessionUser(c);
+  const user = await getSessionUser(c);
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+
+  const canDelete = await hasPermission(user.id, "delete", "Role");
+  if (!canDelete) return c.json({ status: "error", message: "Forbidden" }, 403);
 
   const id = Number(c.req.param("id"));
   if (isNaN(id)) return c.json({ status: "error", message: "Invalid ID" }, 400);
@@ -92,8 +107,12 @@ app.delete("/:id", async (c) => {
 });
 
 app.post("/:id/permissions", async (c) => {
-  const user = getSessionUser(c);
+  const user = await getSessionUser(c);
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+
+  // Updating a role's permissions is arguably 'update Role'
+  const canUpdate = await hasPermission(user.id, "update", "Role");
+  if (!canUpdate) return c.json({ status: "error", message: "Forbidden" }, 403);
 
   const id = Number(c.req.param("id"));
   const body = await c.req.json();

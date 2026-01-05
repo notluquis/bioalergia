@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { getSessionUser } from "../auth";
+import { getSessionUser, hasPermission } from "../auth";
 import { getBalancesReport, upsertDailyBalance } from "../services/balances";
 import {
   balancesQuerySchema,
@@ -9,8 +9,11 @@ import {
 const app = new Hono();
 
 app.get("/", async (c) => {
-  const user = getSessionUser(c);
+  const user = await getSessionUser(c);
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+
+  const canRead = await hasPermission(user.id, "read", "Balance");
+  if (!canRead) return c.json({ status: "error", message: "Forbidden" }, 403);
 
   const query = c.req.query();
   const parsed = balancesQuerySchema.safeParse(query);
@@ -27,8 +30,11 @@ app.get("/", async (c) => {
 });
 
 app.post("/", async (c) => {
-  const user = getSessionUser(c);
+  const user = await getSessionUser(c);
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+
+  const canCreate = await hasPermission(user.id, "create", "Balance");
+  if (!canCreate) return c.json({ status: "error", message: "Forbidden" }, 403);
 
   const body = await c.req.json();
   const parsed = balanceUpsertSchema.safeParse(body);

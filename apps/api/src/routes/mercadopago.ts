@@ -8,6 +8,7 @@ import { Hono } from "hono";
 import { stream } from "hono/streaming";
 import { getCookie } from "hono/cookie";
 import { verifyToken } from "../lib/paseto";
+import { hasPermission } from "../auth";
 
 const MP_ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN || "";
 const COOKIE_NAME = "finanzas_session";
@@ -68,6 +69,9 @@ mercadopagoRoutes.get("/config", async (c) => {
   const auth = await getAuth(c);
   if (!auth) return c.json({ status: "error", message: "No autorizado" }, 401);
 
+  const canRead = await hasPermission(auth.userId, "read", "Integration");
+  if (!canRead) return c.json({ status: "error", message: "Forbidden" }, 403);
+
   try {
     const res = await mpFetch("/config");
     const data = await res.json();
@@ -84,6 +88,9 @@ mercadopagoRoutes.get("/config", async (c) => {
 mercadopagoRoutes.post("/config", async (c) => {
   const auth = await getAuth(c);
   if (!auth) return c.json({ status: "error", message: "No autorizado" }, 401);
+
+  const canUpdate = await hasPermission(auth.userId, "update", "Integration");
+  if (!canUpdate) return c.json({ status: "error", message: "Forbidden" }, 403);
 
   const body = await c.req.json();
 
@@ -103,6 +110,9 @@ mercadopagoRoutes.post("/config", async (c) => {
 mercadopagoRoutes.put("/config", async (c) => {
   const auth = await getAuth(c);
   if (!auth) return c.json({ status: "error", message: "No autorizado" }, 401);
+
+  const canUpdate = await hasPermission(auth.userId, "update", "Integration");
+  if (!canUpdate) return c.json({ status: "error", message: "Forbidden" }, 403);
 
   const body = await c.req.json();
 
@@ -127,6 +137,9 @@ mercadopagoRoutes.get("/reports", async (c) => {
   const auth = await getAuth(c);
   if (!auth) return c.json({ status: "error", message: "No autorizado" }, 401);
 
+  const canRead = await hasPermission(auth.userId, "read", "Integration");
+  if (!canRead) return c.json({ status: "error", message: "Forbidden" }, 403);
+
   try {
     const res = await mpFetch("/list");
     const data = await res.json();
@@ -139,6 +152,9 @@ mercadopagoRoutes.get("/reports", async (c) => {
 mercadopagoRoutes.post("/reports", async (c) => {
   const auth = await getAuth(c);
   if (!auth) return c.json({ status: "error", message: "No autorizado" }, 401);
+
+  const canCreate = await hasPermission(auth.userId, "read", "Integration"); // Generate report treated as read
+  if (!canCreate) return c.json({ status: "error", message: "Forbidden" }, 403);
 
   const { begin_date, end_date } = await c.req.json<{
     begin_date: string;
@@ -169,6 +185,9 @@ mercadopagoRoutes.get("/reports/:id", async (c) => {
   const auth = await getAuth(c);
   if (!auth) return c.json({ status: "error", message: "No autorizado" }, 401);
 
+  const canRead = await hasPermission(auth.userId, "read", "Integration");
+  if (!canRead) return c.json({ status: "error", message: "Forbidden" }, 403);
+
   const id = c.req.param("id");
 
   try {
@@ -187,6 +206,9 @@ mercadopagoRoutes.get("/reports/:id", async (c) => {
 mercadopagoRoutes.get("/reports/download/:fileName", async (c) => {
   const auth = await getAuth(c);
   if (!auth) return c.json({ status: "error", message: "No autorizado" }, 401);
+
+  const canRead = await hasPermission(auth.userId, "read", "Integration");
+  if (!canRead) return c.json({ status: "error", message: "Forbidden" }, 403);
 
   const fileName = c.req.param("fileName");
 
@@ -229,6 +251,9 @@ mercadopagoRoutes.post("/schedule", async (c) => {
   const auth = await getAuth(c);
   if (!auth) return c.json({ status: "error", message: "No autorizado" }, 401);
 
+  const canUpdate = await hasPermission(auth.userId, "update", "Integration");
+  if (!canUpdate) return c.json({ status: "error", message: "Forbidden" }, 403);
+
   try {
     const res = await mpFetch("/schedule", {
       method: "POST",
@@ -245,6 +270,9 @@ mercadopagoRoutes.post("/schedule", async (c) => {
 mercadopagoRoutes.delete("/schedule", async (c) => {
   const auth = await getAuth(c);
   if (!auth) return c.json({ status: "error", message: "No autorizado" }, 401);
+
+  const canUpdate = await hasPermission(auth.userId, "update", "Integration");
+  if (!canUpdate) return c.json({ status: "error", message: "Forbidden" }, 403);
 
   try {
     const res = await mpFetch("/schedule", { method: "DELETE" });
