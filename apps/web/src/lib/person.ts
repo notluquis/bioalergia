@@ -11,11 +11,26 @@ export interface PersonNameData {
 /**
  * Get complete person name by combining names + father name + mother name
  * Safe: returns empty string if person is null/undefined
+ * Smart: avoids duplicating surnames if they're already in the names field
  */
 export function getPersonFullName(person?: PersonNameData | null): string {
   if (!person) return "";
-  const parts = [person.names, person.fatherName, person.motherName].filter(Boolean);
-  return parts.length > 0 ? parts.join(" ") : "";
+
+  const names = person.names?.trim() || "";
+  if (!names) return "";
+
+  // Check if fatherName is already contained in names (to avoid "Pulgar Escobar Pulgar Escobar")
+  const fatherName = person.fatherName?.trim() || "";
+  const motherName = person.motherName?.trim() || "";
+
+  // If names already contains the full surname, just return names
+  if (fatherName && names.toLowerCase().includes(fatherName.toLowerCase())) {
+    return names;
+  }
+
+  // Otherwise, build full name from parts
+  const parts = [names, fatherName, motherName].filter(Boolean);
+  return parts.join(" ");
 }
 
 /**
