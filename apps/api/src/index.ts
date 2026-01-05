@@ -105,10 +105,8 @@ const zenStackHandler = createHonoHandler({
   },
 });
 
-// Mount at /api/model/* for frontend ZenStack hooks
+// Mount ZenStack at /api/model/* for frontend hooks (useFindMany, etc.)
 app.use("/api/model/*", zenStackHandler);
-// Also mount at /api/* for backward compatibility with direct API calls
-app.use("/api/*", zenStackHandler);
 
 // ============================================================================
 // STATIC FILE SERVING (Frontend SPA)
