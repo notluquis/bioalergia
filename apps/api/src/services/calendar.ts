@@ -30,7 +30,7 @@ export async function createCalendarSyncLogEntry(data: {
   if (running) {
     // Check if it's stale (> 15 minutes old) to avoid permanent lock
     const diff = new Date().getTime() - running.startedAt.getTime();
-    const STALE_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes
+    const STALE_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes (reduced from 15)
     if (diff < STALE_TIMEOUT_MS) {
       throw new Error("Sincronización ya en curso");
     }

@@ -529,7 +529,13 @@ function executeWebhookSync(channelId: string) {
         });
     })
     .catch((err) => {
-      console.error(`[webhook] ❌ Failed to create log entry:`, err.message);
+      if (err.message === "Sincronización ya en curso") {
+        console.log(
+          `[webhook] ℹ️ Sync skipped (already in progress): ${channelId.slice(0, 8)}...`
+        );
+      } else {
+        console.error(`[webhook] ❌ Failed to create log entry:`, err.message);
+      }
     });
 }
 
