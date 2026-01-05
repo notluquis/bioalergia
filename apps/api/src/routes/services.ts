@@ -19,7 +19,7 @@ app.get("/", async (c) => {
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
 
   const items = await listServices();
-  return c.json(items);
+  return c.json({ status: "ok", services: items });
 });
 
 app.get("/:id", async (c) => {
@@ -32,7 +32,11 @@ app.get("/:id", async (c) => {
   const item = await getServiceById(id);
   if (!item) return c.json({ status: "error", message: "Not found" }, 404);
 
-  return c.json(item);
+  return c.json({
+    status: "ok",
+    service: item,
+    schedules: [], // ServiceSchedule model not yet implemented
+  });
 });
 
 app.post("/", async (c) => {
@@ -50,7 +54,11 @@ app.post("/", async (c) => {
   }
 
   const result = await createService(parsed.data);
-  return c.json(result);
+  return c.json({
+    status: "ok",
+    service: result,
+    schedules: [], // ServiceSchedule model not yet implemented
+  });
 });
 
 app.put("/:id", async (c) => {
@@ -71,7 +79,11 @@ app.put("/:id", async (c) => {
   }
 
   const result = await updateService(id, parsed.data);
-  return c.json(result);
+  return c.json({
+    status: "ok",
+    service: result,
+    schedules: [], // ServiceSchedule model not yet implemented
+  });
 });
 
 app.delete("/:id", async (c) => {
