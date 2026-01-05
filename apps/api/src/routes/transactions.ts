@@ -58,4 +58,67 @@ app.get("/", async (c) => {
   });
 });
 
+app.get("/participants", async (c) => {
+  const user = getSessionUser(c);
+  if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+
+  const query = c.req.query();
+  const from = query.from ? new Date(query.from) : undefined;
+  const to = query.to ? new Date(query.to) : undefined;
+  const limit = query.limit ? Number(query.limit) : undefined;
+
+  const { getParticipantLeaderboard } =
+    await import("../services/transactions");
+  try {
+    const result = await getParticipantLeaderboard({ from, to, limit });
+    return c.json(result);
+  } catch (err) {
+    console.error("Error fetching participant leaderboard:", err);
+    return c.json({ status: "error", message: "Error interno" }, 500);
+  }
+});
+
+app.get("/participants/:id", async (c) => {
+  const user = getSessionUser(c);
+  if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+
+  const id = c.req.param("id");
+  const query = c.req.query();
+  const from = query.from ? new Date(query.from) : undefined;
+  const to = query.to ? new Date(query.to) : undefined;
+
+  const { getParticipantInsight } = await import("../services/transactions");
+
+  try {
+    const result = await getParticipantInsight(id, { from, to });
+    return c.json(result);
+  } catch (err) {
+    console.error("Error fetching participant insight:", err);
+    return c.json({ status: "error", message: "Error interno" }, 500);
+  }
+});
+
+app.get("/stats", async (c) => {
+  const user = getSessionUser(c);
+  if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+
+  const query = c.req.query();
+  const from = query.from ? new Date(query.from) : undefined;
+  const to = query.to ? new Date(query.to) : undefined;
+
+  if (!from || !to) {
+    return c.json({ status: "error", message: "Fechas requeridas" }, 400);
+  }
+
+  const { getTransactionStats } = await import("../services/transactions");
+
+  try {
+    const result = await getTransactionStats({ from, to });
+    return c.json(result);
+  } catch (err) {
+    console.error("Error fetching stats:", err);
+    return c.json({ status: "error", message: "Error interno" }, 500);
+  }
+});
+
 export default app;

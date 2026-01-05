@@ -119,29 +119,21 @@ function applyFilters(query: any, filters: CalendarEventFilters) {
   let q = query;
 
   if (filters.from) {
-    q = q.where("startDate", ">=", new Date(filters.from));
+    q = q.where("start_date", ">=", new Date(filters.from));
   }
   if (filters.to) {
-    q = q.where("startDate", "<=", new Date(filters.to));
-  }
-  if (filters.calendarIds && filters.calendarIds.length > 0) {
-    // We need to join Calendar to filter by googleId
-    // Assumes the query has joined 'Calendar' or we filter by subquery
-    // For simplicity, let's assume we can join or the main table has what we need?
-    // The Event table has 'calendarId' (int), not googleId.
-    // So we usually need to join Calendar c on e.calendarId = c.id
-    // But let's handle this in the main query construction.
+    q = q.where("start_date", "<=", new Date(filters.to));
   }
 
   // Implementation note: The caller should handle joining if needed.
   // Here we just add where clauses assuming table aliases 'e' (Event) and 'c' (Calendar)
 
   if (filters.calendarIds && filters.calendarIds.length > 0) {
-    q = q.where("c.googleId", "in", filters.calendarIds);
+    q = q.where("c.google_id", "in", filters.calendarIds);
   }
 
   if (filters.eventTypes && filters.eventTypes.length > 0) {
-    q = q.where("e.eventType", "in", filters.eventTypes);
+    q = q.where("e.event_type", "in", filters.eventTypes);
   }
 
   if (filters.categories && filters.categories.length > 0) {
@@ -149,7 +141,7 @@ function applyFilters(query: any, filters: CalendarEventFilters) {
       filters.categories.includes("null") ||
       filters.categories.includes("Uncategorized");
     const validCategories = filters.categories.filter(
-      (c) => c !== "null" && c !== "Uncategorized",
+      (c) => c !== "null" && c !== "Uncategorized"
     );
 
     if (hasNull && validCategories.length > 0) {
@@ -157,7 +149,7 @@ function applyFilters(query: any, filters: CalendarEventFilters) {
         eb.or([
           eb("e.category", "in", validCategories),
           eb("e.category", "is", null),
-        ]),
+        ])
       );
     } else if (hasNull) {
       q = q.where("e.category", "is", null);
@@ -172,7 +164,7 @@ function applyFilters(query: any, filters: CalendarEventFilters) {
       eb.or([
         eb("e.summary", "ilike", term),
         eb("e.description", "ilike", term),
-      ]),
+      ])
     );
   }
 
@@ -180,18 +172,18 @@ function applyFilters(query: any, filters: CalendarEventFilters) {
     // Cast date to string for comparison or strictly compare dates
     // "startDate" is Timestamp/Date.
     // Simplest is to cast to date
-    q = q.where(sql<any>`DATE(e."startDate")`, "in", filters.dates);
+    q = q.where(sql<any>`DATE(e.start_date)`, "in", filters.dates);
   }
 
   return q;
 }
 
 export async function getCalendarAggregates(
-  filters: CalendarEventFilters,
+  filters: CalendarEventFilters
 ): Promise<CalendarAggregateResult> {
   const baseQuery = kysely
-    .selectFrom("Event as e")
-    .leftJoin("Calendar as c", "e.calendarId", "c.id");
+    .selectFrom("events as e")
+    .leftJoin("calendars as c", "e.calendar_id", "c.id");
 
   const filteredQuery = applyFilters(baseQuery, filters);
 
@@ -199,67 +191,67 @@ export async function getCalendarAggregates(
   const totals = await filteredQuery
     .select([
       sql<number>`count(e.id)`.as("events"),
-      sql<number>`count(distinct DATE(e."startDate"))`.as("days"),
-      sql<number>`coalesce(sum(e."amountExpected"), 0)`.as("amountExpected"),
-      sql<number>`coalesce(sum(e."amountPaid"), 0)`.as("amountPaid"),
+      sql<number>`count(distinct DATE(e.start_date))`.as("days"),
+      sql<number>`coalesce(sum(e.amount_expected), 0)`.as("amountExpected"),
+      sql<number>`coalesce(sum(e.amount_paid), 0)`.as("amountPaid"),
     ])
     .executeTakeFirst();
 
   // 2. By Month
   const byMonth = await filteredQuery
     .select([
-      sql<number>`extract(year from e."startDate")`.as("year"),
-      sql<number>`extract(month from e."startDate")`.as("month"),
+      sql<number>`extract(year from e.start_date)`.as("year"),
+      sql<number>`extract(month from e.start_date)`.as("month"),
       sql<number>`count(e.id)`.as("total"),
-      sql<number>`coalesce(sum(e."amountExpected"), 0)`.as("amountExpected"),
-      sql<number>`coalesce(sum(e."amountPaid"), 0)`.as("amountPaid"),
+      sql<number>`coalesce(sum(e.amount_expected), 0)`.as("amountExpected"),
+      sql<number>`coalesce(sum(e.amount_paid), 0)`.as("amountPaid"),
     ])
     .groupBy([
-      sql`extract(year from e."startDate")`,
-      sql`extract(month from e."startDate")`,
+      sql`extract(year from e.start_date)`,
+      sql`extract(month from e.start_date)`,
     ])
-    .orderBy(sql`extract(year from e."startDate")`, "desc")
-    .orderBy(sql`extract(month from e."startDate")`, "desc")
+    .orderBy(sql`extract(year from e.start_date)`, "desc")
+    .orderBy(sql`extract(month from e.start_date)`, "desc")
     .execute();
 
   // 3. By Week
   const byWeek = await filteredQuery
     .select([
-      sql<number>`extract(isoyear from e."startDate")`.as("isoYear"),
-      sql<number>`extract(week from e."startDate")`.as("isoWeek"),
+      sql<number>`extract(isoyear from e.start_date)`.as("isoYear"),
+      sql<number>`extract(week from e.start_date)`.as("isoWeek"),
       sql<number>`count(e.id)`.as("total"),
-      sql<number>`coalesce(sum(e."amountExpected"), 0)`.as("amountExpected"),
-      sql<number>`coalesce(sum(e."amountPaid"), 0)`.as("amountPaid"),
+      sql<number>`coalesce(sum(e.amount_expected), 0)`.as("amountExpected"),
+      sql<number>`coalesce(sum(e.amount_paid), 0)`.as("amountPaid"),
     ])
     .groupBy([
-      sql`extract(isoyear from e."startDate")`,
-      sql`extract(week from e."startDate")`,
+      sql`extract(isoyear from e.start_date)`,
+      sql`extract(week from e.start_date)`,
     ])
-    .orderBy(sql`extract(isoyear from e."startDate")`, "desc")
-    .orderBy(sql`extract(week from e."startDate")`, "desc")
+    .orderBy(sql`extract(isoyear from e.start_date)`, "desc")
+    .orderBy(sql`extract(week from e.start_date)`, "desc")
     .execute();
 
   // 4. By Date
   const byDate = await filteredQuery
     .select([
-      sql<string>`DATE(e."startDate")`.as("date"),
+      sql<string>`DATE(e.start_date)`.as("date"),
       sql<number>`count(e.id)`.as("total"),
-      sql<number>`coalesce(sum(e."amountExpected"), 0)`.as("amountExpected"),
-      sql<number>`coalesce(sum(e."amountPaid"), 0)`.as("amountPaid"),
+      sql<number>`coalesce(sum(e.amount_expected), 0)`.as("amountExpected"),
+      sql<number>`coalesce(sum(e.amount_paid), 0)`.as("amountPaid"),
     ])
-    .groupBy(sql`DATE(e."startDate")`)
-    .orderBy(sql`DATE(e."startDate")`, "desc")
+    .groupBy(sql`DATE(e.start_date)`)
+    .orderBy(sql`DATE(e.start_date)`, "desc")
     .execute();
 
   // 5. By Weekday
   const byWeekday = await filteredQuery
     .select([
-      sql<number>`extract(dow from e."startDate")`.as("weekday"),
+      sql<number>`extract(dow from e.start_date)`.as("weekday"),
       sql<number>`count(e.id)`.as("total"),
-      sql<number>`coalesce(sum(e."amountExpected"), 0)`.as("amountExpected"),
-      sql<number>`coalesce(sum(e."amountPaid"), 0)`.as("amountPaid"),
+      sql<number>`coalesce(sum(e.amount_expected), 0)`.as("amountExpected"),
+      sql<number>`coalesce(sum(e.amount_paid), 0)`.as("amountPaid"),
     ])
-    .groupBy(sql`extract(dow from e."startDate")`)
+    .groupBy(sql`extract(dow from e.start_date)`)
     .orderBy("total", "desc")
     .execute();
 
@@ -268,27 +260,30 @@ export async function getCalendarAggregates(
   // For simplicity, let's query available filters based on date range ONLY.
 
   const dateRangeQuery = kysely
-    .selectFrom("Event as e")
-    .leftJoin("Calendar as c", "e.calendarId", "c.id");
+    .selectFrom("events as e")
+    .leftJoin("calendars as c", "e.calendar_id", "c.id");
 
   let initialQ = dateRangeQuery;
   if (filters.from)
-    initialQ = initialQ.where("startDate", ">=", new Date(filters.from));
+    initialQ = initialQ.where("start_date", ">=", new Date(filters.from));
   if (filters.to)
-    initialQ = initialQ.where("startDate", "<=", new Date(filters.to));
+    initialQ = initialQ.where("start_date", "<=", new Date(filters.to));
 
   const [availCalendars, availEventTypes, availCategories] = await Promise.all([
     initialQ
       .select([
-        "c.googleId as calendarId",
+        "c.google_id as calendarId",
         sql<number>`count(e.id)`.as("total"),
       ])
-      .groupBy("c.googleId")
+      .groupBy("c.google_id")
       .orderBy("total", "desc")
       .execute(),
     initialQ
-      .select(["e.eventType", sql<number>`count(e.id)`.as("total")])
-      .groupBy("e.eventType")
+      .select([
+        "e.event_type as eventType",
+        sql<number>`count(e.id)`.as("total"),
+      ])
+      .groupBy("e.event_type")
       .orderBy("total", "desc")
       .execute(),
     initialQ
@@ -341,7 +336,7 @@ export async function getCalendarAggregates(
       events: Number((totals as unknown as TotalRow)?.events || 0),
       days: Number((totals as unknown as TotalRow)?.days || 0),
       amountExpected: Number(
-        (totals as unknown as TotalRow)?.amountExpected || 0,
+        (totals as unknown as TotalRow)?.amountExpected || 0
       ),
       amountPaid: Number((totals as unknown as TotalRow)?.amountPaid || 0),
     },
@@ -351,7 +346,7 @@ export async function getCalendarAggregates(
           // Flatten logic omitted, assuming byMonth covers needs or todo: implement proper byYear
           return acc;
         },
-        [],
+        []
       ),
       byMonth: (byMonth as unknown as MonthRow[]).map((r: MonthRow) => ({
         year: Number(r.year),
@@ -373,7 +368,7 @@ export async function getCalendarAggregates(
           total: Number(r.total),
           amountExpected: Number(r.amountExpected),
           amountPaid: Number(r.amountPaid),
-        }),
+        })
       ),
       byDate: (byDate as unknown as DateRow[]).map((r: DateRow) => ({
         date: String(r.date),
@@ -387,16 +382,16 @@ export async function getCalendarAggregates(
         (r: CalendarRow) => ({
           calendarId: String(r.calendarId),
           total: Number(r.total),
-        }),
+        })
       ),
       eventTypes: (availEventTypes as unknown as EventTypeRow[]).map(
         (r: EventTypeRow) => ({
           eventType: r.eventType,
           total: Number(r.total),
-        }),
+        })
       ),
       categories: (availCategories as unknown as CategoryRow[]).map(
-        (r: CategoryRow) => ({ category: r.category, total: Number(r.total) }),
+        (r: CategoryRow) => ({ category: r.category, total: Number(r.total) })
       ),
     },
   };
@@ -407,11 +402,11 @@ export async function getCalendarAggregates(
 
 export async function getCalendarEventsByDate(
   filters: CalendarEventFilters,
-  options: { maxDays?: number } = {},
+  options: { maxDays?: number } = {}
 ): Promise<CalendarEventsByDateResult> {
   const baseQuery = kysely
-    .selectFrom("Event as e")
-    .leftJoin("Calendar as c", "e.calendarId", "c.id");
+    .selectFrom("events as e")
+    .leftJoin("calendars as c", "e.calendar_id", "c.id");
 
   const filteredQuery = applyFilters(baseQuery, filters);
 
@@ -419,15 +414,15 @@ export async function getCalendarEventsByDate(
 
   // 1. Get dates with events
   const dates = await filteredQuery
-    .select(sql<string>`DATE(e."startDate")`.as("date"))
+    .select(sql<string>`DATE(e.start_date)`.as("date"))
     .distinct()
-    .orderBy(sql`DATE(e."startDate")`, "desc")
+    .orderBy(sql`DATE(e.start_date)`, "desc")
     .limit(maxDays)
     .execute();
 
   type DateOnlyRow = { date: string | Date };
   const targetDates = (dates as unknown as DateOnlyRow[]).map(
-    (d: DateOnlyRow) => String(d.date),
+    (d: DateOnlyRow) => String(d.date)
   );
 
   if (targetDates.length === 0) {
@@ -444,9 +439,9 @@ export async function getCalendarEventsByDate(
 
   let eventsQuery = applyFilters(
     kysely
-      .selectFrom("Event as e")
-      .leftJoin("Calendar as c", "e.calendarId", "c.id"),
-    { ...filters, dates: targetDates }, // Override dates filter? Or intersect?
+      .selectFrom("events as e")
+      .leftJoin("calendars as c", "e.calendar_id", "c.id"),
+    { ...filters, dates: targetDates } // Override dates filter? Or intersect?
     // The original logic likely wanted "top N days matching filters".
     // So we use the same filters, plus enforce date is in the top N set.
   );
@@ -454,41 +449,41 @@ export async function getCalendarEventsByDate(
   // However, applyFilters uses filters.dates as equality.
   // Let's manually add the where clause for dates.
   eventsQuery = eventsQuery.where(
-    sql<any>`DATE(e."startDate")`,
+    sql<any>`DATE(e.start_date)`,
     "in",
-    targetDates,
+    targetDates
   );
 
   const events = await eventsQuery
     .select([
-      "c.googleId as calendarId",
-      "e.externalEventId as eventId",
-      "e.eventStatus as status",
-      "e.eventType",
+      "c.google_id as calendarId",
+      "e.external_event_id as eventId",
+      "e.event_status as status",
+      "e.event_type as eventType",
       "e.category",
       "e.summary",
       "e.description",
-      "e.startDate",
-      "e.startDateTime",
-      "e.startTimeZone",
-      "e.endDate",
-      "e.endDateTime",
-      "e.endTimeZone",
-      "e.colorId",
+      "e.start_date as startDate",
+      "e.start_date_time as startDateTime",
+      "e.start_time_zone as startTimeZone",
+      "e.end_date as endDate",
+      "e.end_date_time as endDateTime",
+      "e.end_time_zone as endTimeZone",
+      "e.color_id as colorId",
       "e.location",
       "e.transparency",
       "e.visibility",
-      "e.hangoutLink",
-      "e.eventCreatedAt",
-      "e.eventUpdatedAt",
-      "e.amountExpected",
-      "e.amountPaid",
+      "e.hangout_link as hangoutLink",
+      "e.event_created_at as eventCreatedAt",
+      "e.event_updated_at as eventUpdatedAt",
+      "e.amount_expected as amountExpected",
+      "e.amount_paid as amountPaid",
       "e.attended",
       "e.dosage",
-      "e.treatmentStage",
-      sql<string>`DATE(e."startDate")`.as("eventDateString"), // helper for grouping
+      "e.treatment_stage as treatmentStage",
+      sql<string>`DATE(e.start_date)`.as("eventDateString"), // helper for grouping
     ])
-    .orderBy("e.startDateTime", "desc")
+    .orderBy("e.start_date_time", "desc")
     .execute();
 
   // Group by date
