@@ -47,10 +47,11 @@ RUN pnpm deploy --filter=@finanzas/api --prod /app/deploy
 # Extra: Ensure build artifacts are correctly placed for the runtime
 # We manually copy the 'dist' folders to ensure the latest built code is used.
 # For @finanzas/db, we inject it directly into node_modules where Node.js expects it.
+# Note: --remove-destination is needed because pnpm deploy uses hardlinks
 RUN cp -r apps/api/dist /app/deploy/dist && \
     mkdir -p /app/deploy/node_modules/@finanzas/db && \
-    cp -r packages/db/dist /app/deploy/node_modules/@finanzas/db/dist && \
-    cp packages/db/package.json /app/deploy/node_modules/@finanzas/db/package.json
+    cp -r --remove-destination packages/db/dist /app/deploy/node_modules/@finanzas/db/dist && \
+    cp --remove-destination packages/db/package.json /app/deploy/node_modules/@finanzas/db/package.json
 
 # 5. Veto Prisma: Physically remove any Prisma artifacts created during build
 # to ensure zero Prisma footprint in the production image.
