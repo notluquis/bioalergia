@@ -50,3 +50,22 @@ export async function logAudit({
     console.error("[Audit] Failed to create log:", error);
   }
 }
+// ... imports
+
+/**
+ * Get distinct tables (entities) that have been modified since a specific date.
+ * Used for incremental backups.
+ */
+export async function getTablesWithChanges(since?: Date): Promise<string[]> {
+  const where = since ? { createdAt: { gte: since } } : undefined;
+
+  const logs = await db.auditLog.findMany({
+    where,
+    select: {
+      entity: true,
+    },
+    distinct: ["entity"],
+  });
+
+  return logs.map((log) => log.entity);
+}
