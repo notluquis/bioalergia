@@ -11,6 +11,18 @@ import type { EmployeeSalaryType } from "@/types/schema";
 import { createEmployee, updateEmployee } from "../api";
 import type { Employee, EmployeePayload, EmployeeUpdatePayload } from "../types";
 
+// CLP currency formatting helpers
+function formatCLP(value: string | number): string {
+  const num = typeof value === "string" ? parseFloat(value.replace(/\./g, "").replace(/,/g, "")) : value;
+  if (isNaN(num) || num === 0) return "";
+  return num.toLocaleString("es-CL");
+}
+
+function parseCLP(formatted: string): string {
+  // Remove thousands separators (dots in Chilean format)
+  return formatted.replace(/\./g, "");
+}
+
 interface EmployeeFormProps {
   employee?: Employee | null;
   onSave: () => void;
@@ -47,7 +59,7 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
     hourlyRate: "0",
     fixedSalary: "",
     overtimeRate: "",
-    retentionRate: "0.145",
+    retentionRate: "14.5",
   });
 
   const [rutError, setRutError] = useState<string | null>(null);
@@ -66,7 +78,7 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
         hourlyRate: String(employee.hourlyRate ?? "0"),
         fixedSalary: employee.baseSalary != null ? String(employee.baseSalary) : "",
         overtimeRate: "", // Not in schema?
-        retentionRate: "0.145", // Not in schema?
+        retentionRate: "14.5", // Default 14.5%
       });
     } else {
       setForm({
@@ -167,7 +179,9 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
       hourly_rate: form.salaryType === "HOURLY" && form.hourlyRate ? Number(form.hourlyRate) : undefined,
       fixed_salary: form.salaryType === "FIXED" && form.fixedSalary ? Number(form.fixedSalary) : undefined,
       overtime_rate: form.overtimeRate ? Number(form.overtimeRate) : null,
-      retention_rate: form.retentionRate ? Number(form.retentionRate) : 0,
+      // Convert percentage (e.g., 14.5) to decimal (0.145)
+      // Handle comma as decimal separator for Chilean format
+      retention_rate: form.retentionRate ? Number(form.retentionRate.replace(",", ".")) / 100 : 0,
     };
 
     if (employee?.id) {
@@ -279,14 +293,15 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
         {form.salaryType === "FIXED" && (
           <Input
             label="Sueldo fijo mensual (CLP)"
-            type="number"
-            min="0"
-            value={form.fixedSalary}
-            onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
-              setForm((prev) => ({ ...prev, fixedSalary: event.target.value }))
-            }
+            type="text"
+            inputMode="numeric"
+            value={formatCLP(form.fixedSalary)}
+            onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+              const rawValue = parseCLP(event.target.value);
+              setForm((prev) => ({ ...prev, fixedSalary: rawValue }));
+            }}
             required
-            placeholder="$ 0"
+            placeholder="$ 1.500.000"
           />
         )}
         <Input
@@ -301,16 +316,16 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
         />
         <Input
           label="Retención (%)"
-          type="number"
-          min="0"
-          max="1"
-          step="0.001"
+          type="text"
+          inputMode="decimal"
           value={form.retentionRate}
-          onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
-            setForm((prev) => ({ ...prev, retentionRate: event.target.value }))
-          }
+          onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+            // Allow digits, dots, and commas for decimal input
+            const value = event.target.value.replace(/[^\d.,]/g, "");
+            setForm((prev) => ({ ...prev, retentionRate: value }));
+          }}
           required
-          helper="Ej: 0.145 para 14.5%"
+          helper="Ej: 14.5 o 14,5 para 14.5%"
         />
       </div>
       <div className="flex items-center justify-end gap-3">
