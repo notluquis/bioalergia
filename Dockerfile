@@ -14,6 +14,9 @@ RUN turbo prune --scope=@finanzas/api --scope=@finanzas/web --docker
 FROM node:current-slim AS build
 WORKDIR /app
 
+# Define ARG for Project ID (used in cache key) with default for local
+ARG RAILWAY_PROJECT_ID=local
+
 # System deps for native modules (argon2)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
@@ -23,10 +26,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN npm install -g pnpm@10.27.0
 ENV CI=true
 
+ENV PNPM_STORE_DIR=/pnpm/store
+
 # 1. Install dependencies (Cached Layer)
 # Copy only package.json's and lockfile from prune stage
 COPY --from=prune /app/out/json/ .
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
+RUN --mount=type=cache,id=s/${RAILWAY_PROJECT_ID}-pnpm,target=/pnpm/store \
     pnpm install --frozen-lockfile
 
 # 2. Copy source code (Cached Layer)
@@ -38,7 +43,7 @@ RUN pnpm --filter @finanzas/web build
 RUN pnpm --filter @finanzas/api build
 
 # 4. Prepare deployment (Isolate API production deps)
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
+RUN --mount=type=cache,id=s/${RAILWAY_PROJECT_ID}-pnpm,target=/pnpm/store \
     pnpm deploy --filter=@finanzas/api --prod /app/deploy
 
 # 5. Copy built artifacts to deployment folder
