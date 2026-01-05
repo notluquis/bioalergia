@@ -164,6 +164,12 @@ export class SchemaType implements SchemaDef {
                     type: "Json",
                     optional: true
                 },
+                passkeys: {
+                    name: "passkeys",
+                    type: "Passkey",
+                    array: true,
+                    relation: { opposite: "user" }
+                },
                 createdAt: {
                     name: "createdAt",
                     type: "DateTime",
@@ -228,6 +234,81 @@ export class SchemaType implements SchemaDef {
                 personId: { type: "Int" },
                 email: { type: "String" },
                 passkeyCredentialID: { type: "String" }
+            }
+        },
+        Passkey: {
+            name: "Passkey",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true,
+                    default: ExpressionUtils.call("cuid")
+                },
+                userId: {
+                    name: "userId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "user"
+                    ]
+                },
+                credentialId: {
+                    name: "credentialId",
+                    type: "String",
+                    unique: true
+                },
+                publicKey: {
+                    name: "publicKey",
+                    type: "Bytes"
+                },
+                counter: {
+                    name: "counter",
+                    type: "BigInt",
+                    default: 0
+                },
+                transports: {
+                    name: "transports",
+                    type: "Json",
+                    optional: true
+                },
+                webAuthnUserID: {
+                    name: "webAuthnUserID",
+                    type: "String"
+                },
+                deviceType: {
+                    name: "deviceType",
+                    type: "String"
+                },
+                backedUp: {
+                    name: "backedUp",
+                    type: "Boolean",
+                    default: false
+                },
+                friendlyName: {
+                    name: "friendlyName",
+                    type: "String",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                lastUsedAt: {
+                    name: "lastUsedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                user: {
+                    name: "user",
+                    type: "User",
+                    relation: { opposite: "passkeys", fields: ["userId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "String" },
+                credentialId: { type: "String" }
             }
         },
         Role: {

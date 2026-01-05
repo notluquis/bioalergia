@@ -188,6 +188,12 @@ export class SchemaType implements SchemaDef {
                     optional: true,
                     attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("passkey_transports") }] }]
                 },
+                passkeys: {
+                    name: "passkeys",
+                    type: "Passkey",
+                    array: true,
+                    relation: { opposite: "user" }
+                },
                 createdAt: {
                     name: "createdAt",
                     type: "DateTime",
@@ -264,6 +270,98 @@ export class SchemaType implements SchemaDef {
                 personId: { type: "Int" },
                 email: { type: "String" },
                 passkeyCredentialID: { type: "String" }
+            }
+        },
+        Passkey: {
+            name: "Passkey",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("cuid") }] }],
+                    default: ExpressionUtils.call("cuid")
+                },
+                userId: {
+                    name: "userId",
+                    type: "Int",
+                    foreignKeyFor: [
+                        "user"
+                    ]
+                },
+                credentialId: {
+                    name: "credentialId",
+                    type: "String",
+                    unique: true,
+                    attributes: [{ name: "@unique" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("credential_id") }] }]
+                },
+                publicKey: {
+                    name: "publicKey",
+                    type: "Bytes",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("public_key") }] }]
+                },
+                counter: {
+                    name: "counter",
+                    type: "BigInt",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }],
+                    default: 0
+                },
+                transports: {
+                    name: "transports",
+                    type: "Json",
+                    optional: true
+                },
+                webAuthnUserID: {
+                    name: "webAuthnUserID",
+                    type: "String",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("webauthn_user_id") }] }]
+                },
+                deviceType: {
+                    name: "deviceType",
+                    type: "String",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("device_type") }] }]
+                },
+                backedUp: {
+                    name: "backedUp",
+                    type: "Boolean",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("backed_up") }] }],
+                    default: false
+                },
+                friendlyName: {
+                    name: "friendlyName",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("friendly_name") }] }]
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }],
+                    default: ExpressionUtils.call("now")
+                },
+                lastUsedAt: {
+                    name: "lastUsedAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("last_used_at") }] }]
+                },
+                user: {
+                    name: "user",
+                    type: "User",
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array([ExpressionUtils.field("userId")]) }, { name: "references", value: ExpressionUtils.array([ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }],
+                    relation: { opposite: "passkeys", fields: ["userId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            attributes: [
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,read,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils.field("user")) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["roles"]), "?", ExpressionUtils.binary(ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.field("role"), ["name"]), "==", ExpressionUtils.literal("ADMIN")), "||", ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.field("role"), ["name"]), "==", ExpressionUtils.literal("GOD")))) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array([ExpressionUtils.field("userId")]) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("passkeys") }] }
+            ],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "String" },
+                credentialId: { type: "String" }
             }
         },
         Role: {

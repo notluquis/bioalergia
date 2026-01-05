@@ -125,6 +125,7 @@ model User {
     passkeyPublicKey Bytes? @map("passkey_public_key")
     passkeyCounter BigInt @default(0) @map("passkey_counter")
     passkeyTransports Json? @map("passkey_transports")
+    passkeys Passkey[]
     createdAt DateTime @default(now()) @map("created_at")
     updatedAt DateTime @default(now()) @updatedAt() @map("updated_at")
     mfaEnforced Boolean @default(true) @map("mfa_enforced")
@@ -137,6 +138,25 @@ model User {
     person Person @relation(fields: [personId], references: [id], onDelete: Cascade)
 
     @@map("users")
+}
+
+model Passkey {
+    id String @id() @default(cuid())
+    userId Int
+    credentialId String @unique() @map("credential_id")
+    publicKey Bytes @map("public_key")
+    counter BigInt @default(0)
+    transports Json?
+    webAuthnUserID String @map("webauthn_user_id")
+    deviceType String @map("device_type")
+    backedUp Boolean @default(false) @map("backed_up")
+    friendlyName String? @map("friendly_name")
+    createdAt DateTime @default(now()) @map("created_at")
+    lastUsedAt DateTime? @map("last_used_at")
+    user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    @@index([userId])
+    @@map("passkeys")
 }
 
 model Role {
