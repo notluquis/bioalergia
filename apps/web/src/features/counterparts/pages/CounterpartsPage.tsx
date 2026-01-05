@@ -1,3 +1,4 @@
+import { useCreateCounterpart, useFindManyCounterpart, useUpdateCounterpart } from "@finanzas/db/hooks";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { useCallback, useMemo, useState } from "react";
@@ -18,7 +19,6 @@ import { SUMMARY_RANGE_MONTHS } from "@/features/counterparts/constants";
 import type { Counterpart, CounterpartCategory, CounterpartPersonType } from "@/features/counterparts/types";
 import { ServicesGrid, ServicesHero, ServicesSurface } from "@/features/services/components/ServicesShell";
 import { normalizeRut } from "@/lib/rut";
-import { counterpartHooks } from "@/lib/zenstack/hooks";
 
 export default function CounterpartsPage() {
   const queryClient = useQueryClient();
@@ -50,7 +50,7 @@ export default function CounterpartsPage() {
     data: counterpartsData,
     isLoading: listLoading,
     error: listError,
-  } = counterpartHooks.useFindMany({
+  } = useFindManyCounterpart({
     orderBy: { name: "asc" },
   });
 
@@ -85,8 +85,8 @@ export default function CounterpartsPage() {
     (summaryError instanceof Error ? summaryError.message : null);
 
   // ZenStack mutations
-  const createMutation = counterpartHooks.useCreate();
-  const updateMutation = counterpartHooks.useUpdate();
+  const createMutation = useCreateCounterpart();
+  const updateMutation = useUpdateCounterpart();
 
   async function handleSaveCounterpart(payload: CounterpartUpsertPayload) {
     setError(null);

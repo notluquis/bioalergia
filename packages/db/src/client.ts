@@ -5,7 +5,7 @@ import { ZenStackClient } from "@zenstackhq/orm";
 import { PostgresDialect } from "@zenstackhq/orm/dialects/postgres";
 import { PolicyPlugin } from "@zenstackhq/plugin-policy";
 import { Pool } from "pg";
-import { schema } from "../zenstack/schema";
+import { schema } from "./zenstack/schema.js";
 
 // Connection pool
 const pool = new Pool({
@@ -27,8 +27,10 @@ export const kysely = new Kysely<any>({
 });
 
 // Re-export schema for use in apps/api
+// Re-export schema for use in apps/api
 export { schema };
-export type { SchemaType } from "../zenstack/schema";
+export type { SchemaType } from "./zenstack/schema.js";
+export * from "./zenstack/models.js";
 
 // Export standard types
 export const EmployeeStatus = {

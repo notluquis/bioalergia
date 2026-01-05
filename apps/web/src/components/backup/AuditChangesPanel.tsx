@@ -4,7 +4,10 @@
  * Shows recent database changes with diffs and revert functionality.
  */
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+// ==================== IMPORTS ====================
+
+import { useFindManyAuditLog } from "@finanzas/db/hooks";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import {
   ChevronDown,
@@ -26,51 +29,12 @@ import { cn } from "@/lib/utils";
 
 // ==================== TYPES ====================
 
-interface AuditChange {
-  id: string;
-  table_name: string;
-  row_id: string;
-  operation: "INSERT" | "UPDATE" | "DELETE";
-  old_data: Record<string, unknown> | null;
-  new_data: Record<string, unknown> | null;
-  diff: Record<string, unknown> | null;
-  transaction_id: string;
-  created_at: string;
-  exported_at: string | null;
-}
-
 interface AuditStats {
   totalChanges: number;
   pendingExport: number;
   byTable: { table_name: string; count: number }[];
   byOperation: { operation: string; count: number }[];
 }
-
-// ==================== API ====================
-
-const fetchAuditStats = async (): Promise<AuditStats> => {
-  const res = await fetch("/api/audit/stats");
-  if (!res.ok) throw new Error("Failed to fetch audit stats");
-  return res.json();
-};
-
-const fetchRecentChanges = async (): Promise<AuditChange[]> => {
-  const res = await fetch("/api/audit/changes?limit=50");
-  if (!res.ok) throw new Error("Failed to fetch changes");
-  return (await res.json()).changes;
-};
-
-const revertChange = async (changeId: string): Promise<{ success: boolean; message: string }> => {
-  const res = await fetch(`/api/audit/revert/${changeId}`, { method: "POST" });
-  if (!res.ok) throw new Error("Failed to revert change");
-  return res.json();
-};
-
-const triggerExport = async (): Promise<{ success: boolean; message: string }> => {
-  const res = await fetch("/api/audit/export", { method: "POST" });
-  if (!res.ok) throw new Error("Failed to export");
-  return res.json();
-};
 
 // ==================== HELPERS ====================
 
@@ -90,6 +54,7 @@ function getOperationIcon(op: string) {
 function getOperationLabel(op: string) {
   switch (op) {
     case "INSERT":
+    case "CREATE":
       return "Creado";
     case "UPDATE":
       return "Modificado";
@@ -100,32 +65,87 @@ function getOperationLabel(op: string) {
   }
 }
 
-// ==================== MAIN COMPONENT ====================
+// ==================== COMPONENT ====================
 
 export default function AuditChangesPanel() {
   const { success, error: showError } = useToast();
   const queryClient = useQueryClient();
   const [expanded, setExpanded] = useState<string | null>(null);
 
-  // Queries
-  const statsQuery = useQuery({
-    queryKey: ["audit-stats"],
-    queryFn: fetchAuditStats,
-    refetchInterval: 60000,
+  // Queries using ZenStack Hooks
+  const {
+    data: auditLogs,
+    refetch,
+    isFetching,
+  } = useFindManyAuditLog({
+    orderBy: { createdAt: "desc" },
+    take: 50,
   });
 
-  const changesQuery = useQuery({
-    queryKey: ["audit-changes"],
-    queryFn: fetchRecentChanges,
+  // Calculate stats client-side since we're fetching the latest 50 anyway
+  const total = auditLogs?.length || 0;
+
+  const byOperationCount: Record<string, number> = {
+    CREATE: 0,
+    UPDATE: 0,
+    DELETE: 0,
+  };
+
+  const byEntityCount: Record<string, number> = {};
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  auditLogs?.forEach((log: any) => {
+    // Count operations
+    const action = log.action as string;
+    if (typeof byOperationCount[action] === "number") {
+      byOperationCount[action] = (byOperationCount[action] ?? 0) + 1;
+    }
+    // Count entities
+    const entity = log.entity;
+    byEntityCount[entity] = (byEntityCount[entity] || 0) + 1;
   });
 
-  // Mutations
+  const stats: AuditStats = {
+    totalChanges: total,
+    pendingExport: 0, // Not available in basic log
+    byOperation: Object.entries(byOperationCount)
+      .filter(([, count]) => count > 0)
+      .map(([operation, count]) => ({ operation, count })),
+    byTable: Object.entries(byEntityCount)
+      .sort((a, b) => b[1] - a[1])
+      .map(([table_name, count]) => ({ table_name, count })),
+  };
+
+  // Adapter to match the UI's expected format
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const changes = (auditLogs || []).map((log: any) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const details = (log.details as any) || {};
+    return {
+      id: String(log.id),
+      table_name: log.entity,
+      row_id: log.entityId || "N/A",
+      operation: log.action as "INSERT" | "UPDATE" | "DELETE",
+      // Flatten usage for existing UI
+      old_data: details.old_data || null,
+      new_data: details.new_data || null,
+      diff: details.diff || null,
+      transaction_id: "N/A", // Not present in new schema
+      created_at: log.createdAt as unknown as string, // Date object/string handling
+      exported_at: null, // Not present in basic log
+    };
+  });
+
   const revertMutation = useMutation({
-    mutationFn: revertChange,
+    mutationFn: async (changeId: string) => {
+      const res = await fetch(`/api/audit/revert/${changeId}`, { method: "POST" });
+      if (!res.ok) throw new Error("Failed to revert change");
+      return res.json();
+    },
     onSuccess: (data) => {
       if (data.success) {
         success("Cambio revertido");
-        queryClient.invalidateQueries({ queryKey: ["audit-changes"] });
+        refetch(); // Refetch ZenStack query
       } else {
         showError(data.message);
       }
@@ -134,7 +154,11 @@ export default function AuditChangesPanel() {
   });
 
   const exportMutation = useMutation({
-    mutationFn: triggerExport,
+    mutationFn: async () => {
+      const res = await fetch("/api/audit/export", { method: "POST" });
+      if (!res.ok) throw new Error("Failed to export");
+      return res.json();
+    },
     onSuccess: (data) => {
       if (data.success) {
         success("Exportación completada");
@@ -146,12 +170,8 @@ export default function AuditChangesPanel() {
     onError: (e) => showError(e.message),
   });
 
-  const stats = statsQuery.data;
-  const changes = changesQuery.data || [];
-
   return (
     <div className="space-y-4">
-      {/* Header */}
       {/* Header */}
       <div className="bg-base-200/50 rounded-xl">
         <div className="border-base-content/5 flex items-center justify-between border-b p-4">
@@ -163,18 +183,18 @@ export default function AuditChangesPanel() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => queryClient.invalidateQueries({ queryKey: ["audit-changes"] })}
-              disabled={changesQuery.isFetching}
+              onClick={() => refetch()}
+              disabled={isFetching}
               className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full p-0"
               title="Actualizar lista"
             >
-              <RefreshCw className={cn("size-5", changesQuery.isFetching && "animate-spin")} />
+              <RefreshCw className={cn("size-5", isFetching && "animate-spin")} />
             </Button>
             <Button
               variant="primary"
               size="sm"
               onClick={() => exportMutation.mutate()}
-              disabled={exportMutation.isPending || !stats?.pendingExport}
+              disabled={exportMutation.isPending}
               isLoading={exportMutation.isPending}
               className="h-8 text-xs font-medium"
             >
@@ -215,7 +235,8 @@ export default function AuditChangesPanel() {
                 <p>No hay cambios registrados aún</p>
               </div>
             ) : (
-              changes.slice(0, 20).map((change) => (
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              changes.slice(0, 20).map((change: any) => (
                 <div key={change.id} className="p-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">

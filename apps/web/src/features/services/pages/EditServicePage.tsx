@@ -1,3 +1,4 @@
+import { useUpdateService } from "@finanzas/db/hooks";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { useMemo, useState } from "react";
@@ -13,7 +14,6 @@ import { ServicesHero, ServicesSurface } from "@/features/services/components/Se
 import type { CreateServicePayload, ServiceDetailResponse } from "@/features/services/types";
 import { fmtCLP } from "@/lib/format";
 import { LOADING_SPINNER_MD } from "@/lib/styles";
-import { serviceHooks } from "@/lib/zenstack/hooks";
 
 function mapServiceToForm(service: ServiceDetailResponse["service"]): Partial<CreateServicePayload> {
   return {
@@ -66,7 +66,7 @@ export default function ServiceEditPage() {
   });
 
   // ZenStack mutation for updates
-  const updateMutation = serviceHooks.useUpdate();
+  const updateMutation = useUpdateService();
 
   const handleRegenerate = async (serviceId: string, payload?: { months?: number; startDate?: string }) => {
     try {

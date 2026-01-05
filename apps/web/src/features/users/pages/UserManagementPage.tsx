@@ -1,5 +1,6 @@
 import "dayjs/locale/es";
 
+import { useDeleteUser, useFindManyRole, useFindManyUser, useUpdateUser } from "@finanzas/db/hooks";
 import { useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
@@ -35,7 +36,6 @@ import type { User } from "@/features/users/types";
 import { getPersonFullName, getPersonInitials } from "@/lib/person";
 import { BADGE_SM, PAGE_CONTAINER, TITLE_LG } from "@/lib/styles";
 import { cn } from "@/lib/utils";
-import { roleHooks, userHooks } from "@/lib/zenstack/hooks";
 
 dayjs.extend(relativeTime);
 dayjs.locale("es");
@@ -51,7 +51,7 @@ export default function UserManagementPage() {
   const [selectedRole, setSelectedRole] = useState("");
 
   // ZenStack hooks for users
-  const { data: usersData, isLoading } = userHooks.useFindMany({
+  const { data: usersData, isLoading } = useFindManyUser({
     include: { person: true },
     orderBy: { createdAt: "desc" },
   });
@@ -65,15 +65,16 @@ export default function UserManagementPage() {
   /* eslint-enable @typescript-eslint/no-explicit-any */
 
   // ZenStack hooks for roles (for filter dropdown)
-  const { data: rolesData } = roleHooks.useFindMany({
+  const { data: rolesData } = useFindManyRole({
     orderBy: { name: "asc" },
   });
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const roles = (rolesData as any[]) ?? [];
 
   // ZenStack mutations
-  const updateUserMutation = userHooks.useUpdate();
-  const deleteUserMutation = userHooks.useDelete();
+  // ZenStack mutations
+  const updateUserMutation = useUpdateUser();
+  const deleteUserMutation = useDeleteUser();
 
   const handleEditRoleClick = (user: User) => {
     setEditingUser(user);

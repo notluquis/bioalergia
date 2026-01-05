@@ -6,22 +6,40 @@
   "types": "./dist/zenstack/schema.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/src/client.d.ts",
-      "import": "./dist/src/client.js",
-      "default": "./dist/src/client.js"
+      "types": "./dist/client.d.ts",
+      "import": "./dist/client.js",
+      "default": "./dist/client.js"
     },
     "./schema": {
       "types": "./dist/zenstack/schema.d.ts",
       "import": "./dist/zenstack/schema.js",
       "default": "./dist/zenstack/schema.js"
+    },
+    "./schema-lite": {
+      "types": "./dist/zenstack/schema-lite.d.ts",
+      "import": "./dist/zenstack/schema-lite.js",
+      "default": "./dist/zenstack/schema-lite.js"
+    },
+    "./models": {
+      "types": "./dist/zenstack/models.d.ts",
+      "import": "./dist/zenstack/models.js",
+      "default": "./dist/zenstack/models.js"
+    },
+    "./hooks": {
+      "types": "./dist/zenstack/hooks/index.d.ts",
+      "import": "./dist/zenstack/hooks/index.js",
+      "default": "./dist/zenstack/hooks/index.js"
     }
   },
   "scripts": {
-    "build": "zen generate && tsc",
+    "build": "zen generate && pnpm fix-imports && tsc",
+    "fix-imports": "find src/zenstack -name \"*.ts\" -exec sed -i '' -e 's/from \"\\.\\/schema\"/from \".\\/schema.js\"/g' -e 's/from \"\\.\\/schema-lite\"/from \".\\/schema-lite.js\"/g' {} +",
     "generate": "zen generate",
     "db:push": "zen db push",
     "migrate:dev": "zen migrate dev",
-    "migrate:deploy": "zen migrate deploy"
+    "migrate:deploy": "zen migrate deploy",
+    "clean": "rm -rf dist",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@zenstackhq/orm": "^3.1.0",
@@ -31,9 +49,18 @@
     "pg": "^8.11.0"
   },
   "devDependencies": {
+    "@prisma/generator-helper": "^7.2.0",
+    "@tanstack/react-query": "^5.90.16",
     "@types/node": "^25.0.3",
     "@types/pg": "^8.11.0",
+    "@types/react": "^19.2.7",
     "@zenstackhq/cli": "^3.1.0",
+    "@zenstackhq/sdk": "^3.1.0",
+    "@zenstackhq/tanstack-query": "3.1.0",
+    "@zenstackhq/trpc": "^2.22.1",
+    "react": "^19.2.3",
+    "ts-morph": "^27.0.2",
+    "ts-pattern": "^5.9.0",
     "typescript": "^5.8.0"
   }
 }

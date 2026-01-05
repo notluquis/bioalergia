@@ -11,6 +11,19 @@ plugin policy {
   provider = '@zenstackhq/plugin-policy'
 }
 
+plugin ts {
+  provider = '@core/typescript'
+  output = "../src/zenstack"
+  lite = true
+}
+
+
+
+plugin prisma {
+  provider = '@core/prisma'
+  output = "./prisma/schema.prisma"
+}
+
 // ============================================================
 // MODELS
 // ============================================================

@@ -52,6 +52,7 @@ import "./index.css";
 import "./i18n";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QuerySettingsProvider } from "@zenstackhq/tanstack-query/react";
 import React, { lazy, Suspense } from "react";
 import ReactDOM from "react-dom/client";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
@@ -189,15 +190,19 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     <GlobalError>
       <ChunkErrorBoundary>
         <QueryClientProvider client={queryClient}>
-          <AuthProvider>
-            <SettingsProvider>
-              <ToastProvider>
-                <AbilityProvider>
-                  <RouterProvider router={router} />
-                </AbilityProvider>
-              </ToastProvider>
-            </SettingsProvider>
-          </AuthProvider>
+          <QuerySettingsProvider
+            value={{ endpoint: `${import.meta.env.VITE_API_URL || "http://localhost:3000"}/api/model` }}
+          >
+            <AuthProvider>
+              <SettingsProvider>
+                <ToastProvider>
+                  <AbilityProvider>
+                    <RouterProvider router={router} />
+                  </AbilityProvider>
+                </ToastProvider>
+              </SettingsProvider>
+            </AuthProvider>
+          </QuerySettingsProvider>
         </QueryClientProvider>
       </ChunkErrorBoundary>
     </GlobalError>

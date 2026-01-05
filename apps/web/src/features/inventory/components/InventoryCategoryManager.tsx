@@ -1,9 +1,9 @@
+import { useCreateInventoryCategory, useFindManyInventoryCategory } from "@finanzas/db/hooks";
 import { PlusCircle } from "lucide-react";
 import { useState } from "react";
 
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
-import { inventoryCategoryHooks } from "@/lib/zenstack/hooks";
 
 import type { InventoryCategory } from "../types";
 
@@ -15,7 +15,7 @@ export default function InventoryCategoryManager() {
     data: categoriesData,
     isLoading: loading,
     error: queryError,
-  } = inventoryCategoryHooks.useFindMany({
+  } = useFindManyInventoryCategory({
     orderBy: { name: "asc" },
   });
 
@@ -24,7 +24,7 @@ export default function InventoryCategoryManager() {
   /* eslint-enable @typescript-eslint/no-explicit-any */
 
   // ZenStack mutation for creating category
-  const createMutation = inventoryCategoryHooks.useCreate();
+  const createMutation = useCreateInventoryCategory();
 
   const error =
     queryError instanceof Error

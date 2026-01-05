@@ -27,7 +27,9 @@
     "paths": {
       "@/*": ["./src/*"],
       "@shared/*": ["./shared/*"],
-      "~/*": ["./*"]
+      "~/*": ["./*"],
+      "@finanzas/db": ["../../packages/db/dist/client"],
+      "@finanzas/db/*": ["../../packages/db/dist/zenstack/*"]
     }
   },
   "include": ["src", "shared"]
