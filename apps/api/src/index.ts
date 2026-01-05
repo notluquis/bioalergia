@@ -28,6 +28,9 @@ import { settingsRoutes } from "./routes/settings";
 import employeeRoutes from "./routes/employees";
 import loanScheduleRoutes from "./routes/loan-schedules";
 import serviceScheduleRoutes from "./routes/service-schedules";
+import timesheetRoutes from "./routes/timesheets";
+import peopleRoutes from "./routes/people";
+import expenseRoutes from "./routes/expenses";
 import { readFile } from "fs/promises";
 import { join } from "path";
 
@@ -85,6 +88,9 @@ app.route("/api/settings", settingsRoutes);
 app.route("/api/employees", employeeRoutes);
 app.route("/api/loan-schedules", loanScheduleRoutes);
 app.route("/api/services/schedules", serviceScheduleRoutes);
+app.route("/api/timesheets", timesheetRoutes);
+app.route("/api/people", peopleRoutes);
+app.route("/api/expenses", expenseRoutes);
 
 // ZenStack Query-as-a-Service (auto CRUD for all models)
 // Frontend uses /api/model/* (via QuerySettingsProvider in main.tsx)
