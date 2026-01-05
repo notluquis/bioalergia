@@ -39,9 +39,9 @@ RUN --mount=type=cache,id=s/cc493466-c691-4384-8199-99f757a14014-/pnpm/store,tar
 RUN cp -r apps/api/dist /app/deploy/dist && \
     cp -r packages/db/dist /app/deploy/node_modules/@finanzas/db/dist
 
-# 6. Copy frontend build to API's public folder (to serve static files)
+# 6. Copy frontend build to API's public folder (Vite outputs to dist/client/)
 RUN mkdir -p /app/deploy/public && \
-    cp -r apps/web/dist/* /app/deploy/public/
+    cp -r apps/web/dist/client/* /app/deploy/public/
 
 # 7. Remove any Prisma artifacts (we use pure ZenStack/Kysely)
 RUN find /app/deploy -name "prisma" -type d -exec rm -rf {} + 2>/dev/null || true
