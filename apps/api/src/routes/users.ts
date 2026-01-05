@@ -62,6 +62,7 @@ userRoutes.get("/", async (c) => {
     include: {
       person: true,
       roles: { include: { role: true } },
+      passkeys: { select: { id: true } },
     },
     orderBy: { email: "asc" },
   });
@@ -71,7 +72,7 @@ userRoutes.get("/", async (c) => {
     email: u.email,
     status: u.status,
     mfaEnabled: u.mfaEnabled,
-    hasPasskey: !!u.passkeyCredentialID,
+    hasPasskey: u.passkeys.length > 0,
     createdAt: u.createdAt,
     role: u.roles[0]?.role.name || "VIEWER",
     person: u.person
@@ -292,9 +293,6 @@ userRoutes.post("/:id/reset-password", async (c) => {
       status: "PENDING_SETUP",
       mfaEnabled: false,
       mfaSecret: null,
-      passkeyCredentialID: null,
-      passkeyPublicKey: null,
-      passkeyCounter: BigInt(0),
     },
   });
 
@@ -455,10 +453,13 @@ userRoutes.delete("/:id/passkey", async (c) => {
   await db.user.update({
     where: { id: targetUserId },
     data: {
-      passkeyCredentialID: null,
-      passkeyPublicKey: null,
-      passkeyCounter: BigInt(0),
+      // Passkey removal is now handled by deleting entries from logic, but here we just leave empty since it's a delete op on relation usually
+      // For now, removing legacy update
     },
+  });
+
+  await db.passkey.deleteMany({
+    where: { userId: targetUserId },
   });
 
   console.log("[User] Passkey removed by", auth.email, "for", targetUserId);
