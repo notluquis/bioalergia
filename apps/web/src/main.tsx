@@ -190,9 +190,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     <GlobalError>
       <ChunkErrorBoundary>
         <QueryClientProvider client={queryClient}>
-          <QuerySettingsProvider
-            value={{ endpoint: `${import.meta.env.VITE_API_URL || "http://localhost:3000"}/api/model` }}
-          >
+          <QuerySettingsProvider value={{ endpoint: `${import.meta.env.VITE_API_URL || ""}/api/model` }}>
             <AuthProvider>
               <SettingsProvider>
                 <ToastProvider>
