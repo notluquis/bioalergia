@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useState } from "react";
 
 import { useAuth } from "@/context/AuthContext";
 import { logger } from "@/lib/logger";
@@ -19,7 +19,7 @@ export function useDailyBalanceManagement({ loadBalances }: UseDailyBalanceManag
   const [saving, setSaving] = useState<Record<string, boolean>>({});
   const [error, setError] = useState<string | null>(null);
 
-  const handleDraftChange = useCallback((date: string, patch: Partial<BalanceDraft>) => {
+  const handleDraftChange = (date: string, patch: Partial<BalanceDraft>) => {
     setDrafts((prev) => {
       const previous = prev[date] ?? { value: "", note: "" };
       return {
@@ -30,36 +30,33 @@ export function useDailyBalanceManagement({ loadBalances }: UseDailyBalanceManag
         },
       };
     });
-  }, []);
+  };
 
-  const handleSave = useCallback(
-    async (date: string) => {
-      if (!canEdit) return;
-      const draft = drafts[date];
-      if (!draft) return;
+  const handleSave = async (date: string) => {
+    if (!canEdit) return;
+    const draft = drafts[date];
+    if (!draft) return;
 
-      const parsedValue = parseBalanceInput(draft.value);
-      if (parsedValue == null) {
-        setError("Ingresa un saldo válido antes de guardar");
-        return;
-      }
+    const parsedValue = parseBalanceInput(draft.value);
+    if (parsedValue == null) {
+      setError("Ingresa un saldo válido antes de guardar");
+      return;
+    }
 
-      setSaving((prev) => ({ ...prev, [date]: true }));
-      setError(null);
-      try {
-        await saveBalance(date, parsedValue, draft.note);
-        await loadBalances();
-        logger.info("[balances] save:success", { date, balance: parsedValue });
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "No se pudo guardar el saldo diario";
-        setError(message);
-        logger.error("[balances] save:error", message);
-      } finally {
-        setSaving((prev) => ({ ...prev, [date]: false }));
-      }
-    },
-    [canEdit, drafts, loadBalances]
-  );
+    setSaving((prev) => ({ ...prev, [date]: true }));
+    setError(null);
+    try {
+      await saveBalance(date, parsedValue, draft.note);
+      await loadBalances();
+      logger.info("[balances] save:success", { date, balance: parsedValue });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "No se pudo guardar el saldo diario";
+      setError(message);
+      logger.error("[balances] save:error", message);
+    } finally {
+      setSaving((prev) => ({ ...prev, [date]: false }));
+    }
+  };
 
   return { drafts, saving, error, handleDraftChange, handleSave, setError, setDrafts };
 }

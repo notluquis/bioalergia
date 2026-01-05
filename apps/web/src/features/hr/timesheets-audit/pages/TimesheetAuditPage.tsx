@@ -9,7 +9,7 @@ import { useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
 import { Check, ChevronDown, ChevronUp, Search, Users, X } from "lucide-react";
-import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 
 import Alert from "@/components/ui/Alert";
 import Backdrop from "@/components/ui/Backdrop";
@@ -140,19 +140,16 @@ export default function TimesheetAuditPage() {
   const [legendOpen, setLegendOpen] = useState(false);
 
   // Build weeks for the selected month
-  const weeksForMonth = useMemo(() => {
-    if (!selectedMonth) return [];
-    return buildWeeksForMonth(selectedMonth);
-  }, [selectedMonth]);
+  const weeksForMonth = selectedMonth ? buildWeeksForMonth(selectedMonth) : [];
 
   // Active employees with search
-  const activeEmployees = useMemo(() => employees.filter((emp) => emp.status === "ACTIVE"), [employees]);
+  const activeEmployees = employees.filter((emp) => emp.status === "ACTIVE");
 
-  const filteredEmployees = useMemo(() => {
+  const filteredEmployees = (() => {
     if (!employeeSearch.trim()) return activeEmployees;
     const search = employeeSearch.toLowerCase();
     return activeEmployees.filter((emp) => emp.full_name.toLowerCase().includes(search));
-  }, [activeEmployees, employeeSearch]);
+  })();
 
   // Set default month when months load
   useEffect(() => {
@@ -163,7 +160,7 @@ export default function TimesheetAuditPage() {
   }, [months, selectedMonth]);
 
   // Calculate effective date ranges based on quick range or custom selection
-  const effectiveRanges = useMemo((): AuditDateRange[] => {
+  const effectiveRanges = ((): AuditDateRange[] => {
     if (quickRange !== "custom") {
       const range = getQuickRangeValues(quickRange);
       return range ? [range] : [];
@@ -178,7 +175,7 @@ export default function TimesheetAuditPage() {
         return week ? { start: week.start, end: week.end } : null;
       })
       .filter((r): r is AuditDateRange => r !== null);
-  }, [quickRange, selectedWeekKeys, selectedMonth, weeksForMonth]);
+  })();
 
   const focusDate = effectiveRanges[0]?.start ?? null;
 
@@ -193,7 +190,7 @@ export default function TimesheetAuditPage() {
   });
 
   // Calculate overlaps
-  const overlapsByDate = useMemo(() => detectAllOverlaps(entries), [entries]);
+  const overlapsByDate = detectAllOverlaps(entries);
   const totalOverlapDays = overlapsByDate.size;
   const totalOverlapPairs = Array.from(overlapsByDate.values()).reduce(
     (sum, info) => sum + info.total_overlapping_pairs,
@@ -201,28 +198,28 @@ export default function TimesheetAuditPage() {
   );
 
   // Handlers
-  const handleQuickRangeChange = useCallback((range: QuickRange) => {
+  const handleQuickRangeChange = (range: QuickRange) => {
     setQuickRange(range);
-  }, []);
+  };
 
-  const handleWeekToggle = useCallback((key: string) => {
+  const handleWeekToggle = (key: string) => {
     setSelectedWeekKeys((prev) => {
       if (prev.includes(key)) {
         return prev.filter((k) => k !== key);
       }
       return [...prev, key];
     });
-  }, []);
+  };
 
-  const handleSelectAllWeeks = useCallback(() => {
+  const handleSelectAllWeeks = () => {
     setSelectedWeekKeys((prev) => {
       const allKeys = weeksForMonth.map((w) => w.key);
       const allSelected = allKeys.every((k) => prev.includes(k));
       return allSelected ? [] : allKeys;
     });
-  }, [weeksForMonth]);
+  };
 
-  const handleEmployeeToggle = useCallback((employeeId: number) => {
+  const handleEmployeeToggle = (employeeId: number) => {
     setSelectedEmployeeIds((prev) => {
       if (prev.includes(employeeId)) {
         return prev.filter((id) => id !== employeeId);
@@ -230,23 +227,23 @@ export default function TimesheetAuditPage() {
       if (prev.length >= MAX_EMPLOYEES) return prev;
       return [...prev, employeeId];
     });
-  }, []);
+  };
 
-  const handleRemoveEmployee = useCallback((employeeId: number) => {
+  const handleRemoveEmployee = (employeeId: number) => {
     setSelectedEmployeeIds((prev) => prev.filter((id) => id !== employeeId));
-  }, []);
+  };
 
-  const handleClearEmployees = useCallback(() => {
+  const handleClearEmployees = () => {
     setSelectedEmployeeIds([]);
-  }, []);
+  };
 
   // Format range summary
-  const rangeSummary = useMemo(() => {
+  const rangeSummary = (() => {
     if (!effectiveRanges.length) return "";
     const first = dayjs(effectiveRanges[0]?.start);
     const last = dayjs(effectiveRanges[effectiveRanges.length - 1]?.end);
     return `${first.format("D MMM")} → ${last.format("D MMM YYYY")}`;
-  }, [effectiveRanges]);
+  })();
 
   const isMaxEmployees = selectedEmployeeIds.length >= MAX_EMPLOYEES;
   const canShowCalendar = selectedEmployeeIds.length > 0 && effectiveRanges.length > 0;

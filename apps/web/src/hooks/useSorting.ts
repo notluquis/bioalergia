@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from "react";
+import React, { useState } from "react";
 
 export type SortDirection = "asc" | "desc";
 
@@ -21,7 +21,7 @@ export function useSorting<T extends string>({
     direction: initialDirection,
   });
 
-  const sort = useCallback((column: T) => {
+  const sort = (column: T) => {
     setSortState((prev) => {
       if (prev.column === column) {
         // Cycle: asc -> desc -> none
@@ -33,25 +33,19 @@ export function useSorting<T extends string>({
       }
       return { column, direction: "asc" };
     });
-  }, []);
+  };
 
-  const getSortIcon = useCallback(
-    (column: T): React.ReactNode => {
-      if (sortState.column !== column) return null;
-      const symbol = sortState.direction === "asc" ? "▲" : "▼";
-      return React.createElement("span", { className: "ml-1 text-xs opacity-60 align-middle select-none" }, symbol);
-    },
-    [sortState]
-  );
+  const getSortIcon = (column: T): React.ReactNode => {
+    if (sortState.column !== column) return null;
+    const symbol = sortState.direction === "asc" ? "▲" : "▼";
+    return React.createElement("span", { className: "ml-1 text-xs opacity-60 align-middle select-none" }, symbol);
+  };
 
-  const getSortProps = useCallback(
-    (column: T) => ({
-      onClick: () => sort(column),
-      style: { cursor: "pointer" },
-      title: `Ordenar por ${column}`,
-    }),
-    [sort]
-  );
+  const getSortProps = (column: T) => ({
+    onClick: () => sort(column),
+    style: { cursor: "pointer" },
+    title: `Ordenar por ${column}`,
+  });
 
   return {
     sortState,

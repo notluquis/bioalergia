@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useState } from "react";
 
 export type UseDisclosureControls = {
   isOpen: boolean;
@@ -11,10 +11,10 @@ export type UseDisclosureControls = {
 export function useDisclosure(initialState = false): UseDisclosureControls {
   const [isOpen, setIsOpen] = useState<boolean>(initialState);
 
-  const open = useCallback(() => setIsOpen(true), []);
-  const close = useCallback(() => setIsOpen(false), []);
-  const toggle = useCallback(() => setIsOpen((value) => !value), []);
-  const set = useCallback((value: boolean) => setIsOpen(value), []);
+  const open = () => setIsOpen(true);
+  const close = () => setIsOpen(false);
+  const toggle = () => setIsOpen((value) => !value);
+  const set = (value: boolean) => setIsOpen(value);
 
   return { isOpen, open, close, toggle, set };
 }

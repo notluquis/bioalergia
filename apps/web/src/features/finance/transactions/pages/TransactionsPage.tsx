@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useDebounce } from "use-debounce";
 
 import Alert from "@/components/ui/Alert";
@@ -44,7 +44,7 @@ export default function TransactionsMovements() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
 
-  const quickMonths = useMemo(() => {
+  const quickMonths = (() => {
     const months: Array<{ value: string; label: string; from: string; to: string }> = [];
     for (let i = 0; i < 12; i++) {
       const date = dayjs().subtract(i, "month").startOf("month");
@@ -54,34 +54,31 @@ export default function TransactionsMovements() {
       months.push({ value: start, label, from: start, to: end });
     }
     return months;
-  }, []);
+  })();
 
-  const quickRange = useMemo(() => {
+  const quickRange = (() => {
     const match = quickMonths.find(
       ({ from: start, to: end }) => start === draftFilters.from && end === draftFilters.to
     );
     return match ? match.value : "custom";
-  }, [quickMonths, draftFilters.from, draftFilters.to]);
+  })();
 
   // const { hasRole } = useAuth(); // unused
   const { can } = useAuth();
   const { settings } = useSettings();
   const canView = can("read", "Transaction");
 
-  // const initialBalanceNumber = useMemo(() => coerceAmount(debouncedInitialBalance), [debouncedInitialBalance]); // handled inside useLedger
+  // const initialBalanceNumber = coerceAmount(debouncedInitialBalance); // handled inside useLedger
 
-  const queryParams = useMemo(
-    () => ({
-      filters: appliedFilters,
-      page,
-      pageSize,
-    }),
-    [appliedFilters, page, pageSize]
-  );
+  const queryParams = {
+    filters: appliedFilters,
+    page,
+    pageSize,
+  };
 
   const transactionsQuery = useTransactionsQuery(queryParams);
 
-  const rows = useMemo(() => transactionsQuery.data?.data ?? [], [transactionsQuery.data?.data]);
+  const rows = transactionsQuery.data?.data ?? [];
   const hasAmounts = Boolean(transactionsQuery.data?.hasAmounts);
   const total = transactionsQuery.data?.total ?? rows.length;
   const loading = transactionsQuery.isPending || transactionsQuery.isFetching;

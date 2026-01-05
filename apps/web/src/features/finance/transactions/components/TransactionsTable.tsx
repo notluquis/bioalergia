@@ -1,5 +1,4 @@
 import dayjs from "dayjs";
-import { memo, useMemo } from "react";
 
 import Button from "@/components/ui/Button";
 import Checkbox from "@/components/ui/Checkbox";
@@ -20,7 +19,7 @@ type Props = {
   onPageSizeChange?: (size: number) => void;
 };
 
-export const TransactionsTable = memo(function TransactionsTable({
+export const TransactionsTable = function TransactionsTable({
   rows,
   loading,
   hasAmounts,
@@ -48,11 +47,9 @@ export const TransactionsTable = memo(function TransactionsTable({
     isColumnVisible,
   } = table;
 
-  const visibleColumns = useMemo(() => {
-    return COLUMN_DEFS.filter((column) => isColumnVisible(column.key));
-  }, [isColumnVisible]);
+  const visibleColumns = COLUMN_DEFS.filter((column) => isColumnVisible(column.key));
 
-  const sortedRows = useMemo(() => {
+  const sortedRows = (() => {
     if (!sortState.column) return rows;
 
     const { column, direction } = sortState;
@@ -82,9 +79,9 @@ export const TransactionsTable = memo(function TransactionsTable({
       const baseComparison = compare(firstValue, secondValue);
       return direction === "desc" ? -baseComparison : baseComparison;
     });
-  }, [rows, sortState]);
+  })();
 
-  const pageInfo = useMemo(() => {
+  const pageInfo = (() => {
     if (total === 0) {
       return { start: 0, end: 0, totalPages: 0, total: 0 };
     }
@@ -93,7 +90,7 @@ export const TransactionsTable = memo(function TransactionsTable({
     const start = (currentPage - 1) * pageSize + 1;
     const end = Math.min(currentPage * pageSize, total);
     return { start, end, totalPages, total };
-  }, [total, page, pageSize]);
+  })();
 
   const handlePrevClick = () => {
     if (page <= 1 || !onPageChange) return;
@@ -226,7 +223,7 @@ export const TransactionsTable = memo(function TransactionsTable({
       </div>
     </div>
   );
-});
+};
 
 function renderCell(key: ColumnKey, row: LedgerRow, hasAmounts: boolean) {
   if (!row) return "—";

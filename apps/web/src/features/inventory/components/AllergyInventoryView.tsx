@@ -1,5 +1,4 @@
 import { useQuery } from "@tanstack/react-query";
-import { useMemo } from "react";
 
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
@@ -23,7 +22,7 @@ function AllergyInventoryView() {
 
   const error = queryError instanceof Error ? queryError.message : null;
 
-  const grouped = useMemo(() => {
+  const grouped = (() => {
     const map = new Map<
       string,
       {
@@ -43,7 +42,7 @@ function AllergyInventoryView() {
     });
 
     return map;
-  }, [data]);
+  })();
 
   return (
     <section className="surface-recessed space-y-4 rounded-3xl p-6 shadow-inner">

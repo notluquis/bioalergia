@@ -1,5 +1,4 @@
 import dayjs from "dayjs";
-import { memo } from "react";
 
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
@@ -19,7 +18,7 @@ type Props = {
   error: string | null;
 };
 
-export const DailyBalancesPanel = memo(function DailyBalancesPanel({
+export const DailyBalancesPanel = function DailyBalancesPanel({
   report,
   drafts,
   onDraftChange,
@@ -155,4 +154,4 @@ export const DailyBalancesPanel = memo(function DailyBalancesPanel({
       </div>
     </section>
   );
-});
+};

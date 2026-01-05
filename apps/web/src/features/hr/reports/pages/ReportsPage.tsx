@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
 import { BarChart2, BarChart3, Calendar, Check, Clock, Filter, List, Search, TrendingUp, X } from "lucide-react";
-import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
@@ -144,16 +144,16 @@ export default function ReportsPage() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const activeEmployees = useMemo(() => employees.filter((emp) => emp.status === "ACTIVE"), [employees]);
+  const activeEmployees = employees.filter((emp) => emp.status === "ACTIVE");
 
-  const filteredEmployees = useMemo(() => {
+  const filteredEmployees = (() => {
     if (!employeeSearch.trim()) return activeEmployees;
     const search = employeeSearch.toLowerCase();
     return activeEmployees.filter((emp) => emp.full_name.toLowerCase().includes(search));
-  }, [activeEmployees, employeeSearch]);
+  })();
 
   // 2. Report Query
-  const dateParams = useMemo(() => {
+  const dateParams = (() => {
     let start = startDate;
     let end = endDate;
 
@@ -174,7 +174,7 @@ export default function ReportsPage() {
       }
     }
     return { start, end };
-  }, [viewMode, selectedMonth, startDate, endDate, monthsWithData]);
+  })();
 
   const {
     data: reportData = [],
@@ -216,12 +216,9 @@ export default function ReportsPage() {
     }
   };
 
-  const chartData = useMemo(
-    () => (reportData.length > 0 ? prepareComparisonData(reportData, granularity) : []),
-    [reportData, granularity]
-  );
+  const chartData = reportData.length > 0 ? prepareComparisonData(reportData, granularity) : [];
 
-  const periodCount = useMemo(() => {
+  const periodCount = (() => {
     if (!dateParams) return 1;
     const start = dayjs(dateParams.start);
     const end = dayjs(dateParams.end);
@@ -234,9 +231,9 @@ export default function ReportsPage() {
       count = end.diff(start, "month", true);
     }
     return Math.max(1, Math.ceil(count));
-  }, [dateParams, granularity]);
+  })();
 
-  const stats = useMemo(() => calculateStats(reportData, periodCount), [reportData, periodCount]);
+  const stats = calculateStats(reportData, periodCount);
 
   if (!canView) {
     return <Alert variant="error">No tienes permisos para ver reportería.</Alert>;

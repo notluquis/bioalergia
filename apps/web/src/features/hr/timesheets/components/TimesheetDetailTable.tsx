@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
@@ -51,11 +51,11 @@ export default function TimesheetDetailTable({
   const [notWorkedDays, setNotWorkedDays] = useState<Set<string>>(new Set());
 
   // Toggle helper for per-row actions menu
-  const toggleMenu = useCallback((id: string) => {
+  const toggleMenu = (id: string) => {
     const el = document.getElementById(id);
     if (!el) return;
     el.classList.toggle("hidden");
-  }, []);
+  };
 
   // Función para calcular horas trabajadas entre entrada y salida
   const calculateWorkedHours = (startTime: string, endTime: string) => {

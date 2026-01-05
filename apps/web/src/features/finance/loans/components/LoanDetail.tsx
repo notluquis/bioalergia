@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
@@ -41,7 +41,7 @@ export function LoanDetail({
   const [regenerating, setRegenerating] = useState(false);
   const [regenerateError, setRegenerateError] = useState<string | null>(null);
 
-  const statusBadge = useMemo(() => {
+  const statusBadge = (() => {
     if (!loan) return { label: "", className: "" };
     switch (loan.status) {
       case "COMPLETED":
@@ -51,7 +51,7 @@ export function LoanDetail({
       default:
         return { label: "Activo", className: "bg-amber-100 text-amber-700" };
     }
-  }, [loan]);
+  })();
 
   const handleRegenerate = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
