@@ -71,5 +71,5 @@ ENV NODE_OPTIONS="--enable-source-maps"
 
 EXPOSE 3000
 
-# Use native node instead of tsx for performance
-CMD ["node", "dist/index.js"]
+# Use tsx for robust ESM path resolution (handles extensionless imports in JS)
+CMD ["node_modules/.bin/tsx", "dist/index.js"]
