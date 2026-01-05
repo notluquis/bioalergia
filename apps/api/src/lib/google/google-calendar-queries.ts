@@ -119,10 +119,22 @@ function applyFilters(query: any, filters: CalendarEventFilters) {
   let q = query;
 
   if (filters.from) {
-    q = q.where("start_date", ">=", new Date(filters.from));
+    const fromDate = new Date(filters.from);
+    q = q.where((eb: any) =>
+      eb.or([
+        eb("start_date", ">=", fromDate),
+        eb("start_date_time", ">=", fromDate),
+      ])
+    );
   }
   if (filters.to) {
-    q = q.where("start_date", "<=", new Date(filters.to));
+    const toDate = new Date(filters.to);
+    q = q.where((eb: any) =>
+      eb.or([
+        eb("start_date", "<=", toDate),
+        eb("start_date_time", "<=", toDate),
+      ])
+    );
   }
 
   // Implementation note: The caller should handle joining if needed.
@@ -234,13 +246,13 @@ export async function getCalendarAggregates(
   // 4. By Date
   const byDate = await filteredQuery
     .select([
-      sql<string>`DATE(e.start_date)`.as("date"),
+      sql<string>`DATE(coalesce(e.start_date_time, e.start_date))`.as("date"),
       sql<number>`count(e.id)`.as("total"),
       sql<number>`coalesce(sum(e.amount_expected), 0)`.as("amountExpected"),
       sql<number>`coalesce(sum(e.amount_paid), 0)`.as("amountPaid"),
     ])
-    .groupBy(sql`DATE(e.start_date)`)
-    .orderBy(sql`DATE(e.start_date)`, "desc")
+    .groupBy(sql`DATE(coalesce(e.start_date_time, e.start_date))`)
+    .orderBy(sql`DATE(coalesce(e.start_date_time, e.start_date))`, "desc")
     .execute();
 
   // 5. By Weekday
@@ -414,9 +426,11 @@ export async function getCalendarEventsByDate(
 
   // 1. Get dates with events
   const dates = await filteredQuery
-    .select(sql<string>`DATE(e.start_date)`.as("date"))
+    .select(
+      sql<string>`DATE(coalesce(e.start_date_time, e.start_date))`.as("date")
+    )
     .distinct()
-    .orderBy(sql`DATE(e.start_date)`, "desc")
+    .orderBy(sql`DATE(coalesce(e.start_date_time, e.start_date))`, "desc")
     .limit(maxDays)
     .execute();
 
@@ -449,7 +463,7 @@ export async function getCalendarEventsByDate(
   // However, applyFilters uses filters.dates as equality.
   // Let's manually add the where clause for dates.
   eventsQuery = eventsQuery.where(
-    sql<any>`DATE(e.start_date)`,
+    sql<any>`DATE(coalesce(e.start_date_time, e.start_date))`,
     "in",
     targetDates
   );
@@ -481,7 +495,9 @@ export async function getCalendarEventsByDate(
       "e.attended",
       "e.dosage",
       "e.treatment_stage as treatmentStage",
-      sql<string>`DATE(e.start_date)`.as("eventDateString"), // helper for grouping
+      sql<string>`DATE(coalesce(e.start_date_time, e.start_date))`.as(
+        "eventDateString"
+      ), // helper for grouping
     ])
     .orderBy("e.start_date_time", "desc")
     .execute();
