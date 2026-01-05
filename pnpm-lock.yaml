@@ -139,12 +139,9 @@ importers:
       '@tanstack/react-query':
         specifier: ^5.90.16
         version: 5.90.16(react@19.2.3)
-      '@types/jspdf':
-        specifier: ^2.0.0
-        version: 2.0.0
       '@zenstackhq/tanstack-query':
-        specifier: ^3.0.0
-        version: 3.0.0(@tanstack/react-query@5.90.16(react@19.2.3))(pg@8.16.3)(zod@4.3.5)
+        specifier: ^3.1.0
+        version: 3.1.0(@tanstack/react-query@5.90.16(react@19.2.3))
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
@@ -2504,10 +2501,6 @@ packages:
   '@types/json5@0.0.29':
     resolution: {integrity: sha512-dRLjCWHYg4oaA77cxO64oO+7JwCwnIzkZPdrrC71jQmQtlhM556pwKo5bUzqvZndkVbeFLIIi+9TC40JNF5hNQ==}
 
-  '@types/jspdf@2.0.0':
-    resolution: {integrity: sha512-oonYDXI4GegGaG7FFVtriJ+Yqlh4YR3L3NVDiwCEBVG7sbya19SoGx4MW4kg1MCMRPgkbbFTck8YKJL8PrkDfA==}
-    deprecated: This is a stub types definition. jspdf provides its own type definitions, so you do not need this installed.
-
   '@types/node-cron@3.0.11':
     resolution: {integrity: sha512-0ikrnug3/IyneSHqCBeslAhlK2aBfYek1fGo4bP4QnZPmiqSGRK+Oy7ZMisLWkesffJvQ1cqAcBnJC+8+nxIAg==}
 
@@ -2671,9 +2664,6 @@ packages:
   '@zenstackhq/client-helpers@3.1.0':
     resolution: {integrity: sha512-LqCZFh2/eVf/nCfPMUKNJYVQKGGKGDDrNR0HzRPiegeNjJDAUW9b2+Wot64YPskkWerpn3jZJ/qQFsuaWYPF+Q==}
 
-  '@zenstackhq/common-helpers@3.0.0':
-    resolution: {integrity: sha512-l1xs5S17AxPGvrvwNq7Ex+xzuW4HcaSClhhEPwjqaeEJsEf1TAogYkU0ueEs1VIVguwDBOqkjQ7VYOq+JWK1QQ==}
-
   '@zenstackhq/common-helpers@3.1.0':
     resolution: {integrity: sha512-S4S5hYopHOVzK3A0nmJReqpug5XKyh+h2pWsCIA8pEB7wTWt+5Ppyo1NoEB8iPH2jFdMh+Q1m/9pVPXVpHXDbQ==}
 
@@ -2682,21 +2672,6 @@ packages:
 
   '@zenstackhq/language@3.1.0':
     resolution: {integrity: sha512-m64bpl9QlzXC45S3irfb4PjAlYYnjZ3NcGSZ2PojRBux+vZHbPHfsj/4NssqAfWSxluHy3LLweN11/zS7/LQgg==}
-
-  '@zenstackhq/orm@3.0.0':
-    resolution: {integrity: sha512-X6IolzAFFeYzMAuJnG+5EK0frzxCwaeMnuzjXHCNigMNId90c0CHM0pN4kVCac0CBUS5o0hD3l8peSeAcwf/3g==}
-    peerDependencies:
-      better-sqlite3: ^12.5.0
-      pg: ^8.13.1
-      sql.js: ^1.13.0
-      zod: ^4.0.0
-    peerDependenciesMeta:
-      better-sqlite3:
-        optional: true
-      pg:
-        optional: true
-      sql.js:
-        optional: true
 
   '@zenstackhq/orm@3.1.0':
     resolution: {integrity: sha512-uw2S+mBXG1jXEWWyWPcx04d6eWCyX1KPrqkh2VTkqVBfZpB8OQbxdIyi0YCCUWE0JG7VwANgUGtZw17TLzlMeQ==}
@@ -2723,9 +2698,6 @@ packages:
     peerDependencies:
       '@prisma/client': 5.0.0 - 7.x
       zod: ^3.25.0 || ^4.0.0
-
-  '@zenstackhq/schema@3.0.0':
-    resolution: {integrity: sha512-CeOmJvf4pbfrNDB15c75rmVYOEkSQJR3c7QUmq6Nndsr/fom23r33k0aG9Q+F4FeK67cHPfY5WHWK5LQNzjVnA==}
 
   '@zenstackhq/schema@3.1.0':
     resolution: {integrity: sha512-dXqnZaZ0+BWf8/pl1rMal5aRN7AFoy+PKa2LGBHCqiNZwxz7Ad0aaXyIezzaZ7N+1yIxMPKtGC5CASe+9QmPhw==}
@@ -2764,20 +2736,6 @@ packages:
       next:
         optional: true
       nuxt:
-        optional: true
-
-  '@zenstackhq/tanstack-query@3.0.0':
-    resolution: {integrity: sha512-yEZwWD1dga9Yjl61V/DaNr8goTixYvd0PD1jVux5kvWtaUj1mW7dtbuzVfA02TAZbHWLjt8dPPwu8omNVPeOQg==}
-    peerDependencies:
-      '@tanstack/react-query': ^5.0.0
-      '@tanstack/svelte-query': ^5.0.0
-      '@tanstack/vue-query': ^5.0.0
-    peerDependenciesMeta:
-      '@tanstack/react-query':
-        optional: true
-      '@tanstack/svelte-query':
-        optional: true
-      '@tanstack/vue-query':
         optional: true
 
   '@zenstackhq/tanstack-query@3.1.0':
@@ -8527,10 +8485,6 @@ snapshots:
 
   '@types/json5@0.0.29': {}
 
-  '@types/jspdf@2.0.0':
-    dependencies:
-      jspdf: 4.0.0
-
   '@types/node-cron@3.0.11': {}
 
   '@types/node@25.0.3':
@@ -8770,8 +8724,6 @@ snapshots:
       decimal.js: 10.6.0
       superjson: 2.2.6
 
-  '@zenstackhq/common-helpers@3.0.0': {}
-
   '@zenstackhq/common-helpers@3.1.0': {}
 
   '@zenstackhq/language@2.22.1':
@@ -8785,24 +8737,6 @@ snapshots:
       pluralize: 8.0.0
       ts-pattern: 5.9.0
       vscode-languageserver: 9.0.1
-
-  '@zenstackhq/orm@3.0.0(pg@8.16.3)(zod@4.3.5)':
-    dependencies:
-      '@paralleldrive/cuid2': 2.3.1
-      '@zenstackhq/common-helpers': 3.0.0
-      '@zenstackhq/schema': 3.0.0
-      decimal.js: 10.6.0
-      json-stable-stringify: 1.3.0
-      kysely: 0.28.9
-      nanoid: 5.1.6
-      toposort: 2.0.2
-      ts-pattern: 5.9.0
-      ulid: 3.0.2
-      uuid: 11.1.0
-      zod: 4.3.5
-      zod-validation-error: 4.0.2(zod@4.3.5)
-    optionalDependencies:
-      pg: 8.16.3
 
   '@zenstackhq/orm@3.1.0(pg@8.16.3)(zod@4.3.5)':
     dependencies:
@@ -8853,10 +8787,6 @@ snapshots:
       zod: 4.3.5
       zod-validation-error: 4.0.2(zod@4.3.5)
 
-  '@zenstackhq/schema@3.0.0':
-    dependencies:
-      decimal.js: 10.6.0
-
   '@zenstackhq/schema@3.1.0':
     dependencies:
       decimal.js: 10.6.0
@@ -8902,21 +8832,6 @@ snapshots:
       - better-sqlite3
       - pg
       - sql.js
-
-  '@zenstackhq/tanstack-query@3.0.0(@tanstack/react-query@5.90.16(react@19.2.3))(pg@8.16.3)(zod@4.3.5)':
-    dependencies:
-      '@zenstackhq/common-helpers': 3.0.0
-      '@zenstackhq/orm': 3.0.0(pg@8.16.3)(zod@4.3.5)
-      '@zenstackhq/schema': 3.0.0
-      decimal.js: 10.6.0
-      superjson: 2.2.6
-    optionalDependencies:
-      '@tanstack/react-query': 5.90.16(react@19.2.3)
-    transitivePeerDependencies:
-      - better-sqlite3
-      - pg
-      - sql.js
-      - zod
 
   '@zenstackhq/tanstack-query@3.1.0(@tanstack/react-query@5.90.16(react@19.2.3))':
     dependencies:
