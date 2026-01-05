@@ -24,6 +24,7 @@ import dailyProductionRoutes from "./routes/daily-production-balances";
 import counterpartRoutes from "./routes/counterparts";
 import serviceRoutes from "./routes/services";
 import roleRoutes from "./routes/roles";
+import { settingsRoutes } from "./routes/settings";
 import { readFile } from "fs/promises";
 import { join } from "path";
 
@@ -77,6 +78,7 @@ app.route("/api/daily-production-balances", dailyProductionRoutes);
 app.route("/api/counterparts", counterpartRoutes);
 app.route("/api/services", serviceRoutes);
 app.route("/api/roles", roleRoutes);
+app.route("/api/settings", settingsRoutes);
 
 // ZenStack Query-as-a-Service (auto CRUD for all models)
 app.use(
