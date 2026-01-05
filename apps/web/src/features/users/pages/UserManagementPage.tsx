@@ -50,23 +50,21 @@ export default function UserManagementPage() {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [selectedRole, setSelectedRole] = useState("");
 
-  // ZenStack hooks for users - filter out test/debug emails
+  // ZenStack hooks for users
   const { data: usersData, isLoading } = useFindManyUser({
-    where: {
-      NOT: {
-        OR: [{ email: { contains: "test" } }, { email: { contains: "debug" } }],
-      },
-    },
     include: { person: true },
     orderBy: { createdAt: "desc" },
   });
 
   /* eslint-disable @typescript-eslint/no-explicit-any */
-  const users = ((usersData as any[]) ?? []).map((u) => ({
-    ...u,
-    mfaEnabled: u.mfaEnabled ?? false,
-    hasPasskey: u.hasPasskey ?? false,
-  })) as User[];
+  // Filter out test/debug emails client-side (ZenStack where has limited support)
+  const users = ((usersData as any[]) ?? [])
+    .filter((u) => !u.email?.includes("test") && !u.email?.includes("debug"))
+    .map((u) => ({
+      ...u,
+      mfaEnabled: u.mfaEnabled ?? false,
+      hasPasskey: u.hasPasskey ?? false,
+    })) as User[];
   /* eslint-enable @typescript-eslint/no-explicit-any */
 
   // ZenStack hooks for roles (for filter dropdown)
