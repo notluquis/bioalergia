@@ -32,7 +32,10 @@ interface EmployeeFormProps {
 export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFormProps) {
   const { can } = useAuth();
   const { error: toastError, success: toastSuccess } = useToast();
-  const canEdit = can("update", "Employee");
+
+  // Determine required permission based on mode
+  const isEditing = !!employee?.id;
+  const hasPermission = isEditing ? can("update", "Employee") : can("create", "Employee");
 
   const [form, setForm] = useState<{
     fullName: string;
@@ -159,7 +162,7 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!canEdit) return;
+    if (!hasPermission) return;
 
     // Validate RUT before submit if present
     if (form.rut && !validateRut(form.rut)) {

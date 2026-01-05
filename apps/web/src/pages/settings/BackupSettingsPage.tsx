@@ -14,6 +14,7 @@ import {
   FileText,
   HardDrive,
   Loader2,
+  Lock,
   Play,
   RefreshCw,
   RotateCcw,
@@ -23,6 +24,7 @@ import { useEffect, useState } from "react";
 
 import AuditChangesPanel from "@/components/backup/AuditChangesPanel";
 import Button from "@/components/ui/Button";
+import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import { formatFileSize } from "@/lib/format";
 import { PAGE_CONTAINER } from "@/lib/styles";
@@ -113,8 +115,12 @@ const triggerRestore = async (fileId: string, tables?: string[]): Promise<{ job:
 // ==================== MAIN COMPONENT ====================
 
 export default function BackupSettingsPage() {
+  const { can } = useAuth();
   const { success, error: showError } = useToast();
   const queryClient = useQueryClient();
+
+  // Permissions
+  const canCreate = can("create", "Backup");
 
   // SSE state for live progress only
   const [liveJobs, setLiveJobs] = useState<{ backup: BackupJob | null; restore: RestoreJob | null }>({
@@ -249,11 +255,13 @@ export default function BackupSettingsPage() {
                 variant="primary"
                 size="sm"
                 onClick={() => backupMutation.mutate()}
-                disabled={isRunning || backupMutation.isPending}
+                disabled={!canCreate || isRunning || backupMutation.isPending}
                 isLoading={backupMutation.isPending}
                 className="h-8 text-xs font-medium"
+                title={!canCreate ? "No tienes permisos para crear backups" : "Crear nuevo backup"}
               >
-                {!backupMutation.isPending && <Upload className="mr-1.5 size-4" />}
+                {!backupMutation.isPending &&
+                  (!canCreate ? <Lock className="mr-1.5 size-4" /> : <Upload className="mr-1.5 size-4" />)}
                 Crear Backup
               </Button>
             </div>
@@ -372,10 +380,13 @@ function StatCard({
 }
 
 function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () => void }) {
+  const { can } = useAuth();
   const { success, error: showError } = useToast();
   const queryClient = useQueryClient();
   const [isExpanded, setIsExpanded] = useState(false);
   const [selectedTables, setSelectedTables] = useState<string[]>([]);
+
+  const canRestore = can("update", "Backup");
 
   const tablesQuery = useQuery({
     queryKey: ["backup-tables", backup.id],
@@ -457,10 +468,12 @@ function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () =>
             <Button
               variant="primary"
               onClick={() => restoreMutation.mutate(undefined)}
-              disabled={restoreMutation.isPending}
+              disabled={!canRestore || restoreMutation.isPending}
               isLoading={restoreMutation.isPending}
+              title={!canRestore ? "Requiere permiso para restaurar" : undefined}
             >
-              {!restoreMutation.isPending && <RotateCcw className="size-4" />}
+              {!restoreMutation.isPending &&
+                (!canRestore ? <Lock className="size-4" /> : <RotateCcw className="size-4" />)}
               Restaurar Todo
             </Button>
             <span className="text-base-content/60 self-center text-sm">o selecciona tablas específicas abajo</span>
@@ -600,10 +613,12 @@ function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () =>
                     variant="outline"
                     size="sm"
                     onClick={() => restoreMutation.mutate(selectedTables)}
-                    disabled={restoreMutation.isPending}
+                    disabled={!canRestore || restoreMutation.isPending}
                     isLoading={restoreMutation.isPending}
+                    title={!canRestore ? "Requiere permiso para restaurar" : undefined}
                   >
-                    {!restoreMutation.isPending && <Play className="size-4" />}
+                    {!restoreMutation.isPending &&
+                      (!canRestore ? <Lock className="size-4" /> : <Play className="size-4" />)}
                     Restaurar {selectedTables.length} tabla{selectedTables.length > 1 ? "s" : ""}
                   </Button>
                 )}
