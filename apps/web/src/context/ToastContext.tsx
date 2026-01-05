@@ -1,4 +1,4 @@
-import { createContext, type ReactNode, useCallback, useContext, useMemo, useState } from "react";
+import { createContext, type ReactNode, useContext, useState } from "react";
 
 type ToastVariant = "success" | "error" | "info";
 
@@ -26,16 +26,16 @@ const ToastContext = createContext<ToastContextValue | undefined>(undefined);
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<ToastRecord[]>([]);
 
-  const showToast = useCallback(({ message, title, variant = "info", duration = 4000 }: ToastOptions) => {
+  const showToast = ({ message, title, variant = "info", duration = 4000 }: ToastOptions) => {
     const id = Date.now();
     const expiresAt = Date.now() + duration;
     setToasts((current) => [...current, { id, message, title, variant, expiresAt }]);
     window.setTimeout(() => {
       setToasts((current) => current.filter((toast) => toast.id !== id));
     }, duration);
-  }, []);
+  };
 
-  const value = useMemo<ToastContextValue>(() => ({ showToast }), [showToast]);
+  const value: ToastContextValue = { showToast };
 
   return (
     <ToastContext value={value}>
@@ -69,34 +69,22 @@ export function useToast() {
 
   const { showToast } = context;
 
-  const success = useCallback(
-    (message: string, title = "Éxito") => {
-      showToast({ message, title, variant: "success" });
-    },
-    [showToast]
-  );
+  const success = (message: string, title = "Éxito") => {
+    showToast({ message, title, variant: "success" });
+  };
 
-  const error = useCallback(
-    (message: string, title = "Error") => {
-      showToast({ message, title, variant: "error" });
-    },
-    [showToast]
-  );
+  const error = (message: string, title = "Error") => {
+    showToast({ message, title, variant: "error" });
+  };
 
-  const info = useCallback(
-    (message: string, title = "Información") => {
-      showToast({ message, title, variant: "info" });
-    },
-    [showToast]
-  );
+  const info = (message: string, title = "Información") => {
+    showToast({ message, title, variant: "info" });
+  };
 
-  return useMemo(
-    () => ({
-      showToast,
-      success,
-      error,
-      info,
-    }),
-    [showToast, success, error, info]
-  );
+  return {
+    showToast,
+    success,
+    error,
+    info,
+  };
 }
