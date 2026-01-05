@@ -195,7 +195,11 @@ function applyFilters(query: any, filters: CalendarEventFilters) {
     // Cast date to string for comparison or strictly compare dates
     // "startDate" is Timestamp/Date.
     // Simplest is to cast to date
-    q = q.where(sql<any>`DATE(e.start_date)`, "in", filters.dates);
+    q = q.where(
+      sql<any>`DATE(coalesce(e.start_date_time, e.start_date))`,
+      "in",
+      filters.dates
+    );
   }
 
   return q;
