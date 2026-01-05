@@ -1,4 +1,4 @@
-import { transactionHooks } from "@/lib/zenstack/hooks";
+import { useCountTransaction, useFindManyTransaction } from "@finanzas/db/hooks";
 
 import type { TransactionsApiResponse, TransactionsQueryParams } from "../api";
 // import type { Prisma } from "@prisma/client"; // Unused for now
@@ -46,23 +46,24 @@ export function useTransactionsQuery(params: TransactionsQueryParams) {
   const where = buildWhereInput(filters);
 
   // 1. Fetch Data
+  // 1. Fetch Data
   const {
     data: transactions,
     isPending: isPendingData,
     isFetching: isFetchingData,
     error: errorData,
-  } = transactionHooks.useFindMany({
+  } = useFindManyTransaction({
     where,
     skip: (page - 1) * pageSize,
     take: pageSize,
     orderBy: { transactionDate: "desc" },
     include: {
-      source: true, // Assuming we need relations
+      people: true, // Assuming we need relations
     },
   });
 
   // 2. Fetch Count
-  const { data: count, isPending: isPendingCount } = transactionHooks.useCount({ where });
+  const { data: count, isPending: isPendingCount } = useCountTransaction({ where });
 
   // 3. Combine
   const isLoading = isPendingData || isPendingCount;

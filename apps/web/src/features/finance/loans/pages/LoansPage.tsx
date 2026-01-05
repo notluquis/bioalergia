@@ -1,3 +1,4 @@
+import { useCreateLoan, useFindManyLoan, useUpdateLoanSchedule } from "@finanzas/db/hooks";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ChangeEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
@@ -14,7 +15,6 @@ import LoanList from "@/features/finance/loans/components/LoanList";
 import type { CreateLoanPayload, LoanSchedule, RegenerateSchedulePayload } from "@/features/finance/loans/types";
 import { today } from "@/lib/dates";
 import { PAGE_CONTAINER, TITLE_LG } from "@/lib/styles";
-import { loanHooks, loanScheduleHooks } from "@/lib/zenstack/hooks";
 
 export default function LoansPage() {
   const { can } = useAuth();
@@ -40,7 +40,7 @@ export default function LoansPage() {
     data: loansData,
     isLoading: loadingList,
     error: listError,
-  } = loanHooks.useFindMany({
+  } = useFindManyLoan({
     include: { schedules: true },
     orderBy: { createdAt: "desc" },
   });
@@ -76,8 +76,9 @@ export default function LoansPage() {
   });
 
   // ZenStack mutations
-  const createMutation = loanHooks.useCreate();
-  const updateScheduleMutation = loanScheduleHooks.useUpdate();
+  // ZenStack mutations
+  const createMutation = useCreateLoan();
+  const updateScheduleMutation = useUpdateLoanSchedule();
 
   const handleCreateLoan = async (payload: CreateLoanPayload) => {
     setCreateError(null);

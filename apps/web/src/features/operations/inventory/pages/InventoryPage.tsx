@@ -1,3 +1,9 @@
+import {
+  useCreateInventoryItem,
+  useCreateInventoryMovement,
+  useFindManyInventoryItem,
+  useUpdateInventoryItem,
+} from "@finanzas/db/hooks";
 import { useQueryClient } from "@tanstack/react-query";
 import { PlusCircle } from "lucide-react";
 import { useState } from "react";
@@ -12,7 +18,6 @@ import InventoryItemForm from "@/features/inventory/components/InventoryItemForm
 import InventoryTable from "@/features/inventory/components/InventoryTable";
 import type { InventoryItem, InventoryMovement } from "@/features/inventory/types";
 import { ServicesHero, ServicesSurface } from "@/features/services/components/ServicesShell";
-import { inventoryItemHooks, inventoryMovementHooks } from "@/lib/zenstack/hooks";
 
 export default function InventoryPage() {
   const queryClient = useQueryClient();
@@ -24,7 +29,7 @@ export default function InventoryPage() {
     isPending,
     isFetching,
     error: itemsError,
-  } = inventoryItemHooks.useFindMany({
+  } = useFindManyInventoryItem({
     include: { category: true },
     orderBy: { name: "asc" },
   });
@@ -69,9 +74,10 @@ export default function InventoryPage() {
   }
 
   // ZenStack mutations for CRUD
-  const createItemMutation = inventoryItemHooks.useCreate();
-  const updateItemMutation = inventoryItemHooks.useUpdate();
-  const createMovementMutation = inventoryMovementHooks.useCreate();
+  // ZenStack mutations for CRUD
+  const createItemMutation = useCreateInventoryItem();
+  const updateItemMutation = useUpdateInventoryItem();
+  const createMovementMutation = useCreateInventoryMovement();
 
   const saving = createItemMutation.isPending || updateItemMutation.isPending || createMovementMutation.isPending;
 

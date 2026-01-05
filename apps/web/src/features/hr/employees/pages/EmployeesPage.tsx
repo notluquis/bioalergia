@@ -1,3 +1,4 @@
+import { useFindManyEmployee, useUpdateEmployee } from "@finanzas/db/hooks";
 import { useQueryClient } from "@tanstack/react-query";
 import { ChevronUp, Plus } from "lucide-react";
 import type { ChangeEvent } from "react";
@@ -11,7 +12,6 @@ import EmployeeForm from "@/features/hr/employees/components/EmployeeForm";
 import EmployeeTable from "@/features/hr/employees/components/EmployeeTable";
 import type { Employee } from "@/features/hr/employees/types";
 import { PAGE_CONTAINER, TITLE_LG } from "@/lib/styles";
-import { employeeHooks } from "@/lib/zenstack/hooks";
 
 export default function EmployeesPage() {
   const { can } = useAuth();
@@ -28,8 +28,9 @@ export default function EmployeesPage() {
     isLoading: loading,
     error: queryError,
     // refetch: loadEmployees, // ZenStack hooks handle invalidation automatically via queryClient
-  } = employeeHooks.useFindMany({
-    where: includeInactive ? undefined : { status: "ACTIVE" },
+  } = useFindManyEmployee({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    where: includeInactive ? undefined : ({ status: "ACTIVE" } as any),
     include: { person: true },
     orderBy: { createdAt: "desc" },
   });
@@ -46,7 +47,10 @@ export default function EmployeesPage() {
   // Mutation for deactivating (Soft Delete)
   // We use useUpdate instead of manual fetch.
   // Assuming "deactivate" means setting status to INACTIVE.
-  const updateStatusMutation = employeeHooks.useUpdate();
+  // Mutation for deactivating (Soft Delete)
+  // We use useUpdate instead of manual fetch.
+  // Assuming "deactivate" means setting status to INACTIVE.
+  const updateStatusMutation = useUpdateEmployee();
 
   // Clean up legacy mutations if they exist, but for now we map new logic:
 

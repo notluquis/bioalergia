@@ -187,6 +187,8 @@ export default defineConfig(({ mode }) => ({
       "@": fileURLToPath(new URL("./src", import.meta.url)),
       "@shared": fileURLToPath(new URL("./shared", import.meta.url)),
       "~": fileURLToPath(new URL(".", import.meta.url)),
+      "@finanzas/db/hooks": fileURLToPath(new URL("../../packages/db/dist/zenstack/hooks", import.meta.url)),
+      "@finanzas/db": fileURLToPath(new URL("../../packages/db/dist/client", import.meta.url)),
     },
   },
   server: {

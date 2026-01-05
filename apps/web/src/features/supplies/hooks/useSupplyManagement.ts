@@ -1,7 +1,7 @@
+import { useFindManyCommonSupply, useFindManySupplyRequest, useUpdateSupplyRequest } from "@finanzas/db/hooks";
 import { useCallback, useMemo, useState } from "react";
 
 import { useToast } from "@/context/ToastContext";
-import { commonSupplyHooks, supplyRequestHooks } from "@/lib/zenstack/hooks";
 
 import type { CommonSupply, StructuredSupplies, SupplyRequest } from "../types";
 
@@ -27,7 +27,7 @@ export function useSupplyManagement(): UseSupplyManagementResult {
     isFetching: requestsFetching,
     error: requestsError,
     refetch: refetchRequests,
-  } = supplyRequestHooks.useFindMany({
+  } = useFindManySupplyRequest({
     include: { inventoryItem: true },
     orderBy: { createdAt: "desc" },
   });
@@ -39,7 +39,7 @@ export function useSupplyManagement(): UseSupplyManagementResult {
     isFetching: suppliesFetching,
     error: suppliesError,
     refetch: refetchSupplies,
-  } = commonSupplyHooks.useFindMany({
+  } = useFindManyCommonSupply({
     orderBy: { name: "asc" },
   });
 
@@ -83,7 +83,8 @@ export function useSupplyManagement(): UseSupplyManagementResult {
   }, [refetchRequests, refetchSupplies]);
 
   // ZenStack mutation for updating supply request status
-  const updateMutation = supplyRequestHooks.useUpdate();
+  // ZenStack mutation for updating supply request status
+  const updateMutation = useUpdateSupplyRequest();
 
   const handleStatusChange = useCallback(
     async (requestId: number, newStatus: SupplyRequest["status"]) => {
