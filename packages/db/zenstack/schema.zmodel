@@ -61,11 +61,7 @@ model User {
   status                  UserStatus               @default(PENDING_SETUP)
   mfaSecret               String?                  @map("mfa_secret")
   mfaEnabled              Boolean                  @default(false) @map("mfa_enabled")
-  // Passkey fields (Deprecated - moving to Passkey model)
-  passkeyCredentialID     String?                  @unique @map("passkey_credential_id")
-  passkeyPublicKey        Bytes?                   @map("passkey_public_key")
-  passkeyCounter          BigInt                   @default(0) @map("passkey_counter")
-  passkeyTransports       Json?                    @map("passkey_transports")
+
 
   // Relationships
   passkeys                Passkey[]
