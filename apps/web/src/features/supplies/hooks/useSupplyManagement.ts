@@ -1,5 +1,5 @@
 import { useFindManyCommonSupply, useFindManySupplyRequest, useUpdateSupplyRequest } from "@finanzas/db/hooks";
-import { useCallback, useMemo, useState } from "react";
+import { useState } from "react";
 
 import { useToast } from "@/context/ToastContext";
 
@@ -44,7 +44,8 @@ export function useSupplyManagement(): UseSupplyManagementResult {
   });
 
   // Map requests to expected format with useMemo for stable reference
-  const requests = useMemo(() => {
+  // Map requests to expected format with useMemo for stable reference
+  const requests = (() => {
     if (!requestsData) return [];
     return (requestsData as SupplyRequest[]).map((r) => ({
       ...r,
@@ -53,56 +54,49 @@ export function useSupplyManagement(): UseSupplyManagementResult {
       status: r.status,
       notes: r.notes,
     }));
-  }, [requestsData]);
+  })();
 
   // Wrap commonSupplies in useMemo for stable reference
-  const commonSupplies = useMemo(() => {
-    return (commonSuppliesData as CommonSupply[]) ?? [];
-  }, [commonSuppliesData]);
+  const commonSupplies = (commonSuppliesData as CommonSupply[]) ?? [];
 
-  const structuredSupplies = useMemo(() => {
-    return commonSupplies.reduce<StructuredSupplies>((acc, supply) => {
-      if (!supply.name) return acc;
-      if (!acc[supply.name]) {
-        acc[supply.name] = {};
-      }
-      const brand = supply.brand || "N/A";
-      if (!acc[supply.name]![brand]) {
-        acc[supply.name]![brand] = [];
-      }
-      if (supply.model) {
-        acc[supply.name]![brand]!.push(supply.model);
-      }
-      return acc;
-    }, {});
-  }, [commonSupplies]);
+  const structuredSupplies = commonSupplies.reduce<StructuredSupplies>((acc, supply) => {
+    if (!supply.name) return acc;
+    if (!acc[supply.name]) {
+      acc[supply.name] = {};
+    }
+    const brand = supply.brand || "N/A";
+    if (!acc[supply.name]![brand]) {
+      acc[supply.name]![brand] = [];
+    }
+    if (supply.model) {
+      acc[supply.name]![brand]!.push(supply.model);
+    }
+    return acc;
+  }, {});
 
-  const fetchData = useCallback(async () => {
+  const fetchData = async () => {
     setError(null);
     await Promise.all([refetchRequests(), refetchSupplies()]);
-  }, [refetchRequests, refetchSupplies]);
+  };
 
   // ZenStack mutation for updating supply request status
   // ZenStack mutation for updating supply request status
   const updateMutation = useUpdateSupplyRequest();
 
-  const handleStatusChange = useCallback(
-    async (requestId: number, newStatus: SupplyRequest["status"]) => {
-      setError(null);
-      try {
-        await updateMutation.mutateAsync({
-          where: { id: requestId },
-          data: { status: newStatus },
-        });
-        toastSuccess("Estado de solicitud actualizado");
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "Error al actualizar el estado";
-        setError(message);
-        toastError(message);
-      }
-    },
-    [updateMutation, toastSuccess, toastError]
-  );
+  const handleStatusChange = async (requestId: number, newStatus: SupplyRequest["status"]) => {
+    setError(null);
+    try {
+      await updateMutation.mutateAsync({
+        where: { id: requestId },
+        data: { status: newStatus },
+      });
+      toastSuccess("Estado de solicitud actualizado");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Error al actualizar el estado";
+      setError(message);
+      toastError(message);
+    }
+  };
 
   const loading = requestsPending || requestsFetching || suppliesPending || suppliesFetching;
 

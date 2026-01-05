@@ -1,7 +1,7 @@
 import { useMutation } from "@tanstack/react-query";
 import { AlertCircle, ArrowRight, CheckCircle, FileUp, Loader2, Lock, Upload } from "lucide-react";
 import Papa from "papaparse";
-import { useCallback, useMemo, useState } from "react";
+import { useState } from "react";
 
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
@@ -180,21 +180,16 @@ export default function CSVUploadPage() {
 
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
 
-  const allowedTableOptions = useMemo(() => {
-    return TABLE_OPTIONS.filter((t) => {
-      // 1. Must be supported by backend
-      if (!SUPPORTED_TABLES.includes(t.value)) return false;
-      // 2. Must have permission
-      const perm = PERMISSION_MAP[t.value];
-      if (!perm) return false;
-      return can(perm.action, perm.subject);
-    });
-  }, [can]);
+  const allowedTableOptions = TABLE_OPTIONS.filter((t) => {
+    // 1. Must be supported by backend
+    if (!SUPPORTED_TABLES.includes(t.value)) return false;
+    // 2. Must have permission
+    const perm = PERMISSION_MAP[t.value];
+    if (!perm) return false;
+    return can(perm.action, perm.subject);
+  });
 
-  const currentTable = useMemo(
-    () => allowedTableOptions.find((t) => t.value === selectedTable),
-    [selectedTable, allowedTableOptions]
-  );
+  const currentTable = allowedTableOptions.find((t) => t.value === selectedTable);
 
   // Mutations
   const {
@@ -236,7 +231,7 @@ export default function CSVUploadPage() {
     },
   });
 
-  const resetState = useCallback(() => {
+  const resetState = () => {
     setCsvData([]);
     setCsvHeaders([]);
     setColumnMapping({});
@@ -244,75 +239,69 @@ export default function CSVUploadPage() {
     setParseStatus("idle");
     setErrorMessage("");
     setShowSuccessMessage(false);
-  }, []);
+  };
 
-  const handleTableChange = useCallback(
-    (e: React.ChangeEvent<HTMLSelectElement>) => {
-      setSelectedTable(e.target.value);
-      resetState();
-    },
-    [resetState]
-  );
+  const handleTableChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedTable(e.target.value);
+    resetState();
+  };
 
-  const handleFileChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement> | File) => {
+    const file = e instanceof File ? e : e.target.files?.[0];
+    if (!file) return;
 
-      setParseStatus("parsing");
-      setErrorMessage("");
-      setShowSuccessMessage(false);
-      setPreviewData(null);
+    setParseStatus("parsing");
+    setErrorMessage("");
+    setShowSuccessMessage(false);
+    setPreviewData(null);
 
-      Papa.parse(file, {
-        header: true,
-        skipEmptyLines: true,
-        complete: (results) => {
-          if (results.errors.length > 0) {
-            setParseStatus("error");
-            setErrorMessage(`Error al parsear CSV: ${results.errors[0]?.message || "Error desconocido"}`);
-            return;
-          }
-
-          const headers = results.meta.fields || [];
-          setCsvHeaders(headers);
-          setCsvData(results.data as Record<string, string>[]);
-
-          // Auto-mapping heuristics
-          if (currentTable) {
-            const autoMapping: Record<string, string> = {};
-            currentTable.fields.forEach((field) => {
-              const matchingHeader = headers.find(
-                (h) =>
-                  h.toLowerCase() === field.name.toLowerCase() ||
-                  h.toLowerCase().replace(/_/g, "") === field.name.toLowerCase()
-              );
-              if (matchingHeader) {
-                autoMapping[field.name] = matchingHeader;
-              }
-            });
-            setColumnMapping(autoMapping);
-          }
-
-          setParseStatus("idle");
-        },
-        error: (error) => {
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: (results) => {
+        if (results.errors.length > 0) {
           setParseStatus("error");
-          setErrorMessage(`Error al leer archivo: ${error.message}`);
-        },
-      });
-    },
-    [currentTable]
-  );
+          setErrorMessage(`Error al parsear CSV: ${results.errors[0]?.message || "Error desconocido"}`);
+          return;
+        }
 
-  const handleColumnMapChange = useCallback((dbField: string, csvColumn: string) => {
+        const headers = results.meta.fields || [];
+        setCsvHeaders(headers);
+        setCsvData(results.data as Record<string, string>[]);
+
+        // Auto-mapping heuristics
+        if (currentTable) {
+          const autoMapping: Record<string, string> = {};
+          currentTable.fields.forEach((field) => {
+            const matchingHeader = headers.find(
+              (h) =>
+                h.toLowerCase() === field.name.toLowerCase() ||
+                h.toLowerCase().replace(/_/g, "") === field.name.toLowerCase()
+            );
+            if (matchingHeader) {
+              autoMapping[field.name] = matchingHeader;
+            }
+          });
+          setColumnMapping(autoMapping);
+        }
+
+        setParseStatus("idle");
+      },
+      error: (error) => {
+        setParseStatus("error");
+        setErrorMessage(`Error al leer archivo: ${error.message}`);
+      },
+    });
+  };
+
+  const handleColumnMapChange = (dbField: string, csvColumn: string) => {
     setColumnMapping((prev) => ({
       ...prev,
       [dbField]: csvColumn,
     }));
-  }, []);
+  };
 
-  const getTransformedData = useCallback(() => {
+  const getTransformedData = () => {
     return csvData.map((row) => {
       const transformed: Record<string, string | number> = {};
       Object.entries(columnMapping).forEach(([dbField, csvColumn]) => {
@@ -322,31 +311,31 @@ export default function CSVUploadPage() {
       });
       return transformed;
     });
-  }, [csvData, columnMapping]);
+  };
 
-  const handlePreview = useCallback(() => {
+  const handlePreview = () => {
     if (!selectedTable || csvData.length === 0) return;
     setErrorMessage("");
     previewMutate({
       table: selectedTable,
       data: getTransformedData(),
     });
-  }, [selectedTable, csvData, getTransformedData, previewMutate]);
+  };
 
-  const handleImport = useCallback(() => {
+  const handleImport = () => {
     if (!selectedTable || csvData.length === 0) return;
     setErrorMessage("");
     importMutate({
       table: selectedTable,
       data: getTransformedData(),
     });
-  }, [selectedTable, csvData, getTransformedData, importMutate]);
+  };
 
-  const isValidMapping = useMemo(() => {
+  const isValidMapping = (() => {
     if (!currentTable) return false;
     const requiredFields = currentTable.fields.filter((f) => f.required);
     return requiredFields.every((field) => columnMapping[field.name] && columnMapping[field.name] !== "");
-  }, [currentTable, columnMapping]);
+  })();
 
   return (
     <div className={PAGE_CONTAINER}>
