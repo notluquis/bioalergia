@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { getSessionUser } from "../auth";
+import { getSessionUser, hasPermission } from "../auth";
 import {
   createService,
   deleteService,
@@ -15,16 +15,22 @@ import {
 const app = new Hono();
 
 app.get("/", async (c) => {
-  const user = getSessionUser(c);
+  const user = await getSessionUser(c);
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+
+  const canRead = await hasPermission(user.id, "read", "Service");
+  if (!canRead) return c.json({ status: "error", message: "Forbidden" }, 403);
 
   const items = await listServices();
   return c.json({ status: "ok", services: items });
 });
 
 app.get("/:id", async (c) => {
-  const user = getSessionUser(c);
+  const user = await getSessionUser(c);
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+
+  const canRead = await hasPermission(user.id, "read", "Service");
+  if (!canRead) return c.json({ status: "error", message: "Forbidden" }, 403);
 
   const id = Number(c.req.param("id"));
   if (isNaN(id)) return c.json({ status: "error", message: "Invalid ID" }, 400);
@@ -40,8 +46,11 @@ app.get("/:id", async (c) => {
 });
 
 app.post("/", async (c) => {
-  const user = getSessionUser(c);
+  const user = await getSessionUser(c);
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+
+  const canCreate = await hasPermission(user.id, "create", "Service");
+  if (!canCreate) return c.json({ status: "error", message: "Forbidden" }, 403);
 
   const body = await c.req.json();
   const parsed = serviceCreateSchema.safeParse(body);
@@ -62,8 +71,11 @@ app.post("/", async (c) => {
 });
 
 app.put("/:id", async (c) => {
-  const user = getSessionUser(c);
+  const user = await getSessionUser(c);
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+
+  const canUpdate = await hasPermission(user.id, "update", "Service");
+  if (!canUpdate) return c.json({ status: "error", message: "Forbidden" }, 403);
 
   const id = Number(c.req.param("id"));
   if (isNaN(id)) return c.json({ status: "error", message: "Invalid ID" }, 400);
@@ -87,8 +99,11 @@ app.put("/:id", async (c) => {
 });
 
 app.delete("/:id", async (c) => {
-  const user = getSessionUser(c);
+  const user = await getSessionUser(c);
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+
+  const canDelete = await hasPermission(user.id, "delete", "Service");
+  if (!canDelete) return c.json({ status: "error", message: "Forbidden" }, 403);
 
   const id = Number(c.req.param("id"));
   if (isNaN(id)) return c.json({ status: "error", message: "Invalid ID" }, 400);
@@ -101,8 +116,11 @@ app.delete("/:id", async (c) => {
 // NOTE: ServiceSchedule model does not exist in the database schema.
 // This is a placeholder to prevent 400 errors until the feature is implemented.
 app.post("/:id/schedules", async (c) => {
-  const user = getSessionUser(c);
+  const user = await getSessionUser(c);
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+
+  const canUpdate = await hasPermission(user.id, "update", "Service");
+  if (!canUpdate) return c.json({ status: "error", message: "Forbidden" }, 403);
 
   const id = Number(c.req.param("id"));
   if (isNaN(id)) return c.json({ status: "error", message: "Invalid ID" }, 400);

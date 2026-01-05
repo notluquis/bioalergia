@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { getSessionUser } from "../auth";
+import { getSessionUser, hasPermission } from "../auth";
 import {
   listEmployees,
   createEmployee,
@@ -12,8 +12,11 @@ const app = new Hono();
 
 // GET / - List employees
 app.get("/", async (c) => {
-  const user = getSessionUser(c);
+  const user = await getSessionUser(c);
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+
+  const canRead = await hasPermission(user.id, "read", "Employee");
+  if (!canRead) return c.json({ status: "error", message: "Forbidden" }, 403);
 
   try {
     const query = c.req.query();
@@ -32,8 +35,11 @@ app.get("/", async (c) => {
 
 // GET /:id - Get single employee
 app.get("/:id", async (c) => {
-  const user = getSessionUser(c);
+  const user = await getSessionUser(c);
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+
+  const canRead = await hasPermission(user.id, "read", "Employee");
+  if (!canRead) return c.json({ status: "error", message: "Forbidden" }, 403);
 
   const id = Number(c.req.param("id"));
   if (!Number.isFinite(id)) {
@@ -60,8 +66,11 @@ app.get("/:id", async (c) => {
 
 // POST / - Create employee
 app.post("/", async (c) => {
-  const user = getSessionUser(c);
+  const user = await getSessionUser(c);
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+
+  const canCreate = await hasPermission(user.id, "create", "Employee");
+  if (!canCreate) return c.json({ status: "error", message: "Forbidden" }, 403);
 
   try {
     const body = await c.req.json();
@@ -85,8 +94,11 @@ app.post("/", async (c) => {
 
 // PUT /:id - Update employee
 app.put("/:id", async (c) => {
-  const user = getSessionUser(c);
+  const user = await getSessionUser(c);
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+
+  const canUpdate = await hasPermission(user.id, "update", "Employee");
+  if (!canUpdate) return c.json({ status: "error", message: "Forbidden" }, 403);
 
   const id = Number(c.req.param("id"));
   if (!Number.isFinite(id)) {
@@ -107,8 +119,11 @@ app.put("/:id", async (c) => {
 
 // DELETE /:id - Deactivate employee
 app.delete("/:id", async (c) => {
-  const user = getSessionUser(c);
+  const user = await getSessionUser(c);
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+
+  const canDelete = await hasPermission(user.id, "delete", "Employee");
+  if (!canDelete) return c.json({ status: "error", message: "Forbidden" }, 403);
 
   const id = Number(c.req.param("id"));
   if (!Number.isFinite(id)) {

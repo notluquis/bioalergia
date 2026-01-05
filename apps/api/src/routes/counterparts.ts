@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { getSessionUser } from "../auth";
+import { getSessionUser, hasPermission } from "../auth";
 import {
   createCounterpart,
   getCounterpartById,
@@ -17,16 +17,22 @@ import {
 const app = new Hono();
 
 app.get("/", async (c) => {
-  const user = getSessionUser(c);
+  const user = await getSessionUser(c);
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+
+  const canRead = await hasPermission(user.id, "read", "Counterpart");
+  if (!canRead) return c.json({ status: "error", message: "Forbidden" }, 403);
 
   const items = await listCounterparts();
   return c.json({ status: "ok", counterparts: items });
 });
 
 app.get("/:id", async (c) => {
-  const user = getSessionUser(c);
+  const user = await getSessionUser(c);
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+
+  const canRead = await hasPermission(user.id, "read", "Counterpart");
+  if (!canRead) return c.json({ status: "error", message: "Forbidden" }, 403);
 
   const id = Number(c.req.param("id"));
   if (isNaN(id)) return c.json({ status: "error", message: "Invalid ID" }, 400);
@@ -42,8 +48,11 @@ app.get("/:id", async (c) => {
 });
 
 app.post("/", async (c) => {
-  const user = getSessionUser(c);
+  const user = await getSessionUser(c);
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+
+  const canCreate = await hasPermission(user.id, "create", "Counterpart");
+  if (!canCreate) return c.json({ status: "error", message: "Forbidden" }, 403);
 
   const body = await c.req.json();
   const parsed = counterpartPayloadSchema.safeParse(body);
@@ -64,8 +73,11 @@ app.post("/", async (c) => {
 });
 
 app.put("/:id", async (c) => {
-  const user = getSessionUser(c);
+  const user = await getSessionUser(c);
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+
+  const canUpdate = await hasPermission(user.id, "update", "Counterpart");
+  if (!canUpdate) return c.json({ status: "error", message: "Forbidden" }, 403);
 
   const id = Number(c.req.param("id"));
   if (isNaN(id)) return c.json({ status: "error", message: "Invalid ID" }, 400);
@@ -91,8 +103,11 @@ app.put("/:id", async (c) => {
 // Accounts Sub-resource
 
 app.post("/:id/accounts", async (c) => {
-  const user = getSessionUser(c);
+  const user = await getSessionUser(c);
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+
+  const canUpdate = await hasPermission(user.id, "update", "Counterpart");
+  if (!canUpdate) return c.json({ status: "error", message: "Forbidden" }, 403);
 
   const id = Number(c.req.param("id"));
   const body = await c.req.json();
@@ -114,8 +129,11 @@ app.post("/:id/accounts", async (c) => {
 });
 
 app.put("/accounts/:accountId", async (c) => {
-  const user = getSessionUser(c);
+  const user = await getSessionUser(c);
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+
+  const canUpdate = await hasPermission(user.id, "update", "Counterpart");
+  if (!canUpdate) return c.json({ status: "error", message: "Forbidden" }, 403);
 
   const accountId = Number(c.req.param("accountId"));
   const body = await c.req.json();

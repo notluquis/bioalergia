@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { getSessionUser } from "../auth";
+import { getSessionUser, hasPermission } from "../auth";
 import {
   sendPushNotification,
   subscribeToPush,
@@ -25,6 +25,9 @@ app.post("/subscribe", async (c) => {
 app.post("/send-test", async (c) => {
   const user = await getSessionUser(c);
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+
+  const canRead = await hasPermission(user.id, "read", "Notification");
+  if (!canRead) return c.json({ status: "error", message: "Forbidden" }, 403);
 
   const result = await sendPushNotification(user.id, {
     title: "Test Notification",

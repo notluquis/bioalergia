@@ -1,13 +1,16 @@
 import { Hono } from "hono";
-import { getSessionUser } from "../auth";
+import { getSessionUser, hasPermission } from "../auth";
 import { db } from "@finanzas/db";
 
 const app = new Hono();
 
 // GET / - List all people
 app.get("/", async (c) => {
-  const user = getSessionUser(c);
+  const user = await getSessionUser(c);
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+
+  const canRead = await hasPermission(user.id, "read", "Person");
+  if (!canRead) return c.json({ status: "error", message: "Forbidden" }, 403);
 
   try {
     const people = await db.person.findMany({
@@ -38,8 +41,11 @@ app.get("/", async (c) => {
 
 // GET /:id - Get person by ID
 app.get("/:id", async (c) => {
-  const user = getSessionUser(c);
+  const user = await getSessionUser(c);
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+
+  const canRead = await hasPermission(user.id, "read", "Person");
+  if (!canRead) return c.json({ status: "error", message: "Forbidden" }, 403);
 
   const id = Number(c.req.param("id"));
   if (!Number.isFinite(id)) {
