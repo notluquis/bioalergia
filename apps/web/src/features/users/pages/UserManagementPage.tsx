@@ -50,8 +50,13 @@ export default function UserManagementPage() {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [selectedRole, setSelectedRole] = useState("");
 
-  // ZenStack hooks for users
+  // ZenStack hooks for users - filter out test/debug emails
   const { data: usersData, isLoading } = useFindManyUser({
+    where: {
+      NOT: {
+        OR: [{ email: { contains: "test" } }, { email: { contains: "debug" } }],
+      },
+    },
     include: { person: true },
     orderBy: { createdAt: "desc" },
   });
