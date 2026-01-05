@@ -163,31 +163,6 @@ export class SchemaType implements SchemaDef {
                     attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("mfa_enabled") }] }],
                     default: false
                 },
-                passkeyCredentialID: {
-                    name: "passkeyCredentialID",
-                    type: "String",
-                    unique: true,
-                    optional: true,
-                    attributes: [{ name: "@unique" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("passkey_credential_id") }] }]
-                },
-                passkeyPublicKey: {
-                    name: "passkeyPublicKey",
-                    type: "Bytes",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("passkey_public_key") }] }]
-                },
-                passkeyCounter: {
-                    name: "passkeyCounter",
-                    type: "BigInt",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("passkey_counter") }] }],
-                    default: 0
-                },
-                passkeyTransports: {
-                    name: "passkeyTransports",
-                    type: "Json",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("passkey_transports") }] }]
-                },
                 passkeys: {
                     name: "passkeys",
                     type: "Passkey",
@@ -268,8 +243,7 @@ export class SchemaType implements SchemaDef {
             uniqueFields: {
                 id: { type: "Int" },
                 personId: { type: "Int" },
-                email: { type: "String" },
-                passkeyCredentialID: { type: "String" }
+                email: { type: "String" }
             }
         },
         Passkey: {

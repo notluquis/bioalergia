@@ -143,27 +143,6 @@ export class SchemaType implements SchemaDef {
                     type: "Boolean",
                     default: false
                 },
-                passkeyCredentialID: {
-                    name: "passkeyCredentialID",
-                    type: "String",
-                    unique: true,
-                    optional: true
-                },
-                passkeyPublicKey: {
-                    name: "passkeyPublicKey",
-                    type: "Bytes",
-                    optional: true
-                },
-                passkeyCounter: {
-                    name: "passkeyCounter",
-                    type: "BigInt",
-                    default: 0
-                },
-                passkeyTransports: {
-                    name: "passkeyTransports",
-                    type: "Json",
-                    optional: true
-                },
                 passkeys: {
                     name: "passkeys",
                     type: "Passkey",
@@ -232,8 +211,7 @@ export class SchemaType implements SchemaDef {
             uniqueFields: {
                 id: { type: "Int" },
                 personId: { type: "Int" },
-                email: { type: "String" },
-                passkeyCredentialID: { type: "String" }
+                email: { type: "String" }
             }
         },
         Passkey: {
