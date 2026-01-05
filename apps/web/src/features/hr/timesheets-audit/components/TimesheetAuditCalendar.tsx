@@ -11,7 +11,7 @@ import esLocale from "@fullcalendar/core/locales/es";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useRef } from "react";
 
 import { LOADING_SPINNER_MD } from "@/lib/styles";
 
@@ -159,17 +159,17 @@ export default function TimesheetAuditCalendar({
     calendarApiRef.current?.gotoDate(focusDate);
   }, [focusDate]);
 
-  const rangeFilteredEntries = useMemo(() => {
+  const rangeFilteredEntries = (() => {
     if (!visibleDateRanges || visibleDateRanges.length === 0) {
       return entries;
     }
     return entries.filter((entry) =>
       visibleDateRanges.some((range) => entry.work_date >= range.start && entry.work_date <= range.end)
     );
-  }, [entries, visibleDateRanges]);
+  })();
 
   // Memoize overlap detection to avoid recalculation
-  const overlappingEmployeesByDate = useMemo(() => {
+  const overlappingEmployeesByDate = (() => {
     const map = new Map<string, Set<number>>();
     const dates = new Set(rangeFilteredEntries.map((e) => e.work_date));
 
@@ -179,20 +179,16 @@ export default function TimesheetAuditCalendar({
     }
 
     return map;
-  }, [rangeFilteredEntries]);
+  })();
 
   // Convert entries to calendar format
-  const calendarEvents = useMemo(() => {
-    return convertToCalendarEvents(rangeFilteredEntries, overlappingEmployeesByDate);
-  }, [rangeFilteredEntries, overlappingEmployeesByDate]);
+  const calendarEvents = convertToCalendarEvents(rangeFilteredEntries, overlappingEmployeesByDate);
 
   // Convert to FullCalendar format
-  const fullCalendarEvents = useMemo(() => {
-    return toFullCalendarEvents(calendarEvents);
-  }, [calendarEvents]);
+  const fullCalendarEvents = toFullCalendarEvents(calendarEvents);
 
   // Calculate time bounds based on entries
-  const timeBounds = useMemo(() => {
+  const timeBounds = (() => {
     if (!rangeFilteredEntries.length) {
       return {
         slotMinTime: "06:00:00",
@@ -226,7 +222,7 @@ export default function TimesheetAuditCalendar({
       slotMinTime: secondsToTime(minSeconds),
       slotMaxTime: secondsToTime(maxSeconds),
     };
-  }, [rangeFilteredEntries]);
+  })();
 
   const handleEventDidMount = (info: {
     event: {

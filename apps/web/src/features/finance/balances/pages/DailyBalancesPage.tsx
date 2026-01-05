@@ -1,7 +1,7 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
@@ -25,10 +25,10 @@ export default function DailyBalances() {
   const [to, setTo] = useState(today());
   const { quickMonths } = useQuickDateRange();
 
-  const quickRange = useMemo(() => {
+  const quickRange = (() => {
     const match = quickMonths.find((month) => month.from === from && month.to === to);
     return match ? match.value : "custom";
-  }, [quickMonths, from, to]);
+  })();
 
   const balancesQuery = useQuery<BalancesApiResponse, Error>({
     queryKey: ["daily-balances", from, to],
@@ -46,9 +46,9 @@ export default function DailyBalances() {
   const isInitialLoading = isLoading && !report;
   const balancesError = balancesQueryError instanceof Error ? balancesQueryError.message : null;
 
-  const reloadBalances = useCallback(async () => {
+  const reloadBalances = async () => {
     await refetch();
-  }, [refetch]);
+  };
 
   const { drafts, saving, error, handleDraftChange, handleSave, setDrafts } = useDailyBalanceManagement({
     loadBalances: reloadBalances,
@@ -69,7 +69,7 @@ export default function DailyBalances() {
     setDrafts(nextDrafts);
   }, [report, setDrafts]);
 
-  const derivedInitial = useMemo(() => (report ? deriveInitialBalance(report) : null), [report]);
+  const derivedInitial = report ? deriveInitialBalance(report) : null;
 
   return (
     <section className="space-y-4">

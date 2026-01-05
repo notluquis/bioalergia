@@ -1,5 +1,4 @@
 import dayjs from "dayjs";
-import { memo } from "react";
 
 import { fmtCLP } from "@/lib/format";
 
@@ -21,7 +20,7 @@ type SummaryTotals = {
   net: number;
 };
 
-const TimesheetSummaryTable = memo(function TimesheetSummaryTable({
+export default function TimesheetSummaryTable({
   summary,
   loading,
   selectedEmployeeId,
@@ -114,6 +113,4 @@ const TimesheetSummaryTable = memo(function TimesheetSummaryTable({
       </div>
     </div>
   );
-});
-
-export default TimesheetSummaryTable;
+}

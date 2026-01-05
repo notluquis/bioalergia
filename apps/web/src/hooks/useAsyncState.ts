@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useState } from "react";
 
 /**
  * Hook reutilizable para manejar estado asíncrono común (loading, error, data).
@@ -27,13 +27,13 @@ export function useAsyncState<T>(initialData?: T) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const clearError = useCallback(() => setError(null), []);
+  const clearError = () => setError(null);
 
-  const reset = useCallback(() => {
+  const reset = () => {
     setData(initialData);
     setLoading(false);
     setError(null);
-  }, [initialData]);
+  };
 
   return {
     data,

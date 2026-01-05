@@ -1,5 +1,3 @@
-import { useMemo } from "react";
-
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
 import Checkbox from "@/components/ui/Checkbox";
@@ -39,9 +37,9 @@ export default function EmployeeTable({ employees, loading, onEdit, onDeactivate
     initialPageSize: 50,
   });
 
-  const activeEmployees = useMemo(() => employees.filter((employee) => employee.status === "ACTIVE"), [employees]);
+  const activeEmployees = employees.filter((employee) => employee.status === "ACTIVE");
 
-  const sortedEmployees = useMemo(() => {
+  const sortedEmployees = (() => {
     if (!table.sortState.column) return employees;
 
     return [...employees].sort((a, b) => {
@@ -83,7 +81,7 @@ export default function EmployeeTable({ employees, loading, onEdit, onDeactivate
       if (aValue > bValue) return direction === "desc" ? -1 : 1;
       return 0;
     });
-  }, [employees, table.sortState]);
+  })();
 
   return (
     <div className="space-y-4">

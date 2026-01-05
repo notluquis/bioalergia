@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { apiClient } from "@/lib/apiClient";
 
@@ -72,9 +72,9 @@ export function useJobProgress(jobId: string | null, options: UseJobProgressOpti
     setHasNotified(false);
   }, [jobId]);
 
-  const reset = useCallback(() => {
+  const reset = () => {
     setHasNotified(false);
-  }, []);
+  };
 
   return {
     job: query.data,

@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useState } from "react";
 
 export interface ColumnVisibility {
   [key: string]: boolean;
@@ -17,28 +17,28 @@ export function useColumnVisibility({ initialColumns = [], defaultVisible = true
     }, {} as ColumnVisibility);
   });
 
-  const toggleColumn = useCallback((column: string) => {
+  const toggleColumn = (column: string) => {
     setVisibleColumns((prev) => ({
       ...prev,
       [column]: !prev[column],
     }));
-  }, []);
+  };
 
-  const showColumn = useCallback((column: string) => {
+  const showColumn = (column: string) => {
     setVisibleColumns((prev) => ({
       ...prev,
       [column]: true,
     }));
-  }, []);
+  };
 
-  const hideColumn = useCallback((column: string) => {
+  const hideColumn = (column: string) => {
     setVisibleColumns((prev) => ({
       ...prev,
       [column]: false,
     }));
-  }, []);
+  };
 
-  const showAllColumns = useCallback(() => {
+  const showAllColumns = () => {
     setVisibleColumns((prev) => {
       const updated = { ...prev };
       Object.keys(updated).forEach((key) => {
@@ -46,9 +46,9 @@ export function useColumnVisibility({ initialColumns = [], defaultVisible = true
       });
       return updated;
     });
-  }, []);
+  };
 
-  const hideAllColumns = useCallback(() => {
+  const hideAllColumns = () => {
     setVisibleColumns((prev) => {
       const updated = { ...prev };
       Object.keys(updated).forEach((key) => {
@@ -56,21 +56,15 @@ export function useColumnVisibility({ initialColumns = [], defaultVisible = true
       });
       return updated;
     });
-  }, []);
+  };
 
-  const isColumnVisible = useCallback(
-    (column: string) => {
-      return visibleColumns[column] ?? true;
-    },
-    [visibleColumns]
-  );
+  const isColumnVisible = (column: string) => {
+    return visibleColumns[column] ?? true;
+  };
 
-  const getVisibleColumns = useCallback(
-    (allColumns: string[]) => {
-      return allColumns.filter((col) => isColumnVisible(col));
-    },
-    [isColumnVisible]
-  );
+  const getVisibleColumns = (allColumns: string[]) => {
+    return allColumns.filter((col) => isColumnVisible(col));
+  };
 
   return {
     visibleColumns,

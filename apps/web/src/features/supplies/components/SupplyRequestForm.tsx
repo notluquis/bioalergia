@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import React, { useMemo } from "react";
+import React from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -77,24 +77,22 @@ export default function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyR
     }
   };
 
-  const structuredSupplies = useMemo(() => {
-    return commonSupplies.reduce<StructuredSupplies>((acc, supply) => {
-      if (!supply.name) return acc;
-      const supplyGroup = acc[supply.name];
-      if (!supplyGroup) {
-        acc[supply.name] = {};
-      }
-      const brand = supply.brand || "N/A";
-      const brandGroup = acc[supply.name]!;
-      if (!brandGroup[brand]) {
-        brandGroup[brand] = [];
-      }
-      if (supply.model) {
-        brandGroup[brand]!.push(supply.model);
-      }
-      return acc;
-    }, {});
-  }, [commonSupplies]);
+  const structuredSupplies = commonSupplies.reduce<StructuredSupplies>((acc, supply) => {
+    if (!supply.name) return acc;
+    const supplyGroup = acc[supply.name];
+    if (!supplyGroup) {
+      acc[supply.name] = {};
+    }
+    const brand = supply.brand || "N/A";
+    const brandGroup = acc[supply.name]!;
+    if (!brandGroup[brand]) {
+      brandGroup[brand] = [];
+    }
+    if (supply.model) {
+      brandGroup[brand]!.push(supply.model);
+    }
+    return acc;
+  }, {});
 
   const supplyNames = Object.keys(structuredSupplies);
   const availableBrands = selectedSupply ? Object.keys(structuredSupplies[selectedSupply] ?? {}) : [];

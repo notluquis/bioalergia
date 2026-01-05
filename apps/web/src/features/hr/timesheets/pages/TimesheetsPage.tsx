@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import { type ChangeEvent, lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { type ChangeEvent, lazy, Suspense, useEffect, useState } from "react";
 
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
@@ -71,11 +71,8 @@ export default function TimesheetsPage() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const activeEmployees = useMemo(() => employees.filter((e) => e.status === "ACTIVE"), [employees]);
-  const selectedEmployee = useMemo(
-    () => (selectedEmployeeId ? (employees.find((e) => e.id === selectedEmployeeId) ?? null) : null),
-    [employees, selectedEmployeeId]
-  );
+  const activeEmployees = employees.filter((e) => e.status === "ACTIVE");
+  const selectedEmployee = selectedEmployeeId ? (employees.find((e) => e.id === selectedEmployeeId) ?? null) : null;
 
   // 2. Summary (Depends on Month + potentially SelectedEmployee)
   const {
@@ -88,10 +85,10 @@ export default function TimesheetsPage() {
     enabled: !!month,
   });
 
-  const employeeSummaryRow = useMemo(() => {
+  const employeeSummaryRow = (() => {
     if (!summaryData || !selectedEmployee) return null;
     return summaryData.employees.find((e) => e.employeeId === selectedEmployee.id) ?? null;
-  }, [summaryData, selectedEmployee]);
+  })();
 
   // 3. Detail (Depends on Month + SelectedEmployee)
   // We fetch this only when an employee is selected
@@ -154,96 +151,81 @@ export default function TimesheetsPage() {
 
   // --- Handlers ---
 
-  const handleRowChange = useCallback(
-    (index: number, field: keyof Omit<BulkRow, "date" | "entryId">, value: string) => {
-      setBulkRows((prev) => {
-        const currentRow = prev[index];
-        if (!currentRow || currentRow[field] === value) return prev;
+  const handleRowChange = (index: number, field: keyof Omit<BulkRow, "date" | "entryId">, value: string) => {
+    setBulkRows((prev) => {
+      const currentRow = prev[index];
+      if (!currentRow || currentRow[field] === value) return prev;
 
-        return prev.map((row, i) => (i === index ? { ...row, [field]: value } : row));
-      });
-    },
-    []
-  );
+      return prev.map((row, i) => (i === index ? { ...row, [field]: value } : row));
+    });
+  };
 
-  const handleResetRow = useCallback(
-    (index: number) => {
-      setBulkRows((prev) => {
-        const next = [...prev];
-        const initialRow = initialRows[index];
-        if (initialRow) next[index] = { ...initialRow };
-        return next;
-      });
-    },
-    [initialRows]
-  );
+  const handleResetRow = (index: number) => {
+    setBulkRows((prev) => {
+      const next = [...prev];
+      const initialRow = initialRows[index];
+      if (initialRow) next[index] = { ...initialRow };
+      return next;
+    });
+  };
 
   // Row Auto-Save
   const { mutateAsync: upsertMutate, isPending: isUpsertPending } = upsertMutation;
 
-  const saveRowImmediately = useCallback(
-    async (index: number) => {
-      if (!selectedEmployeeId || isUpsertPending) return;
-      const row = bulkRows[index];
-      const initial = initialRows[index];
-      if (!row || !initial) return;
+  const saveRowImmediately = async (index: number) => {
+    if (!selectedEmployeeId || isUpsertPending) return;
+    const row = bulkRows[index];
+    const initial = initialRows[index];
+    if (!row || !initial) return;
 
-      const isComplete = Boolean(row.entrada?.trim()) && Boolean(row.salida?.trim());
-      if (!isComplete || !isRowDirty(row, initial)) return;
+    const isComplete = Boolean(row.entrada?.trim()) && Boolean(row.salida?.trim());
+    if (!isComplete || !isRowDirty(row, initial)) return;
 
-      // Simple validation
-      if (row.entrada && !/^[0-9]{1,2}:[0-9]{2}$/.test(row.entrada)) return;
-      if (row.salida && !/^[0-9]{1,2}:[0-9]{2}$/.test(row.salida)) return;
+    // Simple validation
+    if (row.entrada && !/^[0-9]{1,2}:[0-9]{2}$/.test(row.entrada)) return;
+    if (row.salida && !/^[0-9]{1,2}:[0-9]{2}$/.test(row.salida)) return;
 
-      const overtime = parseDuration(row.overtime);
-      if (overtime === null) return;
+    const overtime = parseDuration(row.overtime);
+    if (overtime === null) return;
 
-      const comment = row.comment.trim() ? row.comment.trim() : null;
-      const entry = {
-        work_date: row.date,
-        start_time: row.entrada || null,
-        end_time: row.salida || null,
-        overtime_minutes: overtime,
-        extra_amount: 0,
-        comment,
-      };
+    const comment = row.comment.trim() ? row.comment.trim() : null;
+    const entry = {
+      work_date: row.date,
+      start_time: row.entrada || null,
+      end_time: row.salida || null,
+      overtime_minutes: overtime,
+      extra_amount: 0,
+      comment,
+    };
 
-      try {
-        await upsertMutate({
-          employeeId: selectedEmployeeId,
-          entries: [entry],
-          removeIds: [],
-        });
-        toastSuccess(`Guardado: ${formatDateLabel(row.date)}`);
-      } catch {
-        // Error handled in mutation
-      }
-    },
-    [selectedEmployeeId, upsertMutate, isUpsertPending, bulkRows, initialRows, toastSuccess]
-  );
+    try {
+      await upsertMutate({
+        employeeId: selectedEmployeeId,
+        entries: [entry],
+        removeIds: [],
+      });
+      toastSuccess(`Guardado: ${formatDateLabel(row.date)}`);
+    } catch {
+      // Error handled in mutation
+    }
+  };
 
-  const handleSalidaBlur = useCallback(
-    (index: number) => {
-      setTimeout(() => {
-        saveRowImmediately(index);
-      }, 100);
-    },
-    [saveRowImmediately]
-  );
+  const handleSalidaBlur = (index: number) => {
+    setTimeout(() => {
+      saveRowImmediately(index);
+    }, 100);
+  };
 
   // Delete Mutation
   const { mutate: deleteMutate } = deleteMutation;
 
-  const handleRemoveEntry = useCallback(
-    async (row: BulkRow) => {
-      if (!row.entryId) return;
-      if (!confirm("¿Eliminar el registro de este día?")) return;
-      deleteMutate(row.entryId);
-    },
-    [deleteMutate]
-  );
+  const handleRemoveEntry = async (row: BulkRow) => {
+    if (!row.entryId) return;
+    if (!confirm("¿Eliminar el registro de este día?")) return;
+    deleteMutate(row.entryId);
+  };
 
-  const handleBulkSave = useCallback(async () => {
+  const handleBulkSave = async () => {
     if (!selectedEmployeeId) {
       setErrorLocal("Selecciona un trabajador para guardar las horas");
       return;
@@ -308,20 +290,20 @@ export default function TimesheetsPage() {
     } catch {
       // Error handled in mutation
     }
-  }, [bulkRows, initialRows, selectedEmployeeId, upsertMutate, toastSuccess]);
+  };
 
   // PDF & Email Logic (kept mostly as is but using state/deps)
-  const monthLabel = useMemo(() => {
+  const monthLabel = (() => {
     if (!month) return "";
     const [year, monthStr] = month.split("-");
     const d = dayjs(`${year}-${monthStr}-01`);
     return d.isValid() ? d.format("MMMM YYYY") : month;
-  }, [month]);
+  })();
 
-  const generatePdfBase64 = useCallback(async (): Promise<string | null> => {
+  const generatePdfBase64 = async (): Promise<string | null> => {
     if (!selectedEmployee || !employeeSummaryRow) return null;
     return generateTimesheetPdfBase64(selectedEmployee, employeeSummaryRow, bulkRows, monthLabel);
-  }, [selectedEmployee, employeeSummaryRow, bulkRows, monthLabel]);
+  };
 
   // ... existing imports
 
@@ -386,19 +368,17 @@ export default function TimesheetsPage() {
   }
 
   // Group months
-  const groupedMonths = useMemo(() => {
+  const groupedMonths = groupedMonthsMemo();
+  function groupedMonthsMemo() {
     const years = [...new Set(months.map((m) => m.split("-")[0] || ""))];
     return years.map((year) => ({
       year,
       months: months.filter((m) => m.startsWith(year)),
     }));
-  }, [months]);
+  }
 
-  const pendingCount = useMemo(() => bulkRows.filter((row) => !row.entryId && hasRowData(row)).length, [bulkRows]);
-  const modifiedCount = useMemo(
-    () => bulkRows.filter((row, index) => isRowDirty(row, initialRows[index])).length,
-    [bulkRows, initialRows]
-  );
+  const pendingCount = bulkRows.filter((row) => !row.entryId && hasRowData(row)).length;
+  const modifiedCount = bulkRows.filter((row, index) => isRowDirty(row, initialRows[index])).length;
 
   const error =
     errorLocal ||

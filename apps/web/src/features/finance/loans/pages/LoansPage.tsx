@@ -1,7 +1,7 @@
 import { useCreateLoan, useFindManyLoan, useUpdateLoanSchedule } from "@finanzas/db/hooks";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ChangeEvent } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
@@ -19,8 +19,8 @@ import { PAGE_CONTAINER, TITLE_LG } from "@/lib/styles";
 export default function LoansPage() {
   const { can } = useAuth();
   const queryClient = useQueryClient();
-  const canManage = useMemo(() => can("update", "Loan"), [can]);
-  const canView = useMemo(() => can("read", "Loan"), [can]);
+  const canManage = can("update", "Loan");
+  const canView = can("read", "Loan");
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -46,12 +46,10 @@ export default function LoansPage() {
   });
 
   /* eslint-disable @typescript-eslint/no-explicit-any */
-  const loans = useMemo(() => {
-    return ((loansData as any[]) ?? []).map((loan) => ({
-      ...loan,
-      public_id: loan.publicId,
-    }));
-  }, [loansData]);
+  const loans = ((loansData as any[]) ?? []).map((loan) => ({
+    ...loan,
+    public_id: loan.publicId,
+  }));
   /* eslint-enable @typescript-eslint/no-explicit-any */
 
   // Auto-selection
