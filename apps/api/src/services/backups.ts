@@ -175,11 +175,40 @@ export async function createBackup(
     });
 
     try {
-      await pipeline(
-        createReadStream(jsonPath),
-        createGzip({ level: 6 }),
-        createWriteStream(filepath)
-      );
+      console.log(`[Backup] Starting compression pipeline for ${jsonPath}`);
+      const readStream = createReadStream(jsonPath);
+      const writeStream = createWriteStream(filepath);
+      const gzip = createGzip({ level: 6 });
+
+      await new Promise<void>((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          readStream.destroy();
+          gzip.destroy();
+          writeStream.destroy();
+          reject(new Error("Compression timed out after 60 seconds"));
+        }, 60000); // 60s timeout
+
+        let bytesProcessed = 0;
+        readStream.on("data", (chunk) => {
+          bytesProcessed += chunk.length;
+          // Log every ~5MB to avoid spam
+          if (Math.random() > 0.95) {
+            console.log(
+              `[Backup] Compressing... processed ${(bytesProcessed / 1024 / 1024).toFixed(1)} MB`
+            );
+          }
+        });
+
+        pipeline(readStream, gzip, writeStream)
+          .then(() => {
+            clearTimeout(timeout);
+            resolve();
+          })
+          .catch((err) => {
+            clearTimeout(timeout);
+            reject(err);
+          });
+      });
     } catch (pipelineError) {
       console.error("[Backup] Compression pipeline failed:", pipelineError);
       throw new Error(`Compression failed: ${pipelineError}`);
