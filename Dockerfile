@@ -19,37 +19,28 @@ ENV CI=true
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 
-# 1. Lockfile & manifests first (optimal layer caching)
-COPY pnpm-lock.yaml package.json pnpm-workspace.yaml ./
-COPY apps/api/package.json ./apps/api/
-COPY packages/db/package.json ./packages/db/
-
-# 2. Fetch dependencies into store (cacheable, no install yet)
-# Note: Railway requires id=s/<service-id>-<path> format for persistent cache
-RUN --mount=type=cache,id=s/cc493466-c691-4384-8199-99f757a14014-/pnpm/store,target=/pnpm/store \
-    pnpm fetch
-
-# 3. Install from cached store
-RUN --mount=type=cache,id=s/cc493466-c691-4384-8199-99f757a14014-/pnpm/store,target=/pnpm/store \
-    pnpm install --offline --frozen-lockfile
-
-# 4. Copy source code
+# 1. Copy everything (simpler, avoids node_modules corruption issues)
 COPY . .
 
-# 5. Build: Generate ZenStack + compile TypeScript
+# 2. Install all dependencies (with cache mount for speed)
+# Note: Railway requires id=s/<service-id>-<path> format for persistent cache
+RUN --mount=type=cache,id=s/cc493466-c691-4384-8199-99f757a14014-/pnpm/store,target=/pnpm/store \
+    pnpm install --frozen-lockfile
+
+# 3. Build: Generate ZenStack + compile TypeScript
 RUN pnpm --filter @finanzas/db build && \
     pnpm --filter @finanzas/api build
 
-# 6. Deploy: Extract only production deps for @finanzas/api
+# 4. Deploy: Extract only production deps for @finanzas/api
 # pnpm deploy handles workspace deps (@finanzas/db) automatically
 RUN --mount=type=cache,id=s/cc493466-c691-4384-8199-99f757a14014-/pnpm/store,target=/pnpm/store \
     pnpm deploy --filter=@finanzas/api --prod /app/deploy
 
-# 7. Copy compiled dist (pnpm deploy copies source, not build artifacts)
+# 5. Copy compiled dist (pnpm deploy copies source, not build artifacts)
 RUN cp -r apps/api/dist /app/deploy/dist && \
     cp -r packages/db/dist /app/deploy/node_modules/@finanzas/db/dist
 
-# 8. Remove any Prisma artifacts (we use pure ZenStack/Kysely)
+# 6. Remove any Prisma artifacts (we use pure ZenStack/Kysely)
 RUN find /app/deploy -name "prisma" -type d -exec rm -rf {} + 2>/dev/null || true
 
 # ============================================================================
