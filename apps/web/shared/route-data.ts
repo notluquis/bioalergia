@@ -355,7 +355,7 @@ export const ROUTE_DATA: RouteData[] = [
         path: "backups",
         componentPath: "pages/settings/BackupSettingsPage",
         nav: { label: "Backups", iconKey: "Database", section: "Sistema", order: 8 },
-        permission: { action: "update", subject: "Setting" },
+        permission: { action: "read", subject: "Backup" },
         title: "Backups de base de datos",
       },
       {
