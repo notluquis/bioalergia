@@ -60,7 +60,15 @@ authRoutes.post("/login", async (c) => {
     include: {
       person: true,
       roles: {
-        include: { role: true },
+        include: {
+          role: {
+            include: {
+              permissions: {
+                include: { permission: true },
+              },
+            },
+          },
+        },
       },
     },
   });
@@ -107,6 +115,9 @@ authRoutes.post("/login", async (c) => {
   const token = await issueToken({ userId: user.id, email: user.email, roles });
   setCookie(c, COOKIE_NAME, token, COOKIE_OPTIONS);
 
+  const { getAbilityRulesForUser } = await import("../services/authz.js");
+  const abilityRules = await getAbilityRulesForUser(user.id);
+
   return c.json({
     status: "ok",
     user: {
@@ -117,6 +128,7 @@ authRoutes.post("/login", async (c) => {
       status: user.status,
       mfaEnabled: user.mfaEnabled,
     },
+    abilityRules,
   });
 });
 
@@ -210,6 +222,10 @@ authRoutes.get("/me/session", async (c) => {
       return c.json({ status: "ok", user: null });
     }
 
+    // --- Role Governance Logic ---
+    const { getAbilityRulesForUser } = await import("../services/authz.js");
+    const abilityRules = await getAbilityRulesForUser(user.id);
+
     return c.json({
       status: "ok",
       user: {
@@ -222,6 +238,8 @@ authRoutes.get("/me/session", async (c) => {
         mfaEnforced: user.mfaEnforced,
         hasPasskey: user.passkeys.length > 0,
       },
+      abilityRules,
+      permissionVersion: 1,
     });
   } catch {
     deleteCookie(c, COOKIE_NAME);
