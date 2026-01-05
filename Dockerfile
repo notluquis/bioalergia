@@ -26,12 +26,12 @@ COPY . .
 RUN --mount=type=cache,id=s/cc493466-c691-4384-8199-99f757a14014-/pnpm/store,target=/pnpm/store \
     pnpm install --frozen-lockfile
 
-# 3. Build: Generate ZenStack + compile TypeScript
+# 3. Build: Generate ZenStack + compile API + build Frontend
 RUN pnpm --filter @finanzas/db build && \
-    pnpm --filter @finanzas/api build
+    pnpm --filter @finanzas/api build && \
+    pnpm --filter @finanzas/web build
 
 # 4. Deploy: Extract only production deps for @finanzas/api
-# Note: tsx is now a production dependency for runtime
 RUN --mount=type=cache,id=s/cc493466-c691-4384-8199-99f757a14014-/pnpm/store,target=/pnpm/store \
     pnpm deploy --filter=@finanzas/api --prod /app/deploy
 
@@ -39,7 +39,11 @@ RUN --mount=type=cache,id=s/cc493466-c691-4384-8199-99f757a14014-/pnpm/store,tar
 RUN cp -r apps/api/dist /app/deploy/dist && \
     cp -r packages/db/dist /app/deploy/node_modules/@finanzas/db/dist
 
-# 6. Remove any Prisma artifacts (we use pure ZenStack/Kysely)
+# 6. Copy frontend build to API's public folder (to serve static files)
+RUN mkdir -p /app/deploy/public && \
+    cp -r apps/web/dist/* /app/deploy/public/
+
+# 7. Remove any Prisma artifacts (we use pure ZenStack/Kysely)
 RUN find /app/deploy -name "prisma" -type d -exec rm -rf {} + 2>/dev/null || true
 
 # ============================================================================
