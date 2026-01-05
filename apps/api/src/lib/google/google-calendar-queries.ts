@@ -287,18 +287,24 @@ export async function getCalendarAggregates(
     .leftJoin("calendars as c", "e.calendar_id", "c.id");
 
   let initialQ = dateRangeQuery;
-  if (filters.from && dayjs(filters.from).isValid())
-    initialQ = initialQ.where(
-      "start_date",
-      ">=",
-      dayjs(filters.from).toISOString()
+  if (filters.from && dayjs(filters.from).isValid()) {
+    const fromDate = dayjs(filters.from).toISOString();
+    initialQ = initialQ.where((eb: any) =>
+      eb.or([
+        eb("start_date", ">=", fromDate),
+        eb("start_date_time", ">=", fromDate),
+      ])
     );
-  if (filters.to && dayjs(filters.to).isValid())
-    initialQ = initialQ.where(
-      "start_date",
-      "<=",
-      dayjs(filters.to).toISOString()
+  }
+  if (filters.to && dayjs(filters.to).isValid()) {
+    const toDate = dayjs(filters.to).toISOString();
+    initialQ = initialQ.where((eb: any) =>
+      eb.or([
+        eb("start_date", "<=", toDate),
+        eb("start_date_time", "<=", toDate),
+      ])
     );
+  }
 
   const [availCalendars, availEventTypes, availCategories] = await Promise.all([
     initialQ
