@@ -5,6 +5,7 @@
  */
 
 import { Hono } from "hono";
+import type { AuthenticatorTransportFuture } from "@simplewebauthn/server";
 import { setCookie, getCookie, deleteCookie } from "hono/cookie";
 import { signToken, verifyToken } from "../lib/paseto";
 import { db } from "@finanzas/db";
@@ -310,5 +311,320 @@ authRoutes.post("/mfa/disable", async (c) => {
     return c.json({ status: "ok" });
   } catch {
     return c.json({ status: "error", message: "Token inválido" }, 401);
+  }
+});
+
+// ============================================================
+// PASSKEY AUTHENTICATION
+// ============================================================
+
+// WebAuthn configuration
+const RP_NAME = process.env.RP_NAME || "Finanzas Bioalergia";
+const RP_ID = process.env.RP_ID || "bioalergia.cl";
+const ORIGIN = process.env.ORIGIN || "https://intranet.bioalergia.cl";
+
+// In-memory challenge store (for simplicity - should use Redis in production)
+const challengeStore = new Map<
+  string,
+  { challenge: string; userId?: number; expires: number }
+>();
+
+function storeChallenge(key: string, challenge: string, userId?: number): void {
+  challengeStore.set(key, {
+    challenge,
+    userId,
+    expires: Date.now() + 5 * 60 * 1000, // 5 minutes
+  });
+}
+
+function getChallenge(
+  key: string
+): { challenge: string; userId?: number } | null {
+  const entry = challengeStore.get(key);
+  if (!entry) return null;
+  if (Date.now() > entry.expires) {
+    challengeStore.delete(key);
+    return null;
+  }
+  challengeStore.delete(key); // One-time use
+  return { challenge: entry.challenge, userId: entry.userId };
+}
+
+// PASSKEY LOGIN OPTIONS
+authRoutes.get("/passkey/login/options", async (c) => {
+  try {
+    const { generateAuthenticationOptions } =
+      await import("@simplewebauthn/server");
+
+    // Get all users with passkeys for discoverable credentials
+    const usersWithPasskeys = await db.user.findMany({
+      where: {
+        passkeyCredentialID: { not: null },
+        status: "ACTIVE",
+      },
+      select: {
+        id: true,
+        passkeyCredentialID: true,
+        passkeyTransports: true,
+      },
+    });
+
+    const allowCredentials = usersWithPasskeys
+      .filter((u) => u.passkeyCredentialID)
+      .map((u) => ({
+        id: u.passkeyCredentialID!,
+        transports:
+          (u.passkeyTransports as AuthenticatorTransportFuture[] | null) ||
+          undefined,
+      }));
+
+    const options = await generateAuthenticationOptions({
+      rpID: RP_ID,
+      allowCredentials:
+        allowCredentials.length > 0 ? allowCredentials : undefined,
+      userVerification: "preferred",
+    });
+
+    // Store challenge for verification
+    storeChallenge(`login:${options.challenge}`, options.challenge);
+
+    return c.json(options);
+  } catch (error) {
+    console.error("[passkey] login options error:", error);
+    return c.json(
+      { status: "error", message: "Error generando opciones" },
+      500
+    );
+  }
+});
+
+// PASSKEY LOGIN VERIFY
+authRoutes.post("/passkey/login/verify", async (c) => {
+  try {
+    const { verifyAuthenticationResponse } =
+      await import("@simplewebauthn/server");
+    const body = await c.req.json();
+    const { body: authResponse, challenge } = body;
+
+    if (!authResponse || !challenge) {
+      return c.json({ status: "error", message: "Datos incompletos" }, 400);
+    }
+
+    // Verify challenge exists
+    const storedChallenge = getChallenge(`login:${challenge}`);
+    if (!storedChallenge) {
+      return c.json(
+        { status: "error", message: "Challenge inválido o expirado" },
+        400
+      );
+    }
+
+    // Find user by credential ID
+    const credentialID = authResponse.id;
+    const user = await db.user.findFirst({
+      where: { passkeyCredentialID: credentialID },
+      include: {
+        person: true,
+        roles: { include: { role: true } },
+      },
+    });
+
+    if (!user || !user.passkeyPublicKey) {
+      return c.json(
+        { status: "error", message: "Credencial no encontrada" },
+        401
+      );
+    }
+
+    // Verify the authentication response
+    const verification = await verifyAuthenticationResponse({
+      response: authResponse,
+      expectedChallenge: challenge,
+      expectedOrigin: ORIGIN,
+      expectedRPID: RP_ID,
+      credential: {
+        id: user.passkeyCredentialID!,
+        publicKey: new Uint8Array(user.passkeyPublicKey),
+        counter: Number(user.passkeyCounter),
+        transports:
+          (user.passkeyTransports as AuthenticatorTransportFuture[] | null) ||
+          undefined,
+      },
+    });
+
+    if (!verification.verified) {
+      return c.json({ status: "error", message: "Verificación fallida" }, 401);
+    }
+
+    // Update counter
+    await db.user.update({
+      where: { id: user.id },
+      data: {
+        passkeyCounter: BigInt(verification.authenticationInfo.newCounter),
+      },
+    });
+
+    // Issue session token
+    const roles = user.roles.map((r) => r.role.name);
+    const token = await issueToken({
+      userId: user.id,
+      email: user.email,
+      roles,
+    });
+    setCookie(c, COOKIE_NAME, token, COOKIE_OPTIONS);
+
+    return c.json({
+      status: "ok",
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.person?.names || null,
+        roles,
+        status: user.status,
+        mfaEnabled: user.mfaEnabled,
+      },
+    });
+  } catch (error) {
+    console.error("[passkey] login verify error:", error);
+    return c.json({ status: "error", message: "Error de verificación" }, 500);
+  }
+});
+
+// PASSKEY REGISTER OPTIONS
+authRoutes.get("/passkey/register/options", async (c) => {
+  const token = getCookie(c, COOKIE_NAME);
+  if (!token) {
+    return c.json({ status: "error", message: "No autorizado" }, 401);
+  }
+
+  try {
+    const { generateRegistrationOptions } =
+      await import("@simplewebauthn/server");
+    const decoded = await verifyToken(token);
+    const userId = Number(decoded.sub);
+    const email = String(decoded.email);
+
+    const user = await db.user.findUnique({
+      where: { id: userId },
+      include: { person: true },
+    });
+
+    if (!user) {
+      return c.json({ status: "error", message: "Usuario no encontrado" }, 404);
+    }
+
+    const options = await generateRegistrationOptions({
+      rpName: RP_NAME,
+      rpID: RP_ID,
+      userName: email,
+      userDisplayName: user.person?.names || email,
+      attestationType: "none",
+      authenticatorSelection: {
+        residentKey: "preferred",
+        userVerification: "preferred",
+      },
+      excludeCredentials: user.passkeyCredentialID
+        ? [{ id: user.passkeyCredentialID }]
+        : undefined,
+    });
+
+    // Store challenge
+    storeChallenge(`register:${options.challenge}`, options.challenge, userId);
+
+    return c.json(options);
+  } catch (error) {
+    console.error("[passkey] register options error:", error);
+    return c.json(
+      { status: "error", message: "Error generando opciones" },
+      500
+    );
+  }
+});
+
+// PASSKEY REGISTER VERIFY
+authRoutes.post("/passkey/register/verify", async (c) => {
+  const sessionToken = getCookie(c, COOKIE_NAME);
+  if (!sessionToken) {
+    return c.json({ status: "error", message: "No autorizado" }, 401);
+  }
+
+  try {
+    const { verifyRegistrationResponse } =
+      await import("@simplewebauthn/server");
+    const decoded = await verifyToken(sessionToken);
+    const userId = Number(decoded.sub);
+
+    const body = await c.req.json();
+    const { body: regResponse, challenge } = body;
+
+    if (!regResponse || !challenge) {
+      return c.json({ status: "error", message: "Datos incompletos" }, 400);
+    }
+
+    // Verify challenge
+    const storedChallenge = getChallenge(`register:${challenge}`);
+    if (!storedChallenge || storedChallenge.userId !== userId) {
+      return c.json({ status: "error", message: "Challenge inválido" }, 400);
+    }
+
+    const verification = await verifyRegistrationResponse({
+      response: regResponse,
+      expectedChallenge: challenge,
+      expectedOrigin: ORIGIN,
+      expectedRPID: RP_ID,
+    });
+
+    if (!verification.verified || !verification.registrationInfo) {
+      return c.json({ status: "error", message: "Verificación fallida" }, 400);
+    }
+
+    const { credential } = verification.registrationInfo;
+
+    // Save credential to user
+    await db.user.update({
+      where: { id: userId },
+      data: {
+        passkeyCredentialID: credential.id,
+        passkeyPublicKey: Buffer.from(credential.publicKey),
+        passkeyCounter: BigInt(credential.counter),
+        passkeyTransports: regResponse.response.transports || null,
+      },
+    });
+
+    return c.json({ status: "ok", message: "Passkey registrado exitosamente" });
+  } catch (error) {
+    console.error("[passkey] register verify error:", error);
+    return c.json({ status: "error", message: "Error de verificación" }, 500);
+  }
+});
+
+// PASSKEY REMOVE
+authRoutes.delete("/passkey/remove", async (c) => {
+  const token = getCookie(c, COOKIE_NAME);
+  if (!token) {
+    return c.json({ status: "error", message: "No autorizado" }, 401);
+  }
+
+  try {
+    const decoded = await verifyToken(token);
+    const userId = Number(decoded.sub);
+
+    await db.user.update({
+      where: { id: userId },
+      data: {
+        passkeyCredentialID: null,
+        passkeyPublicKey: null,
+        passkeyCounter: BigInt(0),
+        passkeyTransports: undefined,
+      },
+    });
+
+    return c.json({ status: "ok", message: "Passkey eliminado" });
+  } catch (error) {
+    console.error("[passkey] remove error:", error);
+    return c.json(
+      { status: "error", message: "Error eliminando passkey" },
+      500
+    );
   }
 });
