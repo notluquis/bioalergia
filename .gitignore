@@ -75,3 +75,17 @@ temp/
 *.swp
 *.swo
 
+
+# Turbo
+.turbo
+
+# Deployments
+.vercel
+.railway
+
+# Logs & Reports
+lint_output.txt
+junit.xml
+
+# Lockfiles (pnpm is king)
+yarn.lock
