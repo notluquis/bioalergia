@@ -87,25 +87,28 @@ app.route("/api/loan-schedules", loanScheduleRoutes);
 app.route("/api/services/schedules", serviceScheduleRoutes);
 
 // ZenStack Query-as-a-Service (auto CRUD for all models)
-app.use(
-  "/api/*",
-  createHonoHandler({
-    apiHandler: new RPCApiHandler({ schema }),
-    getClient: async (ctx) => {
-      // Extract user from JWT
-      const user = await getSessionUser(ctx);
-      const authContext = createAuthContext(user);
+// Frontend uses /api/model/* (via QuerySettingsProvider in main.tsx)
+const zenStackHandler = createHonoHandler({
+  apiHandler: new RPCApiHandler({ schema }),
+  getClient: async (ctx) => {
+    // Extract user from JWT
+    const user = await getSessionUser(ctx);
+    const authContext = createAuthContext(user);
 
-      if (authContext) {
-        // Authenticated: apply access control policies
-        return authDb.$setAuth(authContext);
-      }
+    if (authContext) {
+      // Authenticated: apply access control policies
+      return authDb.$setAuth(authContext);
+    }
 
-      // Anonymous: policies will deny access via @@deny('all', auth() == null)
-      return authDb;
-    },
-  })
-);
+    // Anonymous: policies will deny access via @@deny('all', auth() == null)
+    return authDb;
+  },
+});
+
+// Mount at /api/model/* for frontend ZenStack hooks
+app.use("/api/model/*", zenStackHandler);
+// Also mount at /api/* for backward compatibility with direct API calls
+app.use("/api/*", zenStackHandler);
 
 // ============================================================================
 // STATIC FILE SERVING (Frontend SPA)
