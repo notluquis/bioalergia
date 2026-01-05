@@ -49,7 +49,7 @@ authRoutes.post("/login", async (c) => {
 
   if (!email || !password) {
     return c.json(
-      { status: "error", message: "Email y contraseña requeridos" },
+      { status: "error", message: "Email y contrase?a requeridos" },
       400
     );
   }
@@ -152,7 +152,7 @@ authRoutes.post("/login/mfa", async (c) => {
   const isValid = verifyMfaToken(mfaToken, user.mfaSecret);
 
   if (!isValid) {
-    return c.json({ status: "error", message: "Código incorrecto" }, 401);
+    return c.json({ status: "error", message: "C?digo incorrecto" }, 401);
   }
 
   const roles = user.roles.map((r) => r.role.name);
@@ -254,7 +254,7 @@ authRoutes.post("/mfa/setup", async (c) => {
 
     return c.json({ status: "ok", secret, qrCodeUrl });
   } catch {
-    return c.json({ status: "error", message: "Token inválido" }, 401);
+    return c.json({ status: "error", message: "Token inv?lido" }, 401);
   }
 });
 
@@ -279,7 +279,7 @@ authRoutes.post("/mfa/enable", async (c) => {
     const isValid = verifyMfaToken(body.token, user.mfaSecret);
 
     if (!isValid) {
-      return c.json({ status: "error", message: "Código incorrecto" }, 400);
+      return c.json({ status: "error", message: "C?digo incorrecto" }, 400);
     }
 
     await db.user.update({
@@ -289,7 +289,7 @@ authRoutes.post("/mfa/enable", async (c) => {
 
     return c.json({ status: "ok" });
   } catch {
-    return c.json({ status: "error", message: "Token inválido" }, 401);
+    return c.json({ status: "error", message: "Token inv?lido" }, 401);
   }
 });
 
@@ -310,7 +310,7 @@ authRoutes.post("/mfa/disable", async (c) => {
 
     return c.json({ status: "ok" });
   } catch {
-    return c.json({ status: "error", message: "Token inválido" }, 401);
+    return c.json({ status: "error", message: "Token inv?lido" }, 401);
   }
 });
 
@@ -392,7 +392,7 @@ authRoutes.post("/passkey/login/verify", async (c) => {
     const storedChallenge = getChallenge(`login:${challenge}`);
     if (!storedChallenge) {
       return c.json(
-        { status: "error", message: "Challenge inválido o expirado" },
+        { status: "error", message: "Challenge inv?lido o expirado" },
         400
       );
     }
@@ -436,7 +436,7 @@ authRoutes.post("/passkey/login/verify", async (c) => {
     });
 
     if (!verification.verified) {
-      return c.json({ status: "error", message: "Verificación fallida" }, 401);
+      return c.json({ status: "error", message: "Verificaci?n fallida" }, 401);
     }
 
     // Update counter
@@ -470,7 +470,7 @@ authRoutes.post("/passkey/login/verify", async (c) => {
     });
   } catch (error) {
     console.error("[passkey] login verify error:", error);
-    return c.json({ status: "error", message: "Error de verificación" }, 500);
+    return c.json({ status: "error", message: "Error de verificaci?n" }, 500);
   }
 });
 
@@ -548,7 +548,7 @@ authRoutes.post("/passkey/register/verify", async (c) => {
     // Verify challenge
     const storedChallenge = getChallenge(`register:${challenge}`);
     if (!storedChallenge || storedChallenge.userId !== userId) {
-      return c.json({ status: "error", message: "Challenge inválido" }, 400);
+      return c.json({ status: "error", message: "Challenge inv?lido" }, 400);
     }
 
     const verification = await verifyRegistrationResponse({
@@ -559,7 +559,7 @@ authRoutes.post("/passkey/register/verify", async (c) => {
     });
 
     if (!verification.verified || !verification.registrationInfo) {
-      return c.json({ status: "error", message: "Verificación fallida" }, 400);
+      return c.json({ status: "error", message: "Verificaci?n fallida" }, 400);
     }
 
     const { credential, credentialDeviceType, credentialBackedUp } =
@@ -583,7 +583,7 @@ authRoutes.post("/passkey/register/verify", async (c) => {
     return c.json({ status: "ok", message: "Passkey registrado exitosamente" });
   } catch (error) {
     console.error("[passkey] register verify error:", error);
-    return c.json({ status: "error", message: "Error de verificación" }, 500);
+    return c.json({ status: "error", message: "Error de verificaci?n" }, 500);
   }
 });
 
