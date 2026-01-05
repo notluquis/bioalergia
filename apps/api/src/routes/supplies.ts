@@ -28,6 +28,11 @@ suppliesRoutes.use("*", async (c, next) => {
 
 // GET /api/supplies/requests
 suppliesRoutes.get("/requests", async (c) => {
+  const user = await getSessionUser(c);
+  if (user) {
+    const canRead = await hasPermission(user.id, "read", "SupplyRequest");
+    if (!canRead) return c.json({ status: "error", message: "Forbidden" }, 403);
+  }
   const requests = await getSupplyRequests();
   return c.json(requests);
 });
@@ -42,6 +47,9 @@ suppliesRoutes.get("/common", async (c) => {
 suppliesRoutes.post("/requests", async (c) => {
   const user = await getSessionUser(c);
   if (!user) return c.json({ status: "error", message: "No autorizado" }, 401);
+
+  const canCreate = await hasPermission(user.id, "create", "SupplyRequest");
+  if (!canCreate) return c.json({ status: "error", message: "Forbidden" }, 403);
 
   const body = await c.req.json();
   const parsed = supplyRequestSchema.safeParse(body);
