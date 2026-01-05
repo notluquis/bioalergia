@@ -14,11 +14,22 @@ app.get("/", async (c) => {
   const user = await getSessionUser(c);
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
 
-  // Check for "manage Backup" or "read Backup" permission
-  const canAccess =
-    (await hasPermission(user.id, "read", "Backup")) ||
-    (await hasPermission(user.id, "manage", "Backup"));
+  // Check for "read Backup" permission
+  const canAccess = await hasPermission(user.id, "read", "Backup");
+
+  // Debug: Log permission check result
+  console.log(
+    `[Backup] User ${user.id} (${user.email}) - read Backup permission: ${canAccess}`
+  );
+  console.log(
+    `[Backup] User roles: ${JSON.stringify(user.roles.map((r) => r.role.name))}`
+  );
+
   if (!canAccess) {
+    // Log more details for debugging
+    console.log(
+      `[Backup] Permission denied for user ${user.id}. Run syncPermissions and assign "read Backup" to their role.`
+    );
     return c.json({ status: "error", message: "Forbidden" }, 403);
   }
 
