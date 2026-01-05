@@ -1,37 +1,44 @@
 #!/usr/bin/env node
-// Cross-platform script to fix import extensions in generated ZenStack files
-import { readFileSync, writeFileSync, readdirSync, statSync } from 'fs';
-import { join } from 'path';
+/**
+ * Cross-platform script to fix import extensions in generated ZenStack files.
+ * Best practice 2026: Use native fs/promises with async/await.
+ * No external dependencies required.
+ */
+import { readFile, writeFile, readdir, stat } from 'node:fs/promises';
+import { join } from 'node:path';
 
 const targetDir = join(process.cwd(), 'src/zenstack');
 
-function processFile(filePath) {
-  let content = readFileSync(filePath, 'utf8');
-  const original = content;
+async function processFile(filePath) {
+  const content = await readFile(filePath, 'utf8');
   
-  content = content.replace(/from "\.\/schema"/g, 'from "./schema.js"');
-  content = content.replace(/from "\.\/schema-lite"/g, 'from "./schema-lite.js"');
+  const fixed = content
+    .replace(/from "\.\/schema"/g, 'from "./schema.js"')
+    .replace(/from "\.\/schema-lite"/g, 'from "./schema-lite.js"');
   
-  if (content !== original) {
-    writeFileSync(filePath, content, 'utf8');
+  if (fixed !== content) {
+    await writeFile(filePath, fixed, 'utf8');
     console.log(`Fixed: ${filePath}`);
   }
 }
 
-function walkDir(dir) {
-  for (const entry of readdirSync(dir)) {
-    const fullPath = join(dir, entry);
-    const stat = statSync(fullPath);
-    if (stat.isDirectory()) {
-      walkDir(fullPath);
-    } else if (entry.endsWith('.ts')) {
-      processFile(fullPath);
-    }
-  }
+async function walkDir(dir) {
+  const entries = await readdir(dir, { withFileTypes: true });
+  
+  await Promise.all(
+    entries.map(async (entry) => {
+      const fullPath = join(dir, entry.name);
+      if (entry.isDirectory()) {
+        await walkDir(fullPath);
+      } else if (entry.name.endsWith('.ts')) {
+        await processFile(fullPath);
+      }
+    })
+  );
 }
 
 try {
-  walkDir(targetDir);
+  await walkDir(targetDir);
   console.log('Import fix complete.');
 } catch (err) {
   console.error('Error fixing imports:', err.message);
