@@ -21,7 +21,7 @@ app.get("/", async (c) => {
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
 
   const items = await listCounterparts();
-  return c.json(items);
+  return c.json({ status: "ok", counterparts: items });
 });
 
 app.get("/:id", async (c) => {
@@ -31,10 +31,14 @@ app.get("/:id", async (c) => {
   const id = Number(c.req.param("id"));
   if (isNaN(id)) return c.json({ status: "error", message: "Invalid ID" }, 400);
 
-  const item = await getCounterpartById(id);
-  if (!item) return c.json({ status: "error", message: "Not found" }, 404);
+  const result = await getCounterpartById(id);
+  if (!result) return c.json({ status: "error", message: "Not found" }, 404);
 
-  return c.json(item);
+  return c.json({
+    status: "ok",
+    counterpart: result.counterpart,
+    accounts: result.accounts,
+  });
 });
 
 app.post("/", async (c) => {
@@ -52,7 +56,11 @@ app.post("/", async (c) => {
   }
 
   const result = await createCounterpart(parsed.data);
-  return c.json(result);
+  return c.json({
+    status: "ok",
+    counterpart: result,
+    accounts: result.accounts ?? [],
+  });
 });
 
 app.put("/:id", async (c) => {
@@ -73,7 +81,11 @@ app.put("/:id", async (c) => {
   }
 
   const result = await updateCounterpart(id, parsed.data);
-  return c.json(result);
+  return c.json({
+    status: "ok",
+    counterpart: result,
+    accounts: result.accounts ?? [],
+  });
 });
 
 // Accounts Sub-resource
@@ -98,7 +110,7 @@ app.post("/:id/accounts", async (c) => {
     bankName: parsed.data.bankName,
     accountType: parsed.data.accountType,
   });
-  return c.json(result);
+  return c.json({ status: "ok", accounts: [result] });
 });
 
 app.put("/accounts/:accountId", async (c) => {

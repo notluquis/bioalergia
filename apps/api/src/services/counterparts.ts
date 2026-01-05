@@ -69,7 +69,7 @@ export async function createCounterpart(data: any) {
         category: data.category,
         notes: data.notes,
       },
-      include: { person: true },
+      include: { person: true, accounts: true },
     });
   });
 }
@@ -97,7 +97,7 @@ export async function updateCounterpart(id: number, data: any) {
         category: data.category,
         notes: data.notes,
       },
-      include: { person: true },
+      include: { person: true, accounts: true },
     });
   });
 }
