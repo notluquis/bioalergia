@@ -39,6 +39,12 @@ inventoryRoutes.use("*", async (c, next) => {
     if (!canModify) {
       return c.json({ status: "error", message: "Forbidden" }, 403);
     }
+  } else {
+    // GET requests require read permission
+    const canRead = await hasPermission(user.id, "read", "InventoryItem");
+    if (!canRead) {
+      return c.json({ status: "error", message: "Forbidden" }, 403);
+    }
   }
 
   await next();
