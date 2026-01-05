@@ -86,8 +86,8 @@ export function createAuthContext(user: AuthSession | null) {
  * Check if user has a specific permission
  * Uses existing authz service to get CASL rules from database
  * @param userId - The user's ID
- * @param action - The permission action (e.g., "read", "create", "update", "delete", "manage")
- * @param subject - The permission subject (e.g., "Backup", "Setting", "all")
+ * @param action - The permission action (e.g., "read", "create", "update", "delete")
+ * @param subject - The permission subject (e.g., "Backup", "Setting", "User")
  */
 export async function hasPermission(
   userId: number,
@@ -99,6 +99,12 @@ export async function hasPermission(
 
   const rules = await getAbilityRulesForUser(userId);
 
+  // Debug: Log what rules exist for this user
+  console.log(`[hasPermission] User ${userId} checking ${action}:${subject}`);
+  console.log(
+    `[hasPermission] User has ${rules.length} rules: ${JSON.stringify(rules.map((r) => `${r.action}:${r.subject}`))}`
+  );
+
   // Check if any rule grants the required permission
   for (const rule of rules) {
     // Check for exact match
@@ -106,13 +112,11 @@ export async function hasPermission(
       rule.action === action &&
       rule.subject.toLowerCase() === subject.toLowerCase()
     ) {
-      return true;
-    }
-    // Check for "manage all" which grants everything
-    if (rule.action === "manage" && rule.subject === "all") {
+      console.log(`[hasPermission] MATCH: ${rule.action}:${rule.subject}`);
       return true;
     }
   }
 
+  console.log(`[hasPermission] No match found for ${action}:${subject}`);
   return false;
 }
