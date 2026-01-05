@@ -33,7 +33,7 @@
   },
   "scripts": {
     "build": "zen generate && pnpm fix-imports && tsc",
-    "fix-imports": "find src/zenstack -name \"*.ts\" -exec sed -i '' -e 's/from \"\\.\\/schema\"/from \".\\/schema.js\"/g' -e 's/from \"\\.\\/schema-lite\"/from \".\\/schema-lite.js\"/g' {} +",
+    "fix-imports": "node scripts/fix-imports.mjs",
     "generate": "zen generate",
     "db:push": "zen db push",
     "migrate:dev": "zen migrate dev",
