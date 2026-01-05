@@ -2,6 +2,7 @@
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { serveStatic } from "@hono/node-server/serve-static";
 import { createHonoHandler } from "@zenstackhq/server/hono";
 import { RPCApiHandler } from "@zenstackhq/server/api";
 import { schema, authDb } from "@finanzas/db";
@@ -23,27 +24,22 @@ import dailyProductionRoutes from "./routes/daily-production-balances";
 import counterpartRoutes from "./routes/counterparts";
 import serviceRoutes from "./routes/services";
 import roleRoutes from "./routes/roles";
+import { readFile } from "fs/promises";
+import { join } from "path";
 
 const app = new Hono();
 
-// CORS for frontend
+// CORS for frontend (same-origin in prod, localhost in dev)
 app.use(
-  "/*",
+  "/api/*",
   cors({
     origin: process.env.CORS_ORIGIN || "http://localhost:5173",
     credentials: true,
   })
 );
 
-// Health check
-app.get("/health", (c) => c.json({ status: "ok" }));
-app.get("/", (c) => {
-  return c.json({
-    status: "ok",
-    service: "finanzas-api",
-    stack: "Hono + ZenStack v3",
-  });
-});
+// Health check (at /api/health for consistency)
+app.get("/api/health", (c) => c.json({ status: "ok" }));
 
 // Auth routes (login, logout, session, MFA)
 app.route("/api/auth", authRoutes);
@@ -101,11 +97,51 @@ app.use(
   })
 );
 
+// ============================================================================
+// STATIC FILE SERVING (Frontend SPA)
+// ============================================================================
+// Only enable in production (when public folder exists)
+if (process.env.NODE_ENV === "production") {
+  // Serve static files from /public (Vite build output)
+  app.use(
+    "/*",
+    serveStatic({
+      root: "./public",
+      // Don't serve index.html for missing files yet - SPA fallback handles that
+    })
+  );
+
+  // SPA fallback: serve index.html for all non-API, non-asset routes
+  app.get("*", async (c) => {
+    try {
+      const indexPath = join(process.cwd(), "public", "index.html");
+      const html = await readFile(indexPath, "utf-8");
+      return c.html(html);
+    } catch {
+      return c.text("Frontend not found", 404);
+    }
+  });
+} else {
+  // Development: show API info at root
+  app.get("/", (c) => {
+    return c.json({
+      status: "ok",
+      service: "finanzas-api",
+      stack: "Hono + ZenStack v3",
+      mode: "development",
+      frontend: "Run `pnpm --filter @finanzas/web dev` separately",
+    });
+  });
+}
+
 const port = Number(process.env.PORT) || 3000;
 console.log(`🚀 Finanzas API running on http://localhost:${port}`);
 console.log(
   `📡 Query-as-a-Service: http://localhost:${port}/api/[model]/[operation]`
 );
 console.log(`🔐 Auth routes: http://localhost:${port}/api/auth/*`);
+if (process.env.NODE_ENV === "production") {
+  console.log(`🌐 Frontend: http://localhost:${port}/`);
+}
 
 serve({ fetch: app.fetch, port });
