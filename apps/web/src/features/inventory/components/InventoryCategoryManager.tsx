@@ -19,9 +19,8 @@ export default function InventoryCategoryManager() {
     orderBy: { name: "asc" },
   });
 
-  /* eslint-disable @typescript-eslint/no-explicit-any */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const categories = (categoriesData as any[]) ?? [];
-  /* eslint-enable @typescript-eslint/no-explicit-any */
 
   // ZenStack mutation for creating category
   const createMutation = useCreateInventoryCategory();

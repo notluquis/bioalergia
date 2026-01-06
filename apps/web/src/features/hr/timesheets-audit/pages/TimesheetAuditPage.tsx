@@ -157,8 +157,7 @@ export default function TimesheetAuditPage() {
       const prevMonth = dayjs().subtract(1, "month").format("YYYY-MM");
       setSelectedMonth(months.includes(prevMonth) ? prevMonth : (months[0] ?? ""));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [months]);
+  }, [months, selectedMonth]);
 
   // Cleanup: close dropdown on unmount to prevent event listeners hanging
   useEffect(() => {

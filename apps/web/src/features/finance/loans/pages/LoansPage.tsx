@@ -45,12 +45,10 @@ export default function LoansPage() {
     orderBy: { createdAt: "desc" },
   });
 
-  /* eslint-disable @typescript-eslint/no-explicit-any */
   const loans = ((loansData as any[]) ?? []).map((loan) => ({
     ...loan,
     public_id: loan.publicId,
   }));
-  /* eslint-enable @typescript-eslint/no-explicit-any */
 
   // Auto-selection
   useEffect(() => {
