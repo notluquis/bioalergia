@@ -27,15 +27,15 @@ Deploy:      git push (Railway auto-deploy)
 
 ## Stack tecnológico
 
-| Capa     | Tecnología                               | Notas                            |
-| -------- | ---------------------------------------- | -------------------------------- |
-| Frontend | React 19 + TypeScript + Vite 7           | Entry: `apps/web/src/main.tsx`   |
-| Styling  | Tailwind CSS + DaisyUI                   | Themes en `tailwind.config.cjs`  |
-| State    | TanStack Query + Zustand                 | Hooks en `src/features/*/hooks/` |
-| Backend  | Node 25 + Express + TypeScript           | Entry: `apps/api/src/index.ts`   |
-| Database | **PostgreSQL** (via ZenStack 3.1.1)      | Schema: `packages/db/zenstack/schema.zmodel` |
-| Auth     | Passkey + email/password + **RBAC/ABAC** | Session: 24h                     |
-| Deploy   | Railway (auto-deploy on push)            | Dockerfile con node:current-slim |
+| Capa     | Tecnología                               | Notas                                             |
+| -------- | ---------------------------------------- | ------------------------------------------------- |
+| Frontend | React 19 + TypeScript + Vite 7           | Entry: `apps/web/src/main.tsx`                    |
+| Styling  | Tailwind CSS + DaisyUI                   | Themes en `tailwind.config.cjs`                   |
+| State    | TanStack Query + Zustand                 | Hooks en `src/features/*/hooks/`                  |
+| Backend  | Node 25 + Express + TypeScript           | Entry: `apps/api/src/index.ts`                    |
+| Database | **PostgreSQL** (via ZenStack 3.1.1)      | Schema: `packages/db/zenstack/schema.zmodel`      |
+| Auth     | Passkey + email/password + **RBAC/ABAC** | Session: 24h                                      |
+| Deploy   | Railway (auto-deploy on push)            | Dockerfile con node:current-slim                  |
 | Monorepo | pnpm workspaces + Turbo 2.7.3            | 4 packages (@finanzas/web, @finanzas/api, @finanzas/db, root) |
 
 ⚠️ **IMPORTANTE**: La base de datos es **PostgreSQL**, NO MySQL. Usar sintaxis PostgreSQL en raw queries (`TO_CHAR`, `EXTRACT`, etc.)
