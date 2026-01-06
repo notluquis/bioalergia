@@ -77,11 +77,24 @@ function timeToMinutes(time: string): number | null {
 
 /**
  * Normalize time string to HH:MM:SS format for PostgreSQL TIME columns
- * Input can be HH:MM or HH:MM:SS
- * No timezone conversion - keeps the time as-is from user input
+ * Input can be:
+ * - HH:MM or HH:MM:SS (e.g., "09:00", "09:00:00")
+ * - ISO 8601 timestamp (e.g., "2025-12-02T12:40:00.000Z")
+ * For ISO timestamps, converts to America/Santiago timezone and extracts time
  */
 function normalizeTimeString(time: string): string | null {
   if (!time) return null;
+  
+  // Check if it's an ISO timestamp (contains 'T' or '-')
+  const d = dayjs(time);
+  if (d.isValid() && (time.includes('T') || time.includes('-'))) {
+    // Parse as ISO timestamp and convert to Santiago timezone
+    const santiago = d.tz(TIMEZONE);
+    const h = santiago.hour();
+    const m = santiago.minute();
+    const s = santiago.second();
+    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  }
   
   // Match HH:MM or HH:MM:SS format
   const match = time.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
