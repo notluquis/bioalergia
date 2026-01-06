@@ -1,4 +1,4 @@
-import { db } from "@finanzas/db";
+import { db, kysely } from "@finanzas/db";
 
 import dayjs from "dayjs";
 import timezone from "dayjs/plugin/timezone.js";
@@ -180,10 +180,13 @@ export async function upsertTimesheetEntry(
 ): Promise<TimesheetEntry> {
   const workDateObj = new Date(payload.work_date);
 
-  // Convert time strings to Date objects using work_date as reference
-  // ZenStack/Prisma will extract only TIME component for @db.Time columns
+  // Convert time strings to time-only format for PostgreSQL TIME columns
   const startTime = timeStringToDate(payload.start_time, workDateObj);
   const endTime = timeStringToDate(payload.end_time, workDateObj);
+  
+  // Format as HH:MM:SS for PostgreSQL TIME type
+  const startTimeStr = startTime ? dayjs(startTime).format("HH:mm:ss") : null;
+  const endTimeStr = endTime ? dayjs(endTime).format("HH:mm:ss") : null;
 
   // Calculate worked_minutes from start_time and end_time if not provided
   let workedMinutes = payload.worked_minutes ?? 0;
@@ -196,32 +199,41 @@ export async function upsertTimesheetEntry(
   }
 
   try {
-    const entry = await db.employeeTimesheet.upsert({
-      where: {
-        employeeId_workDate: {
-          employeeId: payload.employee_id,
-          workDate: workDateObj,
-        },
-      },
-      create: {
-        employeeId: payload.employee_id,
-        workDate: workDateObj,
-        startTime,
-        endTime,
-        workedMinutes,
-        overtimeMinutes: payload.overtime_minutes,
+    // Use raw Kysely to avoid ZenStack Date type issues with TIME columns
+    // ZenStack types expect Date but PostgreSQL TIME needs string format
+    const result = await kysely
+      .insertInto("employee_timesheets")
+      .values({
+        employee_id: payload.employee_id,
+        work_date: workDateObj,
+        start_time: startTimeStr,
+        end_time: endTimeStr,
+        worked_minutes: workedMinutes,
+        overtime_minutes: payload.overtime_minutes,
         comment: payload.comment ?? null,
-      },
-      update: {
-        startTime,
-        endTime,
-        workedMinutes,
-        overtimeMinutes: payload.overtime_minutes,
-        comment: payload.comment ?? null,
-      },
-    });
+      })
+      .onConflict((oc) =>
+        oc.columns(["employee_id", "work_date"]).doUpdateSet({
+          start_time: startTimeStr,
+          end_time: endTimeStr,
+          worked_minutes: workedMinutes,
+          overtime_minutes: payload.overtime_minutes,
+          comment: payload.comment ?? null,
+        })
+      )
+      .returningAll()
+      .executeTakeFirstOrThrow();
 
-    return mapTimesheetEntry(entry);
+    return {
+      id: Number(result.id),
+      employee_id: result.employee_id,
+      work_date: formatDateOnly(new Date(result.work_date as Date)),
+      start_time: result.start_time as string | null,
+      end_time: result.end_time as string | null,
+      worked_minutes: result.worked_minutes,
+      overtime_minutes: result.overtime_minutes,
+      comment: result.comment,
+    };
   } catch (error: any) {
     console.error("[timesheets] upsert error details:", {
       message: error.message,
@@ -229,10 +241,8 @@ export async function upsertTimesheetEntry(
       meta: error.meta,
       payload: {
         ...payload,
-        startTime,
-        endTime,
-        startTimeType: typeof startTime,
-        endTimeType: typeof endTime,
+        startTimeStr,
+        endTimeStr,
         workDateType: typeof workDateObj,
       },
     });
