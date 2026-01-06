@@ -504,7 +504,10 @@ export async function getCalendarEventsByDate(
     to: undefined,
   };
 
-  console.log("[getCalendarEventsByDate] Filters without dates:", filtersWithoutDates);
+  console.log(
+    "[getCalendarEventsByDate] Filters without dates:",
+    filtersWithoutDates,
+  );
 
   let eventsQuery = applyFilters(
     kysely
@@ -520,7 +523,10 @@ export async function getCalendarEventsByDate(
     targetDates,
   );
 
-  console.log("[getCalendarEventsByDate] Querying events with IN filter for:", targetDates);
+  console.log(
+    "[getCalendarEventsByDate] Querying events with IN filter for:",
+    targetDates,
+  );
 
   const events = await eventsQuery
     .select([
@@ -556,7 +562,11 @@ export async function getCalendarEventsByDate(
     .orderBy("e.start_date_time", "desc")
     .execute();
 
-  console.log("[getCalendarEventsByDate] Query returned", events.length, "events");
+  console.log(
+    "[getCalendarEventsByDate] Query returned",
+    events.length,
+    "events",
+  );
 
   // Group by date
   const grouped: Record<string, CalendarEventsByDate> = {};
