@@ -2596,6 +2596,30 @@ export class SchemaType implements SchemaDef {
                     attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }],
                     default: ExpressionUtils.call("autoincrement")
                 },
+                triggerSource: {
+                    name: "triggerSource",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("trigger_source") }] }]
+                },
+                triggerUserId: {
+                    name: "triggerUserId",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("trigger_user_id") }] }]
+                },
+                triggerLabel: {
+                    name: "triggerLabel",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("trigger_label") }] }]
+                },
+                status: {
+                    name: "status",
+                    type: "String",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("PENDING") }] }],
+                    default: "PENDING"
+                },
                 startedAt: {
                     name: "startedAt",
                     type: "DateTime",
@@ -2608,23 +2632,17 @@ export class SchemaType implements SchemaDef {
                     optional: true,
                     attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("ended_at") }] }]
                 },
-                status: {
-                    name: "status",
-                    type: "String",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("PENDING") }] }],
-                    default: "PENDING"
+                fetchedAt: {
+                    name: "fetchedAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("fetched_at") }] }]
                 },
                 eventsSynced: {
                     name: "eventsSynced",
                     type: "Int",
                     attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("events_synced") }] }],
                     default: 0
-                },
-                fetchedAt: {
-                    name: "fetchedAt",
-                    type: "DateTime",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("fetched_at") }] }]
                 },
                 inserted: {
                     name: "inserted",
@@ -2659,12 +2677,6 @@ export class SchemaType implements SchemaDef {
                     type: "String",
                     optional: true,
                     attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("error_message") }] }]
-                },
-                triggerSource: {
-                    name: "triggerSource",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("trigger_source") }] }]
                 },
                 changeDetails: {
                     name: "changeDetails",

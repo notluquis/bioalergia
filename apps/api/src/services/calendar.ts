@@ -50,6 +50,8 @@ export async function createCalendarSyncLogEntry(data: {
   const log = await db.calendarSyncLog.create({
     data: {
       triggerSource: data.triggerSource,
+      triggerUserId: data.triggerUserId,
+      triggerLabel: data.triggerLabel,
       status: "RUNNING",
       startedAt: new Date(),
     },
