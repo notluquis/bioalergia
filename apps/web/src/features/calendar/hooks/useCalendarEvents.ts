@@ -105,7 +105,16 @@ export function useCalendarEvents() {
     setFilters(defaults);
     return defaults;
   });
-  const [appliedFilters, setAppliedFilters] = useState<CalendarFilters>(initialDefaults);
+  // Don't initialize with initialDefaults - let useEffect handle it
+  const [appliedFilters, setAppliedFilters] = useState<CalendarFilters>(() => ({
+    from: "",
+    to: "",
+    calendarIds: [],
+    eventTypes: [],
+    categories: [],
+    search: "",
+    maxDays: 28,
+  }));
   const hasAppliedInitialFilters = useRef(false);
 
   // CRITICAL FIX: Apply initial filters on mount to ensure queries run
@@ -113,8 +122,8 @@ export function useCalendarEvents() {
   useEffect(() => {
     if (!hasAppliedInitialFilters.current) {
       hasAppliedInitialFilters.current = true;
-      // Apply the initial defaults immediately
-      setAppliedFilters(initialDefaults);
+      // Apply the initial defaults immediately with a new object reference
+      setAppliedFilters({ ...initialDefaults });
     }
   }, [initialDefaults]);
   const [syncProgress, setSyncProgress] = useState<SyncProgressEntry[]>([]);
