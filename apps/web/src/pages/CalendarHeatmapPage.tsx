@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import clsx from "clsx";
 import dayjs, { type Dayjs } from "dayjs";
 import { ChevronDown, Filter } from "lucide-react";
-import { type ChangeEvent, useCallback, useMemo, useState } from "react";
+import { type ChangeEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import Alert from "@/components/ui/Alert";
@@ -49,14 +49,13 @@ function filtersEqual(a: HeatmapFilters, b: HeatmapFilters): boolean {
 }
 
 function CalendarHeatmapPage() {
-  const initialFilters = useMemo(() => createInitialFilters(), []);
-  // filters = UI state (inputs)
-  const [filters, setFilters] = useState<HeatmapFilters>(initialFilters);
-  // appliedFilters = Server state (what we are looking at)
-  const [appliedFilters, setAppliedFilters] = useState<HeatmapFilters>(initialFilters);
+  // React Compiler auto-memoizes function calls in useState initializer
+  const [filters, setFilters] = useState<HeatmapFilters>(() => createInitialFilters());
+  const [appliedFilters, setAppliedFilters] = useState<HeatmapFilters>(() => createInitialFilters());
 
   const { t } = useTranslation();
-  const tc = useCallback((key: string, options?: Record<string, unknown>) => t(`calendar.${key}`, options), [t]);
+  // React Compiler auto-stabilizes helper functions
+  const tc = (key: string, options?: Record<string, unknown>) => t(`calendar.${key}`, options);
 
   const {
     data: summary,
@@ -83,19 +82,18 @@ function CalendarHeatmapPage() {
   // The user's `filters` state is the source of truth for the form.
   // `appliedFilters` drives the query, and changes when user clicks "Apply".
 
-  const isDirty = useMemo(() => !filtersEqual(filters, appliedFilters), [filters, appliedFilters]);
+  // React Compiler auto-memoizes comparison functions
+  const isDirty = !filtersEqual(filters, appliedFilters);
 
-  const availableCategories: MultiSelectOption[] = useMemo(
-    () =>
-      (summary?.available.categories ?? []).map((entry) => {
-        const value = entry.category ?? NULL_CATEGORY_VALUE;
-        const label = entry.category ?? "Sin clasificación";
-        return { value, label: `${label} · ${numberFormatter.format(entry.total)}` };
-      }),
-    [summary?.available.categories]
-  );
+  // React Compiler auto-memoizes array transformations
+  const availableCategories: MultiSelectOption[] = (summary?.available.categories ?? []).map((entry) => {
+    const value = entry.category ?? NULL_CATEGORY_VALUE;
+    const label = entry.category ?? "Sin clasificación";
+    return { value, label: `${label} · ${numberFormatter.format(entry.total)}` };
+  });
 
-  const statsByDate = useMemo(() => {
+  // React Compiler auto-memoizes Map operations
+  const getStatsByDate = () => {
     const map = new Map<string, { total: number; amountExpected: number; amountPaid: number }>();
     summary?.aggregates.byDate.forEach((entry) => {
       // Server now returns dates as "YYYY-MM-DD" strings via TO_CHAR in SQL
@@ -107,9 +105,11 @@ function CalendarHeatmapPage() {
       });
     });
     return map;
-  }, [summary?.aggregates.byDate]);
+  };
+  const statsByDate = getStatsByDate();
 
-  const heatmapMonths = useMemo(() => {
+  // React Compiler auto-memoizes complex calculations
+  const getHeatmapMonths = () => {
     const sourceFrom = summary?.filters.from || filters.from;
     const sourceTo = summary?.filters.to || filters.to;
 
@@ -133,14 +133,14 @@ function CalendarHeatmapPage() {
       if (guard > 18) break;
     }
     return months;
-  }, [summary?.filters.from, summary?.filters.to, filters.from, filters.to]);
+  };
+  const heatmapMonths = getHeatmapMonths();
 
-  const heatmapMonthKeys = useMemo(
-    () => new Set(heatmapMonths.map((month) => month.format("YYYY-MM"))),
-    [heatmapMonths]
-  );
+  // React Compiler auto-memoizes Set creation
+  const heatmapMonthKeys = new Set(heatmapMonths.map((month) => month.format("YYYY-MM")));
 
-  const heatmapMaxValue = useMemo(() => {
+  // React Compiler auto-memoizes max value calculation
+  const getHeatmapMaxValue = () => {
     if (!summary) return 0;
     let max = 0;
     summary.aggregates.byDate.forEach((entry) => {
@@ -151,7 +151,8 @@ function CalendarHeatmapPage() {
       }
     });
     return max;
-  }, [summary, heatmapMonthKeys]);
+  };
+  const heatmapMaxValue = getHeatmapMaxValue();
 
   const handleToggle = (key: "categories", value: string) => {
     setFilters((prev) => ({

@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 import { AlertTriangle, ChevronDown, ChevronRight } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import Button from "@/components/ui/Button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/Card";
@@ -42,7 +42,8 @@ export default function CalendarSyncHistoryPage() {
     }
   }, [page, totalPages]);
 
-  const visibleLogs = useMemo(() => logs.slice(page * pageSize, page * pageSize + pageSize), [logs, page, pageSize]);
+  // React Compiler auto-memoizes array slicing
+  const visibleLogs = logs.slice(page * pageSize, page * pageSize + pageSize);
 
   const handleRefresh = () => {
     refetchLogs().catch(() => {
