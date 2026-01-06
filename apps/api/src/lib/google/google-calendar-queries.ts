@@ -495,15 +495,21 @@ export async function getCalendarEventsByDate(
   }
 
   // 2. Get events for those dates
-  // Apply filters WITHOUT dates, then add dates filter manually to avoid duplication
+  // Apply filters WITHOUT from/to dates, since we'll use the specific targetDates
+  const filtersWithoutDates = {
+    ...filters,
+    from: undefined,
+    to: undefined,
+  };
+  
   let eventsQuery = applyFilters(
     kysely
       .selectFrom("events as e")
       .leftJoin("calendars as c", "e.calendar_id", "c.id"),
-    filters, // Use original filters WITHOUT dates override
+    filtersWithoutDates,
   );
 
-  // Manually add the where clause for the top N dates
+  // Filter by the exact dates we found (top N dates with events)
   eventsQuery = eventsQuery.where(
     sql<any>`DATE(coalesce(e.start_date_time, e.start_date))`,
     "in",
