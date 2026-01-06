@@ -208,7 +208,16 @@ export async function listUnclassifiedCalendarEvents(
       skip: offset,
       orderBy: { startDateTime: "desc" },
       include: {
-        calendar: true,
+        calendar: {
+          select: {
+            id: true,
+            googleId: true,
+            name: true,
+            createdAt: true,
+            updatedAt: true,
+            // syncToken: true, // Column doesn't exist in production DB yet
+          },
+        },
       },
     }),
     db.event.count({
