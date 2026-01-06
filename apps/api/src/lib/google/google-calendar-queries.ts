@@ -218,7 +218,7 @@ export async function getCalendarAggregates(
   const totals = await filteredQuery
     .select([
       sql<number>`count(e.id)`.as("events"),
-      sql<number>`count(distinct DATE(e.start_date))`.as("days"),
+      sql<number>`count(distinct DATE(coalesce(e.start_date_time, e.start_date)))`.as("days"),
       sql<number>`coalesce(sum(e.amount_expected), 0)`.as("amountExpected"),
       sql<number>`coalesce(sum(e.amount_paid), 0)`.as("amountPaid"),
     ])
@@ -227,35 +227,35 @@ export async function getCalendarAggregates(
   // 2. By Month
   const byMonth = await filteredQuery
     .select([
-      sql<number>`extract(year from e.start_date)`.as("year"),
-      sql<number>`extract(month from e.start_date)`.as("month"),
+      sql<number>`extract(year from coalesce(e.start_date_time, e.start_date))`.as("year"),
+      sql<number>`extract(month from coalesce(e.start_date_time, e.start_date))`.as("month"),
       sql<number>`count(e.id)`.as("total"),
       sql<number>`coalesce(sum(e.amount_expected), 0)`.as("amountExpected"),
       sql<number>`coalesce(sum(e.amount_paid), 0)`.as("amountPaid"),
     ])
     .groupBy([
-      sql`extract(year from e.start_date)`,
-      sql`extract(month from e.start_date)`,
+      sql`extract(year from coalesce(e.start_date_time, e.start_date))`,
+      sql`extract(month from coalesce(e.start_date_time, e.start_date))`,
     ])
-    .orderBy(sql`extract(year from e.start_date)`, "desc")
-    .orderBy(sql`extract(month from e.start_date)`, "desc")
+    .orderBy(sql`extract(year from coalesce(e.start_date_time, e.start_date))`, "desc")
+    .orderBy(sql`extract(month from coalesce(e.start_date_time, e.start_date))`, "desc")
     .execute();
 
   // 3. By Week
   const byWeek = await filteredQuery
     .select([
-      sql<number>`extract(isoyear from e.start_date)`.as("isoYear"),
-      sql<number>`extract(week from e.start_date)`.as("isoWeek"),
+      sql<number>`extract(isoyear from coalesce(e.start_date_time, e.start_date))`.as("isoYear"),
+      sql<number>`extract(week from coalesce(e.start_date_time, e.start_date))`.as("isoWeek"),
       sql<number>`count(e.id)`.as("total"),
       sql<number>`coalesce(sum(e.amount_expected), 0)`.as("amountExpected"),
       sql<number>`coalesce(sum(e.amount_paid), 0)`.as("amountPaid"),
     ])
     .groupBy([
-      sql`extract(isoyear from e.start_date)`,
-      sql`extract(week from e.start_date)`,
+      sql`extract(isoyear from coalesce(e.start_date_time, e.start_date))`,
+      sql`extract(week from coalesce(e.start_date_time, e.start_date))`,
     ])
-    .orderBy(sql`extract(isoyear from e.start_date)`, "desc")
-    .orderBy(sql`extract(week from e.start_date)`, "desc")
+    .orderBy(sql`extract(isoyear from coalesce(e.start_date_time, e.start_date))`, "desc")
+    .orderBy(sql`extract(week from coalesce(e.start_date_time, e.start_date))`, "desc")
     .execute();
 
   // 4. By Date
@@ -273,12 +273,12 @@ export async function getCalendarAggregates(
   // 5. By Weekday
   const byWeekday = await filteredQuery
     .select([
-      sql<number>`extract(dow from e.start_date)`.as("weekday"),
+      sql<number>`extract(dow from coalesce(e.start_date_time, e.start_date))`.as("weekday"),
       sql<number>`count(e.id)`.as("total"),
       sql<number>`coalesce(sum(e.amount_expected), 0)`.as("amountExpected"),
       sql<number>`coalesce(sum(e.amount_paid), 0)`.as("amountPaid"),
     ])
-    .groupBy(sql`extract(dow from e.start_date)`)
+    .groupBy(sql`extract(dow from coalesce(e.start_date_time, e.start_date))`)
     .orderBy("total", "desc")
     .execute();
 
