@@ -137,3 +137,25 @@ export type ServicePaymentPayload = {
   paidDate: string;
   note?: string | null;
 };
+
+export type ServicesFilterState = {
+  search: string;
+  statuses: Set<"ACTIVE" | "INACTIVE" | "ARCHIVED">;
+  types: Set<ServiceType>;
+};
+
+export type ServiceTemplate = {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  payload: CreateServicePayload;
+};
+
+export type SummaryTotals = {
+  totalExpected: number;
+  totalPaid: number;
+  pendingCount: number;
+  overdueCount: number;
+  activeCount: number;
+};

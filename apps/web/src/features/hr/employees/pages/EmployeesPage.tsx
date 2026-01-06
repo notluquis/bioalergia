@@ -11,6 +11,7 @@ import { useAuth } from "@/context/AuthContext";
 import EmployeeForm from "@/features/hr/employees/components/EmployeeForm";
 import EmployeeTable from "@/features/hr/employees/components/EmployeeTable";
 import type { Employee } from "@/features/hr/employees/types";
+import { getPersonFullName } from "@/lib/person";
 import { PAGE_CONTAINER, TITLE_LG } from "@/lib/styles";
 
 export default function EmployeesPage() {
@@ -39,9 +40,7 @@ export default function EmployeesPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const employees = (rawEmployees as any[]).map((e) => ({
     ...e,
-    full_name: e.person
-      ? `${e.person.names} ${e.person.fatherName || ""} ${e.person.motherName || ""}`.trim()
-      : "Sin nombre",
+    full_name: getPersonFullName(e.person) || "Sin nombre",
   }));
 
   // Mutation for deactivating (Soft Delete)

@@ -142,8 +142,22 @@ userRoutes.post("/invite", async (c) => {
     position: string;
     mfaEnforced?: boolean;
     personId?: number;
+    names?: string;
+    fatherName?: string;
+    motherName?: string;
+    rut?: string;
   }>();
-  const { email, role, position, mfaEnforced = true, personId } = body;
+  const {
+    email,
+    role,
+    position,
+    mfaEnforced = true,
+    personId,
+    names,
+    fatherName,
+    motherName,
+    rut,
+  } = body;
 
   if (!email || !role || !position) {
     return c.json(
@@ -167,7 +181,13 @@ userRoutes.post("/invite", async (c) => {
   let targetPersonId = personId;
   if (!targetPersonId) {
     const person = await db.person.create({
-      data: { names: "Nuevo Usuario", email, rut: `TEMP-${Date.now()}` },
+      data: {
+        names: names || "Nuevo Usuario",
+        fatherName: fatherName || "",
+        motherName: motherName || "",
+        email,
+        rut: rut || `TEMP-${Date.now()}`,
+      },
     });
     targetPersonId = person.id;
   }

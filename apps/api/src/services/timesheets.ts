@@ -63,18 +63,22 @@ function timeToMinutes(time: string): number | null {
 }
 
 /**
- * Convert "HH:MM" string to Date object
- * Uses reference date to set the correct year/month/day
+ * Convert "HH:MM" string to Postgres TIME string "HH:MM:00"
+ * Kysely/Postgres expects a string for TIME columns, not a full Date object.
  */
 function timeStringToDate(
   time: string | null,
-  referenceDate: Date = new Date()
-): Date | null {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _referenceDate?: Date
+): string | null {
   if (!time) return null;
+  // If it's already in HH:MM or HH:MM:SS format, ensure we return valid string
+  // For safety, let's parse and reformat
   const [hours, minutes] = time.split(":").map(Number);
-  const date = new Date(referenceDate);
-  date.setHours(hours || 0, minutes || 0, 0, 0);
-  return date;
+  if (hours === undefined || minutes === undefined) return null;
+
+  // Return formatted string "HH:mm:00"
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:00`;
 }
 
 /**
@@ -157,8 +161,11 @@ export async function upsertTimesheetEntry(
   payload: UpsertTimesheetPayload
 ): Promise<TimesheetEntry> {
   const workDateObj = new Date(payload.work_date);
-  const startTime = timeStringToDate(payload.start_time ?? null, workDateObj);
-  const endTime = timeStringToDate(payload.end_time ?? null, workDateObj);
+  // Postgres TIME column handling: explicit cast to any to allow string override
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const startTime = timeStringToDate(payload.start_time ?? null) as any as Date;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const endTime = timeStringToDate(payload.end_time ?? null) as any as Date;
 
   // Calculate worked_minutes from start_time and end_time if not provided
   let workedMinutes = payload.worked_minutes ?? 0;
@@ -219,10 +226,12 @@ export async function updateTimesheetEntry(
   const updateData: EmployeeTimesheetUpdateInput = {};
 
   if (data.start_time !== undefined) {
-    updateData.startTime = timeStringToDate(data.start_time, workDateObj);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    updateData.startTime = timeStringToDate(data.start_time) as any as Date;
   }
   if (data.end_time !== undefined) {
-    updateData.endTime = timeStringToDate(data.end_time, workDateObj);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    updateData.endTime = timeStringToDate(data.end_time) as any as Date;
   }
   if (data.worked_minutes != null) {
     updateData.workedMinutes = data.worked_minutes;

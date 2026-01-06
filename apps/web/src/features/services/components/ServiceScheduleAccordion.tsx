@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import { memo, useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import Button from "@/components/ui/Button";
 import { today } from "@/lib/dates";
@@ -27,14 +27,14 @@ const dateFormatter = new Intl.DateTimeFormat("es-CL", {
   month: "short",
 });
 
-const ServiceScheduleAccordion = memo(function ServiceScheduleAccordion({
+function ServiceScheduleAccordion({
   service,
   schedules,
   canManage,
   onRegisterPayment,
   onUnlinkPayment,
 }: ServiceScheduleAccordionProps) {
-  const groups = useMemo<ScheduleGroup[]>(() => {
+  const groups = (() => {
     if (!schedules.length) return [];
 
     const sorted = [...schedules].sort((a, b) => dayjs(a.due_date).valueOf() - dayjs(b.due_date).valueOf());
@@ -62,7 +62,7 @@ const ServiceScheduleAccordion = memo(function ServiceScheduleAccordion({
     }
 
     return Array.from(map.values()).sort((a, b) => (a.dateKey > b.dateKey ? 1 : -1));
-  }, [schedules]);
+  })();
 
   const [expanded, setExpanded] = useState<Record<string, boolean>>(() => {
     const todayKey = today();
@@ -200,7 +200,7 @@ const ServiceScheduleAccordion = memo(function ServiceScheduleAccordion({
       </div>
     </section>
   );
-});
+}
 
 export default ServiceScheduleAccordion;
 

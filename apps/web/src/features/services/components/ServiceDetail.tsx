@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import Button from "@/components/ui/Button";
@@ -46,7 +46,7 @@ export function ServiceDetail({
   const [regenerateError, setRegenerateError] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  const statusBadge = useMemo(() => {
+  const statusBadge = (() => {
     if (!service) return { label: "", className: "" };
     switch (service.status) {
       case "INACTIVE":
@@ -58,9 +58,9 @@ export function ServiceDetail({
           ? { label: "Vencidos", className: "bg-rose-100 text-rose-700" }
           : { label: "Activo", className: "bg-amber-100 text-amber-700" };
     }
-  }, [service]);
+  })();
 
-  const frequencyLabel = useMemo(() => {
+  const frequencyLabel = (() => {
     if (!service) return "";
     const labels: Record<ServiceFrequency, string> = {
       WEEKLY: "Semanal",
@@ -73,9 +73,9 @@ export function ServiceDetail({
       ONCE: "Única vez",
     };
     return labels[service.frequency];
-  }, [service]);
+  })();
 
-  const serviceTypeLabel = useMemo(() => {
+  const serviceTypeLabel = (() => {
     if (!service) return "";
     const labels: Record<ServiceType, string> = {
       BUSINESS: "Operación general",
@@ -88,9 +88,9 @@ export function ServiceDetail({
       OTHER: "Otro",
     };
     return labels[service.service_type];
-  }, [service]);
+  })();
 
-  const ownershipLabel = useMemo(() => {
+  const ownershipLabel = (() => {
     if (!service) return "";
     const labels: Record<ServiceOwnership, string> = {
       COMPANY: "Empresa",
@@ -99,9 +99,9 @@ export function ServiceDetail({
       THIRD_PARTY: "Terceros",
     };
     return labels[service.ownership];
-  }, [service]);
+  })();
 
-  const obligationLabel = useMemo(() => {
+  const obligationLabel = (() => {
     if (!service) return "";
     const labels: Record<ServiceObligationType, string> = {
       SERVICE: "Servicio / gasto",
@@ -110,23 +110,23 @@ export function ServiceDetail({
       OTHER: "Otro",
     };
     return labels[service.obligation_type];
-  }, [service]);
+  })();
 
-  const recurrenceLabel = useMemo(() => {
+  const recurrenceLabel = (() => {
     if (!service) return "";
     const labels: Record<ServiceRecurrenceType, string> = {
       RECURRING: "Recurrente",
       ONE_OFF: "Puntual",
     };
     return labels[service.recurrence_type];
-  }, [service]);
+  })();
 
-  const amountModeLabel = useMemo(() => {
+  const amountModeLabel = (() => {
     if (!service) return "";
     return service.amount_indexation === "UF" ? "UF" : "Monto fijo";
-  }, [service]);
+  })();
 
-  const lateFeeLabel = useMemo(() => {
+  const lateFeeLabel = (() => {
     if (!service) return "Sin recargo";
     const labels: Record<ServiceLateFeeMode, string> = {
       NONE: "Sin recargo",
@@ -134,14 +134,14 @@ export function ServiceDetail({
       PERCENTAGE: service.late_fee_value != null ? `${service.late_fee_value}%` : "% del monto",
     };
     return labels[service.late_fee_mode];
-  }, [service]);
+  })();
 
-  const counterpartSummary = useMemo(() => {
+  const counterpartSummary = (() => {
     if (!service) return "Sin contraparte";
     if (service.counterpart_name) return service.counterpart_name;
     if (service.counterpart_id) return `Contraparte #${service.counterpart_id}`;
     return "Sin contraparte";
-  }, [service]);
+  })();
 
   const handleRegenerate = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();

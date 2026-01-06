@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import React, { type ChangeEvent } from "react";
+import { type ChangeEvent } from "react";
 import { type Control, Controller, useWatch } from "react-hook-form";
 
 import Button from "@/components/ui/Button";
@@ -43,8 +43,8 @@ function formatEventDate(event: CalendarUnclassifiedEvent) {
   return "Sin fecha";
 }
 
-// We wrap in memo to prevent re-render when OTHER rows change.
-export const ClassificationRow = React.memo(function ClassificationRow({
+// React Compiler handles memoization automatically
+export function ClassificationRow({
   index,
   event,
   control,
@@ -69,7 +69,7 @@ export const ClassificationRow = React.memo(function ClassificationRow({
       treatmentStageChoices={treatmentStageChoices}
     />
   );
-});
+}
 
 interface ClassificationRowInnerProps extends Omit<ClassificationRowProps, "initialValues"> {
   description?: string;

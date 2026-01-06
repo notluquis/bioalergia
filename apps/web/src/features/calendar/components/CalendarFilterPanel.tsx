@@ -4,7 +4,7 @@
  */
 
 import type { ChangeEvent } from "react";
-import { type FormEvent, useMemo } from "react";
+import { type FormEvent } from "react";
 
 import Button from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -59,26 +59,18 @@ export function CalendarFilterPanel({
 }: CalendarFilterPanelProps) {
   // ... (keep logic)
   // Build event type options for MultiSelect
-  const eventTypeOptions: MultiSelectOption[] = useMemo(
-    () =>
-      availableEventTypes.map((entry) => {
-        const value = entry.eventType ?? NULL_EVENT_TYPE_VALUE;
-        const label = entry.eventType ?? "Sin tipo";
-        return { value, label: `${label} · ${numberFormatter.format(entry.total)}` };
-      }),
-    [availableEventTypes]
-  );
+  const eventTypeOptions: MultiSelectOption[] = availableEventTypes.map((entry) => {
+    const value = entry.eventType ?? NULL_EVENT_TYPE_VALUE;
+    const label = entry.eventType ?? "Sin tipo";
+    return { value, label: `${label} · ${numberFormatter.format(entry.total)}` };
+  });
 
   // Build category options for MultiSelect
-  const categoryOptions: MultiSelectOption[] = useMemo(
-    () =>
-      availableCategories.map((entry) => {
-        const value = entry.category ?? NULL_CATEGORY_VALUE;
-        const label = entry.category ?? "Sin clasificación";
-        return { value, label: `${label} · ${numberFormatter.format(entry.total)}` };
-      }),
-    [availableCategories]
-  );
+  const categoryOptions: MultiSelectOption[] = availableCategories.map((entry) => {
+    const value = entry.category ?? NULL_CATEGORY_VALUE;
+    const label = entry.category ?? "Sin clasificación";
+    return { value, label: `${label} · ${numberFormatter.format(entry.total)}` };
+  });
 
   const toggleEventType = (value: string) => {
     const currentTypes = filters.eventTypes ?? [];
