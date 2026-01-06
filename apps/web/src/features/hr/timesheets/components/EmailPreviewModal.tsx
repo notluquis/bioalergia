@@ -17,6 +17,7 @@ interface EmailPreviewModalProps {
   prepareStatus: string | null; // null | 'generating-pdf' | 'preparing' | 'done'
   employee: Employee | null;
   summary: TimesheetSummaryRow | null;
+  month: string; // YYYY-MM format
   monthLabel: string;
 }
 
@@ -27,6 +28,7 @@ export default function EmailPreviewModal({
   prepareStatus,
   employee,
   summary,
+  month,
   monthLabel,
 }: EmailPreviewModalProps) {
   const isPreparing = prepareStatus !== null && prepareStatus !== "done";
@@ -53,8 +55,8 @@ export default function EmailPreviewModal({
 
   const boletaDescription = `SERVICIOS DE ${summary.role.toUpperCase()} ${totalHoursFormatted} HORAS`;
 
-  // Get year from monthLabel (format: YYYY-MM)
-  const summaryYear = monthLabel ? parseInt(monthLabel.split("-")[0]!, 10) : new Date().getFullYear();
+  // Get year from month in YYYY-MM format
+  const summaryYear = month ? parseInt(month.split("-")[0]!, 10) : new Date().getFullYear();
   // Handle both camelCase and snake_case from backend
   const summaryData = summary as unknown as Record<string, unknown>;
   const employeeRate =
