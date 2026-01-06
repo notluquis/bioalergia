@@ -504,11 +504,6 @@ export async function getCalendarEventsByDate(
     to: undefined,
   };
 
-  console.log(
-    "[getCalendarEventsByDate] Filters without dates:",
-    filtersWithoutDates,
-  );
-
   let eventsQuery = applyFilters(
     kysely
       .selectFrom("events as e")
@@ -520,11 +515,6 @@ export async function getCalendarEventsByDate(
   eventsQuery = eventsQuery.where(
     sql<any>`DATE(coalesce(e.start_date_time, e.start_date))`,
     "in",
-    targetDates,
-  );
-
-  console.log(
-    "[getCalendarEventsByDate] Querying events with IN filter for:",
     targetDates,
   );
 
@@ -561,12 +551,6 @@ export async function getCalendarEventsByDate(
     ])
     .orderBy("e.start_date_time", "desc")
     .execute();
-
-  console.log(
-    "[getCalendarEventsByDate] Query returned",
-    events.length,
-    "events",
-  );
 
   // Group by date
   const grouped: Record<string, CalendarEventsByDate> = {};
