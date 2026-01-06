@@ -24,25 +24,32 @@ export function UpdateNotification() {
 
   const handleUpdate = async () => {
     setIsUpdating(true);
-
-    // Immediately hide the notification to prevent it from showing again
     setNeedRefresh(false);
 
     try {
-      // Skip waiting on new service worker and activate immediately
+      // Step 1: Tell the new service worker to skip waiting and activate
       await updateServiceWorker(true);
 
-      // Clear all caches for a completely fresh start
+      // Step 2: Wait for the new service worker to actually take control
+      // This is crucial - we need to ensure the new SW is controlling before clearing cache
+      if ("serviceWorker" in navigator && navigator.serviceWorker.controller) {
+        await new Promise<void>((resolve) => {
+          navigator.serviceWorker.addEventListener("controllerchange", () => resolve(), { once: true });
+          // Fallback timeout in case controllerchange doesn't fire
+          setTimeout(resolve, 1000);
+        });
+      }
+
+      // Step 3: Now clear all caches (the new SW is in control)
       if ("caches" in window) {
         const cacheNames = await caches.keys();
         await Promise.all(cacheNames.map((name) => caches.delete(name)));
       }
 
-      // Hard refresh - bypasses browser cache completely
-      window.location.href = window.location.href.split("?")[0] + "?v=" + Date.now();
+      // Step 4: Force a complete reload from network
+      window.location.reload();
     } catch (error) {
       console.error("Update failed", error);
-      // Fallback: force reload anyway
       window.location.reload();
     }
   };
