@@ -201,6 +201,18 @@ export async function listUnclassifiedCalendarEvents(
     }
   }
 
+  // ALWAYS exclude events before September 2024 (2024-09-01)
+  // These old events should not appear as pending classification
+  const cutoffDate = new Date("2024-09-01T00:00:00.000Z");
+
+  if (Object.keys(whereClause).length === 0) {
+    whereClause = { startDateTime: { gte: cutoffDate } };
+  } else {
+    whereClause = {
+      AND: [whereClause, { startDateTime: { gte: cutoffDate } }],
+    };
+  }
+
   const [events, totalCount] = await Promise.all([
     db.event.findMany({
       where: whereClause,
