@@ -1,5 +1,4 @@
 import dayjs from "dayjs";
-import { memo } from "react";
 
 import Button from "@/components/ui/Button";
 import TimeInput from "@/components/ui/TimeInput";
@@ -248,4 +247,4 @@ function TimesheetRow({
   );
 }
 
-export default memo(TimesheetRow);
+export default TimesheetRow;

@@ -10,7 +10,16 @@ export async function fetchEmployees(includeInactive = false): Promise<Employee[
     url.searchParams.set("includeInactive", "true");
   }
   const res = await apiClient.get<{ employees: Employee[] }>(url.pathname + url.search);
-  return res.employees;
+  return res.employees.map((emp) => {
+    // If backend doesn't send full_name, compute it from person
+    if (!emp.full_name && emp.person) {
+      return {
+        ...emp,
+        full_name: [emp.person.names, emp.person.fatherName, emp.person.motherName].filter(Boolean).join(" "),
+      };
+    }
+    return emp;
+  });
 }
 
 export async function createEmployee(data: EmployeePayload): Promise<Employee> {
