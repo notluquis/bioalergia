@@ -44,34 +44,41 @@ type ProgressCallback = (progress: BackupProgress) => void;
  * For now, using a static list of known models is safer and cleaner.
  */
 function getAllModelNames(): string[] {
-  // Ordered by dependency if possible, though not strictly required for JSON export
-  // Use static list as fallback logic is safer than suppressed types
-  return Object.keys(schema.models || {}).length > 0
-    ? Object.keys((schema as any).models)
-    : [
-        "User",
-        "Person",
-        "Role",
-        "Permission",
-        "RolePermission",
-        "UserRoleAssignment",
-        "Employee",
-        "Counterpart",
-        "CounterpartAccount",
-        "Service",
-        "Transaction",
-        "DailyBalance",
-        "DailyProductionBalance",
-        "Loan",
-        "LoanSchedule",
-        "InventoryItem",
-        "InventoryCategory",
-        "InventoryMovement",
-        "SupplyRequest",
-        "PushSubscription",
-        "Setting",
-        "AuditLog",
-      ];
+  // All models from schema.zmodel in dependency order
+  return [
+    "Person",
+    "User",
+    "Passkey",
+    "Role",
+    "Permission",
+    "RolePermission",
+    "UserRoleAssignment",
+    "UserPermissionVersion",
+    "Employee",
+    "EmployeeTimesheet",
+    "Counterpart",
+    "CounterpartAccount",
+    "Transaction",
+    "DailyBalance",
+    "Service",
+    "Loan",
+    "LoanSchedule",
+    "AuditLog",
+    "Setting",
+    "PushSubscription",
+    "Calendar",
+    "CalendarWatchChannel",
+    "Event",
+    "CalendarSyncLog",
+    "SyncLog",
+    "BackupLog",
+    "InventoryCategory",
+    "InventoryItem",
+    "InventoryMovement",
+    "DailyProductionBalance",
+    "SupplyRequest",
+    "CommonSupply",
+  ];
 }
 
 /**
@@ -99,51 +106,40 @@ export async function createBackup(
   let success = false;
 
   try {
-    // Perform backup in a transaction for consistency
-    await db.$transaction(async (tx) => {
-      const allModels = getAllModelNames();
-      const totalModels = allModels.length;
+    // Perform backup WITHOUT transaction (ZenStack v3 transaction context doesn't expose model delegates)
+    // Use direct db access instead
+    const allModels = getAllModelNames();
+    const totalModels = allModels.length;
 
-      for (let i = 0; i < totalModels; i++) {
-        const modelName = allModels[i];
-        const camelModelName =
-          modelName.charAt(0).toLowerCase() + modelName.slice(1);
-        const progress = Math.round(10 + (i / totalModels) * 50);
+    for (let i = 0; i < totalModels; i++) {
+      const modelName = allModels[i];
+      const camelModelName =
+        modelName.charAt(0).toLowerCase() + modelName.slice(1);
+      const progress = Math.round(10 + (i / totalModels) * 50);
 
-        onProgress?.({
-          step: "exporting",
-          progress,
-          message: `Exporting ${modelName}...`,
-        });
+      onProgress?.({
+        step: "exporting",
+        progress,
+        message: `Exporting ${modelName}...`,
+      });
 
-        try {
-          const txRecord = tx as Record<string, any>;
-          const modelDelegate = txRecord[camelModelName];
-          if (modelDelegate && typeof modelDelegate.findMany === "function") {
-            const data = await modelDelegate.findMany();
-            if (Array.isArray(data) && data.length > 0) {
-              backupData[modelName] = data;
-              tables.push(modelName);
-            }
-          } else {
-            // Try PascalCase if camelCase failed (ZenStack/Kysely nuances)
-            const pascalDelegate = txRecord[modelName];
-            if (
-              pascalDelegate &&
-              typeof pascalDelegate.findMany === "function"
-            ) {
-              const data = await pascalDelegate.findMany();
-              if (Array.isArray(data) && data.length > 0) {
-                backupData[modelName] = data;
-                tables.push(modelName);
-              }
-            }
+      try {
+        const dbRecord = db as Record<string, any>;
+        const modelDelegate = dbRecord[camelModelName];
+        
+        if (modelDelegate && typeof modelDelegate.findMany === "function") {
+          const data = await modelDelegate.findMany();
+          if (Array.isArray(data) && data.length > 0) {
+            backupData[modelName] = data;
+            tables.push(modelName);
           }
-        } catch (error) {
-          console.warn(`⚠️ Skipping ${modelName}: ${error}`);
+        } else {
+          console.warn(`⚠️ Model delegate not found for ${modelName} (tried ${camelModelName})`);
         }
+      } catch (error) {
+        console.warn(`⚠️ Skipping ${modelName}: ${error}`);
       }
-    }, {});
+    }
 
     onProgress?.({
       step: "compressing",
