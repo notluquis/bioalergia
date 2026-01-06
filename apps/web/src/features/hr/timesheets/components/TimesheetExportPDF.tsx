@@ -1,5 +1,6 @@
 import "dayjs/locale/es";
 
+import { formatRetentionPercent, getEffectiveRetentionRate } from "@shared/retention";
 import dayjs from "dayjs";
 import type { CellHookData } from "jspdf-autotable";
 import React from "react";
@@ -214,13 +215,18 @@ export default function TimesheetExportPDF({
 
       const summaryBody: string[][] = [];
       if (summary) {
+        // Extract year from monthLabel (format: YYYY-MM)
+        const summaryYear = monthLabel ? parseInt(monthLabel.split("-")[0]!, 10) : new Date().getFullYear();
+        const effectiveRate = getEffectiveRetentionRate(summary.retentionRate, summaryYear);
+        const retentionPercent = formatRetentionPercent(effectiveRate);
+
         summaryBody.push(["Horas trabajadas", summary.hoursFormatted || "0:00"]);
         if (hasOvertime) {
           summaryBody.push(["Horas extras", summary.overtimeFormatted || "0:00"]);
         }
         summaryBody.push(["Tarifa por hora", fmtCLP(summary.hourlyRate || 0)]);
         summaryBody.push(["Subtotal", fmtCLP(summary.subtotal || 0)]);
-        summaryBody.push(["Retención", fmtCLP(summary.retention || 0)]);
+        summaryBody.push([`Retención ${summaryYear} (${retentionPercent}%)`, fmtCLP(summary.retention || 0)]);
         summaryBody.push(["Total Líquido", fmtCLP(summary.net || 0)]);
       }
 

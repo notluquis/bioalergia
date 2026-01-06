@@ -139,6 +139,28 @@ export default function EmployeesPage() {
 
       {error && <Alert variant="error">{error}</Alert>}
 
+      {/* Información del sistema de retenciones */}
+      <Alert variant="info">
+        <div className="space-y-2">
+          <p className="font-semibold">📊 Sistema de Retención por Año de Trabajo</p>
+          <div className="space-y-1 text-sm">
+            <p>
+              • <strong>2025:</strong> 14,5% de retención sobre honorarios
+            </p>
+            <p>
+              • <strong>2026:</strong> 15,25% de retención sobre honorarios
+            </p>
+            <p>
+              • <strong>2027+:</strong> Tasas por definir
+            </p>
+          </div>
+          <p className="mt-2 text-xs opacity-80">
+            La retención se aplica automáticamente según el año en que se realizó el trabajo. Puedes configurar una tasa
+            personalizada por empleado que se aplicará a todos los años.
+          </p>
+        </div>
+      </Alert>
+
       {canEdit && showForm && (
         <div className="border-base-300 bg-base-100 rounded-2xl border p-6 shadow-sm">
           <div className="mb-4 flex items-center justify-between">

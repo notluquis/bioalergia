@@ -78,6 +78,13 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
 
   useEffect(() => {
     if (employee) {
+      const employeeRate = getEmployeeRetentionRate(employee);
+      const currentYearRate = getRetentionRateForYear(new Date().getFullYear());
+
+      // If employee rate equals current year rate, show empty (auto mode)
+      // Otherwise show the custom rate
+      const rateToShow = Math.abs(employeeRate - currentYearRate) < 0.0001 ? "" : String(employeeRate * 100);
+
       setForm({
         fullName: employee.full_name,
         role: employee.position,
@@ -90,11 +97,9 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
         hourlyRate: String(employee.hourlyRate ?? "0"),
         fixedSalary: employee.baseSalary != null ? String(employee.baseSalary) : "",
         overtimeRate: "", // Not in schema?
-        // Convert decimal to percentage for display: 0.145 -> "14.5"
-        retentionRate: String(getEmployeeRetentionRate(employee) * 100),
+        retentionRate: rateToShow,
       });
     } else {
-      const currentYearRate = getRetentionRateForYear(new Date().getFullYear());
       setForm({
         fullName: "",
         role: "",
@@ -107,8 +112,7 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
         hourlyRate: "0",
         fixedSalary: "",
         overtimeRate: "",
-        // Use current year's rate as default for new employees
-        retentionRate: String(currentYearRate * 100),
+        retentionRate: "", // Start empty for new employees (auto mode)
       });
     }
     // Clear RUT error on employee change
@@ -195,8 +199,11 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
       fixed_salary: form.salaryType === "FIXED" && form.fixedSalary ? Number(form.fixedSalary) : undefined,
       overtime_rate: form.overtimeRate ? Number(form.overtimeRate) : null,
       // Convert percentage (e.g., 14.5) to decimal (0.145)
+      // If empty/blank, use current year's default rate (auto mode)
       // Handle comma as decimal separator for Chilean format
-      retention_rate: form.retentionRate ? Number(form.retentionRate.replace(",", ".")) / 100 : 0,
+      retention_rate: form.retentionRate.trim()
+        ? Number(form.retentionRate.replace(",", ".")) / 100
+        : getRetentionRateForYear(new Date().getFullYear()),
     };
 
     if (employee?.id) {
@@ -330,17 +337,17 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
           placeholder="Opcional - dejar vacío si no aplica"
         />
         <Input
-          label="Retención (%)"
+          label="Retención (%) - Personalizada"
           type="text"
           inputMode="decimal"
-          helper="2025: 14,5% | 2026+: 15,25% (se aplica automáticamente según año)"
+          helper="Dejar vacío para usar tasa por año: 2025=14,5% | 2026=15,25%. Si se ingresa un valor, este se aplica para TODOS los años."
+          placeholder="Ej: 14.5 (opcional - usa tasa por año si está vacío)"
           value={form.retentionRate}
           onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
             // Allow digits, dots, and commas for decimal input
             const value = event.target.value.replace(/[^\d.,]/g, "");
             setForm((prev) => ({ ...prev, retentionRate: value }));
           }}
-          required
         />
       </div>
       <div className="flex items-center justify-end gap-3">
