@@ -56,7 +56,6 @@ export default function UserManagementPage() {
     orderBy: { createdAt: "desc" },
   });
 
-  /* eslint-disable @typescript-eslint/no-explicit-any */
   // Filter out test/debug emails client-side (ZenStack where has limited support)
   const users = ((usersData as any[]) ?? [])
     .filter((u) => !u.email?.includes("test") && !u.email?.includes("debug"))
@@ -65,13 +64,11 @@ export default function UserManagementPage() {
       mfaEnabled: u.mfaEnabled ?? false,
       hasPasskey: u.hasPasskey ?? false,
     })) as User[];
-  /* eslint-enable @typescript-eslint/no-explicit-any */
 
   // ZenStack hooks for roles (for filter dropdown)
   const { data: rolesData } = useFindManyRole({
     orderBy: { name: "asc" },
   });
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const roles = (rolesData as any[]) ?? [];
 
   // ZenStack mutations

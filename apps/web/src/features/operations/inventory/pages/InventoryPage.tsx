@@ -41,14 +41,12 @@ export default function InventoryPage() {
     orderBy: { name: "asc" },
   });
 
-  /* eslint-disable @typescript-eslint/no-explicit-any */
   const items =
     (itemsData as any[])?.map((item) => ({
       ...item,
       current_stock: item.currentStock, // Map to frontend expected field
       category_id: item.categoryId,
     })) ?? [];
-  /* eslint-enable @typescript-eslint/no-explicit-any */
 
   const [error, setError] = useState<string | null>(null);
   const [isItemModalOpen, setIsItemModalOpen] = useState(false);

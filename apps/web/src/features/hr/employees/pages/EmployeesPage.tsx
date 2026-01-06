@@ -40,7 +40,7 @@ export default function EmployeesPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const employees = (rawEmployees as any[]).map((e) => ({
     ...e,
-    full_name: getPersonFullName(e.person) || "Sin nombre",
+    full_name: getPersonFullName((e.person as any) || {}) || "Sin nombre",
   }));
 
   // Mutation for deactivating (Soft Delete)
