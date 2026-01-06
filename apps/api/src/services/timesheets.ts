@@ -76,6 +76,30 @@ function timeToMinutes(time: string): number | null {
 }
 
 /**
+ * Normalize time string to HH:MM:SS format for PostgreSQL TIME columns
+ * Input can be HH:MM or HH:MM:SS
+ * No timezone conversion - keeps the time as-is from user input
+ */
+function normalizeTimeString(time: string): string | null {
+  if (!time) return null;
+  
+  // Match HH:MM or HH:MM:SS format
+  const match = time.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+  if (!match) return null;
+  
+  const [, hours, minutes, seconds = '00'] = match;
+  const h = parseInt(hours!, 10);
+  const m = parseInt(minutes!, 10);
+  const s = parseInt(seconds, 10);
+  
+  // Validate ranges
+  if (h < 0 || h > 23 || m < 0 || m >= 60 || s < 0 || s >= 60) return null;
+  
+  // Return as HH:MM:SS
+  return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+}
+
+/**
  * Convert "HH:MM" or ISO string to Date object for ZenStack @db.Time
  * Uses reference date (work_date) and America/Santiago timezone
  * ZenStack/Prisma extracts only TIME component for PostgreSQL TIME columns
@@ -198,13 +222,10 @@ export async function upsertTimesheetEntry(
 ): Promise<TimesheetEntry> {
   const workDateObj = new Date(payload.work_date);
 
-  // Convert time strings to time-only format for PostgreSQL TIME columns
-  const startTime = timeStringToDate(payload.start_time, workDateObj);
-  const endTime = timeStringToDate(payload.end_time, workDateObj);
-  
-  // Format as HH:MM:SS for PostgreSQL TIME type
-  const startTimeStr = startTime ? dayjs(startTime).format("HH:mm:ss") : null;
-  const endTimeStr = endTime ? dayjs(endTime).format("HH:mm:ss") : null;
+  // Convert time strings directly to HH:MM:SS format for PostgreSQL TIME columns
+  // No timezone conversion - keep as-is from user input
+  const startTimeStr = payload.start_time ? normalizeTimeString(payload.start_time) : null;
+  const endTimeStr = payload.end_time ? normalizeTimeString(payload.end_time) : null;
 
   // Calculate worked_minutes from start_time and end_time if not provided
   let workedMinutes = payload.worked_minutes ?? 0;
