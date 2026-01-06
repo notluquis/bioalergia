@@ -68,44 +68,74 @@ function timeToMinutes(time: string): number | null {
 }
 
 /**
- * Convert "HH:MM" string to Postgres TIME string "HH:MM:00"
- * Kysely/Postgres expects a string for TIME columns, not a full Date object.
+ * Normalize time input to a Date object suitable for PostgreSQL TIME columns
+ * Accepts ISO datetime strings or HH:MM format
+ * Returns Date with epoch date (1970-01-01) but correct time component
+ * Returns null for invalid inputs
  */
-function timeStringToDate(
-  time: string | null,
-  referenceDate?: Date
+function normalizeTimeInput(
+  time: string | null | undefined
 ): Date | null {
   if (!time) return null;
 
-  // Try parsing as ISO first
+  // Try parsing as ISO datetime first
   const d = dayjs(time);
   if (d.isValid() && (time.includes("T") || time.includes("-"))) {
-    // If it's a valid date but in 1970 and we have a reference date, fix the date part
-    if (referenceDate && d.year() === 1970) {
-      const ref = dayjs(referenceDate);
-      return d.year(ref.year()).month(ref.month()).date(ref.date()).toDate();
-    }
-    return d.toDate();
+    // Extract time component and set to epoch date
+    return dayjs(0)
+      .hour(d.hour())
+      .minute(d.minute())
+      .second(d.second())
+      .millisecond(0)
+      .toDate();
   }
 
-  // Fallback to HH:mm
-  const parts = time.split(":").map(Number);
-  const [hours, minutes] = parts;
-  if (hours === undefined || minutes === undefined) return null;
+  // Parse HH:MM or HH:MM:SS format
+  if (/^[0-9]{1,2}:[0-9]{2}(:[0-9]{2})?$/.test(time)) {
+    const parts = time.split(":").map(Number);
+    const [hours, minutes, seconds = 0] = parts;
+    if (
+      hours === undefined ||
+      minutes === undefined ||
+      hours < 0 ||
+      hours > 23 ||
+      minutes < 0 ||
+      minutes >= 60 ||
+      seconds < 0 ||
+      seconds >= 60
+    ) {
+      return null;
+    }
+    return dayjs(0)
+      .hour(hours)
+      .minute(minutes)
+      .second(seconds)
+      .millisecond(0)
+      .toDate();
+  }
 
-  // Use reference date if provided, otherwise 1970 epoch
-  const base = referenceDate ? dayjs(referenceDate) : dayjs(0);
-  return base.hour(hours).minute(minutes).second(0).millisecond(0).toDate();
+  return null;
 }
 
 /**
- * Format Date object to "HH:MM" string
+ * Format time value to "HH:MM" string for API responses
+ * Handles both Date objects and TIME strings from PostgreSQL
  */
-function dateToTimeString(date: Date | null): string | null {
-  if (!date) return null;
-  // If date is 1970-01-01 (epoch), we should format using UTC to get the stored time
-  // Otherwise if it comes from DB, it might have returned it as 1970-01-01 with correct time
-  return dayjs(date).utc().format("HH:mm");
+function formatTimeValue(time: Date | string | null): string | null {
+  if (!time) return null;
+
+  // If it's a string, assume it's already in TIME format from PostgreSQL
+  if (typeof time === "string") {
+    // Extract HH:MM from "HH:MM:SS" or return as-is if already "HH:MM"
+    const parts = time.split(":");
+    if (parts.length >= 2) {
+      return `${parts[0]}:${parts[1]}`;
+    }
+    return time;
+  }
+
+  // If it's a Date object, format it
+  return dayjs(time).format("HH:mm");
 }
 
 /**
@@ -117,8 +147,8 @@ function mapTimesheetEntry(entry: EmployeeTimesheet): TimesheetEntry {
     id: Number(entry.id),
     employee_id: entry.employeeId,
     work_date: formatDateOnly(entry.workDate),
-    start_time: entry.startTime ? dateToTimeString(entry.startTime) : "",
-    end_time: entry.endTime ? dateToTimeString(entry.endTime) : "",
+    start_time: entry.startTime ? formatTimeValue(entry.startTime) : "",
+    end_time: entry.endTime ? formatTimeValue(entry.endTime) : "",
     worked_minutes: entry.workedMinutes,
     overtime_minutes: entry.overtimeMinutes,
     comment: entry.comment || "",
@@ -157,11 +187,11 @@ export async function listTimesheetEntries(
 export async function upsertTimesheetEntry(
   payload: UpsertTimesheetPayload
 ): Promise<TimesheetEntry> {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const workDateObj = new Date(payload.work_date);
 
-  const startTime = timeStringToDate(payload.start_time ?? null, workDateObj);
-  const endTime = timeStringToDate(payload.end_time ?? null, workDateObj);
+  // Normalize time inputs to PostgreSQL TIME format "HH:MM:SS"
+  const startTime = normalizeTimeInput(payload.start_time);
+  const endTime = normalizeTimeInput(payload.end_time);
 
   // Calculate worked_minutes from start_time and end_time if not provided
   let workedMinutes = payload.worked_minutes ?? 0;
@@ -207,9 +237,11 @@ export async function upsertTimesheetEntry(
       meta: error.meta,
       payload: {
         ...payload,
+        startTime,
+        endTime,
         startTimeType: typeof startTime,
         endTimeType: typeof endTime,
-        workDateType: typeof new Date(payload.work_date),
+        workDateType: typeof workDateObj,
       },
     });
     throw error;
@@ -220,28 +252,13 @@ export async function updateTimesheetEntry(
   id: number,
   data: UpdateTimesheetPayload
 ): Promise<TimesheetEntry> {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  let workDateObj: Date | undefined;
-
-  // If we are updating times, we should ideally fetch the entry to get the workDate
-  // to keep dates consistent.
-  if (data.start_time !== undefined || data.end_time !== undefined) {
-    const existing = await db.employeeTimesheet.findUnique({
-      where: { id: BigInt(id) },
-      select: { workDate: true },
-    });
-    if (existing) {
-      workDateObj = existing.workDate;
-    }
-  }
-
   const updateData: EmployeeTimesheetUpdateInput = {};
 
   if (data.start_time !== undefined) {
-    updateData.startTime = timeStringToDate(data.start_time, workDateObj);
+    updateData.startTime = normalizeTimeInput(data.start_time);
   }
   if (data.end_time !== undefined) {
-    updateData.endTime = timeStringToDate(data.end_time, workDateObj);
+    updateData.endTime = normalizeTimeInput(data.end_time);
   }
   if (data.worked_minutes != null) {
     updateData.workedMinutes = data.worked_minutes;
