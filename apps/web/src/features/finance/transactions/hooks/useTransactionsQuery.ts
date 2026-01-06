@@ -1,4 +1,5 @@
 import { useCountTransaction, useFindManyTransaction } from "@finanzas/db/hooks";
+import dayjs from "dayjs";
 
 import type { TransactionsApiResponse, TransactionsQueryParams } from "../api";
 // import type { Prisma } from "@prisma/client"; // Unused for now
@@ -10,8 +11,8 @@ function buildWhereInput(filters: TransactionsQueryParams["filters"]) {
 
   if (filters.from || filters.to) {
     where.transactionDate = {};
-    if (filters.from) where.transactionDate.gte = new Date(filters.from).toISOString();
-    if (filters.to) where.transactionDate.lte = new Date(filters.to).toISOString();
+    if (filters.from) where.transactionDate.gte = dayjs(filters.from).startOf("day").toISOString();
+    if (filters.to) where.transactionDate.lte = dayjs(filters.to).endOf("day").toISOString();
   }
 
   if (filters.description) {

@@ -27,7 +27,7 @@ export async function getBalancesReport(
 ): Promise<BalancesApiResponse> {
   const previous = await db.dailyBalance.findFirst({
     where: {
-      date: { lt: new Date(from) },
+      date: { lt: new Date(dayjs(from).startOf("day").toISOString()) },
     },
     orderBy: { date: "desc" },
   });
@@ -35,7 +35,7 @@ export async function getBalancesReport(
   const transactions = await db.transaction.findMany({
     where: {
       transactionDate: {
-        gte: new Date(from),
+        gte: new Date(dayjs(from).startOf("day").toISOString()),
         lte: new Date(dayjs(to).endOf("day").toISOString()),
       },
     },
@@ -49,8 +49,8 @@ export async function getBalancesReport(
   const existingBalances = await db.dailyBalance.findMany({
     where: {
       date: {
-        gte: new Date(from),
-        lte: new Date(to),
+        gte: new Date(dayjs(from).startOf("day").toISOString()),
+        lte: new Date(dayjs(to).endOf("day").toISOString()),
       },
     },
   });

@@ -9,6 +9,7 @@ import { verifyToken } from "../lib/paseto";
 import { hasPermission } from "../auth";
 import { db } from "@finanzas/db";
 import { Decimal } from "decimal.js";
+import dayjs from "dayjs";
 
 const COOKIE_NAME = "finanzas_session";
 
@@ -119,8 +120,9 @@ csvUploadRoutes.post("/preview", async (c) => {
           else toInsert++;
         }
       } else if (table === "daily_balances" && row.date) {
+        const dateStr = dayjs(String(row.date)).format("YYYY-MM-DD");
         const exists = await db.dailyBalance.findUnique({
-          where: { date: new Date(String(row.date)) },
+          where: { date: new Date(dateStr) },
         });
         if (exists) toUpdate++;
         else toInsert++;
@@ -216,7 +218,7 @@ csvUploadRoutes.post("/import", async (c) => {
         const employeeData = {
           position: row.position ? String(row.position) : "No especificado",
           startDate: row.startDate
-            ? new Date(String(row.startDate))
+            ? new Date(dayjs(String(row.startDate)).format("YYYY-MM-DD"))
             : new Date(),
           status: "ACTIVE" as const,
         };
@@ -258,7 +260,8 @@ csvUploadRoutes.post("/import", async (c) => {
           inserted++;
         }
       } else if (table === "daily_balances") {
-        const date = new Date(String(row.date));
+        const dateStr = dayjs(String(row.date)).format("YYYY-MM-DD");
+        const date = new Date(dateStr);
         // DailyBalance schema only has date, amount, note
         const amountNum = Number(row.amount) || Number(row.closingBalance) || 0;
         const balanceData = {
