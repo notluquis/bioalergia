@@ -139,27 +139,39 @@ export async function upsertGoogleCalendarEvents(
             },
           });
 
-          await db.event.upsert({
-            where: {
-              calendarId_externalEventId: {
-                calendarId: calendarInternalId,
-                externalEventId: event.eventId,
-              },
-            },
-            update: data,
-            create: data,
-          });
-
           const summaryText = event.summary?.slice(0, 50) || "(sin título)";
 
           if (existing) {
-            updated++;
-            // Only log detailed changes for the first 20 to save memory/logs
-            if (updatedSummaries.length < 20) {
-              const changes = computeEventDiff(existing, data);
-              updatedSummaries.push({ summary: summaryText, changes });
+            // Check if there are actual changes before updating
+            const changes = computeEventDiff(existing, data);
+            
+            if (changes.length > 0) {
+              // Has changes - perform update
+              await db.event.update({
+                where: {
+                  calendarId_externalEventId: {
+                    calendarId: calendarInternalId,
+                    externalEventId: event.eventId,
+                  },
+                },
+                data: data,
+              });
+              
+              updated++;
+              // Only log detailed changes for the first 20 to save memory/logs
+              if (updatedSummaries.length < 20) {
+                updatedSummaries.push({ summary: summaryText, changes });
+              }
+            } else {
+              // No changes detected - mark as skipped (no DB write)
+              skipped++;
             }
           } else {
+            // New event - create it
+            await db.event.create({
+              data: data,
+            });
+            
             inserted++;
             if (insertedSummaries.length < 20) {
               insertedSummaries.push(summaryText);
