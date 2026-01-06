@@ -620,17 +620,19 @@ model CommonSupply {
 
 model CalendarSyncLog {
   id            Int       @id @default(autoincrement())
+  triggerSource String?   @map("trigger_source")
+  triggerUserId Int?      @map("trigger_user_id")
+  triggerLabel  String?   @map("trigger_label")
+  status        String    @default("PENDING")
   startedAt     DateTime  @default(now()) @map("started_at")
   endedAt       DateTime? @map("ended_at")
-  status        String    @default("PENDING")
-  eventsSynced  Int       @default(0) @map("events_synced")
   fetchedAt     DateTime? @map("fetched_at")
+  eventsSynced  Int       @default(0) @map("events_synced")
   inserted      Int?      @default(0)
   updated       Int?      @default(0)
   skipped       Int?      @default(0)
   excluded      Int?      @default(0)
   errorMessage  String?   @map("error_message")
-  triggerSource String?   @map("trigger_source")
   changeDetails Json?     @map("change_details")
 
   @@index([startedAt(sort: Desc)])

@@ -2170,6 +2170,26 @@ export class SchemaType implements SchemaDef {
                     id: true,
                     default: ExpressionUtils.call("autoincrement")
                 },
+                triggerSource: {
+                    name: "triggerSource",
+                    type: "String",
+                    optional: true
+                },
+                triggerUserId: {
+                    name: "triggerUserId",
+                    type: "Int",
+                    optional: true
+                },
+                triggerLabel: {
+                    name: "triggerLabel",
+                    type: "String",
+                    optional: true
+                },
+                status: {
+                    name: "status",
+                    type: "String",
+                    default: "PENDING"
+                },
                 startedAt: {
                     name: "startedAt",
                     type: "DateTime",
@@ -2180,20 +2200,15 @@ export class SchemaType implements SchemaDef {
                     type: "DateTime",
                     optional: true
                 },
-                status: {
-                    name: "status",
-                    type: "String",
-                    default: "PENDING"
+                fetchedAt: {
+                    name: "fetchedAt",
+                    type: "DateTime",
+                    optional: true
                 },
                 eventsSynced: {
                     name: "eventsSynced",
                     type: "Int",
                     default: 0
-                },
-                fetchedAt: {
-                    name: "fetchedAt",
-                    type: "DateTime",
-                    optional: true
                 },
                 inserted: {
                     name: "inserted",
@@ -2221,11 +2236,6 @@ export class SchemaType implements SchemaDef {
                 },
                 errorMessage: {
                     name: "errorMessage",
-                    type: "String",
-                    optional: true
-                },
-                triggerSource: {
-                    name: "triggerSource",
                     type: "String",
                     optional: true
                 },
