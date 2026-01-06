@@ -26,6 +26,7 @@ function CalendarSchedulePage() {
 
   const {
     filters,
+    appliedFilters,
     daily,
     summary,
     loading,
@@ -68,8 +69,8 @@ function CalendarSchedulePage() {
   useEffect(() => {
     const weekStart = dayjs(displayedWeekStart);
     const weekEnd = weekStart.add(6, "day");
-    const currentFrom = dayjs(filters.from);
-    const currentTo = dayjs(filters.to);
+    const currentFrom = dayjs(appliedFilters.from);
+    const currentTo = dayjs(appliedFilters.to);
 
     // Check if displayed week is outside currently loaded range
     const needsExtension = weekStart.isBefore(currentFrom) || weekEnd.isAfter(currentTo);
@@ -78,14 +79,14 @@ function CalendarSchedulePage() {
       // Extend range to include displayed week with buffer
       const newFrom = weekStart.isBefore(currentFrom)
         ? weekStart.subtract(1, "week").format("YYYY-MM-DD")
-        : filters.from;
-      const newTo = weekEnd.isAfter(currentTo) ? weekEnd.add(2, "week").format("YYYY-MM-DD") : filters.to;
+        : appliedFilters.from;
+      const newTo = weekEnd.isAfter(currentTo) ? weekEnd.add(2, "week").format("YYYY-MM-DD") : appliedFilters.to;
 
       updateFilters("from", newFrom);
       updateFilters("to", newTo);
       applyFilters();
     }
-  }, [displayedWeekStart, filters.from, filters.to, updateFilters, applyFilters]);
+  }, [displayedWeekStart, appliedFilters.from, appliedFilters.to, updateFilters, applyFilters]);
 
   return (
     <section className={PAGE_CONTAINER}>
