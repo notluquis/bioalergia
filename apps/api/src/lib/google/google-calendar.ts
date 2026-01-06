@@ -220,7 +220,8 @@ async function fetchCalendarEventsForId(
   client: CalendarClient,
   calendarId: string,
   range: FetchRange,
-  patterns: RegExp[]
+  patterns: RegExp[],
+  syncToken?: string | null
 ): Promise<{
   events: CalendarEventRecord[];
   excluded: Array<{
@@ -228,6 +229,7 @@ async function fetchCalendarEventsForId(
     eventId: string;
     summary?: string | null;
   }>;
+  nextSyncToken?: string;
 }> {
   const events: CalendarEventRecord[] = [];
   const excluded: Array<{
@@ -238,20 +240,32 @@ async function fetchCalendarEventsForId(
   let pageToken: string | undefined;
   const MAX_PAGES = 100; // Safety guard to prevent infinite loop
   let pageCount = 0;
+  let nextSyncToken: string | undefined;
 
   do {
-    const response = await client.events.list({
+    const requestParams: any = {
       calendarId,
       pageToken,
-      timeMin: range.timeMin,
-      timeMax: range.timeMax,
-      timeZone: range.timeZone,
-      updatedMin: range.updatedMin,
       singleEvents: true,
       showDeleted: true,
-      orderBy: "startTime",
       maxResults: 2500,
-    });
+    };
+
+    // If we have a syncToken, use incremental sync (ignores timeMin/timeMax)
+    if (syncToken) {
+      requestParams.syncToken = syncToken;
+    } else {
+      // Full sync with time range
+      requestParams.timeMin = range.timeMin;
+      requestParams.timeMax = range.timeMax;
+      requestParams.timeZone = range.timeZone;
+      requestParams.orderBy = "startTime";
+      if (range.updatedMin) {
+        requestParams.updatedMin = range.updatedMin;
+      }
+    }
+
+    const response = await client.events.list(requestParams);
 
     const items = response.data.items ?? [];
 
@@ -304,6 +318,12 @@ async function fetchCalendarEventsForId(
     }
 
     pageToken = response.data.nextPageToken ?? undefined;
+    
+    // Capture syncToken on last page
+    if (!pageToken && response.data.nextSyncToken) {
+      nextSyncToken = response.data.nextSyncToken;
+    }
+    
     pageCount++;
 
     // Safety guard: prevent infinite loop if API returns same pageToken
@@ -317,7 +337,7 @@ async function fetchCalendarEventsForId(
     }
   } while (pageToken);
 
-  return { events, excluded };
+  return { events, excluded, nextSyncToken };
 }
 
 export async function fetchGoogleCalendarData(): Promise<GoogleCalendarSyncPayload> {
@@ -347,30 +367,100 @@ export async function fetchGoogleCalendarData(): Promise<GoogleCalendarSyncPaylo
     eventId: string;
     summary?: string | null;
   }> = [];
+  const syncTokensToSave: Record<string, string> = {};
 
   for (const calendarId of googleCalendarConfig.calendarIds) {
     try {
+      // Get saved syncToken for this calendar
+      const calendar = await db.calendar.findUnique({
+        where: { googleId: calendarId },
+        select: { syncToken: true },
+      });
+      const savedSyncToken = calendar?.syncToken;
+
       logEvent("googleCalendar.fetch.start", {
         calendarId,
-        timeMin: range.timeMin,
-        timeMax: range.timeMax,
+        usingSyncToken: !!savedSyncToken,
+        timeMin: savedSyncToken ? undefined : range.timeMin,
+        timeMax: savedSyncToken ? undefined : range.timeMax,
       });
+      
       const result = await fetchCalendarEventsForId(
         client,
         calendarId,
         range,
-        runtime.excludeSummaryPatterns
+        runtime.excludeSummaryPatterns,
+        savedSyncToken
       );
+      
       events.push(...result.events);
       excludedEvents.push(...result.excluded);
       calendarsSummary.push({ calendarId, totalEvents: result.events.length });
+      
+      // Save the new syncToken for next time
+      if (result.nextSyncToken) {
+        syncTokensToSave[calendarId] = result.nextSyncToken;
+      }
+      
       logEvent("googleCalendar.fetch.success", {
         calendarId,
         totalEvents: result.events.length,
         excluded: result.excluded.length,
+        gotNewSyncToken: !!result.nextSyncToken,
       });
     } catch (error) {
-      logWarn("googleCalendar.fetch.error", {
+      // If syncToken is invalid (e.g., expired), reset and do full sync
+      if (error instanceof Error && error.message.includes("410")) {
+        logWarn("googleCalendar.fetch.syncTokenExpired", {
+          calendarId,
+          message: "Sync token expired, performing full sync",
+        });
+        
+        // Retry without syncToken
+        try {
+          const result = await fetchCalendarEventsForId(
+            client,
+            calendarId,
+            range,
+            runtime.excludeSummaryPatterns,
+            null
+          );
+          events.push(...result.events);
+          excludedEvents.push(...result.excluded);
+          calendarsSummary.push({
+            calendarId,
+            totalEvents: result.events.length,
+          });
+          if (result.nextSyncToken) {
+            syncTokensToSave[calendarId] = result.nextSyncToken;
+          }
+        } catch (retryError) {
+          logWarn("googleCalendar.fetch.error", {
+            calendarId,
+            error:
+              retryError instanceof Error
+                ? retryError.message
+                : String(retryError),
+          });
+        }
+      } else {
+        logWarn("googleCalendar.fetch.error", {
+          calendarId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+  }
+
+  // Save all new syncTokens
+  for (const [calendarId, syncToken] of Object.entries(syncTokensToSave)) {
+    try {
+      await db.calendar.update({
+        where: { googleId: calendarId },
+        data: { syncToken },
+      });
+    } catch (error) {
+      logWarn("googleCalendar.syncToken.saveFailed", {
         calendarId,
         error: error instanceof Error ? error.message : String(error),
       });
