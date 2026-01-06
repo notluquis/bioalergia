@@ -487,6 +487,8 @@ export async function getCalendarEventsByDate(
     (d: DateOnlyRow) => dayjs(d.date).format("YYYY-MM-DD"),
   );
 
+  console.log("[getCalendarEventsByDate] Found dates:", targetDates);
+
   if (targetDates.length === 0) {
     return {
       days: [],
@@ -502,6 +504,8 @@ export async function getCalendarEventsByDate(
     to: undefined,
   };
 
+  console.log("[getCalendarEventsByDate] Filters without dates:", filtersWithoutDates);
+
   let eventsQuery = applyFilters(
     kysely
       .selectFrom("events as e")
@@ -515,6 +519,8 @@ export async function getCalendarEventsByDate(
     "in",
     targetDates,
   );
+
+  console.log("[getCalendarEventsByDate] Querying events with IN filter for:", targetDates);
 
   const events = await eventsQuery
     .select([
@@ -549,6 +555,8 @@ export async function getCalendarEventsByDate(
     ])
     .orderBy("e.start_date_time", "desc")
     .execute();
+
+  console.log("[getCalendarEventsByDate] Query returned", events.length, "events");
 
   // Group by date
   const grouped: Record<string, CalendarEventsByDate> = {};
