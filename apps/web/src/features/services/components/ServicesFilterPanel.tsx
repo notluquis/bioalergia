@@ -7,7 +7,7 @@ import type { ServiceSummary, ServiceType } from "../types";
 
 export type ServicesFilterState = {
   search: string;
-  statuses: Set<string>;
+  statuses: Set<ServiceSummary["status"]>;
   types: Set<ServiceType>;
 };
 

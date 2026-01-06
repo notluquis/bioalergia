@@ -1,6 +1,5 @@
 import clsx from "clsx";
 import dayjs, { type Dayjs } from "dayjs";
-import React from "react";
 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/Tooltip";
 import { fmtCLP } from "@/lib/format";
