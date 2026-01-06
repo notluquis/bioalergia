@@ -148,7 +148,7 @@ export type ServiceTemplate = {
   id: string;
   name: string;
   description: string;
-  category: string;
+  category?: string;
   payload: CreateServicePayload;
 };
 

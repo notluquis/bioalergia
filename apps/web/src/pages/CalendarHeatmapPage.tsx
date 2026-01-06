@@ -12,7 +12,7 @@ import Button from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import Input from "@/components/ui/Input";
 import { fetchCalendarSummary } from "@/features/calendar/api";
-import { HeatmapMonth } from "@/features/calendar/components/HeatmapMonth";
+import HeatmapMonth from "@/features/calendar/components/HeatmapMonth";
 import { MultiSelectFilter, type MultiSelectOption } from "@/features/calendar/components/MultiSelectFilter";
 import { NULL_CATEGORY_VALUE } from "@/features/calendar/constants";
 import { type CalendarFilters } from "@/features/calendar/types";
