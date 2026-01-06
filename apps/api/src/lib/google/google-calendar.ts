@@ -372,11 +372,13 @@ export async function fetchGoogleCalendarData(): Promise<GoogleCalendarSyncPaylo
   for (const calendarId of googleCalendarConfig.calendarIds) {
     try {
       // Get saved syncToken for this calendar
-      const calendar = await db.calendar.findUnique({
-        where: { googleId: calendarId },
-        select: { syncToken: true },
-      });
-      const savedSyncToken = calendar?.syncToken;
+      // HOTFIX: syncToken column doesn't exist in production DB yet - disabled until migration runs
+      // const calendar = await db.calendar.findUnique({
+      //   where: { googleId: calendarId },
+      //   select: { syncToken: true },
+      // });
+      // const savedSyncToken = calendar?.syncToken;
+      const savedSyncToken = null; // Always do full sync until DB migration is run
 
       logEvent("googleCalendar.fetch.start", {
         calendarId,
@@ -453,18 +455,26 @@ export async function fetchGoogleCalendarData(): Promise<GoogleCalendarSyncPaylo
   }
 
   // Save all new syncTokens
-  for (const [calendarId, syncToken] of Object.entries(syncTokensToSave)) {
-    try {
-      await db.calendar.update({
-        where: { googleId: calendarId },
-        data: { syncToken },
-      });
-    } catch (error) {
-      logWarn("googleCalendar.syncToken.saveFailed", {
-        calendarId,
-        error: error instanceof Error ? error.message : String(error),
-      });
-    }
+  // HOTFIX: syncToken column doesn't exist in production DB yet - disabled until migration runs
+  // for (const [calendarId, syncToken] of Object.entries(syncTokensToSave)) {
+  //   try {
+  //     await db.calendar.update({
+  //       where: { googleId: calendarId },
+  //       data: { syncToken },
+  //     });
+  //   } catch (error) {
+  //     logWarn("googleCalendar.syncToken.saveFailed", {
+  //       calendarId,
+  //       error: error instanceof Error ? error.message : String(error),
+  //     });
+  //   }
+  // }
+  // Temporary: Log that we're skipping syncToken save
+  if (Object.keys(syncTokensToSave).length > 0) {
+    logWarn("googleCalendar.syncToken.saveSkipped", {
+      message: "syncToken column not in DB yet - full sync will continue until migration",
+      calendarsAffected: Object.keys(syncTokensToSave),
+    });
   }
 
   return {
