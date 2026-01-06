@@ -39,5 +39,6 @@ export function getEffectiveRetentionRate(employeeRate: number | undefined | nul
  * E.g., 0.145 -> "14,5"
  */
 export function formatRetentionPercent(rate: number): string {
+  if (!rate || isNaN(rate)) return "0,0";
   return (rate * 100).toFixed(1).replace(".", ",");
 }
