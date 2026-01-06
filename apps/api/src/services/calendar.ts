@@ -8,12 +8,12 @@ export async function loadSettings() {
   return settings.reduce(
     (
       acc: Record<string, string>,
-      curr: { key: string; value: string | null }
+      curr: { key: string; value: string | null },
     ) => {
       acc[curr.key] = curr.value || "";
       return acc;
     },
-    {} as Record<string, string>
+    {} as Record<string, string>,
   );
 }
 
@@ -36,7 +36,7 @@ export async function createCalendarSyncLogEntry(data: {
     }
     // If stale (>15min), mark as ERROR and proceed
     console.warn(
-      `⚠ Cleaning up stale sync log ${running.id} (${Math.round(diff / 1000 / 60)}min old)`
+      `⚠ Cleaning up stale sync log ${running.id} (${Math.round(diff / 1000 / 60)}min old)`,
     );
     await db.calendarSyncLog.update({
       where: { id: running.id },
@@ -74,7 +74,7 @@ export async function finalizeCalendarSyncLogEntry(
       updated?: (string | { summary: string; changes: string[] })[];
       excluded?: string[];
     };
-  }
+  },
 ) {
   await db.calendarSyncLog.update({
     where: { id: id },
@@ -100,7 +100,7 @@ export async function listCalendarSyncLogs(
         start?: Date;
         end?: Date;
         limit?: number;
-      }
+      },
 ) {
   let options =
     typeof limitOrOptions === "number"
@@ -141,7 +141,7 @@ type MissingFieldFilter = {
 export async function listUnclassifiedCalendarEvents(
   limit: number,
   offset: number = 0,
-  filters?: MissingFieldFilter
+  filters?: MissingFieldFilter,
 ) {
   const filterMode = filters?.filterMode || "OR";
 
@@ -157,7 +157,7 @@ export async function listUnclassifiedCalendarEvents(
       { category: null },
       { category: "" },
       { amountExpected: null },
-      { attended: null }
+      { attended: null },
     );
   } else {
     if (filters.category) {
@@ -213,9 +213,9 @@ export async function listUnclassifiedCalendarEvents(
             id: true,
             googleId: true,
             name: true,
+            syncToken: true,
             createdAt: true,
             updatedAt: true,
-            // syncToken: true, // Column doesn't exist in production DB yet
           },
         },
       },
@@ -242,7 +242,7 @@ export async function updateCalendarEventClassification(
     attended?: boolean | null;
     dosage?: string | null;
     treatmentStage?: string | null;
-  }
+  },
 ) {
   // ... (function body of createCalendarEvent moved out)
   // We need to find the internal Calendar ID first
