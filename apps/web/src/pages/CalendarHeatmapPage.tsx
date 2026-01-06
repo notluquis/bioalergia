@@ -28,8 +28,8 @@ type HeatmapFilters = {
 };
 
 const createInitialFilters = (): HeatmapFilters => {
-  const start = dayjs().startOf("month").subtract(6, "month");
-  const end = dayjs().endOf("month").add(6, "month");
+  const start = dayjs().startOf("month").subtract(1, "month");
+  const end = dayjs().endOf("month").add(1, "month");
   return {
     from: start.format("YYYY-MM-DD"),
     to: end.format("YYYY-MM-DD"),
