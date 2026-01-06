@@ -1,5 +1,5 @@
 import { ArrowRightLeft, ArrowUpRight, CalendarDays, Users, Wallet } from "lucide-react";
-import { useEffect, useMemo } from "react";
+import { useEffect } from "react";
 import { Link } from "react-router-dom";
 
 import Alert from "@/components/ui/Alert";
@@ -32,14 +32,14 @@ export default function Home() {
   const canReadPersons = can("read", "Person");
   const canReadDashboard = can("read", "Dashboard"); // Top level check?
 
-  const from = useMemo(() => daysAgo(RANGE_DAYS), []);
-  const to = useMemo(() => today(), []);
+  const from = daysAgo(RANGE_DAYS);
+  const to = today();
 
-  const statsParams = useMemo(() => ({ from, to }), [from, to]);
+  const statsParams = { from, to };
   // Pass enabled to hooks if they support it to avoid 403s
   const statsQuery = useDashboardStats(statsParams, { enabled: canReadTransactions });
 
-  const leaderboardParams = useMemo(() => ({ from, to, limit: 5, mode: "outgoing" as const }), [from, to]);
+  const leaderboardParams = { from, to, limit: 5, mode: "outgoing" as const };
   const participantsQuery = useParticipantLeaderboardQuery(leaderboardParams, {
     enabled: Boolean(from && to) && canReadPersons,
   });
@@ -56,16 +56,13 @@ export default function Home() {
 
   const recentMovements = recentMovementsQuery.data ?? [];
 
-  const totals = useMemo(() => {
-    if (!stats) return { in: 0, out: 0, net: 0 };
-    const inTotal = stats.totals?.IN ?? 0;
-    const outTotal = stats.totals?.OUT ?? 0;
-    return {
-      in: inTotal,
-      out: outTotal,
-      net: inTotal - outTotal,
-    };
-  }, [stats]);
+  const totals = !stats
+    ? { in: 0, out: 0, net: 0 }
+    : {
+        in: stats.totals?.IN ?? 0,
+        out: stats.totals?.OUT ?? 0,
+        net: (stats.totals?.IN ?? 0) - (stats.totals?.OUT ?? 0),
+      };
 
   if (!canReadDashboard) {
     return <div className="text-base-content/60 p-8 text-center">No tienes permisos para ver el panel principal.</div>;
