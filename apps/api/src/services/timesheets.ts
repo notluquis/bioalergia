@@ -227,6 +227,13 @@ export async function upsertTimesheetEntry(
   const startTimeStr = payload.start_time ? normalizeTimeString(payload.start_time) : null;
   const endTimeStr = payload.end_time ? normalizeTimeString(payload.end_time) : null;
 
+  console.log('[timesheets] upsert input:', {
+    payload_start: payload.start_time,
+    payload_end: payload.end_time,
+    normalized_start: startTimeStr,
+    normalized_end: endTimeStr,
+  });
+
   // Calculate worked_minutes from start_time and end_time if not provided
   let workedMinutes = payload.worked_minutes ?? 0;
   if (!workedMinutes && payload.start_time && payload.end_time) {
@@ -262,6 +269,14 @@ export async function upsertTimesheetEntry(
       )
       .returningAll()
       .executeTakeFirstOrThrow();
+
+    console.log('[timesheets] upsert result from DB:', {
+      id: result.id,
+      start_time: result.start_time,
+      end_time: result.end_time,
+      start_type: typeof result.start_time,
+      end_type: typeof result.end_time,
+    });
 
     return {
       id: Number(result.id),
