@@ -1,3 +1,4 @@
+import { formatRetentionPercent, getEffectiveRetentionRate } from "@shared/retention";
 import dayjs from "dayjs";
 
 import type { Employee } from "@/features/hr/employees/types";
@@ -12,6 +13,7 @@ export async function generateTimesheetPdfBase64(
   employee: Employee,
   summaryRow: TimesheetSummaryRow,
   bulkRows: BulkRow[],
+  month: string,
   monthLabel: string
 ): Promise<string | null> {
   try {
@@ -52,6 +54,14 @@ export async function generateTimesheetPdfBase64(
     const fmtCLP = (n: number) =>
       n.toLocaleString("es-CL", { style: "currency", currency: "CLP", minimumFractionDigits: 0 });
 
+    // Calculate retention rate based on year
+    const summaryYear = month ? parseInt(month.split("-")[0]!, 10) : new Date().getFullYear();
+    const summaryData = summaryRow as unknown as Record<string, unknown>;
+    const employeeRate =
+      (summaryData.retentionRate as number | null) || (summaryData.retention_rate as number | null) || null;
+    const effectiveRate = getEffectiveRetentionRate(employeeRate, summaryYear);
+    const retentionPercent = formatRetentionPercent(effectiveRate);
+
     autoTable(doc, {
       head: [["Concepto", "Valor"]],
       body: [
@@ -59,7 +69,7 @@ export async function generateTimesheetPdfBase64(
         ["Horas extras", summaryRow.overtimeFormatted],
         ["Tarifa por hora", fmtCLP(summaryRow.hourlyRate)],
         ["Subtotal", fmtCLP(summaryRow.subtotal)],
-        ["Retención", fmtCLP(summaryRow.retention)],
+        [`Retención (${retentionPercent})`, `-${fmtCLP(summaryRow.retention)}`],
         ["Total líquido", fmtCLP(summaryRow.net)],
       ],
       startY: 75,
@@ -84,8 +94,8 @@ export async function generateTimesheetPdfBase64(
         body: detailBody,
         startY: nextY,
         theme: "grid",
-        styles: { fontSize: 9 },
-        headStyles: { fillColor: [241, 167, 34] },
+        styles: { fontSize: 9, halign: "center" },
+        headStyles: { fillColor: [241, 167, 34], halign: "center" },
         margin: { left: margin, right: margin },
       });
     }
