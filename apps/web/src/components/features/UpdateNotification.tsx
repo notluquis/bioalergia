@@ -12,8 +12,22 @@ export function UpdateNotification() {
   } = useRegisterSW({
     onRegistered(r) {
       if (r) {
-        // Check for updates periodically (every 1 hour) without forcing reload
-        setInterval(() => r.update(), 60 * 60 * 1000);
+        // Check for updates periodically every 4 hours (reduced from 1h to minimize interruptions)
+        // Only checks when tab is visible to avoid unnecessary background checks
+        // Railway auto-deploys trigger new SW versions, but we don't want to annoy users
+        const intervalMs = 4 * 60 * 60 * 1000; // 4 hours
+        
+        setInterval(() => {
+          // Only check if the document is visible (user is actively using the app)
+          if (document.visibilityState === "visible") {
+            r.update();
+          }
+        }, intervalMs);
+        
+        // ALTERNATIVE: Disable periodic checks completely and rely on natural browser updates
+        // The service worker will still update on next navigation/reload
+        // Uncomment below and remove setInterval above if updates are still too frequent:
+        // (No periodic checks - SW updates naturally on navigation)
       }
     },
     onNeedRefresh() {
