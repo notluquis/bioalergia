@@ -121,7 +121,7 @@ export async function listCalendarSyncLogs(
   // Cleanup: mark stale RUNNING syncs as ERROR before querying
   const STALE_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
   const staleDate = new Date(Date.now() - STALE_TIMEOUT_MS);
-  
+
   await db.calendarSyncLog.updateMany({
     where: {
       status: "RUNNING",
