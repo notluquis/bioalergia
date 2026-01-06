@@ -85,7 +85,8 @@ function timeToMinutes(time: string): number | null {
 }
 
 export function formatDateLabel(value: string): string {
-  return dayjs(value).format("DD-MM-YYYY");
+  const date = dayjs(value);
+  return date.isValid() ? date.format("DD-MM-YYYY") : value || "—";
 }
 
 export function computeExtraAmount(extraMinutes: number, hourlyRate: number): number {
