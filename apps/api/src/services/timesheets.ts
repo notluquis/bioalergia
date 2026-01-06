@@ -1,5 +1,4 @@
-import { db, kysely } from "@finanzas/db";
-import { sql } from "kysely";
+import { db } from "@finanzas/db";
 
 import dayjs from "dayjs";
 
@@ -69,23 +68,23 @@ function timeToMinutes(time: string): number | null {
 }
 
 /**
- * Normalize time input to PostgreSQL TIME format "HH:MM:SS"
- * Accepts ISO datetime strings or HH:MM format
- * Returns string compatible with PostgreSQL TIME type
- * Returns null for invalid inputs
- * 
- * NOTE: TypeScript types say Date, but we return string to avoid Kysely ISO serialization
+ * Convert "HH:MM" or ISO string to Date object for ZenStack @db.Time
+ * Uses reference date (work_date) to create proper Date object
+ * ZenStack/Prisma extracts only TIME component for PostgreSQL TIME columns
  */
-function normalizeTimeInput(
-  time: string | null | undefined
-): string | null {
+function timeStringToDate(
+  time: string | null | undefined,
+  referenceDate: Date = new Date()
+): Date | null {
   if (!time) return null;
 
   // Try parsing as ISO datetime first
   const d = dayjs(time);
   if (d.isValid() && (time.includes("T") || time.includes("-"))) {
-    // Extract time component as HH:MM:SS
-    return d.format("HH:mm:ss");
+    // Use reference date with time from ISO
+    const result = new Date(referenceDate);
+    result.setHours(d.hour(), d.minute(), d.second(), 0);
+    return result;
   }
 
   // Parse HH:MM or HH:MM:SS format
@@ -104,31 +103,20 @@ function normalizeTimeInput(
     ) {
       return null;
     }
-    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+    const result = new Date(referenceDate);
+    result.setHours(hours, minutes, seconds, 0);
+    return result;
   }
 
   return null;
 }
 
 /**
- * Format time value to "HH:MM" string for API responses
- * Handles both Date objects and TIME strings from PostgreSQL
+ * Format Date object from ZenStack to "HH:MM" string for API responses
  */
-function formatTimeValue(time: Date | string | null): string | null {
-  if (!time) return null;
-
-  // If it's a string, assume it's already in TIME format from PostgreSQL
-  if (typeof time === "string") {
-    // Extract HH:MM from "HH:MM:SS" or return as-is if already "HH:MM"
-    const parts = time.split(":");
-    if (parts.length >= 2) {
-      return `${parts[0]}:${parts[1]}`;
-    }
-    return time;
-  }
-
-  // If it's a Date object, format it
-  return dayjs(time).format("HH:mm");
+function dateToTimeString(date: Date | null): string | null {
+  if (!date) return null;
+  return dayjs(date).format("HH:mm");
 }
 
 /**
@@ -140,8 +128,8 @@ function mapTimesheetEntry(entry: EmployeeTimesheet): TimesheetEntry {
     id: Number(entry.id),
     employee_id: entry.employeeId,
     work_date: formatDateOnly(entry.workDate),
-    start_time: entry.startTime ? formatTimeValue(entry.startTime) : "",
-    end_time: entry.endTime ? formatTimeValue(entry.endTime) : "",
+    start_time: entry.startTime ? dateToTimeString(entry.startTime) : "",
+    end_time: entry.endTime ? dateToTimeString(entry.endTime) : "",
     worked_minutes: entry.workedMinutes,
     overtime_minutes: entry.overtimeMinutes,
     comment: entry.comment || "",
@@ -182,9 +170,10 @@ export async function upsertTimesheetEntry(
 ): Promise<TimesheetEntry> {
   const workDateObj = new Date(payload.work_date);
 
-  // Normalize time inputs to PostgreSQL TIME format "HH:MM:SS"
-  const startTime = normalizeTimeInput(payload.start_time);
-  const endTime = normalizeTimeInput(payload.end_time);
+  // Convert time strings to Date objects using work_date as reference
+  // ZenStack/Prisma will extract only TIME component for @db.Time columns
+  const startTime = timeStringToDate(payload.start_time, workDateObj);
+  const endTime = timeStringToDate(payload.end_time, workDateObj);
 
   // Calculate worked_minutes from start_time and end_time if not provided
   let workedMinutes = payload.worked_minutes ?? 0;
@@ -197,42 +186,32 @@ export async function upsertTimesheetEntry(
   }
 
   try {
-    // Use raw Kysely to bypass ZenStack's Zod validation
-    // ZenStack expects ISO datetime strings for DateTime fields, but PostgreSQL TIME columns need "HH:MM:SS"
-    const result = await kysely
-      .insertInto("employee_timesheets")
-      .values({
-        employee_id: payload.employee_id,
-        work_date: sql`${workDateObj.toISOString()}::date`,
-        start_time: startTime ? sql`${startTime}::time` : null,
-        end_time: endTime ? sql`${endTime}::time` : null,
-        worked_minutes: workedMinutes,
-        overtime_minutes: payload.overtime_minutes,
+    const entry = await db.employeeTimesheet.upsert({
+      where: {
+        employeeId_workDate: {
+          employeeId: payload.employee_id,
+          workDate: workDateObj,
+        },
+      },
+      create: {
+        employeeId: payload.employee_id,
+        workDate: workDateObj,
+        startTime,
+        endTime,
+        workedMinutes,
+        overtimeMinutes: payload.overtime_minutes,
         comment: payload.comment ?? null,
-      })
-      .onConflict((oc) =>
-        oc.columns(["employee_id", "work_date"]).doUpdateSet({
-          start_time: startTime ? sql`${startTime}::time` : null,
-          end_time: endTime ? sql`${endTime}::time` : null,
-          worked_minutes: workedMinutes,
-          overtime_minutes: payload.overtime_minutes,
-          comment: payload.comment ?? null,
-        })
-      )
-      .returningAll()
-      .executeTakeFirstOrThrow();
+      },
+      update: {
+        startTime,
+        endTime,
+        workedMinutes,
+        overtimeMinutes: payload.overtime_minutes,
+        comment: payload.comment ?? null,
+      },
+    });
 
-    // Map Kysely result to TimesheetEntry
-    return {
-      id: Number(result.id),
-      employee_id: result.employee_id as number,
-      work_date: formatDateOnly(result.work_date as Date),
-      start_time: result.start_time ? formatTimeValue(result.start_time as string) : "",
-      end_time: result.end_time ? formatTimeValue(result.end_time as string) : "",
-      worked_minutes: result.worked_minutes as number,
-      overtime_minutes: result.overtime_minutes as number,
-      comment: (result.comment as string) || "",
-    };
+    return mapTimesheetEntry(entry);
   } catch (error: any) {
     console.error("[timesheets] upsert error details:", {
       message: error.message,
@@ -255,22 +234,27 @@ export async function updateTimesheetEntry(
   id: number,
   data: UpdateTimesheetPayload
 ): Promise<TimesheetEntry> {
-  // Build update object for Kysely
-  const updateData: Record<string, any> = {};
+  const updateData: EmployeeTimesheetUpdateInput = {};
+
+  // Get existing entry to use work_date as reference for time conversion
+  const existing = await db.employeeTimesheet.findUnique({
+    where: { id: BigInt(id) },
+  });
+  if (!existing) throw new Error("Registro no encontrado");
+
+  const referenceDate = existing.workDate;
 
   if (data.start_time !== undefined) {
-    const normalized = normalizeTimeInput(data.start_time);
-    updateData.start_time = normalized ? sql`${normalized}::time` : null;
+    updateData.startTime = timeStringToDate(data.start_time, referenceDate);
   }
   if (data.end_time !== undefined) {
-    const normalized = normalizeTimeInput(data.end_time);
-    updateData.end_time = normalized ? sql`${normalized}::time` : null;
+    updateData.endTime = timeStringToDate(data.end_time, referenceDate);
   }
   if (data.worked_minutes != null) {
-    updateData.worked_minutes = data.worked_minutes;
+    updateData.workedMinutes = data.worked_minutes;
   }
   if (data.overtime_minutes != null) {
-    updateData.overtime_minutes = data.overtime_minutes;
+    updateData.overtimeMinutes = data.overtime_minutes;
   }
   if (data.comment !== undefined) {
     updateData.comment = data.comment;
@@ -281,25 +265,12 @@ export async function updateTimesheetEntry(
   }
 
   try {
-    // Use raw Kysely to bypass ZenStack's Zod validation
-    const result = await kysely
-      .updateTable("employee_timesheets")
-      .set(updateData)
-      .where("id", "=", BigInt(id))
-      .returningAll()
-      .executeTakeFirstOrThrow();
+    const entry = await db.employeeTimesheet.update({
+      where: { id: BigInt(id) },
+      data: updateData,
+    });
 
-    // Map Kysely result to TimesheetEntry
-    return {
-      id: Number(result.id),
-      employee_id: result.employee_id as number,
-      work_date: formatDateOnly(result.work_date as Date),
-      start_time: result.start_time ? formatTimeValue(result.start_time as string) : "",
-      end_time: result.end_time ? formatTimeValue(result.end_time as string) : "",
-      worked_minutes: result.worked_minutes as number,
-      overtime_minutes: result.overtime_minutes as number,
-      comment: (result.comment as string) || "",
-    };
+    return mapTimesheetEntry(entry);
   } catch (error: any) {
     console.error("[timesheets] update error details:", {
       id,
