@@ -374,10 +374,28 @@ export function computePayDate(role: string, periodStart: string): string {
     startDate.getMonth() + 1,
     1
   );
-  if (role.toUpperCase().includes("ENFER")) {
-    // Enfermeros: 5to día hábil del mes siguiente
+  
+  const roleUpper = role.toUpperCase();
+  
+  // Técnico en Enfermería Nivel Superior: día 5 calendario del mes siguiente
+  if (roleUpper.includes("TÉCNICO EN ENFERMERÍA NIVEL SUPERIOR") || 
+      roleUpper.includes("TECNICO EN ENFERMERIA NIVEL SUPERIOR")) {
+    return formatDateOnly(
+      new Date(nextMonthFirstDay.getFullYear(), nextMonthFirstDay.getMonth(), 5)
+    );
+  }
+  
+  // Enfermero Universitario: 5to día hábil del mes siguiente
+  if (roleUpper.includes("ENFERMERO UNIVERSITARIO") || 
+      roleUpper.includes("ENFERMERA UNIVERSITARIA")) {
     return formatDateOnly(getNthBusinessDay(nextMonthFirstDay, 5));
   }
+  
+  // Fallback para otros roles con "ENFER": 5to día hábil
+  if (roleUpper.includes("ENFER")) {
+    return formatDateOnly(getNthBusinessDay(nextMonthFirstDay, 5));
+  }
+  
   // Otros: día 5 calendario del mes siguiente
   return formatDateOnly(
     new Date(nextMonthFirstDay.getFullYear(), nextMonthFirstDay.getMonth(), 5)
