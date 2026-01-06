@@ -86,9 +86,22 @@ export async function bulkUpsertTimesheets(
 
 export async function prepareTimesheetEmail(payload: {
   employeeId: number;
+  employeeName: string;
+  employeeEmail: string;
   month: string;
   monthLabel: string;
   pdfBase64: string;
+  summary: {
+    role: string;
+    workedMinutes: number;
+    overtimeMinutes: number;
+    subtotal: number;
+    retention: number;
+    net: number;
+    payDate: string;
+    retentionRate?: number | null;
+    retention_rate?: number | null;
+  };
 }) {
   const data = await apiClient.post<{ status: string; message?: string; emlBase64: string; filename: string }>(
     "/api/timesheets/prepare-email",

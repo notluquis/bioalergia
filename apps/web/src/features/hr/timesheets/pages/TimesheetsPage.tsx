@@ -334,9 +334,25 @@ export default function TimesheetsPage() {
 
       const data = await emailMutation.mutateAsync({
         employeeId: selectedEmployee.id,
+        employeeName: selectedEmployee.full_name,
+        employeeEmail: selectedEmployee.person?.email || "",
         month,
         monthLabel,
         pdfBase64,
+        summary: {
+          role: employeeSummaryRow.role,
+          workedMinutes: employeeSummaryRow.workedMinutes,
+          overtimeMinutes: employeeSummaryRow.overtimeMinutes,
+          subtotal: employeeSummaryRow.subtotal,
+          retention: employeeSummaryRow.retention,
+          net: employeeSummaryRow.net,
+          payDate: employeeSummaryRow.payDate,
+          retentionRate: employeeSummaryRow.retentionRate,
+          retention_rate: (employeeSummaryRow as unknown as Record<string, unknown>).retention_rate as
+            | number
+            | null
+            | undefined,
+        },
       });
 
       if (data.status !== "ok") throw new Error(data.message || "Error al preparar el email");
