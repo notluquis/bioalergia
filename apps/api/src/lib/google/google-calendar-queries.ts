@@ -616,8 +616,16 @@ export async function getCalendarEventsByDate(
   };
 
   (events as unknown as EventRow[]).forEach((ev: EventRow) => {
-    const dateKey = String(ev.eventDateString);
-    if (!grouped[dateKey]) return; // Should not happen
+    // Normalize date to YYYY-MM-DD format to match targetDates
+    const dateKey = dayjs(ev.eventDateString).format("YYYY-MM-DD");
+
+    if (!grouped[dateKey]) {
+      console.warn(
+        `[getCalendarEventsByDate] Event date ${dateKey} not in targetDates:`,
+        targetDates,
+      );
+      return;
+    }
 
     const detail: CalendarEventDetail = {
       calendarId: ev.calendarId,
