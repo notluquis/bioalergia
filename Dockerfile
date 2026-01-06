@@ -34,10 +34,10 @@ RUN --mount=type=cache,id=s/cc493466-c691-4384-8199-99f757a14014-pnpm,target=/pn
 # 2. Copy source code (Cached Layer)
 COPY --from=prune /app/out/full/ .
 
-# 3. Build artifacts
+# 3. Build artifacts (parallelized where possible)
 RUN pnpm --filter @finanzas/db build
-RUN pnpm --filter @finanzas/web build
-RUN pnpm --filter @finanzas/api build
+# Build web and api in parallel (web is the slowest)
+RUN pnpm --filter @finanzas/web --filter @finanzas/api build
 
 # 4. Prepare deployment (Isolate API production deps)
 RUN --mount=type=cache,id=s/cc493466-c691-4384-8199-99f757a14014-pnpm,target=/pnpm/store \
