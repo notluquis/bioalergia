@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { Banknote, ClipboardList, CreditCard, FileText, MoreVertical, Save, TrendingDown, Wallet } from "lucide-react";
 import type { FormEvent } from "react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
@@ -58,7 +58,7 @@ export default function DailyProductionBalancesPage() {
     enabled: canView,
   });
 
-  const balances = useMemo(() => balancesQuery.data ?? [], [balancesQuery.data]);
+  const balances = balancesQuery.data ?? [];
 
   const {
     form,

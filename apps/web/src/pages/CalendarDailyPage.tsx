@@ -4,7 +4,7 @@ import dayjs from "dayjs";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
 import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
 import { Filter } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
@@ -71,9 +71,7 @@ function CalendarDailyPage() {
   }, [filters.from, filters.to, appliedFilters.from, appliedFilters.to, applyFilters]);
 
   // Get data for selected Day
-  const selectedDayEntry = useMemo(() => {
-    return daily?.days.find((d) => d.date === selectedDate);
-  }, [daily, selectedDate]);
+  const selectedDayEntry = daily?.days.find((d) => d.date === selectedDate);
 
   const hasEvents = (selectedDayEntry?.events.length ?? 0) > 0;
 

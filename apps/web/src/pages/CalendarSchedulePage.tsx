@@ -5,7 +5,7 @@ import isoWeek from "dayjs/plugin/isoWeek";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
 import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
 import { ChevronLeft, ChevronRight, Filter } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 dayjs.extend(isoWeek);
 dayjs.extend(isSameOrBefore);
@@ -38,7 +38,7 @@ function CalendarSchedulePage() {
     resetFilters,
   } = useCalendarEvents();
 
-  const allEvents = useMemo(() => daily?.days.flatMap((day) => day.events) ?? [], [daily?.days]);
+  const allEvents = daily?.days.flatMap((day) => day.events) ?? [];
 
   // Separate state for which week is displayed (independent from data filter range)
   const [displayedWeekStart, setDisplayedWeekStart] = useState(() => {

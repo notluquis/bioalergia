@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, ChevronDown, ChevronRight, Eye, Pencil, Plus, RotateCw, Trash2 } from "lucide-react";
-import React, { useCallback, useState } from "react";
+import { Fragment, useCallback, useState } from "react";
 
 import { Card, CardContent, CardHeader } from "@/components/ui/Card";
 import {
@@ -325,7 +325,7 @@ export default function RolesSettingsPage() {
                 </thead>
                 <tbody>
                   {sectionsWithPermissions.map((section) => (
-                    <React.Fragment key={section.title}>
+                    <Fragment key={section.title}>
                       {/* Section Title & Bulk Toggle */}
                       <tr
                         className="bg-base-200/50 hover:bg-base-200/70 border-base-300 cursor-pointer border-b transition-colors"
@@ -370,7 +370,7 @@ export default function RolesSettingsPage() {
                                   // If it has multiple permissions, we treat it as a collapsible group
                                   if (hasMultiple) {
                                     return (
-                                      <React.Fragment key={item.label}>
+                                      <Fragment key={item.label}>
                                         {/* Page Header (Collapsible Trigger) */}
                                         <tr
                                           className="bg-base-100/50 hover:bg-base-200/20 border-base-100 cursor-pointer border-b transition-colors"
@@ -447,7 +447,7 @@ export default function RolesSettingsPage() {
                                             </SmoothCollapse>
                                           </td>
                                         </tr>
-                                      </React.Fragment>
+                                      </Fragment>
                                     );
                                   }
 
@@ -498,7 +498,7 @@ export default function RolesSettingsPage() {
                           </SmoothCollapse>
                         </td>
                       </tr>
-                    </React.Fragment>
+                    </Fragment>
                   ))}
                 </tbody>
               </table>
@@ -523,7 +523,7 @@ export default function RolesSettingsPage() {
   );
 }
 
-const PermissionCell = React.memo(function PermissionCell({
+function PermissionCell({
   role,
   permissionId,
   isUpdating,
@@ -556,4 +556,4 @@ const PermissionCell = React.memo(function PermissionCell({
       </button>
     </td>
   );
-});
+}

@@ -1,5 +1,5 @@
 import { LogOut, User } from "lucide-react";
-import React, { useMemo } from "react";
+import React from "react";
 import { Link, NavLink, useLocation, useNavigation } from "react-router-dom";
 
 import Backdrop from "@/components/ui/Backdrop";
@@ -24,7 +24,7 @@ interface SidebarProps {
 }
 
 // Sub-component for individual Nav Items to keep main component clean
-const SidebarItem = React.memo(function SidebarItem({
+function SidebarItem({
   item,
   isCollapsed,
   isMobile,
@@ -124,7 +124,7 @@ const SidebarItem = React.memo(function SidebarItem({
       )}
     </Tooltip>
   );
-});
+}
 
 export default function Sidebar({ isOpen, isMobile, onClose }: SidebarProps) {
   const { user, logout } = useAuth();
@@ -160,19 +160,17 @@ export default function Sidebar({ isOpen, isMobile, onClose }: SidebarProps) {
     if (isMobile && onClose) onClose();
   };
 
-  const visibleSections = useMemo(() => {
-    return getNavSections()
-      .map((section) => {
-        const filteredItems = section.items.filter((item) => {
-          if (item.requiredPermission && !can(item.requiredPermission.action, item.requiredPermission.subject)) {
-            return false;
-          }
-          return true;
-        });
-        return { ...section, items: filteredItems };
-      })
-      .filter((section) => section.items.length > 0);
-  }, [can]);
+  const visibleSections = getNavSections()
+    .map((section) => {
+      const filteredItems = section.items.filter((item) => {
+        if (item.requiredPermission && !can(item.requiredPermission.action, item.requiredPermission.subject)) {
+          return false;
+        }
+        return true;
+      });
+      return { ...section, items: filteredItems };
+    })
+    .filter((section) => section.items.length > 0);
 
   const displayName = user?.name || user?.email?.split("@")[0] || "Usuario";
 

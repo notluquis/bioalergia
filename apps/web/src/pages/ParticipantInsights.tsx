@@ -1,5 +1,4 @@
 import dayjs from "dayjs";
-import { ChangeEvent, memo, useCallback, useMemo } from "react";
 
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
@@ -71,38 +70,6 @@ export default function ParticipantInsightsPage() {
     handleSelectParticipant,
   } = useParticipantInsightsData();
 
-  // Handlers wrapped in useCallback for stability
-  const onParticipantIdChange = useCallback(
-    (e: ChangeEvent<HTMLInputElement>) => setParticipantId(e.target.value),
-    [setParticipantId]
-  );
-  const onQuickMonthChange = useCallback(
-    (e: ChangeEvent<HTMLSelectElement>) => setQuickMonth(e.target.value),
-    [setQuickMonth]
-  );
-  const onFromChange = useCallback((e: ChangeEvent<HTMLInputElement>) => setFrom(e.target.value), [setFrom]);
-  const onToChange = useCallback((e: ChangeEvent<HTMLInputElement>) => setTo(e.target.value), [setTo]);
-  const onLeaderboardLimitChange = useCallback(
-    (e: ChangeEvent<HTMLSelectElement>) => {
-      const value = Number(e.target.value);
-      setLeaderboardLimit(Number.isFinite(value) ? value : 10);
-    },
-    [setLeaderboardLimit]
-  );
-  const onLeaderboardGroupingChange = useCallback(
-    (e: ChangeEvent<HTMLSelectElement>) => {
-      setLeaderboardGrouping(e.target.value as "account" | "rut");
-    },
-    [setLeaderboardGrouping]
-  );
-
-  const onSelectParticipant = useCallback(
-    (key: string) => {
-      handleSelectParticipant(key);
-    },
-    [handleSelectParticipant]
-  );
-
   return (
     <section className={PAGE_CONTAINER}>
       <Card>
@@ -112,20 +79,32 @@ export default function ParticipantInsightsPage() {
               label="ID participante"
               type="text"
               value={participantId}
-              onChange={onParticipantIdChange}
+              onChange={(e) => setParticipantId(e.target.value)}
               placeholder="123861706983"
               inputMode="numeric"
               enterKeyHint="search"
             />
-            <Input label="Rango rápido" as="select" value={quickMonth} onChange={onQuickMonthChange}>
+            <Input label="Rango rápido" as="select" value={quickMonth} onChange={(e) => setQuickMonth(e.target.value)}>
               {quickMonthOptions.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
               ))}
             </Input>
-            <Input label="Desde" type="date" value={from} onChange={onFromChange} disabled={quickMonth !== "custom"} />
-            <Input label="Hasta" type="date" value={to} onChange={onToChange} disabled={quickMonth !== "custom"} />
+            <Input
+              label="Desde"
+              type="date"
+              value={from}
+              onChange={(e) => setFrom(e.target.value)}
+              disabled={quickMonth !== "custom"}
+            />
+            <Input
+              label="Hasta"
+              type="date"
+              value={to}
+              onChange={(e) => setTo(e.target.value)}
+              disabled={quickMonth !== "custom"}
+            />
             <div className="flex justify-end lg:col-span-4">
               <Button type="submit" disabled={detailLoading} isLoading={detailLoading}>
                 Consultar
@@ -147,7 +126,10 @@ export default function ParticipantInsightsPage() {
                 label="Mostrar top"
                 as="select"
                 value={leaderboardLimit}
-                onChange={onLeaderboardLimitChange}
+                onChange={(e) => {
+                  const value = Number(e.target.value);
+                  setLeaderboardLimit(Number.isFinite(value) ? value : 10);
+                }}
                 className="select-sm"
               >
                 {[10, 20, 30].map((value) => (
@@ -162,7 +144,7 @@ export default function ParticipantInsightsPage() {
                 label="Agrupar por"
                 as="select"
                 value={leaderboardGrouping}
-                onChange={onLeaderboardGroupingChange}
+                onChange={(e) => setLeaderboardGrouping(e.target.value as "account" | "rut")}
                 className="select-sm"
               >
                 <option value="account">Cuenta bancaria</option>
@@ -178,7 +160,7 @@ export default function ParticipantInsightsPage() {
           loading={leaderboardLoading}
           data={displayedLeaderboard}
           participantId={participantId}
-          onSelect={onSelectParticipant}
+          onSelect={handleSelectParticipant}
           detailLoading={detailLoading}
         />
       </div>
@@ -218,7 +200,16 @@ export default function ParticipantInsightsPage() {
 
 // --- Subcomponents ---
 
-const LeaderboardTable = memo(function LeaderboardTable({
+const LEADERBOARD_COLUMNS = [
+  { key: "displayName", label: "Titular" },
+  { key: "rut", label: "RUT" },
+  { key: "account", label: "Cuenta" },
+  { key: "outgoingCount", label: "Egresos (#)" },
+  { key: "outgoingAmount", label: "Egresos ($)" },
+  { key: "action", label: "Acción" },
+];
+
+function LeaderboardTable({
   loading,
   data,
   participantId,
@@ -231,18 +222,6 @@ const LeaderboardTable = memo(function LeaderboardTable({
   onSelect: (key: string) => void;
   detailLoading: boolean;
 }) {
-  const columns = useMemo(
-    () => [
-      { key: "displayName", label: "Titular" },
-      { key: "rut", label: "RUT" },
-      { key: "account", label: "Cuenta" },
-      { key: "outgoingCount", label: "Egresos (#)" },
-      { key: "outgoingAmount", label: "Egresos ($)" },
-      { key: "action", label: "Acción" },
-    ],
-    []
-  );
-
   if (loading) {
     return (
       <Card>
@@ -264,8 +243,8 @@ const LeaderboardTable = memo(function LeaderboardTable({
   return (
     <Card>
       <CardContent className="p-0">
-        <Table columns={columns}>
-          <TableBody columnsCount={columns.length}>
+        <Table columns={LEADERBOARD_COLUMNS}>
+          <TableBody columnsCount={LEADERBOARD_COLUMNS.length}>
             {data.map((row) => {
               const participantKey = row.selectKey;
               const isActive = participantKey && participantId && participantKey === participantId.trim();
@@ -302,25 +281,22 @@ const LeaderboardTable = memo(function LeaderboardTable({
       </CardContent>
     </Card>
   );
-});
+}
 
-const MonthlyTable = memo(function MonthlyTable({ data }: { data: MonthlyRow[] | undefined }) {
-  const columns = useMemo(
-    () => [
-      { key: "month", label: "Mes" },
-      { key: "outgoingCount", label: "Cant." },
-      { key: "outgoingAmount", label: "Monto" },
-    ],
-    []
-  );
+const MONTHLY_COLUMNS = [
+  { key: "month", label: "Mes" },
+  { key: "outgoingCount", label: "Cant." },
+  { key: "outgoingAmount", label: "Monto" },
+];
 
+function MonthlyTable({ data }: { data: MonthlyRow[] | undefined }) {
   if (!data?.length) {
     return <div className="text-base-content/70 p-6 text-center text-sm">Sin movimientos.</div>;
   }
 
   return (
-    <Table columns={columns}>
-      <TableBody columnsCount={columns.length}>
+    <Table columns={MONTHLY_COLUMNS}>
+      <TableBody columnsCount={MONTHLY_COLUMNS.length}>
         {data.map((row) => (
           <tr key={row.month} className="border-base-200 hover:bg-base-200/30 border-b last:border-0">
             <td className="px-4 py-3 font-medium capitalize">{dayjs(row.month).format("MMMM YYYY")}</td>
@@ -331,25 +307,22 @@ const MonthlyTable = memo(function MonthlyTable({ data }: { data: MonthlyRow[] |
       </TableBody>
     </Table>
   );
-});
+}
 
-const CounterpartsTable = memo(function CounterpartsTable({ data }: { data: CounterpartRow[] | undefined }) {
-  const columns = useMemo(
-    () => [
-      { key: "holder", label: "Titular" },
-      { key: "info", label: "Info" },
-      { key: "amount", label: "Monto" },
-    ],
-    []
-  );
+const COUNTERPARTS_COLUMNS = [
+  { key: "holder", label: "Titular" },
+  { key: "info", label: "Info" },
+  { key: "amount", label: "Monto" },
+];
 
+function CounterpartsTable({ data }: { data: CounterpartRow[] | undefined }) {
   if (!data?.length) {
     return <div className="text-base-content/70 p-6 text-center text-sm">No hay contrapartes.</div>;
   }
 
   return (
-    <Table columns={columns}>
-      <TableBody columnsCount={columns.length}>
+    <Table columns={COUNTERPARTS_COLUMNS}>
+      <TableBody columnsCount={COUNTERPARTS_COLUMNS.length}>
         {data.map((row) => {
           const key = row.withdrawId || row.counterpartId || row.counterpart;
 
@@ -399,4 +372,4 @@ const CounterpartsTable = memo(function CounterpartsTable({ data }: { data: Coun
       </TableBody>
     </Table>
   );
-});
+}
