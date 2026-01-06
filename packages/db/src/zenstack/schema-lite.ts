@@ -2182,31 +2182,41 @@ export class SchemaType implements SchemaDef {
                 },
                 status: {
                     name: "status",
-                    type: "String"
+                    type: "String",
+                    default: "PENDING"
                 },
                 eventsSynced: {
                     name: "eventsSynced",
                     type: "Int",
                     default: 0
                 },
-                eventsInserted: {
-                    name: "eventsInserted",
+                fetchedAt: {
+                    name: "fetchedAt",
+                    type: "DateTime",
+                    optional: true
+                },
+                inserted: {
+                    name: "inserted",
                     type: "Int",
+                    optional: true,
                     default: 0
                 },
-                eventsUpdated: {
-                    name: "eventsUpdated",
+                updated: {
+                    name: "updated",
                     type: "Int",
+                    optional: true,
                     default: 0
                 },
-                eventsSkipped: {
-                    name: "eventsSkipped",
+                skipped: {
+                    name: "skipped",
                     type: "Int",
+                    optional: true,
                     default: 0
                 },
-                eventsExcluded: {
-                    name: "eventsExcluded",
+                excluded: {
+                    name: "excluded",
                     type: "Int",
+                    optional: true,
                     default: 0
                 },
                 errorMessage: {
@@ -2217,6 +2227,11 @@ export class SchemaType implements SchemaDef {
                 triggerSource: {
                     name: "triggerSource",
                     type: "String",
+                    optional: true
+                },
+                changeDetails: {
+                    name: "changeDetails",
+                    type: "Json",
                     optional: true
                 }
             },

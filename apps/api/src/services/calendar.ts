@@ -79,12 +79,14 @@ export async function finalizeCalendarSyncLogEntry(
     data: {
       status: data.status,
       endedAt: new Date(),
+      fetchedAt: data.fetchedAt,
       eventsSynced: (data.inserted || 0) + (data.updated || 0),
-      eventsInserted: data.inserted || 0,
-      eventsUpdated: data.updated || 0,
-      eventsSkipped: data.skipped || 0,
-      eventsExcluded: data.excluded || 0,
+      inserted: data.inserted,
+      updated: data.updated,
+      skipped: data.skipped,
+      excluded: data.excluded,
       errorMessage: data.errorMessage,
+      changeDetails: data.changeDetails,
     },
   });
 }
