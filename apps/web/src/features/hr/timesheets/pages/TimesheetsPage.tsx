@@ -302,7 +302,7 @@ export default function TimesheetsPage() {
 
   const generatePdfBase64 = async (): Promise<string | null> => {
     if (!selectedEmployee || !employeeSummaryRow) return null;
-    return generateTimesheetPdfBase64(selectedEmployee, employeeSummaryRow, bulkRows, month, monthLabel);
+    return generateTimesheetPdfBase64(selectedEmployee, employeeSummaryRow, bulkRows, monthLabel);
   };
 
   // ... existing imports
@@ -478,7 +478,6 @@ export default function TimesheetsPage() {
               summary={employeeSummaryRow || null}
               bulkRows={bulkRows}
               columns={["date", "entrada", "salida", "worked", "overtime"]}
-              month={month}
               monthLabel={monthLabel}
             />
           </Suspense>

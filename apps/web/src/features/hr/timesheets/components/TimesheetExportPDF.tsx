@@ -1,6 +1,6 @@
 import "dayjs/locale/es";
 
-import { formatRetentionPercent, getEffectiveRetentionRate } from "@shared/retention";
+import { formatRetentionPercent } from "@shared/retention";
 import dayjs from "dayjs";
 import type { CellHookData } from "jspdf-autotable";
 import React from "react";
@@ -25,7 +25,6 @@ interface TimesheetExportPDFProps {
   summary: TimesheetSummaryRow | null;
   bulkRows: BulkRow[];
   columns: TimesheetColumnKey[];
-  month: string; // YYYY-MM format
   monthLabel: string;
 }
 
@@ -38,7 +37,6 @@ export default function TimesheetExportPDF({
   summary,
   bulkRows,
   columns,
-  month,
   monthLabel,
 }: TimesheetExportPDFProps) {
   const { settings } = useSettings();
@@ -217,14 +215,8 @@ export default function TimesheetExportPDF({
 
       const summaryBody: string[][] = [];
       if (summary) {
-        // Extract year from month in YYYY-MM format
-        const summaryYear = month ? parseInt(month.split("-")[0]!, 10) : new Date().getFullYear();
-        // Handle both camelCase and snake_case from backend
-        const summaryData = summary as unknown as Record<string, unknown>;
-        const employeeRate =
-          (summaryData.retentionRate as number | null) || (summaryData.retention_rate as number | null) || null;
-        const effectiveRate = getEffectiveRetentionRate(employeeRate, summaryYear);
-        const retentionPercent = formatRetentionPercent(effectiveRate);
+        // Use retention rate from backend summary (already calculated with correct year)
+        const retentionPercent = formatRetentionPercent(summary.retentionRate || 0);
 
         summaryBody.push(["Horas trabajadas", summary.hoursFormatted || "0:00"]);
         if (hasOvertime) {
@@ -356,14 +348,14 @@ export default function TimesheetExportPDF({
       // Guardar / previsualizar
       const safeName = (employee.full_name || "Trabajador").replace(/[^a-zA-Z0-9_\- ]/g, "");
       if (preview) {
-        const blob = doc.output("blob");
-        const blobUrl = URL.createObjectURL(blob);
-        const previewWindow = window.open(blobUrl, "_blank", "noopener,noreferrer");
+        // Generate PDF as data URL (works better with Safari)
+        const pdfDataUri = doc.output("dataurlstring");
+        const previewWindow = window.open("", "_blank", "noopener,noreferrer");
         if (!previewWindow) {
           alert("No se pudo abrir la vista previa. Revisa si el navegador bloqueó las ventanas emergentes.");
         } else {
           previewWindow.opener = null;
-          setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+          previewWindow.location.href = pdfDataUri;
         }
       } else {
         doc.save(`Honorarios_${safeName}_${monthLabel}.pdf`);

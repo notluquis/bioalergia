@@ -1,4 +1,4 @@
-import { formatRetentionPercent, getEffectiveRetentionRate } from "@shared/retention";
+import { formatRetentionPercent } from "@shared/retention";
 import dayjs from "dayjs";
 
 import type { Employee } from "@/features/hr/employees/types";
@@ -13,7 +13,6 @@ export async function generateTimesheetPdfBase64(
   employee: Employee,
   summaryRow: TimesheetSummaryRow,
   bulkRows: BulkRow[],
-  month: string,
   monthLabel: string
 ): Promise<string | null> {
   try {
@@ -54,13 +53,8 @@ export async function generateTimesheetPdfBase64(
     const fmtCLP = (n: number) =>
       n.toLocaleString("es-CL", { style: "currency", currency: "CLP", minimumFractionDigits: 0 });
 
-    // Calculate retention rate based on year
-    const summaryYear = month ? parseInt(month.split("-")[0]!, 10) : new Date().getFullYear();
-    const summaryData = summaryRow as unknown as Record<string, unknown>;
-    const employeeRate =
-      (summaryData.retentionRate as number | null) || (summaryData.retention_rate as number | null) || null;
-    const effectiveRate = getEffectiveRetentionRate(employeeRate, summaryYear);
-    const retentionPercent = formatRetentionPercent(effectiveRate);
+    // Use retention rate from backend summary (already calculated with correct year)
+    const retentionPercent = formatRetentionPercent(summaryRow.retentionRate || 0);
 
     autoTable(doc, {
       head: [["Concepto", "Valor"]],
