@@ -151,13 +151,14 @@ export default function TimesheetAuditPage() {
     return activeEmployees.filter((emp) => emp.full_name.toLowerCase().includes(search));
   })();
 
-  // Set default month when months load
+  // Set default month when months load (only once on mount or when months array changes)
   useEffect(() => {
     if (months.length && !selectedMonth) {
       const prevMonth = dayjs().subtract(1, "month").format("YYYY-MM");
       setSelectedMonth(months.includes(prevMonth) ? prevMonth : (months[0] ?? ""));
     }
-  }, [months, selectedMonth]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [months]);
 
   // Cleanup: close dropdown on unmount to prevent event listeners hanging
   useEffect(() => {
