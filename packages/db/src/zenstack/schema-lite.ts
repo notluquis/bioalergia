@@ -1446,6 +1446,11 @@ export class SchemaType implements SchemaDef {
                     type: "String",
                     optional: true
                 },
+                syncToken: {
+                    name: "syncToken",
+                    type: "String",
+                    optional: true
+                },
                 createdAt: {
                     name: "createdAt",
                     type: "DateTime",

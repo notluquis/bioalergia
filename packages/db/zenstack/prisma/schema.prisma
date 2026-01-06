@@ -444,6 +444,7 @@ model Calendar {
     id Int @id() @default(autoincrement())
     googleId String @unique() @map("google_id")
     name String?
+    syncToken String? @map("sync_token")
     createdAt DateTime @default(now()) @map("created_at")
     updatedAt DateTime @default(now()) @updatedAt() @map("updated_at")
     watchChannels CalendarWatchChannel[]

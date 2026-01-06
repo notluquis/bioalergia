@@ -1738,6 +1738,12 @@ export class SchemaType implements SchemaDef {
                     type: "String",
                     optional: true
                 },
+                syncToken: {
+                    name: "syncToken",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("sync_token") }] }]
+                },
                 createdAt: {
                     name: "createdAt",
                     type: "DateTime",
