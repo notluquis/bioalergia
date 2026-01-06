@@ -159,6 +159,13 @@ export default function TimesheetAuditPage() {
     }
   }, [months, selectedMonth]);
 
+  // Cleanup: close dropdown on unmount to prevent event listeners hanging
+  useEffect(() => {
+    return () => {
+      setShowEmployeeDropdown(false);
+    };
+  }, []);
+
   // Calculate effective date ranges based on quick range or custom selection
   const effectiveRanges = ((): AuditDateRange[] => {
     if (quickRange !== "custom") {

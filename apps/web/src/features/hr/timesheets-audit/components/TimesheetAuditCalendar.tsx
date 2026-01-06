@@ -154,10 +154,20 @@ export default function TimesheetAuditCalendar({
 }: TimesheetAuditCalendarProps) {
   const calendarApiRef = useRef<CalendarApi | null>(null);
 
+  // Navigate to focus date when it changes
   useEffect(() => {
     if (!focusDate) return;
     calendarApiRef.current?.gotoDate(focusDate);
   }, [focusDate]);
+
+  // Cleanup: destroy calendar API on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      if (calendarApiRef.current) {
+        calendarApiRef.current = null;
+      }
+    };
+  }, []);
 
   const rangeFilteredEntries = (() => {
     if (!visibleDateRanges || visibleDateRanges.length === 0) {
