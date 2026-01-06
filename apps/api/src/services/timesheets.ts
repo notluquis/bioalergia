@@ -76,7 +76,7 @@ function timeStringToDate(
   if (hours === undefined || minutes === undefined) return null;
 
   // Use a fixed epoch date for Time columns.
-  // Prisma ignores the date part for @db.Time, but ZenStack validation requires a valid Date/ISO string.
+  // The DB layer ignores the date part for time columns, but the Validation layer requires a valid Date/ISO string.
   // We use UTC methods to strictly preserve the hour/minute values provided.
   const date = new Date(0); // 1970-01-01T00:00:00.000Z
   date.setUTCHours(hours);
@@ -92,7 +92,7 @@ function timeStringToDate(
 function dateToTimeString(date: Date | null): string | null {
   if (!date) return null;
   // If date is 1970-01-01 (epoch), we should format using UTC to get the stored time
-  // Otherwise if it comes from DB, Prisma might have returned it as 1970-01-01 with correct time
+  // Otherwise if it comes from DB, it might have returned it as 1970-01-01 with correct time
   return dayjs(date).utc().format("HH:mm");
 }
 
@@ -113,7 +113,34 @@ function mapTimesheetEntry(entry: EmployeeTimesheet): TimesheetEntry {
   };
 }
 
-// ... (Repository Functions omitted until upsertTimesheetEntry)
+// Repository Functions
+
+export async function getTimesheetEntryById(
+  id: number
+): Promise<TimesheetEntry> {
+  const entry = await db.employeeTimesheet.findUnique({
+    where: { id: BigInt(id) },
+  });
+  if (!entry) throw new Error("Registro no encontrado");
+  return mapTimesheetEntry(entry);
+}
+
+export async function listTimesheetEntries(
+  options: ListTimesheetOptions
+): Promise<TimesheetEntry[]> {
+  const entries = await db.employeeTimesheet.findMany({
+    where: {
+      ...(options.employee_id && { employeeId: options.employee_id }),
+      workDate: {
+        gte: new Date(options.from),
+        lte: new Date(options.to),
+      },
+    },
+    orderBy: { workDate: "asc" },
+  });
+
+  return entries.map(mapTimesheetEntry);
+}
 
 export async function upsertTimesheetEntry(
   payload: UpsertTimesheetPayload
