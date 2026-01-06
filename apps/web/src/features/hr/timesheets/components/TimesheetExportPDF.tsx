@@ -217,7 +217,11 @@ export default function TimesheetExportPDF({
       if (summary) {
         // Extract year from monthLabel (format: YYYY-MM)
         const summaryYear = monthLabel ? parseInt(monthLabel.split("-")[0]!, 10) : new Date().getFullYear();
-        const effectiveRate = getEffectiveRetentionRate(summary.retentionRate, summaryYear);
+        // Handle both camelCase and snake_case from backend
+        const summaryData = summary as unknown as Record<string, unknown>;
+        const employeeRate =
+          (summaryData.retentionRate as number | null) || (summaryData.retention_rate as number | null) || null;
+        const effectiveRate = getEffectiveRetentionRate(employeeRate, summaryYear);
         const retentionPercent = formatRetentionPercent(effectiveRate);
 
         summaryBody.push(["Horas trabajadas", summary.hoursFormatted || "0:00"]);
