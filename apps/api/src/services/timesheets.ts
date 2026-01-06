@@ -161,32 +161,47 @@ export async function upsertTimesheetEntry(
     }
   }
 
-  const entry = await db.employeeTimesheet.upsert({
-    where: {
-      employeeId_workDate: {
-        employeeId: payload.employee_id,
-        workDate: new Date(payload.work_date),
+  try {
+    const entry = await db.employeeTimesheet.upsert({
+      where: {
+        employeeId_workDate: {
+          employeeId: payload.employee_id,
+          workDate: new Date(payload.work_date),
+        },
       },
-    },
-    create: {
-      employeeId: payload.employee_id,
-      workDate: new Date(payload.work_date),
-      startTime,
-      endTime,
-      workedMinutes,
-      overtimeMinutes: payload.overtime_minutes,
-      comment: payload.comment ?? null,
-    },
-    update: {
-      startTime,
-      endTime,
-      workedMinutes,
-      overtimeMinutes: payload.overtime_minutes,
-      comment: payload.comment ?? null,
-    },
-  });
+      create: {
+        employee: { connect: { id: payload.employee_id } },
+        workDate: new Date(payload.work_date),
+        startTime,
+        endTime,
+        workedMinutes,
+        overtimeMinutes: payload.overtime_minutes,
+        comment: payload.comment ?? null,
+      },
+      update: {
+        startTime,
+        endTime,
+        workedMinutes,
+        overtimeMinutes: payload.overtime_minutes,
+        comment: payload.comment ?? null,
+      },
+    });
 
-  return mapTimesheetEntry(entry);
+    return mapTimesheetEntry(entry);
+  } catch (error: any) {
+    console.error("[timesheets] upsert error details:", {
+      message: error.message,
+      code: error.code,
+      meta: error.meta,
+      payload: {
+        ...payload,
+        startTimeType: typeof startTime,
+        endTimeType: typeof endTime,
+        workDateType: typeof new Date(payload.work_date),
+      },
+    });
+    throw error;
+  }
 }
 
 export async function updateTimesheetEntry(
@@ -230,12 +245,23 @@ export async function updateTimesheetEntry(
     return getTimesheetEntryById(id);
   }
 
-  const entry = await db.employeeTimesheet.update({
-    where: { id: BigInt(id) },
-    data: updateData,
-  });
+  try {
+    const entry = await db.employeeTimesheet.update({
+      where: { id: BigInt(id) },
+      data: updateData,
+    });
 
-  return mapTimesheetEntry(entry);
+    return mapTimesheetEntry(entry);
+  } catch (error: any) {
+    console.error("[timesheets] update error details:", {
+      id,
+      message: error.message,
+      code: error.code,
+      meta: error.meta,
+      updateData,
+    });
+    throw error;
+  }
 }
 
 export async function deleteTimesheetEntry(id: number): Promise<void> {
