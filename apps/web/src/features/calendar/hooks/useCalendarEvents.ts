@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { useSettings } from "@/context/SettingsContext";
 import { useCalendarFilterStore } from "@/store/calendarFilters";
@@ -106,6 +106,17 @@ export function useCalendarEvents() {
     return defaults;
   });
   const [appliedFilters, setAppliedFilters] = useState<CalendarFilters>(initialDefaults);
+  const hasAppliedInitialFilters = useRef(false);
+
+  // CRITICAL FIX: Apply initial filters on mount to ensure queries run
+  // This solves the issue where pages show "0 events" despite having data
+  useEffect(() => {
+    if (!hasAppliedInitialFilters.current) {
+      hasAppliedInitialFilters.current = true;
+      // Apply the initial defaults immediately
+      setAppliedFilters(initialDefaults);
+    }
+  }, [initialDefaults]);
   const [syncProgress, setSyncProgress] = useState<SyncProgressEntry[]>([]);
   const [syncDurationMs, setSyncDurationMs] = useState<number | null>(null);
   const [syncing, setSyncing] = useState(false);
