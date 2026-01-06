@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { formatRut } from "@/lib/rut";
 
@@ -63,27 +63,25 @@ export function useParticipantInsightsData() {
   const [selectedRange, setSelectedRange] = useState<RangeParams>(() => resolveRange("current", "", ""));
   const activeParticipantId = (participantId || "").trim();
 
-  const accountRows = useMemo<LeaderboardDisplayRow[]>(() => {
-    return leaderboard.map((row) => {
-      const selectKey = row.participant || row.bankAccountNumber || row.withdrawId || row.identificationNumber || "";
-      const displayName = row.bankAccountHolder || row.displayName || row.participant || "(sin información)";
-      const rutValue =
-        row.identificationNumber && typeof row.identificationNumber === "string"
-          ? formatRut(row.identificationNumber)
-          : "";
-      const rut = rutValue || "-";
-      const account = row.bankAccountNumber || row.withdrawId || row.participant || "-";
-      return {
-        key: selectKey || `${displayName}-${account}`,
-        displayName,
-        rut,
-        account,
-        outgoingCount: row.outgoingCount,
-        outgoingAmount: row.outgoingAmount,
-        selectKey,
-      };
-    });
-  }, [leaderboard]);
+  const accountRows: LeaderboardDisplayRow[] = leaderboard.map((row) => {
+    const selectKey = row.participant || row.bankAccountNumber || row.withdrawId || row.identificationNumber || "";
+    const displayName = row.bankAccountHolder || row.displayName || row.participant || "(sin información)";
+    const rutValue =
+      row.identificationNumber && typeof row.identificationNumber === "string"
+        ? formatRut(row.identificationNumber)
+        : "";
+    const rut = rutValue || "-";
+    const account = row.bankAccountNumber || row.withdrawId || row.participant || "-";
+    return {
+      key: selectKey || `${displayName}-${account}`,
+      displayName,
+      rut,
+      account,
+      outgoingCount: row.outgoingCount,
+      outgoingAmount: row.outgoingAmount,
+      selectKey,
+    };
+  });
 
   const rutRows = useMemo<LeaderboardDisplayRow[]>(() => {
     const map = new Map<
@@ -138,12 +136,9 @@ export function useParticipantInsightsData() {
       });
   }, [accountRows]);
 
-  const displayedLeaderboard = useMemo<LeaderboardDisplayRow[]>(
-    () => (leaderboardGrouping === "account" ? accountRows : rutRows),
-    [leaderboardGrouping, accountRows, rutRows]
-  );
+  const displayedLeaderboard: LeaderboardDisplayRow[] = leaderboardGrouping === "account" ? accountRows : rutRows;
 
-  const quickMonthOptions = useMemo(() => {
+  const quickMonthOptions = (() => {
     const options = [{ value: "current", label: "Mes actual" }];
     for (let i = 1; i < MAX_MONTHS; i += 1) {
       const date = dayjs().subtract(i, "month");
@@ -151,9 +146,9 @@ export function useParticipantInsightsData() {
     }
     options.push({ value: "custom", label: "Personalizado" });
     return options;
-  }, []);
+  })();
 
-  const loadParticipant = useCallback(async (participant: string, range: RangeParams) => {
+  const loadParticipant = async (participant: string, range: RangeParams) => {
     const trimmed = (participant || "").trim();
     if (!trimmed) {
       return;
@@ -176,29 +171,26 @@ export function useParticipantInsightsData() {
     } finally {
       setDetailLoading(false);
     }
-  }, []);
+  };
 
-  const handleSubmit = useCallback(
-    async (event: React.FormEvent<HTMLFormElement>) => {
-      event.preventDefault();
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
 
-      const rangeParams = resolveRange(quickMonth, from, to);
-      setSelectedRange(rangeParams);
+    const rangeParams = resolveRange(quickMonth, from, to);
+    setSelectedRange(rangeParams);
 
-      const trimmedId = activeParticipantId;
+    const trimmedId = activeParticipantId;
 
-      if (!trimmedId) {
-        setDetailError(null);
-        setMonthly([]);
-        setCounterparts([]);
-        setVisible(false);
-        return;
-      }
+    if (!trimmedId) {
+      setDetailError(null);
+      setMonthly([]);
+      setCounterparts([]);
+      setVisible(false);
+      return;
+    }
 
-      await loadParticipant(trimmedId, rangeParams);
-    },
-    [activeParticipantId, from, loadParticipant, quickMonth, to]
-  );
+    await loadParticipant(trimmedId, rangeParams);
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -237,13 +229,10 @@ export function useParticipantInsightsData() {
     };
   }, [selectedRange, leaderboardLimit]);
 
-  const handleSelectParticipant = useCallback(
-    async (participant: string) => {
-      setParticipantId(participant);
-      await loadParticipant(participant, selectedRange);
-    },
-    [loadParticipant, selectedRange]
-  );
+  const handleSelectParticipant = async (participant: string) => {
+    setParticipantId(participant);
+    await loadParticipant(participant, selectedRange);
+  };
 
   return {
     participantId,

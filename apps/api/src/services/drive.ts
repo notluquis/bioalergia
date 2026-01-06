@@ -23,7 +23,7 @@ export interface BackupFile {
  */
 export async function uploadToDrive(
   filepath: string,
-  filename: string
+  filename: string,
 ): Promise<{
   fileId: string;
   webViewLink: string | null;
@@ -61,7 +61,7 @@ export async function uploadToDrive(
  */
 export async function downloadFromDrive(
   fileId: string,
-  destPath: string
+  destPath: string,
 ): Promise<void> {
   try {
     const drive = await getDriveClient();
@@ -69,7 +69,7 @@ export async function downloadFromDrive(
 
     const response = await drive.files.get(
       { fileId, alt: "media" },
-      { responseType: "stream" }
+      { responseType: "stream" },
     );
 
     await new Promise<void>((resolve, reject) => {
@@ -115,7 +115,7 @@ export async function listBackups(): Promise<BackupFile[]> {
  * Deletes old backups beyond retention period.
  */
 export async function cleanupOldBackups(
-  retentionDays: number
+  retentionDays: number,
 ): Promise<{ deleted: number; deletedFiles: string[]; errors: string[] }> {
   const errors: string[] = [];
 
@@ -155,7 +155,7 @@ export async function cleanupOldBackups(
  * Gets metadata for a specific file.
  */
 export async function getBackupInfo(
-  fileId: string
+  fileId: string,
 ): Promise<BackupFile | null> {
   try {
     const drive = await getDriveClient();
@@ -194,7 +194,7 @@ export async function getBackupTables(fileId: string): Promise<string[]> {
     // Get file as stream and read just enough to get the tables list
     const response = await drive.files.get(
       { fileId, alt: "media" },
-      { responseType: "stream" }
+      { responseType: "stream" },
     );
 
     return new Promise((resolve) => {

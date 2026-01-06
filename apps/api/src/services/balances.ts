@@ -23,7 +23,7 @@ export interface BalancesApiResponse {
 
 export async function getBalancesReport(
   from: string,
-  to: string
+  to: string,
 ): Promise<BalancesApiResponse> {
   const previous = await db.dailyBalance.findFirst({
     where: {
@@ -56,7 +56,7 @@ export async function getBalancesReport(
   });
 
   const balanceMap = new Map(
-    existingBalances.map((b) => [dayjs(b.date).format("YYYY-MM-DD"), b])
+    existingBalances.map((b) => [dayjs(b.date).format("YYYY-MM-DD"), b]),
   );
 
   const days: DailyBalanceRecord[] = [];
@@ -68,7 +68,7 @@ export async function getBalancesReport(
   while (current.isBefore(end) || current.isSame(end, "day")) {
     const dateStr = current.format("YYYY-MM-DD");
     const dayTx = transactions.filter(
-      (t) => dayjs(t.transactionDate).format("YYYY-MM-DD") === dateStr
+      (t) => dayjs(t.transactionDate).format("YYYY-MM-DD") === dateStr,
     );
 
     let totalIn = 0;
@@ -129,7 +129,7 @@ import { Decimal } from "decimal.js";
 export async function upsertDailyBalance(
   date: string,
   amount: number,
-  note?: string
+  note?: string,
 ) {
   return db.dailyBalance.upsert({
     where: { date: new Date(date) },

@@ -88,7 +88,7 @@ export default function ServiceEditPage() {
 
   const displayError = error || updateError;
 
-  const initialValues = useMemo(() => (detail ? mapServiceToForm(detail.service) : undefined), [detail]);
+  const initialValues = detail ? mapServiceToForm(detail.service) : undefined;
 
   const handleSubmit = async (payload: CreateServicePayload) => {
     setSaveMessage(null);

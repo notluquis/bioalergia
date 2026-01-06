@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 import { useAuth } from "@/context/AuthContext";
 import { type AppSettings, useSettings } from "@/context/SettingsContext";
@@ -54,23 +54,23 @@ export default function SettingsForm() {
   const logoInputRef = useRef<HTMLInputElement | null>(null);
   const faviconInputRef = useRef<HTMLInputElement | null>(null);
 
-  const resetLogoSelection = useCallback(() => {
+  const resetLogoSelection = () => {
     if (logoPreviewRef.current) {
       URL.revokeObjectURL(logoPreviewRef.current);
       logoPreviewRef.current = null;
     }
     setLogoPreview(null);
     setLogoFile(null);
-  }, []);
+  };
 
-  const resetFaviconSelection = useCallback(() => {
+  const resetFaviconSelection = () => {
     if (faviconPreviewRef.current) {
       URL.revokeObjectURL(faviconPreviewRef.current);
       faviconPreviewRef.current = null;
     }
     setFaviconPreview(null);
     setFaviconFile(null);
-  }, []);
+  };
 
   useEffect(() => {
     setForm(settings);

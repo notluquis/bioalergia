@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect, useMemo } from "react";
+import { useEffect } from "react";
 import { type Resolver, useForm } from "react-hook-form";
 import { Link } from "react-router-dom";
 import { z } from "zod";
@@ -72,28 +72,24 @@ export default function CounterpartForm({ counterpart, onSave, error, saving, lo
 
   const values = watch();
 
-  const counterpartSnapshot = useMemo(() => {
-    if (!counterpart) return null;
-    return {
-      rut: formatRut(counterpart.rut ?? ""),
-      name: counterpart.name,
-      personType: counterpart.personType as PersonType,
-      category: counterpart.category as CounterpartCategory,
-      email: counterpart.email ?? "",
-      notes: counterpart.notes ?? "",
-    };
-  }, [counterpart]);
-
   useEffect(() => {
-    if (counterpartSnapshot) {
-      reset(counterpartSnapshot);
+    if (counterpart) {
+      const snapshot = {
+        rut: formatRut(counterpart.rut ?? ""),
+        name: counterpart.name,
+        personType: counterpart.personType as PersonType,
+        category: counterpart.category as CounterpartCategory,
+        email: counterpart.email ?? "",
+        notes: counterpart.notes ?? "",
+      };
+      reset(snapshot);
     } else {
       reset({
         ...EMPTY_FORM,
         personType: "NATURAL",
       });
     }
-  }, [counterpartSnapshot, reset]);
+  }, [counterpart, reset]);
 
   const onSubmit = async (values: CounterpartFormValues) => {
     const payload: CounterpartUpsertPayload = {

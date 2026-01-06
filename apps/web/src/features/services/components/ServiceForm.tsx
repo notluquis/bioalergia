@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import Button from "@/components/ui/Button";
 import { today } from "@/lib/dates";
@@ -78,9 +78,9 @@ export function ServiceForm({ onSubmit, onCancel, initialValues, submitLabel }: 
     }
   }, [initialValues]);
 
-  // Memoize extracted mode values to prevent unnecessary effect runs
-  const lateFeeMode = useMemo(() => form.lateFeeMode ?? "NONE", [form.lateFeeMode]);
-  const emissionMode = useMemo(() => form.emissionMode ?? "FIXED_DAY", [form.emissionMode]);
+  // Extract mode values to prevent unnecessary effect runs
+  const lateFeeMode = form.lateFeeMode ?? "NONE";
+  const emissionMode = form.emissionMode ?? "FIXED_DAY";
 
   // Clear late fee fields when mode is NONE
   useEffect(() => {
@@ -184,10 +184,8 @@ export function ServiceForm({ onSubmit, onCancel, initialValues, submitLabel }: 
     // Accounts will reload automatically via useQuery dependency on form.counterpartId
   };
 
-  const effectiveMonths = useMemo(() => {
-    if (form.recurrenceType === "ONE_OFF" || form.frequency === "ONCE") return 1;
-    return form.monthsToGenerate ?? 12;
-  }, [form.frequency, form.monthsToGenerate, form.recurrenceType]);
+  const effectiveMonths =
+    form.recurrenceType === "ONE_OFF" || form.frequency === "ONCE" ? 1 : (form.monthsToGenerate ?? 12);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();

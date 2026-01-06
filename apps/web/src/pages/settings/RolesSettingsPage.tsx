@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, ChevronDown, ChevronRight, Eye, Pencil, Plus, RotateCw, Trash2 } from "lucide-react";
-import { Fragment, useCallback, useState } from "react";
+import { Fragment, useState } from "react";
 
 import { Card, CardContent, CardHeader } from "@/components/ui/Card";
 import {
@@ -139,44 +139,38 @@ export default function RolesSettingsPage() {
   const allPermissions = permissionsQuery.data || [];
   const isLoading = rolesQuery.isLoading || permissionsQuery.isLoading;
 
-  const handlePermissionToggle = useCallback(
-    (role: Role, permissionId: number) => {
-      const currentPermissionIds = role.permissions.map((p) => p.permissionId);
-      const hasPermission = currentPermissionIds.includes(permissionId);
+  const handlePermissionToggle = (role: Role, permissionId: number) => {
+    const currentPermissionIds = role.permissions.map((p) => p.permissionId);
+    const hasPermission = currentPermissionIds.includes(permissionId);
 
-      let newPermissionIds;
-      if (hasPermission) {
-        newPermissionIds = currentPermissionIds.filter((id) => id !== permissionId);
-      } else {
-        newPermissionIds = [...currentPermissionIds, permissionId];
-      }
+    let newPermissionIds;
+    if (hasPermission) {
+      newPermissionIds = currentPermissionIds.filter((id) => id !== permissionId);
+    } else {
+      newPermissionIds = [...currentPermissionIds, permissionId];
+    }
 
-      updatePermissions({ roleId: role.id, permissionIds: newPermissionIds });
-    },
-    [updatePermissions]
-  );
+    updatePermissions({ roleId: role.id, permissionIds: newPermissionIds });
+  };
 
-  const handleBulkToggle = useCallback(
-    (role: Role, permissionIdsToToggle: number[]) => {
-      const currentPermissionIds = role.permissions.map((p) => p.permissionId);
+  const handleBulkToggle = (role: Role, permissionIdsToToggle: number[]) => {
+    const currentPermissionIds = role.permissions.map((p) => p.permissionId);
 
-      // Check if ALL provided permissions are already present
-      const allPresent = permissionIdsToToggle.every((id) => currentPermissionIds.includes(id));
+    // Check if ALL provided permissions are already present
+    const allPresent = permissionIdsToToggle.every((id) => currentPermissionIds.includes(id));
 
-      let newPermissionIds;
-      if (allPresent) {
-        // If all are present, remove them (toggle off)
-        newPermissionIds = currentPermissionIds.filter((id) => !permissionIdsToToggle.includes(id));
-      } else {
-        // If not all are present, add the missing ones (toggle on)
-        const missingIds = permissionIdsToToggle.filter((id) => !currentPermissionIds.includes(id));
-        newPermissionIds = [...currentPermissionIds, ...missingIds];
-      }
+    let newPermissionIds;
+    if (allPresent) {
+      // If all are present, remove them (toggle off)
+      newPermissionIds = currentPermissionIds.filter((id) => !permissionIdsToToggle.includes(id));
+    } else {
+      // If not all are present, add the missing ones (toggle on)
+      const missingIds = permissionIdsToToggle.filter((id) => !currentPermissionIds.includes(id));
+      newPermissionIds = [...currentPermissionIds, ...missingIds];
+    }
 
-      updatePermissions({ roleId: role.id, permissionIds: newPermissionIds });
-    },
-    [updatePermissions]
-  );
+    updatePermissions({ roleId: role.id, permissionIds: newPermissionIds });
+  };
 
   if (isLoading) {
     // Standard loading state - could be replaced with a localized skeleton if preferred
