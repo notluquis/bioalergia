@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { type ChangeEvent, useMemo, useRef, useState } from "react";
+import { type ChangeEvent, useRef, useState } from "react";
 
 import { useAuth } from "@/context/AuthContext";
 
@@ -31,8 +31,8 @@ type UpdateMonthlyExpensePayload = CreateMonthlyExpensePayload;
 export function useMonthlyExpenses() {
   const { can } = useAuth();
   const queryClient = useQueryClient();
-  const canManage = useMemo(() => can("update", "Expense"), [can]);
-  const canView = useMemo(() => can("read", "Expense"), [can]);
+  const canManage = can("update", "Expense");
+  const canView = can("read", "Expense");
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -65,7 +65,7 @@ export function useMonthlyExpenses() {
     enabled: canView,
   });
 
-  const expenses = useMemo(() => expensesData ?? [], [expensesData]);
+  const expenses = expensesData ?? [];
 
   // 2. Fetch Stats
   const { data: statsData, isLoading: statsLoading } = useQuery({
@@ -82,16 +82,12 @@ export function useMonthlyExpenses() {
     enabled: canView,
   });
 
-  const stats = useMemo(
-    () =>
-      statsData ?? {
-        totalAmount: 0,
-        count: 0,
-        categoryBreakdown: {},
-        statusBreakdown: {},
-      },
-    [statsData]
-  );
+  const stats = statsData ?? {
+    totalAmount: 0,
+    count: 0,
+    categoryBreakdown: {},
+    statusBreakdown: {},
+  };
 
   // 3. Fetch Detail
   const { data: detail, isLoading: loadingDetail } = useQuery({

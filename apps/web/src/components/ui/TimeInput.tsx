@@ -1,4 +1,4 @@
-import { useCallback, useRef } from "react";
+import { useRef } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -75,14 +75,14 @@ function normalizeTimeValue(value: string): string {
 export default function TimeInput({ value, onChange, onBlur, placeholder, className, disabled }: TimeInputProps) {
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const handleBlur = useCallback(() => {
+  const handleBlur = () => {
     // Al salir del campo, normalizar el valor (ej: "9" -> "09:00", "930" -> "09:30")
     const normalized = normalizeTimeValue(value);
     if (normalized && normalized !== value) {
       onChange(normalized);
     }
     onBlur?.();
-  }, [value, onChange, onBlur]);
+  };
 
   // Use a simple input with pattern matching instead of IMask for more flexibility
   // This allows typing "9" and converting it to "09:00" on blur

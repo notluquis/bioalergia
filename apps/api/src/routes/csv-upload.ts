@@ -30,7 +30,7 @@ async function getAuth(c: {
   const cookieHeader = c.req.header("Cookie");
   if (!cookieHeader) return null;
   const cookies = Object.fromEntries(
-    cookieHeader.split(";").map((c) => c.trim().split("="))
+    cookieHeader.split(";").map((c) => c.trim().split("=")),
   );
   const token = cookies[COOKIE_NAME];
   if (!token) return null;
@@ -78,7 +78,7 @@ csvUploadRoutes.post("/preview", async (c) => {
   if (!table || !data || !Array.isArray(data)) {
     return c.json(
       { status: "error", message: "Table and data array required" },
-      400
+      400,
     );
   }
 
@@ -88,7 +88,7 @@ csvUploadRoutes.post("/preview", async (c) => {
     const hasPerm = await hasPermission(
       auth.userId,
       required.action,
-      required.subject
+      required.subject,
     );
     if (!hasPerm) return c.json({ status: "error", message: "Forbidden" }, 403);
   }
@@ -160,7 +160,7 @@ csvUploadRoutes.post("/import", async (c) => {
   if (!table || !data || !Array.isArray(data)) {
     return c.json(
       { status: "error", message: "Table and data array required" },
-      400
+      400,
     );
   }
 
@@ -170,7 +170,7 @@ csvUploadRoutes.post("/import", async (c) => {
     const hasPerm = await hasPermission(
       auth.userId,
       required.action,
-      required.subject
+      required.subject,
     );
     if (!hasPerm) return c.json({ status: "error", message: "Forbidden" }, 403);
   }
@@ -297,7 +297,7 @@ csvUploadRoutes.post("/import", async (c) => {
     "updated:",
     updated,
     "skipped:",
-    skipped
+    skipped,
   );
   return c.json({
     status: "ok",
