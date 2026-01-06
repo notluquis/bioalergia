@@ -478,6 +478,7 @@ export default function TimesheetsPage() {
               summary={employeeSummaryRow || null}
               bulkRows={bulkRows}
               columns={["date", "entrada", "salida", "worked", "overtime"]}
+              month={month}
               monthLabel={monthLabel}
             />
           </Suspense>
@@ -522,6 +523,7 @@ export default function TimesheetsPage() {
         prepareStatus={emailPrepareStatus}
         employee={selectedEmployee}
         summary={employeeSummaryRow ?? null}
+        month={month}
         monthLabel={monthLabel}
       />
     </section>

@@ -25,6 +25,7 @@ interface TimesheetExportPDFProps {
   summary: TimesheetSummaryRow | null;
   bulkRows: BulkRow[];
   columns: TimesheetColumnKey[];
+  month: string; // YYYY-MM format
   monthLabel: string;
 }
 
@@ -37,6 +38,7 @@ export default function TimesheetExportPDF({
   summary,
   bulkRows,
   columns,
+  month,
   monthLabel,
 }: TimesheetExportPDFProps) {
   const { settings } = useSettings();
@@ -215,8 +217,8 @@ export default function TimesheetExportPDF({
 
       const summaryBody: string[][] = [];
       if (summary) {
-        // Extract year from monthLabel (format: YYYY-MM)
-        const summaryYear = monthLabel ? parseInt(monthLabel.split("-")[0]!, 10) : new Date().getFullYear();
+        // Extract year from month in YYYY-MM format
+        const summaryYear = month ? parseInt(month.split("-")[0]!, 10) : new Date().getFullYear();
         // Handle both camelCase and snake_case from backend
         const summaryData = summary as unknown as Record<string, unknown>;
         const employeeRate =
