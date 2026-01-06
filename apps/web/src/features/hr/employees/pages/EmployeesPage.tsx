@@ -89,8 +89,8 @@ export default function EmployeesPage() {
   }
 
   function handleSaveSuccess() {
-    // loadEmployees(); // Handled by mutation invalidation
-    queryClient.invalidateQueries({ queryKey: ["employee"] });
+    // Invalidate ZenStack's Employee query cache (uses "Employee" not "employee")
+    queryClient.invalidateQueries({ queryKey: ["Employee"] });
     handleCancel();
   }
 
