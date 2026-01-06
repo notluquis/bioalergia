@@ -10,34 +10,23 @@ export function UpdateNotification() {
     needRefresh: [needRefresh, setNeedRefresh],
     updateServiceWorker,
   } = useRegisterSW({
-    onRegistered(r) {
-      if (r) {
-        // Check for updates periodically every 4 hours (reduced from 1h to minimize interruptions)
-        // Only checks when tab is visible to avoid unnecessary background checks
-        // Railway auto-deploys trigger new SW versions, but we don't want to annoy users
-        const intervalMs = 4 * 60 * 60 * 1000; // 4 hours
-        
-        setInterval(() => {
-          // Only check if the document is visible (user is actively using the app)
-          if (document.visibilityState === "visible") {
-            r.update();
-          }
-        }, intervalMs);
-        
-        // ALTERNATIVE: Disable periodic checks completely and rely on natural browser updates
-        // The service worker will still update on next navigation/reload
-        // Uncomment below and remove setInterval above if updates are still too frequent:
-        // (No periodic checks - SW updates naturally on navigation)
-      }
+    onRegistered() {
+      // No periodic checks - let browser handle update detection naturally
+      // The service worker will auto-detect new versions on navigation/reload
+      // This prevents the notification from appearing repeatedly after update
+      console.info("Service worker registered - auto-update detection enabled");
     },
     onNeedRefresh() {
-      console.info("New app version available");
+      console.info("New app version available - prompting user");
       setNeedRefresh(true);
     },
   });
 
   const handleUpdate = async () => {
     setIsUpdating(true);
+
+    // Immediately hide the notification to prevent it from showing again
+    setNeedRefresh(false);
 
     try {
       // Skip waiting on new service worker and activate immediately
