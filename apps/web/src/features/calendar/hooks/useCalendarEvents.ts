@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { useSettings } from "@/context/SettingsContext";
 import { useCalendarFilterStore } from "@/store/calendarFilters";
@@ -99,7 +99,12 @@ export function useCalendarEvents() {
   };
 
   // We only want to compute this once on mount, basically
-  const [initialDefaults] = useState(() => computeDefaults());
+  const [initialDefaults] = useState(() => {
+    const defaults = computeDefaults();
+    // Initialize store immediately to avoid empty state
+    setFilters(defaults);
+    return defaults;
+  });
   const [appliedFilters, setAppliedFilters] = useState<CalendarFilters>(initialDefaults);
   const [syncProgress, setSyncProgress] = useState<SyncProgressEntry[]>([]);
   const [syncDurationMs, setSyncDurationMs] = useState<number | null>(null);
@@ -113,12 +118,6 @@ export function useCalendarEvents() {
     logId?: number;
   } | null>(null);
   const [syncError, setSyncError] = useState<string | null>(null);
-
-  useEffect(() => {
-    // Sync store with defaults on mount
-    setFilters(initialDefaults);
-    setAppliedFilters(initialDefaults);
-  }, [initialDefaults, setFilters]);
 
   const normalizedApplied = normalizeFilters(appliedFilters);
 
