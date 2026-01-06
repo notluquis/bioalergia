@@ -125,11 +125,11 @@ function applyFilters(query: any, filters: CalendarEventFilters) {
       : null;
 
     if (fromDate) {
-      q = q.where((eb: any) =>
-        eb.or([
-          eb("start_date", ">=", fromDate),
-          eb("start_date_time", ">=", fromDate),
-        ]),
+      // Use coalesce to handle both all-day and timed events
+      q = q.where(
+        sql`coalesce(e.start_date_time, e.start_date)`,
+        ">=",
+        fromDate,
       );
     }
   }
@@ -139,11 +139,11 @@ function applyFilters(query: any, filters: CalendarEventFilters) {
       : null;
 
     if (toDate) {
-      q = q.where((eb: any) =>
-        eb.or([
-          eb("start_date", "<=", toDate),
-          eb("start_date_time", "<=", toDate),
-        ]),
+      // Use coalesce to handle both all-day and timed events
+      q = q.where(
+        sql`coalesce(e.start_date_time, e.start_date)`,
+        "<=",
+        toDate,
       );
     }
   }
@@ -317,20 +317,18 @@ export async function getCalendarAggregates(
   let initialQ = dateRangeQuery;
   if (filters.from && dayjs(filters.from).isValid()) {
     const fromDate = dayjs(filters.from).toISOString();
-    initialQ = initialQ.where((eb: any) =>
-      eb.or([
-        eb("start_date", ">=", fromDate),
-        eb("start_date_time", ">=", fromDate),
-      ]),
+    initialQ = initialQ.where(
+      sql`coalesce(e.start_date_time, e.start_date)`,
+      ">=",
+      fromDate,
     );
   }
   if (filters.to && dayjs(filters.to).isValid()) {
     const toDate = dayjs(filters.to).toISOString();
-    initialQ = initialQ.where((eb: any) =>
-      eb.or([
-        eb("start_date", "<=", toDate),
-        eb("start_date_time", "<=", toDate),
-      ]),
+    initialQ = initialQ.where(
+      sql`coalesce(e.start_date_time, e.start_date)`,
+      "<=",
+      toDate,
     );
   }
 
