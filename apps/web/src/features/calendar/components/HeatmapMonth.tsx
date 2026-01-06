@@ -1,5 +1,6 @@
 import clsx from "clsx";
 import dayjs, { type Dayjs } from "dayjs";
+import { useMemo } from "react";
 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/Tooltip";
 import { fmtCLP } from "@/lib/format";
@@ -60,7 +61,8 @@ type DayCell = {
 };
 
 function HeatmapMonthComponent({ month, statsByDate, maxValue }: HeatmapMonthProps) {
-  const dates = (() => {
+  // KEEP useMemo: Heavy Array generation with multiple map/format operations
+  const dates = useMemo(() => {
     const startOfMonth = month.startOf("month");
     const endOfMonth = month.endOf("month");
     const daysInMonth = endOfMonth.date();
@@ -93,9 +95,10 @@ function HeatmapMonthComponent({ month, statsByDate, maxValue }: HeatmapMonthPro
     });
 
     return [...paddingStart, ...days];
-  })();
+  }, [month, statsByDate, maxValue]);
 
-  const monthTotals = (() => {
+  // KEEP useMemo: Aggregation over dates array
+  const monthTotals = useMemo(() => {
     let events = 0;
     let expected = 0;
     let paid = 0;
@@ -107,7 +110,7 @@ function HeatmapMonthComponent({ month, statsByDate, maxValue }: HeatmapMonthPro
       }
     }
     return { events, expected, paid };
-  })();
+  }, [dates]);
 
   return (
     <TooltipProvider delayDuration={0}>

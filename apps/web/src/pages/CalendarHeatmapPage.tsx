@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import clsx from "clsx";
 import dayjs, { type Dayjs } from "dayjs";
 import { ChevronDown, Filter } from "lucide-react";
-import { type ChangeEvent, useState } from "react";
+import { type ChangeEvent, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import Alert from "@/components/ui/Alert";
@@ -92,8 +92,8 @@ function CalendarHeatmapPage() {
     return { value, label: `${label} · ${numberFormatter.format(entry.total)}` };
   });
 
-  // React Compiler auto-memoizes Map operations
-  const getStatsByDate = () => {
+  // KEEP useMemo: Heavy Map operation iterating over all events
+  const statsByDate = useMemo(() => {
     const map = new Map<string, { total: number; amountExpected: number; amountPaid: number }>();
     summary?.aggregates.byDate.forEach((entry) => {
       // Server now returns dates as "YYYY-MM-DD" strings via TO_CHAR in SQL
@@ -105,11 +105,10 @@ function CalendarHeatmapPage() {
       });
     });
     return map;
-  };
-  const statsByDate = getStatsByDate();
+  }, [summary?.aggregates.byDate]);
 
-  // React Compiler auto-memoizes complex calculations
-  const getHeatmapMonths = () => {
+  // KEEP useMemo: Complex date range calculation with while loop
+  const heatmapMonths = useMemo(() => {
     const sourceFrom = summary?.filters.from || filters.from;
     const sourceTo = summary?.filters.to || filters.to;
 
@@ -133,14 +132,16 @@ function CalendarHeatmapPage() {
       if (guard > 18) break;
     }
     return months;
-  };
-  const heatmapMonths = getHeatmapMonths();
+  }, [summary?.filters.from, summary?.filters.to, filters.from, filters.to]);
 
-  // React Compiler auto-memoizes Set creation
-  const heatmapMonthKeys = new Set(heatmapMonths.map((month) => month.format("YYYY-MM")));
+  // KEEP useMemo: Set creation from mapped array
+  const heatmapMonthKeys = useMemo(
+    () => new Set(heatmapMonths.map((month) => month.format("YYYY-MM"))),
+    [heatmapMonths]
+  );
 
-  // React Compiler auto-memoizes max value calculation
-  const getHeatmapMaxValue = () => {
+  // KEEP useMemo: Iterates over all events to find max value
+  const heatmapMaxValue = useMemo(() => {
     if (!summary) return 0;
     let max = 0;
     summary.aggregates.byDate.forEach((entry) => {
@@ -151,8 +152,7 @@ function CalendarHeatmapPage() {
       }
     });
     return max;
-  };
-  const heatmapMaxValue = getHeatmapMaxValue();
+  }, [summary, heatmapMonthKeys]);
 
   const handleToggle = (key: "categories", value: string) => {
     setFilters((prev) => ({
