@@ -230,7 +230,7 @@ export default function TimesheetExportPDF({
         }
         summaryBody.push(["Tarifa por hora", fmtCLP(summary.hourlyRate || 0)]);
         summaryBody.push(["Subtotal", fmtCLP(summary.subtotal || 0)]);
-        summaryBody.push([`Retención ${summaryYear} (${retentionPercent}%)`, fmtCLP(summary.retention || 0)]);
+        summaryBody.push([`Retención (${retentionPercent})`, `-${fmtCLP(summary.retention || 0)}`]);
         summaryBody.push(["Total Líquido", fmtCLP(summary.net || 0)]);
       }
 
