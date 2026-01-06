@@ -2189,6 +2189,26 @@ export class SchemaType implements SchemaDef {
                     type: "Int",
                     default: 0
                 },
+                eventsInserted: {
+                    name: "eventsInserted",
+                    type: "Int",
+                    default: 0
+                },
+                eventsUpdated: {
+                    name: "eventsUpdated",
+                    type: "Int",
+                    default: 0
+                },
+                eventsSkipped: {
+                    name: "eventsSkipped",
+                    type: "Int",
+                    default: 0
+                },
+                eventsExcluded: {
+                    name: "eventsExcluded",
+                    type: "Int",
+                    default: 0
+                },
                 errorMessage: {
                     name: "errorMessage",
                     type: "String",

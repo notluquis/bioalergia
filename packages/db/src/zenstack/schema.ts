@@ -2618,6 +2618,30 @@ export class SchemaType implements SchemaDef {
                     attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("events_synced") }] }],
                     default: 0
                 },
+                eventsInserted: {
+                    name: "eventsInserted",
+                    type: "Int",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("events_inserted") }] }],
+                    default: 0
+                },
+                eventsUpdated: {
+                    name: "eventsUpdated",
+                    type: "Int",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("events_updated") }] }],
+                    default: 0
+                },
+                eventsSkipped: {
+                    name: "eventsSkipped",
+                    type: "Int",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("events_skipped") }] }],
+                    default: 0
+                },
+                eventsExcluded: {
+                    name: "eventsExcluded",
+                    type: "Int",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("events_excluded") }] }],
+                    default: 0
+                },
                 errorMessage: {
                     name: "errorMessage",
                     type: "String",
