@@ -5,6 +5,7 @@
  * All errors are parsed through google-errors for clean messages.
  */
 import { createReadStream, createWriteStream } from "fs";
+import dayjs from "dayjs";
 
 import { getDriveClient, getBackupFolderId } from "../lib/google/google-core";
 import { parseGoogleError, GoogleApiError } from "../lib/google/google-errors";
@@ -122,11 +123,10 @@ export async function cleanupOldBackups(
     const drive = await getDriveClient();
     const folderId = await getBackupFolderId();
 
-    const cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
+    const cutoffDate = dayjs().subtract(retentionDays, "day").toISOString();
 
     const response = await drive.files.list({
-      q: `'${folderId}' in parents and trashed = false and createdTime < '${cutoffDate.toISOString()}'`,
+      q: `'${folderId}' in parents and trashed = false and createdTime < '${cutoffDate}'`,
       fields: "files(id,name,createdTime)",
       pageSize: 100,
       supportsAllDrives: true,

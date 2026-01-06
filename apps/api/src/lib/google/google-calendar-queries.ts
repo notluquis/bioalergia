@@ -431,7 +431,7 @@ export async function getCalendarAggregates(
         }),
       ),
       byDate: (byDate as unknown as DateRow[]).map((r: DateRow) => ({
-        date: String(r.date),
+        date: dayjs(r.date).format("YYYY-MM-DD"),
         total: Number(r.total),
         amountExpected: Number(r.amountExpected),
         amountPaid: Number(r.amountPaid),
@@ -486,8 +486,6 @@ export async function getCalendarEventsByDate(
   const targetDates = (dates as unknown as DateOnlyRow[]).map(
     (d: DateOnlyRow) => dayjs(d.date).format("YYYY-MM-DD"),
   );
-
-  console.log("[getCalendarEventsByDate] Found dates:", targetDates);
 
   if (targetDates.length === 0) {
     return {
