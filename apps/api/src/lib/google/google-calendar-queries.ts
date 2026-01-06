@@ -476,21 +476,15 @@ export async function getCalendarEventsByDate(
   }
 
   // 2. Get events for those dates
-  // We apply filters again AND restrict to targetDates
-  // Note: filtering by targetDates is redundant if we already filtered,
-  // but we strictly want the events FOR the top N dates found.
-
+  // Apply filters WITHOUT dates, then add dates filter manually to avoid duplication
   let eventsQuery = applyFilters(
     kysely
       .selectFrom("events as e")
       .leftJoin("calendars as c", "e.calendar_id", "c.id"),
-    { ...filters, dates: targetDates } // Override dates filter? Or intersect?
-    // The original logic likely wanted "top N days matching filters".
-    // So we use the same filters, plus enforce date is in the top N set.
+    filters // Use original filters WITHOUT dates override
   );
 
-  // However, applyFilters uses filters.dates as equality.
-  // Let's manually add the where clause for dates.
+  // Manually add the where clause for the top N dates
   eventsQuery = eventsQuery.where(
     sql<any>`DATE(coalesce(e.start_date_time, e.start_date))`,
     "in",
