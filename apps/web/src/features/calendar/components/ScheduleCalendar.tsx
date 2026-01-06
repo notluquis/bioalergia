@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 import { X } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import type { CalendarEventDetail } from "../types";
 import { DailyEventCard } from "./DailyEventCard";
@@ -16,11 +16,8 @@ export function ScheduleCalendar({ events, loading = false, weekStart }: Schedul
   const [selectedEvent, setSelectedEvent] = useState<CalendarEventDetail | null>(null);
   const detailPanelRef = useRef<HTMLDivElement>(null);
 
-  // Default to current week's Monday
-  const effectiveWeekStart = useMemo(() => {
-    if (weekStart) return weekStart;
-    return dayjs().startOf("week").add(1, "day").format("YYYY-MM-DD");
-  }, [weekStart]);
+  // Default to current week's Monday - React Compiler auto-memoizes
+  const effectiveWeekStart = weekStart || dayjs().startOf("week").add(1, "day").format("YYYY-MM-DD");
 
   // Auto-scroll to detail panel when event is selected
   useEffect(() => {

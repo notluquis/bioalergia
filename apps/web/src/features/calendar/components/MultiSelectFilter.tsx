@@ -1,5 +1,4 @@
 import { ChevronDown } from "lucide-react";
-import { useMemo } from "react";
 
 import {
   DropdownMenu,
@@ -28,7 +27,8 @@ export function MultiSelectFilter({
   onToggle: (value: string) => void;
   placeholder: string;
 }) {
-  const { displayText, fullText } = useMemo(() => {
+  // React Compiler auto-memoizes derived values
+  const getDisplayText = () => {
     if (!selected.length) {
       return { displayText: placeholder, fullText: placeholder };
     }
@@ -52,7 +52,9 @@ export function MultiSelectFilter({
     }
 
     return { displayText: preview || placeholder, fullText: full || placeholder };
-  }, [options, placeholder, selected]);
+  };
+
+  const { displayText, fullText } = getDisplayText();
 
   const labelClasses = "label pt-0 pb-2";
   const labelTextClasses = "label-text text-xs font-semibold uppercase tracking-wider text-base-content/70 ml-1";

@@ -5,7 +5,7 @@ import * as Toast from "@radix-ui/react-toast";
 import * as Tooltip from "@radix-ui/react-tooltip";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 
 import Alert from "@/components/ui/Alert";
@@ -177,23 +177,18 @@ function CalendarClassificationPage() {
           ? classifyMutation.error.message
           : null;
 
-  const handleResetEntry = useCallback(
-    (index: number, event: CalendarUnclassifiedEvent) => {
-      setValue(`entries.${index}`, buildDefaultEntry(event), { shouldDirty: true });
-    },
-    [setValue]
-  );
+  // React Compiler auto-stabilizes event handlers
+  const handleResetEntry = (index: number, event: CalendarUnclassifiedEvent) => {
+    setValue(`entries.${index}`, buildDefaultEntry(event), { shouldDirty: true });
+  };
 
-  const handleSave = useCallback(
-    async (event: CalendarUnclassifiedEvent, index: number) => {
-      const key = eventKey(event);
-      setSavingKey(key);
-      const values = getValues(`entries.${index}` as const);
-      const payload = buildPayload(values, event);
-      mutate({ event, payload });
-    },
-    [getValues, mutate]
-  );
+  const handleSave = async (event: CalendarUnclassifiedEvent, index: number) => {
+    const key = eventKey(event);
+    setSavingKey(key);
+    const values = getValues(`entries.${index}` as const);
+    const payload = buildPayload(values, event);
+    mutate({ event, payload });
+  };
 
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
   const hasActiveFilters = Object.values(filters).some(Boolean);
