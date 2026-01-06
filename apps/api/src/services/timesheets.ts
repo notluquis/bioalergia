@@ -126,7 +126,9 @@ function timeStringToDate(
  */
 function dateToTimeString(date: Date | null): string | null {
   if (!date) return null;
-  return dayjs(date).format("HH:mm");
+  const d = dayjs(date);
+  if (!d.isValid()) return null;
+  return d.format("HH:mm");
 }
 
 /**
