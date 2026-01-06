@@ -138,9 +138,7 @@ export default function EmailPreviewModal({
                   <td className="text-base-content px-3 py-3 text-right font-mono">{fmtCLP(summary.subtotal)}</td>
                 </tr>
                 <tr className="border-base-300 border-b">
-                  <td className="text-base-content px-3 py-3">
-                    Retención {fmtCLP(summary.retention)} ({retentionPercent})
-                  </td>
+                  <td className="text-base-content px-3 py-3">Retención ({retentionPercent})</td>
                   <td className="text-base-content px-3 py-3 text-right font-mono">-{fmtCLP(summary.retention)}</td>
                 </tr>
                 <tr className="bg-blue-700">
