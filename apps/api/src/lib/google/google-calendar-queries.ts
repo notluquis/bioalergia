@@ -501,7 +501,7 @@ export async function getCalendarEventsByDate(
     from: undefined,
     to: undefined,
   };
-  
+
   let eventsQuery = applyFilters(
     kysely
       .selectFrom("events as e")
