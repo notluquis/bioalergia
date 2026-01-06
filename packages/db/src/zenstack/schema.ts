@@ -2610,7 +2610,9 @@ export class SchemaType implements SchemaDef {
                 },
                 status: {
                     name: "status",
-                    type: "String"
+                    type: "String",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("PENDING") }] }],
+                    default: "PENDING"
                 },
                 eventsSynced: {
                     name: "eventsSynced",
@@ -2618,28 +2620,38 @@ export class SchemaType implements SchemaDef {
                     attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("events_synced") }] }],
                     default: 0
                 },
-                eventsInserted: {
-                    name: "eventsInserted",
+                fetchedAt: {
+                    name: "fetchedAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("fetched_at") }] }]
+                },
+                inserted: {
+                    name: "inserted",
                     type: "Int",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("events_inserted") }] }],
+                    optional: true,
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }],
                     default: 0
                 },
-                eventsUpdated: {
-                    name: "eventsUpdated",
+                updated: {
+                    name: "updated",
                     type: "Int",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("events_updated") }] }],
+                    optional: true,
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }],
                     default: 0
                 },
-                eventsSkipped: {
-                    name: "eventsSkipped",
+                skipped: {
+                    name: "skipped",
                     type: "Int",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("events_skipped") }] }],
+                    optional: true,
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }],
                     default: 0
                 },
-                eventsExcluded: {
-                    name: "eventsExcluded",
+                excluded: {
+                    name: "excluded",
                     type: "Int",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("events_excluded") }] }],
+                    optional: true,
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }],
                     default: 0
                 },
                 errorMessage: {
@@ -2653,6 +2665,12 @@ export class SchemaType implements SchemaDef {
                     type: "String",
                     optional: true,
                     attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("trigger_source") }] }]
+                },
+                changeDetails: {
+                    name: "changeDetails",
+                    type: "Json",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("change_details") }] }]
                 }
             },
             attributes: [
