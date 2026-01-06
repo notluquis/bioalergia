@@ -149,7 +149,7 @@ export type ServiceTemplate = {
   name: string;
   description: string;
   category?: string;
-  payload: CreateServicePayload;
+  payload: Partial<CreateServicePayload>;
 };
 
 export type SummaryTotals = {
