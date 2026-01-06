@@ -207,7 +207,19 @@ export default function EmployeeTable({ employees, loading, onEdit, onDeactivate
                   )}
                   {table.isColumnVisible("retentionRate") && (
                     <td className="text-base-content px-4 py-3">
-                      <div>{(getEmployeeRetentionRate(employee) * 100).toFixed(1).replace(".", ",")}%</div>
+                      <div>
+                        {(() => {
+                          const rate = getEmployeeRetentionRate(employee) * 100;
+                          // Use 2 decimals if needed (e.g., 15.25), otherwise 1 (e.g., 14.5)
+                          const formatted =
+                            rate % 1 === 0
+                              ? rate.toFixed(1)
+                              : (rate * 10) % 1 === 0
+                                ? rate.toFixed(1)
+                                : rate.toFixed(2);
+                          return formatted.replace(".", ",") + "%";
+                        })()}
+                      </div>
                       <div className="text-base-content/50 mt-0.5 text-xs">
                         {getEmployeeRetentionRate(employee) === getRetentionRateForYear(new Date().getFullYear())
                           ? "Auto (por año)"
