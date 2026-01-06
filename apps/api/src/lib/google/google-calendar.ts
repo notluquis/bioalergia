@@ -18,9 +18,6 @@ import {
 } from "./google-calendar-store";
 import { logEvent, logWarn } from "../logger";
 
-// Use db as prisma
-// const prisma = db;
-
 const CALENDAR_SCOPES = ["https://www.googleapis.com/auth/calendar.readonly"];
 const STORAGE_ROOT = path.resolve(process.cwd(), "storage", "google-calendar");
 
@@ -83,7 +80,7 @@ let cachedClient: CalendarClient | null = null;
 
 function isEventExcluded(
   item: calendar_v3.Schema$Event,
-  patterns: RegExp[],
+  patterns: RegExp[]
 ): boolean {
   const text = `${item.summary ?? ""}\n${item.description ?? ""}`.toLowerCase();
   return patterns.some((regex) => regex.test(text));
@@ -96,7 +93,7 @@ async function ensureStorageDir() {
 async function getCalendarClient(): Promise<CalendarClient> {
   if (!googleCalendarConfig) {
     throw new Error(
-      "Google Calendar config not available. Check environment variables.",
+      "Google Calendar config not available. Check environment variables."
     );
   }
   if (cachedClient) {
@@ -124,7 +121,7 @@ type FetchRange = {
 async function getRuntimeCalendarConfig(): Promise<CalendarRuntimeConfig> {
   if (!googleCalendarConfig) {
     throw new Error(
-      "Google Calendar config not available. Check environment variables.",
+      "Google Calendar config not available. Check environment variables."
     );
   }
 
@@ -136,7 +133,7 @@ async function getRuntimeCalendarConfig(): Promise<CalendarRuntimeConfig> {
       settings.calendarSyncStart?.trim() || googleCalendarConfig.syncStartDate;
     const lookAheadRaw = Number(
       settings.calendarSyncLookaheadDays ??
-        googleCalendarConfig.syncLookAheadDays,
+        googleCalendarConfig.syncLookAheadDays
     );
     const syncLookAheadDays =
       Number.isFinite(lookAheadRaw) && lookAheadRaw > 0
@@ -150,7 +147,7 @@ async function getRuntimeCalendarConfig(): Promise<CalendarRuntimeConfig> {
       new Set([
         ...googleCalendarConfig.excludeSummarySources,
         ...excludeSetting,
-      ]),
+      ])
     );
     const excludeSummaryPatterns = compileExcludePatterns(sources);
     return {
@@ -161,7 +158,7 @@ async function getRuntimeCalendarConfig(): Promise<CalendarRuntimeConfig> {
     };
   } catch {
     const excludeSummaryPatterns = compileExcludePatterns(
-      googleCalendarConfig.excludeSummarySources,
+      googleCalendarConfig.excludeSummarySources
     );
     return {
       timeZone: googleCalendarConfig.timeZone,
@@ -190,7 +187,7 @@ async function getLastSuccessfulSyncTime(): Promise<Date | null> {
 
 function buildFetchRange(
   runtime: CalendarRuntimeConfig,
-  lastFetchedAt: Date | null,
+  lastFetchedAt: Date | null
 ): FetchRange {
   const startDate = dayjs(runtime.syncStartDate);
   const configuredStart = startDate.isValid()
@@ -223,7 +220,7 @@ async function fetchCalendarEventsForId(
   client: CalendarClient,
   calendarId: string,
   range: FetchRange,
-  patterns: RegExp[],
+  patterns: RegExp[]
 ): Promise<{
   events: CalendarEventRecord[];
   excluded: Array<{
@@ -326,7 +323,7 @@ async function fetchCalendarEventsForId(
 export async function fetchGoogleCalendarData(): Promise<GoogleCalendarSyncPayload> {
   if (!googleCalendarConfig) {
     throw new Error(
-      "Google Calendar config not available. Check environment variables.",
+      "Google Calendar config not available. Check environment variables."
     );
   }
 
@@ -362,7 +359,7 @@ export async function fetchGoogleCalendarData(): Promise<GoogleCalendarSyncPaylo
         client,
         calendarId,
         range,
-        runtime.excludeSummaryPatterns,
+        runtime.excludeSummaryPatterns
       );
       events.push(...result.events);
       excludedEvents.push(...result.excluded);
@@ -392,7 +389,7 @@ export async function fetchGoogleCalendarData(): Promise<GoogleCalendarSyncPaylo
 }
 
 export async function persistGoogleCalendarSnapshot(
-  payload: GoogleCalendarSyncPayload,
+  payload: GoogleCalendarSyncPayload
 ) {
   await ensureStorageDir();
 
