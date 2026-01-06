@@ -11,6 +11,7 @@ const TIMEZONE = "America/Santiago";
 
 import { roundCurrency } from "../lib/currency";
 import { logEvent, logWarn } from "../lib/logger";
+import { getEffectiveRetentionRate } from "../lib/retention";
 import {
   type EmployeeTimesheet,
   type EmployeeTimesheetWhereInput,
@@ -406,7 +407,11 @@ export function buildEmployeeSummary(
 
   const hourlyRate = Number(employee.hourlyRate ?? 0);
   const overtimeRate = Number(employee.overtimeRate ?? 0) || hourlyRate * 1.5;
-  const retentionRate = Number(employee.retentionRate ?? 0);
+  
+  // Get year from period start (format: YYYY-MM-DD)
+  const periodYear = parseInt(data.periodStart.split("-")[0], 10);
+  const retentionRate = getEffectiveRetentionRate(Number(employee.retentionRate ?? 0), periodYear);
+  
   const basePay = roundCurrency((data.workedMinutes / 60) * hourlyRate);
   const overtimePay = roundCurrency((data.overtimeMinutes / 60) * overtimeRate);
   const subtotal = roundCurrency(basePay + overtimePay);

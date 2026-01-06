@@ -1,3 +1,5 @@
+import { getRetentionRateForYear } from "@shared/retention";
+
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
 import Checkbox from "@/components/ui/Checkbox";
@@ -5,6 +7,13 @@ import { useAuth } from "@/context/AuthContext";
 import { useTable } from "@/hooks";
 
 import type { Employee } from "../types";
+
+// Helper to safely extract retention rate from employee object
+function getEmployeeRetentionRate(employee: Employee): number {
+  const emp = employee as unknown as Record<string, unknown>;
+  const rate = emp.retentionRate ?? emp.retention_rate;
+  return typeof rate === "number" ? rate : getRetentionRateForYear(new Date().getFullYear());
+}
 
 type EmployeeColumn = "name" | "role" | "email" | "rut" | "bank" | "retentionRate" | "status" | "actions";
 
@@ -196,7 +205,11 @@ export default function EmployeeTable({ employees, loading, onEdit, onDeactivate
                       )}
                     </td>
                   )}
-                  {table.isColumnVisible("retentionRate") && <td className="text-base-content px-4 py-3">14.5%</td>}
+                  {table.isColumnVisible("retentionRate") && (
+                    <td className="text-base-content px-4 py-3">
+                      {(getEmployeeRetentionRate(employee) * 100).toFixed(1).replace(".", ",")}%
+                    </td>
+                  )}
                   {table.isColumnVisible("status") && (
                     <td className="text-base-content px-4 py-3">
                       {employee.status === "ACTIVE" ? "Activo" : "Inactivo"}
