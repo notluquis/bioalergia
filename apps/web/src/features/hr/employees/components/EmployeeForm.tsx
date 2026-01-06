@@ -1,3 +1,4 @@
+import { getRetentionRateForYear } from "@shared/retention";
 import { useMutation } from "@tanstack/react-query";
 import React, { useEffect, useState } from "react";
 
@@ -10,6 +11,14 @@ import type { EmployeeSalaryType } from "@/types/schema";
 
 import { createEmployee, updateEmployee } from "../api";
 import type { Employee, EmployeePayload, EmployeeUpdatePayload } from "../types";
+
+// Helper to safely extract retention rate from employee object
+function getEmployeeRetentionRate(employee: Employee): number {
+  // Try both property naming conventions due to ZenStack type inconsistencies
+  const emp = employee as unknown as Record<string, unknown>;
+  const rate = emp.retentionRate ?? emp.retention_rate;
+  return typeof rate === "number" ? rate : getRetentionRateForYear(new Date().getFullYear());
+}
 
 // CLP currency formatting helpers
 function formatCLP(value: string | number): string {
@@ -81,9 +90,11 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
         hourlyRate: String(employee.hourlyRate ?? "0"),
         fixedSalary: employee.baseSalary != null ? String(employee.baseSalary) : "",
         overtimeRate: "", // Not in schema?
-        retentionRate: "14.5", // Default 14.5%
+        // Convert decimal to percentage for display: 0.145 -> "14.5"
+        retentionRate: String(getEmployeeRetentionRate(employee) * 100),
       });
     } else {
+      const currentYearRate = getRetentionRateForYear(new Date().getFullYear());
       setForm({
         fullName: "",
         role: "",
@@ -96,7 +107,8 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
         hourlyRate: "0",
         fixedSalary: "",
         overtimeRate: "",
-        retentionRate: "0.145",
+        // Use current year's rate as default for new employees
+        retentionRate: String(currentYearRate * 100),
       });
     }
     // Clear RUT error on employee change
@@ -321,6 +333,7 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
           label="Retención (%)"
           type="text"
           inputMode="decimal"
+          helper="2025: 14,5% | 2026+: 15,25% (se aplica automáticamente según año)"
           value={form.retentionRate}
           onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
             // Allow digits, dots, and commas for decimal input
@@ -328,7 +341,6 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
             setForm((prev) => ({ ...prev, retentionRate: value }));
           }}
           required
-          helper="Ej: 14.5 o 14,5 para 14.5%"
         />
       </div>
       <div className="flex items-center justify-end gap-3">

@@ -1,5 +1,6 @@
 import "dayjs/locale/es";
 
+import { formatRetentionPercent,getEffectiveRetentionRate } from "@shared/retention";
 import dayjs from "dayjs";
 
 import Button from "@/components/ui/Button";
@@ -51,7 +52,11 @@ export default function EmailPreviewModal({
   const totalHoursFormatted = `${String(totalHrs).padStart(2, "0")}:${String(totalMins).padStart(2, "0")}`;
 
   const boletaDescription = `SERVICIOS DE ${summary.role.toUpperCase()} ${totalHoursFormatted} HORAS`;
-  const retentionPercent = ((summary.retentionRate || 0.145) * 100).toFixed(1).replace(".", ",");
+
+  // Get year from monthLabel (format: YYYY-MM)
+  const summaryYear = monthLabel ? parseInt(monthLabel.split("-")[0]!, 10) : new Date().getFullYear();
+  const effectiveRate = getEffectiveRetentionRate(summary.retentionRate, summaryYear);
+  const retentionPercent = formatRetentionPercent(effectiveRate);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
