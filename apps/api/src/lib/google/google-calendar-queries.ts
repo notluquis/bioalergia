@@ -119,9 +119,9 @@ function applyFilters(query: any, filters: CalendarEventFilters) {
   let q = query;
 
   if (filters.from) {
-    // Validar y formatear a ISO string para Postgres
+    // Use startOf('day') to get 00:00:00 UTC for date comparisons
     const fromDate = dayjs(filters.from).isValid()
-      ? dayjs(filters.from).toISOString()
+      ? dayjs(filters.from).startOf("day").toISOString()
       : null;
 
     if (fromDate) {
@@ -134,8 +134,9 @@ function applyFilters(query: any, filters: CalendarEventFilters) {
     }
   }
   if (filters.to) {
+    // Use endOf('day') to get 23:59:59.999 UTC for date comparisons
     const toDate = dayjs(filters.to).isValid()
-      ? dayjs(filters.to).toISOString()
+      ? dayjs(filters.to).endOf("day").toISOString()
       : null;
 
     if (toDate) {
@@ -312,7 +313,7 @@ export async function getCalendarAggregates(
 
   let initialQ = dateRangeQuery;
   if (filters.from && dayjs(filters.from).isValid()) {
-    const fromDate = dayjs(filters.from).toISOString();
+    const fromDate = dayjs(filters.from).startOf("day").toISOString();
     initialQ = initialQ.where(
       sql`coalesce(e.start_date_time, e.start_date)`,
       ">=",
@@ -320,7 +321,7 @@ export async function getCalendarAggregates(
     );
   }
   if (filters.to && dayjs(filters.to).isValid()) {
-    const toDate = dayjs(filters.to).toISOString();
+    const toDate = dayjs(filters.to).endOf("day").toISOString();
     initialQ = initialQ.where(
       sql`coalesce(e.start_date_time, e.start_date)`,
       "<=",
