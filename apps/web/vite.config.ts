@@ -2,32 +2,32 @@ import { fileURLToPath, URL } from "node:url";
 
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
-import { visualizer } from "rollup-plugin-visualizer";
 import { defineConfig } from "vite";
 import checker from "vite-plugin-checker";
-import viteCompression from "vite-plugin-compression";
 import { VitePWA } from "vite-plugin-pwa";
 import { configDefaults } from "vitest/config";
 
+// Bundle Analysis:
+// Use Vite's built-in analysis with: pnpm exec vite build --mode analyze
+// Or inspect build output size in terminal during build
+
 export default defineConfig(({ mode }) => ({
   plugins: [
+    // React with Compiler (official Vite plugin)
     react({
       babel: {
         plugins: [["babel-plugin-react-compiler", { target: "19" }]],
       },
     }),
+    // Tailwind CSS (official Tailwind plugin for Vite)
     tailwindcss(),
-    // TypeScript type-checking in dev mode
-    mode === "development" && checker({ typescript: true }),
-    // Bundle analyzer in dev mode
+    // TypeScript type-checking in dev mode only
     mode === "development" &&
-      visualizer({
-        filename: "dist/stats.html",
-        open: false,
-        gzipSize: true,
-        brotliSize: true,
+      checker({
+        typescript: true,
+        overlay: { initialIsOpen: false },
       }),
-    // PWA - 2025 best practices configuration
+    // PWA - 2026 best practices configuration
     VitePWA({
       registerType: "prompt", // Let the app control when to update (UX best practice)
       injectRegister: "auto",
@@ -144,23 +144,6 @@ export default defineConfig(({ mode }) => ({
       },
       devOptions: { enabled: false },
     }),
-    // Gzip/Brotli compression disabled - Railway/Cloudflare does it dynamically
-    // This saves ~3-5s on build time
-    // If you need pre-compression, uncomment below:
-    /*
-    mode === "production" &&
-      viteCompression({
-        algorithm: "gzip",
-        threshold: 10240,
-        deleteOriginFile: false,
-      }),
-    mode === "production" &&
-      viteCompression({
-        algorithm: "brotliCompress",
-        threshold: 10240,
-        deleteOriginFile: false,
-      }),
-    */
   ].filter(Boolean),
   define: {
     "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV || "development"),
