@@ -267,8 +267,8 @@ export default function TimesheetsPage() {
 
       entries.push({
         work_date: row.date,
-        start_time: row.entrada || null,
-        end_time: row.salida || null,
+        start_time: row.entrada ? dayjs(`${row.date} ${row.entrada}`).toISOString() : null,
+        end_time: row.salida ? dayjs(`${row.date} ${row.salida}`).toISOString() : null,
         overtime_minutes: overtime,
         extra_amount: 0,
         comment,

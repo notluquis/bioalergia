@@ -43,8 +43,7 @@ export function useSupplyManagement(): UseSupplyManagementResult {
     orderBy: { name: "asc" },
   });
 
-  // Map requests to expected format with useMemo for stable reference
-  // Map requests to expected format with useMemo for stable reference
+  // Map requests to expected format
   const requests = (() => {
     if (!requestsData) return [];
     return (requestsData as SupplyRequest[]).map((r) => ({
@@ -56,7 +55,6 @@ export function useSupplyManagement(): UseSupplyManagementResult {
     }));
   })();
 
-  // Wrap commonSupplies in useMemo for stable reference
   const commonSupplies = (commonSuppliesData as CommonSupply[]) ?? [];
 
   const structuredSupplies = commonSupplies.reduce<StructuredSupplies>((acc, supply) => {

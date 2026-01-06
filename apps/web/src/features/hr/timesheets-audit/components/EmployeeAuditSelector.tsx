@@ -3,7 +3,7 @@
  * Limits selection to 5 employees with visual feedback
  */
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import Checkbox from "@/components/ui/Checkbox";
 import type { Employee } from "@/features/hr/employees/types";
@@ -25,12 +25,8 @@ export default function EmployeeAuditSelector({
 }: EmployeeAuditSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
 
-  const activeEmployees = useMemo(() => employees.filter((emp) => emp.status === "ACTIVE"), [employees]);
-
-  const selectedNames = useMemo(
-    () => selectedIds.map((id) => activeEmployees.find((e) => e.id === id)?.full_name).filter(Boolean),
-    [selectedIds, activeEmployees]
-  );
+  const activeEmployees = employees.filter((emp) => emp.status === "ACTIVE");
+  const selectedNames = selectedIds.map((id) => activeEmployees.find((e) => e.id === id)?.full_name).filter(Boolean);
 
   const isMaxed = selectedIds.length >= MAX_EMPLOYEES;
 
