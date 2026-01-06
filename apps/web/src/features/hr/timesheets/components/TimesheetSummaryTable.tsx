@@ -81,7 +81,11 @@ export default function TimesheetSummaryTable({
                   <td className="text-base-content px-4 py-3">{fmtCLP(row.subtotal)}</td>
                   <td className="text-base-content px-4 py-3">{fmtCLP(row.retention)}</td>
                   <td className="text-base-content px-4 py-3">{fmtCLP(row.net)}</td>
-                  <td className="text-base-content px-4 py-3">{dayjs(row.payDate).format("DD-MM-YYYY")}</td>
+                  <td className="text-base-content px-4 py-3">
+                    {row.payDate && dayjs(row.payDate).isValid()
+                      ? dayjs(row.payDate).format("DD-MM-YYYY")
+                      : row.payDate || "—"}
+                  </td>
                 </tr>
               ))}
             {!loading && summary?.employees.length === 0 && (
