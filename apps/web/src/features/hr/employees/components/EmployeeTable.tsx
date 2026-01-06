@@ -207,7 +207,12 @@ export default function EmployeeTable({ employees, loading, onEdit, onDeactivate
                   )}
                   {table.isColumnVisible("retentionRate") && (
                     <td className="text-base-content px-4 py-3">
-                      {(getEmployeeRetentionRate(employee) * 100).toFixed(1).replace(".", ",")}%
+                      <div>{(getEmployeeRetentionRate(employee) * 100).toFixed(1).replace(".", ",")}%</div>
+                      <div className="text-base-content/50 mt-0.5 text-xs">
+                        {getEmployeeRetentionRate(employee) === getRetentionRateForYear(new Date().getFullYear())
+                          ? "Auto (por año)"
+                          : "Personalizada"}
+                      </div>
                     </td>
                   )}
                   {table.isColumnVisible("status") && (

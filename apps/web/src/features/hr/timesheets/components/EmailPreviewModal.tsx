@@ -1,6 +1,6 @@
 import "dayjs/locale/es";
 
-import { formatRetentionPercent,getEffectiveRetentionRate } from "@shared/retention";
+import { formatRetentionPercent, getEffectiveRetentionRate } from "@shared/retention";
 import dayjs from "dayjs";
 
 import Button from "@/components/ui/Button";
@@ -134,7 +134,14 @@ export default function EmailPreviewModal({
                   <td className="text-base-content px-3 py-3 text-right font-mono">{fmtCLP(summary.subtotal)}</td>
                 </tr>
                 <tr className="border-base-300 border-b">
-                  <td className="text-base-content px-3 py-3">Retención ({retentionPercent}%)</td>
+                  <td className="text-base-content px-3 py-3">
+                    Retención {summaryYear} ({retentionPercent}%)
+                    <div className="text-base-content/60 mt-0.5 text-xs">
+                      {summaryYear === 2025 && "Año 2025: 14,5%"}
+                      {summaryYear === 2026 && "Año 2026: 15,25%"}
+                      {summaryYear > 2026 && `Año ${summaryYear}: tasa a confirmar`}
+                    </div>
+                  </td>
                   <td className="text-base-content px-3 py-3 text-right font-mono">-{fmtCLP(summary.retention)}</td>
                 </tr>
                 <tr className="bg-blue-700">
