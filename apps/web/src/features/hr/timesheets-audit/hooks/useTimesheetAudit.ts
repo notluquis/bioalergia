@@ -24,14 +24,18 @@ export function useTimesheetAudit({ ranges, employeeIds }: UseTimesheetAuditOpti
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let isMounted = true; // Prevent state updates after unmount
+
     async function loadEntries() {
       if (!employeeIds.length || !ranges.length) {
-        setEntries([]);
+        if (isMounted) setEntries([]);
         return;
       }
 
-      setLoading(true);
-      setError(null);
+      if (isMounted) {
+        setLoading(true);
+        setError(null);
+      }
 
       try {
         const sortedRanges = [...ranges].sort((a, b) => a.start.localeCompare(b.start));
@@ -39,23 +43,33 @@ export function useTimesheetAudit({ ranges, employeeIds }: UseTimesheetAuditOpti
         const lastDay = sortedRanges[sortedRanges.length - 1]?.end;
 
         if (!firstDay || !lastDay) {
-          setEntries([]);
+          if (isMounted) setEntries([]);
           return;
         }
 
         const data = await fetchMultiEmployeeTimesheets(employeeIds, firstDay, lastDay);
+
+        if (!isMounted) return; // Don't update state if unmounted
+
         const filtered = data.filter((entry) => sortedRanges.some((range) => isWithinRange(entry.work_date, range)));
         setEntries(filtered);
       } catch (err) {
+        if (!isMounted) return; // Don't update state if unmounted
+
         const message = err instanceof Error ? err.message : "Error cargando datos de auditoría";
         setError(message);
         setEntries([]);
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     }
 
     loadEntries();
+
+    // Cleanup function to prevent state updates after unmount
+    return () => {
+      isMounted = false;
+    };
   }, [ranges, employeeIds]);
 
   return { entries, loading, error };
