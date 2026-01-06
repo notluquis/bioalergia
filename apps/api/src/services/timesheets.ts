@@ -68,26 +68,23 @@ function timeToMinutes(time: string): number | null {
 }
 
 /**
- * Normalize time input to a Date object suitable for PostgreSQL TIME columns
+ * Normalize time input to PostgreSQL TIME format "HH:MM:SS"
  * Accepts ISO datetime strings or HH:MM format
- * Returns Date with epoch date (1970-01-01) but correct time component
+ * Returns string compatible with PostgreSQL TIME type
  * Returns null for invalid inputs
+ * 
+ * NOTE: TypeScript types say Date, but we return string to avoid Kysely ISO serialization
  */
 function normalizeTimeInput(
   time: string | null | undefined
-): Date | null {
+): string | null {
   if (!time) return null;
 
   // Try parsing as ISO datetime first
   const d = dayjs(time);
   if (d.isValid() && (time.includes("T") || time.includes("-"))) {
-    // Extract time component and set to epoch date
-    return dayjs(0)
-      .hour(d.hour())
-      .minute(d.minute())
-      .second(d.second())
-      .millisecond(0)
-      .toDate();
+    // Extract time component as HH:MM:SS
+    return d.format("HH:mm:ss");
   }
 
   // Parse HH:MM or HH:MM:SS format
@@ -106,12 +103,7 @@ function normalizeTimeInput(
     ) {
       return null;
     }
-    return dayjs(0)
-      .hour(hours)
-      .minute(minutes)
-      .second(seconds)
-      .millisecond(0)
-      .toDate();
+    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
   }
 
   return null;
@@ -214,15 +206,17 @@ export async function upsertTimesheetEntry(
       create: {
         employeeId: payload.employee_id,
         workDate: workDateObj,
-        startTime,
-        endTime,
+        // Type assertion: ZenStack expects Date but we send string for PostgreSQL TIME
+        startTime: startTime as unknown as Date,
+        endTime: endTime as unknown as Date,
         workedMinutes,
         overtimeMinutes: payload.overtime_minutes,
         comment: payload.comment ?? null,
       },
       update: {
-        startTime,
-        endTime,
+        // Type assertion: ZenStack expects Date but we send string for PostgreSQL TIME
+        startTime: startTime as unknown as Date,
+        endTime: endTime as unknown as Date,
         workedMinutes,
         overtimeMinutes: payload.overtime_minutes,
         comment: payload.comment ?? null,
@@ -255,10 +249,12 @@ export async function updateTimesheetEntry(
   const updateData: EmployeeTimesheetUpdateInput = {};
 
   if (data.start_time !== undefined) {
-    updateData.startTime = normalizeTimeInput(data.start_time);
+    // Type assertion: ZenStack expects Date but we send string for PostgreSQL TIME
+    updateData.startTime = normalizeTimeInput(data.start_time) as unknown as Date;
   }
   if (data.end_time !== undefined) {
-    updateData.endTime = normalizeTimeInput(data.end_time);
+    // Type assertion: ZenStack expects Date but we send string for PostgreSQL TIME
+    updateData.endTime = normalizeTimeInput(data.end_time) as unknown as Date;
   }
   if (data.worked_minutes != null) {
     updateData.workedMinutes = data.worked_minutes;
