@@ -129,7 +129,7 @@ function applyFilters(query: any, filters: CalendarEventFilters) {
         eb.or([
           eb("start_date", ">=", fromDate),
           eb("start_date_time", ">=", fromDate),
-        ])
+        ]),
       );
     }
   }
@@ -143,7 +143,7 @@ function applyFilters(query: any, filters: CalendarEventFilters) {
         eb.or([
           eb("start_date", "<=", toDate),
           eb("start_date_time", "<=", toDate),
-        ])
+        ]),
       );
     }
   }
@@ -164,7 +164,7 @@ function applyFilters(query: any, filters: CalendarEventFilters) {
       filters.categories.includes("null") ||
       filters.categories.includes("Uncategorized");
     const validCategories = filters.categories.filter(
-      (c) => c !== "null" && c !== "Uncategorized"
+      (c) => c !== "null" && c !== "Uncategorized",
     );
 
     if (hasNull && validCategories.length > 0) {
@@ -172,7 +172,7 @@ function applyFilters(query: any, filters: CalendarEventFilters) {
         eb.or([
           eb("e.category", "in", validCategories),
           eb("e.category", "is", null),
-        ])
+        ]),
       );
     } else if (hasNull) {
       q = q.where("e.category", "is", null);
@@ -187,7 +187,7 @@ function applyFilters(query: any, filters: CalendarEventFilters) {
       eb.or([
         eb("e.summary", "ilike", term),
         eb("e.description", "ilike", term),
-      ])
+      ]),
     );
   }
 
@@ -198,7 +198,7 @@ function applyFilters(query: any, filters: CalendarEventFilters) {
     q = q.where(
       sql<any>`DATE(coalesce(e.start_date_time, e.start_date))`,
       "in",
-      filters.dates
+      filters.dates,
     );
   }
 
@@ -206,7 +206,7 @@ function applyFilters(query: any, filters: CalendarEventFilters) {
 }
 
 export async function getCalendarAggregates(
-  filters: CalendarEventFilters
+  filters: CalendarEventFilters,
 ): Promise<CalendarAggregateResult> {
   const baseQuery = kysely
     .selectFrom("events as e")
@@ -218,7 +218,9 @@ export async function getCalendarAggregates(
   const totals = await filteredQuery
     .select([
       sql<number>`count(e.id)`.as("events"),
-      sql<number>`count(distinct DATE(coalesce(e.start_date_time, e.start_date)))`.as("days"),
+      sql<number>`count(distinct DATE(coalesce(e.start_date_time, e.start_date)))`.as(
+        "days",
+      ),
       sql<number>`coalesce(sum(e.amount_expected), 0)`.as("amountExpected"),
       sql<number>`coalesce(sum(e.amount_paid), 0)`.as("amountPaid"),
     ])
@@ -227,8 +229,12 @@ export async function getCalendarAggregates(
   // 2. By Month
   const byMonth = await filteredQuery
     .select([
-      sql<number>`extract(year from coalesce(e.start_date_time, e.start_date))`.as("year"),
-      sql<number>`extract(month from coalesce(e.start_date_time, e.start_date))`.as("month"),
+      sql<number>`extract(year from coalesce(e.start_date_time, e.start_date))`.as(
+        "year",
+      ),
+      sql<number>`extract(month from coalesce(e.start_date_time, e.start_date))`.as(
+        "month",
+      ),
       sql<number>`count(e.id)`.as("total"),
       sql<number>`coalesce(sum(e.amount_expected), 0)`.as("amountExpected"),
       sql<number>`coalesce(sum(e.amount_paid), 0)`.as("amountPaid"),
@@ -237,15 +243,25 @@ export async function getCalendarAggregates(
       sql`extract(year from coalesce(e.start_date_time, e.start_date))`,
       sql`extract(month from coalesce(e.start_date_time, e.start_date))`,
     ])
-    .orderBy(sql`extract(year from coalesce(e.start_date_time, e.start_date))`, "desc")
-    .orderBy(sql`extract(month from coalesce(e.start_date_time, e.start_date))`, "desc")
+    .orderBy(
+      sql`extract(year from coalesce(e.start_date_time, e.start_date))`,
+      "desc",
+    )
+    .orderBy(
+      sql`extract(month from coalesce(e.start_date_time, e.start_date))`,
+      "desc",
+    )
     .execute();
 
   // 3. By Week
   const byWeek = await filteredQuery
     .select([
-      sql<number>`extract(isoyear from coalesce(e.start_date_time, e.start_date))`.as("isoYear"),
-      sql<number>`extract(week from coalesce(e.start_date_time, e.start_date))`.as("isoWeek"),
+      sql<number>`extract(isoyear from coalesce(e.start_date_time, e.start_date))`.as(
+        "isoYear",
+      ),
+      sql<number>`extract(week from coalesce(e.start_date_time, e.start_date))`.as(
+        "isoWeek",
+      ),
       sql<number>`count(e.id)`.as("total"),
       sql<number>`coalesce(sum(e.amount_expected), 0)`.as("amountExpected"),
       sql<number>`coalesce(sum(e.amount_paid), 0)`.as("amountPaid"),
@@ -254,8 +270,14 @@ export async function getCalendarAggregates(
       sql`extract(isoyear from coalesce(e.start_date_time, e.start_date))`,
       sql`extract(week from coalesce(e.start_date_time, e.start_date))`,
     ])
-    .orderBy(sql`extract(isoyear from coalesce(e.start_date_time, e.start_date))`, "desc")
-    .orderBy(sql`extract(week from coalesce(e.start_date_time, e.start_date))`, "desc")
+    .orderBy(
+      sql`extract(isoyear from coalesce(e.start_date_time, e.start_date))`,
+      "desc",
+    )
+    .orderBy(
+      sql`extract(week from coalesce(e.start_date_time, e.start_date))`,
+      "desc",
+    )
     .execute();
 
   // 4. By Date
@@ -273,7 +295,9 @@ export async function getCalendarAggregates(
   // 5. By Weekday
   const byWeekday = await filteredQuery
     .select([
-      sql<number>`extract(dow from coalesce(e.start_date_time, e.start_date))`.as("weekday"),
+      sql<number>`extract(dow from coalesce(e.start_date_time, e.start_date))`.as(
+        "weekday",
+      ),
       sql<number>`count(e.id)`.as("total"),
       sql<number>`coalesce(sum(e.amount_expected), 0)`.as("amountExpected"),
       sql<number>`coalesce(sum(e.amount_paid), 0)`.as("amountPaid"),
@@ -297,7 +321,7 @@ export async function getCalendarAggregates(
       eb.or([
         eb("start_date", ">=", fromDate),
         eb("start_date_time", ">=", fromDate),
-      ])
+      ]),
     );
   }
   if (filters.to && dayjs(filters.to).isValid()) {
@@ -306,7 +330,7 @@ export async function getCalendarAggregates(
       eb.or([
         eb("start_date", "<=", toDate),
         eb("start_date_time", "<=", toDate),
-      ])
+      ]),
     );
   }
 
@@ -377,7 +401,7 @@ export async function getCalendarAggregates(
       events: Number((totals as unknown as TotalRow)?.events || 0),
       days: Number((totals as unknown as TotalRow)?.days || 0),
       amountExpected: Number(
-        (totals as unknown as TotalRow)?.amountExpected || 0
+        (totals as unknown as TotalRow)?.amountExpected || 0,
       ),
       amountPaid: Number((totals as unknown as TotalRow)?.amountPaid || 0),
     },
@@ -387,7 +411,7 @@ export async function getCalendarAggregates(
           // Flatten logic omitted, assuming byMonth covers needs or todo: implement proper byYear
           return acc;
         },
-        []
+        [],
       ),
       byMonth: (byMonth as unknown as MonthRow[]).map((r: MonthRow) => ({
         year: Number(r.year),
@@ -409,7 +433,7 @@ export async function getCalendarAggregates(
           total: Number(r.total),
           amountExpected: Number(r.amountExpected),
           amountPaid: Number(r.amountPaid),
-        })
+        }),
       ),
       byDate: (byDate as unknown as DateRow[]).map((r: DateRow) => ({
         date: String(r.date),
@@ -423,16 +447,16 @@ export async function getCalendarAggregates(
         (r: CalendarRow) => ({
           calendarId: String(r.calendarId),
           total: Number(r.total),
-        })
+        }),
       ),
       eventTypes: (availEventTypes as unknown as EventTypeRow[]).map(
         (r: EventTypeRow) => ({
           eventType: r.eventType,
           total: Number(r.total),
-        })
+        }),
       ),
       categories: (availCategories as unknown as CategoryRow[]).map(
-        (r: CategoryRow) => ({ category: r.category, total: Number(r.total) })
+        (r: CategoryRow) => ({ category: r.category, total: Number(r.total) }),
       ),
     },
   };
@@ -443,7 +467,7 @@ export async function getCalendarAggregates(
 
 export async function getCalendarEventsByDate(
   filters: CalendarEventFilters,
-  options: { maxDays?: number } = {}
+  options: { maxDays?: number } = {},
 ): Promise<CalendarEventsByDateResult> {
   const baseQuery = kysely
     .selectFrom("events as e")
@@ -456,7 +480,7 @@ export async function getCalendarEventsByDate(
   // 1. Get dates with events
   const dates = await filteredQuery
     .select(
-      sql<string>`DATE(coalesce(e.start_date_time, e.start_date))`.as("date")
+      sql<string>`DATE(coalesce(e.start_date_time, e.start_date))`.as("date"),
     )
     .distinct()
     .orderBy(sql`DATE(coalesce(e.start_date_time, e.start_date))`, "desc")
@@ -465,7 +489,7 @@ export async function getCalendarEventsByDate(
 
   type DateOnlyRow = { date: string | Date };
   const targetDates = (dates as unknown as DateOnlyRow[]).map(
-    (d: DateOnlyRow) => dayjs(d.date).format("YYYY-MM-DD")
+    (d: DateOnlyRow) => dayjs(d.date).format("YYYY-MM-DD"),
   );
 
   if (targetDates.length === 0) {
@@ -481,14 +505,14 @@ export async function getCalendarEventsByDate(
     kysely
       .selectFrom("events as e")
       .leftJoin("calendars as c", "e.calendar_id", "c.id"),
-    filters // Use original filters WITHOUT dates override
+    filters, // Use original filters WITHOUT dates override
   );
 
   // Manually add the where clause for the top N dates
   eventsQuery = eventsQuery.where(
     sql<any>`DATE(coalesce(e.start_date_time, e.start_date))`,
     "in",
-    targetDates
+    targetDates,
   );
 
   const events = await eventsQuery
@@ -519,7 +543,7 @@ export async function getCalendarEventsByDate(
       "e.dosage",
       "e.treatment_stage as treatmentStage",
       sql<string>`DATE(coalesce(e.start_date_time, e.start_date))`.as(
-        "eventDateString"
+        "eventDateString",
       ), // helper for grouping
     ])
     .orderBy("e.start_date_time", "desc")
