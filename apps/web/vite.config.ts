@@ -144,18 +144,23 @@ export default defineConfig(({ mode }) => ({
       },
       devOptions: { enabled: false },
     }),
-    // Gzip compression in production
+    // Gzip/Brotli compression disabled - Railway/Cloudflare does it dynamically
+    // This saves ~3-5s on build time
+    // If you need pre-compression, uncomment below:
+    /*
     mode === "production" &&
       viteCompression({
         algorithm: "gzip",
-        threshold: 1024,
+        threshold: 10240,
+        deleteOriginFile: false,
       }),
-    // Brotli compression in production
     mode === "production" &&
       viteCompression({
         algorithm: "brotliCompress",
-        threshold: 1024,
+        threshold: 10240,
+        deleteOriginFile: false,
       }),
+    */
   ].filter(Boolean),
   define: {
     "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV || "development"),
@@ -170,6 +175,8 @@ export default defineConfig(({ mode }) => ({
     chunkSizeWarningLimit: 1000,
     sourcemap: false,
     minify: "esbuild", // 2026: esbuild is standard for speed/size balance
+    cssCodeSplit: true, // Split CSS for faster parallel loading
+    reportCompressedSize: false, // Skip gzip size calculation during build (faster)
     // 2026: Trust the graph! Manual chunks often hurt HTTP/3 multiplexing.
     // We let Vite/Rollup split based on dynamic imports (React.lazy).
     rollupOptions: {
