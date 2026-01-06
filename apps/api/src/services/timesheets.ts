@@ -1,4 +1,5 @@
-import { db } from "@finanzas/db";
+import { db, kysely } from "@finanzas/db";
+import { sql } from "kysely";
 
 import dayjs from "dayjs";
 
@@ -196,34 +197,42 @@ export async function upsertTimesheetEntry(
   }
 
   try {
-    const entry = await db.employeeTimesheet.upsert({
-      where: {
-        employeeId_workDate: {
-          employeeId: payload.employee_id,
-          workDate: workDateObj,
-        },
-      },
-      create: {
-        employeeId: payload.employee_id,
-        workDate: workDateObj,
-        // Type assertion: ZenStack expects Date but we send string for PostgreSQL TIME
-        startTime: startTime as unknown as Date,
-        endTime: endTime as unknown as Date,
-        workedMinutes,
-        overtimeMinutes: payload.overtime_minutes,
+    // Use raw Kysely to bypass ZenStack's Zod validation
+    // ZenStack expects ISO datetime strings for DateTime fields, but PostgreSQL TIME columns need "HH:MM:SS"
+    const result = await kysely
+      .insertInto("employee_timesheets")
+      .values({
+        employee_id: payload.employee_id,
+        work_date: sql`${workDateObj.toISOString()}::date`,
+        start_time: startTime ? sql`${startTime}::time` : null,
+        end_time: endTime ? sql`${endTime}::time` : null,
+        worked_minutes: workedMinutes,
+        overtime_minutes: payload.overtime_minutes,
         comment: payload.comment ?? null,
-      },
-      update: {
-        // Type assertion: ZenStack expects Date but we send string for PostgreSQL TIME
-        startTime: startTime as unknown as Date,
-        endTime: endTime as unknown as Date,
-        workedMinutes,
-        overtimeMinutes: payload.overtime_minutes,
-        comment: payload.comment ?? null,
-      },
-    });
+      })
+      .onConflict((oc) =>
+        oc.columns(["employee_id", "work_date"]).doUpdateSet({
+          start_time: startTime ? sql`${startTime}::time` : null,
+          end_time: endTime ? sql`${endTime}::time` : null,
+          worked_minutes: workedMinutes,
+          overtime_minutes: payload.overtime_minutes,
+          comment: payload.comment ?? null,
+        })
+      )
+      .returningAll()
+      .executeTakeFirstOrThrow();
 
-    return mapTimesheetEntry(entry);
+    // Map Kysely result to TimesheetEntry
+    return {
+      id: Number(result.id),
+      employee_id: result.employee_id as number,
+      work_date: formatDateOnly(result.work_date as Date),
+      start_time: result.start_time ? formatTimeValue(result.start_time as string) : "",
+      end_time: result.end_time ? formatTimeValue(result.end_time as string) : "",
+      worked_minutes: result.worked_minutes as number,
+      overtime_minutes: result.overtime_minutes as number,
+      comment: (result.comment as string) || "",
+    };
   } catch (error: any) {
     console.error("[timesheets] upsert error details:", {
       message: error.message,
@@ -246,21 +255,22 @@ export async function updateTimesheetEntry(
   id: number,
   data: UpdateTimesheetPayload
 ): Promise<TimesheetEntry> {
-  const updateData: EmployeeTimesheetUpdateInput = {};
+  // Build update object for Kysely
+  const updateData: Record<string, any> = {};
 
   if (data.start_time !== undefined) {
-    // Type assertion: ZenStack expects Date but we send string for PostgreSQL TIME
-    updateData.startTime = normalizeTimeInput(data.start_time) as unknown as Date;
+    const normalized = normalizeTimeInput(data.start_time);
+    updateData.start_time = normalized ? sql`${normalized}::time` : null;
   }
   if (data.end_time !== undefined) {
-    // Type assertion: ZenStack expects Date but we send string for PostgreSQL TIME
-    updateData.endTime = normalizeTimeInput(data.end_time) as unknown as Date;
+    const normalized = normalizeTimeInput(data.end_time);
+    updateData.end_time = normalized ? sql`${normalized}::time` : null;
   }
   if (data.worked_minutes != null) {
-    updateData.workedMinutes = data.worked_minutes;
+    updateData.worked_minutes = data.worked_minutes;
   }
   if (data.overtime_minutes != null) {
-    updateData.overtimeMinutes = data.overtime_minutes;
+    updateData.overtime_minutes = data.overtime_minutes;
   }
   if (data.comment !== undefined) {
     updateData.comment = data.comment;
@@ -271,12 +281,25 @@ export async function updateTimesheetEntry(
   }
 
   try {
-    const entry = await db.employeeTimesheet.update({
-      where: { id: BigInt(id) },
-      data: updateData,
-    });
+    // Use raw Kysely to bypass ZenStack's Zod validation
+    const result = await kysely
+      .updateTable("employee_timesheets")
+      .set(updateData)
+      .where("id", "=", BigInt(id))
+      .returningAll()
+      .executeTakeFirstOrThrow();
 
-    return mapTimesheetEntry(entry);
+    // Map Kysely result to TimesheetEntry
+    return {
+      id: Number(result.id),
+      employee_id: result.employee_id as number,
+      work_date: formatDateOnly(result.work_date as Date),
+      start_time: result.start_time ? formatTimeValue(result.start_time as string) : "",
+      end_time: result.end_time ? formatTimeValue(result.end_time as string) : "",
+      worked_minutes: result.worked_minutes as number,
+      overtime_minutes: result.overtime_minutes as number,
+      comment: (result.comment as string) || "",
+    };
   } catch (error: any) {
     console.error("[timesheets] update error details:", {
       id,
