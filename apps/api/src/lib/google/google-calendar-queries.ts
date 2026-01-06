@@ -140,11 +140,7 @@ function applyFilters(query: any, filters: CalendarEventFilters) {
 
     if (toDate) {
       // Use coalesce to handle both all-day and timed events
-      q = q.where(
-        sql`coalesce(e.start_date_time, e.start_date)`,
-        "<=",
-        toDate,
-      );
+      q = q.where(sql`coalesce(e.start_date_time, e.start_date)`, "<=", toDate);
     }
   }
 
