@@ -2,7 +2,6 @@ import "./WeekGrid.css";
 
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
-import { useMemo } from "react";
 
 import { currencyFormatter } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -208,7 +207,7 @@ function getCategoryClass(category: string | null | undefined): string {
 
 export function WeekGrid({ events, weekStart, loading, onEventClick }: WeekGridProps) {
   // Parse weekStart and get Monday of that week using ISO week (Monday = 1)
-  const monday = useMemo(() => {
+  const monday = (() => {
     const parsed = dayjs(weekStart);
     if (!parsed.isValid()) {
       // Fallback to current week's Monday
@@ -216,10 +215,10 @@ export function WeekGrid({ events, weekStart, loading, onEventClick }: WeekGridP
     }
     // Get the Monday of the week containing this date
     return parsed.isoWeekday(1);
-  }, [weekStart]);
+  })();
 
   // Calculate time bounds based ONLY on events in this week
-  const { startHour, endHour } = useMemo(() => {
+  const { startHour, endHour } = (() => {
     // Filter events to only those in the displayed week (Mon-Sat)
     const weekEnd = monday.add(5, "day").endOf("day");
     const weekEvents = events.filter((event) => {
@@ -272,25 +271,23 @@ export function WeekGrid({ events, weekStart, loading, onEventClick }: WeekGridP
     const paddedEnd = Math.min(24, max + 1); // Allow extending to 24 (midnight)
 
     return { startHour: paddedStart, endHour: paddedEnd };
-  }, [events, monday]);
+  })();
 
-  const hours = useMemo(() => generateHours(startHour, endHour), [startHour, endHour]);
-  const eventsByDay = useMemo(() => groupEventsByDay(events, monday), [events, monday]);
+  const hours = generateHours(startHour, endHour);
+  const eventsByDay = groupEventsByDay(events, monday);
 
   // Generate day headers
-  const days = useMemo(() => {
-    return Array.from({ length: 6 }, (_, i) => {
-      const date = monday.add(i, "day");
-      return {
-        key: date.format("YYYY-MM-DD"),
-        isoDate: date.format("YYYY-MM-DD"),
-        dayName: date.format("ddd").toUpperCase(),
-        fullDayName: date.format("dddd"),
-        dayNumber: date.format("D"),
-        isToday: date.isSame(dayjs(), "day"),
-      };
-    });
-  }, [monday]);
+  const days = Array.from({ length: 6 }, (_, i) => {
+    const date = monday.add(i, "day");
+    return {
+      key: date.format("YYYY-MM-DD"),
+      isoDate: date.format("YYYY-MM-DD"),
+      dayName: date.format("ddd").toUpperCase(),
+      fullDayName: date.format("dddd"),
+      dayNumber: date.format("D"),
+      isToday: date.isSame(dayjs(), "day"),
+    };
+  });
 
   return (
     <div className={cn("week-grid", loading && "week-grid--loading")} role="grid" aria-label="Calendario semanal">

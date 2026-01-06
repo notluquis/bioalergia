@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import Button from "@/components/ui/Button";
 import { today } from "@/lib/dates";
@@ -57,7 +57,7 @@ export default function ServicesUnifiedAgenda({
   onUnlinkPayment,
 }: ServicesUnifiedAgendaProps) {
   const skeletons = Array.from({ length: 4 }, (_, index) => index);
-  const groups = useMemo<AgendaGroup[]>(() => {
+  const groups = (() => {
     if (!items.length) return [];
     const map = new Map<string, AgendaGroup>();
     items.forEach(({ service, schedule }) => {
@@ -76,9 +76,9 @@ export default function ServicesUnifiedAgenda({
       group.entries.push({ service, schedule });
     });
     return Array.from(map.values()).sort((a, b) => (a.dateKey > b.dateKey ? 1 : -1));
-  }, [items]);
+  })();
 
-  const totals = useMemo(() => {
+  const totals = (() => {
     const today = dayjs().startOf("day");
     let daySum = 0;
     let weekSum = 0;
@@ -100,7 +100,7 @@ export default function ServicesUnifiedAgenda({
       week: weekSum,
       month: monthSum,
     };
-  }, [items]);
+  })();
 
   const [expanded, setExpanded] = useState<Record<string, boolean>>(() => {
     const todayKey = today();

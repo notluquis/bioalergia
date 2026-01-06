@@ -1,6 +1,6 @@
 import clsx from "clsx";
 import dayjs, { type Dayjs } from "dayjs";
-import React, { useMemo } from "react";
+import React from "react";
 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/Tooltip";
 import { fmtCLP } from "@/lib/format";
@@ -60,10 +60,8 @@ type DayCell = {
   intensity: 0 | 1 | 2 | 3 | 4;
 };
 
-type DateCell = PaddingCell | DayCell;
-
 function HeatmapMonthComponent({ month, statsByDate, maxValue }: HeatmapMonthProps) {
-  const dates = useMemo<DateCell[]>(() => {
+  const dates = (() => {
     const startOfMonth = month.startOf("month");
     const endOfMonth = month.endOf("month");
     const daysInMonth = endOfMonth.date();
@@ -96,9 +94,9 @@ function HeatmapMonthComponent({ month, statsByDate, maxValue }: HeatmapMonthPro
     });
 
     return [...paddingStart, ...days];
-  }, [month, statsByDate, maxValue]);
+  })();
 
-  const monthTotals = useMemo(() => {
+  const monthTotals = (() => {
     let events = 0;
     let expected = 0;
     let paid = 0;
@@ -110,7 +108,7 @@ function HeatmapMonthComponent({ month, statsByDate, maxValue }: HeatmapMonthPro
       }
     }
     return { events, expected, paid };
-  }, [dates]);
+  })();
 
   return (
     <TooltipProvider delayDuration={0}>
@@ -211,5 +209,4 @@ function HeatmapMonthComponent({ month, statsByDate, maxValue }: HeatmapMonthPro
   );
 }
 
-export const HeatmapMonth = React.memo(HeatmapMonthComponent);
-export default HeatmapMonth;
+export default HeatmapMonthComponent;

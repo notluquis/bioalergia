@@ -1,4 +1,4 @@
-import { type ChangeEvent, useMemo } from "react";
+import { type ChangeEvent } from "react";
 
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
@@ -26,13 +26,13 @@ const STATUS_LABELS: Record<ServiceSummary["status"], string> = {
 const STATUS_ORDER: Array<ServiceSummary["status"]> = ["ACTIVE", "INACTIVE", "ARCHIVED"];
 
 export default function ServicesFilterPanel({ services, filters, onChange }: ServicesFilterPanelProps) {
-  const typeOptions = useMemo(() => {
+  const typeOptions = (() => {
     const counts = new Map<ServiceType, number>();
     services.forEach((service) => {
       counts.set(service.service_type, (counts.get(service.service_type) ?? 0) + 1);
     });
     return Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
-  }, [services]);
+  })();
 
   const handleStatusToggle = (status: ServiceSummary["status"]) => {
     const next = new Set(filters.statuses);

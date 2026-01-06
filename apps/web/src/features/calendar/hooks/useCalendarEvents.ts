@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { useSettings } from "@/context/SettingsContext";
 import { useCalendarFilterStore } from "@/store/calendarFilters";
@@ -71,7 +71,7 @@ export function useCalendarEvents() {
   const filters = useCalendarFilterStore((state) => state);
   const setFilters = useCalendarFilterStore((state) => state.setFilters);
 
-  const computeDefaults = useCallback((): CalendarFilters => {
+  const computeDefaults = (): CalendarFilters => {
     const syncStart = settings.calendarSyncStart?.trim() || "2000-01-01";
     const lookaheadRaw = Number(settings.calendarSyncLookaheadDays ?? "365");
     const lookahead =
@@ -96,9 +96,10 @@ export function useCalendarEvents() {
       search: "",
       maxDays,
     };
-  }, [settings]);
+  };
 
-  const initialDefaults = useMemo(() => computeDefaults(), [computeDefaults]);
+  // We only want to compute this once on mount, basically
+  const [initialDefaults] = useState(() => computeDefaults());
   const [appliedFilters, setAppliedFilters] = useState<CalendarFilters>(initialDefaults);
   const [syncProgress, setSyncProgress] = useState<SyncProgressEntry[]>([]);
   const [syncDurationMs, setSyncDurationMs] = useState<number | null>(null);
@@ -114,12 +115,12 @@ export function useCalendarEvents() {
   const [syncError, setSyncError] = useState<string | null>(null);
 
   useEffect(() => {
-    const defaults = initialDefaults;
-    setFilters(defaults);
-    setAppliedFilters(defaults);
+    // Sync store with defaults on mount
+    setFilters(initialDefaults);
+    setAppliedFilters(initialDefaults);
   }, [initialDefaults, setFilters]);
 
-  const normalizedApplied = useMemo(() => normalizeFilters(appliedFilters), [appliedFilters]);
+  const normalizedApplied = normalizeFilters(appliedFilters);
 
   const summaryQuery = useQuery<CalendarSummary, Error>({
     queryKey: ["calendar", "summary", normalizedApplied],
@@ -157,20 +158,14 @@ export function useCalendarEvents() {
   const loading = summaryQuery.isLoading || dailyQuery.isLoading;
   const error = summaryQuery.error?.message || dailyQuery.error?.message || null;
 
-  const normalizedDraft = useMemo(() => normalizeFilters(filters), [filters]);
-  const isDirty = useMemo(
-    () => !filtersEqual(normalizedDraft, normalizedApplied),
-    [normalizedDraft, normalizedApplied]
-  );
+  const normalizedDraft = normalizeFilters(filters);
+  const isDirty = !filtersEqual(normalizedDraft, normalizedApplied);
 
-  const updateFilters = useCallback(
-    <K extends keyof CalendarFilters>(key: K, value: CalendarFilters[K]) => {
-      setFilters({ [key]: value } as Partial<CalendarFilters>);
-    },
-    [setFilters]
-  );
+  const updateFilters = <K extends keyof CalendarFilters>(key: K, value: CalendarFilters[K]) => {
+    setFilters({ [key]: value } as Partial<CalendarFilters>);
+  };
 
-  const applyFilters = useCallback(() => {
+  const applyFilters = () => {
     const draft = normalizeFilters(useCalendarFilterStore.getState());
     const fromDate = dayjs(draft.from);
     const toDate = dayjs(draft.to);
@@ -179,13 +174,13 @@ export function useCalendarEvents() {
     const next = { ...draft, maxDays: resolvedMaxDays };
     setAppliedFilters(next);
     setFilters(next);
-  }, [setFilters]);
+  };
 
-  const resetFilters = useCallback(() => {
+  const resetFilters = () => {
     const defaults = computeDefaults();
     setFilters(defaults);
     setAppliedFilters(defaults);
-  }, [computeDefaults, setFilters]);
+  };
 
   const availableCalendars = summary?.available.calendars ?? [];
   const availableEventTypes = summary?.available.eventTypes ?? [];
@@ -293,9 +288,9 @@ export function useCalendarEvents() {
 
   const { mutate: sync } = syncMutation;
 
-  const syncNow = useCallback(() => {
+  const syncNow = () => {
     sync();
-  }, [sync]);
+  };
 
   return {
     filters,

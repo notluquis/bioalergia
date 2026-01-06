@@ -22,6 +22,7 @@ export default function AddUserPage() {
     email: "",
     names: "",
     fatherName: "",
+    motherName: "",
     rut: "",
     role: "VIEWER",
     position: "",
@@ -44,8 +45,15 @@ export default function AddUserPage() {
     queryFn: fetchPeople,
   });
 
-  // Filter people who don't have a user yet
-  const availablePeople = peopleData?.filter((p) => !p.user && !p.hasUser) || [];
+  // Filter people who don't have a user yet and exclude test users
+  const availablePeople =
+    peopleData?.filter(
+      (p) =>
+        !p.user &&
+        !p.hasUser &&
+        !p.names.toLowerCase().includes("test") &&
+        !p.names.toLowerCase().includes("usuario prueba")
+    ) || [];
 
   // Create user mutation
   const createUserMutation = useMutation({
@@ -76,6 +84,7 @@ export default function AddUserPage() {
     } else {
       payload.names = form.names;
       payload.fatherName = form.fatherName;
+      payload.motherName = form.motherName;
       payload.rut = form.rut;
     }
 
@@ -123,6 +132,7 @@ export default function AddUserPage() {
                         email: person?.email ?? form.email,
                         names: pid ? "" : form.names,
                         fatherName: pid ? "" : form.fatherName,
+                        motherName: pid ? "" : form.motherName,
                         rut: pid ? "" : form.rut,
                       });
                     }}
@@ -159,6 +169,13 @@ export default function AddUserPage() {
                 onChange={(e) => setForm({ ...form, fatherName: e.target.value })}
                 required={!form.personId}
                 placeholder="Ej: Pérez"
+              />
+              <Input
+                label="Apellido Materno"
+                value={form.motherName}
+                onChange={(e) => setForm({ ...form, motherName: e.target.value })}
+                required={!form.personId}
+                placeholder="Ej: González"
               />
               <Input
                 label="RUT"

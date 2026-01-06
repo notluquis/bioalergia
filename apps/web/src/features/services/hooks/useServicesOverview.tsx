@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import { createContext, type ReactNode, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { createContext, type ReactNode, useContext, useEffect, useRef, useState } from "react";
 
 import { useAuth } from "@/context/AuthContext";
 import { fetchTransactions } from "@/features/finance/transactions/api";
@@ -16,8 +16,6 @@ import {
   registerServicePayment,
   unlinkServicePayment,
 } from "../api";
-import type { ServicesFilterState } from "../components/ServicesFilterPanel";
-import type { ServiceTemplate } from "../components/ServiceTemplateGallery";
 import type {
   CreateServicePayload,
   RegenerateServicePayload,
@@ -25,21 +23,19 @@ import type {
   ServiceListResponse,
   ServicePaymentPayload,
   ServiceSchedule,
+  ServicesFilterState,
+  ServiceSummary,
+  ServiceTemplate,
+  SummaryTotals,
 } from "../types";
 
-type SummaryTotals = {
-  totalExpected: number;
-  totalPaid: number;
-  pendingCount: number;
-  overdueCount: number;
-  activeCount: number;
-};
+const EMPTY_SERVICES: ServiceSummary[] = [];
 
 function useServicesController() {
   const { can } = useAuth();
   const queryClient = useQueryClient();
-  const canManage = useMemo(() => can("update", "Service"), [can]);
-  const canView = useMemo(() => can("read", "Service"), [can]);
+  const canManage = can("update", "Service");
+  const canView = can("read", "Service");
 
   // UI State
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -76,10 +72,10 @@ function useServicesController() {
     enabled: canView,
   });
 
-  const services = useMemo(() => servicesData?.services ?? [], [servicesData]);
+  const services = servicesData?.services ?? EMPTY_SERVICES;
 
   // Memoize service IDs for the query key to avoid frequent updates if services are unchanged
-  const serviceIds = useMemo(() => services.map((s) => s.public_id).join(","), [services]);
+  const serviceIds = services.map((s) => s.public_id).join(",");
 
   // 2. Fetch All Details (Aggregated)
   // We keep this pattern because the original code relied on having all details for the "Unified Agenda"
@@ -116,7 +112,7 @@ function useServicesController() {
     staleTime: 5 * 60 * 1000, // 5 minutes cache for details
   });
 
-  const allDetails = useMemo(() => allDetailsData ?? {}, [allDetailsData]);
+  const allDetails = allDetailsData ?? {};
   const aggregatedError = aggregatedErrorObj
     ? aggregatedErrorObj instanceof Error
       ? aggregatedErrorObj.message
@@ -353,7 +349,7 @@ function useServicesController() {
   };
 
   // Filter Logic
-  const filteredServices = useMemo(() => {
+  const filteredServices = (() => {
     const searchTerm = filters.search.trim().toLowerCase();
     return services.filter((service) => {
       const matchesStatus = filters.statuses.size === 0 || filters.statuses.has(service.status);
@@ -365,10 +361,10 @@ function useServicesController() {
           .includes(searchTerm);
       return matchesStatus && matchesType && matchesSearch;
     });
-  }, [services, filters]);
+  })();
 
   // Summaries
-  const summaryTotals: SummaryTotals = useMemo(() => {
+  const summaryTotals: SummaryTotals = (() => {
     if (!filteredServices.length) {
       return { totalExpected: 0, totalPaid: 0, pendingCount: 0, overdueCount: 0, activeCount: 0 };
     }
@@ -383,16 +379,12 @@ function useServicesController() {
       },
       { totalExpected: 0, totalPaid: 0, pendingCount: 0, overdueCount: 0, activeCount: 0 }
     );
-  }, [filteredServices]);
+  })();
 
   const collectionRate = summaryTotals.totalExpected > 0 ? summaryTotals.totalPaid / summaryTotals.totalExpected : 0;
 
-  const unifiedAgendaItems = useMemo(
-    () =>
-      Object.values(allDetails).flatMap((item) =>
-        item.schedules.map((schedule) => ({ service: item.service, schedule }))
-      ),
-    [allDetails]
+  const unifiedAgendaItems = Object.values(allDetails).flatMap((item) =>
+    item.schedules.map((schedule) => ({ service: item.service, schedule }))
   );
 
   // Other props
