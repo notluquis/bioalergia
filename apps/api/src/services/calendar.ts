@@ -80,6 +80,10 @@ export async function finalizeCalendarSyncLogEntry(
       status: data.status,
       endedAt: new Date(),
       eventsSynced: (data.inserted || 0) + (data.updated || 0),
+      eventsInserted: data.inserted || 0,
+      eventsUpdated: data.updated || 0,
+      eventsSkipped: data.skipped || 0,
+      eventsExcluded: data.excluded || 0,
       errorMessage: data.errorMessage,
     },
   });

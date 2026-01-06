@@ -631,6 +631,10 @@ model CalendarSyncLog {
     endedAt DateTime? @map("ended_at")
     status String
     eventsSynced Int @default(0) @map("events_synced")
+    eventsInserted Int @default(0) @map("events_inserted")
+    eventsUpdated Int @default(0) @map("events_updated")
+    eventsSkipped Int @default(0) @map("events_skipped")
+    eventsExcluded Int @default(0) @map("events_excluded")
     errorMessage String? @map("error_message")
     triggerSource String? @map("trigger_source")
 
