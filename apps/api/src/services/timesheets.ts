@@ -1,6 +1,13 @@
 import { db } from "@finanzas/db";
 
 import dayjs from "dayjs";
+import timezone from "dayjs/plugin/timezone.js";
+import utc from "dayjs/plugin/utc.js";
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
+const TIMEZONE = "America/Santiago";
 
 import { roundCurrency } from "../lib/currency";
 import { logEvent, logWarn } from "../lib/logger";
@@ -69,7 +76,7 @@ function timeToMinutes(time: string): number | null {
 
 /**
  * Convert "HH:MM" or ISO string to Date object for ZenStack @db.Time
- * Uses reference date (work_date) to create proper Date object
+ * Uses reference date (work_date) and America/Santiago timezone
  * ZenStack/Prisma extracts only TIME component for PostgreSQL TIME columns
  */
 function timeStringToDate(
@@ -78,13 +85,15 @@ function timeStringToDate(
 ): Date | null {
   if (!time) return null;
 
+  // Format reference date as YYYY-MM-DD in Santiago timezone
+  const refDateStr = dayjs(referenceDate).tz(TIMEZONE).format("YYYY-MM-DD");
+
   // Try parsing as ISO datetime first
   const d = dayjs(time);
   if (d.isValid() && (time.includes("T") || time.includes("-"))) {
-    // Use reference date with time from ISO
-    const result = new Date(referenceDate);
-    result.setHours(d.hour(), d.minute(), d.second(), 0);
-    return result;
+    // Build datetime string in Santiago timezone: "YYYY-MM-DD HH:mm:ss"
+    const timeStr = `${d.hour().toString().padStart(2, "0")}:${d.minute().toString().padStart(2, "0")}:${d.second().toString().padStart(2, "0")}`;
+    return dayjs.tz(`${refDateStr} ${timeStr}`, TIMEZONE).toDate();
   }
 
   // Parse HH:MM or HH:MM:SS format
@@ -103,9 +112,9 @@ function timeStringToDate(
     ) {
       return null;
     }
-    const result = new Date(referenceDate);
-    result.setHours(hours, minutes, seconds, 0);
-    return result;
+    // Build datetime string in Santiago timezone: "YYYY-MM-DD HH:mm:ss"
+    const timeStr = `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+    return dayjs.tz(`${refDateStr} ${timeStr}`, TIMEZONE).toDate();
   }
 
   return null;
