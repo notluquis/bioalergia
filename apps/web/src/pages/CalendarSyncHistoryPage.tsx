@@ -31,7 +31,8 @@ export default function CalendarSyncHistoryPage() {
   const hasRunningSyncInHistory = logs.some((log) => {
     if (log.status !== "RUNNING") return false;
     const started = dayjs(log.startedAt);
-    return started.isValid() && Date.now() - started.valueOf() < 15 * 60 * 1000;
+    // Match backend stale timeout: 5 minutes
+    return started.isValid() && Date.now() - started.valueOf() < 5 * 60 * 1000;
   });
   const isSyncing = syncing || hasRunningSyncFromOtherSource || hasRunningSyncInHistory;
   const totalPages = Math.max(1, Math.ceil(logs.length / pageSize));

@@ -118,6 +118,21 @@ export async function listCalendarSyncLogs(
     where.startedAt = { lte: end };
   }
 
+  // Cleanup: mark stale RUNNING syncs as ERROR before querying
+  const STALE_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+  const staleDate = new Date(Date.now() - STALE_TIMEOUT_MS);
+  
+  await db.calendarSyncLog.updateMany({
+    where: {
+      status: "RUNNING",
+      startedAt: { lt: staleDate },
+    },
+    data: {
+      status: "ERROR",
+      errorMessage: "Sync timeout - automatically marked as stale",
+    },
+  });
+
   // Correction: Query SyncLog, not Event
   const logs = await db.calendarSyncLog.findMany({
     where,
