@@ -54,6 +54,11 @@ export interface ListTimesheetOptions {
  * Convert time string (HH:MM or HH:MM:SS) to minutes since midnight.
  */
 function timeToMinutes(time: string): number | null {
+  if (!time) return null;
+  const d = dayjs(time);
+  if (d.isValid() && (time.includes("T") || time.includes("-"))) {
+    return d.hour() * 60 + d.minute();
+  }
   if (!/^[0-9]{1,2}:[0-9]{2}(:[0-9]{2})?$/.test(time)) return null;
   const parts = time.split(":").map(Number);
   const [hours, minutes] = parts;
@@ -68,22 +73,29 @@ function timeToMinutes(time: string): number | null {
  */
 function timeStringToDate(
   time: string | null,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  _referenceDate?: Date
+  referenceDate?: Date
 ): Date | null {
   if (!time) return null;
-  const [hours, minutes] = time.split(":").map(Number);
+
+  // Try parsing as ISO first
+  const d = dayjs(time);
+  if (d.isValid() && (time.includes("T") || time.includes("-"))) {
+    // If it's a valid date but in 1970 and we have a reference date, fix the date part
+    if (referenceDate && d.year() === 1970) {
+      const ref = dayjs(referenceDate);
+      return d.year(ref.year()).month(ref.month()).date(ref.date()).toDate();
+    }
+    return d.toDate();
+  }
+
+  // Fallback to HH:mm
+  const parts = time.split(":").map(Number);
+  const [hours, minutes] = parts;
   if (hours === undefined || minutes === undefined) return null;
 
-  // Use a fixed epoch date for Time columns.
-  // The DB layer ignores the date part for time columns, but the Validation layer requires a valid Date/ISO string.
-  // We use UTC methods to strictly preserve the hour/minute values provided.
-  const date = new Date(0); // 1970-01-01T00:00:00.000Z
-  date.setUTCHours(hours);
-  date.setUTCMinutes(minutes);
-  date.setUTCSeconds(0);
-
-  return date;
+  // Use reference date if provided, otherwise 1970 epoch
+  const base = referenceDate ? dayjs(referenceDate) : dayjs(0);
+  return base.hour(hours).minute(minutes).second(0).millisecond(0).toDate();
 }
 
 /**
@@ -148,8 +160,8 @@ export async function upsertTimesheetEntry(
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const workDateObj = new Date(payload.work_date);
 
-  const startTime = timeStringToDate(payload.start_time ?? null);
-  const endTime = timeStringToDate(payload.end_time ?? null);
+  const startTime = timeStringToDate(payload.start_time ?? null, workDateObj);
+  const endTime = timeStringToDate(payload.end_time ?? null, workDateObj);
 
   // Calculate worked_minutes from start_time and end_time if not provided
   let workedMinutes = payload.worked_minutes ?? 0;
@@ -166,12 +178,12 @@ export async function upsertTimesheetEntry(
       where: {
         employeeId_workDate: {
           employeeId: payload.employee_id,
-          workDate: new Date(payload.work_date),
+          workDate: workDateObj,
         },
       },
       create: {
-        employee: { connect: { id: payload.employee_id } },
-        workDate: new Date(payload.work_date),
+        employeeId: payload.employee_id,
+        workDate: workDateObj,
         startTime,
         endTime,
         workedMinutes,
@@ -226,10 +238,10 @@ export async function updateTimesheetEntry(
   const updateData: EmployeeTimesheetUpdateInput = {};
 
   if (data.start_time !== undefined) {
-    updateData.startTime = timeStringToDate(data.start_time);
+    updateData.startTime = timeStringToDate(data.start_time, workDateObj);
   }
   if (data.end_time !== undefined) {
-    updateData.endTime = timeStringToDate(data.end_time);
+    updateData.endTime = timeStringToDate(data.end_time, workDateObj);
   }
   if (data.worked_minutes != null) {
     updateData.workedMinutes = data.worked_minutes;
@@ -307,9 +319,11 @@ export function normalizeTimesheetPayload(data: {
   const overtimeMinutes = data.overtime_minutes ?? 0;
 
   if (!workedMinutes && data.start_time && data.end_time) {
-    const start = durationToMinutes(data.start_time);
-    const end = durationToMinutes(data.end_time);
-    workedMinutes = Math.max(end - start, 0);
+    const start = timeToMinutes(data.start_time);
+    const end = timeToMinutes(data.end_time);
+    if (start !== null && end !== null) {
+      workedMinutes = Math.max(end - start, 0);
+    }
   }
 
   return {
