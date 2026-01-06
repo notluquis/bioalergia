@@ -124,8 +124,24 @@ function timeStringToDate(
 /**
  * Format Date object from ZenStack to "HH:MM" string for API responses
  */
-function dateToTimeString(date: Date | null): string | null {
+function dateToTimeString(date: Date | string | null): string | null {
   if (!date) return null;
+  
+  // If it's already a string in HH:MM or HH:MM:SS format, extract just HH:MM
+  if (typeof date === 'string') {
+    const match = date.match(/^(\d{1,2}):(\d{2})/);
+    if (match) {
+      const [, hours, minutes] = match;
+      return `${hours!.padStart(2, '0')}:${minutes}`;
+    }
+    // Try parsing as date/time
+    const d = dayjs(date);
+    if (d.isValid()) {
+      return d.format("HH:mm");
+    }
+    return null;
+  }
+  
   const d = dayjs(date);
   if (!d.isValid()) return null;
   return d.format("HH:mm");
