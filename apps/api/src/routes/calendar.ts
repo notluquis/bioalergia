@@ -496,6 +496,14 @@ function executeWebhookSync(channelId: string) {
     .then((logId) => {
       syncGoogleCalendarOnce()
         .then(async (result) => {
+          console.log(`[webhook] Sync result:`, {
+            fetched: result.payload.events.length,
+            excluded: result.payload.excludedEvents.length,
+            inserted: result.upsertResult.inserted,
+            updated: result.upsertResult.updated,
+            skipped: result.upsertResult.skipped,
+          });
+
           const excludedSummaries = result.payload.excludedEvents
             .slice(0, 20)
             .map((e) => e.summary?.slice(0, 50) || "(sin título)");
