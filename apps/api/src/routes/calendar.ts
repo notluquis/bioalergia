@@ -452,16 +452,30 @@ calendarRoutes.get("/calendars/:calendarId/events", requireAuth, async (c) => {
   }
 
   // Fetch events from DB (internal copy)
+  // Support both all-day events (startDate) and timed events (startDateTime)
   const events = await db.event.findMany({
     where: {
       calendarId: calendar.id,
-      startDateTime: {
-        gte: start,
-        lte: end,
-      },
+      OR: [
+        {
+          startDateTime: {
+            gte: start,
+            lte: end,
+          },
+        },
+        {
+          startDate: {
+            gte: start,
+            lte: end,
+          },
+        },
+      ],
       ...filterConditions,
     },
-    orderBy: { startDateTime: "asc" },
+    orderBy: [
+      { startDateTime: "asc" },
+      { startDate: "asc" },
+    ],
   });
 
   return c.json({
