@@ -321,9 +321,15 @@ csvUploadRoutes.post("/import", async (c) => {
         const dateStr = dayjs(String(row.balanceDate)).format("YYYY-MM-DD");
         const balanceDate = new Date(dateStr);
         const productionData = {
-          ingresoTarjetas: row.ingresoTarjetas ? Number(row.ingresoTarjetas) : 0,
-          ingresoTransferencias: row.ingresoTransferencias ? Number(row.ingresoTransferencias) : 0,
-          ingresoEfectivo: row.ingresoEfectivo ? Number(row.ingresoEfectivo) : 0,
+          ingresoTarjetas: row.ingresoTarjetas
+            ? Number(row.ingresoTarjetas)
+            : 0,
+          ingresoTransferencias: row.ingresoTransferencias
+            ? Number(row.ingresoTransferencias)
+            : 0,
+          ingresoEfectivo: row.ingresoEfectivo
+            ? Number(row.ingresoEfectivo)
+            : 0,
           gastosDiarios: row.gastosDiarios ? Number(row.gastosDiarios) : 0,
           otrosAbonos: row.otrosAbonos ? Number(row.otrosAbonos) : 0,
           consultasMonto: row.consultasMonto ? Number(row.consultasMonto) : 0,
@@ -337,17 +343,22 @@ csvUploadRoutes.post("/import", async (c) => {
           changeReason: row.changeReason ? String(row.changeReason) : null,
         };
 
-        const existing = await db.dailyProductionBalance.findUnique({ where: { balanceDate } });
+        const existing = await db.dailyProductionBalance.findUnique({
+          where: { balanceDate },
+        });
         if (existing) {
-          await db.dailyProductionBalance.update({ where: { balanceDate }, data: productionData });
+          await db.dailyProductionBalance.update({
+            where: { balanceDate },
+            data: productionData,
+          });
           updated++;
         } else {
-          await db.dailyProductionBalance.create({ 
-            data: { 
-              balanceDate, 
+          await db.dailyProductionBalance.create({
+            data: {
+              balanceDate,
               ...productionData,
               createdBy: auth.userId,
-            } 
+            },
           });
           inserted++;
         }
@@ -357,8 +368,11 @@ csvUploadRoutes.post("/import", async (c) => {
           name: String(row.name),
           serviceType: (row.type as any) || "BUSINESS",
           frequency: (row.frequency as any) || "MONTHLY",
-          defaultAmount: row.defaultAmount ? new Decimal(Number(row.defaultAmount)) : new Decimal(0),
-          status: (row.status as "ACTIVE" | "INACTIVE" | "ARCHIVED") || "ACTIVE",
+          defaultAmount: row.defaultAmount
+            ? new Decimal(Number(row.defaultAmount))
+            : new Decimal(0),
+          status:
+            (row.status as "ACTIVE" | "INACTIVE" | "ARCHIVED") || "ACTIVE",
           counterpartId: person?.counterpart?.id || null,
         };
 
@@ -377,7 +391,10 @@ csvUploadRoutes.post("/import", async (c) => {
         });
 
         if (existing) {
-          await db.inventoryItem.update({ where: { id: existing.id }, data: itemData });
+          await db.inventoryItem.update({
+            where: { id: existing.id },
+            data: itemData,
+          });
           updated++;
         } else {
           await db.inventoryItem.create({ data: itemData });
@@ -393,10 +410,14 @@ csvUploadRoutes.post("/import", async (c) => {
 
         const dateStr = dayjs(String(row.workDate)).format("YYYY-MM-DD");
         const workDate = new Date(dateStr);
-        
+
         // Parse times if provided
-        const startTime = row.startTime ? new Date(`1970-01-01T${row.startTime}`) : null;
-        const endTime = row.endTime ? new Date(`1970-01-01T${row.endTime}`) : null;
+        const startTime = row.startTime
+          ? new Date(`1970-01-01T${row.startTime}`)
+          : null;
+        const endTime = row.endTime
+          ? new Date(`1970-01-01T${row.endTime}`)
+          : null;
 
         const timesheetData = {
           employeeId: person.employee.id,
@@ -416,7 +437,10 @@ csvUploadRoutes.post("/import", async (c) => {
         });
 
         if (existing) {
-          await db.employeeTimesheet.update({ where: { id: existing.id }, data: timesheetData });
+          await db.employeeTimesheet.update({
+            where: { id: existing.id },
+            data: timesheetData,
+          });
           updated++;
         } else {
           await db.employeeTimesheet.create({ data: timesheetData });
