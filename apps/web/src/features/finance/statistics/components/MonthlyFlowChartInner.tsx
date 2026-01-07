@@ -3,24 +3,34 @@
  * Separated for code splitting
  */
 
+import "dayjs/locale/es";
+
 import dayjs from "dayjs";
+import customParseFormat from "dayjs/plugin/customParseFormat";
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 import { fmtCLP } from "@/lib/format";
 
 import type { MonthlyFlowData } from "../types";
 
+dayjs.extend(customParseFormat);
+dayjs.locale("es");
+
 interface MonthlyFlowChartInnerProps {
   data: MonthlyFlowData[];
 }
 
 export default function MonthlyFlowChartInner({ data }: MonthlyFlowChartInnerProps) {
-  const chartData = data.map((item) => ({
-    month: dayjs(item.month + "-01").format("MMM YY"),
-    Ingresos: item.in,
-    Egresos: item.out,
-    Neto: item.net,
-  }));
+  const chartData = data.map((item) => {
+    // item.month viene como "YYYY-MM" (e.g., "2025-01")
+    const monthDate = dayjs(item.month + "-01", "YYYY-MM-DD");
+    return {
+      month: monthDate.isValid() ? monthDate.format("MMM YY") : item.month,
+      Ingresos: item.in,
+      Egresos: item.out,
+      Neto: item.net,
+    };
+  });
 
   return (
     <ResponsiveContainer width="100%" height={320}>
