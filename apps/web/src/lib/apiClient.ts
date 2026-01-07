@@ -186,7 +186,7 @@ async function request<T>(method: string, url: string, options?: RequestOptions)
 
   // Only set JSON content type if body is NOT FormData
   if (!(body instanceof FormData)) {
-    (headers as Record<string, string>)["Content-Type"] = "application/json";
+    (headers as Record<string, string>)["Content-Type"] = "application/json; charset=utf-8";
   }
 
   const config: RequestInit = {
