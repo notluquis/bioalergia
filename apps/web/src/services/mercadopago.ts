@@ -3,34 +3,12 @@
  * Types aligned with backend: server/schemas/mercadopago.ts
  */
 
-// Weekday type for weekly frequency
-type Weekday = "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday";
+import { MpReleaseConfigFormData, MpSettlementConfigFormData } from "../../shared/mercadopago";
 
-export interface MPReportConfig {
-  file_name_prefix: string;
-  columns: { key: string }[];
-  frequency: {
-    type: "daily" | "weekly" | "monthly";
-    value: number | Weekday; // daily=0, weekly=Weekday, monthly=1-31
-    hour: number;
-  };
-  sftp_info?: {
-    server?: string;
-    password?: string;
-    remote_dir?: string;
-    port?: number;
-    username?: string;
-  };
-  separator?: string;
-  display_timezone?: string; // default: "GMT-04"
-  report_translation?: "en" | "es" | "pt";
-  notification_email_list?: (string | null)[];
-  include_withdrawal_at_end?: boolean; // default: true
-  check_available_balance?: boolean; // default: true
-  compensate_detail?: boolean; // default: true
-  execute_after_withdrawal?: boolean; // default: false
-  scheduled?: boolean; // default: false
-}
+export type MpReportType = "release" | "settlement";
+
+// Consolidated Config Interface (Union of both)
+export type MPReportConfig = Partial<MpReleaseConfigFormData> & Partial<MpSettlementConfigFormData>;
 
 export interface MPReport {
   id: number;
@@ -46,7 +24,7 @@ export interface MPReport {
   report_id?: number;
   retries?: number;
   status?: string;
-  sub_type?: "release";
+  sub_type?: "release" | "settlement"; // added settlement
   user_id?: number;
   format?: string;
   file_name?: string;
@@ -76,21 +54,28 @@ async function handleApiError(res: Response, fallbackMessage: string): Promise<n
   throw new Error(errorMessage);
 }
 
+// Helper to get base URL
+function getBaseUrl(type: MpReportType = "release") {
+  return type === "release" ? "/api/mercadopago" : "/api/mercadopago/settlement";
+}
+
 export const MPService = {
-  getConfig: async (): Promise<MPReportConfig> => {
-    const res = await fetch("/api/mercadopago/config");
+  getConfig: async (type: MpReportType = "release"): Promise<MPReportConfig> => {
+    const baseUrl = getBaseUrl(type);
+    const res = await fetch(`${baseUrl}/config`);
     if (!res.ok) {
-      // Config might not exist yet (404), return null-ish or throw
+      // Config might not exist yet (404), return empty or throw
       if (res.status === 404) {
-        throw new Error("No hay configuración de MercadoPago. Crea una nueva.");
+        throw new Error("No hay configuración. Crea una nueva.");
       }
       await handleApiError(res, "Error al obtener configuración");
     }
     return res.json();
   },
 
-  updateConfig: async (data: Partial<MPReportConfig>): Promise<MPReportConfig> => {
-    const res = await fetch("/api/mercadopago/config", {
+  updateConfig: async (data: MPReportConfig, type: MpReportType = "release"): Promise<MPReportConfig> => {
+    const baseUrl = getBaseUrl(type);
+    const res = await fetch(`${baseUrl}/config`, {
       method: "PUT",
       headers: { "Content-Type": "application/json; charset=utf-8" },
       body: JSON.stringify(data),
@@ -99,8 +84,9 @@ export const MPService = {
     return res.json();
   },
 
-  createConfig: async (data: Partial<MPReportConfig>): Promise<MPReportConfig> => {
-    const res = await fetch("/api/mercadopago/config", {
+  createConfig: async (data: MPReportConfig, type: MpReportType = "release"): Promise<MPReportConfig> => {
+    const baseUrl = getBaseUrl(type);
+    const res = await fetch(`${baseUrl}/config`, {
       method: "POST",
       headers: { "Content-Type": "application/json; charset=utf-8" },
       body: JSON.stringify(data),
@@ -109,14 +95,16 @@ export const MPService = {
     return res.json();
   },
 
-  listReports: async (): Promise<MPReport[]> => {
-    const res = await fetch("/api/mercadopago/reports");
+  listReports: async (type: MpReportType = "release"): Promise<MPReport[]> => {
+    const baseUrl = getBaseUrl(type);
+    const res = await fetch(`${baseUrl}/reports`);
     if (!res.ok) await handleApiError(res, "Error al obtener reportes");
     return res.json();
   },
 
-  createReport: async (beginDate: string, endDate: string): Promise<MPReport> => {
-    const res = await fetch("/api/mercadopago/reports", {
+  createReport: async (beginDate: string, endDate: string, type: MpReportType = "release"): Promise<MPReport> => {
+    const baseUrl = getBaseUrl(type);
+    const res = await fetch(`${baseUrl}/reports`, {
       method: "POST",
       headers: { "Content-Type": "application/json; charset=utf-8" },
       body: JSON.stringify({ begin_date: beginDate, end_date: endDate }),
@@ -125,20 +113,23 @@ export const MPService = {
     return res.json();
   },
 
-  downloadReport: async (fileName: string): Promise<Blob> => {
-    const res = await fetch(`/api/mercadopago/reports/download/${encodeURIComponent(fileName)}`);
+  downloadReport: async (fileName: string, type: MpReportType = "release"): Promise<Blob> => {
+    const baseUrl = getBaseUrl(type);
+    const res = await fetch(`${baseUrl}/reports/download/${encodeURIComponent(fileName)}`);
     if (!res.ok) await handleApiError(res, "Error al descargar reporte");
     return res.blob();
   },
 
-  enableSchedule: async (): Promise<MPReport> => {
-    const res = await fetch("/api/mercadopago/schedule", { method: "POST" });
+  enableSchedule: async (type: MpReportType = "release"): Promise<MPReport> => {
+    const baseUrl = getBaseUrl(type);
+    const res = await fetch(`${baseUrl}/schedule`, { method: "POST" });
     if (!res.ok) await handleApiError(res, "Error al activar programación");
     return res.json();
   },
 
-  disableSchedule: async (): Promise<MPReport> => {
-    const res = await fetch("/api/mercadopago/schedule", { method: "DELETE" });
+  disableSchedule: async (type: MpReportType = "release"): Promise<MPReport> => {
+    const baseUrl = getBaseUrl(type);
+    const res = await fetch(`${baseUrl}/schedule`, { method: "DELETE" });
     if (!res.ok) await handleApiError(res, "Error al desactivar programación");
     return res.json();
   },
