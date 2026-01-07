@@ -59,8 +59,19 @@ export function RoleFormModal({ role, isOpen, onClose }: RoleFormModalProps) {
       queryClient.invalidateQueries({ queryKey: ["roles"] }); // Refresh list
       onClose();
     },
-    onError: (error: Error) => {
-      toast.error(error.message || "Ocurrió un error al guardar el rol.", "Error");
+    onError: (err: Error) => {
+      let message = err.message || "Ocurrió un error al guardar el rol.";
+
+      const errorWithDetails = err as Error & { details?: unknown };
+
+      if ("details" in errorWithDetails && Array.isArray(errorWithDetails.details)) {
+        const issues = errorWithDetails.details
+          .map((i: { path: (string | number)[]; message: string }) => `${i.path.join(".")}: ${i.message}`)
+          .join("\n");
+        message = `Datos inválidos:\n${issues}`;
+      }
+
+      toast.error(message, "Error");
     },
   });
 
