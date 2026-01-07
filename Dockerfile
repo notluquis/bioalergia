@@ -30,6 +30,7 @@ RUN --mount=type=cache,id=s/cc493466-c691-4384-8199-99f757a14014-pnpm,target=/pn
 # STAGE 3: Builder - Build application
 # ============================================================================
 FROM deps AS builder
+ENV CI=true
 COPY . .
 # Build in sequence for reliability (ZenStack must finish before others)
 RUN pnpm --filter @finanzas/db build && \
