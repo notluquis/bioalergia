@@ -37,10 +37,7 @@ COPY --from=prune /app/out/full/ .
 # 3. Build artifacts (parallelized where possible)
 RUN pnpm --filter @finanzas/db build
 # Build web and api in parallel (web is the slowest)
-# Cache Vite build artifacts and TypeScript incremental builds
-RUN --mount=type=cache,id=s/cc493466-c691-4384-8199-99f757a14014-vite,target=/app/apps/web/node_modules/.vite \
-    --mount=type=cache,id=s/cc493466-c691-4384-8199-99f757a14014-tsbuildinfo,target=/app/.tsbuildinfo \
-    pnpm --filter @finanzas/web --filter @finanzas/api build
+RUN pnpm --filter @finanzas/web --filter @finanzas/api build
 
 # 4. Prepare deployment (Isolate API production deps)
 RUN --mount=type=cache,id=s/cc493466-c691-4384-8199-99f757a14014-pnpm,target=/pnpm/store \
