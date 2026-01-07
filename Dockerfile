@@ -1,75 +1,78 @@
-# ============================================================================
-# STAGE 1: Prune - Generate minimal lockfile and source set
-# ============================================================================
-FROM node:current-slim AS prune
-WORKDIR /app
-RUN npm install -g turbo
-COPY . .
-# Prune for both API (service) and Web (assets)
-RUN turbo prune --scope=@finanzas/api --scope=@finanzas/web --docker
+# syntax=docker/dockerfile:1.4
+# Multi-stage Dockerfile optimized for Railway - adapted from working f7df51b config
 
 # ============================================================================
-# STAGE 2: Build - Install deps and compile
+# STAGE 1: Base - Install pnpm and system dependencies
 # ============================================================================
-FROM node:current-slim AS build
+FROM node:current-slim AS base
 WORKDIR /app
-
-# System deps for native modules (argon2)
+# System deps for native modules (argon2, better-sqlite3)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     python3 \
     && rm -rf /var/lib/apt/lists/*
-
 RUN npm install -g pnpm@10.27.0
-ENV CI=true
+COPY pnpm-lock.yaml pnpm-workspace.yaml ./
 
-ENV PNPM_STORE_DIR=/pnpm/store
-
-# 1. Install dependencies (Cached Layer)
-# Copy only package.json's and lockfile from prune stage
-COPY --from=prune /app/out/json/ .
+# ============================================================================
+# STAGE 2: Dependencies - Install all dependencies
+# ============================================================================
+FROM base AS deps
+COPY package*.json ./
+COPY apps/web/package*.json ./apps/web/
+COPY apps/api/package*.json ./apps/api/
+COPY packages/db/package*.json ./packages/db/
+# Install all dependencies with cache mount
 RUN --mount=type=cache,id=s/cc493466-c691-4384-8199-99f757a14014-pnpm,target=/pnpm/store \
     pnpm install --frozen-lockfile
 
-# 2. Copy source code (Cached Layer)
-COPY --from=prune /app/out/full/ .
+# ============================================================================
+# STAGE 3: Builder - Build application
+# ============================================================================
+FROM deps AS builder
+COPY . .
+# Build in sequence for reliability (ZenStack must finish before others)
+RUN pnpm --filter @finanzas/db build && \
+    pnpm --filter @finanzas/web --filter @finanzas/api build
 
-# 3. Build artifacts (parallelized where possible)
-RUN pnpm --filter @finanzas/db build
-# Build web and api in parallel (web is the slowest)
-RUN pnpm --filter @finanzas/web --filter @finanzas/api build
-
-# 4. Prepare deployment (Isolate API production deps)
+# ============================================================================
+# STAGE 4: Production Dependencies - Fresh install prod only
+# ============================================================================
+FROM base AS prod-deps
+COPY package*.json ./
+COPY apps/web/package*.json ./apps/web/
+COPY apps/api/package*.json ./apps/api/
+COPY packages/db/package*.json ./packages/db/
+# Install ONLY production dependencies
 RUN --mount=type=cache,id=s/cc493466-c691-4384-8199-99f757a14014-pnpm,target=/pnpm/store \
-    pnpm deploy --filter=@finanzas/api --prod /app/deploy
-
-# 5. Copy built artifacts to deployment folder
-# (pnpm deploy copies sources, we need the build outputs)
-RUN cp -r apps/api/dist /app/deploy/dist && \
-    cp -r packages/db/dist /app/deploy/node_modules/@finanzas/db/dist
-
-# 6. Copy frontend assets to API public folder
-RUN mkdir -p /app/deploy/public && \
-    cp -r apps/web/dist/client/* /app/deploy/public/
-
-# 7. Cleanup
-RUN find /app/deploy -name "prisma" -type d -exec rm -rf {} + 2>/dev/null || true
+    pnpm install --frozen-lockfile --prod
 
 # ============================================================================
-# STAGE 3: Runtime - Pure production image
+# STAGE 5: Runner - Production image
 # ============================================================================
-FROM node:current-slim
-
+FROM node:current-slim AS runner
 WORKDIR /app
-
-# Copy only the prepared deployment
-COPY --from=build /app/deploy ./
-
 ENV NODE_ENV=production
 ENV PORT=3000
-ENV NODE_OPTIONS="--enable-source-maps"
+
+# Copy prod dependencies
+COPY --from=prod-deps /app/node_modules ./node_modules
+COPY --from=prod-deps /app/apps/api/node_modules ./apps/api/node_modules
+COPY --from=prod-deps /app/packages/db/node_modules ./packages/db/node_modules
+
+# Copy ZenStack generated client from builder
+COPY --from=builder /app/packages/db/dist ./packages/db/dist
+
+# Copy built artifacts
+COPY --from=builder /app/apps/api/dist ./apps/api/dist
+COPY --from=builder /app/apps/web/dist/client ./public
+
+# Copy necessary config files
+COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/apps/api/package*.json ./apps/api/
+COPY --from=builder /app/packages/db/package*.json ./packages/db/
 
 EXPOSE 3000
 
-# Use tsx for robust ESM path resolution (handles extensionless imports in JS)
-CMD ["node_modules/.bin/tsx", "dist/index.js"]
+# Start with node directly (no tsx overhead in production)
+CMD ["node", "apps/api/dist/index.js"]
