@@ -398,7 +398,7 @@ export default function RolesSettingsPage() {
                                         <tr>
                                           <td colSpan={displayRoles.length + 1} className="border-0 p-0">
                                             <SmoothCollapse isOpen={isOpen}>
-                                              <table className="w-full table-auto table-fixed border-collapse">
+                                              <table className="w-full table-fixed border-collapse">
                                                 <tbody>
                                                   {item.relatedPermissions.map((perm) => {
                                                     const actionMap: Record<string, string> = {

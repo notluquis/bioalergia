@@ -42,7 +42,7 @@ export default function InventoryPage() {
   });
 
   const items =
-    (itemsData as any[])?.map((item) => ({
+    (itemsData as InventoryItem[])?.map((item) => ({
       ...item,
       current_stock: item.currentStock, // Map to frontend expected field
       category_id: item.categoryId,
