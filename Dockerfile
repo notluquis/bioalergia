@@ -13,7 +13,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     python3 \
     && rm -rf /var/lib/apt/lists/*
-RUN corepack enable && corepack prepare pnpm@10.27.0 --activate
+# Install corepack first (not included in slim image), then enable pnpm
+RUN npm install -g corepack && \
+    corepack enable && \
+    corepack prepare pnpm@10.27.0 --activate
 
 # ============================================================================
 # STAGE 2: Build - Install, build, and deploy
