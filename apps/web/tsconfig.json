@@ -5,6 +5,8 @@
     "lib": ["DOM", "DOM.Iterable", "ESNext"],
     "allowJs": false,
     "skipLibCheck": true,
+    "incremental": true,
+    "tsBuildInfoFile": "../../.tsbuildinfo/web.tsbuildinfo",
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "strict": true,

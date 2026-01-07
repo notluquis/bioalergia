@@ -14,6 +14,7 @@ test/
 dist/client/
 .vite/
 .turbo/
+.tsbuildinfo/
 
 # Development tools
 .vscode/
