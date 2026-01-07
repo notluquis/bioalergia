@@ -40,7 +40,7 @@ export default function EmployeesPage() {
   type EmployeeWithPerson = (typeof rawEmployees)[number];
   const employees = rawEmployees.map((e: EmployeeWithPerson) => ({
     ...e,
-    full_name: getPersonFullName(e.person || {}) || "Sin nombre",
+    full_name: e.person ? getPersonFullName(e.person) : "Sin nombre",
   }));
 
   // Mutation for deactivating (Soft Delete)

@@ -241,14 +241,6 @@ export default function ReportsPage() {
 
   return (
     <section className={PAGE_CONTAINER}>
-      {/* Header */}
-      <header>
-        <h1 className={TITLE_LG}>Reportería y Análisis</h1>
-        <p className="text-base-content/70 mt-1 text-sm">
-          Visualiza tendencias, compara desempeño y exporta datos históricos
-        </p>
-      </header>
-
       {/* Main Controls */}
       <div className="grid gap-6 lg:grid-cols-12">
         {/* Left Column: Filters */}
