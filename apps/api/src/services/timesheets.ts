@@ -84,32 +84,32 @@ function timeToMinutes(time: string): number | null {
  */
 function normalizeTimeString(time: string): string | null {
   if (!time) return null;
-  
+
   // Check if it's an ISO timestamp (contains 'T' or '-')
   const d = dayjs(time);
-  if (d.isValid() && (time.includes('T') || time.includes('-'))) {
+  if (d.isValid() && (time.includes("T") || time.includes("-"))) {
     // Parse as ISO timestamp and convert to Santiago timezone
     const santiago = d.tz(TIMEZONE);
     const h = santiago.hour();
     const m = santiago.minute();
     const s = santiago.second();
-    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
   }
-  
+
   // Match HH:MM or HH:MM:SS format
   const match = time.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
   if (!match) return null;
-  
-  const [, hours, minutes, seconds = '00'] = match;
+
+  const [, hours, minutes, seconds = "00"] = match;
   const h = parseInt(hours!, 10);
   const m = parseInt(minutes!, 10);
   const s = parseInt(seconds, 10);
-  
+
   // Validate ranges
   if (h < 0 || h > 23 || m < 0 || m >= 60 || s < 0 || s >= 60) return null;
-  
+
   // Return as HH:MM:SS
-  return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
 }
 
 /**
@@ -119,7 +119,7 @@ function normalizeTimeString(time: string): string | null {
  */
 function timeStringToDate(
   time: string | null | undefined,
-  referenceDate: Date = new Date()
+  referenceDate: Date = new Date(),
 ): Date | null {
   if (!time) return null;
 
@@ -163,13 +163,13 @@ function timeStringToDate(
  */
 function dateToTimeString(date: Date | string | null): string | null {
   if (!date) return null;
-  
+
   // If it's already a string in HH:MM or HH:MM:SS format, extract just HH:MM
-  if (typeof date === 'string') {
+  if (typeof date === "string") {
     const match = date.match(/^(\d{1,2}):(\d{2})/);
     if (match) {
       const [, hours, minutes] = match;
-      return `${hours!.padStart(2, '0')}:${minutes}`;
+      return `${hours!.padStart(2, "0")}:${minutes}`;
     }
     // Try parsing as date/time
     const d = dayjs(date);
@@ -178,7 +178,7 @@ function dateToTimeString(date: Date | string | null): string | null {
     }
     return null;
   }
-  
+
   const d = dayjs(date);
   if (!d.isValid()) return null;
   return d.format("HH:mm");
@@ -204,7 +204,7 @@ function mapTimesheetEntry(entry: EmployeeTimesheet): TimesheetEntry {
 // Repository Functions
 
 export async function getTimesheetEntryById(
-  id: number
+  id: number,
 ): Promise<TimesheetEntry> {
   const entry = await db.employeeTimesheet.findUnique({
     where: { id: BigInt(id) },
@@ -219,7 +219,7 @@ export async function getTimesheetEntryById(
  */
 export async function ensureFixedSalaryRecord(
   employeeId: number,
-  month: string // Format: YYYY-MM
+  month: string, // Format: YYYY-MM
 ): Promise<void> {
   const employee = await getEmployeeById(employeeId);
   if (!employee || employee.salaryType !== "FIXED") {
@@ -230,7 +230,7 @@ export async function ensureFixedSalaryRecord(
   const monthStart = new Date(`${month}-01`);
   const monthEnd = new Date(monthStart);
   monthEnd.setMonth(monthEnd.getMonth() + 1);
-  
+
   // Check if record already exists for this month
   const existing = await db.employeeTimesheet.findFirst({
     where: {
@@ -266,7 +266,7 @@ export async function ensureFixedSalaryRecord(
 }
 
 export async function listTimesheetEntries(
-  options: ListTimesheetOptions
+  options: ListTimesheetOptions,
 ): Promise<TimesheetEntry[]> {
   // For FIXED employees, ensure they have a monthly record
   if (options.employee_id) {
@@ -293,16 +293,20 @@ export async function listTimesheetEntries(
 }
 
 export async function upsertTimesheetEntry(
-  payload: UpsertTimesheetPayload
+  payload: UpsertTimesheetPayload,
 ): Promise<TimesheetEntry> {
   const workDateObj = new Date(payload.work_date);
 
   // Convert time strings directly to HH:MM:SS format for PostgreSQL TIME columns
   // No timezone conversion - keep as-is from user input
-  const startTimeStr = payload.start_time ? normalizeTimeString(payload.start_time) : null;
-  const endTimeStr = payload.end_time ? normalizeTimeString(payload.end_time) : null;
+  const startTimeStr = payload.start_time
+    ? normalizeTimeString(payload.start_time)
+    : null;
+  const endTimeStr = payload.end_time
+    ? normalizeTimeString(payload.end_time)
+    : null;
 
-  console.log('[timesheets] upsert input:', {
+  console.log("[timesheets] upsert input:", {
     payload_start: payload.start_time,
     payload_end: payload.end_time,
     normalized_start: startTimeStr,
@@ -340,12 +344,12 @@ export async function upsertTimesheetEntry(
           worked_minutes: workedMinutes,
           overtime_minutes: payload.overtime_minutes,
           comment: payload.comment ?? null,
-        })
+        }),
       )
       .returningAll()
       .executeTakeFirstOrThrow();
 
-    console.log('[timesheets] upsert result from DB:', {
+    console.log("[timesheets] upsert result from DB:", {
       id: result.id,
       start_time: result.start_time,
       end_time: result.end_time,
@@ -381,7 +385,7 @@ export async function upsertTimesheetEntry(
 
 export async function updateTimesheetEntry(
   id: number,
-  data: UpdateTimesheetPayload
+  data: UpdateTimesheetPayload,
 ): Promise<TimesheetEntry> {
   const updateData: EmployeeTimesheetUpdateInput = {};
 
@@ -501,33 +505,41 @@ export function computePayDate(role: string, periodStart: string): string {
   const nextMonthFirstDay = new Date(
     startDate.getFullYear(),
     startDate.getMonth() + 1,
-    1
+    1,
   );
-  
+
   const roleUpper = role.toUpperCase();
-  
+
   // Técnico en Enfermería Nivel Superior: día 5 calendario del mes siguiente
-  if (roleUpper.includes("TÉCNICO EN ENFERMERÍA NIVEL SUPERIOR") || 
-      roleUpper.includes("TECNICO EN ENFERMERIA NIVEL SUPERIOR")) {
+  if (
+    roleUpper.includes("TÉCNICO EN ENFERMERÍA NIVEL SUPERIOR") ||
+    roleUpper.includes("TECNICO EN ENFERMERIA NIVEL SUPERIOR")
+  ) {
     return formatDateOnly(
-      new Date(nextMonthFirstDay.getFullYear(), nextMonthFirstDay.getMonth(), 5)
+      new Date(
+        nextMonthFirstDay.getFullYear(),
+        nextMonthFirstDay.getMonth(),
+        5,
+      ),
     );
   }
-  
+
   // Enfermero Universitario: 5to día hábil del mes siguiente
-  if (roleUpper.includes("ENFERMERO UNIVERSITARIO") || 
-      roleUpper.includes("ENFERMERA UNIVERSITARIA")) {
+  if (
+    roleUpper.includes("ENFERMERO UNIVERSITARIO") ||
+    roleUpper.includes("ENFERMERA UNIVERSITARIA")
+  ) {
     return formatDateOnly(getNthBusinessDay(nextMonthFirstDay, 5));
   }
-  
+
   // Fallback para otros roles con "ENFER": 5to día hábil
   if (roleUpper.includes("ENFER")) {
     return formatDateOnly(getNthBusinessDay(nextMonthFirstDay, 5));
   }
-  
+
   // Otros: día 5 calendario del mes siguiente
   return formatDateOnly(
-    new Date(nextMonthFirstDay.getFullYear(), nextMonthFirstDay.getMonth(), 5)
+    new Date(nextMonthFirstDay.getFullYear(), nextMonthFirstDay.getMonth(), 5),
   );
 }
 
@@ -540,7 +552,7 @@ export function buildEmployeeSummary(
     workedMinutes: number;
     overtimeMinutes: number;
     periodStart: string;
-  }
+  },
 ) {
   if (!employee) {
     return {
@@ -564,7 +576,10 @@ export function buildEmployeeSummary(
 
   // Get year from period start (format: YYYY-MM-DD)
   const periodYear = parseInt(data.periodStart.split("-")[0], 10);
-  const retentionRate = getEffectiveRetentionRate(Number(employee.retentionRate ?? 0), periodYear);
+  const retentionRate = getEffectiveRetentionRate(
+    Number(employee.retentionRate ?? 0),
+    periodYear,
+  );
   const payDate = computePayDate(employee.position, data.periodStart);
 
   // Handle FIXED salary employees differently
@@ -596,7 +611,7 @@ export function buildEmployeeSummary(
   // Handle HOURLY employees (existing logic)
   const hourlyRate = Number(employee.hourlyRate ?? 0);
   const overtimeRate = Number(employee.overtimeRate ?? 0) || hourlyRate * 1.5;
-  
+
   const basePay = roundCurrency((data.workedMinutes / 60) * hourlyRate);
   const overtimePay = roundCurrency((data.overtimeMinutes / 60) * overtimeRate);
   const subtotal = roundCurrency(basePay + overtimePay);
@@ -628,11 +643,11 @@ export function buildEmployeeSummary(
 export async function buildMonthlySummary(
   from: string,
   to: string,
-  employeeId?: number
+  employeeId?: number,
 ) {
   const employees = await listEmployees();
   const employeeMap = new Map(
-    employees.map((employee) => [employee.id, employee])
+    employees.map((employee) => [employee.id, employee]),
   );
 
   const summaryData = await db.employeeTimesheet.groupBy({
@@ -682,7 +697,10 @@ export async function buildMonthlySummary(
   // Include FIXED salary employees without timesheets
   for (const employee of employees) {
     // Skip if already processed or not active
-    if (employeesWithTimesheets.has(employee.id) || employee.status !== "ACTIVE") {
+    if (
+      employeesWithTimesheets.has(employee.id) ||
+      employee.status !== "ACTIVE"
+    ) {
       continue;
     }
     // Skip if filtering by specific employee and this isn't it
