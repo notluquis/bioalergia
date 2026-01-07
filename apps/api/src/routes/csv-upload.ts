@@ -54,6 +54,37 @@ async function findPersonByRut(rut: string) {
   });
 }
 
+// Clean amount string (removes $, commas, dots for thousands)
+function cleanAmount(value: unknown): number {
+  if (value == null || value === "") return 0;
+  const str = String(value)
+    .trim()
+    .replace(/\$/g, "") // Remove $
+    .replace(/\./g, "") // Remove dots (thousands separator in CLP)
+    .replace(/,/g, "."); // Replace comma with dot (decimal separator)
+  const num = Number(str);
+  return isNaN(num) ? 0 : num;
+}
+
+// Parse date from DD/M/YYYY or DD/MM/YYYY format
+function parseFlexibleDate(value: unknown): string | null {
+  if (!value) return null;
+  const str = String(value).trim();
+  
+  // Try DD/M/YYYY or DD/MM/YYYY format
+  const match = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (match) {
+    const [, day, month, year] = match;
+    const paddedDay = day.padStart(2, "0");
+    const paddedMonth = month.padStart(2, "0");
+    return `${year}-${paddedMonth}-${paddedDay}`;
+  }
+  
+  // Fallback to dayjs parsing
+  const parsed = dayjs(str);
+  return parsed.isValid() ? parsed.format("YYYY-MM-DD") : null;
+}
+
 // Permission mapping
 const TABLE_PERMISSIONS: Record<
   TableName,
@@ -134,8 +165,13 @@ csvUploadRoutes.post("/preview", async (c) => {
         });
         if (exists) toUpdate++;
         else toInsert++;
-      } else if (table === "daily_production_balances" && row.balanceDate) {
-        const dateStr = dayjs(String(row.balanceDate)).format("YYYY-MM-DD");
+      } else if (table === "daily_production_balances") {
+        const dateStr = parseFlexibleDate(row.balanceDate || row.Fecha);
+        if (!dateStr) {
+          errors.push(`Fila ${i + 1}: Fecha inválida`);
+          toSkip++;
+          continue;
+        }
         const exists = await db.dailyProductionBalance.findUnique({
           where: { balanceDate: new Date(dateStr) },
         });
@@ -318,27 +354,27 @@ csvUploadRoutes.post("/import", async (c) => {
           inserted++;
         }
       } else if (table === "daily_production_balances") {
-        const dateStr = dayjs(String(row.balanceDate)).format("YYYY-MM-DD");
+        const dateStr = parseFlexibleDate(row.balanceDate || row.Fecha);
+        if (!dateStr) {
+          errors.push(`Fila ${i + 1}: Fecha inválida`);
+          skipped++;
+          continue;
+        }
         const balanceDate = new Date(dateStr);
+        
         const productionData = {
-          ingresoTarjetas: row.ingresoTarjetas
-            ? Number(row.ingresoTarjetas)
-            : 0,
-          ingresoTransferencias: row.ingresoTransferencias
-            ? Number(row.ingresoTransferencias)
-            : 0,
-          ingresoEfectivo: row.ingresoEfectivo
-            ? Number(row.ingresoEfectivo)
-            : 0,
-          gastosDiarios: row.gastosDiarios ? Number(row.gastosDiarios) : 0,
-          otrosAbonos: row.otrosAbonos ? Number(row.otrosAbonos) : 0,
-          consultasMonto: row.consultasMonto ? Number(row.consultasMonto) : 0,
-          controlesMonto: row.controlesMonto ? Number(row.controlesMonto) : 0,
-          testsMonto: row.testsMonto ? Number(row.testsMonto) : 0,
-          vacunasMonto: row.vacunasMonto ? Number(row.vacunasMonto) : 0,
-          licenciasMonto: row.licenciasMonto ? Number(row.licenciasMonto) : 0,
-          roxairMonto: row.roxairMonto ? Number(row.roxairMonto) : 0,
-          comentarios: row.comentarios ? String(row.comentarios) : null,
+          ingresoTarjetas: cleanAmount(row.ingresoTarjetas || row["INGRESO TARJETAS"]),
+          ingresoTransferencias: cleanAmount(row.ingresoTransferencias || row["INGRESO TRANSFERENCIAS"]),
+          ingresoEfectivo: cleanAmount(row.ingresoEfectivo || row["INGRESO EFECTIVO"]),
+          gastosDiarios: cleanAmount(row.gastosDiarios || row["GASTOS DIARIOS"]),
+          otrosAbonos: cleanAmount(row.otrosAbonos || row["Otros/abonos"]),
+          consultasMonto: cleanAmount(row.consultasMonto || row.CONSULTAS),
+          controlesMonto: cleanAmount(row.controlesMonto || row.CONTROLES),
+          testsMonto: cleanAmount(row.testsMonto || row.TEST),
+          vacunasMonto: cleanAmount(row.vacunasMonto || row.VACUNAS),
+          licenciasMonto: cleanAmount(row.licenciasMonto || row.LICENCIAS),
+          roxairMonto: cleanAmount(row.roxairMonto || row.ROXAIR),
+          comentarios: row.comentarios || row.Comentarios ? String(row.comentarios || row.Comentarios) : null,
           status: (row.status as "DRAFT" | "FINAL") || "DRAFT",
           changeReason: row.changeReason ? String(row.changeReason) : null,
         };
