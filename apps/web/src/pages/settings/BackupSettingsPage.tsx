@@ -385,6 +385,7 @@ function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () =>
   const queryClient = useQueryClient();
   const [isExpanded, setIsExpanded] = useState(false);
   const [selectedTables, setSelectedTables] = useState<string[]>([]);
+  const [showAllTables, setShowAllTables] = useState(false);
 
   const canRestore = can("update", "Backup");
 
@@ -514,36 +515,31 @@ function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () =>
                           </p>
                           <button
                             className="text-primary mt-2 text-xs hover:underline"
-                            onClick={() => {
-                              const el = document.getElementById(`unchanged-tables-${backup.id}`);
-                              if (el) el.style.display = el.style.display === "none" ? "grid" : "none";
-                            }}
+                            onClick={() => setShowAllTables(!showAllTables)}
                           >
-                            Ver todas las tablas de todas formas
+                            {showAllTables ? "Ocultar tablas" : "Ver todas las tablas de todas formas"}
                           </button>
-                          <div
-                            id={`unchanged-tables-${backup.id}`}
-                            className="mt-3 grid grid-cols-2 gap-2 text-left sm:grid-cols-3 md:grid-cols-4"
-                            style={{ display: "none" }}
-                          >
-                            {allTables.map((table) => (
-                              <label
-                                key={table}
-                                className={cn(
-                                  "border-base-content/10 hover:bg-base-content/5 flex cursor-pointer items-center gap-2 rounded-lg border p-2 text-sm transition-colors",
-                                  selectedTables.includes(table) ? "border-primary bg-primary/5" : ""
-                                )}
-                              >
-                                <input
-                                  type="checkbox"
-                                  className="checkbox checkbox-primary checkbox-sm"
-                                  checked={selectedTables.includes(table)}
-                                  onChange={() => toggleTable(table)}
-                                />
-                                <span className="flex-1 truncate">{table}</span>
-                              </label>
-                            ))}
-                          </div>
+                          {showAllTables && (
+                            <div className="mt-3 grid grid-cols-2 gap-2 text-left sm:grid-cols-3 md:grid-cols-4">
+                              {allTables.map((table) => (
+                                <label
+                                  key={table}
+                                  className={cn(
+                                    "border-base-content/10 hover:bg-base-content/5 flex cursor-pointer items-center gap-2 rounded-lg border p-2 text-sm transition-colors",
+                                    selectedTables.includes(table) ? "border-primary bg-primary/5" : ""
+                                  )}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    className="checkbox checkbox-primary checkbox-sm"
+                                    checked={selectedTables.includes(table)}
+                                    onChange={() => toggleTable(table)}
+                                  />
+                                  <span className="flex-1 truncate">{table}</span>
+                                </label>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       );
                     }
