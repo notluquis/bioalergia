@@ -296,8 +296,9 @@ export const ROUTE_DATA: RouteData[] = [
       {
         path: "reports",
         componentPath: "features/hr/reports/pages/ReportsPage",
+        nav: { label: "Análisis", iconKey: "BarChart3", section: "Operaciones", order: 6 },
         permission: { action: "read", subject: "Report" },
-        title: "Reportes",
+        title: "Reportes y estadísticas",
       },
     ],
   },
