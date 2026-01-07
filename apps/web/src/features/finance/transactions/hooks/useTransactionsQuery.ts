@@ -39,6 +39,20 @@ function buildWhereInput(filters: TransactionsQueryParams["filters"]) {
     where.bankAccount = { contains: filters.bankAccountNumber };
   }
 
+  // Exclude test transactions by default (unless explicitly requested)
+  if (!filters.includeTest) {
+    where.AND = where.AND || [];
+    where.AND.push({
+      NOT: {
+        OR: [
+          { description: { contains: "test", mode: "insensitive" } },
+          { sourceId: { contains: "test", mode: "insensitive" } },
+          { externalReference: { contains: "test", mode: "insensitive" } },
+        ],
+      },
+    });
+  }
+
   return where;
 }
 
