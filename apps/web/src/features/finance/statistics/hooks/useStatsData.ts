@@ -56,7 +56,7 @@ export function useStatsData(): UseStatsDataResult {
   // Top participants query
   const participantsQuery = useQuery<TopParticipantData[], Error>({
     queryKey: ["top-participants", { from, to }],
-    queryFn: () => fetchTopParticipants(from, to, 10, "outgoing"),
+    queryFn: () => fetchTopParticipants(from, to, 10),
     enabled: canView && Boolean(from && to),
     staleTime: 2 * 60 * 1000,
   });
