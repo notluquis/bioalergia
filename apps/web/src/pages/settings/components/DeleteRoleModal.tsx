@@ -45,8 +45,8 @@ export function DeleteRoleModal({ isOpen, onClose, role, allRoles }: DeleteRoleM
       queryClient.invalidateQueries({ queryKey: ["roles"] });
       onClose();
     },
-    onError: (error: { response?: { data?: { message?: string } } }) => {
-      toast.error(error.response?.data?.message || "No se pudo eliminar el rol", "Error");
+    onError: (error: Error) => {
+      toast.error(error.message || "No se pudo eliminar el rol", "Error");
     },
   });
 
