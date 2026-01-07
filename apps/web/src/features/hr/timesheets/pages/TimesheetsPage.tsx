@@ -404,12 +404,7 @@ export default function TimesheetsPage() {
   return (
     <section className={PAGE_CONTAINER}>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div className="space-y-2">
-          <h1 className={TITLE_LG}>Registro de horas y pagos</h1>
-          <p className="text-base-content/70 max-w-2xl text-sm">
-            Consolida horas trabajadas, extras y montos líquidos.
-          </p>
-        </div>
+        <h1 className={TITLE_LG}>Registro de horas y pagos</h1>
         <div className="flex flex-col gap-3 sm:flex-row">
           <div className="min-w-52">
             <Input

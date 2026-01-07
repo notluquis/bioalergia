@@ -9,7 +9,7 @@ import { lazy, Suspense } from "react";
 import type { MonthlyFlowData } from "../types";
 
 // Lazy load Recharts (heavy dependency)
-const RechartsComponent = lazy(() => import("./MonthlyFlowChartInner"));
+const MonthlyFlowChartInner = lazy(() => import("./MonthlyFlowChartInner.js"));
 
 interface MonthlyFlowChartProps {
   data: MonthlyFlowData[];
@@ -43,7 +43,7 @@ export default function MonthlyFlowChart({ data }: MonthlyFlowChartProps) {
           </div>
         }
       >
-        <RechartsComponent data={data} />
+        <MonthlyFlowChartInner data={data} />
       </Suspense>
     </div>
   );

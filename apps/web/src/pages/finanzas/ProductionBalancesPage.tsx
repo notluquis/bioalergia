@@ -127,22 +127,6 @@ export default function DailyProductionBalancesPage() {
 
   return (
     <section className="mx-auto w-full max-w-none space-y-6 p-4">
-      <header className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-base-content/70 text-xs tracking-wide uppercase">Balances diarios</p>
-          <h1 className="text-base-content text-2xl font-bold">Producción y cobros</h1>
-          <p className="text-base-content/60 text-sm">
-            Registra ingresos por método de pago y por servicio. Verifica que ambos totales coincidan antes de cerrar el
-            día.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button size="sm" onClick={handleGoToday}>
-            Ir a hoy
-          </Button>
-        </div>
-      </header>
-
       <div className="card bg-base-100 border-base-200 border shadow-sm">
         <div className="card-body gap-3 p-4 sm:p-5">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -153,6 +137,9 @@ export default function DailyProductionBalancesPage() {
               </h3>
             </div>
             <div className="flex gap-2">
+              <Button size="sm" onClick={handleGoToday}>
+                Ir a hoy
+              </Button>
               <Button size="sm" onClick={() => setCurrentDate((d) => d.subtract(1, "week"))}>
                 ← Semana previa
               </Button>

@@ -10,7 +10,7 @@ import Alert from "@/components/ui/Alert";
 import type { TopParticipantData } from "../types";
 
 // Lazy load pie chart
-const TopParticipantsPieChart = lazy(() => import("./TopParticipantsPieChart"));
+const TopParticipantsPieChart = lazy(() => import("./TopParticipantsPieChart.js"));
 
 interface TopParticipantsSectionProps {
   data: TopParticipantData[];

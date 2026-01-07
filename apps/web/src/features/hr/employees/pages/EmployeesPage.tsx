@@ -37,10 +37,10 @@ export default function EmployeesPage() {
   });
 
   // Calculate full_name for display compatibility
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const employees = (rawEmployees as any[]).map((e) => ({
+  type EmployeeWithPerson = (typeof rawEmployees)[number];
+  const employees = rawEmployees.map((e: EmployeeWithPerson) => ({
     ...e,
-    full_name: getPersonFullName((e.person as any) || {}) || "Sin nombre",
+    full_name: getPersonFullName(e.person || {}) || "Sin nombre",
   }));
 
   // Mutation for deactivating (Soft Delete)
@@ -97,12 +97,7 @@ export default function EmployeesPage() {
   return (
     <section className={PAGE_CONTAINER}>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div className="space-y-2">
-          <h1 className={TITLE_LG}>Equipo y tarifas</h1>
-          <p className="text-base-content/70 text-sm">
-            Registra trabajadores, correos y tarifas para calcular automáticamente los totales mensuales.
-          </p>
-        </div>
+        <h1 className={TITLE_LG}>Equipo y tarifas</h1>
         <div className="flex items-center gap-3">
           <Checkbox
             checked={includeInactive}

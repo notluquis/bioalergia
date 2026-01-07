@@ -8,7 +8,7 @@ import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import { fetchPeople } from "@/features/people/api";
 import { getPersonFullName, getPersonInitials } from "@/lib/person";
-import { BADGE_SM, PAGE_CONTAINER, TITLE_LG } from "@/lib/styles";
+import { BADGE_SM, PAGE_CONTAINER } from "@/lib/styles";
 
 export default function PersonManagementPage() {
   const navigate = useNavigate();
@@ -27,17 +27,6 @@ export default function PersonManagementPage() {
 
   return (
     <div className={PAGE_CONTAINER}>
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className={TITLE_LG}>Personas</h1>
-          <p className="text-base-content/60">Base de datos central de personas y entidades.</p>
-        </div>
-        <Button className="gap-2">
-          <Plus size={18} />
-          Nueva Persona
-        </Button>
-      </header>
-
       {/* Filters */}
       <div className="bg-base-100 flex items-center gap-4 rounded-2xl p-4 shadow-sm">
         <div className="relative flex-1">
@@ -50,6 +39,10 @@ export default function PersonManagementPage() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
+        <Button className="gap-2">
+          <Plus size={18} />
+          Nueva Persona
+        </Button>
       </div>
 
       {/* People List */}
