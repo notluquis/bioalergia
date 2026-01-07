@@ -57,7 +57,7 @@ export default function CounterpartsPage() {
     isLoading: listLoading,
     error: listError,
   } = useFindManyCounterpart({
-    orderBy: { name: "asc" },
+    orderBy: [{ person: { names: "asc" } }],
   });
 
   // Wrap counterparts in useMemo for stable reference
