@@ -29,8 +29,14 @@ RUN --mount=type=cache,id=s/cc493466-c691-4384-8199-99f757a14014-pnpm,target=/pn
 # ============================================================================
 # STAGE 3: Builder - Build application
 # ============================================================================
-FROM deps AS builder
+FROM base AS builder
 ENV CI=true
+# Copy installed node_modules from deps stage (not inherit the stage)
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/apps/web/node_modules ./apps/web/node_modules
+COPY --from=deps /app/apps/api/node_modules ./apps/api/node_modules
+COPY --from=deps /app/packages/db/node_modules ./packages/db/node_modules
+# Now copy source code
 COPY . .
 # Build in sequence for reliability (ZenStack must finish before others)
 # Use --offline to prevent pnpm from reinstalling packages
