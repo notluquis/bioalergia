@@ -41,7 +41,11 @@ const app = new Hono();
 app.use("/api/*", async (c, next) => {
   await next();
   const contentType = c.res.headers.get("Content-Type");
-  if (contentType && contentType.includes("application/json") && !contentType.includes("charset")) {
+  if (
+    contentType &&
+    contentType.includes("application/json") &&
+    !contentType.includes("charset")
+  ) {
     c.res.headers.set("Content-Type", "application/json; charset=utf-8");
   }
 });
@@ -52,7 +56,7 @@ app.use(
   cors({
     origin: process.env.CORS_ORIGIN || "http://localhost:5173",
     credentials: true,
-  })
+  }),
 );
 
 // Health check (at root for Railway healthcheck)
@@ -138,7 +142,7 @@ if (process.env.NODE_ENV === "production") {
     serveStatic({
       root: "./public",
       // Don't serve index.html for missing files yet - SPA fallback handles that
-    })
+    }),
   );
 
   // SPA fallback: serve index.html for all non-API, non-asset routes

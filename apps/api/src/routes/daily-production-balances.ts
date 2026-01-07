@@ -74,7 +74,7 @@ app.get("/", async (c) => {
         message: "Parámetros inválidos",
         issues: parsed.error.issues,
       },
-      400
+      400,
     );
   }
 
@@ -109,7 +109,7 @@ app.post("/", async (c) => {
         message: "Payload inválido",
         issues: parsed.error.issues,
       },
-      400
+      400,
     );
   }
 
@@ -151,7 +151,7 @@ app.put("/:id", async (c) => {
         message: "Payload inválido",
         issues: parsed.error.issues,
       },
-      400
+      400,
     );
   }
 
