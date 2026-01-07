@@ -160,17 +160,11 @@ export default defineConfig(({ mode }) => ({
     minify: "esbuild", // 2026: esbuild is standard for speed/size balance
     cssCodeSplit: true, // Split CSS for faster parallel loading
     reportCompressedSize: false, // Skip gzip size calculation during build (faster)
-    // Strategic chunking for build speed (fewer chunks = faster rollup)
+    // 2026: Trust the graph! Manual chunks often hurt HTTP/3 multiplexing.
+    // We let Vite/Rollup split based on dynamic imports (React.lazy).
     rollupOptions: {
       output: {
-        manualChunks: {
-          // Vendor chunk - large stable dependencies
-          vendor: ["react", "react-dom", "react-router-dom"],
-          // Charts - isolated bundle for lazy loading
-          charts: ["recharts"],
-          // Utils - shared utilities
-          utils: ["dayjs", "zod", "decimal.js"],
-        },
+        // manualChunks removed to allow granular graph-based splitting
       },
     },
   },
