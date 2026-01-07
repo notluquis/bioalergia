@@ -14,8 +14,7 @@ import { useAuth } from "@/context/AuthContext";
 import { fetchEmployees } from "@/features/hr/employees/api";
 import type { Employee } from "@/features/hr/employees/types";
 import { useMonths } from "@/features/hr/timesheets/hooks/useMonths";
-import { LOADING_SPINNER_SM } from "@/lib/styles";
-import { PAGE_CONTAINER, TITLE_LG } from "@/lib/styles";
+import { LOADING_SPINNER_SM, PAGE_CONTAINER } from "@/lib/styles";
 import { cn } from "@/lib/utils";
 
 import { fetchGlobalTimesheetRange } from "../api";

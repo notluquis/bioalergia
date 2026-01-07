@@ -14,7 +14,7 @@ import LoanForm from "@/features/finance/loans/components/LoanForm";
 import LoanList from "@/features/finance/loans/components/LoanList";
 import type { CreateLoanPayload, LoanSchedule, RegenerateSchedulePayload } from "@/features/finance/loans/types";
 import { today } from "@/lib/dates";
-import { PAGE_CONTAINER, TITLE_LG } from "@/lib/styles";
+import { PAGE_CONTAINER } from "@/lib/styles";
 
 export default function LoansPage() {
   const { can } = useAuth();
@@ -45,7 +45,8 @@ export default function LoansPage() {
     orderBy: { createdAt: "desc" },
   });
 
-  const loans = ((loansData as any[]) ?? []).map((loan) => ({
+  type LoanWithSchedules = (typeof loansData)[number];
+  const loans = (loansData ?? []).map((loan: LoanWithSchedules) => ({
     ...loan,
     public_id: loan.publicId,
   }));
@@ -174,9 +175,6 @@ export default function LoansPage() {
   if (!canView) {
     return (
       <section className={PAGE_CONTAINER}>
-        <div className="space-y-2">
-          <h1 className={TITLE_LG}>Préstamos y créditos</h1>
-        </div>
         <Alert variant="error">No tienes permisos para ver los préstamos registrados.</Alert>
       </section>
     );
@@ -184,13 +182,6 @@ export default function LoansPage() {
 
   return (
     <section className={PAGE_CONTAINER}>
-      <div className="space-y-2">
-        <h1 className={TITLE_LG}>Préstamos y créditos</h1>
-        <p className="text-base-content/70 text-sm">
-          Gestiona préstamos internos, cronogramas de pago y vincula cada cuota con las transacciones reales.
-        </p>
-      </div>
-
       {globalError && <Alert variant="error">{globalError}</Alert>}
 
       {loadingList && <p className="text-base-content/50 text-xs">Actualizando listado de préstamos...</p>}

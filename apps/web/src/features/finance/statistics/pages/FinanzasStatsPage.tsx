@@ -15,7 +15,7 @@ import Input from "@/components/ui/Input";
 import StatCard from "@/components/ui/StatCard";
 import { useAuth } from "@/context/AuthContext";
 import { BalanceSummary } from "@/features/finance/balances/components/BalanceSummary";
-import { PAGE_CONTAINER, TITLE_LG } from "@/lib/styles";
+import { PAGE_CONTAINER } from "@/lib/styles";
 
 import MonthlyFlowChart from "../components/MonthlyFlowChart";
 import MovementTypeList from "../components/MovementTypeList";
@@ -109,7 +109,6 @@ export default function FinanzasStatsPage() {
   if (!canView) {
     return (
       <section className={PAGE_CONTAINER}>
-        <h1 className={TITLE_LG}>Estadísticas</h1>
         <Alert variant="error">No tienes permisos para ver las estadísticas financieras.</Alert>
       </section>
     );
