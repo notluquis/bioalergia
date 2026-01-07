@@ -1,0 +1,168 @@
+---
+trigger: always_on
+---
+
+# Gemini Code Assist — finanzas-app Development Guide
+
+> **Optimized for Google Gemini Code Assist / Gemini 1.5 Pro+**
+> This guide provides structured context for intelligent code completion, generation, and refactoring.
+
+## 🎯 Quick Start
+
+```bash
+Stack:       React 19 (with React Compilr) + Vite + TypeScript | Node + Express + Prisma + PostgreSQL
+Development: npm run dev:full (full stack)
+Verify:      npm run type-check && npm run lint
+```
+
+**Critical Rules:**
+
+1. **NEVER use `bg-white`** → use `bg-base-100` (DaisyUI semantic token)
+2. **NEVER check `role === 'GOD'`** → use (RBAC)
+3. **Harmonic Layout** → use `pt-[env(safe-area-inset-top)]` for safe areas
+4. **ALWAYS verify** with `npm run type-check` before committing
+
+---
+
+## 📊 Architecture Overview
+
+### Frontend (src/)
+
+- **Framework**: React 19 + TypeScript + Vite
+- **Styling**: Tailwind CSS + DaisyUI (theme-aware)
+- **State**: TanStack Query (server state) + Zustand (client state)
+- **Structure**: `src/features/{domain}/` (colocated api, hooks, types)
+
+### Backend (server/)
+
+- **Framework**: Node + Express + TypeScript
+- **Database**: PostgreSQL via Prisma ORM (**NOT MySQL**)
+- **Auth**: Passkey (WebAuthn) + email/password + MFA
+- **Authorization**: CASL-based (`authorize` middleware)
+
+---
+
+## 🔴 Recent Critical Changes (2025 Standard)
+
+### 1. Semantic Roles (RBAC)
+
+- **Removed**: Hardcoded "GOD" / "ADMIN" checks.
+- **Use**: Permission-based checks:
+
+  ```typescript
+  // Backend
+  req.ability.throwUnlessCan('manage', 'Employee');
+
+  // Frontend
+  const { can } = useAuth();
+  if (can('read', 'CalendarEvent')) { ... }
+  ```
+
+### 2. Harmonic Layout & Safe Areas
+
+- Use `env()` utilities for "notch-aware" layout:
+  ```tsx
+  <div className="pt-[env(safe-area-inset-top)] pl-[env(safe-area-inset-left)]">
+  ```
+
+### 3. Theme & Contrast
+
+- **Text**: Use `text-base-content/70` for metadata (was `/40` or `/50`).
+- **Badges**: Use alpha backgrounds for dual-mode support:
+
+  ```tsx
+  // ✅ GOOD
+  <span className="bg-success/15 text-success">Active</span>
+
+  // ❌ BAD
+  <span className="bg-emerald-100 text-emerald-700">Active</span>
+  ```
+
+### 4. Database: PostgreSQL only
+
+- All raw SQL must use PostgreSQL syntax (`TO_CHAR`, `EXTRACT`, not `DATE_FORMAT`).
+- Use table names from `@@map`: `events`, `people`, etc.
+
+### 5. Tabs must use `end: true`
+
+- All layout tabs need `end: true` for correct active state (`CalendarLayout.tsx` etc).
+
+---
+
+## 💡 Coding Standards
+
+### Frontend Patterns
+
+#### Use DaisyUI Semantic Tokens
+
+```tsx
+// ✅ CORRECT - semantic tokens
+<div className="bg-base-100 text-base-content card shadow">
+  <h2 className="card-title">Título</h2>
+  <input className="input input-bordered" />
+</div>
+```
+
+#### Use Shared Button Component
+
+```tsx
+// ✅ CORRECT
+import Button from "@/components/ui/Button";
+<Button variant="primary" size="md" onClick={handleClick}>
+  Guardar
+</Button>;
+```
+
+#### Feature-Based API Organization
+
+```typescript
+// ✅ CORRECT - centralized in src/features/calendar/api.ts
+export async function fetchCalendarSummary(params: SummaryParams) { ... }
+```
+
+### Backend Patterns
+
+#### PostgreSQL Raw Queries
+
+```typescript
+// ✅ CORRECT
+const events = await prisma.$queryRaw`
+  SELECT TO_CHAR(start_date_time, 'YYYY-MM-DD') as date...
+`;
+```
+
+#### Amount Validation
+
+```typescript
+// ✅ CORRECT - validate before DB insert
+const MAX_INT32 = 2147483647;
+if (amount > MAX_INT32) ...
+```
+
+---
+
+## 🔧 MCP Tools Integration
+
+### Available Tools
+
+1. **Sequential Thinking** - Multi-step reasoning for complex problems
+2. **Context7** - Up-to-date library documentation
+
+---
+
+## 🛡️ Safety Rules (DO NOT VIOLATE)
+
+2. **Migrations**: NEVER modify deployed migrations. Create new ones.
+3. **Session Duration**: DO NOT change `sessionCookieOptions.maxAge` (24h).
+4. **Login Aesthetics**: DO NOT alter minimalist passkey-first login design.
+5. **Amount Validation**: ALWAYS validate amounts ≤ Int32 max.
+
+---
+
+## ✅ Pre-Commit Checklist
+
+```bash
+npm run type-check   # REQUIRED
+npm run lint         # REQUIRED
+npm run build        # Production build compliance
+```

@@ -351,7 +351,7 @@ export default function RolesSettingsPage() {
                       <tr>
                         <td colSpan={displayRoles.length + 1} className="border-0 p-0">
                           <SmoothCollapse isOpen={!!openSections[section.title]}>
-                            <table className="w-full table-fixed">
+                            <table className="w-full table-fixed border-collapse">
                               <tbody>
                                 {section.items.map((item) => {
                                   // const hasMultiple = item.relatedPermissions.length > 1; // Unused
@@ -370,7 +370,7 @@ export default function RolesSettingsPage() {
                                           className="bg-base-100/50 hover:bg-base-200/20 border-base-100 cursor-pointer border-b transition-colors"
                                           onClick={() => toggleItem(itemKey)}
                                         >
-                                          <td className="bg-base-100 border-base-300 w-80 border-r py-3 pl-8 text-sm font-semibold">
+                                          <td className="bg-base-100 border-base-300 w-80 min-w-80 border-r py-3 pl-8 text-sm font-semibold">
                                             <div className="flex items-center gap-2">
                                               <div className="text-base-content/40 flex h-4 w-4 items-center justify-center">
                                                 {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
@@ -389,7 +389,7 @@ export default function RolesSettingsPage() {
                                               }
                                               onToggle={handleBulkToggle}
                                               variant="page"
-                                              className="py-3"
+                                              className="w-32 min-w-32 py-3"
                                             />
                                           ))}
                                         </tr>
@@ -398,7 +398,7 @@ export default function RolesSettingsPage() {
                                         <tr>
                                           <td colSpan={displayRoles.length + 1} className="border-0 p-0">
                                             <SmoothCollapse isOpen={isOpen}>
-                                              <table className="w-full table-fixed">
+                                              <table className="w-full table-auto table-fixed border-collapse">
                                                 <tbody>
                                                   {item.relatedPermissions.map((perm) => {
                                                     const actionMap: Record<string, string> = {
@@ -414,7 +414,7 @@ export default function RolesSettingsPage() {
                                                         key={perm.id}
                                                         className="hover:bg-base-200/50 border-base-100 border-b transition-colors last:border-0"
                                                       >
-                                                        <td className="bg-base-100 border-base-300 w-80 border-r py-2 pl-16 text-sm">
+                                                        <td className="bg-base-100 border-base-300 w-80 min-w-80 border-r py-2 pl-16 text-sm">
                                                           <div className="flex flex-col">
                                                             <span className="flex items-center gap-2 font-medium">
                                                               {actionLabel}
@@ -431,6 +431,7 @@ export default function RolesSettingsPage() {
                                                             permissionId={perm.id}
                                                             isUpdating={false}
                                                             onToggle={handlePermissionToggle}
+                                                            className="w-32 min-w-32"
                                                           />
                                                         ))}
                                                       </tr>
@@ -464,7 +465,7 @@ export default function RolesSettingsPage() {
                                       key={perm.id}
                                       className="hover:bg-base-200/50 border-base-100 border-b transition-colors last:border-0"
                                     >
-                                      <td className="bg-base-100 border-base-300 w-80 border-r py-3 pl-8">
+                                      <td className="bg-base-100 border-base-300 w-80 min-w-80 border-r py-3 pl-8">
                                         <div className="flex flex-col">
                                           <span className="flex items-center gap-2 text-sm font-medium">
                                             <item.icon className="h-4 w-4 opacity-70" />
@@ -482,6 +483,7 @@ export default function RolesSettingsPage() {
                                           permissionId={perm.id}
                                           isUpdating={false}
                                           onToggle={handlePermissionToggle}
+                                          className="w-32 min-w-32"
                                         />
                                       ))}
                                     </tr>
