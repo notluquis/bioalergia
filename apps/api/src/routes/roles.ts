@@ -131,7 +131,7 @@ app.post("/:id/permissions", async (c) => {
 
 // Sync permissions - generates CRUD permissions for all subjects
 app.post("/permissions/sync", async (c) => {
-  const user = getSessionUser(c);
+  const user = await getSessionUser(c);
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
 
   try {

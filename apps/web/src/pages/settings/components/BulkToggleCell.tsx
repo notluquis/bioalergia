@@ -29,20 +29,20 @@ export function BulkToggleCell({
         onClick={() => onToggle(role, permissionIds)}
         disabled={isUpdating}
         title={allPresent ? "Desmarcar todos" : "Marcar todos"}
-        className="mx-auto flex h-6 w-6 items-center justify-center rounded-md transition-colors"
+        className="mx-auto flex h-8 w-full items-center justify-center rounded-md transition-colors"
       >
         {isUpdating ? (
-          <Loader2 className="text-base-content/40 h-3 w-3 animate-spin" />
+          <Loader2 className="text-base-content/40 h-4 w-4 animate-spin" />
         ) : allPresent ? (
-          <div className="bg-primary hover:bg-primary-focus flex h-4 w-4 items-center justify-center rounded shadow-sm transition-transform active:scale-95">
-            <CheckCheck size={10} className="text-primary-content" />
+          <div className="bg-primary hover:bg-primary-focus flex h-5 w-5 items-center justify-center rounded-md shadow-sm transition-transform active:scale-95">
+            <CheckCheck size={12} className="text-primary-content" />
           </div>
         ) : somePresent ? (
-          <div className="bg-primary/70 hover:bg-primary flex h-4 w-4 items-center justify-center rounded shadow-sm transition-transform active:scale-95">
-            <Minus size={10} className="text-primary-content" />
+          <div className="bg-primary/70 hover:bg-primary flex h-5 w-5 items-center justify-center rounded-md shadow-sm transition-transform active:scale-95">
+            <Minus size={12} className="text-primary-content" />
           </div>
         ) : (
-          <div className="border-base-300 hover:border-primary/50 hover:bg-primary/5 h-4 w-4 rounded border-2 transition-colors" />
+          <div className="border-base-300 hover:border-primary/50 hover:bg-primary/5 h-5 w-5 rounded-md border-2 transition-colors" />
         )}
       </button>
     </td>
