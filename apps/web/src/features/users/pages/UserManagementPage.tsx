@@ -34,7 +34,7 @@ import { useToast } from "@/context/ToastContext";
 import { deleteUserPasskey, resetUserPassword, toggleUserMfa } from "@/features/users/api";
 import type { User } from "@/features/users/types";
 import { getPersonFullName, getPersonInitials } from "@/lib/person";
-import { BADGE_SM, PAGE_CONTAINER, TITLE_LG } from "@/lib/styles";
+import { BADGE_SM, PAGE_CONTAINER } from "@/lib/styles";
 import { cn } from "@/lib/utils";
 
 dayjs.extend(relativeTime);
@@ -57,9 +57,10 @@ export default function UserManagementPage() {
   });
 
   // Filter out test/debug emails client-side (ZenStack where has limited support)
-  const users = ((usersData as any[]) ?? [])
-    .filter((u) => !u.email?.includes("test") && !u.email?.includes("debug"))
-    .map((u) => ({
+  type UserWithPerson = (typeof usersData)[number];
+  const users = (usersData ?? [])
+    .filter((u: UserWithPerson) => !u.email?.includes("test") && !u.email?.includes("debug"))
+    .map((u: UserWithPerson) => ({
       ...u,
       mfaEnabled: u.mfaEnabled ?? false,
       hasPasskey: u.hasPasskey ?? false,
@@ -69,7 +70,7 @@ export default function UserManagementPage() {
   const { data: rolesData } = useFindManyRole({
     orderBy: { name: "asc" },
   });
-  const roles = (rolesData as any[]) ?? [];
+  const roles = rolesData ?? [];
 
   // ZenStack mutations
   // ZenStack mutations
@@ -193,22 +194,6 @@ export default function UserManagementPage() {
 
   return (
     <div className={PAGE_CONTAINER}>
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className={TITLE_LG}>Usuarios y seguridad</h1>
-          </div>
-          <p className="text-base-content/60 text-sm">
-            Gestiona el acceso, roles y seguridad de las cuentas del sistema.
-          </p>
-        </div>
-        <Link to="/settings/users/add" className="btn btn-primary gap-2">
-          <UserPlus size={20} />
-          Agregar usuario
-        </Link>
-      </div>
-
       {/* Security Overview Cards */}
       {users && users.length > 0 && (
         <div className="grid gap-4 md:grid-cols-3">
@@ -280,6 +265,10 @@ export default function UserManagementPage() {
               </option>
             ))}
           </select>
+          <Link to="/settings/users/add" className="btn btn-primary gap-2">
+            <UserPlus size={20} />
+            Agregar usuario
+          </Link>
         </div>
 
         <div className="min-h-96 overflow-x-auto pb-32">

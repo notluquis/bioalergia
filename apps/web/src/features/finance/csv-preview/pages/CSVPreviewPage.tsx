@@ -12,7 +12,7 @@ import FileInput from "@/components/ui/FileInput";
 import Input from "@/components/ui/Input";
 import { useAuth } from "@/context/AuthContext";
 import { coerceAmount } from "@/lib/format";
-import { PAGE_CONTAINER, TITLE_LG } from "@/lib/styles";
+import { PAGE_CONTAINER } from "@/lib/styles";
 
 import ReportTable from "../components/ReportTable";
 import { useReportUpload } from "../hooks/useReportUpload";
@@ -56,7 +56,6 @@ export default function CSVPreviewPage() {
   if (!canView) {
     return (
       <section className={PAGE_CONTAINER}>
-        <h1 className={TITLE_LG}>Vista Previa CSV</h1>
         <Alert variant="error">No tienes permisos para ver esta página.</Alert>
       </section>
     );
@@ -64,14 +63,6 @@ export default function CSVPreviewPage() {
 
   return (
     <section className={PAGE_CONTAINER}>
-      {/* Header */}
-      <header>
-        <h1 className={TITLE_LG}>Vista Previa de Reportes CSV</h1>
-        <p className="text-base-content/70 mt-1 text-sm">
-          Visualiza y valida un CSV de Mercado Pago antes de cargarlo en la base de datos
-        </p>
-      </header>
-
       {/* Instructions Card */}
       <div className="bg-base-100 border-base-200 space-y-3 rounded-2xl border p-6 shadow-sm">
         <div className="flex items-start gap-3">
