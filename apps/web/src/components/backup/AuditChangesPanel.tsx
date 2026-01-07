@@ -72,7 +72,7 @@ export default function AuditChangesPanel() {
   const queryClient = useQueryClient();
   const [expanded, setExpanded] = useState<string | null>(null);
 
-  // Queries using ZenStack Hooks
+  // Queries using ZenStack Hooks - include user relation
   const {
     data: auditLogs,
     refetch,
@@ -80,6 +80,15 @@ export default function AuditChangesPanel() {
   } = useFindManyAuditLog({
     orderBy: { createdAt: "desc" },
     take: 50,
+    include: {
+      user: {
+        select: {
+          id: true,
+          email: true,
+          name: true,
+        },
+      },
+    },
   });
 
   // Calculate stats client-side since we're fetching the latest 50 anyway
@@ -133,6 +142,7 @@ export default function AuditChangesPanel() {
       transaction_id: "N/A", // Not present in new schema
       created_at: log.createdAt as unknown as string, // Date object/string handling
       exported_at: null, // Not present in basic log
+      user: log.user || null, // Include user info
     };
   });
 
@@ -248,6 +258,9 @@ export default function AuditChangesPanel() {
                         </p>
                         <p className="text-base-content/60 text-xs">
                           {dayjs(change.created_at).format("DD MMM HH:mm:ss")}
+                          {change.user && (
+                            <span className="text-base-content/40 ml-2">• {change.user.name || change.user.email}</span>
+                          )}
                         </p>
                       </div>
                     </div>
