@@ -33,8 +33,9 @@ FROM deps AS builder
 ENV CI=true
 COPY . .
 # Build in sequence for reliability (ZenStack must finish before others)
-RUN pnpm --filter @finanzas/db build && \
-    pnpm --filter @finanzas/web --filter @finanzas/api build
+# Use --offline to prevent pnpm from reinstalling packages
+RUN pnpm --offline --filter @finanzas/db build && \
+    pnpm --offline --filter @finanzas/web --filter @finanzas/api build
 
 # ============================================================================
 # STAGE 4: Production Dependencies - Fresh install prod only
