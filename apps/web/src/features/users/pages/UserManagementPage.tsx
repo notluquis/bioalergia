@@ -259,7 +259,7 @@ export default function UserManagementPage() {
             onChange={(e) => setRoleFilter(e.target.value)}
           >
             <option value="ALL">Todos los roles</option>
-            {roles?.map((role) => (
+            {roles?.map((role: { name: string }) => (
               <option key={role.name} value={role.name}>
                 {role.name}
               </option>
@@ -442,7 +442,7 @@ export default function UserManagementPage() {
               <option value="" disabled>
                 Seleccionar rol
               </option>
-              {roles?.map((role) => (
+              {roles?.map((role: { name: string }) => (
                 <option key={role.name} value={role.name}>
                   {role.name}
                 </option>
