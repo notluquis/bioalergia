@@ -41,12 +41,7 @@ export default function InventoryPage() {
     orderBy: { name: "asc" },
   });
 
-  const items =
-    (itemsData as InventoryItem[])?.map((item) => ({
-      ...item,
-      current_stock: item.currentStock, // Map to frontend expected field
-      category_id: item.categoryId,
-    })) ?? [];
+  const items = (itemsData as InventoryItem[]) ?? [];
 
   const [error, setError] = useState<string | null>(null);
   const [isItemModalOpen, setIsItemModalOpen] = useState(false);
