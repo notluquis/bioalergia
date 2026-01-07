@@ -9,7 +9,7 @@ import { useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
 import { Check, ChevronDown, ChevronUp, Search, Users, X } from "lucide-react";
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 
 import Alert from "@/components/ui/Alert";
 import Backdrop from "@/components/ui/Backdrop";
@@ -139,6 +139,9 @@ export default function TimesheetAuditPage() {
   const [customWeeksOpen, setCustomWeeksOpen] = useState(true);
   const [legendOpen, setLegendOpen] = useState(false);
 
+  // Ref to track if month has been initialized
+  const monthInitialized = useRef(false);
+
   // Build weeks for the selected month
   const weeksForMonth = selectedMonth ? buildWeeksForMonth(selectedMonth) : [];
 
@@ -151,11 +154,12 @@ export default function TimesheetAuditPage() {
     return activeEmployees.filter((emp) => emp.full_name.toLowerCase().includes(search));
   })();
 
-  // Set default month when months load (only once on mount or when months array changes)
+  // Set default month when months load (only once)
   useEffect(() => {
-    if (months.length && !selectedMonth) {
+    if (months.length && !selectedMonth && !monthInitialized.current) {
       const prevMonth = dayjs().subtract(1, "month").format("YYYY-MM");
       setSelectedMonth(months.includes(prevMonth) ? prevMonth : (months[0] ?? ""));
+      monthInitialized.current = true;
     }
   }, [months, selectedMonth]);
 
