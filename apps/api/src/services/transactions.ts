@@ -11,12 +11,13 @@ export type TransactionFilters = {
   description?: string;
   externalReference?: string;
   sourceId?: string;
+  includeTest?: boolean;
 };
 
 export async function listTransactions(
   filters: TransactionFilters,
   limit = 100,
-  offset = 0
+  offset = 0,
 ) {
   const where: any = {};
 
@@ -63,6 +64,19 @@ export async function listTransactions(
       { externalReference: { contains: filters.search, mode: "insensitive" } },
       { paymentMethod: { contains: filters.search, mode: "insensitive" } },
     ];
+  }
+
+  // Exclude test data by default
+  if (!filters.includeTest) {
+    where.NOT = {
+      OR: [
+        { description: { contains: "test", mode: "insensitive" } },
+        { description: { contains: "Test" } },
+        { sourceId: { contains: "TEST" } },
+        { sourceId: { contains: "test" } },
+        { externalReference: { contains: "test", mode: "insensitive" } },
+      ],
+    };
   }
 
   const [total, transactions] = await Promise.all([
@@ -112,45 +126,45 @@ export async function getParticipantLeaderboard(params: {
     .selectFrom("transactions")
     .select([
       sql<string>`COALESCE(metadata->>'recipient_rut', metadata->>'rut', metadata->>'identification_number')`.as(
-        "identificationNumber"
+        "identificationNumber",
       ),
       sql<string>`COALESCE(metadata->>'bank_account_holder_name', metadata->>'name', metadata->>'account_holder')`.as(
-        "bankAccountHolder"
+        "bankAccountHolder",
       ),
       sql<string>`COALESCE(metadata->>'bank_account_number', metadata->>'account_number')`.as(
-        "bankAccountNumber"
+        "bankAccountNumber",
       ),
       sql<string>`COALESCE(metadata->>'bank_name', metadata->>'bank')`.as(
-        "bankName"
+        "bankName",
       ),
       sql<string>`COALESCE(metadata->>'bank_account_type', metadata->>'account_type')`.as(
-        "bankAccountType"
+        "bankAccountType",
       ),
       sql<string>`COALESCE(metadata->>'withdraw_id', metadata->>'id')`.as(
-        "withdrawId"
+        "withdrawId",
       ),
       // Determine participant key (prefer RUT, then Account, then Name)
       sql<string>`COALESCE(metadata->>'recipient_rut', metadata->>'rut', metadata->>'identification_number', metadata->>'bank_account_number', metadata->>'account_number', 'unknown')`.as(
-        "participant"
+        "participant",
       ),
       // Display Name
       sql<string>`COALESCE(metadata->>'bank_account_holder_name', metadata->>'name', metadata->>'account_holder', 'Desconocido')`.as(
-        "displayName"
+        "displayName",
       ),
       // Metrics
       sql<number>`count(*)`.as("totalCount"),
       sql<number>`sum(transaction_amount)`.as("totalAmount"),
       sql<number>`sum(case when transaction_amount < 0 then 1 else 0 end)`.as(
-        "outgoingCount"
+        "outgoingCount",
       ),
       sql<number>`sum(case when transaction_amount < 0 then ABS(transaction_amount) else 0 end)`.as(
-        "outgoingAmount"
+        "outgoingAmount",
       ),
       sql<number>`sum(case when transaction_amount > 0 then 1 else 0 end)`.as(
-        "incomingCount"
+        "incomingCount",
       ),
       sql<number>`sum(case when transaction_amount > 0 then transaction_amount else 0 end)`.as(
-        "incomingAmount"
+        "incomingAmount",
       ),
     ])
     .groupBy([
@@ -203,7 +217,7 @@ export async function getParticipantLeaderboard(params: {
 
 export async function getParticipantInsight(
   participantId: string,
-  params: { from?: Date; to?: Date }
+  params: { from?: Date; to?: Date },
 ) {
   const { from, to } = params;
 
@@ -213,16 +227,16 @@ export async function getParticipantInsight(
     .select([
       sql<string>`to_char(transaction_date, 'YYYY-MM-01')`.as("month"),
       sql<number>`sum(case when transaction_amount < 0 then 1 else 0 end)`.as(
-        "outgoingCount"
+        "outgoingCount",
       ),
       sql<number>`sum(case when transaction_amount < 0 then ABS(transaction_amount) else 0 end)`.as(
-        "outgoingAmount"
+        "outgoingAmount",
       ),
       sql<number>`sum(case when transaction_amount > 0 then 1 else 0 end)`.as(
-        "incomingCount"
+        "incomingCount",
       ),
       sql<number>`sum(case when transaction_amount > 0 then transaction_amount else 0 end)`.as(
-        "incomingAmount"
+        "incomingAmount",
       ),
     ])
     .where((eb) =>
@@ -231,7 +245,7 @@ export async function getParticipantInsight(
         sql`metadata->>'rut' = ${participantId}`,
         sql`metadata->>'identification_number' = ${participantId}`,
         sql`metadata->>'bank_account_number' = ${participantId}`,
-      ])
+      ]),
     )
     .groupBy("month")
     .orderBy("month", "desc");
@@ -246,35 +260,35 @@ export async function getParticipantInsight(
     .selectFrom("transactions")
     .select([
       sql<string>`COALESCE(metadata->>'recipient_rut', metadata->>'rut', metadata->>'identification_number')`.as(
-        "identificationNumber"
+        "identificationNumber",
       ),
       sql<string>`COALESCE(metadata->>'bank_account_holder_name', metadata->>'name')`.as(
-        "bankAccountHolder"
+        "bankAccountHolder",
       ),
       sql<string>`COALESCE(metadata->>'bank_account_number', metadata->>'account_number')`.as(
-        "bankAccountNumber"
+        "bankAccountNumber",
       ),
       sql<string>`COALESCE(metadata->>'bank_name', metadata->>'bank')`.as(
-        "bankName"
+        "bankName",
       ),
       sql<string>`COALESCE(metadata->>'bank_account_type', metadata->>'account_type')`.as(
-        "bankAccountType"
+        "bankAccountType",
       ),
       sql<string>`COALESCE(metadata->>'withdraw_id', metadata->>'id')`.as(
-        "withdrawId"
+        "withdrawId",
       ),
       //
       sql<number>`sum(case when transaction_amount < 0 then 1 else 0 end)`.as(
-        "outgoingCount"
+        "outgoingCount",
       ),
       sql<number>`sum(case when transaction_amount < 0 then ABS(transaction_amount) else 0 end)`.as(
-        "outgoingAmount"
+        "outgoingAmount",
       ),
       sql<number>`sum(case when transaction_amount > 0 then 1 else 0 end)`.as(
-        "incomingCount"
+        "incomingCount",
       ),
       sql<number>`sum(case when transaction_amount > 0 then transaction_amount else 0 end)`.as(
-        "incomingAmount"
+        "incomingAmount",
       ),
     ])
     .where((eb) =>
@@ -283,7 +297,7 @@ export async function getParticipantInsight(
         sql`metadata->>'rut' = ${participantId}`,
         sql`metadata->>'identification_number' = ${participantId}`,
         sql`metadata->>'bank_account_number' = ${participantId}`,
-      ])
+      ]),
     )
     .groupBy([
       "identificationNumber",
@@ -340,10 +354,10 @@ export async function getTransactionStats(params: { from: Date; to: Date }) {
     .select([
       sql<string>`to_char(transaction_date, 'YYYY-MM-01')`.as("month"),
       sql<number>`sum(case when transaction_amount > 0 then transaction_amount else 0 end)`.as(
-        "in"
+        "in",
       ),
       sql<number>`sum(case when transaction_amount < 0 then ABS(transaction_amount) else 0 end)`.as(
-        "out"
+        "out",
       ),
       sql<number>`sum(transaction_amount)`.as("net"),
     ])
@@ -377,10 +391,10 @@ export async function getTransactionStats(params: { from: Date; to: Date }) {
     .selectFrom("transactions")
     .select([
       sql<number>`sum(case when transaction_amount > 0 then transaction_amount else 0 end)`.as(
-        "in"
+        "in",
       ),
       sql<number>`sum(case when transaction_amount < 0 then ABS(transaction_amount) else 0 end)`.as(
-        "out"
+        "out",
       ),
       sql<number>`sum(transaction_amount)`.as("net"),
     ])

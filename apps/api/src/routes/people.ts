@@ -12,8 +12,23 @@ app.get("/", async (c) => {
   const canRead = await hasPermission(user.id, "read", "Person");
   if (!canRead) return c.json({ status: "error", message: "Forbidden" }, 403);
 
+  const includeTest = c.req.query("includeTest") === "true";
+
   try {
     const people = await db.person.findMany({
+      where: includeTest
+        ? undefined
+        : {
+            NOT: {
+              OR: [
+                { names: { contains: "Test", mode: "insensitive" } },
+                { names: { contains: "test" } },
+                { rut: { startsWith: "11111111" } },
+                { rut: { startsWith: "TEMP-" } },
+                { email: { contains: "test", mode: "insensitive" } },
+              ],
+            },
+          },
       orderBy: { names: "asc" },
       include: {
         counterpart: true,
@@ -34,7 +49,7 @@ app.get("/", async (c) => {
     console.error("[people] list error:", error);
     return c.json(
       { status: "error", message: "Error al listar personas" },
-      500
+      500,
     );
   }
 });
@@ -77,7 +92,7 @@ app.get("/:id", async (c) => {
     console.error("[people] get error:", error);
     return c.json(
       { status: "error", message: "Error al obtener persona" },
-      500
+      500,
     );
   }
 });
