@@ -106,7 +106,8 @@ export async function syncPermissions() {
     "Backup",
     "BulkData",
     // New dedicated subjects for specific pages
-    "Balance",
+    "DailyBalance",
+    "ProductionBalance",
     "CalendarSetting",
     "InventorySetting",
     "Integration",
