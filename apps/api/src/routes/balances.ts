@@ -21,7 +21,7 @@ app.get("/", async (c) => {
   if (!parsed.success || !parsed.data.from || !parsed.data.to) {
     return c.json(
       { status: "error", message: "Parameters 'from' and 'to' are required" },
-      400
+      400,
     );
   }
 
@@ -46,14 +46,14 @@ app.post("/", async (c) => {
         message: "Datos inválidos",
         issues: parsed.error.issues,
       },
-      400
+      400,
     );
   }
 
   await upsertDailyBalance(
     parsed.data.date,
     parsed.data.balance,
-    parsed.data.note
+    parsed.data.note,
   );
   return c.json({ status: "ok" });
 });
