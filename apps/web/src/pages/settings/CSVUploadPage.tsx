@@ -145,16 +145,30 @@ const TABLE_OPTIONS: TableOption[] = [
   },
 ];
 
-// Backend only supports these tables
-const SUPPORTED_TABLES = ["people", "employees", "counterparts", "daily_balances", "transactions"];
+// Backend now supports all these tables
+const SUPPORTED_TABLES = [
+  "people",
+  "employees",
+  "counterparts",
+  "daily_balances",
+  "daily_production_balances",
+  "transactions",
+  "services",
+  "inventory_items",
+  "employee_timesheets",
+];
 
 // Permission mapping
 const PERMISSION_MAP: Record<string, { action: string; subject: string }> = {
   people: { action: "create", subject: "Person" },
   employees: { action: "create", subject: "Employee" },
   counterparts: { action: "create", subject: "Counterpart" },
-  daily_balances: { action: "create", subject: "Balance" },
+  daily_balances: { action: "create", subject: "DailyBalance" },
+  daily_production_balances: { action: "create", subject: "ProductionBalance" },
   transactions: { action: "create", subject: "Transaction" },
+  services: { action: "create", subject: "Service" },
+  inventory_items: { action: "create", subject: "InventoryItem" },
+  employee_timesheets: { action: "create", subject: "Timesheet" },
 };
 
 export default function CSVUploadPage() {
