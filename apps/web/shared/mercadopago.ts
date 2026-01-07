@@ -111,27 +111,61 @@ export const MpSftpInfoSchema = z
   })
   .optional();
 
-/** POST/PUT /v1/account/release_report/config - Create/Update config */
-export const MpConfigSchema = z.object({
-  // Required
+// Common Base Config Schema
+const MpBaseConfigSchema = z.object({
   file_name_prefix: z.string().min(1, "Prefijo requerido"),
   columns: z
     .array(MpColumnSchema)
     .min(1, "Al menos una columna requerida")
-    // Note: Backend might not validate max length or exact keys strictly, but frontend should
     .refine((cols) => new Set(cols.map((c) => c.key)).size === cols.length, "No se permiten columnas duplicadas"),
   frequency: MpFrequencySchema,
-  // Optional
   sftp_info: MpSftpInfoSchema,
   separator: z.string().optional(),
   display_timezone: z.string().optional(),
-  report_translation: z.enum(MP_REPORT_LANGUAGES).optional(),
+  report_translation: z.enum(MP_REPORT_COLUMNS.length ? MP_REPORT_LANGUAGES : ["es"]).optional(), // Simplified
   notification_email_list: z.array(z.string().email().or(z.null())).optional(),
+  scheduled: z.boolean().optional(),
+});
+
+/** POST/PUT /v1/account/release_report/config */
+export const MpReleaseConfigSchema = MpBaseConfigSchema.extend({
   include_withdrawal_at_end: z.boolean().optional(),
   check_available_balance: z.boolean().optional(),
   compensate_detail: z.boolean().optional(),
   execute_after_withdrawal: z.boolean().optional(),
-  scheduled: z.boolean().optional(),
 });
 
-export type MpConfigFormData = z.infer<typeof MpConfigSchema>;
+/** POST/PUT /v1/account/settlement_report/config */
+export const MpSettlementConfigSchema = MpBaseConfigSchema.extend({
+  show_fee_prevision: z.boolean().optional(),
+  show_chargeback_cancel: z.boolean().optional(),
+  coupon_detailed: z.boolean().optional(),
+  include_withdraw: z.boolean().optional(),
+  shipping_detail: z.boolean().optional(),
+  refund_detailed: z.boolean().optional(),
+});
+
+// Union Type for generic usage
+export type MpReleaseConfigFormData = z.infer<typeof MpReleaseConfigSchema>;
+export type MpSettlementConfigFormData = z.infer<typeof MpSettlementConfigSchema>;
+
+// Kept for backward compatibility if needed, or alias to Release
+export const MpConfigSchema = MpReleaseConfigSchema;
+export type MpConfigFormData = MpReleaseConfigFormData;
+
+// Default columns for Settlement Report (from user request)
+export const MP_SETTLEMENT_DEFAULT_COLUMNS: MpReportColumn[] = [
+  "TRANSACTION_DATE", // Note: These exact keys might not be in MP_REPORT_COLUMNS const, but that const is specific to Release?
+  // User provided: TRANSACTION_DATE, SOURCE_ID, EXTERNAL_REFERENCE
+  // We should probably allow string literals in columns if they are dynamic.
+] as string[]; // Casting to allow checking against MpReportColumn if needed, but for now just string[] mostly
+
+// Add simple constants for defaults
+export const MP_SETTLEMENT_DEFAULTS = [
+  "TRANSACTION_DATE",
+  "SOURCE_ID",
+  "EXTERNAL_REFERENCE",
+  "TRANSACTION_AMOUNT",
+  "SETTLEMENT_NET_AMOUNT",
+  "PAYMENT_METHOD",
+];

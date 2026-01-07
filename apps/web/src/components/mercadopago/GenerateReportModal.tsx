@@ -8,7 +8,7 @@ import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
 import { useToast } from "@/context/ToastContext";
-import { MPService } from "@/services/mercadopago";
+import { MpReportType, MPService } from "@/services/mercadopago";
 
 const schema = z
   .object({
@@ -25,9 +25,10 @@ type FormData = z.infer<typeof schema>;
 interface Props {
   open: boolean;
   onClose: () => void;
+  reportType: MpReportType;
 }
 
-export default function GenerateReportModal({ open, onClose }: Props) {
+export default function GenerateReportModal({ open, onClose, reportType }: Props) {
   const queryClient = useQueryClient();
   const { success: showSuccess, error: showError } = useToast();
   const {
@@ -41,10 +42,14 @@ export default function GenerateReportModal({ open, onClose }: Props) {
 
   const mutation = useMutation({
     mutationFn: (data: FormData) =>
-      MPService.createReport(new Date(data.begin_date).toISOString(), new Date(data.end_date).toISOString()),
+      MPService.createReport(
+        new Date(data.begin_date).toISOString(),
+        new Date(data.end_date).toISOString(),
+        reportType
+      ),
     onSuccess: () => {
       showSuccess("Solicitud de reporte enviada");
-      queryClient.invalidateQueries({ queryKey: ["mp-reports"] });
+      queryClient.invalidateQueries({ queryKey: ["mp-reports", reportType] });
       reset();
       onClose();
     },
@@ -56,10 +61,15 @@ export default function GenerateReportModal({ open, onClose }: Props) {
   };
 
   return (
-    <Modal title="Generar Reporte Manual" isOpen={open} onClose={onClose}>
+    <Modal
+      title={`Generar Reporte: ${reportType === "release" ? "Liberación" : "Conciliación"}`}
+      isOpen={open}
+      onClose={onClose}
+    >
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <p className="text-base-content/70 text-sm">
-          Selecciona el rango de fechas para generar el reporte de liberación de fondos.
+          Selecciona el rango de fechas para generar el reporte de{" "}
+          {reportType === "release" ? "liberación de fondos" : "conciliación"}.
         </p>
 
         <Input

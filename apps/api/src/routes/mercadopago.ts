@@ -2,6 +2,9 @@
  * Mercado Pago Routes for Hono API
  *
  * Handles MP report config, creation, download, and schedule
+ * Supports:
+ * - Release Report (Liberaciones)
+ * - Settlement Report (Conciliación)
  */
 
 import { Hono } from "hono";
@@ -41,12 +44,22 @@ function checkMpConfig() {
   }
 }
 
-// API calls to MP
-const MP_API = "https://api.mercadopago.com/v1/account/release_report";
+// API Endpoints
+const MP_API_RELEASE = "https://api.mercadopago.com/v1/account/release_report";
+const MP_API_SETTLEMENT =
+  "https://api.mercadopago.com/v1/account/settlement_report";
 
-async function mpFetch(path: string, options: RequestInit = {}) {
+// Generic fetcher for both report types
+async function mpFetch(
+  endpoint: string,
+  baseUrl: string,
+  options: RequestInit = {}
+) {
   checkMpConfig();
-  const res = await fetch(`${MP_API}${path}`, {
+  // Ensure we don't double slash if endpoint is empty
+  const url = endpoint ? `${baseUrl}${endpoint}` : baseUrl;
+
+  const res = await fetch(url, {
     ...options,
     headers: {
       Authorization: `Bearer ${MP_ACCESS_TOKEN}`,
@@ -62,7 +75,7 @@ async function mpFetch(path: string, options: RequestInit = {}) {
 }
 
 // ============================================================
-// GET CONFIG
+// RELEASE REPORTS (Existing Implementation)
 // ============================================================
 
 mercadopagoRoutes.get("/config", async (c) => {
@@ -73,17 +86,13 @@ mercadopagoRoutes.get("/config", async (c) => {
   if (!canRead) return c.json({ status: "error", message: "Forbidden" }, 403);
 
   try {
-    const res = await mpFetch("/config");
+    const res = await mpFetch("/config", MP_API_RELEASE);
     const data = await res.json();
     return c.json(data);
   } catch (e) {
     return c.json({ status: "error", message: String(e) }, 500);
   }
 });
-
-// ============================================================
-// CREATE/UPDATE CONFIG
-// ============================================================
 
 mercadopagoRoutes.post("/config", async (c) => {
   const auth = await getAuth(c);
@@ -95,12 +104,12 @@ mercadopagoRoutes.post("/config", async (c) => {
   const body = await c.req.json();
 
   try {
-    const res = await mpFetch("/config", {
+    const res = await mpFetch("/config", MP_API_RELEASE, {
       method: "POST",
       body: JSON.stringify(body),
     });
     const data = await res.json();
-    console.log("[MP] Config created by", auth.email);
+    console.log("[MP Release] Config created by", auth.email);
     return c.json(data, 201);
   } catch (e) {
     return c.json({ status: "error", message: String(e) }, 500);
@@ -117,21 +126,17 @@ mercadopagoRoutes.put("/config", async (c) => {
   const body = await c.req.json();
 
   try {
-    const res = await mpFetch("/config", {
+    const res = await mpFetch("/config", MP_API_RELEASE, {
       method: "PUT",
       body: JSON.stringify(body),
     });
     const data = await res.json();
-    console.log("[MP] Config updated by", auth.email);
+    console.log("[MP Release] Config updated by", auth.email);
     return c.json(data);
   } catch (e) {
     return c.json({ status: "error", message: String(e) }, 500);
   }
 });
-
-// ============================================================
-// REPORTS CRUD
-// ============================================================
 
 mercadopagoRoutes.get("/reports", async (c) => {
   const auth = await getAuth(c);
@@ -141,7 +146,7 @@ mercadopagoRoutes.get("/reports", async (c) => {
   if (!canRead) return c.json({ status: "error", message: "Forbidden" }, 403);
 
   try {
-    const res = await mpFetch("/list");
+    const res = await mpFetch("/list", MP_API_RELEASE);
     const data = await res.json();
     return c.json(data);
   } catch (e) {
@@ -153,7 +158,7 @@ mercadopagoRoutes.post("/reports", async (c) => {
   const auth = await getAuth(c);
   if (!auth) return c.json({ status: "error", message: "No autorizado" }, 401);
 
-  const canCreate = await hasPermission(auth.userId, "read", "Integration"); // Generate report treated as read
+  const canCreate = await hasPermission(auth.userId, "read", "Integration");
   if (!canCreate) return c.json({ status: "error", message: "Forbidden" }, 403);
 
   const { begin_date, end_date } = await c.req.json<{
@@ -162,13 +167,13 @@ mercadopagoRoutes.post("/reports", async (c) => {
   }>();
 
   try {
-    const res = await mpFetch("", {
+    const res = await mpFetch("", MP_API_RELEASE, {
       method: "POST",
       body: JSON.stringify({ begin_date, end_date }),
     });
     const data = await res.json();
     console.log(
-      "[MP] Report created by",
+      "[MP Release] Report created by",
       auth.email,
       ":",
       begin_date,
@@ -191,17 +196,13 @@ mercadopagoRoutes.get("/reports/:id", async (c) => {
   const id = c.req.param("id");
 
   try {
-    const res = await mpFetch(`/${id}`);
+    const res = await mpFetch(`/${id}`, MP_API_RELEASE);
     const data = await res.json();
     return c.json(data);
   } catch (e) {
     return c.json({ status: "error", message: String(e) }, 500);
   }
 });
-
-// ============================================================
-// DOWNLOAD REPORT
-// ============================================================
 
 mercadopagoRoutes.get("/reports/download/:fileName", async (c) => {
   const auth = await getAuth(c);
@@ -214,12 +215,9 @@ mercadopagoRoutes.get("/reports/download/:fileName", async (c) => {
 
   try {
     checkMpConfig();
-    const res = await fetch(
-      `https://api.mercadopago.com/v1/account/release_report/${fileName}`,
-      {
-        headers: { Authorization: `Bearer ${MP_ACCESS_TOKEN}` },
-      }
-    );
+    const res = await fetch(`${MP_API_RELEASE}/${fileName}`, {
+      headers: { Authorization: `Bearer ${MP_ACCESS_TOKEN}` },
+    });
 
     if (!res.ok) throw new Error(`Download failed: ${res.status}`);
 
@@ -243,10 +241,6 @@ mercadopagoRoutes.get("/reports/download/:fileName", async (c) => {
   }
 });
 
-// ============================================================
-// SCHEDULE
-// ============================================================
-
 mercadopagoRoutes.post("/schedule", async (c) => {
   const auth = await getAuth(c);
   if (!auth) return c.json({ status: "error", message: "No autorizado" }, 401);
@@ -255,12 +249,12 @@ mercadopagoRoutes.post("/schedule", async (c) => {
   if (!canUpdate) return c.json({ status: "error", message: "Forbidden" }, 403);
 
   try {
-    const res = await mpFetch("/schedule", {
+    const res = await mpFetch("/schedule", MP_API_RELEASE, {
       method: "POST",
       body: JSON.stringify({ enabled: true }),
     });
     const data = await res.json();
-    console.log("[MP] Schedule enabled by", auth.email);
+    console.log("[MP Release] Schedule enabled by", auth.email);
     return c.json(data);
   } catch (e) {
     return c.json({ status: "error", message: String(e) }, 500);
@@ -275,9 +269,204 @@ mercadopagoRoutes.delete("/schedule", async (c) => {
   if (!canUpdate) return c.json({ status: "error", message: "Forbidden" }, 403);
 
   try {
-    const res = await mpFetch("/schedule", { method: "DELETE" });
+    const res = await mpFetch("/schedule", MP_API_RELEASE, {
+      method: "DELETE",
+    });
     const data = await res.json();
-    console.log("[MP] Schedule disabled by", auth.email);
+    console.log("[MP Release] Schedule disabled by", auth.email);
+    return c.json(data);
+  } catch (e) {
+    return c.json({ status: "error", message: String(e) }, 500);
+  }
+});
+
+// ============================================================
+// SETTLEMENT REPORTS (New Implementation - Reconciliation)
+// ============================================================
+
+mercadopagoRoutes.get("/settlement/config", async (c) => {
+  const auth = await getAuth(c);
+  if (!auth) return c.json({ status: "error", message: "No autorizado" }, 401);
+
+  const canRead = await hasPermission(auth.userId, "read", "Integration");
+  if (!canRead) return c.json({ status: "error", message: "Forbidden" }, 403);
+
+  try {
+    const res = await mpFetch("/config", MP_API_SETTLEMENT);
+    const data = await res.json();
+    return c.json(data);
+  } catch (e) {
+    return c.json({ status: "error", message: String(e) }, 500);
+  }
+});
+
+mercadopagoRoutes.post("/settlement/config", async (c) => {
+  const auth = await getAuth(c);
+  if (!auth) return c.json({ status: "error", message: "No autorizado" }, 401);
+
+  const canUpdate = await hasPermission(auth.userId, "update", "Integration");
+  if (!canUpdate) return c.json({ status: "error", message: "Forbidden" }, 403);
+
+  const body = await c.req.json();
+
+  try {
+    const res = await mpFetch("/config", MP_API_SETTLEMENT, {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    console.log("[MP Settlement] Config created by", auth.email);
+    return c.json(data, 201);
+  } catch (e) {
+    return c.json({ status: "error", message: String(e) }, 500);
+  }
+});
+
+mercadopagoRoutes.put("/settlement/config", async (c) => {
+  const auth = await getAuth(c);
+  if (!auth) return c.json({ status: "error", message: "No autorizado" }, 401);
+
+  const canUpdate = await hasPermission(auth.userId, "update", "Integration");
+  if (!canUpdate) return c.json({ status: "error", message: "Forbidden" }, 403);
+
+  const body = await c.req.json();
+
+  try {
+    const res = await mpFetch("/config", MP_API_SETTLEMENT, {
+      method: "PUT",
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    console.log("[MP Settlement] Config updated by", auth.email);
+    return c.json(data);
+  } catch (e) {
+    return c.json({ status: "error", message: String(e) }, 500);
+  }
+});
+
+// Manual Report Creation
+mercadopagoRoutes.post("/settlement/reports", async (c) => {
+  const auth = await getAuth(c);
+  if (!auth) return c.json({ status: "error", message: "No autorizado" }, 401);
+
+  const canCreate = await hasPermission(auth.userId, "read", "Integration");
+  if (!canCreate) return c.json({ status: "error", message: "Forbidden" }, 403);
+
+  // Payload: { "begin_date": "...", "end_date": "..." }
+  const body = await c.req.json();
+
+  try {
+    // POST to base URL creates manual report
+    const res = await mpFetch("", MP_API_SETTLEMENT, {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    console.log("[MP Settlement] Report created by", auth.email);
+    return c.json(data, 201);
+  } catch (e) {
+    return c.json({ status: "error", message: String(e) }, 500);
+  }
+});
+
+// List Reports
+mercadopagoRoutes.get("/settlement/reports", async (c) => {
+  const auth = await getAuth(c);
+  if (!auth) return c.json({ status: "error", message: "No autorizado" }, 401);
+
+  const canRead = await hasPermission(auth.userId, "read", "Integration");
+  if (!canRead) return c.json({ status: "error", message: "Forbidden" }, 403);
+
+  try {
+    const res = await mpFetch("/list", MP_API_SETTLEMENT);
+    const data = await res.json();
+    return c.json(data);
+  } catch (e) {
+    return c.json({ status: "error", message: String(e) }, 500);
+  }
+});
+
+// Download Report
+mercadopagoRoutes.get("/settlement/reports/download/:fileName", async (c) => {
+  const auth = await getAuth(c);
+  if (!auth) return c.json({ status: "error", message: "No autorizado" }, 401);
+
+  const canRead = await hasPermission(auth.userId, "read", "Integration");
+  if (!canRead) return c.json({ status: "error", message: "Forbidden" }, 403);
+
+  const fileName = c.req.param("fileName");
+
+  try {
+    checkMpConfig();
+    // According to docs: GET https://api.mercadopago.com/v1/account/settlement_report/:file_name
+    const res = await fetch(`${MP_API_SETTLEMENT}/${fileName}`, {
+      headers: { Authorization: `Bearer ${MP_ACCESS_TOKEN}` },
+    });
+
+    if (!res.ok) throw new Error(`Download failed: ${res.status}`);
+
+    c.header(
+      "Content-Type",
+      res.headers.get("Content-Type") || "application/octet-stream"
+    );
+    c.header("Content-Disposition", `attachment; filename="${fileName}"`);
+
+    return stream(c, async (stream) => {
+      const reader = res.body?.getReader();
+      if (!reader) return;
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        await stream.write(value);
+      }
+    });
+  } catch (e) {
+    return c.json({ status: "error", message: String(e) }, 500);
+  }
+});
+
+// Schedule
+mercadopagoRoutes.post("/settlement/schedule", async (c) => {
+  const auth = await getAuth(c);
+  if (!auth) return c.json({ status: "error", message: "No autorizado" }, 401);
+
+  const canUpdate = await hasPermission(auth.userId, "update", "Integration");
+  if (!canUpdate) return c.json({ status: "error", message: "Forbidden" }, 403);
+
+  try {
+    // POST /schedule with empty body (implicit enablement?) or check docs
+    // Docs say: POST .../schedule to enable.
+    const res = await mpFetch("/schedule", MP_API_SETTLEMENT, {
+      method: "POST",
+      // Often requires empty object or specific config.
+      // Existing release implementation sends { enabled: true }?
+      // Docs provided say: POST /schedule (no body mentioned in curl example, but curl has no -d usually implies empty).
+      // However previous existing code sent { enabled: true }.
+      // I will send empty object {} to be safe as per standard JSON APIs, or follow release pattern if it works.
+      // Let's stick to simple POST as per User Docs strictly.
+      // User curl: curl -X POST .../schedule (no body).
+    });
+    const data = await res.json();
+    console.log("[MP Settlement] Schedule enabled by", auth.email);
+    return c.json(data);
+  } catch (e) {
+    return c.json({ status: "error", message: String(e) }, 500);
+  }
+});
+
+mercadopagoRoutes.delete("/settlement/schedule", async (c) => {
+  const auth = await getAuth(c);
+  if (!auth) return c.json({ status: "error", message: "No autorizado" }, 401);
+
+  const canUpdate = await hasPermission(auth.userId, "update", "Integration");
+  if (!canUpdate) return c.json({ status: "error", message: "Forbidden" }, 403);
+
+  try {
+    const res = await mpFetch("/schedule", MP_API_SETTLEMENT, {
+      method: "DELETE",
+    });
+    const data = await res.json();
+    console.log("[MP Settlement] Schedule disabled by", auth.email);
     return c.json(data);
   } catch (e) {
     return c.json({ status: "error", message: String(e) }, 500);

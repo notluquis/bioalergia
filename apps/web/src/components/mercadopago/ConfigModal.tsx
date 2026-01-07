@@ -1,5 +1,5 @@
 import { CheckSquare, Info, Loader2, Plus, RotateCcw, Square, Trash } from "lucide-react";
-import { Controller, useFieldArray } from "react-hook-form";
+import { useFieldArray } from "react-hook-form";
 
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
@@ -7,6 +7,7 @@ import Modal from "@/components/ui/Modal";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/Tooltip";
 import { useMercadoPagoConfig } from "@/hooks/useMercadoPago";
 import { cn } from "@/lib/utils";
+import { MpReportType } from "@/services/mercadopago";
 
 import { MP_DEFAULT_COLUMNS, MP_REPORT_COLUMNS, MP_REPORT_LANGUAGES, MP_WEEKDAYS } from "../../../shared/mercadopago";
 
@@ -34,10 +35,67 @@ const TIMEZONES = {
 interface Props {
   open: boolean;
   onClose: () => void;
+  reportType: MpReportType;
 }
 
-export default function ConfigModal({ open, onClose }: Props) {
-  const { form, isLoading, isPending, currentConfig, onSubmit } = useMercadoPagoConfig(open, onClose);
+const RELEASE_OPTIONS = [
+  {
+    key: "include_withdrawal_at_end",
+    label: "Incluir retiros al final",
+    description: "Agrega un resumen de los retiros de dinero al final del reporte.",
+  },
+  {
+    key: "check_available_balance",
+    label: "Mostrar balance disponible",
+    description: "Incluye una columna con el saldo acumulado después de cada movimiento.",
+  },
+  {
+    key: "compensate_detail",
+    label: "Detalle compensaciones",
+    description: "Muestra el detalle de disputas y contracargos asociados.",
+  },
+  {
+    key: "execute_after_withdrawal",
+    label: "Ejecutar post-retiro",
+    description: "Genera automáticamente un reporte cada vez que realizas un retiro de dinero.",
+  },
+];
+
+const SETTLEMENT_OPTIONS = [
+  {
+    key: "include_withdraw",
+    label: "Incluir retiros",
+    description: "Ignorar o incluir los retiros de dinero en el reporte.",
+  },
+  {
+    key: "coupon_detailed",
+    label: "Detalle de cupones",
+    description: "Incluye una columna para mostrar el detalle de los cupones de descuento.",
+  },
+  {
+    key: "shipping_detail",
+    label: "Detalle de envíos",
+    description: "Incluye el detalle de los envíos.",
+  },
+  {
+    key: "refund_detailed",
+    label: "Detalle de reembolsos",
+    description: "Muestra el código de referencia del reembolso en vez del de pago.",
+  },
+  {
+    key: "show_chargeback_cancel",
+    label: "Cancelación de contracargos",
+    description: "Incluye el detalle de las cancelaciones de los contracargos.",
+  },
+  {
+    key: "show_fee_prevision",
+    label: "Previsión de comisiones",
+    description: "Incluye el detalle de las comisiones.",
+  },
+];
+
+export default function ConfigModal({ open, onClose, reportType }: Props) {
+  const { form, isLoading, isPending, currentConfig, onSubmit } = useMercadoPagoConfig(open, onClose, reportType);
 
   const {
     register,
@@ -48,21 +106,22 @@ export default function ConfigModal({ open, onClose }: Props) {
   } = form;
 
   const frequencyType = watch("frequency.type");
-  const currentColumns = watch("columns");
 
   const { fields, append, remove, replace } = useFieldArray({
     control,
     name: "columns",
   });
 
-  // Get available columns (not already selected)
-  const selectedColumnKeys = new Set(currentColumns?.map((c) => c.key) || []);
-  const availableColumns = MP_REPORT_COLUMNS.filter((col) => !selectedColumnKeys.has(col));
   const maxColumns = MP_REPORT_COLUMNS.length;
-  const canAddColumn = fields.length < maxColumns && availableColumns.length > 0;
+
+  const BOOLEAN_OPTIONS = reportType === "release" ? RELEASE_OPTIONS : SETTLEMENT_OPTIONS;
 
   return (
-    <Modal title="Configuración de Reportes MercadoPago" isOpen={open} onClose={onClose}>
+    <Modal
+      title={`Configuración: ${reportType === "release" ? "Liberación" : "Conciliación"}`}
+      isOpen={open}
+      onClose={onClose}
+    >
       {isLoading ? (
         <div className="flex justify-center p-8">
           <Loader2 className="animate-spin" />
@@ -75,7 +134,7 @@ export default function ConfigModal({ open, onClose }: Props) {
               <Input
                 label="Prefijo Archivo"
                 {...register("file_name_prefix")}
-                placeholder="release-report"
+                placeholder={reportType === "release" ? "release-report" : "settlement-report"}
                 error={errors.file_name_prefix?.message}
               />
               <p className="text-base-content/60 mt-1 text-xs">Nombre base para los archivos generados</p>
@@ -311,21 +370,16 @@ export default function ConfigModal({ open, onClose }: Props) {
 
             <div className="mb-3 flex items-center justify-between text-xs">
               <p className="text-base-content/60">
-                Seleccionadas: <span className="text-base-content font-medium">{fields.length}</span> / {maxColumns}
-                {fields.length >= maxColumns && <span className="text-success ml-1">(Todas)</span>}
+                Seleccionadas: <span className="text-base-content font-medium">{fields.length}</span>
               </p>
               <Button
                 type="button"
                 size="sm"
                 variant="ghost"
                 onClick={() => {
-                  const firstAvailable = availableColumns[0];
-                  if (firstAvailable) {
-                    append({ key: firstAvailable });
-                  }
+                  // Fallback for adding empty/default column if we don't strict check available
+                  append({ key: "" });
                 }}
-                disabled={!canAddColumn}
-                title={!canAddColumn ? `Máximo ${maxColumns} columnas o todas ya seleccionadas` : ""}
               >
                 <Plus className="mr-1 h-3 w-3" /> Agregar Columna
               </Button>
@@ -337,31 +391,20 @@ export default function ConfigModal({ open, onClose }: Props) {
 
             <div className="max-h-96 space-y-2 overflow-y-auto pr-1">
               {fields.map((field, index) => {
-                const currentValue = currentColumns?.[index]?.key;
-                const rowAvailableColumns = MP_REPORT_COLUMNS.filter(
-                  (col) => col === currentValue || !selectedColumnKeys.has(col)
-                );
                 return (
                   <div key={field.id} className="bg-base-200/30 flex items-center gap-2 rounded-md p-1">
                     <div className="bg-base-300 flex h-6 w-6 shrink-0 items-center justify-center rounded font-mono text-xs opacity-50">
                       {index + 1}
                     </div>
-                    <Controller
-                      name={`columns.${index}.key`}
-                      control={control}
-                      render={({ field: selectField }) => (
-                        <select
-                          {...selectField}
-                          className="select select-bordered select-sm focus:ring-primary/20 focus:border-primary flex-1 bg-transparent focus:ring-2 focus:outline-none"
-                        >
-                          {rowAvailableColumns.map((col) => (
-                            <option key={col} value={col}>
-                              {col}
-                            </option>
-                          ))}
-                        </select>
-                      )}
+                    {/* Free Text Input for Columns instead of Select, since strict ENUM is for Release only maybe? */}
+                    {/* Actually let's use a DataList or Combobox if we want to support both. For now simple Input for flexibility on Settlement */}
+                    <Input
+                      {...register(`columns.${index}.key` as const)}
+                      className="h-8 font-mono text-xs"
+                      placeholder="COLUMN_KEY"
+                      containerClassName="flex-1 mt-0"
                     />
+
                     <Button
                       type="button"
                       size="sm"
@@ -383,77 +426,29 @@ export default function ConfigModal({ open, onClose }: Props) {
             <h4 className="mb-3 text-sm font-medium">Opciones Adicionales</h4>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <TooltipProvider delayDuration={0}>
-                <div className="flex items-center justify-between gap-2">
-                  <label className="label cursor-pointer justify-start gap-2 p-0">
-                    <input
-                      type="checkbox"
-                      {...register("include_withdrawal_at_end")}
-                      className="checkbox checkbox-sm"
-                    />
-                    <span className="label-text text-sm">Incluir retiros al final</span>
-                  </label>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button type="button" className="cursor-help transition-opacity hover:opacity-80">
-                        <Info className="text-base-content/40 h-4 w-4" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom" className="max-w-xs text-xs">
-                      <p>Agrega un resumen de los retiros de dinero al final del reporte.</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-
-                <div className="flex items-center justify-between gap-2">
-                  <label className="label cursor-pointer justify-start gap-2 p-0">
-                    <input type="checkbox" {...register("check_available_balance")} className="checkbox checkbox-sm" />
-                    <span className="label-text text-sm">Mostrar balance disponible</span>
-                  </label>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button type="button" className="cursor-help transition-opacity hover:opacity-80">
-                        <Info className="text-base-content/40 h-4 w-4" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom" className="max-w-xs text-xs">
-                      <p>Incluye una columna con el saldo acumulado después de cada movimiento.</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-
-                <div className="flex items-center justify-between gap-2">
-                  <label className="label cursor-pointer justify-start gap-2 p-0">
-                    <input type="checkbox" {...register("compensate_detail")} className="checkbox checkbox-sm" />
-                    <span className="label-text text-sm">Detalle compensaciones</span>
-                  </label>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button type="button" className="cursor-help transition-opacity hover:opacity-80">
-                        <Info className="text-base-content/40 h-4 w-4" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom" className="max-w-xs text-xs">
-                      <p>Muestra el detalle de disputas y contracargos asociados.</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-
-                <div className="flex items-center justify-between gap-2">
-                  <label className="label cursor-pointer justify-start gap-2 p-0">
-                    <input type="checkbox" {...register("execute_after_withdrawal")} className="checkbox checkbox-sm" />
-                    <span className="label-text text-sm">Ejecutar post-retiro</span>
-                  </label>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button type="button" className="cursor-help transition-opacity hover:opacity-80">
-                        <Info className="text-base-content/40 h-4 w-4" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom" className="max-w-xs text-xs">
-                      <p>Genera automáticamente un reporte cada vez que realizas un retiro de dinero.</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
+                {BOOLEAN_OPTIONS.map((opt) => (
+                  <div key={opt.key} className="flex items-center justify-between gap-2">
+                    <label className="label cursor-pointer justify-start gap-2 p-0">
+                      <input
+                        type="checkbox"
+                        // @ts-ignore - Dynamic key access on form data
+                        {...register(opt.key)}
+                        className="checkbox checkbox-sm"
+                      />
+                      <span className="label-text text-sm">{opt.label}</span>
+                    </label>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button type="button" className="cursor-help transition-opacity hover:opacity-80">
+                          <Info className="text-base-content/40 h-4 w-4" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" className="max-w-xs text-xs">
+                        <p>{opt.description}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                ))}
               </TooltipProvider>
             </div>
           </div>
