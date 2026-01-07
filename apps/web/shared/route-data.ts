@@ -147,7 +147,7 @@ export const ROUTE_DATA: RouteData[] = [
         path: "balances",
         componentPath: "features/finance/balances/pages/DailyBalancesPage",
         nav: { label: "Saldos Diarios", iconKey: "PiggyBank", section: "Finanzas", order: 2 },
-        permission: { action: "read", subject: "Balance" },
+        permission: { action: "read", subject: "DailyBalance" },
         title: "Saldos diarios",
       },
       {
