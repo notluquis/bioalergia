@@ -23,7 +23,7 @@ app.get("/", async (c) => {
         message: "Filtros inválidos",
         issues: parsed.error.issues,
       },
-      400
+      400,
     );
   }
 
@@ -32,6 +32,8 @@ app.get("/", async (c) => {
   const page = parsed.data.page ?? 1;
   const pageSize = parsed.data.pageSize ?? limit;
   const offset = (page - 1) * pageSize;
+
+  const includeTestData = c.req.query("includeTest") === "true";
 
   const filters: TransactionFilters = {
     from: parsed.data.from ? new Date(parsed.data.from) : undefined,
@@ -42,12 +44,13 @@ app.get("/", async (c) => {
     transactionType: parsed.data.transactionType,
     status: parsed.data.status,
     search: parsed.data.search,
+    includeTest: includeTestData,
   };
 
   const { total, transactions } = await listTransactions(
     filters,
     pageSize,
-    offset
+    offset,
   );
   const data = transactions.map(mapTransaction);
 
