@@ -80,6 +80,7 @@ export type Filters = {
   destination: string; // Maybe obsolete
   direction: "" | "IN" | "OUT"; // Kept for UI compatibility, but functionality might be limited
   includeAmounts: boolean;
+  includeTest?: boolean; // Exclude test transactions by default
 };
 
 export type ApiResponse = {
