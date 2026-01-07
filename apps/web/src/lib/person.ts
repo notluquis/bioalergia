@@ -19,16 +19,31 @@ export function getPersonFullName(person?: PersonNameData | null): string {
   const names = person.names?.trim() || "";
   if (!names) return "";
 
-  // Check if fatherName is already contained in names (to avoid "Pulgar Escobar Pulgar Escobar")
   const fatherName = person.fatherName?.trim() || "";
   const motherName = person.motherName?.trim() || "";
 
-  // If names already contains the full surname, just return names
-  if (fatherName && names.toLowerCase().includes(fatherName.toLowerCase())) {
+  // If both surnames are already in names, just return names (avoids "Pulgar Escobar Pulgar Escobar")
+  const namesLower = names.toLowerCase();
+  const hasFatherName = fatherName && namesLower.includes(fatherName.toLowerCase());
+  const hasMotherName = motherName && namesLower.includes(motherName.toLowerCase());
+
+  if (hasFatherName && hasMotherName) {
     return names;
   }
 
-  // Otherwise, build full name from parts
+  // If only father name is in names, don't add it again
+  if (hasFatherName) {
+    const parts = [names, motherName].filter(Boolean);
+    return parts.join(" ");
+  }
+
+  // If only mother name is in names, don't add it again
+  if (hasMotherName) {
+    const parts = [names, fatherName].filter(Boolean);
+    return parts.join(" ");
+  }
+
+  // Otherwise, build full name from all parts
   const parts = [names, fatherName, motherName].filter(Boolean);
   return parts.join(" ");
 }
