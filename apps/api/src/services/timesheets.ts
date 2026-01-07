@@ -213,9 +213,71 @@ export async function getTimesheetEntryById(
   return mapTimesheetEntry(entry);
 }
 
+/**
+ * Ensure FIXED salary employee has a monthly timesheet record
+ * Creates one if it doesn't exist (lazy creation)
+ */
+export async function ensureFixedSalaryRecord(
+  employeeId: number,
+  month: string // Format: YYYY-MM
+): Promise<void> {
+  const employee = await getEmployeeById(employeeId);
+  if (!employee || employee.salaryType !== "FIXED") {
+    return; // Only for FIXED employees
+  }
+
+  const firstDayOfMonth = `${month}-01`;
+  const monthStart = new Date(`${month}-01`);
+  const monthEnd = new Date(monthStart);
+  monthEnd.setMonth(monthEnd.getMonth() + 1);
+  
+  // Check if record already exists for this month
+  const existing = await db.employeeTimesheet.findFirst({
+    where: {
+      employeeId,
+      workDate: {
+        gte: monthStart,
+        lt: monthEnd,
+      },
+    },
+  });
+
+  if (existing) {
+    return; // Already has a record this month
+  }
+
+  // Create synthetic record for FIXED salary
+  await db.employeeTimesheet.create({
+    data: {
+      employeeId,
+      workDate: new Date(firstDayOfMonth),
+      startTime: null,
+      endTime: null,
+      workedMinutes: 0,
+      overtimeMinutes: 0,
+      comment: "Sueldo fijo mensual",
+    },
+  });
+
+  logEvent("timesheet:fixed-salary-created", {
+    employeeId,
+    month,
+  });
+}
+
 export async function listTimesheetEntries(
   options: ListTimesheetOptions
 ): Promise<TimesheetEntry[]> {
+  // For FIXED employees, ensure they have a monthly record
+  if (options.employee_id) {
+    try {
+      const monthStr = options.from.substring(0, 7); // Extract YYYY-MM
+      await ensureFixedSalaryRecord(options.employee_id, monthStr);
+    } catch (error) {
+      logWarn("Failed to ensure FIXED salary record", { error });
+    }
+  }
+
   const entries = await db.employeeTimesheet.findMany({
     where: {
       ...(options.employee_id && { employeeId: options.employee_id }),
@@ -500,19 +562,46 @@ export function buildEmployeeSummary(
     };
   }
 
-  const hourlyRate = Number(employee.hourlyRate ?? 0);
-  const overtimeRate = Number(employee.overtimeRate ?? 0) || hourlyRate * 1.5;
-  
   // Get year from period start (format: YYYY-MM-DD)
   const periodYear = parseInt(data.periodStart.split("-")[0], 10);
   const retentionRate = getEffectiveRetentionRate(Number(employee.retentionRate ?? 0), periodYear);
+  const payDate = computePayDate(employee.position, data.periodStart);
+
+  // Handle FIXED salary employees differently
+  if (employee.salaryType === "FIXED") {
+    const fixedSalary = Number(employee.baseSalary ?? 0);
+    const subtotal = roundCurrency(fixedSalary);
+    const retention = roundCurrency(subtotal * retentionRate);
+    const net = roundCurrency(subtotal - retention);
+
+    return {
+      employeeId: employee.id,
+      fullName: employee.person.names,
+      role: employee.position,
+      email: employee.person.email ?? null,
+      workedMinutes: 0,
+      overtimeMinutes: 0,
+      hourlyRate: 0,
+      overtimeRate: 0,
+      retentionRate,
+      subtotal,
+      retention,
+      net,
+      payDate,
+      hoursFormatted: "Sueldo fijo",
+      overtimeFormatted: "-",
+    };
+  }
+
+  // Handle HOURLY employees (existing logic)
+  const hourlyRate = Number(employee.hourlyRate ?? 0);
+  const overtimeRate = Number(employee.overtimeRate ?? 0) || hourlyRate * 1.5;
   
   const basePay = roundCurrency((data.workedMinutes / 60) * hourlyRate);
   const overtimePay = roundCurrency((data.overtimeMinutes / 60) * overtimeRate);
   const subtotal = roundCurrency(basePay + overtimePay);
   const retention = roundCurrency(subtotal * retentionRate);
   const net = roundCurrency(subtotal - retention);
-  const payDate = computePayDate(employee.position, data.periodStart);
 
   return {
     employeeId: employee.id,
@@ -570,9 +659,13 @@ export async function buildMonthlySummary(
     net: 0,
   };
 
+  // Track which employees have timesheets
+  const employeesWithTimesheets = new Set<number>();
+
   for (const row of summaryData) {
     const employee = employeeMap.get(row.employeeId);
     if (!employee) continue;
+    employeesWithTimesheets.add(row.employeeId);
     const summary = buildEmployeeSummary(employee, {
       workedMinutes: Number(row._sum.workedMinutes ?? 0),
       overtimeMinutes: Number(row._sum.overtimeMinutes ?? 0),
@@ -584,6 +677,30 @@ export async function buildMonthlySummary(
     totals.subtotal += summary.subtotal;
     totals.retention += summary.retention;
     totals.net += summary.net;
+  }
+
+  // Include FIXED salary employees without timesheets
+  for (const employee of employees) {
+    // Skip if already processed or not active
+    if (employeesWithTimesheets.has(employee.id) || employee.status !== "ACTIVE") {
+      continue;
+    }
+    // Skip if filtering by specific employee and this isn't it
+    if (employeeId && employee.id !== employeeId) {
+      continue;
+    }
+    // Only include FIXED salary employees without timesheets
+    if (employee.salaryType === "FIXED") {
+      const summary = buildEmployeeSummary(employee, {
+        workedMinutes: 0,
+        overtimeMinutes: 0,
+        periodStart: from,
+      });
+      results.push(summary);
+      totals.subtotal += summary.subtotal;
+      totals.retention += summary.retention;
+      totals.net += summary.net;
+    }
   }
 
   // If filtered by specific employee but no data, include with 0s
