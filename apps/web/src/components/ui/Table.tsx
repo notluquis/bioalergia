@@ -13,7 +13,7 @@ interface TableColumn<T extends string> {
 }
 
 interface TableProps<T extends string> {
-  columns: TableColumn<T>[];
+  columns?: TableColumn<T>[];
   children: React.ReactNode;
   className?: string;
   responsive?: boolean;
@@ -131,7 +131,7 @@ export function Table<T extends string>({
 
   const tableContent = (
     <table className={tableClass} {...props}>
-      <TableHeader columns={columns} sortState={sortState} onSort={onSort} />
+      {columns && <TableHeader columns={columns} sortState={sortState} onSort={onSort} />}
       {children}
     </table>
   );
