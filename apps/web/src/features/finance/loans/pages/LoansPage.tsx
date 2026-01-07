@@ -57,7 +57,7 @@ export default function LoansPage() {
       setSelectedId(loans[0]?.public_id ?? null);
     } else if (loans.length === 0 && selectedId) {
       setSelectedId(null);
-    } else if (selectedId && !loans.some((l) => l.public_id === selectedId) && loans.length > 0) {
+    } else if (selectedId && !loans.some((l: LoanWithSchedules) => l.public_id === selectedId) && loans.length > 0) {
       setSelectedId(loans[0]?.public_id ?? null);
     }
   }, [loans, selectedId]);
