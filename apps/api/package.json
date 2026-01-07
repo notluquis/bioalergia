@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc",
+    "build": "esbuild src/index.ts --bundle --platform=node --target=node25 --format=esm --outfile=dist/index.js --external:@finanzas/db --external:@zenstackhq/* --sourcemap",
     "start": "tsx dist/index.js",
     "type-check": "tsc --noEmit",
     "clean": "rm -rf dist"
@@ -40,6 +40,7 @@
     "@types/node-cron": "^3.0.11",
     "@types/qrcode": "^1.5.6",
     "@types/qs": "^6.9.17",
+    "esbuild": "^0.24.2",
     "typescript": "^5.8.0"
   }
 }
