@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useDebounce } from "use-debounce";
 
 import Alert from "@/components/ui/Alert";
@@ -8,6 +8,11 @@ import Checkbox from "@/components/ui/Checkbox";
 import Input from "@/components/ui/Input";
 import { useAuth } from "@/context/AuthContext";
 import { useSettings } from "@/context/SettingsContext";
+import { fetchBalances } from "@/features/finance/balances/api";
+import { DailyBalancesPanel } from "@/features/finance/balances/components/DailyBalancesPanel";
+import { useDailyBalanceManagement } from "@/features/finance/balances/hooks/useDailyBalanceManagement";
+import type { BalanceDraft, BalancesApiResponse } from "@/features/finance/balances/types";
+import { deriveInitialBalance, formatBalanceInput } from "@/features/finance/balances/utils";
 import { TransactionsColumnToggles } from "@/features/finance/transactions/components/TransactionsColumnToggles";
 import { TransactionsFilters } from "@/features/finance/transactions/components/TransactionsFilters";
 import { TransactionsTable } from "@/features/finance/transactions/components/TransactionsTable";
@@ -22,6 +27,7 @@ const DEFAULT_PAGE_SIZE = 50;
 
 export default function TransactionsMovements() {
   const [initialBalance, setInitialBalance] = useState<string>("0");
+  const [initialBalanceEdited, setInitialBalanceEdited] = useState(false);
   const [debouncedInitialBalance] = useDebounce(initialBalance, 500);
   const [draftFilters, setDraftFilters] = useState<Filters>({
     from: dayjs().startOf("year").format("YYYY-MM-DD"),
@@ -43,6 +49,8 @@ export default function TransactionsMovements() {
   );
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const [balancesReport, setBalancesReport] = useState<BalancesApiResponse | null>(null);
+  const [balancesLoading, setBalancesLoading] = useState(false);
 
   const quickMonths = (() => {
     const months: Array<{ value: string; label: string; from: string; to: string }> = [];
@@ -63,12 +71,9 @@ export default function TransactionsMovements() {
     return match ? match.value : "custom";
   })();
 
-  // const { hasRole } = useAuth(); // unused
   const { can } = useAuth();
   const { settings } = useSettings();
   const canView = can("read", "Transaction");
-
-  // const initialBalanceNumber = coerceAmount(debouncedInitialBalance); // handled inside useLedger
 
   const queryParams = {
     filters: appliedFilters,
@@ -90,9 +95,101 @@ export default function TransactionsMovements() {
     hasAmounts,
   });
 
+  // Load balances
+  const loadBalances = useCallback(async (fromValue: string, toValue: string) => {
+    if (!fromValue || !toValue) {
+      setBalancesReport(null);
+      return;
+    }
+
+    setBalancesLoading(true);
+    try {
+      const payload = await fetchBalances(fromValue, toValue);
+      setBalancesReport(payload);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "No se pudieron obtener los saldos diarios";
+      logger.error("[transactions] balances:error", message);
+      setBalancesReport(null);
+    } finally {
+      setBalancesLoading(false);
+    }
+  }, []);
+
+  // Daily balance management
+  const {
+    drafts: balancesDrafts,
+    saving: balancesSaving,
+    error: balancesError,
+    handleDraftChange: handleBalanceDraftChange,
+    handleSave: handleBalanceSave,
+    setDrafts: setBalancesDrafts,
+  } = useDailyBalanceManagement({
+    loadBalances: async () => {
+      await loadBalances(appliedFilters.from, appliedFilters.to);
+    },
+  });
+
+  // Load balances when filters change
+  useEffect(() => {
+    if (!canView) return;
+
+    async function loadAndUpdateDrafts() {
+      await loadBalances(appliedFilters.from, appliedFilters.to);
+    }
+
+    loadAndUpdateDrafts();
+  }, [appliedFilters.from, appliedFilters.to, canView, loadBalances]);
+
+  // Update drafts when balances report changes
+  useEffect(() => {
+    if (!balancesReport) {
+      setBalancesDrafts({});
+      return;
+    }
+
+    const drafts: Record<string, BalanceDraft> = {};
+    for (const day of balancesReport.days) {
+      drafts[day.date] = {
+        value: day.recordedBalance != null ? formatBalanceInput(day.recordedBalance) : "",
+        note: day.note ?? "",
+      };
+    }
+    setBalancesDrafts(drafts);
+
+    // Derive initial balance if not manually edited
+    if (!initialBalanceEdited) {
+      const derived = deriveInitialBalance(balancesReport);
+      if (derived == null) {
+        const hasRecorded = balancesReport.days.some((day) => day.recordedBalance != null);
+        if (!balancesReport.previous && !hasRecorded && initialBalance !== "0") {
+          setInitialBalance("0");
+        }
+        return;
+      }
+
+      const formatted = formatBalanceInput(derived);
+      if (formatted !== initialBalance) {
+        setInitialBalance(formatted);
+      }
+    }
+  }, [balancesReport, setBalancesDrafts, initialBalance, initialBalanceEdited]);
+
   const handleFilterChange = (update: Partial<Filters>) => {
     setDraftFilters((prev) => ({ ...prev, ...update }));
+    // Reset initial balance edited flag when date range changes
+    if (Object.prototype.hasOwnProperty.call(update, "from") || Object.prototype.hasOwnProperty.call(update, "to")) {
+      setInitialBalanceEdited(false);
+    }
   };
+
+  const handleResetInitialBalance = useCallback(() => {
+    if (!balancesReport) return;
+    const derived = deriveInitialBalance(balancesReport);
+    if (derived == null) return;
+    const formatted = formatBalanceInput(derived);
+    setInitialBalance(formatted);
+    setInitialBalanceEdited(false);
+  }, [balancesReport]);
 
   return (
     <section className="mx-auto w-full max-w-none space-y-4 p-4">
@@ -139,18 +236,33 @@ export default function TransactionsMovements() {
               </p>
             </div>
             <div className="flex flex-wrap items-end gap-3">
-              <div className="flex w-32 flex-col gap-1">
+              <div className="flex flex-col gap-1">
                 <span className="text-base-content text-xs font-semibold tracking-wide uppercase">
                   Saldo inicial (CLP)
                 </span>
-                <Input
-                  type="text"
-                  value={initialBalance}
-                  onChange={(event) => setInitialBalance(event.target.value)}
-                  className="input-sm bg-base-100/90"
-                  placeholder="0"
-                  inputMode="decimal"
-                />
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="text"
+                    value={initialBalance}
+                    onChange={(event) => {
+                      setInitialBalance(event.target.value);
+                      setInitialBalanceEdited(true);
+                    }}
+                    className="input-sm bg-base-100/90 w-32"
+                    placeholder="0"
+                    inputMode="decimal"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleResetInitialBalance}
+                    disabled={!balancesReport}
+                    title="Restablecer al saldo calculado"
+                  >
+                    ↻
+                  </Button>
+                </div>
               </div>
               <div className="flex w-40 flex-col gap-1">
                 <span className="text-base-content text-xs font-semibold tracking-wide uppercase">Mes rápido</span>
@@ -218,6 +330,17 @@ export default function TransactionsMovements() {
               setPageSize(nextPageSize);
               setPage(1);
             }}
+          />
+
+          {/* Daily Balances Panel */}
+          <DailyBalancesPanel
+            report={balancesReport}
+            drafts={balancesDrafts}
+            onDraftChange={handleBalanceDraftChange}
+            onSave={handleBalanceSave}
+            saving={balancesSaving}
+            loading={balancesLoading}
+            error={balancesError}
           />
         </>
       )}

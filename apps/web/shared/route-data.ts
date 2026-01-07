@@ -185,6 +185,13 @@ export const ROUTE_DATA: RouteData[] = [
         permission: { action: "read", subject: "Loan" },
         title: "Préstamos y créditos",
       },
+      {
+        path: "csv-preview",
+        componentPath: "features/finance/csv-preview/pages/CSVPreviewPage",
+        nav: { label: "Vista Previa CSV", iconKey: "FileText", section: "Finanzas", order: 8 },
+        permission: { action: "read", subject: "Transaction" },
+        title: "Vista Previa de Reportes CSV",
+      },
     ],
   },
 
