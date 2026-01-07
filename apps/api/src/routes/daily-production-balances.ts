@@ -61,7 +61,7 @@ app.get("/", async (c) => {
   const user = await getSessionUser(c);
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
 
-  const canRead = await hasPermission(user.id, "read", "Balance");
+  const canRead = await hasPermission(user.id, "read", "ProductionBalance");
   if (!canRead) return c.json({ status: "error", message: "Forbidden" }, 403);
 
   const query = c.req.query();
@@ -96,7 +96,7 @@ app.post("/", async (c) => {
   const user = await getSessionUser(c);
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
 
-  const canCreate = await hasPermission(user.id, "create", "Balance");
+  const canCreate = await hasPermission(user.id, "create", "ProductionBalance");
   if (!canCreate) return c.json({ status: "error", message: "Forbidden" }, 403);
 
   const body = await c.req.json();
@@ -133,7 +133,7 @@ app.put("/:id", async (c) => {
   const user = await getSessionUser(c);
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
 
-  const canUpdate = await hasPermission(user.id, "update", "Balance");
+  const canUpdate = await hasPermission(user.id, "update", "ProductionBalance");
   if (!canUpdate) return c.json({ status: "error", message: "Forbidden" }, 403);
 
   const id = Number(c.req.param("id"));

@@ -58,7 +58,7 @@ const TABLE_PERMISSIONS: Record<
   people: { action: "create", subject: "Person" },
   employees: { action: "create", subject: "Employee" },
   counterparts: { action: "create", subject: "Counterpart" },
-  daily_balances: { action: "create", subject: "Balance" },
+  daily_balances: { action: "create", subject: "DailyBalance" },
   transactions: { action: "create", subject: "Transaction" },
 };
 
