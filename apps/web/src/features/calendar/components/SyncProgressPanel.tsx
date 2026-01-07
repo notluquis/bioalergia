@@ -74,8 +74,6 @@ export function SyncProgressPanel({
     events: "Eventos",
     inserted: "Nuevas",
     updated: "Actualizadas",
-    skipped: "Omitidas",
-    excluded: "Excluidas",
     stored: "Snapshot",
   };
 
@@ -146,14 +144,6 @@ export function SyncProgressPanel({
           <p>
             <span className="text-base-content font-semibold">Actualizadas:</span>{" "}
             {numberFormatter.format(lastSyncInfo.updated)}
-          </p>
-          <p>
-            <span className="text-base-content font-semibold">Omitidas:</span>{" "}
-            {numberFormatter.format(lastSyncInfo.skipped)}
-          </p>
-          <p>
-            <span className="text-base-content font-semibold">Filtradas:</span>{" "}
-            {numberFormatter.format(lastSyncInfo.excluded)}
           </p>
           <p className="text-base-content/60 md:col-span-2">
             Ejecutado el {dayjs(lastSyncInfo.fetchedAt).format("DD MMM YYYY · HH:mm")}
