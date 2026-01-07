@@ -37,9 +37,11 @@ import { join } from "path";
 
 const app = new Hono();
 
-// Ensure UTF-8 encoding for all responses
-app.use("/api/*", async (c, next) => {
+// Security headers and CSP for Cloudflare + Vite
+app.use("*", async (c, next) => {
   await next();
+
+  // UTF-8 encoding for JSON responses
   const contentType = c.res.headers.get("Content-Type");
   if (
     contentType &&
@@ -48,6 +50,22 @@ app.use("/api/*", async (c, next) => {
   ) {
     c.res.headers.set("Content-Type", "application/json; charset=utf-8");
   }
+
+  // Content Security Policy - Allow Cloudflare + Vite assets
+  const csp = [
+    "default-src 'self'",
+    "script-src 'self' 'unsafe-inline' https://cdn.cloudflare.com https://static.cloudflareinsights.com https://challenges.cloudflare.com",
+    "script-src-elem 'self' https://cdn.cloudflare.com https://static.cloudflareinsights.com https://challenges.cloudflare.com",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: https:",
+    "font-src 'self' data:",
+    "connect-src 'self' https://api.cloudflare.com",
+    "worker-src 'self' blob:",
+    "manifest-src 'self'",
+    "frame-ancestors 'none'",
+  ].join("; ");
+
+  c.res.headers.set("Content-Security-Policy", csp);
 });
 
 // CORS for frontend (same-origin in prod, localhost in dev)
