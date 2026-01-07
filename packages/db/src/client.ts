@@ -7,9 +7,15 @@ import { PolicyPlugin } from "@zenstackhq/plugin-policy";
 import { Pool } from "pg";
 import { schema } from "./zenstack/schema.js";
 
-// Connection pool
+// Connection pool with UTF-8 encoding
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
+  // Ensure UTF-8 encoding for all database operations
+  connectionTimeoutMillis: 5000,
+  idleTimeoutMillis: 30000,
+  max: 20,
+  // Force UTF-8 client encoding
+  options: "-c client_encoding=UTF8",
 });
 
 // Base ORM client (no access control)

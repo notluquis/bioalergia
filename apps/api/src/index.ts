@@ -37,6 +37,15 @@ import { join } from "path";
 
 const app = new Hono();
 
+// Ensure UTF-8 encoding for all responses
+app.use("/api/*", async (c, next) => {
+  await next();
+  const contentType = c.res.headers.get("Content-Type");
+  if (contentType && contentType.includes("application/json") && !contentType.includes("charset")) {
+    c.res.headers.set("Content-Type", "application/json; charset=utf-8");
+  }
+});
+
 // CORS for frontend (same-origin in prod, localhost in dev)
 app.use(
   "/api/*",

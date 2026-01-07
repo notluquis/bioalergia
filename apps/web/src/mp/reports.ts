@@ -14,7 +14,7 @@ export async function createReleasedMoneyReport(
     method: "POST",
     headers: {
       Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
+      "Content-Type": "application/json; charset=utf-8",
     },
     body: JSON.stringify({ begin_date: beginDateISO, end_date: endDateISO }),
   });

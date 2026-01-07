@@ -92,7 +92,7 @@ export const MPService = {
   updateConfig: async (data: Partial<MPReportConfig>): Promise<MPReportConfig> => {
     const res = await fetch("/api/mercadopago/config", {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json; charset=utf-8" },
       body: JSON.stringify(data),
     });
     if (!res.ok) await handleApiError(res, "Error al actualizar configuración");
@@ -102,7 +102,7 @@ export const MPService = {
   createConfig: async (data: Partial<MPReportConfig>): Promise<MPReportConfig> => {
     const res = await fetch("/api/mercadopago/config", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json; charset=utf-8" },
       body: JSON.stringify(data),
     });
     if (!res.ok) await handleApiError(res, "Error al crear configuración");
@@ -118,7 +118,7 @@ export const MPService = {
   createReport: async (beginDate: string, endDate: string): Promise<MPReport> => {
     const res = await fetch("/api/mercadopago/reports", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json; charset=utf-8" },
       body: JSON.stringify({ begin_date: beginDate, end_date: endDate }),
     });
     if (!res.ok) await handleApiError(res, "Error al crear reporte");
