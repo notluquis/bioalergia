@@ -472,14 +472,7 @@ export default function CSVUploadPage() {
               </CardHeader>
               <CardContent className="p-0">
                 <div className="overflow-x-auto">
-                  <Table
-                    columns={[
-                      { key: "dbField", label: "Campo BD" },
-                      { key: "type", label: "Tipo" },
-                      { key: "csvColumn", label: "Columna CSV" },
-                      { key: "preview", label: "Ejemplo (Fila 1)" },
-                    ]}
-                  >
+                  <Table>
                     <TableHeader
                       columns={[
                         { key: "dbField", label: "Campo BD", width: "25%" },
