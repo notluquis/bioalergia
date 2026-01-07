@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "esbuild src/index.ts --bundle --platform=node --target=node25 --format=esm --outfile=dist/index.js --external:@finanzas/db --external:@zenstackhq/* --sourcemap",
+    "build": "esbuild src/index.ts --bundle --platform=node --target=node25 --format=esm --outfile=dist/index.js --packages=external --sourcemap",
     "start": "tsx dist/index.js",
     "type-check": "tsc --noEmit",
     "clean": "rm -rf dist"
