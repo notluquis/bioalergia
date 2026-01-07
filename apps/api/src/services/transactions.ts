@@ -68,15 +68,17 @@ export async function listTransactions(
 
   // Exclude test data by default
   if (!filters.includeTest) {
-    where.NOT = {
-      OR: [
-        { description: { contains: "test", mode: "insensitive" } },
-        { description: { contains: "Test" } },
-        { sourceId: { contains: "TEST" } },
-        { sourceId: { contains: "test" } },
-        { externalReference: { contains: "test", mode: "insensitive" } },
-      ],
-    };
+    // Add to AND array to ensure it doesn't conflict with other filters
+    where.AND = where.AND || [];
+    where.AND.push({
+      NOT: {
+        OR: [
+          { description: { contains: "test", mode: "insensitive" } },
+          { sourceId: { contains: "test", mode: "insensitive" } },
+          { externalReference: { contains: "test", mode: "insensitive" } },
+        ],
+      },
+    });
   }
 
   const [total, transactions] = await Promise.all([
