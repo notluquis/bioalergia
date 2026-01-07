@@ -21,9 +21,19 @@ import type { LedgerRow } from "../types";
 export default function CSVPreviewPage() {
   const { can } = useAuth();
   const [initialBalance, setInitialBalance] = useState<string>("0");
-  const { movs, fileName, error: uploadError, onFile, clearFile } = useReportUpload();
+  const {
+    movs,
+    fileName,
+    error: uploadError,
+    importing,
+    importResult,
+    onFile,
+    clearFile,
+    importToDatabase,
+  } = useReportUpload();
 
   const canView = can("read", "Transaction");
+  const canCreate = can("create", "Transaction");
 
   const ledger: LedgerRow[] = useMemo(() => {
     const initialBalanceNumber = coerceAmount(initialBalance);
@@ -127,9 +137,42 @@ export default function CSVPreviewPage() {
       {/* Preview Table */}
       {ledger.length > 0 && (
         <div className="space-y-3">
-          <h2 className="text-lg font-semibold">Vista Previa</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold">Vista Previa</h2>
+            {canCreate && (
+              <Button variant="primary" onClick={importToDatabase} disabled={importing}>
+                {importing ? "Importando..." : "Importar a Base de Datos"}
+              </Button>
+            )}
+          </div>
           <ReportTable ledger={ledger} />
         </div>
+      )}
+
+      {/* Import Result */}
+      {importResult && (
+        <Alert variant="success">
+          <div className="space-y-2">
+            <p className="font-semibold">✓ Importación completada</p>
+            <div className="text-sm">
+              <p>
+                <strong>Insertados:</strong> {importResult.inserted ?? 0} · <strong>Actualizados:</strong>{" "}
+                {importResult.updated ?? 0} · <strong>Omitidos:</strong> {importResult.skipped ?? 0}
+              </p>
+              {importResult.errors && importResult.errors.length > 0 && (
+                <div className="mt-2">
+                  <p className="font-medium">Errores ({importResult.errors.length}):</p>
+                  <ul className="ml-4 list-disc">
+                    {importResult.errors.slice(0, 5).map((err, i) => (
+                      <li key={i}>{err}</li>
+                    ))}
+                    {importResult.errors.length > 5 && <li>... y {importResult.errors.length - 5} más</li>}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
+        </Alert>
       )}
     </section>
   );
