@@ -117,14 +117,6 @@ export default function FinanzasStatsPage() {
 
   return (
     <section className={PAGE_CONTAINER}>
-      {/* Header */}
-      <header>
-        <h1 className={TITLE_LG}>Estadísticas Financieras</h1>
-        <p className="text-base-content/70 mt-1 text-sm">
-          Resumen contable por mes, tipo de movimiento y contrapartes principales
-        </p>
-      </header>
-
       {/* Date Range Filters */}
       <form
         onSubmit={handleSubmit}
