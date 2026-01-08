@@ -56,7 +56,7 @@ export async function fetchGlobalTimesheetRange(startDate: string, endDate: stri
   });
 
   if (data.status !== "ok") {
-    throw new Error(data.message || "Error fetching global timesheets");
+    throw new Error(data.message || `Error fetching global timesheets (Status: ${data.status})`);
   }
 
   return data.entries;
