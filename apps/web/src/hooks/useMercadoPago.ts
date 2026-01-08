@@ -177,6 +177,12 @@ export function useMercadoPagoConfig(isOpen: boolean, onClose: () => void, repor
     isLoading,
     isPending: createMutation.isPending || updateMutation.isPending,
     currentConfig,
-    onSubmit: form.handleSubmit(onSubmit),
+    onSubmit: form.handleSubmit(onSubmit, (errors) => {
+      console.error("Form Validation Errors:", errors);
+      const firstErrorKey = Object.keys(errors)[0];
+      const firstError = errors[firstErrorKey as keyof typeof errors];
+      const msg = firstError?.message || `Error en campo ${firstErrorKey}`;
+      showError(`Error de validación: ${msg}`);
+    }),
   };
 }
