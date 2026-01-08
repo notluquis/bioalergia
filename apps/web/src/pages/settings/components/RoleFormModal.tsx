@@ -1,7 +1,9 @@
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, User as UserIcon } from "lucide-react";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
+import { z } from "zod";
 
 import { useToast } from "@/context/ToastContext";
 import { createRole, fetchRoleUsers, type RoleUser, updateRole } from "@/features/roles/api";
@@ -13,10 +15,12 @@ interface RoleFormModalProps {
   onClose: () => void;
 }
 
-interface RoleFormData {
-  name: string;
-  description: string;
-}
+const formSchema = z.object({
+  name: z.string().min(1, "El nombre es obligatorio").max(50, "El nombre no puede exceder los 50 caracteres"),
+  description: z.string().max(255, "La descripción no puede exceder los 255 caracteres").optional(),
+});
+
+type RoleFormData = z.infer<typeof formSchema>;
 
 export function RoleFormModal({ role, isOpen, onClose }: RoleFormModalProps) {
   const {
@@ -24,7 +28,9 @@ export function RoleFormModal({ role, isOpen, onClose }: RoleFormModalProps) {
     handleSubmit,
     reset,
     formState: { errors },
-  } = useForm<RoleFormData>();
+  } = useForm<RoleFormData>({
+    resolver: zodResolver(formSchema),
+  });
   const toast = useToast();
   const queryClient = useQueryClient();
 
@@ -46,12 +52,18 @@ export function RoleFormModal({ role, isOpen, onClose }: RoleFormModalProps) {
 
   const mutation = useMutation({
     mutationFn: async (data: RoleFormData) => {
+      // Ensure description is string (handle optional/undefined)
+      const payload = {
+        name: data.name,
+        description: data.description || "",
+      };
+
       if (role) {
         // Edit
-        await updateRole(role.id, data);
+        await updateRole(role.id, payload);
       } else {
         // Create
-        await createRole(data);
+        await createRole(payload);
       }
     },
     onSuccess: () => {
@@ -96,7 +108,7 @@ export function RoleFormModal({ role, isOpen, onClose }: RoleFormModalProps) {
               type="text"
               placeholder="Ej. Supervisor de Finanzas"
               className={`input input-bordered w-full ${errors.name ? "input-error" : ""}`}
-              {...register("name", { required: "El nombre es obligatorio" })}
+              {...register("name")}
             />
             {errors.name && <span className="text-error mt-1 text-xs">{errors.name.message}</span>}
           </div>
