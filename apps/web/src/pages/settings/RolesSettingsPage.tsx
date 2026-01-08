@@ -109,6 +109,7 @@ export default function RolesSettingsPage() {
     },
     onError: (_err, _newTodo, context) => {
       // toast.error("Error al actualizar permisos");
+      toast.error("Error al actualizar permisos. Inténtalo de nuevo.");
       if (context?.previousRoles) {
         queryClient.setQueryData(["roles"], context.previousRoles);
       }

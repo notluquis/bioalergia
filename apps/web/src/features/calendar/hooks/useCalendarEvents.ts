@@ -3,6 +3,7 @@ import dayjs from "dayjs";
 import { useEffect, useRef, useState } from "react";
 
 import { useSettings } from "@/context/SettingsContext";
+import { useToast } from "@/context/ToastContext";
 import { useCalendarFilterStore } from "@/store/calendarFilters";
 
 import { fetchCalendarDaily, fetchCalendarSummary, fetchCalendarSyncLogs, syncCalendarEvents } from "../api";
@@ -70,6 +71,7 @@ export function useCalendarEvents() {
   const queryClient = useQueryClient();
   const filters = useCalendarFilterStore((state) => state);
   const setFilters = useCalendarFilterStore((state) => state.setFilters);
+  const { error: showError } = useToast();
 
   const computeDefaults = (): CalendarFilters => {
     const syncStart = settings.calendarSyncStart?.trim() || "2000-01-01";
@@ -270,7 +272,9 @@ export function useCalendarEvents() {
             });
           } else if (currentLog.status === "ERROR") {
             clearInterval(pollInterval);
-            setSyncError(currentLog.errorMessage || "Error desconocido durante la sincronización");
+            const msg = currentLog.errorMessage || "Error desconocido durante la sincronización";
+            setSyncError(msg);
+            showError(msg);
             setSyncProgress((prev) =>
               prev.map((entry) => ({
                 ...entry,
@@ -281,6 +285,7 @@ export function useCalendarEvents() {
           } else if (pollCount >= maxPolls) {
             clearInterval(pollInterval);
             setSyncError("Timeout: la sincronización tardó demasiado");
+            showError("Timeout: la sincronización tardó demasiado");
             setSyncing(false);
           }
           // else: still RUNNING, keep polling
@@ -288,6 +293,7 @@ export function useCalendarEvents() {
           clearInterval(pollInterval);
           const message = err instanceof Error ? err.message : "Error al verificar estado de sincronización";
           setSyncError(message);
+          showError(message);
           setSyncing(false);
         }
       }, 5000); // Poll every 5 seconds
@@ -295,6 +301,7 @@ export function useCalendarEvents() {
     onError: (err: unknown) => {
       const message = err instanceof Error ? err.message : "No se pudo iniciar la sincronización";
       setSyncError(message);
+      showError(message); // Toast
       setSyncProgress((prev) =>
         prev.map((entry) => ({
           ...entry,
@@ -304,6 +311,19 @@ export function useCalendarEvents() {
       setSyncing(false);
     },
   });
+
+  // Watch for query errors to show toast
+  useEffect(() => {
+    if (summaryQuery.error) {
+      showError(`Error al cargar resumen: ${summaryQuery.error.message}`);
+    }
+  }, [summaryQuery.error, showError]);
+
+  useEffect(() => {
+    if (dailyQuery.error) {
+      showError(`Error al cargar eventos: ${dailyQuery.error.message}`);
+    }
+  }, [dailyQuery.error, showError]);
 
   const { mutate: sync } = syncMutation;
 
