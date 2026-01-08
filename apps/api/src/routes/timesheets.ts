@@ -19,7 +19,12 @@ app.get("/summary", async (c) => {
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
 
   const canRead = await hasPermission(user.id, "read", "Timesheet");
-  if (!canRead) return c.json({ status: "error", message: "Forbidden" }, 403);
+  const canReadList = await hasPermission(user.id, "read", "TimesheetList");
+  const canReadAudit = await hasPermission(user.id, "read", "TimesheetAudit");
+
+  if (!canRead && !canReadList && !canReadAudit) {
+    return c.json({ status: "error", message: "Forbidden" }, 403);
+  }
 
   try {
     const query = c.req.query();
@@ -51,7 +56,12 @@ app.get("/months", async (c) => {
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
 
   const canRead = await hasPermission(user.id, "read", "Timesheet");
-  if (!canRead) return c.json({ status: "error", message: "Forbidden" }, 403);
+  const canReadList = await hasPermission(user.id, "read", "TimesheetList");
+  const canReadAudit = await hasPermission(user.id, "read", "TimesheetAudit");
+
+  if (!canRead && !canReadList && !canReadAudit) {
+    return c.json({ status: "error", message: "Forbidden" }, 403);
+  }
 
   try {
     // Generate last 24 months as available options
@@ -81,7 +91,12 @@ app.get("/multi-month", async (c) => {
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
 
   const canRead = await hasPermission(user.id, "read", "Timesheet");
-  if (!canRead) return c.json({ status: "error", message: "Forbidden" }, 403);
+  const canReadList = await hasPermission(user.id, "read", "TimesheetList");
+  const canReadAudit = await hasPermission(user.id, "read", "TimesheetAudit");
+
+  if (!canRead && !canReadList && !canReadAudit) {
+    return c.json({ status: "error", message: "Forbidden" }, 403);
+  }
 
   try {
     const query = c.req.query();
@@ -115,7 +130,7 @@ app.get("/multi-month", async (c) => {
     console.error("[timesheets] multi-month error:", error);
     return c.json(
       { status: "error", message: "Error al cargar datos multi-mes" },
-      500,
+      500
     );
   }
 });
@@ -126,7 +141,12 @@ app.get("/multi-detail", async (c) => {
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
 
   const canRead = await hasPermission(user.id, "read", "Timesheet");
-  if (!canRead) return c.json({ status: "error", message: "Forbidden" }, 403);
+  const canReadList = await hasPermission(user.id, "read", "TimesheetList");
+  const canReadAudit = await hasPermission(user.id, "read", "TimesheetAudit");
+
+  if (!canRead && !canReadList && !canReadAudit) {
+    return c.json({ status: "error", message: "Forbidden" }, 403);
+  }
 
   try {
     const query = c.req.query();
@@ -155,7 +175,7 @@ app.get("/multi-detail", async (c) => {
     console.error("[timesheets] multi-detail error:", error);
     return c.json(
       { status: "error", message: "Error al cargar detalles" },
-      500,
+      500
     );
   }
 });
@@ -166,7 +186,12 @@ app.get("/:employeeId/range", async (c) => {
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
 
   const canRead = await hasPermission(user.id, "read", "Timesheet");
-  if (!canRead) return c.json({ status: "error", message: "Forbidden" }, 403);
+  const canReadList = await hasPermission(user.id, "read", "TimesheetList");
+  const canReadAudit = await hasPermission(user.id, "read", "TimesheetAudit");
+
+  if (!canRead && !canReadList && !canReadAudit) {
+    return c.json({ status: "error", message: "Forbidden" }, 403);
+  }
 
   try {
     const employeeId = Number(c.req.param("employeeId"));
@@ -204,7 +229,12 @@ app.get("/:employeeId/detail", async (c) => {
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
 
   const canRead = await hasPermission(user.id, "read", "Timesheet");
-  if (!canRead) return c.json({ status: "error", message: "Forbidden" }, 403);
+  const canReadList = await hasPermission(user.id, "read", "TimesheetList");
+  const canReadAudit = await hasPermission(user.id, "read", "TimesheetAudit");
+
+  if (!canRead && !canReadList && !canReadAudit) {
+    return c.json({ status: "error", message: "Forbidden" }, 403);
+  }
 
   try {
     const employeeId = Number(c.req.param("employeeId"));
@@ -248,7 +278,7 @@ app.post("/", async (c) => {
     const body = await c.req.json();
     const normalized = normalizeTimesheetPayload(body);
     const entry = await upsertTimesheetEntry(
-      normalized as UpsertTimesheetPayload,
+      normalized as UpsertTimesheetPayload
     );
     return c.json({ status: "ok", entry });
   } catch (error) {
@@ -354,7 +384,12 @@ app.post("/prepare-email", async (c) => {
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
 
   const canRead = await hasPermission(user.id, "read", "Timesheet");
-  if (!canRead) return c.json({ status: "error", message: "Forbidden" }, 403);
+  const canReadList = await hasPermission(user.id, "read", "TimesheetList");
+  const canReadAudit = await hasPermission(user.id, "read", "TimesheetAudit");
+
+  if (!canRead && !canReadList && !canReadAudit) {
+    return c.json({ status: "error", message: "Forbidden" }, 403);
+  }
 
   try {
     const body = await c.req.json();
@@ -515,7 +550,7 @@ app.post("/prepare-email", async (c) => {
     console.error("[timesheets] prepare-email error:", error);
     return c.json(
       { status: "error", message: "Error al preparar el email" },
-      500,
+      500
     );
   }
 });

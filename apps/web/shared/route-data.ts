@@ -86,7 +86,6 @@ export const ROUTE_DATA: RouteData[] = [
   {
     path: "calendar",
     componentPath: "components/Layout/CalendarLayout",
-    permission: { action: "read", subject: "CalendarEvent" },
     title: "Calendario",
     children: [
       { index: true, redirectTo: "/calendar/schedule" },
@@ -201,7 +200,6 @@ export const ROUTE_DATA: RouteData[] = [
   {
     path: "services",
     componentPath: "features/services/layout/ServicesLayout",
-    permission: { action: "read", subject: "Service" },
     title: "Servicios",
     children: [
       {
@@ -244,7 +242,6 @@ export const ROUTE_DATA: RouteData[] = [
   // ══════════════════════════════════════════════════════════════════════════
   {
     path: "operations",
-    permission: { action: "read", subject: "InventoryItem" },
     title: "Operaciones",
     children: [
       { index: true, redirectTo: "/operations/inventory" },
@@ -268,7 +265,6 @@ export const ROUTE_DATA: RouteData[] = [
   // HR routes
   {
     path: "hr",
-    permission: { action: "read", subject: "Employee" },
     title: "RRHH",
     children: [
       { index: true, redirectTo: "/hr/employees" },
@@ -427,10 +423,4 @@ export const API_PERMISSIONS: RoutePermission[] = [
   // Permission management endpoints (/api/roles/permissions)
   { action: "read", subject: "Permission" },
   { action: "update", subject: "Permission" },
-
-  // Generic Data Access (kept for compatibility and API usage)
-  { action: "read", subject: "CalendarEvent" },
-  { action: "read", subject: "Transaction" },
-  { action: "read", subject: "Service" },
-  { action: "read", subject: "Timesheet" },
 ];
