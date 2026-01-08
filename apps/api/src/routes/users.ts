@@ -173,9 +173,8 @@ userRoutes.post("/invite", async (c) => {
 
   // Generate temp password
   const crypto = await import("crypto");
-  const tempPasswordHash = await hashPassword(
-    crypto.randomBytes(12).toString("hex")
-  );
+  const tempPassword = crypto.randomBytes(12).toString("hex");
+  const tempPasswordHash = await hashPassword(tempPassword);
 
   // Create user
   let targetPersonId = personId;
@@ -223,7 +222,7 @@ userRoutes.post("/invite", async (c) => {
   });
 
   console.log("[User] Invited:", email, "by", auth.email);
-  return c.json({ status: "ok", userId: user.id });
+  return c.json({ status: "ok", userId: user.id, tempPassword });
 });
 
 // ============================================================
