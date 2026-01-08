@@ -356,6 +356,10 @@ mercadopagoRoutes.put("/settlement/config", async (c) => {
   const body = await c.req.json();
 
   try {
+    console.log(
+      "[MP Settlement] PUT config body:",
+      JSON.stringify(body, null, 2)
+    );
     const res = await mpFetch("/config", MP_API_SETTLEMENT, {
       method: "PUT",
       body: JSON.stringify(body),

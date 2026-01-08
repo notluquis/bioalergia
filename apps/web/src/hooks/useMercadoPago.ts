@@ -14,6 +14,42 @@ import {
   MpSettlementConfigSchema,
 } from "../../shared/mercadopago";
 
+/**
+ * Convert IANA timezone to GMT format for MercadoPago API
+ * @param ianaTimezone - e.g., "America/Santiago"
+ * @returns GMT format string, e.g., "GMT-04"
+ */
+function timezoneToGMT(ianaTimezone: string): string {
+  if (ianaTimezone.startsWith("GMT")) {
+    return ianaTimezone;
+  }
+
+  try {
+    const now = new Date();
+    const formatter = new Intl.DateTimeFormat("en-US", {
+      timeZone: ianaTimezone,
+      timeZoneName: "shortOffset",
+    });
+    const parts = formatter.formatToParts(now);
+    const tzPart = parts.find((p) => p.type === "timeZoneName");
+
+    if (tzPart?.value) {
+      // Convert "GMT-4" to "GMT-04"
+      const match = tzPart.value.match(/GMT([+-])(\d{1,2})(?::(\d{2}))?/);
+      if (match && match[1] && match[2]) {
+        const sign = match[1];
+        const hours = match[2].padStart(2, "0");
+        return `GMT${sign}${hours}`;
+      }
+      return tzPart.value;
+    }
+  } catch {
+    // Fallback for invalid timezone
+  }
+
+  return "GMT-04";
+}
+
 export function useMercadoPagoConfig(isOpen: boolean, onClose: () => void, reportType: MpReportType = "release") {
   const queryClient = useQueryClient();
   const { success: showSuccess, error: showError } = useToast();
@@ -190,6 +226,11 @@ export function useMercadoPagoConfig(isOpen: boolean, onClose: () => void, repor
     }
     // For "weekly", value is already a string (enum), so leave it as is.
     sanitizedData.frequency = frequency;
+
+    // Convert IANA timezone to GMT format for API
+    if (sanitizedData.display_timezone) {
+      sanitizedData.display_timezone = timezoneToGMT(sanitizedData.display_timezone);
+    }
 
     if (currentConfig) {
       updateMutation.mutate(sanitizedData);
