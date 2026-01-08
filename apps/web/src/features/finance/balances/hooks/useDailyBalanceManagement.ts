@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/context/ToastContext";
 import { logger } from "@/lib/logger";
 
 import { saveBalance } from "../api";
@@ -13,6 +14,7 @@ interface UseDailyBalanceManagementProps {
 
 export function useDailyBalanceManagement({ loadBalances }: UseDailyBalanceManagementProps) {
   const { can } = useAuth();
+  const { error: showError } = useToast();
   const canEdit = can("update", "Transaction");
 
   const [drafts, setDrafts] = useState<Record<string, BalanceDraft>>({});
@@ -52,6 +54,7 @@ export function useDailyBalanceManagement({ loadBalances }: UseDailyBalanceManag
     } catch (err) {
       const message = err instanceof Error ? err.message : "No se pudo guardar el saldo diario";
       setError(message);
+      showError(message);
       logger.error("[balances] save:error", message);
     } finally {
       setSaving((prev) => ({ ...prev, [date]: false }));

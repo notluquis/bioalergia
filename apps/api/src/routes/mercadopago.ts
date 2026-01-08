@@ -272,6 +272,10 @@ mercadopagoRoutes.delete("/schedule", async (c) => {
     const res = await mpFetch("/schedule", MP_API_RELEASE, {
       method: "DELETE",
     });
+    if (res.status === 204) {
+      console.log("[MP Release] Schedule disabled by", auth.email);
+      return c.json({ status: "success", message: "Schedule disabled" });
+    }
     const data = await res.json();
     console.log("[MP Release] Schedule disabled by", auth.email);
     return c.json(data);
@@ -459,6 +463,10 @@ mercadopagoRoutes.delete("/settlement/schedule", async (c) => {
     const res = await mpFetch("/schedule", MP_API_SETTLEMENT, {
       method: "DELETE",
     });
+    if (res.status === 204) {
+      console.log("[MP Settlement] Schedule disabled by", auth.email);
+      return c.json({ status: "success", message: "Schedule disabled" });
+    }
     const data = await res.json();
     console.log("[MP Settlement] Schedule disabled by", auth.email);
     return c.json(data);
