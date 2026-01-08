@@ -81,9 +81,9 @@ export function useMercadoPagoConfig(isOpen: boolean, onClose: () => void, repor
       form.reset({
         ...defaultValues, // keep defaults for missing fields
         ...currentConfig,
-        columns: uniqueColumns,
+        columns: uniqueColumns || defaultValues.columns,
         // Ensure enums match exact types
-        frequency: currentConfig.frequency,
+        frequency: currentConfig.frequency || defaultValues.frequency,
       });
     } else {
       // If config failed (404), reset to defaults?
