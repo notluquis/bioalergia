@@ -32,7 +32,7 @@ export const brandAssetUrlSchema = z
       (value.startsWith("/") && value.length > 1),
     {
       message: "Debe comenzar con https:// o una ruta interna que inicie con /",
-    },
+    }
   );
 
 // Numeric schemas
@@ -61,7 +61,7 @@ export const amountSchema = z
       (Number.isInteger(value) && value >= 0 && value <= 100_000_000),
     {
       message: "Monto inválido",
-    },
+    }
   )
   .optional();
 
@@ -72,12 +72,12 @@ export const amountSchema = z
 export const updateClassificationSchema = z.object({
   calendarId: z.string(),
   eventId: z.string(),
-  category: z.string().optional(),
-  amountExpected: z.coerce.number().optional(),
-  amountPaid: z.coerce.number().optional(),
-  attended: z.boolean().optional(),
-  dosage: z.string().optional(),
-  treatmentStage: z.string().optional(),
+  category: z.string().nullable().optional(),
+  amountExpected: z.coerce.number().nullable().optional(),
+  amountPaid: z.coerce.number().nullable().optional(),
+  attended: z.boolean().nullable().optional(),
+  dosage: z.string().nullable().optional(),
+  treatmentStage: z.string().nullable().optional(),
 });
 
 // ==========================================

@@ -197,39 +197,6 @@ function CalendarClassificationPage() {
     <Toast.Provider swipeDirection="right">
       <Tooltip.Provider delayDuration={200}>
         <div className="space-y-8">
-          {/* Header */}
-          <header className="space-y-2">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <div>
-                <h1 className="text-2xl font-bold tracking-tight">Clasificar eventos</h1>
-                <p className="text-base-content/60 text-sm">Revisa y clasifica eventos pendientes</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => void refetch()}
-                  disabled={loading}
-                  className="btn btn-sm btn-ghost gap-2"
-                >
-                  <svg
-                    className={`h-4 w-4 ${loading ? "animate-spin" : ""}`}
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                    />
-                  </svg>
-                  {loading ? "Cargando..." : "Actualizar"}
-                </button>
-              </div>
-            </div>
-          </header>
-
           {/* Stats Cards */}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard title="Pendientes" value={loading ? "—" : totalCount.toLocaleString("es-CL")} tone="primary" />
@@ -370,6 +337,30 @@ function CalendarClassificationPage() {
 
             {/* Reclassify Actions */}
             <div className="flex items-center gap-3">
+              {/* Refresh Button - Moved here */}
+              <button
+                type="button"
+                onClick={() => void refetch()}
+                disabled={loading}
+                className="btn btn-ghost btn-sm text-base-content/70 gap-2"
+                title="Actualizar lista"
+              >
+                <svg
+                  className={`h-4 w-4 ${loading ? "animate-spin" : ""}`}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                  />
+                </svg>
+                <span className="hidden sm:inline">{loading ? "Cargando..." : "Actualizar"}</span>
+              </button>
+
               {/* Action Buttons */}
               <Button
                 type="button"

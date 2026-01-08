@@ -143,7 +143,7 @@ export default function ReportsPage() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const activeEmployees = employees.filter((emp) => emp.status === "ACTIVE");
+  const activeEmployees = employees.filter((emp) => emp.status === "ACTIVE" && emp.salaryType !== "FIXED");
 
   const filteredEmployees = (() => {
     if (!employeeSearch.trim()) return activeEmployees;
