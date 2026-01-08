@@ -78,12 +78,38 @@ export function useMercadoPagoConfig(isOpen: boolean, onClose: () => void, repor
 
       const uniqueColumns = currentConfig.columns; // Simplify for now
 
+      // Build frequency respecting discriminated union
+      const configFreq = currentConfig.frequency;
+      const defaultFreq = defaultValues.frequency;
+      const fallbackHour = defaultFreq?.hour ?? 8;
+      let frequency: NonNullable<typeof defaultFreq>;
+
+      if (configFreq?.type === "weekly") {
+        frequency = {
+          type: "weekly",
+          hour: configFreq.hour ?? fallbackHour,
+          value: configFreq.value as "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday",
+        };
+      } else if (configFreq?.type === "monthly") {
+        frequency = {
+          type: "monthly",
+          hour: configFreq.hour ?? fallbackHour,
+          value: (configFreq.value as number) ?? 1,
+        };
+      } else {
+        // Default to daily
+        frequency = {
+          type: "daily",
+          hour: configFreq?.hour ?? fallbackHour,
+          value: 0,
+        };
+      }
+
       form.reset({
         ...defaultValues, // keep defaults for missing fields
         ...currentConfig,
         columns: uniqueColumns || defaultValues.columns,
-        // Ensure enums match exact types
-        frequency: { ...defaultValues.frequency, ...(currentConfig.frequency || {}) },
+        frequency,
       });
     } else {
       // If config failed (404), reset to defaults?
