@@ -68,7 +68,7 @@ export default function MercadoPagoSettingsPage() {
       showSuccess("Generación automática activada");
       queryClient.invalidateQueries({ queryKey: ["mp-config", activeTab] });
     },
-    onError: () => showError("Error al activar generación automática"),
+    onError: (e) => showError(`Error al activar: ${e.message}`),
   });
 
   const disableScheduleMutation = useMutation({
@@ -77,7 +77,7 @@ export default function MercadoPagoSettingsPage() {
       showSuccess("Generación automática desactivada");
       queryClient.invalidateQueries({ queryKey: ["mp-config", activeTab] });
     },
-    onError: () => showError("Error al desactivar generación automática"),
+    onError: (e) => showError(`Error al desactivar: ${e.message}`),
   });
 
   const downloadMutation = useMutation({

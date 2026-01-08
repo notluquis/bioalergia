@@ -438,13 +438,7 @@ mercadopagoRoutes.post("/settlement/schedule", async (c) => {
     // Docs say: POST .../schedule to enable.
     const res = await mpFetch("/schedule", MP_API_SETTLEMENT, {
       method: "POST",
-      // Often requires empty object or specific config.
-      // Existing release implementation sends { enabled: true }?
-      // Docs provided say: POST /schedule (no body mentioned in curl example, but curl has no -d usually implies empty).
-      // However previous existing code sent { enabled: true }.
-      // I will send empty object {} to be safe as per standard JSON APIs, or follow release pattern if it works.
-      // Let's stick to simple POST as per User Docs strictly.
-      // User curl: curl -X POST .../schedule (no body).
+      body: JSON.stringify({ enabled: true }),
     });
     const data = await res.json();
     console.log("[MP Settlement] Schedule enabled by", auth.email);
