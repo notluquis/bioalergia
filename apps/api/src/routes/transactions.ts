@@ -11,7 +11,11 @@ app.get("/", async (c) => {
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
 
   const canRead = await hasPermission(user.id, "read", "Transaction");
-  if (!canRead) return c.json({ status: "error", message: "Forbidden" }, 403);
+  const canReadList = await hasPermission(user.id, "read", "TransactionList");
+
+  if (!canRead && !canReadList) {
+    return c.json({ status: "error", message: "Forbidden" }, 403);
+  }
 
   const query = c.req.query();
   const parsed = transactionsQuerySchema.safeParse(query);
@@ -23,7 +27,7 @@ app.get("/", async (c) => {
         message: "Filtros inválidos",
         issues: parsed.error.issues,
       },
-      400,
+      400
     );
   }
 
@@ -50,7 +54,7 @@ app.get("/", async (c) => {
   const { total, transactions } = await listTransactions(
     filters,
     pageSize,
-    offset,
+    offset
   );
   const data = transactions.map(mapTransaction);
 
@@ -69,7 +73,11 @@ app.get("/participants", async (c) => {
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
 
   const canRead = await hasPermission(user.id, "read", "Transaction");
-  if (!canRead) return c.json({ status: "error", message: "Forbidden" }, 403);
+  const canReadList = await hasPermission(user.id, "read", "TransactionList");
+
+  if (!canRead && !canReadList) {
+    return c.json({ status: "error", message: "Forbidden" }, 403);
+  }
 
   const query = c.req.query();
   const from = query.from ? new Date(query.from) : undefined;
@@ -92,7 +100,11 @@ app.get("/participants/:id", async (c) => {
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
 
   const canRead = await hasPermission(user.id, "read", "Transaction");
-  if (!canRead) return c.json({ status: "error", message: "Forbidden" }, 403);
+  const canReadList = await hasPermission(user.id, "read", "TransactionList");
+
+  if (!canRead && !canReadList) {
+    return c.json({ status: "error", message: "Forbidden" }, 403);
+  }
 
   const id = c.req.param("id");
   const query = c.req.query();
@@ -111,8 +123,15 @@ app.get("/participants/:id", async (c) => {
 });
 
 app.get("/stats", async (c) => {
-  const user = getSessionUser(c);
+  const user = await getSessionUser(c);
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+
+  const canRead = await hasPermission(user.id, "read", "Transaction");
+  const canReadStats = await hasPermission(user.id, "read", "TransactionStats");
+
+  if (!canRead && !canReadStats) {
+    return c.json({ status: "error", message: "Forbidden" }, 403);
+  }
 
   const query = c.req.query();
   const from = query.from ? new Date(query.from) : undefined;

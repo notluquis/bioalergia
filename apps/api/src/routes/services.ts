@@ -19,7 +19,12 @@ app.get("/", async (c) => {
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
 
   const canRead = await hasPermission(user.id, "read", "Service");
-  if (!canRead) return c.json({ status: "error", message: "Forbidden" }, 403);
+  const canReadList = await hasPermission(user.id, "read", "ServiceList");
+  const canReadAgenda = await hasPermission(user.id, "read", "ServiceAgenda");
+
+  if (!canRead && !canReadList && !canReadAgenda) {
+    return c.json({ status: "error", message: "Forbidden" }, 403);
+  }
 
   const items = await listServices();
   return c.json({ status: "ok", services: items });
@@ -30,7 +35,12 @@ app.get("/:id", async (c) => {
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
 
   const canRead = await hasPermission(user.id, "read", "Service");
-  if (!canRead) return c.json({ status: "error", message: "Forbidden" }, 403);
+  const canReadList = await hasPermission(user.id, "read", "ServiceList");
+  const canReadAgenda = await hasPermission(user.id, "read", "ServiceAgenda");
+
+  if (!canRead && !canReadList && !canReadAgenda) {
+    return c.json({ status: "error", message: "Forbidden" }, 403);
+  }
 
   const id = Number(c.req.param("id"));
   if (isNaN(id)) return c.json({ status: "error", message: "Invalid ID" }, 400);
