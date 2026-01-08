@@ -95,11 +95,23 @@ export const MpColumnSchema = z.object({ key: z.string().min(1) });
  * - weekly: value = "monday"|"tuesday"|...|"sunday", hour = 0-23
  * - monthly: value = 1-31 (day of month), hour = 0-23
  */
-export const MpFrequencySchema = z.object({
-  type: z.enum(["daily", "weekly", "monthly"]),
-  value: z.union([z.number().int().min(0).max(31), z.enum(MP_WEEKDAYS)]),
-  hour: z.number().int().min(0).max(23),
-});
+export const MpFrequencySchema = z.discriminatedUnion("type", [
+  z.object({
+    type: z.literal("daily"),
+    hour: z.number().int().min(0).max(23),
+    value: z.undefined().or(z.literal(0)).optional(), // Explicitly allow undefined or 0
+  }),
+  z.object({
+    type: z.literal("weekly"),
+    hour: z.number().int().min(0).max(23),
+    value: z.enum(MP_WEEKDAYS),
+  }),
+  z.object({
+    type: z.literal("monthly"),
+    hour: z.number().int().min(0).max(23),
+    value: z.number().int().min(1).max(31),
+  }),
+]);
 
 export const MpSftpInfoSchema = z
   .object({
