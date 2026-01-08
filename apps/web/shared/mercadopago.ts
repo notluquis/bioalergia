@@ -136,7 +136,6 @@ const MpBaseConfigSchema = z.object({
   display_timezone: z.string().optional(),
   report_translation: z.enum(MP_REPORT_COLUMNS.length ? MP_REPORT_LANGUAGES : ["es"]).optional(), // Simplified
   notification_email_list: z.array(z.string().email().or(z.null())).optional(),
-  scheduled: z.boolean().optional(),
 });
 
 /** POST/PUT /v1/account/release_report/config */
@@ -164,14 +163,6 @@ export type MpSettlementConfigFormData = z.infer<typeof MpSettlementConfigSchema
 // Kept for backward compatibility but expanded
 export const MpConfigSchema = MpReleaseConfigSchema.or(MpSettlementConfigSchema);
 export type MpConfigFormData = MpReleaseConfigFormData | MpSettlementConfigFormData;
-
-// Default columns for Settlement Report (from user request)
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const MP_SETTLEMENT_DEFAULT_COLUMNS: any[] = [
-  "TRANSACTION_DATE", // Note: These keys differ from Release Report columns
-  // User provided: TRANSACTION_DATE, SOURCE_ID, EXTERNAL_REFERENCE
-  // We allow any string here for now to avoid build errors.
-];
 
 // Add simple constants for defaults
 export const MP_SETTLEMENT_DEFAULTS = [
