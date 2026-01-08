@@ -232,6 +232,7 @@ export const ROUTE_DATA: RouteData[] = [
       {
         path: "templates",
         componentPath: "features/services/pages/TemplatesPage",
+        permission: { action: "read", subject: "ServiceTemplate" },
         title: "Plantillas de servicios",
       },
     ],

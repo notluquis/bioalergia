@@ -21,8 +21,13 @@ app.get("/", async (c) => {
   const canRead = await hasPermission(user.id, "read", "Service");
   const canReadList = await hasPermission(user.id, "read", "ServiceList");
   const canReadAgenda = await hasPermission(user.id, "read", "ServiceAgenda");
+  const canReadTemplate = await hasPermission(
+    user.id,
+    "read",
+    "ServiceTemplate"
+  );
 
-  if (!canRead && !canReadList && !canReadAgenda) {
+  if (!canRead && !canReadList && !canReadAgenda && !canReadTemplate) {
     return c.json({ status: "error", message: "Forbidden" }, 403);
   }
 
@@ -37,8 +42,13 @@ app.get("/:id", async (c) => {
   const canRead = await hasPermission(user.id, "read", "Service");
   const canReadList = await hasPermission(user.id, "read", "ServiceList");
   const canReadAgenda = await hasPermission(user.id, "read", "ServiceAgenda");
+  const canReadTemplate = await hasPermission(
+    user.id,
+    "read",
+    "ServiceTemplate"
+  );
 
-  if (!canRead && !canReadList && !canReadAgenda) {
+  if (!canRead && !canReadList && !canReadAgenda && !canReadTemplate) {
     return c.json({ status: "error", message: "Forbidden" }, 403);
   }
 
