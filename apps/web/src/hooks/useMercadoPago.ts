@@ -83,7 +83,7 @@ export function useMercadoPagoConfig(isOpen: boolean, onClose: () => void, repor
         ...currentConfig,
         columns: uniqueColumns || defaultValues.columns,
         // Ensure enums match exact types
-        frequency: currentConfig.frequency || defaultValues.frequency,
+        frequency: { ...defaultValues.frequency, ...(currentConfig.frequency || {}) },
       });
     } else {
       // If config failed (404), reset to defaults?
@@ -156,8 +156,8 @@ export function useMercadoPagoConfig(isOpen: boolean, onClose: () => void, repor
     // Sanitize Frequency: Daily should not have a 'value'.
     const frequency = { ...data.frequency };
     if (frequency.type === "daily") {
-      // Daily frequency has value 0 per schema
-      frequency.value = 0;
+      // API validation rejects 'value' for daily frequency
+      delete frequency.value;
     } else if (frequency.type === "monthly") {
       // Ensure value is integer for monthly
       frequency.value = Number(frequency.value);
