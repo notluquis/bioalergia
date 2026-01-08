@@ -232,6 +232,9 @@ export function useMercadoPagoConfig(isOpen: boolean, onClose: () => void, repor
       sanitizedData.display_timezone = timezoneToGMT(sanitizedData.display_timezone);
     }
 
+    // Remove read-only fields that MP API rejects
+    delete sanitizedData.scheduled;
+
     if (currentConfig) {
       updateMutation.mutate(sanitizedData);
     } else {
