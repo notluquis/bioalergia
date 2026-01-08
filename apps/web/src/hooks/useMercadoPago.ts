@@ -158,10 +158,11 @@ export function useMercadoPagoConfig(isOpen: boolean, onClose: () => void, repor
     if (frequency.type === "daily") {
       // Daily frequency has value 0 per schema
       frequency.value = 0;
-    } else {
-      // Ensure value is integer
+    } else if (frequency.type === "monthly") {
+      // Ensure value is integer for monthly
       frequency.value = Number(frequency.value);
     }
+    // For "weekly", value is already a string (enum), so leave it as is.
     sanitizedData.frequency = frequency;
 
     if (currentConfig) {

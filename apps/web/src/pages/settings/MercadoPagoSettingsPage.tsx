@@ -107,12 +107,39 @@ export default function MercadoPagoSettingsPage() {
   return (
     <div className={cn(PAGE_CONTAINER, "space-y-6")}>
       {/* Header */}
-      <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
+      {/* Header & Tabs Combined */}
+      <div className="flex flex-col justify-between gap-6 xl:flex-row xl:items-end">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Reportes de Mercado Pago</h1>
           <p className="text-base-content/60 text-sm">Gestiona reportes de Liberación de Fondos y Conciliación</p>
         </div>
-        <div className="flex flex-wrap gap-3">
+
+        {/* Tabs Moved Up */}
+        <div role="tablist" className="tabs tabs-boxed bg-base-200/50 order-3 self-start p-1 xl:order-2 xl:self-auto">
+          <button
+            role="tab"
+            className={cn(
+              "tab h-9 px-4",
+              activeTab === "release" && "tab-active bg-base-100 text-base-content font-medium shadow-sm transition-all"
+            )}
+            onClick={() => setActiveTab("release")}
+          >
+            Liberación de Fondos
+          </button>
+          <button
+            role="tab"
+            className={cn(
+              "tab h-9 px-4",
+              activeTab === "settlement" &&
+                "tab-active bg-base-100 text-base-content font-medium shadow-sm transition-all"
+            )}
+            onClick={() => setActiveTab("settlement")}
+          >
+            Conciliación (Settlement)
+          </button>
+        </div>
+
+        <div className="order-2 flex flex-wrap gap-3 xl:order-3">
           <Button variant="outline" onClick={() => setIsConfigModalOpen(true)}>
             <Settings className="mr-2 h-4 w-4" />
             Configuración
@@ -122,24 +149,6 @@ export default function MercadoPagoSettingsPage() {
             Generar Reporte
           </Button>
         </div>
-      </div>
-
-      {/* Tabs */}
-      <div role="tablist" className="tabs tabs-boxed bg-base-200/50 w-fit p-1">
-        <button
-          role="tab"
-          className={cn("tab px-6", activeTab === "release" && "tab-active bg-white font-medium shadow-sm")}
-          onClick={() => setActiveTab("release")}
-        >
-          Liberación de Fondos
-        </button>
-        <button
-          role="tab"
-          className={cn("tab px-6", activeTab === "settlement" && "tab-active bg-white font-medium shadow-sm")}
-          onClick={() => setActiveTab("settlement")}
-        >
-          Conciliación (Settlement)
-        </button>
       </div>
 
       {isLoading ? (

@@ -149,9 +149,9 @@ export const MpSettlementConfigSchema = MpBaseConfigSchema.extend({
 export type MpReleaseConfigFormData = z.infer<typeof MpReleaseConfigSchema>;
 export type MpSettlementConfigFormData = z.infer<typeof MpSettlementConfigSchema>;
 
-// Kept for backward compatibility if needed, or alias to Release
-export const MpConfigSchema = MpReleaseConfigSchema;
-export type MpConfigFormData = MpReleaseConfigFormData;
+// Kept for backward compatibility but expanded
+export const MpConfigSchema = MpReleaseConfigSchema.or(MpSettlementConfigSchema);
+export type MpConfigFormData = MpReleaseConfigFormData | MpSettlementConfigFormData;
 
 // Default columns for Settlement Report (from user request)
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
