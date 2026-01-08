@@ -74,6 +74,30 @@ async function mpFetch(
   return res;
 }
 
+// Helper to safely parse MP response (handles 204 No Content)
+async function safeMpJson(res: Response) {
+  if (res.status === 204) {
+    return {
+      status: "success",
+      message: "Operation completed successfully (No Content)",
+    };
+  }
+  const text = await res.text();
+  if (!text) {
+    return {
+      status: "success",
+      message: "Operation completed successfully (Empty Body)",
+    };
+  }
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    throw new Error(
+      `Failed to parse MP response: ${text.substring(0, 100)}...`
+    );
+  }
+}
+
 // ============================================================
 // RELEASE REPORTS (Existing Implementation)
 // ============================================================
@@ -87,7 +111,7 @@ mercadopagoRoutes.get("/config", async (c) => {
 
   try {
     const res = await mpFetch("/config", MP_API_RELEASE);
-    const data = await res.json();
+    const data = await safeMpJson(res);
     return c.json(data);
   } catch (e) {
     return c.json({ status: "error", message: String(e) }, 500);
@@ -108,7 +132,7 @@ mercadopagoRoutes.post("/config", async (c) => {
       method: "POST",
       body: JSON.stringify(body),
     });
-    const data = await res.json();
+    const data = await safeMpJson(res);
     console.log("[MP Release] Config created by", auth.email);
     return c.json(data, 201);
   } catch (e) {
@@ -130,7 +154,7 @@ mercadopagoRoutes.put("/config", async (c) => {
       method: "PUT",
       body: JSON.stringify(body),
     });
-    const data = await res.json();
+    const data = await safeMpJson(res);
     console.log("[MP Release] Config updated by", auth.email);
     return c.json(data);
   } catch (e) {
@@ -147,7 +171,7 @@ mercadopagoRoutes.get("/reports", async (c) => {
 
   try {
     const res = await mpFetch("/list", MP_API_RELEASE);
-    const data = await res.json();
+    const data = await safeMpJson(res);
     return c.json(data);
   } catch (e) {
     return c.json({ status: "error", message: String(e) }, 500);
@@ -171,7 +195,7 @@ mercadopagoRoutes.post("/reports", async (c) => {
       method: "POST",
       body: JSON.stringify({ begin_date, end_date }),
     });
-    const data = await res.json();
+    const data = await safeMpJson(res);
     console.log(
       "[MP Release] Report created by",
       auth.email,
@@ -197,7 +221,7 @@ mercadopagoRoutes.get("/reports/:id", async (c) => {
 
   try {
     const res = await mpFetch(`/${id}`, MP_API_RELEASE);
-    const data = await res.json();
+    const data = await safeMpJson(res);
     return c.json(data);
   } catch (e) {
     return c.json({ status: "error", message: String(e) }, 500);
@@ -253,7 +277,7 @@ mercadopagoRoutes.post("/schedule", async (c) => {
       method: "POST",
       body: JSON.stringify({ enabled: true }),
     });
-    const data = await res.json();
+    const data = await safeMpJson(res);
     console.log("[MP Release] Schedule enabled by", auth.email);
     return c.json(data);
   } catch (e) {
@@ -272,11 +296,7 @@ mercadopagoRoutes.delete("/schedule", async (c) => {
     const res = await mpFetch("/schedule", MP_API_RELEASE, {
       method: "DELETE",
     });
-    if (res.status === 204) {
-      console.log("[MP Release] Schedule disabled by", auth.email);
-      return c.json({ status: "success", message: "Schedule disabled" });
-    }
-    const data = await res.json();
+    const data = await safeMpJson(res);
     console.log("[MP Release] Schedule disabled by", auth.email);
     return c.json(data);
   } catch (e) {
@@ -297,7 +317,7 @@ mercadopagoRoutes.get("/settlement/config", async (c) => {
 
   try {
     const res = await mpFetch("/config", MP_API_SETTLEMENT);
-    const data = await res.json();
+    const data = await safeMpJson(res);
     return c.json(data);
   } catch (e) {
     return c.json({ status: "error", message: String(e) }, 500);
@@ -318,7 +338,7 @@ mercadopagoRoutes.post("/settlement/config", async (c) => {
       method: "POST",
       body: JSON.stringify(body),
     });
-    const data = await res.json();
+    const data = await safeMpJson(res);
     console.log("[MP Settlement] Config created by", auth.email);
     return c.json(data, 201);
   } catch (e) {
@@ -340,7 +360,7 @@ mercadopagoRoutes.put("/settlement/config", async (c) => {
       method: "PUT",
       body: JSON.stringify(body),
     });
-    const data = await res.json();
+    const data = await safeMpJson(res);
     console.log("[MP Settlement] Config updated by", auth.email);
     return c.json(data);
   } catch (e) {
@@ -365,7 +385,7 @@ mercadopagoRoutes.post("/settlement/reports", async (c) => {
       method: "POST",
       body: JSON.stringify(body),
     });
-    const data = await res.json();
+    const data = await safeMpJson(res);
     console.log("[MP Settlement] Report created by", auth.email);
     return c.json(data, 201);
   } catch (e) {
@@ -383,7 +403,7 @@ mercadopagoRoutes.get("/settlement/reports", async (c) => {
 
   try {
     const res = await mpFetch("/list", MP_API_SETTLEMENT);
-    const data = await res.json();
+    const data = await safeMpJson(res);
     return c.json(data);
   } catch (e) {
     return c.json({ status: "error", message: String(e) }, 500);
@@ -444,7 +464,7 @@ mercadopagoRoutes.post("/settlement/schedule", async (c) => {
       method: "POST",
       body: JSON.stringify({ enabled: true }),
     });
-    const data = await res.json();
+    const data = await safeMpJson(res);
     console.log("[MP Settlement] Schedule enabled by", auth.email);
     return c.json(data);
   } catch (e) {
@@ -463,11 +483,7 @@ mercadopagoRoutes.delete("/settlement/schedule", async (c) => {
     const res = await mpFetch("/schedule", MP_API_SETTLEMENT, {
       method: "DELETE",
     });
-    if (res.status === 204) {
-      console.log("[MP Settlement] Schedule disabled by", auth.email);
-      return c.json({ status: "success", message: "Schedule disabled" });
-    }
-    const data = await res.json();
+    const data = await safeMpJson(res);
     console.log("[MP Settlement] Schedule disabled by", auth.email);
     return c.json(data);
   } catch (e) {
