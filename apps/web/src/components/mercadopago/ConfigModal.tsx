@@ -9,7 +9,13 @@ import { useMercadoPagoConfig } from "@/hooks/useMercadoPago";
 import { cn } from "@/lib/utils";
 import { MpReportType } from "@/services/mercadopago";
 
-import { MP_DEFAULT_COLUMNS, MP_REPORT_COLUMNS, MP_REPORT_LANGUAGES, MP_WEEKDAYS } from "../../../shared/mercadopago";
+import {
+  MP_DEFAULT_COLUMNS,
+  MP_REPORT_COLUMNS,
+  MP_REPORT_LANGUAGES,
+  MP_SETTLEMENT_DEFAULTS,
+  MP_WEEKDAYS,
+} from "../../../shared/mercadopago";
 
 // Timezone groupings
 const TIMEZONES = {
@@ -360,7 +366,8 @@ export default function ConfigModal({ open, onClose, reportType }: Props) {
                   size="xs"
                   variant="outline"
                   onClick={() => {
-                    replace(MP_DEFAULT_COLUMNS.map((key) => ({ key })));
+                    const defaults = reportType === "release" ? MP_DEFAULT_COLUMNS : MP_SETTLEMENT_DEFAULTS;
+                    replace(defaults.map((key) => ({ key })));
                   }}
                 >
                   <RotateCcw className="mr-1 h-3 w-3" /> Por defecto

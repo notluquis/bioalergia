@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, User as UserIcon } from "lucide-react";
-import { useEffect } from "react";
+import { useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -23,25 +23,27 @@ const formSchema = z.object({
 type RoleFormData = z.infer<typeof formSchema>;
 
 export function RoleFormModal({ role, isOpen, onClose }: RoleFormModalProps) {
+  // Memoize default values to prevent unnecessary resets
+  const defaultValues = useMemo<RoleFormData>(
+    () => ({
+      name: role?.name || "",
+      description: role?.description || "",
+    }),
+    [role]
+  );
+
   const {
     register,
     handleSubmit,
-    reset,
     formState: { errors },
   } = useForm<RoleFormData>({
     resolver: zodResolver(formSchema),
+    defaultValues,
+    mode: "onChange",
   });
+
   const toast = useToast();
   const queryClient = useQueryClient();
-
-  useEffect(() => {
-    if (isOpen) {
-      reset({
-        name: role?.name || "",
-        description: role?.description || "",
-      });
-    }
-  }, [isOpen, role, reset]);
 
   // Fetch users for this role if editing
   const { data: userData = [], isLoading: isLoadingUsers } = useQuery<RoleUser[]>({

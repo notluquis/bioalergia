@@ -272,11 +272,11 @@ export default function RolesSettingsPage() {
                 {/* ... Header logic using displayRoles ... */}
                 <thead>
                   <tr>
-                    <th className="bg-base-100 border-base-300 sticky left-0 z-20 w-80 border-r px-6 text-left">
+                    <th className="bg-base-100 border-base-300 sticky left-0 z-20 w-[320px] max-w-[320px] min-w-[320px] border-r px-6 text-left">
                       Permiso / acción
                     </th>
                     {displayRoles.map((role) => (
-                      <th key={role.id} className="group relative w-32 min-w-32 p-2 text-center align-top">
+                      <th key={role.id} className="group relative w-35 max-w-35 min-w-35 text-center align-top">
                         <div className="flex flex-col items-center gap-1">
                           <span className="line-clamp-2 text-base leading-tight font-bold" title={role.name}>
                             {role.name}
@@ -325,7 +325,7 @@ export default function RolesSettingsPage() {
                         className="bg-base-200/50 hover:bg-base-200/70 border-base-300 cursor-pointer border-b transition-colors"
                         onClick={() => toggleSection(section.title)}
                       >
-                        <td className="bg-base-200 border-base-300 sticky left-0 z-10 w-80 border-r py-3 pl-4 text-xs font-bold tracking-widest uppercase">
+                        <td className="bg-base-200 border-base-300 sticky left-0 z-10 w-[320px] max-w-[320px] min-w-[320px] border-r py-3 pl-4 text-xs font-bold tracking-widest uppercase">
                           <div className="flex items-center gap-2">
                             {openSections[section.title] ? (
                               <ChevronDown className="h-4 w-4" />
@@ -370,7 +370,7 @@ export default function RolesSettingsPage() {
                                           className="bg-base-100/50 hover:bg-base-200/20 border-base-100 cursor-pointer border-b transition-colors"
                                           onClick={() => toggleItem(itemKey)}
                                         >
-                                          <td className="bg-base-100 border-base-300 w-80 min-w-80 border-r py-3 pl-8 text-sm font-semibold">
+                                          <td className="bg-base-100 border-base-300 w-[320px] max-w-[320px] min-w-[320px] border-r py-3 pl-8 text-sm font-semibold">
                                             <div className="flex items-center gap-2">
                                               <div className="text-base-content/40 flex h-4 w-4 items-center justify-center">
                                                 {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
@@ -389,7 +389,7 @@ export default function RolesSettingsPage() {
                                               }
                                               onToggle={handleBulkToggle}
                                               variant="page"
-                                              className="w-32 min-w-32 py-3"
+                                              className="w-35 max-w-35 min-w-35 py-3"
                                             />
                                           ))}
                                         </tr>
@@ -414,7 +414,7 @@ export default function RolesSettingsPage() {
                                                         key={perm.id}
                                                         className="hover:bg-base-200/50 border-base-100 border-b transition-colors last:border-0"
                                                       >
-                                                        <td className="bg-base-100 border-base-300 w-80 min-w-80 border-r py-2 pl-16 text-sm">
+                                                        <td className="bg-base-100 border-base-300 w-[320px] max-w-[320px] min-w-[320px] border-r py-2 pl-16 text-sm">
                                                           <div className="flex flex-col">
                                                             <span className="flex items-center gap-2 font-medium">
                                                               {actionLabel}
@@ -431,7 +431,7 @@ export default function RolesSettingsPage() {
                                                             permissionId={perm.id}
                                                             isUpdating={false}
                                                             onToggle={handlePermissionToggle}
-                                                            className="w-32 min-w-32"
+                                                            className="w-35 max-w-35 min-w-35"
                                                           />
                                                         ))}
                                                       </tr>
@@ -465,7 +465,7 @@ export default function RolesSettingsPage() {
                                       key={perm.id}
                                       className="hover:bg-base-200/50 border-base-100 border-b transition-colors last:border-0"
                                     >
-                                      <td className="bg-base-100 border-base-300 w-80 min-w-80 border-r py-3 pl-8">
+                                      <td className="bg-base-100 border-base-300 w-[320px] max-w-[320px] min-w-[320px] border-r py-3 pl-8">
                                         <div className="flex flex-col">
                                           <span className="flex items-center gap-2 text-sm font-medium">
                                             <item.icon className="h-4 w-4 opacity-70" />
@@ -483,7 +483,7 @@ export default function RolesSettingsPage() {
                                           permissionId={perm.id}
                                           isUpdating={false}
                                           onToggle={handlePermissionToggle}
-                                          className="w-32 min-w-32"
+                                          className="w-35 max-w-35 min-w-35"
                                         />
                                       ))}
                                     </tr>
@@ -539,7 +539,7 @@ function PermissionCell({
       <button
         onClick={() => onToggle(role, permissionId)}
         disabled={isUpdating}
-        className="group mx-auto flex h-8 w-full items-center justify-center transition-colors"
+        className="group mx-auto flex h-8 w-8 items-center justify-center transition-colors"
       >
         {/* Solid badge style for better visibility */}
         {hasAccess ? (
