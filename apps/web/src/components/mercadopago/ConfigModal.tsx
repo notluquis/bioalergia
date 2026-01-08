@@ -11,8 +11,9 @@ import { MpReportType } from "@/services/mercadopago";
 
 import {
   MP_DEFAULT_COLUMNS,
-  MP_REPORT_COLUMNS,
+  MP_RELEASE_COLUMNS,
   MP_REPORT_LANGUAGES,
+  MP_SETTLEMENT_COLUMNS,
   MP_SETTLEMENT_DEFAULTS,
   MP_WEEKDAYS,
 } from "../../../shared/mercadopago";
@@ -118,7 +119,8 @@ export default function ConfigModal({ open, onClose, reportType }: Props) {
     name: "columns",
   });
 
-  const maxColumns = MP_REPORT_COLUMNS.length;
+  const availableColumns = reportType === "release" ? MP_RELEASE_COLUMNS : MP_SETTLEMENT_COLUMNS;
+  const maxColumns = availableColumns.length;
 
   const BOOLEAN_OPTIONS = reportType === "release" ? RELEASE_OPTIONS : SETTLEMENT_OPTIONS;
 
@@ -345,7 +347,7 @@ export default function ConfigModal({ open, onClose, reportType }: Props) {
                   variant="outline"
                   onClick={() => {
                     const currentKeys = new Set(fields.map((f) => f.key));
-                    const missing = MP_REPORT_COLUMNS.filter((k) => !currentKeys.has(k));
+                    const missing = availableColumns.filter((k) => !currentKeys.has(k));
                     append(missing.map((key) => ({ key })));
                   }}
                   disabled={fields.length >= maxColumns}
