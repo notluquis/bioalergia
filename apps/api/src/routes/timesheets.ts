@@ -21,8 +21,9 @@ app.get("/summary", async (c) => {
   const canRead = await hasPermission(user.id, "read", "Timesheet");
   const canReadList = await hasPermission(user.id, "read", "TimesheetList");
   const canReadAudit = await hasPermission(user.id, "read", "TimesheetAudit");
+  const canReadReport = await hasPermission(user.id, "read", "Report");
 
-  if (!canRead && !canReadList && !canReadAudit) {
+  if (!canRead && !canReadList && !canReadAudit && !canReadReport) {
     return c.json({ status: "error", message: "Forbidden" }, 403);
   }
 
@@ -50,6 +51,37 @@ app.get("/summary", async (c) => {
   }
 });
 
+// GET / - List all timesheets (Global Range for Reports)
+app.get("/", async (c) => {
+  const user = await getSessionUser(c);
+  if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+
+  const canRead = await hasPermission(user.id, "read", "Timesheet");
+  const canReadList = await hasPermission(user.id, "read", "TimesheetList");
+  const canReadAudit = await hasPermission(user.id, "read", "TimesheetAudit");
+  const canReadReport = await hasPermission(user.id, "read", "Report");
+
+  if (!canRead && !canReadList && !canReadAudit && !canReadReport) {
+    return c.json({ status: "error", message: "Forbidden" }, 403);
+  }
+
+  try {
+    const query = c.req.query();
+    const from = query.from || dayjs().startOf("month").format("YYYY-MM-DD");
+    const to = query.to || dayjs().endOf("month").format("YYYY-MM-DD");
+
+    const entries = await listTimesheetEntries({ from, to });
+
+    return c.json({ status: "ok", entries });
+  } catch (error) {
+    console.error("[timesheets] list error:", error);
+    return c.json(
+      { status: "error", message: "Error al listar registros" },
+      500
+    );
+  }
+});
+
 // GET /months - Get available months
 app.get("/months", async (c) => {
   const user = await getSessionUser(c);
@@ -58,8 +90,9 @@ app.get("/months", async (c) => {
   const canRead = await hasPermission(user.id, "read", "Timesheet");
   const canReadList = await hasPermission(user.id, "read", "TimesheetList");
   const canReadAudit = await hasPermission(user.id, "read", "TimesheetAudit");
+  const canReadReport = await hasPermission(user.id, "read", "Report");
 
-  if (!canRead && !canReadList && !canReadAudit) {
+  if (!canRead && !canReadList && !canReadAudit && !canReadReport) {
     return c.json({ status: "error", message: "Forbidden" }, 403);
   }
 
@@ -93,8 +126,9 @@ app.get("/multi-month", async (c) => {
   const canRead = await hasPermission(user.id, "read", "Timesheet");
   const canReadList = await hasPermission(user.id, "read", "TimesheetList");
   const canReadAudit = await hasPermission(user.id, "read", "TimesheetAudit");
+  const canReadReport = await hasPermission(user.id, "read", "Report");
 
-  if (!canRead && !canReadList && !canReadAudit) {
+  if (!canRead && !canReadList && !canReadAudit && !canReadReport) {
     return c.json({ status: "error", message: "Forbidden" }, 403);
   }
 
@@ -143,8 +177,9 @@ app.get("/multi-detail", async (c) => {
   const canRead = await hasPermission(user.id, "read", "Timesheet");
   const canReadList = await hasPermission(user.id, "read", "TimesheetList");
   const canReadAudit = await hasPermission(user.id, "read", "TimesheetAudit");
+  const canReadReport = await hasPermission(user.id, "read", "Report");
 
-  if (!canRead && !canReadList && !canReadAudit) {
+  if (!canRead && !canReadList && !canReadAudit && !canReadReport) {
     return c.json({ status: "error", message: "Forbidden" }, 403);
   }
 
@@ -188,8 +223,9 @@ app.get("/:employeeId/range", async (c) => {
   const canRead = await hasPermission(user.id, "read", "Timesheet");
   const canReadList = await hasPermission(user.id, "read", "TimesheetList");
   const canReadAudit = await hasPermission(user.id, "read", "TimesheetAudit");
+  const canReadReport = await hasPermission(user.id, "read", "Report");
 
-  if (!canRead && !canReadList && !canReadAudit) {
+  if (!canRead && !canReadList && !canReadAudit && !canReadReport) {
     return c.json({ status: "error", message: "Forbidden" }, 403);
   }
 
@@ -231,8 +267,9 @@ app.get("/:employeeId/detail", async (c) => {
   const canRead = await hasPermission(user.id, "read", "Timesheet");
   const canReadList = await hasPermission(user.id, "read", "TimesheetList");
   const canReadAudit = await hasPermission(user.id, "read", "TimesheetAudit");
+  const canReadReport = await hasPermission(user.id, "read", "Report");
 
-  if (!canRead && !canReadList && !canReadAudit) {
+  if (!canRead && !canReadList && !canReadAudit && !canReadReport) {
     return c.json({ status: "error", message: "Forbidden" }, 403);
   }
 
@@ -386,8 +423,9 @@ app.post("/prepare-email", async (c) => {
   const canRead = await hasPermission(user.id, "read", "Timesheet");
   const canReadList = await hasPermission(user.id, "read", "TimesheetList");
   const canReadAudit = await hasPermission(user.id, "read", "TimesheetAudit");
+  const canReadReport = await hasPermission(user.id, "read", "Report");
 
-  if (!canRead && !canReadList && !canReadAudit) {
+  if (!canRead && !canReadList && !canReadAudit && !canReadReport) {
     return c.json({ status: "error", message: "Forbidden" }, 403);
   }
 
