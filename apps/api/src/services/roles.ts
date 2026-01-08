@@ -51,7 +51,7 @@ export async function deleteRole(id: number) {
 
 export async function assignPermissionsToRole(
   roleId: number,
-  permissionIds: number[],
+  permissionIds: number[]
 ) {
   return await db.$transaction(async (tx) => {
     // Clear existing permissions
@@ -111,6 +111,19 @@ export async function syncPermissions() {
     "CalendarSetting",
     "InventorySetting",
     "Integration",
+    // Granular permissions
+    "CalendarSchedule",
+    "CalendarDaily",
+    "CalendarHeatmap",
+    "CalendarSyncLog",
+    "TransactionList",
+    "TransactionStats",
+    "TransactionCSV",
+    "ServiceList",
+    "ServiceAgenda",
+    "ServiceTemplate",
+    "TimesheetList",
+    "TimesheetAudit",
   ];
 
   const actions = ["create", "read", "update", "delete"];

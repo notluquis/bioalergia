@@ -135,6 +135,10 @@ app.post("/permissions/sync", async (c) => {
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
 
   try {
+    const canManageRoles = await hasPermission(user.id, "update", "Role");
+    if (!canManageRoles)
+      return c.json({ status: "error", message: "Forbidden" }, 403);
+
     const result = await syncPermissions();
     return c.json({ status: "ok", ...result });
   } catch (e: any) {

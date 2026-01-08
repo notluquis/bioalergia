@@ -99,6 +99,18 @@ inventoryRoutes.get("/categories", async (c) => {
 
 // POST /api/inventory/categories
 inventoryRoutes.post("/categories", async (c) => {
+  const user = await getSessionUser(c);
+  if (!user) return c.json({ status: "error", message: "No autorizado" }, 401);
+
+  const canManageSettings = await hasPermission(
+    user.id,
+    "update",
+    "InventorySetting"
+  );
+  if (!canManageSettings) {
+    return c.json({ status: "error", message: "Forbidden" }, 403);
+  }
+
   const body = await c.req.json();
   const parsed = inventoryCategorySchema.safeParse(body);
   if (!parsed.success) {
@@ -124,6 +136,18 @@ inventoryRoutes.post("/categories", async (c) => {
 
 // DELETE /api/inventory/categories/:id
 inventoryRoutes.delete("/categories/:id", async (c) => {
+  const user = await getSessionUser(c);
+  if (!user) return c.json({ status: "error", message: "No autorizado" }, 401);
+
+  const canManageSettings = await hasPermission(
+    user.id,
+    "update",
+    "InventorySetting"
+  );
+  if (!canManageSettings) {
+    return c.json({ status: "error", message: "Forbidden" }, 403);
+  }
+
   const id = Number(c.req.param("id"));
   try {
     await deleteInventoryCategory(id);
