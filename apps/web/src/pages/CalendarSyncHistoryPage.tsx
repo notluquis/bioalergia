@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import { AlertTriangle, Info } from "lucide-react";
+import { Info } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import Button from "@/components/ui/Button";
