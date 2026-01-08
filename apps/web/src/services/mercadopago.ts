@@ -8,7 +8,9 @@ import { MpReleaseConfigFormData, MpSettlementConfigFormData } from "../../share
 export type MpReportType = "release" | "settlement";
 
 // Consolidated Config Interface (Union of both)
-export type MPReportConfig = Partial<MpReleaseConfigFormData> & Partial<MpSettlementConfigFormData>;
+// Note: 'scheduled' is read-only from API, not in form schema but returned in GET response
+export type MPReportConfig = Partial<MpReleaseConfigFormData> &
+  Partial<MpSettlementConfigFormData> & { scheduled?: boolean };
 
 export interface MPReport {
   id: number;

@@ -438,8 +438,7 @@ export default function ConfigModal({ open, onClose, reportType }: Props) {
                     <label className="label cursor-pointer justify-start gap-2 p-0">
                       <input
                         type="checkbox"
-                        // @ts-ignore - Dynamic key access on form data
-                        {...register(opt.key)}
+                        {...register(opt.key as keyof typeof form.getValues)}
                         className="checkbox checkbox-sm"
                       />
                       <span className="label-text text-sm">{opt.label}</span>
