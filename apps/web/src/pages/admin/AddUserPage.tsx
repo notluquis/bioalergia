@@ -130,6 +130,7 @@ export default function AddUserPage() {
                         personId: pid,
                         linkToPerson: !!pid,
                         email: person?.email ?? form.email,
+                        position: person?.employee?.position ?? form.position,
                         names: pid ? "" : form.names,
                         fatherName: pid ? "" : form.fatherName,
                         motherName: pid ? "" : form.motherName,
@@ -185,31 +186,32 @@ export default function AddUserPage() {
                 placeholder="12.345.678-9"
               />
               <div className="md:col-span-1">{/* Spacer */}</div>
-
-              <div className="md:col-span-2">
-                <h3 className="text-base-content mt-2 mb-4 font-semibold">Datos de cuenta</h3>
-              </div>
-
-              <div className="md:col-span-2">
-                <Input
-                  label="Correo electrónico"
-                  type="email"
-                  value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  required={!form.personId}
-                  placeholder="usuario@bioalergia.cl"
-                />
-              </div>
-
-              <Input
-                label="Cargo / posición"
-                value={form.position}
-                onChange={(e) => setForm({ ...form, position: e.target.value })}
-                required={!form.personId}
-                placeholder="Ej: Enfermera, Administrativo"
-              />
             </>
           )}
+
+          <div className="md:col-span-2">
+            <h3 className="text-base-content mt-2 mb-4 font-semibold">Datos de cuenta</h3>
+          </div>
+
+          <div className="md:col-span-2">
+            <Input
+              label="Correo electrónico"
+              type="email"
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              required
+              placeholder="usuario@bioalergia.cl"
+              helper={form.personId ? "Verifica o actualiza el correo asociado" : undefined}
+            />
+          </div>
+
+          <Input
+            label="Cargo / posición"
+            value={form.position}
+            onChange={(e) => setForm({ ...form, position: e.target.value })}
+            required
+            placeholder="Ej: Enfermera, Administrativo"
+          />
 
           <div className={form.personId ? "md:col-span-2" : ""}>
             <label htmlFor="role" className="label">

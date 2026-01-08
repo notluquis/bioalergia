@@ -3,7 +3,7 @@ import { AlertTriangle, Info } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import Button from "@/components/ui/Button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Card, CardContent, CardFooter } from "@/components/ui/Card";
 import { Table } from "@/components/ui/Table";
 import { SyncDetailModal } from "@/features/calendar/components/SyncDetailModal";
 import { SyncProgressPanel } from "@/features/calendar/components/SyncProgressPanel";
@@ -67,21 +67,16 @@ export default function CalendarSyncHistoryPage() {
 
   return (
     <section className="space-y-6">
+      <div className="flex items-center justify-end gap-2">
+        <Button variant="ghost" size="sm" onClick={handleRefresh} disabled={loading || isSyncing}>
+          {loading ? "Actualizando..." : "Actualizar"}
+        </Button>
+        <Button size="sm" onClick={syncNow} disabled={isSyncing || loading}>
+          {isSyncing ? "Sincronizando..." : "Sincronizar ahora"}
+        </Button>
+      </div>
+
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between pb-4">
-          <div className="space-y-1">
-            <CardTitle className="text-lg font-semibold">Ejecuciones</CardTitle>
-            <CardDescription className="text-sm">Historial de sincronizaciones capturadas</CardDescription>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="ghost" size="sm" onClick={handleRefresh} disabled={loading || isSyncing}>
-              {loading ? "Actualizando..." : "Actualizar"}
-            </Button>
-            <Button size="sm" onClick={syncNow} disabled={isSyncing || loading}>
-              {isSyncing ? "Sincronizando..." : "Sincronizar ahora"}
-            </Button>
-          </div>
-        </CardHeader>
         <CardContent className="p-0">
           <Table columns={tableColumns} variant="minimal" className="border-0 shadow-none">
             <Table.Body loading={loading} columnsCount={7}>
@@ -95,11 +90,12 @@ export default function CalendarSyncHistoryPage() {
                 visibleLogs.map((log) => {
                   const started = dayjs(log.startedAt).format("DD MMM YYYY HH:mm");
                   const finished = log.finishedAt ? dayjs(log.finishedAt) : null;
-                  const duration = finished && finished.isValid()
-                    ? `${finished.diff(dayjs(log.startedAt), "second")}s`
-                    : log.status === "RUNNING"
-                      ? "En curso..."
-                      : "-";
+                  const duration =
+                    finished && finished.isValid()
+                      ? `${finished.diff(dayjs(log.startedAt), "second")}s`
+                      : log.status === "RUNNING"
+                        ? "En curso..."
+                        : "-";
                   const sourceLabel = log.triggerLabel ?? log.triggerSource;
 
                   const statusColors = {
@@ -110,7 +106,7 @@ export default function CalendarSyncHistoryPage() {
                   const statusClass = statusColors[log.status as keyof typeof statusColors] || "text-error";
 
                   return (
-                    <tr key={log.id} className="group transition-colors hover:bg-base-200/50">
+                    <tr key={log.id} className="group hover:bg-base-200/50 transition-colors">
                       <td className="text-base-content font-medium">{started}</td>
                       <td className={cn("font-semibold", statusClass)}>
                         {log.status === "SUCCESS" ? "Éxito" : log.status === "RUNNING" ? "En curso..." : "Error"}
@@ -169,12 +165,6 @@ export default function CalendarSyncHistoryPage() {
 
       {logs.some((log) => log.errorMessage) && (
         <Card className="border-error/20 bg-error/5">
-          <CardHeader>
-            <CardTitle className="text-error flex items-center gap-2 text-base">
-              <AlertTriangle size={18} />
-              Errores recientes
-            </CardTitle>
-          </CardHeader>
           <CardContent>
             <ul className="space-y-2 text-sm">
               {logs
