@@ -41,8 +41,8 @@ export async function deleteUser(userId: number): Promise<void> {
   await apiClient.delete(`/api/users/${userId}`);
 }
 
-export async function inviteUser(payload: Record<string, unknown>): Promise<void> {
-  await apiClient.post("/api/users/invite", payload);
+export async function inviteUser(payload: Record<string, unknown>): Promise<{ userId: number; tempPassword?: string }> {
+  return apiClient.post("/api/users/invite", payload);
 }
 
 export async function fetchUserProfile(): Promise<UserProfile> {
