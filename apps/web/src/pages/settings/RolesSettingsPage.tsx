@@ -233,35 +233,43 @@ export default function RolesSettingsPage() {
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader className="flex flex-col gap-4 pb-4 sm:flex-row sm:items-center sm:justify-between">
+        <CardHeader className="flex flex-row items-center justify-between gap-4 border-b pb-4">
           <div className="space-y-1">
             <h2 className="text-lg font-semibold">Listado de roles</h2>
-            <p className="text-base-content/70 text-sm">Gestiona los permisos y roles del sistema</p>
+            <p className="text-base-content/70 hidden text-sm md:block">Gestiona los permisos y roles del sistema</p>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <button className="btn btn-outline btn-sm gap-2" onClick={() => syncMutation.mutate()} disabled={isSyncing}>
-              <RotateCw className={cn("h-4 w-4", isSyncing && "animate-spin")} />
-              Sincronizar
-            </button>
-
+          <div className="flex items-center gap-2">
             {/* Role Filter Selector */}
-            <select
-              className="select select-bordered select-sm max-w-xs"
-              value={viewModeRole}
-              onChange={(e) => setViewModeRole(e.target.value)}
-            >
-              <option value="all">Ver todos los roles</option>
-              {roles.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.name}
-                </option>
-              ))}
-            </select>
+            <div className="hidden sm:block">
+              <select
+                className="select select-bordered select-sm w-full max-w-50"
+                value={viewModeRole}
+                onChange={(e) => setViewModeRole(e.target.value)}
+              >
+                <option value="all">Ver todos los roles</option>
+                {roles.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.name}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-            <button className="btn btn-primary btn-sm gap-2" onClick={handleCreateRole}>
-              <Plus className="h-4 w-4" />
-              Nuevo rol
-            </button>
+            <div className="ml-2 flex items-center gap-2 border-l pl-2">
+              <button
+                className="btn btn-ghost btn-sm btn-square"
+                onClick={() => syncMutation.mutate()}
+                disabled={isSyncing}
+                title="Sincronizar permisos"
+              >
+                <RotateCw className={cn("h-4 w-4", isSyncing && "animate-spin")} />
+              </button>
+
+              <button className="btn btn-primary btn-sm gap-2" onClick={handleCreateRole}>
+                <Plus className="h-4 w-4" />
+                <span className="hidden sm:inline">Nuevo rol</span>
+              </button>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="overflow-hidden p-0">
