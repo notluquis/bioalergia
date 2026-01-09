@@ -1,4 +1,4 @@
-/* eslint-disable react-compiler/react-compiler */
+/* eslint-disable */
 import { useClientQueries } from "@zenstackhq/tanstack-query/react";
 import { schema } from "../schema-lite.js";
 
