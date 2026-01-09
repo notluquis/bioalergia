@@ -384,6 +384,13 @@ export const ROUTE_DATA: RouteData[] = [
         permission: { action: "update", subject: "User" },
         title: "Control de acceso y MFA",
       },
+      {
+        path: "sync-history",
+        componentPath: "pages/admin/SyncHistoryPage",
+        nav: { label: "Historial Sync", iconKey: "History", section: "Sistema", order: 10 },
+        permission: { action: "read", subject: "SyncLog" },
+        title: "Historial de Sincronización",
+      },
     ],
   },
   // ══════════════════════════════════════════════════════════════════════════

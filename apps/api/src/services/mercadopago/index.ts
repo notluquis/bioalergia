@@ -1,0 +1,75 @@
+import {
+  MP_API,
+  mpFetch,
+  safeMpJson,
+  checkMpConfig,
+  MP_ACCESS_TOKEN,
+} from "./client";
+import { processReportUrl } from "./ingest";
+
+// Re-export webhook password for controller
+export { MP_WEBHOOK_PASSWORD } from "./client";
+
+export const MercadoPagoService = {
+  /**
+   * List available reports from MP API
+   */
+  async listReports(type: "release" | "settlement") {
+    const baseUrl = type === "release" ? MP_API.RELEASE : MP_API.SETTLEMENT;
+    const res = await mpFetch("/list", baseUrl);
+    return safeMpJson(res);
+  },
+
+  /**
+   * Create a new manual report generation task
+   */
+  async createReport(
+    type: "release" | "settlement",
+    range: { begin_date: string; end_date: string } | any
+  ) {
+    const baseUrl = type === "release" ? MP_API.RELEASE : MP_API.SETTLEMENT;
+    const res = await mpFetch("", baseUrl, {
+      method: "POST",
+      body: JSON.stringify(range),
+    });
+    return safeMpJson(res);
+  },
+
+  /**
+   * Get a download stream for a report file
+   */
+  async downloadReport(type: "release" | "settlement", fileName: string) {
+    checkMpConfig();
+    const baseUrl = type === "release" ? MP_API.RELEASE : MP_API.SETTLEMENT;
+    const url = `${baseUrl}/${fileName}`;
+
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${MP_ACCESS_TOKEN}` },
+    });
+
+    if (!res.ok) throw new Error(`Download failed: ${res.status}`);
+    return res;
+  },
+
+  /**
+   * Process a report by ingesting it into the database
+   * Can accept a specific URL (webhook) or filename (manual sync)
+   */
+  async processReport(
+    type: "release" | "settlement",
+    source: { url?: string; fileName?: string }
+  ) {
+    let downloadUrl = source.url;
+
+    if (!downloadUrl && source.fileName) {
+      const baseUrl = type === "release" ? MP_API.RELEASE : MP_API.SETTLEMENT;
+      downloadUrl = `${baseUrl}/${source.fileName}`;
+    }
+
+    if (!downloadUrl) {
+      throw new Error("Either url or fileName must be provided");
+    }
+
+    await processReportUrl(downloadUrl, type);
+  },
+};

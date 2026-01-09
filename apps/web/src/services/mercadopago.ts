@@ -62,6 +62,15 @@ export const MPService = {
     if (!res.ok) await handleApiError(res, "Error al descargar reporte");
     return res.blob();
   },
+
+  processReport: async (fileName: string, type: MpReportType): Promise<void> => {
+    const res = await fetch("/api/mercadopago/process-report", {
+      method: "POST",
+      headers: { "Content-Type": "application/json; charset=utf-8" },
+      body: JSON.stringify({ fileName, reportType: type }),
+    });
+    if (!res.ok) await handleApiError(res, "Error al procesar reporte");
+  },
 };
 
 export type { MpReportType };

@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import { Clock, Download, FileText, Loader2, Plus, Settings } from "lucide-react";
+import { Clock, Download, FileText, Loader2, Plus, RefreshCw, Settings } from "lucide-react";
 import { useState } from "react";
 
 import GenerateReportModal from "@/components/mercadopago/GenerateReportModal";
@@ -77,6 +77,32 @@ export default function MercadoPagoSettingsPage() {
   };
 
   const isLoading = reportsQuery.isLoading;
+
+  const [processingFile, setProcessingFile] = useState<string | null>(null);
+
+  const processMutation = useMutation({
+    mutationFn: (fileName: string) => MPService.processReport(fileName, activeTab),
+    onSuccess: () => {
+      showSuccess("Reporte procesado y sincronizado correctamente");
+      setProcessingFile(null);
+    },
+    onError: (e: Error) => {
+      showError(`Error al procesar: ${e.message}`);
+      setProcessingFile(null);
+    },
+  });
+
+  const handleProcess = (e: React.MouseEvent, fileName: string) => {
+    e.preventDefault();
+    if (
+      confirm(
+        `¿Estás seguro de sincronizar el reporte ${fileName}? Esto podría duplicar datos si no se detecta correctamente.`
+      )
+    ) {
+      setProcessingFile(fileName);
+      processMutation.mutate(fileName);
+    }
+  };
 
   return (
     <div className={cn(PAGE_CONTAINER, "space-y-6")}>
@@ -260,6 +286,20 @@ export default function MercadoPagoSettingsPage() {
                             <Loader2 className="h-4 w-4 animate-spin" />
                           ) : (
                             <Download className="h-4 w-4" />
+                          )}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="btn-square opacity-0 transition-opacity group-hover:opacity-100"
+                          onClick={(e) => report.file_name && handleProcess(e, report.file_name)}
+                          disabled={processMutation.isPending}
+                          title="Sincronizar a BD"
+                        >
+                          {processMutation.isPending && processingFile === report.file_name ? (
+                            <Loader2 className="text-primary h-4 w-4 animate-spin" />
+                          ) : (
+                            <RefreshCw className="h-4 w-4" />
                           )}
                         </Button>
                       </td>
