@@ -80,7 +80,7 @@ export default function SyncHistoryPage() {
           ]}
         >
           <Table.Body loading={isLoading} columnsCount={6} emptyMessage="No hay registros de sincronización de datos.">
-            {syncLogs?.map((log) => {
+            {syncLogs?.map((log: SyncLog) => {
               const duration = log.finishedAt ? dayjs(log.finishedAt).diff(dayjs(log.startedAt), "s") : null;
 
               return (
