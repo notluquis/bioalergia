@@ -1,5 +1,5 @@
-import { useCreateCounterpart, useFindManyCounterpart, useUpdateCounterpart } from "@finanzas/db/hooks";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useFindManyCounterpart } from "@finanzas/db/hooks";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { Lock } from "lucide-react";
 import { useState } from "react";
@@ -11,8 +11,10 @@ import { useToast } from "@/context/ToastContext";
 import {
   attachCounterpartRut,
   type CounterpartUpsertPayload,
+  createCounterpart,
   fetchCounterpart,
   fetchCounterpartSummary,
+  updateCounterpart,
 } from "@/features/counterparts/api";
 import AssociatedAccounts from "@/features/counterparts/components/AssociatedAccounts";
 import CounterpartForm from "@/features/counterparts/components/CounterpartForm";
@@ -20,6 +22,7 @@ import CounterpartList from "@/features/counterparts/components/CounterpartList"
 import { SUMMARY_RANGE_MONTHS } from "@/features/counterparts/constants";
 import type { Counterpart, CounterpartCategory, CounterpartPersonType } from "@/features/counterparts/types";
 import { ServicesGrid, ServicesHero, ServicesSurface } from "@/features/services/components/ServicesShell";
+import { getPersonFullName } from "@/lib/person";
 import { normalizeRut } from "@/lib/rut";
 
 export default function CounterpartsPage() {
@@ -51,7 +54,7 @@ export default function CounterpartsPage() {
     setFormCounterpart(null);
   };
 
-  // ZenStack hooks for counterparts
+  // ZenStack hook for list query
   const {
     data: counterpartsData,
     isLoading: listLoading,
@@ -60,8 +63,36 @@ export default function CounterpartsPage() {
     include: { person: true },
   });
 
-  // Wrap counterparts in useMemo for stable reference
-  const counterparts = (counterpartsData as Counterpart[]) ?? [];
+  // Transform ZenStack data to match frontend Counterpart type
+  type ZenStackCounterpart = NonNullable<typeof counterpartsData>[number];
+  const counterparts: Counterpart[] = (counterpartsData ?? []).map((row: ZenStackCounterpart) => {
+    const person = (
+      row as {
+        person?: {
+          rut?: string;
+          names?: string;
+          fatherName?: string | null;
+          motherName?: string | null;
+          email?: string | null;
+          personType?: string;
+        };
+      }
+    ).person;
+    return {
+      id: row.id,
+      rut: person?.rut ?? null,
+      name: person
+        ? getPersonFullName(person as { names: string; fatherName?: string | null; motherName?: string | null })
+        : "Sin nombre",
+      personType: (person?.personType ?? "NATURAL") as Counterpart["personType"],
+      category: row.category as Counterpart["category"],
+      employeeId: null,
+      email: person?.email ?? null,
+      notes: row.notes ?? null,
+      created_at: (row as { createdAt?: Date }).createdAt?.toISOString() ?? new Date().toISOString(),
+      updated_at: (row as { updatedAt?: Date }).updatedAt?.toISOString() ?? new Date().toISOString(),
+    };
+  });
 
   // Detail query for selected counterpart with accounts (using original API for complete data)
   const {
@@ -88,9 +119,22 @@ export default function CounterpartsPage() {
     (detailError instanceof Error ? detailError.message : null) ||
     (summaryError instanceof Error ? summaryError.message : null);
 
-  // ZenStack mutations
-  const createMutation = useCreateCounterpart();
-  const updateMutation = useUpdateCounterpart();
+  // Use REST API mutations (they handle Person+Counterpart relationship correctly)
+  const createMutation = useMutation({
+    mutationFn: createCounterpart,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["Counterpart"] });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: number; payload: Partial<CounterpartUpsertPayload> }) =>
+      updateCounterpart(id, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["Counterpart"] });
+      queryClient.invalidateQueries({ queryKey: ["counterpart-detail"] });
+    },
+  });
 
   async function handleSaveCounterpart(payload: CounterpartUpsertPayload) {
     setError(null);
@@ -104,27 +148,11 @@ export default function CounterpartsPage() {
       let isNew = false;
 
       if (selectedId) {
-        await updateMutation.mutateAsync({
-          where: { id: selectedId },
-          data: {
-            name: payload.name,
-            rut: payload.rut,
-            email: payload.email,
-            category: payload.category,
-            personType: payload.personType,
-          },
-        });
+        await updateMutation.mutateAsync({ id: selectedId, payload });
         toastSuccess("Contraparte actualizada correctamente");
       } else {
-        const result = await createMutation.mutateAsync({
-          name: payload.name,
-          rut: payload.rut,
-          email: payload.email,
-          category: payload.category,
-          personType: payload.personType,
-        });
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        savedId = (result as any)?.id;
+        const result = await createMutation.mutateAsync(payload);
+        savedId = result?.counterpart?.id ?? null;
         isNew = true;
         toastSuccess("Contraparte creada correctamente");
       }

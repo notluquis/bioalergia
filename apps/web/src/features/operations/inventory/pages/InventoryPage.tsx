@@ -41,7 +41,16 @@ export default function InventoryPage() {
     orderBy: { name: "asc" },
   });
 
-  const items = (itemsData as InventoryItem[]) ?? [];
+  // Transform ZenStack camelCase to frontend snake_case
+  type ZenStackItem = NonNullable<typeof itemsData>[number];
+  const items: InventoryItem[] = (itemsData ?? []).map((item: ZenStackItem) => ({
+    id: item.id,
+    name: item.name,
+    description: item.description,
+    category_id: item.categoryId,
+    current_stock: item.currentStock,
+    category_name: (item as { category?: { name?: string } }).category?.name,
+  }));
 
   const [error, setError] = useState<string | null>(null);
   const [isItemModalOpen, setIsItemModalOpen] = useState(false);
@@ -96,11 +105,14 @@ export default function InventoryPage() {
         });
         toastSuccess("Item actualizado");
       } else {
+        // ZenStack uses camelCase field names
         await createItemMutation.mutateAsync({
-          name: itemData.name,
-          description: itemData.description,
-          categoryId: itemData.category_id,
-          currentStock: itemData.current_stock ?? 0,
+          data: {
+            name: itemData.name,
+            description: itemData.description,
+            categoryId: itemData.category_id,
+            currentStock: itemData.current_stock ?? 0,
+          },
         });
         toastSuccess("Item creado correctamente");
       }
@@ -115,10 +127,13 @@ export default function InventoryPage() {
   async function handleAdjustStock(movement: InventoryMovement) {
     setError(null);
     try {
+      // ZenStack uses camelCase field names
       await createMovementMutation.mutateAsync({
-        itemId: movement.item_id,
-        quantityChange: movement.quantity_change,
-        reason: movement.reason,
+        data: {
+          itemId: movement.item_id,
+          quantityChange: movement.quantity_change,
+          reason: movement.reason,
+        },
       });
       // Refetch items to get updated stock
       queryClient.invalidateQueries({ queryKey: ["inventoryItem"] });

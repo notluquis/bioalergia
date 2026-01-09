@@ -40,7 +40,8 @@ function getIntensity(count: number, max: number): 0 | 1 | 2 | 3 | 4 {
   return 1;
 }
 
-const WEEKDAYS = ["Lu", "Ma", "Mi", "Ju", "Vi", "Sá", "Do"];
+// Monday to Saturday only (excluding Sunday)
+const WEEKDAYS = ["Lu", "Ma", "Mi", "Ju", "Vi", "Sá"];
 
 type PaddingCell = {
   key: string;
@@ -67,32 +68,39 @@ function HeatmapMonthComponent({ month, statsByDate, maxValue }: HeatmapMonthPro
     const endOfMonth = month.endOf("month");
     const daysInMonth = endOfMonth.date();
 
-    // Adjust for Monday start (0=Mon, 6=Sun in our consistent handling)
-    const startDayOfWeek = (startOfMonth.day() + 6) % 7;
+    // Adjust for Monday start (0=Mon, 5=Sat in our 6-day week)
+    // Sunday is excluded, so we map: Mon=0, Tue=1, Wed=2, Thu=3, Fri=4, Sat=5
+    const jsDay = startOfMonth.day(); // 0=Sun, 1=Mon, ..., 6=Sat
+    // For a Mon-Sat grid: Mon=0, Tue=1, Wed=2, Thu=3, Fri=4, Sat=5
+    // If jsDay=0 (Sun), it's not shown, but for month start we treat it as would be after Sat
+    // jsDay=1 (Mon) -> 0, jsDay=2 (Tue) -> 1, ..., jsDay=6 (Sat) -> 5, jsDay=0 (Sun) -> 6 (but clamp to 0)
+    const startDayOfWeek = jsDay === 0 ? 0 : jsDay - 1; // Sun treated as Monday position (0)
 
-    // Generate padding days for start grid alignment
+    // Generate padding days for start grid alignment (now 6 columns)
     const paddingStart: PaddingCell[] = Array.from({ length: startDayOfWeek }).map((_, i) => ({
       key: `pad-start-${i}`,
       type: "padding",
     }));
 
-    // Generate actual days
-    const days: DayCell[] = Array.from({ length: daysInMonth }).map((_, i) => {
-      const date = startOfMonth.add(i, "day");
-      const isoDate = date.format("YYYY-MM-DD");
-      const stats = statsByDate.get(isoDate) || { total: 0, amountExpected: 0, amountPaid: 0 };
+    // Generate actual days, excluding Sundays
+    const days: DayCell[] = Array.from({ length: daysInMonth })
+      .map((_, i) => {
+        const date = startOfMonth.add(i, "day");
+        const isoDate = date.format("YYYY-MM-DD");
+        const stats = statsByDate.get(isoDate) || { total: 0, amountExpected: 0, amountPaid: 0 };
 
-      return {
-        key: isoDate,
-        type: "day",
-        date: date,
-        dayNumber: i + 1,
-        isoDate,
-        ...stats,
-        isToday: date.isSame(dayjs(), "day"),
-        intensity: getIntensity(stats.total, maxValue),
-      };
-    });
+        return {
+          key: isoDate,
+          type: "day" as const,
+          date: date,
+          dayNumber: i + 1,
+          isoDate,
+          ...stats,
+          isToday: date.isSame(dayjs(), "day"),
+          intensity: getIntensity(stats.total, maxValue),
+        };
+      })
+      .filter((day) => day.date.day() !== 0); // Filter out Sundays (day() === 0)
 
     return [...paddingStart, ...days];
   }, [month, statsByDate, maxValue]);
@@ -120,7 +128,7 @@ function HeatmapMonthComponent({ month, statsByDate, maxValue }: HeatmapMonthPro
           <span className="text-base-content/50 text-xs font-medium">{month.format("YYYY")}</span>
         </header>
 
-        <div className="grid grid-cols-7 gap-1 p-4">
+        <div className="grid grid-cols-6 gap-1 p-4">
           {/* Weekday headers */}
           {WEEKDAYS.map((d) => (
             <div

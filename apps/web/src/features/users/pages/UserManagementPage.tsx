@@ -57,14 +57,31 @@ export default function UserManagementPage() {
   });
 
   // Filter out test/debug emails client-side (ZenStack where has limited support)
-  type UserWithPerson = (typeof usersData)[number];
-  const users = (usersData ?? [])
-    .filter((u: UserWithPerson) => !u.email?.includes("test") && !u.email?.includes("debug"))
-    .map((u: UserWithPerson) => ({
-      ...u,
-      mfaEnabled: u.mfaEnabled ?? false,
-      hasPasskey: u.hasPasskey ?? false,
-    })) as User[];
+  // Transform ZenStack data to frontend User type
+  type ZenStackUser = NonNullable<typeof usersData>[number];
+  const users: User[] = (usersData ?? [])
+    .filter((u: ZenStackUser) => !u.email?.includes("test") && !u.email?.includes("debug"))
+    .map((u: ZenStackUser) => {
+      const raw = u as Record<string, unknown>;
+      const passkeys = (raw.passkeys as unknown[] | undefined) ?? [];
+      const roles = (raw.roles as Array<{ role?: { name?: string } }> | undefined) ?? [];
+      const personData = raw.person as { names?: string; fatherName?: string | null; rut?: string } | undefined;
+      return {
+        id: u.id,
+        email: u.email,
+        role: roles[0]?.role?.name ?? "",
+        mfaEnabled: u.mfaEnabled ?? false,
+        passkeysCount: passkeys.length,
+        hasPasskey: passkeys.length > 0,
+        status: u.status as User["status"],
+        createdAt: (raw.createdAt as Date)?.toISOString() ?? new Date().toISOString(),
+        person: {
+          names: personData?.names ?? "",
+          fatherName: personData?.fatherName ?? null,
+          rut: personData?.rut ?? "",
+        },
+      };
+    });
 
   // ZenStack hooks for roles (for filter dropdown)
   const { data: rolesData } = useFindManyRole({
@@ -85,11 +102,11 @@ export default function UserManagementPage() {
   const handleSaveRole = async () => {
     if (!editingUser) return;
     try {
-      await updateUserMutation.mutateAsync({
-        where: { id: editingUser.id },
-        data: { role: selectedRole },
-      });
-      success("Rol actualizado correctamente");
+      // Note: User model doesn't have a single 'role' field.
+      // It uses UserRoleAssignment for role management.
+      // For now, show a message - this requires a proper role assignment API.
+      // TODO: Implement proper role assignment via UserRoleAssignment
+      error("La actualización de roles requiere implementación de UserRoleAssignment");
       setEditingUser(null);
     } catch (err) {
       error(err instanceof Error ? err.message : "Error al actualizar rol");

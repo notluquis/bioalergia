@@ -1,12 +1,11 @@
-import { useUpdateService } from "@finanzas/db/hooks";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
-import { fetchServiceDetail, regenerateServiceSchedules } from "@/features/services/api";
+import { fetchServiceDetail, regenerateServiceSchedules, updateService } from "@/features/services/api";
 import ServiceForm from "@/features/services/components/ServiceForm";
 import ServiceScheduleAccordion from "@/features/services/components/ServiceScheduleAccordion";
 import ServiceScheduleTable from "@/features/services/components/ServiceScheduleTable";
@@ -65,8 +64,14 @@ export default function ServiceEditPage() {
     enabled: !!id,
   });
 
-  // ZenStack mutation for updates
-  const updateMutation = useUpdateService();
+  // Use REST API mutation for service updates (ZenStack has strict Decimal type requirements)
+  const updateMutation = useMutation({
+    mutationFn: (payload: CreateServicePayload) => updateService(id!, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["service-detail", id] });
+      queryClient.invalidateQueries({ queryKey: ["services-audit"] });
+    },
+  });
 
   const handleRegenerate = async (serviceId: string, payload?: { months?: number; startDate?: string }) => {
     try {
@@ -95,38 +100,7 @@ export default function ServiceEditPage() {
     if (!id) return;
 
     try {
-      await updateMutation.mutateAsync({
-        where: { id: Number(id) },
-        data: {
-          name: payload.name,
-          detail: payload.detail,
-          category: payload.category,
-          serviceType: payload.serviceType,
-          ownership: payload.ownership,
-          obligationType: payload.obligationType,
-          recurrenceType: payload.recurrenceType,
-          frequency: payload.frequency,
-          defaultAmount: payload.defaultAmount,
-          amountIndexation: payload.amountIndexation,
-          counterpartId: payload.counterpartId,
-          counterpartAccountId: payload.counterpartAccountId,
-          accountReference: payload.accountReference,
-          emissionMode: payload.emissionMode,
-          emissionDay: payload.emissionDay,
-          emissionStartDay: payload.emissionStartDay,
-          emissionEndDay: payload.emissionEndDay,
-          emissionExactDate: payload.emissionExactDate,
-          dueDay: payload.dueDay,
-          startDate: payload.startDate,
-          monthsToGenerate: payload.monthsToGenerate,
-          lateFeeMode: payload.lateFeeMode,
-          lateFeeValue: payload.lateFeeValue,
-          lateFeeGraceDays: payload.lateFeeGraceDays,
-          notes: payload.notes,
-        },
-      });
-      queryClient.invalidateQueries({ queryKey: ["service-detail", id] });
-      queryClient.invalidateQueries({ queryKey: ["services-audit"] });
+      await updateMutation.mutateAsync(payload);
       setSaveMessage("Servicio actualizado correctamente.");
     } catch {
       // Error handled by mutation state

@@ -85,7 +85,7 @@ export default function AuditChangesPanel() {
         select: {
           id: true,
           email: true,
-          name: true,
+          // name is not on User, it's on Person relation
         },
       },
     },
