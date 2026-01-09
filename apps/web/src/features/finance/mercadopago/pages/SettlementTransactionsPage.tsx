@@ -19,22 +19,22 @@ export default function SettlementTransactionsPage() {
   });
   const [appliedFilters, setAppliedFilters] = useState(draftFilters);
   const [page, setPage] = useState(1);
-  const [pageSize] = useState(DEFAULT_PAGE_SIZE);
+  const pageSize = DEFAULT_PAGE_SIZE;
 
   const { can } = useAuth();
   const canView = can("read", "SettlementTransaction");
 
-  // Query Data
+  // Query Data - using correct field name 'transactionDate' from schema
   const { data: rows, isLoading } = useFindManySettlementTransaction({
     where: {
-      date: {
+      transactionDate: {
         gte: appliedFilters.from ? new Date(appliedFilters.from) : undefined,
         lte: appliedFilters.to ? new Date(appliedFilters.to) : undefined,
       },
     },
     take: pageSize,
     skip: (page - 1) * pageSize,
-    orderBy: { date: "desc" },
+    orderBy: { transactionDate: "desc" },
   });
 
   const handleFilterChange = (update: Partial<typeof draftFilters>) => {
@@ -42,14 +42,14 @@ export default function SettlementTransactionsPage() {
   };
 
   const columns = [
-    { key: "date", label: "Fecha" },
+    { key: "transactionDate", label: "Fecha" },
     { key: "transactionType", label: "Tipo" },
     { key: "transactionAmount", label: "Monto Transacción", align: "right" as const },
     { key: "settlementNetAmount", label: "Monto Neto", align: "right" as const },
     { key: "realAmount", label: "Monto Real", align: "right" as const },
     { key: "couponAmount", label: "Cupón", align: "right" as const },
-    { key: "taxAmount", label: "Impuestos", align: "right" as const },
-    { key: "installmentAmount", label: "Cuotas", align: "right" as const },
+    { key: "taxesAmount", label: "Impuestos", align: "right" as const },
+    { key: "installments", label: "Cuotas", align: "right" as const },
   ];
 
   return (
@@ -100,14 +100,14 @@ export default function SettlementTransactionsPage() {
           <TableBody loading={isLoading} columnsCount={columns.length}>
             {rows?.map((row: SettlementTransaction) => (
               <tr key={row.id}>
-                <td className="px-4 py-2">{dayjs(row.date).format("DD/MM/YYYY")}</td>
+                <td className="px-4 py-2">{dayjs(row.transactionDate).format("DD/MM/YYYY")}</td>
                 <td className="px-4 py-2">{row.transactionType}</td>
                 <td className="px-4 py-2 text-right">{row.transactionAmount?.toString()}</td>
                 <td className="px-4 py-2 text-right">{row.settlementNetAmount?.toString()}</td>
                 <td className="px-4 py-2 text-right">{row.realAmount?.toString()}</td>
                 <td className="px-4 py-2 text-right">{row.couponAmount?.toString()}</td>
-                <td className="px-4 py-2 text-right">{row.taxAmount?.toString()}</td>
-                <td className="px-4 py-2 text-right">{row.installmentAmount?.toString()}</td>
+                <td className="px-4 py-2 text-right">{row.taxesAmount?.toString()}</td>
+                <td className="px-4 py-2 text-right">{row.installments?.toString()}</td>
               </tr>
             ))}
           </TableBody>
