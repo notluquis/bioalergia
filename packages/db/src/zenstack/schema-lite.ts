@@ -1419,6 +1419,296 @@ export class SchemaType implements SchemaDef {
                 sourceId: { type: "String" }
             }
         },
+        ReleaseTransaction: {
+            name: "ReleaseTransaction",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                sourceId: {
+                    name: "sourceId",
+                    type: "String",
+                    unique: true
+                },
+                date: {
+                    name: "date",
+                    type: "DateTime"
+                },
+                externalReference: {
+                    name: "externalReference",
+                    type: "String",
+                    optional: true
+                },
+                recordType: {
+                    name: "recordType",
+                    type: "String",
+                    optional: true
+                },
+                description: {
+                    name: "description",
+                    type: "String",
+                    optional: true
+                },
+                netCreditAmount: {
+                    name: "netCreditAmount",
+                    type: "Decimal",
+                    optional: true
+                },
+                netDebitAmount: {
+                    name: "netDebitAmount",
+                    type: "Decimal",
+                    optional: true
+                },
+                grossAmount: {
+                    name: "grossAmount",
+                    type: "Decimal"
+                },
+                sellerAmount: {
+                    name: "sellerAmount",
+                    type: "Decimal",
+                    optional: true
+                },
+                mpFeeAmount: {
+                    name: "mpFeeAmount",
+                    type: "Decimal",
+                    optional: true
+                },
+                financingFeeAmount: {
+                    name: "financingFeeAmount",
+                    type: "Decimal",
+                    optional: true
+                },
+                shippingFeeAmount: {
+                    name: "shippingFeeAmount",
+                    type: "Decimal",
+                    optional: true
+                },
+                taxesAmount: {
+                    name: "taxesAmount",
+                    type: "Decimal",
+                    optional: true
+                },
+                couponAmount: {
+                    name: "couponAmount",
+                    type: "Decimal",
+                    optional: true
+                },
+                effectiveCouponAmount: {
+                    name: "effectiveCouponAmount",
+                    type: "Decimal",
+                    optional: true
+                },
+                balanceAmount: {
+                    name: "balanceAmount",
+                    type: "Decimal",
+                    optional: true
+                },
+                taxAmountTelco: {
+                    name: "taxAmountTelco",
+                    type: "Decimal",
+                    optional: true
+                },
+                installments: {
+                    name: "installments",
+                    type: "Int",
+                    optional: true
+                },
+                paymentMethod: {
+                    name: "paymentMethod",
+                    type: "String",
+                    optional: true
+                },
+                paymentMethodType: {
+                    name: "paymentMethodType",
+                    type: "String",
+                    optional: true
+                },
+                taxDetail: {
+                    name: "taxDetail",
+                    type: "String",
+                    optional: true
+                },
+                taxesDisaggregated: {
+                    name: "taxesDisaggregated",
+                    type: "Json",
+                    optional: true
+                },
+                transactionApprovalDate: {
+                    name: "transactionApprovalDate",
+                    type: "DateTime",
+                    optional: true
+                },
+                transactionIntentId: {
+                    name: "transactionIntentId",
+                    type: "String",
+                    optional: true
+                },
+                posId: {
+                    name: "posId",
+                    type: "String",
+                    optional: true
+                },
+                posName: {
+                    name: "posName",
+                    type: "String",
+                    optional: true
+                },
+                externalPosId: {
+                    name: "externalPosId",
+                    type: "String",
+                    optional: true
+                },
+                storeId: {
+                    name: "storeId",
+                    type: "String",
+                    optional: true
+                },
+                storeName: {
+                    name: "storeName",
+                    type: "String",
+                    optional: true
+                },
+                externalStoreId: {
+                    name: "externalStoreId",
+                    type: "String",
+                    optional: true
+                },
+                currency: {
+                    name: "currency",
+                    type: "String",
+                    optional: true
+                },
+                shippingId: {
+                    name: "shippingId",
+                    type: "BigInt",
+                    optional: true
+                },
+                shipmentMode: {
+                    name: "shipmentMode",
+                    type: "String",
+                    optional: true
+                },
+                shippingOrderId: {
+                    name: "shippingOrderId",
+                    type: "String",
+                    optional: true
+                },
+                orderId: {
+                    name: "orderId",
+                    type: "BigInt",
+                    optional: true
+                },
+                packId: {
+                    name: "packId",
+                    type: "BigInt",
+                    optional: true
+                },
+                poiId: {
+                    name: "poiId",
+                    type: "String",
+                    optional: true
+                },
+                itemId: {
+                    name: "itemId",
+                    type: "String",
+                    optional: true
+                },
+                metadata: {
+                    name: "metadata",
+                    type: "Json",
+                    optional: true
+                },
+                cardInitialNumber: {
+                    name: "cardInitialNumber",
+                    type: "String",
+                    optional: true
+                },
+                operationTags: {
+                    name: "operationTags",
+                    type: "Json",
+                    optional: true
+                },
+                lastFourDigits: {
+                    name: "lastFourDigits",
+                    type: "String",
+                    optional: true
+                },
+                franchise: {
+                    name: "franchise",
+                    type: "String",
+                    optional: true
+                },
+                issuerName: {
+                    name: "issuerName",
+                    type: "String",
+                    optional: true
+                },
+                poiBankName: {
+                    name: "poiBankName",
+                    type: "String",
+                    optional: true
+                },
+                poiWalletName: {
+                    name: "poiWalletName",
+                    type: "String",
+                    optional: true
+                },
+                businessUnit: {
+                    name: "businessUnit",
+                    type: "String",
+                    optional: true
+                },
+                subUnit: {
+                    name: "subUnit",
+                    type: "String",
+                    optional: true
+                },
+                payoutBankAccountNumber: {
+                    name: "payoutBankAccountNumber",
+                    type: "String",
+                    optional: true
+                },
+                productSku: {
+                    name: "productSku",
+                    type: "String",
+                    optional: true
+                },
+                saleDetail: {
+                    name: "saleDetail",
+                    type: "String",
+                    optional: true
+                },
+                orderMp: {
+                    name: "orderMp",
+                    type: "String",
+                    optional: true
+                },
+                purchaseId: {
+                    name: "purchaseId",
+                    type: "String",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    default: ExpressionUtils.call("now")
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    default: ExpressionUtils.call("now")
+                }
+            },
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                sourceId: { type: "String" }
+            }
+        },
         DailyBalance: {
             name: "DailyBalance",
             fields: {

@@ -15,6 +15,7 @@ import {
   CreditCard,
   Database,
   FileSpreadsheet,
+  History,
   Home,
   LayoutDashboard,
   ListChecks,
@@ -71,6 +72,7 @@ const ICON_MAP: Record<string, ComponentType<{ className?: string; strokeWidth?:
   Database,
   Home,
   CreditCard,
+  History,
 };
 
 // ============================================================================
