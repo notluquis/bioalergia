@@ -766,7 +766,7 @@ html.perf-low .gpu-accelerated {
 
 /* === MOBILE/TOUCH OPTIMIZATIONS === */
 /* Prevent text zoom on input focus for iOS (requires 16px min) but keep compact sizing */
-@media screen and (max-width: 768px) {
+@media screen and (width <= 768px) {
   input,
   select,
   textarea,
