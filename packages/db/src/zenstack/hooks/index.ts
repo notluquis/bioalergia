@@ -286,3 +286,22 @@ export function useFindManyAuditLog(
   const { auditLog } = useClientQueries(schema);
   return auditLog.useFindMany(...args);
 }
+
+// Sync Logs
+export function useFindManySyncLog(
+  ...args: Parameters<
+    ReturnType<typeof useClientQueries>["syncLog"]["useFindMany"]
+  >
+) {
+  const { syncLog } = useClientQueries(schema);
+  return syncLog.useFindMany(...args);
+}
+
+export function useFindManyCalendarSyncLog(
+  ...args: Parameters<
+    ReturnType<typeof useClientQueries>["calendarSyncLog"]["useFindMany"]
+  >
+) {
+  const { calendarSyncLog } = useClientQueries(schema);
+  return calendarSyncLog.useFindMany(...args);
+}
