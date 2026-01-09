@@ -20,7 +20,7 @@ export default function ReleaseTransactionsPage() {
   });
   const [appliedFilters, setAppliedFilters] = useState(draftFilters);
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const pageSize = DEFAULT_PAGE_SIZE;
 
   const { can } = useAuth();
   const canView = can("read", "ReleaseTransaction");
