@@ -11,17 +11,12 @@ plugin policy {
   provider = '@zenstackhq/plugin-policy'
 }
 
+
+
 plugin ts {
   provider = '@core/typescript'
   output = "../src/zenstack"
-  lite = true
   preserveImportExtensions = true
-}
-
-plugin hooks {
-  provider = '@zenstackhq/tanstack-query'
-  target = 'react'
-  output = "../src/zenstack/hooks"
 }
 
 
