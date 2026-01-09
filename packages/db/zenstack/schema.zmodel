@@ -18,6 +18,12 @@ plugin ts {
   preserveImportExtensions = true
 }
 
+plugin hooks {
+  provider = '@zenstackhq/tanstack-query'
+  target = 'react'
+  output = "../src/zenstack/hooks"
+}
+
 
 
 plugin prisma {

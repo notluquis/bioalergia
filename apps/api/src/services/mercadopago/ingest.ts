@@ -34,8 +34,7 @@ export async function processReportUrl(url: string, reportType: string) {
     if (!body) throw new Error("Empty response body");
 
     // Convert Web Stream to Node Stream
-    // @ts-ignore
-    const nodeStream = Readable.fromWeb(body);
+    const nodeStream = Readable.fromWeb(body as any);
 
     const rows: any[] = [];
 
@@ -85,7 +84,7 @@ async function saveReportBatch(rows: any[], reportType: string) {
   if (type.includes("settlement")) {
     const transactions = rows
       .map(mapRowToSettlementTransaction)
-      .filter((t) => t.sourceId);
+      .filter((t): t is typeof t & { sourceId: string } => !!t.sourceId);
 
     if (transactions.length > 0) {
       await db.settlementTransaction.createMany({

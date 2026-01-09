@@ -1,4 +1,20 @@
-import { SettlementTransaction, ReleaseTransaction } from "@finanzas/db";
+import { SettlementTransaction, ReleaseTransaction, db } from "@finanzas/db";
+
+// Infer Input types from the db client
+type SettlementManyArgs = Parameters<
+  typeof db.settlementTransaction.createMany
+>[0];
+type ReleaseManyArgs = Parameters<typeof db.releaseTransaction.createMany>[0];
+
+// Extract the single item type from 'data' which can be T | T[]
+type ExtractDataInput<T> = T extends { data: infer D }
+  ? D extends (infer U)[]
+    ? U
+    : D
+  : never;
+
+type SettlementTransactionInput = ExtractDataInput<SettlementManyArgs>;
+type ReleaseTransactionInput = ExtractDataInput<ReleaseManyArgs>;
 
 // Helper parsers
 export function parseDate(val: string) {
@@ -11,101 +27,102 @@ export function parseDecimal(val: string): any {
   return val.replace(",", ".");
 }
 
-export function parseBigInt(val: string) {
-  if (!val) return null;
+export function parseBigInt(val: string): bigint | undefined {
+  if (!val) return undefined;
   try {
     return BigInt(val);
   } catch {
-    return null;
+    return undefined;
   }
 }
 
-export function parseJson(val: any) {
-  if (!val) return null;
+export function parseJson(val: any): any {
+  if (!val) return undefined;
   try {
     if (typeof val === "string") return JSON.parse(val);
     return val;
   } catch {
-    return val; // Return raw string if not JSON
+    // If it fails to parse, it might be a weird string. Let's keep val but safely...
+    // Actually if it's not valid JSON, Prisma might choke.
+    // SAFE: return undefined if error.
+    return undefined;
   }
 }
 
 // Mapper for Settlement Report
 export function mapRowToSettlementTransaction(
   row: any
-): Partial<SettlementTransaction> {
+): SettlementTransactionInput {
   return {
-    sourceId: row.SOURCE_ID,
+    sourceId: row.SOURCE_ID || `unknown-${Date.now()}-${Math.random()}`, // Should be filtered out if empty but strict type needs string
     transactionDate: parseDate(row.TRANSACTION_DATE),
     settlementDate: parseDate(row.SETTLEMENT_DATE),
     moneyReleaseDate: parseDate(row.MONEY_RELEASE_DATE),
-    externalReference: row.EXTERNAL_REFERENCE,
-    userId: row.USER_ID,
-    paymentMethodType: row.PAYMENT_METHOD_TYPE,
-    paymentMethod: row.PAYMENT_METHOD,
-    site: row.SITE,
-    transactionType: row.TRANSACTION_TYPE,
+    externalReference: row.EXTERNAL_REFERENCE || null,
+    userId: row.USER_ID || null,
+    paymentMethodType: row.PAYMENT_METHOD_TYPE || null,
+    paymentMethod: row.PAYMENT_METHOD || null,
+    site: row.SITE || null,
+    transactionType: row.TRANSACTION_TYPE || "Unknown",
     transactionAmount: parseDecimal(row.TRANSACTION_AMOUNT),
-    transactionCurrency: row.TRANSACTION_CURRENCY,
+    transactionCurrency: row.TRANSACTION_CURRENCY || "ARS",
     sellerAmount: parseDecimal(row.SELLER_AMOUNT),
     feeAmount: parseDecimal(row.FEE_AMOUNT),
     settlementNetAmount: parseDecimal(row.SETTLEMENT_NET_AMOUNT),
-    settlementCurrency: row.SETTLEMENT_CURRENCY,
+    settlementCurrency: row.SETTLEMENT_CURRENCY || null,
     realAmount: parseDecimal(row.REAL_AMOUNT),
     couponAmount: parseDecimal(row.COUPON_AMOUNT),
-    metadata: parseJson(row.METADATA),
+    metadata: parseJson(row.METADATA) || undefined, // Strict undefined
     mkpFeeAmount: parseDecimal(row.MKP_FEE_AMOUNT),
     financingFeeAmount: parseDecimal(row.FINANCING_FEE_AMOUNT),
     shippingFeeAmount: parseDecimal(row.SHIPPING_FEE_AMOUNT),
     taxesAmount: parseDecimal(row.TAXES_AMOUNT),
     installments: parseInt(row.INSTALLMENTS || "0") || null,
-    taxDetail: row.TAX_DETAIL,
-    taxesDisaggregated: parseJson(row.TAXES_DISAGGREGATED),
-    description: row.DESCRIPTION,
-    cardInitialNumber: row.CARD_INITIAL_NUMBER,
-    operationTags: parseJson(row.OPERATION_TAGS),
-    businessUnit: row.BUSINESS_UNIT,
-    subUnit: row.SUB_UNIT,
-    productSku: row.PRODUCT_SKU,
-    saleDetail: row.SALE_DETAIL,
-    transactionIntentId: row.TRANSACTION_INTENT_ID,
-    franchise: row.FRANCHISE,
-    issuerName: row.ISSUER_NAME,
-    lastFourDigits: row.LAST_FOUR_DIGITS,
-    orderMp: row.ORDER_MP,
-    invoicingPeriod: row.INVOICING_PERIOD,
-    payBankTransferId: row.PAY_BANK_TRANSFER_ID,
+    taxDetail: row.TAX_DETAIL || null,
+    taxesDisaggregated: parseJson(row.TAXES_DISAGGREGATED) || undefined,
+    description: row.DESCRIPTION || null,
+    cardInitialNumber: row.CARD_INITIAL_NUMBER || null,
+    operationTags: parseJson(row.OPERATION_TAGS) || undefined,
+    businessUnit: row.BUSINESS_UNIT || null,
+    subUnit: row.SUB_UNIT || null,
+    productSku: row.PRODUCT_SKU || null,
+    saleDetail: row.SALE_DETAIL || null,
+    transactionIntentId: row.TRANSACTION_INTENT_ID || null,
+    franchise: row.FRANCHISE || null,
+    issuerName: row.ISSUER_NAME || null,
+    lastFourDigits: row.LAST_FOUR_DIGITS || null,
+    orderMp: row.ORDER_MP || null,
+    invoicingPeriod: row.INVOICING_PERIOD || null,
+    payBankTransferId: row.PAY_BANK_TRANSFER_ID || null,
     isReleased: String(row.IS_RELEASED).toUpperCase() === "TRUE",
     tipAmount: parseDecimal(row.TIP_AMOUNT),
-    purchaseId: row.PURCHASE_ID,
+    purchaseId: row.PURCHASE_ID || null,
     totalCouponAmount: parseDecimal(row.TOTAL_COUPON_AMOUNT),
-    posId: row.POS_ID,
-    posName: row.POS_NAME,
-    externalPosId: row.EXTERNAL_POS_ID,
-    storeId: row.STORE_ID,
-    storeName: row.STORE_NAME,
-    externalStoreId: row.EXTERNAL_STORE_ID,
-    poiId: row.POI_ID,
+    posId: row.POS_ID || null,
+    posName: row.POS_NAME || null,
+    externalPosId: row.EXTERNAL_POS_ID || null,
+    storeId: row.STORE_ID || null,
+    storeName: row.STORE_NAME || null,
+    externalStoreId: row.EXTERNAL_STORE_ID || null,
+    poiId: row.POI_ID || null,
     orderId: parseBigInt(row.ORDER_ID),
     shippingId: parseBigInt(row.SHIPPING_ID),
-    shipmentMode: row.SHIPMENT_MODE,
+    shipmentMode: row.SHIPMENT_MODE || null,
     packId: parseBigInt(row.PACK_ID),
-    shippingOrderId: row.SHIPPING_ORDER_ID,
-    poiWalletName: row.POI_WALLET_NAME,
-    poiBankName: row.POI_BANK_NAME,
+    shippingOrderId: row.SHIPPING_ORDER_ID || null,
+    poiWalletName: row.POI_WALLET_NAME || null,
+    poiBankName: row.POI_BANK_NAME || null,
   };
 }
 
 // Mapper for Release Report
-export function mapRowToReleaseTransaction(
-  row: any
-): Partial<ReleaseTransaction> {
+export function mapRowToReleaseTransaction(row: any): ReleaseTransactionInput {
   return {
-    sourceId: row.SOURCE_ID,
+    sourceId: row.SOURCE_ID || `unknown-${Date.now()}-${Math.random()}`,
     date: parseDate(row.DATE),
-    externalReference: row.EXTERNAL_REFERENCE,
-    recordType: row.RECORD_TYPE,
-    description: row.DESCRIPTION,
+    externalReference: row.EXTERNAL_REFERENCE || null,
+    recordType: row.RECORD_TYPE || null,
+    description: row.DESCRIPTION || null,
     netCreditAmount: parseDecimal(row.NET_CREDIT_AMOUNT),
     netDebitAmount: parseDecimal(row.NET_DEBIT_AMOUNT),
     grossAmount: parseDecimal(row.GROSS_AMOUNT),
@@ -116,43 +133,43 @@ export function mapRowToReleaseTransaction(
     taxesAmount: parseDecimal(row.TAXES_AMOUNT),
     couponAmount: parseDecimal(row.COUPON_AMOUNT),
     installments: parseInt(row.INSTALLMENTS || "0") || null,
-    paymentMethod: row.PAYMENT_METHOD,
-    taxDetail: row.TAX_DETAIL,
+    paymentMethod: row.PAYMENT_METHOD || null,
+    taxDetail: row.TAX_DETAIL || null,
     taxAmountTelco: parseDecimal(row.TAX_AMOUNT_TELCO),
     transactionApprovalDate: parseDate(row.TRANSACTION_APPROVAL_DATE),
-    posId: row.POS_ID,
-    posName: row.POS_NAME,
-    externalPosId: row.EXTERNAL_POS_ID,
-    storeId: row.STORE_ID,
-    storeName: row.STORE_NAME,
-    externalStoreId: row.EXTERNAL_STORE_ID,
-    currency: row.CURRENCY,
-    taxesDisaggregated: parseJson(row.TAXES_DISAGGREGATED),
+    posId: row.POS_ID || null,
+    posName: row.POS_NAME || null,
+    externalPosId: row.EXTERNAL_POS_ID || null,
+    storeId: row.STORE_ID || null,
+    storeName: row.STORE_NAME || null,
+    externalStoreId: row.EXTERNAL_STORE_ID || null,
+    currency: row.CURRENCY || "ARS",
+    taxesDisaggregated: parseJson(row.TAXES_DISAGGREGATED) || undefined,
     shippingId: parseBigInt(row.SHIPPING_ID),
-    shipmentMode: row.SHIPMENT_MODE,
+    shipmentMode: row.SHIPMENT_MODE || null,
     orderId: parseBigInt(row.ORDER_ID),
     packId: parseBigInt(row.PACK_ID),
-    metadata: parseJson(row.METADATA),
+    metadata: parseJson(row.METADATA) || undefined,
     effectiveCouponAmount: parseDecimal(row.EFFECTIVE_COUPON_AMOUNT),
-    poiId: row.POI_ID,
-    cardInitialNumber: row.CARD_INITIAL_NUMBER,
-    operationTags: parseJson(row.OPERATION_TAGS),
-    itemId: row.ITEM_ID,
-    poiBankName: row.POI_BANK_NAME,
-    poiWalletName: row.POI_WALLET_NAME,
-    businessUnit: row.BUSINESS_UNIT,
-    subUnit: row.SUB_UNIT,
+    poiId: row.POI_ID || null,
+    cardInitialNumber: row.CARD_INITIAL_NUMBER || null,
+    operationTags: parseJson(row.OPERATION_TAGS) || undefined,
+    itemId: row.ITEM_ID || null,
+    poiBankName: row.POI_BANK_NAME || null,
+    poiWalletName: row.POI_WALLET_NAME || null,
+    businessUnit: row.BUSINESS_UNIT || null,
+    subUnit: row.SUB_UNIT || null,
     balanceAmount: parseDecimal(row.BALANCE_AMOUNT),
-    payoutBankAccountNumber: row.PAYOUT_BANK_ACCOUNT_NUMBER,
-    productSku: row.PRODUCT_SKU,
-    saleDetail: row.SALE_DETAIL,
-    paymentMethodType: row.PAYMENT_METHOD_TYPE,
-    transactionIntentId: row.TRANSACTION_INTENT_ID,
-    franchise: row.FRANCHISE,
-    issuerName: row.ISSUER_NAME,
-    lastFourDigits: row.LAST_FOUR_DIGITS,
-    orderMp: row.ORDER_MP,
-    purchaseId: row.PURCHASE_ID,
-    shippingOrderId: row.SHIPPING_ORDER_ID,
+    payoutBankAccountNumber: row.PAYOUT_BANK_ACCOUNT_NUMBER || null,
+    productSku: row.PRODUCT_SKU || null,
+    saleDetail: row.SALE_DETAIL || null,
+    paymentMethodType: row.PAYMENT_METHOD_TYPE || null,
+    transactionIntentId: row.TRANSACTION_INTENT_ID || null,
+    franchise: row.FRANCHISE || null,
+    issuerName: row.ISSUER_NAME || null,
+    lastFourDigits: row.LAST_FOUR_DIGITS || null,
+    orderMp: row.ORDER_MP || null,
+    purchaseId: row.PURCHASE_ID || null,
+    shippingOrderId: row.SHIPPING_ORDER_ID || null,
   };
 }
