@@ -1,9 +1,8 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import { AlertTriangle, CheckCircle, Clock, Download, FileText, Loader2, Plus, Settings } from "lucide-react";
+import { Clock, Download, FileText, Loader2, Plus, Settings } from "lucide-react";
 import { useState } from "react";
 
-import ConfigModal from "@/components/mercadopago/ConfigModal";
 import GenerateReportModal from "@/components/mercadopago/GenerateReportModal";
 import Button from "@/components/ui/Button";
 import {
@@ -31,10 +30,8 @@ const ALL_TABLE_COLUMNS = [
 ];
 
 export default function MercadoPagoSettingsPage() {
-  const queryClient = useQueryClient();
   const { success: showSuccess, error: showError } = useToast();
   const [activeTab, setActiveTab] = useState<MpReportType>("release");
-  const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
   const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false);
   const [visibleColumns, setVisibleColumns] = useState<Set<string>>(
     new Set(["date", "file", "source", "status", "actions"])
@@ -51,34 +48,12 @@ export default function MercadoPagoSettingsPage() {
   };
 
   // Queries
-  const configQuery = useQuery({
-    queryKey: ["mp-config", activeTab],
-    queryFn: () => MPService.getConfig(activeTab),
-  });
-
   const reportsQuery = useQuery({
     queryKey: ["mp-reports", activeTab],
     queryFn: () => MPService.listReports(activeTab),
   });
 
   // Mutations
-  const enableScheduleMutation = useMutation({
-    mutationFn: () => MPService.enableSchedule(activeTab),
-    onSuccess: () => {
-      showSuccess("Generación automática activada");
-      queryClient.invalidateQueries({ queryKey: ["mp-config", activeTab] });
-    },
-    onError: (e) => showError(`Error al activar: ${e.message}`),
-  });
-
-  const disableScheduleMutation = useMutation({
-    mutationFn: () => MPService.disableSchedule(activeTab),
-    onSuccess: () => {
-      showSuccess("Generación automática desactivada");
-      queryClient.invalidateQueries({ queryKey: ["mp-config", activeTab] });
-    },
-    onError: (e) => showError(`Error al desactivar: ${e.message}`),
-  });
 
   const downloadMutation = useMutation({
     mutationFn: (fileName: string) => MPService.downloadReport(fileName, activeTab),
@@ -101,8 +76,7 @@ export default function MercadoPagoSettingsPage() {
     downloadMutation.mutate(fileName);
   };
 
-  const isScheduled = configQuery.data?.scheduled ?? false;
-  const isLoading = configQuery.isLoading || reportsQuery.isLoading;
+  const isLoading = reportsQuery.isLoading;
 
   return (
     <div className={cn(PAGE_CONTAINER, "space-y-6")}>
@@ -140,10 +114,6 @@ export default function MercadoPagoSettingsPage() {
         </div>
 
         <div className="order-2 flex flex-wrap gap-3 xl:order-3">
-          <Button variant="outline" onClick={() => setIsConfigModalOpen(true)}>
-            <Settings className="mr-2 h-4 w-4" />
-            Configuración
-          </Button>
           <Button variant="primary" onClick={() => setIsGenerateModalOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
             Generar Reporte
@@ -158,39 +128,7 @@ export default function MercadoPagoSettingsPage() {
       ) : (
         <>
           {/* Overview Cards */}
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-            {/* Status Card */}
-            <article className="bg-base-100 border-base-300 relative overflow-hidden rounded-2xl border p-6 shadow-sm">
-              <div className="relative z-10 flex items-start justify-between">
-                <div>
-                  <p className="text-base-content/60 flex items-center gap-1.5 text-xs font-semibold tracking-wide uppercase">
-                    Estado Automático
-                  </p>
-                  <h3 className={cn("mt-2 text-2xl font-semibold", isScheduled ? "text-success" : "text-warning")}>
-                    {isScheduled ? "Activo" : "Inactivo"}
-                  </h3>
-                </div>
-                <div
-                  className={cn(
-                    "rounded-lg p-2",
-                    isScheduled ? "bg-success/10 text-success" : "bg-warning/10 text-warning"
-                  )}
-                >
-                  {isScheduled ? <CheckCircle className="h-5 w-5" /> : <AlertTriangle className="h-5 w-5" />}
-                </div>
-              </div>
-              <div className="border-base-300/50 relative z-10 mt-4 flex items-center justify-between border-t pt-4">
-                <span className="text-base-content/50 text-xs">Generación periódica</span>
-                <button
-                  className="text-primary text-xs font-medium hover:underline"
-                  onClick={() => (isScheduled ? disableScheduleMutation.mutate() : enableScheduleMutation.mutate())}
-                  disabled={enableScheduleMutation.isPending || disableScheduleMutation.isPending}
-                >
-                  {isScheduled ? "Desactivar" : "Activar"}
-                </button>
-              </div>
-            </article>
-
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             {/* Last Report Card */}
             <article className="bg-base-100 border-base-300 rounded-2xl border p-6 shadow-sm">
               <div className="flex items-start justify-between">
@@ -202,7 +140,7 @@ export default function MercadoPagoSettingsPage() {
                     {(() => {
                       const lastReport = reportsQuery.data?.[0];
                       if (!lastReport) return "N/A";
-                      const date = lastReport.date_created || lastReport.generation_date || lastReport.begin_date;
+                      const date = lastReport.date_created || lastReport.begin_date;
                       return date ? dayjs(date).format("D MMM, HH:mm") : "N/A";
                     })()}
                   </h3>
@@ -279,9 +217,7 @@ export default function MercadoPagoSettingsPage() {
                     )}
                     {visibleColumns.has("date") && (
                       <td className="font-medium whitespace-nowrap">
-                        {dayjs(report.date_created || report.generation_date || report.begin_date).format(
-                          "DD/MM/YYYY HH:mm"
-                        )}
+                        {dayjs(report.date_created || report.begin_date).format("DD/MM/YYYY HH:mm")}
                       </td>
                     )}
                     {visibleColumns.has("file") && (
@@ -337,11 +273,6 @@ export default function MercadoPagoSettingsPage() {
       )}
 
       {/* Modals */}
-      <ConfigModal
-        open={isConfigModalOpen}
-        onClose={() => setIsConfigModalOpen(false)}
-        reportType={activeTab} // Using activeTab directly
-      />
       <GenerateReportModal
         open={isGenerateModalOpen}
         onClose={() => setIsGenerateModalOpen(false)}
