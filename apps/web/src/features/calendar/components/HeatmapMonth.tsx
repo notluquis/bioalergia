@@ -156,10 +156,13 @@ function HeatmapMonthComponent({ month, statsByDate, maxValue }: HeatmapMonthPro
                       // Intensity colors overlap default
                       INTENSITY_COLORS[cell.intensity],
                       {
-                        "ring-primary/50 relative ring-1 ring-inset": cell.isToday,
+                        // TODAY indicator - prominent ring with glow effect
+                        "ring-warning ring-offset-base-100 shadow-warning/40 z-10 shadow-lg ring-2 ring-offset-2":
+                          cell.isToday,
                         "cursor-pointer font-semibold": cell.total > 0,
                       },
-                      "hover:ring-primary hover:ring-offset-base-100 hover:z-10 hover:scale-110 hover:shadow-lg hover:ring-2 hover:ring-offset-2"
+                      !cell.isToday &&
+                        "hover:ring-primary hover:ring-offset-base-100 hover:z-10 hover:scale-110 hover:shadow-lg hover:ring-2 hover:ring-offset-2"
                     )}
                   >
                     {/* Day Number - Top Left, smaller */}
