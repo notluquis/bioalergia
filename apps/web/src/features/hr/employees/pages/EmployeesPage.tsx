@@ -28,24 +28,45 @@ export default function EmployeesPage() {
     data: rawEmployees = [],
     isLoading: loading,
     error: queryError,
-    // refetch: loadEmployees, // ZenStack hooks handle invalidation automatically via queryClient
   } = useFindManyEmployee({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    where: includeInactive ? undefined : ({ status: "ACTIVE" } as any),
+    where: includeInactive ? undefined : { status: "ACTIVE" },
     include: { person: true },
     orderBy: { createdAt: "desc" },
   });
 
   // Calculate full_name for display compatibility
-  type EmployeeWithPerson = (typeof rawEmployees)[number];
-  const employees = rawEmployees.map((e: EmployeeWithPerson) => ({
-    ...e,
-    full_name: e.person ? getPersonFullName(e.person) : "Sin nombre",
-  }));
+  // ZenStack returns: { id, personId, person?: { names, fatherName, motherName, ... }, ... }
+  // Also converts Decimal types to numbers and Date types to strings
+  type ZenStackEmployee = NonNullable<typeof rawEmployees>[number];
+  const employees: Employee[] = rawEmployees.map((e: ZenStackEmployee) => {
+    const person = (e as { person?: { names?: string; fatherName?: string | null; motherName?: string | null } })
+      .person;
+    const raw = e as Record<string, unknown>;
+    return {
+      id: e.id,
+      personId: e.personId,
+      position: (raw.position as string) ?? "",
+      department: (raw.department as string | null) ?? null,
+      status: e.status,
+      salaryType: (raw.salaryType as Employee["salaryType"]) ?? "FIXED",
+      // Convert Decimal to number
+      baseSalary: Number(raw.baseSalary ?? 0),
+      hourlyRate: raw.hourlyRate != null ? Number(raw.hourlyRate) : null,
+      bankName: (raw.bankName as string | null) ?? null,
+      bankAccountType: (raw.bankAccountType as string | null) ?? null,
+      bankAccountNumber: (raw.bankAccountNumber as string | null) ?? null,
+      // Convert Date to string
+      startDate: (raw.startDate as Date)?.toISOString().split("T")[0] ?? "",
+      endDate: raw.endDate ? (raw.endDate as Date).toISOString().split("T")[0] : null,
+      createdAt: (raw.createdAt as Date)?.toISOString() ?? new Date().toISOString(),
+      updatedAt: (raw.updatedAt as Date)?.toISOString() ?? new Date().toISOString(),
+      person: person as Employee["person"],
+      full_name: person
+        ? getPersonFullName(person as { names: string; fatherName?: string | null; motherName?: string | null })
+        : "Sin nombre",
+    };
+  });
 
-  // Mutation for deactivating (Soft Delete)
-  // We use useUpdate instead of manual fetch.
-  // Assuming "deactivate" means setting status to INACTIVE.
   // Mutation for deactivating (Soft Delete)
   // We use useUpdate instead of manual fetch.
   // Assuming "deactivate" means setting status to INACTIVE.

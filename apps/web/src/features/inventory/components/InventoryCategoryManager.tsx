@@ -36,7 +36,7 @@ export default function InventoryCategoryManager() {
     e.preventDefault();
     if (!newCategoryName.trim()) return;
     createMutation.mutate(
-      { name: newCategoryName.trim() },
+      { data: { name: newCategoryName.trim() } },
       {
         onSuccess: () => {
           setNewCategoryName("");

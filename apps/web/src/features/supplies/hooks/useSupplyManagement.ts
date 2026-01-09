@@ -28,7 +28,7 @@ export function useSupplyManagement(): UseSupplyManagementResult {
     error: requestsError,
     refetch: refetchRequests,
   } = useFindManySupplyRequest({
-    include: { inventoryItem: true },
+    // Note: SupplyRequest model doesn't have inventoryItem relation
     orderBy: { createdAt: "desc" },
   });
 
@@ -43,19 +43,27 @@ export function useSupplyManagement(): UseSupplyManagementResult {
     orderBy: { name: "asc" },
   });
 
-  // Map requests to expected format
-  const requests = (() => {
-    if (!requestsData) return [];
-    return (requestsData as SupplyRequest[]).map((r) => ({
-      ...r,
-      item_id: (r as unknown as { inventoryItemId: number }).inventoryItemId,
-      quantity: r.quantity,
-      status: r.status,
-      notes: r.notes,
-    }));
-  })();
+  // Map requests from ZenStack camelCase to frontend snake_case format
+  type ZenStackRequest = NonNullable<typeof requestsData>[number];
+  const requests: SupplyRequest[] = (requestsData ?? []).map((r: ZenStackRequest) => ({
+    id: r.id,
+    supply_name: r.supplyName,
+    quantity: r.quantity,
+    brand: r.brand ?? undefined,
+    model: r.model ?? undefined,
+    notes: r.notes ?? undefined,
+    status: r.status.toLowerCase() as SupplyRequest["status"],
+    created_at: (r as { createdAt?: Date }).createdAt?.toISOString() ?? new Date().toISOString(),
+  }));
 
-  const commonSupplies = (commonSuppliesData as CommonSupply[]) ?? [];
+  // Map common supplies
+  type ZenStackSupply = NonNullable<typeof commonSuppliesData>[number];
+  const commonSupplies: CommonSupply[] = (commonSuppliesData ?? []).map((s: ZenStackSupply) => ({
+    id: s.id,
+    name: s.name,
+    brand: s.brand ?? undefined,
+    model: s.model ?? undefined,
+  }));
 
   const structuredSupplies = commonSupplies.reduce<StructuredSupplies>((acc, supply) => {
     if (!supply.name) return acc;
