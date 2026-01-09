@@ -21,6 +21,12 @@ plugin ts {
 
 
 
+plugin hooks {
+  provider = '@zenstackhq/tanstack-query'
+  target = 'react'
+  output = "../src/zenstack/hooks"
+}
+
 plugin prisma {
   provider = '@core/prisma'
   output = "./prisma/schema.prisma"

@@ -70,6 +70,24 @@ export function useCountTransaction(
   return transaction.useCount(...args);
 }
 
+export function useFindManySettlementTransaction(
+  ...args: Parameters<
+    ReturnType<typeof useClientQueries>["settlementTransaction"]["useFindMany"]
+  >
+) {
+  const { settlementTransaction } = useClientQueries(schema);
+  return settlementTransaction.useFindMany(...args);
+}
+
+export function useFindManyReleaseTransaction(
+  ...args: Parameters<
+    ReturnType<typeof useClientQueries>["releaseTransaction"]["useFindMany"]
+  >
+) {
+  const { releaseTransaction } = useClientQueries(schema);
+  return releaseTransaction.useFindMany(...args);
+}
+
 export function useFindManyLoan(
   ...args: Parameters<
     ReturnType<typeof useClientQueries>["loan"]["useFindMany"]
@@ -304,4 +322,14 @@ export function useFindManyCalendarSyncLog(
 ) {
   const { calendarSyncLog } = useClientQueries(schema);
   return calendarSyncLog.useFindMany(...args);
+}
+
+export function useFindManySettlementTransaction(...args: any[]) {
+  const { settlementTransaction } = useClientQueries(schema);
+  return settlementTransaction.useFindMany(...args);
+}
+
+export function useFindManyReleaseTransaction(...args: any[]) {
+  const { releaseTransaction } = useClientQueries(schema);
+  return releaseTransaction.useFindMany(...args);
 }
