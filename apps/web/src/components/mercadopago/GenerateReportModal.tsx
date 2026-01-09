@@ -43,8 +43,8 @@ export default function GenerateReportModal({ open, onClose, reportType }: Props
   const mutation = useMutation({
     mutationFn: (data: FormData) =>
       MPService.createReport(
-        new Date(data.begin_date).toISOString(),
-        new Date(data.end_date).toISOString(),
+        new Date(data.begin_date).toISOString().split(".")[0] + "Z",
+        new Date(data.end_date).toISOString().split(".")[0] + "Z",
         reportType
       ),
     onSuccess: () => {
