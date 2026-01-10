@@ -23,6 +23,7 @@ import {
 import { useEffect, useState } from "react";
 
 import AuditChangesPanel from "@/components/backup/AuditChangesPanel";
+import GoogleDriveConnect from "@/components/backup/GoogleDriveConnect";
 import Button from "@/components/ui/Button";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
@@ -199,6 +200,9 @@ export default function BackupSettingsPage() {
           </div>
         </div>
       )}
+
+      {/* Google Drive Connection */}
+      <GoogleDriveConnect />
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-4">

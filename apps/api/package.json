@@ -15,6 +15,7 @@
     "@googleapis/calendar": "^14.2.0",
     "@googleapis/drive": "^20.0.0",
     "@hono/node-server": "^1.19.8",
+    "@hono/zod-validator": "^0.7.6",
     "@otplib/plugin-base32-scure": "^13.0.1",
     "@otplib/plugin-crypto-node": "^13.0.1",
     "@paralleldrive/cuid2": "^3.0.6",

@@ -8,6 +8,7 @@
 
 import { drive, drive_v3 } from "@googleapis/drive";
 import { OAuth2Client } from "google-auth-library";
+import { db } from "@finanzas/db";
 
 import { googleCalendarConfig } from "../../config";
 
@@ -17,6 +18,7 @@ import { parseGoogleError } from "./google-errors.js";
 // Cached clients
 let cachedDriveClient: drive_v3.Drive | null = null;
 let cachedOAuthClient: OAuth2Client | null = null;
+const OAUTH_TOKEN_KEY = "GOOGLE_OAUTH_REFRESH_TOKEN";
 
 // ==================== SERVICE ACCOUNT (Calendar) ====================
 
@@ -52,14 +54,25 @@ interface OAuthConfig {
 }
 
 /**
- * Gets OAuth2 configuration from environment variables.
+ * Gets OAuth2 configuration from DB (System Setting) or environment variables.
+ * DB takes precedence for refresh token.
  */
-function getOAuthConfig(): OAuthConfig | null {
+async function getOAuthConfig(): Promise<OAuthConfig | null> {
   const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_OAUTH_CLIENT_SECRET;
-  const refreshToken = process.env.GOOGLE_OAUTH_REFRESH_TOKEN;
 
-  if (!clientId || !clientSecret || !refreshToken) {
+  if (!clientId || !clientSecret) {
+    return null;
+  }
+
+  // 1. Try DB first
+  const setting = await db.setting.findUnique({
+    where: { key: OAUTH_TOKEN_KEY },
+  });
+
+  const refreshToken = setting?.value || process.env.GOOGLE_OAUTH_REFRESH_TOKEN;
+
+  if (!refreshToken) {
     return null;
   }
 
@@ -68,23 +81,39 @@ function getOAuthConfig(): OAuthConfig | null {
 
 /**
  * Checks if OAuth is configured for Drive backups.
+ * Now async because it checks DB.
  */
-export function isOAuthConfigured(): boolean {
-  return getOAuthConfig() !== null;
+export async function isOAuthConfigured(): Promise<boolean> {
+  const config = await getOAuthConfig();
+  return config !== null;
 }
 
 /**
  * Gets an OAuth2 client for Drive operations.
+ */
+export async function getOAuthClientBase(): Promise<OAuth2Client> {
+  const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_OAUTH_CLIENT_SECRET;
+
+  if (!clientId || !clientSecret) {
+    throw new Error("Google OAuth Client ID/Secret not configured in ENV.");
+  }
+
+  return new OAuth2Client(clientId, clientSecret, "urn:ietf:wg:oauth:2.0:oob");
+}
+
+/**
+ * Gets an authenticated OAuth2 client for Drive operations.
  */
 async function getOAuthClient(): Promise<OAuth2Client> {
   if (cachedOAuthClient) {
     return cachedOAuthClient;
   }
 
-  const config = getOAuthConfig();
+  const config = await getOAuthConfig();
   if (!config) {
     throw new Error(
-      "OAuth no configurado. Ejecuta 'npm run google:auth' para autorizar tu cuenta de Google Drive."
+      "OAuth no configurado. Conecta Google Drive desde la configuración."
     );
   }
 
@@ -100,9 +129,15 @@ async function getOAuthClient(): Promise<OAuth2Client> {
 
   // Verify the token works by getting a new access token
   try {
-    await oauth2Client.getAccessToken();
+    const { token } = await oauth2Client.getAccessToken();
+    if (!token) throw new Error("No access token returned");
+
     logEvent("google.oauth.authenticated", {
       clientId: config.clientId.substring(0, 20) + "...",
+      source:
+        config.refreshToken === process.env.GOOGLE_OAUTH_REFRESH_TOKEN
+          ? "env"
+          : "db",
     });
   } catch (error) {
     const parsed = parseGoogleError(error);
@@ -111,6 +146,8 @@ async function getOAuthClient(): Promise<OAuth2Client> {
       reason: parsed.reason,
       code: parsed.code,
     });
+    // Don't throw logic here? If auth fails, maybe we just want to return a client that MIGHT fail later?
+    // But throwing is safer to fail fast.
     throw new Error(`Error de autenticación OAuth: ${parsed.message}`);
   }
 
