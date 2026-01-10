@@ -1,5 +1,32 @@
 import { OAuth2Client } from "google-auth-library";
 import * as readline from "readline";
+import fs from "fs";
+import path from "path";
+
+// Simple .env parser to avoid adding dotenv dependency if not present
+function loadEnv() {
+  try {
+    const envPath = path.resolve(process.cwd(), ".env");
+    if (fs.existsSync(envPath)) {
+      const content = fs.readFileSync(envPath, "utf-8");
+      content.split("\n").forEach((line) => {
+        const match = line.match(/^([^=]+)=(.*)$/);
+        if (match) {
+          const key = match[1].trim();
+          const value = match[2].trim().replace(/^["']|["']$/g, ""); // Remove quotes
+          if (!process.env[key]) {
+            process.env[key] = value;
+          }
+        }
+      });
+      console.log("📝 Loaded .env file");
+    }
+  } catch (e) {
+    console.warn("Could not load .env file", e);
+  }
+}
+
+loadEnv();
 
 const SCOPES = ["https://www.googleapis.com/auth/drive.file"];
 
