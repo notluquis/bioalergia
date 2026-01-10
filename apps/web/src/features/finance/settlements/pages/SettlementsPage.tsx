@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight, Columns3, Search } from "lucide-react";
 import { useState } from "react";
 
 import Button from "@/components/ui/Button";
+import { apiClient } from "@/lib/apiClient";
 
 interface SettlementTransaction {
   id: number;
@@ -58,10 +59,10 @@ interface SettlementTransaction {
   storeName: string | null;
   externalStoreId: string | null;
   poiId: string | null;
-  orderId: number | null;
-  shippingId: number | null;
+  orderId: string | number | bigint | null;
+  shippingId: string | number | bigint | null;
   shipmentMode: string | null;
-  packId: number | null;
+  packId: string | number | bigint | null;
   shippingOrderId: string | null;
   poiWalletName: string | null;
   poiBankName: string | null;
@@ -116,9 +117,7 @@ async function fetchSettlements(page: number, pageSize: number, search?: string)
   const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
   if (search) params.set("search", search);
 
-  const res = await fetch(`/api/settlement-transactions?${params}`);
-  if (!res.ok) throw new Error("Error al cargar conciliaciones");
-  return res.json();
+  return apiClient.get<ListResponse>(`/api/settlement-transactions?${params.toString()}`);
 }
 
 function formatAmount(amount: number | null, currency: string | null = "CLP") {

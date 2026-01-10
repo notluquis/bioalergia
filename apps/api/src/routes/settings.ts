@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { reply } from "../utils/reply";
 import { getSessionUser, hasPermission } from "../auth";
 import { db } from "@finanzas/db";
 import { cacheControl } from "../lib/cache-control";
@@ -13,7 +14,7 @@ export const settingsRoutes = new Hono<{ Variables: Variables }>();
 const requireAuth = async (c: any, next: any) => {
   const user = await getSessionUser(c);
   if (!user) {
-    return c.json({ status: "error", message: "No autorizado" }, 401);
+    return reply(c, { status: "error", message: "No autorizado" }, 401);
   }
   c.set("user", user);
   await next();
@@ -24,7 +25,7 @@ settingsRoutes.get("/internal", requireAuth, cacheControl(3600), async (c) => {
   const user = c.get("user");
 
   const canRead = await hasPermission(user.id, "read", "Setting");
-  if (!canRead) return c.json({ status: "error", message: "Forbidden" }, 403);
+  if (!canRead) return reply(c, { status: "error", message: "Forbidden" }, 403);
 
   // Fetch settings from DB
   const settings = await db.setting.findMany({
@@ -35,7 +36,7 @@ settingsRoutes.get("/internal", requireAuth, cacheControl(3600), async (c) => {
     (s) => s.key === "internal.upsertChunkSize"
   )?.value;
 
-  return c.json({
+  return reply(c, {
     internal: {
       upsertChunkSize: upsertChunkSize ? Number(upsertChunkSize) : undefined,
       envUpsertChunkSize: process.env.BIOALERGIA_UPSERT_CHUNK_SIZE || undefined,
@@ -49,7 +50,7 @@ settingsRoutes.put("/internal", requireAuth, async (c) => {
   const user = c.get("user");
 
   const canUpdate = await hasPermission(user.id, "update", "Setting");
-  if (!canUpdate) return c.json({ status: "error", message: "Forbidden" }, 403);
+  if (!canUpdate) return reply(c, { status: "error", message: "Forbidden" }, 403);
 
   const body = await c.req.json();
   const { upsertChunkSize } = body; // expect object { upsertChunkSize: number | undefined }
@@ -70,7 +71,7 @@ settingsRoutes.put("/internal", requireAuth, async (c) => {
     });
   }
 
-  return c.json({ status: "ok" });
+  return reply(c, { status: "ok" });
 });
 
 // Upload endpoints (Placeholder for now to avoid 404/400 if called)
@@ -78,17 +79,17 @@ settingsRoutes.put("/internal", requireAuth, async (c) => {
 settingsRoutes.post("/logo/upload", requireAuth, async (c) => {
   const user = c.get("user");
   const canUpdate = await hasPermission(user.id, "update", "Setting");
-  if (!canUpdate) return c.json({ status: "error", message: "Forbidden" }, 403);
+  if (!canUpdate) return reply(c, { status: "error", message: "Forbidden" }, 403);
 
   // Todo: Implement upload
-  return c.json({ status: "error", message: "Not implemented yet" }, 501);
+  return reply(c, { status: "error", message: "Not implemented yet" }, 501);
 });
 
 settingsRoutes.post("/favicon/upload", requireAuth, async (c) => {
   const user = c.get("user");
   const canUpdate = await hasPermission(user.id, "update", "Setting");
-  if (!canUpdate) return c.json({ status: "error", message: "Forbidden" }, 403);
+  if (!canUpdate) return reply(c, { status: "error", message: "Forbidden" }, 403);
 
   // Todo: Implement upload
-  return c.json({ status: "error", message: "Not implemented yet" }, 501);
+  return reply(c, { status: "error", message: "Not implemented yet" }, 501);
 });

@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { reply } from "../utils/reply";
 import { getSessionUser, hasPermission } from "../auth";
 import {
   sendPushNotification,
@@ -9,32 +10,32 @@ const app = new Hono();
 
 app.post("/subscribe", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
 
   const body = await c.req.json();
   const { subscription } = body;
 
   if (!subscription || !subscription.endpoint) {
-    return c.json({ status: "error", message: "Missing subscription" }, 400);
+    return reply(c, { status: "error", message: "Missing subscription" }, 400);
   }
 
   await subscribeToPush(user.id, subscription);
-  return c.json({ message: "Subscribed successfully" });
+  return reply(c, { message: "Subscribed successfully" });
 });
 
 app.post("/send-test", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
 
   const canRead = await hasPermission(user.id, "read", "Notification");
-  if (!canRead) return c.json({ status: "error", message: "Forbidden" }, 403);
+  if (!canRead) return reply(c, { status: "error", message: "Forbidden" }, 403);
 
   const result = await sendPushNotification(user.id, {
     title: "Test Notification",
     body: "This is a test from the new API!",
   });
 
-  return c.json(result);
+  return reply(c, result);
 });
 
 export default app;

@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { reply } from "../utils/reply";
 import { getSessionUser, hasPermission } from "../auth";
 import { listTransactions, TransactionFilters } from "../services/transactions";
 import { transactionsQuerySchema } from "../lib/financial-schemas";
@@ -8,20 +9,20 @@ const app = new Hono();
 
 app.get("/", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
 
   const canRead = await hasPermission(user.id, "read", "Transaction");
   const canReadList = await hasPermission(user.id, "read", "TransactionList");
 
   if (!canRead && !canReadList) {
-    return c.json({ status: "error", message: "Forbidden" }, 403);
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
   }
 
   const query = c.req.query();
   const parsed = transactionsQuerySchema.safeParse(query);
 
   if (!parsed.success) {
-    return c.json(
+    return reply(c, 
       {
         status: "error",
         message: "Filtros inválidos",
@@ -58,7 +59,7 @@ app.get("/", async (c) => {
   );
   const data = transactions.map(mapTransaction);
 
-  return c.json({
+  return reply(c, {
     status: "ok",
     data,
     hasAmounts: includeAmounts,
@@ -70,13 +71,13 @@ app.get("/", async (c) => {
 
 app.get("/participants", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
 
   const canRead = await hasPermission(user.id, "read", "Transaction");
   const canReadList = await hasPermission(user.id, "read", "TransactionList");
 
   if (!canRead && !canReadList) {
-    return c.json({ status: "error", message: "Forbidden" }, 403);
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
   }
 
   const query = c.req.query();
@@ -88,22 +89,22 @@ app.get("/participants", async (c) => {
     await import("../services/transactions");
   try {
     const result = await getParticipantLeaderboard({ from, to, limit });
-    return c.json(result);
+    return reply(c, result);
   } catch (err) {
     console.error("Error fetching participant leaderboard:", err);
-    return c.json({ status: "error", message: "Error interno" }, 500);
+    return reply(c, { status: "error", message: "Error interno" }, 500);
   }
 });
 
 app.get("/participants/:id", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
 
   const canRead = await hasPermission(user.id, "read", "Transaction");
   const canReadList = await hasPermission(user.id, "read", "TransactionList");
 
   if (!canRead && !canReadList) {
-    return c.json({ status: "error", message: "Forbidden" }, 403);
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
   }
 
   const id = c.req.param("id");
@@ -115,22 +116,22 @@ app.get("/participants/:id", async (c) => {
 
   try {
     const result = await getParticipantInsight(id, { from, to });
-    return c.json(result);
+    return reply(c, result);
   } catch (err) {
     console.error("Error fetching participant insight:", err);
-    return c.json({ status: "error", message: "Error interno" }, 500);
+    return reply(c, { status: "error", message: "Error interno" }, 500);
   }
 });
 
 app.get("/stats", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
 
   const canRead = await hasPermission(user.id, "read", "Transaction");
   const canReadStats = await hasPermission(user.id, "read", "TransactionStats");
 
   if (!canRead && !canReadStats) {
-    return c.json({ status: "error", message: "Forbidden" }, 403);
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
   }
 
   const query = c.req.query();
@@ -138,17 +139,17 @@ app.get("/stats", async (c) => {
   const to = query.to ? new Date(query.to) : undefined;
 
   if (!from || !to) {
-    return c.json({ status: "error", message: "Fechas requeridas" }, 400);
+    return reply(c, { status: "error", message: "Fechas requeridas" }, 400);
   }
 
   const { getTransactionStats } = await import("../services/transactions");
 
   try {
     const result = await getTransactionStats({ from, to });
-    return c.json(result);
+    return reply(c, result);
   } catch (err) {
     console.error("Error fetching stats:", err);
-    return c.json({ status: "error", message: "Error interno" }, 500);
+    return reply(c, { status: "error", message: "Error interno" }, 500);
   }
 });
 

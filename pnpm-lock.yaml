@@ -8,6 +8,10 @@ settings:
 importers:
 
   .:
+    dependencies:
+      superjson:
+        specifier: ^2.2.6
+        version: 2.2.6
     devDependencies:
       '@zenstackhq/tanstack-query':
         specifier: ^3.2.0

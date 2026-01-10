@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { reply } from "../utils/reply";
 import { getSessionUser, hasPermission } from "../auth";
 import { db } from "@finanzas/db";
 
@@ -7,10 +8,10 @@ const app = new Hono();
 // GET / - List all people
 app.get("/", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
 
   const canRead = await hasPermission(user.id, "read", "Person");
-  if (!canRead) return c.json({ status: "error", message: "Forbidden" }, 403);
+  if (!canRead) return reply(c, { status: "error", message: "Forbidden" }, 403);
 
   const includeTest = c.req.query("includeTest") === "true";
 
@@ -44,10 +45,10 @@ app.get("/", async (c) => {
       hasEmployee: !!p.employee,
     }));
 
-    return c.json({ status: "ok", people: mappedPeople });
+    return reply(c, { status: "ok", people: mappedPeople });
   } catch (error) {
     console.error("[people] list error:", error);
-    return c.json(
+    return reply(c, 
       { status: "error", message: "Error al listar personas" },
       500,
     );
@@ -57,14 +58,14 @@ app.get("/", async (c) => {
 // GET /:id - Get person by ID
 app.get("/:id", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
 
   const canRead = await hasPermission(user.id, "read", "Person");
-  if (!canRead) return c.json({ status: "error", message: "Forbidden" }, 403);
+  if (!canRead) return reply(c, { status: "error", message: "Forbidden" }, 403);
 
   const id = Number(c.req.param("id"));
   if (!Number.isFinite(id)) {
-    return c.json({ status: "error", message: "ID inválido" }, 400);
+    return reply(c, { status: "error", message: "ID inválido" }, 400);
   }
 
   try {
@@ -78,10 +79,10 @@ app.get("/:id", async (c) => {
     });
 
     if (!person) {
-      return c.json({ status: "error", message: "Persona no encontrada" }, 404);
+      return reply(c, { status: "error", message: "Persona no encontrada" }, 404);
     }
 
-    return c.json({
+    return reply(c, {
       person: {
         ...person,
         hasUser: !!person.user,
@@ -90,7 +91,7 @@ app.get("/:id", async (c) => {
     });
   } catch (error) {
     console.error("[people] get error:", error);
-    return c.json(
+    return reply(c, 
       { status: "error", message: "Error al obtener persona" },
       500,
     );

@@ -29,5 +29,8 @@
   "devDependencies": {
     "@zenstackhq/tanstack-query": "^3.2.0",
     "turbo": "^2.7.3"
+  },
+  "dependencies": {
+    "superjson": "^2.2.6"
   }
 }

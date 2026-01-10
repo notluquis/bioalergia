@@ -1,3 +1,4 @@
+import superjson from "superjson";
 import { z } from "zod";
 
 import { logger } from "./logger";
@@ -155,7 +156,12 @@ async function parseResponse<T>(
 
     if (isJson && !looksLikeHtml) {
       try {
-        data = JSON.parse(rawBody);
+        const jsonData = JSON.parse(rawBody);
+        if (jsonData && typeof jsonData === "object" && "json" in jsonData && "meta" in jsonData) {
+          data = superjson.deserialize(jsonData);
+        } else {
+          data = jsonData;
+        }
       } catch (e) {
         console.warn("Failed to parse JSON response:", e);
         // Fallback to text if JSON parsing fails but we expected JSON

@@ -4,6 +4,7 @@ import { ArrowDownToLine, ArrowUpFromLine, ChevronLeft, ChevronRight, Columns3, 
 import { useState } from "react";
 
 import Button from "@/components/ui/Button";
+import { apiClient } from "@/lib/apiClient";
 
 interface ReleaseTransaction {
   id: number;
@@ -33,9 +34,9 @@ interface ReleaseTransaction {
   posName: string | null;
   storeId: string | null;
   storeName: string | null;
-  orderId: number | null;
+  orderId: string | number | bigint | null;
   currency: string | null;
-  shippingId: number | null;
+  shippingId: string | number | bigint | null;
   shipmentMode: string | null;
 }
 
@@ -79,9 +80,7 @@ async function fetchReleases(page: number, pageSize: number, search?: string): P
   const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
   if (search) params.set("search", search);
 
-  const res = await fetch(`/api/release-transactions?${params}`);
-  if (!res.ok) throw new Error("Error al cargar liberaciones");
-  return res.json();
+  return apiClient.get<ListResponse>(`/api/release-transactions?${params.toString()}`);
 }
 
 function formatAmount(amount: number | null, currency: string | null = "CLP") {

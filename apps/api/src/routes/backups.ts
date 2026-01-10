@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { reply } from "../utils/reply";
 import { streamSSE } from "hono/streaming";
 
 import { getSessionUser, hasPermission } from "../auth";
@@ -24,11 +25,11 @@ const app = new Hono();
 // List all backups from Google Drive
 app.get("/", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
 
   const canAccess = await hasPermission(user.id, "read", "Backup");
   if (!canAccess) {
-    return c.json(
+    return reply(c, 
       {
         status: "error",
         message: "Forbidden - missing 'read Backup' permission",
@@ -40,7 +41,7 @@ app.get("/", async (c) => {
   try {
     // Check if OAuth is configured
     if (!isOAuthConfigured()) {
-      return c.json({
+      return reply(c, {
         status: "ok",
         jobs: getCurrentJobs(),
         backups: [],
@@ -52,10 +53,10 @@ app.get("/", async (c) => {
     const backups = await listBackups();
     const jobs = getCurrentJobs();
 
-    return c.json({ status: "ok", jobs, backups });
+    return reply(c, { status: "ok", jobs, backups });
   } catch (error) {
     console.error("[Backups] Error listing backups:", error);
-    return c.json({
+    return reply(c, {
       status: "ok",
       jobs: getCurrentJobs(),
       backups: [],
@@ -70,11 +71,11 @@ app.get("/", async (c) => {
 // Create a new backup
 app.post("/", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
 
   const canCreate = await hasPermission(user.id, "create", "Backup");
   if (!canCreate) {
-    return c.json(
+    return reply(c, 
       {
         status: "error",
         message: "Forbidden - missing 'create Backup' permission",
@@ -85,9 +86,9 @@ app.post("/", async (c) => {
 
   try {
     const job = startBackup();
-    return c.json({ status: "ok", message: "Backup started", job });
+    return reply(c, { status: "ok", message: "Backup started", job });
   } catch (error) {
-    return c.json(
+    return reply(c, 
       {
         status: "error",
         message:
@@ -101,21 +102,21 @@ app.post("/", async (c) => {
 // Get tables from a specific backup
 app.get("/:fileId/tables", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
 
   const canAccess = await hasPermission(user.id, "read", "Backup");
   if (!canAccess) {
-    return c.json({ status: "error", message: "Forbidden" }, 403);
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
   }
 
   const fileId = c.req.param("fileId");
 
   try {
     const tables = await getBackupTables(fileId);
-    return c.json({ status: "ok", tables });
+    return reply(c, { status: "ok", tables });
   } catch (error) {
     console.error("[Backups] Error getting tables:", error);
-    return c.json(
+    return reply(c, 
       {
         status: "error",
         message:
@@ -129,39 +130,39 @@ app.get("/:fileId/tables", async (c) => {
 // Get backup logs
 app.get("/logs", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
 
   const canAccess = await hasPermission(user.id, "read", "Backup");
   if (!canAccess) {
-    return c.json({ status: "error", message: "Forbidden" }, 403);
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
   }
 
   const logs = getLogs(100);
-  return c.json({ status: "ok", logs });
+  return reply(c, { status: "ok", logs });
 });
 
 // Get backup history
 app.get("/history", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
 
   const canAccess = await hasPermission(user.id, "read", "Backup");
   if (!canAccess) {
-    return c.json({ status: "error", message: "Forbidden" }, 403);
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
   }
 
   const history = getJobHistory();
-  return c.json({ status: "ok", history });
+  return reply(c, { status: "ok", history });
 });
 
 // Restore from backup
 app.post("/:fileId/restore", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
 
   const canRestore = await hasPermission(user.id, "update", "Backup");
   if (!canRestore) {
-    return c.json(
+    return reply(c, 
       {
         status: "error",
         message: "Forbidden - missing 'update Backup' permission",
@@ -177,7 +178,7 @@ app.post("/:fileId/restore", async (c) => {
   try {
     // TODO: Implement restore logic
     // This would download the file, decompress, and restore selected tables
-    return c.json({
+    return reply(c, {
       status: "ok",
       job: {
         id: `restore-${Date.now()}`,
@@ -187,7 +188,7 @@ app.post("/:fileId/restore", async (c) => {
       },
     });
   } catch (error) {
-    return c.json(
+    return reply(c, 
       {
         status: "error",
         message:
@@ -201,11 +202,11 @@ app.post("/:fileId/restore", async (c) => {
 // SSE for progress
 app.get("/progress", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
 
   const canAccess = await hasPermission(user.id, "read", "Backup");
   if (!canAccess) {
-    return c.json({ status: "error", message: "Forbidden" }, 403);
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
   }
 
   return streamSSE(c, async (stream) => {
