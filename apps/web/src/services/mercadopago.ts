@@ -4,6 +4,7 @@
  */
 
 import { MpReportType } from "../../shared/mercadopago";
+import { apiClient } from "../lib/apiClient";
 
 export interface MPReport {
   id: number;
@@ -33,24 +34,6 @@ interface ProcessReportResponse {
   stats: ImportStats;
 }
 
-/**
- * Helper to extract error message from API response
- */
-async function handleApiError(res: Response, fallbackMessage: string): Promise<never> {
-  let errorMessage = fallbackMessage;
-  try {
-    const body = await res.json();
-    if (body.message) {
-      errorMessage = body.message;
-    } else if (body.error) {
-      errorMessage = body.error;
-    }
-  } catch {
-    errorMessage = `${fallbackMessage}: ${res.status} ${res.statusText}`;
-  }
-  throw new Error(errorMessage);
-}
-
 function getBaseUrl(type: MpReportType = "release") {
   return type === "release" ? "/api/mercadopago" : "/api/mercadopago/settlement";
 }
@@ -58,37 +41,24 @@ function getBaseUrl(type: MpReportType = "release") {
 export const MPService = {
   listReports: async (type: MpReportType = "release"): Promise<MPReport[]> => {
     const baseUrl = getBaseUrl(type);
-    const res = await fetch(`${baseUrl}/reports`);
-    if (!res.ok) await handleApiError(res, "Error al obtener reportes");
-    return res.json();
+    return apiClient.get<MPReport[]>(`${baseUrl}/reports`);
   },
 
   createReport: async (beginDate: string, endDate: string, type: MpReportType = "release"): Promise<MPReport> => {
     const baseUrl = getBaseUrl(type);
-    const res = await fetch(`${baseUrl}/reports`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json; charset=utf-8" },
-      body: JSON.stringify({ begin_date: beginDate, end_date: endDate }),
-    });
-    if (!res.ok) await handleApiError(res, "Error al crear reporte");
-    return res.json();
+    return apiClient.post<MPReport>(`${baseUrl}/reports`, { begin_date: beginDate, end_date: endDate });
   },
 
   downloadReport: async (fileName: string, type: MpReportType = "release"): Promise<Blob> => {
     const baseUrl = getBaseUrl(type);
-    const res = await fetch(`${baseUrl}/reports/download/${encodeURIComponent(fileName)}`);
-    if (!res.ok) await handleApiError(res, "Error al descargar reporte");
-    return res.blob();
+    return apiClient.get<Blob>(`${baseUrl}/reports/download/${encodeURIComponent(fileName)}`, { responseType: "blob" });
   },
 
   processReport: async (fileName: string, type: MpReportType): Promise<ImportStats> => {
-    const res = await fetch("/api/mercadopago/process-report", {
-      method: "POST",
-      headers: { "Content-Type": "application/json; charset=utf-8" },
-      body: JSON.stringify({ fileName, reportType: type }),
+    const data = await apiClient.post<ProcessReportResponse>("/api/mercadopago/process-report", {
+      fileName,
+      reportType: type,
     });
-    if (!res.ok) await handleApiError(res, "Error al procesar reporte");
-    const data: ProcessReportResponse = await res.json();
     return data.stats;
   },
 

@@ -9,6 +9,7 @@ import Button from "@/components/ui/Button";
 import Checkbox from "@/components/ui/Checkbox";
 import { useSettings } from "@/context/SettingsContext";
 import type { Employee } from "@/features/hr/employees/types";
+import { apiClient } from "@/lib/apiClient";
 import { fmtCLP } from "@/lib/format";
 
 import type { BulkRow, TimesheetSummaryRow } from "../types";
@@ -82,17 +83,28 @@ export default function TimesheetExportPDF({
       // Helper: Cargar logo y normalizarlo a PNG (evitar "wrong PNG signature")
       async function loadLogoAsPng(url: string): Promise<string | null> {
         try {
-          let res: Response | null = null;
-          if (/^https?:\/\//i.test(url)) {
-            const proxyUrl = `/api/assets/proxy-image?url=${encodeURIComponent(url)}`;
-            res = await fetch(proxyUrl, { credentials: "include", cache: "no-cache" });
-            if (!res.ok) res = null;
+          let blob: Blob | null = null;
+          try {
+            if (/^https?:\/\//i.test(url)) {
+              // Internal proxy call
+              const proxyUrl = `/api/assets/proxy-image?url=${encodeURIComponent(url)}`;
+              // apiClient includes credentials usually if configured, but here we explicitly requested them before.
+              // apiClient uses defaults.
+              blob = await apiClient.get<Blob>(proxyUrl, { responseType: "blob" });
+            }
+          } catch {
+            blob = null;
           }
-          if (!res) {
-            res = await fetch(url, { cache: "no-cache" });
+
+          if (!blob) {
+            try {
+              // Direct fetch fallback using apiClient for consistency/timeout
+              blob = await apiClient.get<Blob>(url, { responseType: "blob" });
+            } catch {
+              blob = null;
+            }
           }
-          if (!res.ok) return null;
-          const blob = await res.blob();
+          if (!blob) return null;
           if (blob.type === "image/png") {
             return await new Promise((resolve) => {
               const reader = new FileReader();
