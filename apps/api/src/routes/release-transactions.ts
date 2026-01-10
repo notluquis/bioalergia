@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { enhance } from "@zenstackhq/runtime";
+import { enhance } from "@zenstackhq/orm";
 import { z } from "zod";
 
 import { db } from "@finanzas/db";
