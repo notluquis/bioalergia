@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import { Clock, Download, FileText, Loader2, Plus, RefreshCw, Settings } from "lucide-react";
+import { CheckCircle2, Clock, Download, FileText, Loader2, Plus, RefreshCw, Settings, X } from "lucide-react";
 import { useState } from "react";
 
 import GenerateReportModal from "@/components/mercadopago/GenerateReportModal";
@@ -18,7 +18,7 @@ import { Table } from "@/components/ui/Table";
 import { useToast } from "@/context/ToastContext";
 import { PAGE_CONTAINER } from "@/lib/styles";
 import { cn } from "@/lib/utils";
-import { MpReportType, MPService } from "@/services/mercadopago";
+import { ImportStats, MpReportType, MPService } from "@/services/mercadopago";
 
 const ALL_TABLE_COLUMNS = [
   { key: "id", label: "ID" },
@@ -36,6 +36,7 @@ export default function MercadoPagoSettingsPage() {
   const [visibleColumns, setVisibleColumns] = useState<Set<string>>(
     new Set(["date", "file", "source", "status", "actions"])
   );
+  const [lastImportStats, setLastImportStats] = useState<ImportStats | null>(null);
 
   const toggleColumn = (key: string) => {
     const newSet = new Set(visibleColumns);
@@ -82,8 +83,9 @@ export default function MercadoPagoSettingsPage() {
 
   const processMutation = useMutation({
     mutationFn: (fileName: string) => MPService.processReport(fileName, activeTab),
-    onSuccess: () => {
-      showSuccess("Reporte procesado y sincronizado correctamente");
+    onSuccess: (stats) => {
+      setLastImportStats(stats);
+      showSuccess(`Reporte procesado: ${stats.insertedRows} insertados, ${stats.duplicateRows} duplicados`);
       setProcessingFile(null);
     },
     onError: (e: Error) => {
@@ -100,6 +102,7 @@ export default function MercadoPagoSettingsPage() {
       )
     ) {
       setProcessingFile(fileName);
+      setLastImportStats(null);
       processMutation.mutate(fileName);
     }
   };
@@ -146,6 +149,57 @@ export default function MercadoPagoSettingsPage() {
           </Button>
         </div>
       </div>
+
+      {/* Import Stats Panel */}
+      {lastImportStats && (
+        <div className="bg-success/10 border-success/30 relative rounded-xl border p-4">
+          <button
+            onClick={() => setLastImportStats(null)}
+            className="text-base-content/50 hover:text-base-content absolute top-3 right-3"
+          >
+            <X className="h-4 w-4" />
+          </button>
+          <div className="flex items-start gap-3">
+            <CheckCircle2 className="text-success mt-0.5 h-5 w-5 shrink-0" />
+            <div className="flex-1">
+              <h4 className="font-semibold">Reporte Procesado</h4>
+              <div className="mt-2 grid grid-cols-2 gap-x-6 gap-y-1 text-sm sm:grid-cols-3 md:grid-cols-5">
+                <div>
+                  <span className="text-base-content/60">Total filas:</span>{" "}
+                  <span className="font-medium">{lastImportStats.totalRows}</span>
+                </div>
+                <div>
+                  <span className="text-base-content/60">Válidas:</span>{" "}
+                  <span className="font-medium">{lastImportStats.validRows}</span>
+                </div>
+                <div>
+                  <span className="text-success">Insertadas:</span>{" "}
+                  <span className="text-success font-medium">{lastImportStats.insertedRows}</span>
+                </div>
+                <div>
+                  <span className="text-warning">Duplicados:</span>{" "}
+                  <span className="text-warning font-medium">{lastImportStats.duplicateRows}</span>
+                </div>
+                <div>
+                  <span className="text-base-content/60">Omitidas:</span>{" "}
+                  <span className="font-medium">{lastImportStats.skippedRows}</span>
+                </div>
+              </div>
+              {lastImportStats.errors.length > 0 && (
+                <div className="text-error mt-3 text-xs">
+                  <strong>Errores ({lastImportStats.errors.length}):</strong>
+                  <ul className="ml-4 list-disc">
+                    {lastImportStats.errors.slice(0, 5).map((err, i) => (
+                      <li key={i}>{err}</li>
+                    ))}
+                    {lastImportStats.errors.length > 5 && <li>...y {lastImportStats.errors.length - 5} más</li>}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {isLoading ? (
         <div className="flex h-64 items-center justify-center rounded-xl border border-dashed">

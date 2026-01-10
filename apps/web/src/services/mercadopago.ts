@@ -16,6 +16,24 @@ export interface MPReport {
 }
 
 /**
+ * Statistics returned after processing a report
+ */
+export interface ImportStats {
+  totalRows: number;
+  validRows: number;
+  skippedRows: number;
+  insertedRows: number;
+  duplicateRows: number;
+  errors: string[];
+}
+
+interface ProcessReportResponse {
+  status: string;
+  message: string;
+  stats: ImportStats;
+}
+
+/**
  * Helper to extract error message from API response
  */
 async function handleApiError(res: Response, fallbackMessage: string): Promise<never> {
@@ -63,13 +81,15 @@ export const MPService = {
     return res.blob();
   },
 
-  processReport: async (fileName: string, type: MpReportType): Promise<void> => {
+  processReport: async (fileName: string, type: MpReportType): Promise<ImportStats> => {
     const res = await fetch("/api/mercadopago/process-report", {
       method: "POST",
       headers: { "Content-Type": "application/json; charset=utf-8" },
       body: JSON.stringify({ fileName, reportType: type }),
     });
     if (!res.ok) await handleApiError(res, "Error al procesar reporte");
+    const data: ProcessReportResponse = await res.json();
+    return data.stats;
   },
 };
 
