@@ -157,8 +157,16 @@ async function parseResponse<T>(
     if (isJson && !looksLikeHtml) {
       try {
         const jsonData = JSON.parse(rawBody);
-        if (jsonData && typeof jsonData === "object" && "json" in jsonData && "meta" in jsonData) {
-          data = superjson.deserialize(jsonData);
+        // Check if response is a SuperJSON envelope (has "json" property)
+        if (jsonData && typeof jsonData === "object" && "json" in jsonData) {
+          try {
+            data = superjson.deserialize(jsonData);
+          } catch (e) {
+            // If deserialization fails, it might not be a SuperJSON envelope or malformed.
+            // Fallback to using the raw JSON object (maybe the property 'json' was actual data)
+            console.warn("[apiClient] SuperJSON deserialize failed, using raw data", e);
+            data = jsonData;
+          }
         } else {
           data = jsonData;
         }
