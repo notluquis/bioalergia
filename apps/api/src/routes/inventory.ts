@@ -2,6 +2,8 @@
  * Inventory Routes
  * Migrated from apps/web/server/routes/inventory.ts
  */
+import { Prisma } from "@prisma/client";
+import { cacheControl } from "../lib/cache-control";
 import { Hono } from "hono";
 import {
   createInventoryCategory,
@@ -84,8 +86,8 @@ inventoryRoutes.get("/allergy-overview", async (c) => {
   return c.json({ status: "ok", data: mappedData });
 });
 
-// GET /api/inventory/categories
-inventoryRoutes.get("/categories", async (c) => {
+// GET /api/inventory/categories - Cached 5 mins
+inventoryRoutes.get("/categories", cacheControl(300), async (c) => {
   const categories = await listInventoryCategories();
   return c.json({
     status: "ok",

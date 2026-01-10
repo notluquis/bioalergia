@@ -164,7 +164,27 @@ export default defineConfig(({ mode }) => ({
     // We let Vite/Rollup split based on dynamic imports (React.lazy).
     rollupOptions: {
       output: {
-        // manualChunks removed to allow granular graph-based splitting
+        manualChunks: {
+          "vendor-react": ["react", "react-dom", "react-router-dom"],
+          "vendor-ui": [
+            "@radix-ui/react-dropdown-menu",
+            "@radix-ui/react-toast",
+            "@radix-ui/react-tooltip",
+            "lucide-react",
+            "clsx",
+            "tailwind-merge",
+          ],
+          "vendor-core": [
+            "@tanstack/react-query",
+            "zustand",
+            "react-hook-form",
+            "zod",
+            "dayjs",
+            "i18next",
+            "react-i18next",
+          ],
+          "vendor-charts": ["recharts"],
+        },
       },
     },
   },

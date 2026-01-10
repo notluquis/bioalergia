@@ -5,9 +5,7 @@ import { ServicesProvider } from "../hooks/useServicesOverview";
 export default function ServicesLayout() {
   return (
     <ServicesProvider>
-      <ServicesProvider>
-        <Outlet />
-      </ServicesProvider>
+      <Outlet />
     </ServicesProvider>
   );
 }

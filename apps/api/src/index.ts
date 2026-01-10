@@ -74,12 +74,26 @@ app.use(
   cors({
     origin: process.env.CORS_ORIGIN || "http://localhost:5173",
     credentials: true,
-  }),
+  })
 );
 
 // Health check (at root for Railway healthcheck)
 app.get("/health", (c) => c.json({ status: "ok" }));
 app.get("/api/health", (c) => c.json({ status: "ok" }));
+
+// Rate limiting for auth routes (prevent brute force attacks)
+import { rateLimiter } from "hono-rate-limiter";
+
+const authRateLimiter = rateLimiter({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  limit: 50, // 50 requests per 15 minutes per IP
+  standardHeaders: "draft-6",
+  keyGenerator: (c) =>
+    c.req.header("x-forwarded-for") || c.req.header("x-real-ip") || "anonymous",
+});
+
+// Apply rate limiting to sensitive routes
+app.use("/api/auth/*", authRateLimiter);
 
 // Auth routes (login, logout, session, MFA)
 
@@ -160,7 +174,7 @@ if (process.env.NODE_ENV === "production") {
     serveStatic({
       root: "./public",
       // Don't serve index.html for missing files yet - SPA fallback handles that
-    }),
+    })
   );
 
   // SPA fallback: serve index.html for all non-API, non-asset routes
