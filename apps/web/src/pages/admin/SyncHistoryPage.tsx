@@ -14,6 +14,72 @@ type ChangeDetail = {
   fields?: string[];
 };
 
+const ChangeDetailsViewer = ({ data }: { data: unknown }) => {
+  if (!data) return null;
+
+  const details = data as ChangeDetail[];
+  if (!Array.isArray(details) || details.length === 0) {
+    return <p className="text-base-content/50 text-sm italic">No hay cambios detallados.</p>;
+  }
+
+  // Group by action
+  const grouped = details.reduce(
+    (acc, item) => {
+      const action = item.action || "unknown";
+      if (!acc[action]) acc[action] = [];
+      acc[action].push(item);
+      return acc;
+    },
+    {} as Record<string, ChangeDetail[]>
+  );
+
+  const actionLabels: Record<string, { label: string; color: string }> = {
+    created: { label: "Insertados", color: "text-success" },
+    updated: { label: "Modificados", color: "text-info" },
+    deleted: { label: "Eliminados", color: "text-error" },
+    skipped: { label: "Omitidos", color: "text-warning" },
+    unknown: { label: "Otros", color: "text-base-content/70" },
+  };
+
+  return (
+    <details className="group bg-base-100/50 border-base-200 open:bg-base-100 overflow-hidden rounded-lg border">
+      <summary className="hover:bg-base-200 flex cursor-pointer items-center justify-between px-3 py-2 text-xs font-medium transition-colors select-none">
+        <span>Ver Detalle de Cambios ({details.length})</span>
+        <ChevronDown className="h-3 w-3 opacity-50 transition-transform duration-200 group-open:rotate-180" />
+      </summary>
+      <div className="border-base-200 space-y-3 border-t p-3">
+        {Object.entries(grouped).map(([action, items]) => {
+          const lookup = actionLabels[action as keyof typeof actionLabels];
+          const label = lookup?.label ?? "Otros";
+          const color = lookup?.color ?? "text-base-content/70";
+          return (
+            <div key={action}>
+              <h5 className={cn("mb-1.5 text-xs font-semibold tracking-wide uppercase", color)}>
+                {label} ({items.length})
+              </h5>
+              <div className="bg-base-200/50 max-h-40 space-y-1 overflow-y-auto rounded-lg p-2">
+                {items.slice(0, 50).map((item, idx) => (
+                  <div key={idx} className="border-base-300 flex items-start gap-2 border-b pb-1 text-xs last:border-0">
+                    <span className="text-base-content/70 flex-1 truncate" title={item.summary}>
+                      {item.summary || item.eventId || "Sin título"}
+                    </span>
+                    {item.fields && item.fields.length > 0 && (
+                      <span className="text-base-content/50 shrink-0 font-mono">[{item.fields.join(", ")}]</span>
+                    )}
+                  </div>
+                ))}
+                {items.length > 50 && (
+                  <p className="text-base-content/50 pt-1 text-center text-xs">...y {items.length - 50} más</p>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </details>
+  );
+};
+
 export default function SyncHistoryPage() {
   const [expandedId, setExpandedId] = useState<bigint | null>(null);
 
@@ -50,66 +116,6 @@ export default function SyncHistoryPage() {
       <span className="badge badge-warning gap-1 text-xs font-semibold">
         <Loader2 className="h-3 w-3 animate-spin" /> {status}
       </span>
-    );
-  };
-
-  const renderChangeDetails = (changeDetails: unknown) => {
-    if (!changeDetails) return null;
-
-    const details = changeDetails as ChangeDetail[];
-    if (!Array.isArray(details) || details.length === 0) {
-      return <p className="text-base-content/50 text-sm italic">No hay cambios detallados.</p>;
-    }
-
-    // Group by action
-    const grouped = details.reduce(
-      (acc, item) => {
-        const action = item.action || "unknown";
-        if (!acc[action]) acc[action] = [];
-        acc[action].push(item);
-        return acc;
-      },
-      {} as Record<string, ChangeDetail[]>
-    );
-
-    const actionLabels: Record<string, { label: string; color: string }> = {
-      created: { label: "Insertados", color: "text-success" },
-      updated: { label: "Modificados", color: "text-info" },
-      deleted: { label: "Eliminados", color: "text-error" },
-      skipped: { label: "Omitidos", color: "text-warning" },
-      unknown: { label: "Otros", color: "text-base-content/70" },
-    };
-
-    return (
-      <div className="space-y-3">
-        {Object.entries(grouped).map(([action, items]) => {
-          const lookup = actionLabels[action as keyof typeof actionLabels];
-          const label = lookup?.label ?? "Otros";
-          const color = lookup?.color ?? "text-base-content/70";
-          return (
-            <div key={action}>
-              <h5 className={cn("mb-1.5 text-xs font-semibold tracking-wide uppercase", color)}>
-                {label} ({items.length})
-              </h5>
-              <div className="bg-base-200/50 max-h-40 space-y-1 overflow-y-auto rounded-lg p-2">
-                {items.slice(0, 20).map((item, idx) => (
-                  <div key={idx} className="border-base-300 flex items-start gap-2 border-b pb-1 text-xs last:border-0">
-                    <span className="text-base-content/70 flex-1 truncate" title={item.summary}>
-                      {item.summary || item.eventId || "Sin título"}
-                    </span>
-                    {item.fields && item.fields.length > 0 && (
-                      <span className="text-base-content/50 shrink-0 font-mono">[{item.fields.join(", ")}]</span>
-                    )}
-                  </div>
-                ))}
-                {items.length > 20 && (
-                  <p className="text-base-content/50 pt-1 text-center text-xs">...y {items.length - 20} más</p>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
     );
   };
 
@@ -240,7 +246,7 @@ export default function SyncHistoryPage() {
                       {/* Change Details */}
                       <div>
                         <h4 className="mb-3 text-sm font-semibold">Detalle de Cambios</h4>
-                        {renderChangeDetails(log.changeDetails)}
+                        <ChangeDetailsViewer data={log.changeDetails} />
                       </div>
                     </div>
                   </div>

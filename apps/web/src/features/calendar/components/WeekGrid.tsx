@@ -2,6 +2,7 @@ import "./WeekGrid.css";
 
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
+import { useEffect, useState } from "react";
 
 import { currencyFormatter } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -217,10 +218,15 @@ export function WeekGrid({ events, weekStart, loading, onEventClick }: WeekGridP
     return parsed.isoWeekday(1);
   })();
 
-  // Calculate time bounds based ONLY on events in this week
+  // Calculate time bounds based based on events AND current time
   const { startHour, endHour } = (() => {
     // Filter events to only those in the displayed week (Mon-Sat)
     const weekEnd = monday.add(5, "day").endOf("day");
+
+    // Check if we need to include current time (if today is in range)
+    const now = dayjs();
+    const isTodayInView = now.isAfter(monday.startOf("day")) && now.isBefore(weekEnd);
+
     const weekEvents = events.filter((event) => {
       if (!event.startDateTime) return false;
       const eventDate = dayjs(event.startDateTime);
@@ -230,11 +236,24 @@ export function WeekGrid({ events, weekStart, loading, onEventClick }: WeekGridP
 
     // If no events in week, show reasonable default range
     if (weekEvents.length === 0) {
+      if (isTodayInView) {
+        // Show a window around current time if we have no events
+        return {
+          startHour: Math.max(0, now.hour() - 2),
+          endHour: Math.min(24, now.hour() + 4),
+        };
+      }
       return { startHour: 9, endHour: 18 };
     }
 
     let min = 23;
     let max = 0;
+
+    // Expand to show current time if today is in view
+    if (isTodayInView) {
+      min = Math.min(min, now.hour());
+      max = Math.max(max, now.hour() + 1);
+    }
 
     weekEvents.forEach((event) => {
       if (event.startDateTime) {
@@ -436,9 +455,18 @@ export function WeekGrid({ events, weekStart, loading, onEventClick }: WeekGridP
   );
 }
 
-// Current time indicator
+// Current time indicator - Live Updating
 function NowIndicator({ startHour, endHour }: { startHour: number; endHour: number }) {
-  const now = dayjs();
+  const [now, setNow] = useState(dayjs());
+
+  useEffect(() => {
+    // Initial update to sync
+    setNow(dayjs());
+    // Update every minute
+    const timer = setInterval(() => setNow(dayjs()), 60000);
+    return () => clearInterval(timer);
+  }, []);
+
   const currentMinutes = now.hour() * 60 + now.minute();
   const gridStartMinutes = startHour * 60;
   const gridEndMinutes = (endHour + 1) * 60;
@@ -449,7 +477,11 @@ function NowIndicator({ startHour, endHour }: { startHour: number; endHour: numb
   if (position < 0 || position > 100) return null;
 
   return (
-    <div className="week-grid__now-indicator" style={{ top: `${position}%` }}>
+    <div
+      className="week-grid__now-indicator"
+      style={{ top: `${position}%` }}
+      title={`Hora actual: ${now.format("HH:mm")}`}
+    >
       <div className="week-grid__now-dot" />
       <div className="week-grid__now-line" />
     </div>
