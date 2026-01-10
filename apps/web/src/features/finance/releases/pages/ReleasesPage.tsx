@@ -133,13 +133,16 @@ export default function ReleasesPage() {
         )}
 
         {/* Column Picker */}
-        <div className="dropdown dropdown-end">
-          <Button variant="ghost" size="sm" className="gap-1" onClick={() => setShowColumnPicker(!showColumnPicker)}>
+        <div className="relative">
+          <button type="button" className="btn btn-ghost btn-sm gap-1" onClick={() => setShowColumnPicker((v) => !v)}>
             <Columns3 className="h-4 w-4" />
             <span className="hidden sm:inline">Columnas</span>
-          </Button>
+          </button>
           {showColumnPicker && (
-            <div className="dropdown-content bg-base-100 border-base-200 z-50 mt-2 w-48 rounded-lg border p-2 shadow-lg">
+            <div
+              className="bg-base-100 border-base-200 absolute right-0 z-50 mt-2 w-48 rounded-lg border p-2 shadow-lg"
+              onMouseLeave={() => setShowColumnPicker(false)}
+            >
               {ALL_COLUMNS.map((col) => (
                 <label
                   key={col.key}
