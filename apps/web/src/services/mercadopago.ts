@@ -104,7 +104,14 @@ export const MPService = {
   ): Promise<MPReport[]> => {
     const MAX_DAYS = 60; // Safe margin below 62-day limit
     const start = new Date(beginDate);
-    const end = new Date(endDate);
+    let end = new Date(endDate);
+
+    // Cap end date to today (MP API doesn't accept future dates)
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    if (end > today) {
+      end = today;
+    }
 
     // Calculate chunks needed
     const chunks: { begin: Date; end: Date }[] = [];
