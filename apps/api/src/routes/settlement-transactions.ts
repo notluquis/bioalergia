@@ -66,10 +66,12 @@ app.get("/", async (c) => {
     ];
   }
 
-  // authDb already has PolicyPlugin applied
+  // Create user-bound client for policy enforcement
+  const userDb = authDb.$setAuth(user);
+
   const [total, data] = await Promise.all([
-    authDb.settlementTransaction.count({ where }),
-    authDb.settlementTransaction.findMany({
+    userDb.settlementTransaction.count({ where }),
+    userDb.settlementTransaction.findMany({
       where,
       orderBy: { transactionDate: "desc" },
       skip: offset,
@@ -112,7 +114,9 @@ app.get("/:id", async (c) => {
 
   const id = Number(c.req.param("id"));
 
-  const transaction = await authDb.settlementTransaction.findUnique({
+  // Create user-bound client for policy enforcement
+  const userDb = authDb.$setAuth(user);
+  const transaction = await userDb.settlementTransaction.findUnique({
     where: { id },
   });
 
