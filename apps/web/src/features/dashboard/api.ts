@@ -1,4 +1,4 @@
-import type { DbMovement } from "@/features/finance/transactions/types";
+import type { DbMovement } from "@/features/finance/types";
 import { apiClient } from "@/lib/apiClient";
 
 export type StatsResponse = {

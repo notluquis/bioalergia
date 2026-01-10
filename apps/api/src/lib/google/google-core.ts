@@ -27,7 +27,7 @@ let cachedOAuthClient: OAuth2Client | null = null;
 export function getGoogleCredentials(): { email: string; privateKey: string } {
   if (!googleCalendarConfig) {
     throw new Error(
-      "Google credentials not configured. Set GOOGLE_SERVICE_ACCOUNT_EMAIL and GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY.",
+      "Google credentials not configured. Set GOOGLE_SERVICE_ACCOUNT_EMAIL and GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY."
     );
   }
   return {
@@ -84,14 +84,14 @@ async function getOAuthClient(): Promise<OAuth2Client> {
   const config = getOAuthConfig();
   if (!config) {
     throw new Error(
-      "OAuth no configurado. Ejecuta 'npm run google:auth' para autorizar tu cuenta de Google Drive.",
+      "OAuth no configurado. Ejecuta 'npm run google:auth' para autorizar tu cuenta de Google Drive."
     );
   }
 
   const oauth2Client = new OAuth2Client(
     config.clientId,
     config.clientSecret,
-    "urn:ietf:wg:oauth:2.0:oob", // Desktop app redirect
+    "urn:ietf:wg:oauth:2.0:oob" // Desktop app redirect
   );
 
   oauth2Client.setCredentials({
@@ -106,7 +106,11 @@ async function getOAuthClient(): Promise<OAuth2Client> {
     });
   } catch (error) {
     const parsed = parseGoogleError(error);
-    logWarn("google.oauth.auth_failed", { error: parsed.message });
+    logWarn("google.oauth.auth_failed", {
+      error: parsed.message,
+      reason: parsed.reason,
+      code: parsed.code,
+    });
     throw new Error(`Error de autenticación OAuth: ${parsed.message}`);
   }
 
@@ -149,7 +153,7 @@ export async function getBackupFolderId(): Promise<string> {
   }
 
   throw new Error(
-    "GOOGLE_BACKUP_FOLDER_ID no configurado. Crea una carpeta en tu Drive y agrega el ID como variable de entorno.",
+    "GOOGLE_BACKUP_FOLDER_ID no configurado. Crea una carpeta en tu Drive y agrega el ID como variable de entorno."
   );
 }
 

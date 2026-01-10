@@ -1,0 +1,126 @@
+import { Hono } from "hono";
+import { enhance } from "@zenstackhq/runtime";
+import { z } from "zod";
+
+import { db } from "@finanzas/db";
+import { getSessionUser, hasPermission } from "../auth";
+
+const app = new Hono();
+
+// GET /api/release-transactions
+app.get("/", async (c) => {
+  const user = await getSessionUser(c);
+  if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+
+  const canRead = await hasPermission(user.id, "read", "Integration");
+  if (!canRead) return c.json({ status: "error", message: "Forbidden" }, 403);
+
+  const query = c.req.query();
+  const querySchema = z.object({
+    page: z.coerce.number().min(1).default(1),
+    pageSize: z.coerce.number().min(1).max(100).default(50),
+    from: z.string().optional(),
+    to: z.string().optional(),
+    paymentMethod: z.string().optional(),
+    search: z.string().optional(),
+  });
+
+  const parsed = querySchema.safeParse(query);
+
+  if (!parsed.success) {
+    return c.json({ status: "error", message: "Invalid params" }, 400);
+  }
+
+  const { page, pageSize, from, to, paymentMethod, search } = parsed.data;
+  const offset = (page - 1) * pageSize;
+
+  // Enhanced DB with ZenStack policies
+  // We pass the partial user object returned by getSessionUser which matches AuthSession
+  const enhancedDb = enhance(db, { user });
+
+  // Build where clause
+  const where: any = {};
+
+  if (from) {
+    where.date = { ...where.date, gte: new Date(from) };
+  }
+
+  if (to) {
+    where.date = { ...where.date, lte: new Date(to) };
+  }
+
+  if (paymentMethod) {
+    where.paymentMethod = paymentMethod;
+  }
+
+  if (search) {
+    const isNumeric = /^\d+$/.test(search);
+    where.OR = [
+      { externalReference: { contains: search, mode: "insensitive" } },
+      { sourceId: { contains: search, mode: "insensitive" } },
+      // If numeric, search in orderId too
+      ...(isNumeric ? [{ orderId: Number(search) }] : []),
+    ];
+  }
+
+  // Using enhancedDb ensures schema policies are applied automatically
+  const [total, data] = await Promise.all([
+    enhancedDb.releaseTransaction.count({ where }),
+    enhancedDb.releaseTransaction.findMany({
+      where,
+      orderBy: { date: "desc" },
+      skip: offset,
+      take: pageSize,
+      select: {
+        id: true,
+        sourceId: true,
+        date: true,
+        externalReference: true,
+        recordType: true,
+        description: true,
+        netCreditAmount: true,
+        netDebitAmount: true,
+        grossAmount: true,
+        sellerAmount: true,
+        paymentMethod: true,
+        currency: true,
+      },
+    }),
+  ]);
+
+  return c.json({
+    status: "ok",
+    data,
+    total,
+    page,
+    pageSize,
+    totalPages: Math.ceil(total / pageSize),
+  });
+});
+
+// GET /api/release-transactions/:id
+app.get("/:id", async (c) => {
+  const user = await getSessionUser(c);
+  if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+
+  const canRead = await hasPermission(user.id, "read", "Integration");
+  if (!canRead) return c.json({ status: "error", message: "Forbidden" }, 403);
+
+  const id = Number(c.req.param("id"));
+
+  const enhancedDb = enhance(db, { user });
+  const transaction = await enhancedDb.releaseTransaction.findUnique({
+    where: { id },
+  });
+
+  if (!transaction) {
+    return c.json(
+      { status: "error", message: "Transacción no encontrada" },
+      404
+    );
+  }
+
+  return c.json({ status: "ok", data: transaction });
+});
+
+export default app;

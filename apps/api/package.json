@@ -6,6 +6,7 @@
     "dev": "tsx watch src/index.ts",
     "build": "esbuild src/index.ts --bundle --platform=node --target=esnext --format=esm --outfile=dist/index.js --packages=external --sourcemap",
     "start": "tsx dist/index.js",
+    "google:auth": "tsx src/scripts/google-auth.ts",
     "type-check": "tsc --noEmit",
     "clean": "rm -rf dist"
   },
