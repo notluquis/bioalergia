@@ -54,7 +54,7 @@ export function mapRowToSettlementTransaction(
   row: any
 ): SettlementTransactionInput {
   return {
-    sourceId: row.SOURCE_ID || `unknown-${Date.now()}-${Math.random()}`, // Should be filtered out if empty but strict type needs string
+    sourceId: row.SOURCE_ID || "", // Empty = will be skipped as invalid
     transactionDate: parseDate(row.TRANSACTION_DATE),
     settlementDate: parseDate(row.SETTLEMENT_DATE),
     moneyReleaseDate: parseDate(row.MONEY_RELEASE_DATE),
@@ -118,7 +118,7 @@ export function mapRowToSettlementTransaction(
 // Mapper for Release Report
 export function mapRowToReleaseTransaction(row: any): ReleaseTransactionInput {
   return {
-    sourceId: row.SOURCE_ID || `unknown-${Date.now()}-${Math.random()}`,
+    sourceId: row.SOURCE_ID || "", // Empty = will be skipped as invalid
     date: parseDate(row.DATE),
     externalReference: row.EXTERNAL_REFERENCE || null,
     recordType: row.RECORD_TYPE || null,
