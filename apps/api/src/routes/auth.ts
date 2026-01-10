@@ -166,7 +166,7 @@ authRoutes.post("/login/mfa", async (c) => {
 
   // Verify MFA token
   const { verifyMfaToken } = await import("../services/mfa.js");
-  const isValid = verifyMfaToken(mfaToken, user.mfaSecret);
+  const isValid = await verifyMfaToken(mfaToken, user.mfaSecret);
 
   if (!isValid) {
     return reply(c, { status: "error", message: "C?digo incorrecto" }, 401);
@@ -304,7 +304,7 @@ authRoutes.post("/mfa/enable", async (c) => {
     }
 
     const { verifyMfaToken } = await import("../services/mfa.js");
-    const isValid = verifyMfaToken(body.token, user.mfaSecret);
+    const isValid = await verifyMfaToken(body.token, user.mfaSecret);
 
     if (!isValid) {
       return reply(c, { status: "error", message: "C?digo incorrecto" }, 400);
