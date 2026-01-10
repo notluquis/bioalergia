@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import { ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, Columns3, Search } from "lucide-react";
 import { useState } from "react";
 
 import Button from "@/components/ui/Button";
@@ -30,6 +30,20 @@ interface ListResponse {
   totalPages: number;
 }
 
+const ALL_COLUMNS = [
+  { key: "transactionDate", label: "Fecha Tx", default: true },
+  { key: "settlementDate", label: "Fecha Liq", default: true },
+  { key: "transactionType", label: "Tipo", default: true },
+  { key: "paymentMethod", label: "Método", default: true },
+  { key: "transactionAmount", label: "Monto", default: true },
+  { key: "feeAmount", label: "Comisión", default: true },
+  { key: "settlementNetAmount", label: "Neto", default: true },
+  { key: "externalReference", label: "Ref. Externa", default: false },
+  { key: "sellerAmount", label: "Monto Vendedor", default: false },
+] as const;
+
+type ColumnKey = (typeof ALL_COLUMNS)[number]["key"];
+
 async function fetchSettlements(page: number, pageSize: number, search?: string): Promise<ListResponse> {
   const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
   if (search) params.set("search", search);
@@ -53,6 +67,10 @@ export default function SettlementsPage() {
   const [pageSize] = useState(50);
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
+  const [showColumnPicker, setShowColumnPicker] = useState(false);
+  const [visibleColumns, setVisibleColumns] = useState<Set<ColumnKey>>(
+    new Set(ALL_COLUMNS.filter((c) => c.default).map((c) => c.key))
+  );
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["settlement-transactions", page, pageSize, search],
@@ -65,15 +83,24 @@ export default function SettlementsPage() {
     setPage(1);
   };
 
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Conciliaciones</h1>
-          <p className="text-base-content/60 text-sm">Transacciones de conciliación de MercadoPago</p>
-        </div>
+  const toggleColumn = (key: ColumnKey) => {
+    setVisibleColumns((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  };
 
+  const isVisible = (key: ColumnKey) => visibleColumns.has(key);
+
+  return (
+    <div className="space-y-4">
+      {/* Toolbar */}
+      <div className="flex flex-wrap items-center gap-3">
         {/* Search */}
         <form onSubmit={handleSearch} className="flex gap-2">
           <div className="relative">
@@ -83,26 +110,55 @@ export default function SettlementsPage() {
               placeholder="Buscar..."
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              className="input input-bordered w-full pl-10 sm:w-64"
+              className="input input-bordered input-sm w-full pl-10 sm:w-56"
             />
           </div>
-          <Button type="submit" variant="ghost">
+          <Button type="submit" variant="ghost" size="sm">
             Buscar
           </Button>
         </form>
-      </div>
 
-      {/* Stats */}
-      {data && (
-        <div className="bg-base-200/50 rounded-lg p-4 text-sm">
-          <span className="font-medium">{data.total.toLocaleString()}</span> transacciones total
-          {data.total > 0 && (
-            <span className="text-base-content/60 ml-2">
-              • Mostrando {(page - 1) * pageSize + 1} - {Math.min(page * pageSize, data.total)}
-            </span>
+        <div className="flex-1" />
+
+        {/* Stats inline */}
+        {data && (
+          <span className="text-base-content/60 text-sm">
+            <span className="text-base-content font-medium">{data.total.toLocaleString()}</span> transacciones
+            {data.total > 0 && (
+              <span className="hidden sm:inline">
+                {" "}
+                • {(page - 1) * pageSize + 1}-{Math.min(page * pageSize, data.total)}
+              </span>
+            )}
+          </span>
+        )}
+
+        {/* Column Picker */}
+        <div className="dropdown dropdown-end">
+          <Button variant="ghost" size="sm" className="gap-1" onClick={() => setShowColumnPicker(!showColumnPicker)}>
+            <Columns3 className="h-4 w-4" />
+            <span className="hidden sm:inline">Columnas</span>
+          </Button>
+          {showColumnPicker && (
+            <div className="dropdown-content bg-base-100 border-base-200 z-50 mt-2 w-48 rounded-lg border p-2 shadow-lg">
+              {ALL_COLUMNS.map((col) => (
+                <label
+                  key={col.key}
+                  className="hover:bg-base-200 flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-sm"
+                >
+                  <input
+                    type="checkbox"
+                    className="checkbox checkbox-sm"
+                    checked={isVisible(col.key)}
+                    onChange={() => toggleColumn(col.key)}
+                  />
+                  {col.label}
+                </label>
+              ))}
+            </div>
           )}
         </div>
-      )}
+      </div>
 
       {/* Table */}
       {isLoading ? (
@@ -117,42 +173,60 @@ export default function SettlementsPage() {
         </div>
       ) : (
         <div className="overflow-x-auto rounded-lg border">
-          <table className="table w-full">
+          <table className="table-sm table w-full">
             <thead className="bg-base-200/50">
               <tr>
-                <th>Fecha Tx</th>
-                <th>Fecha Liq</th>
-                <th>Tipo</th>
-                <th>Método</th>
-                <th className="text-right">Monto</th>
-                <th className="text-right">Comisión</th>
-                <th className="text-right">Neto</th>
-                <th>Ref. Externa</th>
+                {isVisible("transactionDate") && <th>Fecha Tx</th>}
+                {isVisible("settlementDate") && <th>Fecha Liq</th>}
+                {isVisible("transactionType") && <th>Tipo</th>}
+                {isVisible("paymentMethod") && <th>Método</th>}
+                {isVisible("transactionAmount") && <th className="text-right">Monto</th>}
+                {isVisible("feeAmount") && <th className="text-right">Comisión</th>}
+                {isVisible("settlementNetAmount") && <th className="text-right">Neto</th>}
+                {isVisible("sellerAmount") && <th className="text-right">Vendedor</th>}
+                {isVisible("externalReference") && <th>Ref. Externa</th>}
               </tr>
             </thead>
             <tbody>
               {data?.data.map((tx) => (
                 <tr key={tx.id} className="hover">
-                  <td className="text-sm whitespace-nowrap">{dayjs(tx.transactionDate).format("DD/MM/YY")}</td>
-                  <td className="text-sm whitespace-nowrap">
-                    {tx.settlementDate ? dayjs(tx.settlementDate).format("DD/MM/YY") : "-"}
-                  </td>
-                  <td>
-                    <span className="badge badge-outline badge-sm">{tx.transactionType || "-"}</span>
-                  </td>
-                  <td className="text-sm">{tx.paymentMethod || tx.paymentMethodType || "-"}</td>
-                  <td className="text-right font-medium">
-                    {formatAmount(tx.transactionAmount, tx.transactionCurrency)}
-                  </td>
-                  <td className="text-error text-right text-sm">
-                    {tx.feeAmount ? `-${formatAmount(Math.abs(tx.feeAmount), tx.transactionCurrency)}` : "-"}
-                  </td>
-                  <td className="text-success text-right font-medium">
-                    {formatAmount(tx.settlementNetAmount, tx.transactionCurrency)}
-                  </td>
-                  <td className="max-w-32 truncate font-mono text-xs" title={tx.externalReference || ""}>
-                    {tx.externalReference || "-"}
-                  </td>
+                  {isVisible("transactionDate") && (
+                    <td className="whitespace-nowrap">{dayjs(tx.transactionDate).format("DD/MM/YY")}</td>
+                  )}
+                  {isVisible("settlementDate") && (
+                    <td className="whitespace-nowrap">
+                      {tx.settlementDate ? dayjs(tx.settlementDate).format("DD/MM/YY") : "-"}
+                    </td>
+                  )}
+                  {isVisible("transactionType") && (
+                    <td>
+                      <span className="badge badge-outline badge-sm">{tx.transactionType || "-"}</span>
+                    </td>
+                  )}
+                  {isVisible("paymentMethod") && <td>{tx.paymentMethod || tx.paymentMethodType || "-"}</td>}
+                  {isVisible("transactionAmount") && (
+                    <td className="text-right font-medium">
+                      {formatAmount(tx.transactionAmount, tx.transactionCurrency)}
+                    </td>
+                  )}
+                  {isVisible("feeAmount") && (
+                    <td className="text-error text-right">
+                      {tx.feeAmount ? `-${formatAmount(Math.abs(tx.feeAmount), tx.transactionCurrency)}` : "-"}
+                    </td>
+                  )}
+                  {isVisible("settlementNetAmount") && (
+                    <td className="text-success text-right font-medium">
+                      {formatAmount(tx.settlementNetAmount, tx.transactionCurrency)}
+                    </td>
+                  )}
+                  {isVisible("sellerAmount") && (
+                    <td className="text-right">{formatAmount(tx.sellerAmount, tx.transactionCurrency)}</td>
+                  )}
+                  {isVisible("externalReference") && (
+                    <td className="max-w-32 truncate font-mono text-xs" title={tx.externalReference || ""}>
+                      {tx.externalReference || "-"}
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
