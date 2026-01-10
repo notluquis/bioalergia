@@ -57,14 +57,6 @@ export default function AccessSettingsPage() {
 
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div>
-        <h1 className="text-base-content text-2xl font-bold">Accesos y conexiones</h1>
-        <p className="text-base-content/60 text-sm">
-          Administra la seguridad de las cuentas de usuario con autenticación de múltiples factores y passkeys.
-        </p>
-      </div>
-
       {/* Security Overview Cards */}
       {isAdmin && users && (
         <div className="grid gap-4 md:grid-cols-3">

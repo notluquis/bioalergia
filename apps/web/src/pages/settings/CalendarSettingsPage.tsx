@@ -32,11 +32,6 @@ export default function CalendarSettingsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-base-content text-2xl font-bold">Configuración de calendario</h1>
-        <p className="text-base-content/60 text-sm">Gestiona la sincronización con Google Calendar.</p>
-      </div>
-
       <div className="surface-elevated space-y-6 rounded-2xl p-6">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">

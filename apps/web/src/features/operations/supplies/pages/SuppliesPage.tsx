@@ -13,9 +13,7 @@ export default function Supplies() {
   if (loading) return <div className="p-4">Cargando...</div>;
 
   return (
-    <div className="mx-auto max-w-7xl p-4">
-      <h1 className="mb-4 text-2xl font-bold">Solicitudes de Insumos</h1>
-
+    <div className="mx-auto max-w-7xl space-y-6">
       {canCreate && <SupplyRequestForm commonSupplies={commonSupplies} onSuccess={fetchData} />}
 
       <SupplyRequestsTable requests={requests} onStatusChange={canUpdate ? handleStatusChange : () => {}} />

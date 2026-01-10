@@ -261,14 +261,6 @@ export default function TimesheetAuditPage() {
 
   return (
     <section className="space-y-6">
-      {/* Header */}
-      <header>
-        <h1 className="text-primary text-2xl font-bold">Auditoría de horarios</h1>
-        <p className="text-base-content/70 mt-1 text-sm">
-          Detecta solapamientos de turnos entre empleados y analiza conflictos de programación
-        </p>
-      </header>
-
       {/* Step 1: Period Selection */}
       <div className="border-base-300 bg-base-100 rounded-2xl border p-6 shadow-sm">
         <div className="mb-4 flex items-center gap-3">
