@@ -44,7 +44,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         {toasts.map((toast) => (
           <div
             key={toast.id}
-            className={`surface-elevated pointer-events-auto w-full max-w-sm border-l-4 px-4 py-3 text-sm shadow-xl sm:w-80 ${
+            className={`surface-elevated pointer-events-auto w-full max-w-sm border-l-4 px-4 py-3 text-sm shadow-xl select-text sm:w-80 ${
               toast.variant === "success"
                 ? "border-success/70 text-success"
                 : toast.variant === "error"
@@ -53,7 +53,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             }`}
           >
             {toast.title && <p className="text-base-content font-semibold">{toast.title}</p>}
-            <p className="text-base-content/80 text-sm">{toast.message}</p>
+            <p className="text-base-content/80 cursor-text text-sm">{toast.message}</p>
           </div>
         ))}
       </div>

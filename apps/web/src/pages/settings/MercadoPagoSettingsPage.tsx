@@ -109,45 +109,38 @@ export default function MercadoPagoSettingsPage() {
 
   return (
     <div className={cn(PAGE_CONTAINER, "space-y-6")}>
-      {/* Header */}
-      {/* Header & Tabs Combined */}
-      <div className="flex flex-col justify-between gap-6 xl:flex-row xl:items-end">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Reportes de Mercado Pago</h1>
-          <p className="text-base-content/60 text-sm">Gestiona reportes de Liberación de Fondos y Conciliación</p>
-        </div>
-
-        {/* Tabs Moved Up */}
-        <div role="tablist" className="tabs tabs-boxed bg-base-200/50 order-3 self-start p-1 xl:order-2 xl:self-auto">
+      {/* Header: Tabs + Actions */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        {/* Tabs */}
+        <div role="tablist" className="tabs tabs-boxed bg-base-200/50 w-full p-1 sm:w-auto">
           <button
             role="tab"
             className={cn(
-              "tab h-9 px-4",
+              "tab h-9 flex-1 px-3 text-sm sm:flex-none sm:px-4",
               activeTab === "release" && "tab-active bg-base-100 text-base-content font-medium shadow-sm transition-all"
             )}
             onClick={() => setActiveTab("release")}
           >
-            Liberación de Fondos
+            Liberación
           </button>
           <button
             role="tab"
             className={cn(
-              "tab h-9 px-4",
+              "tab h-9 flex-1 px-3 text-sm sm:flex-none sm:px-4",
               activeTab === "settlement" &&
                 "tab-active bg-base-100 text-base-content font-medium shadow-sm transition-all"
             )}
             onClick={() => setActiveTab("settlement")}
           >
-            Conciliación (Settlement)
+            Conciliación
           </button>
         </div>
 
-        <div className="order-2 flex flex-wrap gap-3 xl:order-3">
-          <Button variant="primary" onClick={() => setIsGenerateModalOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Generar Reporte
-          </Button>
-        </div>
+        {/* Action Button */}
+        <Button variant="primary" size="sm" onClick={() => setIsGenerateModalOpen(true)} className="w-full sm:w-auto">
+          <Plus className="mr-2 h-4 w-4" />
+          Generar Reporte
+        </Button>
       </div>
 
       {/* Import Stats Panel */}
@@ -327,11 +320,10 @@ export default function MercadoPagoSettingsPage() {
                     )}
                     {visibleColumns.has("actions") && (
                       <td className="text-right">
-                        {/* Use button with click handler for manual download via mutation */}
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="btn-square opacity-0 transition-opacity group-hover:opacity-100"
+                          className="btn-square sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100"
                           onClick={(e) => report.file_name && handleDownload(e, report.file_name)}
                           disabled={downloadMutation.isPending}
                           title="Descargar"
@@ -345,7 +337,7 @@ export default function MercadoPagoSettingsPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="btn-square opacity-0 transition-opacity group-hover:opacity-100"
+                          className="btn-square sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100"
                           onClick={(e) => report.file_name && handleProcess(e, report.file_name)}
                           disabled={processMutation.isPending}
                           title="Sincronizar a BD"
