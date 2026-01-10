@@ -44,16 +44,21 @@ const ERROR_MESSAGES: Record<number, Record<string, string> | string> = {
   400: {
     badRequest: "Solicitud inválida",
     invalidSharingRequest: "No se puede compartir con esta cuenta",
+    invalid_grant:
+      "Token de actualización inválido o expirado. Ejecuta 'npm run google:auth' nuevamente.",
     default: "Error en la solicitud",
   },
   401: "Autenticación fallida. Por favor, re-autoriza la cuenta de Google.",
   403: {
     storageQuotaExceeded: "Cuota de almacenamiento de Google Drive excedida",
-    userRateLimitExceeded: "Límite de solicitudes excedido. Intenta en unos minutos.",
-    rateLimitExceeded: "Límite de solicitudes excedido. Intenta en unos minutos.",
+    userRateLimitExceeded:
+      "Límite de solicitudes excedido. Intenta en unos minutos.",
+    rateLimitExceeded:
+      "Límite de solicitudes excedido. Intenta en unos minutos.",
     forbidden: "Sin permisos para esta acción",
     insufficientFilePermissions: "Sin permisos para acceder a este archivo",
-    sharingRateLimitExceeded: "Demasiadas operaciones de compartir. Espera un momento.",
+    sharingRateLimitExceeded:
+      "Demasiadas operaciones de compartir. Espera un momento.",
     // Service account specific error
     default: "Sin permisos o cuota insuficiente",
   },
@@ -84,7 +89,8 @@ function extractGaxiosDetails(error: GaxiosError): {
   const firstError = data?.error?.errors?.[0];
   const reason = firstError?.reason ?? "unknown";
   const domain = firstError?.domain ?? "global";
-  const rawMessage = firstError?.message ?? data?.error?.message ?? error.message;
+  const rawMessage =
+    firstError?.message ?? data?.error?.message ?? error.message;
 
   return { code: Number(code), reason, domain, rawMessage };
 }
@@ -92,7 +98,11 @@ function extractGaxiosDetails(error: GaxiosError): {
 /**
  * Gets a human-readable message for the error.
  */
-function getHumanMessage(code: number, reason: string, rawMessage: string): string {
+function getHumanMessage(
+  code: number,
+  reason: string,
+  rawMessage: string
+): string {
   const codeMessages = ERROR_MESSAGES[code];
 
   if (typeof codeMessages === "string") {

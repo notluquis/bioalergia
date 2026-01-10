@@ -32,6 +32,8 @@ import serviceScheduleRoutes from "./routes/service-schedules";
 import timesheetRoutes from "./routes/timesheets";
 import peopleRoutes from "./routes/people";
 import expenseRoutes from "./routes/expenses";
+import releaseTransactionRoutes from "./routes/release-transactions";
+import settlementTransactionRoutes from "./routes/settlement-transactions";
 import { readFile } from "fs/promises";
 import { join } from "path";
 
@@ -128,6 +130,8 @@ app.route("/api/inventory", inventoryRoutes);
 app.route("/api/supplies", suppliesRoutes);
 app.route("/api/loans", loanRoutes);
 app.route("/api/transactions", transactionRoutes);
+app.route("/api/release-transactions", releaseTransactionRoutes);
+app.route("/api/settlement-transactions", settlementTransactionRoutes);
 app.route("/api/balances", balanceRoutes);
 app.route("/api/daily-production-balances", dailyProductionRoutes);
 app.route("/api/counterparts", counterpartRoutes);

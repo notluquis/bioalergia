@@ -3,8 +3,8 @@ import dayjs from "dayjs";
 import { createContext, type ReactNode, useContext, useEffect, useRef, useState } from "react";
 
 import { useAuth } from "@/context/AuthContext";
-import { fetchTransactions } from "@/features/finance/transactions/api";
-import type { Transaction } from "@/features/finance/transactions/types";
+import { fetchTransactions } from "@/features/finance/api";
+import type { Transaction } from "@/features/finance/types";
 import { today } from "@/lib/dates";
 import { logger } from "@/lib/logger";
 

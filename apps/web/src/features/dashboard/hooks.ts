@@ -1,6 +1,6 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
-import type { DbMovement } from "@/features/finance/transactions/types";
+import type { DbMovement } from "@/features/finance/types";
 import { queryKeys } from "@/lib/queryKeys";
 
 import { fetchRecentMovements, fetchStats, type StatsResponse } from "./api";

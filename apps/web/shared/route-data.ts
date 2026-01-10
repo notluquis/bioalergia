@@ -134,24 +134,19 @@ export const ROUTE_DATA: RouteData[] = [
     path: "finanzas",
     title: "Finanzas",
     children: [
-      { index: true, redirectTo: "/finanzas/movements" },
-      {
-        nav: { label: "Movimientos", iconKey: "PiggyBank", section: "Finanzas", order: 1 },
-        permission: { action: "read", subject: "TransactionList" },
-        title: "Movimientos registrados",
-      },
+      { index: true, redirectTo: "/finanzas/conciliaciones" },
       {
         path: "conciliaciones",
-        componentPath: "features/finance/mercadopago/pages/SettlementTransactionsPage",
+        componentPath: "features/finance/settlements/pages/SettlementsPage",
         nav: { label: "Conciliaciones", iconKey: "ListChecks", section: "Finanzas", order: 2 },
-        permission: { action: "read", subject: "SettlementTransaction" },
+        permission: { action: "read", subject: "Integration" },
         title: "Conciliaciones (MP)",
       },
       {
         path: "liberaciones",
-        componentPath: "features/finance/mercadopago/pages/ReleaseTransactionsPage",
+        componentPath: "features/finance/releases/pages/ReleasesPage",
         nav: { label: "Liberaciones", iconKey: "Wallet", section: "Finanzas", order: 3 },
-        permission: { action: "read", subject: "ReleaseTransaction" },
+        permission: { action: "read", subject: "Integration" },
         title: "Liberaciones (MP)",
       },
       {

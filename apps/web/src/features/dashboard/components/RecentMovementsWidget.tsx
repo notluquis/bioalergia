@@ -1,7 +1,7 @@
 import dayjs from "dayjs";
 import { Link } from "react-router-dom";
 
-import type { Transaction } from "@/features/finance/transactions/types";
+import type { Transaction } from "@/features/finance/types";
 import { fmtCLP } from "@/lib/format";
 
 export default function RecentMovementsWidget({ rows }: { rows: Transaction[] }) {
