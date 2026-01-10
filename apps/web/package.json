@@ -38,6 +38,7 @@
     "@radix-ui/react-tooltip": "^1.2.8",
     "@simplewebauthn/browser": "^13.2.2",
     "@tanstack/react-query": "^5.90.16",
+    "@tanstack/react-table": "^8.21.3",
     "@zenstackhq/tanstack-query": "^3.2.0",
     "clsx": "^2.1.1",
     "dayjs": "^1.11.19",
