@@ -220,6 +220,7 @@ const MAINTENANCE_PATTERNS = [
   /\bmantencio\b/i, // typo: missing final 'n'
   /\bmant\b/i, // abbreviated
   /\bmensual\b/i, // monthly
+  /\bvacuna\s+mensual\s+clustoid\b/i, // "vacuna mensual clustoid" = maintenance
   // NOTE: Removed "dosis clustoid" - it conflicts with "2da dosis clustoid" which is induction
   /\(\s*50\s*\)/i, // (50) - parenthesized 50 indicates maintenance dose
   /\b50\s*(?:$|\))/i, // "50" at end of text or before closing paren
@@ -281,7 +282,7 @@ export function isIgnoredEvent(summary: string | null | undefined): boolean {
 
 /** Normalize event date to ISO string */
 export function normalizeEventDate(
-  value: string | null | undefined,
+  value: string | null | undefined
 ): string | null {
   if (!value) return null;
   try {
@@ -423,7 +424,7 @@ function extractAmounts(summary: string, description: string) {
 function refineAmounts(
   amounts: { amountExpected: number | null; amountPaid: number | null },
   summary: string,
-  description: string,
+  description: string
 ) {
   const text = `${summary} ${description}`;
   const isConfirmed = matchesAny(text, MONEY_CONFIRMED_PATTERNS);
@@ -484,7 +485,7 @@ function classifyCategory(summary: string, description: string): string | null {
 
 function detectAttendance(
   summary: string,
-  description: string,
+  description: string
 ): boolean | null {
   const text = `${summary} ${description}`;
   return matchesAny(text, ATTENDED_PATTERNS) ? true : null;
@@ -535,7 +536,7 @@ function extractDosage(summary: string, description: string): string | null {
 
 function detectTreatmentStage(
   summary: string,
-  description: string,
+  description: string
 ): string | null {
   const text = `${summary} ${description}`;
 
@@ -575,12 +576,16 @@ export function parseCalendarMetadata(input: {
   // Logic: Dosage and Treatment Stage only apply to "Tratamiento subcutáneo"
   const isSubcut = category === "Tratamiento subcutáneo";
 
-  // Determine treatment stage based on dosage value if available
+  // Determine treatment stage:
+  // 1. Pattern-based detection takes priority (e.g., "3era dosis" = Inducción even if 0.5ml)
+  // 2. Only use ml-based inference as fallback when no explicit pattern matched
   let finalTreatmentStage = isSubcut ? treatmentStage : null;
-  if (isSubcut && dosage) {
+  if (isSubcut && dosage && treatmentStage === null) {
+    // Only apply ml-based rule if no explicit pattern matched
     const dosageValue = parseDosageToMl(dosage);
     if (dosageValue !== null) {
       // Business rule: < 0.5 ml = Inducción, >= 0.5 ml = Mantención
+      // This is a FALLBACK only - explicit patterns like "3era dosis" override this
       finalTreatmentStage = dosageValue < 0.5 ? "Inducción" : "Mantención";
     }
   }
