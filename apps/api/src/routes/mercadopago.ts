@@ -213,11 +213,14 @@ mercadopagoRoutes.post("/process-report", async (c) => {
       `[MP Process] Manual processing triggered for ${fileName} (${reportType}) by ${auth.email}`
     );
 
-    await MercadoPagoService.processReport(reportType, { fileName });
+    const stats = await MercadoPagoService.processReport(reportType, {
+      fileName,
+    });
 
     return c.json({
       status: "success",
       message: "Reporte procesado exitosamente",
+      stats,
     });
   } catch (e) {
     console.error(`[MP Process] Failed to process ${fileName}:`, e);

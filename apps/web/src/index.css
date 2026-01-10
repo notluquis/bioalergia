@@ -173,6 +173,14 @@ h6 {
 
 html {
   scroll-behavior: smooth;
+  /* iOS 26 PWA Safe Area Fix (2026 Community Standard)
+     This "min-height hack" expands the document to compensate for safe-area-inset-top
+     when iOS reports 0px incorrectly in standalone PWA mode.
+     Uses only env() - no hardcoded fallbacks. */
+  min-height: calc(100% + env(safe-area-inset-top));
+  padding-top: env(safe-area-inset-top);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
 }
 
 /* ============================================
