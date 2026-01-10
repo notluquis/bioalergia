@@ -37,6 +37,7 @@ import releaseTransactionRoutes from "./routes/release-transactions";
 import settlementTransactionRoutes from "./routes/settlement-transactions";
 import { readFile } from "fs/promises";
 import { join } from "path";
+import { integrationRoutes } from "./routes/integrations";
 
 const app = new Hono();
 
@@ -145,6 +146,7 @@ app.route("/api/services/schedules", serviceScheduleRoutes);
 app.route("/api/timesheets", timesheetRoutes);
 app.route("/api/people", peopleRoutes);
 app.route("/api/expenses", expenseRoutes);
+app.route("/api/integrations", integrationRoutes);
 
 // ZenStack Query-as-a-Service (auto CRUD for all models)
 // Frontend uses /api/model/* (via QuerySettingsProvider in main.tsx)
