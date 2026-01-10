@@ -158,7 +158,7 @@ export default function App() {
         <Sidebar isOpen={sidebarOpen} isMobile={isMobile} onClose={closeSidebar} />
 
         {/* Main content */}
-        <div className="layout-container flex min-w-0 flex-1 flex-col gap-3 pb-[calc(110px+env(safe-area-inset-bottom))] md:pb-0">
+        <div className="layout-container flex min-w-0 flex-1 flex-col gap-3 pt-[env(safe-area-inset-top)] pb-[calc(110px+env(safe-area-inset-bottom))] md:pt-0 md:pb-0">
           <Header />
 
           <main className="flex-1 overflow-hidden rounded-3xl transition-all duration-300">

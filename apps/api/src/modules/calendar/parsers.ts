@@ -150,7 +150,11 @@ const CONSULTA_PATTERNS = [
  * - retira roxair: "RETIRA ROXAIR (pagado): Alondra valenzuela"
  * - enviar roxair: "enviar roxair a Santino (pagado)"
  */
-const ROXAIR_PATTERNS = [/\broxair\b/i, /\bretira\s+roxair\b/i, /\benviar\s+roxair\b/i];
+const ROXAIR_PATTERNS = [
+  /\broxair\b/i,
+  /\bretira\s+roxair\b/i,
+  /\benviar\s+roxair\b/i,
+];
 
 /** Patterns for "Servicio de inyección" (Patient brings med or specific injection service) */
 const INJECTION_PATTERNS = [
@@ -194,7 +198,13 @@ export const IGNORE_PATTERNS = [
 ];
 
 /** Patterns for attendance confirmation */
-const ATTENDED_PATTERNS = [/\bllego\b/i, /\basist[ií]o\b/i];
+const ATTENDED_PATTERNS = [
+  /\blleg[oó]\b/i,
+  /\basist[ií]o\b/i,
+  /\blleg[oó]acuna\b/i, // Typo: "llego vacuna"
+  /\blisto\b/i,
+  /\bse\s+llev[oó]\b/i,
+];
 
 /** Patterns for induction stage (1st-5th dose) */
 const INDUCTION_PATTERNS = [
@@ -223,13 +233,25 @@ const MAINTENANCE_PATTERNS = [
 ];
 
 /** Patterns for dosage extraction */
-const DOSAGE_PATTERNS = [/(\d+(?:[.,]\d+)?)\s*ml\b/i, /(\d+(?:[.,]\d+)?)\s*cc\b/i, /(\d+(?:[.,]\d+)?)\s*mg\b/i];
+const DOSAGE_PATTERNS = [
+  /(\d+(?:[.,]\d+)?)\s*ml\b/i,
+  /(\d+(?:[.,]\d+)?)\s*cc\b/i,
+  /(\d+(?:[.,]\d+)?)\s*mg\b/i,
+];
 
 /** Pattern for S/C (sin costo) */
 const SIN_COSTO_PATTERN = /\bs\/?c\b|sincosto|sin\s*costo/i;
 
 /** Patterns for money confirmation (paid) */
-const MONEY_CONFIRMED_PATTERNS = [/\blleg[oó]\b/i, /\benv[ií][oó]\b/i, /\btransferencia\b/i, /\bpagado\b/i];
+const MONEY_CONFIRMED_PATTERNS = [
+  /\blleg[oó]\b/i,
+  /\benv[ií][oó]\b/i,
+  /\btransferencia\b/i,
+  /\bpagado\b/i,
+  /\blleg[oó]acuna\b/i,
+  /\blisto\b/i,
+  /\bse\s+llev[oó]\b/i,
+];
 
 /** Phone number patterns to exclude from amount parsing */
 const PHONE_PATTERNS = [
@@ -267,7 +289,9 @@ export function isIgnoredEvent(summary: string | null | undefined): boolean {
 }
 
 /** Normalize event date to ISO string */
-export function normalizeEventDate(value: string | null | undefined): string | null {
+export function normalizeEventDate(
+  value: string | null | undefined
+): string | null {
   if (!value) return null;
   try {
     return dayjs(value).toISOString();
@@ -364,7 +388,8 @@ function extractAmounts(summary: string, description: string) {
   // 3.5. Keyword followed by amount (e.g. "clustoid 50", "cluxin 30")
   if (amountExpected == null) {
     // Note: this must match the robust SUBCUT_PATTERNS to catch typos like "clusitoid"
-    const keywordPattern = /(?:cl[au]s[i]?t[oau]?id[eo]?|cluxin|alxoid|oral[-\s]?tec|vacuna)\s+(\d{2,3})\b/gi;
+    const keywordPattern =
+      /(?:cl[au]s[i]?t[oau]?id[eo]?|cluxin|alxoid|oral[-\s]?tec|vacuna)\s+(\d{2,3})\b/gi;
     let kwMatch: RegExpExecArray | null;
     while ((kwMatch = keywordPattern.exec(text)) !== null) {
       const amount = normalizeAmountRaw(kwMatch[1]);
@@ -413,7 +438,11 @@ function refineAmounts(
   const isConfirmed = matchesAny(text, MONEY_CONFIRMED_PATTERNS);
 
   // If confirmed (llegó, envio, etc.) and only expected is set, assume paid
-  if (isConfirmed && amounts.amountExpected != null && amounts.amountPaid == null) {
+  if (
+    isConfirmed &&
+    amounts.amountExpected != null &&
+    amounts.amountPaid == null
+  ) {
     return { ...amounts, amountPaid: amounts.amountExpected };
   }
 
@@ -462,7 +491,10 @@ function classifyCategory(summary: string, description: string): string | null {
 // ATTENDANCE, DOSAGE, TREATMENT STAGE
 // ============================================================================
 
-function detectAttendance(summary: string, description: string): boolean | null {
+function detectAttendance(
+  summary: string,
+  description: string
+): boolean | null {
   const text = `${summary} ${description}`;
   return matchesAny(text, ATTENDED_PATTERNS) ? true : null;
 }
@@ -510,7 +542,10 @@ function extractDosage(summary: string, description: string): string | null {
   return null;
 }
 
-function detectTreatmentStage(summary: string, description: string): string | null {
+function detectTreatmentStage(
+  summary: string,
+  description: string
+): string | null {
   const text = `${summary} ${description}`;
 
   // Induction takes priority (e.g. "2da dosis clustoid" is Induction, even if "dosis clustoid" looks like maintenance)
@@ -519,7 +554,10 @@ function detectTreatmentStage(summary: string, description: string): string | nu
   }
 
   // Maintenance keywords or 0.5 (with or without ml) = Mantención
-  if (matchesAny(text, MAINTENANCE_PATTERNS) || /0[.,]5(\s*ml)?\b/i.test(text)) {
+  if (
+    matchesAny(text, MAINTENANCE_PATTERNS) ||
+    /0[.,]5(\s*ml)?\b/i.test(text)
+  ) {
     return "Mantención";
   }
 
