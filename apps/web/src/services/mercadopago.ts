@@ -91,6 +91,56 @@ export const MPService = {
     const data: ProcessReportResponse = await res.json();
     return data.stats;
   },
+
+  /**
+   * Create multiple reports if date range exceeds 60 days (MP limit is 62)
+   * Returns array of created reports and calls onProgress for each
+   */
+  createReportBulk: async (
+    beginDate: string,
+    endDate: string,
+    type: MpReportType,
+    onProgress?: (current: number, total: number) => void
+  ): Promise<MPReport[]> => {
+    const MAX_DAYS = 60; // Safe margin below 62-day limit
+    const start = new Date(beginDate);
+    const end = new Date(endDate);
+
+    // Calculate chunks needed
+    const chunks: { begin: Date; end: Date }[] = [];
+    let chunkStart = new Date(start);
+
+    while (chunkStart < end) {
+      const chunkEnd = new Date(chunkStart);
+      chunkEnd.setDate(chunkEnd.getDate() + MAX_DAYS);
+
+      // Don't exceed the end date
+      const actualEnd = chunkEnd > end ? end : chunkEnd;
+
+      chunks.push({ begin: new Date(chunkStart), end: actualEnd });
+
+      // Next chunk starts the day after this chunk ends
+      chunkStart = new Date(actualEnd);
+      chunkStart.setDate(chunkStart.getDate() + 1);
+    }
+
+    const reports: MPReport[] = [];
+
+    let index = 0;
+    for (const chunk of chunks) {
+      index++;
+      onProgress?.(index, chunks.length);
+
+      // Format dates as YYYY-MM-DD for the API
+      const beginStr = chunk.begin.toISOString().split("T")[0]!;
+      const endStr = chunk.end.toISOString().split("T")[0]!;
+
+      const report = await MPService.createReport(beginStr, endStr, type);
+      reports.push(report);
+    }
+
+    return reports;
+  },
 };
 
 export type { MpReportType };
