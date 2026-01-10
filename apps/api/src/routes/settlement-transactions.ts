@@ -1,8 +1,7 @@
 import { Hono } from "hono";
-import { enhance } from "@zenstackhq/orm";
 import { z } from "zod";
 
-import { db } from "@finanzas/db";
+import { authDb } from "@finanzas/db";
 import { getSessionUser, hasPermission } from "../auth";
 
 const app = new Hono();
@@ -36,9 +35,6 @@ app.get("/", async (c) => {
     parsed.data;
   const offset = (page - 1) * pageSize;
 
-  // Enhanced DB with ZenStack policies
-  const enhancedDb = enhance(db, { user });
-
   // Build where clause
   const where: any = {};
 
@@ -70,10 +66,10 @@ app.get("/", async (c) => {
     ];
   }
 
-  // Using enhancedDb ensures schema policies are applied automatically
+  // authDb already has PolicyPlugin applied
   const [total, data] = await Promise.all([
-    enhancedDb.settlementTransaction.count({ where }),
-    enhancedDb.settlementTransaction.findMany({
+    authDb.settlementTransaction.count({ where }),
+    authDb.settlementTransaction.findMany({
       where,
       orderBy: { transactionDate: "desc" },
       skip: offset,
@@ -116,8 +112,7 @@ app.get("/:id", async (c) => {
 
   const id = Number(c.req.param("id"));
 
-  const enhancedDb = enhance(db, { user });
-  const transaction = await enhancedDb.settlementTransaction.findUnique({
+  const transaction = await authDb.settlementTransaction.findUnique({
     where: { id },
   });
 
