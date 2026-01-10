@@ -25,6 +25,7 @@ import { useState } from "react";
 
 import Button from "@/components/ui/Button";
 import { useToast } from "@/context/ToastContext";
+import { apiClient } from "@/lib/apiClient";
 import { cn } from "@/lib/utils";
 
 // ==================== TYPES ====================
@@ -148,9 +149,7 @@ export default function AuditChangesPanel() {
 
   const revertMutation = useMutation({
     mutationFn: async (changeId: string) => {
-      const res = await fetch(`/api/audit/revert/${changeId}`, { method: "POST" });
-      if (!res.ok) throw new Error("Failed to revert change");
-      return res.json();
+      return await apiClient.post<{ success: boolean; message: string }>(`/api/audit/revert/${changeId}`, {});
     },
     onSuccess: (data) => {
       if (data.success) {
@@ -165,9 +164,7 @@ export default function AuditChangesPanel() {
 
   const exportMutation = useMutation({
     mutationFn: async () => {
-      const res = await fetch("/api/audit/export", { method: "POST" });
-      if (!res.ok) throw new Error("Failed to export");
-      return res.json();
+      return await apiClient.post<{ success: boolean; message: string }>("/api/audit/export", {});
     },
     onSuccess: (data) => {
       if (data.success) {

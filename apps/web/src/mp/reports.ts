@@ -1,3 +1,4 @@
+import ky from "ky";
 import { z } from "zod";
 
 import { detectDelimiter, stripBom } from "../../shared/csv";
@@ -10,26 +11,24 @@ export async function createReleasedMoneyReport(
   beginDateISO: string, // e.g., "2025-09-01T00:00:00Z"
   endDateISO: string // e.g., "2025-09-19T23:59:59Z"
 ) {
-  const res = await fetch("https://api.mercadopago.com/v1/account/release_report", {
-    method: "POST",
+  const res = await ky.post("https://api.mercadopago.com/v1/account/release_report", {
     headers: {
       Authorization: `Bearer ${accessToken}`,
       "Content-Type": "application/json; charset=utf-8",
     },
-    body: JSON.stringify({ begin_date: beginDateISO, end_date: endDateISO }),
+    json: { begin_date: beginDateISO, end_date: endDateISO },
   });
-  if (!res.ok) throw new Error(`Release report create failed: ${res.status}`);
+  // Ky throws on non-2xx by default
   const schema = z.object({ file_name: z.string(), url: z.string() });
   const data = schema.parse(await res.json());
   return data; // devuelve metadata del archivo a generar
 }
 
 export async function downloadReportFile(fileUrl: string, accessToken: string) {
-  const res = await fetch(fileUrl, {
+  const res = await ky.get(fileUrl, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
-  if (!res.ok) throw new Error(`Download failed: ${res.status}`);
-  return await res.text(); // CSV/TSV/pipe según config
+  return await res.text();
 }
 
 export function parseDelimited(text: string): MPReportRow[] {

@@ -9,7 +9,6 @@
   },
   "overrides": {
     "hono": "^4.10.3",
-    "valibot": "^1.1.1",
     "jspdf": "$jspdf"
   },
   "scripts": {
@@ -46,6 +45,7 @@
     "i18next": "^25.7.4",
     "jspdf": "^4.0.0",
     "jspdf-autotable": "^5.0.7",
+    "ky": "^1.14.2",
     "lucide-react": "^0.562.0",
     "papaparse": "^5.5.3",
     "react": "^19.2.3",

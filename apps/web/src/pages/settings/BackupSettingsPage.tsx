@@ -26,6 +26,7 @@ import AuditChangesPanel from "@/components/backup/AuditChangesPanel";
 import Button from "@/components/ui/Button";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
+import { apiClient } from "@/lib/apiClient";
 import { formatFileSize } from "@/lib/format";
 import { PAGE_CONTAINER } from "@/lib/styles";
 import { cn } from "@/lib/utils";
@@ -76,40 +77,35 @@ interface RestoreJob {
 // ==================== API ====================
 
 const fetchBackups = async (): Promise<BackupFile[]> => {
-  const res = await fetch("/api/backups");
-  if (!res.ok) throw new Error("Failed to fetch backups");
-  return (await res.json()).backups;
+  const data = await apiClient.get<{ backups: BackupFile[] }>("/api/backups");
+  return data.backups;
 };
 
 const fetchTables = async (fileId: string): Promise<string[]> => {
-  const res = await fetch(`/api/backups/${fileId}/tables`);
-  if (!res.ok) throw new Error("Failed to fetch tables");
-  return (await res.json()).tables;
+  const data = await apiClient.get<{ tables: string[] }>(`/api/backups/${fileId}/tables`);
+  return data.tables;
 };
 
 const fetchTablesWithChanges = async (since?: string): Promise<string[]> => {
   const url = since
     ? `/api/audit/tables-with-changes?since=${encodeURIComponent(since)}`
     : "/api/audit/tables-with-changes";
-  const res = await fetch(url);
-  if (!res.ok) return [];
-  return (await res.json()).tables;
+  try {
+    const data = await apiClient.get<{ tables: string[] }>(url);
+    return data.tables;
+  } catch {
+    return [];
+  }
 };
 
 const triggerBackup = async (): Promise<{ job: BackupJob }> => {
-  const res = await fetch("/api/backups", { method: "POST" });
-  if (!res.ok) throw new Error("Failed to start backup");
-  return res.json();
+  const job = await apiClient.post<BackupJob>("/api/backups", {});
+  return { job };
 };
 
 const triggerRestore = async (fileId: string, tables?: string[]): Promise<{ job: RestoreJob }> => {
-  const res = await fetch(`/api/backups/${fileId}/restore`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ tables }),
-  });
-  if (!res.ok) throw new Error("Failed to start restore");
-  return res.json();
+  const job = await apiClient.post<RestoreJob>(`/api/backups/${fileId}/restore`, { tables });
+  return { job };
 };
 
 // ==================== MAIN COMPONENT ====================

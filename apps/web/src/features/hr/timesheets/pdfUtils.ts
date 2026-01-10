@@ -1,5 +1,6 @@
 import { formatRetentionPercent } from "@shared/retention";
 import dayjs from "dayjs";
+import ky from "ky";
 
 import type { Employee } from "@/features/hr/employees/types";
 
@@ -24,8 +25,7 @@ export async function generateTimesheetPdfBase64(
 
     // Try to load and add logo
     try {
-      const logoResponse = await fetch("/logo_sin_eslogan.png");
-      const logoBlob = await logoResponse.blob();
+      const logoBlob = await ky.get("/logo_sin_eslogan.png").blob();
       const logoBase64 = await new Promise<string>((resolve) => {
         const reader = new FileReader();
         reader.onload = () => resolve(reader.result as string);
