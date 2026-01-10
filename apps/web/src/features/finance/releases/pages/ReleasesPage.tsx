@@ -16,8 +16,27 @@ interface ReleaseTransaction {
   netDebitAmount: number | null;
   grossAmount: number | null;
   sellerAmount: number | null;
+  mpFeeAmount: number | null;
+  financingFeeAmount: number | null;
+  shippingFeeAmount: number | null;
+  taxesAmount: number | null;
+  couponAmount: number | null;
+  effectiveCouponAmount: number | null;
+  balanceAmount: number | null;
+  taxAmountTelco: number | null;
+  installments: number | null;
   paymentMethod: string | null;
+  paymentMethodType: string | null;
+  taxDetail: string | null;
+  taxesDisaggregated: unknown;
+  posId: string | null;
+  posName: string | null;
+  storeId: string | null;
+  storeName: string | null;
+  orderId: number | null;
   currency: string | null;
+  shippingId: number | null;
+  shipmentMode: string | null;
 }
 
 interface ListResponse {
@@ -30,15 +49,28 @@ interface ListResponse {
 }
 
 const ALL_COLUMNS = [
-  { key: "date", label: "Fecha", default: true },
-  { key: "recordType", label: "Tipo", default: true },
-  { key: "description", label: "Descripción", default: true },
-  { key: "paymentMethod", label: "Método", default: true },
-  { key: "netCreditAmount", label: "Crédito", default: true },
-  { key: "netDebitAmount", label: "Débito", default: true },
-  { key: "grossAmount", label: "Bruto", default: false },
-  { key: "sellerAmount", label: "Vendedor", default: false },
-  { key: "externalReference", label: "Ref. Externa", default: false },
+  { key: "sourceId", label: "ID Origen" },
+  { key: "date", label: "Fecha" },
+  { key: "recordType", label: "Tipo" },
+  { key: "description", label: "Descripción" },
+  { key: "paymentMethod", label: "Método" },
+  { key: "paymentMethodType", label: "Tipo Método" },
+  { key: "netCreditAmount", label: "Crédito" },
+  { key: "netDebitAmount", label: "Débito" },
+  { key: "grossAmount", label: "Bruto" },
+  { key: "sellerAmount", label: "Vendedor" },
+  { key: "mpFeeAmount", label: "Comisión MP" },
+  { key: "financingFeeAmount", label: "Costo Fin." },
+  { key: "shippingFeeAmount", label: "Costo Envío" },
+  { key: "taxesAmount", label: "Impuestos" },
+  { key: "couponAmount", label: "Cupón" },
+  { key: "balanceAmount", label: "Balance" },
+  { key: "installments", label: "Cuotas" },
+  { key: "posName", label: "POS" },
+  { key: "storeName", label: "Tienda" },
+  { key: "externalReference", label: "Ref. Externa" },
+  { key: "orderId", label: "ID Orden" },
+  { key: "shippingId", label: "ID Envío" },
 ] as const;
 
 type ColumnKey = (typeof ALL_COLUMNS)[number]["key"];
@@ -67,9 +99,7 @@ export default function ReleasesPage() {
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [showColumnPicker, setShowColumnPicker] = useState(false);
-  const [visibleColumns, setVisibleColumns] = useState<Set<ColumnKey>>(
-    new Set(ALL_COLUMNS.filter((c) => c.default).map((c) => c.key))
-  );
+  const [visibleColumns, setVisibleColumns] = useState<Set<ColumnKey>>(new Set(ALL_COLUMNS.map((c) => c.key)));
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["release-transactions", page, pageSize, search],
@@ -190,8 +220,13 @@ export default function ReleasesPage() {
               </tr>
             </thead>
             <tbody>
-              {data?.data.map((tx) => (
+              {data?.data.map((tx: ReleaseTransaction) => (
                 <tr key={tx.id} className="hover">
+                  {isVisible("sourceId") && (
+                    <td className="max-w-24 truncate font-mono text-xs" title={tx.sourceId}>
+                      {tx.sourceId}
+                    </td>
+                  )}
                   {isVisible("date") && (
                     <td className="whitespace-nowrap">{dayjs(tx.date).format("DD/MM/YY HH:mm")}</td>
                   )}
@@ -206,6 +241,7 @@ export default function ReleasesPage() {
                     </td>
                   )}
                   {isVisible("paymentMethod") && <td>{tx.paymentMethod || "-"}</td>}
+                  {isVisible("paymentMethodType") && <td>{tx.paymentMethodType || "-"}</td>}
                   {isVisible("netCreditAmount") && (
                     <td className="text-right">
                       {tx.netCreditAmount && tx.netCreditAmount > 0 ? (
@@ -236,11 +272,42 @@ export default function ReleasesPage() {
                   {isVisible("sellerAmount") && (
                     <td className="text-right">{formatAmount(tx.sellerAmount, tx.currency)}</td>
                   )}
+                  {isVisible("mpFeeAmount") && (
+                    <td className="text-error text-right">{formatAmount(tx.mpFeeAmount, tx.currency)}</td>
+                  )}
+                  {isVisible("financingFeeAmount") && (
+                    <td className="text-error text-right">{formatAmount(tx.financingFeeAmount, tx.currency)}</td>
+                  )}
+                  {isVisible("shippingFeeAmount") && (
+                    <td className="text-error text-right">{formatAmount(tx.shippingFeeAmount, tx.currency)}</td>
+                  )}
+                  {isVisible("taxesAmount") && (
+                    <td className="text-error text-right">{formatAmount(tx.taxesAmount, tx.currency)}</td>
+                  )}
+                  {isVisible("couponAmount") && (
+                    <td className="text-right">{formatAmount(tx.couponAmount, tx.currency)}</td>
+                  )}
+                  {isVisible("balanceAmount") && (
+                    <td className="text-right">{formatAmount(tx.balanceAmount, tx.currency)}</td>
+                  )}
+                  {isVisible("installments") && <td className="text-center">{tx.installments || "-"}</td>}
+                  {isVisible("posName") && (
+                    <td className="max-w-xs truncate" title={tx.posName || ""}>
+                      {tx.posName || "-"}
+                    </td>
+                  )}
+                  {isVisible("storeName") && (
+                    <td className="max-w-xs truncate" title={tx.storeName || ""}>
+                      {tx.storeName || "-"}
+                    </td>
+                  )}
                   {isVisible("externalReference") && (
                     <td className="max-w-32 truncate font-mono text-xs" title={tx.externalReference || ""}>
                       {tx.externalReference || "-"}
                     </td>
                   )}
+                  {isVisible("orderId") && <td className="font-mono text-xs">{tx.orderId?.toString() || "-"}</td>}
+                  {isVisible("shippingId") && <td className="font-mono text-xs">{tx.shippingId?.toString() || "-"}</td>}
                 </tr>
               ))}
             </tbody>

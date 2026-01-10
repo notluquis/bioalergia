@@ -9,16 +9,62 @@ interface SettlementTransaction {
   id: number;
   sourceId: string;
   transactionDate: string;
-  settlementDate: string;
+  settlementDate: string | null;
+  moneyReleaseDate: string | null;
   externalReference: string | null;
+  userId: string | null;
+  paymentMethodType: string | null;
+  paymentMethod: string | null;
+  site: string | null;
   transactionType: string | null;
   transactionAmount: number | null;
   transactionCurrency: string | null;
   sellerAmount: number | null;
   feeAmount: number | null;
   settlementNetAmount: number | null;
-  paymentMethod: string | null;
-  paymentMethodType: string | null;
+  settlementCurrency: string | null;
+  realAmount: number | null;
+  couponAmount: number | null;
+  metadata: unknown;
+  mkpFeeAmount: number | null;
+  financingFeeAmount: number | null;
+  shippingFeeAmount: number | null;
+  taxesAmount: number | null;
+  installments: number | null;
+  taxDetail: string | null;
+  taxesDisaggregated: unknown;
+  description: string | null;
+  cardInitialNumber: string | null;
+  operationTags: unknown;
+  businessUnit: string | null;
+  subUnit: string | null;
+  productSku: string | null;
+  saleDetail: string | null;
+  transactionIntentId: string | null;
+  franchise: string | null;
+  issuerName: string | null;
+  lastFourDigits: string | null;
+  orderMp: string | null;
+  invoicingPeriod: string | null;
+  payBankTransferId: string | null;
+  isReleased: boolean | null;
+  tipAmount: number | null;
+  purchaseId: string | null;
+  totalCouponAmount: number | null;
+  posId: string | null;
+  posName: string | null;
+  externalPosId: string | null;
+  storeId: string | null;
+  storeName: string | null;
+  externalStoreId: string | null;
+  poiId: string | null;
+  orderId: number | null;
+  shippingId: number | null;
+  shipmentMode: string | null;
+  packId: number | null;
+  shippingOrderId: string | null;
+  poiWalletName: string | null;
+  poiBankName: string | null;
 }
 
 interface ListResponse {
@@ -31,15 +77,37 @@ interface ListResponse {
 }
 
 const ALL_COLUMNS = [
-  { key: "transactionDate", label: "Fecha Tx", default: true },
-  { key: "settlementDate", label: "Fecha Liq", default: true },
-  { key: "transactionType", label: "Tipo", default: true },
-  { key: "paymentMethod", label: "Método", default: true },
-  { key: "transactionAmount", label: "Monto", default: true },
-  { key: "feeAmount", label: "Comisión", default: true },
-  { key: "settlementNetAmount", label: "Neto", default: true },
-  { key: "externalReference", label: "Ref. Externa", default: false },
-  { key: "sellerAmount", label: "Monto Vendedor", default: false },
+  { key: "sourceId", label: "ID Origen" },
+  { key: "transactionDate", label: "Fecha Tx" },
+  { key: "settlementDate", label: "Fecha Liq" },
+  { key: "moneyReleaseDate", label: "Fecha Lib. Dinero" },
+  { key: "transactionType", label: "Tipo" },
+  { key: "paymentMethod", label: "Método" },
+  { key: "paymentMethodType", label: "Tipo Método" },
+  { key: "transactionAmount", label: "Monto Tx" },
+  { key: "transactionCurrency", label: "Moneda Tx" },
+  { key: "feeAmount", label: "Comisión" },
+  { key: "settlementNetAmount", label: "Neto Liq" },
+  { key: "settlementCurrency", label: "Moneda Liq" },
+  { key: "sellerAmount", label: "Monto Vendedor" },
+  { key: "realAmount", label: "Monto Real" },
+  { key: "couponAmount", label: "Cupón" },
+  { key: "mkpFeeAmount", label: "Comisión MKP" },
+  { key: "financingFeeAmount", label: "Costo Financiero" },
+  { key: "shippingFeeAmount", label: "Costo Envío" },
+  { key: "taxesAmount", label: "Impuestos" },
+  { key: "installments", label: "Cuotas" },
+  { key: "description", label: "Descripción" },
+  { key: "cardInitialNumber", label: "BIN Tarjeta" },
+  { key: "lastFourDigits", label: "Últimos 4" },
+  { key: "issuerName", label: "Emisor" },
+  { key: "isReleased", label: "Liberado" },
+  { key: "posName", label: "POS" },
+  { key: "storeName", label: "Tienda" },
+  { key: "externalReference", label: "Ref. Externa" },
+  { key: "orderMp", label: "Orden MP" },
+  { key: "shippingId", label: "ID Envío" },
+  { key: "orderId", label: "ID Orden" },
 ] as const;
 
 type ColumnKey = (typeof ALL_COLUMNS)[number]["key"];
@@ -68,9 +136,7 @@ export default function SettlementsPage() {
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [showColumnPicker, setShowColumnPicker] = useState(false);
-  const [visibleColumns, setVisibleColumns] = useState<Set<ColumnKey>>(
-    new Set(ALL_COLUMNS.filter((c) => c.default).map((c) => c.key))
-  );
+  const [visibleColumns, setVisibleColumns] = useState<Set<ColumnKey>>(new Set(ALL_COLUMNS.map((c) => c.key)));
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["settlement-transactions", page, pageSize, search],
@@ -179,11 +245,14 @@ export default function SettlementsPage() {
           <table className="table-sm table w-full">
             <thead className="bg-base-200/50">
               <tr>
+                {isVisible("sourceId") && <th>ID Origen</th>}
                 {isVisible("transactionDate") && <th>Fecha Tx</th>}
                 {isVisible("settlementDate") && <th>Fecha Liq</th>}
                 {isVisible("transactionType") && <th>Tipo</th>}
                 {isVisible("paymentMethod") && <th>Método</th>}
+                {isVisible("paymentMethodType") && <th>Tipo Método</th>}
                 {isVisible("transactionAmount") && <th className="text-right">Monto</th>}
+                {isVisible("transactionCurrency") && <th>Moneda</th>}
                 {isVisible("feeAmount") && <th className="text-right">Comisión</th>}
                 {isVisible("settlementNetAmount") && <th className="text-right">Neto</th>}
                 {isVisible("sellerAmount") && <th className="text-right">Vendedor</th>}
@@ -191,8 +260,13 @@ export default function SettlementsPage() {
               </tr>
             </thead>
             <tbody>
-              {data?.data.map((tx) => (
+              {data?.data.map((tx: SettlementTransaction) => (
                 <tr key={tx.id} className="hover">
+                  {isVisible("sourceId") && (
+                    <td className="max-w-24 truncate font-mono text-xs" title={tx.sourceId}>
+                      {tx.sourceId}
+                    </td>
+                  )}
                   {isVisible("transactionDate") && (
                     <td className="whitespace-nowrap">{dayjs(tx.transactionDate).format("DD/MM/YY")}</td>
                   )}
@@ -201,17 +275,24 @@ export default function SettlementsPage() {
                       {tx.settlementDate ? dayjs(tx.settlementDate).format("DD/MM/YY") : "-"}
                     </td>
                   )}
+                  {isVisible("moneyReleaseDate") && (
+                    <td className="whitespace-nowrap">
+                      {tx.moneyReleaseDate ? dayjs(tx.moneyReleaseDate).format("DD/MM/YY") : "-"}
+                    </td>
+                  )}
                   {isVisible("transactionType") && (
                     <td>
                       <span className="badge badge-outline badge-sm">{tx.transactionType || "-"}</span>
                     </td>
                   )}
-                  {isVisible("paymentMethod") && <td>{tx.paymentMethod || tx.paymentMethodType || "-"}</td>}
+                  {isVisible("paymentMethod") && <td>{tx.paymentMethod || "-"}</td>}
+                  {isVisible("paymentMethodType") && <td>{tx.paymentMethodType || "-"}</td>}
                   {isVisible("transactionAmount") && (
                     <td className="text-right font-medium">
                       {formatAmount(tx.transactionAmount, tx.transactionCurrency)}
                     </td>
                   )}
+                  {isVisible("transactionCurrency") && <td className="text-center">{tx.transactionCurrency || "-"}</td>}
                   {isVisible("feeAmount") && (
                     <td className="text-error text-right">
                       {tx.feeAmount ? `-${formatAmount(Math.abs(tx.feeAmount), tx.transactionCurrency)}` : "-"}
@@ -222,14 +303,68 @@ export default function SettlementsPage() {
                       {formatAmount(tx.settlementNetAmount, tx.transactionCurrency)}
                     </td>
                   )}
+                  {isVisible("settlementCurrency") && <td className="text-center">{tx.settlementCurrency || "-"}</td>}
                   {isVisible("sellerAmount") && (
                     <td className="text-right">{formatAmount(tx.sellerAmount, tx.transactionCurrency)}</td>
+                  )}
+                  {isVisible("realAmount") && (
+                    <td className="text-right">{formatAmount(tx.realAmount, tx.transactionCurrency)}</td>
+                  )}
+                  {isVisible("couponAmount") && (
+                    <td className="text-right">{formatAmount(tx.couponAmount, tx.transactionCurrency)}</td>
+                  )}
+                  {isVisible("mkpFeeAmount") && (
+                    <td className="text-error text-right">{formatAmount(tx.mkpFeeAmount, tx.transactionCurrency)}</td>
+                  )}
+                  {isVisible("financingFeeAmount") && (
+                    <td className="text-error text-right">
+                      {formatAmount(tx.financingFeeAmount, tx.transactionCurrency)}
+                    </td>
+                  )}
+                  {isVisible("shippingFeeAmount") && (
+                    <td className="text-error text-right">
+                      {formatAmount(tx.shippingFeeAmount, tx.transactionCurrency)}
+                    </td>
+                  )}
+                  {isVisible("taxesAmount") && (
+                    <td className="text-error text-right">{formatAmount(tx.taxesAmount, tx.transactionCurrency)}</td>
+                  )}
+                  {isVisible("installments") && <td className="text-center">{tx.installments || "-"}</td>}
+                  {isVisible("description") && (
+                    <td className="max-w-xs truncate" title={tx.description || ""}>
+                      {tx.description || "-"}
+                    </td>
+                  )}
+                  {isVisible("cardInitialNumber") && <td>{tx.cardInitialNumber || "-"}</td>}
+                  {isVisible("lastFourDigits") && <td>{tx.lastFourDigits ? `...${tx.lastFourDigits}` : "-"}</td>}
+                  {isVisible("issuerName") && <td>{tx.issuerName || "-"}</td>}
+                  {isVisible("isReleased") && (
+                    <td>
+                      {tx.isReleased ? (
+                        <span className="badge badge-success badge-sm">Si</span>
+                      ) : (
+                        <span className="badge badge-warning badge-sm">No</span>
+                      )}
+                    </td>
+                  )}
+                  {isVisible("posName") && (
+                    <td className="max-w-xs truncate" title={tx.posName || ""}>
+                      {tx.posName || "-"}
+                    </td>
+                  )}
+                  {isVisible("storeName") && (
+                    <td className="max-w-xs truncate" title={tx.storeName || ""}>
+                      {tx.storeName || "-"}
+                    </td>
                   )}
                   {isVisible("externalReference") && (
                     <td className="max-w-32 truncate font-mono text-xs" title={tx.externalReference || ""}>
                       {tx.externalReference || "-"}
                     </td>
                   )}
+                  {isVisible("orderMp") && <td className="font-mono text-xs">{tx.orderMp || "-"}</td>}
+                  {isVisible("shippingId") && <td className="font-mono text-xs">{tx.shippingId?.toString() || "-"}</td>}
+                  {isVisible("orderId") && <td className="font-mono text-xs">{tx.orderId?.toString() || "-"}</td>}
                 </tr>
               ))}
             </tbody>

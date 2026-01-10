@@ -68,20 +68,6 @@ app.get("/", async (c) => {
       orderBy: { date: "desc" },
       skip: offset,
       take: pageSize,
-      select: {
-        id: true,
-        sourceId: true,
-        date: true,
-        externalReference: true,
-        recordType: true,
-        description: true,
-        netCreditAmount: true,
-        netDebitAmount: true,
-        grossAmount: true,
-        sellerAmount: true,
-        paymentMethod: true,
-        currency: true,
-      },
     }),
   ]);
 

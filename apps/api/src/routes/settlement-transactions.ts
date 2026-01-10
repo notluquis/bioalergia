@@ -76,21 +76,6 @@ app.get("/", async (c) => {
       orderBy: { transactionDate: "desc" },
       skip: offset,
       take: pageSize,
-      select: {
-        id: true,
-        sourceId: true,
-        transactionDate: true,
-        settlementDate: true,
-        transactionType: true,
-        transactionAmount: true,
-        transactionCurrency: true,
-        settlementNetAmount: true,
-        paymentMethod: true,
-        paymentMethodType: true,
-        externalReference: true,
-        feeAmount: true,
-        sellerAmount: true,
-      },
     }),
   ]);
 
