@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import Button from "@/components/ui/Button";
 import { apiClient } from "@/lib/apiClient";
+import { cn } from "@/lib/utils";
 
 interface SettlementTransaction {
   id: number;
@@ -244,126 +245,117 @@ export default function SettlementsPage() {
           <table className="table-sm table w-full">
             <thead className="bg-base-200/50">
               <tr>
-                {isVisible("sourceId") && <th>ID Origen</th>}
-                {isVisible("transactionDate") && <th>Fecha Tx</th>}
-                {isVisible("settlementDate") && <th>Fecha Liq</th>}
-                {isVisible("transactionType") && <th>Tipo</th>}
-                {isVisible("paymentMethod") && <th>Método</th>}
-                {isVisible("paymentMethodType") && <th>Tipo Método</th>}
-                {isVisible("transactionAmount") && <th className="text-right">Monto</th>}
-                {isVisible("transactionCurrency") && <th>Moneda</th>}
-                {isVisible("feeAmount") && <th className="text-right">Comisión</th>}
-                {isVisible("settlementNetAmount") && <th className="text-right">Neto</th>}
-                {isVisible("sellerAmount") && <th className="text-right">Vendedor</th>}
-                {isVisible("externalReference") && <th>Ref. Externa</th>}
+                {ALL_COLUMNS.map((col) => {
+                  if (!isVisible(col.key)) return null;
+                  const isRight = [
+                    "transactionAmount",
+                    "feeAmount",
+                    "settlementNetAmount",
+                    "sellerAmount",
+                    "realAmount",
+                    "couponAmount",
+                    "mkpFeeAmount",
+                    "financingFeeAmount",
+                    "shippingFeeAmount",
+                    "taxesAmount",
+                    "tipAmount",
+                    "totalCouponAmount",
+                  ].includes(col.key);
+                  const isCenter = ["transactionCurrency", "settlementCurrency", "installments", "isReleased"].includes(
+                    col.key
+                  );
+
+                  return (
+                    <th
+                      key={col.key}
+                      className={cn(
+                        "text-xs font-semibold whitespace-nowrap",
+                        isRight && "text-right",
+                        isCenter && "text-center"
+                      )}
+                    >
+                      {col.label}
+                    </th>
+                  );
+                })}
               </tr>
             </thead>
             <tbody>
               {data?.data.map((tx: SettlementTransaction) => (
                 <tr key={tx.id} className="hover">
-                  {isVisible("sourceId") && (
-                    <td className="max-w-24 truncate font-mono text-xs" title={tx.sourceId}>
-                      {tx.sourceId}
-                    </td>
-                  )}
-                  {isVisible("transactionDate") && (
-                    <td className="whitespace-nowrap">{dayjs(tx.transactionDate).format("DD/MM/YY")}</td>
-                  )}
-                  {isVisible("settlementDate") && (
-                    <td className="whitespace-nowrap">
-                      {tx.settlementDate ? dayjs(tx.settlementDate).format("DD/MM/YY") : "-"}
-                    </td>
-                  )}
-                  {isVisible("moneyReleaseDate") && (
-                    <td className="whitespace-nowrap">
-                      {tx.moneyReleaseDate ? dayjs(tx.moneyReleaseDate).format("DD/MM/YY") : "-"}
-                    </td>
-                  )}
-                  {isVisible("transactionType") && (
-                    <td>
-                      <span className="badge badge-outline badge-sm">{tx.transactionType || "-"}</span>
-                    </td>
-                  )}
-                  {isVisible("paymentMethod") && <td>{tx.paymentMethod || "-"}</td>}
-                  {isVisible("paymentMethodType") && <td>{tx.paymentMethodType || "-"}</td>}
-                  {isVisible("transactionAmount") && (
-                    <td className="text-right font-medium">
-                      {formatAmount(tx.transactionAmount, tx.transactionCurrency)}
-                    </td>
-                  )}
-                  {isVisible("transactionCurrency") && <td className="text-center">{tx.transactionCurrency || "-"}</td>}
-                  {isVisible("feeAmount") && (
-                    <td className="text-error text-right">
-                      {tx.feeAmount ? `-${formatAmount(Math.abs(tx.feeAmount), tx.transactionCurrency)}` : "-"}
-                    </td>
-                  )}
-                  {isVisible("settlementNetAmount") && (
-                    <td className="text-success text-right font-medium">
-                      {formatAmount(tx.settlementNetAmount, tx.transactionCurrency)}
-                    </td>
-                  )}
-                  {isVisible("settlementCurrency") && <td className="text-center">{tx.settlementCurrency || "-"}</td>}
-                  {isVisible("sellerAmount") && (
-                    <td className="text-right">{formatAmount(tx.sellerAmount, tx.transactionCurrency)}</td>
-                  )}
-                  {isVisible("realAmount") && (
-                    <td className="text-right">{formatAmount(tx.realAmount, tx.transactionCurrency)}</td>
-                  )}
-                  {isVisible("couponAmount") && (
-                    <td className="text-right">{formatAmount(tx.couponAmount, tx.transactionCurrency)}</td>
-                  )}
-                  {isVisible("mkpFeeAmount") && (
-                    <td className="text-error text-right">{formatAmount(tx.mkpFeeAmount, tx.transactionCurrency)}</td>
-                  )}
-                  {isVisible("financingFeeAmount") && (
-                    <td className="text-error text-right">
-                      {formatAmount(tx.financingFeeAmount, tx.transactionCurrency)}
-                    </td>
-                  )}
-                  {isVisible("shippingFeeAmount") && (
-                    <td className="text-error text-right">
-                      {formatAmount(tx.shippingFeeAmount, tx.transactionCurrency)}
-                    </td>
-                  )}
-                  {isVisible("taxesAmount") && (
-                    <td className="text-error text-right">{formatAmount(tx.taxesAmount, tx.transactionCurrency)}</td>
-                  )}
-                  {isVisible("installments") && <td className="text-center">{tx.installments || "-"}</td>}
-                  {isVisible("description") && (
-                    <td className="max-w-xs truncate" title={tx.description || ""}>
-                      {tx.description || "-"}
-                    </td>
-                  )}
-                  {isVisible("cardInitialNumber") && <td>{tx.cardInitialNumber || "-"}</td>}
-                  {isVisible("lastFourDigits") && <td>{tx.lastFourDigits ? `...${tx.lastFourDigits}` : "-"}</td>}
-                  {isVisible("issuerName") && <td>{tx.issuerName || "-"}</td>}
-                  {isVisible("isReleased") && (
-                    <td>
-                      {tx.isReleased ? (
-                        <span className="badge badge-success badge-sm">Si</span>
-                      ) : (
-                        <span className="badge badge-warning badge-sm">No</span>
-                      )}
-                    </td>
-                  )}
-                  {isVisible("posName") && (
-                    <td className="max-w-xs truncate" title={tx.posName || ""}>
-                      {tx.posName || "-"}
-                    </td>
-                  )}
-                  {isVisible("storeName") && (
-                    <td className="max-w-xs truncate" title={tx.storeName || ""}>
-                      {tx.storeName || "-"}
-                    </td>
-                  )}
-                  {isVisible("externalReference") && (
-                    <td className="max-w-32 truncate font-mono text-xs" title={tx.externalReference || ""}>
-                      {tx.externalReference || "-"}
-                    </td>
-                  )}
-                  {isVisible("orderMp") && <td className="font-mono text-xs">{tx.orderMp || "-"}</td>}
-                  {isVisible("shippingId") && <td className="font-mono text-xs">{tx.shippingId?.toString() || "-"}</td>}
-                  {isVisible("orderId") && <td className="font-mono text-xs">{tx.orderId?.toString() || "-"}</td>}
+                  {ALL_COLUMNS.map((col) => {
+                    if (!isVisible(col.key)) return null;
+
+                    const isRight = [
+                      "transactionAmount",
+                      "feeAmount",
+                      "settlementNetAmount",
+                      "sellerAmount",
+                      "realAmount",
+                      "couponAmount",
+                      "mkpFeeAmount",
+                      "financingFeeAmount",
+                      "shippingFeeAmount",
+                      "taxesAmount",
+                      "tipAmount", // Added missing numeric fields logic
+                      "totalCouponAmount",
+                    ].includes(col.key);
+                    const isCenter = [
+                      "transactionCurrency",
+                      "settlementCurrency",
+                      "installments",
+                      "isReleased",
+                    ].includes(col.key);
+
+                    // Render Content
+                    let content: React.ReactNode = "-";
+                    const val = tx[col.key as keyof SettlementTransaction];
+
+                    if (val === null || val === undefined) {
+                      content = "-";
+                    } else if (col.key === "transactionType") {
+                      content = <span className="badge badge-outline badge-sm whitespace-nowrap">{String(val)}</span>;
+                    } else if (col.key === "description" || col.key === "sourceId") {
+                      content = (
+                        <span className="block max-w-40 truncate" title={String(val)}>
+                          {String(val)}
+                        </span>
+                      );
+                    } else if (["transactionDate", "settlementDate", "moneyReleaseDate"].includes(col.key)) {
+                      content = dayjs(val as string).format("DD/MM/YY");
+                    } else if (typeof val === "boolean") {
+                      content = val ? "Sí" : "No";
+                    } else if (isRight) {
+                      const num = val as number;
+                      const isNegative = [
+                        "feeAmount",
+                        "mkpFeeAmount",
+                        "financingFeeAmount",
+                        "shippingFeeAmount",
+                        "taxesAmount",
+                      ].includes(col.key);
+
+                      if (isNegative) {
+                        content = (
+                          <span className="text-error">-{formatAmount(Math.abs(num), tx.transactionCurrency)}</span>
+                        );
+                      } else if (col.key === "settlementNetAmount") {
+                        content = (
+                          <span className="text-success font-medium">{formatAmount(num, tx.transactionCurrency)}</span>
+                        );
+                      } else {
+                        content = formatAmount(num, tx.transactionCurrency);
+                      }
+                    } else {
+                      content = String(val);
+                    }
+
+                    return (
+                      <td key={col.key} className={cn("text-xs", isRight && "text-right", isCenter && "text-center")}>
+                        {content}
+                      </td>
+                    );
+                  })}
                 </tr>
               ))}
             </tbody>

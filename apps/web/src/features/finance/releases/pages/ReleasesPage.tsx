@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import Button from "@/components/ui/Button";
 import { apiClient } from "@/lib/apiClient";
+import { cn } from "@/lib/utils";
 
 interface ReleaseTransaction {
   id: number;
@@ -207,106 +208,118 @@ export default function ReleasesPage() {
           <table className="table-sm table w-full">
             <thead className="bg-base-200/50">
               <tr>
-                {isVisible("date") && <th>Fecha</th>}
-                {isVisible("recordType") && <th>Tipo</th>}
-                {isVisible("description") && <th>Descripción</th>}
-                {isVisible("paymentMethod") && <th>Método</th>}
-                {isVisible("netCreditAmount") && <th className="text-right">Crédito</th>}
-                {isVisible("netDebitAmount") && <th className="text-right">Débito</th>}
-                {isVisible("grossAmount") && <th className="text-right">Bruto</th>}
-                {isVisible("sellerAmount") && <th className="text-right">Vendedor</th>}
-                {isVisible("externalReference") && <th>Ref. Externa</th>}
+                {ALL_COLUMNS.map((col) => {
+                  if (!isVisible(col.key)) return null;
+                  const isRight = [
+                    "netCreditAmount",
+                    "netDebitAmount",
+                    "grossAmount",
+                    "sellerAmount",
+                    "mpFeeAmount",
+                    "financingFeeAmount",
+                    "shippingFeeAmount",
+                    "taxesAmount",
+                    "couponAmount",
+                    "balanceAmount",
+                  ].includes(col.key);
+                  const isCenter = ["installments"].includes(col.key);
+
+                  return (
+                    <th
+                      key={col.key}
+                      className={cn(
+                        "text-xs font-semibold whitespace-nowrap",
+                        isRight && "text-right",
+                        isCenter && "text-center"
+                      )}
+                    >
+                      {col.label}
+                    </th>
+                  );
+                })}
               </tr>
             </thead>
             <tbody>
               {data?.data.map((tx: ReleaseTransaction) => (
                 <tr key={tx.id} className="hover">
-                  {isVisible("sourceId") && (
-                    <td className="max-w-24 truncate font-mono text-xs" title={tx.sourceId}>
-                      {tx.sourceId}
-                    </td>
-                  )}
-                  {isVisible("date") && (
-                    <td className="whitespace-nowrap">{dayjs(tx.date).format("DD/MM/YY HH:mm")}</td>
-                  )}
-                  {isVisible("recordType") && (
-                    <td>
-                      <span className="badge badge-outline badge-sm">{tx.recordType || "-"}</span>
-                    </td>
-                  )}
-                  {isVisible("description") && (
-                    <td className="max-w-48 truncate" title={tx.description || ""}>
-                      {tx.description || "-"}
-                    </td>
-                  )}
-                  {isVisible("paymentMethod") && <td>{tx.paymentMethod || "-"}</td>}
-                  {isVisible("paymentMethodType") && <td>{tx.paymentMethodType || "-"}</td>}
-                  {isVisible("netCreditAmount") && (
-                    <td className="text-right">
-                      {tx.netCreditAmount && tx.netCreditAmount > 0 ? (
-                        <span className="text-success flex items-center justify-end gap-1">
-                          <ArrowDownToLine className="h-3 w-3" />
-                          {formatAmount(tx.netCreditAmount, tx.currency)}
+                  {ALL_COLUMNS.map((col) => {
+                    if (!isVisible(col.key)) return null;
+
+                    const isRight = [
+                      "netCreditAmount",
+                      "netDebitAmount",
+                      "grossAmount",
+                      "sellerAmount",
+                      "mpFeeAmount",
+                      "financingFeeAmount",
+                      "shippingFeeAmount",
+                      "taxesAmount",
+                      "couponAmount",
+                      "balanceAmount",
+                    ].includes(col.key);
+                    const isCenter = ["installments"].includes(col.key);
+
+                    let content: React.ReactNode = "-";
+                    const val = tx[col.key as keyof ReleaseTransaction];
+
+                    if (val === null || val === undefined) {
+                      content = "-";
+                    } else if (col.key === "recordType") {
+                      content = <span className="badge badge-outline badge-sm whitespace-nowrap">{String(val)}</span>;
+                    } else if (col.key === "date") {
+                      content = dayjs(String(val)).format("DD/MM/YY HH:mm");
+                    } else if (col.key === "netCreditAmount") {
+                      const num = val as number;
+                      if (num > 0) {
+                        content = (
+                          <span className="text-success flex items-center justify-end gap-1">
+                            <ArrowDownToLine className="h-3 w-3" />
+                            {formatAmount(num, tx.currency)}
+                          </span>
+                        );
+                      } else {
+                        content = "-";
+                      }
+                    } else if (col.key === "netDebitAmount") {
+                      const num = val as number;
+                      if (num > 0) {
+                        content = (
+                          <span className="text-error flex items-center justify-end gap-1">
+                            <ArrowUpFromLine className="h-3 w-3" />
+                            {formatAmount(num, tx.currency)}
+                          </span>
+                        );
+                      } else {
+                        content = "-";
+                      }
+                    } else if (col.key === "description" || col.key === "sourceId") {
+                      content = (
+                        <span className="block max-w-40 truncate" title={String(val)}>
+                          {String(val)}
                         </span>
-                      ) : (
-                        "-"
-                      )}
-                    </td>
-                  )}
-                  {isVisible("netDebitAmount") && (
-                    <td className="text-right">
-                      {tx.netDebitAmount && tx.netDebitAmount > 0 ? (
-                        <span className="text-error flex items-center justify-end gap-1">
-                          <ArrowUpFromLine className="h-3 w-3" />
-                          {formatAmount(tx.netDebitAmount, tx.currency)}
-                        </span>
-                      ) : (
-                        "-"
-                      )}
-                    </td>
-                  )}
-                  {isVisible("grossAmount") && (
-                    <td className="text-right">{formatAmount(tx.grossAmount, tx.currency)}</td>
-                  )}
-                  {isVisible("sellerAmount") && (
-                    <td className="text-right">{formatAmount(tx.sellerAmount, tx.currency)}</td>
-                  )}
-                  {isVisible("mpFeeAmount") && (
-                    <td className="text-error text-right">{formatAmount(tx.mpFeeAmount, tx.currency)}</td>
-                  )}
-                  {isVisible("financingFeeAmount") && (
-                    <td className="text-error text-right">{formatAmount(tx.financingFeeAmount, tx.currency)}</td>
-                  )}
-                  {isVisible("shippingFeeAmount") && (
-                    <td className="text-error text-right">{formatAmount(tx.shippingFeeAmount, tx.currency)}</td>
-                  )}
-                  {isVisible("taxesAmount") && (
-                    <td className="text-error text-right">{formatAmount(tx.taxesAmount, tx.currency)}</td>
-                  )}
-                  {isVisible("couponAmount") && (
-                    <td className="text-right">{formatAmount(tx.couponAmount, tx.currency)}</td>
-                  )}
-                  {isVisible("balanceAmount") && (
-                    <td className="text-right">{formatAmount(tx.balanceAmount, tx.currency)}</td>
-                  )}
-                  {isVisible("installments") && <td className="text-center">{tx.installments || "-"}</td>}
-                  {isVisible("posName") && (
-                    <td className="max-w-xs truncate" title={tx.posName || ""}>
-                      {tx.posName || "-"}
-                    </td>
-                  )}
-                  {isVisible("storeName") && (
-                    <td className="max-w-xs truncate" title={tx.storeName || ""}>
-                      {tx.storeName || "-"}
-                    </td>
-                  )}
-                  {isVisible("externalReference") && (
-                    <td className="max-w-32 truncate font-mono text-xs" title={tx.externalReference || ""}>
-                      {tx.externalReference || "-"}
-                    </td>
-                  )}
-                  {isVisible("orderId") && <td className="font-mono text-xs">{tx.orderId?.toString() || "-"}</td>}
-                  {isVisible("shippingId") && <td className="font-mono text-xs">{tx.shippingId?.toString() || "-"}</td>}
+                      );
+                    } else if (isRight && typeof val === "number") {
+                      const isNegative = [
+                        "mpFeeAmount",
+                        "financingFeeAmount",
+                        "shippingFeeAmount",
+                        "taxesAmount",
+                      ].includes(col.key);
+                      if (isNegative) {
+                        content = <span className="text-error">{formatAmount(val, tx.currency)}</span>;
+                      } else {
+                        content = formatAmount(val, tx.currency);
+                      }
+                    } else {
+                      content = String(val);
+                    }
+
+                    return (
+                      <td key={col.key} className={cn("text-xs", isRight && "text-right", isCenter && "text-center")}>
+                        {content}
+                      </td>
+                    );
+                  })}
                 </tr>
               ))}
             </tbody>
