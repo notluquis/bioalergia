@@ -2,7 +2,9 @@ import { Hono } from "hono";
 import { z } from "zod";
 
 import { authDb } from "@finanzas/db";
+
 import { getSessionUser, hasPermission } from "../auth";
+import { reply } from "../utils/reply";
 
 const app = new Hono();
 
@@ -79,13 +81,13 @@ app.get("/", async (c) => {
     }),
   ]);
 
-  return c.json({
+  return reply(c, {
     status: "ok",
     data,
     total,
-    page,
-    pageSize,
-    totalPages: Math.ceil(total / pageSize),
+    page: Number(page),
+    pageSize: Number(pageSize),
+    totalPages: Math.ceil(total / Number(pageSize)),
   });
 });
 

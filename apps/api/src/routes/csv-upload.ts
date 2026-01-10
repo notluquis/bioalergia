@@ -5,6 +5,7 @@
  */
 
 import { Hono } from "hono";
+import { reply } from "../utils/reply";
 import { verifyToken } from "../lib/paseto";
 import { hasPermission } from "../auth";
 import { db } from "@finanzas/db";
@@ -107,7 +108,7 @@ const TABLE_PERMISSIONS: Record<
 
 csvUploadRoutes.post("/preview", async (c) => {
   const auth = await getAuth(c);
-  if (!auth) return c.json({ status: "error", message: "No autorizado" }, 401);
+  if (!auth) return reply(c, { status: "error", message: "No autorizado" }, 401);
 
   const { table, data } = await c.req.json<{
     table: TableName;
@@ -115,7 +116,7 @@ csvUploadRoutes.post("/preview", async (c) => {
   }>();
 
   if (!table || !data || !Array.isArray(data)) {
-    return c.json(
+    return reply(c, 
       { status: "error", message: "Table and data array required" },
       400,
     );
@@ -129,7 +130,7 @@ csvUploadRoutes.post("/preview", async (c) => {
       required.action,
       required.subject,
     );
-    if (!hasPerm) return c.json({ status: "error", message: "Forbidden" }, 403);
+    if (!hasPerm) return reply(c, { status: "error", message: "Forbidden" }, 403);
   }
 
   const errors: string[] = [];
@@ -211,7 +212,7 @@ csvUploadRoutes.post("/preview", async (c) => {
     }
   }
 
-  return c.json({
+  return reply(c, {
     status: "ok",
     toInsert,
     toUpdate,
@@ -226,7 +227,7 @@ csvUploadRoutes.post("/preview", async (c) => {
 
 csvUploadRoutes.post("/import", async (c) => {
   const auth = await getAuth(c);
-  if (!auth) return c.json({ status: "error", message: "No autorizado" }, 401);
+  if (!auth) return reply(c, { status: "error", message: "No autorizado" }, 401);
 
   const { table, data } = await c.req.json<{
     table: TableName;
@@ -234,7 +235,7 @@ csvUploadRoutes.post("/import", async (c) => {
   }>();
 
   if (!table || !data || !Array.isArray(data)) {
-    return c.json(
+    return reply(c, 
       { status: "error", message: "Table and data array required" },
       400,
     );
@@ -248,7 +249,7 @@ csvUploadRoutes.post("/import", async (c) => {
       required.action,
       required.subject,
     );
-    if (!hasPerm) return c.json({ status: "error", message: "Forbidden" }, 403);
+    if (!hasPerm) return reply(c, { status: "error", message: "Forbidden" }, 403);
   }
 
   let inserted = 0;
@@ -504,7 +505,7 @@ csvUploadRoutes.post("/import", async (c) => {
     "skipped:",
     skipped,
   );
-  return c.json({
+  return reply(c, {
     status: "ok",
     inserted,
     updated,

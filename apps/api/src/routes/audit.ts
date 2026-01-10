@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { reply } from "../utils/reply";
 import { getSessionUser, hasPermission } from "../auth";
 import {
   getTablesWithChanges,
@@ -11,27 +12,27 @@ const app = new Hono();
 // GET /tables-with-changes?since=ISOString
 app.get("/tables-with-changes", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
 
   // Read permission for Backup implies reading what needs backup
   const canAccess = await hasPermission(user.id, "read", "Backup");
   if (!canAccess) {
-    return c.json({ status: "error", message: "Forbidden" }, 403);
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
   }
 
   const sinceQuery = c.req.query("since");
   const since = sinceQuery ? new Date(sinceQuery) : undefined;
 
   if (since && isNaN(since.getTime())) {
-    return c.json({ status: "error", message: "Invalid date format" }, 400);
+    return reply(c, { status: "error", message: "Invalid date format" }, 400);
   }
 
   try {
     const tables = await getTablesWithChanges(since);
-    return c.json({ status: "ok", tables });
+    return reply(c, { status: "ok", tables });
   } catch (error) {
     console.error("[Audit] Error getting tables with changes:", error);
-    return c.json(
+    return reply(c, 
       { status: "error", message: "Error fetching incremental changes" },
       500,
     );
@@ -41,24 +42,24 @@ app.get("/tables-with-changes", async (c) => {
 // POST /revert/:changeId - Revert a specific change
 app.post("/revert/:changeId", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
 
   const canRevert = await hasPermission(user.id, "delete", "Backup");
   if (!canRevert) {
-    return c.json({ status: "error", message: "Forbidden" }, 403);
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
   }
 
   const changeId = c.req.param("changeId");
   if (!changeId) {
-    return c.json({ status: "error", message: "Change ID required" }, 400);
+    return reply(c, { status: "error", message: "Change ID required" }, 400);
   }
 
   try {
     const result = await revertAuditChange(BigInt(changeId), user.id);
-    return c.json(result);
+    return reply(c, result);
   } catch (error) {
     console.error("[Audit] Error reverting change:", error);
-    return c.json(
+    return reply(c, 
       {
         status: "error",
         success: false,
@@ -73,19 +74,19 @@ app.post("/revert/:changeId", async (c) => {
 // POST /export - Export audit logs to backup
 app.post("/export", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
 
   const canExport = await hasPermission(user.id, "create", "Backup");
   if (!canExport) {
-    return c.json({ status: "error", message: "Forbidden" }, 403);
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
   }
 
   try {
     const result = await exportAuditLogs();
-    return c.json(result);
+    return reply(c, result);
   } catch (error) {
     console.error("[Audit] Error exporting logs:", error);
-    return c.json(
+    return reply(c, 
       {
         status: "error",
         success: false,

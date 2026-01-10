@@ -4,6 +4,7 @@
  */
 import { cacheControl } from "../lib/cache-control";
 import { Hono } from "hono";
+import { reply } from "../utils/reply";
 import {
   createInventoryCategory,
   createInventoryItem,
@@ -28,7 +29,7 @@ export const inventoryRoutes = new Hono();
 inventoryRoutes.use("*", async (c, next) => {
   const user = await getSessionUser(c);
   if (!user) {
-    return c.json({ status: "error", message: "No autorizado" }, 401);
+    return reply(c, { status: "error", message: "No autorizado" }, 401);
   }
 
   // For non-GET requests, check for inventory write permissions
@@ -39,7 +40,7 @@ inventoryRoutes.use("*", async (c, next) => {
       (await hasPermission(user.id, "delete", "InventoryItem")) ||
       (await hasPermission(user.id, "update", "InventorySetting"));
     if (!canModify) {
-      return c.json({ status: "error", message: "Forbidden" }, 403);
+      return reply(c, { status: "error", message: "Forbidden" }, 403);
     }
   } else {
     // GET requests require read permission
@@ -50,7 +51,7 @@ inventoryRoutes.use("*", async (c, next) => {
       "InventorySetting"
     );
     if (!canRead && !canReadSettings) {
-      return c.json({ status: "error", message: "Forbidden" }, 403);
+      return reply(c, { status: "error", message: "Forbidden" }, 403);
     }
   }
 
@@ -82,13 +83,13 @@ inventoryRoutes.get("/allergy-overview", async (c) => {
     providers: [],
   }));
 
-  return c.json({ status: "ok", data: mappedData });
+  return reply(c, { status: "ok", data: mappedData });
 });
 
 // GET /api/inventory/categories - Cached 5 mins
 inventoryRoutes.get("/categories", cacheControl(300), async (c) => {
   const categories = await listInventoryCategories();
-  return c.json({
+  return reply(c, {
     status: "ok",
     data: categories.map((c) => ({
       id: c.id,
@@ -101,7 +102,7 @@ inventoryRoutes.get("/categories", cacheControl(300), async (c) => {
 // POST /api/inventory/categories
 inventoryRoutes.post("/categories", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return c.json({ status: "error", message: "No autorizado" }, 401);
+  if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
 
   const canManageSettings = await hasPermission(
     user.id,
@@ -109,20 +110,20 @@ inventoryRoutes.post("/categories", async (c) => {
     "InventorySetting"
   );
   if (!canManageSettings) {
-    return c.json({ status: "error", message: "Forbidden" }, 403);
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
   }
 
   const body = await c.req.json();
   const parsed = inventoryCategorySchema.safeParse(body);
   if (!parsed.success) {
-    return c.json(
+    return reply(c, 
       { status: "error", message: "Invalid data", issues: parsed.error.issues },
       400
     );
   }
 
   const category = await createInventoryCategory(parsed.data.name);
-  return c.json(
+  return reply(c, 
     {
       status: "ok",
       data: {
@@ -138,7 +139,7 @@ inventoryRoutes.post("/categories", async (c) => {
 // DELETE /api/inventory/categories/:id
 inventoryRoutes.delete("/categories/:id", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return c.json({ status: "error", message: "No autorizado" }, 401);
+  if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
 
   const canManageSettings = await hasPermission(
     user.id,
@@ -146,7 +147,7 @@ inventoryRoutes.delete("/categories/:id", async (c) => {
     "InventorySetting"
   );
   if (!canManageSettings) {
-    return c.json({ status: "error", message: "Forbidden" }, 403);
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
   }
 
   const id = Number(c.req.param("id"));
@@ -155,7 +156,7 @@ inventoryRoutes.delete("/categories/:id", async (c) => {
     return c.body(null, 204);
   } catch (err: unknown) {
     if (err instanceof Error && err.message.includes("associated items")) {
-      return c.json({ status: "error", message: err.message }, 409);
+      return reply(c, { status: "error", message: err.message }, 409);
     }
     throw err;
   }
@@ -164,7 +165,7 @@ inventoryRoutes.delete("/categories/:id", async (c) => {
 // GET /api/inventory/items
 inventoryRoutes.get("/items", async (c) => {
   const items = await listInventoryItems();
-  return c.json({
+  return reply(c, {
     status: "ok",
     data: items.map((i) => ({
       id: i.id,
@@ -184,7 +185,7 @@ inventoryRoutes.post("/items", async (c) => {
   const body = await c.req.json();
   const parsed = inventoryItemSchema.safeParse(body);
   if (!parsed.success) {
-    return c.json(
+    return reply(c, 
       { status: "error", message: "Invalid data", issues: parsed.error.issues },
       400
     );
@@ -198,7 +199,7 @@ inventoryRoutes.post("/items", async (c) => {
     categoryId: data.category_id ?? null,
   });
 
-  return c.json(
+  return reply(c, 
     {
       status: "ok",
       data: {
@@ -222,7 +223,7 @@ inventoryRoutes.put("/items/:id", async (c) => {
   const body = await c.req.json();
   const parsed = inventoryItemUpdateSchema.safeParse(body);
   if (!parsed.success) {
-    return c.json(
+    return reply(c, 
       { status: "error", message: "Invalid data", issues: parsed.error.issues },
       400
     );
@@ -236,7 +237,7 @@ inventoryRoutes.put("/items/:id", async (c) => {
     categoryId: data.category_id,
   });
 
-  return c.json({
+  return reply(c, {
     status: "ok",
     data: {
       id: item.id,
@@ -263,7 +264,7 @@ inventoryRoutes.post("/movements", async (c) => {
   const body = await c.req.json();
   const parsed = inventoryMovementSchema.safeParse(body);
   if (!parsed.success) {
-    return c.json(
+    return reply(c, 
       { status: "error", message: "Invalid data", issues: parsed.error.issues },
       400
     );
@@ -275,5 +276,5 @@ inventoryRoutes.post("/movements", async (c) => {
     reason: parsed.data.reason,
   });
 
-  return c.json({ status: "ok" }, 201);
+  return reply(c, { status: "ok" }, 201);
 });

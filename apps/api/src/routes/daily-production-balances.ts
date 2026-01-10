@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { reply } from "../utils/reply";
 import dayjs from "dayjs";
 import { getSessionUser, hasPermission } from "../auth";
 import {
@@ -59,16 +60,16 @@ function mapResponse(p: any) {
 
 app.get("/", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
 
   const canRead = await hasPermission(user.id, "read", "ProductionBalance");
-  if (!canRead) return c.json({ status: "error", message: "Forbidden" }, 403);
+  if (!canRead) return reply(c, { status: "error", message: "Forbidden" }, 403);
 
   const query = c.req.query();
   const parsed = productionBalanceQuerySchema.safeParse(query);
 
   if (!parsed.success) {
-    return c.json(
+    return reply(c, 
       {
         status: "error",
         message: "Parámetros inválidos",
@@ -84,7 +85,7 @@ app.get("/", async (c) => {
     parsed.data.from ?? today.subtract(30, "day").format("YYYY-MM-DD");
 
   const items = await listProductionBalances(fromDate, toDate);
-  return c.json({
+  return reply(c, {
     status: "ok",
     from: fromDate,
     to: toDate,
@@ -94,16 +95,16 @@ app.get("/", async (c) => {
 
 app.post("/", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
 
   const canCreate = await hasPermission(user.id, "create", "ProductionBalance");
-  if (!canCreate) return c.json({ status: "error", message: "Forbidden" }, 403);
+  if (!canCreate) return reply(c, { status: "error", message: "Forbidden" }, 403);
 
   const body = await c.req.json();
   const parsed = productionBalancePayloadSchema.safeParse(body);
 
   if (!parsed.success) {
-    return c.json(
+    return reply(c, 
       {
         status: "error",
         message: "Payload inválido",
@@ -126,26 +127,26 @@ app.post("/", async (c) => {
   };
 
   const created = await createProductionBalance(payload, user.id);
-  return c.json({ status: "ok", item: mapResponse(created) });
+  return reply(c, { status: "ok", item: mapResponse(created) });
 });
 
 app.put("/:id", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
 
   const canUpdate = await hasPermission(user.id, "update", "ProductionBalance");
-  if (!canUpdate) return c.json({ status: "error", message: "Forbidden" }, 403);
+  if (!canUpdate) return reply(c, { status: "error", message: "Forbidden" }, 403);
 
   const id = Number(c.req.param("id"));
   if (!Number.isFinite(id)) {
-    return c.json({ status: "error", message: "ID inválido" }, 400);
+    return reply(c, { status: "error", message: "ID inválido" }, 400);
   }
 
   const body = await c.req.json();
   const parsed = productionBalancePayloadSchema.safeParse(body);
 
   if (!parsed.success) {
-    return c.json(
+    return reply(c, 
       {
         status: "error",
         message: "Payload inválido",
@@ -167,7 +168,7 @@ app.put("/:id", async (c) => {
   };
 
   const updated = await updateProductionBalance(id, payload);
-  return c.json({ status: "ok", item: mapResponse(updated) });
+  return reply(c, { status: "ok", item: mapResponse(updated) });
 });
 
 export default app;

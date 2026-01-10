@@ -1,3 +1,4 @@
+import { reply } from "../utils/reply";
 import { Hono, type Context } from "hono";
 import { getSessionUser, type AuthSession, hasPermission } from "../auth";
 
@@ -126,7 +127,7 @@ async function buildFilters(
 const requireAuth = async (c: Context, next: any) => {
   const user = await getSessionUser(c);
   if (!user) {
-    return c.json({ status: "error", message: "No autorizado" }, 401);
+    return reply(c, { status: "error", message: "No autorizado" }, 401);
   }
   c.set("user", user);
   await next();
@@ -137,7 +138,7 @@ const requireAuth = async (c: Context, next: any) => {
 // ============================================================
 calendarRoutes.get("/events/summary", requireAuth, async (c: Context) => {
   const user = await getSessionUser(c);
-  if (!user) return c.json({ status: "error", message: "No autorizado" }, 401);
+  if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
 
   const canReadSchedule = await hasPermission(
     user.id,
@@ -152,12 +153,12 @@ calendarRoutes.get("/events/summary", requireAuth, async (c: Context) => {
   const canReadEvents = await hasPermission(user.id, "read", "CalendarEvent"); // Legacy/Broad
 
   if (!canReadSchedule && !canReadHeatmap && !canReadEvents) {
-    return c.json({ status: "error", message: "Forbidden" }, 403);
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
   }
 
   const { filters, applied } = await buildFilters(c.req.query());
   const aggregates = await getCalendarAggregates(filters);
-  return c.json({
+  return reply(c, {
     status: "ok",
     filters: applied,
     totals: aggregates.totals,
@@ -171,18 +172,18 @@ calendarRoutes.get("/events/summary", requireAuth, async (c: Context) => {
 // ============================================================
 calendarRoutes.get("/events/daily", requireAuth, async (c: Context) => {
   const user = await getSessionUser(c);
-  if (!user) return c.json({ status: "error", message: "No autorizado" }, 401);
+  if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
 
   const canReadDaily = await hasPermission(user.id, "read", "CalendarDaily");
   const canReadEvents = await hasPermission(user.id, "read", "CalendarEvent"); // Legacy/Broad
 
   if (!canReadDaily && !canReadEvents) {
-    return c.json({ status: "error", message: "Forbidden" }, 403);
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
   }
 
   const { filters, applied, maxDays } = await buildFilters(c.req.query());
   const events = await getCalendarEventsByDate(filters, { maxDays });
-  return c.json({
+  return reply(c, {
     status: "ok",
     filters: {
       ...applied,
@@ -198,7 +199,7 @@ calendarRoutes.get("/events/daily", requireAuth, async (c: Context) => {
 // ============================================================
 calendarRoutes.post("/events/sync", requireAuth, async (c: Context) => {
   const user = await getSessionUser(c);
-  if (!user) return c.json({ status: "error", message: "No autorizado" }, 401);
+  if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
 
   const canSync = await hasPermission(user.id, "update", "CalendarSetting");
   // Also allow if they can manage events broadly, though strictly it's a setting op
@@ -209,7 +210,7 @@ calendarRoutes.post("/events/sync", requireAuth, async (c: Context) => {
   );
 
   if (!canSync && !canManageEvents) {
-    return c.json({ status: "error", message: "Forbidden" }, 403);
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
   }
 
   // Create log entry first
@@ -250,7 +251,7 @@ calendarRoutes.post("/events/sync", requireAuth, async (c: Context) => {
       console.error(`❌ Sync failed (logId: ${logId}):`, error);
     });
 
-  return c.json(
+  return reply(c, 
     {
       status: "accepted",
       message: "Sincronización iniciada en segundo plano",
@@ -265,7 +266,7 @@ calendarRoutes.post("/events/sync", requireAuth, async (c: Context) => {
 // ============================================================
 calendarRoutes.get("/events/sync/logs", requireAuth, async (c: Context) => {
   const user = await getSessionUser(c);
-  if (!user) return c.json({ status: "error", message: "No autorizado" }, 401);
+  if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
 
   const canReadLogs = await hasPermission(user.id, "read", "CalendarSyncLog");
   const canReadSettings = await hasPermission(
@@ -275,11 +276,11 @@ calendarRoutes.get("/events/sync/logs", requireAuth, async (c: Context) => {
   ); // Settings page shows logs
 
   if (!canReadLogs && !canReadSettings) {
-    return c.json({ status: "error", message: "Forbidden" }, 403);
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
   }
 
   const logs = await listCalendarSyncLogs(50);
-  return c.json({
+  return reply(c, {
     status: "ok",
     logs: logs.map((log: any) => ({
       id: Number(log.id),
@@ -306,7 +307,7 @@ calendarRoutes.get("/events/sync/logs", requireAuth, async (c: Context) => {
 // ============================================================
 calendarRoutes.get("/classification-options", async (c: Context) => {
   const user = await getSessionUser(c);
-  if (!user) return c.json({ status: "error", message: "No autorizado" }, 401);
+  if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
 
   // Allow if user has ANY calendar read capability
   const canReadSchedule = await hasPermission(
@@ -318,10 +319,10 @@ calendarRoutes.get("/classification-options", async (c: Context) => {
   const canReadEvents = await hasPermission(user.id, "read", "CalendarEvent");
 
   if (!canReadSchedule && !canReadDaily && !canReadEvents) {
-    return c.json({ status: "error", message: "Forbidden" }, 403);
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
   }
 
-  return c.json({
+  return reply(c, {
     status: "ok",
     categories: CATEGORY_CHOICES,
     treatmentStages: TREATMENT_STAGE_CHOICES,
@@ -333,7 +334,7 @@ calendarRoutes.get("/classification-options", async (c: Context) => {
 // ============================================================
 calendarRoutes.get("/events/unclassified", requireAuth, async (c: Context) => {
   const user = await getSessionUser(c);
-  if (!user) return c.json({ status: "error", message: "No autorizado" }, 401);
+  if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
 
   const canUpdateEvents = await hasPermission(
     user.id,
@@ -342,7 +343,7 @@ calendarRoutes.get("/events/unclassified", requireAuth, async (c: Context) => {
   );
 
   if (!canUpdateEvents) {
-    return c.json({ status: "error", message: "Forbidden" }, 403);
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
   }
 
   const query = c.req.query();
@@ -392,7 +393,7 @@ calendarRoutes.get("/events/unclassified", requireAuth, async (c: Context) => {
     (row: UnclassifiedEvent) => !isIgnoredEvent(row.summary)
   );
 
-  return c.json({
+  return reply(c, {
     status: "ok",
     totalCount,
     events: filteredRows.map((row: UnclassifiedEvent) => ({
@@ -424,18 +425,18 @@ calendarRoutes.get("/events/unclassified", requireAuth, async (c: Context) => {
 // ============================================================
 calendarRoutes.post("/events/classify", requireAuth, async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return c.json({ status: "error", message: "No autorizado" }, 401);
+  if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
 
   const canClassify = await hasPermission(user.id, "update", "CalendarEvent");
 
   if (!canClassify) {
-    return c.json({ status: "error", message: "Forbidden" }, 403);
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
   }
 
   const body = await c.req.json();
   const parsed = updateClassificationSchema.safeParse(body);
   if (!parsed.success) {
-    return c.json(
+    return reply(c, 
       {
         status: "error",
         error: "Payload inválido",
@@ -456,7 +457,7 @@ calendarRoutes.post("/events/classify", requireAuth, async (c) => {
     treatmentStage: payload.treatmentStage ?? null,
   });
 
-  return c.json({ status: "ok" });
+  return reply(c, { status: "ok" });
 });
 
 // ============================================================
@@ -465,7 +466,7 @@ calendarRoutes.post("/events/classify", requireAuth, async (c) => {
 // GET /api/calendar/calendars
 calendarRoutes.get("/calendars", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return c.json({ status: "error", message: "No autorizado" }, 401);
+  if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
 
   // Allow if they have any broad listing/settings access
   const canReadSchedule = await hasPermission(
@@ -481,7 +482,7 @@ calendarRoutes.get("/calendars", async (c) => {
   const canReadEvents = await hasPermission(user.id, "read", "CalendarEvent");
 
   if (!canReadSchedule && !canReadSettings && !canReadEvents) {
-    return c.json({ status: "error", message: "Forbidden" }, 403);
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
   }
 
   const calendars = (await db.calendar.findMany({
@@ -495,7 +496,7 @@ calendarRoutes.get("/calendars", async (c) => {
     },
   })) as any; // Cast to any to avoid TS error with ZenStack _count inference for now
 
-  return c.json({
+  return reply(c, {
     status: "ok",
     calendars: calendars.map((cal: any) => ({
       id: cal.id,
@@ -513,7 +514,7 @@ calendarRoutes.get("/calendars", async (c) => {
 // ============================================================
 calendarRoutes.get("/calendars/:calendarId/events", requireAuth, async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return c.json({ status: "error", message: "No autorizado" }, 401);
+  if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
 
   const canReadSchedule = await hasPermission(
     user.id,
@@ -524,7 +525,7 @@ calendarRoutes.get("/calendars/:calendarId/events", requireAuth, async (c) => {
   const canReadEvents = await hasPermission(user.id, "read", "CalendarEvent");
 
   if (!canReadSchedule && !canReadDaily && !canReadEvents) {
-    return c.json({ status: "error", message: "Forbidden" }, 403);
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
   }
 
   const calendarId = c.req.param("calendarId");
@@ -540,14 +541,14 @@ calendarRoutes.get("/calendars/:calendarId/events", requireAuth, async (c) => {
   });
 
   if (!calendar) {
-    return c.json({ status: "error", message: "Calendar not found" }, 404);
+    return reply(c, { status: "error", message: "Calendar not found" }, 404);
   }
 
   const startParam = query.start;
   const endParam = query.end;
 
   if (!startParam || !endParam) {
-    return c.json(
+    return reply(c, 
       { status: "error", message: "Missing start or end date" },
       400
     );
@@ -557,7 +558,7 @@ calendarRoutes.get("/calendars/:calendarId/events", requireAuth, async (c) => {
   const end = new Date(endParam);
 
   if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-    return c.json(
+    return reply(c, 
       { status: "error", message: "Invalid start or end date" },
       400
     );
@@ -603,7 +604,7 @@ calendarRoutes.get("/calendars/:calendarId/events", requireAuth, async (c) => {
     orderBy: [{ startDateTime: "asc" }, { startDate: "asc" }],
   });
 
-  return c.json({
+  return reply(c, {
     status: "ok",
     events: events.map((e) => ({
       ...e,
@@ -694,7 +695,7 @@ calendarRoutes.post("/webhook", async (c) => {
 
   if (!channelId || !resourceId) {
     console.warn("[webhook] ⚠️ Missing channelId or resourceId");
-    return c.json({ error: "Missing required headers" }, 400);
+    return reply(c, { error: "Missing required headers" }, 400);
   }
 
   if (resourceState === "sync") {
@@ -733,11 +734,11 @@ calendarRoutes.post("/webhook", async (c) => {
 
 calendarRoutes.post("/events/reclassify", requireAuth, async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return c.json({ status: "error", message: "No autorizado" }, 401);
+  if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
 
   const canReclassify = await hasPermission(user.id, "update", "CalendarEvent");
   if (!canReclassify) {
-    return c.json({ status: "error", message: "Forbidden" }, 403);
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
   }
 
   // Dynamic import to avoid cycles if any, though imports up top are fine
@@ -770,7 +771,7 @@ calendarRoutes.post("/events/reclassify", requireAuth, async (c) => {
   });
 
   const jobId = startJob("reclassify", events.length);
-  c.json({ status: "accepted", jobId, totalEvents: events.length }); // Respond first? No, await issues in Hono.
+  reply(c, { status: "accepted", jobId, totalEvents: events.length }); // Respond first? No, await issues in Hono.
   // Hono doesn't support responding then continuing easily without waitUntil.
   // c.executionCtx.waitUntil is for Cloudflare Workers.
   // In Node, we can just not await the async IIFE.
@@ -879,16 +880,16 @@ calendarRoutes.post("/events/reclassify", requireAuth, async (c) => {
     }
   })();
 
-  return c.json({ status: "accepted", jobId, totalEvents: events.length });
+  return reply(c, { status: "accepted", jobId, totalEvents: events.length });
 });
 
 calendarRoutes.post("/events/reclassify-all", requireAuth, async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return c.json({ status: "error", message: "No autorizado" }, 401);
+  if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
 
   const canReclassify = await hasPermission(user.id, "update", "CalendarEvent");
   if (!canReclassify) {
-    return c.json({ status: "error", message: "Forbidden" }, 403);
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
   }
 
   const { startJob, updateJobProgress, completeJob, failJob } =
@@ -993,7 +994,7 @@ calendarRoutes.post("/events/reclassify-all", requireAuth, async (c) => {
     }
   })();
 
-  return c.json({ status: "accepted", jobId, totalEvents: events.length });
+  return reply(c, { status: "accepted", jobId, totalEvents: events.length });
 });
 
 calendarRoutes.get("/events/job/:jobId", requireAuth, async (c) => {
@@ -1002,13 +1003,13 @@ calendarRoutes.get("/events/job/:jobId", requireAuth, async (c) => {
   const job = getJobStatus(jobId);
 
   if (!job) {
-    return c.json(
+    return reply(c, 
       { status: "error", message: "Job not found or expired" },
       404
     );
   }
 
-  return c.json({
+  return reply(c, {
     status: "ok",
     job: {
       id: job.id,

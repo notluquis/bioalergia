@@ -8,6 +8,7 @@
  */
 
 import { Hono } from "hono";
+import { reply } from "../utils/reply";
 import { stream } from "hono/streaming";
 import { getCookie } from "hono/cookie";
 import bcrypt from "bcryptjs";
@@ -48,45 +49,45 @@ async function getAuth(c: {
 // List Reports
 mercadopagoRoutes.get("/reports", async (c) => {
   const auth = await getAuth(c);
-  if (!auth) return c.json({ status: "error", message: "No autorizado" }, 401);
+  if (!auth) return reply(c, { status: "error", message: "No autorizado" }, 401);
 
   const canRead = await hasPermission(auth.userId, "read", "Integration");
-  if (!canRead) return c.json({ status: "error", message: "Forbidden" }, 403);
+  if (!canRead) return reply(c, { status: "error", message: "Forbidden" }, 403);
 
   try {
     const data = await MercadoPagoService.listReports("release");
-    return c.json(data);
+    return reply(c, data);
   } catch (e) {
-    return c.json({ status: "error", message: String(e) }, 500);
+    return reply(c, { status: "error", message: String(e) }, 500);
   }
 });
 
 // Create Manual Report
 mercadopagoRoutes.post("/reports", async (c) => {
   const auth = await getAuth(c);
-  if (!auth) return c.json({ status: "error", message: "No autorizado" }, 401);
+  if (!auth) return reply(c, { status: "error", message: "No autorizado" }, 401);
 
   const canCreate = await hasPermission(auth.userId, "read", "Integration");
-  if (!canCreate) return c.json({ status: "error", message: "Forbidden" }, 403);
+  if (!canCreate) return reply(c, { status: "error", message: "Forbidden" }, 403);
 
   const body = await c.req.json();
 
   try {
     const data = await MercadoPagoService.createReport("release", body);
     console.log("[MP Release] Report created by", auth.email);
-    return c.json(data, 201);
+    return reply(c, data, 201);
   } catch (e) {
-    return c.json({ status: "error", message: String(e) }, 500);
+    return reply(c, { status: "error", message: String(e) }, 500);
   }
 });
 
 // Download Report
 mercadopagoRoutes.get("/reports/download/:fileName", async (c) => {
   const auth = await getAuth(c);
-  if (!auth) return c.json({ status: "error", message: "No autorizado" }, 401);
+  if (!auth) return reply(c, { status: "error", message: "No autorizado" }, 401);
 
   const canRead = await hasPermission(auth.userId, "read", "Integration");
-  if (!canRead) return c.json({ status: "error", message: "Forbidden" }, 403);
+  if (!canRead) return reply(c, { status: "error", message: "Forbidden" }, 403);
 
   const fileName = c.req.param("fileName");
 
@@ -109,7 +110,7 @@ mercadopagoRoutes.get("/reports/download/:fileName", async (c) => {
       }
     });
   } catch (e) {
-    return c.json({ status: "error", message: String(e) }, 500);
+    return reply(c, { status: "error", message: String(e) }, 500);
   }
 });
 
@@ -120,45 +121,45 @@ mercadopagoRoutes.get("/reports/download/:fileName", async (c) => {
 // List Reports
 mercadopagoRoutes.get("/settlement/reports", async (c) => {
   const auth = await getAuth(c);
-  if (!auth) return c.json({ status: "error", message: "No autorizado" }, 401);
+  if (!auth) return reply(c, { status: "error", message: "No autorizado" }, 401);
 
   const canRead = await hasPermission(auth.userId, "read", "Integration");
-  if (!canRead) return c.json({ status: "error", message: "Forbidden" }, 403);
+  if (!canRead) return reply(c, { status: "error", message: "Forbidden" }, 403);
 
   try {
     const data = await MercadoPagoService.listReports("settlement");
-    return c.json(data);
+    return reply(c, data);
   } catch (e) {
-    return c.json({ status: "error", message: String(e) }, 500);
+    return reply(c, { status: "error", message: String(e) }, 500);
   }
 });
 
 // Create Manual Report
 mercadopagoRoutes.post("/settlement/reports", async (c) => {
   const auth = await getAuth(c);
-  if (!auth) return c.json({ status: "error", message: "No autorizado" }, 401);
+  if (!auth) return reply(c, { status: "error", message: "No autorizado" }, 401);
 
   const canCreate = await hasPermission(auth.userId, "read", "Integration");
-  if (!canCreate) return c.json({ status: "error", message: "Forbidden" }, 403);
+  if (!canCreate) return reply(c, { status: "error", message: "Forbidden" }, 403);
 
   const body = await c.req.json();
 
   try {
     const data = await MercadoPagoService.createReport("settlement", body);
     console.log("[MP Settlement] Report created by", auth.email);
-    return c.json(data, 201);
+    return reply(c, data, 201);
   } catch (e) {
-    return c.json({ status: "error", message: String(e) }, 500);
+    return reply(c, { status: "error", message: String(e) }, 500);
   }
 });
 
 // Download Report
 mercadopagoRoutes.get("/settlement/reports/download/:fileName", async (c) => {
   const auth = await getAuth(c);
-  if (!auth) return c.json({ status: "error", message: "No autorizado" }, 401);
+  if (!auth) return reply(c, { status: "error", message: "No autorizado" }, 401);
 
   const canRead = await hasPermission(auth.userId, "read", "Integration");
-  if (!canRead) return c.json({ status: "error", message: "Forbidden" }, 403);
+  if (!canRead) return reply(c, { status: "error", message: "Forbidden" }, 403);
 
   const fileName = c.req.param("fileName");
 
@@ -181,7 +182,7 @@ mercadopagoRoutes.get("/settlement/reports/download/:fileName", async (c) => {
       }
     });
   } catch (e) {
-    return c.json({ status: "error", message: String(e) }, 500);
+    return reply(c, { status: "error", message: String(e) }, 500);
   }
 });
 
@@ -191,10 +192,10 @@ mercadopagoRoutes.get("/settlement/reports/download/:fileName", async (c) => {
 
 mercadopagoRoutes.post("/process-report", async (c) => {
   const auth = await getAuth(c);
-  if (!auth) return c.json({ status: "error", message: "No autorizado" }, 401);
+  if (!auth) return reply(c, { status: "error", message: "No autorizado" }, 401);
 
   const canCreate = await hasPermission(auth.userId, "read", "Integration");
-  if (!canCreate) return c.json({ status: "error", message: "Forbidden" }, 403);
+  if (!canCreate) return reply(c, { status: "error", message: "Forbidden" }, 403);
 
   const { fileName, reportType } = await c.req.json<{
     fileName: string;
@@ -202,7 +203,7 @@ mercadopagoRoutes.post("/process-report", async (c) => {
   }>();
 
   if (!fileName || !reportType) {
-    return c.json(
+    return reply(c, 
       { status: "error", message: "Missing fileName or reportType" },
       400
     );
@@ -217,14 +218,14 @@ mercadopagoRoutes.post("/process-report", async (c) => {
       fileName,
     });
 
-    return c.json({
+    return reply(c, {
       status: "success",
       message: "Reporte procesado exitosamente",
       stats,
     });
   } catch (e) {
     console.error(`[MP Process] Failed to process ${fileName}:`, e);
-    return c.json({ status: "error", message: String(e) }, 500);
+    return reply(c, { status: "error", message: String(e) }, 500);
   }
 });
 
@@ -270,7 +271,7 @@ mercadopagoRoutes.post("/webhook", async (c) => {
           "[MP Webhook] Invalid signature for transaction:",
           payload.transaction_id
         );
-        return c.json({ status: "error", message: "Invalid signature" }, 401);
+        return reply(c, { status: "error", message: "Invalid signature" }, 401);
       }
     }
 
@@ -294,9 +295,9 @@ mercadopagoRoutes.post("/webhook", async (c) => {
       }
     }
 
-    return c.json({ status: "ok", message: "Notification received" });
+    return reply(c, { status: "ok", message: "Notification received" });
   } catch (e) {
     console.error("[MP Webhook] Error processing notification:", e);
-    return c.json({ status: "error", message: String(e) }, 500);
+    return reply(c, { status: "error", message: String(e) }, 500);
   }
 });

@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { reply } from "../utils/reply";
 import { getSessionUser, hasPermission } from "../auth";
 
 const app = new Hono();
@@ -8,18 +9,18 @@ const app = new Hono();
 // This is a placeholder to prevent 400 errors until the feature is implemented.
 app.post("/:id/pay", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
 
   const canUpdate = await hasPermission(user.id, "update", "Service");
-  if (!canUpdate) return c.json({ status: "error", message: "Forbidden" }, 403);
+  if (!canUpdate) return reply(c, { status: "error", message: "Forbidden" }, 403);
 
   const id = Number(c.req.param("id"));
   if (!Number.isFinite(id)) {
-    return c.json({ status: "error", message: "ID inválido" }, 400);
+    return reply(c, { status: "error", message: "ID inválido" }, 400);
   }
 
   // TODO: Implement when ServiceSchedule model is added to schema
-  return c.json(
+  return reply(c, 
     { status: "error", message: "ServiceSchedule feature not yet implemented" },
     501
   );
@@ -28,18 +29,18 @@ app.post("/:id/pay", async (c) => {
 // POST /:id/unlink - Unlink payment from a service schedule
 app.post("/:id/unlink", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
 
   const canUpdate = await hasPermission(user.id, "update", "Service");
-  if (!canUpdate) return c.json({ status: "error", message: "Forbidden" }, 403);
+  if (!canUpdate) return reply(c, { status: "error", message: "Forbidden" }, 403);
 
   const id = Number(c.req.param("id"));
   if (!Number.isFinite(id)) {
-    return c.json({ status: "error", message: "ID inválido" }, 400);
+    return reply(c, { status: "error", message: "ID inválido" }, 400);
   }
 
   // TODO: Implement when ServiceSchedule model is added to schema
-  return c.json(
+  return reply(c, 
     { status: "error", message: "ServiceSchedule feature not yet implemented" },
     501
   );
