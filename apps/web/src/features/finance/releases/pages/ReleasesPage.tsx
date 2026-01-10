@@ -20,7 +20,7 @@ async function fetchReleases(page: number, pageSize: number, search?: string): P
 
 export default function ReleasesPage() {
   const [page, setPage] = useState(0);
-  const [pageSize] = useState(50);
+  const [pageSize, setPageSize] = useState(50);
   const [searchInput, setSearchInput] = useState("");
   const [debouncedSearch] = useDebounce(searchInput, 500);
 
@@ -59,10 +59,13 @@ export default function ReleasesPage() {
           if (typeof updater === "function") {
             const newState = updater({ pageIndex: page, pageSize });
             setPage(newState.pageIndex);
+            setPageSize(newState.pageSize);
           } else {
             setPage(updater.pageIndex);
+            setPageSize(updater.pageSize);
           }
         }}
+        initialPinning={{ left: ["expander", "sourceId"], right: [] }}
         isLoading={isLoading}
       />
     </div>

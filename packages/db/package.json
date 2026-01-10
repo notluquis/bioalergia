@@ -51,9 +51,9 @@
   },
   "devDependencies": {
     "@tanstack/react-query": "^5.90.16",
-    "@types/node": "^25.0.5",
+    "@types/node": "^25.0.6",
     "@types/pg": "^8.16.0",
-    "@types/react": "^19.2.7",
+    "@types/react": "^19.2.8",
     "@zenstackhq/cli": "^3.2.0",
     "@zenstackhq/sdk": "^3.2.0",
     "@zenstackhq/tanstack-query": "^3.2.0",

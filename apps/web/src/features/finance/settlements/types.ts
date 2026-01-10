@@ -61,10 +61,9 @@ export interface SettlementTransaction {
 }
 
 export interface ListResponse {
-  status: string;
   data: SettlementTransaction[];
   total: number;
+  totalPages: number;
   page: number;
   pageSize: number;
-  totalPages: number;
 }
