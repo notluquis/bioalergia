@@ -1,4 +1,6 @@
 import { Hono } from "hono";
+import { db } from "@finanzas/db";
+import { cacheControl } from "../lib/cache-control";
 import { getSessionUser, hasPermission } from "../auth";
 import {
   assignPermissionsToRole,
@@ -17,7 +19,7 @@ import {
 
 const app = new Hono();
 
-app.get("/", async (c) => {
+app.get("/", cacheControl(300), async (c) => {
   const user = await getSessionUser(c);
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
 

@@ -1,39 +1,52 @@
+/**
+ * PASETO Token Utilities
+ *
+ * Uses auto-generated secret from database - no hardcoded values.
+ * Secret is lazily initialized on first use.
+ */
+
 import { createHash } from "crypto";
 import { V3 } from "paseto";
+import { getOrCreateTokenSecret } from "./token-secret";
 
-const SECRET =
-  process.env.JWT_SECRET || "default_super_secret_key_at_least_32_bytes_long";
+// Key is initialized lazily on first token operation
+let KEY: Buffer | null = null;
 
-// Ensure key is 32 bytes for V3.local (AES-256-CTR + HMAC-SHA384)
-// Helper to derive a 32-byte key from the existing secret
-function getKey() {
-  const keyBuffer = Buffer.from(SECRET);
-  if (keyBuffer.length === 32) return keyBuffer;
+/**
+ * Get the encryption key, initializing from DB if needed.
+ * Derives a 32-byte key from the secret using SHA-256 if necessary.
+ */
+async function getKey(): Promise<Buffer> {
+  if (KEY) return KEY;
 
-  // If not 32 bytes, hash it to sha256 to get exactly 32 bytes
-  return createHash("sha256").update(SECRET).digest();
+  const secret = await getOrCreateTokenSecret();
+  const keyBuffer = Buffer.from(secret, "hex");
+
+  // If already 32 bytes, use directly
+  if (keyBuffer.length === 32) {
+    KEY = keyBuffer;
+    return KEY;
+  }
+
+  // Otherwise hash to get exactly 32 bytes
+  KEY = createHash("sha256").update(secret).digest();
+  return KEY;
 }
 
-const KEY = getKey();
-
-export async function signToken(payload: any, expiresIn: string = "2d") {
-  // Using V3.encrypt for local (symmetric) tokens
-  // paseto supports 'expiresIn' option directly
-
-  const options = {
-    expiresIn,
-  };
-
-  return V3.encrypt(payload, KEY, options);
+export async function signToken(
+  payload: Record<string, unknown>,
+  expiresIn: string = "2d"
+) {
+  const key = await getKey();
+  return V3.encrypt(payload, key, { expiresIn });
 }
 
 export async function verifyToken(token: string) {
   try {
-    const payload = await V3.decrypt(token, KEY);
-
-    // The paseto library validates 'exp' automatically
+    const key = await getKey();
+    const payload = await V3.decrypt(token, key);
     return payload;
-  } catch (error) {
+  } catch {
     throw new Error("Invalid token");
   }
 }

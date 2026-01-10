@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { getSessionUser, hasPermission } from "../auth";
 import { db } from "@finanzas/db";
+import { cacheControl } from "../lib/cache-control";
 
 export type Variables = {
   user: any;
@@ -19,7 +20,7 @@ const requireAuth = async (c: any, next: any) => {
 };
 
 // GET /internal
-settingsRoutes.get("/internal", requireAuth, async (c) => {
+settingsRoutes.get("/internal", requireAuth, cacheControl(3600), async (c) => {
   const user = c.get("user");
 
   const canRead = await hasPermission(user.id, "read", "Setting");

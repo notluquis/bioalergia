@@ -17,6 +17,15 @@ import { LOADING_SPINNER_XS } from "@/lib/styles";
 
 import { addCounterpartAccount, attachCounterpartRut, fetchAccountSuggestions, updateCounterpartAccount } from "../api";
 import type { Counterpart, CounterpartAccount, CounterpartAccountSuggestion, CounterpartSummary } from "../types";
+import {
+  ACCOUNT_FORM_DEFAULT,
+  accountFilterKey,
+  AccountForm,
+  AccountGroup,
+  AccountTransactionFilter,
+  buildAccountTransactionFilter,
+  DateRange,
+} from "./AssociatedAccounts.helpers";
 
 interface AssociatedAccountsProps {
   selectedId: number | null;
@@ -24,57 +33,6 @@ interface AssociatedAccountsProps {
   summary: CounterpartSummary | null;
   summaryRange: { from: string; to: string };
   onSummaryRangeChange: (update: Partial<DateRange>) => void;
-}
-
-type AccountForm = {
-  accountIdentifier: string;
-  bankName: string;
-  accountType: string;
-  holder: string;
-  concept: string;
-  bankAccountNumber: string;
-};
-
-const ACCOUNT_FORM_DEFAULT: AccountForm = {
-  accountIdentifier: "",
-  bankName: "",
-  accountType: "",
-  holder: "",
-  concept: "",
-  bankAccountNumber: "",
-};
-
-type DateRange = { from: string; to: string };
-
-type AccountGroup = {
-  key: string;
-  label: string;
-  bankName: string | null;
-  holder: string | null;
-  concept: string;
-  accounts: CounterpartAccount[];
-};
-
-type AccountTransactionFilter = {
-  sourceId?: string;
-  bankAccountNumber?: string;
-};
-
-function buildAccountTransactionFilter(account: CounterpartAccount): AccountTransactionFilter {
-  const withdrawId = account.metadata?.withdrawId?.trim();
-  const bankAccountNumber = account.metadata?.bankAccountNumber?.trim() || account.account_identifier.trim();
-  const filter: AccountTransactionFilter = {};
-  if (withdrawId) {
-    filter.sourceId = withdrawId;
-  }
-  if (bankAccountNumber) {
-    filter.bankAccountNumber = bankAccountNumber;
-  }
-  return filter;
-}
-
-function accountFilterKey(filter: AccountTransactionFilter) {
-  return `${filter.sourceId ?? ""}|${filter.bankAccountNumber ?? ""}`;
 }
 
 export default function AssociatedAccounts({

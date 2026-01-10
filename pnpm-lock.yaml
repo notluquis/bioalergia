@@ -10,8 +10,8 @@ importers:
   .:
     devDependencies:
       '@zenstackhq/tanstack-query':
-        specifier: ^3.1.1
-        version: 3.1.1(@tanstack/react-query@5.90.16(react@19.2.3))
+        specifier: ^3.2.0
+        version: 3.2.0(@tanstack/react-query@5.90.16(react@19.2.3))
       turbo:
         specifier: ^2.7.3
         version: 2.7.3
@@ -20,7 +20,7 @@ importers:
     dependencies:
       '@finanzas/db':
         specifier: workspace:*
-        version: link:../../packages/db
+        version: file:packages/db(hono@4.11.3)(zod@4.3.5)
       '@googleapis/calendar':
         specifier: ^14.2.0
         version: 14.2.0
@@ -36,24 +36,18 @@ importers:
       '@simplewebauthn/server':
         specifier: ^13.2.2
         version: 13.2.2
-      '@types/bcrypt':
-        specifier: ^6.0.0
-        version: 6.0.0
       '@types/web-push':
         specifier: ^3.6.4
         version: 3.6.4
       '@zenstackhq/orm':
-        specifier: ^3.1.1
-        version: 3.1.1(pg@8.16.3)(zod@4.3.5)
+        specifier: ^3.2.0
+        version: 3.2.0(pg@8.16.3)(zod@4.3.5)
       '@zenstackhq/server':
-        specifier: ^3.1.1
-        version: 3.1.1(hono@4.11.3)(pg@8.16.3)(zod@4.3.5)
+        specifier: ^3.2.0
+        version: 3.2.0(hono@4.11.3)(pg@8.16.3)(zod@4.3.5)
       argon2:
         specifier: ^0.44.0
         version: 0.44.0
-      bcrypt:
-        specifier: ^6.0.0
-        version: 6.0.0
       bcryptjs:
         specifier: ^3.0.3
         version: 3.0.3
@@ -75,6 +69,9 @@ importers:
       hono:
         specifier: ^4.11.3
         version: 4.11.3
+      hono-rate-limiter:
+        specifier: ^0.5.3
+        version: 0.5.3(hono@4.11.3)
       kysely:
         specifier: ^0.28.9
         version: 0.28.9
@@ -161,8 +158,8 @@ importers:
         specifier: ^5.90.16
         version: 5.90.16(react@19.2.3)
       '@zenstackhq/tanstack-query':
-        specifier: ^3.1.1
-        version: 3.1.1(@tanstack/react-query@5.90.16(react@19.2.3))
+        specifier: ^3.2.0
+        version: 3.2.0(@tanstack/react-query@5.90.16(react@19.2.3))
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
@@ -351,11 +348,11 @@ importers:
   packages/db:
     dependencies:
       '@zenstackhq/orm':
-        specifier: ^3.1.1
-        version: 3.1.1(pg@8.16.3)(zod@4.3.5)
+        specifier: ^3.2.0
+        version: 3.2.0(pg@8.16.3)(zod@4.3.5)
       '@zenstackhq/plugin-policy':
-        specifier: ^3.1.1
-        version: 3.1.1(kysely@0.28.9)(pg@8.16.3)(zod@4.3.5)
+        specifier: ^3.2.0
+        version: 3.2.0(kysely@0.28.9)(pg@8.16.3)(zod@4.3.5)
       '@zenstackhq/server':
         specifier: ^3.1.1
         version: 3.1.1(hono@4.11.3)(pg@8.16.3)(zod@4.3.5)
@@ -382,14 +379,14 @@ importers:
         specifier: ^19.2.7
         version: 19.2.7
       '@zenstackhq/cli':
-        specifier: ^3.1.1
-        version: 3.1.1(typescript@5.9.3)
+        specifier: ^3.2.0
+        version: 3.2.0(typescript@5.9.3)
       '@zenstackhq/sdk':
-        specifier: ^3.1.1
-        version: 3.1.1
+        specifier: ^3.2.0
+        version: 3.2.0
       '@zenstackhq/tanstack-query':
-        specifier: 3.1.1
-        version: 3.1.1(@tanstack/react-query@5.90.16(react@19.2.3))
+        specifier: ^3.2.0
+        version: 3.2.0(@tanstack/react-query@5.90.16(react@19.2.3))
       '@zenstackhq/trpc':
         specifier: ^2.22.1
         version: 2.22.1(@prisma/client@7.2.0(prisma@6.19.1(typescript@5.9.3))(typescript@5.9.3))(typescript@5.9.3)(zod@4.3.5)
@@ -1499,6 +1496,9 @@ packages:
       '@exodus/crypto':
         optional: true
 
+  '@finanzas/db@file:packages/db':
+    resolution: {directory: packages/db, type: directory}
+
   '@floating-ui/core@1.7.3':
     resolution: {integrity: sha512-sGnvb5dmrJaKEZ+LDIpguvdX3bDlEllmv4/ClQ9awcmCZrlx5jQyyMWFM5kBI+EyNOCDDiKk8il0zeuX3Zlg/w==}
 
@@ -2530,9 +2530,6 @@ packages:
   '@types/babel__traverse@7.28.0':
     resolution: {integrity: sha512-8PvcXf70gTDZBgt9ptxJ8elBeBjcLOAcOtoO/mPJjtji1+CdGbHgm77om1GrsPxsiE+uXIpNSK64UYaIwQXd4Q==}
 
-  '@types/bcrypt@6.0.0':
-    resolution: {integrity: sha512-/oJGukuH3D2+D+3H4JWLaAsJ/ji86dhRidzZ/Od7H/i8g+aCmvkeCc6Ni/f9uxGLSQVCRZkX2/lqEFG2BvWtlQ==}
-
   '@types/chai@5.2.3':
     resolution: {integrity: sha512-Mw558oeA9fFbv65/y4mHtXDs9bPnFMZAL/jxdPFUpOHHIXX91mcgEHbS5Lahr+pwZFR8A7GQleRWeI6cGFC2UA==}
 
@@ -2734,21 +2731,25 @@ packages:
   '@vitest/utils@4.0.16':
     resolution: {integrity: sha512-h8z9yYhV3e1LEfaQ3zdypIrnAg/9hguReGZoS7Gl0aBG5xgA410zBqECqmaF/+RkTggRsfnzc1XaAHA6bmUufA==}
 
-  '@zenstackhq/cli@3.1.1':
-    resolution: {integrity: sha512-w+ml9dh2tZJuViF6wqIiEjYQMl2nvUbVIDLzrctDkbS699bsY58I2qDCFAh1zRb4gcPEOAAud9Kwmzbz0UH5rw==}
+  '@zenstackhq/cli@3.2.0':
+    resolution: {integrity: sha512-fPEyd3R7Z5+nxOAK9N0t6ojyLBsHfw83kpX4tMWbHePYJ91ih48U9Zl+sZElMqzQtH8PsmbMMeu8SDlsXLXReA==}
+    engines: {node: '>=20'}
     hasBin: true
 
-  '@zenstackhq/client-helpers@3.1.1':
-    resolution: {integrity: sha512-8lmbTz6UFIoHtkksoXM5zUGq/q4Ni710m2OjyqAK9USMh9ZfHILv/vz1jpI1DCuQeAFqPR5RhAa5k3IRhLMgSA==}
+  '@zenstackhq/client-helpers@3.2.0':
+    resolution: {integrity: sha512-wsvxLOX2/w3fIGS/fjxtgxhEvJQ0z8YpX+F3BvS2yKPEABL2A4O3YcSb5pQOh/hNd72h4DUT97w+MCnsRTJHEg==}
 
   '@zenstackhq/common-helpers@3.1.1':
     resolution: {integrity: sha512-QB75r8f0lgeVNNXmBeqRHPvtit2EqaGPlzR9OfIzW2v9QjCBFt8jGqlNBky8Y7x/Up2MkJ1+UvUBDxAHGWfXOg==}
 
+  '@zenstackhq/common-helpers@3.2.0':
+    resolution: {integrity: sha512-AT3+iSG1IFb3E2ad6AARqQbKNqvc2uJ31C65UIOqVarHAq4YNFkPC8wDoe7Ezo/6ShZmJNcHW97DCgNSdqftRw==}
+
   '@zenstackhq/language@2.22.1':
     resolution: {integrity: sha512-VSCVV7aMXMcC/tBnURIehtdQrm04u7EtwbtFB391PPW3ZESp9tEIK4CskLzEiaR8tR/w+rMOQiX3dyXuhJVZOA==}
 
-  '@zenstackhq/language@3.1.1':
-    resolution: {integrity: sha512-sBWD8TchaZrDpzrmujX5wUwio4XlFp62NXXdq+/4iWyKAjado45UqIWjNJ61X+SNHnBa4PIRx/VFPT4xyIhkQQ==}
+  '@zenstackhq/language@3.2.0':
+    resolution: {integrity: sha512-VKr+hECjbRs7v4hl0BD9foARrA8aK7Y5thhMfT33Zgkpoc+5E9G5vmtj80W++mJdlGAF6JhHQV+oDk5wzd8dnQ==}
 
   '@zenstackhq/orm@3.1.1':
     resolution: {integrity: sha512-Blo1P9qrWaVXaom4y+FUKj9SqleRbE/VJ3debqo4e8zbmcv1UGdSOO3X4AHuNLHDWZJ7attrWbaB6IOnKEJxow==}
@@ -2765,8 +2766,23 @@ packages:
       sql.js:
         optional: true
 
-  '@zenstackhq/plugin-policy@3.1.1':
-    resolution: {integrity: sha512-//4lMKAk5OeVu+U/8R+ZdAG2afQPC7KkPXbj7aLVQiZkDKV6kw94rastLNnW6AJQn6n0yMQ38uT2tYtik3xINA==}
+  '@zenstackhq/orm@3.2.0':
+    resolution: {integrity: sha512-ECR/XzNTZ+SVaxb7FTLCDlqDGpD7vUCTnZtzYeAouxNNXw4bcw9R8wNJTztsVRKdAVBpZuEAUjYZnZMdQkuWeg==}
+    peerDependencies:
+      better-sqlite3: ^12.5.0
+      pg: ^8.13.1
+      sql.js: ^1.13.0
+      zod: ^4.0.0
+    peerDependenciesMeta:
+      better-sqlite3:
+        optional: true
+      pg:
+        optional: true
+      sql.js:
+        optional: true
+
+  '@zenstackhq/plugin-policy@3.2.0':
+    resolution: {integrity: sha512-z+hQcVc9E1vIEu9WNCtGYGII0SigLDA+AMLm54ZuMP5g+3KJXfliYOBtVH4R0tl+9iJHORxJaRg0LVC9Gb2Wfg==}
     peerDependencies:
       kysely: ~0.28.8
 
@@ -2779,11 +2795,14 @@ packages:
   '@zenstackhq/schema@3.1.1':
     resolution: {integrity: sha512-G+wyCHAr7eCRzsaRPTjE4Jr6IEeFZdQo1Mn6Ivqq7CghEciFUiA9TF4CJqtjUMqsrg2Wjhu69m1EdAUO4B283g==}
 
+  '@zenstackhq/schema@3.2.0':
+    resolution: {integrity: sha512-LsT8J7Ylg1WbsF93kMx16uEJFwfmiJvhn/6aDMTY/qwILxLdY2NJA3B+nlbEf+YQPl6oUzr85UfTppW/rZxkyg==}
+
   '@zenstackhq/sdk@2.22.1':
     resolution: {integrity: sha512-N6FxqdzWWoQKxBVZzfgIui7ve5raolrGZAyCGM/9rwiMJcwCTbrRf/F98kvCoCtLasRfzQJjz7L9CBRjXOdgew==}
 
-  '@zenstackhq/sdk@3.1.1':
-    resolution: {integrity: sha512-dION49UOoXz9g8+JuvJhEE58j7HrN4nFgUZ4H/z7KXHllHuMA6mZgMA8gQ6mdBAqFu1HZwZ1Z8YNYWH4ijb8aQ==}
+  '@zenstackhq/sdk@3.2.0':
+    resolution: {integrity: sha512-B+Gf88h6WwwND5xukbOiIwNbVWrCoK3eIGnQ6maAZeg9eBR0swpgH+ugY82pNSTzk3yualPawQej02G6SSEiIw==}
 
   '@zenstackhq/server@3.1.1':
     resolution: {integrity: sha512-73557bP80qZcfaWn/ebucU61mNzLD7XXeSWi+6gcifzMq6o01oXKl4B4ohEtHlmqYXGndrca4SJRzoGa2oe0Tw==}
@@ -2815,8 +2834,38 @@ packages:
       nuxt:
         optional: true
 
-  '@zenstackhq/tanstack-query@3.1.1':
-    resolution: {integrity: sha512-/7azNp9EgFYERskc91XSlsn1izeH6nJwLuM42Dmx8kw4gJLpBRr8EtOq9oRUEFnPpcT8SRa9TiXKjgRjU9FKRQ==}
+  '@zenstackhq/server@3.2.0':
+    resolution: {integrity: sha512-1b/MyomHdOjSDu6V7TQlWx/wVDZLAYZjFKX6hhc4VvxglCxykQ2hqdCjd4l4eVRYeJJTErvDnWJjawc5eFNC1w==}
+    peerDependencies:
+      '@sveltejs/kit': ^2.0.0
+      elysia: ^1.3.0
+      express: ^5.0.0
+      fastify: ^5.0.0
+      fastify-plugin: ^5.0.0
+      hono: ^4.6.0
+      next: ^15.0.0 || ^16.0.0
+      nuxt: ^4.0.0
+      zod: ^4.0.0
+    peerDependenciesMeta:
+      '@sveltejs/kit':
+        optional: true
+      elysia:
+        optional: true
+      express:
+        optional: true
+      fastify:
+        optional: true
+      fastify-plugin:
+        optional: true
+      hono:
+        optional: true
+      next:
+        optional: true
+      nuxt:
+        optional: true
+
+  '@zenstackhq/tanstack-query@3.2.0':
+    resolution: {integrity: sha512-COsUxzQ2Y12ZCiJcGcNz6aIAgrzm8dsfqkr8sCAXboBYykJs04KUdicfdoO5kjR9Mcszf+W4bWgvwW/K/+A8kA==}
     peerDependencies:
       '@tanstack/react-query': ^5.0.0
       '@tanstack/svelte-query': ^6.0.0
@@ -3015,10 +3064,6 @@ packages:
     resolution: {integrity: sha512-WhtvB2NG2wjr04+h77sg3klAIwrgOqnjS49GGudnUPGFFgg7G17y7Qecqp+2Dr5kUDxNRBca0SK7cG8JwzkWDQ==}
     hasBin: true
 
-  bcrypt@6.0.0:
-    resolution: {integrity: sha512-cU8v/EGSrnH+HnxV2z0J7/blxH8gq7Xh2JFT6Aroax7UohdmiJJlxApMxtKfuI7z68NvvVcmR78k2LbT6efhRg==}
-    engines: {node: '>= 18'}
-
   bcryptjs@2.4.3:
     resolution: {integrity: sha512-V/Hy/X9Vt7f3BbPJEi8BdVFMByHi+jNXrYkW3huaybV/kQ0KJg0Y6PkEMbn+zeT+i+SiKZ/HMqJGIIt4LZDqNQ==}
 
@@ -3127,6 +3172,10 @@ packages:
   chokidar@4.0.3:
     resolution: {integrity: sha512-Qgzu8kfBvo+cA4962jnP1KkS6Dop5NS6g7R5LFYJr4b8Ub94PPQXUksCw9PvXoeXPRRddRNC5C1JQUR2SMGtnA==}
     engines: {node: '>= 14.16.0'}
+
+  chokidar@5.0.0:
+    resolution: {integrity: sha512-TQMmc3w+5AxjpL8iIiwebF73dRDF4fBIieAqGn9RGCWaEVwQ6Fb2cGe31Yns0RRIzii5goJ1Y7xbMwo1TxMplw==}
+    engines: {node: '>= 20.19.0'}
 
   citty@0.1.6:
     resolution: {integrity: sha512-tskPPKEs8D2KPafUypv2gxwJP8h/OaJmC82QQGGDQcHvXX43xF2VDACcJVmZ0EuSxkpO9Kc4MlrA3q0+FG58AQ==}
@@ -3993,6 +4042,15 @@ packages:
 
   hermes-parser@0.25.1:
     resolution: {integrity: sha512-6pEjquH3rqaI6cYAXYPcz9MS4rY6R4ngRgrgfDshRptUZIc3lw0MCIJIGDj9++mfySOuPTHB4nrSW99BCvOPIA==}
+
+  hono-rate-limiter@0.5.3:
+    resolution: {integrity: sha512-M0DxbVMpPELEzLi0AJg1XyBHLGJXz7GySjsPoK+gc5YeeBsdGDGe+2RvVuCAv8ydINiwlbxqYMNxUEyYfRji/A==}
+    peerDependencies:
+      hono: ^4.10.8
+      unstorage: ^1.17.3
+    peerDependenciesMeta:
+      unstorage:
+        optional: true
 
   hono@4.11.3:
     resolution: {integrity: sha512-PmQi306+M/ct/m5s66Hrg+adPnkD5jiO6IjA7WhWw0gSBSo1EcRegwuI1deZ+wd5pzCGynCcn2DprnE4/yEV4w==}
@@ -5056,6 +5114,10 @@ packages:
     resolution: {integrity: sha512-VpZrUqU5A69eQyW2c5CA1jtLecCsN2U/bD6VilrFDWq5+5UIEVO7nazS3TEcHf1zuPYO/sqGvUvW62g86RXZuA==}
     engines: {node: '>=4'}
 
+  postgres-array@3.0.4:
+    resolution: {integrity: sha512-nAUSGfSDGOaOAEGwqsRY27GPOea7CNipJPOA7lPbdEpx5Kg3qzdP0AaWC5MlhTWV9s4hFX39nomVZ+C4tnGOJQ==}
+    engines: {node: '>=12'}
+
   postgres-bytea@1.0.1:
     resolution: {integrity: sha512-5+5HqXnsZPE65IJZSMkZtURARZelel2oXUEO8rH83VS/hxH5vv1uHquPg5wZs8yMAfdv971IU+kcPUczi7NVBQ==}
     engines: {node: '>=0.10.0'}
@@ -5313,6 +5375,10 @@ packages:
   readdirp@4.1.2:
     resolution: {integrity: sha512-GDhwkLfywWL2s6vEjyhri+eXmfH6j1L7JE27WhqLeYzoh/A3DBaYGEj2H/HFZCn/kMfim73FXxEJTw06WtxQwg==}
     engines: {node: '>= 14.18.0'}
+
+  readdirp@5.0.0:
+    resolution: {integrity: sha512-9u/XQ1pvrQtYyMpZe7DXKv2p5CNvyVwzUB6uhLAnQwHMSgKMBR62lc7AHljaeteeHXn11XTAaLLUVZYVZyuRBQ==}
+    engines: {node: '>= 20.19.0'}
 
   recharts@3.6.0:
     resolution: {integrity: sha512-L5bjxvQRAe26RlToBAziKUB7whaGKEwD3znoM6fz3DrTowCIC/FnJYnuq1GEzB8Zv2kdTfaxQfi5GoH0tBinyg==}
@@ -7603,6 +7669,27 @@ snapshots:
 
   '@exodus/bytes@1.8.0': {}
 
+  '@finanzas/db@file:packages/db(hono@4.11.3)(zod@4.3.5)':
+    dependencies:
+      '@zenstackhq/orm': 3.2.0(pg@8.16.3)(zod@4.3.5)
+      '@zenstackhq/plugin-policy': 3.2.0(kysely@0.28.9)(pg@8.16.3)(zod@4.3.5)
+      '@zenstackhq/server': 3.2.0(hono@4.11.3)(pg@8.16.3)(zod@4.3.5)
+      kysely: 0.28.9
+      pg: 8.16.3
+    transitivePeerDependencies:
+      - '@sveltejs/kit'
+      - better-sqlite3
+      - elysia
+      - express
+      - fastify
+      - fastify-plugin
+      - hono
+      - next
+      - nuxt
+      - pg-native
+      - sql.js
+      - zod
+
   '@floating-ui/core@1.7.3':
     dependencies:
       '@floating-ui/utils': 0.2.10
@@ -8634,10 +8721,6 @@ snapshots:
     dependencies:
       '@babel/types': 7.28.5
 
-  '@types/bcrypt@6.0.0':
-    dependencies:
-      '@types/node': 25.0.3
-
   '@types/chai@5.2.3':
     dependencies:
       '@types/deep-eql': 4.0.2
@@ -8888,11 +8971,12 @@ snapshots:
       '@vitest/pretty-format': 4.0.16
       tinyrainbow: 3.0.3
 
-  '@zenstackhq/cli@3.1.1(typescript@5.9.3)':
+  '@zenstackhq/cli@3.2.0(typescript@5.9.3)':
     dependencies:
-      '@zenstackhq/common-helpers': 3.1.1
-      '@zenstackhq/language': 3.1.1
-      '@zenstackhq/sdk': 3.1.1
+      '@zenstackhq/common-helpers': 3.2.0
+      '@zenstackhq/language': 3.2.0
+      '@zenstackhq/sdk': 3.2.0
+      chokidar: 5.0.0
       colors: 1.4.0
       commander: 8.3.0
       execa: 9.6.1
@@ -8909,22 +8993,24 @@ snapshots:
       - supports-color
       - typescript
 
-  '@zenstackhq/client-helpers@3.1.1':
+  '@zenstackhq/client-helpers@3.2.0':
     dependencies:
-      '@zenstackhq/common-helpers': 3.1.1
-      '@zenstackhq/schema': 3.1.1
+      '@zenstackhq/common-helpers': 3.2.0
+      '@zenstackhq/schema': 3.2.0
       decimal.js: 10.6.0
       superjson: 2.2.6
 
   '@zenstackhq/common-helpers@3.1.1': {}
 
+  '@zenstackhq/common-helpers@3.2.0': {}
+
   '@zenstackhq/language@2.22.1':
     dependencies:
       langium: 1.3.1
 
-  '@zenstackhq/language@3.1.1':
+  '@zenstackhq/language@3.2.0':
     dependencies:
-      '@zenstackhq/common-helpers': 3.1.1
+      '@zenstackhq/common-helpers': 3.2.0
       langium: 3.5.0
       pluralize: 8.0.0
       ts-pattern: 5.9.0
@@ -8949,10 +9035,30 @@ snapshots:
     optionalDependencies:
       pg: 8.16.3
 
-  '@zenstackhq/plugin-policy@3.1.1(kysely@0.28.9)(pg@8.16.3)(zod@4.3.5)':
+  '@zenstackhq/orm@3.2.0(pg@8.16.3)(zod@4.3.5)':
     dependencies:
-      '@zenstackhq/common-helpers': 3.1.1
-      '@zenstackhq/orm': 3.1.1(pg@8.16.3)(zod@4.3.5)
+      '@paralleldrive/cuid2': 2.3.1
+      '@zenstackhq/common-helpers': 3.2.0
+      '@zenstackhq/schema': 3.2.0
+      cuid: 3.0.0
+      decimal.js: 10.6.0
+      json-stable-stringify: 1.3.0
+      kysely: 0.28.9
+      nanoid: 5.1.6
+      postgres-array: 3.0.4
+      toposort: 2.0.2
+      ts-pattern: 5.9.0
+      ulid: 3.0.2
+      uuid: 11.1.0
+      zod: 4.3.5
+      zod-validation-error: 4.0.2(zod@4.3.5)
+    optionalDependencies:
+      pg: 8.16.3
+
+  '@zenstackhq/plugin-policy@3.2.0(kysely@0.28.9)(pg@8.16.3)(zod@4.3.5)':
+    dependencies:
+      '@zenstackhq/common-helpers': 3.2.0
+      '@zenstackhq/orm': 3.2.0(pg@8.16.3)(zod@4.3.5)
       kysely: 0.28.9
       ts-pattern: 5.9.0
     transitivePeerDependencies:
@@ -8983,6 +9089,10 @@ snapshots:
     dependencies:
       decimal.js: 10.6.0
 
+  '@zenstackhq/schema@3.2.0':
+    dependencies:
+      decimal.js: 10.6.0
+
   '@zenstackhq/sdk@2.22.1(@prisma/client@7.2.0(prisma@6.19.1(typescript@5.9.3))(typescript@5.9.3))(typescript@5.9.3)(zod@4.3.5)':
     dependencies:
       '@prisma/generator-helper': 6.19.1
@@ -8999,10 +9109,10 @@ snapshots:
       - typescript
       - zod
 
-  '@zenstackhq/sdk@3.1.1':
+  '@zenstackhq/sdk@3.2.0':
     dependencies:
-      '@zenstackhq/common-helpers': 3.1.1
-      '@zenstackhq/language': 3.1.1
+      '@zenstackhq/common-helpers': 3.2.0
+      '@zenstackhq/language': 3.2.0
       langium: 3.5.0
       ts-pattern: 5.9.0
       typescript: 5.9.3
@@ -9025,11 +9135,29 @@ snapshots:
       - pg
       - sql.js
 
-  '@zenstackhq/tanstack-query@3.1.1(@tanstack/react-query@5.90.16(react@19.2.3))':
+  '@zenstackhq/server@3.2.0(hono@4.11.3)(pg@8.16.3)(zod@4.3.5)':
     dependencies:
-      '@zenstackhq/client-helpers': 3.1.1
-      '@zenstackhq/common-helpers': 3.1.1
-      '@zenstackhq/schema': 3.1.1
+      '@zenstackhq/common-helpers': 3.2.0
+      '@zenstackhq/orm': 3.2.0(pg@8.16.3)(zod@4.3.5)
+      decimal.js: 10.6.0
+      superjson: 2.2.6
+      ts-japi: 1.12.1
+      ts-pattern: 5.9.0
+      url-pattern: 1.0.3
+      zod: 4.3.5
+      zod-validation-error: 4.0.2(zod@4.3.5)
+    optionalDependencies:
+      hono: 4.11.3
+    transitivePeerDependencies:
+      - better-sqlite3
+      - pg
+      - sql.js
+
+  '@zenstackhq/tanstack-query@3.2.0(@tanstack/react-query@5.90.16(react@19.2.3))':
+    dependencies:
+      '@zenstackhq/client-helpers': 3.2.0
+      '@zenstackhq/common-helpers': 3.2.0
+      '@zenstackhq/schema': 3.2.0
       decimal.js: 10.6.0
     optionalDependencies:
       '@tanstack/react-query': 5.90.16(react@19.2.3)
@@ -9257,11 +9385,6 @@ snapshots:
 
   baseline-browser-mapping@2.9.13: {}
 
-  bcrypt@6.0.0:
-    dependencies:
-      node-addon-api: 8.5.0
-      node-gyp-build: 4.8.4
-
   bcryptjs@2.4.3: {}
 
   bcryptjs@3.0.3: {}
@@ -9403,6 +9526,10 @@ snapshots:
   chokidar@4.0.3:
     dependencies:
       readdirp: 4.1.2
+
+  chokidar@5.0.0:
+    dependencies:
+      readdirp: 5.0.0
 
   citty@0.1.6:
     dependencies:
@@ -10420,6 +10547,10 @@ snapshots:
   hermes-parser@0.25.1:
     dependencies:
       hermes-estree: 0.25.1
+
+  hono-rate-limiter@0.5.3(hono@4.11.3):
+    dependencies:
+      hono: 4.11.3
 
   hono@4.11.3: {}
 
@@ -11519,6 +11650,8 @@ snapshots:
 
   postgres-array@2.0.0: {}
 
+  postgres-array@3.0.4: {}
+
   postgres-bytea@1.0.1: {}
 
   postgres-date@1.0.7: {}
@@ -11697,6 +11830,8 @@ snapshots:
       util-deprecate: 1.0.2
 
   readdirp@4.1.2: {}
+
+  readdirp@5.0.0: {}
 
   recharts@3.6.0(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react-is@17.0.2)(react@19.2.3)(redux@5.0.1):
     dependencies:
