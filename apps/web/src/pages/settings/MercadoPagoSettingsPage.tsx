@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import { CheckCircle2, Clock, Download, FileText, Loader2, Plus, RefreshCw, Settings, X } from "lucide-react";
+import { CheckCircle2, Clock, Download, FileText, Loader2, Plus, RefreshCw, Settings } from "lucide-react";
 import { useState } from "react";
 
 import GenerateReportModal from "@/components/mercadopago/GenerateReportModal";
@@ -13,6 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/DropdownMenu";
+import Modal from "@/components/ui/Modal";
 import StatCard from "@/components/ui/StatCard";
 import { Table } from "@/components/ui/Table";
 import { useToast } from "@/context/ToastContext";
@@ -22,7 +23,9 @@ import { ImportStats, MpReportType, MPService } from "@/services/mercadopago";
 
 const ALL_TABLE_COLUMNS = [
   { key: "id", label: "ID" },
-  { key: "date", label: "Fecha Creación" },
+  { key: "date", label: "Creado" },
+  { key: "begin_date", label: "Desde" },
+  { key: "end_date", label: "Hasta" },
   { key: "file", label: "Archivo" },
   { key: "source", label: "Origen" },
   { key: "status", label: "Estado" },
@@ -34,7 +37,7 @@ export default function MercadoPagoSettingsPage() {
   const [activeTab, setActiveTab] = useState<MpReportType>("release");
   const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false);
   const [visibleColumns, setVisibleColumns] = useState<Set<string>>(
-    new Set(["date", "file", "source", "status", "actions"])
+    new Set(["date", "begin_date", "end_date", "file", "status", "actions"])
   );
   const [lastImportStats, setLastImportStats] = useState<ImportStats | null>(null);
 
@@ -143,56 +146,64 @@ export default function MercadoPagoSettingsPage() {
         </Button>
       </div>
 
-      {/* Import Stats Panel */}
-      {lastImportStats && (
-        <div className="bg-success/10 border-success/30 relative rounded-xl border p-4">
-          <button
-            onClick={() => setLastImportStats(null)}
-            className="text-base-content/50 hover:text-base-content absolute top-3 right-3"
-          >
-            <X className="h-4 w-4" />
-          </button>
-          <div className="flex items-start gap-3">
-            <CheckCircle2 className="text-success mt-0.5 h-5 w-5 shrink-0" />
-            <div className="flex-1">
-              <h4 className="font-semibold">Reporte Procesado</h4>
-              <div className="mt-2 grid grid-cols-2 gap-x-6 gap-y-1 text-sm sm:grid-cols-3 md:grid-cols-5">
-                <div>
-                  <span className="text-base-content/60">Total filas:</span>{" "}
-                  <span className="font-medium">{lastImportStats.totalRows}</span>
-                </div>
-                <div>
-                  <span className="text-base-content/60">Válidas:</span>{" "}
-                  <span className="font-medium">{lastImportStats.validRows}</span>
-                </div>
-                <div>
-                  <span className="text-success">Insertadas:</span>{" "}
-                  <span className="text-success font-medium">{lastImportStats.insertedRows}</span>
-                </div>
-                <div>
-                  <span className="text-warning">Duplicados:</span>{" "}
-                  <span className="text-warning font-medium">{lastImportStats.duplicateRows}</span>
-                </div>
-                <div>
-                  <span className="text-base-content/60">Omitidas:</span>{" "}
-                  <span className="font-medium">{lastImportStats.skippedRows}</span>
-                </div>
+      {/* Import Stats Modal */}
+      <Modal isOpen={!!lastImportStats} onClose={() => setLastImportStats(null)} title="Reporte Procesado">
+        {lastImportStats && (
+          <div className="space-y-4">
+            <div className="text-success flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5" />
+              <span className="font-medium">Procesamiento completado</span>
+            </div>
+
+            <div className="bg-base-200/50 grid grid-cols-2 gap-3 rounded-lg p-4 sm:grid-cols-3">
+              <div className="text-center">
+                <p className="text-2xl font-bold">{lastImportStats.totalRows}</p>
+                <p className="text-base-content/60 text-xs">Total filas</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold">{lastImportStats.validRows}</p>
+                <p className="text-base-content/60 text-xs">Válidas</p>
+              </div>
+              <div className="text-center">
+                <p className="text-success text-2xl font-bold">{lastImportStats.insertedRows}</p>
+                <p className="text-success/70 text-xs">Insertadas</p>
+              </div>
+              <div className="text-center">
+                <p className="text-warning text-2xl font-bold">{lastImportStats.duplicateRows}</p>
+                <p className="text-warning/70 text-xs">Duplicados</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold">{lastImportStats.skippedRows}</p>
+                <p className="text-base-content/60 text-xs">Omitidas</p>
               </div>
               {lastImportStats.errors.length > 0 && (
-                <div className="text-error mt-3 text-xs">
-                  <strong>Errores ({lastImportStats.errors.length}):</strong>
-                  <ul className="ml-4 list-disc">
-                    {lastImportStats.errors.slice(0, 5).map((err, i) => (
-                      <li key={i}>{err}</li>
-                    ))}
-                    {lastImportStats.errors.length > 5 && <li>...y {lastImportStats.errors.length - 5} más</li>}
-                  </ul>
+                <div className="text-center">
+                  <p className="text-error text-2xl font-bold">{lastImportStats.errors.length}</p>
+                  <p className="text-error/70 text-xs">Errores</p>
                 </div>
               )}
             </div>
+
+            {lastImportStats.errors.length > 0 && (
+              <div className="bg-error/10 rounded-lg p-3 text-sm">
+                <p className="text-error mb-2 font-medium">Errores encontrados:</p>
+                <ul className="text-error/80 list-inside list-disc space-y-1 text-xs">
+                  {lastImportStats.errors.slice(0, 5).map((err, i) => (
+                    <li key={i}>{err}</li>
+                  ))}
+                  {lastImportStats.errors.length > 5 && <li>...y {lastImportStats.errors.length - 5} más</li>}
+                </ul>
+              </div>
+            )}
+
+            <div className="flex justify-end">
+              <Button variant="primary" onClick={() => setLastImportStats(null)}>
+                Cerrar
+              </Button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </Modal>
 
       {isLoading ? (
         <div className="flex h-64 items-center justify-center rounded-xl border border-dashed">
@@ -289,13 +300,23 @@ export default function MercadoPagoSettingsPage() {
                       <td className="text-base-content/60 font-mono text-xs">#{report.id}</td>
                     )}
                     {visibleColumns.has("date") && (
-                      <td className="font-medium whitespace-nowrap">
-                        {dayjs(report.date_created || report.begin_date).format("DD/MM/YYYY HH:mm")}
+                      <td className="text-sm whitespace-nowrap">
+                        {dayjs(report.date_created || report.begin_date).format("DD/MM/YY HH:mm")}
+                      </td>
+                    )}
+                    {visibleColumns.has("begin_date") && (
+                      <td className="text-base-content/70 text-sm whitespace-nowrap">
+                        {report.begin_date ? dayjs(report.begin_date).format("DD/MM/YYYY") : "-"}
+                      </td>
+                    )}
+                    {visibleColumns.has("end_date") && (
+                      <td className="text-base-content/70 text-sm whitespace-nowrap">
+                        {report.end_date ? dayjs(report.end_date).format("DD/MM/YYYY") : "-"}
                       </td>
                     )}
                     {visibleColumns.has("file") && (
-                      <td className="text-base-content/70 max-w-50 truncate font-mono text-xs" title={report.file_name}>
-                        {report.file_name}
+                      <td className="text-base-content/70 max-w-40 truncate font-mono text-xs" title={report.file_name}>
+                        {report.file_name || <span className="opacity-50">-</span>}
                       </td>
                     )}
                     {visibleColumns.has("source") && (
@@ -312,42 +333,49 @@ export default function MercadoPagoSettingsPage() {
                     )}
                     {visibleColumns.has("status") && (
                       <td>
-                        <span className="text-success bg-success/10 inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium">
-                          <span className="bg-success h-1.5 w-1.5 rounded-full"></span>
-                          Disponible
-                        </span>
+                        {report.status === "pending" ? (
+                          <span className="text-warning bg-warning/10 inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium">
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                            Generando...
+                          </span>
+                        ) : (
+                          <span className="text-success bg-success/10 inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium">
+                            <span className="bg-success h-1.5 w-1.5 rounded-full"></span>
+                            Disponible
+                          </span>
+                        )}
                       </td>
                     )}
                     {visibleColumns.has("actions") && (
                       <td className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="btn-square sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100"
-                          onClick={(e) => report.file_name && handleDownload(e, report.file_name)}
-                          disabled={downloadMutation.isPending}
-                          title="Descargar"
-                        >
-                          {downloadMutation.isPending ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Download className="h-4 w-4" />
-                          )}
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="btn-square sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100"
-                          onClick={(e) => report.file_name && handleProcess(e, report.file_name)}
-                          disabled={processMutation.isPending}
-                          title="Sincronizar a BD"
-                        >
-                          {processMutation.isPending && processingFile === report.file_name ? (
-                            <Loader2 className="text-primary h-4 w-4 animate-spin" />
-                          ) : (
-                            <RefreshCw className="h-4 w-4" />
-                          )}
-                        </Button>
+                        <div className="inline-flex gap-1">
+                          <Button
+                            variant="ghost"
+                            className="h-9 w-9 p-0 sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100"
+                            onClick={(e) => report.file_name && handleDownload(e, report.file_name)}
+                            disabled={downloadMutation.isPending || report.status === "pending" || !report.file_name}
+                            title={report.status === "pending" ? "Reporte aún generándose" : "Descargar"}
+                          >
+                            {downloadMutation.isPending ? (
+                              <Loader2 className="h-5 w-5 animate-spin" />
+                            ) : (
+                              <Download className="h-5 w-5" />
+                            )}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            className="h-9 w-9 p-0 sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100"
+                            onClick={(e) => report.file_name && handleProcess(e, report.file_name)}
+                            disabled={processMutation.isPending || report.status === "pending" || !report.file_name}
+                            title={report.status === "pending" ? "Reporte aún generándose" : "Sincronizar a BD"}
+                          >
+                            {processMutation.isPending && processingFile === report.file_name ? (
+                              <Loader2 className="text-primary h-5 w-5 animate-spin" />
+                            ) : (
+                              <RefreshCw className="h-5 w-5" />
+                            )}
+                          </Button>
+                        </div>
                       </td>
                     )}
                   </tr>
