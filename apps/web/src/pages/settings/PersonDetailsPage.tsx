@@ -36,15 +36,10 @@ export default function PersonDetailsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <button className="btn btn-ghost btn-circle" onClick={() => navigate("/settings/people")}>
-          <ArrowLeft size={20} />
-        </button>
-        <div>
-          <h1 className="text-base-content text-2xl font-bold">Detalles de Persona</h1>
-          <p className="text-base-content/60 text-sm">Información completa y relaciones.</p>
-        </div>
-      </div>
+      <button className="btn btn-ghost btn-sm gap-2" onClick={() => navigate("/settings/people")}>
+        <ArrowLeft size={16} />
+        Volver
+      </button>
 
       <div className="grid gap-6 md:grid-cols-3">
         {/* Main Info Card */}

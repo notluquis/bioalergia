@@ -1,7 +1,7 @@
 import type { SyncLog } from "@finanzas/db";
 import { useFindManySyncLog } from "@finanzas/db/hooks";
 import dayjs from "dayjs";
-import { CheckCircle, ChevronDown, ChevronRight, History, Loader2, RefreshCw, XCircle } from "lucide-react";
+import { CheckCircle, ChevronDown, ChevronRight, Loader2, RefreshCw, XCircle } from "lucide-react";
 import { useState } from "react";
 
 import Button from "@/components/ui/Button";
@@ -115,24 +115,12 @@ export default function SyncHistoryPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight">
-            <History className="text-primary h-6 w-6" />
-            Historial de Sincronización
-          </h1>
-          <p className="text-base-content/60 text-sm">
-            Monitorea los procesos de importación de datos y cargas masivas (CSV, Bancos).
-          </p>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isLoading}>
-            <RefreshCw className={cn("mr-2 h-4 w-4", isLoading && "animate-spin")} />
-            Actualizar
-          </Button>
-        </div>
+      {/* Toolbar */}
+      <div className="flex items-center justify-end">
+        <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isLoading}>
+          <RefreshCw className={cn("mr-2 h-4 w-4", isLoading && "animate-spin")} />
+          Actualizar
+        </Button>
       </div>
 
       {/* Content */}
