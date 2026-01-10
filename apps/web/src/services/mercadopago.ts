@@ -131,9 +131,16 @@ export const MPService = {
       index++;
       onProgress?.(index, chunks.length);
 
-      // Format dates as YYYY-MM-DD for the API
-      const beginStr = chunk.begin.toISOString().split("T")[0]!;
-      const endStr = chunk.end.toISOString().split("T")[0]!;
+      // Format dates as ISO with time for MP API (YYYY-MM-DDTHH:MM:SSZ)
+      // Begin date: start of day, End date: end of day
+      const beginDate = new Date(chunk.begin);
+      beginDate.setUTCHours(0, 0, 0, 0);
+
+      const endDate = new Date(chunk.end);
+      endDate.setUTCHours(23, 59, 59, 999);
+
+      const beginStr = beginDate.toISOString().split(".")[0] + "Z";
+      const endStr = endDate.toISOString().split(".")[0] + "Z";
 
       const report = await MPService.createReport(beginStr, endStr, type);
       reports.push(report);
