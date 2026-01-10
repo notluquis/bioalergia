@@ -58,7 +58,6 @@
     "@zenstackhq/cli": "^3.2.0",
     "@zenstackhq/sdk": "^3.2.0",
     "@zenstackhq/tanstack-query": "^3.2.0",
-    "@zenstackhq/trpc": "^2.22.1",
     "react": "^19.2.3",
     "ts-morph": "^27.0.2",
     "ts-pattern": "^5.9.0",

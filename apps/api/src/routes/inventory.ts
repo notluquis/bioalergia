@@ -2,7 +2,6 @@
  * Inventory Routes
  * Migrated from apps/web/server/routes/inventory.ts
  */
-import { Prisma } from "@prisma/client";
 import { cacheControl } from "../lib/cache-control";
 import { Hono } from "hono";
 import {
