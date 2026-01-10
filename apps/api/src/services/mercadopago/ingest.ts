@@ -11,18 +11,37 @@ import {
 const BATCH_SIZE = 100;
 
 /**
- * Downloads and processes a CSV report from a URL.
+ * Statistics returned after processing a MercadoPago report
  */
-export async function processReportUrl(url: string, reportType: string) {
+export interface ImportStats {
+  totalRows: number;
+  validRows: number;
+  skippedRows: number;
+  insertedRows: number;
+  duplicateRows: number;
+  errors: string[];
+}
+
+/**
+ * Downloads and processes a CSV report from a URL.
+ * Returns detailed statistics about the import.
+ */
+export async function processReportUrl(
+  url: string,
+  reportType: string
+): Promise<ImportStats> {
+  const stats: ImportStats = {
+    totalRows: 0,
+    validRows: 0,
+    skippedRows: 0,
+    insertedRows: 0,
+    duplicateRows: 0,
+    errors: [],
+  };
+
   try {
     checkMpConfig();
-    console.log(`[MP Ingest] Downloading CSV from ${url}`); // url might be signed or direct
-
-    // Note: We need headers if downloading directly from MP API, but webhook URLs might be pre-signed?
-    // Webhook URLs are usually temporary signed URLs.
-    // However, for manual process we construct the API URL which definitely needs headers.
-    // To be safe, we add headers which shouldn't hurt signed URLs usually, OR we check domain.
-    // Given previous implementation used headers for all, let's stick to that.
+    console.log(`[MP Ingest] Downloading CSV from ${url}`);
 
     const res = await fetch(url, {
       headers: { Authorization: `Bearer ${MP_ACCESS_TOKEN}` },
@@ -37,31 +56,53 @@ export async function processReportUrl(url: string, reportType: string) {
     const nodeStream = Readable.fromWeb(body as any);
 
     const rows: any[] = [];
+    let isFirstRow = true;
 
-    await new Promise((resolve, reject) => {
+    await new Promise<void>((resolve, reject) => {
       nodeStream
-        .pipe(csv())
-        .on("data", async (row) => {
-          // Clean keys
+        // MercadoPago CSVs use semicolons as separators
+        .pipe(csv({ separator: ";" }))
+        .on("data", (row) => {
+          // Clean keys (trim whitespace)
           const cleanRow: any = {};
           for (const key in row) {
-            cleanRow[key.trim()] = row[key];
+            const cleanKey = key.trim();
+            cleanRow[cleanKey] = row[key]?.trim?.() ?? row[key];
           }
+
+          // Debug: log keys of first row to verify parsing
+          if (isFirstRow) {
+            console.log("[MP Ingest] First row keys:", Object.keys(cleanRow));
+            console.log("[MP Ingest] First row SOURCE_ID:", cleanRow.SOURCE_ID);
+            isFirstRow = false;
+          }
+
           rows.push(cleanRow);
         })
         .on("end", async () => {
           try {
+            stats.totalRows = rows.length;
             console.log(
               `[MP Ingest] CSV Downloaded. Rows: ${rows.length}. Starting batch insert...`
             );
+
             for (let i = 0; i < rows.length; i += BATCH_SIZE) {
               const batch = rows.slice(i, i + BATCH_SIZE);
-              await saveReportBatch(batch, reportType);
+              const batchStats = await saveReportBatch(batch, reportType);
+              stats.validRows += batchStats.valid;
+              stats.skippedRows += batchStats.skipped;
+              stats.insertedRows += batchStats.inserted;
+              stats.duplicateRows += batchStats.duplicates;
+              if (batchStats.errors.length > 0) {
+                stats.errors.push(...batchStats.errors);
+              }
             }
+
             console.log(
-              `[MP Ingest] Finished processing CSV for ${reportType}`
+              `[MP Ingest] Finished processing CSV for ${reportType}. Stats:`,
+              stats
             );
-            resolve(true);
+            resolve();
           } catch (err) {
             reject(err);
           }
@@ -73,35 +114,101 @@ export async function processReportUrl(url: string, reportType: string) {
     });
   } catch (e) {
     console.error(`[MP Webhook] Failed to process CSV ${url}:`, e);
+    stats.errors.push(e instanceof Error ? e.message : String(e));
     throw e;
   }
+
+  return stats;
 }
 
-// Save batch to DB
-async function saveReportBatch(rows: any[], reportType: string) {
+interface BatchStats {
+  valid: number;
+  skipped: number;
+  inserted: number;
+  duplicates: number;
+  errors: string[];
+}
+
+// Save batch to DB with detailed statistics
+async function saveReportBatch(
+  rows: any[],
+  reportType: string
+): Promise<BatchStats> {
+  const batchStats: BatchStats = {
+    valid: 0,
+    skipped: 0,
+    inserted: 0,
+    duplicates: 0,
+    errors: [],
+  };
+
   const type = reportType.toLowerCase();
 
-  if (type.includes("settlement")) {
-    const transactions = rows
-      .map(mapRowToSettlementTransaction)
-      .filter((t): t is typeof t & { sourceId: string } => !!t.sourceId);
+  try {
+    if (type.includes("settlement")) {
+      const transactions = rows.map(mapRowToSettlementTransaction);
 
-    if (transactions.length > 0) {
-      await db.settlementTransaction.createMany({
-        data: transactions,
-        skipDuplicates: true,
-      });
-    }
-  } else if (type.includes("release")) {
-    const transactions = rows
-      .map(mapRowToReleaseTransaction)
-      .filter((t) => t.sourceId);
+      for (const tx of transactions) {
+        if (!tx.sourceId) {
+          batchStats.skipped++;
+          continue;
+        }
+        batchStats.valid++;
 
-    if (transactions.length > 0) {
-      await db.releaseTransaction.createMany({
-        data: transactions,
-        skipDuplicates: true,
-      });
+        try {
+          // Check if exists
+          const existing = await db.settlementTransaction.findUnique({
+            where: { sourceId: tx.sourceId },
+            select: { id: true },
+          });
+
+          if (existing) {
+            batchStats.duplicates++;
+          } else {
+            await db.settlementTransaction.create({ data: tx });
+            batchStats.inserted++;
+          }
+        } catch (err) {
+          batchStats.errors.push(
+            `Settlement ${tx.sourceId}: ${err instanceof Error ? err.message : String(err)}`
+          );
+        }
+      }
+    } else if (type.includes("release")) {
+      const transactions = rows.map(mapRowToReleaseTransaction);
+
+      for (const tx of transactions) {
+        if (!tx.sourceId) {
+          batchStats.skipped++;
+          continue;
+        }
+        batchStats.valid++;
+
+        try {
+          // Check if exists
+          const existing = await db.releaseTransaction.findUnique({
+            where: { sourceId: tx.sourceId },
+            select: { id: true },
+          });
+
+          if (existing) {
+            batchStats.duplicates++;
+          } else {
+            await db.releaseTransaction.create({ data: tx });
+            batchStats.inserted++;
+          }
+        } catch (err) {
+          batchStats.errors.push(
+            `Release ${tx.sourceId}: ${err instanceof Error ? err.message : String(err)}`
+          );
+        }
+      }
     }
+  } catch (err) {
+    batchStats.errors.push(
+      `Batch error: ${err instanceof Error ? err.message : String(err)}`
+    );
   }
+
+  return batchStats;
 }

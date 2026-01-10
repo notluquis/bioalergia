@@ -5,10 +5,11 @@ import {
   checkMpConfig,
   MP_ACCESS_TOKEN,
 } from "./client";
-import { processReportUrl } from "./ingest";
+import { processReportUrl, ImportStats } from "./ingest";
 
 // Re-export webhook password for controller
 export { MP_WEBHOOK_PASSWORD } from "./client";
+export type { ImportStats } from "./ingest";
 
 export const MercadoPagoService = {
   /**
@@ -54,11 +55,12 @@ export const MercadoPagoService = {
   /**
    * Process a report by ingesting it into the database
    * Can accept a specific URL (webhook) or filename (manual sync)
+   * Returns detailed import statistics
    */
   async processReport(
     type: "release" | "settlement",
     source: { url?: string; fileName?: string }
-  ) {
+  ): Promise<ImportStats> {
     let downloadUrl = source.url;
 
     if (!downloadUrl && source.fileName) {
@@ -70,6 +72,6 @@ export const MercadoPagoService = {
       throw new Error("Either url or fileName must be provided");
     }
 
-    await processReportUrl(downloadUrl, type);
+    return await processReportUrl(downloadUrl, type);
   },
 };
