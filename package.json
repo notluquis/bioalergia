@@ -27,7 +27,7 @@
     "type-check": "pnpm -r --if-present type-check"
   },
   "devDependencies": {
-    "@zenstackhq/tanstack-query": "^3.2.0",
+    "@zenstackhq/tanstack-query": "^3.2.1",
     "turbo": "^2.7.3"
   },
   "dependencies": {
