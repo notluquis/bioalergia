@@ -15,10 +15,14 @@ import { googleCalendarConfig } from "../../config";
 import { logEvent, logWarn } from "../logger";
 import { parseGoogleError } from "./google-errors.js";
 
-// Cached clients
 let cachedDriveClient: drive_v3.Drive | null = null;
 let cachedOAuthClient: OAuth2Client | null = null;
 const OAUTH_TOKEN_KEY = "GOOGLE_OAUTH_REFRESH_TOKEN";
+
+// OAuth redirect URI - uses callback endpoint instead of deprecated OOB
+const getOAuthRedirectUri = () =>
+  process.env.GOOGLE_OAUTH_REDIRECT_URI ||
+  `${process.env.PUBLIC_URL || "http://localhost:3000"}/api/integrations/google/callback`;
 
 // ==================== SERVICE ACCOUNT (Calendar) ====================
 
@@ -189,6 +193,7 @@ export async function validateOAuthToken(): Promise<OAuthValidationResult> {
 
 /**
  * Gets an OAuth2 client for Drive operations.
+ * Uses redirect-based flow (modern, secure) instead of deprecated OOB flow.
  */
 export async function getOAuthClientBase(): Promise<OAuth2Client> {
   const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID;
@@ -198,7 +203,7 @@ export async function getOAuthClientBase(): Promise<OAuth2Client> {
     throw new Error("Google OAuth Client ID/Secret not configured in ENV.");
   }
 
-  return new OAuth2Client(clientId, clientSecret, "urn:ietf:wg:oauth:2.0:oob");
+  return new OAuth2Client(clientId, clientSecret, getOAuthRedirectUri());
 }
 
 /**
@@ -219,7 +224,7 @@ async function getOAuthClient(): Promise<OAuth2Client> {
   const oauth2Client = new OAuth2Client(
     config.clientId,
     config.clientSecret,
-    "urn:ietf:wg:oauth:2.0:oob" // Desktop app redirect
+    getOAuthRedirectUri()
   );
 
   oauth2Client.setCredentials({
