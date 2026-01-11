@@ -6,7 +6,6 @@ import tsParser from "@typescript-eslint/parser";
 import jestDom from "eslint-plugin-jest-dom";
 import jsxA11y from "eslint-plugin-jsx-a11y";
 import react from "eslint-plugin-react";
-import reactCompiler from "eslint-plugin-react-compiler";
 import reactHooks from "eslint-plugin-react-hooks";
 import reactRefresh from "eslint-plugin-react-refresh";
 import security from "eslint-plugin-security";
@@ -65,9 +64,9 @@ export default [
     plugins: { react },
     ...react.configs.flat.recommended,
   },
-  // React hooks + refresh additions and overrides
+  // React hooks + refresh additions
   {
-    plugins: { "react-hooks": reactHooks, "react-refresh": reactRefresh, "react-compiler": reactCompiler },
+    plugins: { "react-hooks": reactHooks, "react-refresh": reactRefresh },
     rules: {
       // Re-enabled for safer component export patterns (warn for now)
       "react-refresh/only-export-components": "off", // Allow hooks to be exported from context files
@@ -78,7 +77,8 @@ export default [
       // Note: React Query methods (refetch, mutate, mutateAsync) are stable by design,
       // so we use eslint-disable-next-line when destructuring them from query/mutation objects
       "react-hooks/exhaustive-deps": "error",
-      "react-compiler/react-compiler": "error",
+      // Compiler-powered rules now included in react-hooks v7.x:
+      // - set-state-in-render, set-state-in-effect, refs
     },
     settings: { react: { version: "detect" } },
   },
