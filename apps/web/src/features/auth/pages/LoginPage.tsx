@@ -1,9 +1,9 @@
 import { startAuthentication } from "@simplewebauthn/browser";
 import { useMutation } from "@tanstack/react-query";
+import { useLocation, useNavigate } from "@tanstack/react-router";
 import { Fingerprint, Mail } from "lucide-react";
 import type { ChangeEvent } from "react";
 import { useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
 
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
@@ -51,7 +51,7 @@ export default function LoginPage() {
       }
 
       logger.info("[login-page] redirecting after successful login", { user: email, to: from });
-      navigate(from, { replace: true });
+      navigate({ to: from as "/", replace: true });
     } catch (err) {
       const message = err instanceof Error ? err.message : "No se pudo iniciar sesión";
       setFormError(message);
@@ -69,7 +69,7 @@ export default function LoginPage() {
     try {
       await loginWithMfa(tempUserId, mfaCode);
       logger.info("[login-page] redirecting after successful mfa login", { userId: tempUserId, to: from });
-      navigate(from, { replace: true });
+      navigate({ to: from as "/", replace: true });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Código incorrecto";
       setFormError(message);
@@ -90,7 +90,7 @@ export default function LoginPage() {
     },
     onSuccess: () => {
       logger.info("[login-page] redirecting after successful passkey login", { to: from });
-      navigate(from, { replace: true });
+      navigate({ to: from as "/", replace: true });
     },
     onError: (err) => {
       console.error(err);

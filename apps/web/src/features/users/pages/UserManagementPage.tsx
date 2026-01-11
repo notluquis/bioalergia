@@ -2,6 +2,7 @@ import "dayjs/locale/es";
 
 import { useDeleteUser, useFindManyRole, useFindManyUser, useUpdateUser } from "@finanzas/db/hooks";
 import { useQueryClient } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import {
@@ -17,7 +18,6 @@ import {
   UserPlus,
 } from "lucide-react";
 import { useState } from "react";
-import { Link } from "react-router-dom";
 
 import Button from "@/components/ui/Button";
 import {

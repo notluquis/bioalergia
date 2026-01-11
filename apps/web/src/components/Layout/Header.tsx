@@ -1,55 +1,54 @@
+import { useLocation, useNavigate, useRouterState } from "@tanstack/react-router";
 import { ChevronRight, Loader2, LogOut } from "lucide-react";
 import React from "react";
-import { useLocation, useMatches, useNavigate, useNavigation } from "react-router-dom";
 
 import { useAuth } from "@/context/AuthContext";
 
 import Clock from "../features/Clock";
 import ThemeToggle from "../ui/ThemeToggle";
 
-type RouteHandle = {
-  title?: string;
-  breadcrumb?: string;
-};
-
 export default function Header() {
   const location = useLocation();
-  const navigationState = useNavigation();
+  const routerStatus = useRouterState({ select: (s) => s.status });
   const navigate = useNavigate();
-  const matches = useMatches();
   const { logout } = useAuth();
 
-  const isNavigating = navigationState.state === "loading";
+  const isNavigating = routerStatus === "pending";
 
   const { breadcrumbs, title } = React.useMemo(() => {
     const path = location.pathname;
 
-    // Obtener título desde route handle
-    const currentMatch = matches[matches.length - 1];
-    const handle = currentMatch?.handle as RouteHandle | undefined;
-    const titleText = handle?.title;
-
-    if (!titleText) {
-      return { breadcrumbs: [], title: "Inicio" };
-    }
-
-    // Extraer breadcrumbs desde el path
+    // Extract title from path
     const parts = path.split("/").filter(Boolean);
+    let titleText = "Inicio";
     const crumbs: string[] = [];
 
-    if (parts[0] === "finanzas") crumbs.push("Finanzas");
-    else if (parts[0] === "services") crumbs.push("Servicios");
-    else if (parts[0] === "calendar") crumbs.push("Calendario");
-    else if (parts[0] === "operations") crumbs.push("Operaciones");
-    else if (parts[0] === "hr") crumbs.push("RRHH");
-    else if (parts[0] === "settings") crumbs.push("Configuración");
+    if (parts[0] === "finanzas") {
+      crumbs.push("Finanzas");
+      titleText = parts[1] ? parts[1].charAt(0).toUpperCase() + parts[1].slice(1) : "Finanzas";
+    } else if (parts[0] === "services") {
+      crumbs.push("Servicios");
+      titleText = "Servicios";
+    } else if (parts[0] === "calendar") {
+      crumbs.push("Calendario");
+      titleText = parts[1] ? parts[1].charAt(0).toUpperCase() + parts[1].slice(1) : "Calendario";
+    } else if (parts[0] === "operations") {
+      crumbs.push("Operaciones");
+      titleText = "Operaciones";
+    } else if (parts[0] === "hr") {
+      crumbs.push("RRHH");
+      titleText = parts[1] ? parts[1].charAt(0).toUpperCase() + parts[1].slice(1) : "RRHH";
+    } else if (parts[0] === "settings") {
+      crumbs.push("Configuración");
+      titleText = parts[1] ? parts[1].charAt(0).toUpperCase() + parts[1].slice(1) : "Configuración";
+    }
 
     return { breadcrumbs: crumbs, title: titleText };
-  }, [location.pathname, matches]);
+  }, [location.pathname]);
 
   const handleLogout = async () => {
     await logout();
-    navigate("/login", { replace: true });
+    navigate({ to: "/login", replace: true });
   };
 
   return (

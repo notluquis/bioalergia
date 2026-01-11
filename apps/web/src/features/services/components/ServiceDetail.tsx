@@ -1,7 +1,7 @@
+import { useNavigate } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
@@ -195,7 +195,11 @@ export function ServiceDetail({
             </Button>
           )}
           {canManage && (
-            <Button type="button" variant="secondary" onClick={() => navigate(`/services/${service.public_id}/edit`)}>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => navigate({ to: `/services/${service.public_id}/edit` })}
+            >
               Editar servicio
             </Button>
           )}

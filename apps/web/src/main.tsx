@@ -1,8 +1,8 @@
 /**
  * Application Entry Point
  *
- * Uses unified route configuration as single source of truth.
- * All routes are generated automatically from shared/route-config.ts
+ * MIGRATION NOTE: This file now uses TanStack Router for routing.
+ * The old React Router v7 routes have been migrated to file-based routing in src/routes/.
  */
 
 // Aggressive recovery from chunk load errors
@@ -52,104 +52,21 @@ import "./index.css";
 import "./i18n";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { createRouter, RouterProvider } from "@tanstack/react-router";
 import { QuerySettingsProvider } from "@zenstackhq/tanstack-query/react";
-import React, { lazy, Suspense } from "react";
+import React from "react";
 import ReactDOM from "react-dom/client";
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
 
-import PublicOnlyRoute from "@/components/guards/PublicOnlyRoute";
-import RequireAuth from "@/components/guards/RequireAuth";
-import RouteErrorBoundary from "@/components/guards/RouteErrorBoundary";
-
-import App from "./App";
 import { ChunkErrorBoundary } from "./components/ui/ChunkErrorBoundary";
 import { GlobalError } from "./components/ui/GlobalError";
 import PageLoader from "./components/ui/PageLoader";
-import { AuthProvider } from "./context/AuthContext";
+import { AuthProvider, useAuth } from "./context/AuthContext";
 import { SettingsProvider } from "./context/SettingsContext";
 import { ToastProvider } from "./context/ToastContext";
 import { AbilityProvider } from "./lib/authz/AbilityProvider";
 import { initPerformanceMonitoring } from "./lib/performance";
-// Generate routes from unified config
-import { generateRoutes } from "./lib/route-generator";
-import NotFoundPage from "./pages/NotFoundPage";
-
-// Pages that are outside the main route config
-const Login = lazy(() => import("@/features/auth/pages/LoginPage"));
-const OnboardingWizard = lazy(() => import("./pages/onboarding/OnboardingWizard"));
-const ChunkLoadErrorPage = lazy(() => import("./pages/ChunkLoadErrorPage"));
-const Home = lazy(() => import("./pages/Home"));
-
-// ============================================================================
-// ROUTER CONFIGURATION
-// ============================================================================
-
-const router = createBrowserRouter(
-  [
-    // Public routes
-    {
-      path: "/login",
-      element: (
-        <PublicOnlyRoute>
-          <Suspense fallback={<PageLoader />}>
-            <Login />
-          </Suspense>
-        </PublicOnlyRoute>
-      ),
-      errorElement: <RouteErrorBoundary />,
-    },
-    {
-      path: "/onboarding",
-      element: (
-        <RequireAuth>
-          <Suspense fallback={<PageLoader />}>
-            <OnboardingWizard />
-          </Suspense>
-        </RequireAuth>
-      ),
-      errorElement: <RouteErrorBoundary />,
-    },
-
-    // Main authenticated app
-    {
-      path: "/",
-      element: (
-        <RequireAuth>
-          <App />
-        </RequireAuth>
-      ),
-      errorElement: <RouteErrorBoundary />,
-      children: [
-        // Home/Dashboard
-        {
-          index: true,
-          element: (
-            <Suspense fallback={<PageLoader />}>
-              <Home />
-            </Suspense>
-          ),
-        },
-
-        // All app routes generated from config
-        ...generateRoutes(),
-
-        // Chunk load error page
-        {
-          path: "/chunk-load-error",
-          element: (
-            <Suspense fallback={<PageLoader />}>
-              <ChunkLoadErrorPage />
-            </Suspense>
-          ),
-        },
-      ],
-    },
-
-    // 404 Not Found
-    { path: "*", element: <NotFoundPage /> },
-  ],
-  {}
-);
+// Import the generated route tree
+import { routeTree } from "./routeTree.gen";
 
 // ============================================================================
 // REACT QUERY CLIENT
@@ -169,6 +86,41 @@ const queryClient = new QueryClient({
 });
 
 // ============================================================================
+// TANSTACK ROUTER CONFIGURATION
+// ============================================================================
+
+// Create the router instance with context
+const router = createRouter({
+  routeTree,
+  context: {
+    queryClient,
+    // Auth will be injected at runtime via InnerApp
+    auth: undefined!,
+  },
+  defaultPreload: "intent",
+  defaultPendingComponent: PageLoader,
+  // Integrate with React Query for cache invalidation on navigation
+  defaultPreloadStaleTime: 0,
+});
+
+// Register router for type safety
+declare module "@tanstack/react-router" {
+  interface Register {
+    router: typeof router;
+  }
+}
+
+// ============================================================================
+// INNER APP (with auth context available)
+// ============================================================================
+
+function InnerApp() {
+  const auth = useAuth();
+
+  return <RouterProvider router={router} context={{ auth }} />;
+}
+
+// ============================================================================
 // INITIALIZE APP
 // ============================================================================
 
@@ -186,7 +138,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               <SettingsProvider>
                 <ToastProvider>
                   <AbilityProvider>
-                    <RouterProvider router={router} />
+                    <InnerApp />
                   </AbilityProvider>
                 </ToastProvider>
               </SettingsProvider>

@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
+// import type { Person } from "@/types/schema";
+import { useNavigate } from "@tanstack/react-router";
 import { Briefcase, Building, Plus, Search, User } from "lucide-react";
 import { useState } from "react";
-// import type { Person } from "@/types/schema";
-import { useNavigate } from "react-router-dom";
 
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
@@ -94,7 +94,7 @@ export default function PersonManagementPage() {
                 </div>
 
                 <div className="border-base-200 mt-4 flex justify-end border-t pt-4">
-                  <Button variant="ghost" size="xs" onClick={() => navigate(`/settings/people/${person.id}`)}>
+                  <Button variant="ghost" size="xs" onClick={() => navigate({ to: `/settings/people/${person.id}` })}>
                     Ver Detalles
                   </Button>
                 </div>

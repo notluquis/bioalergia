@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "@tanstack/react-router";
 
 import Button from "@/components/ui/Button";
 
@@ -29,7 +29,7 @@ export default function ShortcutCard({
 function ShortcutButton({ to }: { to: string }) {
   const navigate = useNavigate();
   return (
-    <Button type="button" variant="primary" onClick={() => navigate(to)} className="mt-5">
+    <Button type="button" variant="primary" onClick={() => navigate({ to: to })} className="mt-5">
       Abrir
     </Button>
   );

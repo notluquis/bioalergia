@@ -1,0 +1,19 @@
+import { createFileRoute, redirect } from "@tanstack/react-router";
+import { lazy, Suspense } from "react";
+
+import PageLoader from "@/components/ui/PageLoader";
+
+const AgendaPage = lazy(() => import("@/features/services/pages/AgendaPage"));
+
+export const Route = createFileRoute("/_authed/services/agenda")({
+  beforeLoad: ({ context }) => {
+    if (!context.auth.can("read", "ServiceAgenda")) {
+      throw redirect({ to: "/" });
+    }
+  },
+  component: () => (
+    <Suspense fallback={<PageLoader />}>
+      <AgendaPage />
+    </Suspense>
+  ),
+});

@@ -1,7 +1,7 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
 import { ArrowRight, Check, CreditCard, Fingerprint, Key, Loader2, Shield, Smartphone, User } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
@@ -41,7 +41,7 @@ export default function OnboardingWizard() {
   // Security: Redirect if user already completed onboarding
   useEffect(() => {
     if (user && user.status !== "PENDING_SETUP") {
-      navigate("/", { replace: true });
+      navigate({ to: "/", replace: true });
     }
   }, [user, navigate]);
 
@@ -146,7 +146,7 @@ export default function OnboardingWizard() {
       await refreshSession();
     },
     onSuccess: () => {
-      navigate("/");
+      navigate({ to: "/" });
     },
     onError: () => {
       setError("Error al finalizar la configuración. Inténtalo de nuevo.");

@@ -1,14 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate, useParams } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { ArrowLeft, Briefcase, Building, Calendar, Mail, MapPin, Phone, User } from "lucide-react";
-import { useNavigate, useParams } from "react-router-dom";
 
 import PageLoader from "@/components/ui/PageLoader";
 import { fetchPerson } from "@/features/people/api";
 import { getPersonFullName, getPersonInitials } from "@/lib/person";
 
 export default function PersonDetailsPage() {
-  const { id } = useParams<{ id: string }>();
+  const { id } = useParams({ from: "/_authed/settings/people/$id" });
   const navigate = useNavigate();
 
   const {
@@ -28,7 +28,7 @@ export default function PersonDetailsPage() {
     return (
       <div className="p-6 text-center">
         <p className="text-error">Error al cargar los detalles de la persona.</p>
-        <button className="btn btn-ghost mt-4" onClick={() => navigate("/settings/people")}>
+        <button className="btn btn-ghost mt-4" onClick={() => navigate({ to: "/settings/people" })}>
           <ArrowLeft className="mr-2" /> Volver
         </button>
       </div>
@@ -36,7 +36,7 @@ export default function PersonDetailsPage() {
 
   return (
     <div className="space-y-6">
-      <button className="btn btn-ghost btn-sm gap-2" onClick={() => navigate("/settings/people")}>
+      <button className="btn btn-ghost btn-sm gap-2" onClick={() => navigate({ to: "/settings/people" })}>
         <ArrowLeft size={16} />
         Volver
       </button>
