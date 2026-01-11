@@ -29,7 +29,8 @@ app.get("/", async (c) => {
 
   const canAccess = await hasPermission(user.id, "read", "Backup");
   if (!canAccess) {
-    return reply(c, 
+    return reply(
+      c,
       {
         status: "error",
         message: "Forbidden - missing 'read Backup' permission",
@@ -40,7 +41,7 @@ app.get("/", async (c) => {
 
   try {
     // Check if OAuth is configured
-    if (!isOAuthConfigured()) {
+    if (!(await isOAuthConfigured())) {
       return reply(c, {
         status: "ok",
         jobs: getCurrentJobs(),
@@ -75,7 +76,8 @@ app.post("/", async (c) => {
 
   const canCreate = await hasPermission(user.id, "create", "Backup");
   if (!canCreate) {
-    return reply(c, 
+    return reply(
+      c,
       {
         status: "error",
         message: "Forbidden - missing 'create Backup' permission",
@@ -88,7 +90,8 @@ app.post("/", async (c) => {
     const job = startBackup();
     return reply(c, { status: "ok", message: "Backup started", job });
   } catch (error) {
-    return reply(c, 
+    return reply(
+      c,
       {
         status: "error",
         message:
@@ -116,7 +119,8 @@ app.get("/:fileId/tables", async (c) => {
     return reply(c, { status: "ok", tables });
   } catch (error) {
     console.error("[Backups] Error getting tables:", error);
-    return reply(c, 
+    return reply(
+      c,
       {
         status: "error",
         message:
@@ -162,7 +166,8 @@ app.post("/:fileId/restore", async (c) => {
 
   const canRestore = await hasPermission(user.id, "update", "Backup");
   if (!canRestore) {
-    return reply(c, 
+    return reply(
+      c,
       {
         status: "error",
         message: "Forbidden - missing 'update Backup' permission",
@@ -188,7 +193,8 @@ app.post("/:fileId/restore", async (c) => {
       },
     });
   } catch (error) {
-    return reply(c, 
+    return reply(
+      c,
       {
         status: "error",
         message:

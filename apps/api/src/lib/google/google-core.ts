@@ -89,6 +89,105 @@ export async function isOAuthConfigured(): Promise<boolean> {
 }
 
 /**
+ * Validation result for OAuth token.
+ */
+export interface OAuthValidationResult {
+  valid: boolean;
+  configured: boolean;
+  source: "db" | "env" | "none";
+  error?: string;
+  errorCode?: "token_expired" | "token_revoked" | "invalid_grant" | "unknown";
+}
+
+/**
+ * Validates the OAuth refresh token by attempting to get an access token.
+ * This is a full validation - not just checking if config exists.
+ */
+export async function validateOAuthToken(): Promise<OAuthValidationResult> {
+  const config = await getOAuthConfig();
+
+  if (!config) {
+    return {
+      valid: false,
+      configured: false,
+      source: "none",
+      error: "OAuth no configurado",
+    };
+  }
+
+  const source =
+    config.refreshToken === process.env.GOOGLE_OAUTH_REFRESH_TOKEN
+      ? "env"
+      : "db";
+
+  try {
+    const oauth2Client = new OAuth2Client(
+      config.clientId,
+      config.clientSecret,
+      "urn:ietf:wg:oauth:2.0:oob"
+    );
+
+    oauth2Client.setCredentials({
+      refresh_token: config.refreshToken,
+    });
+
+    // Actually try to get an access token - this validates the refresh token
+    const { token } = await oauth2Client.getAccessToken();
+
+    if (!token) {
+      return {
+        valid: false,
+        configured: true,
+        source,
+        error: "No se pudo obtener access token",
+        errorCode: "unknown",
+      };
+    }
+
+    logEvent("google.oauth.validated", { source });
+
+    return {
+      valid: true,
+      configured: true,
+      source,
+    };
+  } catch (error) {
+    // Parse the error to determine the type
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorStr = errorMessage.toLowerCase();
+
+    let errorCode: OAuthValidationResult["errorCode"] = "unknown";
+    let userMessage = "Error de autenticación";
+
+    if (
+      errorStr.includes("invalid_grant") ||
+      errorStr.includes("token has been expired or revoked")
+    ) {
+      errorCode = "token_expired";
+      userMessage =
+        "Token expirado. Reconecta Google Drive desde la configuración.";
+    } else if (errorStr.includes("revoked")) {
+      errorCode = "token_revoked";
+      userMessage = "Acceso revocado. Reconecta Google Drive.";
+    }
+
+    logWarn("google.oauth.validation_failed", {
+      error: errorMessage,
+      errorCode,
+      source,
+    });
+
+    return {
+      valid: false,
+      configured: true,
+      source,
+      error: userMessage,
+      errorCode,
+    };
+  }
+}
+
+/**
  * Gets an OAuth2 client for Drive operations.
  */
 export async function getOAuthClientBase(): Promise<OAuth2Client> {

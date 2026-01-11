@@ -1,7 +1,10 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
-import { getOAuthClientBase } from "../lib/google/google-core";
+import {
+  getOAuthClientBase,
+  validateOAuthToken,
+} from "../lib/google/google-core";
 import { db } from "@finanzas/db";
 
 const OAUTH_TOKEN_KEY = "GOOGLE_OAUTH_REFRESH_TOKEN";
@@ -95,18 +98,15 @@ integrationRoutes.delete("/google/disconnect", async (c) => {
   }
 });
 
-// 4. Status
+// 4. Status - with REAL token validation
 integrationRoutes.get("/google/status", async (c) => {
-  const setting = await db.setting.findUnique({
-    where: { key: OAUTH_TOKEN_KEY },
-  });
+  const validation = await validateOAuthToken();
 
   return c.json({
-    configured: !!setting || !!process.env.GOOGLE_OAUTH_REFRESH_TOKEN,
-    source: setting
-      ? "db"
-      : process.env.GOOGLE_OAUTH_REFRESH_TOKEN
-        ? "env"
-        : "none",
+    configured: validation.configured,
+    valid: validation.valid,
+    source: validation.source,
+    error: validation.error,
+    errorCode: validation.errorCode,
   });
 });
