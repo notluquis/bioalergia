@@ -1,5 +1,4 @@
 import dayjs from "dayjs";
-import dayjsLib from "dayjs";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import Button from "@/components/ui/Button";
@@ -19,7 +18,7 @@ type WeekViewProps = {
 export default function WeekView({ currentDate, onDateChange, balances, onSelectDay, selectedDate }: WeekViewProps) {
   // Use 'es' locale to ensure startOf('week') is Monday.
   const startOfWeek = currentDate.locale("es").startOf("week"); // Start on Monday
-  const today = dayjsLib();
+  const today = dayjs();
   const nextWeekStart = startOfWeek.add(7, "day");
   const canGoNextWeek = !nextWeekStart.isAfter(today, "day");
   const days = Array.from({ length: 6 })
@@ -66,7 +65,7 @@ export default function WeekView({ currentDate, onDateChange, balances, onSelect
       <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-6 lg:grid-cols-6">
         {days.map((day) => {
           const dateStr = day.format("YYYY-MM-DD");
-          const balance = balances.find((b) => dayjsLib(b.date).isSame(day, "day"));
+          const balance = balances.find((b) => dayjs(b.date).isSame(day, "day"));
           const isSelected = selectedDate === dateStr;
           const isToday = day.isSame(dayjs(), "day");
 

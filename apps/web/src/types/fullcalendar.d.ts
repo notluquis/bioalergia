@@ -1,5 +1,6 @@
 declare module "@fullcalendar/react" {
   import type { ComponentType } from "react";
+
   const FullCalendar: ComponentType<Record<string, unknown>>;
   export default FullCalendar;
 }
@@ -21,6 +22,7 @@ declare module "@fullcalendar/interaction" {
 
 declare module "react-calendar-heatmap" {
   import type { ComponentType } from "react";
+
   type Props = Record<string, unknown>;
   const Heatmap: ComponentType<Props>;
   export default Heatmap;

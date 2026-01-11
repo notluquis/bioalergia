@@ -1,6 +1,7 @@
 import type { ChangeEvent } from "react";
 
 import Input from "@/components/ui/Input";
+import { GRID_2_COL_MD } from "@/lib/styles";
 
 import type { ServiceFrequency, ServiceRecurrenceType } from "../../types";
 import type { ServiceFormState } from "../ServiceForm";
@@ -25,8 +26,6 @@ const FREQUENCY_OPTIONS: Array<{ value: ServiceFrequency; label: string }> = [
   { value: "ANNUAL", label: "Anual" },
   { value: "ONCE", label: "Única vez" },
 ];
-
-import { GRID_2_COL_MD } from "@/lib/styles";
 
 export function SchedulingSection({
   frequency,

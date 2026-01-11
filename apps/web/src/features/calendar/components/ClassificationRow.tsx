@@ -10,6 +10,7 @@ import { type CalendarUnclassifiedEvent } from "@/features/calendar/types";
 
 import { type FormValues } from "../schemas";
 import { FormattedEventDescription } from "./FormattedEventDescription";
+
 interface ClassificationRowProps {
   index: number;
   event: CalendarUnclassifiedEvent;

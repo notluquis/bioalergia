@@ -14,15 +14,14 @@ import { MoneyInput } from "@/components/ui/MoneyInput";
 import { useAuth } from "@/context/AuthContext";
 import { fetchProductionBalanceHistory, fetchProductionBalances } from "@/features/daily-production-balances/api";
 import { HistoryItem } from "@/features/daily-production-balances/components/HistoryItem";
+// Compact stat display for summary sections
+import { StatMini } from "@/features/daily-production-balances/components/StatMini";
 import WeekView from "@/features/daily-production-balances/components/WeekView";
 import { useProductionBalanceForm } from "@/features/daily-production-balances/hooks/useProductionBalanceForm";
 import { today } from "@/lib/dates";
 import { coerceAmount, fmtCLP } from "@/lib/format";
 
 dayjs.locale("es");
-
-// Compact stat display for summary sections
-import { StatMini } from "@/features/daily-production-balances/components/StatMini";
 
 export default function DailyProductionBalancesPage() {
   const { can } = useAuth();

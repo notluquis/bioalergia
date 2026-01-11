@@ -2,8 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
-import { fmtCLP } from "@/lib/format";
-import { formatDate } from "@/lib/format";
+import { fmtCLP, formatDate } from "@/lib/format";
 
 import { fetchAllergyOverview } from "../api";
 import type { AllergyInventoryOverview } from "../types";

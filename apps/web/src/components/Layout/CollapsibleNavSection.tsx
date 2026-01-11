@@ -1,6 +1,5 @@
 import { ChevronDown } from "lucide-react";
-import { useState } from "react";
-import React from "react";
+import React, { useState } from "react";
 
 import Button from "@/components/ui/Button";
 import { SmoothCollapse } from "@/components/ui/SmoothCollapse";
