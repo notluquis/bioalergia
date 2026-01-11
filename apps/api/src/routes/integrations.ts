@@ -1,19 +1,20 @@
 import { Hono } from "hono";
-import { z } from "zod";
-import { zValidator } from "@hono/zod-validator";
+import { getCookie, setCookie, deleteCookie } from "hono/cookie";
+import { randomBytes } from "crypto";
 import {
   getOAuthClientBase,
   validateOAuthToken,
+  clearDriveClientCache,
 } from "../lib/google/google-core";
 import { db } from "@finanzas/db";
+import { logEvent, logWarn } from "../lib/logger";
 
 const OAUTH_TOKEN_KEY = "GOOGLE_OAUTH_REFRESH_TOKEN";
+const OAUTH_STATE_COOKIE = "oauth_state";
 
 export const integrationRoutes = new Hono();
 
-import { randomBytes } from "crypto";
-
-// 1. Get Auth URL
+// 1. Get Auth URL - redirects user to Google consent screen
 integrationRoutes.get("/google/url", async (c) => {
   try {
     const oauth2Client = await getOAuthClientBase();
@@ -21,11 +22,24 @@ integrationRoutes.get("/google/url", async (c) => {
     // Generate random state for CSRF protection
     const state = randomBytes(32).toString("hex");
 
+    // Store state in secure cookie (10 minutes expiry)
+    setCookie(c, OAUTH_STATE_COOKIE, state, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Lax",
+      maxAge: 600, // 10 minutes
+      path: "/",
+    });
+
     const authUrl = oauth2Client.generateAuthUrl({
       access_type: "offline",
       scope: ["https://www.googleapis.com/auth/drive.file"],
       prompt: "consent", // Force refresh token generation
-      state, // Required by Google security policy
+      state,
+    });
+
+    logEvent("google.oauth.auth_url_generated", {
+      state: state.substring(0, 8) + "...",
     });
 
     return c.json({ url: authUrl });
@@ -35,53 +49,80 @@ integrationRoutes.get("/google/url", async (c) => {
   }
 });
 
-// 2. Exchange Code
-integrationRoutes.post(
-  "/google/connect",
-  zValidator(
-    "json",
-    z.object({
-      code: z.string().min(1),
-    })
-  ),
-  async (c) => {
-    const { code } = c.req.valid("json");
+// 2. OAuth Callback - receives authorization code from Google redirect
+integrationRoutes.get("/google/callback", async (c) => {
+  const code = c.req.query("code");
+  const state = c.req.query("state");
+  const error = c.req.query("error");
+  const errorDescription = c.req.query("error_description");
 
-    try {
-      const oauth2Client = await getOAuthClientBase();
-      const { tokens } = await oauth2Client.getToken(code);
+  // Get the frontend URL for redirects
+  const frontendUrl = process.env.PUBLIC_URL || "http://localhost:5173";
+  const settingsPath = "/settings/backups";
 
-      if (!tokens.refresh_token) {
-        return c.json(
-          {
-            error:
-              "No refresh token returned. Did you already authorize? Revoke access and try again.",
-          },
-          400
-        );
-      }
+  // Get saved state from cookie
+  const savedState = getCookie(c, OAUTH_STATE_COOKIE);
 
-      // Save to DB
-      await db.setting.upsert({
-        where: { key: OAUTH_TOKEN_KEY },
-        create: {
-          key: OAUTH_TOKEN_KEY,
-          value: tokens.refresh_token,
-        },
-        update: {
-          value: tokens.refresh_token,
-        },
-      });
+  // Clear the state cookie immediately
+  deleteCookie(c, OAUTH_STATE_COOKIE, { path: "/" });
 
-      return c.json({ success: true });
-    } catch (error) {
-      console.error("Error exchanging code", error);
-      return c.json({ error: "Failed to exchange code for token" }, 500);
-    }
+  // Handle errors from Google
+  if (error) {
+    logWarn("google.oauth.callback_error", { error, errorDescription });
+    return c.redirect(
+      `${frontendUrl}${settingsPath}?error=${encodeURIComponent(error)}`
+    );
   }
-);
 
-// 3. Disconnect
+  // Verify state matches (CSRF protection)
+  if (!state || !savedState || state !== savedState) {
+    logWarn("google.oauth.invalid_state", {
+      hasState: !!state,
+      hasSavedState: !!savedState,
+      matches: state === savedState,
+    });
+    return c.redirect(`${frontendUrl}${settingsPath}?error=invalid_state`);
+  }
+
+  if (!code) {
+    return c.redirect(`${frontendUrl}${settingsPath}?error=missing_code`);
+  }
+
+  try {
+    const oauth2Client = await getOAuthClientBase();
+    const { tokens } = await oauth2Client.getToken(code);
+
+    if (!tokens.refresh_token) {
+      logWarn("google.oauth.no_refresh_token", {});
+      return c.redirect(`${frontendUrl}${settingsPath}?error=no_refresh_token`);
+    }
+
+    // Save refresh token to DB
+    await db.setting.upsert({
+      where: { key: OAUTH_TOKEN_KEY },
+      create: { key: OAUTH_TOKEN_KEY, value: tokens.refresh_token },
+      update: { value: tokens.refresh_token },
+    });
+
+    // Clear any cached OAuth client to use new token
+    clearDriveClientCache();
+
+    logEvent("google.oauth.connected", { source: "callback" });
+
+    // Redirect to frontend with success
+    return c.redirect(`${frontendUrl}${settingsPath}?connected=true`);
+  } catch (err) {
+    console.error("Error exchanging code for tokens:", err);
+    logWarn("google.oauth.token_exchange_failed", {
+      error: err instanceof Error ? err.message : "Unknown error",
+    });
+    return c.redirect(
+      `${frontendUrl}${settingsPath}?error=token_exchange_failed`
+    );
+  }
+});
+
+// 3. Disconnect - removes stored OAuth token
 integrationRoutes.delete("/google/disconnect", async (c) => {
   try {
     await db.setting
@@ -91,6 +132,11 @@ integrationRoutes.delete("/google/disconnect", async (c) => {
       .catch(() => {
         // Ignore if not found
       });
+
+    // Clear cached client
+    clearDriveClientCache();
+
+    logEvent("google.oauth.disconnected", {});
 
     return c.json({ success: true });
   } catch (error) {
