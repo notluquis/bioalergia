@@ -43,7 +43,7 @@ export class ChunkErrorBoundary extends Component<Props, State> {
       }
 
       // 2. Limpiar todas las caches
-      if ("caches" in window) {
+      if ("caches" in globalThis) {
         const keys = await caches.keys();
         await Promise.all(keys.map((key) => caches.delete(key)));
       }
@@ -51,11 +51,11 @@ export class ChunkErrorBoundary extends Component<Props, State> {
       console.error("Error clearing cache:", error);
     } finally {
       // 3. Recargar la página (Manual action)
-      window.location.reload();
+      globalThis.location.reload();
     }
   };
 
-  render() {
+  render(): React.JSX.Element {
     if (this.state.hasError) {
       return (
         <div className="bg-base-200 flex min-h-screen items-center justify-center p-4">
@@ -77,7 +77,7 @@ export class ChunkErrorBoundary extends Component<Props, State> {
               <p className="text-base-content/70 mt-2 text-sm">
                 Se ha publicado una nueva versión. Para continuar, necesitamos recargar la página.
               </p>
-              <p className="text-base-content/50 word-break: break-word mt-4 text-xs">
+              <p className="text-base-content/50 mt-4 text-xs break-all">
                 {this.state.error?.message || "Error desconocido"}
               </p>
               <div className="card-actions mt-6 justify-center">
@@ -91,6 +91,6 @@ export class ChunkErrorBoundary extends Component<Props, State> {
       );
     }
 
-    return this.props.children;
+    return <>{this.props.children}</>;
   }
 }

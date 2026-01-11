@@ -26,9 +26,8 @@ export default function TopParticipantsWidget({
         </Link>
       </div>
       {error && <p className="text-error text-xs">{error}</p>}
-      {loading ? (
-        <p className="text-base-content text-xs">Cargando...</p>
-      ) : data.length ? (
+      {loading && <p className="text-base-content text-xs">Cargando...</p>}
+      {!loading && data.length > 0 && (
         <ul className="text-base-content space-y-3 text-sm">
           {data.map((item) => {
             const displayName = item.bankAccountHolder || item.displayName || item.participant || "Sin información";
@@ -55,9 +54,8 @@ export default function TopParticipantsWidget({
             );
           })}
         </ul>
-      ) : (
-        <p className="text-base-content text-xs">Aún no hay retiros registrados.</p>
       )}
+      {!loading && data.length === 0 && <p className="text-base-content text-xs">Aún no hay retiros registrados.</p>}
     </article>
   );
 }

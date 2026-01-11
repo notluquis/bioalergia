@@ -29,8 +29,108 @@ interface TimesheetExportPDFProps {
   monthLabel: string;
 }
 
+const COLUMN_LABELS: Record<TimesheetColumnKey, string> = {
+  date: "Fecha",
+  entrada: "Entrada",
+  salida: "Salida",
+  worked: "Trabajadas",
+  overtime: "Extras",
+};
+
 type JsPdfFactory = typeof import("jspdf");
 type AutoTableFactory = typeof import("jspdf-autotable");
+
+// Helper: Cargar logo y normalizarlo a PNG (evitar "wrong PNG signature")
+function blobToDataUrl(blob: Blob): Promise<string | null> {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.addEventListener("load", () => resolve(reader.result as string));
+    reader.addEventListener("error", () => resolve(null));
+    reader.readAsDataURL(blob);
+  });
+}
+
+function imageToPngDataUrl(objectUrl: string): Promise<string | null> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const onLoad = () => {
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.width || 240;
+        canvas.height = img.height || 120;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          resolve(null);
+          return;
+        }
+        ctx.drawImage(img, 0, 0);
+        resolve(canvas.toDataURL("image/png"));
+      } catch {
+        resolve(null);
+      }
+    };
+    img.addEventListener("load", onLoad);
+    img.addEventListener("error", () => resolve(null));
+    img.src = objectUrl;
+  });
+}
+
+// Helper: Cargar logo y normalizarlo a PNG (evitar "wrong PNG signature")
+async function loadLogoAsPng(url: string): Promise<string | null> {
+  try {
+    let blob: Blob | null = null;
+    const isUrl = /^https?:\/\//i.test(url);
+
+    if (isUrl) {
+      try {
+        const proxyUrl = `/api/assets/proxy-image?url=${encodeURIComponent(url)}`;
+        blob = await apiClient.get<Blob>(proxyUrl, { responseType: "blob" });
+      } catch {
+        blob = null;
+      }
+    }
+
+    if (!blob) {
+      try {
+        blob = await apiClient.get<Blob>(url, { responseType: "blob" });
+      } catch {
+        blob = null;
+      }
+    }
+
+    if (!blob) return null;
+
+    if (blob.type === "image/png") {
+      return blobToDataUrl(blob);
+    }
+
+    const objectUrl = URL.createObjectURL(blob);
+    try {
+      return await imageToPngDataUrl(objectUrl);
+    } finally {
+      URL.revokeObjectURL(objectUrl);
+    }
+  } catch {
+    return null;
+  }
+}
+
+function getLogoDimensions(logoDataUrl: string | null): Promise<{ w: number; h: number } | null> {
+  if (!logoDataUrl) return Promise.resolve(null);
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.addEventListener("load", () => {
+      const maxW = 45;
+      const maxH = 22;
+      const iw0 = (img as HTMLImageElement).width || maxW;
+      const ih0 = (img as HTMLImageElement).height || maxH;
+      const scale = Math.min(maxW / iw0, maxH / ih0);
+      resolve({ w: Math.max(1, iw0 * scale), h: Math.max(1, ih0 * scale) });
+    });
+    img.addEventListener("error", () => resolve(null));
+    img.src = logoDataUrl;
+  });
+}
 
 export default function TimesheetExportPDF({
   logoUrl,
@@ -43,7 +143,7 @@ export default function TimesheetExportPDF({
   const { settings } = useSettings();
   const defaultCols: readonly TimesheetColumnKey[] = ["date", "entrada", "salida", "worked", "overtime"];
   const [selectedCols, setSelectedCols] = React.useState<TimesheetColumnKey[]>(
-    columns.length ? columns : Array.from(defaultCols)
+    columns.length > 0 ? columns : [...defaultCols]
   );
   const [showOptions, setShowOptions] = React.useState(false);
   const pdfLibsRef = React.useRef<{ jsPDF: JsPdfFactory["default"]; autoTable: AutoTableFactory["default"] } | null>(
@@ -69,6 +169,7 @@ export default function TimesheetExportPDF({
     getPageSize?: () => JsPdfPageSize;
   };
 
+  // eslint-disable-next-line sonarjs/cognitive-complexity
   async function handleExport(preview = true) {
     try {
       const libs = await loadPdfLibs();
@@ -80,69 +181,6 @@ export default function TimesheetExportPDF({
         typeof pageSize?.getWidth === "function" ? pageSize.getWidth() : (pageSize?.width ?? 210);
       const margin = 10;
 
-      // Helper: Cargar logo y normalizarlo a PNG (evitar "wrong PNG signature")
-      async function loadLogoAsPng(url: string): Promise<string | null> {
-        try {
-          let blob: Blob | null = null;
-          try {
-            if (/^https?:\/\//i.test(url)) {
-              // Internal proxy call
-              const proxyUrl = `/api/assets/proxy-image?url=${encodeURIComponent(url)}`;
-              // apiClient includes credentials usually if configured, but here we explicitly requested them before.
-              // apiClient uses defaults.
-              blob = await apiClient.get<Blob>(proxyUrl, { responseType: "blob" });
-            }
-          } catch {
-            blob = null;
-          }
-
-          if (!blob) {
-            try {
-              // Direct fetch fallback using apiClient for consistency/timeout
-              blob = await apiClient.get<Blob>(url, { responseType: "blob" });
-            } catch {
-              blob = null;
-            }
-          }
-          if (!blob) return null;
-          if (blob.type === "image/png") {
-            return await new Promise((resolve) => {
-              const reader = new FileReader();
-              reader.onload = () => resolve(reader.result as string);
-              reader.onerror = () => resolve(null);
-              reader.readAsDataURL(blob);
-            });
-          }
-          const objectUrl = URL.createObjectURL(blob);
-          try {
-            const dataUrl = await new Promise<string | null>((resolve) => {
-              const img = new Image();
-              img.onload = () => {
-                try {
-                  const canvas = document.createElement("canvas");
-                  canvas.width = img.width || 240;
-                  canvas.height = img.height || 120;
-                  const ctx = canvas.getContext("2d");
-                  if (!ctx) return resolve(null);
-                  ctx.drawImage(img, 0, 0);
-                  const pngDataUrl = canvas.toDataURL("image/png");
-                  resolve(pngDataUrl);
-                } catch {
-                  resolve(null);
-                }
-              };
-              img.onerror = () => resolve(null);
-              img.src = objectUrl;
-            });
-            return dataUrl;
-          } finally {
-            URL.revokeObjectURL(objectUrl);
-          }
-        } catch {
-          return null;
-        }
-      }
-
       // Logo (mantener proporción)
       const resolvedLogo = settings.logoUrl || logoUrl;
       let logoDataUrl: string | null = null;
@@ -151,24 +189,10 @@ export default function TimesheetExportPDF({
 
       const headerTopY = margin + 2;
       let logoBottomY = headerTopY;
-      if (logoDataUrl) {
-        const dims = await new Promise<{ w: number; h: number } | null>((resolve) => {
-          const img = new Image();
-          img.onload = () => {
-            const maxW = 45;
-            const maxH = 22;
-            const iw0 = (img as HTMLImageElement).width || maxW;
-            const ih0 = (img as HTMLImageElement).height || maxH;
-            const scale = Math.min(maxW / iw0, maxH / ih0);
-            resolve({ w: Math.max(1, iw0 * scale), h: Math.max(1, ih0 * scale) });
-          };
-          img.onerror = () => resolve(null);
-          img.src = logoDataUrl!;
-        });
-        const w = dims?.w ?? 40;
-        const h = dims?.h ?? 20;
-        doc.addImage(logoDataUrl, "PNG", margin, headerTopY, w, h);
-        logoBottomY = headerTopY + h;
+      const dims = await getLogoDimensions(logoDataUrl);
+      if (dims && logoDataUrl) {
+        doc.addImage(logoDataUrl, "PNG", margin, headerTopY, dims.w, dims.h);
+        logoBottomY = headerTopY + dims.h;
       }
 
       // Encabezado a la derecha (título + datos organización)
@@ -191,7 +215,7 @@ export default function TimesheetExportPDF({
       dayjs.locale("es");
       // monthLabel puede venir como "November 2025" o "2025-11", convertir a español
       let periodEs = monthLabel;
-      const monthMatch = monthLabel.match(/^(\d{4})-(\d{2})$/);
+      const monthMatch = /^(\d{4})-(\d{2})$/.exec(monthLabel);
       if (monthMatch) {
         // Formato YYYY-MM
         periodEs = dayjs(`${monthMatch[1]}-${monthMatch[2]}-01`).locale("es").format("MMMM YYYY");
@@ -230,14 +254,14 @@ export default function TimesheetExportPDF({
         // Use retention rate from backend summary (already calculated with correct year)
         const retentionPercent = formatRetentionPercent(summary.retentionRate || 0);
 
-        summaryBody.push(["Horas trabajadas", summary.hoursFormatted || "0:00"]);
-        if (hasOvertime) {
-          summaryBody.push(["Horas extras", summary.overtimeFormatted || "0:00"]);
-        }
-        summaryBody.push(["Tarifa por hora", fmtCLP(summary.hourlyRate || 0)]);
-        summaryBody.push(["Subtotal", fmtCLP(summary.subtotal || 0)]);
-        summaryBody.push([`Retención (${retentionPercent})`, `-${fmtCLP(summary.retention || 0)}`]);
-        summaryBody.push(["Total Líquido", fmtCLP(summary.net || 0)]);
+        summaryBody.push(
+          ["Horas trabajadas", summary.hoursFormatted || "0:00"],
+          ...(hasOvertime ? [["Horas extras", summary.overtimeFormatted || "0:00"]] : []),
+          ["Tarifa por hora", fmtCLP(summary.hourlyRate || 0)],
+          ["Subtotal", fmtCLP(summary.subtotal || 0)],
+          [`Retención (${retentionPercent})`, `-${fmtCLP(summary.retention || 0)}`],
+          ["Total Líquido", fmtCLP(summary.net || 0)]
+        );
       }
 
       const summaryColumnStyles: Record<string, { halign: "left" | "center" | "right" }> = {
@@ -263,7 +287,7 @@ export default function TimesheetExportPDF({
         (row) => row.overtime && row.overtime !== "0:00" && row.overtime !== "00:00"
       );
       // Filtrar columna worked también si no está seleccionada
-      const baseColKeys: TimesheetColumnKey[] = selectedCols.length ? selectedCols : Array.from(defaultCols);
+      const baseColKeys: TimesheetColumnKey[] = selectedCols.length > 0 ? selectedCols : [...defaultCols];
       // Ocultar columna overtime si no hay horas extras en ningún día
       const colKeys: TimesheetColumnKey[] = hasAnyOvertime ? baseColKeys : baseColKeys.filter((k) => k !== "overtime");
 
@@ -304,18 +328,24 @@ export default function TimesheetExportPDF({
       const body = workedRows.map((row) =>
         colKeys.map((key): string => {
           switch (key) {
-            case "date":
+            case "date": {
               return dayjs(row.date).isValid() ? dayjs(row.date).format("DD-MM-YYYY") : row.date;
-            case "entrada":
+            }
+            case "entrada": {
               return row.entrada || "-";
-            case "salida":
+            }
+            case "salida": {
               return row.salida || "-";
-            case "worked":
+            }
+            case "worked": {
               return computeWorked(row.entrada, row.salida) || "-";
-            case "overtime":
+            }
+            case "overtime": {
               return row.overtime || "-";
-            default:
+            }
+            default: {
               return assertUnreachable(key);
+            }
           }
         })
       );
@@ -324,7 +354,7 @@ export default function TimesheetExportPDF({
       const lastTableReference = doc as unknown as { lastAutoTable?: { finalY: number } };
       const lastAutoTable = lastTableReference.lastAutoTable;
       const nextY = lastAutoTable ? lastAutoTable.finalY + 8 : infoStartY + 30;
-      if (!body.length) {
+      if (body.length === 0) {
         doc.setFontSize(11);
         doc.text("Sin registros para este periodo.", margin, nextY);
       } else {
@@ -358,22 +388,22 @@ export default function TimesheetExportPDF({
       }
 
       // Guardar / previsualizar
-      const safeName = (employee.full_name || "Trabajador").replace(/[^a-zA-Z0-9_\- ]/g, "");
+      const safeName = (employee.full_name || "Trabajador").replaceAll(/[^a-zA-Z0-9_\- ]/g, "");
       if (preview) {
         // Generate PDF as data URL (works better with Safari)
         const pdfDataUri = doc.output("dataurlstring");
         const previewWindow = window.open("", "_blank", "noopener,noreferrer");
-        if (!previewWindow) {
-          alert("No se pudo abrir la vista previa. Revisa si el navegador bloqueó las ventanas emergentes.");
-        } else {
+        if (previewWindow) {
           previewWindow.opener = null;
           previewWindow.location.href = pdfDataUri;
+        } else {
+          alert("No se pudo abrir la vista previa. Revisa si el navegador bloqueó las ventanas emergentes.");
         }
       } else {
         doc.save(`Honorarios_${safeName}_${monthLabel}.pdf`);
       }
-    } catch (err: unknown) {
-      console.error("Export PDF error:", err);
+    } catch (error: unknown) {
+      console.error("Export PDF error:", error);
       alert("No se pudo generar el PDF. Revisa la consola para más detalles.");
     }
   }
@@ -401,7 +431,7 @@ export default function TimesheetExportPDF({
         {showOptions && (
           <div className="bg-base-100 absolute right-0 z-20 mt-2 w-56 rounded-xl p-3 shadow-xl ring-1 ring-black/5">
             <p className="text-base-content/80 mb-2 text-xs font-semibold">Columnas del detalle</p>
-            {Array.from(defaultCols).map((key) => (
+            {[...defaultCols].map((key) => (
               <label key={key} className="text-base-content mb-1 flex items-center gap-2 text-sm">
                 <Checkbox
                   checked={selectedCols.includes(key)}
@@ -410,19 +440,11 @@ export default function TimesheetExportPDF({
                       const set = new Set<TimesheetColumnKey>(prev);
                       if (e.target.checked) set.add(key);
                       else set.delete(key);
-                      return Array.from(set);
+                      return [...set];
                     });
                   }}
                 />
-                {key === "date"
-                  ? "Fecha"
-                  : key === "entrada"
-                    ? "Entrada"
-                    : key === "salida"
-                      ? "Salida"
-                      : key === "worked"
-                        ? "Trabajadas"
-                        : "Extras"}
+                {COLUMN_LABELS[key] || key}
               </label>
             ))}
             <div className="mt-3 flex justify-end gap-2">

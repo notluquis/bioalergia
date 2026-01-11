@@ -167,13 +167,7 @@ export default function ParticipantInsightsPage() {
 
       {detailError && <Alert variant="error">{detailError}</Alert>}
 
-      {!visible ? (
-        <div className="text-base-content/50 py-12 text-center">
-          {detailLoading
-            ? "Buscando información del participante..."
-            : "Ingresa un identificador y selecciona el rango para ver su actividad."}
-        </div>
-      ) : (
+      {visible ? (
         <div className="grid gap-6 lg:grid-cols-2">
           <section className="space-y-4">
             <h2 className="text-lg font-semibold">Resumen mensual</h2>
@@ -192,6 +186,12 @@ export default function ParticipantInsightsPage() {
               </CardContent>
             </Card>
           </section>
+        </div>
+      ) : (
+        <div className="text-base-content/50 py-12 text-center">
+          {detailLoading
+            ? "Buscando información del participante..."
+            : "Ingresa un identificador y selecciona el rango para ver su actividad."}
         </div>
       )}
     </section>
@@ -247,7 +247,7 @@ function LeaderboardTable({
           <TableBody columnsCount={LEADERBOARD_COLUMNS.length}>
             {data.map((row) => {
               const participantKey = row.selectKey;
-              const isActive = participantKey && participantId && participantKey === participantId.trim();
+              const isActive = participantKey && participantKey === participantId?.trim();
 
               return (
                 <tr

@@ -31,7 +31,7 @@ export function MoneyInput({ icon, label, value, onChange, hint, disabled }: Mon
           inputMode="numeric"
           value={value ? numberFormatter.format(Number(value)) : ""}
           onChange={(e) => {
-            const raw = e.target.value.replace(/[^0-9-]/g, "");
+            const raw = e.target.value.replaceAll(/[^0-9-]/g, "");
             onChange(raw);
           }}
           className="text-base-content placeholder:text-base-content/40 grow bg-transparent text-xs sm:text-sm md:text-base"

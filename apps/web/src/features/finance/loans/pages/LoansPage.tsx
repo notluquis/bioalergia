@@ -110,8 +110,8 @@ export default function LoansPage() {
     try {
       await createMutation.mutateAsync(payload);
       setCreateOpen(false);
-    } catch (err) {
-      setCreateError(err instanceof Error ? err.message : "Error al crear préstamo");
+    } catch (error) {
+      setCreateError(error instanceof Error ? error.message : "Error al crear préstamo");
     }
   };
 
@@ -121,8 +121,8 @@ export default function LoansPage() {
       await regenerateSchedules(selectedId, overrides);
       queryClient.invalidateQueries({ queryKey: ["loans"] });
       queryClient.invalidateQueries({ queryKey: ["loan-detail", selectedId] });
-    } catch (err) {
-      console.error("Regenerate failed:", err);
+    } catch (error) {
+      console.error("Regenerate failed:", error);
     }
   };
 
@@ -130,7 +130,7 @@ export default function LoansPage() {
     setPaymentSchedule(schedule);
     setPaymentForm({
       transactionId: schedule.transaction_id ? String(schedule.transaction_id) : "",
-      paidAmount: schedule.paid_amount != null ? String(schedule.paid_amount) : String(schedule.expected_amount),
+      paidAmount: schedule.paid_amount == null ? String(schedule.expected_amount) : String(schedule.paid_amount),
       paidDate: schedule.paid_date ?? today(),
     });
     setPaymentError(null);
@@ -157,22 +157,25 @@ export default function LoansPage() {
         },
       });
       setPaymentSchedule(null);
-    } catch (err) {
-      setPaymentError(err instanceof Error ? err.message : "Error al registrar pago");
+    } catch (error) {
+      setPaymentError(error instanceof Error ? error.message : "Error al registrar pago");
     }
   };
 
   const handleUnlink = async (schedule: LoanSchedule) => {
     try {
       await unlinkPaymentMutation.mutateAsync(schedule.id);
-    } catch (err) {
-      console.error("Unlink failed:", err);
+    } catch (error) {
+      console.error("Unlink failed:", error);
     }
   };
 
-  const selectedLoan = detail?.loan ?? null;
-  const globalError = listError ? (listError instanceof Error ? listError.message : String(listError)) : null;
+  const globalError = (() => {
+    if (!listError) return null;
+    return listError instanceof Error ? listError.message : String(listError);
+  })();
 
+  const selectedLoan = detail?.loan ?? null;
   const schedules = detail?.schedules ?? [];
   const summary = detail?.summary ?? null;
 

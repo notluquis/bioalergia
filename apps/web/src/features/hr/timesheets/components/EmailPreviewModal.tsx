@@ -39,7 +39,8 @@ export default function EmailPreviewModal({
   // Convertir mes a español
   dayjs.locale("es");
   let monthLabelEs = monthLabel;
-  const monthMatch = monthLabel.match(/^(\d{4})-(\d{2})$/);
+  const monthRegex = /^(\d{4})-(\d{2})$/;
+  const monthMatch = monthRegex.exec(monthLabel);
   if (monthMatch) {
     monthLabelEs = dayjs(`${monthMatch[1]}-${monthMatch[2]}-01`).locale("es").format("MMMM YYYY");
   } else if (dayjs(monthLabel, "MMMM YYYY", "en").isValid()) {
@@ -56,7 +57,7 @@ export default function EmailPreviewModal({
   const boletaDescription = `SERVICIOS DE ${summary.role.toUpperCase()} ${totalHoursFormatted} HORAS`;
 
   // Get year from month in YYYY-MM format
-  const summaryYear = month ? parseInt(month.split("-")[0]!, 10) : new Date().getFullYear();
+  const summaryYear = month ? Number.parseInt(month.split("-")[0]!, 10) : new Date().getFullYear();
   // Handle both camelCase and snake_case from backend
   const summaryData = summary as unknown as Record<string, unknown>;
   const employeeRate =
@@ -180,24 +181,33 @@ export default function EmailPreviewModal({
               disabled={isPreparing || !employeeEmail || prepareStatus === "done"}
               className="min-w-44"
             >
-              {prepareStatus === "generating-pdf" ? (
-                <span className="flex items-center gap-2">
-                  <span className={LOADING_SPINNER_SM}></span>
-                  Generando PDF...
-                </span>
-              ) : prepareStatus === "preparing" ? (
-                <span className="flex items-center gap-2">
-                  <span className={LOADING_SPINNER_SM}></span>
-                  Preparando...
-                </span>
-              ) : prepareStatus === "done" ? (
-                <span className="flex items-center gap-2">
-                  <span>📧</span>
-                  Descargado
-                </span>
-              ) : (
-                "Preparar Email"
-              )}
+              {(() => {
+                if (prepareStatus === "generating-pdf") {
+                  return (
+                    <span className="flex items-center gap-2">
+                      <span className={LOADING_SPINNER_SM}></span>
+                      Generando PDF...
+                    </span>
+                  );
+                }
+                if (prepareStatus === "preparing") {
+                  return (
+                    <span className="flex items-center gap-2">
+                      <span className={LOADING_SPINNER_SM}></span>
+                      Preparando...
+                    </span>
+                  );
+                }
+                if (prepareStatus === "done") {
+                  return (
+                    <span className="flex items-center gap-2">
+                      <span>📧</span>
+                      Descargado
+                    </span>
+                  );
+                }
+                return <>Preparar Email</>;
+              })()}
             </Button>
           </div>
         </div>

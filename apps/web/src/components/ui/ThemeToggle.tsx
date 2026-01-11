@@ -5,18 +5,18 @@ const THEME_KEY = "bioalergia:theme";
 type Theme = "light" | "dark" | "system";
 
 function getPreferredThemeFromSystem(): "light" | "dark" {
-  if (typeof window === "undefined" || !window.matchMedia) return "dark";
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  if (!globalThis.matchMedia) return "dark";
+  return globalThis.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
 function applyTheme(theme: "light" | "dark") {
   const html = document.documentElement;
   // Apply both DaisyUI data-theme and Tailwind dark class for full compatibility
   if (theme === "dark") {
-    html.setAttribute("data-theme", "bioalergia-dark");
+    html.dataset.theme = "bioalergia-dark";
     html.classList.add("dark");
   } else {
-    html.setAttribute("data-theme", "bioalergia");
+    html.dataset.theme = "bioalergia";
     html.classList.remove("dark");
   }
 }
@@ -37,8 +37,7 @@ export default function ThemeToggle() {
       if (theme !== "system") return;
       applyTheme(getPreferredThemeFromSystem());
     };
-    const mql =
-      typeof window !== "undefined" && window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
+    const mql = globalThis.matchMedia ? globalThis.matchMedia("(prefers-color-scheme: dark)") : null;
     mql?.addEventListener?.("change", handle);
     return () => mql?.removeEventListener?.("change", handle);
   }, [theme]);
@@ -64,12 +63,12 @@ export default function ThemeToggle() {
   const resolvedTheme: "light" | "dark" = theme === "system" ? getPreferredThemeFromSystem() : theme;
   const isDark = resolvedTheme === "dark";
   const icon = isDark ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />;
-  const label =
-    resolvedTheme === "dark"
-      ? "Cambiar a modo claro"
-      : resolvedTheme === "light"
-        ? "Cambiar a modo oscuro"
-        : "Cambiar tema";
+  const getLabel = () => {
+    if (resolvedTheme === "dark") return "Cambiar a modo claro";
+    if (resolvedTheme === "light") return "Cambiar a modo oscuro";
+    return "Cambiar tema";
+  };
+  const label = getLabel();
 
   return (
     <button

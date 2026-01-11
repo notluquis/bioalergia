@@ -62,14 +62,14 @@ export default function MercadoPagoSettingsPage() {
   const downloadMutation = useMutation({
     mutationFn: (fileName: string) => MPService.downloadReport(fileName, activeTab),
     onSuccess: (blob, fileName) => {
-      const url = window.URL.createObjectURL(blob);
+      const url = globalThis.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
       a.download = fileName;
-      document.body.appendChild(a);
+      document.body.append(a);
       a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      globalThis.URL.revokeObjectURL(url);
+      a.remove();
       showSuccess(`Descargando ${fileName}`);
     },
     onError: (e: Error) => showError(`Error al descargar: ${e.message}`),
@@ -369,7 +369,7 @@ export default function MercadoPagoSettingsPage() {
                             disabled={processMutation.isPending || report.status === "pending" || !report.file_name}
                             title={report.status === "pending" ? "Reporte aún generándose" : "Sincronizar a BD"}
                           >
-                            {processMutation.isPending && processingFile === report.file_name ? (
+                            {processMutation.isPending && processingFile && processingFile === report.file_name ? (
                               <Loader2 className="text-primary h-5 w-5 animate-spin" />
                             ) : (
                               <RefreshCw className="h-5 w-5" />

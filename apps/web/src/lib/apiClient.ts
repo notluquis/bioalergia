@@ -51,7 +51,7 @@ async function handleKyError(error: HTTPError) {
   const response = error.response;
   const status = response.status;
   let serverMessage = response.statusText;
-  let details: unknown = undefined;
+  let details: unknown;
 
   try {
     const rawBody = await response.text();
@@ -90,7 +90,7 @@ const superJsonParser = (text: string) => {
 };
 
 const kyInstance = ky.create({
-  timeout: 30000,
+  timeout: 30_000,
   retry: {
     limit: 2,
     methods: ["get", "put", "head", "delete", "options", "trace"],
@@ -199,8 +199,8 @@ export async function uploadFiles(files: File[], endpoint: string, logContext: s
 
       logger.info(`${logContext} archivo procesado`, { file: file.name, ...payload });
       aggregated.push({ file: file.name, summary: payload });
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Error inesperado al subir";
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Error inesperado al subir";
       aggregated.push({ file: file.name, error: message });
       logger.error(`${logContext} archivo falló`, { file: file.name, message });
     }

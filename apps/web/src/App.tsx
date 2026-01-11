@@ -22,11 +22,11 @@ export default function App() {
 
   // Detect if mobile/tablet (md breakpoint)
   // Optimized 2025: Use standard matchMedia listener instead of resize event to avoid layout thrashing
-  const [isMobile, setIsMobile] = React.useState(!window.matchMedia("(min-width: 768px)").matches);
+  const [isMobile, setIsMobile] = React.useState(!globalThis.matchMedia("(min-width: 768px)").matches);
   const [debouncedIsMobile] = useDebounce(isMobile, 150);
 
   React.useEffect(() => {
-    const mql = window.matchMedia("(min-width: 768px)");
+    const mql = globalThis.matchMedia("(min-width: 768px)");
     const onChange = (e: MediaQueryListEvent) => setIsMobile(!e.matches);
 
     // Set initial value
@@ -67,22 +67,22 @@ export default function App() {
 
   // Handle PWA File Launch (macOS/Windows "Open With")
   React.useEffect(() => {
-    if ("launchQueue" in window) {
+    if ("launchQueue" in globalThis) {
       interface LaunchParams {
         files: FileSystemFileHandle[];
       }
       interface LaunchQueue {
         setConsumer(callback: (launchParams: LaunchParams) => Promise<void>): void;
       }
-      const launchQueue = (window as unknown as { launchQueue: LaunchQueue }).launchQueue;
+      const launchQueue = (globalThis as unknown as { launchQueue: LaunchQueue }).launchQueue;
 
       launchQueue.setConsumer(async (launchParams) => {
-        if (!launchParams.files.length) return;
+        if (launchParams.files.length === 0) return;
 
         const fileHandle = launchParams.files[0];
         if (!fileHandle) return;
         const file = await fileHandle.getFile();
-        void file; // Mark as used to avoid lint error until implemented
+        console.debug("File opened via PWA launch:", file);
 
         // Store file in a global state or navigate with it
         // For now, we'll log it and maybe show a toast or redirect

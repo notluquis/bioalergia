@@ -52,8 +52,8 @@ export default function LoginPage() {
 
       logger.info("[login-page] redirecting after successful login", { user: email, to: from });
       navigate({ to: from as "/", replace: true });
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "No se pudo iniciar sesión";
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "No se pudo iniciar sesión";
       setFormError(message);
       logger.error("[login-page] login error", { email, message });
       setLoading(false);
@@ -70,8 +70,8 @@ export default function LoginPage() {
       await loginWithMfa(tempUserId, mfaCode);
       logger.info("[login-page] redirecting after successful mfa login", { userId: tempUserId, to: from });
       navigate({ to: from as "/", replace: true });
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Código incorrecto";
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Código incorrecto";
       setFormError(message);
       setLoading(false);
     }

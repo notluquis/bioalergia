@@ -13,8 +13,8 @@ interface ClassificationTotalsProps {
 
 function parseAmountInput(value: string | null | undefined): number | null {
   if (!value) return null;
-  const normalized = value.replace(/[^0-9]/g, "");
-  if (!normalized.length) return null;
+  const normalized = value.replaceAll(/\D/g, "");
+  if (normalized.length === 0) return null;
   const parsed = Number.parseInt(normalized, 10);
   return Number.isNaN(parsed) ? null : parsed;
 }
@@ -26,22 +26,21 @@ export function ClassificationTotals({ control, events }: ClassificationTotalsPr
     name: "entries",
   });
 
-  const totals =
-    !watchedEntries || !watchedEntries.length
-      ? { expected: 0, paid: 0 }
-      : watchedEntries.reduce(
-          (acc, entry, index) => {
-            const event = events[index];
-            if (!event) return acc;
-            const expected = parseAmountInput(entry?.amountExpected) ?? event.amountExpected ?? 0;
-            const paid = parseAmountInput(entry?.amountPaid) ?? event.amountPaid ?? 0;
-            return {
-              expected: acc.expected + expected,
-              paid: acc.paid + paid,
-            };
-          },
-          { expected: 0, paid: 0 }
-        );
+  const totals = watchedEntries?.length
+    ? watchedEntries.reduce(
+        (acc, entry, index) => {
+          const event = events[index];
+          if (!event) return acc;
+          const expected = parseAmountInput(entry?.amountExpected) ?? event.amountExpected ?? 0;
+          const paid = parseAmountInput(entry?.amountPaid) ?? event.amountPaid ?? 0;
+          return {
+            expected: acc.expected + expected,
+            paid: acc.paid + paid,
+          };
+        },
+        { expected: 0, paid: 0 }
+      )
+    : { expected: 0, paid: 0 };
 
   return (
     <>

@@ -90,7 +90,7 @@ export default function MonthlyExpenseDetail({
               )}
             </article>
           ))}
-          {!expense.transactions.length && (
+          {expense.transactions.length === 0 && (
             <p className="border-base-300 bg-base-200 text-base-content/60 rounded-xl border border-dashed p-3 text-xs">
               Aún no se han vinculado transacciones a este gasto.
             </p>

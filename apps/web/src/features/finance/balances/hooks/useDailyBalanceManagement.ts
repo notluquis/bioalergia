@@ -51,8 +51,8 @@ export function useDailyBalanceManagement({ loadBalances }: UseDailyBalanceManag
       await saveBalance(date, parsedValue, draft.note);
       await loadBalances();
       logger.info("[balances] save:success", { date, balance: parsedValue });
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "No se pudo guardar el saldo diario";
+    } catch (error_) {
+      const message = error_ instanceof Error ? error_.message : "No se pudo guardar el saldo diario";
       setError(message);
       showError(message);
       logger.error("[balances] save:error", message);

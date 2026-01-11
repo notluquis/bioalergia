@@ -88,27 +88,11 @@ export default function RolesSettingsPage() {
       await queryClient.cancelQueries({ queryKey: ["roles"] });
       const previousRoles = queryClient.getQueryData<Role[]>(["roles"]);
 
-      queryClient.setQueryData<Role[]>(["roles"], (old) => {
-        if (!old) return [];
-        return old.map((role) => {
-          if (role.id === roleId) {
-            // Reconstruct permissions array based on IDs (we only need permissionId for UI check)
-            // Note: We lose the full Permission object here temporarily, but UI only checks permissionId
-            // The invalidateQueries will fetch the full object back
-            const newPermissions = permissionIds.map((id) => ({
-              permissionId: id,
-              permission: { id, action: "", subject: "", description: "" }, // Placeholder
-            }));
-            return { ...role, permissions: newPermissions };
-          }
-          return role;
-        });
-      });
+      queryClient.setQueryData<Role[]>(["roles"], (old) => optimisticUpdateRole(old, roleId, permissionIds));
 
       return { previousRoles };
     },
     onError: (_err, _newTodo, context) => {
-      // toast.error("Error al actualizar permisos");
       toast.error("Error al actualizar permisos. Inténtalo de nuevo.");
       if (context?.previousRoles) {
         queryClient.setQueryData(["roles"], context.previousRoles);
@@ -145,11 +129,9 @@ export default function RolesSettingsPage() {
     const hasPermission = currentPermissionIds.includes(permissionId);
 
     let newPermissionIds;
-    if (hasPermission) {
-      newPermissionIds = currentPermissionIds.filter((id) => id !== permissionId);
-    } else {
-      newPermissionIds = [...currentPermissionIds, permissionId];
-    }
+    newPermissionIds = hasPermission
+      ? currentPermissionIds.filter((id) => id !== permissionId)
+      : [...currentPermissionIds, permissionId];
 
     updatePermissions({ roleId: role.id, permissionIds: newPermissionIds });
   };
@@ -187,46 +169,8 @@ export default function RolesSettingsPage() {
   // Track which permissions are "used" by pages so we can show the rest in "Advanced/System"
   const usedPermissionIds = new Set<number>();
 
-  const sectionsWithPermissions = getNavSections()
-    .map((section: NavSectionData) => {
-      const itemsWithPermissions = section.items
-        .map((item: NavItem) => {
-          // Collect permissions for this nav item
-          const perms: Permission[] = [];
-
-          // Direct permissions from requiredPermission
-          if (item.requiredPermission) {
-            const subject = item.requiredPermission.subject;
-            const related = allPermissions.filter((p) => p.subject.toLowerCase() === subject.toLowerCase());
-            perms.push(...related);
-          }
-
-          // Deduplicate
-          const uniquePermissions = Array.from(new Map(perms.map((p) => [p.id, p])).values());
-
-          // Mark as used
-          uniquePermissions.forEach((p) => usedPermissionIds.add(p.id));
-
-          if (uniquePermissions.length === 0) return null;
-
-          return {
-            ...item,
-            relatedPermissions: uniquePermissions,
-            permissionIds: uniquePermissions.map((p) => p.id),
-          };
-        })
-        .filter((item): item is NonNullable<typeof item> => item !== null);
-
-      // Collect ALL permission IDs in this section for the section bulk toggle
-      const sectionPermissionIds = itemsWithPermissions.flatMap((item) => item.permissionIds);
-
-      return {
-        ...section,
-        items: itemsWithPermissions,
-        permissionIds: sectionPermissionIds,
-      };
-    })
-    .filter((section) => section.items.length > 0);
+  // Pre-process navigation sections with permission data
+  const sectionsWithPermissions = processNavSections(getNavSections(), allPermissions || [], usedPermissionIds);
 
   const displayRoles = viewModeRole === "all" ? roles : roles.filter((r) => r.id.toString() === viewModeRole);
 
@@ -363,7 +307,6 @@ export default function RolesSettingsPage() {
                             <table className="w-full table-fixed border-collapse">
                               <tbody>
                                 {section.items.map((item) => {
-                                  // const hasMultiple = item.relatedPermissions.length > 1; // Unused
                                   const itemKey = `${section.title}-${item.label}`;
                                   const isOpen = !!openItems[itemKey];
 
@@ -409,43 +352,14 @@ export default function RolesSettingsPage() {
                                             <SmoothCollapse isOpen={isOpen}>
                                               <table className="w-full table-fixed border-collapse">
                                                 <tbody>
-                                                  {item.relatedPermissions.map((perm) => {
-                                                    const actionMap: Record<string, string> = {
-                                                      read: "Ver",
-                                                      create: "Crear",
-                                                      update: "Editar",
-                                                      delete: "Eliminar",
-                                                    };
-                                                    const actionLabel = actionMap[perm.action] || perm.action;
-
-                                                    return (
-                                                      <tr
-                                                        key={perm.id}
-                                                        className="hover:bg-base-200/50 border-base-100 border-b transition-colors last:border-0"
-                                                      >
-                                                        <td className="bg-base-100 border-base-300 w-[320px] max-w-[320px] min-w-[320px] border-r py-2 pl-16 text-sm">
-                                                          <div className="flex flex-col">
-                                                            <span className="flex items-center gap-2 font-medium">
-                                                              {actionLabel}
-                                                            </span>
-                                                            <span className="text-base-content/60 font-mono text-[10px]">
-                                                              {perm.action} • {perm.subject}
-                                                            </span>
-                                                          </div>
-                                                        </td>
-                                                        {displayRoles.map((role) => (
-                                                          <PermissionCell
-                                                            key={role.id}
-                                                            role={role}
-                                                            permissionId={perm.id}
-                                                            isUpdating={false}
-                                                            onToggle={handlePermissionToggle}
-                                                            className="w-35 max-w-35 min-w-35"
-                                                          />
-                                                        ))}
-                                                      </tr>
-                                                    );
-                                                  })}
+                                                  {item.relatedPermissions.map((perm) => (
+                                                    <PermissionRow
+                                                      key={perm.id}
+                                                      perm={perm}
+                                                      displayRoles={displayRoles}
+                                                      onToggle={handlePermissionToggle}
+                                                    />
+                                                  ))}
                                                 </tbody>
                                               </table>
                                             </SmoothCollapse>
@@ -561,4 +475,102 @@ function PermissionCell({
       </button>
     </td>
   );
+}
+
+function PermissionRow({
+  perm,
+  displayRoles,
+  onToggle,
+}: {
+  perm: Permission;
+  displayRoles: Role[];
+  onToggle: (role: Role, id: number) => void;
+}) {
+  const actionMap: Record<string, string> = {
+    read: "Ver",
+    create: "Crear",
+    update: "Editar",
+    delete: "Eliminar",
+  };
+  const actionLabel = actionMap[perm.action] || perm.action;
+
+  return (
+    <tr className="hover:bg-base-200/50 border-base-100 border-b transition-colors last:border-0">
+      <td className="bg-base-100 border-base-300 w-[320px] max-w-[320px] min-w-[320px] border-r py-2 pl-16 text-sm">
+        <div className="flex flex-col">
+          <span className="flex items-center gap-2 font-medium">{actionLabel}</span>
+          <span className="text-base-content/60 font-mono text-[10px]">
+            {perm.action} • {perm.subject}
+          </span>
+        </div>
+      </td>
+      {displayRoles.map((role) => (
+        <PermissionCell
+          key={role.id}
+          role={role}
+          permissionId={perm.id}
+          isUpdating={false}
+          onToggle={onToggle}
+          className="w-35 max-w-35 min-w-35"
+        />
+      ))}
+    </tr>
+  );
+}
+
+// Helper: Optimistic Update Logic
+function optimisticUpdateRole(oldRoles: Role[] | undefined, roleId: number, permissionIds: number[]): Role[] {
+  if (!oldRoles) return [];
+  return oldRoles.map((role) => {
+    if (role.id === roleId) {
+      const newPermissions = permissionIds.map((id) => ({
+        permissionId: id,
+        permission: { id, action: "", subject: "", description: "" }, // Placeholder
+      }));
+      return { ...role, permissions: newPermissions };
+    }
+    return role;
+  });
+}
+
+// Helper: Navigation Processing Logic
+function processNavSections(
+  navSections: NavSectionData[],
+  allPermissions: Permission[],
+  usedPermissionIds: Set<number>
+) {
+  return navSections
+    .map((section: NavSectionData) => {
+      const itemsWithPermissions = section.items
+        .map((item: NavItem) => {
+          const perms: Permission[] = [];
+
+          if (item.requiredPermission) {
+            const subject = item.requiredPermission.subject;
+            const related = allPermissions.filter((p) => p.subject.toLowerCase() === subject.toLowerCase());
+            perms.push(...related);
+          }
+
+          const uniquePermissions = [...new Map(perms.map((p) => [p.id, p])).values()];
+          uniquePermissions.forEach((p) => usedPermissionIds.add(p.id));
+
+          if (uniquePermissions.length === 0) return null;
+
+          return {
+            ...item,
+            relatedPermissions: uniquePermissions,
+            permissionIds: uniquePermissions.map((p) => p.id),
+          };
+        })
+        .filter((item): item is NonNullable<typeof item> => item !== null);
+
+      const sectionPermissionIds = itemsWithPermissions.flatMap((item) => item.permissionIds);
+
+      return {
+        ...section,
+        items: itemsWithPermissions,
+        permissionIds: sectionPermissionIds,
+      };
+    })
+    .filter((section) => section.items.length > 0);
 }

@@ -97,8 +97,8 @@ export function useSupplyManagement(): UseSupplyManagementResult {
         data: { status: newStatus },
       });
       toastSuccess("Estado de solicitud actualizado");
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Error al actualizar el estado";
+    } catch (error_) {
+      const message = error_ instanceof Error ? error_.message : "Error al actualizar el estado";
       setError(message);
       toastError(message);
     }

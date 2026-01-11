@@ -28,6 +28,8 @@ const TimesheetAuditCalendar = lazy(() => import("@/features/hr/timesheets-audit
 dayjs.extend(isoWeek);
 dayjs.locale("es");
 
+const DATE_ISO_FORMAT = "YYYY-MM-DD";
+
 type WeekDefinition = {
   key: string;
   month: string;
@@ -71,8 +73,8 @@ function buildWeeksForMonth(month: string): WeekDefinition[] {
         month,
         number: weekNumber,
         label: `S${weekNumber} (${clampedStart.format("D")} - ${clampedEnd.format("D MMM")})`,
-        start: clampedStart.format("YYYY-MM-DD"),
-        end: clampedEnd.format("YYYY-MM-DD"),
+        start: clampedStart.format(DATE_ISO_FORMAT),
+        end: clampedEnd.format(DATE_ISO_FORMAT),
       });
       seen.add(weekNumber);
     }
@@ -85,33 +87,39 @@ function buildWeeksForMonth(month: string): WeekDefinition[] {
 function getQuickRangeValues(range: QuickRange): { start: string; end: string } | null {
   const today = dayjs();
   switch (range) {
-    case "this-week":
+    case "this-week": {
       return {
-        start: today.startOf("isoWeek").format("YYYY-MM-DD"),
-        end: today.endOf("isoWeek").format("YYYY-MM-DD"),
+        start: today.startOf("isoWeek").format(DATE_ISO_FORMAT),
+        end: today.endOf("isoWeek").format(DATE_ISO_FORMAT),
       };
-    case "last-week":
+    }
+    case "last-week": {
       return {
-        start: today.subtract(1, "week").startOf("isoWeek").format("YYYY-MM-DD"),
-        end: today.subtract(1, "week").endOf("isoWeek").format("YYYY-MM-DD"),
+        start: today.subtract(1, "week").startOf("isoWeek").format(DATE_ISO_FORMAT),
+        end: today.subtract(1, "week").endOf("isoWeek").format(DATE_ISO_FORMAT),
       };
-    case "this-month":
+    }
+    case "this-month": {
       return {
         start: startOfMonth(),
         end: endOfMonth(),
       };
-    case "last-month":
+    }
+    case "last-month": {
       return {
         start: monthsAgoStart(1),
         end: monthsAgoEnd(1),
       };
-    case "two-months-ago":
+    }
+    case "two-months-ago": {
       return {
         start: monthsAgoStart(2),
         end: monthsAgoEnd(2),
       };
-    default:
+    }
+    default: {
       return null;
+    }
   }
 }
 
@@ -156,7 +164,7 @@ export default function TimesheetAuditPage() {
 
   // Set default month when months load (only once)
   useEffect(() => {
-    if (months.length && !selectedMonth && !monthInitialized.current) {
+    if (months.length > 0 && !selectedMonth && !monthInitialized.current) {
       const prevMonth = dayjs().subtract(1, "month").format("YYYY-MM");
       setSelectedMonth(months.includes(prevMonth) ? prevMonth : (months[0] ?? ""));
       monthInitialized.current = true;
@@ -178,7 +186,7 @@ export default function TimesheetAuditPage() {
     }
 
     // Custom: use selected weeks
-    if (!selectedWeekKeys.length || !selectedMonth) return [];
+    if (selectedWeekKeys.length === 0 || !selectedMonth) return [];
 
     return selectedWeekKeys
       .map((key) => {
@@ -203,10 +211,7 @@ export default function TimesheetAuditPage() {
   // Calculate overlaps
   const overlapsByDate = detectAllOverlaps(entries);
   const totalOverlapDays = overlapsByDate.size;
-  const totalOverlapPairs = Array.from(overlapsByDate.values()).reduce(
-    (sum, info) => sum + info.total_overlapping_pairs,
-    0
-  );
+  const totalOverlapPairs = [...overlapsByDate.values()].reduce((sum, info) => sum + info.total_overlapping_pairs, 0);
 
   // Handlers
   const handleQuickRangeChange = (range: QuickRange) => {
@@ -250,9 +255,9 @@ export default function TimesheetAuditPage() {
 
   // Format range summary
   const rangeSummary = (() => {
-    if (!effectiveRanges.length) return "";
+    if (effectiveRanges.length === 0) return "";
     const first = dayjs(effectiveRanges[0]?.start);
-    const last = dayjs(effectiveRanges[effectiveRanges.length - 1]?.end);
+    const last = dayjs(effectiveRanges.at(-1)?.end);
     return `${first.format("D MMM")} → ${last.format("D MMM YYYY")}`;
   })();
 
@@ -428,36 +433,46 @@ export default function TimesheetAuditPage() {
 
                   {/* Employee List */}
                   <ul className="max-h-64 overflow-y-auto p-2">
-                    {loadingEmployees ? (
-                      <li className="flex justify-center p-4">
-                        <span className={LOADING_SPINNER_SM} />
-                      </li>
-                    ) : filteredEmployees.length === 0 ? (
-                      <li className="text-base-content/50 p-4 text-center text-sm">No se encontraron empleados</li>
-                    ) : (
-                      filteredEmployees.map((emp) => {
-                        const isSelected = selectedEmployeeIds.includes(emp.id);
+                    {(() => {
+                      if (loadingEmployees) {
                         return (
-                          <li key={emp.id}>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                handleEmployeeToggle(emp.id);
-                                if (!isSelected && selectedEmployeeIds.length + 1 >= MAX_EMPLOYEES) {
-                                  setShowEmployeeDropdown(false);
-                                }
-                              }}
-                              className={`flex w-full items-center justify-between rounded-lg p-2 transition-all ${
-                                isSelected ? "bg-primary/20 text-primary" : "hover:bg-base-200"
-                              }`}
-                            >
-                              <span className="truncate">{emp.full_name}</span>
-                              {isSelected && <Check className="h-4 w-4 shrink-0" />}
-                            </button>
+                          <li className="flex justify-center p-4">
+                            <span className={LOADING_SPINNER_SM} />
                           </li>
                         );
-                      })
-                    )}
+                      }
+                      if (filteredEmployees.length === 0) {
+                        return (
+                          <li className="text-base-content/50 p-4 text-center text-sm">No se encontraron empleados</li>
+                        );
+                      }
+                      return (
+                        <>
+                          {filteredEmployees.map((emp) => {
+                            const isSelected = selectedEmployeeIds.includes(emp.id);
+                            return (
+                              <li key={emp.id}>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    handleEmployeeToggle(emp.id);
+                                    if (!isSelected && selectedEmployeeIds.length + 1 >= MAX_EMPLOYEES) {
+                                      setShowEmployeeDropdown(false);
+                                    }
+                                  }}
+                                  className={`flex w-full items-center justify-between rounded-lg p-2 transition-all ${
+                                    isSelected ? "bg-primary/20 text-primary" : "hover:bg-base-200"
+                                  }`}
+                                >
+                                  <span className="truncate">{emp.full_name}</span>
+                                  {isSelected && <Check className="h-4 w-4 shrink-0" />}
+                                </button>
+                              </li>
+                            );
+                          })}
+                        </>
+                      );
+                    })()}
                   </ul>
                 </div>
               </>
@@ -512,19 +527,29 @@ export default function TimesheetAuditPage() {
       {errorEntries && <Alert variant="error">{errorEntries}</Alert>}
 
       {/* Empty States */}
-      {selectedEmployeeIds.length === 0 ? (
-        <div className="card bg-base-100 shadow-sm">
-          <div className="card-body items-center py-16 text-center">
-            <Users className="text-base-content/30 mb-4 h-12 w-12" />
-            <h3 className="text-base-content/70 text-lg font-semibold">Selecciona empleados</h3>
-            <p className="text-base-content/50 max-w-md text-sm">
-              Elige hasta {MAX_EMPLOYEES} empleados para analizar sus horarios y detectar solapamientos
-            </p>
-          </div>
-        </div>
-      ) : !loadingEntries && entries.length === 0 ? (
-        <Alert variant="warning">No hay registros para el periodo seleccionado. Prueba con otro rango de fechas.</Alert>
-      ) : null}
+      {(() => {
+        if (selectedEmployeeIds.length === 0) {
+          return (
+            <div className="card bg-base-100 shadow-sm">
+              <div className="card-body items-center py-16 text-center">
+                <Users className="text-base-content/30 mb-4 h-12 w-12" />
+                <h3 className="text-base-content/70 text-lg font-semibold">Selecciona empleados</h3>
+                <p className="text-base-content/50 max-w-md text-sm">
+                  Elige hasta {MAX_EMPLOYEES} empleados para analizar sus horarios y detectar solapamientos
+                </p>
+              </div>
+            </div>
+          );
+        }
+        if (!loadingEntries && entries.length === 0) {
+          return (
+            <Alert variant="warning">
+              No hay registros para el periodo seleccionado. Prueba con otro rango de fechas.
+            </Alert>
+          );
+        }
+        return null;
+      })()}
 
       {/* Calendar */}
       {canShowCalendar && (

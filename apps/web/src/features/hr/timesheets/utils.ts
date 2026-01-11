@@ -10,7 +10,7 @@ export function buildBulkRows(month: string, entries: TimesheetEntry[]): BulkRow
   for (let day = 1; day <= days; day += 1) {
     const date = base.date(day).format("YYYY-MM-DD");
     const entry = entryMap.get(date);
-    const extraMinutes = entry && entry.overtime_minutes ? entry.overtime_minutes : 0;
+    const extraMinutes = entry?.overtime_minutes || 0;
     rows.push({
       date,
       entrada: entry?.start_time ?? "",
@@ -49,7 +49,7 @@ export function computeStatus(row: BulkRow, dirty: boolean): string {
 export function parseDuration(value: string): number | null {
   const trimmed = value.trim();
   if (!trimmed) return 0;
-  if (!/^[0-9]{1,2}:[0-9]{2}$/.test(trimmed)) return null;
+  if (!/^\d{1,2}:\d{2}$/.test(trimmed)) return null;
   const parts = trimmed.split(":").map(Number);
   const [hours, minutes] = parts;
   if (hours === undefined || minutes === undefined) return null;
@@ -76,7 +76,7 @@ export function calculateWorkedMinutes(startTime: string, endTime: string): numb
 }
 
 function timeToMinutes(time: string): number | null {
-  if (!/^[0-9]{1,2}:[0-9]{2}$/.test(time)) return null;
+  if (!/^\d{1,2}:\d{2}$/.test(time)) return null;
   const parts = time.split(":").map(Number);
   const [hours, minutes] = parts;
   if (hours === undefined || minutes === undefined) return null;
@@ -116,12 +116,8 @@ export function formatTotalExtraHours(rows: TimesheetSummaryRow[]): string {
     if (!row.extraAmount) continue;
 
     // Si hay overtimeRate definido, calcular horas basado en extraAmount / overtimeRate
-    if (row.overtimeRate > 0) {
-      totalMinutes += Math.round((row.extraAmount / row.overtimeRate) * 60);
-    } else {
-      // Si overtimeRate es 0, usar las horas extra reales del timesheet
-      totalMinutes += row.overtimeMinutes || 0;
-    }
+    totalMinutes +=
+      row.overtimeRate > 0 ? Math.round((row.extraAmount / row.overtimeRate) * 60) : row.overtimeMinutes || 0;
   }
   return minutesToDuration(totalMinutes);
 }

@@ -18,6 +18,10 @@ function isWithinRange(date: string, range: AuditDateRange) {
   return date >= range.start && date <= range.end;
 }
 
+function filterAuditEntries(data: TimesheetEntryWithEmployee[], ranges: AuditDateRange[]) {
+  return data.filter((entry) => ranges.some((range) => isWithinRange(entry.work_date, range)));
+}
+
 export function useTimesheetAudit({ ranges, employeeIds }: UseTimesheetAuditOptions) {
   const [entries, setEntries] = useState<TimesheetEntryWithEmployee[]>([]);
   const [loading, setLoading] = useState(false);
@@ -27,7 +31,7 @@ export function useTimesheetAudit({ ranges, employeeIds }: UseTimesheetAuditOpti
     let isMounted = true; // Prevent state updates after unmount
 
     async function loadEntries() {
-      if (!employeeIds.length || !ranges.length) {
+      if (employeeIds.length === 0 || ranges.length === 0) {
         if (isMounted) setEntries([]);
         return;
       }
@@ -38,9 +42,9 @@ export function useTimesheetAudit({ ranges, employeeIds }: UseTimesheetAuditOpti
       }
 
       try {
-        const sortedRanges = [...ranges].sort((a, b) => a.start.localeCompare(b.start));
+        const sortedRanges = ranges.toSorted((a, b) => a.start.localeCompare(b.start));
         const firstDay = sortedRanges[0]?.start;
-        const lastDay = sortedRanges[sortedRanges.length - 1]?.end;
+        const lastDay = sortedRanges.at(-1)?.end;
 
         if (!firstDay || !lastDay) {
           if (isMounted) setEntries([]);
@@ -49,14 +53,12 @@ export function useTimesheetAudit({ ranges, employeeIds }: UseTimesheetAuditOpti
 
         const data = await fetchMultiEmployeeTimesheets(employeeIds, firstDay, lastDay);
 
+        const filtered = filterAuditEntries(data, sortedRanges);
+        if (isMounted) setEntries(filtered);
+      } catch (error_) {
         if (!isMounted) return; // Don't update state if unmounted
 
-        const filtered = data.filter((entry) => sortedRanges.some((range) => isWithinRange(entry.work_date, range)));
-        setEntries(filtered);
-      } catch (err) {
-        if (!isMounted) return; // Don't update state if unmounted
-
-        const message = err instanceof Error ? err.message : "Error cargando datos de auditoría";
+        const message = error_ instanceof Error ? error_.message : "Error cargando datos de auditoría";
         setError(message);
         setEntries([]);
       } finally {

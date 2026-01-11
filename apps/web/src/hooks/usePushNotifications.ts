@@ -14,17 +14,17 @@ const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY;
 function urlBase64ToUint8Array(base64String: string) {
   try {
     const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-    const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+    const base64 = (base64String + padding).replaceAll("-", "+").replaceAll("_", "/");
 
-    const rawData = window.atob(base64);
+    const rawData = globalThis.atob(base64);
     const outputArray = new Uint8Array(rawData.length);
 
     for (let i = 0; i < rawData.length; ++i) {
-      outputArray[i] = rawData.charCodeAt(i);
+      outputArray[i] = rawData.codePointAt(i) ?? 0;
     }
     return outputArray;
-  } catch (e) {
-    console.error("Error decoding VAPID key:", e);
+  } catch (error) {
+    console.error("Error decoding VAPID key:", error);
     return new Uint8Array(0);
   }
 }
@@ -36,7 +36,7 @@ export function usePushNotifications() {
   const { user } = useAuth();
 
   useEffect(() => {
-    if ("Notification" in window) {
+    if ("Notification" in globalThis) {
       setPermission(Notification.permission);
       checkSubscription();
     }

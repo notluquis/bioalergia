@@ -451,10 +451,10 @@ export default function DailyProductionBalancesPage() {
                           className="shadow-primary/20 grow rounded-xl text-sm font-bold shadow-sm"
                           disabled={mutation.isPending || !canEdit}
                           onClick={() => {
-                            if (!hasDifference) {
-                              triggerSave({ forceFinal: true });
-                            } else {
+                            if (hasDifference) {
                               triggerSave({ forceFinal: false });
+                            } else {
+                              triggerSave({ forceFinal: true });
                             }
                           }}
                         >
@@ -463,11 +463,11 @@ export default function DailyProductionBalancesPage() {
                           ) : (
                             <>
                               <Save className="h-4 w-4" />
-                              {form.status === "FINAL"
-                                ? "Guardar cambios"
-                                : !hasDifference
-                                  ? "Guardar y Finalizar"
-                                  : "Guardar Borrador"}
+                              {(() => {
+                                if (form.status === "FINAL") return "Guardar cambios";
+                                if (hasDifference) return "Guardar Borrador";
+                                return "Guardar y Finalizar";
+                              })()}
                             </>
                           )}
                         </Button>

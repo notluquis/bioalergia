@@ -31,6 +31,15 @@ export function CounterpartSection({
   onCounterpartSelect,
   onChange,
 }: CounterpartSectionProps) {
+  let accountsHelper: string | undefined;
+  if (counterpartsError) {
+    accountsHelper = "No se pudo cargar las cuentas";
+  } else if (counterpartsLoading) {
+    accountsHelper = "Cargando opciones...";
+  } else if (counterpartId && accounts.length === 0) {
+    accountsHelper = "Esta contraparte aún no tiene cuentas agregadas";
+  }
+
   return (
     <section className={GRID_2_COL_MD}>
       <Input
@@ -56,15 +65,7 @@ export function CounterpartSection({
           onChange("counterpartAccountId", event.target.value ? Number(event.target.value) : null)
         }
         disabled={!counterpartId || accountsLoading}
-        helper={
-          counterpartsError
-            ? "No se pudo cargar las cuentas"
-            : counterpartsLoading
-              ? "Cargando opciones..."
-              : counterpartId && !accounts.length
-                ? "Esta contraparte aún no tiene cuentas agregadas"
-                : undefined
-        }
+        helper={accountsHelper}
       >
         <option value="">Sin cuenta específica</option>
         {accounts.map((account) => (

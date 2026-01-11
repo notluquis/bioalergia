@@ -169,12 +169,7 @@ export default function AccountSettingsPage() {
               </div>
             ) : (
               <div className="space-y-4">
-                {!qrCodeUrl ? (
-                  <Button onClick={() => setupMfaMutation.mutate()} disabled={setupMfaMutation.isPending}>
-                    {setupMfaMutation.isPending ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
-                    Configurar MFA
-                  </Button>
-                ) : (
+                {qrCodeUrl ? (
                   <div className="border-base-300 bg-base-200/50 rounded-xl border p-4">
                     <div className="mb-4 text-center">
                       <p className="mb-2 text-sm font-medium">1. Escanea este código QR con tu app de autenticación:</p>
@@ -219,6 +214,11 @@ export default function AccountSettingsPage() {
                       </Button>
                     </div>
                   </div>
+                ) : (
+                  <Button onClick={() => setupMfaMutation.mutate()} disabled={setupMfaMutation.isPending}>
+                    {setupMfaMutation.isPending ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
+                    Configurar MFA
+                  </Button>
                 )}
               </div>
             )}

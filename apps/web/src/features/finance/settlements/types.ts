@@ -1,3 +1,5 @@
+import type { JsonId } from "../types";
+
 export interface SettlementTransaction {
   id: number;
   sourceId: string;
@@ -51,10 +53,10 @@ export interface SettlementTransaction {
   storeName: string | null;
   externalStoreId: string | null;
   poiId: string | null;
-  orderId: string | number | bigint | null;
-  shippingId: string | number | bigint | null;
+  orderId: JsonId | null;
+  shippingId: JsonId | null;
   shipmentMode: string | null;
-  packId: string | number | bigint | null;
+  packId: JsonId | null;
   shippingOrderId: string | null;
   poiWalletName: string | null;
   poiBankName: string | null;

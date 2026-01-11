@@ -26,13 +26,17 @@ const ToastContext = createContext<ToastContextValue | undefined>(undefined);
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<ToastRecord[]>([]);
 
+  const removeToast = (id: number) => {
+    setToasts((current) => current.filter((t) => t.id !== id));
+  };
+
   const showToast = ({ message, title, variant = "info", duration = 4000 }: ToastOptions) => {
     const id = Date.now();
     const expiresAt = Date.now() + duration;
+
     setToasts((current) => [...current, { id, message, title, variant, expiresAt }]);
-    window.setTimeout(() => {
-      setToasts((current) => current.filter((toast) => toast.id !== id));
-    }, duration);
+
+    globalThis.setTimeout(() => removeToast(id), duration);
   };
 
   const value: ToastContextValue = { showToast };
@@ -44,13 +48,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         {toasts.map((toast) => (
           <div
             key={toast.id}
-            className={`surface-elevated pointer-events-auto w-full max-w-sm border-l-4 px-4 py-3 text-sm shadow-xl select-text sm:w-80 ${
-              toast.variant === "success"
-                ? "border-success/70 text-success"
-                : toast.variant === "error"
-                  ? "border-error/70 text-error"
-                  : "border-primary/50 text-base-content"
-            }`}
+            className={`surface-elevated pointer-events-auto w-full max-w-sm border-l-4 px-4 py-3 text-sm shadow-xl select-text sm:w-80 ${(() => {
+              if (toast.variant === "success") return "border-success/70 text-success";
+              if (toast.variant === "error") return "border-error/70 text-error";
+              return "border-primary/50 text-base-content";
+            })()}`}
           >
             {toast.title && <p className="text-base-content font-semibold">{toast.title}</p>}
             <p className="text-base-content/80 cursor-text text-sm">{toast.message}</p>

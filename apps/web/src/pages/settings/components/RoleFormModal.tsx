@@ -60,13 +60,7 @@ export function RoleFormModal({ role, isOpen, onClose }: RoleFormModalProps) {
         description: data.description || "",
       };
 
-      if (role) {
-        // Edit
-        await updateRole(role.id, payload);
-      } else {
-        // Create
-        await createRole(payload);
-      }
+      await (role ? updateRole(role.id, payload) : createRole(payload));
     },
     onSuccess: () => {
       toast.success("Los cambios se han guardado correctamente.", role ? "Rol actualizado" : "Rol creado");
@@ -91,6 +85,25 @@ export function RoleFormModal({ role, isOpen, onClose }: RoleFormModalProps) {
 
   const onSubmit = (data: RoleFormData) => {
     mutation.mutate(data);
+  };
+
+  const renderUsersList = () => {
+    if (isLoadingUsers) return <div className="loading loading-spinner loading-xs"></div>;
+
+    if (userData.length > 0) {
+      return (
+        <div className="max-h-32 space-y-1 overflow-y-auto">
+          {userData.map((u) => (
+            <div key={u.id} className="hover:bg-base-100 flex items-center justify-between rounded p-1 text-xs">
+              <span>{u.person ? `${u.person.names} ${u.person.fatherName}` : "Sin nombre"}</span>
+              <span className="opacity-50">{u.email}</span>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    return <p className="text-xs italic opacity-50">No hay usuarios con este rol.</p>;
   };
 
   if (!isOpen) return null;
@@ -135,20 +148,7 @@ export function RoleFormModal({ role, isOpen, onClose }: RoleFormModalProps) {
                 <UserIcon className="h-4 w-4" />
                 Usuarios afectados ({userData.length})
               </div>
-              {isLoadingUsers ? (
-                <div className="loading loading-spinner loading-xs"></div>
-              ) : userData.length > 0 ? (
-                <div className="max-h-32 space-y-1 overflow-y-auto">
-                  {userData.map((u) => (
-                    <div key={u.id} className="hover:bg-base-100 flex items-center justify-between rounded p-1 text-xs">
-                      <span>{u.person ? `${u.person.names} ${u.person.fatherName}` : "Sin nombre"}</span>
-                      <span className="opacity-50">{u.email}</span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-xs italic opacity-50">No hay usuarios con este rol.</p>
-              )}
+              {renderUsersList()}
               <div className="text-warning mt-2 flex gap-1 text-xs">
                 <AlertCircle className="h-3 w-3" />
                 <span>Cualquier cambio en los permisos afectará inmediatamente a estos usuarios.</span>

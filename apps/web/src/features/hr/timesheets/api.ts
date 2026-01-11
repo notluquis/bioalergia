@@ -74,7 +74,7 @@ export async function bulkUpsertTimesheets(
     {
       employee_id: employeeId,
       entries,
-      remove_ids: removeIds.length ? removeIds : undefined,
+      remove_ids: removeIds.length > 0 ? removeIds : undefined,
     }
   );
 

@@ -39,8 +39,8 @@ const createInitialFilters = (): HeatmapFilters => {
 
 function arraysEqual(a: string[], b: string[]): boolean {
   if (a.length !== b.length) return false;
-  const sortedA = [...a].sort();
-  const sortedB = [...b].sort();
+  const sortedA = a.toSorted((x, y) => x.localeCompare(y));
+  const sortedB = b.toSorted((x, y) => x.localeCompare(y));
   return sortedA.every((value, index) => value === sortedB[index]);
 }
 
@@ -75,7 +75,7 @@ function CalendarHeatmapPage() {
     staleTime: 5 * 60 * 1000, // 5 minutes cache
   });
 
-  const error = queryError instanceof Error ? queryError.message : queryError ? String(queryError) : null;
+  const error = queryError instanceof Error ? queryError.message : String(queryError || "");
   const initializing = loading && !summary;
 
   // NOTE: We no longer sync server filters back to UI to avoid overwriting user changes.
@@ -173,7 +173,7 @@ function CalendarHeatmapPage() {
 
   const busy = loading || initializing;
   const rangeStartLabel = heatmapMonths[0]?.format("MMM YYYY") ?? "—";
-  const rangeEndLabel = heatmapMonths[heatmapMonths.length - 1]?.format("MMM YYYY") ?? "—";
+  const rangeEndLabel = heatmapMonths.at(-1)?.format("MMM YYYY") ?? "—";
 
   const [showAdvanced, setShowAdvanced] = useState(false);
 
@@ -272,9 +272,11 @@ function CalendarHeatmapPage() {
 
       {error && <Alert variant="error">{error}</Alert>}
 
-      {initializing && !summary ? (
-        <p className="text-base-content/60 text-sm">{tc("loading")}</p>
-      ) : summary ? (
+      {initializing && !summary && <p className="text-base-content/60 text-sm">{tc("loading")}</p>}
+
+      {!initializing && !summary && <Alert variant="warning">No se encontraron datos para mostrar.</Alert>}
+
+      {!initializing && summary && (
         <section className="space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="text-base-content/60 text-sm font-semibold tracking-wide uppercase">
@@ -306,8 +308,6 @@ function CalendarHeatmapPage() {
             })}
           </p>
         </section>
-      ) : (
-        <Alert variant="warning">No se encontraron datos para mostrar.</Alert>
       )}
     </section>
   );

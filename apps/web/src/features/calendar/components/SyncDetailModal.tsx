@@ -26,26 +26,24 @@ export function SyncDetailModal({ isOpen, onClose, log }: SyncDetailModalProps) 
         <div
           className={cn(
             "flex items-center gap-3 rounded-lg p-3 text-sm font-medium",
-            log.status === "SUCCESS"
-              ? "bg-success/10 text-success"
-              : log.status === "ERROR"
-                ? "bg-error/10 text-error"
-                : "bg-warning/10 text-warning"
+            (() => {
+              if (log.status === "SUCCESS") return "bg-success/10 text-success";
+              if (log.status === "ERROR") return "bg-error/10 text-error";
+              return "bg-warning/10 text-warning";
+            })()
           )}
         >
-          {log.status === "SUCCESS" ? (
-            <CheckCircle size={18} />
-          ) : log.status === "ERROR" ? (
-            <XCircle size={18} />
-          ) : (
-            <AlertTriangle size={18} />
-          )}
+          {(() => {
+            if (log.status === "SUCCESS") return <CheckCircle size={18} />;
+            if (log.status === "ERROR") return <XCircle size={18} />;
+            return <AlertTriangle size={18} />;
+          })()}
           <span>
-            {log.status === "SUCCESS"
-              ? "Sincronización completada exitosamente"
-              : log.status === "ERROR"
-                ? "Error durante la sincronización"
-                : "Sincronización en curso"}
+            {(() => {
+              if (log.status === "SUCCESS") return "Sincronización completada exitosamente";
+              if (log.status === "ERROR") return "Error durante la sincronización";
+              return "Sincronización en curso";
+            })()}
           </span>
         </div>
 

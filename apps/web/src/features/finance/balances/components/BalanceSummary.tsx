@@ -24,8 +24,8 @@ function useBalanceReportSummary(report: BalancesApiResponse | undefined | null)
 
   const mismatchDays = report.days.filter((day) => day.difference != null && Math.abs(day.difference) > 1);
   const hasRecordedBalances = report.days.some((day) => day.recordedBalance != null);
-  const lastRecorded = [...report.days].reverse().find((day) => day.recordedBalance != null) ?? null;
-  const lastExpected = [...report.days].reverse().find((day) => day.expectedBalance != null) ?? null;
+  const lastRecorded = [...report.days].toReversed().find((day) => day.recordedBalance != null) ?? null;
+  const lastExpected = [...report.days].toReversed().find((day) => day.expectedBalance != null) ?? null;
 
   return { mismatchDays, hasRecordedBalances, lastRecorded, lastExpected };
 }
@@ -37,12 +37,14 @@ function formatSignedCLP(value: number) {
 export function BalanceSummary({ report, loading, error }: BalanceSummaryProps) {
   const { mismatchDays, hasRecordedBalances, lastRecorded, lastExpected } = useBalanceReportSummary(report);
 
-  return (
-    <section className="card bg-base-100 shadow-sm">
-      <div className="card-body">
-        <h2 className="card-title text-primary text-lg">Conciliación</h2>
-        {error && <p className="bg-base-100 border-l-4 border-rose-300/80 px-4 py-2 text-xs text-rose-700">{error}</p>}
-        {loading ? (
+  if (loading) {
+    return (
+      <section className="card bg-base-100 shadow-sm">
+        <div className="card-body">
+          <h2 className="card-title text-primary text-lg">Conciliación</h2>
+          {error && (
+            <p className="bg-base-100 border-l-4 border-rose-300/80 px-4 py-2 text-xs text-rose-700">{error}</p>
+          )}
           <div className="space-y-3">
             <div className="skeleton-card space-y-2">
               <span className="skeleton-line w-1/2" />
@@ -53,52 +55,85 @@ export function BalanceSummary({ report, loading, error }: BalanceSummaryProps) 
               <span className="skeleton-line w-2/3" />
             </div>
           </div>
-        ) : !report ? (
+        </div>
+      </section>
+    );
+  }
+
+  if (!report) {
+    return (
+      <section className="card bg-base-100 shadow-sm">
+        <div className="card-body">
+          <h2 className="card-title text-primary text-lg">Conciliación</h2>
+          {error && (
+            <p className="bg-base-100 border-l-4 border-rose-300/80 px-4 py-2 text-xs text-rose-700">{error}</p>
+          )}
           <p className="text-base-content text-sm">
             Selecciona un rango para revisar los saldos de cierre registrados.
           </p>
-        ) : !hasRecordedBalances ? (
+        </div>
+      </section>
+    );
+  }
+
+  if (!hasRecordedBalances) {
+    return (
+      <section className="card bg-base-100 shadow-sm">
+        <div className="card-body">
+          <h2 className="card-title text-primary text-lg">Conciliación</h2>
+          {error && (
+            <p className="bg-base-100 border-l-4 border-rose-300/80 px-4 py-2 text-xs text-rose-700">{error}</p>
+          )}
           <p className="text-base-content text-sm">
             Aún no registras saldos de cierre para este rango. Actualiza la sección de Saldos diarios en la página de
             movimientos para comenzar la conciliación.
           </p>
-        ) : (
-          <div className="text-base-content space-y-3 text-xs">
-            {report.previous && (
-              <div className="border-base-300 bg-base-200 text-base-content rounded-2xl border px-4 py-3">
-                Saldo cierre previo ({dayjs(report.previous.date).format("DD-MM-YYYY")} 23:59)
-                <span className="text-base-content ml-2 font-semibold">{fmtCLP(report.previous.balance)}</span>
-              </div>
-            )}
+        </div>
+      </section>
+    );
+  }
 
-            {lastRecorded && (
-              <div className="rounded-2xl border border-emerald-200/80 bg-emerald-50/80 px-4 py-3 text-emerald-700">
-                Último saldo registrado ({dayjs(lastRecorded.date).format("DD-MM-YYYY")} 23:59)
-                <span className="ml-2 font-semibold text-emerald-800">{fmtCLP(lastRecorded.recordedBalance!)}</span>
-                {lastRecorded.difference != null && Math.abs(lastRecorded.difference) > 1 && (
-                  <span className="ml-2 font-semibold text-rose-600">
-                    Dif: {formatSignedCLP(lastRecorded.difference)}
-                  </span>
-                )}
-              </div>
-            )}
+  return (
+    <section className="card bg-base-100 shadow-sm">
+      <div className="card-body">
+        <h2 className="card-title text-primary text-lg">Conciliación</h2>
+        {error && <p className="bg-base-100 border-l-4 border-rose-300/80 px-4 py-2 text-xs text-rose-700">{error}</p>}
+        {/* Main content */}
+        <div className="text-base-content space-y-3 text-xs">
+          {report.previous && (
+            <div className="border-base-300 bg-base-200 text-base-content rounded-2xl border px-4 py-3">
+              Saldo cierre previo ({dayjs(report.previous.date).format("DD-MM-YYYY")} 23:59)
+              <span className="text-base-content ml-2 font-semibold">{fmtCLP(report.previous.balance)}</span>
+            </div>
+          )}
 
-            {!lastRecorded && lastExpected && (
-              <div className="border-base-300 bg-base-200 text-base-content rounded-2xl border px-4 py-3">
-                Saldo esperado del último día ({dayjs(lastExpected.date).format("DD-MM-YYYY")}):
-                <span className="text-base-content ml-2 font-semibold">{fmtCLP(lastExpected.expectedBalance!)}</span>
-              </div>
-            )}
+          {lastRecorded && (
+            <div className="rounded-2xl border border-emerald-200/80 bg-emerald-50/80 px-4 py-3 text-emerald-700">
+              Último saldo registrado ({dayjs(lastRecorded.date).format("DD-MM-YYYY")} 23:59)
+              <span className="ml-2 font-semibold text-emerald-800">{fmtCLP(lastRecorded.recordedBalance!)}</span>
+              {lastRecorded.difference != null && Math.abs(lastRecorded.difference) > 1 && (
+                <span className="ml-2 font-semibold text-rose-600">
+                  Dif: {formatSignedCLP(lastRecorded.difference)}
+                </span>
+              )}
+            </div>
+          )}
 
-            {mismatchDays.length > 0 ? (
-              <MismatchSummary mismatchDays={mismatchDays} />
-            ) : (
-              <p className="font-semibold text-emerald-600">
-                Los saldos registrados coinciden con los movimientos del rango seleccionado.
-              </p>
-            )}
-          </div>
-        )}
+          {!lastRecorded && lastExpected && (
+            <div className="border-base-300 bg-base-200 text-base-content rounded-2xl border px-4 py-3">
+              Saldo esperado del último día ({dayjs(lastExpected.date).format("DD-MM-YYYY")}):
+              <span className="text-base-content ml-2 font-semibold">{fmtCLP(lastExpected.expectedBalance!)}</span>
+            </div>
+          )}
+
+          {mismatchDays.length > 0 ? (
+            <MismatchSummary mismatchDays={mismatchDays} />
+          ) : (
+            <p className="font-semibold text-emerald-600">
+              Los saldos registrados coinciden con los movimientos del rango seleccionado.
+            </p>
+          )}
+        </div>
       </div>
     </section>
   );

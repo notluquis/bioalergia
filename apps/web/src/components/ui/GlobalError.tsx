@@ -31,7 +31,7 @@ function isDeployError(error: Error | null): boolean {
 }
 
 async function clearCaches() {
-  if ("caches" in window) {
+  if ("caches" in globalThis) {
     const names = await caches.keys();
     await Promise.all(names.map((name) => caches.delete(name)));
   }
@@ -64,19 +64,19 @@ export class GlobalError extends Component<Props, State> {
 
     try {
       await clearCaches();
-      await new Promise((r) => setTimeout(r, 500));
-      if (!import.meta.env.DEV) {
-        window.location.reload();
-      } else {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      if (import.meta.env.DEV) {
         console.debug("Dev mode: preventing reload in GlobalError");
         this.setState({ isReloading: false });
+      } else {
+        globalThis.location.reload();
       }
     } catch {
       this.setState({ isReloading: false });
     }
   };
 
-  public render() {
+  public render(): React.JSX.Element {
     if (this.state.hasError) {
       const isDeployIssue = isDeployError(this.state.error);
 
@@ -148,7 +148,7 @@ export class GlobalError extends Component<Props, State> {
               <Button onClick={() => this.handleAutoReload()}>
                 {this.state.isReloading ? "Recargando..." : "Recargar página"}
               </Button>
-              <Button variant="secondary" onClick={() => (window.location.href = "/")}>
+              <Button variant="secondary" onClick={() => (globalThis.location.href = "/")}>
                 Ir al inicio
               </Button>
             </div>
@@ -157,6 +157,6 @@ export class GlobalError extends Component<Props, State> {
       );
     }
 
-    return this.props.children;
+    return <>{this.props.children}</>;
   }
 }

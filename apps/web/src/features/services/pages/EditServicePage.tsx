@@ -77,18 +77,21 @@ export default function ServiceEditPage() {
       const updated = await regenerateServiceSchedules(serviceId, payload ?? {});
       queryClient.setQueryData(["service-detail", id], updated);
       setSaveMessage("Proyecciones regeneradas correctamente.");
-    } catch (err) {
-      console.error("Regenerate failed:", err);
+    } catch (error_) {
+      console.error("Regenerate failed:", error_);
     }
   };
 
-  const error = fetchError instanceof Error ? fetchError.message : fetchError ? String(fetchError) : null;
-  const updateError =
-    updateMutation.error instanceof Error
-      ? updateMutation.error.message
-      : updateMutation.error
-        ? String(updateMutation.error)
-        : null;
+  const error = (() => {
+    if (fetchError instanceof Error) return fetchError.message;
+    if (fetchError) return String(fetchError);
+    return null;
+  })();
+  const updateError = (() => {
+    if (updateMutation.error instanceof Error) return updateMutation.error.message;
+    if (updateMutation.error) return String(updateMutation.error);
+    return null;
+  })();
 
   const displayError = error || updateError;
 
@@ -172,7 +175,7 @@ export default function ServiceEditPage() {
           description="Cargando información del servicio seleccionado."
           breadcrumbs={[{ label: "Servicios", to: "/services" }, { label: "Editar" }]}
           actions={
-            <Button variant="ghost" onClick={() => window.history.back()}>
+            <Button variant="ghost" onClick={() => globalThis.history.back()}>
               Volver
             </Button>
           }
@@ -202,7 +205,7 @@ export default function ServiceEditPage() {
         description={service ? service.name : "Ajusta los datos y cronogramas del servicio seleccionado."}
         breadcrumbs={[{ label: "Servicios", to: "/services" }, { label: "Editar" }]}
         actions={
-          <Button variant="ghost" onClick={() => window.history.back()}>
+          <Button variant="ghost" onClick={() => globalThis.history.back()}>
             Volver
           </Button>
         }
@@ -245,7 +248,7 @@ export default function ServiceEditPage() {
                 {initialValues && (
                   <ServiceForm
                     onSubmit={handleSubmit}
-                    onCancel={() => window.history.back()}
+                    onCancel={() => globalThis.history.back()}
                     initialValues={initialValues}
                     submitLabel="Actualizar servicio"
                   />
@@ -257,14 +260,14 @@ export default function ServiceEditPage() {
                   service={service}
                   schedules={schedules}
                   canManage={false}
-                  onRegisterPayment={() => undefined}
-                  onUnlinkPayment={() => undefined}
+                  onRegisterPayment={() => {}}
+                  onUnlinkPayment={() => {}}
                 />
                 <ServiceScheduleTable
                   schedules={schedules}
                   canManage={false}
-                  onRegisterPayment={() => undefined}
-                  onUnlinkPayment={() => undefined}
+                  onRegisterPayment={() => {}}
+                  onUnlinkPayment={() => {}}
                 />
                 <div className="flex justify-end">
                   <Button

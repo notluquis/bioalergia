@@ -1,7 +1,6 @@
 // === CURRENCY FORMATTING ===
-import { formatFileSize } from "../../shared/format";
 
-export const fmtCLP = (n: number | string | null | undefined) => {
+export const fmtCLP = (n?: number | string | null) => {
   // Handle null/undefined
   if (n == null) return "$0";
 
@@ -24,10 +23,15 @@ export const fmtCLP = (n: number | string | null | undefined) => {
   }
 };
 
-export const coerceAmount = (v: unknown): number => {
+export const coerceAmount = (v?: unknown): number => {
   if (v == null) return 0;
   if (typeof v === "number") return v;
-  const s = String(v).replace(/\$/g, "").replace(/\./g, "").replace(/\s/g, "").replace(/CLP/gi, "").replace(/,/g, ".");
+  const s = String(v)
+    .replaceAll("$", "")
+    .replaceAll(".", "")
+    .replaceAll(/\s/g, "")
+    .replaceAll(/CLP/gi, "")
+    .replaceAll(",", ".");
   const n = Number(s);
   return Number.isFinite(n) ? n : 0;
 };
@@ -36,7 +40,7 @@ export const coerceAmount = (v: unknown): number => {
 
 export function formatDate(date: string | Date, options?: Intl.DateTimeFormatOptions): string {
   const d = typeof date === "string" ? new Date(date) : date;
-  if (!d || isNaN(d.getTime())) return "-";
+  if (!d || Number.isNaN(d.getTime())) return "-";
 
   return new Intl.DateTimeFormat("es-CL", {
     year: "numeric",
@@ -58,7 +62,7 @@ export function formatDateTime(date: string | Date): string {
 
 export function formatRelativeDate(date: string | Date): string {
   const d = typeof date === "string" ? new Date(date) : date;
-  if (!d || isNaN(d.getTime())) return "-";
+  if (!d || Number.isNaN(d.getTime())) return "-";
 
   const now = new Date();
   const diffMs = now.getTime() - d.getTime();
@@ -89,7 +93,7 @@ export const currencyFormatter = new Intl.NumberFormat("es-CL", {
 });
 
 /** Safe wrapper for currency formatting that handles null/undefined/invalid values */
-export function formatCurrency(value: number | string | null | undefined): string {
+export function formatCurrency(value?: number | string | null): string {
   if (value == null) return "$0";
 
   const num = typeof value === "string" ? Number(value) : value;
@@ -116,4 +120,4 @@ export function formatPercentage(value: number, decimals = 1): string {
 
 // === FILE SIZE FORMATTING ===
 
-export { formatFileSize };
+export { formatFileSize } from "../../shared/format";

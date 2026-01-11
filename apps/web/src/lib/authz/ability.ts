@@ -1,4 +1,5 @@
 // src/lib/authz/ability.ts
+/* eslint-disable sonarjs/deprecation */
 import { Ability, AbilityBuilder, MongoAbility, RawRuleOf } from "@casl/ability";
 
 export const ability = new Ability();

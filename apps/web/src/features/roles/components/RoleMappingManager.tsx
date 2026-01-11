@@ -5,15 +5,8 @@ import Button from "@/components/ui/Button";
 import { type Employee, fetchEmployees } from "@/features/hr/employees/api";
 import type { Role as AvailableRole } from "@/types/roles";
 
-// import { apiClient } from "@/lib/apiClient";
 import type { RoleMapping } from "../api";
 import { fetchRoles, getRoleMappings, saveRoleMapping } from "../api";
-
-// type AvailableRole = {
-//   id: number;
-//   name: string;
-//   description: string | null;
-// };
 
 type ExtendedRoleMapping = RoleMapping & { isNew?: boolean; isModified?: boolean };
 
@@ -61,7 +54,9 @@ export default function RoleMappingManager() {
       setAvailableRoles(roles);
 
       const dbMappingsMap = new Map(dbMappings.map((m: RoleMapping) => [m.employee_role, m]));
-      const uniqueRoles = [...new Set(employees.map((e: Employee) => e.position))].sort();
+      const uniqueRoles = [...new Set(employees.map((e: Employee) => e.position))].toSorted((a, b) =>
+        a.localeCompare(b)
+      );
 
       const allRoles = uniqueRoles.map((resultRole: string) => {
         const existing = dbMappingsMap.get(resultRole);
@@ -88,14 +83,17 @@ export default function RoleMappingManager() {
     saveMutation.mutate(changedMappings);
   };
 
-  const error =
-    queryError instanceof Error
-      ? queryError.message
-      : queryError
-        ? String(queryError)
-        : saveMutation.error instanceof Error
-          ? saveMutation.error.message
-          : null;
+  const queryErrorMessage = (() => {
+    if (queryError instanceof Error) return queryError.message;
+    return queryError ? String(queryError) : null;
+  })();
+
+  const saveErrorMessage = (() => {
+    if (saveMutation.error instanceof Error) return saveMutation.error.message;
+    return null;
+  })();
+
+  const error = queryErrorMessage || saveErrorMessage;
   const isSaving = saveMutation.isPending;
 
   if (loading) {

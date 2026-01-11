@@ -51,7 +51,7 @@ export default function EmployeesPage() {
       salaryType: (raw.salaryType as Employee["salaryType"]) ?? "FIXED",
       // Convert Decimal to number
       baseSalary: Number(raw.baseSalary ?? 0),
-      hourlyRate: raw.hourlyRate != null ? Number(raw.hourlyRate) : null,
+      hourlyRate: raw.hourlyRate == null ? null : Number(raw.hourlyRate),
       bankName: (raw.bankName as string | null) ?? null,
       bankAccountType: (raw.bankAccountType as string | null) ?? null,
       bankAccountNumber: (raw.bankAccountNumber as string | null) ?? null,
@@ -74,12 +74,11 @@ export default function EmployeesPage() {
 
   // Clean up legacy mutations if they exist, but for now we map new logic:
 
-  const error =
-    queryError instanceof Error
-      ? queryError.message
-      : updateStatusMutation.error instanceof Error
-        ? updateStatusMutation.error.message
-        : null;
+  const error = (() => {
+    if (queryError instanceof Error) return queryError.message;
+    if (updateStatusMutation.error instanceof Error) return updateStatusMutation.error.message;
+    return null;
+  })();
 
   const isMutating = updateStatusMutation.isPending;
 

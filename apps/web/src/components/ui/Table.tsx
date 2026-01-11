@@ -51,7 +51,7 @@ const TABLE_VARIANTS = {
 
 function TableHeader<T extends string>({ columns, sortState, onSort, visibleColumns }: TableHeaderProps<T>) {
   const getSortIcon = (column: T) => {
-    if (!sortState || sortState.column !== column) return null;
+    if (sortState?.column !== column) return null;
     return sortState.direction === "asc" ? (
       <ChevronUp className="text-primary ml-1 inline h-3 w-3" />
     ) : (
@@ -91,10 +91,10 @@ function TableBody({
   loadingMessage = "Cargando...",
   emptyMessage = "No hay datos para mostrar",
   columnsCount,
-}: TableBodyProps) {
-  return (
-    <tbody>
-      {loading ? (
+}: TableBodyProps): React.JSX.Element {
+  const content = (() => {
+    if (loading) {
+      return (
         <tr>
           <td colSpan={columnsCount} className="px-4 py-12 text-center">
             <div className="flex flex-col items-center justify-center gap-2">
@@ -103,17 +103,21 @@ function TableBody({
             </div>
           </td>
         </tr>
-      ) : React.Children.count(children) === 0 ? (
+      );
+    }
+    if (React.Children.count(children) === 0) {
+      return (
         <tr>
           <td colSpan={columnsCount} className="text-base-content/60 px-4 py-12 text-center italic">
             {emptyMessage}
           </td>
         </tr>
-      ) : (
-        children
-      )}
-    </tbody>
-  );
+      );
+    }
+    return <>{children}</>;
+  })();
+
+  return <tbody>{content}</tbody>;
 }
 
 export function Table<T extends string>({

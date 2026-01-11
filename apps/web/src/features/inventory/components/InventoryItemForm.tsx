@@ -23,7 +23,7 @@ export default function InventoryItemForm({ item, onSave, onCancel, saving }: In
   const [categories, setCategories] = useState<InventoryCategory[]>([]);
 
   useEffect(() => {
-    getInventoryCategories().then(setCategories);
+    getInventoryCategories().then(setCategories).catch(console.error);
   }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -44,7 +44,7 @@ export default function InventoryItemForm({ item, onSave, onCancel, saving }: In
         <Input
           label="Categoría"
           as="select"
-          value={form.category_id != null ? String(form.category_id) : ""}
+          value={form.category_id == null ? "" : String(form.category_id)}
           onChange={(event: React.ChangeEvent<HTMLSelectElement>) =>
             setForm({ ...form, category_id: event.target.value ? Number(event.target.value) : null })
           }

@@ -18,8 +18,8 @@ export function eventKey(event: Pick<CalendarUnclassifiedEvent, "calendarId" | "
 
 export function parseAmountInput(value: string | null | undefined): number | null {
   if (!value) return null;
-  const normalized = value.replace(/[^0-9]/g, "");
-  if (!normalized.length) return null;
+  const normalized = value.replaceAll(/\D/g, "");
+  if (normalized.length === 0) return null;
   const parsed = Number.parseInt(normalized, 10);
   return Number.isNaN(parsed) ? null : parsed;
 }
@@ -27,8 +27,8 @@ export function parseAmountInput(value: string | null | undefined): number | nul
 export function buildDefaultEntry(event: CalendarUnclassifiedEvent) {
   return {
     category: event.category ?? "",
-    amountExpected: event.amountExpected != null ? String(event.amountExpected) : "",
-    amountPaid: event.amountPaid != null ? String(event.amountPaid) : "",
+    amountExpected: event.amountExpected == null ? "" : String(event.amountExpected),
+    amountPaid: event.amountPaid == null ? "" : String(event.amountPaid),
     attended: event.attended ?? false,
     dosage: event.dosage ?? "",
     treatmentStage: event.treatmentStage ?? "",

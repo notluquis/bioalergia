@@ -96,25 +96,17 @@ export default function GoogleDriveConnect() {
             <div>
               <h3 className="font-semibold">Conexión Google Drive</h3>
               <p className="text-base-content/60 text-sm">
-                {isConfigured
-                  ? `Conectado y listo para backups (${isEnv ? "Configuración estática ENV" : "Gestionado por Servidor"}).`
-                  : "No conectado. Los backups a la nube podrían fallar."}
+                {(() => {
+                  if (!isConfigured) return "No conectado. Los backups a la nube podrían fallar.";
+                  const sourceText = isEnv ? "Configuración estática ENV" : "Gestionado por Servidor";
+                  return `Conectado y listo para backups (${sourceText}).`;
+                })()}
               </p>
             </div>
           </div>
 
           <div className="flex gap-2">
-            {!isConfigured ? (
-              <Button
-                variant="primary"
-                onClick={() => getUrlMutation.mutate()}
-                isLoading={getUrlMutation.isPending}
-                className="gap-2"
-              >
-                <Key className="size-4" />
-                Conectar
-              </Button>
-            ) : (
+            {isConfigured ? (
               <Button
                 variant="outline"
                 disabled={isEnv || disconnectMutation.isPending}
@@ -134,6 +126,16 @@ export default function GoogleDriveConnect() {
               >
                 <LogOut className="size-4" />
                 {isEnv ? "Gestionado por ENV" : "Desconectar"}
+              </Button>
+            ) : (
+              <Button
+                variant="primary"
+                onClick={() => getUrlMutation.mutate()}
+                isLoading={getUrlMutation.isPending}
+                className="gap-2"
+              >
+                <Key className="size-4" />
+                Conectar
               </Button>
             )}
           </div>

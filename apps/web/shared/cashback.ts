@@ -8,12 +8,12 @@ export type CashbackCandidate = {
 };
 
 export function isCashbackCandidate(candidate: CashbackCandidate): boolean {
-  if (!candidate || candidate.direction.toUpperCase() !== "IN") {
+  if (candidate?.direction.toUpperCase() !== "IN") {
     return false;
   }
 
   const haystack = [candidate.description, candidate.origin, candidate.destination]
-    .filter((value): value is string => Boolean(value && value.trim()))
+    .filter((value): value is string => Boolean(value?.trim()))
     .join(" ")
     .toLowerCase();
 

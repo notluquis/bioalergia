@@ -31,6 +31,14 @@ import type {
 
 const EMPTY_SERVICES: ServiceSummary[] = [];
 
+const CACHE_KEY_LIST = "services-list";
+const CACHE_KEY_DETAILS = "services-details-all";
+
+function extractErrorMessage(error: unknown): string | null {
+  if (!error) return null;
+  return error instanceof Error ? error.message : String(error);
+}
+
 function useServicesController() {
   const { can } = useAuth();
   const queryClient = useQueryClient();
@@ -67,7 +75,7 @@ function useServicesController() {
     isLoading: loadingList,
     error: listError,
   } = useQuery({
-    queryKey: ["services-list"],
+    queryKey: [CACHE_KEY_LIST],
     queryFn: fetchServices,
     enabled: canView,
   });
@@ -84,9 +92,9 @@ function useServicesController() {
     isLoading: aggregatedLoading,
     error: aggregatedErrorObj,
   } = useQuery({
-    queryKey: ["services-details-all", serviceIds, services.length],
+    queryKey: [CACHE_KEY_DETAILS, serviceIds, services.length],
     queryFn: async () => {
-      if (!services.length) return {};
+      if (services.length === 0) return {};
       const results = await Promise.allSettled(services.map((service) => fetchServiceDetail(service.public_id)));
 
       const detailsMap: Record<string, ServiceDetailResponse> = {};
@@ -113,11 +121,7 @@ function useServicesController() {
   });
 
   const allDetails = allDetailsData ?? {};
-  const aggregatedError = aggregatedErrorObj
-    ? aggregatedErrorObj instanceof Error
-      ? aggregatedErrorObj.message
-      : String(aggregatedErrorObj)
-    : null;
+  const aggregatedError = extractErrorMessage(aggregatedErrorObj);
 
   // Sync selectedIdRef
   useEffect(() => {
@@ -126,16 +130,14 @@ function useServicesController() {
 
   // Auto-select logic
   useEffect(() => {
-    if (!services.length) {
+    if (services.length === 0) {
       // If no services, clear selection
       if (selectedId) setSelectedId(null);
       return;
     }
     // If nothing selected, or selection not in list
-    if (!selectedId || !services.some((s) => s.public_id === selectedId)) {
-      if (services.length > 0) {
-        setSelectedId(services[0]?.public_id ?? null);
-      }
+    if ((!selectedId || !services.some((s) => s.public_id === selectedId)) && services.length > 0) {
+      setSelectedId(services[0]?.public_id ?? null);
     }
   }, [services, selectedId]);
 
@@ -145,20 +147,20 @@ function useServicesController() {
   const createMutation = useMutation({
     mutationFn: createService,
     onSuccess: (response) => {
-      queryClient.setQueryData(["services-list"], (old: ServiceListResponse | undefined) => {
+      queryClient.setQueryData([CACHE_KEY_LIST], (old: ServiceListResponse | undefined) => {
         if (!old) return { status: "ok", services: [response.service] };
         return { ...old, services: [...old.services, response.service] };
       });
       // Also update details cache
       queryClient.setQueryData(
-        ["services-details-all", serviceIds + "," + response.service.public_id, services.length + 1],
+        [CACHE_KEY_DETAILS, serviceIds + "," + response.service.public_id, services.length + 1],
         (old: Record<string, ServiceDetailResponse> | undefined) => {
           return { ...old, [response.service.public_id]: response };
         }
       );
       // Invalidate to be safe
-      queryClient.invalidateQueries({ queryKey: ["services-list"] });
-      queryClient.invalidateQueries({ queryKey: ["services-details-all"] });
+      queryClient.invalidateQueries({ queryKey: [CACHE_KEY_LIST] });
+      queryClient.invalidateQueries({ queryKey: [CACHE_KEY_DETAILS] });
 
       setSelectedId(response.service.public_id);
       setCreateOpen(false);
@@ -177,13 +179,13 @@ function useServicesController() {
     onSuccess: (response) => {
       // Optimistic update local detail in cache if valid key exists
       queryClient.setQueryData(
-        ["services-details-all", serviceIds, services.length],
+        [CACHE_KEY_DETAILS, serviceIds, services.length],
         (old: Record<string, ServiceDetailResponse> | undefined) => {
           if (!old) return { [response.service.public_id]: response };
           return { ...old, [response.service.public_id]: response };
         }
       );
-      queryClient.invalidateQueries({ queryKey: ["services-details-all"] });
+      queryClient.invalidateQueries({ queryKey: [CACHE_KEY_DETAILS] });
     },
   });
 
@@ -195,8 +197,8 @@ function useServicesController() {
       // We need to find which service this schedule belonged to, to update it.
       // It's likely the selected service (detail).
       if (!detail) {
-        queryClient.invalidateQueries({ queryKey: ["services-details-all"] });
-        queryClient.invalidateQueries({ queryKey: ["services-list"] });
+        queryClient.invalidateQueries({ queryKey: [CACHE_KEY_DETAILS] });
+        queryClient.invalidateQueries({ queryKey: [CACHE_KEY_LIST] });
         return;
       }
 
@@ -211,7 +213,7 @@ function useServicesController() {
 
       // Optimistic update of the specific detail
       queryClient.setQueryData(
-        ["services-details-all", serviceIds, services.length],
+        [CACHE_KEY_DETAILS, serviceIds, services.length],
         (old: Record<string, ServiceDetailResponse> | undefined) => {
           if (!old) return old;
           return { ...old, [detail.service.public_id]: updatedDetail };
@@ -219,8 +221,8 @@ function useServicesController() {
       );
 
       // Always invalidate to get fresh totals/status from backend
-      queryClient.invalidateQueries({ queryKey: ["services-list"] });
-      queryClient.invalidateQueries({ queryKey: ["services-details-all"] });
+      queryClient.invalidateQueries({ queryKey: [CACHE_KEY_LIST] });
+      queryClient.invalidateQueries({ queryKey: [CACHE_KEY_DETAILS] });
 
       setPaymentSchedule(null);
     },
@@ -232,8 +234,8 @@ function useServicesController() {
   const unlinkMutation = useMutation({
     mutationFn: unlinkServicePayment,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["services-list"] });
-      queryClient.invalidateQueries({ queryKey: ["services-details-all"] });
+      queryClient.invalidateQueries({ queryKey: [CACHE_KEY_LIST] });
+      queryClient.invalidateQueries({ queryKey: [CACHE_KEY_DETAILS] });
     },
   });
 
@@ -299,17 +301,13 @@ function useServicesController() {
     enabled: !!paymentSchedule && paymentSuggestionsRequestId > 0,
   });
 
-  const suggestedError = suggestedErrorObj
-    ? suggestedErrorObj instanceof Error
-      ? suggestedErrorObj.message
-      : String(suggestedErrorObj)
-    : null;
+  const suggestedError = extractErrorMessage(suggestedErrorObj);
 
   const openPaymentModal = (schedule: ServiceSchedule) => {
     setPaymentSchedule(schedule);
     setPaymentForm({
       transactionId: schedule.transaction?.id ? String(schedule.transaction.id) : "",
-      paidAmount: schedule.paid_amount != null ? String(schedule.paid_amount) : String(schedule.effective_amount),
+      paidAmount: schedule.paid_amount == null ? String(schedule.effective_amount) : String(schedule.paid_amount),
       paidDate: schedule.paid_date ?? today(),
       note: schedule.note ?? "",
     });
@@ -365,7 +363,7 @@ function useServicesController() {
 
   // Summaries
   const summaryTotals: SummaryTotals = (() => {
-    if (!filteredServices.length) {
+    if (filteredServices.length === 0) {
       return { totalExpected: 0, totalPaid: 0, pendingCount: 0, overdueCount: 0, activeCount: 0 };
     }
     return filteredServices.reduce(
@@ -442,7 +440,7 @@ function useServicesController() {
     summaryTotals,
     collectionRate,
     unifiedAgendaItems,
-    globalError: listError ? (listError instanceof Error ? listError.message : String(listError)) : null,
+    globalError: extractErrorMessage(listError),
     loadingList,
     loadingDetail: aggregatedLoading || regenerateMutation.isPending, // approximate
     aggregatedLoading,

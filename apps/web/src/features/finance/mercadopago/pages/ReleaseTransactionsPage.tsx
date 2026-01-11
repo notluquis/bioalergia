@@ -94,9 +94,7 @@ export default function ReleaseTransactionsPage() {
         </div>
       </div>
 
-      {!canView ? (
-        <Alert variant="error">No tienes permisos para ver liberaciones.</Alert>
-      ) : (
+      {canView ? (
         <Table columns={columns}>
           <TableBody loading={isLoading} columnsCount={columns.length}>
             {rows?.map((row: ReleaseTransaction) => (
@@ -113,6 +111,8 @@ export default function ReleaseTransactionsPage() {
             ))}
           </TableBody>
         </Table>
+      ) : (
+        <Alert variant="error">No tienes permisos para ver liberaciones.</Alert>
       )}
 
       {/* Simple Pagination Control */}

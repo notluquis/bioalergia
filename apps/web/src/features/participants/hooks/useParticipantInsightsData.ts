@@ -96,11 +96,11 @@ export function useParticipantInsightsData() {
       }
     >();
     accountRows.forEach((row) => {
-      const key = row.rut !== "-" ? row.rut : row.displayName;
+      const key = row.rut === "-" ? row.displayName : row.rut;
       if (!map.has(key)) {
         map.set(key, {
           displayName: row.displayName,
-          rut: row.rut !== "-" ? row.rut : "-",
+          rut: row.rut === "-" ? "-" : row.rut,
           accounts: new Set<string>(),
           outgoingCount: 0,
           outgoingAmount: 0,
@@ -120,17 +120,17 @@ export function useParticipantInsightsData() {
         entry.selectKey = row.selectKey;
       }
     });
-    return Array.from(map.entries())
+    return [...map.entries()]
       .map(([key, entry]) => ({
         key,
         displayName: entry.displayName,
         rut: entry.rut,
-        account: entry.accounts.size ? Array.from(entry.accounts).slice(0, 4).join(", ") : "-",
+        account: entry.accounts.size > 0 ? [...entry.accounts].slice(0, 4).join(", ") : "-",
         outgoingCount: entry.outgoingCount,
         outgoingAmount: entry.outgoingAmount,
         selectKey: entry.selectKey,
       }))
-      .sort((a, b) => {
+      .toSorted((a, b) => {
         if (b.outgoingAmount !== a.outgoingAmount) return b.outgoingAmount - a.outgoingAmount;
         return b.outgoingCount - a.outgoingCount;
       });
@@ -162,8 +162,8 @@ export function useParticipantInsightsData() {
       setMonthly(data.monthly);
       setCounterparts(data.counterparts);
       setVisible(true);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "No se pudo obtener la información";
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "No se pudo obtener la información";
       setDetailError(message);
       setMonthly([]);
       setCounterparts([]);
@@ -209,9 +209,9 @@ export function useParticipantInsightsData() {
         if (!cancelled) {
           setLeaderboard(data.participants || []);
         }
-      } catch (err) {
+      } catch (error) {
         if (!cancelled) {
-          const message = err instanceof Error ? err.message : "No se pudo obtener el ranking de participantes";
+          const message = error instanceof Error ? error.message : "No se pudo obtener el ranking de participantes";
           setLeaderboardError(message);
           setLeaderboard([]);
         }

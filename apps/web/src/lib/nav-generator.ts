@@ -93,7 +93,12 @@ function extractNavItems(routes: RouteData[], parentPath = ""): ExtractedNavItem
 
   for (const route of routes) {
     // Build full path
-    const fullPath = route.index ? parentPath : parentPath ? `${parentPath}/${route.path}` : `/${route.path}`;
+    let fullPath = `/${route.path}`;
+    if (route.index) {
+      fullPath = parentPath;
+    } else if (parentPath) {
+      fullPath = `${parentPath}/${route.path}`;
+    }
 
     // If this route has nav config, add it
     if (route.nav) {
@@ -143,7 +148,7 @@ export function generateNavSections(): NavSectionData[] {
 
     // Sort by order and convert to NavItem
     const sortedItems = items
-      .sort((a, b) => a.order - b.order)
+      .toSorted((a, b) => a.order - b.order)
       .map(
         (item): NavItem => ({
           to: item.to,

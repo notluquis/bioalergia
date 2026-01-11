@@ -39,13 +39,13 @@ async function handleChunkLoadError() {
     }
 
     // Clear all caches
-    if ("caches" in window) {
+    if ("caches" in globalThis) {
       const cacheNames = await caches.keys();
       await Promise.all(cacheNames.map((name) => caches.delete(name)));
       console.log("All caches cleared:", cacheNames);
     }
-  } catch (e) {
-    console.error("Error during cache cleanup:", e);
+  } catch (error) {
+    console.error("Error during cache cleanup:", error);
   }
 
   // No forcing reload automatically. Use Error Boundary or Toast.
@@ -53,14 +53,14 @@ async function handleChunkLoadError() {
 }
 
 // Global error handler for chunk load failures (runs before React mounts)
-window.addEventListener("error", (event) => {
+globalThis.addEventListener("error", (event) => {
   const message = event.message || "";
   if (/Loading chunk|Failed to fetch dynamically imported module|Importing a module script failed/i.test(message)) {
     handleChunkLoadError();
   }
 });
 
-window.addEventListener("unhandledrejection", (event) => {
+globalThis.addEventListener("unhandledrejection", (event) => {
   const message = event.reason?.message || String(event.reason) || "";
   if (/Loading chunk|Failed to fetch dynamically imported module|Importing a module script failed/i.test(message)) {
     event.preventDefault();
@@ -128,7 +128,7 @@ function InnerApp() {
 initPerformanceMonitoring();
 
 // Render the app
-ReactDOM.createRoot(document.getElementById("root")!).render(
+ReactDOM.createRoot(document.querySelector("#root")!).render(
   <React.StrictMode>
     <GlobalError>
       <ChunkErrorBoundary>

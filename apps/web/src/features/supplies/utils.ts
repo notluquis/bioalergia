@@ -2,17 +2,23 @@ import type { SupplyRequest } from "./types";
 
 export const translateStatus = (status: SupplyRequest["status"]) => {
   switch (status) {
-    case "pending":
+    case "pending": {
       return "Pendiente";
-    case "ordered":
+    }
+    case "ordered": {
       return "Pedido";
-    case "in_transit":
+    }
+    case "in_transit": {
       return "En Tránsito";
-    case "delivered":
+    }
+    case "delivered": {
       return "Entregado";
-    case "rejected":
+    }
+    case "rejected": {
       return "Rechazado";
-    default:
+    }
+    default: {
       return status;
+    }
   }
 };

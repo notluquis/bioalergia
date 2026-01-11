@@ -41,6 +41,7 @@ export function useJobProgress(jobId: string | null, options: UseJobProgressOpti
       return response.job;
     },
     enabled: !!jobId,
+    // eslint-disable-next-line sonarjs/function-return-type
     refetchInterval: (query) => {
       const data = query.state.data;
       // Stop polling when job is done

@@ -69,7 +69,7 @@ export default function CounterpartList({
             </li>
           );
         })}
-        {!counterparts.length && (
+        {counterparts.length === 0 && (
           <li className="border-base-300 bg-base-200 text-base-content/60 rounded-xl border px-3 py-2 text-xs">
             No hay registros aún.
           </li>

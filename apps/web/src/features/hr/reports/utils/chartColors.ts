@@ -13,12 +13,13 @@ export function getChartColors(): string[] {
     "hsl(290 70% 55%)", // Magenta
   ];
 
+  // eslint-disable-next-line unicorn/prefer-global-this
   if (typeof window === "undefined") return defaultColors;
 
   try {
-    const root = window.getComputedStyle(document.documentElement);
+    const styles = globalThis.window.getComputedStyle(document.documentElement);
     const getVar = (name: string) => {
-      const val = root.getPropertyValue(name).trim();
+      const val = styles.getPropertyValue(name).trim();
       return val ? `hsl(${val})` : null;
     };
 

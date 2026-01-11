@@ -29,7 +29,10 @@ export default function Input(props: Props) {
   const [isPasswordVisible, setIsPasswordVisible] = React.useState(false);
 
   const isPassword = type === "password";
-  const inputType = isPassword ? (isPasswordVisible ? "text" : "password") : type;
+  let inputType = type;
+  if (isPassword) {
+    inputType = isPasswordVisible ? "text" : "password";
+  }
 
   const sizeClasses = {
     xs: "input-xs h-6 text-xs",

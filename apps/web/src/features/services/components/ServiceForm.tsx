@@ -113,11 +113,10 @@ export function ServiceForm({ onSubmit, onCancel, initialValues, submitLabel }: 
     enabled: !!form.counterpartId,
   });
 
-  const counterpartsError = counterpartsQueryError
-    ? counterpartsQueryError instanceof Error
-      ? counterpartsQueryError.message
-      : "Error al cargar contrapartes"
-    : null;
+  const counterpartsError = (() => {
+    if (!counterpartsQueryError) return null;
+    return counterpartsQueryError instanceof Error ? counterpartsQueryError.message : "Error al cargar contrapartes";
+  })();
 
   // Sync error handling roughly to previous (though React Query handles this better naturally)
 
@@ -215,12 +214,11 @@ export function ServiceForm({ onSubmit, onCancel, initialValues, submitLabel }: 
         startDate: form.startDate,
         monthsToGenerate: form.recurrenceType === "ONE_OFF" || form.frequency === "ONCE" ? 1 : form.monthsToGenerate,
         lateFeeMode,
-        lateFeeValue:
-          lateFeeMode === "NONE"
-            ? null
-            : form.lateFeeValue === null || form.lateFeeValue === undefined
-              ? null
-              : Number(form.lateFeeValue),
+        lateFeeValue: (() => {
+          if (lateFeeMode === "NONE") return null;
+          if (form.lateFeeValue === null || form.lateFeeValue === undefined) return null;
+          return Number(form.lateFeeValue);
+        })(),
         lateFeeGraceDays: lateFeeMode === "NONE" ? null : (form.lateFeeGraceDays ?? null),
         notes: form.notes?.trim() ? form.notes.trim() : undefined,
       };
@@ -230,10 +228,10 @@ export function ServiceForm({ onSubmit, onCancel, initialValues, submitLabel }: 
         setForm(INITIAL_STATE);
         // setAccounts([]); // Handled by useQuery dependency
       }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "No se pudo crear el servicio";
+    } catch (error_) {
+      const message = error_ instanceof Error ? error_.message : "No se pudo crear el servicio";
       setError(message);
-      throw err;
+      throw error_;
     } finally {
       setSubmitting(false);
     }

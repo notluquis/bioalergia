@@ -35,6 +35,7 @@ export function useSorting<T extends string>({
     });
   };
 
+  // eslint-disable-next-line sonarjs/function-return-type
   const getSortIcon = (column: T): React.ReactNode => {
     if (sortState.column !== column) return null;
     const symbol = sortState.direction === "asc" ? "▲" : "▼";

@@ -117,8 +117,8 @@ export default function InventoryPage() {
         toastSuccess("Item creado correctamente");
       }
       closeModal();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "No se pudo guardar el item";
+    } catch (error_) {
+      const message = error_ instanceof Error ? error_.message : "No se pudo guardar el item";
       setError(message);
       toastError(message);
     }
@@ -139,8 +139,8 @@ export default function InventoryPage() {
       queryClient.invalidateQueries({ queryKey: ["inventoryItem"] });
       toastSuccess("Stock ajustado correctamente");
       closeModal();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "No se pudo ajustar el stock";
+    } catch (error_) {
+      const message = error_ instanceof Error ? error_.message : "No se pudo ajustar el stock";
       setError(message);
       toastError(message);
     }
@@ -157,9 +157,9 @@ export default function InventoryPage() {
           <Button
             onClick={openCreateModal}
             disabled={!canCreateItem}
-            title={!canCreateItem ? "Requiere permiso para crear ítems" : undefined}
+            title={canCreateItem ? undefined : "Requiere permiso para crear ítems"}
           >
-            {!canCreateItem ? <Lock size={16} /> : <PlusCircle size={16} />}
+            {canCreateItem ? <PlusCircle size={16} /> : <Lock size={16} />}
             Agregar item
           </Button>
         }

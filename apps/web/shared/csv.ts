@@ -5,5 +5,5 @@ export function detectDelimiter(line: string): string {
 }
 
 export function stripBom(value: string): string {
-  return value.replace(/^\ufeff/, "");
+  return value.replace(/^\uFEFF/, "");
 }

@@ -6,8 +6,12 @@ interface StatMiniProps {
 }
 
 export function StatMini({ label, value, tone, bold }: StatMiniProps) {
-  const toneClass =
-    tone === "primary" ? "text-primary" : tone === "success" ? "text-success" : tone === "error" ? "text-error" : "";
+  const toneClasses = {
+    primary: "text-primary",
+    success: "text-success",
+    error: "text-error",
+  };
+  const toneClass = (tone && toneClasses[tone]) || "";
 
   return (
     <div className="border-base-200 bg-base-100 rounded-lg border p-3 text-center">

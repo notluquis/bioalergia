@@ -51,7 +51,14 @@ export function TemporalChart({ chartData, reportData, granularity }: TemporalCh
           Comparativa Temporal
         </h3>
         <div className="badge badge-outline text-xs">
-          {granularity === "day" ? "Diario" : granularity === "week" ? "Semanal" : "Mensual"}
+          {(() => {
+            const labels: Record<string, string> = {
+              day: "Diario",
+              week: "Semanal",
+              month: "Mensual",
+            };
+            return labels[granularity] || granularity;
+          })()}
         </div>
       </div>
 
@@ -115,7 +122,7 @@ export function DistributionChart({ reportData }: DistributionChartProps) {
 
   const pieData = reportData.map((emp) => ({
     name: emp.fullName,
-    value: parseFloat((emp.totalMinutes / 60).toFixed(1)),
+    value: Number.parseFloat((emp.totalMinutes / 60).toFixed(1)),
   }));
 
   return (

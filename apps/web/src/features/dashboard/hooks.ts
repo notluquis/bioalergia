@@ -1,8 +1,8 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
-import type { DbMovement } from "@/features/finance/types";
 import { queryKeys } from "@/lib/queryKeys";
 
+import type { Transaction } from "../finance/types";
 import { fetchRecentMovements, fetchStats, type StatsResponse } from "./api";
 
 type StatsParams = {
@@ -23,7 +23,7 @@ export function useDashboardStats(params: StatsParams, options?: { enabled?: boo
 }
 
 export function useRecentMovements(options?: { enabled?: boolean }) {
-  return useQuery<DbMovement[]>({
+  return useQuery<Transaction[]>({
     queryKey: queryKeys.dashboard.recentMovements(RECENT_MOVEMENTS_PARAMS),
     queryFn: fetchRecentMovements,
     enabled: options?.enabled ?? true,

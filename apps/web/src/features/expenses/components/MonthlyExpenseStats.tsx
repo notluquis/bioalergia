@@ -12,7 +12,7 @@ export default function MonthlyExpenseStats({ stats, loading }: MonthlyExpenseSt
     return <p className="text-base-content/50 text-xs">Calculando estadísticas…</p>;
   }
 
-  if (!stats.length) {
+  if (stats.length === 0) {
     return <p className="text-base-content/50 text-xs">No hay datos disponibles para el período seleccionado.</p>;
   }
 

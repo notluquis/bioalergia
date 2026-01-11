@@ -146,6 +146,28 @@ function secondsToTime(value: number) {
   return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
+const handleEventDidMount = (info: {
+  event: {
+    extendedProps: {
+      employee_name: string;
+      duration_hours: number;
+      has_overlap: boolean;
+      employee_role: string | null;
+    };
+  };
+  el: HTMLElement;
+}) => {
+  const props = info.event.extendedProps;
+  const roleLabel = props.employee_role ? ` · ${props.employee_role}` : "";
+  const tooltipText = `${props.employee_name}${roleLabel} · ${formatDuration(props.duration_hours)}${
+    props.has_overlap ? " · ⚠️ Solapamiento" : ""
+  }`;
+  info.el.setAttribute("title", tooltipText);
+  if (props.has_overlap) {
+    info.el.classList.add("has-overlap");
+  }
+};
+
 export default function TimesheetAuditCalendar({
   entries,
   loading = false,
@@ -199,7 +221,7 @@ export default function TimesheetAuditCalendar({
 
   // Calculate time bounds based on entries
   const timeBounds = (() => {
-    if (!rangeFilteredEntries.length) {
+    if (rangeFilteredEntries.length === 0) {
       return {
         slotMinTime: "06:00:00",
         slotMaxTime: "20:00:00",
@@ -234,28 +256,6 @@ export default function TimesheetAuditCalendar({
     };
   })();
 
-  const handleEventDidMount = (info: {
-    event: {
-      extendedProps: {
-        employee_name: string;
-        duration_hours: number;
-        has_overlap: boolean;
-        employee_role: string | null;
-      };
-    };
-    el: HTMLElement;
-  }) => {
-    const props = info.event.extendedProps;
-    const roleLabel = props.employee_role ? ` · ${props.employee_role}` : "";
-    const tooltipText = `${props.employee_name}${roleLabel} · ${formatDuration(props.duration_hours)}${
-      props.has_overlap ? " · ⚠️ Solapamiento" : ""
-    }`;
-    info.el.setAttribute("title", tooltipText);
-    if (props.has_overlap) {
-      info.el.classList.add("has-overlap");
-    }
-  };
-
   return (
     <div className="bg-base-200/30 border-base-200 w-full overflow-hidden rounded-xl border p-6">
       <div className="timesheet-audit-calendar-wrapper">
@@ -266,11 +266,10 @@ export default function TimesheetAuditCalendar({
         )}
         <FullCalendar
           ref={(instance: unknown) => {
-            if (instance && typeof (instance as { getApi?: unknown }).getApi === "function") {
-              calendarApiRef.current = (instance as { getApi: () => CalendarApi }).getApi();
-            } else {
-              calendarApiRef.current = null;
-            }
+            calendarApiRef.current =
+              instance && typeof (instance as { getApi?: unknown }).getApi === "function"
+                ? (instance as { getApi: () => CalendarApi }).getApi()
+                : null;
           }}
           plugins={[dayGridPlugin, timeGridPlugin]}
           initialView="timeGridWeek"

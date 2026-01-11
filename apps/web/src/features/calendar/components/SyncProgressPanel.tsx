@@ -31,6 +31,12 @@ interface SyncProgressPanelProps {
   showLastSyncInfo?: boolean;
 }
 
+const formatDuration = (value: number) => {
+  if (!value) return null;
+  if (value >= 1000) return `${(value / 1000).toFixed(1)} s`;
+  return `${Math.round(value)} ms`;
+};
+
 export function SyncProgressPanel({
   syncing,
   syncError,
@@ -45,8 +51,6 @@ export function SyncProgressPanel({
   if (!syncing && !syncError && !hasProgress) {
     return null;
   }
-
-  const title = syncError ? "Error al sincronizar" : syncing ? "Sincronizando calendario" : "Sincronización completada";
 
   const statusLabelMap: Record<SyncProgressStatus, string> = {
     pending: "Pendiente",
@@ -77,12 +81,6 @@ export function SyncProgressPanel({
     stored: "Snapshot",
   };
 
-  const formatDuration = (value: number) => {
-    if (!value) return null;
-    if (value >= 1000) return `${(value / 1000).toFixed(1)} s`;
-    return `${Math.round(value)} ms`;
-  };
-
   const formatDetails = (details: Record<string, unknown>) => {
     const parts: string[] = [];
     Object.entries(details ?? {}).forEach(([key, rawValue]) => {
@@ -92,7 +90,7 @@ export function SyncProgressPanel({
         parts.push(`${label}: ${numberFormatter.format(rawValue)}`);
       } else if (typeof rawValue === "boolean") {
         parts.push(`${label}: ${rawValue ? "Sí" : "No"}`);
-      } else if (typeof rawValue === "string" && rawValue.length) {
+      } else if (typeof rawValue === "string" && rawValue.length > 0) {
         parts.push(`${label}: ${rawValue}`);
       }
     });
@@ -104,13 +102,19 @@ export function SyncProgressPanel({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="bg-base-200/60 rounded-xl px-3 py-2">
-            <p className="text-base-content text-sm font-semibold">{title}</p>
+            <p className="text-base-content text-sm font-semibold">
+              {(() => {
+                if (syncError) return "Error al sincronizar";
+                if (syncing) return "Sincronizando calendario";
+                return "Sincronización completada";
+              })()}
+            </p>
             <p className="text-base-content/60 text-xs">
-              {syncing
-                ? "Consultando eventos y actualizando la base."
-                : syncError
-                  ? "Vuelve a intentar más tarde."
-                  : "Última ejecución completada correctamente."}
+              {(() => {
+                if (syncing) return "Consultando eventos y actualizando la base.";
+                if (syncError) return "Vuelve a intentar más tarde.";
+                return "Última ejecución completada correctamente.";
+              })()}
             </p>
           </div>
           {syncing && <span className={LOADING_SPINNER_SM} aria-label="Sincronizando" />}

@@ -22,14 +22,14 @@ function getEmployeeRetentionRate(employee: Employee): number {
 
 // CLP currency formatting helpers
 function formatCLP(value: string | number): string {
-  const num = typeof value === "string" ? parseFloat(value.replace(/\./g, "").replace(/,/g, "")) : value;
-  if (isNaN(num) || num === 0) return "";
+  const num = typeof value === "string" ? Number.parseFloat(value.replaceAll(".", "").replaceAll(",", "")) : value;
+  if (Number.isNaN(num) || num === 0) return "";
   return num.toLocaleString("es-CL");
 }
 
 function parseCLP(formatted: string): string {
   // Remove thousands separators (dots in Chilean format)
-  return formatted.replace(/\./g, "");
+  return formatted.replaceAll(".", "");
 }
 
 interface EmployeeFormProps {
@@ -95,7 +95,7 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
         bankAccountNumber: employee.bankAccountNumber ?? "",
         salaryType: employee.salaryType ?? "HOURLY",
         hourlyRate: String(employee.hourlyRate ?? "0"),
-        fixedSalary: employee.baseSalary != null ? String(employee.baseSalary) : "",
+        fixedSalary: employee.baseSalary == null ? "" : String(employee.baseSalary),
         overtimeRate: "", // Not in schema?
         retentionRate: rateToShow,
       });
@@ -345,7 +345,7 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
           value={form.retentionRate}
           onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
             // Allow digits, dots, and commas for decimal input
-            const value = event.target.value.replace(/[^\d.,]/g, "");
+            const value = event.target.value.replaceAll(/[^\d.,]/g, "");
             setForm((prev) => ({ ...prev, retentionRate: value }));
           }}
         />
@@ -355,7 +355,10 @@ export default function EmployeeForm({ employee, onSave, onCancel }: EmployeeFor
           Cancelar
         </Button>
         <Button type="submit" disabled={isMutating}>
-          {isMutating ? "Guardando..." : employee?.id ? "Actualizar empleado" : "Agregar empleado"}
+          {(() => {
+            if (isMutating) return "Guardando...";
+            return isEditing ? "Actualizar empleado" : "Agregar empleado";
+          })()}
         </Button>
       </div>
     </form>

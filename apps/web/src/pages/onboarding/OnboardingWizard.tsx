@@ -129,11 +129,11 @@ export default function OnboardingWizard() {
       // Logic to prevent surname duplication in 'names' field
       let cleanNames = profile.names.trim();
       if (profile.motherName) {
-        const regex = new RegExp(`\\s+${profile.motherName.trim()}$`, "i");
+        const regex = new RegExp(String.raw`\s+${profile.motherName.trim()}$`, "i");
         cleanNames = cleanNames.replace(regex, "");
       }
       if (profile.fatherName) {
-        const regex = new RegExp(`\\s+${profile.fatherName.trim()}$`, "i");
+        const regex = new RegExp(String.raw`\s+${profile.fatherName.trim()}$`, "i");
         cleanNames = cleanNames.replace(regex, "");
       }
       cleanNames = cleanNames.trim();
@@ -310,7 +310,7 @@ export default function OnboardingWizard() {
                   <Input
                     label="RUT"
                     value={profile.rut}
-                    error={error && error.includes("RUT") ? "RUT inválido" : undefined}
+                    error={error?.includes("RUT") ? "RUT inválido" : undefined}
                     onChange={(e) => {
                       const val = e.target.value;
                       setProfile({ ...profile, rut: val });
@@ -484,70 +484,78 @@ export default function OnboardingWizard() {
                 </p>
               </div>
 
-              {loading && !mfaSecret ? (
-                <div className="flex justify-center py-8">
-                  <Loader2 className="text-primary animate-spin" size={40} />
-                </div>
-              ) : mfaSecret ? (
-                <div className="flex flex-col items-center gap-6">
-                  <div className="rounded-xl bg-white p-4 shadow-sm">
-                    <img
-                      src={mfaSecret.qrCodeUrl}
-                      alt="QR Code"
-                      className="h-48 w-48"
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  </div>
+              {(() => {
+                if (loading && !mfaSecret) {
+                  return (
+                    <div className="flex justify-center py-8">
+                      <Loader2 className="text-primary animate-spin" size={40} />
+                    </div>
+                  );
+                }
 
-                  <div className="form-control w-full max-w-xs">
-                    <Input
-                      label="Ingresa el código de 6 dígitos"
-                      type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      maxLength={6}
-                      className="text-center text-2xl tracking-widest"
-                      value={mfaCode}
-                      onChange={(e) => setMfaCode(e.target.value)}
-                      placeholder="000000"
-                    />
-                  </div>
+                if (mfaSecret) {
+                  return (
+                    <div className="flex flex-col items-center gap-6">
+                      <div className="rounded-xl bg-white p-4 shadow-sm">
+                        <img
+                          src={mfaSecret.qrCodeUrl}
+                          alt="QR Code"
+                          className="h-48 w-48"
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      </div>
 
-                  <Button
-                    onClick={verifyMfa}
-                    variant="primary"
-                    className="w-full max-w-xs"
-                    disabled={mfaCode.length !== 6 || loading}
-                  >
-                    {loading ? <Loader2 className="animate-spin" /> : "Verificar y activar"}
-                  </Button>
+                      <div className="form-control w-full max-w-xs">
+                        <Input
+                          label="Ingresa el código de 6 dígitos"
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          maxLength={6}
+                          className="text-center text-2xl tracking-widest"
+                          value={mfaCode}
+                          onChange={(e) => setMfaCode(e.target.value)}
+                          placeholder="000000"
+                        />
+                      </div>
 
-                  <div className="divider text-base-content/40 text-xs">O usa biometría</div>
+                      <Button
+                        onClick={verifyMfa}
+                        variant="primary"
+                        className="w-full max-w-xs"
+                        disabled={mfaCode.length !== 6 || loading}
+                      >
+                        {loading ? <Loader2 className="animate-spin" /> : "Verificar y activar"}
+                      </Button>
 
-                  <Button
-                    onClick={handlePasskeyRegister}
-                    variant="outline"
-                    className="w-full max-w-xs gap-2"
-                    disabled={loading}
-                  >
-                    <Fingerprint size={20} />
-                    Registrar passkey (huella/FaceID)
-                  </Button>
+                      <div className="divider text-base-content/40 text-xs">O usa biometría</div>
 
-                  <Button
-                    onClick={handleNext}
-                    variant="ghost"
-                    size="sm"
-                    className="text-base-content/50 hover:text-base-content mt-2"
-                    disabled={loading}
-                  >
-                    Omitir por ahora
-                  </Button>
-                </div>
-              ) : (
-                <div className="text-error text-center">No se pudo cargar el código QR.</div>
-              )}
+                      <Button
+                        onClick={handlePasskeyRegister}
+                        variant="outline"
+                        className="w-full max-w-xs gap-2"
+                        disabled={loading}
+                      >
+                        <Fingerprint size={20} />
+                        Registrar passkey (huella/FaceID)
+                      </Button>
+
+                      <Button
+                        onClick={handleNext}
+                        variant="ghost"
+                        size="sm"
+                        className="text-base-content/50 hover:text-base-content mt-2"
+                        disabled={loading}
+                      >
+                        Omitir por ahora
+                      </Button>
+                    </div>
+                  );
+                }
+
+                return <div className="text-error text-center">No se pudo cargar el código QR.</div>;
+              })()}
             </div>
           )}
 

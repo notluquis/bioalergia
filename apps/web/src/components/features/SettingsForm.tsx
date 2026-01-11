@@ -110,12 +110,12 @@ export default function SettingsForm() {
   });
 
   useEffect(() => {
-    if (internalData?.internal) {
-      // ... existing logic using internalData matches ...
-      if (upsertChunkSize === "") {
-        setUpsertChunkSize(internalData.internal.upsertChunkSize ?? "");
-        setEnvUpsertChunkSize(internalData.internal.envUpsertChunkSize ?? null);
-      }
+    if (
+      internalData?.internal && // ... existing logic using internalData matches ...
+      upsertChunkSize === ""
+    ) {
+      setUpsertChunkSize(internalData.internal.upsertChunkSize ?? "");
+      setEnvUpsertChunkSize(internalData.internal.envUpsertChunkSize ?? null);
     }
   }, [internalData, upsertChunkSize]);
 
@@ -208,8 +208,8 @@ export default function SettingsForm() {
       if (faviconMode === "upload") resetFaviconSelection();
 
       setStatus("success");
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Error inesperado";
+    } catch (error_) {
+      const message = error_ instanceof Error ? error_.message : "Error inesperado";
       setError(message);
       setStatus("error");
     }
@@ -235,16 +235,39 @@ export default function SettingsForm() {
                 className="h-12 w-20 cursor-pointer px-0"
               />
             ) : (
-              <Input
-                label={label}
-                helper={helper}
-                type="text"
-                value={form[key]}
-                onChange={(event) => handleChange(key, event.target.value)}
-                placeholder={label}
-                inputMode={key === "orgPhone" ? "tel" : key === "supportEmail" ? "email" : undefined}
-                autoComplete={key === "orgPhone" ? "tel" : key === "supportEmail" ? "email" : undefined}
-              />
+              <>
+                {(() => {
+                  const isEmail = key === "supportEmail";
+                  const isPhone = key === "orgPhone";
+                  const isName = key === "orgName";
+
+                  const inputMode = (() => {
+                    if (isEmail) return "email";
+                    if (isPhone) return "tel";
+                    return "text";
+                  })();
+                  const autoComplete = (() => {
+                    if (isEmail) return "email";
+                    if (isPhone) return "tel";
+                    if (isName) return "name";
+                    return "off";
+                  })();
+
+                  return (
+                    <Input
+                      id={key}
+                      label={label}
+                      helper={helper}
+                      value={form[key]}
+                      onChange={(event) => handleChange(key, event.target.value)}
+                      type={isEmail ? "email" : "text"}
+                      inputMode={inputMode}
+                      autoComplete={autoComplete}
+                      placeholder={label}
+                    />
+                  );
+                })()}
+              </>
             )}
           </label>
         ))}

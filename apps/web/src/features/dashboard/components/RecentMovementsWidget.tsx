@@ -16,7 +16,7 @@ export default function RecentMovementsWidget({ rows }: { rows: Transaction[] })
           Ver más
         </Link>
       </div>
-      {rows.length ? (
+      {rows.length > 0 ? (
         <ul className="text-base-content space-y-3 text-xs">
           {rows.map((row) => (
             <li

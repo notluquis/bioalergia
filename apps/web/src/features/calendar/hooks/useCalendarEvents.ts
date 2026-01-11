@@ -31,12 +31,21 @@ const hasFreshRunningSync = (logs: CalendarSyncLog[] | undefined) => {
   });
 };
 
-const resolveRefetchInterval = (logs: CalendarSyncLog[] | undefined) => {
+const markEntryAsError = (entry: SyncProgressEntry): SyncProgressEntry => ({
+  ...entry,
+  status: "error",
+});
+
+// eslint-disable-next-line sonarjs/function-return-type
+const resolveRefetchInterval = (logs: CalendarSyncLog[] | undefined): number | false => {
   return hasFreshRunningSync(logs) ? 5000 : false;
 };
 
+const markAllAsError = (entries: SyncProgressEntry[]) => entries.map((e) => markEntryAsError(e));
+
+const unique = (values: string[]) => [...new Set(values)].toSorted((a, b) => a.localeCompare(b));
+
 function normalizeFilters(filters: CalendarFilters): CalendarFilters {
-  const unique = (values: string[]) => Array.from(new Set(values)).sort();
   return {
     ...filters,
     calendarIds: unique(filters.calendarIds ?? []),
@@ -48,8 +57,8 @@ function normalizeFilters(filters: CalendarFilters): CalendarFilters {
 
 function arraysEqual(a: string[], b: string[]) {
   if (a.length !== b.length) return false;
-  for (let i = 0; i < a.length; i += 1) {
-    if (a[i] !== b[i]) return false;
+  for (const [i, element] of a.entries()) {
+    if (element !== b[i]) return false;
   }
   return true;
 }
@@ -58,9 +67,9 @@ function filtersEqual(a: CalendarFilters, b: CalendarFilters) {
   return (
     a.from === b.from &&
     a.to === b.to &&
-    arraysEqual([...(a.calendarIds ?? [])].sort(), [...(b.calendarIds ?? [])].sort()) &&
-    arraysEqual([...(a.eventTypes ?? [])].sort(), [...(b.eventTypes ?? [])].sort()) &&
-    arraysEqual([...a.categories].sort(), [...b.categories].sort()) &&
+    arraysEqual(unique(a.calendarIds ?? []), unique(b.calendarIds ?? [])) &&
+    arraysEqual(unique(a.eventTypes ?? []), unique(b.eventTypes ?? [])) &&
+    arraysEqual(unique(a.categories), unique(b.categories)) &&
     (a.search ?? "").trim() === (b.search ?? "").trim() &&
     a.maxDays === b.maxDays
   );
@@ -224,79 +233,7 @@ export function useCalendarEvents() {
       );
     },
     onSuccess: (result) => {
-      // Sync started in background - poll for status
-      const logId = result.logId;
-      let pollCount = 0;
-      const maxPolls = 60; // 5 minutes max (5s interval)
-
-      const pollInterval = setInterval(async () => {
-        pollCount++;
-        try {
-          const logs = await fetchCalendarSyncLogs(10);
-          const currentLog = logs.find((log) => log.id === logId);
-
-          if (!currentLog) {
-            clearInterval(pollInterval);
-            setSyncError("No se encontró el log de sincronización");
-            setSyncing(false);
-            return;
-          }
-
-          if (currentLog.status === "SUCCESS") {
-            clearInterval(pollInterval);
-            setSyncDurationMs(
-              currentLog.finishedAt && currentLog.startedAt
-                ? new Date(currentLog.finishedAt).getTime() - new Date(currentLog.startedAt).getTime()
-                : null
-            );
-            setSyncProgress(
-              SYNC_STEPS_TEMPLATE.map((step) => ({
-                id: step.id,
-                label: step.label,
-                durationMs: 0,
-                details: {},
-                status: "completed" as SyncProgressStatus,
-              }))
-            );
-            setLastSyncInfo({
-              fetchedAt: currentLog.fetchedAt ?? new Date().toISOString(),
-              inserted: currentLog.inserted,
-              updated: currentLog.updated,
-              skipped: currentLog.skipped,
-              excluded: currentLog.excluded,
-              logId: currentLog.id,
-            });
-            setSyncing(false);
-            queryClient.invalidateQueries({ queryKey: ["calendar"] }).catch(() => {
-              /* handled */
-            });
-          } else if (currentLog.status === "ERROR") {
-            clearInterval(pollInterval);
-            const msg = currentLog.errorMessage || "Error desconocido durante la sincronización";
-            setSyncError(msg);
-            showError(msg);
-            setSyncProgress((prev) =>
-              prev.map((entry) => ({
-                ...entry,
-                status: "error" as SyncProgressStatus,
-              }))
-            );
-            setSyncing(false);
-          } else if (pollCount >= maxPolls) {
-            clearInterval(pollInterval);
-            setSyncError("Timeout: la sincronización tardó demasiado");
-            showError("Timeout: la sincronización tardó demasiado");
-            setSyncing(false);
-          }
-          // else: still RUNNING, keep polling
-        } catch (err) {
-          clearInterval(pollInterval);
-          const message = err instanceof Error ? err.message : "Error al verificar estado de sincronización";
-          setSyncError(message);
-          showError(message);
-          setSyncing(false);
-        }
-      }, 5000); // Poll every 5 seconds
+      startPolling(result.logId);
     },
     onError: (err: unknown) => {
       const message = err instanceof Error ? err.message : "No se pudo iniciar la sincronización";
@@ -311,6 +248,76 @@ export function useCalendarEvents() {
       setSyncing(false);
     },
   });
+
+  const startPolling = (logId: number) => {
+    let pollCount = 0;
+    const maxPolls = 60; // 5 minutes max (5s interval)
+
+    const pollInterval = setInterval(async () => {
+      pollCount++;
+      try {
+        const logs = await fetchCalendarSyncLogs(10);
+        const currentLog = logs.find((log) => log.id === logId);
+
+        if (!currentLog) {
+          clearInterval(pollInterval);
+          setSyncError("No se encontró el log de sincronización");
+          setSyncing(false);
+          return;
+        }
+
+        if (currentLog.status === "SUCCESS") {
+          clearInterval(pollInterval);
+          setSyncDurationMs(
+            currentLog.finishedAt && currentLog.startedAt
+              ? new Date(currentLog.finishedAt).getTime() - new Date(currentLog.startedAt).getTime()
+              : null
+          );
+          setSyncProgress(
+            SYNC_STEPS_TEMPLATE.map((step) => ({
+              id: step.id,
+              label: step.label,
+              durationMs: 0,
+              details: {},
+              status: "completed" as SyncProgressStatus,
+            }))
+          );
+          setLastSyncInfo({
+            fetchedAt: currentLog.fetchedAt ?? new Date().toISOString(),
+            inserted: currentLog.inserted,
+            updated: currentLog.updated,
+            skipped: currentLog.skipped,
+            excluded: currentLog.excluded,
+            logId: currentLog.id,
+          });
+          setSyncing(false);
+          queryClient.invalidateQueries({ queryKey: ["calendar"] }).catch(() => {
+            /* handled */
+          });
+        } else if (currentLog.status === "ERROR") {
+          clearInterval(pollInterval);
+          const msg = currentLog.errorMessage || "Error desconocido durante la sincronización";
+          setSyncError(msg);
+          showError(msg);
+
+          setSyncProgress(markAllAsError);
+          setSyncing(false);
+        } else if (pollCount >= maxPolls) {
+          clearInterval(pollInterval);
+          setSyncError("Timeout: la sincronización tardó demasiado");
+          showError("Timeout: la sincronización tardó demasiado");
+          setSyncing(false);
+        }
+        // else: still RUNNING, keep polling
+      } catch (error_) {
+        clearInterval(pollInterval);
+        const message = error_ instanceof Error ? error_.message : "Error al verificar estado de sincronización";
+        setSyncError(message);
+        showError(message);
+        setSyncing(false);
+      }
+    }, 5000); // Poll every 5 seconds
+  };
 
   // Watch for query errors to show toast
   useEffect(() => {

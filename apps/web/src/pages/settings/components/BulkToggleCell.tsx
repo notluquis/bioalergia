@@ -16,10 +16,33 @@ export function BulkToggleCell({
   variant?: "section" | "page"; // Deprecated but kept for compatibility
   className?: string;
 }) {
-  const currentPermissionIds = role.permissions.map((p) => p.permissionId);
-  const presentCount = permissionIds.filter((id) => currentPermissionIds.includes(id)).length;
+  const currentPermissionIds = new Set(role.permissions.map((p) => p.permissionId));
+  const presentCount = permissionIds.filter((id) => currentPermissionIds.has(id)).length;
   const allPresent = permissionIds.length > 0 && presentCount === permissionIds.length;
   const somePresent = presentCount > 0 && presentCount < permissionIds.length;
+
+  const renderIcon = () => {
+    if (isUpdating) {
+      return <Loader2 className="text-base-content/40 h-4 w-4 animate-spin" />;
+    }
+    if (allPresent) {
+      return (
+        <div className="bg-primary hover:bg-primary-focus flex h-5 w-5 items-center justify-center rounded-md shadow-sm transition-transform active:scale-95">
+          <CheckCheck size={12} className="text-primary-content" />
+        </div>
+      );
+    }
+    if (somePresent) {
+      return (
+        <div className="bg-primary/70 hover:bg-primary flex h-5 w-5 items-center justify-center rounded-md shadow-sm transition-transform active:scale-95">
+          <Minus size={12} className="text-primary-content" />
+        </div>
+      );
+    }
+    return (
+      <div className="border-base-300 hover:border-primary/50 hover:bg-primary/5 h-5 w-5 rounded-md border-2 transition-colors" />
+    );
+  };
 
   if (permissionIds.length === 0) return <td className={className} />;
 
@@ -31,19 +54,7 @@ export function BulkToggleCell({
         title={allPresent ? "Desmarcar todos" : "Marcar todos"}
         className="mx-auto flex h-8 w-full items-center justify-center rounded-md transition-colors"
       >
-        {isUpdating ? (
-          <Loader2 className="text-base-content/40 h-4 w-4 animate-spin" />
-        ) : allPresent ? (
-          <div className="bg-primary hover:bg-primary-focus flex h-5 w-5 items-center justify-center rounded-md shadow-sm transition-transform active:scale-95">
-            <CheckCheck size={12} className="text-primary-content" />
-          </div>
-        ) : somePresent ? (
-          <div className="bg-primary/70 hover:bg-primary flex h-5 w-5 items-center justify-center rounded-md shadow-sm transition-transform active:scale-95">
-            <Minus size={12} className="text-primary-content" />
-          </div>
-        ) : (
-          <div className="border-base-300 hover:border-primary/50 hover:bg-primary/5 h-5 w-5 rounded-md border-2 transition-colors" />
-        )}
+        {renderIcon()}
       </button>
     </td>
   );
