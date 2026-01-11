@@ -1,6 +1,7 @@
 import { fileURLToPath, URL } from "node:url";
 
 import tailwindcss from "@tailwindcss/vite";
+import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 import checker from "vite-plugin-checker";
@@ -13,6 +14,14 @@ import { configDefaults } from "vitest/config";
 
 export default defineConfig(({ mode }) => ({
   plugins: [
+    // TanStack Router - File-Based Routing (MUST be first)
+    TanStackRouterVite({
+      target: "react",
+      autoCodeSplitting: true,
+      routesDirectory: "./src/routes",
+      generatedRouteTree: "./src/routeTree.gen.ts",
+      quoteStyle: "double",
+    }),
     // React with Compiler (official Vite plugin)
     react({
       babel: {
@@ -165,7 +174,8 @@ export default defineConfig(({ mode }) => ({
     rollupOptions: {
       output: {
         manualChunks: {
-          "vendor-react": ["react", "react-dom", "react-router-dom"],
+          "vendor-react": ["react", "react-dom"],
+          "vendor-router": ["@tanstack/react-router"],
           "vendor-ui": [
             "@radix-ui/react-dropdown-menu",
             "@radix-ui/react-toast",

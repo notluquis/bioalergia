@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useParams } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
 
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
@@ -45,8 +45,7 @@ function mapServiceToForm(service: ServiceDetailResponse["service"]): Partial<Cr
 }
 
 export default function ServiceEditPage() {
-  const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
+  const { id } = useParams({ from: "/_authed/services/$id/edit" });
   const queryClient = useQueryClient();
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
@@ -173,7 +172,7 @@ export default function ServiceEditPage() {
           description="Cargando información del servicio seleccionado."
           breadcrumbs={[{ label: "Servicios", to: "/services" }, { label: "Editar" }]}
           actions={
-            <Button variant="ghost" onClick={() => navigate(-1)}>
+            <Button variant="ghost" onClick={() => window.history.back()}>
               Volver
             </Button>
           }
@@ -203,7 +202,7 @@ export default function ServiceEditPage() {
         description={service ? service.name : "Ajusta los datos y cronogramas del servicio seleccionado."}
         breadcrumbs={[{ label: "Servicios", to: "/services" }, { label: "Editar" }]}
         actions={
-          <Button variant="ghost" onClick={() => navigate(-1)}>
+          <Button variant="ghost" onClick={() => window.history.back()}>
             Volver
           </Button>
         }
@@ -246,7 +245,7 @@ export default function ServiceEditPage() {
                 {initialValues && (
                   <ServiceForm
                     onSubmit={handleSubmit}
-                    onCancel={() => navigate(-1)}
+                    onCancel={() => window.history.back()}
                     initialValues={initialValues}
                     submitLabel="Actualizar servicio"
                   />

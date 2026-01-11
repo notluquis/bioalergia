@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
 import { Shield, UserPlus, Users } from "lucide-react";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 
 import Button from "@/components/ui/Button";
 import Checkbox from "@/components/ui/Checkbox";
@@ -62,7 +62,7 @@ export default function AddUserPage() {
       queryClient.invalidateQueries({ queryKey: ["users"] });
       queryClient.invalidateQueries({ queryKey: ["people"] });
       success("Usuario creado exitosamente");
-      navigate("/settings/users");
+      navigate({ to: "/settings/users" });
     },
     onError: (err) => {
       toastError(err instanceof Error ? err.message : "Error al crear usuario");
@@ -255,7 +255,7 @@ export default function AddUserPage() {
         </div>
 
         <div className="flex justify-end gap-3 pt-4">
-          <Button type="button" variant="secondary" onClick={() => navigate("/settings/users")}>
+          <Button type="button" variant="secondary" onClick={() => navigate({ to: "/settings/users" })}>
             Cancelar
           </Button>
           <Button type="submit" disabled={loading} className="gap-2">

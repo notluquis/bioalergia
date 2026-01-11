@@ -1,6 +1,6 @@
+import { useLocation, useNavigate } from "@tanstack/react-router";
 import { BarChart3, Briefcase, Home, type LucideIcon, Users } from "lucide-react";
 import React from "react";
-import { useLocation, useNavigate } from "react-router-dom";
 
 interface NavItem {
   path: string;
@@ -40,7 +40,7 @@ export function BottomNav() {
               type="button"
               onClick={() => {
                 setPendingPath(path);
-                navigate(path);
+                navigate({ to: path });
               }}
               className={`relative flex flex-1 flex-col items-center justify-center gap-1 rounded-3xl px-1 py-3 text-[10px] font-medium transition-all duration-300 ${
                 active ? "text-primary" : "text-base-content/50 hover:text-base-content/80"

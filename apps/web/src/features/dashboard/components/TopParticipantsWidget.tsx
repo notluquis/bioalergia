@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link } from "@tanstack/react-router";
 
 import { fmtCLP } from "@/lib/format";
 import { formatRut } from "@/lib/rut";
@@ -19,7 +19,7 @@ export default function TopParticipantsWidget({
       <div className="flex items-center justify-between">
         <h3 className="text-secondary text-base font-semibold drop-shadow-sm">Retiros destacados</h3>
         <Link
-          to="/transactions/participants"
+          to="/finanzas/participants"
           className="border-secondary/40 bg-secondary/15 text-secondary inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold tracking-wide uppercase"
         >
           Ver todos

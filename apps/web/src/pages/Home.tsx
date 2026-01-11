@@ -1,6 +1,6 @@
+import { Link } from "@tanstack/react-router";
 import { ArrowRightLeft, ArrowUpRight, CalendarDays, Users, Wallet } from "lucide-react";
 import { useEffect } from "react";
-import { Link } from "react-router-dom";
 
 import Alert from "@/components/ui/Alert";
 import { useAuth } from "@/context/AuthContext";
@@ -112,7 +112,7 @@ const QUICK_LINKS = [
   {
     title: "Registrar saldo",
     description: "Actualiza saldos diarios y conciliaciones.",
-    to: "/transactions/balances",
+    to: "/finanzas/balances" as const,
     icon: Wallet,
     color: "text-emerald-500",
     bg: "bg-emerald-500/10",
@@ -122,7 +122,7 @@ const QUICK_LINKS = [
   {
     title: "Ver movimientos",
     description: "Audita los movimientos y flujos de caja.",
-    to: "/transactions/movements",
+    to: "/finanzas/statistics" as const,
     icon: ArrowRightLeft,
     color: "text-blue-500",
     bg: "bg-blue-500/10",
@@ -132,7 +132,7 @@ const QUICK_LINKS = [
   {
     title: "Participantes",
     description: "Gestiona contrapartes y sus historiales.",
-    to: "/transactions/participants",
+    to: "/finanzas/participants" as const,
     icon: Users,
     color: "text-violet-500",
     bg: "bg-violet-500/10",
@@ -142,7 +142,7 @@ const QUICK_LINKS = [
   {
     title: "Servicios",
     description: "Administra servicios recurrentes y agenda.",
-    to: "/services",
+    to: "/services" as const,
     icon: CalendarDays,
     color: "text-amber-500",
     bg: "bg-amber-500/10",

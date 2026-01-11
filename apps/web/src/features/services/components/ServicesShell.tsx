@@ -1,5 +1,5 @@
+import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
-import { Link } from "react-router-dom";
 
 type Breadcrumb = { label: string; to?: string };
 

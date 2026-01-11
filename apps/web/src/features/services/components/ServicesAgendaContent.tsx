@@ -1,5 +1,5 @@
+import { Link } from "@tanstack/react-router";
 import dayjs from "dayjs";
-import { Link } from "react-router-dom";
 
 import Button from "@/components/ui/Button";
 import { StatCard } from "@/components/ui/StatCard";

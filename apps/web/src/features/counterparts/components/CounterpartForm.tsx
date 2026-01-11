@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Link } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { type Resolver, useForm } from "react-hook-form";
-import { Link } from "react-router-dom";
 import { z } from "zod";
 
 import Alert from "@/components/ui/Alert";

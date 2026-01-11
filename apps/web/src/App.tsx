@@ -1,5 +1,5 @@
+import { Outlet, useRouterState } from "@tanstack/react-router";
 import React from "react";
-import { Outlet, useNavigation } from "react-router-dom";
 import { useDebounce } from "use-debounce";
 
 import { PerformanceIndicator } from "./components/features/PerformanceIndicator";
@@ -14,7 +14,7 @@ import { BUILD_TIMESTAMP } from "./version";
 
 export default function App() {
   const { impersonatedRole, stopImpersonating } = useAuth();
-  const navigationState = useNavigation();
+  const navigationState = useRouterState({ select: (s) => s.status });
   const { settings } = useSettings();
 
   // Sidebar state: visible/hidden
@@ -51,7 +51,7 @@ export default function App() {
 
   // Desktop Sidebar Collapse State logic removed (handled internally by Sidebar hover)
 
-  const isNavigating = navigationState.state === "loading";
+  const isNavigating = navigationState === "pending";
   const buildLabel = React.useMemo(() => {
     if (!BUILD_TIMESTAMP) return "Desconocido";
     const parsed = new Date(BUILD_TIMESTAMP);

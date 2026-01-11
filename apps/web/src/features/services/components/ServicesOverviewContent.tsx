@@ -1,6 +1,6 @@
+import { Link } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
-import { Link } from "react-router-dom";
 
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";

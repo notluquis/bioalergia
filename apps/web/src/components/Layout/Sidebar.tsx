@@ -1,6 +1,6 @@
+import { Link, useLocation, useRouterState } from "@tanstack/react-router";
 import { LogOut, User } from "lucide-react";
 import React from "react";
-import { Link, NavLink, useLocation, useNavigation } from "react-router-dom";
 
 import Backdrop from "@/components/ui/Backdrop";
 import {
@@ -39,77 +39,69 @@ function SidebarItem({
   locationPath: string;
   onNavigate: () => void;
 }) {
-  const navigation = useNavigation();
-  const isPending = pendingPath === item.to || (navigation.state === "loading" && pendingPath === item.to);
+  const routerStatus = useRouterState({ select: (s) => s.status });
+  const isPending = pendingPath === item.to || (routerStatus === "pending" && pendingPath === item.to);
+
+  // Check if this link is currently active
+  const isActive = locationPath === item.to || locationPath.startsWith(`${item.to}/`);
+  const finalActive = isActive || isPending;
+
+  const linkClassName = cn(
+    "group relative flex items-center rounded-xl transition-all duration-200 ease-in-out outline-none select-none",
+    // Mobile vs Desktop styling
+    isMobile
+      ? "w-full justify-start px-4 py-3"
+      : isCollapsed
+        ? "mx-auto h-9 w-9 justify-center p-0"
+        : "w-full justify-start px-3 py-2.5",
+    finalActive
+      ? "bg-primary/10 text-primary font-semibold"
+      : "text-base-content/60 hover:text-base-content hover:bg-base-content/5"
+  );
 
   return (
     <Tooltip delayDuration={300}>
       <TooltipTrigger asChild>
-        <NavLink
-          to={item.to}
-          end={item.exact}
+        <Link
+          to={item.to as "/"}
           onClick={() => {
-            if (locationPath !== item.to) onNavigate(); // Notify parent of nav intent (sets pending)
+            if (locationPath !== item.to) onNavigate();
           }}
-          className={({ isActive }) => {
-            const finalActive = isActive || isPending;
-            return cn(
-              "group relative flex items-center rounded-xl transition-all duration-200 ease-in-out outline-none select-none",
-              // Mobile vs Desktop styling
-              isMobile
-                ? "w-full justify-start px-4 py-3"
-                : isCollapsed
-                  ? "mx-auto h-9 w-9 justify-center p-0"
-                  : "w-full justify-start px-3 py-2.5",
-              finalActive
-                ? "bg-primary/10 text-primary font-semibold"
-                : "text-base-content/60 hover:text-base-content hover:bg-base-content/5"
-            );
-          }}
+          className={linkClassName}
         >
-          {({ isActive }) => {
-            const finalActive = isActive || isPending;
-            return (
-              <>
-                {/* Active Indicator (Vertical Bar for Expanded/Mobile) */}
-                {finalActive && (!isCollapsed || isMobile) && (
-                  <span className="bg-primary absolute top-1/2 left-0 h-5 w-1 -translate-y-1/2 rounded-r-full" />
-                )}
+          {/* Active Indicator (Vertical Bar for Expanded/Mobile) */}
+          {finalActive && (!isCollapsed || isMobile) && (
+            <span className="bg-primary absolute top-1/2 left-0 h-5 w-1 -translate-y-1/2 rounded-r-full" />
+          )}
 
-                {/* Icon Container */}
-                <div
-                  className={cn(
-                    "relative flex items-center justify-center transition-colors duration-200",
-                    isMobile ? "mr-4" : isCollapsed ? "mr-0" : "mr-3"
-                  )}
-                >
-                  <item.icon
-                    className={cn(
-                      "h-5 w-5 transition-transform duration-200",
-                      finalActive ? "scale-105" : "group-hover:scale-105"
-                    )}
-                    strokeWidth={finalActive ? 2.5 : 2}
-                  />
+          {/* Icon Container */}
+          <div
+            className={cn(
+              "relative flex items-center justify-center transition-colors duration-200",
+              isMobile ? "mr-4" : isCollapsed ? "mr-0" : "mr-3"
+            )}
+          >
+            <item.icon
+              className={cn(
+                "h-5 w-5 transition-transform duration-200",
+                finalActive ? "scale-105" : "group-hover:scale-105"
+              )}
+              strokeWidth={finalActive ? 2.5 : 2}
+            />
 
-                  {/* Active Dot for Collapsed State (replaces bar when collapsed) */}
-                  {!isMobile && isCollapsed && finalActive && (
-                    <span className="bg-primary absolute top-0 -right-1 h-2 w-2 rounded-full shadow-sm ring-2 ring-white dark:ring-black" />
-                  )}
-                </div>
+            {/* Active Dot for Collapsed State (replaces bar when collapsed) */}
+            {!isMobile && isCollapsed && finalActive && (
+              <span className="bg-primary absolute top-0 -right-1 h-2 w-2 rounded-full shadow-sm ring-2 ring-white dark:ring-black" />
+            )}
+          </div>
 
-                {/* Label */}
-                <span
-                  className={cn(
-                    "bg-transparent text-sm whitespace-nowrap",
-                    !isMobile && isCollapsed ? "hidden" : "block"
-                  )}
-                >
-                  {item.label}
-                </span>
-              </>
-            );
-          }}
-        </NavLink>
+          {/* Label */}
+          <span
+            className={cn("bg-transparent text-sm whitespace-nowrap", !isMobile && isCollapsed ? "hidden" : "block")}
+          >
+            {item.label}
+          </span>
+        </Link>
       </TooltipTrigger>
       {/* Tooltip only on Desktop Collapsed - force close when expanded */}
       {!isMobile && (
