@@ -7,10 +7,6 @@ import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
 import { ChevronLeft, ChevronRight, Filter } from "lucide-react";
 import { useEffect, useState } from "react";
 
-dayjs.extend(isoWeek);
-dayjs.extend(isSameOrBefore);
-dayjs.extend(isSameOrAfter);
-
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
 import { CalendarFilterPanel } from "@/features/calendar/components/CalendarFilterPanel";
@@ -18,6 +14,10 @@ import ScheduleCalendar from "@/features/calendar/components/ScheduleCalendar";
 import { useCalendarEvents } from "@/features/calendar/hooks/useCalendarEvents";
 import { numberFormatter } from "@/lib/format";
 import { PAGE_CONTAINER } from "@/lib/styles";
+
+dayjs.extend(isoWeek);
+dayjs.extend(isSameOrBefore);
+dayjs.extend(isSameOrAfter);
 
 dayjs.locale("es");
 

@@ -1,6 +1,7 @@
 import type { ChangeEvent } from "react";
 
 import Input from "@/components/ui/Input";
+import { GRID_2_COL_MD } from "@/lib/styles";
 
 import type { ServiceObligationType, ServiceOwnership, ServiceRecurrenceType, ServiceType } from "../../types";
 import type { ServiceFormState } from "../ServiceForm";
@@ -42,8 +43,6 @@ const RECURRENCE_OPTIONS: Array<{ value: ServiceRecurrenceType; label: string }>
   { value: "RECURRING", label: "Recurrente" },
   { value: "ONE_OFF", label: "Puntual" },
 ];
-
-import { GRID_2_COL_MD } from "@/lib/styles";
 
 export function ServiceClassificationSection({
   serviceType,

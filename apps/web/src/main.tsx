@@ -7,6 +7,26 @@
 
 // Aggressive recovery from chunk load errors
 // Clears all caches, unregisters service workers, then reloads
+import "./index.css";
+import "./i18n";
+
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { createRouter, RouterProvider } from "@tanstack/react-router";
+import { QuerySettingsProvider } from "@zenstackhq/tanstack-query/react";
+import React from "react";
+import ReactDOM from "react-dom/client";
+
+import { ChunkErrorBoundary } from "./components/ui/ChunkErrorBoundary";
+import { GlobalError } from "./components/ui/GlobalError";
+import PageLoader from "./components/ui/PageLoader";
+import { AuthProvider, useAuth } from "./context/AuthContext";
+import { SettingsProvider } from "./context/SettingsContext";
+import { ToastProvider } from "./context/ToastContext";
+import { AbilityProvider } from "./lib/authz/AbilityProvider";
+import { initPerformanceMonitoring } from "./lib/performance";
+// Import the generated route tree
+import { routeTree } from "./routeTree.gen";
+
 async function handleChunkLoadError() {
   console.warn("Chunk load error detected, clearing caches and reloading...");
 
@@ -47,26 +67,6 @@ window.addEventListener("unhandledrejection", (event) => {
     handleChunkLoadError();
   }
 });
-
-import "./index.css";
-import "./i18n";
-
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { createRouter, RouterProvider } from "@tanstack/react-router";
-import { QuerySettingsProvider } from "@zenstackhq/tanstack-query/react";
-import React from "react";
-import ReactDOM from "react-dom/client";
-
-import { ChunkErrorBoundary } from "./components/ui/ChunkErrorBoundary";
-import { GlobalError } from "./components/ui/GlobalError";
-import PageLoader from "./components/ui/PageLoader";
-import { AuthProvider, useAuth } from "./context/AuthContext";
-import { SettingsProvider } from "./context/SettingsContext";
-import { ToastProvider } from "./context/ToastContext";
-import { AbilityProvider } from "./lib/authz/AbilityProvider";
-import { initPerformanceMonitoring } from "./lib/performance";
-// Import the generated route tree
-import { routeTree } from "./routeTree.gen";
 
 // ============================================================================
 // REACT QUERY CLIENT

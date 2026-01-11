@@ -3,8 +3,7 @@
  * Extracts duplicated filter logic from CalendarDailyPage, CalendarSchedulePage, etc.
  */
 
-import type { ChangeEvent } from "react";
-import { type FormEvent } from "react";
+import type { ChangeEvent, FormEvent } from "react";
 
 import Button from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";

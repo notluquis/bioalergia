@@ -1,6 +1,7 @@
 import type { ChangeEvent } from "react";
 
 import Input from "@/components/ui/Input";
+import { GRID_2_COL_MD } from "@/lib/styles";
 
 import type { Counterpart, CounterpartAccount } from "../../../counterparts/types";
 import type { ServiceFormState } from "../ServiceForm";
@@ -17,8 +18,6 @@ interface CounterpartSectionProps {
   onCounterpartSelect: (value: string) => void;
   onChange: <K extends keyof ServiceFormState>(key: K, value: ServiceFormState[K]) => void;
 }
-
-import { GRID_2_COL_MD } from "@/lib/styles";
 
 export function CounterpartSection({
   counterpartId,

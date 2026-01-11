@@ -3,6 +3,7 @@ import js from "@eslint/js";
 import reactQuery from "@tanstack/eslint-plugin-query";
 import tseslint from "@typescript-eslint/eslint-plugin";
 import tsParser from "@typescript-eslint/parser";
+import importPlugin from "eslint-plugin-import";
 import jestDom from "eslint-plugin-jest-dom";
 import jsxA11y from "eslint-plugin-jsx-a11y";
 import react from "eslint-plugin-react";
@@ -53,10 +54,23 @@ export default [
   },
   // Imports & Formatting
   {
-    plugins: { "simple-import-sort": simpleImportSort },
+    plugins: { "simple-import-sort": simpleImportSort, import: importPlugin },
     rules: {
       "simple-import-sort/imports": "error",
       "simple-import-sort/exports": "error",
+      // Helpful import rules (no resolver needed)
+      "import/no-duplicates": "error",
+      "import/no-self-import": "error",
+      "import/no-useless-path-segments": "error",
+      "import/first": "error",
+      "import/newline-after-import": "error",
+      // Disable rules that conflict with typescript-eslint or simple-import-sort
+      "import/order": "off",
+      "import/named": "off", // TS handles this
+      "import/namespace": "off", // TS handles this
+      "import/default": "off", // TS handles this
+      "import/no-unresolved": "off", // TS handles this
+      "import/no-cycle": "off", // Requires resolver setup
     },
   },
   // React recommended via plugin flat config recommended.recommended

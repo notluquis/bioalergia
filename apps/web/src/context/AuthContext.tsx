@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createContext, type ReactNode, useContext, useEffect, useState } from "react";
 
 import { apiClient, ApiError } from "@/lib/apiClient";
+import { ability, updateAbility } from "@/lib/authz/ability";
 import { logger } from "@/lib/logger";
 import type { Role } from "@/types/roles";
 
@@ -37,8 +38,6 @@ export type AuthContextType = {
 };
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-import { ability, updateAbility } from "@/lib/authz/ability";
 
 // ... (existing imports)
 
