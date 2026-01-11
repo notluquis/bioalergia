@@ -22,16 +22,16 @@ export function FormattedEventDescription({ text, className }: FormattedEventDes
     ];
 
     const pattern = new RegExp(`(${keysToBold.join("|")}):`, "gi");
-    html = html.replace(pattern, '<span class="font-bold text-base-content/80">$1:</span>');
+    html = html.replaceAll(pattern, '<span class="font-bold text-base-content/80">$1:</span>');
 
     // 2. Highlight and separate DATOS BOLETA specifically
-    html = html.replace(
-      /DATOS BOLETA/g,
+    html = html.replaceAll(
+      "DATOS BOLETA",
       '<div class="mt-3 mb-1 font-bold text-base-content uppercase tracking-wide border-t border-base-200 pt-2">Datos Boleta</div>'
     );
 
     // 3. Remove empty spans (cleanup)
-    html = html.replace(/<span>\s*<\/span>/g, "");
+    html = html.replaceAll(/<span>\s*<\/span>/g, "");
 
     return html;
   })();

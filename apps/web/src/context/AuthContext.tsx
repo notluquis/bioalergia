@@ -1,13 +1,11 @@
 import { MongoAbility, RawRuleOf } from "@casl/ability";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { createContext, type ReactNode, useContext, useEffect, useState } from "react";
+import { createContext, type ReactNode, useCallback, useContext, useEffect, useState } from "react";
 
 import { apiClient, ApiError } from "@/lib/apiClient";
 import { ability, updateAbility } from "@/lib/authz/ability";
 import { logger } from "@/lib/logger";
 import type { Role } from "@/types/roles";
-
-export type UserRole = string;
 
 export type AuthUser = {
   id: number;
@@ -195,10 +193,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const hasRole = (...rolesToCheck: string[]) => {
     if (!effectiveUser) return false;
-    if (!rolesToCheck.length) return true;
+    if (rolesToCheck.length === 0) return true;
 
-    const userRoles = effectiveUser.roles.map((r) => r.toUpperCase());
-    return rolesToCheck.some((r) => userRoles.includes(r.toUpperCase()));
+    const userRoles = new Set(effectiveUser.roles.map((r) => r.toUpperCase()));
+    return rolesToCheck.some((r) => userRoles.has(r.toUpperCase()));
   };
 
   const { refetch: refetchSession } = sessionQuery;
@@ -207,10 +205,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await refetchSession();
   };
 
-  const can = (action: string, subject: string, field?: string) => {
+  const can = useCallback((action: string, subject: string, field?: string) => {
     // Wrapper for CASL ability
     return ability.can(action, subject, field);
-  };
+  }, []); // ability is imported from lib/authz/ability, stable instance
 
   const value: AuthContextType = {
     user: effectiveUser,

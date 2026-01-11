@@ -2,10 +2,8 @@ import { apiClient } from "@/lib/apiClient";
 
 import type { Employee, EmployeePayload, EmployeeUpdatePayload } from "./types";
 
-export type { Employee, EmployeePayload, EmployeeUpdatePayload };
-
 export async function fetchEmployees(includeInactive = false): Promise<Employee[]> {
-  const url = new URL("/api/employees", window.location.origin);
+  const url = new URL("/api/employees", globalThis.location.origin);
   if (includeInactive) {
     url.searchParams.set("includeInactive", "true");
   }
@@ -35,3 +33,5 @@ export async function updateEmployee(id: number, data: EmployeeUpdatePayload): P
 export async function deactivateEmployee(id: number): Promise<void> {
   await apiClient.delete(`/api/employees/${id}`);
 }
+
+export { type Employee, type EmployeePayload, type EmployeeUpdatePayload } from "./types";

@@ -43,7 +43,7 @@ export default function MonthlyFlowChartInner({ data }: MonthlyFlowChartInnerPro
           tickFormatter={(value) => {
             const num = typeof value === "number" ? value : 0;
             if (num >= 1_000_000) return `$${Math.round(num / 1_000_000)}M`;
-            if (num >= 1_000) return `$${Math.round(num / 1_000)}K`;
+            if (num >= 1000) return `$${Math.round(num / 1000)}K`;
             return fmtCLP(num);
           }}
         />

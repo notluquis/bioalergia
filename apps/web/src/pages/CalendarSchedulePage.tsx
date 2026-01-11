@@ -21,6 +21,8 @@ dayjs.extend(isSameOrAfter);
 
 dayjs.locale("es");
 
+const DATE_FORMAT = "YYYY-MM-DD";
+
 function CalendarSchedulePage() {
   const [showFilters, setShowFilters] = useState(false);
 
@@ -44,7 +46,7 @@ function CalendarSchedulePage() {
   // Separate state for which week is displayed (independent from data filter range)
   const [displayedWeekStart, setDisplayedWeekStart] = useState(() => {
     // Start on current week's Monday
-    return dayjs().isoWeekday(1).format("YYYY-MM-DD");
+    return dayjs().isoWeekday(1).format(DATE_FORMAT);
   });
 
   // Navigation helpers
@@ -54,15 +56,15 @@ function CalendarSchedulePage() {
     : "Seleccionar rango";
 
   const goToPreviousWeek = () => {
-    setDisplayedWeekStart(currentDisplayed.subtract(1, "week").format("YYYY-MM-DD"));
+    setDisplayedWeekStart(currentDisplayed.subtract(1, "week").format(DATE_FORMAT));
   };
 
   const goToNextWeek = () => {
-    setDisplayedWeekStart(currentDisplayed.add(1, "week").format("YYYY-MM-DD"));
+    setDisplayedWeekStart(currentDisplayed.add(1, "week").format(DATE_FORMAT));
   };
 
   const goToThisWeek = () => {
-    setDisplayedWeekStart(dayjs().isoWeekday(1).format("YYYY-MM-DD"));
+    setDisplayedWeekStart(dayjs().isoWeekday(1).format(DATE_FORMAT));
   };
 
   // On-demand loading: extend date range when navigating to weeks outside current range
@@ -78,9 +80,9 @@ function CalendarSchedulePage() {
     if (needsExtension) {
       // Extend range to include displayed week with buffer
       const newFrom = weekStart.isBefore(currentFrom)
-        ? weekStart.subtract(1, "week").format("YYYY-MM-DD")
+        ? weekStart.subtract(1, "week").format(DATE_FORMAT)
         : appliedFilters.from;
-      const newTo = weekEnd.isAfter(currentTo) ? weekEnd.add(2, "week").format("YYYY-MM-DD") : appliedFilters.to;
+      const newTo = weekEnd.isAfter(currentTo) ? weekEnd.add(2, "week").format(DATE_FORMAT) : appliedFilters.to;
 
       updateFilters("from", newFrom);
       updateFilters("to", newTo);

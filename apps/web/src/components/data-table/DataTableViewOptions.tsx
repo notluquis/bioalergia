@@ -19,9 +19,7 @@ interface DataTableViewOptionsProps<TData> {
 export function DataTableViewOptions<TData>({ table }: DataTableViewOptionsProps<TData>) {
   const [search, setSearch] = useState("");
 
-  const columns = table
-    .getAllColumns()
-    .filter((column) => typeof column.accessorFn !== "undefined" && column.getCanHide());
+  const columns = table.getAllColumns().filter((column) => column.accessorFn !== undefined && column.getCanHide());
 
   const filteredColumns = columns.filter((c) => {
     // Try to find a human readable label usually stored in columnDef.header if it's a string
@@ -37,7 +35,7 @@ export function DataTableViewOptions<TData>({ table }: DataTableViewOptionsProps
           Columnas
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="flex max-h-[400px] w-[200px] flex-col">
+      <DropdownMenuContent align="end" className="flex max-h-100 w-50 flex-col">
         <DropdownMenuLabel>Alternar columnas</DropdownMenuLabel>
         <div className="border-b px-2 py-2">
           <Input

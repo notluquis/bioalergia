@@ -1,27 +1,27 @@
-export default function ChunkLoadErrorPage() {
-  const handleRetry = async () => {
-    try {
-      // 1. Desregistrar Service Workers para evitar cache stale
-      if ("serviceWorker" in navigator) {
-        const registrations = await navigator.serviceWorker.getRegistrations();
-        for (const registration of registrations) {
-          await registration.unregister();
-        }
+const handleRetry = async () => {
+  try {
+    // 1. Desregistrar Service Workers para evitar cache stale
+    if ("serviceWorker" in navigator) {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      for (const registration of registrations) {
+        await registration.unregister();
       }
-
-      // 2. Limpiar todas las caches
-      if ("caches" in window) {
-        const keys = await caches.keys();
-        await Promise.all(keys.map((key) => caches.delete(key)));
-      }
-    } catch (error) {
-      console.error("Error clearing cache:", error);
-    } finally {
-      // 3. Recargar la página forzando fetch al servidor
-      window.location.reload();
     }
-  };
 
+    // 2. Limpiar todas las caches
+    if ("caches" in globalThis) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map((key) => caches.delete(key)));
+    }
+  } catch (error) {
+    console.error("Error clearing cache:", error);
+  } finally {
+    // 3. Recargar la página forzando fetch al servidor
+    globalThis.location.reload();
+  }
+};
+
+export default function ChunkLoadErrorPage() {
   return (
     <div className="bg-base-200 flex min-h-screen items-center justify-center p-4">
       <div className="w-full max-w-md space-y-6 text-center">
@@ -62,7 +62,7 @@ export default function ChunkLoadErrorPage() {
           <button onClick={handleRetry} className="btn btn-primary w-full">
             Recargar Ahora
           </button>
-          <button onClick={() => (window.location.href = "/login")} className="btn btn-ghost w-full text-xs">
+          <button onClick={() => (globalThis.location.href = "/login")} className="btn btn-ghost w-full text-xs">
             Ir a Login
           </button>
         </div>

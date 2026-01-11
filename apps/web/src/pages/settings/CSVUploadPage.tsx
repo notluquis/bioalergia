@@ -146,7 +146,7 @@ const TABLE_OPTIONS: TableOption[] = [
 ];
 
 // Backend now supports all these tables
-const SUPPORTED_TABLES = [
+const SUPPORTED_TABLES = new Set([
   "people",
   "employees",
   "counterparts",
@@ -156,7 +156,7 @@ const SUPPORTED_TABLES = [
   "services",
   "inventory_items",
   "employee_timesheets",
-];
+]);
 
 // Permission mapping
 const PERMISSION_MAP: Record<string, { action: string; subject: string }> = {
@@ -196,7 +196,7 @@ export default function CSVUploadPage() {
 
   const allowedTableOptions = TABLE_OPTIONS.filter((t) => {
     // 1. Must be supported by backend
-    if (!SUPPORTED_TABLES.includes(t.value)) return false;
+    if (!SUPPORTED_TABLES.has(t.value)) return false;
     // 2. Must have permission
     const perm = PERMISSION_MAP[t.value];
     if (!perm) return false;
@@ -260,6 +260,36 @@ export default function CSVUploadPage() {
     resetState();
   };
 
+  const handleParseComplete = (results: Papa.ParseResult<Record<string, string>>) => {
+    if (results.errors.length > 0) {
+      setParseStatus("error");
+      setErrorMessage(`Error al parsear CSV: ${results.errors[0]?.message || "Error desconocido"}`);
+      return;
+    }
+
+    const headers = results.meta.fields || [];
+    setCsvHeaders(headers);
+    setCsvData(results.data);
+
+    // Auto-mapping heuristics
+    if (currentTable) {
+      const autoMapping: Record<string, string> = {};
+      currentTable.fields.forEach((field) => {
+        const matchingHeader = headers.find(
+          (h) =>
+            h.toLowerCase() === field.name.toLowerCase() ||
+            h.toLowerCase().replaceAll("_", "") === field.name.toLowerCase()
+        );
+        if (matchingHeader) {
+          autoMapping[field.name] = matchingHeader;
+        }
+      });
+      setColumnMapping(autoMapping);
+    }
+
+    setParseStatus("idle");
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement> | File) => {
     const file = e instanceof File ? e : e.target.files?.[0];
     if (!file) return;
@@ -272,35 +302,7 @@ export default function CSVUploadPage() {
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
-      complete: (results) => {
-        if (results.errors.length > 0) {
-          setParseStatus("error");
-          setErrorMessage(`Error al parsear CSV: ${results.errors[0]?.message || "Error desconocido"}`);
-          return;
-        }
-
-        const headers = results.meta.fields || [];
-        setCsvHeaders(headers);
-        setCsvData(results.data as Record<string, string>[]);
-
-        // Auto-mapping heuristics
-        if (currentTable) {
-          const autoMapping: Record<string, string> = {};
-          currentTable.fields.forEach((field) => {
-            const matchingHeader = headers.find(
-              (h) =>
-                h.toLowerCase() === field.name.toLowerCase() ||
-                h.toLowerCase().replace(/_/g, "") === field.name.toLowerCase()
-            );
-            if (matchingHeader) {
-              autoMapping[field.name] = matchingHeader;
-            }
-          });
-          setColumnMapping(autoMapping);
-        }
-
-        setParseStatus("idle");
-      },
+      complete: handleParseComplete,
       error: (error) => {
         setParseStatus("error");
         setErrorMessage(`Error al leer archivo: ${error.message}`);

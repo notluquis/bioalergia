@@ -37,7 +37,8 @@ const counterpartFormSchema = z.object({
     "LENDER",
     "OCCASIONAL",
   ] as const),
-  email: z.string().trim().email("Email inválido").or(z.literal("")),
+  // eslint-disable-next-line sonarjs/deprecation
+  email: z.string().email().or(z.literal("")).nullable().optional(),
   notes: z.string().trim().default(""),
 });
 

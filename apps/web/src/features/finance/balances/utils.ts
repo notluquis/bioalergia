@@ -13,11 +13,11 @@ export function parseBalanceInput(value: string) {
   const trimmed = value.trim();
   if (!trimmed) return null;
   const normalized = trimmed
-    .replace(/CLP/gi, "")
-    .replace(/\$/g, "")
-    .replace(/\s+/g, "")
-    .replace(/\./g, "")
-    .replace(/,/g, ".");
+    .replaceAll(/CLP/gi, "")
+    .replaceAll("$", "")
+    .replaceAll(/\s+/g, "")
+    .replaceAll(".", "")
+    .replaceAll(",", ".");
   if (!normalized) return null;
   const parsed = Number(normalized);
   return Number.isFinite(parsed) ? parsed : null;

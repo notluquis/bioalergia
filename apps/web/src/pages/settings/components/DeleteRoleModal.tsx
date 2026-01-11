@@ -67,6 +67,64 @@ export function DeleteRoleModal({ isOpen, onClose, role, allRoles }: DeleteRoleM
 
   const isSystemRole = role.isSystem;
 
+  const renderUsersContent = () => {
+    if (isLoadingUsers) {
+      return (
+        <div className="flex justify-center p-4">
+          <span className="loading loading-spinner" />
+        </div>
+      );
+    }
+
+    if (hasUsers) {
+      return (
+        <div className="bg-warning/10 border-warning/20 space-y-3 rounded-lg border p-4">
+          <div className="text-warning flex items-start gap-2">
+            <AlertTriangle className="mt-0.5 h-5 w-5" />
+            <div className="font-medium">Usuarios afectados</div>
+          </div>
+          <p className="text-sm">
+            Hay <strong>{users.length} usuarios</strong> asignados a este rol. Debes moverlos a otro rol antes de
+            eliminarlo.
+          </p>
+
+          <ul className="bg-base-100 max-h-32 space-y-1 overflow-y-auto rounded p-2 text-xs">
+            {users.map((u) => (
+              <li key={u.id} className="flex justify-between">
+                <span>{u.person ? `${u.person.names} ${u.person.fatherName}` : u.email}</span>
+                <span className="opacity-50">{u.email}</span>
+              </li>
+            ))}
+          </ul>
+
+          <div className="form-control w-full">
+            <label className="label" htmlFor="target-role-select">
+              <span className="label-text flex items-center gap-2 font-medium">
+                <ArrowRight className="h-4 w-4" />
+                Mover usuarios a:
+              </span>
+            </label>
+            <select
+              id="target-role-select"
+              className="select select-bordered w-full"
+              value={targetRoleId}
+              onChange={(e) => setTargetRoleId(e.target.value)}
+            >
+              <option value="">Selecciona un rol...</option>
+              {availableRoles.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      );
+    }
+
+    return <p className="text-sm opacity-70">No hay usuarios asignados a este rol. Es seguro eliminarlo.</p>;
+  };
+
   return (
     <dialog open className="modal modal-bottom sm:modal-middle">
       <div className="modal-box">
@@ -92,55 +150,7 @@ export function DeleteRoleModal({ isOpen, onClose, role, allRoles }: DeleteRoleM
             <div className="space-y-4 py-4">
               <p>¿Estás seguro que deseas eliminar este rol? Esta acción no se puede deshacer.</p>
 
-              {isLoadingUsers ? (
-                <div className="flex justify-center p-4">
-                  <span className="loading loading-spinner" />
-                </div>
-              ) : hasUsers ? (
-                <div className="bg-warning/10 border-warning/20 space-y-3 rounded-lg border p-4">
-                  <div className="text-warning flex items-start gap-2">
-                    <AlertTriangle className="mt-0.5 h-5 w-5" />
-                    <div className="font-medium">Usuarios afectados</div>
-                  </div>
-                  <p className="text-sm">
-                    Hay <strong>{users.length} usuarios</strong> asignados a este rol. Debes moverlos a otro rol antes
-                    de eliminarlo.
-                  </p>
-
-                  <ul className="bg-base-100 max-h-32 space-y-1 overflow-y-auto rounded p-2 text-xs">
-                    {users.map((u) => (
-                      <li key={u.id} className="flex justify-between">
-                        <span>{u.person ? `${u.person.names} ${u.person.fatherName}` : u.email}</span>
-                        <span className="opacity-50">{u.email}</span>
-                      </li>
-                    ))}
-                  </ul>
-
-                  <div className="form-control w-full">
-                    <label className="label" htmlFor="target-role-select">
-                      <span className="label-text flex items-center gap-2 font-medium">
-                        <ArrowRight className="h-4 w-4" />
-                        Mover usuarios a:
-                      </span>
-                    </label>
-                    <select
-                      id="target-role-select"
-                      className="select select-bordered w-full"
-                      value={targetRoleId}
-                      onChange={(e) => setTargetRoleId(e.target.value)}
-                    >
-                      <option value="">Selecciona un rol...</option>
-                      {availableRoles.map((r) => (
-                        <option key={r.id} value={r.id}>
-                          {r.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              ) : (
-                <p className="text-sm opacity-70">No hay usuarios asignados a este rol. Es seguro eliminarlo.</p>
-              )}
+              {renderUsersContent()}
             </div>
 
             <div className="modal-action">

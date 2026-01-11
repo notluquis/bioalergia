@@ -9,10 +9,10 @@ function normalizeRole(role: string | null | undefined): string {
   return role
     ? role
         .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
+        .replaceAll(/[\u0300-\u036F]/g, "")
         .toLowerCase()
-        .replace(/[^a-z0-9\s]/g, " ")
-        .replace(/\s+/g, " ")
+        .replaceAll(/[^a-z0-9\s]/g, " ")
+        .replaceAll(/\s+/g, " ")
         .trim()
     : "";
 }
@@ -142,7 +142,7 @@ export function detectAllOverlaps(entries: TimesheetEntryWithEmployee[]): Map<st
       overlapsByDate.set(workDate, {
         work_date: workDate,
         employee_count: employeeIds.size,
-        employee_ids: Array.from(employeeIds),
+        employee_ids: [...employeeIds],
         total_overlapping_pairs: overlaps.length,
       });
     }
@@ -176,5 +176,5 @@ export function getOverlappingEmployeesForDate(entries: TimesheetEntryWithEmploy
     }
   }
 
-  return Array.from(overlappingIds);
+  return [...overlappingIds];
 }

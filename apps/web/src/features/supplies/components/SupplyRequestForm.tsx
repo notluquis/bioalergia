@@ -71,8 +71,8 @@ export default function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyR
       toastSuccess("Solicitud de insumo enviada");
       reset();
       onSuccess();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Error al enviar la solicitud";
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Error al enviar la solicitud";
       toastError(message);
     }
   };

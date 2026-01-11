@@ -51,34 +51,40 @@ export default function EmployeeTable({ employees, loading, onEdit, onDeactivate
   const sortedEmployees = (() => {
     if (!table.sortState.column) return employees;
 
-    return [...employees].sort((a, b) => {
+    return [...employees].toSorted((a, b) => {
       const { column, direction } = table.sortState;
       let aValue: string | number;
       let bValue: string | number;
 
       switch (column) {
-        case "name":
+        case "name": {
           aValue = a.full_name;
           bValue = b.full_name;
           break;
-        case "role":
+        }
+        case "role": {
           aValue = a.position;
           bValue = b.position;
           break;
-        case "email":
+        }
+        case "email": {
           aValue = a.person?.email || "";
           bValue = b.person?.email || "";
           break;
-        case "retentionRate":
+        }
+        case "retentionRate": {
           aValue = 0; // Not in schema
           bValue = 0;
           break;
-        case "status":
+        }
+        case "status": {
           aValue = a.status;
           bValue = b.status;
           break;
-        default:
+        }
+        default: {
           return 0;
+        }
       }
 
       if (typeof aValue === "string" && typeof bValue === "string") {
@@ -211,12 +217,11 @@ export default function EmployeeTable({ employees, loading, onEdit, onDeactivate
                         {(() => {
                           const rate = getEmployeeRetentionRate(employee) * 100;
                           // Use 2 decimals if needed (e.g., 15.25), otherwise 1 (e.g., 14.5)
-                          const formatted =
-                            rate % 1 === 0
-                              ? rate.toFixed(1)
-                              : (rate * 10) % 1 === 0
-                                ? rate.toFixed(1)
-                                : rate.toFixed(2);
+                          const formatted = (() => {
+                            if (rate % 1 === 0) return rate.toFixed(1);
+                            if ((rate * 10) % 1 === 0) return rate.toFixed(1);
+                            return rate.toFixed(2);
+                          })();
                           return formatted.replace(".", ",") + "%";
                         })()}
                       </div>
@@ -252,7 +257,7 @@ export default function EmployeeTable({ employees, loading, onEdit, onDeactivate
                   )}
                 </tr>
               ))}
-              {!employees.length && !loading && (
+              {employees.length === 0 && !loading && (
                 <tr>
                   <td
                     colSpan={table.getVisibleColumns(columns).length}
@@ -272,7 +277,7 @@ export default function EmployeeTable({ employees, loading, onEdit, onDeactivate
             </tbody>
           </table>
         </div>
-        {!activeEmployees.length && !loading && (
+        {activeEmployees.length === 0 && !loading && (
           <Alert variant="error">Registra a tu primer trabajador para habilitar la captura de horas.</Alert>
         )}
       </div>

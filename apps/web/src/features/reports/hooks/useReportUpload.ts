@@ -25,8 +25,8 @@ export function useReportUpload(): UseReportUploadResult {
       setMovs(deriveMovements(rows, { accountName: settings.orgName }));
       setFileName(f.name);
       setError(null);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Error al leer el archivo";
+    } catch (error_) {
+      const message = error_ instanceof Error ? error_.message : "Error al leer el archivo";
       setError(message);
       setMovs([]);
       setFileName(null);

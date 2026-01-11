@@ -41,16 +41,16 @@ export function UpdateNotification() {
       }
 
       // Step 3: Now clear all caches (the new SW is in control)
-      if ("caches" in window) {
+      if ("caches" in globalThis) {
         const cacheNames = await caches.keys();
         await Promise.all(cacheNames.map((name) => caches.delete(name)));
       }
 
       // Step 4: Force a complete reload from network
-      window.location.reload();
+      globalThis.location.reload();
     } catch (error) {
       console.error("Update failed", error);
-      window.location.reload();
+      globalThis.location.reload();
     }
   };
 

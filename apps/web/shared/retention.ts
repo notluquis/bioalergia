@@ -39,10 +39,16 @@ export function getEffectiveRetentionRate(employeeRate: number | undefined | nul
  * E.g., 0.145 -> "14,5"  |  0.1525 -> "15,25"
  */
 export function formatRetentionPercent(rate: number): string {
-  if (!rate || isNaN(rate)) return "0,0";
+  if (!rate || Number.isNaN(rate)) return "0,0";
   const percent = rate * 100;
   // Use 2 decimals if needed (e.g., 15.25), otherwise 1 (e.g., 14.5)
-  const formatted =
-    percent % 1 === 0 ? percent.toFixed(1) : (percent * 10) % 1 === 0 ? percent.toFixed(1) : percent.toFixed(2);
+  let formatted: string;
+  if (percent % 1 === 0) {
+    formatted = percent.toFixed(1);
+  } else if ((percent * 10) % 1 === 0) {
+    formatted = percent.toFixed(1);
+  } else {
+    formatted = percent.toFixed(2);
+  }
   return formatted.replace(".", ",");
 }

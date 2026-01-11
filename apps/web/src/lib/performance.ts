@@ -3,35 +3,36 @@
  * Heuristically determines if the device is "low-end" to disable expensive CSS effects.
  */
 
-export function initPerformanceMonitoring() {
-  if (typeof window === "undefined") return;
+interface NavigatorWithMemory extends Navigator {
+  deviceMemory?: number;
+  connection?: {
+    saveData: boolean;
+  };
+}
 
+export function initPerformanceMonitoring() {
   let isLowEnd = false;
+
+  const nav = navigator as NavigatorWithMemory;
 
   // 1. Check Hardware Concurrency (CPU Cores)
   // Most modern phones have 8 cores. Low end often have 4 or less.
-  if (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4) {
+  if (nav.hardwareConcurrency && nav.hardwareConcurrency <= 4) {
     isLowEnd = true;
   }
 
   // 2. Check Device Memory (RAM in GB) - Chrome only
-  // 2. Check Device Memory (RAM in GB) - Chrome only
-  if (navigator.deviceMemory && navigator.deviceMemory < 4) {
+  if (nav.deviceMemory && nav.deviceMemory < 4) {
     isLowEnd = true;
   }
 
   // 3. Check Data Saver / Lite Mode
-  // 3. Check Data Saver / Lite Mode
-  if (navigator.connection && navigator.connection.saveData) {
+  if (nav.connection?.saveData) {
     isLowEnd = true;
   }
 
   // 4. Check Low Power Mode (iOS/Mac) - Media Query
   // This is dynamic, so we use a listener, but for init we check matches
-  /*
-  const isLowPowerMode = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  if (isLowPowerMode) isLowEnd = true;
-  */
 
   // Apply class to HTML
   const html = document.documentElement;

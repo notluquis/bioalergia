@@ -30,6 +30,8 @@ const DistributionChart = lazy(() =>
 dayjs.extend(isoWeek);
 dayjs.locale("es");
 
+const DATE_FORMAT = "YYYY-MM-DD";
+
 type ViewMode = "month" | "range" | "all";
 
 // --- Helper Functions in Scope ---
@@ -80,7 +82,7 @@ function processRawEntries(
     Object.assign(data.dailyBreakdown, { [dateKey]: currentDaily + entry.worked_minutes });
 
     // Weekly
-    const weekKey = dayjs(entry.work_date).startOf("isoWeek").format("YYYY-MM-DD");
+    const weekKey = dayjs(entry.work_date).startOf("isoWeek").format(DATE_FORMAT);
     const currentWeekly = data.weeklyBreakdown[weekKey] ?? 0;
     Object.assign(data.weeklyBreakdown, { [weekKey]: currentWeekly + entry.worked_minutes });
 
@@ -96,10 +98,10 @@ function processRawEntries(
     data.totalDays = uniqueDays;
     data.avgDailyMinutes = uniqueDays > 0 ? Math.round(data.totalMinutes / uniqueDays) : 0;
     data.overtimePercentage =
-      data.totalMinutes > 0 ? parseFloat(((data.totalOvertimeMinutes / data.totalMinutes) * 100).toFixed(1)) : 0;
+      data.totalMinutes > 0 ? Number.parseFloat(((data.totalOvertimeMinutes / data.totalMinutes) * 100).toFixed(1)) : 0;
   }
 
-  return Array.from(map.values());
+  return [...map.values()];
 }
 // ---------------------------------
 
@@ -109,9 +111,10 @@ export default function ReportsPage() {
 
   // Selection state
   const [viewMode, setViewMode] = useState<ViewMode>("month");
-  const [startDate, setStartDate] = useState<string>(() => dayjs().startOf("month").format("YYYY-MM-DD"));
-  const [endDate, setEndDate] = useState<string>(() => dayjs().endOf("month").format("YYYY-MM-DD"));
+  const [startDate, setStartDate] = useState<string>(() => dayjs().startOf("month").format(DATE_FORMAT));
+  const [endDate, setEndDate] = useState<string>(() => dayjs().endOf("month").format(DATE_FORMAT));
   const [granularity, setGranularity] = useState<ReportGranularity>("month");
+  const granularityLabel = { month: "mes", week: "sem", day: "día" }[granularity];
 
   // We need to manage "trigger" state manually or rely on effective params
   const [isReportEnabled, setIsReportEnabled] = useState(false);
@@ -127,7 +130,7 @@ export default function ReportsPage() {
   const [selectedMonth, setSelectedMonth] = useState<string>("");
 
   useEffect(() => {
-    if (months.length && !selectedMonth) {
+    if (months.length > 0 && !selectedMonth) {
       setSelectedMonth(months[0] ?? "");
     }
   }, [months, selectedMonth]);
@@ -158,18 +161,18 @@ export default function ReportsPage() {
 
     if (viewMode === "month") {
       if (!selectedMonth) return null;
-      start = dayjs(`${selectedMonth}-01`).startOf("month").format("YYYY-MM-DD");
-      end = dayjs(`${selectedMonth}-01`).endOf("month").format("YYYY-MM-DD");
+      start = dayjs(`${selectedMonth}-01`).startOf("month").format(DATE_FORMAT);
+      end = dayjs(`${selectedMonth}-01`).endOf("month").format(DATE_FORMAT);
     } else if (viewMode === "all") {
-      const available = Array.from(monthsWithData).sort();
+      const available = [...monthsWithData].toSorted((a, b) => a.localeCompare(b));
       if (available.length > 0) {
-        start = dayjs(`${available[0]}-01`).startOf("month").format("YYYY-MM-DD");
-        end = dayjs(`${available[available.length - 1]}-01`)
+        start = dayjs(`${available[0]}-01`).startOf("month").format(DATE_FORMAT);
+        end = dayjs(`${available.at(-1)}-01`)
           .endOf("month")
-          .format("YYYY-MM-DD");
+          .format(DATE_FORMAT);
       } else {
-        start = dayjs().subtract(1, "year").format("YYYY-MM-DD");
-        end = dayjs().format("YYYY-MM-DD");
+        start = dayjs().subtract(1, "year").format(DATE_FORMAT);
+        end = dayjs().format(DATE_FORMAT);
       }
     }
     return { start, end };
@@ -189,11 +192,10 @@ export default function ReportsPage() {
     enabled: isReportEnabled && selectedEmployeeIds.length > 0 && !!dateParams,
   });
 
-  const error = reportErrorObj
-    ? reportErrorObj instanceof Error
-      ? reportErrorObj.message
-      : String(reportErrorObj)
-    : null;
+  const error = (() => {
+    if (!reportErrorObj) return null;
+    return reportErrorObj instanceof Error ? reportErrorObj.message : String(reportErrorObj);
+  })();
 
   const handleGenerateReport = () => {
     setIsReportEnabled(true);
@@ -382,10 +384,7 @@ export default function ReportsPage() {
                     return (
                       <div key={id} className="badge badge-primary badge-sm gap-1 py-3 text-xs">
                         <span className="max-w-25 truncate">{emp.person?.names.split(" ")[0] ?? emp.full_name}</span>
-                        <button
-                          onClick={() => setSelectedEmployeeIds((p) => p.filter((x) => x !== id))}
-                          className="hover:text-white/80"
-                        >
+                        <button onClick={() => handleEmployeeToggle(id)} className="hover:text-white/80">
                           <X className="h-3 w-3" />
                         </button>
                       </div>
@@ -512,7 +511,7 @@ export default function ReportsPage() {
                   value={stats?.averageHours ?? 0}
                   icon={BarChart3}
                   className="text-secondary"
-                  subtitle={`Por ${granularity === "month" ? "mes" : granularity === "week" ? "sem" : "día"}`}
+                  subtitle={`Por ${granularityLabel}`}
                 />
                 <StatCard
                   title="DÍAS TRAB."
@@ -523,15 +522,11 @@ export default function ReportsPage() {
                 />
                 <StatCard
                   title="PROM. DIARIO"
-                  value={
-                    reportData.length
-                      ? parseFloat(
-                          (reportData.reduce((acc, e) => acc + e.avgDailyMinutes, 0) / reportData.length / 60).toFixed(
-                            1
-                          )
-                        )
-                      : 0
-                  }
+                  value={(() => {
+                    if (reportData.length === 0) return 0;
+                    const avg = reportData.reduce((acc, e) => acc + e.avgDailyMinutes, 0) / reportData.length / 60;
+                    return Number.parseFloat(avg.toFixed(1));
+                  })()}
                   suffix="h"
                   icon={TrendingUp}
                   className="text-success"
@@ -599,7 +594,7 @@ export default function ReportsPage() {
                             <td className="text-right font-medium">{emp.totalDays}</td>
                             <td className="text-right font-mono">{minutesToTime(emp.avgDailyMinutes)}</td>
                             <td className="text-right font-mono text-base">
-                              {parseFloat((emp.totalMinutes / 60).toFixed(1))}
+                              {Number.parseFloat((emp.totalMinutes / 60).toFixed(1))}
                             </td>
                           </tr>
                         ))}

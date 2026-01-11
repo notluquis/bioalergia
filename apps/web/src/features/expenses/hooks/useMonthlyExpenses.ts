@@ -28,6 +28,9 @@ export type ExpenseFilters = {
 // Update payload matches Create payload for PUT operations
 type UpdateMonthlyExpensePayload = CreateMonthlyExpensePayload;
 
+const MONTHLY_EXPENSES_QUERY_KEY = "monthly-expenses";
+const MONTHLY_EXPENSES_STATS_QUERY_KEY = "monthly-expenses-stats";
+
 export function useMonthlyExpenses() {
   const { can } = useAuth();
   const queryClient = useQueryClient();
@@ -54,13 +57,13 @@ export function useMonthlyExpenses() {
     isLoading: loadingList,
     error: listError,
   } = useQuery({
-    queryKey: ["monthly-expenses", filters.from, filters.to],
+    queryKey: [MONTHLY_EXPENSES_QUERY_KEY, filters.from, filters.to],
     queryFn: async () => {
       const response = await fetchMonthlyExpenses({
         from: filters.from,
         to: filters.to,
       });
-      return response.expenses.map(normalizeExpense);
+      return response.expenses.map((e) => normalizeExpense(e));
     },
     enabled: canView,
   });
@@ -69,7 +72,7 @@ export function useMonthlyExpenses() {
 
   // 2. Fetch Stats
   const { data: statsData, isLoading: statsLoading } = useQuery({
-    queryKey: ["monthly-expenses-stats", filters.from, filters.to, filters.category],
+    queryKey: [MONTHLY_EXPENSES_STATS_QUERY_KEY, filters.from, filters.to, filters.category],
     queryFn: async () => {
       const response = await fetchMonthlyExpenseStats({
         from: filters.from,
@@ -106,8 +109,8 @@ export function useMonthlyExpenses() {
     mutationFn: createMonthlyExpense,
     onSuccess: (response) => {
       const normalized = normalizeExpenseDetail(response.expense);
-      queryClient.invalidateQueries({ queryKey: ["monthly-expenses"] });
-      queryClient.invalidateQueries({ queryKey: ["monthly-expenses-stats"] });
+      queryClient.invalidateQueries({ queryKey: [MONTHLY_EXPENSES_QUERY_KEY] });
+      queryClient.invalidateQueries({ queryKey: [MONTHLY_EXPENSES_STATS_QUERY_KEY] });
       setSelectedId(normalized.publicId);
       setCreateOpen(false);
     },
@@ -121,8 +124,8 @@ export function useMonthlyExpenses() {
       return updateMonthlyExpense(id, payload);
     },
     onSuccess: (response) => {
-      queryClient.invalidateQueries({ queryKey: ["monthly-expenses"] });
-      queryClient.invalidateQueries({ queryKey: ["monthly-expenses-stats"] });
+      queryClient.invalidateQueries({ queryKey: [MONTHLY_EXPENSES_QUERY_KEY] });
+      queryClient.invalidateQueries({ queryKey: [MONTHLY_EXPENSES_STATS_QUERY_KEY] });
       queryClient.setQueryData(
         ["monthly-expense-detail", response.expense.publicId],
         normalizeExpenseDetail(response.expense)
@@ -138,8 +141,8 @@ export function useMonthlyExpenses() {
       return linkMonthlyExpenseTransaction(id, payload);
     },
     onSuccess: (response) => {
-      queryClient.invalidateQueries({ queryKey: ["monthly-expenses"] });
-      queryClient.invalidateQueries({ queryKey: ["monthly-expenses-stats"] });
+      queryClient.invalidateQueries({ queryKey: [MONTHLY_EXPENSES_QUERY_KEY] });
+      queryClient.invalidateQueries({ queryKey: [MONTHLY_EXPENSES_STATS_QUERY_KEY] });
       queryClient.setQueryData(
         ["monthly-expense-detail", response.expense.publicId],
         normalizeExpenseDetail(response.expense)
@@ -156,8 +159,8 @@ export function useMonthlyExpenses() {
       return unlinkMonthlyExpenseTransaction(id, transactionId);
     },
     onSuccess: (response) => {
-      queryClient.invalidateQueries({ queryKey: ["monthly-expenses"] });
-      queryClient.invalidateQueries({ queryKey: ["monthly-expenses-stats"] });
+      queryClient.invalidateQueries({ queryKey: [MONTHLY_EXPENSES_QUERY_KEY] });
+      queryClient.invalidateQueries({ queryKey: [MONTHLY_EXPENSES_STATS_QUERY_KEY] });
       queryClient.setQueryData(
         ["monthly-expense-detail", response.expense.publicId],
         normalizeExpenseDetail(response.expense)
@@ -207,7 +210,10 @@ export function useMonthlyExpenses() {
     await unlinkMutation.mutateAsync({ id: publicId, transactionId });
   };
 
-  const error = listError ? (listError instanceof Error ? listError.message : String(listError)) : null;
+  const error = (() => {
+    if (listError instanceof Error) return listError.message;
+    return listError ? String(listError) : null;
+  })();
 
   return {
     canManage,

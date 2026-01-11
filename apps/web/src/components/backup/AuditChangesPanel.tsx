@@ -41,28 +41,36 @@ interface AuditStats {
 
 function getOperationIcon(op: string) {
   switch (op) {
-    case "INSERT":
+    case "INSERT": {
       return <Plus className="text-success size-4" />;
-    case "UPDATE":
+    }
+    case "UPDATE": {
       return <Pencil className="text-warning size-4" />;
-    case "DELETE":
+    }
+    case "DELETE": {
       return <Trash2 className="text-error size-4" />;
-    default:
+    }
+    default: {
       return <Database className="size-4" />;
+    }
   }
 }
 
 function getOperationLabel(op: string) {
   switch (op) {
     case "INSERT":
-    case "CREATE":
+    case "CREATE": {
       return "Creado";
-    case "UPDATE":
+    }
+    case "UPDATE": {
       return "Modificado";
-    case "DELETE":
+    }
+    case "DELETE": {
       return "Eliminado";
-    default:
+    }
+    default: {
       return op;
+    }
   }
 }
 
@@ -103,7 +111,6 @@ export default function AuditChangesPanel() {
 
   const byEntityCount: Record<string, number> = {};
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   auditLogs?.forEach((log: any) => {
     // Count operations
     const action = log.action as string;
@@ -122,14 +129,13 @@ export default function AuditChangesPanel() {
       .filter(([, count]) => count > 0)
       .map(([operation, count]) => ({ operation, count })),
     byTable: Object.entries(byEntityCount)
-      .sort((a, b) => b[1] - a[1])
+      .toSorted((a, b) => b[1] - a[1])
       .map(([table_name, count]) => ({ table_name, count })),
   };
 
   // Adapter to match the UI's expected format
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   const changes = (auditLogs || []).map((log: any) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const details = (log.details as any) || {};
     return {
       id: String(log.id),
@@ -242,7 +248,6 @@ export default function AuditChangesPanel() {
                 <p>No hay cambios registrados aún</p>
               </div>
             ) : (
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               changes.slice(0, 20).map((change: any) => (
                 <div key={change.id} className="p-3">
                   <div className="flex items-center justify-between">
@@ -279,14 +284,13 @@ export default function AuditChangesPanel() {
                         variant="ghost"
                         size="sm"
                         onClick={() => {
-                          const opText =
-                            change.operation === "INSERT"
-                              ? "eliminar este registro"
-                              : change.operation === "DELETE"
-                                ? "recrear este registro"
-                                : "restaurar los valores anteriores";
+                          const opText = (() => {
+                            if (change.operation === "INSERT") return "eliminar este registro";
+                            if (change.operation === "DELETE") return "recrear este registro";
+                            return "restaurar los valores anteriores";
+                          })();
                           if (
-                            window.confirm(
+                            globalThis.confirm(
                               `¿Estás seguro de que deseas ${opText}?\n\nTabla: ${change.table_name}\nID: ${change.row_id}`
                             )
                           ) {

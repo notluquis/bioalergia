@@ -28,6 +28,46 @@ interface TimesheetDetailTableProps {
   employeeOptions: Employee[];
 }
 
+// Toggle helper for per-row actions menu
+const toggleMenu = (id: string) => {
+  const el = document.querySelector(`#${id}`);
+  if (!el) return;
+  el.classList.toggle("hidden");
+};
+
+// Función para convertir HH:MM a minutos
+const timeToMinutes = (time: string): number | null => {
+  if (!/^\d{1,2}:\d{2}$/.test(time)) return null;
+  const parts = time.split(":").map(Number);
+
+  const [hours, minutes] = parts;
+
+  if (hours === undefined || minutes === undefined) return null;
+  if (hours < 0 || hours > 23 || minutes < 0 || minutes >= 60) return null;
+  return hours * 60 + minutes;
+};
+
+// Función para calcular horas trabajadas entre entrada y salida
+const calculateWorkedHours = (startTime: string, endTime: string) => {
+  if (!startTime || !endTime || startTime === "00:00" || endTime === "00:00") return "00:00";
+
+  const start = timeToMinutes(startTime);
+  const end = timeToMinutes(endTime);
+
+  if (start === null || end === null) return "00:00";
+
+  let totalMinutes = end - start;
+
+  // Si end < start, asumimos que cruza medianoche (ej: 22:00 a 06:00)
+  if (totalMinutes < 0) {
+    totalMinutes = 24 * 60 + totalMinutes;
+  }
+
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
+};
+
 export default function TimesheetDetailTable({
   bulkRows,
   initialRows,
@@ -49,46 +89,6 @@ export default function TimesheetDetailTable({
   const [openOvertimeEditors, setOpenOvertimeEditors] = useState<Set<string>>(new Set());
   const [commentPreview, setCommentPreview] = useState<{ date: string; text: string } | null>(null);
   const [notWorkedDays, setNotWorkedDays] = useState<Set<string>>(new Set());
-
-  // Toggle helper for per-row actions menu
-  const toggleMenu = (id: string) => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.classList.toggle("hidden");
-  };
-
-  // Función para calcular horas trabajadas entre entrada y salida
-  const calculateWorkedHours = (startTime: string, endTime: string) => {
-    if (!startTime || !endTime || startTime === "00:00" || endTime === "00:00") return "00:00";
-
-    const start = timeToMinutes(startTime);
-    const end = timeToMinutes(endTime);
-
-    if (start === null || end === null) return "00:00";
-
-    let totalMinutes = end - start;
-
-    // Si end < start, asumimos que cruza medianoche (ej: 22:00 a 06:00)
-    if (totalMinutes < 0) {
-      totalMinutes = 24 * 60 + totalMinutes;
-    }
-
-    const hours = Math.floor(totalMinutes / 60);
-    const minutes = totalMinutes % 60;
-    return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
-  };
-
-  // Función para convertir HH:MM a minutos
-  const timeToMinutes = (time: string): number | null => {
-    if (!/^[0-9]{1,2}:[0-9]{2}$/.test(time)) return null;
-    const parts = time.split(":").map(Number);
-
-    const [hours, minutes] = parts;
-
-    if (hours === undefined || minutes === undefined) return null;
-    if (hours < 0 || hours > 23 || minutes < 0 || minutes >= 60) return null;
-    return hours * 60 + minutes;
-  };
 
   // Función para calcular horas trabajadas totales (normal + extra)
   // Cerrar menús dropdown al hacer clic fuera
@@ -220,10 +220,10 @@ export default function TimesheetDetailTable({
                 </td>
               </tr>
             )}
-            {!loadingDetail && !bulkRows.length && (
+            {!loadingDetail && bulkRows.length === 0 && (
               <tr>
                 <td colSpan={7} className="text-base-content/60 px-4 py-6 text-center">
-                  {employeeOptions.length
+                  {employeeOptions.length > 0
                     ? "Selecciona un trabajador para ver o editar sus horas."
                     : "Registra a trabajadores activos para comenzar a cargar horas."}
                 </td>

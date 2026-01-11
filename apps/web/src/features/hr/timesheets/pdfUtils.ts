@@ -28,7 +28,7 @@ export async function generateTimesheetPdfBase64(
       const logoBlob = await ky.get("/logo_sin_eslogan.png").blob();
       const logoBase64 = await new Promise<string>((resolve) => {
         const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
+        reader.addEventListener("load", () => resolve(reader.result as string));
         reader.readAsDataURL(logoBlob);
       });
       doc.addImage(logoBase64, "PNG", margin, 5, 40, 12);
@@ -82,7 +82,7 @@ export async function generateTimesheetPdfBase64(
       .filter((row) => row.entrada || row.salida)
       .map((row) => [dayjs(row.date).format("DD-MM-YYYY"), row.entrada || "-", row.salida || "-", row.overtime || "-"]);
 
-    if (detailBody.length) {
+    if (detailBody.length > 0) {
       autoTable(doc, {
         head: [["Fecha", "Entrada", "Salida", "Extras"]],
         body: detailBody,
@@ -98,16 +98,16 @@ export async function generateTimesheetPdfBase64(
     const pdfBlob = doc.output("blob");
     return new Promise((resolve) => {
       const reader = new FileReader();
-      reader.onload = () => {
+      reader.addEventListener("load", () => {
         const dataUrl = reader.result as string;
         const base64 = dataUrl.split(",")[1] || "";
         resolve(base64);
-      };
-      reader.onerror = () => resolve(null);
+      });
+      reader.addEventListener("error", () => resolve(null), { once: true });
       reader.readAsDataURL(pdfBlob);
     });
-  } catch (err) {
-    console.error("Error generating PDF:", err);
+  } catch (error) {
+    console.error("Error generating PDF:", error);
     return null;
   }
 }

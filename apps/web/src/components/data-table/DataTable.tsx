@@ -32,13 +32,12 @@ const getCommonPinningStyles = <TData,>(column: Column<TData>): CSSProperties =>
   // const isLastLeft = isPinned === 'left' && column.getIsLastColumn('left')
   // const isFirstRight = isPinned === 'right' && column.getIsFirstColumn('right')
 
+  let boxShadow: string | undefined;
+  if (isPinned === "left") boxShadow = "-4px 0 4px -4px gray inset";
+  if (isPinned === "right") boxShadow = "4px 0 4px -4px gray inset";
+
   return {
-    boxShadow:
-      isPinned === "left"
-        ? "-4px 0 4px -4px gray inset"
-        : isPinned === "right"
-          ? "4px 0 4px -4px gray inset"
-          : undefined,
+    boxShadow,
     left: isPinned === "left" ? `${column.getStart("left")}px` : undefined,
     right: isPinned === "right" ? `${column.getAfter("right")}px` : undefined,
     opacity: isPinned ? 0.95 : 1,
@@ -141,7 +140,7 @@ export function DataTable<TData, TValue>({
               ))}
             </thead>
             <tbody>
-              {isLoading ? (
+              {isLoading && (
                 <tr>
                   <td colSpan={columns.length} className="px-4 py-12 text-center">
                     <div className="flex flex-col items-center justify-center gap-2">
@@ -150,7 +149,18 @@ export function DataTable<TData, TValue>({
                     </div>
                   </td>
                 </tr>
-              ) : table.getRowModel().rows?.length ? (
+              )}
+
+              {!isLoading && table.getRowModel().rows?.length === 0 && (
+                <tr>
+                  <td colSpan={columns.length} className="text-base-content/60 h-24 text-center italic">
+                    No hay resultados.
+                  </td>
+                </tr>
+              )}
+
+              {!isLoading &&
+                table.getRowModel().rows?.length > 0 &&
                 table.getRowModel().rows.map((row) => (
                   <>
                     <tr
@@ -183,14 +193,7 @@ export function DataTable<TData, TValue>({
                       </tr>
                     )}
                   </>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={columns.length} className="text-base-content/60 h-24 text-center italic">
-                    No hay resultados.
-                  </td>
-                </tr>
-              )}
+                ))}
             </tbody>
           </table>
         </div>

@@ -1,8 +1,7 @@
-import type { DbMovement } from "@/features/finance/types";
+import type { Transaction } from "@/features/finance/types";
 import { CounterpartCategory, PersonType } from "@/types/schema";
 
 export type CounterpartPersonType = PersonType;
-export type { CounterpartCategory };
 
 export type Counterpart = {
   id: number;
@@ -72,12 +71,12 @@ export type AccountTransactionsState = {
   expanded: boolean;
   loading: boolean;
   error: string | null;
-  rows: DbMovement[];
+  recentTransactions?: Transaction[];
 };
 
 export type TransactionsApiResponse = {
   status: "ok" | "error";
-  data: DbMovement[];
+  data: Transaction[];
   message?: string;
 };
 
@@ -89,3 +88,5 @@ export type AccountGroup = {
   concept: string;
   accounts: CounterpartAccount[];
 };
+
+export { type CounterpartCategory } from "@/types/schema";

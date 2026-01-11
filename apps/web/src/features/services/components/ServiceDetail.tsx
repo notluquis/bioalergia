@@ -49,14 +49,17 @@ export function ServiceDetail({
   const statusBadge = (() => {
     if (!service) return { label: "", className: "" };
     switch (service.status) {
-      case "INACTIVE":
+      case "INACTIVE": {
         return { label: "Sin pendientes", className: "bg-emerald-100 text-emerald-700" };
-      case "ARCHIVED":
+      }
+      case "ARCHIVED": {
         return { label: "Archivado", className: "bg-base-200 text-base-content" };
-      default:
+      }
+      default: {
         return service.overdue_count > 0
           ? { label: "Vencidos", className: "bg-rose-100 text-rose-700" }
           : { label: "Activo", className: "bg-amber-100 text-amber-700" };
+      }
     }
   })();
 
@@ -131,7 +134,7 @@ export function ServiceDetail({
     const labels: Record<ServiceLateFeeMode, string> = {
       NONE: "Sin recargo",
       FIXED: service.late_fee_value ? `$${service.late_fee_value.toLocaleString("es-CL")}` : "Monto fijo",
-      PERCENTAGE: service.late_fee_value != null ? `${service.late_fee_value}%` : "% del monto",
+      PERCENTAGE: service.late_fee_value == null ? "% del monto" : `${service.late_fee_value}%`,
     };
     return labels[service.late_fee_mode];
   })();
@@ -152,8 +155,8 @@ export function ServiceDetail({
       await onRegenerate(regenerateForm);
       setRegenerateOpen(false);
       setRegenerateForm({});
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "No se pudo regenerar el cronograma";
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "No se pudo regenerar el cronograma";
       setRegenerateError(message);
     } finally {
       setRegenerating(false);
@@ -255,13 +258,18 @@ export function ServiceDetail({
         <div>
           <p className="text-base-content/50 text-xs tracking-wide uppercase">Emisión</p>
           <p className="text-base-content font-semibold">
-            {service.emission_mode === "FIXED_DAY" && service.emission_day
-              ? `Día ${service.emission_day}`
-              : service.emission_mode === "DATE_RANGE" && service.emission_start_day && service.emission_end_day
-                ? `Entre día ${service.emission_start_day} y ${service.emission_end_day}`
-                : service.emission_mode === "SPECIFIC_DATE" && service.emission_exact_date
-                  ? `Fecha ${dayjs(service.emission_exact_date).format("DD MMM YYYY")}`
-                  : "Sin especificar"}
+            {(() => {
+              if (service.emission_mode === "FIXED_DAY" && service.emission_day) {
+                return `Día ${service.emission_day}`;
+              }
+              if (service.emission_mode === "DATE_RANGE" && service.emission_start_day && service.emission_end_day) {
+                return `Entre día ${service.emission_start_day} y ${service.emission_end_day}`;
+              }
+              if (service.emission_mode === "SPECIFIC_DATE" && service.emission_exact_date) {
+                return `Fecha ${dayjs(service.emission_exact_date).format("DD MMM YYYY")}`;
+              }
+              return "Sin especificar";
+            })()}
           </p>
         </div>
         <div>

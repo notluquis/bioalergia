@@ -15,14 +15,18 @@ interface DailyEventCardProps {
  */
 function getCategoryIndicatorColor(category: string | null | undefined): string {
   switch (category) {
-    case "Tratamiento subcutáneo":
+    case "Tratamiento subcutáneo": {
       return "bg-blue-400";
-    case "Test y exámenes":
+    }
+    case "Test y exámenes": {
       return "bg-emerald-400";
-    case "Inyección":
+    }
+    case "Inyección": {
       return "bg-amber-400";
-    default:
+    }
+    default: {
       return "bg-gray-300";
+    }
   }
 }
 

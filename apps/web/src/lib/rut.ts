@@ -1,11 +1,11 @@
 export function normalizeRut(value: string | null | undefined): string | null {
   if (!value) return null;
-  const cleaned = value.toUpperCase().replace(/[^0-9K]/g, "");
+  const cleaned = value.toUpperCase().replaceAll(/[^0-9K]/g, "");
   if (!cleaned) return null;
   const body = cleaned.slice(0, -1);
   const dv = cleaned.slice(-1);
-  if (!body || !/^[0-9]+$/.test(body)) return null;
-  return `${parseInt(body, 10)}-${dv}`;
+  if (!body || !/^\d+$/.test(body)) return null;
+  return `${Number.parseInt(body, 10)}-${dv}`;
 }
 
 export function formatRut(value: string | null | undefined): string {
@@ -15,7 +15,7 @@ export function formatRut(value: string | null | undefined): string {
   if (!normalized) return "";
   const [body, dv] = normalized.split("-");
   if (!body || !dv) return "";
-  const formattedBody = body.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  const formattedBody = new Intl.NumberFormat("es-CL").format(Number(body));
   return `${formattedBody}-${dv}`;
 }
 
@@ -30,7 +30,7 @@ export function validateRut(value: string | null | undefined): boolean {
 
   // Iterate backwards over the body digits
   for (let i = body.length - 1; i >= 0; i--) {
-    sum += parseInt(body.charAt(i), 10) * multiplier;
+    sum += Number.parseInt(body.charAt(i), 10) * multiplier;
     multiplier = multiplier === 7 ? 2 : multiplier + 1;
   }
 

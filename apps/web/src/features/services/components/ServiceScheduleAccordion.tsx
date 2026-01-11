@@ -35,9 +35,9 @@ function ServiceScheduleAccordion({
   onUnlinkPayment,
 }: ServiceScheduleAccordionProps) {
   const groups = (() => {
-    if (!schedules.length) return [];
+    if (schedules.length === 0) return [];
 
-    const sorted = [...schedules].sort((a, b) => dayjs(a.due_date).valueOf() - dayjs(b.due_date).valueOf());
+    const sorted = [...schedules].toSorted((a, b) => dayjs(a.due_date).valueOf() - dayjs(b.due_date).valueOf());
 
     const today = dayjs().startOf("day");
     const map = new Map<string, ScheduleGroup>();
@@ -49,19 +49,32 @@ function ServiceScheduleAccordion({
         const diff = dueDate.diff(today, "day");
         let label: string;
 
-        if (diff === 0) label = "Hoy";
-        else if (diff === 1) label = "Mañana";
-        else if (diff === -1) label = "Ayer";
-        else if (diff > 1 && diff <= 5) label = `En ${diff} días`;
-        else if (diff < -1 && diff >= -5) label = `Hace ${Math.abs(diff)} días`;
-        else label = capitalize(dateFormatter.format(dueDate.toDate()));
+        switch (diff) {
+          case 0: {
+            label = "Hoy";
+            break;
+          }
+          case 1: {
+            label = "Mañana";
+            break;
+          }
+          case -1: {
+            label = "Ayer";
+            break;
+          }
+          default: {
+            if (diff > 1 && diff <= 5) label = `En ${diff} días`;
+            else if (diff < -1 && diff >= -5) label = `Hace ${Math.abs(diff)} días`;
+            else label = capitalize(dateFormatter.format(dueDate.toDate()));
+          }
+        }
 
         map.set(key, { dateKey: key, label, items: [] });
       }
       map.get(key)!.items.push(schedule);
     }
 
-    return Array.from(map.values()).sort((a, b) => (a.dateKey > b.dateKey ? 1 : -1));
+    return [...map.values()].toSorted((a, b) => (a.dateKey > b.dateKey ? 1 : -1));
   })();
 
   const [expanded, setExpanded] = useState<Record<string, boolean>>(() => {
@@ -87,7 +100,7 @@ function ServiceScheduleAccordion({
     setExpanded((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  if (!groups.length) {
+  if (groups.length === 0) {
     return (
       <section className="border-base-300 bg-base-200 text-base-content space-y-3 rounded-2xl border p-4 text-sm">
         <header className="flex items-center justify-between">
@@ -205,7 +218,7 @@ function ServiceScheduleAccordion({
 export default ServiceScheduleAccordion;
 
 function capitalize(value: string) {
-  if (!value.length) return value;
+  if (value.length === 0) return value;
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 

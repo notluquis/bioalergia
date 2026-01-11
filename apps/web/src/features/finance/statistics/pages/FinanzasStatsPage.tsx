@@ -22,6 +22,8 @@ import MovementTypeList from "../components/MovementTypeList";
 import TopParticipantsSection from "../components/TopParticipantsSection";
 import { useStatsData } from "../hooks/useStatsData";
 
+const DATE_FORMAT = "YYYY-MM-DD";
+
 dayjs.locale("es");
 
 // Quick date ranges
@@ -29,32 +31,32 @@ const QUICK_MONTHS = [
   {
     label: "Este mes",
     value: "current",
-    from: dayjs().startOf("month").format("YYYY-MM-DD"),
-    to: dayjs().endOf("month").format("YYYY-MM-DD"),
+    from: dayjs().startOf("month").format(DATE_FORMAT),
+    to: dayjs().endOf("month").format(DATE_FORMAT),
   },
   {
     label: "Mes pasado",
     value: "previous",
-    from: dayjs().subtract(1, "month").startOf("month").format("YYYY-MM-DD"),
-    to: dayjs().subtract(1, "month").endOf("month").format("YYYY-MM-DD"),
+    from: dayjs().subtract(1, "month").startOf("month").format(DATE_FORMAT),
+    to: dayjs().subtract(1, "month").endOf("month").format(DATE_FORMAT),
   },
   {
     label: "Últimos 3 meses",
     value: "3months",
-    from: dayjs().subtract(3, "month").startOf("month").format("YYYY-MM-DD"),
-    to: dayjs().endOf("month").format("YYYY-MM-DD"),
+    from: dayjs().subtract(3, "month").startOf("month").format(DATE_FORMAT),
+    to: dayjs().endOf("month").format(DATE_FORMAT),
   },
   {
     label: "Últimos 6 meses",
     value: "6months",
-    from: dayjs().subtract(6, "month").startOf("month").format("YYYY-MM-DD"),
-    to: dayjs().endOf("month").format("YYYY-MM-DD"),
+    from: dayjs().subtract(6, "month").startOf("month").format(DATE_FORMAT),
+    to: dayjs().endOf("month").format(DATE_FORMAT),
   },
   {
     label: "Este año",
     value: "year",
-    from: dayjs().startOf("year").format("YYYY-MM-DD"),
-    to: dayjs().endOf("year").format("YYYY-MM-DD"),
+    from: dayjs().startOf("year").format(DATE_FORMAT),
+    to: dayjs().endOf("year").format(DATE_FORMAT),
   },
 ];
 
@@ -274,7 +276,7 @@ export default function FinanzasStatsPage() {
       )}
 
       {/* Empty State */}
-      {!loading && !error && data && data.monthly.length === 0 && (
+      {!loading && !error && data?.monthly.length === 0 && (
         <Alert variant="warning">No se encontraron movimientos en el rango seleccionado.</Alert>
       )}
     </section>

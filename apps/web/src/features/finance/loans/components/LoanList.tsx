@@ -30,8 +30,12 @@ export function LoanList({ loans, selectedId, onSelect, onCreateRequest, canMana
         {loans.map((loan) => {
           const isActive = loan.public_id === selectedId;
           const paidRatio = loan.total_expected > 0 ? loan.total_paid / loan.total_expected : 0;
-          const indicatorColor =
-            loan.status === "COMPLETED" ? "bg-success" : loan.status === "DEFAULTED" ? "bg-error" : "bg-warning";
+          const indicatorColors = {
+            COMPLETED: "bg-success",
+            DEFAULTED: "bg-error",
+            ACTIVE: "bg-warning",
+          };
+          const indicatorColor = indicatorColors[loan.status as keyof typeof indicatorColors] || "bg-warning";
 
           return (
             <button
@@ -71,7 +75,7 @@ export function LoanList({ loans, selectedId, onSelect, onCreateRequest, canMana
             </button>
           );
         })}
-        {!loans.length && (
+        {loans.length === 0 && (
           <p className="border-base-300 bg-base-200 text-base-content/60 rounded-2xl border border-dashed p-4 text-xs">
             Aún no registras préstamos. Crea el primero para comenzar a seguir cuotas y pagos.
           </p>

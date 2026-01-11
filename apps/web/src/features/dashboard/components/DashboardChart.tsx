@@ -13,7 +13,7 @@ export default function DashboardChart({
     return <div className="surface-recessed text-base-content p-6 text-sm">Cargando actividad...</div>;
   }
 
-  if (!data.length) {
+  if (data.length === 0) {
     return <div className="surface-recessed text-base-content p-6 text-sm">No se registran movimientos recientes.</div>;
   }
 

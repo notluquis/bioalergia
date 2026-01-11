@@ -56,8 +56,11 @@ function TimesheetRow({
   if (hasComment) tooltipParts.push(`Comentario: ${row.comment.trim()}`);
 
   const status = computeStatus(row, dirty);
-  const statusColor =
-    status === "Registrado" ? "text-success" : status === "Sin guardar" ? "text-warning" : "text-base-content/50";
+  const statusColor = (() => {
+    if (status === "Registrado") return "text-success";
+    if (status === "Sin guardar") return "text-warning";
+    return "text-base-content/50";
+  })();
 
   return (
     <tr
@@ -108,36 +111,40 @@ function TimesheetRow({
       <td className="text-base-content px-3 py-2 tabular-nums">{worked}</td>
       {/* Extras */}
       <td className="px-3 py-2">
-        {!row.overtime?.trim() && !isOvertimeOpen ? (
-          canEditRow ? (
-            <Button
-              type="button"
-              size="sm"
-              variant="secondary"
-              className="border-base-300 bg-base-200 text-primary hover:bg-base-200 inline-flex h-8 w-8 items-center justify-center rounded-full border shadow"
-              aria-label="Agregar horas extra"
-              title="Agregar horas extra"
-              onClick={() => onOpenOvertime(row.date)}
-            >
-              +
-            </Button>
-          ) : (
-            <span className="text-base-content/50">—</span>
-          )
-        ) : (
-          <TimeInput
-            value={row.overtime}
-            onChange={(value) => {
-              onRowChange(index, "overtime", value);
-              if (!value.trim()) {
-                onCloseOvertime(row.date);
-              }
-            }}
-            placeholder="HH:MM"
-            className="w-28"
-            disabled={!canEditRow}
-          />
-        )}
+        {(() => {
+          if (!row.overtime?.trim() && !isOvertimeOpen) {
+            if (canEditRow) {
+              return (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  className="border-base-300 bg-base-200 text-primary hover:bg-base-200 inline-flex h-8 w-8 items-center justify-center rounded-full border shadow"
+                  aria-label="Agregar horas extra"
+                  title="Agregar horas extra"
+                  onClick={() => onOpenOvertime(row.date)}
+                >
+                  +
+                </Button>
+              );
+            }
+            return <span className="text-base-content/50">—</span>;
+          }
+          return (
+            <TimeInput
+              value={row.overtime}
+              onChange={(value) => {
+                onRowChange(index, "overtime", value);
+                if (!value.trim()) {
+                  onCloseOvertime(row.date);
+                }
+              }}
+              placeholder="HH:MM"
+              className="w-28"
+              disabled={!canEditRow}
+            />
+          );
+        })()}
       </td>
       {/* Estado + indicador unificado "!" */}
       <td className={`px-3 py-2 text-xs font-semibold tracking-wide uppercase ${statusColor} relative`}>

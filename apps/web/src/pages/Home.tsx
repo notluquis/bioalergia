@@ -56,13 +56,13 @@ export default function Home() {
 
   const recentMovements = recentMovementsQuery.data ?? [];
 
-  const totals = !stats
-    ? { in: 0, out: 0, net: 0 }
-    : {
+  const totals = stats
+    ? {
         in: stats.totals?.IN ?? 0,
         out: stats.totals?.OUT ?? 0,
         net: (stats.totals?.IN ?? 0) - (stats.totals?.OUT ?? 0),
-      };
+      }
+    : { in: 0, out: 0, net: 0 };
 
   if (!canReadDashboard) {
     return <div className="text-base-content/60 p-8 text-center">No tienes permisos para ver el panel principal.</div>;

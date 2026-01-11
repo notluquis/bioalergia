@@ -18,7 +18,7 @@ const moneyColumn = (
   cell: ({ row }) => {
     const amount = row.getValue(accessorKey) as number | null;
     const currency = row.original.transactionCurrency;
-    if (amount === null || amount === undefined) return <div className={`text-${align}`}>-</div>;
+    if (amount == null) return <div className={`text-${align}`}>-</div>;
 
     let className = `text-${align}`;
     if (accessorKey === "settlementNetAmount" && amount > 0) className += " text-success font-medium";

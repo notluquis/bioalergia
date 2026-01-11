@@ -127,31 +127,39 @@ function CalendarDailyPage() {
 
       {/* Main Content - Events List */}
       <div className="mt-6 space-y-3">
-        {loading && !daily ? (
-          <CalendarSkeleton days={1} />
-        ) : !selectedDayEntry || !hasEvents ? (
-          <div className="border-base-200 bg-base-100/50 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed py-12 text-center">
-            <div className="bg-base-200 mb-3 rounded-full p-3">
-              <Filter className="text-base-content/30 h-6 w-6" />
-            </div>
-            <h3 className="text-base-content/70 font-semibold">Sin eventos</h3>
-            <p className="text-base-content/50 mt-1 max-w-xs text-sm">
-              No hay eventos para el {dayjs(selectedDate).format("DD [de] MMMM")}.
-            </p>
-          </div>
-        ) : (
-          <>
-            {selectedDayEntry.events.map((event) => (
-              <DailyEventCard key={event.eventId} event={event} />
-            ))}
+        {(() => {
+          if (loading && !daily) {
+            return <CalendarSkeleton days={1} />;
+          }
 
-            {/* Footer */}
-            <div className="text-base-content/40 flex justify-center pt-2 text-xs">
-              {selectedDayEntry.total} evento{selectedDayEntry.total !== 1 ? "s" : ""} ·{" "}
-              {dayjs(selectedDate).format("dddd, D [de] MMMM")}
-            </div>
-          </>
-        )}
+          if (!selectedDayEntry || !hasEvents) {
+            return (
+              <div className="border-base-200 bg-base-100/50 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed py-12 text-center">
+                <div className="bg-base-200 mb-3 rounded-full p-3">
+                  <Filter className="text-base-content/30 h-6 w-6" />
+                </div>
+                <h3 className="text-base-content/70 font-semibold">Sin eventos</h3>
+                <p className="text-base-content/50 mt-1 max-w-xs text-sm">
+                  No hay eventos para el {dayjs(selectedDate).format("DD [de] MMMM")}.
+                </p>
+              </div>
+            );
+          }
+
+          return (
+            <>
+              {selectedDayEntry.events.map((event) => (
+                <DailyEventCard key={event.eventId} event={event} />
+              ))}
+
+              {/* Footer */}
+              <div className="text-base-content/40 flex justify-center pt-2 text-xs">
+                {selectedDayEntry.total} evento{selectedDayEntry.total === 1 ? "" : "s"} ·{" "}
+                {dayjs(selectedDate).format("dddd, D [de] MMMM")}
+              </div>
+            </>
+          );
+        })()}
       </div>
     </section>
   );

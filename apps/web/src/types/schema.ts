@@ -1,4 +1,3 @@
-export type UserRole = string;
 export type PersonType = "NATURAL" | "JURIDICAL";
 export type CounterpartCategory =
   | "SUPPLIER"
@@ -50,7 +49,7 @@ export interface User {
   id: number;
   personId: number;
   email: string;
-  role: UserRole;
+  role: string;
   status: UserStatus;
   mfaEnabled: boolean;
   createdAt: string;

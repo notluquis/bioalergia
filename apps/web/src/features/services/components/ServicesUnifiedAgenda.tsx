@@ -58,7 +58,7 @@ export default function ServicesUnifiedAgenda({
 }: ServicesUnifiedAgendaProps) {
   const skeletons = Array.from({ length: 4 }, (_, index) => index);
   const groups = (() => {
-    if (!items.length) return [];
+    if (items.length === 0) return [];
     const map = new Map<string, AgendaGroup>();
     items.forEach(({ service, schedule }) => {
       const dueDate = dayjs(schedule.due_date).startOf("day");
@@ -75,7 +75,7 @@ export default function ServicesUnifiedAgenda({
       group.total += schedule.expected_amount;
       group.entries.push({ service, schedule });
     });
-    return Array.from(map.values()).sort((a, b) => (a.dateKey > b.dateKey ? 1 : -1));
+    return [...map.values()].toSorted((a, b) => (a.dateKey > b.dateKey ? 1 : -1));
   })();
 
   const totals = (() => {
@@ -147,7 +147,7 @@ export default function ServicesUnifiedAgenda({
           )}
         </div>
         {error && <p className="text-error text-xs">{error}</p>}
-        {!groups.length && !loading && !error && (
+        {groups.length === 0 && !loading && !error && (
           <p className="text-base-content/40 text-xs">No hay cuotas programadas en el periodo consultado.</p>
         )}
         {loading && groups.length === 0 && (
@@ -257,6 +257,6 @@ export default function ServicesUnifiedAgenda({
 }
 
 function capitalize(value: string) {
-  if (!value.length) return value;
+  if (value.length === 0) return value;
   return value.charAt(0).toUpperCase() + value.slice(1);
 }

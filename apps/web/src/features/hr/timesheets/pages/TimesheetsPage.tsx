@@ -27,19 +27,19 @@ import { PAGE_CONTAINER, TITLE_LG } from "@/lib/styles";
 
 const TimesheetExportPDF = lazy(() => import("@/features/hr/timesheets/components/TimesheetExportPDF"));
 
+// Utility to ensure month is always YYYY-MM
+function formatMonthString(m: string): string {
+  if (/^\d{4}-\d{2}$/.test(m)) return m;
+  const d = dayjs(m, ["YYYY-MM", "YYYY/MM", "MM/YYYY", "YYYY-MM-DD", "DD/MM/YYYY"]);
+  if (d.isValid()) return d.format("YYYY-MM");
+  return dayjs().format("YYYY-MM");
+}
+
 export default function TimesheetsPage() {
   useWakeLock();
   const queryClient = useQueryClient();
   const { success: toastSuccess } = useToast();
   useAuth();
-
-  // Utility to ensure month is always YYYY-MM
-  function formatMonthString(m: string): string {
-    if (/^[0-9]{4}-[0-9]{2}$/.test(m)) return m;
-    const d = dayjs(m, ["YYYY-MM", "YYYY/MM", "MM/YYYY", "YYYY-MM-DD", "DD/MM/YYYY"]);
-    if (d.isValid()) return d.format("YYYY-MM");
-    return dayjs().format("YYYY-MM");
-  }
 
   // --- State ---
   const { months, monthsWithData, loading: loadingMonths } = useMonths();
@@ -56,7 +56,7 @@ export default function TimesheetsPage() {
 
   // Set initial month
   useEffect(() => {
-    if (months.length && !month) {
+    if (months.length > 0 && !month) {
       const previousMonth = dayjs().subtract(1, "month").format("YYYY-MM");
       setMonth(months.includes(previousMonth) ? previousMonth : (months[0] ?? ""));
     }
@@ -182,13 +182,13 @@ export default function TimesheetsPage() {
     if (!isComplete || !isRowDirty(row, initial)) return;
 
     // Simple validation
-    if (row.entrada && !/^[0-9]{1,2}:[0-9]{2}$/.test(row.entrada)) return;
-    if (row.salida && !/^[0-9]{1,2}:[0-9]{2}$/.test(row.salida)) return;
+    if (row.entrada && !/^\d{1,2}:\d{2}$/.test(row.entrada)) return;
+    if (row.salida && !/^\d{1,2}:\d{2}$/.test(row.salida)) return;
 
     const overtime = parseDuration(row.overtime);
     if (overtime === null) return;
 
-    const comment = row.comment.trim() ? row.comment.trim() : null;
+    const comment = row.comment.trim() || null;
     const entry = {
       work_date: row.date,
       start_time: row.entrada || null,
@@ -225,6 +225,45 @@ export default function TimesheetsPage() {
     deleteMutate(row.entryId);
   };
 
+  const processBulkRow = (
+    row: BulkRow,
+    initial: BulkRow
+  ): { entry?: TimesheetUpsertEntry; removeId?: number; error?: string } => {
+    if (!isRowDirty(row, initial)) return {};
+
+    if (row.entrada && !/^\d{1,2}:\d{2}$/.test(row.entrada)) {
+      return { error: `Hora de entrada inválida en ${formatDateLabel(row.date)}` };
+    }
+    if (row.salida && !/^\d{1,2}:\d{2}$/.test(row.salida)) {
+      return { error: `Hora de salida inválida en ${formatDateLabel(row.date)}` };
+    }
+
+    const overtime = parseDuration(row.overtime);
+    if (overtime === null) {
+      return { error: `Horas extra inválidas en ${formatDateLabel(row.date)}` };
+    }
+
+    const comment = row.comment.trim() || null;
+    const hasContent = Boolean(row.entrada) || Boolean(row.salida) || overtime > 0 || Boolean(comment);
+
+    if (!hasContent && row.entryId) {
+      return { removeId: row.entryId };
+    }
+
+    if (!hasContent) return {};
+
+    return {
+      entry: {
+        work_date: row.date,
+        start_time: row.entrada ? dayjs(`${row.date} ${row.entrada}`).toISOString() : null,
+        end_time: row.salida ? dayjs(`${row.date} ${row.salida}`).toISOString() : null,
+        overtime_minutes: overtime,
+        extra_amount: 0,
+        comment,
+      },
+    };
+  };
+
   const handleBulkSave = async () => {
     if (!selectedEmployeeId) {
       setErrorLocal("Selecciona un trabajador para guardar las horas");
@@ -235,47 +274,17 @@ export default function TimesheetsPage() {
     const entries: TimesheetUpsertEntry[] = [];
     const removeIds: number[] = [];
 
-    for (let index = 0; index < bulkRows.length; index += 1) {
-      const row = bulkRows[index];
-      const initial = initialRows[index];
-      if (!row || !initial || !isRowDirty(row, initial)) continue;
-
-      if (row.entrada && !/^[0-9]{1,2}:[0-9]{2}$/.test(row.entrada)) {
-        setErrorLocal(`Hora de entrada inválida en ${formatDateLabel(row.date)}`);
+    for (const [index, row] of bulkRows.entries()) {
+      const result = processBulkRow(row, initialRows[index]!);
+      if (result.error) {
+        setErrorLocal(result.error);
         return;
       }
-      if (row.salida && !/^[0-9]{1,2}:[0-9]{2}$/.test(row.salida)) {
-        setErrorLocal(`Hora de salida inválida en ${formatDateLabel(row.date)}`);
-        return;
-      }
-
-      const overtime = parseDuration(row.overtime);
-      if (overtime === null) {
-        setErrorLocal(`Horas extra inválidas en ${formatDateLabel(row.date)}`);
-        return;
-      }
-
-      const comment = row.comment.trim() || null;
-      const hasContent = Boolean(row.entrada) || Boolean(row.salida) || overtime > 0 || Boolean(comment);
-
-      if (!hasContent && row.entryId) {
-        removeIds.push(row.entryId);
-        continue;
-      }
-
-      if (!hasContent) continue;
-
-      entries.push({
-        work_date: row.date,
-        start_time: row.entrada ? dayjs(`${row.date} ${row.entrada}`).toISOString() : null,
-        end_time: row.salida ? dayjs(`${row.date} ${row.salida}`).toISOString() : null,
-        overtime_minutes: overtime,
-        extra_amount: 0,
-        comment,
-      });
+      if (result.entry) entries.push(result.entry);
+      if (result.removeId) removeIds.push(result.removeId);
     }
 
-    if (!entries.length && !removeIds.length) {
+    if (entries.length === 0 && removeIds.length === 0) {
       toastSuccess("No hay cambios para guardar");
       return;
     }
@@ -358,25 +367,25 @@ export default function TimesheetsPage() {
       if (data.status !== "ok") throw new Error(data.message || "Error al preparar el email");
 
       // Download .eml
-      const emlBlob = new Blob([Uint8Array.from(atob(data.emlBase64), (c) => c.charCodeAt(0))], {
+      const emlBlob = new Blob([Uint8Array.from(atob(data.emlBase64), (c) => c.codePointAt(0)!)], {
         type: "message/rfc822",
       });
       const url = URL.createObjectURL(emlBlob);
       const link = document.createElement("a");
       link.href = url;
       link.download = data.filename;
-      document.body.appendChild(link);
+      document.body.append(link);
       link.click();
-      document.body.removeChild(link);
+      link.remove();
       URL.revokeObjectURL(url);
 
       setEmailPrepareStatus("done");
       toastSuccess(`Archivo descargado: ${data.filename}`);
-    } catch (err) {
+    } catch (error_) {
       // Error handled in mutation onError or caught here
       if (!emailMutation.isError) {
         // If error happened outside mutation (e.g. PDF gen or data processing)
-        const message = err instanceof Error ? err.message : "Error al preparar el email";
+        const message = error_ instanceof Error ? error_.message : "Error al preparar el email";
         setErrorLocal(message);
         setEmailPrepareStatus(null);
       }
@@ -396,10 +405,17 @@ export default function TimesheetsPage() {
   const pendingCount = bulkRows.filter((row) => !row.entryId && hasRowData(row)).length;
   const modifiedCount = bulkRows.filter((row, index) => isRowDirty(row, initialRows[index])).length;
 
-  const error =
-    errorLocal ||
-    (summaryError instanceof Error ? summaryError.message : summaryError ? String(summaryError) : null) ||
-    (detailError instanceof Error ? detailError.message : detailError ? String(detailError) : null);
+  const summaryErrorMessage = (() => {
+    if (summaryError instanceof Error) return summaryError.message;
+    return summaryError ? String(summaryError) : null;
+  })();
+
+  const detailErrorMessage = (() => {
+    if (detailError instanceof Error) return detailError.message;
+    return detailError ? String(detailError) : null;
+  })();
+
+  const error = errorLocal || summaryErrorMessage || detailErrorMessage;
 
   return (
     <section className={PAGE_CONTAINER}>
@@ -415,7 +431,7 @@ export default function TimesheetsPage() {
                 const value = event.target.value;
                 setSelectedEmployeeId(value ? Number(value) : null);
               }}
-              disabled={!activeEmployees.length}
+              disabled={activeEmployees.length === 0}
               className="bg-base-100"
             >
               <option value="">Seleccionar...</option>
@@ -467,9 +483,9 @@ export default function TimesheetsPage() {
             }}
             disabled={!employeeSummaryRow || !selectedEmployee.person?.email}
             title={
-              !selectedEmployee.person?.email
-                ? "El empleado no tiene email registrado"
-                : "Preparar boleta para enviar por email"
+              selectedEmployee.person?.email
+                ? "Preparar boleta para enviar por email"
+                : "El empleado no tiene email registrado"
             }
           >
             ✉️ Preparar email

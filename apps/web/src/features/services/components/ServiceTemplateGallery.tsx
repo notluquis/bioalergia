@@ -72,7 +72,7 @@ export const SERVICE_TEMPLATES: ServiceTemplate[] = [
       startDate: TODAY,
       monthsToGenerate: 24,
       lateFeeMode: "FIXED",
-      lateFeeValue: 10000,
+      lateFeeValue: 10_000,
       lateFeeGraceDays: 3,
     },
   },

@@ -7,7 +7,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/DropdownMenu";
 
-type Option = { value: string; label: string };
+export type MultiSelectOption = { value: string; label: string };
 
 function truncateLabel(text: string, max = 32) {
   if (!text) return "";
@@ -22,14 +22,14 @@ export function MultiSelectFilter({
   placeholder,
 }: {
   label: string;
-  options: Option[];
+  options: MultiSelectOption[];
   selected: string[];
   onToggle: (value: string) => void;
   placeholder: string;
 }) {
   // React Compiler auto-memoizes derived values
   const getDisplayText = () => {
-    if (!selected.length) {
+    if (selected.length === 0) {
       return { displayText: placeholder, fullText: placeholder };
     }
 
@@ -37,7 +37,7 @@ export function MultiSelectFilter({
       .filter((option) => selected.includes(option.value))
       .map((option) => option.label.split(" · ")[0]);
 
-    if (!matches.length) {
+    if (matches.length === 0) {
       return { displayText: placeholder, fullText: placeholder };
     }
 
@@ -114,5 +114,3 @@ export function MultiSelectFilter({
     </div>
   );
 }
-
-export type MultiSelectOption = Option;

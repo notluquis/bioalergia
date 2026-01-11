@@ -47,7 +47,7 @@ export default function InventoryTable({
                     onClick={() => openAdjustStockModal(item)}
                     className="mr-3"
                     disabled={!canAdjust}
-                    title={!canAdjust ? "Sin permiso" : undefined}
+                    title={canAdjust ? undefined : "Sin permiso"}
                   >
                     {!canAdjust && <Lock size={12} className="mr-1" />}
                     Ajustar stock
@@ -56,7 +56,7 @@ export default function InventoryTable({
                     variant="secondary"
                     onClick={() => openEditModal(item)}
                     disabled={!canUpdate}
-                    title={!canUpdate ? "Sin permiso" : undefined}
+                    title={canUpdate ? undefined : "Sin permiso"}
                   >
                     {!canUpdate && <Lock size={12} className="mr-1" />}
                     Editar
@@ -64,7 +64,7 @@ export default function InventoryTable({
                 </td>
               </tr>
             ))}
-            {!items.length && !loading && (
+            {items.length === 0 && !loading && (
               <tr>
                 <td colSpan={5} className="text-base-content/60 px-4 py-6 text-center">
                   No hay items en el inventario.

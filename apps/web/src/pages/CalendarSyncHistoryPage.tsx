@@ -90,12 +90,11 @@ export default function CalendarSyncHistoryPage() {
                 visibleLogs.map((log) => {
                   const started = dayjs(log.startedAt).format("DD MMM YYYY HH:mm");
                   const finished = log.finishedAt ? dayjs(log.finishedAt) : null;
-                  const duration =
-                    finished && finished.isValid()
-                      ? `${finished.diff(dayjs(log.startedAt), "second")}s`
-                      : log.status === "RUNNING"
-                        ? "En curso..."
-                        : "-";
+                  const duration = (() => {
+                    if (finished?.isValid()) return `${finished.diff(dayjs(log.startedAt), "second")}s`;
+                    if (log.status === "RUNNING") return "En curso...";
+                    return "-";
+                  })();
                   const sourceLabel = log.triggerLabel ?? log.triggerSource;
 
                   const statusColors = {
@@ -104,13 +103,16 @@ export default function CalendarSyncHistoryPage() {
                     ERROR: "text-error",
                   };
                   const statusClass = statusColors[log.status as keyof typeof statusColors] || "text-error";
+                  const statusText = (() => {
+                    if (log.status === "SUCCESS") return "Éxito";
+                    if (log.status === "RUNNING") return "En curso...";
+                    return "Error";
+                  })();
 
                   return (
                     <tr key={log.id} className="group hover:bg-base-200/50 transition-colors">
                       <td className="text-base-content font-medium">{started}</td>
-                      <td className={cn("font-semibold", statusClass)}>
-                        {log.status === "SUCCESS" ? "Éxito" : log.status === "RUNNING" ? "En curso..." : "Error"}
-                      </td>
+                      <td className={cn("font-semibold", statusClass)}>{statusText}</td>
                       <td>{numberFormatter.format(log.inserted)}</td>
                       <td>{numberFormatter.format(log.updated)}</td>
                       <td>{sourceLabel}</td>

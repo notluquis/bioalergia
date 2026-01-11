@@ -62,7 +62,7 @@ export default function DailyBalances() {
     const nextDrafts: Record<string, BalanceDraft> = {};
     for (const day of report.days) {
       nextDrafts[day.date] = {
-        value: day.recordedBalance != null ? formatBalanceInput(day.recordedBalance) : "",
+        value: day.recordedBalance == null ? "" : formatBalanceInput(day.recordedBalance),
         note: day.note ?? "",
       };
     }
@@ -73,9 +73,7 @@ export default function DailyBalances() {
 
   return (
     <section className="space-y-4">
-      {!can("read", "DailyBalance") ? (
-        <Alert variant="error">No tienes permisos para ver los saldos diarios.</Alert>
-      ) : (
+      {can("read", "DailyBalance") ? (
         <>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -147,6 +145,8 @@ export default function DailyBalances() {
             error={error}
           />
         </>
+      ) : (
+        <Alert variant="error">No tienes permisos para ver los saldos diarios.</Alert>
       )}
     </section>
   );

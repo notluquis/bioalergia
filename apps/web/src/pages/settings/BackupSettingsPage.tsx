@@ -129,33 +129,52 @@ export default function BackupSettingsPage() {
   useEffect(() => {
     const eventSource = new EventSource("/api/backups/progress");
 
-    eventSource.onmessage = (event) => {
+    const handleMessage = (event: MessageEvent) => {
       try {
         const data = JSON.parse(event.data);
-        if (data.type === "init") {
-          setLiveJobs(data.jobs);
-        } else if (data.type === "backup") {
-          setLiveJobs((prev) => ({ ...prev, backup: data.job }));
-          if (data.job.status === "completed" || data.job.status === "failed") {
-            queryClient.invalidateQueries({ queryKey: ["backups"] });
+        switch (data.type) {
+          case "init": {
+            setLiveJobs(data.jobs);
+
+            break;
           }
-        } else if (data.type === "restore") {
-          setLiveJobs((prev) => ({ ...prev, restore: data.job }));
-          if (data.job.status === "completed" || data.job.status === "failed") {
-            queryClient.invalidateQueries({ queryKey: ["backups"] });
+          case "backup": {
+            setLiveJobs((prev) => ({ ...prev, backup: data.job }));
+            if (data.job.status === "completed" || data.job.status === "failed") {
+              queryClient.invalidateQueries({ queryKey: ["backups"] });
+            }
+
+            break;
           }
+          case "restore": {
+            setLiveJobs((prev) => ({ ...prev, restore: data.job }));
+            if (data.job.status === "completed" || data.job.status === "failed") {
+              queryClient.invalidateQueries({ queryKey: ["backups"] });
+            }
+
+            break;
+          }
+          // No default
         }
       } catch {
         // Ignore parse errors
       }
     };
 
-    eventSource.onerror = () => eventSource.close();
-    return () => eventSource.close();
+    const handleError = () => eventSource.close();
+
+    eventSource.addEventListener("message", handleMessage);
+    eventSource.addEventListener("error", handleError);
+
+    return () => {
+      eventSource.removeEventListener("message", handleMessage);
+      eventSource.removeEventListener("error", handleError);
+      eventSource.close();
+    };
   }, [queryClient]);
 
   // Queries
-  const backupsQuery = useQuery({ queryKey: ["backups"], queryFn: fetchBackups, refetchInterval: 30000 });
+  const backupsQuery = useQuery({ queryKey: ["backups"], queryFn: fetchBackups, refetchInterval: 30_000 });
 
   // Mutations
   const backupMutation = useMutation({
@@ -174,7 +193,38 @@ export default function BackupSettingsPage() {
   const fullBackups = backups.filter((b) => !b.name.startsWith("audit_"));
   const auditExports = backups.filter((b) => b.name.startsWith("audit_"));
 
-  const totalSize = backups.reduce((acc, b) => acc + parseInt(b.size || "0", 10), 0);
+  // eslint-disable-next-line unicorn/explicit-length-check
+  const totalSize = backups.reduce((acc, b) => acc + Number.parseInt(b.size || "0", 10), 0);
+
+  const renderBackupListContent = () => {
+    if (backupsQuery.isLoading) {
+      return (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="text-primary size-6 animate-spin" />
+        </div>
+      );
+    }
+
+    if (backupsQuery.error) {
+      return <div className="text-error py-12 text-center">Error al cargar backups</div>;
+    }
+
+    if (fullBackups.length === 0) {
+      return <div className="text-base-content/60 py-12 text-center">No hay backups disponibles</div>;
+    }
+
+    return (
+      <>
+        {fullBackups.map((backup) => (
+          <BackupRow
+            key={backup.id}
+            backup={backup}
+            onSuccess={() => queryClient.invalidateQueries({ queryKey: ["backups"] })}
+          />
+        ))}
+      </>
+    );
+  };
 
   return (
     <div className={cn(PAGE_CONTAINER, "space-y-6")}>
@@ -258,33 +308,15 @@ export default function BackupSettingsPage() {
                 disabled={!canCreate || isRunning || backupMutation.isPending}
                 isLoading={backupMutation.isPending}
                 className="h-8 text-xs font-medium"
-                title={!canCreate ? "No tienes permisos para crear backups" : "Crear nuevo backup"}
+                title={canCreate ? "Crear nuevo backup" : "No tienes permisos para crear backups"}
               >
                 {!backupMutation.isPending &&
-                  (!canCreate ? <Lock className="mr-1.5 size-4" /> : <Upload className="mr-1.5 size-4" />)}
+                  (canCreate ? <Upload className="mr-1.5 size-4" /> : <Lock className="mr-1.5 size-4" />)}
                 Crear Backup
               </Button>
             </div>
           </div>
-          <div className="divide-base-content/5 divide-y">
-            {backupsQuery.isLoading ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="text-primary size-6 animate-spin" />
-              </div>
-            ) : backupsQuery.error ? (
-              <div className="text-error py-12 text-center">Error al cargar backups</div>
-            ) : fullBackups.length === 0 ? (
-              <div className="text-base-content/60 py-12 text-center">No hay backups disponibles</div>
-            ) : (
-              fullBackups.map((backup) => (
-                <BackupRow
-                  key={backup.id}
-                  backup={backup}
-                  onSuccess={() => queryClient.invalidateQueries({ queryKey: ["backups"] })}
-                />
-              ))
-            )}
-          </div>
+          <div className="divide-base-content/5 divide-y">{renderBackupListContent()}</div>
         </div>
 
         {/* Incremental Exports */}
@@ -379,13 +411,121 @@ function StatCard({
   );
 }
 
+function TableSelectionList({
+  tables,
+  selectedTables,
+  toggleTable,
+  tablesWithChanges,
+}: {
+  tables: string[];
+  selectedTables: string[];
+  toggleTable: (t: string) => void;
+  tablesWithChanges: Set<string>;
+}) {
+  const [showAllTables, setShowAllTables] = useState(false);
+
+  const changedTables = tables.filter((t) => tablesWithChanges.has(t));
+  const unchangedTables = tables.filter((t) => !tablesWithChanges.has(t));
+
+  if (changedTables.length === 0) {
+    return (
+      <div className="border-base-content/10 bg-base-200/30 rounded-lg border py-4 text-center">
+        <p className="text-base-content/60 text-sm">No hay tablas con cambios registrados desde este backup.</p>
+        <button
+          type="button"
+          className="text-primary mt-2 text-xs hover:underline"
+          onClick={() => setShowAllTables(!showAllTables)}
+        >
+          {showAllTables ? "Ocultar tablas" : "Ver todas las tablas de todas formas"}
+        </button>
+        {showAllTables && (
+          <div className="mt-3 grid grid-cols-2 gap-2 text-left sm:grid-cols-3 md:grid-cols-4">
+            {tables.map((table) => (
+              <label
+                key={table}
+                className={cn(
+                  "border-base-content/10 hover:bg-base-content/5 flex cursor-pointer items-center gap-2 rounded-lg border p-2 text-sm transition-colors",
+                  selectedTables.includes(table) ? "border-primary bg-primary/5" : ""
+                )}
+              >
+                <input
+                  type="checkbox"
+                  className="checkbox checkbox-primary checkbox-sm"
+                  checked={selectedTables.includes(table)}
+                  onChange={() => toggleTable(table)}
+                />
+                <span className="flex-1 truncate">{table}</span>
+              </label>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
+        {changedTables.map((table) => (
+          <label
+            key={table}
+            className={cn(
+              "border-warning/50 bg-warning/5 flex cursor-pointer items-center gap-2 rounded-lg border p-2 text-sm transition-colors",
+              selectedTables.includes(table) ? "border-primary bg-primary/5" : ""
+            )}
+          >
+            <input
+              type="checkbox"
+              className="checkbox checkbox-primary checkbox-sm"
+              checked={selectedTables.includes(table)}
+              onChange={() => toggleTable(table)}
+            />
+            <span className="flex-1 truncate">{table}</span>
+            <span className="bg-warning size-2 shrink-0 rounded-full" title="Tiene cambios recientes" />
+          </label>
+        ))}
+      </div>
+
+      {unchangedTables.length > 0 && (
+        <div className="mt-4">
+          <details className="group">
+            <summary className="text-base-content/60 hover:text-base-content flex cursor-pointer items-center gap-2 text-xs">
+              <ChevronRight className="size-3 transition-transform group-open:rotate-90" />
+              Mostrar tablas sin cambios ({unchangedTables.length})
+            </summary>
+            <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
+              {unchangedTables.map((table) => (
+                <label
+                  key={table}
+                  className={cn(
+                    "border-base-content/10 hover:bg-base-content/5 flex cursor-pointer items-center gap-2 rounded-lg border p-2 text-sm transition-colors",
+                    selectedTables.includes(table) ? "border-primary bg-primary/5" : ""
+                  )}
+                >
+                  <input
+                    type="checkbox"
+                    className="checkbox checkbox-primary checkbox-sm"
+                    checked={selectedTables.includes(table)}
+                    onChange={() => toggleTable(table)}
+                  />
+                  <span className="flex-1 truncate">{table}</span>
+                </label>
+              ))}
+            </div>
+          </details>
+        </div>
+      )}
+    </>
+  );
+}
+
 function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () => void }) {
   const { can } = useAuth();
   const { success, error: showError } = useToast();
   const queryClient = useQueryClient();
   const [isExpanded, setIsExpanded] = useState(false);
   const [selectedTables, setSelectedTables] = useState<string[]>([]);
-  const [showAllTables, setShowAllTables] = useState(false);
+  // Removed showAllTables from here as it moved to child
 
   const canRestore = can("update", "Backup");
 
@@ -400,7 +540,7 @@ function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () =>
     queryKey: ["tables-with-changes", backup.createdTime],
     queryFn: () => fetchTablesWithChanges(backup.createdTime),
     enabled: isExpanded,
-    staleTime: 30000,
+    staleTime: 30_000,
   });
 
   const restoreMutation = useMutation({
@@ -416,6 +556,58 @@ function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () =>
   const tablesWithChanges = new Set(tablesWithChangesQuery.data || []);
   const toggleTable = (table: string) =>
     setSelectedTables((prev) => (prev.includes(table) ? prev.filter((t) => t !== table) : [...prev, table]));
+
+  const renderTablesContent = () => {
+    if (tablesQuery.isLoading) {
+      return (
+        <div className="flex items-center gap-2 py-4">
+          <Loader2 className="size-4 animate-spin" />
+          <span className="text-sm">Cargando tablas...</span>
+        </div>
+      );
+    }
+
+    if (tablesQuery.error) {
+      return <p className="text-error text-sm">Error al cargar tablas</p>;
+    }
+
+    return (
+      <>
+        <div className="mb-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <h4 className="text-sm font-medium">Tablas con cambios recientes</h4>
+          </div>
+        </div>
+
+        <div className="mb-3">
+          {tablesQuery.data?.length === 0 && (
+            <p className="text-base-content/60 text-sm">No hay tablas en este backup.</p>
+          )}
+
+          <TableSelectionList
+            tables={tablesQuery.data || []}
+            selectedTables={selectedTables}
+            toggleTable={toggleTable}
+            tablesWithChanges={tablesWithChanges}
+          />
+        </div>
+
+        {selectedTables.length > 0 && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => restoreMutation.mutate(selectedTables)}
+            disabled={!canRestore || restoreMutation.isPending}
+            isLoading={restoreMutation.isPending}
+            title={canRestore ? undefined : "Requiere permiso para restaurar"}
+          >
+            {!restoreMutation.isPending && (canRestore ? <Play className="size-4" /> : <Lock className="size-4" />)}
+            Restaurar {selectedTables.length} tabla{selectedTables.length > 1 ? "s" : ""}
+          </Button>
+        )}
+      </>
+    );
+  };
 
   return (
     <div>
@@ -468,159 +660,20 @@ function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () =>
           <div className="mb-4 flex gap-3">
             <Button
               variant="primary"
+              // eslint-disable-next-line unicorn/no-useless-undefined
               onClick={() => restoreMutation.mutate(undefined)}
               disabled={!canRestore || restoreMutation.isPending}
               isLoading={restoreMutation.isPending}
-              title={!canRestore ? "Requiere permiso para restaurar" : undefined}
+              title={canRestore ? undefined : "Requiere permiso para restaurar"}
             >
               {!restoreMutation.isPending &&
-                (!canRestore ? <Lock className="size-4" /> : <RotateCcw className="size-4" />)}
+                (canRestore ? <RotateCcw className="size-4" /> : <Lock className="size-4" />)}
               Restaurar Todo
             </Button>
             <span className="text-base-content/60 self-center text-sm">o selecciona tablas específicas abajo</span>
           </div>
 
-          <div className="bg-base-200/50 rounded-lg p-4">
-            {tablesQuery.isLoading ? (
-              <div className="flex items-center gap-2 py-4">
-                <Loader2 className="size-4 animate-spin" />
-                <span className="text-sm">Cargando tablas...</span>
-              </div>
-            ) : tablesQuery.error ? (
-              <p className="text-error text-sm">Error al cargar tablas</p>
-            ) : (
-              <>
-                <div className="mb-3 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <h4 className="text-sm font-medium">Tablas con cambios recientes</h4>
-                  </div>
-                  {/* Toggle moved to render logic or just implied by logic above; keeping it simple */}
-                </div>
-
-                <div className="mb-3">
-                  {tablesQuery.data?.length === 0 && (
-                    <p className="text-base-content/60 text-sm">No hay tablas en este backup.</p>
-                  )}
-
-                  {(() => {
-                    const allTables = tablesQuery.data || [];
-                    const changedTables = allTables.filter((t) => tablesWithChanges.has(t));
-                    const unchangedTables = allTables.filter((t) => !tablesWithChanges.has(t));
-
-                    if (changedTables.length === 0) {
-                      return (
-                        <div className="border-base-content/10 bg-base-200/30 rounded-lg border py-4 text-center">
-                          <p className="text-base-content/60 text-sm">
-                            No hay tablas con cambios registrados desde este backup.
-                          </p>
-                          <button
-                            className="text-primary mt-2 text-xs hover:underline"
-                            onClick={() => setShowAllTables(!showAllTables)}
-                          >
-                            {showAllTables ? "Ocultar tablas" : "Ver todas las tablas de todas formas"}
-                          </button>
-                          {showAllTables && (
-                            <div className="mt-3 grid grid-cols-2 gap-2 text-left sm:grid-cols-3 md:grid-cols-4">
-                              {allTables.map((table) => (
-                                <label
-                                  key={table}
-                                  className={cn(
-                                    "border-base-content/10 hover:bg-base-content/5 flex cursor-pointer items-center gap-2 rounded-lg border p-2 text-sm transition-colors",
-                                    selectedTables.includes(table) ? "border-primary bg-primary/5" : ""
-                                  )}
-                                >
-                                  <input
-                                    type="checkbox"
-                                    className="checkbox checkbox-primary checkbox-sm"
-                                    checked={selectedTables.includes(table)}
-                                    onChange={() => toggleTable(table)}
-                                  />
-                                  <span className="flex-1 truncate">{table}</span>
-                                </label>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    }
-
-                    return (
-                      <>
-                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
-                          {changedTables.map((table) => (
-                            <label
-                              key={table}
-                              className={cn(
-                                "border-warning/50 bg-warning/5 flex cursor-pointer items-center gap-2 rounded-lg border p-2 text-sm transition-colors",
-                                selectedTables.includes(table) ? "border-primary bg-primary/5" : ""
-                              )}
-                            >
-                              <input
-                                type="checkbox"
-                                className="checkbox checkbox-primary checkbox-sm"
-                                checked={selectedTables.includes(table)}
-                                onChange={() => toggleTable(table)}
-                              />
-                              <span className="flex-1 truncate">{table}</span>
-                              <span
-                                className="bg-warning size-2 shrink-0 rounded-full"
-                                title="Tiene cambios recientes"
-                              />
-                            </label>
-                          ))}
-                        </div>
-
-                        {unchangedTables.length > 0 && (
-                          <div className="mt-4">
-                            <details className="group">
-                              <summary className="text-base-content/60 hover:text-base-content flex cursor-pointer items-center gap-2 text-xs">
-                                <ChevronRight className="size-3 transition-transform group-open:rotate-90" />
-                                Mostrar tablas sin cambios ({unchangedTables.length})
-                              </summary>
-                              <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
-                                {unchangedTables.map((table) => (
-                                  <label
-                                    key={table}
-                                    className={cn(
-                                      "border-base-content/10 hover:bg-base-content/5 flex cursor-pointer items-center gap-2 rounded-lg border p-2 text-sm transition-colors",
-                                      selectedTables.includes(table) ? "border-primary bg-primary/5" : ""
-                                    )}
-                                  >
-                                    <input
-                                      type="checkbox"
-                                      className="checkbox checkbox-primary checkbox-sm"
-                                      checked={selectedTables.includes(table)}
-                                      onChange={() => toggleTable(table)}
-                                    />
-                                    <span className="flex-1 truncate">{table}</span>
-                                  </label>
-                                ))}
-                              </div>
-                            </details>
-                          </div>
-                        )}
-                      </>
-                    );
-                  })()}
-                </div>
-
-                {selectedTables.length > 0 && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => restoreMutation.mutate(selectedTables)}
-                    disabled={!canRestore || restoreMutation.isPending}
-                    isLoading={restoreMutation.isPending}
-                    title={!canRestore ? "Requiere permiso para restaurar" : undefined}
-                  >
-                    {!restoreMutation.isPending &&
-                      (!canRestore ? <Lock className="size-4" /> : <Play className="size-4" />)}
-                    Restaurar {selectedTables.length} tabla{selectedTables.length > 1 ? "s" : ""}
-                  </Button>
-                )}
-              </>
-            )}
-          </div>
+          <div className="bg-base-200/50 rounded-lg p-4">{renderTablesContent()}</div>
         </div>
       )}
     </div>

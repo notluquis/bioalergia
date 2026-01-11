@@ -73,7 +73,10 @@ export default function ServicesOverviewContent() {
     {
       title: "Pagos conciliados",
       value: currencyFormatter.format(summaryTotals.totalPaid),
-      helper: `Cobertura ${collectionRate ? `${Math.round(collectionRate * 100)}%` : "0%"}`,
+      helper: (() => {
+        const percentage = collectionRate ? Math.round(collectionRate * 100) : 0;
+        return `Cobertura ${percentage}%`;
+      })(),
     },
     {
       title: "Pendientes / vencidos",

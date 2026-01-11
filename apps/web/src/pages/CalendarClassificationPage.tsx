@@ -35,6 +35,9 @@ dayjs.locale("es");
 
 const EMPTY_EVENTS: CalendarUnclassifiedEvent[] = [];
 
+const ACTIVE_FILTER_CLASS = "bg-primary text-primary-content shadow-sm";
+const INACTIVE_FILTER_CLASS = "bg-base-300/50 text-base-content/70 hover:bg-base-300";
+
 function CalendarClassificationPage() {
   const PAGE_SIZE = 50;
   const queryClient = useQueryClient();
@@ -81,7 +84,7 @@ function CalendarClassificationPage() {
   // Sync form with data
   useEffect(() => {
     if (events) {
-      reset({ entries: events.map(buildDefaultEntry) });
+      reset({ entries: events.map((e) => buildDefaultEntry(e)) });
     }
   }, [events, reset]);
 
@@ -168,14 +171,12 @@ function CalendarClassificationPage() {
 
   const { mutate } = classifyMutation;
 
-  const error =
-    queryError instanceof Error
-      ? queryError.message
-      : queryError
-        ? String(queryError)
-        : classifyMutation.error instanceof Error
-          ? classifyMutation.error.message
-          : null;
+  const error = (() => {
+    if (queryError instanceof Error) return queryError.message;
+    if (queryError) return String(queryError);
+    if (classifyMutation.error instanceof Error) return classifyMutation.error.message;
+    return null;
+  })();
 
   // React Compiler auto-stabilizes event handlers
   const handleResetEntry = (index: number, event: CalendarUnclassifiedEvent) => {
@@ -217,9 +218,7 @@ function CalendarClassificationPage() {
                     setPage(0);
                   }}
                   className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
-                    filters.missingCategory
-                      ? "bg-primary text-primary-content shadow-sm"
-                      : "bg-base-300/50 text-base-content/70 hover:bg-base-300"
+                    filters.missingCategory ? ACTIVE_FILTER_CLASS : INACTIVE_FILTER_CLASS
                   }`}
                 >
                   Sin categoría
@@ -231,9 +230,7 @@ function CalendarClassificationPage() {
                     setPage(0);
                   }}
                   className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
-                    filters.missingAmount
-                      ? "bg-primary text-primary-content shadow-sm"
-                      : "bg-base-300/50 text-base-content/70 hover:bg-base-300"
+                    filters.missingAmount ? ACTIVE_FILTER_CLASS : INACTIVE_FILTER_CLASS
                   }`}
                 >
                   Sin monto
@@ -421,7 +418,7 @@ function CalendarClassificationPage() {
                     type="button"
                     onClick={() => {
                       if (
-                        window.confirm(
+                        globalThis.confirm(
                           "¿Reclasificar TODOS los eventos? Esto sobrescribirá las clasificaciones existentes."
                         )
                       ) {

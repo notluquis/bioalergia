@@ -31,7 +31,7 @@ export default function ServicesFilterPanel({ services, filters, onChange }: Ser
     services.forEach((service) => {
       counts.set(service.service_type, (counts.get(service.service_type) ?? 0) + 1);
     });
-    return Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
+    return [...counts.entries()].toSorted((a, b) => b[1] - a[1]);
   })();
 
   const handleStatusToggle = (status: ServiceSummary["status"]) => {

@@ -16,12 +16,12 @@ describe("Format Utilities", () => {
     });
 
     it("should return $0 for NaN", () => {
-      expect(fmtCLP(NaN)).toBe("$0");
+      expect(fmtCLP(Number.NaN)).toBe("$0");
     });
 
     it("should return $0 for null/undefined", () => {
       expect(fmtCLP(null)).toBe("$0");
-      expect(fmtCLP(undefined)).toBe("$0");
+      expect(fmtCLP()).toBe("$0");
     });
 
     it("should handle zero", () => {
@@ -39,11 +39,11 @@ describe("Format Utilities", () => {
 
     it("should return $0 for null/undefined", () => {
       expect(formatCurrency(null)).toBe("$0");
-      expect(formatCurrency(undefined)).toBe("$0");
+      expect(formatCurrency()).toBe("$0");
     });
 
     it("should return $0 for NaN", () => {
-      expect(formatCurrency(NaN)).toBe("$0");
+      expect(formatCurrency(Number.NaN)).toBe("$0");
     });
   });
 
@@ -63,7 +63,7 @@ describe("Format Utilities", () => {
 
     it("should return 0 for null/undefined", () => {
       expect(coerceAmount(null)).toBe(0);
-      expect(coerceAmount(undefined)).toBe(0);
+      expect(coerceAmount()).toBe(0);
     });
   });
 
@@ -118,7 +118,7 @@ describe("Format Utilities", () => {
 
     it("should return 0 B for negative or invalid input", () => {
       expect(formatFileSize(-1)).toBe("0 B");
-      expect(formatFileSize(NaN)).toBe("0 B");
+      expect(formatFileSize(Number.NaN)).toBe("0 B");
     });
   });
 });

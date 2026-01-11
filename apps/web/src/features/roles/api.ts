@@ -3,11 +3,9 @@ import type { Permission, Role } from "@/types/roles";
 
 // --- Role Mappings ---
 
-export type AppRole = string;
-
 export type RoleMapping = {
   employee_role: string;
-  app_role: AppRole;
+  app_role: string;
 };
 
 export async function getRoleMappings(): Promise<RoleMapping[]> {

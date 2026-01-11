@@ -40,6 +40,23 @@ import { cn } from "@/lib/utils";
 dayjs.extend(relativeTime);
 dayjs.locale("es");
 
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case "ACTIVE": {
+      return "badge-success";
+    }
+    case "PENDING_SETUP": {
+      return "badge-warning";
+    }
+    case "SUSPENDED": {
+      return "badge-error";
+    }
+    default: {
+      return "badge-ghost";
+    }
+  }
+};
+
 export default function UserManagementPage() {
   useAuth(); // Keep context mounted
   const { success, error } = useToast();
@@ -105,11 +122,10 @@ export default function UserManagementPage() {
       // Note: User model doesn't have a single 'role' field.
       // It uses UserRoleAssignment for role management.
       // For now, show a message - this requires a proper role assignment API.
-      // TODO: Implement proper role assignment via UserRoleAssignment
       error("La actualización de roles requiere implementación de UserRoleAssignment");
       setEditingUser(null);
-    } catch (err) {
-      error(err instanceof Error ? err.message : "Error al actualizar rol");
+    } catch (error_) {
+      error(error_ instanceof Error ? error_.message : "Error al actualizar rol");
     }
   };
 
@@ -132,8 +148,8 @@ export default function UserManagementPage() {
         success(`Contraseña restablecida. Temporal: ${tempPassword}`);
         queryClient.invalidateQueries({ queryKey: ["user"] });
         alert(`Contraseña temporal: ${tempPassword}\n\nPor favor compártela con el usuario de forma segura.`);
-      } catch (err) {
-        error(err instanceof Error ? err.message : "Error al restablecer contraseña");
+      } catch (error_) {
+        error(error_ instanceof Error ? error_.message : "Error al restablecer contraseña");
       }
     }
   };
@@ -147,8 +163,8 @@ export default function UserManagementPage() {
           where: { id: userId },
         });
         success("Usuario eliminado correctamente");
-      } catch (err) {
-        error(err instanceof Error ? err.message : "Error al eliminar usuario");
+      } catch (error_) {
+        error(error_ instanceof Error ? error_.message : "Error al eliminar usuario");
       }
     }
   };
@@ -163,8 +179,8 @@ export default function UserManagementPage() {
           data: { status: newStatus },
         });
         success(`Usuario ${newStatus === "ACTIVE" ? "reactivado" : "suspendido"}`);
-      } catch (err) {
-        error(err instanceof Error ? err.message : "Error al actualizar estado");
+      } catch (error_) {
+        error(error_ instanceof Error ? error_.message : "Error al actualizar estado");
       }
     }
   };
@@ -176,8 +192,8 @@ export default function UserManagementPage() {
         await toggleUserMfa(userId, !currentMfa);
         queryClient.invalidateQueries({ queryKey: ["user"] });
         success("Estado MFA actualizado correctamente");
-      } catch (err) {
-        error(err instanceof Error ? err.message : "Error desconocido");
+      } catch (error_) {
+        error(error_ instanceof Error ? error_.message : "Error desconocido");
       }
     }
   };
@@ -195,19 +211,6 @@ export default function UserManagementPage() {
 
     return matchesSearch && matchesRole;
   });
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "ACTIVE":
-        return "badge-success";
-      case "PENDING_SETUP":
-        return "badge-warning";
-      case "SUSPENDED":
-        return "badge-error";
-      default:
-        return "badge-ghost";
-    }
-  };
 
   return (
     <div className={PAGE_CONTAINER}>
@@ -302,134 +305,144 @@ export default function UserManagementPage() {
               </tr>
             </thead>
             <tbody>
-              {isLoading ? (
-                <tr>
-                  <td colSpan={7} className="text-base-content/60 py-8 text-center">
-                    Cargando usuarios...
-                  </td>
-                </tr>
-              ) : filteredUsers?.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="text-base-content/60 py-8 text-center">
-                    No se encontraron usuarios
-                  </td>
-                </tr>
-              ) : (
-                filteredUsers?.map((user) => {
+              {(() => {
+                if (isLoading) {
                   return (
-                    <tr key={user.id} className="hover:bg-base-200/50">
-                      <td className="whitespace-nowrap">
-                        <div className="flex items-center gap-3">
-                          <div className="avatar placeholder">
-                            <div className="bg-neutral text-neutral-content flex h-10 w-10 items-center justify-center rounded-full">
-                              <span className="text-xs font-bold">{getPersonInitials(user.person)}</span>
-                            </div>
-                          </div>
-                          <div>
-                            <div className="font-bold">{getPersonFullName(user.person)}</div>
-                            <div className="text-xs opacity-50">{user.email}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="whitespace-nowrap">
-                        <span className="badge badge-ghost badge-sm font-medium whitespace-nowrap">{user.role}</span>
-                      </td>
-                      <td className="whitespace-nowrap">
-                        <div className={cn(BADGE_SM, "w-fit gap-2 whitespace-nowrap", getStatusColor(user.status))}>
-                          {user.status === "ACTIVE" && <div className="size-1.5 rounded-full bg-current" />}
-                          {user.status}
-                        </div>
-                      </td>
-                      {/* MFA Icon Only */}
-                      <td className="text-center align-middle">
-                        <div className="flex justify-center">
-                          {user.mfaEnabled ? (
-                            <div className="tooltip" data-tip="MFA activado">
-                              <ShieldCheck className="text-success size-5" />
-                            </div>
-                          ) : (
-                            <div className="tooltip" data-tip="MFA inactivo">
-                              <ShieldCheck className="text-base-content/20 size-5" />
-                            </div>
-                          )}
-                        </div>
-                      </td>
-                      {/* Passkey Icon Only */}
-                      <td className="text-center align-middle">
-                        <div className="flex justify-center">
-                          {user.hasPasskey ? (
-                            <div className="tooltip" data-tip="Passkey configurado">
-                              <Fingerprint size={5} className="text-success size-5" />
-                            </div>
-                          ) : (
-                            <div className="tooltip" data-tip="Sin passkey">
-                              <Fingerprint className="text-base-content/20 size-5" />
-                            </div>
-                          )}
-                        </div>
-                      </td>
-                      <td className="text-base-content/70 text-sm">{dayjs(user.createdAt).format("DD MMM YYYY")}</td>
-                      <td>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <button type="button" className="btn btn-ghost btn-xs">
-                              <MoreVertical size={16} />
-                            </button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-56">
-                            <DropdownMenuItem onClick={() => handleEditRoleClick(user)}>
-                              <UserCog className="mr-2 h-4 w-4" />
-                              Editar rol
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleToggleMfa(user.id, user.mfaEnabled)}>
-                              <ShieldCheck className="mr-2 h-4 w-4" />
-                              {user.mfaEnabled ? "Desactivar" : "Activar"} MFA
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleResetPassword(user.id)}>
-                              <Key className="mr-2 h-4 w-4" />
-                              Restablecer contraseña
-                            </DropdownMenuItem>
-                            {user.hasPasskey && (
-                              <DropdownMenuItem
-                                onClick={() => handleDeletePasskey(user.id)}
-                                className="text-warning focus:text-warning"
-                              >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Eliminar passkey
-                              </DropdownMenuItem>
-                            )}
-                            {user.status !== "SUSPENDED" ? (
-                              <DropdownMenuItem
-                                onClick={() => handleToggleStatus(user.id, user.status)}
-                                className="text-warning focus:text-warning"
-                              >
-                                <Lock className="mr-2 h-4 w-4" />
-                                Suspender acceso
-                              </DropdownMenuItem>
-                            ) : (
-                              <DropdownMenuItem
-                                onClick={() => handleToggleStatus(user.id, user.status)}
-                                className="text-success focus:text-success"
-                              >
-                                <Shield className="mr-2 h-4 w-4" />
-                                Reactivar acceso
-                              </DropdownMenuItem>
-                            )}
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              onClick={() => handleDeleteUser(user.id)}
-                              className="text-error focus:text-error"
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Eliminar usuario
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                    <tr>
+                      <td colSpan={7} className="text-base-content/60 py-8 text-center">
+                        Cargando usuarios...
                       </td>
                     </tr>
                   );
-                })
-              )}
+                }
+
+                if (!filteredUsers || filteredUsers.length === 0) {
+                  return (
+                    <tr>
+                      <td colSpan={7} className="text-base-content/60 py-8 text-center">
+                        No se encontraron usuarios
+                      </td>
+                    </tr>
+                  );
+                }
+
+                return (
+                  <>
+                    {filteredUsers.map((user) => (
+                      <tr key={user.id} className="hover:bg-base-200/50">
+                        <td className="whitespace-nowrap">
+                          <div className="flex items-center gap-3">
+                            <div className="avatar placeholder">
+                              <div className="bg-neutral text-neutral-content flex h-10 w-10 items-center justify-center rounded-full">
+                                <span className="text-xs font-bold">{getPersonInitials(user.person)}</span>
+                              </div>
+                            </div>
+                            <div>
+                              <div className="font-bold">{getPersonFullName(user.person)}</div>
+                              <div className="text-xs opacity-50">{user.email}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="whitespace-nowrap">
+                          <span className="badge badge-ghost badge-sm font-medium whitespace-nowrap">{user.role}</span>
+                        </td>
+                        <td className="whitespace-nowrap">
+                          <div className={cn(BADGE_SM, "w-fit gap-2 whitespace-nowrap", getStatusColor(user.status))}>
+                            {user.status === "ACTIVE" && <div className="size-1.5 rounded-full bg-current" />}
+                            {user.status}
+                          </div>
+                        </td>
+                        {/* MFA Icon Only */}
+                        <td className="text-center align-middle">
+                          <div className="flex justify-center">
+                            {user.mfaEnabled ? (
+                              <div className="tooltip" data-tip="MFA activado">
+                                <ShieldCheck className="text-success size-5" />
+                              </div>
+                            ) : (
+                              <div className="tooltip" data-tip="MFA inactivo">
+                                <ShieldCheck className="text-base-content/20 size-5" />
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                        {/* Passkey Icon Only */}
+                        <td className="text-center align-middle">
+                          <div className="flex justify-center">
+                            {user.hasPasskey ? (
+                              <div className="tooltip" data-tip="Passkey configurado">
+                                <Fingerprint size={5} className="text-success size-5" />
+                              </div>
+                            ) : (
+                              <div className="tooltip" data-tip="Sin passkey">
+                                <Fingerprint className="text-base-content/20 size-5" />
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                        <td className="text-base-content/70 text-sm">{dayjs(user.createdAt).format("DD MMM YYYY")}</td>
+                        <td>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <button type="button" className="btn btn-ghost btn-xs">
+                                <MoreVertical size={16} />
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-56">
+                              <DropdownMenuItem onClick={() => handleEditRoleClick(user)}>
+                                <UserCog className="mr-2 h-4 w-4" />
+                                Editar rol
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleToggleMfa(user.id, user.mfaEnabled)}>
+                                <ShieldCheck className="mr-2 h-4 w-4" />
+                                {user.mfaEnabled ? "Desactivar" : "Activar"} MFA
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleResetPassword(user.id)}>
+                                <Key className="mr-2 h-4 w-4" />
+                                Restablecer contraseña
+                              </DropdownMenuItem>
+                              {user.hasPasskey && (
+                                <DropdownMenuItem
+                                  onClick={() => handleDeletePasskey(user.id)}
+                                  className="text-warning focus:text-warning"
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Eliminar passkey
+                                </DropdownMenuItem>
+                              )}
+                              {user.status === "SUSPENDED" ? (
+                                <DropdownMenuItem
+                                  onClick={() => handleToggleStatus(user.id, user.status)}
+                                  className="text-success focus:text-success"
+                                >
+                                  <Shield className="mr-2 h-4 w-4" />
+                                  Reactivar acceso
+                                </DropdownMenuItem>
+                              ) : (
+                                <DropdownMenuItem
+                                  onClick={() => handleToggleStatus(user.id, user.status)}
+                                  className="text-warning focus:text-warning"
+                                >
+                                  <Lock className="mr-2 h-4 w-4" />
+                                  Suspender acceso
+                                </DropdownMenuItem>
+                              )}
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() => handleDeleteUser(user.id)}
+                                className="text-error focus:text-error"
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Eliminar usuario
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </td>
+                      </tr>
+                    ))}
+                  </>
+                );
+              })()}
             </tbody>
           </table>
         </div>

@@ -1,4 +1,4 @@
-const shouldLog = typeof import.meta !== "undefined" && Boolean(import.meta.env?.DEV);
+const shouldLog = Boolean(import.meta.env?.DEV);
 
 type LogMethod = (...args: unknown[]) => void;
 

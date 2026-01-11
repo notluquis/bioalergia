@@ -38,7 +38,7 @@ export function ServiceList({
       </header>
       <div className="muted-scrollbar flex-1 space-y-3 overflow-y-auto pr-2">
         {loading &&
-          !services.length &&
+          services.length === 0 &&
           skeletons.map((value) => (
             <div key={value} className="border-base-300/60 bg-base-200/60 rounded-2xl border p-4 shadow-sm">
               <div className="skeleton-line mb-3 w-3/4" />
@@ -51,11 +51,11 @@ export function ServiceList({
         {services.map((service) => {
           const isActive = service.public_id === selectedId;
           const overdue = service.overdue_count > 0;
-          const indicatorColor = overdue
-            ? "bg-rose-400"
-            : service.pending_count === 0
-              ? "bg-emerald-400"
-              : "bg-amber-400";
+          const indicatorColor = (() => {
+            if (overdue) return "bg-rose-400";
+            if (service.pending_count === 0) return "bg-emerald-400";
+            return "bg-amber-400";
+          })();
 
           const frequencyLabels: Record<ServiceFrequency, string> = {
             WEEKLY: "Semanal",
@@ -116,7 +116,7 @@ export function ServiceList({
             </button>
           );
         })}
-        {!services.length && (
+        {services.length === 0 && (
           <p className="border-base-300 bg-base-100/40 text-base-content/60 rounded-2xl border border-dashed p-4 text-xs">
             Aún no registras servicios recurrentes. Crea el primero para controlar gastos mensuales.
           </p>

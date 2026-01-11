@@ -1,4 +1,5 @@
 // src/lib/authz/AbilityProvider.tsx
+/* eslint-disable sonarjs/deprecation */
 import { Ability } from "@casl/ability";
 import { createContextualCan } from "@casl/react";
 import React, { createContext } from "react";

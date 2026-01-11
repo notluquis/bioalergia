@@ -19,14 +19,11 @@ export default function CalendarSettingsPage() {
   });
 
   const lastSync = syncLogs?.[0];
-  const syncStatus: "SUCCESS" | "ERROR" | "RUNNING" | undefined =
-    lastSync?.status === "RUNNING"
-      ? "RUNNING"
-      : lastSync?.status === "SUCCESS"
-        ? "SUCCESS"
-        : lastSync?.status === "ERROR"
-          ? "ERROR"
-          : undefined;
+  const getSyncStatus = () => {
+    const status = lastSync?.status;
+    return status === "RUNNING" || status === "SUCCESS" || status === "ERROR" ? status : undefined;
+  };
+  const syncStatus = getSyncStatus();
 
   const isSyncing = syncing || hasRunningSyncFromOtherSource;
 
@@ -54,37 +51,7 @@ export default function CalendarSettingsPage() {
               )}
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <span
-              className={cn(
-                "badge h-auto gap-1 py-1 whitespace-nowrap",
-                syncStatus === "SUCCESS"
-                  ? "badge-success"
-                  : syncStatus === "RUNNING"
-                    ? "badge-warning"
-                    : syncStatus === "ERROR"
-                      ? "badge-error"
-                      : "badge-ghost"
-              )}
-            >
-              {syncStatus === "SUCCESS" ? (
-                <CheckCircle2 size={12} />
-              ) : syncStatus === "RUNNING" ? (
-                <span className="loading loading-spinner loading-xs"></span>
-              ) : syncStatus === "ERROR" ? (
-                <AlertCircle size={12} />
-              ) : (
-                <RefreshCw size={12} />
-              )}
-              {syncStatus === "SUCCESS"
-                ? "Activo"
-                : syncStatus === "RUNNING"
-                  ? "Sincronizando..."
-                  : syncStatus === "ERROR"
-                    ? "Error"
-                    : "Sin datos"}
-            </span>
-          </div>
+          <div className="flex items-center gap-2">{renderSyncBadge(syncStatus)}</div>
         </div>
 
         <div className="divider" />
@@ -97,38 +64,7 @@ export default function CalendarSettingsPage() {
             )}
           </div>
 
-          {calendarsLoading ? (
-            <div className="flex justify-center p-8">
-              <RefreshCw size={24} className="text-base-content/30 animate-spin" />
-            </div>
-          ) : calendars.length > 0 ? (
-            <div className="grid gap-3">
-              {calendars.map((cal: CalendarData) => (
-                <div
-                  key={cal.id}
-                  className="bg-base-200/50 border-base-200 flex items-center justify-between gap-4 rounded-lg border p-3"
-                >
-                  <div className="flex min-w-0 items-center gap-3">
-                    <div className="h-2 w-2 shrink-0 rounded-full bg-blue-500" />
-                    <div className="min-w-0">
-                      <span className="block truncate font-medium">{cal.name}</span>
-                      <p className="text-base-content/50 mt-0.5 truncate text-xs">
-                        {cal.eventCount.toLocaleString()} evento(s)
-                      </p>
-                    </div>
-                  </div>
-                  <span className="text-base-content/50 max-w-32 shrink-0 truncate font-mono text-xs sm:max-w-48">
-                    {cal.googleId}
-                  </span>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-base-content/50 p-8 text-center">
-              <Calendar size={32} className="mx-auto mb-2 opacity-30" />
-              <p className="text-sm">No hay calendarios conectados</p>
-            </div>
-          )}
+          {renderCalendarsList(calendarsLoading, calendars)}
         </div>
 
         <div className="flex justify-end pt-4">
@@ -145,6 +81,87 @@ export default function CalendarSettingsPage() {
         syncProgress={syncProgress}
         syncDurationMs={syncDurationMs}
       />
+    </div>
+  );
+}
+
+function renderSyncBadge(status: "SUCCESS" | "ERROR" | "RUNNING" | undefined) {
+  let badgeClass = "badge-ghost";
+  let icon = <RefreshCw size={12} />;
+  let text = "Sin datos";
+
+  switch (status) {
+    case "SUCCESS": {
+      badgeClass = "badge-success";
+      icon = <CheckCircle2 size={12} />;
+      text = "Activo";
+
+      break;
+    }
+    case "RUNNING": {
+      badgeClass = "badge-warning";
+      icon = <span className="loading loading-spinner loading-xs"></span>;
+      text = "Sincronizando...";
+
+      break;
+    }
+    case "ERROR": {
+      badgeClass = "badge-error";
+      icon = <AlertCircle size={12} />;
+      text = "Error";
+
+      break;
+    }
+    // No default
+  }
+
+  return (
+    <span className={cn("badge h-auto gap-1 py-1 whitespace-nowrap", badgeClass)}>
+      {icon}
+      {text}
+    </span>
+  );
+}
+
+function renderCalendarsList(loading: boolean, calendars: CalendarData[]) {
+  if (loading) {
+    return (
+      <div className="flex justify-center p-8">
+        <RefreshCw size={24} className="text-base-content/30 animate-spin" />
+      </div>
+    );
+  }
+
+  if (calendars.length === 0) {
+    return (
+      <div className="text-base-content/50 p-8 text-center">
+        <Calendar size={32} className="mx-auto mb-2 opacity-30" />
+        <p className="text-sm">No hay calendarios conectados</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid gap-3">
+      {calendars.map((cal: CalendarData) => (
+        <div
+          key={cal.id}
+          className="bg-base-200/50 border-base-200 flex items-center justify-between gap-4 rounded-lg border p-3"
+        >
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="h-2 w-2 shrink-0 rounded-full bg-blue-500" />
+            <div className="min-w-0">
+              <span className="block truncate font-medium">{cal.name}</span>
+              <p className="text-base-content/50 mt-0.5 truncate text-xs">
+                {cal.eventCount.toLocaleString()} evento(s)
+              </p>
+            </div>
+          </div>
+          <span className="text-base-content/50 max-w-32 shrink-0 truncate font-mono text-xs sm:max-w-48">
+            {cal.googleId}
+          </span>
+        </div>
+      ))}
     </div>
   );
 }

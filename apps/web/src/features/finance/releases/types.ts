@@ -1,3 +1,5 @@
+import type { JsonId } from "../types";
+
 export interface ReleaseTransaction {
   id: number;
   sourceId: string;
@@ -26,16 +28,16 @@ export interface ReleaseTransaction {
   posName: string | null;
   storeId: string | null;
   storeName: string | null;
-  orderId: string | number | bigint | null;
+  orderId: JsonId | null;
   currency: string | null;
-  shippingId: string | number | bigint | null;
+  shippingId: JsonId | null;
   shipmentMode: string | null;
   transactionApprovalDate: string | null;
   transactionIntentId: string | null;
   externalPosId: string | null;
   externalStoreId: string | null;
   shippingOrderId: string | null;
-  packId: string | number | bigint | null;
+  packId: JsonId | null;
   poiId: string | null;
   itemId: string | null;
   cardInitialNumber: string | null;

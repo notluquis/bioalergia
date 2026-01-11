@@ -53,25 +53,21 @@ export default function LoanScheduleTable({
                 </td>
                 <td className="text-right font-bold">{currencyFormatter.format(schedule.expected_amount)}</td>
                 <td className="text-center">
-                  <div
-                    className={`badge badge-sm font-semibold capitalize ${
-                      schedule.status === "PAID"
-                        ? "badge-success text-success-content"
-                        : schedule.status === "PARTIAL"
-                          ? "badge-warning text-warning-content"
-                          : isLate
-                            ? "badge-error text-error-content"
-                            : "badge-ghost"
-                    }`}
-                  >
-                    {schedule.status === "PAID"
-                      ? "Pagado"
-                      : schedule.status === "PARTIAL"
-                        ? "Parcial"
-                        : isLate
-                          ? "Vencido"
-                          : "Pendiente"}
-                  </div>
+                  {(() => {
+                    const badgeClass = (() => {
+                      if (schedule.status === "PAID") return "badge-success text-success-content";
+                      if (schedule.status === "PARTIAL") return "badge-warning text-warning-content";
+                      if (isLate) return "badge-error text-error-content";
+                      return "badge-ghost";
+                    })();
+                    const statusLabel = (() => {
+                      if (schedule.status === "PAID") return "Pagado";
+                      if (schedule.status === "PARTIAL") return "Parcial";
+                      if (isLate) return "Vencido";
+                      return "Pendiente";
+                    })();
+                    return <div className={`badge badge-sm font-semibold capitalize ${badgeClass}`}>{statusLabel}</div>;
+                  })()}
                 </td>
                 <td className="text-right">
                   {schedule.paid_amount ? (

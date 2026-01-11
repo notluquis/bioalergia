@@ -76,18 +76,17 @@ export function ServiceScheduleTable({
                   <span
                     className={`rounded-full px-3 py-1 text-xs font-semibold tracking-wide uppercase ${badgeClass}`}
                   >
-                    {schedule.status === "PAID"
-                      ? "Pagado"
-                      : schedule.status === "PARTIAL"
-                        ? "Parcial"
-                        : schedule.status === "SKIPPED"
-                          ? "Omitido"
-                          : "Pendiente"}
+                    {(() => {
+                      if (schedule.status === "PAID") return "Pagado";
+                      if (schedule.status === "PARTIAL") return "Parcial";
+                      if (schedule.status === "SKIPPED") return "Omitido";
+                      return "Pendiente";
+                    })()}
                   </span>
                 </td>
                 <td className="text-base-content px-4 py-3">
                   <div className="space-y-1">
-                    <div>{schedule.paid_amount != null ? `$${schedule.paid_amount.toLocaleString("es-CL")}` : "—"}</div>
+                    <div>{schedule.paid_amount == null ? "—" : `$${schedule.paid_amount.toLocaleString("es-CL")}`}</div>
                     <div className="text-base-content/50 text-xs">
                       {schedule.paid_date ? dayjs(schedule.paid_date).format("DD MMM YYYY") : "—"}
                     </div>
@@ -124,7 +123,7 @@ export function ServiceScheduleTable({
               </tr>
             );
           })}
-          {!schedules.length && (
+          {schedules.length === 0 && (
             <tr>
               <td colSpan={canManage ? 7 : 6} className="text-base-content/60 px-4 py-6 text-center">
                 No hay periodos generados aún.

@@ -5,7 +5,7 @@ import { APP_CONFIG } from "@/config/app";
 import { apiClient } from "@/lib/apiClient";
 import { logger } from "@/lib/logger";
 
-import { useAuth, type UserRole } from "./AuthContext";
+import { useAuth } from "./AuthContext";
 
 export type AppSettings = {
   orgName: string;
@@ -41,7 +41,7 @@ export type SettingsContextType = {
   settings: AppSettings;
   loading: boolean;
   updateSettings: (next: AppSettings) => Promise<void>;
-  canEdit: (...roles: UserRole[]) => boolean;
+  canEdit: (...roles: string[]) => boolean;
 };
 
 export const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -170,7 +170,7 @@ function colorToRgb(color: string) {
   }
   // Otherwise, convert hex to rgb
   const hex = color.replace("#", "");
-  const bigint = parseInt(hex.length === 3 ? hex.repeat(2) : hex, 16);
+  const bigint = Number.parseInt(hex.length === 3 ? hex.repeat(2) : hex, 16);
   const r = (bigint >> 16) & 255;
   const g = (bigint >> 8) & 255;
   const b = bigint & 255;

@@ -50,7 +50,7 @@ export function useFileUpload({
   });
 
   const handleUpload = async () => {
-    if (!files.length) {
+    if (files.length === 0) {
       setError("Selecciona uno o más archivos antes de subirlos.");
       return;
     }
@@ -60,9 +60,9 @@ export function useFileUpload({
     try {
       uploadMutation.reset();
       await uploadMutation.mutateAsync(files);
-    } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
+    } catch (error_) {
+      if (error_ instanceof Error) {
+        setError(error_.message);
       } else {
         setError("Error al subir archivos");
       }
@@ -70,10 +70,10 @@ export function useFileUpload({
   };
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const selected = Array.from(event.target.files ?? []);
+    const selected = [...(event.target.files ?? [])];
     reset();
 
-    if (!selected.length) {
+    if (selected.length === 0) {
       setFiles([]);
       return;
     }
@@ -92,7 +92,7 @@ export function useFileUpload({
         }))
       );
 
-      if (problematic.length && confirmOnValidationWarning) {
+      if (problematic.length > 0 && confirmOnValidationWarning) {
         const message = problematic
           .map(
             ({ file, missing, headersCount }) =>
@@ -100,7 +100,7 @@ export function useFileUpload({
           )
           .join("\n");
 
-        const proceed = window.confirm(
+        const proceed = globalThis.confirm(
           `Advertencia: algunos archivos no contienen todas las columnas esperadas.\n\n${message}\n\n¿Deseas continuar igualmente?`
         );
 
@@ -113,7 +113,15 @@ export function useFileUpload({
     }
 
     const firstFile = selected[0];
-    setFiles(multiple ? selected : firstFile ? [firstFile] : []);
+    let newFiles: File[] = [];
+
+    if (multiple) {
+      newFiles = selected;
+    } else if (firstFile) {
+      newFiles = [firstFile];
+    }
+
+    setFiles(newFiles);
   };
 
   const reset = () => {

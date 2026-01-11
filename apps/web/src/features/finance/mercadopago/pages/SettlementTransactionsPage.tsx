@@ -93,9 +93,7 @@ export default function SettlementTransactionsPage() {
         </div>
       </div>
 
-      {!canView ? (
-        <Alert variant="error">No tienes permisos para ver conciliaciones.</Alert>
-      ) : (
+      {canView ? (
         <Table columns={columns}>
           <TableBody loading={isLoading} columnsCount={columns.length}>
             {rows?.map((row: SettlementTransaction) => (
@@ -112,6 +110,8 @@ export default function SettlementTransactionsPage() {
             ))}
           </TableBody>
         </Table>
+      ) : (
+        <Alert variant="error">No tienes permisos para ver conciliaciones.</Alert>
       )}
 
       {/* Simple Pagination Control */}

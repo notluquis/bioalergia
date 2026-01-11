@@ -53,20 +53,18 @@ export default function ReportTable({ ledger }: ReportTableProps) {
                 <td className="px-4 py-3">{m.to ?? "-"}</td>
                 <td className="px-4 py-3">{renderDirection(m.direction)}</td>
                 <td
-                  className={`px-4 py-3 font-semibold ${
-                    m.direction === "IN"
-                      ? "text-emerald-600"
-                      : m.direction === "OUT"
-                        ? "text-rose-600"
-                        : "text-base-content"
-                  }`}
+                  className={`px-4 py-3 font-semibold ${(() => {
+                    if (m.direction === "IN") return "text-emerald-600";
+                    if (m.direction === "OUT") return "text-rose-600";
+                    return "text-base-content";
+                  })()}`}
                 >
                   {formatAmount(m.direction, m.amount)}
                 </td>
                 <td className="text-base-content px-4 py-3 font-semibold">{fmtCLP(m.runningBalance)}</td>
               </tr>
             ))}
-            {!ledger.length && (
+            {ledger.length === 0 && (
               <tr>
                 <td colSpan={7} className="text-base-content/60 px-4 py-6 text-center">
                   Carga un reporte de saldo para ver los movimientos.

@@ -7,13 +7,9 @@ export function useAppBadge() {
     setBadgeCount(count);
     if ("setAppBadge" in navigator) {
       try {
-        if (count > 0) {
-          await navigator.setAppBadge(count);
-        } else {
-          await navigator.clearAppBadge();
-        }
-      } catch (e) {
-        console.error("Failed to set app badge", e);
+        await (count > 0 ? navigator.setAppBadge(count) : navigator.clearAppBadge());
+      } catch (error) {
+        console.error("Failed to set app badge", error);
       }
     }
   };

@@ -19,18 +19,16 @@ export default function InventoryCategoryManager() {
     orderBy: { name: "asc" },
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const categories = (categoriesData as any[]) ?? [];
 
   // ZenStack mutation for creating category
   const createMutation = useCreateInventoryCategory();
 
-  const error =
-    queryError instanceof Error
-      ? queryError.message
-      : createMutation.error instanceof Error
-        ? createMutation.error.message
-        : null;
+  const error = (() => {
+    if (queryError instanceof Error) return queryError.message;
+    if (createMutation.error instanceof Error) return createMutation.error.message;
+    return null;
+  })();
 
   function handleAddCategory(e: React.FormEvent) {
     e.preventDefault();
@@ -84,7 +82,9 @@ export default function InventoryCategoryManager() {
 
       <div className="border-base-300 bg-base-100 max-h-60 overflow-y-auto border p-3">
         {loading && <p className="text-base-content text-sm">Cargando categorías...</p>}
-        {!loading && !categories.length && <p className="text-base-content text-sm">No hay categorías definidas.</p>}
+        {!loading && categories.length === 0 && (
+          <p className="text-base-content text-sm">No hay categorías definidas.</p>
+        )}
         <ul className="space-y-2">
           {categories.map((cat: InventoryCategory) => (
             <li

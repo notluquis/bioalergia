@@ -46,18 +46,25 @@ function SidebarItem({
   const isActive = locationPath === item.to || locationPath.startsWith(`${item.to}/`);
   const finalActive = isActive || isPending;
 
-  const linkClassName = cn(
-    "group relative flex items-center rounded-xl transition-all duration-200 ease-in-out outline-none select-none",
-    // Mobile vs Desktop styling
-    isMobile
-      ? "w-full justify-start px-4 py-3"
-      : isCollapsed
-        ? "mx-auto h-9 w-9 justify-center p-0"
-        : "w-full justify-start px-3 py-2.5",
-    finalActive
+  const getLinkClasses = () => {
+    const base =
+      "group relative flex items-center rounded-xl transition-all duration-200 ease-in-out outline-none select-none";
+    let sizing = "w-full justify-start px-3 py-2.5";
+
+    if (isMobile) {
+      sizing = "w-full justify-start px-4 py-3";
+    } else if (isCollapsed) {
+      sizing = "mx-auto h-9 w-9 justify-center p-0";
+    }
+
+    const coloring = finalActive
       ? "bg-primary/10 text-primary font-semibold"
-      : "text-base-content/60 hover:text-base-content hover:bg-base-content/5"
-  );
+      : "text-base-content/60 hover:text-base-content hover:bg-base-content/5";
+
+    return cn(base, sizing, coloring);
+  };
+
+  const linkClassName = getLinkClasses();
 
   return (
     <Tooltip delayDuration={300}>
@@ -78,7 +85,7 @@ function SidebarItem({
           <div
             className={cn(
               "relative flex items-center justify-center transition-colors duration-200",
-              isMobile ? "mr-4" : isCollapsed ? "mr-0" : "mr-3"
+              getIconMargin(isMobile, isCollapsed)
             )}
           >
             <item.icon
@@ -118,6 +125,11 @@ function SidebarItem({
   );
 }
 
+function getIconMargin(isMobile: boolean, isCollapsed: boolean) {
+  if (isMobile) return "mr-4";
+  return isCollapsed ? "mr-0" : "mr-3";
+}
+
 export default function Sidebar({ isOpen, isMobile, onClose }: SidebarProps) {
   const { user, logout } = useAuth();
   const { can } = useCan();
@@ -131,14 +143,8 @@ export default function Sidebar({ isOpen, isMobile, onClose }: SidebarProps) {
 
   // Debounced expansion to avoid flickering
   React.useEffect(() => {
-    let timer: NodeJS.Timeout;
-    if (isHovered) {
-      // Expand quickly but not instantly
-      timer = setTimeout(() => setIsCollapsed(false), 150);
-    } else {
-      // Collapse
-      timer = setTimeout(() => setIsCollapsed(true), 300);
-    }
+    const timeoutMs = isHovered ? 150 : 300;
+    const timer = setTimeout(() => setIsCollapsed(!isHovered), timeoutMs);
     return () => clearTimeout(timer);
   }, [isHovered]);
 
@@ -155,10 +161,7 @@ export default function Sidebar({ isOpen, isMobile, onClose }: SidebarProps) {
   const visibleSections = getNavSections()
     .map((section) => {
       const filteredItems = section.items.filter((item) => {
-        if (item.requiredPermission && !can(item.requiredPermission.action, item.requiredPermission.subject)) {
-          return false;
-        }
-        return true;
+        return !(item.requiredPermission && !can(item.requiredPermission.action, item.requiredPermission.subject));
       });
       return { ...section, items: filteredItems };
     })
@@ -167,29 +170,23 @@ export default function Sidebar({ isOpen, isMobile, onClose }: SidebarProps) {
   const displayName = user?.name || user?.email?.split("@")[0] || "Usuario";
 
   // Sidebar Classes
-  const sidebarClasses = cn(
-    // Base - GPU-accelerated transitions only (transform, opacity)
-    // Rounded corners on the right side for modern look
-    // Base - GPU-accelerated transitions
-    // Removed backdrop-blur-xl as it causes massive repaints during width animation
-    "flex flex-col bg-base-100 border-base-200 transition-[width] duration-300 ease-in-out z-50 will-change-[width] transform-gpu",
-    // Mobile
-    isMobile
-      ? cn(
-          "fixed inset-y-0 left-0 w-64 h-[100dvh] shadow-2xl safe-area-left rounded-r-3xl border-r",
-          isOpen ? "translate-x-0" : "-translate-x-full"
-        )
-      : cn(
-          // Desktop
-          "h-full rounded-2xl border shadow-xl",
-          isCollapsed ? "w-16" : "w-64"
-        )
+  const baseClasses =
+    "flex flex-col bg-base-100 border-base-200 transition-[width] duration-300 ease-in-out z-50 will-change-[width] transform-gpu";
+
+  const mobileClasses = cn(
+    "fixed inset-y-0 left-0 w-64 h-[100dvh] shadow-2xl safe-area-left rounded-r-3xl border-r",
+    isOpen ? "translate-x-0" : "-translate-x-full"
   );
+
+  const desktopClasses = cn("h-full rounded-2xl border shadow-xl", isCollapsed ? "w-16" : "w-64");
+
+  const sidebarClasses = cn(baseClasses, isMobile ? mobileClasses : desktopClasses);
 
   return (
     <TooltipProvider delayDuration={0}>
       <Backdrop isVisible={isMobile && isOpen} onClose={onClose} zIndex={40} />
 
+      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
       <aside
         className={sidebarClasses}
         onMouseEnter={() => !isMobile && setIsHovered(true)}
@@ -273,7 +270,7 @@ export default function Sidebar({ isOpen, isMobile, onClose }: SidebarProps) {
               >
                 <div className="bg-base-200 border-base-300 h-10 w-10 shrink-0 overflow-hidden rounded-full border">
                   <div className="bg-base-100 text-primary flex h-full w-full items-center justify-center font-bold">
-                    {displayName.substring(0, 2).toUpperCase()}
+                    {displayName.slice(0, 2).toUpperCase()}
                   </div>
                 </div>
 

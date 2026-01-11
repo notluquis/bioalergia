@@ -10,6 +10,19 @@ import { fetchUsers, toggleUserMfa } from "@/features/users/api";
 import type { User } from "@/features/users/types";
 import { BADGE_SM } from "@/lib/styles";
 
+const getSecurityScore = (user: User) => {
+  let score = 0;
+  if (user.mfaEnabled) score += 50;
+  if (user.hasPasskey) score += 50;
+  return score;
+};
+
+const getSecurityBadge = (score: number) => {
+  if (score === 100) return { label: "Óptima", color: "badge-success", icon: Shield };
+  if (score >= 50) return { label: "Buena", color: "badge-warning", icon: ShieldCheck };
+  return { label: "Básica", color: "badge-error", icon: Lock };
+};
+
 export default function AccessSettingsPage() {
   const { success, error: toastError } = useToast();
   const { can } = useAuth();
@@ -32,19 +45,6 @@ export default function AccessSettingsPage() {
       toastError(err instanceof Error ? err.message : "Error desconocido");
     },
   });
-
-  const getSecurityScore = (user: User) => {
-    let score = 0;
-    if (user.mfaEnabled) score += 50;
-    if (user.hasPasskey) score += 50;
-    return score;
-  };
-
-  const getSecurityBadge = (score: number) => {
-    if (score === 100) return { label: "Óptima", color: "badge-success", icon: Shield };
-    if (score >= 50) return { label: "Buena", color: "badge-warning", icon: ShieldCheck };
-    return { label: "Básica", color: "badge-error", icon: Lock };
-  };
 
   const tableColumns = [
     { key: "user", label: "Usuario" },
@@ -130,7 +130,7 @@ export default function AccessSettingsPage() {
                           <div className="avatar placeholder">
                             <div className="bg-neutral text-neutral-content flex h-10 w-10 items-center justify-center rounded-full">
                               <span className="text-xs">
-                                {user.email?.split("@")[0]?.substring(0, 2)?.toUpperCase() || "??"}
+                                {user.email?.split("@")[0]?.slice(0, 2)?.toUpperCase() || "??"}
                               </span>
                             </div>
                           </div>

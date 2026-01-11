@@ -38,12 +38,11 @@ export default function EmployeeAuditSelector({
     }
   };
 
-  const displayText =
-    selectedIds.length === 0
-      ? "Seleccionar empleados..."
-      : selectedIds.length <= 2
-        ? selectedNames.join(", ")
-        : `${selectedNames.slice(0, 2).join(", ")} +${selectedIds.length - 2}`;
+  const displayText = (() => {
+    if (selectedIds.length === 0) return "Seleccionar empleados...";
+    if (selectedIds.length <= 2) return selectedNames.join(", ");
+    return `${selectedNames.slice(0, 2).join(", ")} +${selectedIds.length - 2}`;
+  })();
 
   return (
     <div className="relative flex flex-col gap-2">

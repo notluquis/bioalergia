@@ -44,12 +44,15 @@ export function LoanDetail({
   const statusBadge = (() => {
     if (!loan) return { label: "", className: "" };
     switch (loan.status) {
-      case "COMPLETED":
+      case "COMPLETED": {
         return { label: "Liquidado", className: "bg-emerald-100 text-emerald-700" };
-      case "DEFAULTED":
+      }
+      case "DEFAULTED": {
         return { label: "En mora", className: "bg-rose-100 text-rose-700" };
-      default:
+      }
+      default: {
         return { label: "Activo", className: "bg-amber-100 text-amber-700" };
+      }
     }
   })();
 
@@ -62,8 +65,8 @@ export function LoanDetail({
       await onRegenerate(regenerateForm);
       setRegenerateOpen(false);
       setRegenerateForm({});
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "No se pudo regenerar el cronograma";
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "No se pudo regenerar el cronograma";
       setRegenerateError(message);
     } finally {
       setRegenerating(false);
@@ -90,7 +93,13 @@ export function LoanDetail({
             <span>Inicio {dayjs(loan.start_date).format("DD MMM YYYY")}</span>
             <span>
               {loan.total_installments} cuotas ·{" "}
-              {loan.frequency === "WEEKLY" ? "semanal" : loan.frequency === "BIWEEKLY" ? "quincenal" : "mensual"}
+              {
+                {
+                  WEEKLY: "semanal",
+                  BIWEEKLY: "quincenal",
+                  MONTHLY: "mensual",
+                }[loan.frequency]
+              }
             </span>
             <span>Tasa {loan.interest_rate.toLocaleString("es-CL")}%</span>
           </div>

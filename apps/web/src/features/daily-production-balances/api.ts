@@ -87,7 +87,7 @@ export async function fetchProductionBalances(from: string, to: string): Promise
   if (payload.status !== "ok") {
     throw new Error(payload.message || "No se pudieron obtener los balances diarios de prestaciones");
   }
-  return (payload.items ?? []).map(asBalance);
+  return (payload.items ?? []).map((item) => asBalance(item));
 }
 
 export async function saveProductionBalance(

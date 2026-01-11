@@ -166,26 +166,13 @@ export default function AssociatedAccounts({
       bankName: suggestion.bankName ?? "",
       accountType: suggestion.accountType ?? "",
       holder: suggestion.holder ?? "",
-      concept: suggestion.assignedCounterpartId ? "" : "",
+      concept: suggestion.assignedCounterpartId ? "" : (suggestion.holder ?? ""),
       bankAccountNumber: suggestion.bankAccountNumber ?? "",
     });
     setSuggestionQuery(suggestion.accountIdentifier);
-    if (!selectedId) {
-      // setForm((prev) => ({
-      //   ...prev,
-      //   rut: suggestion.rut ?? prev.rut,
-      //   name: suggestion.holder ?? prev.name,
-      // }));
-    }
   }
 
   function handleSuggestionCreate(suggestion: CounterpartAccountSuggestion) {
-    // setForm((prev) => ({
-    //   ...prev,
-    //   rut: suggestion.rut ?? prev.rut,
-    //   name: suggestion.holder ?? prev.name,
-    //   category: prev.category,
-    // }));
     setAccountForm({
       accountIdentifier: suggestion.accountIdentifier,
       bankName: suggestion.bankName ?? "",
@@ -196,6 +183,106 @@ export default function AssociatedAccounts({
     });
     setSuggestionQuery(suggestion.accountIdentifier);
   }
+
+  const renderQuickViewContent = () => {
+    if (quickViewLoading) {
+      return (
+        <div className="text-base-content/70 flex items-center gap-2 text-xs">
+          <span className={LOADING_SPINNER_XS} />
+          Cargando movimientos…
+        </div>
+      );
+    }
+    if (quickViewError) {
+      return (
+        <Alert variant="error" className="text-xs">
+          {quickViewError instanceof Error ? quickViewError.message : "Error al cargar movimientos"}
+        </Alert>
+      );
+    }
+    if (quickViewRows.length === 0) {
+      return <p className="text-base-content/60 text-xs">Sin movimientos dentro del rango seleccionado.</p>;
+    }
+    return (
+      <div className="overflow-x-auto">
+        <table className="text-base-content min-w-full text-xs">
+          <thead className="bg-base-100/60 text-primary">
+            <tr>
+              <th className="px-3 py-2 text-left text-xs font-semibold tracking-wide uppercase">Fecha</th>
+              <th className="px-3 py-2 text-left text-xs font-semibold tracking-wide uppercase">Descripción</th>
+              <th className="px-3 py-2 text-left text-xs font-semibold tracking-wide uppercase">Origen</th>
+              <th className="px-3 py-2 text-left text-xs font-semibold tracking-wide uppercase">Destino</th>
+              <th className="px-3 py-2 text-right text-xs font-semibold tracking-wide uppercase">Monto</th>
+            </tr>
+          </thead>
+          <tbody>
+            {quickViewRows.map((movement) => (
+              <tr key={movement.id} className="border-base-200 border-t">
+                <td className="text-base-content px-3 py-2">
+                  {dayjs(movement.transactionDate).format("DD MMM YYYY HH:mm")}
+                </td>
+                <td className="text-base-content px-3 py-2">{movement.description ?? "-"}</td>
+                <td className="text-base-content px-3 py-2">{movement.externalReference ?? "-"}</td>
+                <td className="text-base-content px-3 py-2">{movement.transactionType ?? "-"}</td>
+                <td className="text-base-content px-3 py-2 text-right">
+                  {movement.transactionAmount == null ? "-" : fmtCLP(movement.transactionAmount)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
+  const renderSuggestions = () => {
+    if (suggestionsLoading) {
+      return <span className="text-base-content/60 text-xs">Buscando sugerencias...</span>;
+    }
+    if (accountSuggestions.length === 0) {
+      return <span className="text-base-content/60 text-xs">No hay sugerencias para este identificador.</span>;
+    }
+    return (
+      <div className="border-base-300 bg-base-100 max-h-48 overflow-y-auto rounded-xl border">
+        {accountSuggestions.map((suggestion) => (
+          <div
+            key={suggestion.accountIdentifier}
+            className="border-base-300 flex flex-col gap-1 border-b px-3 py-2 text-xs last:border-b-0"
+          >
+            <span className="text-base-content font-semibold">{suggestion.accountIdentifier}</span>
+            <span className="text-base-content/90">{suggestion.holder ?? "(sin titular)"}</span>
+            {suggestion.bankAccountNumber && (
+              <span className="text-base-content/90 text-xs">Cuenta {suggestion.bankAccountNumber}</span>
+            )}
+            {suggestion.rut && <span className="text-base-content/90 text-xs">RUT {formatRut(suggestion.rut)}</span>}
+            <span className="text-base-content/90 text-xs">
+              {suggestion.movements} mov. · {fmtCLP(suggestion.totalAmount)}
+            </span>
+            <div className="flex flex-wrap gap-2 pt-1">
+              <Button size="xs" variant="primary" onClick={() => handleSuggestionClick(suggestion)}>
+                Autrellenar
+              </Button>
+              {selectedId && suggestion.rut && (
+                <Button
+                  variant="secondary"
+                  size="xs"
+                  onClick={() => handleAttachRut(suggestion.rut)}
+                  disabled={attachRutMutation.isPending}
+                >
+                  {attachRutMutation.isPending ? "Vinculando..." : "Vincular por RUT"}
+                </Button>
+              )}
+              {!selectedId && (
+                <Button size="xs" variant="secondary" onClick={() => handleSuggestionCreate(suggestion)}>
+                  Copiar datos
+                </Button>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
 
   const attachRutMutation = useMutation({
     mutationFn: ({ id, rut }: { id: number; rut: string }) => attachCounterpartRut(id, rut),
@@ -253,12 +340,12 @@ export default function AssociatedAccounts({
       }
     });
 
-    const accountGroups = Array.from(groups.values())
+    const accountGroups = [...groups.values()]
       .map((group) => ({
         ...group,
         concept: group.concept ?? "",
       }))
-      .sort((a, b) => a.label.localeCompare(b.label, "es", { sensitivity: "base" }));
+      .toSorted((a, b) => a.label.localeCompare(b.label, "es", { sensitivity: "base" }));
 
     return { accountGroups, identifierToKey };
   }, [detail?.accounts]);
@@ -361,7 +448,7 @@ export default function AssociatedAccounts({
       });
 
       // Sort
-      const sorted = Array.from(dedup.values()).sort(
+      const sorted = [...dedup.values()].toSorted(
         (a, b) => dayjs(b.transactionDate).valueOf() - dayjs(a.transactionDate).valueOf()
       );
 
@@ -467,7 +554,7 @@ export default function AssociatedAccounts({
                 </Fragment>
               );
             })}
-            {!accountGroups.length && (
+            {accountGroups.length === 0 && (
               <tr>
                 <td colSpan={5} className="text-base-content/60 px-3 py-4 text-center text-xs">
                   Sin cuentas asociadas.
@@ -521,51 +608,7 @@ export default function AssociatedAccounts({
                 Año en curso
               </Button>
             </div>
-            <div className="surface-recessed border-base-300/70 border p-4">
-              {quickViewLoading ? (
-                <div className="text-base-content/70 flex items-center gap-2 text-xs">
-                  <span className={LOADING_SPINNER_XS} />
-                  Cargando movimientos…
-                </div>
-              ) : quickViewError ? (
-                <Alert variant="error" className="text-xs">
-                  {quickViewError instanceof Error ? quickViewError.message : "Error al cargar movimientos"}
-                </Alert>
-              ) : quickViewRows.length ? (
-                <div className="overflow-x-auto">
-                  <table className="text-base-content min-w-full text-xs">
-                    <thead className="bg-base-100/60 text-primary">
-                      <tr>
-                        <th className="px-3 py-2 text-left text-xs font-semibold tracking-wide uppercase">Fecha</th>
-                        <th className="px-3 py-2 text-left text-xs font-semibold tracking-wide uppercase">
-                          Descripción
-                        </th>
-                        <th className="px-3 py-2 text-left text-xs font-semibold tracking-wide uppercase">Origen</th>
-                        <th className="px-3 py-2 text-left text-xs font-semibold tracking-wide uppercase">Destino</th>
-                        <th className="px-3 py-2 text-right text-xs font-semibold tracking-wide uppercase">Monto</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {quickViewRows.map((movement) => (
-                        <tr key={movement.id} className="border-base-200 border-t">
-                          <td className="text-base-content px-3 py-2">
-                            {dayjs(movement.transactionDate).format("DD MMM YYYY HH:mm")}
-                          </td>
-                          <td className="text-base-content px-3 py-2">{movement.description ?? "-"}</td>
-                          <td className="text-base-content px-3 py-2">{movement.externalReference ?? "-"}</td>
-                          <td className="text-base-content px-3 py-2">{movement.transactionType ?? "-"}</td>
-                          <td className="text-base-content px-3 py-2 text-right">
-                            {movement.transactionAmount != null ? fmtCLP(movement.transactionAmount) : "-"}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <p className="text-base-content/60 text-xs">Sin movimientos dentro del rango seleccionado.</p>
-              )}
-            </div>
+            <div className="surface-recessed border-base-300/70 border p-4">{renderQuickViewContent()}</div>
           </div>
         ) : (
           <div className="border-base-300/70 bg-base-100/40 text-base-content/60 rounded-[28px] border border-dashed p-8 text-center text-sm">
@@ -583,50 +626,7 @@ export default function AssociatedAccounts({
             onChange={handleAccountIdentifierChange}
             placeholder="Ej. 124282432930"
           />
-          {suggestionsLoading ? (
-            <span className="text-base-content/60 text-xs">Buscando sugerencias...</span>
-          ) : accountSuggestions.length ? (
-            <div className="border-base-300 bg-base-100 max-h-48 overflow-y-auto rounded-xl border">
-              {accountSuggestions.map((suggestion) => (
-                <div
-                  key={suggestion.accountIdentifier}
-                  className="border-base-300 flex flex-col gap-1 border-b px-3 py-2 text-xs last:border-b-0"
-                >
-                  <span className="text-base-content font-semibold">{suggestion.accountIdentifier}</span>
-                  <span className="text-base-content/90">{suggestion.holder ?? "(sin titular)"}</span>
-                  {suggestion.bankAccountNumber && (
-                    <span className="text-base-content/90 text-xs">Cuenta {suggestion.bankAccountNumber}</span>
-                  )}
-                  {suggestion.rut && (
-                    <span className="text-base-content/90 text-xs">RUT {formatRut(suggestion.rut)}</span>
-                  )}
-                  <span className="text-base-content/90 text-xs">
-                    {suggestion.movements} mov. · {fmtCLP(suggestion.totalAmount)}
-                  </span>
-                  <div className="flex flex-wrap gap-2 pt-1">
-                    <Button variant="secondary" size="xs" onClick={() => handleSuggestionClick(suggestion)}>
-                      Usar
-                    </Button>
-                    {selectedId && suggestion.rut && (
-                      <Button
-                        variant="secondary"
-                        size="xs"
-                        onClick={() => handleAttachRut(suggestion.rut)}
-                        disabled={attachRutMutation.isPending}
-                      >
-                        {attachRutMutation.isPending ? "Vinculando..." : "Vincular por RUT"}
-                      </Button>
-                    )}
-                    {!selectedId && (
-                      <Button size="xs" onClick={() => handleSuggestionCreate(suggestion)}>
-                        Crear contraparte
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : null}
+          {renderSuggestions()}
           <div className="grid gap-3 md:grid-cols-2">
             <Input
               label="Banco"

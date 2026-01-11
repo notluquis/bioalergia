@@ -65,8 +65,8 @@ export function toPayload(form: FormState): ProductionBalancePayload {
     vacunas: coerceAmount(form.vacunas),
     licencias: coerceAmount(form.licencias),
     roxair: coerceAmount(form.roxair),
-    comentarios: form.comentarios.trim() ? form.comentarios.trim() : null,
+    comentarios: form.comentarios.trim() || null,
     status: form.status,
-    reason: form.reason.trim() ? form.reason.trim() : null,
+    reason: form.reason.trim() || null,
   };
 }

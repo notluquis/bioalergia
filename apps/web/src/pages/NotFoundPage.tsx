@@ -16,7 +16,7 @@ export default function NotFoundPage() {
         no está disponible.
       </p>
       <div className="flex gap-4">
-        <button className="btn btn-outline" onClick={() => window.history.back()}>
+        <button className="btn btn-outline" onClick={() => globalThis.history.back()}>
           <ArrowLeft size={18} />
           Volver
         </button>

@@ -6,14 +6,14 @@
 /** Standard API response status */
 export type ApiStatus = "ok" | "error";
 
+/** ID type for JSON responses (can be string, number or bigint) */
+export type JsonId = string | number | bigint;
+
 /** Date range for queries */
 export type DateRange = {
   from: string;
   to: string;
 };
-
-/** Currency amount in CLP (Chilean Pesos) */
-export type CurrencyAmount = number;
 
 /** Direction of money flow */
 export type MoneyDirection = "IN" | "OUT" | "NEUTRO";
@@ -34,7 +34,7 @@ export type InterestType = "SIMPLE" | "COMPOUND";
 export type EntityType = "PERSON" | "COMPANY";
 
 /** Transaction movement from DB (mapped) */
-export type DbMovement = {
+export type Transaction = {
   id: number;
   transactionDate: string;
   description: string | null;
@@ -46,6 +46,3 @@ export type DbMovement = {
   paymentMethod: string | null;
   settlementNetAmount: number | null;
 };
-
-/** Alias for backward compatibility */
-export type Transaction = DbMovement;

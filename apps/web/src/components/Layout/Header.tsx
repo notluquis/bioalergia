@@ -23,24 +23,44 @@ export default function Header() {
     let titleText = "Inicio";
     const crumbs: string[] = [];
 
-    if (parts[0] === "finanzas") {
-      crumbs.push("Finanzas");
-      titleText = parts[1] ? parts[1].charAt(0).toUpperCase() + parts[1].slice(1) : "Finanzas";
-    } else if (parts[0] === "services") {
-      crumbs.push("Servicios");
-      titleText = "Servicios";
-    } else if (parts[0] === "calendar") {
-      crumbs.push("Calendario");
-      titleText = parts[1] ? parts[1].charAt(0).toUpperCase() + parts[1].slice(1) : "Calendario";
-    } else if (parts[0] === "operations") {
-      crumbs.push("Operaciones");
-      titleText = "Operaciones";
-    } else if (parts[0] === "hr") {
-      crumbs.push("RRHH");
-      titleText = parts[1] ? parts[1].charAt(0).toUpperCase() + parts[1].slice(1) : "RRHH";
-    } else if (parts[0] === "settings") {
-      crumbs.push("Configuración");
-      titleText = parts[1] ? parts[1].charAt(0).toUpperCase() + parts[1].slice(1) : "Configuración";
+    switch (parts[0]) {
+      case "finanzas": {
+        crumbs.push("Finanzas");
+        titleText = parts[1] ? parts[1].charAt(0).toUpperCase() + parts[1].slice(1) : "Finanzas";
+
+        break;
+      }
+      case "services": {
+        crumbs.push("Servicios");
+        titleText = "Servicios";
+
+        break;
+      }
+      case "calendar": {
+        crumbs.push("Calendario");
+        titleText = parts[1] ? parts[1].charAt(0).toUpperCase() + parts[1].slice(1) : "Calendario";
+
+        break;
+      }
+      case "operations": {
+        crumbs.push("Operaciones");
+        titleText = "Operaciones";
+
+        break;
+      }
+      case "hr": {
+        crumbs.push("RRHH");
+        titleText = parts[1] ? parts[1].charAt(0).toUpperCase() + parts[1].slice(1) : "RRHH";
+
+        break;
+      }
+      case "settings": {
+        crumbs.push("Configuración");
+        titleText = parts[1] ? parts[1].charAt(0).toUpperCase() + parts[1].slice(1) : "Configuración";
+
+        break;
+      }
+      // No default
     }
 
     return { breadcrumbs: crumbs, title: titleText };

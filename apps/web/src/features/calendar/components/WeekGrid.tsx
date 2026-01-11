@@ -123,7 +123,7 @@ function calculateEventLayout(events: CalendarEventDetail[]): EventWithLayout[] 
   };
 
   // Sort by start time, then by duration (longer first)
-  const sorted = [...events].sort((a, b) => {
+  const sorted = [...events].toSorted((a, b) => {
     const startDiff = getStartMs(a) - getStartMs(b);
     if (startDiff !== 0) return startDiff;
     return getEndMs(b) - getStartMs(b) - (getEndMs(a) - getStartMs(a));
@@ -380,7 +380,7 @@ export function WeekGrid({ events, weekStart, loading, onEventClick }: WeekGridP
                 // Build tooltip text (always complete info)
                 const timeStr = start ? start.format("HH:mm") : "";
                 const endTimeStr = end ? end.format("HH:mm") : "";
-                const amountStr = event.amountExpected != null ? currencyFormatter.format(event.amountExpected) : "";
+                const amountStr = event.amountExpected == null ? "" : currencyFormatter.format(event.amountExpected);
                 const tooltipLines = [event.summary || "(Sin título)", `${timeStr} - ${endTimeStr}`, amountStr].filter(
                   Boolean
                 );
@@ -409,38 +409,35 @@ export function WeekGrid({ events, weekStart, loading, onEventClick }: WeekGridP
                     title={tooltipLines.join("\n")}
                     data-mode={displayMode}
                   >
-                    {displayMode === "minimal" ? (
-                      // Minimal: time + title inline, very compact
-                      <span className="week-grid__event-row">
-                        <span className="week-grid__event-time">{timeStr}</span>
-                        <span className="week-grid__event-title">{title}</span>
-                      </span>
-                    ) : displayMode === "compact" ? (
-                      // Compact: time + title on one line
-                      <span className="week-grid__event-row">
-                        <span className="week-grid__event-time">{timeStr}</span>
-                        <span className="week-grid__event-title">{title}</span>
-                      </span>
-                    ) : displayMode === "normal" ? (
-                      // Normal: time + title inline
-                      <span className="week-grid__event-row">
-                        <span className="week-grid__event-time">{timeStr}</span>
-                        <span className="week-grid__event-title">{title}</span>
-                      </span>
-                    ) : (
-                      // Detailed: time + title inline, then amount below
-                      <>
-                        <span className="week-grid__event-row">
-                          <span className="week-grid__event-time">{timeStr}</span>
-                          <span className="week-grid__event-title">{title}</span>
-                        </span>
-                        {event.amountExpected != null && (
-                          <span className="week-grid__event-amount">
-                            {currencyFormatter.format(event.amountExpected)}
-                          </span>
-                        )}
-                      </>
-                    )}
+                    {(() => {
+                      switch (displayMode) {
+                        case "minimal":
+                        case "compact":
+                        case "normal": {
+                          return (
+                            <span className="week-grid__event-row">
+                              <span className="week-grid__event-time">{timeStr}</span>
+                              <span className="week-grid__event-title">{title}</span>
+                            </span>
+                          );
+                        }
+                        default: {
+                          return (
+                            <>
+                              <span className="week-grid__event-row">
+                                <span className="week-grid__event-time">{timeStr}</span>
+                                <span className="week-grid__event-title">{title}</span>
+                              </span>
+                              {event.amountExpected != null && (
+                                <span className="week-grid__event-amount">
+                                  {currencyFormatter.format(event.amountExpected)}
+                                </span>
+                              )}
+                            </>
+                          );
+                        }
+                      }
+                    })()}
                   </button>
                 );
               })}
@@ -463,7 +460,7 @@ function NowIndicator({ startHour, endHour }: { startHour: number; endHour: numb
     // Initial update to sync
     setNow(dayjs());
     // Update every minute
-    const timer = setInterval(() => setNow(dayjs()), 60000);
+    const timer = setInterval(() => setNow(dayjs()), 60_000);
     return () => clearInterval(timer);
   }, []);
 

@@ -170,8 +170,8 @@ export default function CounterpartsPage() {
           console.warn("Auto-attach failed", attachError);
         }
       }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Error al guardar contraparte";
+    } catch (error_) {
+      const message = error_ instanceof Error ? error_.message : "Error al guardar contraparte";
       setError(message);
       toastError(message);
     }
@@ -209,7 +209,7 @@ export default function CounterpartsPage() {
         map.set(key, item);
       }
     }
-    return Array.from(map.values());
+    return [...map.values()];
   })();
 
   const visibleCounterparts = deduplicatedCounterparts.filter((item) => {
@@ -305,7 +305,7 @@ export default function CounterpartsPage() {
                 variant="ghost"
                 disabled={!detail || !canUpdate}
                 onClick={() => detail && openFormModal(detail.counterpart)}
-                title={!canUpdate ? "No tienes permisos para editar" : undefined}
+                title={canUpdate ? undefined : "No tienes permisos para editar"}
               >
                 {!canUpdate && <Lock className="mr-2 h-3 w-3" />}
                 {detail ? "Editar contraparte" : "Selecciona para editar"}

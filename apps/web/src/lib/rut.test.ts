@@ -3,9 +3,11 @@ import { describe, expect, it } from "vitest";
 import { formatRut, normalizeRut, validateRut } from "./rut";
 
 describe("RUT Utilities", () => {
+  const VALID_RUT = "12.345.678-5";
+
   describe("normalizeRut", () => {
     it("should normalize a valid RUT with dots and dash", () => {
-      expect(normalizeRut("12.345.678-5")).toBe("12345678-5");
+      expect(normalizeRut(VALID_RUT)).toBe("12345678-5");
     });
 
     it("should normalize a RUT without dots or dash", () => {
@@ -23,6 +25,7 @@ describe("RUT Utilities", () => {
     it("should return null for empty input", () => {
       expect(normalizeRut("")).toBeNull();
       expect(normalizeRut(null)).toBeNull();
+      // eslint-disable-next-line unicorn/no-useless-undefined
       expect(normalizeRut(undefined)).toBeNull();
     });
 
@@ -37,7 +40,7 @@ describe("RUT Utilities", () => {
     });
 
     it("should format an already formatted RUT", () => {
-      expect(formatRut("12.345.678-5")).toBe("12.345.678-5");
+      expect(formatRut(VALID_RUT)).toBe(VALID_RUT);
     });
 
     it("should format a RUT with K", () => {
@@ -52,7 +55,7 @@ describe("RUT Utilities", () => {
 
   describe("validateRut", () => {
     it("should return true for valid RUTs", () => {
-      expect(validateRut("12.345.678-5")).toBe(true);
+      expect(validateRut(VALID_RUT)).toBe(true);
       expect(validateRut("11.111.111-1")).toBe(true);
     });
 

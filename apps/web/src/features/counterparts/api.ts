@@ -89,8 +89,9 @@ export async function fetchCounterpartSummary(counterpartId: number, params?: { 
   const search = new URLSearchParams();
   if (params?.from) search.set("from", params.from);
   if (params?.to) search.set("to", params.to);
+  const queryString = search.size > 0 ? `?${search.toString()}` : "";
   const data = await apiClient.get<{ summary: CounterpartSummary }>(
-    `/api/counterparts/${counterpartId}/summary${search.size ? `?${search.toString()}` : ""}`
+    `/api/counterparts/${counterpartId}/summary${queryString}`
   );
   return data.summary;
 }

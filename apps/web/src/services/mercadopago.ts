@@ -92,7 +92,7 @@ export const MPService = {
       chunkEnd.setDate(chunkEnd.getDate() + MAX_DAYS);
 
       // Don't exceed the end date
-      const actualEnd = chunkEnd > end ? end : chunkEnd;
+      const actualEnd = new Date(Math.min(chunkEnd.getTime(), end.getTime()));
 
       chunks.push({ begin: new Date(chunkStart), end: actualEnd });
 
@@ -127,4 +127,4 @@ export const MPService = {
   },
 };
 
-export type { MpReportType };
+export { type MpReportType } from "../../shared/mercadopago";

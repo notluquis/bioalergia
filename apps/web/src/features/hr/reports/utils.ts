@@ -75,7 +75,7 @@ export function processEmployeeData(
 
   const avgDailyMinutes = totalDays > 0 ? Math.round(totalMinutes / totalDays) : 0;
   const overtimePercentage =
-    totalMinutes > 0 ? parseFloat(((totalOvertimeMinutes / totalMinutes) * 100).toFixed(1)) : 0;
+    totalMinutes > 0 ? Number.parseFloat(((totalOvertimeMinutes / totalMinutes) * 100).toFixed(1)) : 0;
 
   return {
     employeeId,
@@ -96,13 +96,17 @@ export function processEmployeeData(
  * Prepara datos para gráfico (formato Recharts)
  */
 export function prepareChartData(data: EmployeeWorkData, granularity: ReportGranularity) {
-  const breakdown =
-    granularity === "day" ? data.dailyBreakdown : granularity === "week" ? data.weeklyBreakdown : data.monthlyBreakdown;
+  const breakdownMap = {
+    day: data.dailyBreakdown,
+    week: data.weeklyBreakdown,
+    month: data.monthlyBreakdown,
+  };
+  const breakdown = breakdownMap[granularity];
 
   return Object.entries(breakdown).map(([period, minutes]) => ({
     period,
 
-    [data.fullName]: parseFloat((minutes / 60).toFixed(2)), // Convertir a horas
+    [data.fullName]: Number.parseFloat((minutes / 60).toFixed(2)), // Convertir a horas
     minutes,
   }));
 }
@@ -113,8 +117,12 @@ export function prepareChartData(data: EmployeeWorkData, granularity: ReportGran
 export function prepareComparisonData(employees: EmployeeWorkData[], granularity: ReportGranularity) {
   if (employees.length === 0) return [];
 
-  const breakdown =
-    granularity === "day" ? "dailyBreakdown" : granularity === "week" ? "weeklyBreakdown" : "monthlyBreakdown";
+  const breakdownKeyMap = {
+    day: "dailyBreakdown",
+    week: "weeklyBreakdown",
+    month: "monthlyBreakdown",
+  } as const;
+  const breakdown = breakdownKeyMap[granularity];
 
   // Obtener todas las fechas/semanas/meses
   const allPeriods = new Set<string>();
@@ -122,14 +130,14 @@ export function prepareComparisonData(employees: EmployeeWorkData[], granularity
     Object.keys(emp[breakdown]).forEach((period) => allPeriods.add(period));
   });
 
-  const periods = Array.from(allPeriods).sort();
+  const periods = [...allPeriods].toSorted((a, b) => a.localeCompare(b));
 
   return periods.map((period) => {
     const dataPoint: Record<string, string | number> = { period };
     employees.forEach((emp) => {
       const minutes = emp[breakdown][period] || 0;
 
-      dataPoint[emp.fullName] = parseFloat((minutes / 60).toFixed(2));
+      dataPoint[emp.fullName] = Number.parseFloat((minutes / 60).toFixed(2));
     });
     return dataPoint;
   });
@@ -152,13 +160,13 @@ export function calculateStats(data: EmployeeWorkData[], periodCount = 1) {
   // Ej: 1600 horas / (10 empleados * 1 mes) = 160h promedio/emp/mes
   const averageHours = totalHours / (data.length * Math.max(periodCount, 1));
 
-  const maxEmployee = data.reduce((max, emp) => (emp.totalMinutes > max.totalMinutes ? emp : max));
-  const minEmployee = data.reduce((min, emp) => (emp.totalMinutes < min.totalMinutes ? emp : min));
+  const maxEmployee = data.reduce((max, emp) => (emp.totalMinutes > max.totalMinutes ? emp : max), data[0]!);
+  const minEmployee = data.reduce((min, emp) => (emp.totalMinutes < min.totalMinutes ? emp : min), data[0]!);
 
   return {
-    totalHours: parseFloat(totalHours.toFixed(2)),
-    averageHours: parseFloat(averageHours.toFixed(2)),
-    maxEmployee: { name: maxEmployee.fullName, hours: parseFloat((maxEmployee.totalMinutes / 60).toFixed(2)) },
-    minEmployee: { name: minEmployee.fullName, hours: parseFloat((minEmployee.totalMinutes / 60).toFixed(2)) },
+    totalHours: Number.parseFloat(totalHours.toFixed(2)),
+    averageHours: Number.parseFloat(averageHours.toFixed(2)),
+    maxEmployee: { name: maxEmployee.fullName, hours: Number.parseFloat((maxEmployee.totalMinutes / 60).toFixed(2)) },
+    minEmployee: { name: minEmployee.fullName, hours: Number.parseFloat((minEmployee.totalMinutes / 60).toFixed(2)) },
   };
 }

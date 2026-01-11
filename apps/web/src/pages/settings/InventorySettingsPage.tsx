@@ -14,6 +14,12 @@ import {
 } from "@/features/inventory/api";
 import type { InventoryItem } from "@/features/inventory/types";
 
+const getStockStatusColor = (stock: number) => {
+  if (stock <= 0) return "text-error";
+  if (stock < 10) return "text-warning";
+  return "text-success";
+};
+
 export default function InventorySettingsPage() {
   const [isCreating, setIsCreating] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
@@ -133,154 +139,180 @@ export default function InventorySettingsPage() {
             </div>
           )}
 
-          <div>
-            {isLoading ? (
-              <div className="text-base-content/50 py-12 text-center">
-                <Loader2 className="mx-auto animate-spin" />
+          <InventoryList
+            isLoading={isLoading}
+            categories={categories}
+            itemsByCategory={itemsByCategory}
+            uncategorizedItems={uncategorizedItems}
+            expandedCategories={expandedCategories}
+            toggleCategory={toggleCategory}
+            onDeleteCategory={(id) => {
+              if (confirm("¿Estás seguro de eliminar esta categoría?")) {
+                deleteMutation.mutate(id);
+              }
+            }}
+          />
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+interface InventoryListProps {
+  isLoading: boolean;
+  categories: { id: number; name: string }[];
+  itemsByCategory: Record<number, InventoryItem[]>;
+  uncategorizedItems: InventoryItem[];
+  expandedCategories: Set<number>;
+  toggleCategory: (id: number) => void;
+  onDeleteCategory: (id: number) => void;
+}
+
+function InventoryList({
+  isLoading,
+  categories,
+  itemsByCategory,
+  uncategorizedItems,
+  expandedCategories,
+  toggleCategory,
+  onDeleteCategory,
+}: InventoryListProps) {
+  if (isLoading) {
+    return (
+      <div className="text-base-content/50 py-12 text-center">
+        <Loader2 className="mx-auto animate-spin" />
+      </div>
+    );
+  }
+
+  if (categories.length === 0 && uncategorizedItems.length === 0) {
+    return <div className="text-base-content/50 py-12 text-center">No hay categorías ni items registrados.</div>;
+  }
+
+  return (
+    <div className="divide-base-200 divide-y border-t">
+      {categories.map((category) => {
+        const catItems = itemsByCategory[category.id] ?? [];
+        const isExpanded = expandedCategories.has(category.id);
+
+        return (
+          <div key={category.id}>
+            {/* Category Row */}
+            <div className="hover:bg-base-200/50 group flex items-center gap-3 p-4 transition-colors">
+              <button
+                type="button"
+                className="flex flex-1 items-center gap-3 text-left focus:outline-none"
+                onClick={() => toggleCategory(category.id)}
+              >
+                <span
+                  className="text-base-content/50 flex h-6 w-6 items-center justify-center transition-transform"
+                  aria-label={isExpanded ? "Colapsar" : "Expandir"}
+                >
+                  {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+                </span>
+                <div className="bg-primary/10 text-primary flex h-8 w-8 items-center justify-center rounded-lg">
+                  <Package size={16} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <span className="font-medium">{category.name}</span>
+                </div>
+                <span className="badge badge-ghost badge-sm">{catItems.length} items</span>
+              </button>
+              <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                <Button size="sm" variant="ghost" className="btn-square btn-xs">
+                  <Edit2 size={14} />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="btn-square btn-xs text-error hover:bg-error/10"
+                  onClick={() => onDeleteCategory(category.id)}
+                >
+                  <Trash2 size={14} />
+                </Button>
               </div>
-            ) : categories.length === 0 && uncategorizedItems.length === 0 ? (
-              <div className="text-base-content/50 py-12 text-center">No hay categorías ni items registrados.</div>
-            ) : (
-              <div className="divide-base-200 divide-y border-t">
-                {categories.map((category) => {
-                  const items = itemsByCategory[category.id] ?? [];
-                  const isExpanded = expandedCategories.has(category.id);
+            </div>
 
-                  return (
-                    <div key={category.id}>
-                      {/* Category Row */}
-                      <div className="hover:bg-base-200/50 group flex items-center gap-3 p-4 transition-colors">
-                        <button
-                          type="button"
-                          className="flex flex-1 items-center gap-3 text-left focus:outline-none"
-                          onClick={() => toggleCategory(category.id)}
-                        >
-                          <span
-                            className="text-base-content/50 flex h-6 w-6 items-center justify-center transition-transform"
-                            aria-label={isExpanded ? "Colapsar" : "Expandir"}
-                          >
-                            {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
-                          </span>
-                          <div className="bg-primary/10 text-primary flex h-8 w-8 items-center justify-center rounded-lg">
-                            <Package size={16} />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <span className="font-medium">{category.name}</span>
-                          </div>
-                          <span className="badge badge-ghost badge-sm">{items.length} items</span>
-                        </button>
-                        <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                          <Button size="sm" variant="ghost" className="btn-square btn-xs">
-                            <Edit2 size={14} />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="btn-square btn-xs text-error hover:bg-error/10"
-                            onClick={() => {
-                              if (confirm("¿Estás seguro de eliminar esta categoría?")) {
-                                deleteMutation.mutate(category.id);
-                              }
-                            }}
-                          >
-                            <Trash2 size={14} />
-                          </Button>
-                        </div>
-                      </div>
-
-                      {/* Items List (Expanded) */}
-                      {isExpanded && items.length > 0 && (
-                        <div className="bg-base-200/30 border-base-200 border-t">
-                          {items.map((item) => (
-                            <div
-                              key={item.id}
-                              className="hover:bg-base-200/50 border-base-200/50 flex items-center gap-3 border-b py-3 pr-4 pl-14 last:border-b-0"
-                            >
-                              <div className="bg-base-300/50 text-base-content/40 flex h-6 w-6 items-center justify-center rounded">
-                                <Box size={12} />
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <p className="truncate text-sm font-medium">{item.name}</p>
-                                {item.description && (
-                                  <p className="text-base-content/50 truncate text-xs">{item.description}</p>
-                                )}
-                              </div>
-                              <span
-                                className={`text-xs font-medium ${item.current_stock <= 0 ? "text-error" : item.current_stock < 10 ? "text-warning" : "text-success"}`}
-                              >
-                                Stock: {item.current_stock}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      {isExpanded && items.length === 0 && (
-                        <div className="bg-base-200/30 border-base-200 text-base-content/50 border-t py-4 pl-14 text-sm italic">
-                          Sin items en esta categoría
-                        </div>
-                      )}
+            {/* Items List (Expanded) */}
+            {isExpanded && catItems.length > 0 && (
+              <div className="bg-base-200/30 border-base-200 border-t">
+                {catItems.map((item) => (
+                  <div
+                    key={item.id}
+                    className="hover:bg-base-200/50 border-base-200/50 flex items-center gap-3 border-b py-3 pr-4 pl-14 last:border-b-0"
+                  >
+                    <div className="bg-base-300/50 text-base-content/40 flex h-6 w-6 items-center justify-center rounded">
+                      <Box size={12} />
                     </div>
-                  );
-                })}
-
-                {/* Uncategorized Items */}
-                {uncategorizedItems.length > 0 && (
-                  <div>
-                    <div className="hover:bg-base-200/50 group flex items-center gap-3 p-4 transition-colors">
-                      <button
-                        type="button"
-                        className="flex flex-1 items-center gap-3 text-left focus:outline-none"
-                        onClick={() => toggleCategory(0)}
-                      >
-                        <span
-                          className="text-base-content/50 flex h-6 w-6 items-center justify-center"
-                          aria-label={expandedCategories.has(0) ? "Colapsar" : "Expandir"}
-                        >
-                          {expandedCategories.has(0) ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
-                        </span>
-                        <div className="bg-base-300 text-base-content/50 flex h-8 w-8 items-center justify-center rounded-lg">
-                          <Package size={16} />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <span className="text-base-content/70 font-medium">Sin categoría</span>
-                        </div>
-                        <span className="badge badge-ghost badge-sm">{uncategorizedItems.length} items</span>
-                      </button>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">{item.name}</p>
+                      {item.description && <p className="text-base-content/50 truncate text-xs">{item.description}</p>}
                     </div>
-
-                    {expandedCategories.has(0) && (
-                      <div className="bg-base-200/30 border-base-200 border-t">
-                        {uncategorizedItems.map((item) => (
-                          <div
-                            key={item.id}
-                            className="hover:bg-base-200/50 border-base-200/50 flex items-center gap-3 border-b py-3 pr-4 pl-14 last:border-b-0"
-                          >
-                            <div className="bg-base-300/50 text-base-content/40 flex h-6 w-6 items-center justify-center rounded">
-                              <Box size={12} />
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <p className="truncate text-sm font-medium">{item.name}</p>
-                              {item.description && (
-                                <p className="text-base-content/50 truncate text-xs">{item.description}</p>
-                              )}
-                            </div>
-                            <span
-                              className={`text-xs font-medium ${item.current_stock <= 0 ? "text-error" : item.current_stock < 10 ? "text-warning" : "text-success"}`}
-                            >
-                              Stock: {item.current_stock}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                    <span className={`text-xs font-medium ${getStockStatusColor(item.current_stock)}`}>
+                      Stock: {item.current_stock}
+                    </span>
                   </div>
-                )}
+                ))}
+              </div>
+            )}
+
+            {isExpanded && catItems.length === 0 && (
+              <div className="bg-base-200/30 border-base-200 text-base-content/50 border-t py-4 pl-14 text-sm italic">
+                Sin items en esta categoría
               </div>
             )}
           </div>
-        </CardContent>
-      </Card>
+        );
+      })}
+
+      {/* Uncategorized Items */}
+      {uncategorizedItems.length > 0 && (
+        <div>
+          <div className="hover:bg-base-200/50 group flex items-center gap-3 p-4 transition-colors">
+            <button
+              type="button"
+              className="flex flex-1 items-center gap-3 text-left focus:outline-none"
+              onClick={() => toggleCategory(0)}
+            >
+              <span
+                className="text-base-content/50 flex h-6 w-6 items-center justify-center"
+                aria-label={expandedCategories.has(0) ? "Colapsar" : "Expandir"}
+              >
+                {expandedCategories.has(0) ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+              </span>
+              <div className="bg-base-300 text-base-content/50 flex h-8 w-8 items-center justify-center rounded-lg">
+                <Package size={16} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <span className="text-base-content/70 font-medium">Sin categoría</span>
+              </div>
+              <span className="badge badge-ghost badge-sm">{uncategorizedItems.length} items</span>
+            </button>
+          </div>
+
+          {expandedCategories.has(0) && (
+            <div className="bg-base-200/30 border-base-200 border-t">
+              {uncategorizedItems.map((item) => (
+                <div
+                  key={item.id}
+                  className="hover:bg-base-200/50 border-base-200/50 flex items-center gap-3 border-b py-3 pr-4 pl-14 last:border-b-0"
+                >
+                  <div className="bg-base-300/50 text-base-content/40 flex h-6 w-6 items-center justify-center rounded">
+                    <Box size={12} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">{item.name}</p>
+                    {item.description && <p className="text-base-content/50 truncate text-xs">{item.description}</p>}
+                  </div>
+                  <span className={`text-xs font-medium ${getStockStatusColor(item.current_stock)}`}>
+                    Stock: {item.current_stock}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

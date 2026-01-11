@@ -63,7 +63,7 @@ export default function MonthlyExpenseList({
             </button>
           );
         })}
-        {!expenses.length && (
+        {expenses.length === 0 && (
           <p className="border-base-300 bg-base-200 text-base-content/60 rounded-2xl border border-dashed p-4 text-xs">
             Aún no registras gastos. Crea el primero para llevar control mensual.
           </p>
