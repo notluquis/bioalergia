@@ -3,13 +3,13 @@
 
 # ============================================================================
 # STAGE 1: Prune - Generate a minimal lockfile from the monorepo
+# Using npx turbo@^2 as recommended by Turborepo docs for Docker prune stage
 # ============================================================================
 FROM node:current-slim AS pruner
 WORKDIR /app
-RUN npm install -g turbo
 COPY . .
-# Prune the workspace to include only what's needed for api, web and db
-RUN turbo prune --scope=@finanzas/api --scope=@finanzas/web --docker
+# npx downloads turbo pinned to major version - fastest approach for prune-only stage
+RUN npx turbo@^2 prune --scope=@finanzas/api --scope=@finanzas/web --docker
 
 # ============================================================================
 # STAGE 2: Base - Install dependencies using the pruned lockfile
@@ -25,10 +25,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
     && rm -rf /var/lib/apt/lists/*
 
-# Install corepack
-RUN npm install -g corepack --force && \
-    corepack enable && \
-    corepack prepare pnpm@10.27.0 --activate
+# Install corepack + latest pnpm
+RUN npm install -g corepack@latest --force && \
+    corepack enable pnpm && \
+    corepack install -g pnpm@latest
 
 # Copy dependencies from pruner
 COPY --from=pruner /app/out/json/ .
