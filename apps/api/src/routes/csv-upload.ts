@@ -28,6 +28,63 @@ type TableName =
   | "inventory_items"
   | "employee_timesheets";
 
+interface CSVRow {
+  rut?: unknown;
+  names?: unknown;
+  fatherName?: unknown;
+  motherName?: unknown;
+  email?: unknown;
+  phone?: unknown;
+  address?: unknown;
+  position?: unknown;
+  startDate?: unknown;
+  type?: unknown;
+  frequency?: unknown;
+  amount?: unknown;
+  closingBalance?: unknown;
+  note?: unknown;
+  date?: unknown;
+  balanceDate?: unknown;
+  Fecha?: unknown;
+  ingresoTarjetas?: unknown;
+  ingresoTransferencias?: unknown;
+  ingresoEfectivo?: unknown;
+  gastosDiarios?: unknown;
+  otrosAbonos?: unknown;
+  consultasMonto?: unknown;
+  controlesMonto?: unknown;
+  testsMonto?: unknown;
+  vacunasMonto?: unknown;
+  licenciasMonto?: unknown;
+  roxairMonto?: unknown;
+  comentarios?: unknown;
+  Comentarios?: unknown;
+  status?: unknown;
+  changeReason?: unknown;
+  name?: unknown;
+  defaultAmount?: unknown;
+  description?: unknown;
+  currentStock?: unknown;
+  categoryId?: unknown;
+  workDate?: unknown;
+  startTime?: unknown;
+  endTime?: unknown;
+  workedMinutes?: unknown;
+  overtimeMinutes?: unknown;
+  comment?: unknown;
+  "INGRESO TARJETAS"?: unknown;
+  "INGRESO TRANSFERENCIAS"?: unknown;
+  "INGRESO EFECTIVO"?: unknown;
+  "GASTOS DIARIOS"?: unknown;
+  "Otros/abonos"?: unknown;
+  CONSULTAS?: unknown;
+  CONTROLES?: unknown;
+  TEST?: unknown;
+  VACUNAS?: unknown;
+  LICENCIAS?: unknown;
+  ROXAIR?: unknown;
+}
+
 // Helper to get auth
 async function getAuth(c: {
   req: { header: (name: string) => string | undefined };
@@ -35,7 +92,7 @@ async function getAuth(c: {
   const cookieHeader = c.req.header("Cookie");
   if (!cookieHeader) return null;
   const cookies = Object.fromEntries(
-    cookieHeader.split(";").map((c) => c.trim().split("=")),
+    cookieHeader.split(";").map((c) => c.trim().split("="))
   );
   const token = cookies[COOKIE_NAME];
   if (!token) return null;
@@ -71,7 +128,7 @@ function cleanAmount(value: unknown): number {
 function parseFlexibleDate(value: unknown): string | null {
   if (!value) return null;
   const str = String(value).trim();
-  
+
   // Try DD/M/YYYY or DD/MM/YYYY format
   const match = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
   if (match) {
@@ -80,7 +137,7 @@ function parseFlexibleDate(value: unknown): string | null {
     const paddedMonth = month.padStart(2, "0");
     return `${year}-${paddedMonth}-${paddedDay}`;
   }
-  
+
   // Fallback to dayjs parsing
   const parsed = dayjs(str);
   return parsed.isValid() ? parsed.format("YYYY-MM-DD") : null;
@@ -108,7 +165,8 @@ const TABLE_PERMISSIONS: Record<
 
 csvUploadRoutes.post("/preview", async (c) => {
   const auth = await getAuth(c);
-  if (!auth) return reply(c, { status: "error", message: "No autorizado" }, 401);
+  if (!auth)
+    return reply(c, { status: "error", message: "No autorizado" }, 401);
 
   const { table, data } = await c.req.json<{
     table: TableName;
@@ -116,9 +174,10 @@ csvUploadRoutes.post("/preview", async (c) => {
   }>();
 
   if (!table || !data || !Array.isArray(data)) {
-    return reply(c, 
+    return reply(
+      c,
       { status: "error", message: "Table and data array required" },
-      400,
+      400
     );
   }
 
@@ -128,9 +187,10 @@ csvUploadRoutes.post("/preview", async (c) => {
     const hasPerm = await hasPermission(
       auth.userId,
       required.action,
-      required.subject,
+      required.subject
     );
-    if (!hasPerm) return reply(c, { status: "error", message: "Forbidden" }, 403);
+    if (!hasPerm)
+      return reply(c, { status: "error", message: "Forbidden" }, 403);
   }
 
   const errors: string[] = [];
@@ -139,7 +199,7 @@ csvUploadRoutes.post("/preview", async (c) => {
   let toSkip = 0;
 
   for (let i = 0; i < data.length; i++) {
-    const row = data[i] as Record<string, unknown>;
+    const row = data[i] as CSVRow;
 
     try {
       if (table === "people" && row.rut) {
@@ -227,7 +287,8 @@ csvUploadRoutes.post("/preview", async (c) => {
 
 csvUploadRoutes.post("/import", async (c) => {
   const auth = await getAuth(c);
-  if (!auth) return reply(c, { status: "error", message: "No autorizado" }, 401);
+  if (!auth)
+    return reply(c, { status: "error", message: "No autorizado" }, 401);
 
   const { table, data } = await c.req.json<{
     table: TableName;
@@ -235,9 +296,10 @@ csvUploadRoutes.post("/import", async (c) => {
   }>();
 
   if (!table || !data || !Array.isArray(data)) {
-    return reply(c, 
+    return reply(
+      c,
       { status: "error", message: "Table and data array required" },
-      400,
+      400
     );
   }
 
@@ -247,9 +309,10 @@ csvUploadRoutes.post("/import", async (c) => {
     const hasPerm = await hasPermission(
       auth.userId,
       required.action,
-      required.subject,
+      required.subject
     );
-    if (!hasPerm) return reply(c, { status: "error", message: "Forbidden" }, 403);
+    if (!hasPerm)
+      return reply(c, { status: "error", message: "Forbidden" }, 403);
   }
 
   let inserted = 0;
@@ -258,7 +321,7 @@ csvUploadRoutes.post("/import", async (c) => {
   const errors: string[] = [];
 
   for (let i = 0; i < data.length; i++) {
-    const row = data[i] as Record<string, unknown>;
+    const row = data[i] as CSVRow;
 
     try {
       if (table === "people") {
@@ -321,7 +384,7 @@ csvUploadRoutes.post("/import", async (c) => {
         }
 
         const counterpartData = {
-          category: (row.type as any) || "SUPPLIER",
+          category: String(row.type || "SUPPLIER") as "SUPPLIER" | "CLIENT",
         };
 
         if (person.counterpart) {
@@ -362,12 +425,20 @@ csvUploadRoutes.post("/import", async (c) => {
           continue;
         }
         const balanceDate = new Date(dateStr);
-        
+
         const productionData = {
-          ingresoTarjetas: cleanAmount(row.ingresoTarjetas || row["INGRESO TARJETAS"]),
-          ingresoTransferencias: cleanAmount(row.ingresoTransferencias || row["INGRESO TRANSFERENCIAS"]),
-          ingresoEfectivo: cleanAmount(row.ingresoEfectivo || row["INGRESO EFECTIVO"]),
-          gastosDiarios: cleanAmount(row.gastosDiarios || row["GASTOS DIARIOS"]),
+          ingresoTarjetas: cleanAmount(
+            row.ingresoTarjetas || row["INGRESO TARJETAS"]
+          ),
+          ingresoTransferencias: cleanAmount(
+            row.ingresoTransferencias || row["INGRESO TRANSFERENCIAS"]
+          ),
+          ingresoEfectivo: cleanAmount(
+            row.ingresoEfectivo || row["INGRESO EFECTIVO"]
+          ),
+          gastosDiarios: cleanAmount(
+            row.gastosDiarios || row["GASTOS DIARIOS"]
+          ),
           otrosAbonos: cleanAmount(row.otrosAbonos || row["Otros/abonos"]),
           consultasMonto: cleanAmount(row.consultasMonto || row.CONSULTAS),
           controlesMonto: cleanAmount(row.controlesMonto || row.CONTROLES),
@@ -375,7 +446,10 @@ csvUploadRoutes.post("/import", async (c) => {
           vacunasMonto: cleanAmount(row.vacunasMonto || row.VACUNAS),
           licenciasMonto: cleanAmount(row.licenciasMonto || row.LICENCIAS),
           roxairMonto: cleanAmount(row.roxairMonto || row.ROXAIR),
-          comentarios: row.comentarios || row.Comentarios ? String(row.comentarios || row.Comentarios) : null,
+          comentarios:
+            row.comentarios || row.Comentarios
+              ? String(row.comentarios || row.Comentarios)
+              : null,
           status: (row.status as "DRAFT" | "FINAL") || "DRAFT",
           changeReason: row.changeReason ? String(row.changeReason) : null,
         };
@@ -403,13 +477,20 @@ csvUploadRoutes.post("/import", async (c) => {
         const person = row.rut ? await findPersonByRut(String(row.rut)) : null;
         const serviceData = {
           name: String(row.name),
-          serviceType: (row.type as any) || "BUSINESS",
-          frequency: (row.frequency as any) || "MONTHLY",
+          serviceType: String(row.type || "BUSINESS") as
+            | "BUSINESS"
+            | "PERSONAL",
+          frequency: String(row.frequency || "MONTHLY") as
+            | "MONTHLY"
+            | "ONCE"
+            | "ANNUAL",
           defaultAmount: row.defaultAmount
             ? new Decimal(Number(row.defaultAmount))
             : new Decimal(0),
-          status:
-            (row.status as "ACTIVE" | "INACTIVE" | "ARCHIVED") || "ACTIVE",
+          status: String(row.status || "ACTIVE") as
+            | "ACTIVE"
+            | "INACTIVE"
+            | "ARCHIVED",
           counterpartId: person?.counterpart?.id || null,
         };
 
@@ -503,7 +584,7 @@ csvUploadRoutes.post("/import", async (c) => {
     "updated:",
     updated,
     "skipped:",
-    skipped,
+    skipped
   );
   return reply(c, {
     status: "ok",

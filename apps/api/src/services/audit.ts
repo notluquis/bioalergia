@@ -76,7 +76,7 @@ export async function getTablesWithChanges(since?: Date): Promise<string[]> {
  */
 export async function revertAuditChange(
   changeId: bigint,
-  userId: number,
+  userId: number
 ): Promise<{ success: boolean; message: string }> {
   try {
     // Fetch the audit log
@@ -88,7 +88,7 @@ export async function revertAuditChange(
       return { success: false, message: "Registro de auditoría no encontrado" };
     }
 
-    const details = auditLog.details as any;
+    const details = auditLog.details as Record<string, unknown> | null;
     const { entity, entityId, action } = auditLog;
 
     if (!entityId) {
@@ -157,7 +157,7 @@ export async function revertAuditChange(
       return { success: true, message: "Registro eliminado correctamente" };
     } else if (action === "UPDATE") {
       // Restore old values
-      const oldData = details?.old_data;
+      const oldData = details?.old_data as Record<string, any> | undefined;
       if (!oldData) {
         return {
           success: false,
@@ -195,7 +195,7 @@ export async function revertAuditChange(
       return { success: true, message: "Valores restaurados correctamente" };
     } else if (action === "DELETE") {
       // Re-create the deleted record
-      const oldData = details?.old_data;
+      const oldData = details?.old_data as Record<string, any> | undefined;
       if (!oldData) {
         return {
           success: false,

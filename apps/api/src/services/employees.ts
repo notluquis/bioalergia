@@ -28,14 +28,21 @@ interface EmployeePayload {
   metadata?: Record<string, unknown> | null;
 }
 
+type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JsonValue[]
+  | { [key: string]: JsonValue };
+
 // Helper to convert metadata to compatible JSON
 function toJsonValue(
-  value: Record<string, unknown> | null | undefined
-): any | undefined {
-  // Changed return type from JsonNull | undefined
+  value: Record<string, unknown> | null | undefined,
+): JsonValue | undefined {
   if (value === undefined) return undefined;
   if (value === null) return null;
-  return value as any;
+  return value as unknown as JsonValue;
 }
 
 // Map frontend payload to ZenStack Employee update data
@@ -70,7 +77,7 @@ function mapToEmployeeData(payload: EmployeePayload): EmployeeUpdateInput {
     data.retentionRate = new Decimal(payload.retention_rate ?? 0);
   }
   if (payload.metadata !== undefined) {
-    data.metadata = toJsonValue(payload.metadata);
+    data.metadata = toJsonValue(payload.metadata) ?? undefined;
   }
   if (payload.status !== undefined) {
     data.status = payload.status as EmployeeStatus;
@@ -143,7 +150,7 @@ export async function findEmployeeByEmail(email: string) {
 
 // Create employee from frontend payload - requires creating Person first
 export async function createEmployee(
-  payload: EmployeePayload & { rut: string; full_name: string }
+  payload: EmployeePayload & { rut: string; full_name: string },
 ) {
   return await db.$transaction(async (tx) => {
     // First create or find Person by RUT
@@ -179,7 +186,7 @@ export async function createEmployee(
         retentionRate: payload.retention_rate
           ? new Decimal(payload.retention_rate)
           : undefined,
-        metadata: toJsonValue(payload.metadata),
+        metadata: toJsonValue(payload.metadata) ?? undefined,
         bankName: payload.bank_name,
         bankAccountType: payload.bank_account_type,
         bankAccountNumber: payload.bank_account_number,
@@ -235,7 +242,7 @@ export async function deactivateEmployee(id: number) {
 export async function listEmployeeTimesheets(
   employeeId: number,
   from?: Date,
-  to?: Date
+  to?: Date,
 ) {
   const where: EmployeeTimesheetWhereInput = {
     employeeId,
@@ -254,7 +261,7 @@ export async function listEmployeeTimesheets(
 }
 
 export async function createEmployeeTimesheet(
-  data: EmployeeTimesheetCreateInput
+  data: EmployeeTimesheetCreateInput,
 ) {
   return await db.employeeTimesheet.create({
     data,
@@ -263,7 +270,7 @@ export async function createEmployeeTimesheet(
 
 export async function updateEmployeeTimesheet(
   id: number,
-  data: EmployeeTimesheetUpdateInput
+  data: EmployeeTimesheetUpdateInput,
 ) {
   return await db.employeeTimesheet.update({
     where: { id: BigInt(id) },

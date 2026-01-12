@@ -16,6 +16,7 @@ export interface BackupFile {
   createdTime: string;
   size: string;
   webViewLink?: string;
+  customChecksum?: string;
 }
 
 /**
@@ -24,6 +25,9 @@ export interface BackupFile {
 export async function uploadToDrive(
   filepath: string,
   filename: string,
+  tables: string[] = [], // Optional for backward compatibility
+  checksum?: string, // Optional custom checksum (SHA256)
+  stats?: Record<string, { count: number; hash: string }>, // Optional granular stats
 ): Promise<{
   fileId: string;
   webViewLink: string | null;
@@ -37,6 +41,11 @@ export async function uploadToDrive(
       requestBody: {
         name: filename,
         parents: [folderId],
+        description: JSON.stringify({ tables, stats }), // Store tables & stats in description (16KB limit)
+        appProperties: {
+          backupVersion: "1.0",
+          customChecksum: checksum || "", // Store custom checksum (64 bytes)
+        },
       },
       media: {
         mimeType: "application/octet-stream",
@@ -93,7 +102,7 @@ export async function listBackups(): Promise<BackupFile[]> {
 
     const response = await drive.files.list({
       q: `'${folderId}' in parents and trashed = false`,
-      fields: "files(id,name,createdTime,size,webViewLink)",
+      fields: "files(id,name,createdTime,size,webViewLink,appProperties)",
       orderBy: "createdTime desc",
       pageSize: 100,
       supportsAllDrives: true,
@@ -105,6 +114,7 @@ export async function listBackups(): Promise<BackupFile[]> {
       createdTime: f.createdTime!,
       size: f.size || "0",
       webViewLink: f.webViewLink || undefined,
+      customChecksum: f.appProperties?.customChecksum,
     }));
   } catch (error) {
     throw parseGoogleError(error);
@@ -188,6 +198,33 @@ export async function getBackupInfo(
 export async function getBackupTables(fileId: string): Promise<string[]> {
   try {
     const drive = await getDriveClient();
+
+    // 1. Try to get tables from metadata (Fastest)
+    try {
+      const metadata = await drive.files.get({
+        fileId,
+        fields: "description",
+        supportsAllDrives: true,
+      });
+
+      if (metadata.data.description) {
+        try {
+          const desc = JSON.parse(metadata.data.description);
+          if (desc.tables && Array.isArray(desc.tables)) {
+            return desc.tables;
+          }
+        } catch {
+          // Description might not be JSON, ignore
+        }
+      }
+    } catch (e) {
+      console.warn(
+        `[Drive] Metadata check failed for ${fileId}, falling back to stream parsing`,
+        e,
+      );
+    }
+
+    // 2. Fallback: Parse file header (Slower)
     const { createGunzip } = await import("zlib");
     const streamModule = await import("stream");
 
@@ -238,8 +275,8 @@ export async function getBackupTables(fileId: string): Promise<string[]> {
         dataStream.removeListener("end", onEnd);
         dataStream.removeListener("error", onError);
         // Safely check and call destroy if it exists (it should on Node streams)
-        if (typeof (dataStream as any).destroy === "function") {
-          (dataStream as any).destroy();
+        if (typeof dataStream.destroy === "function") {
+          dataStream.destroy();
         }
       };
 
@@ -256,8 +293,31 @@ export async function getBackupTables(fileId: string): Promise<string[]> {
           gunzip.on("data", (chunk: Buffer) => decompressed.push(chunk));
           gunzip.on("end", () => {
             try {
-              const json = JSON.parse(Buffer.concat(decompressed).toString());
-              resolve(json.tables || []);
+              // We only have the beginning of the file, so it's invalid JSON.
+              // But we can extract the "tables":[...] part using regex.
+              const cleanText = Buffer.concat(decompressed).toString();
+
+              // Match "tables": ["Table1", "Table2", ...]
+              // Handles optional whitespace
+              const match = cleanText.match(/"tables"\s*:\s*(\[[^\]]*\])/);
+
+              if (match && match[1]) {
+                try {
+                  const tables = JSON.parse(match[1]);
+                  if (Array.isArray(tables)) {
+                    resolve(tables);
+                    return;
+                  }
+                } catch (e) {
+                  // Ignore inner parse error
+                }
+              }
+
+              // Fallback: If we can't find tables, return empty
+              console.warn(
+                "[Drive] Could not extract tables from backup header",
+              );
+              resolve([]);
             } catch {
               resolve([]);
             }
@@ -271,5 +331,37 @@ export async function getBackupTables(fileId: string): Promise<string[]> {
     });
   } catch (error) {
     throw parseGoogleError(error);
+  }
+}
+
+/**
+ * Gets granular stats (hash, count) from backup metadata.
+ * Returns null if metadata is missing or legacy backup.
+ */
+export async function getBackupStats(
+  fileId: string,
+): Promise<Record<string, { count: number; hash: string }> | null> {
+  try {
+    const drive = await getDriveClient();
+    const metadata = await drive.files.get({
+      fileId,
+      fields: "description",
+      supportsAllDrives: true,
+    });
+
+    if (metadata.data.description) {
+      try {
+        const desc = JSON.parse(metadata.data.description);
+        if (desc.stats) {
+          return desc.stats;
+        }
+      } catch {
+        // Ignore JSON error
+      }
+    }
+    return null;
+  } catch (error) {
+    console.warn(`[Drive] Failed to get stats for ${fileId}`, error);
+    return null;
   }
 }

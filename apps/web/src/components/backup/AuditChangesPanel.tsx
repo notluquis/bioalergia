@@ -30,6 +30,14 @@ import { cn } from "@/lib/utils";
 
 // ==================== TYPES ====================
 
+// ==================== TYPES ====================
+
+interface AuditLogDetails {
+  old_data?: Record<string, unknown>;
+  new_data?: Record<string, unknown>;
+  diff?: Record<string, unknown>;
+}
+
 interface AuditStats {
   totalChanges: number;
   pendingExport: number;
@@ -136,7 +144,7 @@ export default function AuditChangesPanel() {
   // Adapter to match the UI's expected format
 
   const changes = (auditLogs || []).map((log: any) => {
-    const details = (log.details as any) || {};
+    const details = (log.details as unknown as AuditLogDetails) || {};
     return {
       id: String(log.id),
       table_name: log.entity,

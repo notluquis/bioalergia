@@ -52,7 +52,7 @@ export async function sendPushNotification(
       webpush.sendNotification(
         {
           endpoint: sub.endpoint,
-          keys: sub.keys as any,
+          keys: sub.keys as unknown as { p256dh: string; auth: string },
         },
         notificationPayload
       )

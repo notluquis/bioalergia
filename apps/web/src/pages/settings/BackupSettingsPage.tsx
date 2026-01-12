@@ -193,8 +193,10 @@ export default function BackupSettingsPage() {
   const fullBackups = backups.filter((b) => !b.name.startsWith("audit_"));
   const auditExports = backups.filter((b) => b.name.startsWith("audit_"));
 
-  // eslint-disable-next-line unicorn/explicit-length-check
-  const totalSize = backups.reduce((acc, b) => acc + Number.parseInt(b.size || "0", 10), 0);
+  const totalSize = backups.reduce((acc, b) => {
+    const sizeStr = b.size ?? "0";
+    return acc + Number.parseInt(sizeStr, 10);
+  }, 0);
 
   const renderBackupListContent = () => {
     if (backupsQuery.isLoading) {
@@ -660,8 +662,7 @@ function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () =>
           <div className="mb-4 flex gap-3">
             <Button
               variant="primary"
-              // eslint-disable-next-line unicorn/no-useless-undefined
-              onClick={() => restoreMutation.mutate(undefined)}
+              onClick={() => restoreMutation.mutate()}
               disabled={!canRestore || restoreMutation.isPending}
               isLoading={restoreMutation.isPending}
               title={canRestore ? undefined : "Requiere permiso para restaurar"}
