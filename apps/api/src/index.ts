@@ -38,6 +38,7 @@ import settlementTransactionRoutes from "./routes/settlement-transactions";
 import { readFile } from "fs/promises";
 import { join } from "path";
 import { integrationRoutes } from "./routes/integrations";
+import { AuditLoggingPlugin } from "./lib/audit-plugin";
 
 const app = new Hono();
 
@@ -158,8 +159,14 @@ const zenStackHandler = createHonoHandler({
     const authContext = createAuthContext(user);
 
     if (authContext) {
-      // Authenticated: apply access control policies
-      return authDb.$setAuth(authContext);
+      // Authenticated: apply access control policies AND audit logging
+      const policyClient = authDb.$setAuth(authContext);
+
+      const ip = ctx.req.header("x-forwarded-for") || "unknown";
+
+      // Inject Audit Plugin
+      // This ensures every write operation via the content-aware client is logged
+      return policyClient.$use(AuditLoggingPlugin(user?.id, ip));
     }
 
     // Anonymous: policies will deny access via @@deny('all', auth() == null)

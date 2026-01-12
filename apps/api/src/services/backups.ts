@@ -78,6 +78,9 @@ function getAllModelNames(): string[] {
     "DailyProductionBalance",
     "SupplyRequest",
     "CommonSupply",
+    "SettlementTransaction",
+    "ReleaseTransaction",
+    "CalendarSyncLog",
   ];
 }
 
@@ -126,7 +129,7 @@ export async function createBackup(
       try {
         const dbRecord = db as Record<string, any>;
         const modelDelegate = dbRecord[camelModelName];
-        
+
         if (modelDelegate && typeof modelDelegate.findMany === "function") {
           const data = await modelDelegate.findMany();
           if (Array.isArray(data) && data.length > 0) {
@@ -134,7 +137,9 @@ export async function createBackup(
             tables.push(modelName);
           }
         } else {
-          console.warn(`⚠️ Model delegate not found for ${modelName} (tried ${camelModelName})`);
+          console.warn(
+            `⚠️ Model delegate not found for ${modelName} (tried ${camelModelName})`
+          );
         }
       } catch (error) {
         console.warn(`⚠️ Skipping ${modelName}: ${error}`);
