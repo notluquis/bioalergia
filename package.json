@@ -24,11 +24,12 @@
     "test": "pnpm -r --if-present test",
     "lint": "pnpm -r --if-present lint",
     "clean": "pnpm -r --if-present clean",
-    "type-check": "pnpm -r --if-present type-check"
+    "type-check": "pnpm -r --if-present type-check",
+    "devtools": "turbo devtools"
   },
   "devDependencies": {
     "@zenstackhq/tanstack-query": "^3.2.1",
-    "turbo": "^2.7.3"
+    "turbo": "^2.7.4"
   },
   "dependencies": {
     "superjson": "^2.2.6"
