@@ -91,6 +91,7 @@ const superJsonParser = (text: string) => {
 
 const kyInstance = ky.create({
   timeout: 30_000,
+  credentials: "include", // CRITICAL: Send cookies with every request
   retry: {
     limit: 2,
     methods: ["get", "put", "head", "delete", "options", "trace"],
