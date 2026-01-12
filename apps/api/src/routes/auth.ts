@@ -5,7 +5,6 @@
  */
 
 import { Hono } from "hono";
-import { reply } from "../utils/reply";
 import type { AuthenticatorTransportFuture } from "@simplewebauthn/server";
 import { setCookie, getCookie, deleteCookie } from "hono/cookie";
 import { signToken, verifyToken } from "../lib/paseto";
@@ -49,8 +48,7 @@ authRoutes.post("/login", async (c) => {
   const { email, password } = body;
 
   if (!email || !password) {
-    return reply(
-      c,
+    return c.json(
       { status: "error", message: "Email y contrase?a requeridos" },
       400
     );
@@ -76,8 +74,7 @@ authRoutes.post("/login", async (c) => {
   });
 
   if (!user || !user.passwordHash) {
-    return reply(
-      c,
+    return c.json(
       { status: "error", message: "Credenciales incorrectas" },
       401
     );
@@ -91,8 +88,7 @@ authRoutes.post("/login", async (c) => {
   );
 
   if (!valid) {
-    return reply(
-      c,
+    return c.json(
       { status: "error", message: "Credenciales incorrectas" },
       401
     );
@@ -109,7 +105,7 @@ authRoutes.post("/login", async (c) => {
 
   // Check MFA
   if (user.mfaEnabled) {
-    return reply(c, { status: "mfa_required", userId: user.id });
+    return c.json({ status: "mfa_required", userId: user.id });
   }
 
   // Build roles array
@@ -122,7 +118,7 @@ authRoutes.post("/login", async (c) => {
   const { getAbilityRulesForUser } = await import("../services/authz.js");
   const abilityRules = await getAbilityRulesForUser(user.id);
 
-  return reply(c, {
+  return c.json({
     status: "ok",
     user: {
       id: user.id,
@@ -145,8 +141,7 @@ authRoutes.post("/login/mfa", async (c) => {
   const { userId, token: mfaToken } = body;
 
   if (!userId || !mfaToken) {
-    return reply(
-      c,
+    return c.json(
       { status: "error", message: "userId y token requeridos" },
       400
     );
@@ -161,7 +156,7 @@ authRoutes.post("/login/mfa", async (c) => {
   });
 
   if (!user || !user.mfaEnabled || !user.mfaSecret) {
-    return reply(c, { status: "error", message: "MFA no configurado" }, 400);
+    return c.json({ status: "error", message: "MFA no configurado" }, 400);
   }
 
   // Verify MFA token
@@ -169,14 +164,14 @@ authRoutes.post("/login/mfa", async (c) => {
   const isValid = await verifyMfaToken(mfaToken, user.mfaSecret);
 
   if (!isValid) {
-    return reply(c, { status: "error", message: "C?digo incorrecto" }, 401);
+    return c.json({ status: "error", message: "C?digo incorrecto" }, 401);
   }
 
   const roles = user.roles.map((r) => r.role.name);
   const token = await issueToken({ userId: user.id, email: user.email, roles });
   setCookie(c, COOKIE_NAME, token, COOKIE_OPTIONS);
 
-  return reply(c, {
+  return c.json({
     status: "ok",
     user: {
       id: user.id,
@@ -195,7 +190,7 @@ authRoutes.post("/login/mfa", async (c) => {
 
 authRoutes.post("/logout", async (c) => {
   deleteCookie(c, COOKIE_NAME);
-  return reply(c, { status: "ok" });
+  return c.json({ status: "ok" });
 });
 
 // ============================================================
@@ -206,7 +201,7 @@ authRoutes.get("/me/session", async (c) => {
   const token = getCookie(c, COOKIE_NAME);
 
   if (!token) {
-    return reply(c, { status: "ok", user: null });
+    return c.json({ status: "ok", user: null });
   }
 
   try {
@@ -224,14 +219,14 @@ authRoutes.get("/me/session", async (c) => {
 
     if (!user) {
       deleteCookie(c, COOKIE_NAME);
-      return reply(c, { status: "ok", user: null });
+      return c.json({ status: "ok", user: null });
     }
 
     // --- Role Governance Logic ---
     const { getAbilityRulesForUser } = await import("../services/authz.js");
     const abilityRules = await getAbilityRulesForUser(user.id);
 
-    return reply(c, {
+    return c.json({
       status: "ok",
       user: {
         id: user.id,
@@ -248,7 +243,7 @@ authRoutes.get("/me/session", async (c) => {
     });
   } catch {
     deleteCookie(c, COOKIE_NAME);
-    return reply(c, { status: "ok", user: null });
+    return c.json({ status: "ok", user: null });
   }
 });
 
@@ -260,7 +255,7 @@ authRoutes.post("/mfa/setup", async (c) => {
   // Requires auth - extract from cookie
   const token = getCookie(c, COOKIE_NAME);
   if (!token) {
-    return reply(c, { status: "error", message: "No autorizado" }, 401);
+    return c.json({ status: "error", message: "No autorizado" }, 401);
   }
 
   try {
@@ -276,16 +271,16 @@ authRoutes.post("/mfa/setup", async (c) => {
       data: { mfaSecret: secret, mfaEnabled: false },
     });
 
-    return reply(c, { status: "ok", secret, qrCodeUrl });
+    return c.json({ status: "ok", secret, qrCodeUrl });
   } catch {
-    return reply(c, { status: "error", message: "Token inv?lido" }, 401);
+    return c.json({ status: "error", message: "Token inv?lido" }, 401);
   }
 });
 
 authRoutes.post("/mfa/enable", async (c) => {
   const token = getCookie(c, COOKIE_NAME);
   if (!token) {
-    return reply(c, { status: "error", message: "No autorizado" }, 401);
+    return c.json({ status: "error", message: "No autorizado" }, 401);
   }
 
   try {
@@ -296,18 +291,14 @@ authRoutes.post("/mfa/enable", async (c) => {
 
     const user = await db.user.findUnique({ where: { id: userId } });
     if (!user?.mfaSecret) {
-      return reply(
-        c,
-        { status: "error", message: "MFA setup no iniciado" },
-        400
-      );
+      return c.json({ status: "error", message: "MFA setup no iniciado" }, 400);
     }
 
     const { verifyMfaToken } = await import("../services/mfa.js");
     const isValid = await verifyMfaToken(body.token, user.mfaSecret);
 
     if (!isValid) {
-      return reply(c, { status: "error", message: "C?digo incorrecto" }, 400);
+      return c.json({ status: "error", message: "C?digo incorrecto" }, 400);
     }
 
     await db.user.update({
@@ -315,16 +306,16 @@ authRoutes.post("/mfa/enable", async (c) => {
       data: { mfaEnabled: true },
     });
 
-    return reply(c, { status: "ok" });
+    return c.json({ status: "ok" });
   } catch {
-    return reply(c, { status: "error", message: "Token inv?lido" }, 401);
+    return c.json({ status: "error", message: "Token inv?lido" }, 401);
   }
 });
 
 authRoutes.post("/mfa/disable", async (c) => {
   const token = getCookie(c, COOKIE_NAME);
   if (!token) {
-    return reply(c, { status: "error", message: "No autorizado" }, 401);
+    return c.json({ status: "error", message: "No autorizado" }, 401);
   }
 
   try {
@@ -336,9 +327,9 @@ authRoutes.post("/mfa/disable", async (c) => {
       data: { mfaSecret: null, mfaEnabled: false },
     });
 
-    return reply(c, { status: "ok" });
+    return c.json({ status: "ok" });
   } catch {
-    return reply(c, { status: "error", message: "Token inv?lido" }, 401);
+    return c.json({ status: "error", message: "Token inv?lido" }, 401);
   }
 });
 
@@ -394,11 +385,10 @@ authRoutes.get("/passkey/login/options", async (c) => {
     // Store challenge for verification
     storeChallenge(`login:${options.challenge}`, options.challenge);
 
-    return reply(c, options);
+    return c.json(options);
   } catch (error) {
     console.error("[passkey] login options error:", error);
-    return reply(
-      c,
+    return c.json(
       { status: "error", message: "Error generando opciones" },
       500
     );
@@ -414,14 +404,13 @@ authRoutes.post("/passkey/login/verify", async (c) => {
     const { body: authResponse, challenge } = body;
 
     if (!authResponse || !challenge) {
-      return reply(c, { status: "error", message: "Datos incompletos" }, 400);
+      return c.json({ status: "error", message: "Datos incompletos" }, 400);
     }
 
     // Verify challenge exists
     const storedChallenge = getChallenge(`login:${challenge}`);
     if (!storedChallenge) {
-      return reply(
-        c,
+      return c.json(
         { status: "error", message: "Challenge inv?lido o expirado" },
         400
       );
@@ -442,8 +431,7 @@ authRoutes.post("/passkey/login/verify", async (c) => {
     });
 
     if (!passkey || !passkey.user) {
-      return reply(
-        c,
+      return c.json(
         { status: "error", message: "Credencial no encontrada" },
         401
       );
@@ -467,11 +455,7 @@ authRoutes.post("/passkey/login/verify", async (c) => {
     });
 
     if (!verification.verified) {
-      return reply(
-        c,
-        { status: "error", message: "Verificaci?n fallida" },
-        401
-      );
+      return c.json({ status: "error", message: "Verificaci?n fallida" }, 401);
     }
 
     // Update counter
@@ -492,7 +476,7 @@ authRoutes.post("/passkey/login/verify", async (c) => {
     });
     setCookie(c, COOKIE_NAME, token, COOKIE_OPTIONS);
 
-    return reply(c, {
+    return c.json({
       status: "ok",
       user: {
         id: user.id,
@@ -505,7 +489,7 @@ authRoutes.post("/passkey/login/verify", async (c) => {
     });
   } catch (error) {
     console.error("[passkey] login verify error:", error);
-    return reply(c, { status: "error", message: "Error de verificaci?n" }, 500);
+    return c.json({ status: "error", message: "Error de verificaci?n" }, 500);
   }
 });
 
@@ -513,7 +497,7 @@ authRoutes.post("/passkey/login/verify", async (c) => {
 authRoutes.get("/passkey/register/options", async (c) => {
   const token = getCookie(c, COOKIE_NAME);
   if (!token) {
-    return reply(c, { status: "error", message: "No autorizado" }, 401);
+    return c.json({ status: "error", message: "No autorizado" }, 401);
   }
 
   try {
@@ -529,11 +513,7 @@ authRoutes.get("/passkey/register/options", async (c) => {
     });
 
     if (!user) {
-      return reply(
-        c,
-        { status: "error", message: "Usuario no encontrado" },
-        404
-      );
+      return c.json({ status: "error", message: "Usuario no encontrado" }, 404);
     }
 
     const options = await generateRegistrationOptions({
@@ -554,11 +534,10 @@ authRoutes.get("/passkey/register/options", async (c) => {
     // Store challenge
     storeChallenge(`register:${options.challenge}`, options.challenge, userId);
 
-    return reply(c, options);
+    return c.json(options);
   } catch (error) {
     console.error("[passkey] register options error:", error);
-    return reply(
-      c,
+    return c.json(
       { status: "error", message: "Error generando opciones" },
       500
     );
@@ -569,7 +548,7 @@ authRoutes.get("/passkey/register/options", async (c) => {
 authRoutes.post("/passkey/register/verify", async (c) => {
   const sessionToken = getCookie(c, COOKIE_NAME);
   if (!sessionToken) {
-    return reply(c, { status: "error", message: "No autorizado" }, 401);
+    return c.json({ status: "error", message: "No autorizado" }, 401);
   }
 
   try {
@@ -582,13 +561,13 @@ authRoutes.post("/passkey/register/verify", async (c) => {
     const { body: regResponse, challenge } = body;
 
     if (!regResponse || !challenge) {
-      return reply(c, { status: "error", message: "Datos incompletos" }, 400);
+      return c.json({ status: "error", message: "Datos incompletos" }, 400);
     }
 
     // Verify challenge
     const storedChallenge = getChallenge(`register:${challenge}`);
     if (!storedChallenge || storedChallenge.userId !== userId) {
-      return reply(c, { status: "error", message: "Challenge inv?lido" }, 400);
+      return c.json({ status: "error", message: "Challenge inv?lido" }, 400);
     }
 
     const verification = await verifyRegistrationResponse({
@@ -599,11 +578,7 @@ authRoutes.post("/passkey/register/verify", async (c) => {
     });
 
     if (!verification.verified || !verification.registrationInfo) {
-      return reply(
-        c,
-        { status: "error", message: "Verificaci?n fallida" },
-        400
-      );
+      return c.json({ status: "error", message: "Verificaci?n fallida" }, 400);
     }
 
     const { credential, credentialDeviceType, credentialBackedUp } =
@@ -624,13 +599,13 @@ authRoutes.post("/passkey/register/verify", async (c) => {
       },
     });
 
-    return reply(c, {
+    return c.json({
       status: "ok",
       message: "Passkey registrado exitosamente",
     });
   } catch (error) {
     console.error("[passkey] register verify error:", error);
-    return reply(c, { status: "error", message: "Error de verificaci?n" }, 500);
+    return c.json({ status: "error", message: "Error de verificaci?n" }, 500);
   }
 });
 
@@ -638,7 +613,7 @@ authRoutes.post("/passkey/register/verify", async (c) => {
 authRoutes.delete("/passkey/remove", async (c) => {
   const token = getCookie(c, COOKIE_NAME);
   if (!token) {
-    return reply(c, { status: "error", message: "No autorizado" }, 401);
+    return c.json({ status: "error", message: "No autorizado" }, 401);
   }
 
   try {
@@ -650,11 +625,10 @@ authRoutes.delete("/passkey/remove", async (c) => {
       where: { userId },
     });
 
-    return reply(c, { status: "ok", message: "Passkey eliminado" });
+    return c.json({ status: "ok", message: "Passkey eliminado" });
   } catch (error) {
     console.error("[passkey] remove error:", error);
-    return reply(
-      c,
+    return c.json(
       { status: "error", message: "Error eliminando passkey" },
       500
     );
