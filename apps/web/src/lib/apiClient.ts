@@ -81,7 +81,12 @@ const superJsonParser = (text: string) => {
   try {
     const jsonData = JSON.parse(text);
     if (jsonData && typeof jsonData === "object" && "json" in jsonData) {
-      return superjson.deserialize(jsonData);
+      try {
+        return superjson.deserialize(jsonData);
+      } catch (error) {
+        console.warn("[apiClient] SuperJSON deserialize failed, falling back to raw json:", error);
+        return jsonData.json;
+      }
     }
     return jsonData;
   } catch {
