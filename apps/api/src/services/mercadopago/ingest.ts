@@ -53,7 +53,9 @@ export async function processReportUrl(
     if (!body) throw new Error("Empty response body");
 
     // Convert Web Stream to Node Stream
-    const nodeStream = Readable.fromWeb(body as any);
+    const nodeStream = Readable.fromWeb(
+      body as import("stream/web").ReadableStream
+    );
 
     const rows: any[] = [];
     let isFirstRow = true;

@@ -170,149 +170,150 @@ export default function Sidebar({ isOpen, isMobile, onClose }: SidebarProps) {
   const displayName = user?.name || user?.email?.split("@")[0] || "Usuario";
 
   // Sidebar Classes
-  const baseClasses =
-    "flex flex-col bg-base-100 border-base-200 transition-[width] duration-300 ease-in-out z-50 will-change-[width] transform-gpu";
-
-  const mobileClasses = cn(
-    "fixed inset-y-0 left-0 w-64 h-[100dvh] shadow-2xl safe-area-left rounded-r-3xl border-r",
-    isOpen ? "translate-x-0" : "-translate-x-full"
-  );
-
-  const desktopClasses = cn("h-full rounded-2xl border shadow-xl", isCollapsed ? "w-16" : "w-64");
-
-  const sidebarClasses = cn(baseClasses, isMobile ? mobileClasses : desktopClasses);
 
   return (
     <TooltipProvider delayDuration={0}>
       <Backdrop isVisible={isMobile && isOpen} onClose={onClose} zIndex={40} />
 
-      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
-      <aside
-        className={sidebarClasses}
+      {/* Lint disabled: This is a pure UI hover zone for expanding sidebar, not semantically interactive */}
+      { }
+      <div
+        role="presentation"
+        // Tab index -1 ensures it's not in tab order
+        tabIndex={-1}
         onMouseEnter={() => !isMobile && setIsHovered(true)}
         onMouseLeave={() => !isMobile && setIsHovered(false)}
-        aria-label="Navegación principal"
+        className={cn(
+          "z-50 h-full transform-gpu transition-[width] duration-300 ease-in-out will-change-[width]",
+          isMobile
+            ? "safe-area-left fixed inset-y-0 left-0 w-64 rounded-r-3xl border-r shadow-2xl"
+            : "bg-base-100 border-base-200 relative rounded-2xl border shadow-xl",
+          !isMobile && (isCollapsed ? "w-16" : "w-64"),
+          isMobile && (isOpen ? "translate-x-0" : "-translate-x-full")
+        )}
       >
-        {/* Header / Logo */}
-        <div
-          className={cn(
-            "flex h-16 shrink-0 items-center transition-all duration-300",
-            !isMobile && isCollapsed ? "justify-center px-0" : "gap-3 px-5"
-          )}
-        >
-          {/* Logo Container */}
+        <aside className="flex h-full w-full flex-col overflow-hidden" aria-label="Navegación principal">
+          {/* Header / Logo */}
           <div
             className={cn(
-              "relative flex items-center transition-all duration-300",
-              !isMobile && isCollapsed ? "h-10 w-10 justify-center" : "h-12 w-full justify-center"
+              "flex h-16 shrink-0 items-center transition-all duration-300",
+              !isMobile && isCollapsed ? "justify-center px-0" : "gap-3 px-5"
             )}
           >
-            <img
-              src="/logo.png"
-              alt="Bioalergia"
+            {/* Logo Container */}
+            <div
               className={cn(
-                "object-contain transition-all duration-300",
-                !isMobile && isCollapsed ? "h-8 w-8" : "h-10 w-auto"
+                "relative flex items-center transition-all duration-300",
+                !isMobile && isCollapsed ? "h-10 w-10 justify-center" : "h-12 w-full justify-center"
               )}
-              fetchPriority="high"
-            />
-          </div>
-        </div>
-
-        {/* Navigation Content - Native scrollbar behavior */}
-        <div className="flex-1 space-y-4 overflow-x-hidden overflow-y-auto px-2 py-2">
-          {visibleSections.map((section) => (
-            <div key={section.title} className="space-y-1">
-              {/* Section Title */}
-              <div
+            >
+              <img
+                src="/logo.png"
+                alt="Bioalergia"
                 className={cn(
-                  "flex items-center px-4 pb-1 transition-all duration-300",
-                  !isMobile && isCollapsed ? "h-0 overflow-hidden opacity-0" : "h-auto opacity-100"
+                  "object-contain transition-all duration-300",
+                  !isMobile && isCollapsed ? "h-8 w-8" : "h-10 w-auto"
                 )}
-              >
-                <h3 className="text-base-content/50 text-[10px] font-bold tracking-[0.2em] uppercase">
-                  {section.title}
-                </h3>
-              </div>
-
-              {/* Section Items */}
-              <div className="space-y-0.5">
-                {section.items.map((item) => (
-                  <SidebarItem
-                    key={item.to}
-                    item={item}
-                    isCollapsed={!isMobile && isCollapsed}
-                    isMobile={isMobile}
-                    pendingPath={pendingPath}
-                    locationPath={location.pathname}
-                    onNavigate={() => handleNavigate(item.to)}
-                  />
-                ))}
-              </div>
+                fetchPriority="high"
+              />
             </div>
-          ))}
-        </div>
+          </div>
 
-        {/* User Footer - Pinned to bottom, with dropdown menu */}
-        <div
-          className={cn(
-            "border-base-200/50 bg-base-100/30 mt-auto shrink-0 border-t px-3 pt-3 pb-6 transition-all duration-300",
-            !isMobile && isCollapsed ? "items-center justify-center px-2 pt-3 pb-6" : ""
-          )}
-        >
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                className={cn(
-                  "hover:bg-base-200/50 group flex w-full cursor-pointer items-center gap-3 rounded-2xl p-2 transition-all outline-none",
-                  !isMobile && isCollapsed ? "justify-center p-0 hover:bg-transparent" : "px-3 py-2"
-                )}
-              >
-                <div className="bg-base-200 border-base-300 h-10 w-10 shrink-0 overflow-hidden rounded-full border">
-                  <div className="bg-base-100 text-primary flex h-full w-full items-center justify-center font-bold">
-                    {displayName.slice(0, 2).toUpperCase()}
-                  </div>
-                </div>
-
+          {/* Navigation Content - Native scrollbar behavior */}
+          <div className="flex-1 space-y-4 overflow-x-hidden overflow-y-auto px-2 py-2">
+            {visibleSections.map((section) => (
+              <div key={section.title} className="space-y-1">
+                {/* Section Title */}
                 <div
                   className={cn(
-                    "flex min-w-0 flex-1 flex-col gap-0.5 text-left transition-all duration-300",
-                    !isMobile && isCollapsed ? "hidden" : "block"
+                    "flex items-center px-4 pb-1 transition-all duration-300",
+                    !isMobile && isCollapsed ? "h-0 overflow-hidden opacity-0" : "h-auto opacity-100"
                   )}
                 >
-                  <span className="text-base-content group-hover:text-primary truncate text-sm font-semibold transition-colors">
-                    {displayName}
-                  </span>
-                  <span className="text-base-content/50 truncate text-xs">{user?.email}</span>
+                  <h3 className="text-base-content/50 text-[10px] font-bold tracking-[0.2em] uppercase">
+                    {section.title}
+                  </h3>
                 </div>
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent side="top" align="start" className="w-56">
-              <DropdownMenuLabel className="font-normal">
-                <div className="flex flex-col space-y-1">
-                  <p className="text-sm leading-none font-medium">{displayName}</p>
-                  <p className="text-base-content/60 text-xs leading-none">{user?.email}</p>
+
+                {/* Section Items */}
+                <div className="space-y-0.5">
+                  {section.items.map((item) => (
+                    <SidebarItem
+                      key={item.to}
+                      item={item}
+                      isCollapsed={!isMobile && isCollapsed}
+                      isMobile={isMobile}
+                      pendingPath={pendingPath}
+                      locationPath={location.pathname}
+                      onNavigate={() => handleNavigate(item.to)}
+                    />
+                  ))}
                 </div>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <Link to="/account" className="flex cursor-pointer items-center">
-                  <User className="mr-2 size-4" />
-                  Mi Cuenta
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={() => logout()}
-                className="text-error focus:bg-error/10 focus:text-error cursor-pointer"
-              >
-                <LogOut className="mr-2 size-4" />
-                Cerrar sesión
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </aside>
+              </div>
+            ))}
+          </div>
+
+          {/* User Footer - Pinned to bottom, with dropdown menu */}
+          <div
+            className={cn(
+              "border-base-200/50 bg-base-100/30 mt-auto shrink-0 border-t px-3 pt-3 pb-6 transition-all duration-300",
+              !isMobile && isCollapsed ? "items-center justify-center px-2 pt-3 pb-6" : ""
+            )}
+          >
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  className={cn(
+                    "hover:bg-base-200/50 group flex w-full cursor-pointer items-center gap-3 rounded-2xl p-2 transition-all outline-none",
+                    !isMobile && isCollapsed ? "justify-center p-0 hover:bg-transparent" : "px-3 py-2"
+                  )}
+                >
+                  <div className="bg-base-200 border-base-300 h-10 w-10 shrink-0 overflow-hidden rounded-full border">
+                    <div className="bg-base-100 text-primary flex h-full w-full items-center justify-center font-bold">
+                      {displayName.slice(0, 2).toUpperCase()}
+                    </div>
+                  </div>
+
+                  <div
+                    className={cn(
+                      "flex min-w-0 flex-1 flex-col gap-0.5 text-left transition-all duration-300",
+                      !isMobile && isCollapsed ? "hidden" : "block"
+                    )}
+                  >
+                    <span className="text-base-content group-hover:text-primary truncate text-sm font-semibold transition-colors">
+                      {displayName}
+                    </span>
+                    <span className="text-base-content/50 truncate text-xs">{user?.email}</span>
+                  </div>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent side="top" align="start" className="w-56">
+                <DropdownMenuLabel className="font-normal">
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm leading-none font-medium">{displayName}</p>
+                    <p className="text-base-content/60 text-xs leading-none">{user?.email}</p>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link to="/account" className="flex cursor-pointer items-center">
+                    <User className="mr-2 size-4" />
+                    Mi Cuenta
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => logout()}
+                  className="text-error focus:bg-error/10 focus:text-error cursor-pointer"
+                >
+                  <LogOut className="mr-2 size-4" />
+                  Cerrar sesión
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </aside>
+      </div>
     </TooltipProvider>
   );
 }

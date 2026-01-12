@@ -2,6 +2,7 @@ import { createHash } from "crypto";
 import {
   createReadStream,
   createWriteStream,
+  readFileSync,
   statSync,
   unlinkSync,
   writeFileSync,
@@ -20,6 +21,7 @@ export interface BackupResult {
   sizeBytes: number;
   durationMs: number;
   tables: string[];
+  stats: Record<string, { count: number; hash: string }>;
 }
 
 export interface BackupProgress {
@@ -88,7 +90,7 @@ function getAllModelNames(): string[] {
  * Creates a database backup.
  */
 export async function createBackup(
-  onProgress?: ProgressCallback
+  onProgress?: ProgressCallback,
 ): Promise<BackupResult> {
   const startTime = Date.now();
   const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
@@ -113,6 +115,7 @@ export async function createBackup(
     // Use direct db access instead
     const allModels = getAllModelNames();
     const totalModels = allModels.length;
+    const tableStats: Record<string, { count: number; hash: string }> = {};
 
     for (let i = 0; i < totalModels; i++) {
       const modelName = allModels[i];
@@ -135,10 +138,19 @@ export async function createBackup(
           if (Array.isArray(data) && data.length > 0) {
             backupData[modelName] = data;
             tables.push(modelName);
+
+            // Compute granular stats
+            const jsonString = JSON.stringify(data, (_, value) =>
+              typeof value === "bigint" ? value.toString() : value,
+            );
+            tableStats[modelName] = {
+              count: data.length,
+              hash: createHash("sha256").update(jsonString).digest("hex"),
+            };
           }
         } else {
           console.warn(
-            `⚠️ Model delegate not found for ${modelName} (tried ${camelModelName})`
+            `⚠️ Model delegate not found for ${modelName} (tried ${camelModelName})`,
           );
         }
       } catch (error) {
@@ -161,14 +173,14 @@ export async function createBackup(
         data: backupData,
       },
       (_, value) => (typeof value === "bigint" ? value.toString() : value),
-      0
+      0,
     );
 
     writeFileSync(jsonPath, jsonContent, "utf-8");
 
     const jsonStats = statSync(jsonPath);
     console.log(
-      `[Backup] JSON file generated at ${jsonPath}, size: ${jsonStats.size} bytes`
+      `[Backup] JSON file generated at ${jsonPath}, size: ${jsonStats.size} bytes`,
     );
 
     onProgress?.({
@@ -197,7 +209,7 @@ export async function createBackup(
           // Log every ~5MB to avoid spam
           if (Math.random() > 0.95) {
             console.log(
-              `[Backup] Compressing... processed ${(bytesProcessed / 1024 / 1024).toFixed(1)} MB`
+              `[Backup] Compressing... processed ${(bytesProcessed / 1024 / 1024).toFixed(1)} MB`,
             );
           }
         });
@@ -242,6 +254,7 @@ export async function createBackup(
       sizeBytes,
       durationMs,
       tables,
+      stats: tableStats,
     };
   } catch (error) {
     // Cleanup
@@ -294,12 +307,59 @@ export function startBackup() {
     if (p.message) logs.push({ timestamp: new Date(), message: p.message });
   })
     .then(async (res) => {
+      // Deduplication Check
+      try {
+        const { listBackups } = await import("./drive");
+        const existingBackups = await listBackups();
+        const lastBackup = existingBackups[0];
+
+        if (lastBackup && lastBackup.customChecksum === res.checksum) {
+          console.log(
+            `[Backup] Duplicate checksum detected (${res.checksum}). Skipping upload.`,
+          );
+
+          jobs[jobId].status = "completed";
+          jobs[jobId].progress = 100;
+          jobs[jobId].currentStep = "No changes detected - Backup skipped";
+
+          // We return a specialized result indicating duplication
+          jobs[jobId].result = {
+            ...res,
+            skipped: true,
+            message: "Backup identico al anterior (sin cambios)",
+          };
+          history.push(jobs[jobId]);
+
+          try {
+            unlinkSync(res.path);
+          } catch {}
+
+          // Delay cleanup
+          setTimeout(() => {
+            delete jobs[jobId];
+          }, 5000);
+
+          return; // EXIT EARLY
+        }
+      } catch (dedupeError) {
+        console.warn(
+          "[Backup] Deduplication check failed, proceeding with upload:",
+          dedupeError,
+        );
+      }
+
       // Upload to Drive
       jobs[jobId].currentStep = "Uploading to Google Drive...";
       jobs[jobId].status = "uploading";
 
       try {
-        const driveFile = await uploadToDrive(res.path, res.filename);
+        const driveFile = await uploadToDrive(
+          res.path,
+          res.filename,
+          res.tables,
+          res.checksum,
+          res.stats,
+        );
 
         // Add Drive info to result
         const finalResult = {
@@ -343,4 +403,91 @@ export function startBackup() {
     });
 
   return jobs[jobId];
+}
+
+/**
+ * Compares current database state with a backup.
+ * Returns granular differences per table.
+ */
+export async function getBackupDiff(fileId: string) {
+  const { getBackupStats } = await import("./drive");
+  const backupStats = await getBackupStats(fileId);
+
+  if (!backupStats) {
+    throw new Error("Backup does not support granular comparison (legacy)");
+  }
+
+  const allModels = getAllModelNames();
+  const diffs: Array<{
+    table: string;
+    status:
+      | "match"
+      | "count_mismatch"
+      | "content_mismatch"
+      | "missing_local"
+      | "missing_remote";
+    localCount: number;
+    remoteCount: number;
+  }> = [];
+
+  for (const model of allModels) {
+    const remote = backupStats[model];
+    // Cast strict type
+    const modelDelegate = (db as any)[model];
+
+    if (!modelDelegate || typeof modelDelegate.findMany !== "function") {
+      continue;
+    }
+
+    const localCount = await modelDelegate.count();
+
+    if (!remote) {
+      if (localCount > 0) {
+        diffs.push({
+          table: model,
+          status: "missing_remote",
+          localCount,
+          remoteCount: 0,
+        });
+      }
+      continue;
+    }
+
+    if (localCount !== remote.count) {
+      diffs.push({
+        table: model,
+        status: "count_mismatch",
+        localCount,
+        remoteCount: remote.count,
+      });
+      continue;
+    }
+
+    // Counts match, verify content hash (expensive)
+    // We only do this for small tables or if requested?
+    // For now, let's do it regardless but warn.
+    const data = await modelDelegate.findMany();
+    const jsonString = JSON.stringify(data, (_, value) =>
+      typeof value === "bigint" ? value.toString() : value,
+    );
+    const localHash = createHash("sha256").update(jsonString).digest("hex");
+
+    if (localHash !== remote.hash) {
+      diffs.push({
+        table: model,
+        status: "content_mismatch",
+        localCount,
+        remoteCount: remote.count,
+      });
+    } else {
+      diffs.push({
+        table: model,
+        status: "match",
+        localCount,
+        remoteCount: remote.count,
+      });
+    }
+  }
+
+  return diffs;
 }
