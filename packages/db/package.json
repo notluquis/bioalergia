@@ -43,6 +43,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@prisma/client": "6.19.1",
     "@zenstackhq/orm": "3.2.1",
     "@zenstackhq/plugin-policy": "^3.2.1",
     "@zenstackhq/server": "^3.2.1",

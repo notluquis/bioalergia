@@ -38,6 +38,7 @@ import settlementTransactionRoutes from "./routes/settlement-transactions";
 import { readFile } from "fs/promises";
 import { join } from "path";
 import { integrationRoutes } from "./routes/integrations";
+import { doctoraliaRoutes } from "./routes/doctoralia";
 import { AuditLoggingPlugin } from "./lib/audit-plugin";
 
 const app = new Hono();
@@ -79,7 +80,7 @@ app.use(
   cors({
     origin: process.env.CORS_ORIGIN || "http://localhost:5173",
     credentials: true,
-  })
+  }),
 );
 
 // Health check (at root for Railway healthcheck)
@@ -149,6 +150,9 @@ app.route("/api/people", peopleRoutes);
 app.route("/api/expenses", expenseRoutes);
 app.route("/api/integrations", integrationRoutes);
 
+// Doctoralia integration routes
+app.route("/api/doctoralia", doctoraliaRoutes);
+
 // ZenStack Query-as-a-Service (auto CRUD for all models)
 // Frontend uses /api/model/* (via QuerySettingsProvider in main.tsx)
 const zenStackHandler = createHonoHandler({
@@ -188,7 +192,7 @@ if (process.env.NODE_ENV === "production") {
     serveStatic({
       root: "./public",
       // Don't serve index.html for missing files yet - SPA fallback handles that
-    })
+    }),
   );
 
   // SPA fallback: serve index.html for all non-API, non-asset routes
