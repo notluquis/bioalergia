@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import type { ChangeEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
 
@@ -18,6 +18,7 @@ import {
 import LoanDetail from "@/features/finance/loans/components/LoanDetail";
 import LoanForm from "@/features/finance/loans/components/LoanForm";
 import LoanList from "@/features/finance/loans/components/LoanList";
+import { loanKeys } from "@/features/finance/loans/queries";
 import type {
   CreateLoanPayload,
   LoanPaymentPayload,
@@ -46,15 +47,10 @@ export default function LoansPage() {
   });
   const [paymentError, setPaymentError] = useState<string | null>(null);
 
-  // Use REST API for loans list
-  const {
-    data: loansResponse,
-    isLoading: loadingList,
-    error: listError,
-  } = useQuery({
-    queryKey: ["loans"],
+  // Suspense Query (data is preloaded by Router)
+  const { data: loansResponse } = useSuspenseQuery({
+    queryKey: loanKeys.all,
     queryFn: fetchLoans,
-    enabled: canView,
   });
 
   const loans = useMemo(() => loansResponse?.loans ?? [], [loansResponse?.loans]);
@@ -70,9 +66,9 @@ export default function LoansPage() {
     }
   }, [loans, selectedId]);
 
-  // Fetch Detail (kept as manual due to complex aggregation)
+  // Fetch Detail (Standard Query for detail selection)
   const { data: detail, isLoading: loadingDetail } = useQuery({
-    queryKey: ["loan-detail", selectedId],
+    queryKey: loanKeys.detail(selectedId ?? ""),
     queryFn: async () => {
       if (!selectedId) return null;
       return fetchLoanDetail(selectedId);
@@ -84,7 +80,7 @@ export default function LoansPage() {
   const createMutation = useMutation({
     mutationFn: createLoan,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["loans"] });
+      queryClient.invalidateQueries({ queryKey: loanKeys.all });
     },
   });
 
@@ -92,16 +88,16 @@ export default function LoansPage() {
     mutationFn: ({ scheduleId, payload }: { scheduleId: number; payload: LoanPaymentPayload }) =>
       registerLoanPayment(scheduleId, payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["loans"] });
-      queryClient.invalidateQueries({ queryKey: ["loan-detail", selectedId] });
+      queryClient.invalidateQueries({ queryKey: loanKeys.all });
+      queryClient.invalidateQueries({ queryKey: loanKeys.detail(selectedId ?? "") });
     },
   });
 
   const unlinkPaymentMutation = useMutation({
     mutationFn: unlinkLoanPayment,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["loans"] });
-      queryClient.invalidateQueries({ queryKey: ["loan-detail", selectedId] });
+      queryClient.invalidateQueries({ queryKey: loanKeys.all });
+      queryClient.invalidateQueries({ queryKey: loanKeys.detail(selectedId ?? "") });
     },
   });
 
@@ -119,8 +115,8 @@ export default function LoansPage() {
     if (!selectedId) return;
     try {
       await regenerateSchedules(selectedId, overrides);
-      queryClient.invalidateQueries({ queryKey: ["loans"] });
-      queryClient.invalidateQueries({ queryKey: ["loan-detail", selectedId] });
+      queryClient.invalidateQueries({ queryKey: loanKeys.all });
+      queryClient.invalidateQueries({ queryKey: loanKeys.detail(selectedId) });
     } catch (error) {
       console.error("Regenerate failed:", error);
     }
@@ -170,11 +166,6 @@ export default function LoansPage() {
     }
   };
 
-  const globalError = (() => {
-    if (!listError) return null;
-    return listError instanceof Error ? listError.message : String(listError);
-  })();
-
   const selectedLoan = detail?.loan ?? null;
   const schedules = detail?.schedules ?? [];
   const summary = detail?.summary ?? null;
@@ -189,10 +180,6 @@ export default function LoansPage() {
 
   return (
     <section className={PAGE_CONTAINER}>
-      {globalError && <Alert variant="error">{globalError}</Alert>}
-
-      {loadingList && <p className="text-base-content/50 text-xs">Actualizando listado de préstamos...</p>}
-
       <div className="grid gap-4 lg:grid-cols-[300px,1fr]">
         <div className="border-base-300 bg-base-100 min-h-[70vh] rounded-2xl border p-6 shadow-sm">
           <LoanList
