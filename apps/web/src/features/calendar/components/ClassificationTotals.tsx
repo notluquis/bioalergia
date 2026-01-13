@@ -1,13 +1,13 @@
-import { type Control, useWatch } from "react-hook-form";
+import { useStore } from "@tanstack/react-form";
 
 import { StatCard } from "@/components/ui/StatCard";
 import { type CalendarUnclassifiedEvent } from "@/features/calendar/types";
 import { currencyFormatter } from "@/lib/format";
 
-import { type FormValues } from "../schemas";
+import { type ClassificationEntry, type FormValues } from "../schemas";
 
 interface ClassificationTotalsProps {
-  control: Control<FormValues>;
+  form: any;
   events: CalendarUnclassifiedEvent[];
 }
 
@@ -19,16 +19,14 @@ function parseAmountInput(value: string | null | undefined): number | null {
   return Number.isNaN(parsed) ? null : parsed;
 }
 
-export function ClassificationTotals({ control, events }: ClassificationTotalsProps) {
-  // Only subscribe to entries
-  const watchedEntries = useWatch({
-    control,
-    name: "entries",
-  });
+export function ClassificationTotals({ form, events }: ClassificationTotalsProps) {
+  // Subscribe to entries values via TanStack Form's useStore
+
+  const watchedEntries = useStore(form.store, (state: any) => (state as { values: FormValues }).values.entries);
 
   const totals = watchedEntries?.length
     ? watchedEntries.reduce(
-        (acc, entry, index) => {
+        (acc: { expected: number; paid: number }, entry: ClassificationEntry, index: number) => {
           const event = events[index];
           if (!event) return acc;
           const expected = parseAmountInput(entry?.amountExpected) ?? event.amountExpected ?? 0;

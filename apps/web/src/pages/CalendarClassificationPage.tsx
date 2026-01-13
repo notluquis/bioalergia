@@ -1,12 +1,11 @@
 import "dayjs/locale/es";
 
-import { zodResolver } from "@hookform/resolvers/zod";
 import * as Toast from "@radix-ui/react-toast";
 import * as Tooltip from "@radix-ui/react-tooltip";
+import { useForm, useStore } from "@tanstack/react-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { useEffect, useState } from "react";
-import { useFieldArray, useForm } from "react-hook-form";
 
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
@@ -21,7 +20,7 @@ import {
 } from "@/features/calendar/api";
 import { ClassificationRow } from "@/features/calendar/components/ClassificationRow";
 import { ClassificationTotals } from "@/features/calendar/components/ClassificationTotals";
-import { classificationArraySchema, type FormValues } from "@/features/calendar/schemas";
+import { type ClassificationEntry, type FormValues } from "@/features/calendar/schemas";
 import type { CalendarUnclassifiedEvent } from "@/features/calendar/types";
 import {
   buildDefaultEntry,
@@ -72,21 +71,20 @@ function CalendarClassificationPage() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastOpen, setToastOpen] = useState(false);
 
-  const form = useForm<FormValues>({
-    resolver: zodResolver(classificationArraySchema),
-    defaultValues: { entries: [] },
-    mode: "onChange",
+  // TanStack Form for array of classification entries
+  const form = useForm({
+    defaultValues: { entries: [] } as FormValues,
   });
 
-  const { control, reset, getValues, setValue } = form;
-  const { fields } = useFieldArray({ control, name: "entries" });
+  // Subscribe to entries for rendering
+  const entries = useStore(form.store, (state) => state.values.entries);
 
-  // Sync form with data
+  // Sync form with data when events change
   useEffect(() => {
-    if (events) {
-      reset({ entries: events.map((e) => buildDefaultEntry(e)) });
+    if (events.length > 0) {
+      form.reset({ entries: events.map((e) => buildDefaultEntry(e)) });
     }
-  }, [events, reset]);
+  }, [events, form]);
 
   const classifyMutation = useMutation({
     mutationFn: (params: { event: CalendarUnclassifiedEvent; payload: ParsedPayload }) => {
@@ -178,17 +176,18 @@ function CalendarClassificationPage() {
     return null;
   })();
 
-  // React Compiler auto-stabilizes event handlers
   const handleResetEntry = (index: number, event: CalendarUnclassifiedEvent) => {
-    setValue(`entries.${index}`, buildDefaultEntry(event), { shouldDirty: true });
+    form.setFieldValue(`entries[${index}]`, buildDefaultEntry(event) as ClassificationEntry);
   };
 
   const handleSave = async (event: CalendarUnclassifiedEvent, index: number) => {
     const key = eventKey(event);
     setSavingKey(key);
-    const values = getValues(`entries.${index}` as const);
-    const payload = buildPayload(values, event);
-    mutate({ event, payload });
+    const entry = form.getFieldValue(`entries[${index}]`);
+    if (entry) {
+      const payload = buildPayload(entry as ClassificationEntry, event);
+      mutate({ event, payload });
+    }
   };
 
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
@@ -202,7 +201,7 @@ function CalendarClassificationPage() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard title="Pendientes" value={loading ? "—" : totalCount.toLocaleString("es-CL")} tone="primary" />
             <StatCard title="Página actual" value={loading ? "—" : events.length} tone="success" />
-            <ClassificationTotals control={control} events={events} />
+            <ClassificationTotals form={form} events={events} />
           </div>
 
           {/* Actions Bar */}
@@ -470,21 +469,20 @@ function CalendarClassificationPage() {
           {/* Events List */}
           {events.length > 0 && (
             <div className="space-y-3">
-              {fields.map((field, index) => {
+              {entries.map((_, index) => {
                 const event = events[index];
                 if (!event) return null;
                 const key = eventKey(event);
 
                 return (
                   <ClassificationRow
-                    key={field.id}
+                    key={key}
                     index={index}
                     event={event}
-                    control={control}
+                    form={form}
                     isSaving={savingKey === key}
                     onSave={handleSave}
                     onReset={handleResetEntry}
-                    initialValues={null}
                     categoryChoices={categoryChoices}
                     treatmentStageChoices={treatmentStageChoices}
                   />

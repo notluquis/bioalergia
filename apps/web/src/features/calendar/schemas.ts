@@ -17,3 +17,4 @@ export const classificationArraySchema = z.object({
 });
 
 export type FormValues = z.infer<typeof classificationArraySchema>;
+export type ClassificationEntry = z.infer<typeof classificationSchema>;
