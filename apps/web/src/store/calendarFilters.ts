@@ -1,4 +1,4 @@
-import { create } from "zustand";
+import { Store } from "@tanstack/store";
 
 export type CalendarFilterState = {
   from: string;
@@ -20,16 +20,15 @@ const initialState: CalendarFilterState = {
   maxDays: 31,
 };
 
-type CalendarFilterActions = {
-  setFilters: (partial: Partial<CalendarFilterState>) => void;
-  resetFilters: () => void;
+export const calendarFilterStore = new Store<CalendarFilterState>(initialState);
+
+export const updateFilters = (partial: Partial<CalendarFilterState>) => {
+  calendarFilterStore.setState((state) => ({ ...state, ...partial }));
 };
 
-export const useCalendarFilterStore = create<CalendarFilterState & CalendarFilterActions>((set) => ({
-  ...initialState,
-  setFilters: (partial) => set((state) => ({ ...state, ...partial })),
-  resetFilters: () => set({ ...initialState }),
-}));
+export const resetFilters = () => {
+  calendarFilterStore.setState((state) => ({ ...state, ...initialState }));
+};
 
 export const selectCalendarFilters = (state: CalendarFilterState) => state;
 
