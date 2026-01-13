@@ -1,7 +1,6 @@
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm, useStore } from "@tanstack/react-form";
 import { Link } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { type Resolver, useForm } from "react-hook-form";
 import { z } from "zod";
 
 import Alert from "@/components/ui/Alert";
@@ -16,15 +15,11 @@ import { CATEGORY_OPTIONS, EMPTY_FORM } from "../constants";
 import type { Counterpart } from "../types";
 
 const counterpartFormSchema = z.object({
-  rut: z
-    .string()
-    .trim()
-    .default("")
-    .refine((value) => {
-      if (!value) return true;
-      return validateRut(value);
-    }, "RUT inválido"),
-  name: z.string().trim().min(1, "El nombre es requerido"),
+  rut: z.string().refine((value) => {
+    if (!value) return true;
+    return validateRut(value);
+  }, "RUT inválido"),
+  name: z.string().min(1, "El nombre es requerido"),
   personType: z.enum(["NATURAL", "JURIDICAL"] as const),
   category: z.enum([
     "SUPPLIER",
@@ -39,7 +34,7 @@ const counterpartFormSchema = z.object({
   ] as const),
   // eslint-disable-next-line sonarjs/deprecation
   email: z.string().email().or(z.literal("")).nullable().optional(),
-  notes: z.string().trim().default(""),
+  notes: z.string(),
 });
 
 type CounterpartFormValues = z.infer<typeof counterpartFormSchema>;
@@ -53,59 +48,54 @@ interface CounterpartFormProps {
 }
 
 export default function CounterpartForm({ counterpart, onSave, error, saving, loading = false }: CounterpartFormProps) {
-  const {
-    register,
-    handleSubmit,
-    reset,
-    watch,
-    formState: { errors, isSubmitting },
-  } = useForm<CounterpartFormValues>({
-    resolver: zodResolver(counterpartFormSchema) as unknown as Resolver<CounterpartFormValues>, // Fix type mismatch
+  const form = useForm({
     defaultValues: {
       rut: "",
       name: "",
-      personType: "NATURAL",
-      category: "OTHER",
+      personType: "NATURAL" as PersonType,
+      category: "OTHER" as CounterpartCategory,
       email: "",
       notes: "",
+    } as CounterpartFormValues,
+    validators: {
+      onChange: counterpartFormSchema,
+    },
+    onSubmit: async ({ value }) => {
+      const payload: CounterpartUpsertPayload = {
+        rut: value.rut || null,
+        name: value.name,
+        personType: value.personType,
+        category: value.category,
+        email: value.email || null,
+        employeeEmail: value.email || null,
+        notes: value.notes || null,
+      };
+      await onSave(payload);
     },
   });
 
-  const values = watch();
-
+  // Reset form when counterpart changes
   useEffect(() => {
     if (counterpart) {
-      const snapshot = {
+      form.reset({
         rut: formatRut(counterpart.rut ?? ""),
         name: counterpart.name,
         personType: counterpart.personType as PersonType,
         category: counterpart.category as CounterpartCategory,
         email: counterpart.email ?? "",
         notes: counterpart.notes ?? "",
-      };
-      reset(snapshot);
+      });
     } else {
-      reset({
+      form.reset({
         ...EMPTY_FORM,
         personType: "NATURAL",
-      });
+      } as CounterpartFormValues);
     }
-  }, [counterpart, reset]);
+  }, [counterpart, form]);
 
-  const onSubmit = async (values: CounterpartFormValues) => {
-    const payload: CounterpartUpsertPayload = {
-      rut: values.rut || null,
-      name: values.name,
-      personType: values.personType,
-      category: values.category,
-      email: values.email || null,
-      employeeEmail: values.email || null,
-      notes: values.notes || null,
-    };
-    await onSave(payload);
-  };
-
-  const busy = loading || saving || isSubmitting;
+  const busy = loading || saving || form.state.isSubmitting;
+  const categoryValue = useStore(form.store, (state) => state.values.category);
+  const rutValue = useStore(form.store, (state) => state.values.rut);
 
   return (
     <section className="surface-recessed relative space-y-5 p-6" aria-busy={busy}>
@@ -120,60 +110,140 @@ export default function CounterpartForm({ counterpart, onSave, error, saving, lo
           Completa los datos principales para sincronizar la información de pagos y retiros.
         </p>
       </div>
-      <form onSubmit={handleSubmit(onSubmit)} className={GRID_2_COL_MD}>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          form.handleSubmit();
+        }}
+        className={GRID_2_COL_MD}
+      >
         <fieldset className="contents" disabled={busy}>
-          <div>
-            <Input
-              label="RUT"
-              type="text"
-              {...register("rut")}
-              placeholder="12.345.678-9"
-              helper={values.rut ? formatRut(values.rut) : undefined}
-            />
-            {errors.rut && <p className="text-error mt-1 text-xs">{errors.rut.message}</p>}
-          </div>
-          <div>
-            <Input label="Nombre" type="text" {...register("name")} placeholder="Allos Chile Spa" required />
-            {errors.name && <p className="text-error mt-1 text-xs">{errors.name.message}</p>}
-          </div>
-          <div>
-            <Input label="Tipo de persona" as="select" {...register("personType")}>
-              <option value="NATURAL">Persona natural</option>
-              <option value="JURIDICAL">Empresa</option>
-            </Input>
-            {errors.personType && <p className="text-error mt-1 text-xs">{errors.personType.message}</p>}
-          </div>
-          <div>
-            <Input label="Clasificación" as="select" {...register("category")}>
-              {CATEGORY_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </Input>
-            {errors.category && <p className="text-error mt-1 text-xs">{errors.category.message}</p>}
-          </div>
-          {values.category === "EMPLOYEE" && (
+          <form.Field name="rut">
+            {(field) => (
+              <div>
+                <Input
+                  label="RUT"
+                  type="text"
+                  placeholder="12.345.678-9"
+                  helper={rutValue ? formatRut(rutValue) : undefined}
+                  value={field.state.value}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  onBlur={field.handleBlur}
+                />
+                {field.state.meta.errors.length > 0 && (
+                  <p className="text-error mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
+                )}
+              </div>
+            )}
+          </form.Field>
+
+          <form.Field name="name">
+            {(field) => (
+              <div>
+                <Input
+                  label="Nombre"
+                  type="text"
+                  placeholder="Allos Chile Spa"
+                  required
+                  value={field.state.value}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  onBlur={field.handleBlur}
+                />
+                {field.state.meta.errors.length > 0 && (
+                  <p className="text-error mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
+                )}
+              </div>
+            )}
+          </form.Field>
+
+          <form.Field name="personType">
+            {(field) => (
+              <div>
+                <Input
+                  label="Tipo de persona"
+                  as="select"
+                  value={field.state.value}
+                  onChange={(e) => field.handleChange(e.target.value as PersonType)}
+                  onBlur={field.handleBlur}
+                >
+                  <option value="NATURAL">Persona natural</option>
+                  <option value="JURIDICAL">Empresa</option>
+                </Input>
+                {field.state.meta.errors.length > 0 && (
+                  <p className="text-error mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
+                )}
+              </div>
+            )}
+          </form.Field>
+
+          <form.Field name="category">
+            {(field) => (
+              <div>
+                <Input
+                  label="Clasificación"
+                  as="select"
+                  value={field.state.value}
+                  onChange={(e) => field.handleChange(e.target.value as CounterpartCategory)}
+                  onBlur={field.handleBlur}
+                >
+                  {CATEGORY_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </Input>
+                {field.state.meta.errors.length > 0 && (
+                  <p className="text-error mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
+                )}
+              </div>
+            )}
+          </form.Field>
+
+          {categoryValue === "EMPLOYEE" && (
             <p className="text-base-content/80 text-xs md:col-span-2">
               Se vinculará como empleado utilizando el correo electrónico ingresado.
             </p>
           )}
-          <div>
-            <Input label="Correo electrónico" type="email" {...register("email")} placeholder="contacto@empresa.cl" />
-            {errors.email && <p className="text-error mt-1 text-xs">{errors.email.message}</p>}
-          </div>
+
+          <form.Field name="email">
+            {(field) => (
+              <div>
+                <Input
+                  label="Correo electrónico"
+                  type="email"
+                  placeholder="contacto@empresa.cl"
+                  value={field.state.value ?? ""}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  onBlur={field.handleBlur}
+                />
+                {field.state.meta.errors.length > 0 && (
+                  <p className="text-error mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
+                )}
+              </div>
+            )}
+          </form.Field>
+
           {!counterpart && (
-            <div className="md:col-span-2">
-              <Input
-                label="Notas"
-                as="textarea"
-                rows={4}
-                {...register("notes")}
-                placeholder="Información adicional, persona de contacto, etc."
-              />
-              {errors.notes && <p className="text-error mt-1 text-xs">{errors.notes.message}</p>}
-            </div>
+            <form.Field name="notes">
+              {(field) => (
+                <div className="md:col-span-2">
+                  <Input
+                    label="Notas"
+                    as="textarea"
+                    rows={4}
+                    placeholder="Información adicional, persona de contacto, etc."
+                    value={field.state.value}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    onBlur={field.handleBlur}
+                  />
+                  {field.state.meta.errors.length > 0 && (
+                    <p className="text-error mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
+                  )}
+                </div>
+              )}
+            </form.Field>
           )}
+
           {counterpart?.employeeId && (
             <p className="text-base-content/80 text-xs md:col-span-2">
               Empleado vinculado (ID #{counterpart.employeeId}).{" "}
@@ -182,6 +252,7 @@ export default function CounterpartForm({ counterpart, onSave, error, saving, lo
               </Link>
             </p>
           )}
+
           <div className="flex flex-col gap-3 md:col-span-2">
             {error && <Alert variant="error">{error}</Alert>}
             <div className="flex flex-wrap justify-end gap-2">
