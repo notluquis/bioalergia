@@ -1,8 +1,6 @@
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "@tanstack/react-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, User as UserIcon } from "lucide-react";
-import { useMemo } from "react";
-import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { useToast } from "@/context/ToastContext";
@@ -23,25 +21,6 @@ const formSchema = z.object({
 type RoleFormData = z.infer<typeof formSchema>;
 
 export function RoleFormModal({ role, isOpen, onClose }: RoleFormModalProps) {
-  // Memoize default values to prevent unnecessary resets
-  const defaultValues = useMemo<RoleFormData>(
-    () => ({
-      name: role?.name || "",
-      description: role?.description || "",
-    }),
-    [role]
-  );
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<RoleFormData>({
-    resolver: zodResolver(formSchema),
-    defaultValues,
-    mode: "onChange",
-  });
-
   const toast = useToast();
   const queryClient = useQueryClient();
 
@@ -54,17 +33,15 @@ export function RoleFormModal({ role, isOpen, onClose }: RoleFormModalProps) {
 
   const mutation = useMutation({
     mutationFn: async (data: RoleFormData) => {
-      // Ensure description is string (handle optional/undefined)
       const payload = {
         name: data.name,
         description: data.description || "",
       };
-
       await (role ? updateRole(role.id, payload) : createRole(payload));
     },
     onSuccess: () => {
       toast.success("Los cambios se han guardado correctamente.", role ? "Rol actualizado" : "Rol creado");
-      queryClient.invalidateQueries({ queryKey: ["roles"] }); // Refresh list
+      queryClient.invalidateQueries({ queryKey: ["roles"] });
       onClose();
     },
     onError: (err: Error) => {
@@ -83,9 +60,18 @@ export function RoleFormModal({ role, isOpen, onClose }: RoleFormModalProps) {
     },
   });
 
-  const onSubmit = (data: RoleFormData) => {
-    mutation.mutate(data);
-  };
+  const form = useForm({
+    defaultValues: {
+      name: role?.name ?? "",
+      description: role?.description ?? "",
+    } as RoleFormData,
+    validators: {
+      onChange: formSchema,
+    },
+    onSubmit: async ({ value }) => {
+      mutation.mutate(value);
+    },
+  });
 
   const renderUsersList = () => {
     if (isLoadingUsers) return <div className="loading loading-spinner loading-xs"></div>;
@@ -113,33 +99,53 @@ export function RoleFormModal({ role, isOpen, onClose }: RoleFormModalProps) {
       <div className="modal-box">
         <h3 className="text-lg font-bold">{role ? "Editar Rol" : "Nuevo Rol"}</h3>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
-          <div className="form-control w-full">
-            <label className="label" htmlFor="role-name">
-              <span className="label-text">Nombre del Rol</span>
-            </label>
-            <input
-              id="role-name"
-              type="text"
-              placeholder="Ej. Supervisor de Finanzas"
-              className={`input input-bordered w-full ${errors.name ? "input-error" : ""}`}
-              {...register("name")}
-            />
-            {errors.name && <span className="text-error mt-1 text-xs">{errors.name.message}</span>}
-          </div>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            form.handleSubmit();
+          }}
+          className="space-y-4 py-4"
+        >
+          <form.Field name="name">
+            {(field) => (
+              <div className="form-control w-full">
+                <label className="label" htmlFor="role-name">
+                  <span className="label-text">Nombre del Rol</span>
+                </label>
+                <input
+                  id="role-name"
+                  type="text"
+                  placeholder="Ej. Supervisor de Finanzas"
+                  className={`input input-bordered w-full ${field.state.meta.errors.length > 0 ? "input-error" : ""}`}
+                  value={field.state.value}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  onBlur={field.handleBlur}
+                />
+                {field.state.meta.errors.length > 0 && (
+                  <span className="text-error mt-1 text-xs">{field.state.meta.errors.join(", ")}</span>
+                )}
+              </div>
+            )}
+          </form.Field>
 
-          <div className="form-control w-full">
-            <label className="label" htmlFor="role-description">
-              <span className="label-text">Descripción</span>
-            </label>
-            <input
-              id="role-description"
-              type="text"
-              placeholder="Descripción breve de las responsabilidades"
-              className="input input-bordered w-full"
-              {...register("description")}
-            />
-          </div>
+          <form.Field name="description">
+            {(field) => (
+              <div className="form-control w-full">
+                <label className="label" htmlFor="role-description">
+                  <span className="label-text">Descripción</span>
+                </label>
+                <input
+                  id="role-description"
+                  type="text"
+                  placeholder="Descripción breve de las responsabilidades"
+                  className="input input-bordered w-full"
+                  value={field.state.value ?? ""}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  onBlur={field.handleBlur}
+                />
+              </div>
+            )}
+          </form.Field>
 
           {/* Show affected users when editing */}
           {role && (

@@ -1,8 +1,7 @@
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
-import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 import Button from "@/components/ui/Button";
@@ -34,15 +33,6 @@ export default function GenerateReportModal({ open, onClose, reportType }: Props
   const { success: showSuccess, error: showError } = useToast();
   const [progress, setProgress] = useState<{ current: number; total: number } | null>(null);
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    reset,
-  } = useForm<FormData>({
-    resolver: zodResolver(schema),
-  });
-
   const mutation = useMutation({
     mutationFn: (data: FormData) =>
       MPService.createReportBulk(data.begin_date, data.end_date, reportType, (current, total) =>
@@ -52,7 +42,7 @@ export default function GenerateReportModal({ open, onClose, reportType }: Props
       const count = reports.length;
       showSuccess(count === 1 ? "Solicitud de reporte enviada" : `${count} reportes solicitados exitosamente`);
       queryClient.invalidateQueries({ queryKey: ["mp-reports", reportType] });
-      reset();
+      form.reset();
       setProgress(null);
       onClose();
     },
@@ -62,9 +52,18 @@ export default function GenerateReportModal({ open, onClose, reportType }: Props
     },
   });
 
-  const onSubmit = (data: FormData) => {
-    mutation.mutate(data);
-  };
+  const form = useForm({
+    defaultValues: {
+      begin_date: "",
+      end_date: "",
+    } as FormData,
+    validators: {
+      onChange: schema,
+    },
+    onSubmit: async ({ value }) => {
+      mutation.mutate(value);
+    },
+  });
 
   return (
     <Modal
@@ -72,16 +71,44 @@ export default function GenerateReportModal({ open, onClose, reportType }: Props
       isOpen={open}
       onClose={onClose}
     >
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          form.handleSubmit();
+        }}
+        className="space-y-4"
+      >
         <p className="text-base-content/70 text-sm">
           Selecciona el rango de fechas para generar el reporte de{" "}
           {reportType === "release" ? "liberación de fondos" : "conciliación"}. Si el rango es mayor a 60 días, se
           crearán múltiples reportes automáticamente.
         </p>
 
-        <Input label="Fecha Inicio" type="date" error={errors.begin_date?.message} {...register("begin_date")} />
+        <form.Field name="begin_date">
+          {(field) => (
+            <Input
+              label="Fecha Inicio"
+              type="date"
+              error={field.state.meta.errors[0]?.message}
+              value={field.state.value}
+              onChange={(e) => field.handleChange(e.target.value)}
+              onBlur={field.handleBlur}
+            />
+          )}
+        </form.Field>
 
-        <Input label="Fecha Fin" type="date" error={errors.end_date?.message} {...register("end_date")} />
+        <form.Field name="end_date">
+          {(field) => (
+            <Input
+              label="Fecha Fin"
+              type="date"
+              error={field.state.meta.errors[0]?.message}
+              value={field.state.value}
+              onChange={(e) => field.handleChange(e.target.value)}
+              onBlur={field.handleBlur}
+            />
+          )}
+        </form.Field>
 
         <div className="mt-6 flex justify-end gap-3">
           <Button type="button" variant="ghost" onClick={onClose} disabled={mutation.isPending}>
