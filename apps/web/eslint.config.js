@@ -1,6 +1,7 @@
 // Flat ESLint config - Golden Standard 2026
 // React 19 + TypeScript + Strict Type-Checking
 import js from "@eslint/js";
+import pluginRouter from "@tanstack/eslint-plugin-router";
 import reactQuery from "@tanstack/eslint-plugin-query";
 import tseslint from "@typescript-eslint/eslint-plugin";
 import tsParser from "@typescript-eslint/parser";
@@ -259,6 +260,11 @@ export default [
       "no-restricted-imports": "off",
     },
   },
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // TANSTACK ROUTER - Best practices
+  // ═══════════════════════════════════════════════════════════════════════════
+  ...pluginRouter.configs["flat/recommended"],
 
   // ═══════════════════════════════════════════════════════════════════════════
   // TESTING
