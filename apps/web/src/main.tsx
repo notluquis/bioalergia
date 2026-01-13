@@ -120,6 +120,16 @@ function InnerApp() {
   return <RouterProvider router={router} context={{ auth }} />;
 }
 
+// Lazy load devtools for development only
+const ReactQueryDevtools =
+  process.env.NODE_ENV === "production"
+    ? () => null
+    : React.lazy(() =>
+        import("@tanstack/react-query-devtools").then((res) => ({
+          default: res.ReactQueryDevtools,
+        }))
+      );
+
 // ============================================================================
 // INITIALIZE APP
 // ============================================================================
@@ -139,6 +149,9 @@ ReactDOM.createRoot(document.querySelector("#root")!).render(
                 <ToastProvider>
                   <AbilityProvider>
                     <InnerApp />
+                    <React.Suspense fallback={null}>
+                      <ReactQueryDevtools initialIsOpen={false} />
+                    </React.Suspense>
                   </AbilityProvider>
                 </ToastProvider>
               </SettingsProvider>
