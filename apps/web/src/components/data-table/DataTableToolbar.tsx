@@ -5,7 +5,18 @@ import Papa from "papaparse";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 
+import { DataTableFacetedFilter } from "./DataTableFacetedFilter";
 import { DataTableViewOptions } from "./DataTableViewOptions";
+
+export interface DataTableFilterOption {
+  columnId: string;
+  title: string;
+  options: {
+    label: string;
+    value: string;
+    icon?: React.ComponentType<{ className?: string }>;
+  }[];
+}
 
 interface DataTableToolbarProps<TData> {
   table: Table<TData>;
@@ -17,12 +28,17 @@ interface DataTableToolbarProps<TData> {
    * Enable CSV export
    */
   enableExport?: boolean;
+  /**
+   * Faceted filters for specific columns
+   */
+  filters?: DataTableFilterOption[];
 }
 
 export function DataTableToolbar<TData>({
   table,
   enableGlobalFilter = true,
   enableExport = true,
+  filters = [],
 }: DataTableToolbarProps<TData>) {
   const isFiltered = table.getState().columnFilters.length > 0;
   const globalFilter = table.getState().globalFilter as string;
@@ -63,22 +79,35 @@ export function DataTableToolbar<TData>({
 
   return (
     <div className="flex flex-col items-start justify-between gap-4 py-4 sm:flex-row sm:items-center">
-      {enableGlobalFilter && (
-        <div className="flex w-full flex-1 items-center space-x-2 sm:w-auto">
+      <div className="flex w-full flex-1 flex-col items-start space-y-2 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-2">
+        {enableGlobalFilter && (
           <Input
             placeholder="Filtrar..."
             value={globalFilter ?? ""}
             onChange={(event) => table.setGlobalFilter(event.target.value)}
-            className="h-9 w-full sm:w-[250px] lg:w-[350px]"
+            className="h-9 w-full sm:w-62.5 lg:w-87.5"
           />
-          {isFiltered && (
-            <Button variant="ghost" onClick={() => table.resetColumnFilters()} className="h-8 px-2 lg:px-3">
-              Reset
-              <X className="ml-2 h-4 w-4" />
-            </Button>
-          )}
-        </div>
-      )}
+        )}
+        {filters.map((filter) => {
+          const column = table.getColumn(filter.columnId);
+          return (
+            column && (
+              <DataTableFacetedFilter
+                key={filter.columnId}
+                column={column}
+                title={filter.title}
+                options={filter.options}
+              />
+            )
+          );
+        })}
+        {isFiltered && (
+          <Button variant="ghost" onClick={() => table.resetColumnFilters()} className="h-8 px-2 lg:px-3">
+            Reset
+            <X className="ml-2 h-4 w-4" />
+          </Button>
+        )}
+      </div>
       <div className="flex w-full items-center justify-between gap-2 sm:w-auto sm:justify-end">
         {enableExport && (
           <Button variant="outline" size="sm" onClick={handleExport} className="h-8">
