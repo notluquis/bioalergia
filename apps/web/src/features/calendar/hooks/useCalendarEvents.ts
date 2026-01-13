@@ -1,10 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useStore } from "@tanstack/react-store";
 import dayjs from "dayjs";
 import { useEffect, useRef, useState } from "react";
 
 import { useSettings } from "@/context/SettingsContext";
 import { useToast } from "@/context/ToastContext";
-import { useCalendarFilterStore } from "@/store/calendarFilters";
+import { calendarFilterStore, updateFilters } from "@/store/calendarFilters";
 
 import { fetchCalendarDaily, fetchCalendarSummary, fetchCalendarSyncLogs, syncCalendarEvents } from "../api";
 import type { CalendarDaily, CalendarFilters, CalendarSummary, CalendarSyncLog, CalendarSyncStep } from "../types";
@@ -78,8 +79,7 @@ function filtersEqual(a: CalendarFilters, b: CalendarFilters) {
 export function useCalendarEvents() {
   const { settings } = useSettings();
   const queryClient = useQueryClient();
-  const filters = useCalendarFilterStore((state) => state);
-  const setFilters = useCalendarFilterStore((state) => state.setFilters);
+  const filters = useStore(calendarFilterStore, (state) => state);
   const { error: showError } = useToast();
 
   const computeDefaults = (): CalendarFilters => {
@@ -113,7 +113,7 @@ export function useCalendarEvents() {
   const [initialDefaults] = useState(() => {
     const defaults = computeDefaults();
     // Initialize store immediately to avoid empty state
-    setFilters(defaults);
+    updateFilters(defaults);
     return defaults;
   });
   // Don't initialize with initialDefaults - let useEffect handle it
@@ -191,24 +191,24 @@ export function useCalendarEvents() {
   const normalizedDraft = normalizeFilters(filters);
   const isDirty = !filtersEqual(normalizedDraft, normalizedApplied);
 
-  const updateFilters = <K extends keyof CalendarFilters>(key: K, value: CalendarFilters[K]) => {
-    setFilters({ [key]: value } as Partial<CalendarFilters>);
+  const handleUpdateFilters = <K extends keyof CalendarFilters>(key: K, value: CalendarFilters[K]) => {
+    updateFilters({ [key]: value } as Partial<CalendarFilters>);
   };
 
   const applyFilters = () => {
-    const draft = normalizeFilters(useCalendarFilterStore.getState());
+    const draft = normalizeFilters(calendarFilterStore.state);
     const fromDate = dayjs(draft.from);
     const toDate = dayjs(draft.to);
     const spanDays = fromDate.isValid() && toDate.isValid() ? Math.max(1, toDate.diff(fromDate, "day") + 1) : 1;
     const resolvedMaxDays = Math.min(Math.max(spanDays, draft.maxDays, 1), 365);
     const next = { ...draft, maxDays: resolvedMaxDays };
     setAppliedFilters(next);
-    setFilters(next);
+    updateFilters(next);
   };
 
-  const resetFilters = () => {
+  const handleResetFilters = () => {
     const defaults = computeDefaults();
-    setFilters(defaults);
+    updateFilters(defaults);
     setAppliedFilters(defaults);
   };
 
@@ -346,9 +346,9 @@ export function useCalendarEvents() {
     loading,
     error,
     isDirty,
-    updateFilters,
+    updateFilters: handleUpdateFilters,
     applyFilters,
-    resetFilters,
+    resetFilters: handleResetFilters,
     availableCalendars,
     availableEventTypes,
     availableCategories,

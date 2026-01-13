@@ -1,5 +1,7 @@
+import { useStore } from "@tanstack/react-store";
+import { Store } from "@tanstack/store";
 import dayjs from "dayjs";
-import { create } from "zustand";
+import { useMemo } from "react";
 
 import type { BalanceSummary, DailyBalanceFormData, DayCell, DayStatus, WeekData } from "../types";
 import { calculateSummary, getDayAbbrev } from "../utils";
@@ -20,7 +22,7 @@ const defaultFormData: DailyBalanceFormData = {
   nota: "",
 };
 
-interface DailyBalanceState {
+export interface DailyBalanceState {
   // Current selected date
   selectedDate: string;
 
@@ -37,132 +39,31 @@ interface DailyBalanceState {
   weekData: WeekData | null;
 
   // State flags
-  isDirty: boolean;
   isLoading: boolean;
   isSaving: boolean;
   lastSaved: Date | null;
-
-  // Computed values
-  summary: BalanceSummary;
-  status: DayStatus;
-
-  // Actions
-  setSelectedDate: (date: string) => void;
-  updateField: <K extends keyof DailyBalanceFormData>(field: K, value: DailyBalanceFormData[K]) => void;
-  setFormData: (data: DailyBalanceFormData) => void;
-  setOriginalData: (data: DailyBalanceFormData, id?: number) => void;
-  setWeekData: (data: WeekData) => void;
-  setIsLoading: (loading: boolean) => void;
-  setIsSaving: (saving: boolean) => void;
-  markSaved: (newId?: number) => void;
-  resetForm: () => void;
 }
 
-export const useDailyBalanceStore = create<DailyBalanceState>((set, get) => ({
-  // Initial state
+// 1. Base Store
+export const dailyBalanceStore = new Store<DailyBalanceState>({
   selectedDate: dayjs().format("YYYY-MM-DD"),
   currentEntryId: null,
   formData: { ...defaultFormData },
   originalData: { ...defaultFormData },
   weekData: null,
-  isDirty: false,
   isLoading: false,
   isSaving: false,
   lastSaved: null,
-  summary: {
-    totalMetodos: 0,
-    totalServicios: 0,
-    gastos: 0,
-    diferencia: 0,
-    cuadra: true,
-  },
-  status: "empty",
+});
 
-  // Actions
-  setSelectedDate: (date) => set({ selectedDate: date }),
-
-  updateField: (field, value) => {
-    const currentData = get().formData;
-    const newData = { ...currentData, [field]: value };
-    const originalData = get().originalData;
-    const isDirty = JSON.stringify(newData) !== JSON.stringify(originalData);
-    const summary = calculateSummary(newData);
-    const status = computeStatus(newData, summary);
-
-    set({
-      formData: newData,
-      isDirty,
-      summary,
-      status,
-    });
-  },
-
-  setFormData: (data) => {
-    const summary = calculateSummary(data);
-    const status = computeStatus(data, summary);
-    set({
-      formData: data,
-      summary,
-      status,
-    });
-  },
-
-  setOriginalData: (data, id) => {
-    const summary = calculateSummary(data);
-    const status = computeStatus(data, summary);
-    set({
-      originalData: data,
-      formData: data,
-      currentEntryId: id ?? null,
-      isDirty: false,
-      summary,
-      status,
-    });
-  },
-
-  setWeekData: (data) => set({ weekData: data }),
-
-  setIsLoading: (loading) => set({ isLoading: loading }),
-
-  setIsSaving: (saving) => set({ isSaving: saving }),
-
-  markSaved: (newId) => {
-    const currentData = get().formData;
-    set((state) => ({
-      originalData: { ...currentData },
-      isDirty: false,
-      lastSaved: new Date(),
-      currentEntryId: newId ?? state.currentEntryId,
-    }));
-  },
-
-  resetForm: () =>
-    set({
-      formData: { ...defaultFormData },
-      originalData: { ...defaultFormData },
-      currentEntryId: null,
-      isDirty: false,
-      summary: {
-        totalMetodos: 0,
-        totalServicios: 0,
-        gastos: 0,
-        diferencia: 0,
-        cuadra: true,
-      },
-      status: "empty",
-    }),
-}));
-
-// Helper to compute status
+// 2. Helper Logic
 function computeStatus(data: DailyBalanceFormData, summary: BalanceSummary): DayStatus {
   const hasData = data.tarjeta > 0 || data.transferencia > 0 || data.efectivo > 0;
-
   if (!hasData) return "empty";
   if (summary.cuadra) return "balanced";
   return "unbalanced";
 }
 
-// Helper to generate week data from a date
 export function generateWeekData(centerDate: string, entries: Record<string, number>): WeekData {
   const center = dayjs(centerDate);
   const startOfWeek = center.startOf("week"); // Sunday
@@ -189,5 +90,92 @@ export function generateWeekData(centerDate: string, entries: Record<string, num
   return {
     weekLabel: `${startOfWeek.format("D")} – ${endOfWeek.format("D MMM YYYY")}`,
     days,
+  };
+}
+
+// 3. Standalone Actions
+export const setSelectedDate = (date: string) => {
+  dailyBalanceStore.setState((s) => ({ ...s, selectedDate: date }));
+};
+
+export const updateField = <K extends keyof DailyBalanceFormData>(field: K, value: DailyBalanceFormData[K]) => {
+  dailyBalanceStore.setState((s) => ({
+    ...s,
+    formData: { ...s.formData, [field]: value },
+  }));
+};
+
+export const setFormData = (data: DailyBalanceFormData) => {
+  dailyBalanceStore.setState((s) => ({ ...s, formData: data }));
+};
+
+export const setOriginalData = (data: DailyBalanceFormData, id?: number) => {
+  dailyBalanceStore.setState((s) => ({
+    ...s,
+    originalData: data,
+    formData: data,
+    currentEntryId: id ?? null,
+  }));
+};
+
+export const setWeekData = (data: WeekData) => {
+  dailyBalanceStore.setState((s) => ({ ...s, weekData: data }));
+};
+
+export const setIsLoading = (loading: boolean) => {
+  dailyBalanceStore.setState((s) => ({ ...s, isLoading: loading }));
+};
+
+export const setIsSaving = (saving: boolean) => {
+  dailyBalanceStore.setState((s) => ({ ...s, isSaving: saving }));
+};
+
+export const markSaved = (newId?: number) => {
+  dailyBalanceStore.setState((s) => ({
+    ...s,
+    originalData: { ...s.formData },
+    lastSaved: new Date(),
+    currentEntryId: newId ?? s.currentEntryId,
+  }));
+};
+
+export const resetForm = () => {
+  dailyBalanceStore.setState((s) => ({
+    ...s,
+    formData: { ...defaultFormData },
+    originalData: { ...defaultFormData },
+    currentEntryId: null,
+    isDirty: false,
+    summary: { ...calculateSummary(defaultFormData) }, // Initial summary logic if needed in store? No, store is clean.
+  }));
+};
+
+// 4. Adapter Hook (Backward Compatibility)
+export function useDailyBalanceStore() {
+  const state = useStore(dailyBalanceStore);
+
+  const summary = useMemo(() => calculateSummary(state.formData), [state.formData]);
+
+  const status = useMemo(() => computeStatus(state.formData, summary), [state.formData, summary]);
+  const isDirty = useMemo(
+    () => JSON.stringify(state.formData) !== JSON.stringify(state.originalData),
+    [state.formData, state.originalData]
+  );
+
+  return {
+    ...state,
+    summary,
+    status,
+    isDirty,
+    // Actions
+    setSelectedDate,
+    updateField,
+    setFormData,
+    setOriginalData,
+    setWeekData,
+    setIsLoading,
+    setIsSaving,
+    markSaved,
+    resetForm,
   };
 }
