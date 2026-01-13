@@ -1,6 +1,6 @@
+import { useDebouncedValue } from "@tanstack/react-pacer";
 import { createFileRoute, Outlet, redirect, useRouterState } from "@tanstack/react-router";
 import React from "react";
-import { useDebounce } from "use-debounce";
 
 import { PerformanceIndicator } from "@/components/features/PerformanceIndicator";
 import { UpdateNotification } from "@/components/features/UpdateNotification";
@@ -45,7 +45,7 @@ function AuthedLayout() {
 
   // Detect if mobile/tablet (md breakpoint)
   const [isMobile, setIsMobile] = React.useState(!globalThis.matchMedia("(min-width: 768px)").matches);
-  const [debouncedIsMobile] = useDebounce(isMobile, 150);
+  const [debouncedIsMobile] = useDebouncedValue(isMobile, { wait: 150 });
 
   React.useEffect(() => {
     const mql = globalThis.matchMedia("(min-width: 768px)");
