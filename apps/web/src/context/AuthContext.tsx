@@ -23,6 +23,7 @@ export type LoginResult = { status: "ok"; user: AuthUser } | { status: "mfa_requ
 export type AuthContextType = {
   user: AuthUser | null;
   initializing: boolean;
+  ensureSession: () => Promise<AuthUser | null>;
   login: (email: string, password: string) => Promise<LoginResult>;
   loginWithMfa: (userId: number, token: string) => Promise<void>;
   loginWithPasskey: (authResponse: unknown, challenge: string) => Promise<void>;
@@ -205,6 +206,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await refetchSession();
   };
 
+  // Promise that resolves when session is loaded (for router beforeLoad)
+  const ensureSession = useCallback(async (): Promise<AuthUser | null> => {
+    // If already loaded, return immediately
+    if (!sessionQuery.isPending && !sessionQuery.isFetching) {
+      return sessionQuery.data?.user ?? null;
+    }
+    // Wait for the query to complete
+    const result = await refetchSession();
+    return result.data?.user ?? null;
+  }, [sessionQuery.isPending, sessionQuery.isFetching, sessionQuery.data, refetchSession]);
+
   const can = useCallback((action: string, subject: string, field?: string) => {
     // Wrapper for CASL ability
     return ability.can(action, subject, field);
@@ -213,6 +225,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value: AuthContextType = {
     user: effectiveUser,
     initializing,
+    ensureSession,
     login,
     loginWithMfa,
     loginWithPasskey,
