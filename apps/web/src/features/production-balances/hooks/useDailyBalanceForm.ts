@@ -9,6 +9,8 @@ import type { DailyBalanceFormData } from "../types";
 import { generateWeekData, useDailyBalanceStore } from "./useDailyBalanceStore";
 
 const AUTOSAVE_DELAY_MS = 2000;
+const QUERY_KEY = "production-balances";
+const DATE_FORMAT = "YYYY-MM-DD";
 
 // Helper to map API item to Form Data
 function mapApiToForm(item: ProductionBalanceApiItem): DailyBalanceFormData {
@@ -56,41 +58,47 @@ export function useDailyBalanceForm() {
   } = useDailyBalanceStore();
 
   // Fetch entry for selected date (and week context)
-  // We fetch a 7-day range to populate the week strip logic if needed,
-  // or we can just fetch the specific day.
-  // Given the backend `listProductionBalances` returns a list, fetching the specific day is safest for the form.
-  const entryQuery = useQuery({
-    queryKey: ["daily-balances", selectedDate],
+  // We fetch a 7-day range to populate the week strip logic
+  const startOfWeek = dayjs(selectedDate).startOf("week").format(DATE_FORMAT);
+  const endOfWeek = dayjs(selectedDate).endOf("week").format(DATE_FORMAT);
+
+  const weekQuery = useQuery({
+    queryKey: [QUERY_KEY, "week", startOfWeek, endOfWeek],
     queryFn: async () => {
-      // Fetch just the selected date
-      const response = await dailyBalanceApi.getBalances(selectedDate, selectedDate);
-      return response.items[0] || null;
+      // Fetch the whole week
+      const response = await dailyBalanceApi.getBalances(startOfWeek, endOfWeek);
+      return response.items;
     },
     enabled: !!selectedDate,
   });
 
-  // Load data when query succeeds
+  const selectedDayItem = weekQuery.data?.find((item) => item.date === selectedDate) || null;
+
+  // Load data when query succeeds (if day changes or we just loaded data)
   useEffect(() => {
-    // If we have data, map it and set it
-    if (entryQuery.data) {
-      const formValues = mapApiToForm(entryQuery.data);
-      setOriginalData(formValues, entryQuery.data.id);
+    // If we have data for this day, map it and set it
+    if (selectedDayItem) {
+      const formValues = mapApiToForm(selectedDayItem);
+      setOriginalData(formValues, selectedDayItem.id);
     }
-    // If query succeeded but no data (day is empty), reset form
-    else if (entryQuery.isSuccess && !entryQuery.data) {
+    // If query succeeded but no data for this day, reset form
+    else if (weekQuery.isSuccess && !selectedDayItem) {
+      // Only reset if we are not currently saving (to avoid race conditions)
       resetForm();
     }
-  }, [entryQuery.data, entryQuery.isSuccess, setOriginalData, resetForm]);
+  }, [selectedDayItem, weekQuery.isSuccess, setOriginalData, resetForm, selectedDate]);
 
-  // Generate week data
-  // NOTE: Ideally we would fetch the whole week's totals here.
-  // For now, we will just generate the days structure.
+  // Generate week data with real status
   useEffect(() => {
-    // Future improvement: Fetch week totals to show colored dots for other days
-    const mockEntries: Record<string, number> = {};
-    const week = generateWeekData(selectedDate, mockEntries);
+    const entries: Record<string, number> = {};
+    if (weekQuery.data) {
+      weekQuery.data.forEach((item) => {
+        entries[item.date] = item.total;
+      });
+    }
+    const week = generateWeekData(selectedDate, entries);
     setWeekData(week);
-  }, [selectedDate, setWeekData]);
+  }, [selectedDate, weekQuery.data, setWeekData]);
 
   // Save mutation
   const saveMutation = useMutation({
@@ -108,8 +116,8 @@ export function useDailyBalanceForm() {
     onSuccess: (response) => {
       markSaved(response.item.id);
       success("Balance guardado");
-      queryClient.invalidateQueries({ queryKey: ["daily-balances"] });
-      // Also invalidate week view if we had one
+      // Invalidate the week query so dots update
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEY] });
     },
     onError: (err) => {
       setIsSaving(false);
@@ -162,17 +170,17 @@ export function useDailyBalanceForm() {
 
   // Navigation
   const goToPrevWeek = useCallback(() => {
-    const prev = dayjs(selectedDate).subtract(7, "day").format("YYYY-MM-DD");
+    const prev = dayjs(selectedDate).subtract(7, "day").format(DATE_FORMAT);
     setSelectedDate(prev);
   }, [selectedDate, setSelectedDate]);
 
   const goToNextWeek = useCallback(() => {
-    const next = dayjs(selectedDate).add(7, "day").format("YYYY-MM-DD");
+    const next = dayjs(selectedDate).add(7, "day").format(DATE_FORMAT);
     setSelectedDate(next);
   }, [selectedDate, setSelectedDate]);
 
   const goToToday = useCallback(() => {
-    setSelectedDate(dayjs().format("YYYY-MM-DD"));
+    setSelectedDate(dayjs().format(DATE_FORMAT));
   }, [setSelectedDate]);
 
   const selectDate = useCallback(
@@ -187,7 +195,7 @@ export function useDailyBalanceForm() {
     selectedDate,
     formData,
     isDirty,
-    isLoading: entryQuery.isLoading,
+    isLoading: weekQuery.isLoading,
     isSaving,
     lastSaved,
     summary,

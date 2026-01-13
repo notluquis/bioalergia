@@ -3,9 +3,9 @@ import { lazy, Suspense } from "react";
 
 import PageLoader from "@/components/ui/PageLoader";
 
-const DailyBalancePage = lazy(() => import("@/features/daily-balances/DailyBalancePage"));
+const DailyBalancePage = lazy(() => import("@/features/production-balances/DailyBalancePage"));
 
-export const Route = createFileRoute("/_authed/finanzas/balances")({
+export const Route = createFileRoute("/_authed/finanzas/production-balances")({
   beforeLoad: ({ context }) => {
     if (!context.auth.can("read", "DailyBalance")) {
       throw redirect({ to: "/" });

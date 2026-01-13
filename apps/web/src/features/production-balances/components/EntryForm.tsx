@@ -82,59 +82,54 @@ export function EntryForm({ values, onChange, disabled = false }: EntryFormProps
         </div>
       </section>
 
-      {/* Ingresos por servicio (optional detailed breakdown) */}
-      <details className="group">
-        <summary className="text-base-content/60 hover:text-base-content flex cursor-pointer items-center gap-2 px-1 py-2 text-sm">
-          <span className="transition-transform group-open:rotate-90">▶</span>
-          Desglose por servicio (opcional)
-        </summary>
-        <section className="bg-base-200/30 border-base-content/5 mt-2 rounded-2xl border p-4">
-          <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-4">
-            <MoneyInput
-              label="Consultas"
-              value={toStr(values.consultas)}
-              onChange={(v) => onChange("consultas", toNum(v))}
-              disabled={disabled}
-            />
-            <MoneyInput
-              label="Controles"
-              value={toStr(values.controles)}
-              onChange={(v) => onChange("controles", toNum(v))}
-              disabled={disabled}
-            />
-            <MoneyInput
-              label="Tests"
-              value={toStr(values.tests)}
-              onChange={(v) => onChange("tests", toNum(v))}
-              disabled={disabled}
-            />
-            <MoneyInput
-              label="Vacunas"
-              value={toStr(values.vacunas)}
-              onChange={(v) => onChange("vacunas", toNum(v))}
-              disabled={disabled}
-            />
-            <MoneyInput
-              label="Licencias"
-              value={toStr(values.licencias)}
-              onChange={(v) => onChange("licencias", toNum(v))}
-              disabled={disabled}
-            />
-            <MoneyInput
-              label="Roxair"
-              value={toStr(values.roxair)}
-              onChange={(v) => onChange("roxair", toNum(v))}
-              disabled={disabled}
-            />
-            <MoneyInput
-              label="Otros"
-              value={toStr(values.otros)}
-              onChange={(v) => onChange("otros", toNum(v))}
-              disabled={disabled}
-            />
-          </div>
-        </section>
-      </details>
+      {/* Ingresos por servicio (desglose) */}
+      <section className="bg-base-200/30 border-base-content/5 mt-4 rounded-2xl border p-4">
+        <h3 className="mb-4 text-base font-semibold">Desglose por servicio</h3>
+        <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          <MoneyInput
+            label="Consultas"
+            value={toStr(values.consultas)}
+            onChange={(v) => onChange("consultas", toNum(v))}
+            disabled={disabled}
+          />
+          <MoneyInput
+            label="Controles"
+            value={toStr(values.controles)}
+            onChange={(v) => onChange("controles", toNum(v))}
+            disabled={disabled}
+          />
+          <MoneyInput
+            label="Tests"
+            value={toStr(values.tests)}
+            onChange={(v) => onChange("tests", toNum(v))}
+            disabled={disabled}
+          />
+          <MoneyInput
+            label="Vacunas"
+            value={toStr(values.vacunas)}
+            onChange={(v) => onChange("vacunas", toNum(v))}
+            disabled={disabled}
+          />
+          <MoneyInput
+            label="Licencias"
+            value={toStr(values.licencias)}
+            onChange={(v) => onChange("licencias", toNum(v))}
+            disabled={disabled}
+          />
+          <MoneyInput
+            label="Roxair"
+            value={toStr(values.roxair)}
+            onChange={(v) => onChange("roxair", toNum(v))}
+            disabled={disabled}
+          />
+          <MoneyInput
+            label="Otros"
+            value={toStr(values.otros)}
+            onChange={(v) => onChange("otros", toNum(v))}
+            disabled={disabled}
+          />
+        </div>
+      </section>
     </div>
   );
 }

@@ -27,10 +27,10 @@ plugin hooks {
   output = "../src/zenstack/hooks"
 }
 
-plugin prisma {
-  provider = '@core/prisma'
-  output = "./prisma/schema.prisma"
-}
+// plugin prisma {
+//   provider = '@core/prisma'
+//   output = "./prisma/schema.prisma"
+// }
 
 // ============================================================
 // MODELS
@@ -875,18 +875,18 @@ model DoctoraliaDoctor {
 }
 
 model DoctoraliaAddress {
-  id                 Int                          @id @default(autoincrement())
-  doctorId           Int                          @map("doctor_id")
-  externalId         String                       @map("external_id")
+  id                 Int                           @id @default(autoincrement())
+  doctorId           Int                           @map("doctor_id")
+  externalId         String                        @map("external_id")
   name               String?
-  cityName           String?                      @map("city_name")
-  postCode           String?                      @map("post_code")
+  cityName           String?                       @map("city_name")
+  postCode           String?                       @map("post_code")
   street             String?
-  onlineOnly         Boolean                      @default(false) @map("online_only")
-  calendarEnabled    Boolean                      @default(true) @map("calendar_enabled")
-  createdAt          DateTime                     @default(now()) @map("created_at")
-  updatedAt          DateTime                     @default(now()) @updatedAt @map("updated_at")
-  doctor             DoctoraliaDoctor             @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  onlineOnly         Boolean                       @default(false) @map("online_only")
+  calendarEnabled    Boolean                       @default(true) @map("calendar_enabled")
+  createdAt          DateTime                      @default(now()) @map("created_at")
+  updatedAt          DateTime                      @default(now()) @updatedAt @map("updated_at")
+  doctor             DoctoraliaDoctor              @relation(fields: [doctorId], references: [id], onDelete: Cascade)
   services           DoctoraliaService[]
   insuranceProviders DoctoraliaInsuranceProvider[]
   slots              DoctoraliaSlot[]
