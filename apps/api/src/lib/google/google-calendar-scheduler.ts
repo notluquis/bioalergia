@@ -7,11 +7,13 @@ import {
 
 import { logEvent, logWarn } from "../logger";
 import { syncGoogleCalendarOnce } from "./google-calendar.js";
+import { renewWatchChannels } from "./google-calendar-watch.js";
 
-const CRON_JOBS = [
-  { expression: "0 9 * * *", label: "morning" },
-  { expression: "0 20 * * *", label: "evening" },
-];
+// Polling disabled by user request (relying on Webhooks)
+const CRON_JOBS: { expression: string; label: string }[] = [];
+
+// Run renewal check every day at 4 AM
+const RENEWAL_JOB = { expression: "0 4 * * *", label: "renewal" };
 
 export function startGoogleCalendarScheduler() {
   if (!googleCalendarConfig) {
@@ -83,8 +85,21 @@ export function startGoogleCalendarScheduler() {
     );
   }
 
+  // Schedule Channel Renewal
+  cron.schedule(
+    RENEWAL_JOB.expression,
+    async () => {
+      logEvent("googleCalendar.renewal.trigger", {
+        label: RENEWAL_JOB.label,
+        expression: RENEWAL_JOB.expression,
+      });
+      await renewWatchChannels();
+    },
+    { timezone },
+  );
+
   logEvent("googleCalendar.scheduler.started", {
-    jobs: CRON_JOBS.length,
+    jobs: CRON_JOBS.length + 1,
     timezone,
   });
 }

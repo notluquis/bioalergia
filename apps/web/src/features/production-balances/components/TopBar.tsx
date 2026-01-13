@@ -13,12 +13,23 @@ interface TopBarProps {
   onSave: () => void;
   onFinalize: () => void;
   canFinalize: boolean;
+  onPrevWeek: () => void;
+  onNextWeek: () => void;
 }
 
 /**
  * Sticky top bar with date, status, and action buttons
  */
-export function TopBar({ date, status, isSaving, onSave, onFinalize, canFinalize }: TopBarProps) {
+export function TopBar({
+  date,
+  status,
+  isSaving,
+  onSave,
+  onFinalize,
+  canFinalize,
+  onPrevWeek,
+  onNextWeek,
+}: TopBarProps) {
   const [showShortcut, setShowShortcut] = useState(false);
 
   // Keyboard shortcut: ⌘S to save
@@ -95,8 +106,13 @@ export function TopBar({ date, status, isSaving, onSave, onFinalize, canFinalize
           </button>
           <ul className="dropdown-content bg-base-200 border-base-content/10 menu z-10 w-52 rounded-xl border p-2 shadow-lg">
             <li>
-              <button type="button" className="text-sm">
+              <button type="button" className="text-sm" onClick={onPrevWeek}>
                 Ver anterior semana
+              </button>
+            </li>
+            <li>
+              <button type="button" className="text-sm" onClick={onNextWeek}>
+                Ver siguiente semana
               </button>
             </li>
             <li>

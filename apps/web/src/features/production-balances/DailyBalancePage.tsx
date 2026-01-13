@@ -58,6 +58,8 @@ export default function DailyBalancePage() {
         onSave={save}
         onFinalize={finalize}
         canFinalize={summary.cuadra && summary.totalMetodos > 0}
+        onPrevWeek={goToPrevWeek}
+        onNextWeek={goToNextWeek}
       />
 
       {/* Week Navigation */}
