@@ -107,7 +107,10 @@ export function useDailyBalanceForm() {
         // Actually, we can sum the fields.
         const calculatedTotal =
           item.ingresoTarjetas + item.ingresoTransferencias + item.ingresoEfectivo + item.otrosAbonos;
-        entries[item.balanceDate.split("T")[0]] = calculatedTotal;
+        const dateKey = item.balanceDate.split("T")[0];
+        if (dateKey) {
+          entries[dateKey] = calculatedTotal;
+        }
       });
     }
     const week = generateWeekData(selectedDate, entries);
