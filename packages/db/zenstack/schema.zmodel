@@ -835,6 +835,203 @@ model CalendarSyncLog {
 }
 
 // ============================================================
+// DOCTORALIA INTEGRATION
+// ============================================================
+
+model DoctoraliaFacility {
+  id         Int                @id @default(autoincrement())
+  externalId String             @unique @map("external_id")
+  name       String
+  createdAt  DateTime           @default(now()) @map("created_at")
+  updatedAt  DateTime           @default(now()) @updatedAt @map("updated_at")
+  doctors    DoctoraliaDoctor[]
+
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().roles?[role.name == 'ADMIN'])
+
+  @@map("doctoralia_facilities")
+}
+
+model DoctoraliaDoctor {
+  id         Int                 @id @default(autoincrement())
+  facilityId Int                 @map("facility_id")
+  externalId String              @map("external_id")
+  name       String
+  surname    String
+  profileUrl String?             @map("profile_url")
+  createdAt  DateTime            @default(now()) @map("created_at")
+  updatedAt  DateTime            @default(now()) @updatedAt @map("updated_at")
+  facility   DoctoraliaFacility  @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+  addresses  DoctoraliaAddress[]
+
+  @@unique([facilityId, externalId])
+  @@index([facilityId])
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().roles?[role.name == 'ADMIN'])
+
+  @@map("doctoralia_doctors")
+}
+
+model DoctoraliaAddress {
+  id                 Int                          @id @default(autoincrement())
+  doctorId           Int                          @map("doctor_id")
+  externalId         String                       @map("external_id")
+  name               String?
+  cityName           String?                      @map("city_name")
+  postCode           String?                      @map("post_code")
+  street             String?
+  onlineOnly         Boolean                      @default(false) @map("online_only")
+  calendarEnabled    Boolean                      @default(true) @map("calendar_enabled")
+  createdAt          DateTime                     @default(now()) @map("created_at")
+  updatedAt          DateTime                     @default(now()) @updatedAt @map("updated_at")
+  doctor             DoctoraliaDoctor             @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  services           DoctoraliaService[]
+  insuranceProviders DoctoraliaInsuranceProvider[]
+  slots              DoctoraliaSlot[]
+  bookings           DoctoraliaBooking[]
+  breaks             DoctoraliaCalendarBreak[]
+
+  @@unique([doctorId, externalId])
+  @@index([doctorId])
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().roles?[role.name == 'ADMIN'])
+
+  @@map("doctoralia_addresses")
+}
+
+model DoctoraliaService {
+  id              Int               @id @default(autoincrement())
+  addressId       Int               @map("address_id")
+  externalId      String            @map("external_id")
+  serviceId       String?           @map("service_id")
+  name            String
+  price           Int?
+  isPriceFrom     Boolean           @default(false) @map("is_price_from")
+  isDefault       Boolean           @default(false) @map("is_default")
+  isVisible       Boolean           @default(true) @map("is_visible")
+  description     String?
+  defaultDuration Int?              @map("default_duration")
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @default(now()) @updatedAt @map("updated_at")
+  address         DoctoraliaAddress @relation(fields: [addressId], references: [id], onDelete: Cascade)
+
+  @@unique([addressId, externalId])
+  @@index([addressId])
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().roles?[role.name == 'ADMIN'])
+
+  @@map("doctoralia_services")
+}
+
+model DoctoraliaInsuranceProvider {
+  id                  Int               @id @default(autoincrement())
+  addressId           Int               @map("address_id")
+  insuranceProviderId String            @map("insurance_provider_id")
+  name                String
+  createdAt           DateTime          @default(now()) @map("created_at")
+  address             DoctoraliaAddress @relation(fields: [addressId], references: [id], onDelete: Cascade)
+
+  @@unique([addressId, insuranceProviderId])
+  @@index([addressId])
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().roles?[role.name == 'ADMIN'])
+
+  @@map("doctoralia_insurance_providers")
+}
+
+model DoctoraliaSlot {
+  id        Int               @id @default(autoincrement())
+  addressId Int               @map("address_id")
+  startAt   DateTime          @map("start_at")
+  endAt     DateTime          @map("end_at")
+  createdAt DateTime          @default(now()) @map("created_at")
+  address   DoctoraliaAddress @relation(fields: [addressId], references: [id], onDelete: Cascade)
+
+  @@index([addressId])
+  @@index([startAt])
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().roles?[role.name == 'ADMIN'])
+
+  @@map("doctoralia_slots")
+}
+
+model DoctoraliaBooking {
+  id             Int               @id @default(autoincrement())
+  addressId      Int               @map("address_id")
+  externalId     String            @map("external_id")
+  status         String            @default("booked")
+  startAt        DateTime          @map("start_at")
+  endAt          DateTime          @map("end_at")
+  duration       Int
+  bookedBy       String?           @map("booked_by")
+  bookedAt       DateTime?         @map("booked_at")
+  canceledBy     String?           @map("canceled_by")
+  canceledAt     DateTime?         @map("canceled_at")
+  patientName    String?           @map("patient_name")
+  patientSurname String?           @map("patient_surname")
+  patientEmail   String?           @map("patient_email")
+  patientPhone   String?           @map("patient_phone")
+  comment        String?
+  createdAt      DateTime          @default(now()) @map("created_at")
+  updatedAt      DateTime          @default(now()) @updatedAt @map("updated_at")
+  address        DoctoraliaAddress @relation(fields: [addressId], references: [id], onDelete: Cascade)
+
+  @@unique([addressId, externalId])
+  @@index([addressId])
+  @@index([startAt])
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().roles?[role.name == 'ADMIN'])
+
+  @@map("doctoralia_bookings")
+}
+
+model DoctoraliaCalendarBreak {
+  id          Int               @id @default(autoincrement())
+  addressId   Int               @map("address_id")
+  externalId  String            @map("external_id")
+  since       DateTime
+  till        DateTime
+  description String?
+  createdAt   DateTime          @default(now()) @map("created_at")
+  address     DoctoraliaAddress @relation(fields: [addressId], references: [id], onDelete: Cascade)
+
+  @@unique([addressId, externalId])
+  @@index([addressId])
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().roles?[role.name == 'ADMIN'])
+
+  @@map("doctoralia_calendar_breaks")
+}
+
+model DoctoraliaSyncLog {
+  id               Int       @id @default(autoincrement())
+  triggerSource    String?   @map("trigger_source")
+  triggerUserId    Int?      @map("trigger_user_id")
+  status           String    @default("PENDING")
+  startedAt        DateTime  @default(now()) @map("started_at")
+  endedAt          DateTime? @map("ended_at")
+  facilitiesSynced Int       @default(0) @map("facilities_synced")
+  doctorsSynced    Int       @default(0) @map("doctors_synced")
+  slotsSynced      Int       @default(0) @map("slots_synced")
+  bookingsSynced   Int       @default(0) @map("bookings_synced")
+  errorMessage     String?   @map("error_message")
+
+  @@index([startedAt(sort: Desc)])
+  @@deny('all', auth() == null)
+  @@allow('read', auth() != null)
+
+  @@map("doctoralia_sync_logs")
+}
+
+// ============================================================
 // ENUMS
 // ============================================================
 
