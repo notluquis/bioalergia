@@ -1,6 +1,5 @@
+import { useStore } from "@tanstack/react-form";
 import dayjs from "dayjs";
-import { type ChangeEvent } from "react";
-import { type Control, Controller, useWatch } from "react-hook-form";
 
 import Button from "@/components/ui/Button";
 import { Card, CardContent, CardHeader } from "@/components/ui/Card";
@@ -14,11 +13,11 @@ import { FormattedEventDescription } from "./FormattedEventDescription";
 interface ClassificationRowProps {
   index: number;
   event: CalendarUnclassifiedEvent;
-  control: Control<FormValues>;
+
+  form: any;
   isSaving: boolean;
   onSave: (event: CalendarUnclassifiedEvent, index: number) => void;
   onReset: (index: number, event: CalendarUnclassifiedEvent) => void;
-  initialValues: unknown;
   categoryChoices: readonly string[];
   treatmentStageChoices: readonly string[];
 }
@@ -44,11 +43,10 @@ function formatEventDate(event: CalendarUnclassifiedEvent) {
   return "Sin fecha";
 }
 
-// React Compiler handles memoization automatically
 export function ClassificationRow({
   index,
   event,
-  control,
+  form,
   isSaving,
   onSave,
   onReset,
@@ -57,42 +55,13 @@ export function ClassificationRow({
 }: ClassificationRowProps) {
   const description = event.description?.trim();
 
-  return (
-    <ClassificationRowInner
-      index={index}
-      event={event}
-      control={control}
-      isSaving={isSaving}
-      onSave={onSave}
-      onReset={onReset}
-      description={description}
-      categoryChoices={categoryChoices}
-      treatmentStageChoices={treatmentStageChoices}
-    />
+  // Subscribe to category for conditional fields
+
+  const category = useStore(
+    form.store,
+    (state: any) => (state as { values: FormValues }).values.entries[index]?.category ?? ""
   );
-}
-
-interface ClassificationRowInnerProps extends Omit<ClassificationRowProps, "initialValues"> {
-  description?: string;
-}
-
-function ClassificationRowInner({
-  index,
-  event,
-  control,
-  isSaving,
-  onSave,
-  onReset,
-  description,
-  categoryChoices,
-  treatmentStageChoices,
-}: ClassificationRowInnerProps) {
-  const category = useWatch({
-    control,
-    name: `entries.${index}.category`,
-  });
-
-  const isSubcutaneous = (category || "") === "Tratamiento subcutáneo";
+  const isSubcutaneous = category === "Tratamiento subcutáneo";
 
   return (
     <Card className="text-sm">
@@ -124,15 +93,13 @@ function ClassificationRowInner({
         )}
 
         <div className="text-base-content grid gap-4 text-xs md:grid-cols-6">
-          <Controller
-            control={control}
-            name={`entries.${index}.category` as const}
-            render={({ field: formField }) => (
+          <form.Field name={`entries[${index}].category`}>
+            {(field: { state: { value: string | null }; handleChange: (v: string) => void }) => (
               <Input
                 label="Clasificación"
                 as="select"
-                value={formField.value ?? ""}
-                onChange={(event: ChangeEvent<HTMLSelectElement>) => formField.onChange(event.target.value)}
+                value={field.state.value ?? ""}
+                onChange={(e) => field.handleChange(e.target.value)}
               >
                 <option value="">Sin clasificación</option>
                 {categoryChoices.map((option: string) => (
@@ -142,57 +109,53 @@ function ClassificationRowInner({
                 ))}
               </Input>
             )}
-          />
-          <Controller
-            control={control}
-            name={`entries.${index}.amountExpected` as const}
-            render={({ field: formField }) => (
+          </form.Field>
+
+          <form.Field name={`entries[${index}].amountExpected`}>
+            {(field: { state: { value: string | null }; handleChange: (v: string) => void }) => (
               <Input
                 label="Monto esperado"
                 type="text"
                 placeholder="50000"
-                value={formField.value ?? ""}
-                onChange={(event: ChangeEvent<HTMLInputElement>) => formField.onChange(event.target.value)}
+                value={field.state.value ?? ""}
+                onChange={(e) => field.handleChange(e.target.value)}
               />
             )}
-          />
-          <Controller
-            control={control}
-            name={`entries.${index}.amountPaid` as const}
-            render={({ field: formField }) => (
+          </form.Field>
+
+          <form.Field name={`entries[${index}].amountPaid`}>
+            {(field: { state: { value: string | null }; handleChange: (v: string) => void }) => (
               <Input
                 label="Monto pagado"
                 type="text"
                 placeholder="50000"
-                value={formField.value ?? ""}
-                onChange={(event: ChangeEvent<HTMLInputElement>) => formField.onChange(event.target.value)}
+                value={field.state.value ?? ""}
+                onChange={(e) => field.handleChange(e.target.value)}
               />
             )}
-          />
+          </form.Field>
+
           {isSubcutaneous && (
-            <Controller
-              control={control}
-              name={`entries.${index}.dosage` as const}
-              render={({ field: formField }) => (
+            <form.Field name={`entries[${index}].dosage`}>
+              {(field: { state: { value: string | null }; handleChange: (v: string) => void }) => (
                 <Input
                   label="Dosis"
                   placeholder="0.3 ml"
-                  value={formField.value ?? ""}
-                  onChange={(event: ChangeEvent<HTMLInputElement>) => formField.onChange(event.target.value)}
+                  value={field.state.value ?? ""}
+                  onChange={(e) => field.handleChange(e.target.value)}
                 />
               )}
-            />
+            </form.Field>
           )}
+
           {isSubcutaneous && (
-            <Controller
-              control={control}
-              name={`entries.${index}.treatmentStage` as const}
-              render={({ field: formField }) => (
+            <form.Field name={`entries[${index}].treatmentStage`}>
+              {(field: { state: { value: string | null }; handleChange: (v: string) => void }) => (
                 <Input
                   label="Etapa tratamiento"
                   as="select"
-                  value={formField.value ?? ""}
-                  onChange={(event: ChangeEvent<HTMLSelectElement>) => formField.onChange(event.target.value)}
+                  value={field.state.value ?? ""}
+                  onChange={(e) => field.handleChange(e.target.value)}
                 >
                   <option value="">Sin etapa</option>
                   {treatmentStageChoices.map((option: string) => (
@@ -202,21 +165,20 @@ function ClassificationRowInner({
                   ))}
                 </Input>
               )}
-            />
+            </form.Field>
           )}
-          <Controller
-            control={control}
-            name={`entries.${index}.attended` as const}
-            render={({ field: formField }) => (
+
+          <form.Field name={`entries[${index}].attended`}>
+            {(field: { state: { value: boolean }; handleChange: (v: boolean) => void }) => (
               <div className="flex items-end">
                 <Checkbox
                   label="Asistió / llegó"
-                  checked={formField.value ?? false}
-                  onChange={(event) => formField.onChange(event.target.checked)}
+                  checked={field.state.value ?? false}
+                  onChange={(e) => field.handleChange(e.target.checked)}
                 />
               </div>
             )}
-          />
+          </form.Field>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
