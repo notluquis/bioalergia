@@ -1,0 +1,76 @@
+/**
+ * Daily Balance V2 utilities
+ * Reuses existing format utilities from @/lib/format
+ */
+
+// Re-export existing formatters
+export { coerceAmount, fmtCLP, formatRelativeDate, numberFormatter } from "@/lib/format";
+
+/**
+ * Format date for large display
+ * E.g. "2026-01-10" → "Sáb 10 Ene 2026"
+ */
+export function formatDateFull(dateStr: string): string {
+  const date = new Date(dateStr + "T12:00:00"); // Avoid timezone issues
+  return date.toLocaleDateString("es-CL", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+/**
+ * Get day abbreviation for week strip
+ */
+export function getDayAbbrev(dateStr: string): string {
+  const date = new Date(dateStr + "T12:00:00");
+  const day = date.getDay();
+  // getDay() always returns 0-6, so this is safe
+  return ["D", "L", "M", "X", "J", "V", "S"][day]!;
+}
+
+/**
+ * Format relative time for "Guardado hace X" (shorter version)
+ */
+export function formatSaveTime(date: Date): string {
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffSec = Math.floor(diffMs / 1000);
+
+  if (diffSec < 5) return "ahora";
+  if (diffSec < 60) return `${diffSec}s`;
+  if (diffSec < 3600) return `${Math.floor(diffSec / 60)}m`;
+  return `${Math.floor(diffSec / 3600)}h`;
+}
+
+/**
+ * Calculate summary from form data
+ */
+export function calculateSummary(data: {
+  tarjeta: number;
+  transferencia: number;
+  efectivo: number;
+  gastos: number;
+  consultas: number;
+  controles: number;
+  tests: number;
+  vacunas: number;
+  licencias: number;
+  roxair: number;
+  otros: number;
+}) {
+  const totalMetodos = data.tarjeta + data.transferencia + data.efectivo;
+  const totalServicios =
+    data.consultas + data.controles + data.tests + data.vacunas + data.licencias + data.roxair + data.otros;
+  const diferencia = totalMetodos - totalServicios;
+  const cuadra = diferencia === 0;
+
+  return {
+    totalMetodos,
+    totalServicios,
+    gastos: data.gastos,
+    diferencia,
+    cuadra,
+  };
+}

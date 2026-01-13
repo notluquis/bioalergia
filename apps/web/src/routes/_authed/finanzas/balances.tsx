@@ -3,7 +3,7 @@ import { lazy, Suspense } from "react";
 
 import PageLoader from "@/components/ui/PageLoader";
 
-const DailyBalancesPage = lazy(() => import("@/features/finance/balances/pages/DailyBalancesPage"));
+const DailyBalancePage = lazy(() => import("@/features/daily-balances/DailyBalancePage"));
 
 export const Route = createFileRoute("/_authed/finanzas/balances")({
   beforeLoad: ({ context }) => {
@@ -13,7 +13,7 @@ export const Route = createFileRoute("/_authed/finanzas/balances")({
   },
   component: () => (
     <Suspense fallback={<PageLoader />}>
-      <DailyBalancesPage />
+      <DailyBalancePage />
     </Suspense>
   ),
 });
