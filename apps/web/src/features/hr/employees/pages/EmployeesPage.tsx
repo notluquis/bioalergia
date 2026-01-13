@@ -1,17 +1,18 @@
-import { useFindManyEmployee, useUpdateEmployee } from "@finanzas/db/hooks";
-import { useQueryClient } from "@tanstack/react-query";
+import { useUpdateEmployee } from "@finanzas/db/hooks";
+import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { ChevronUp, Plus } from "lucide-react";
 import type { ChangeEvent } from "react";
 import { useState } from "react";
 
+import { DataTable } from "@/components/data-table/DataTable";
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
 import Checkbox from "@/components/ui/Checkbox";
 import { useAuth } from "@/context/AuthContext";
+import { columns } from "@/features/hr/employees/components/columns";
 import EmployeeForm from "@/features/hr/employees/components/EmployeeForm";
-import EmployeeTable from "@/features/hr/employees/components/EmployeeTable";
+import { employeeKeys } from "@/features/hr/employees/queries";
 import type { Employee } from "@/features/hr/employees/types";
-import { getPersonFullName } from "@/lib/person";
 import { PAGE_CONTAINER, TITLE_LG } from "@/lib/styles";
 
 export default function EmployeesPage() {
@@ -24,48 +25,9 @@ export default function EmployeesPage() {
   const [showForm, setShowForm] = useState(false);
 
   // Query for employees
-  const {
-    data: rawEmployees = [],
-    isLoading: loading,
-    error: queryError,
-  } = useFindManyEmployee({
-    where: includeInactive ? undefined : { status: "ACTIVE" },
-    include: { person: true },
-    orderBy: { createdAt: "desc" },
-  });
+  const { data: employees } = useSuspenseQuery(employeeKeys.list({ includeInactive }));
 
-  // Calculate full_name for display compatibility
-  // ZenStack returns: { id, personId, person?: { names, fatherName, motherName, ... }, ... }
-  // Also converts Decimal types to numbers and Date types to strings
-  type ZenStackEmployee = NonNullable<typeof rawEmployees>[number];
-  const employees: Employee[] = rawEmployees.map((e: ZenStackEmployee) => {
-    const person = (e as { person?: { names?: string; fatherName?: string | null; motherName?: string | null } })
-      .person;
-    const raw = e as Record<string, unknown>;
-    return {
-      id: e.id,
-      personId: e.personId,
-      position: (raw.position as string) ?? "",
-      department: (raw.department as string | null) ?? null,
-      status: e.status,
-      salaryType: (raw.salaryType as Employee["salaryType"]) ?? "FIXED",
-      // Convert Decimal to number
-      baseSalary: Number(raw.baseSalary ?? 0),
-      hourlyRate: raw.hourlyRate == null ? null : Number(raw.hourlyRate),
-      bankName: (raw.bankName as string | null) ?? null,
-      bankAccountType: (raw.bankAccountType as string | null) ?? null,
-      bankAccountNumber: (raw.bankAccountNumber as string | null) ?? null,
-      // Convert Date to string
-      startDate: (raw.startDate as Date)?.toISOString().split("T")[0] ?? "",
-      endDate: raw.endDate ? (raw.endDate as Date).toISOString().split("T")[0] : null,
-      createdAt: (raw.createdAt as Date)?.toISOString() ?? new Date().toISOString(),
-      updatedAt: (raw.updatedAt as Date)?.toISOString() ?? new Date().toISOString(),
-      person: person as Employee["person"],
-      full_name: person
-        ? getPersonFullName(person as { names: string; fatherName?: string | null; motherName?: string | null })
-        : "Sin nombre",
-    };
-  });
+  const loading = false; // Suspense handles loading
 
   // Mutation for deactivating (Soft Delete)
   // We use useUpdate instead of manual fetch.
@@ -75,7 +37,6 @@ export default function EmployeesPage() {
   // Clean up legacy mutations if they exist, but for now we map new logic:
 
   const error = (() => {
-    if (queryError instanceof Error) return queryError.message;
     if (updateStatusMutation.error instanceof Error) return updateStatusMutation.error.message;
     return null;
   })();
@@ -84,18 +45,32 @@ export default function EmployeesPage() {
 
   function handleDeactivate(id: number) {
     if (!canEdit) return;
-    updateStatusMutation.mutate({
-      where: { id },
-      data: { status: "INACTIVE" },
-    });
+    updateStatusMutation.mutate(
+      {
+        where: { id },
+        data: { status: "INACTIVE" },
+      },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: employeeKeys.all });
+        },
+      }
+    );
   }
 
   function handleActivate(id: number) {
     if (!canEdit) return;
-    updateStatusMutation.mutate({
-      where: { id },
-      data: { status: "ACTIVE" },
-    });
+    updateStatusMutation.mutate(
+      {
+        where: { id },
+        data: { status: "ACTIVE" },
+      },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: employeeKeys.all });
+        },
+      }
+    );
   }
 
   function handleEdit(employee: Employee) {
@@ -110,7 +85,7 @@ export default function EmployeesPage() {
 
   function handleSaveSuccess() {
     // Invalidate ZenStack's Employee query cache (uses "Employee" not "employee")
-    queryClient.invalidateQueries({ queryKey: ["Employee"] });
+    queryClient.invalidateQueries({ queryKey: employeeKeys.all });
     handleCancel();
   }
 
@@ -170,12 +145,27 @@ export default function EmployeesPage() {
       )}
 
       <div className="border-base-300 bg-base-100 rounded-2xl border p-6 shadow-sm">
-        <EmployeeTable
-          employees={employees}
-          loading={loading || isMutating}
-          onEdit={handleEdit}
-          onDeactivate={handleDeactivate}
-          onActivate={handleActivate}
+        <DataTable
+          columns={columns}
+          data={employees}
+          isLoading={loading || isMutating}
+          enableVirtualization
+          filters={[
+            {
+              columnId: "status",
+              title: "Estado",
+              options: [
+                { label: "Activo", value: "ACTIVE" },
+                { label: "Inactivo", value: "INACTIVE" },
+              ],
+            },
+          ]}
+          meta={{
+            onEdit: handleEdit,
+            onDeactivate: handleDeactivate,
+            onActivate: handleActivate,
+            canEdit,
+          }}
         />
       </div>
     </section>

@@ -1,13 +1,9 @@
-import {
-  useCreateInventoryItem,
-  useCreateInventoryMovement,
-  useFindManyInventoryItem,
-  useUpdateInventoryItem,
-} from "@finanzas/db/hooks";
-import { useQueryClient } from "@tanstack/react-query";
+import { useCreateInventoryItem, useCreateInventoryMovement, useUpdateInventoryItem } from "@finanzas/db/hooks";
+import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Lock, PlusCircle } from "lucide-react";
 import { useState } from "react";
 
+import { DataTable } from "@/components/data-table/DataTable";
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
@@ -15,8 +11,9 @@ import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import AdjustStockForm from "@/features/inventory/components/AdjustStockForm";
 import AllergyInventoryView from "@/features/inventory/components/AllergyInventoryView";
+import { columns } from "@/features/inventory/components/columns";
 import InventoryItemForm from "@/features/inventory/components/InventoryItemForm";
-import InventoryTable from "@/features/inventory/components/InventoryTable";
+import { inventoryKeys } from "@/features/inventory/queries";
 import type { InventoryItem, InventoryMovement } from "@/features/inventory/types";
 import { ServicesHero, ServicesSurface } from "@/features/services/components/ServicesShell";
 
@@ -30,27 +27,8 @@ export default function InventoryPage() {
   // Adjusting stock creates a movement
   const canAdjustStock = can("create", "InventoryMovement");
 
-  // ZenStack hooks for inventory items
-  const {
-    data: itemsData,
-    isPending,
-    isFetching,
-    error: itemsError,
-  } = useFindManyInventoryItem({
-    include: { category: true },
-    orderBy: { name: "asc" },
-  });
-
-  // Transform ZenStack camelCase to frontend snake_case
-  type ZenStackItem = NonNullable<typeof itemsData>[number];
-  const items: InventoryItem[] = (itemsData ?? []).map((item: ZenStackItem) => ({
-    id: item.id,
-    name: item.name,
-    description: item.description,
-    category_id: item.categoryId,
-    current_stock: item.currentStock,
-    category_name: (item as { category?: { name?: string } }).category?.name,
-  }));
+  // Modernized Query
+  const { data: items } = useSuspenseQuery(inventoryKeys.items());
 
   const [error, setError] = useState<string | null>(null);
   const [isItemModalOpen, setIsItemModalOpen] = useState(false);
@@ -58,7 +36,7 @@ export default function InventoryPage() {
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
   const [itemForStockAdjust, setItemForStockAdjust] = useState<InventoryItem | null>(null);
 
-  const loading = isPending || isFetching;
+  const loading = false; // Suspense handles initial load; mutations handle background states if needed
 
   function openCreateModal() {
     setEditingItem(null);
@@ -82,7 +60,6 @@ export default function InventoryPage() {
     setItemForStockAdjust(null);
   }
 
-  // ZenStack mutations for CRUD
   // ZenStack mutations for CRUD
   const createItemMutation = useCreateInventoryItem();
   const updateItemMutation = useUpdateInventoryItem();
@@ -116,6 +93,7 @@ export default function InventoryPage() {
         });
         toastSuccess("Item creado correctamente");
       }
+      queryClient.invalidateQueries({ queryKey: inventoryKeys.items().queryKey });
       closeModal();
     } catch (error_) {
       const message = error_ instanceof Error ? error_.message : "No se pudo guardar el item";
@@ -136,7 +114,7 @@ export default function InventoryPage() {
         },
       });
       // Refetch items to get updated stock
-      queryClient.invalidateQueries({ queryKey: ["inventoryItem"] });
+      queryClient.invalidateQueries({ queryKey: inventoryKeys.items().queryKey });
       toastSuccess("Stock ajustado correctamente");
       closeModal();
     } catch (error_) {
@@ -146,7 +124,7 @@ export default function InventoryPage() {
     }
   }
 
-  const combinedError = error || (itemsError ? itemsError.message : null);
+  const combinedError = error;
 
   return (
     <section className="space-y-8">
@@ -168,13 +146,17 @@ export default function InventoryPage() {
       {combinedError && <Alert variant="error">{combinedError}</Alert>}
 
       <ServicesSurface>
-        <InventoryTable
-          items={items}
-          loading={loading}
-          openAdjustStockModal={openAdjustStockModal}
-          openEditModal={openEditModal}
-          canUpdate={canUpdateItem}
-          canAdjust={canAdjustStock}
+        <DataTable
+          columns={columns}
+          data={items}
+          isLoading={loading}
+          enableVirtualization
+          meta={{
+            openAdjustStockModal,
+            openEditModal,
+            canUpdate: canUpdateItem,
+            canAdjust: canAdjustStock,
+          }}
         />
       </ServicesSurface>
 

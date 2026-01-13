@@ -46,7 +46,15 @@ interface DataTableProps<TData, TValue> {
   /**
    * Faceted filters for specific columns
    */
+  /**
+   * Faceted filters for specific columns
+   */
   filters?: DataTableFilterOption[];
+  /**
+   * Metadata to pass to table instance (useful for actions)
+   */
+
+  meta?: any;
 }
 
 const getCommonPinningStyles = <TData,>(column: Column<TData>): CSSProperties => {
@@ -80,6 +88,7 @@ export function DataTable<TData, TValue>({
   estimatedRowHeight = 48,
   enableToolbar = true,
   filters = [],
+  meta,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
@@ -103,6 +112,7 @@ export function DataTable<TData, TValue>({
       columnFilters,
       globalFilter,
     },
+    meta,
     enableRowSelection: true,
     manualPagination: true,
     enableColumnResizing: true,
