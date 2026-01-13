@@ -156,13 +156,14 @@ export const ROUTE_DATA: RouteData[] = [
         permission: { action: "read", subject: "TransactionStats" },
         title: "Estadísticas financieras",
       },
-      {
-        path: "balances",
-        componentPath: "features/finance/balances/pages/DailyBalancesPage",
-        nav: { label: "Saldos Diarios", iconKey: "PiggyBank", section: "Finanzas", order: 3 },
-        permission: { action: "read", subject: "DailyBalance" },
-        title: "Saldos diarios",
-      },
+      // Removed 'balances' route as requested by user
+      // {
+      //   path: "balances",
+      //   componentPath: "features/finance/balances/pages/DailyBalancesPage",
+      //   nav: { label: "Saldos Diarios", iconKey: "PiggyBank", section: "Finanzas", order: 3 },
+      //   permission: { action: "read", subject: "DailyBalance" },
+      //   title: "Saldos diarios",
+      // },
       {
         path: "counterparts",
         componentPath: "pages/Counterparts",
