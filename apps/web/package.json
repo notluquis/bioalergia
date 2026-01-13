@@ -28,6 +28,7 @@
   "dependencies": {
     "@casl/ability": "^6.7.5",
     "@casl/react": "^5.0.0",
+    "@finanzas/db": "workspace:*",
     "@fullcalendar/core": "^6.1.20",
     "@fullcalendar/daygrid": "^6.1.20",
     "@fullcalendar/react": "^6.1.20",
@@ -40,7 +41,7 @@
     "@tanstack/react-query": "^5.90.16",
     "@tanstack/react-router": "^1.147.3",
     "@tanstack/react-table": "^8.21.3",
-    "@tanstack/router-devtools": "^1.147.3",
+    "@tanstack/router-devtools": "^1.149.0",
     "@zenstackhq/server": "3.2.1",
     "@zenstackhq/tanstack-query": "3.2.1",
     "clsx": "^2.1.1",
@@ -59,8 +60,7 @@
     "tailwind-merge": "^3.4.0",
     "use-debounce": "^10.1.0",
     "zod": "^4.3.5",
-    "zustand": "^5.0.9",
-    "@finanzas/db": "workspace:*"
+    "zustand": "^5.0.10"
   },
   "devDependencies": {
     "@dotenvx/dotenvx": "^1.51.4",
@@ -71,12 +71,12 @@
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.1",
     "@testing-library/user-event": "^14.6.1",
-    "@types/node": "^25.0.6",
+    "@types/node": "^25.0.8",
     "@types/papaparse": "^5.5.2",
     "@types/react": "^19.2.8",
     "@types/react-dom": "^19.2.3",
-    "@typescript-eslint/eslint-plugin": "^8.52.0",
-    "@typescript-eslint/parser": "^8.52.0",
+    "@typescript-eslint/eslint-plugin": "^8.53.0",
+    "@typescript-eslint/parser": "^8.53.0",
     "@vitejs/plugin-react": "^5.1.2",
     "babel-plugin-react-compiler": "^1.0.0",
     "concurrently": "^9.2.1",
@@ -108,7 +108,7 @@
     "vite": "^7.3.1",
     "vite-plugin-checker": "^0.12.0",
     "vite-plugin-pwa": "^1.2.0",
-    "vitest": "^4.0.16"
+    "vitest": "^4.0.17"
   },
   "lint-staged": {
     "*.{ts,tsx}": [
