@@ -17,8 +17,11 @@ import { BUILD_TIMESTAMP } from "@/version";
 
 export const Route = createFileRoute("/_authed")({
   beforeLoad: async ({ context, location }) => {
-    // If not authenticated (user is null), redirect to login with return URL
-    if (!context.auth.user) {
+    // Wait for session to load before making auth decision
+    const user = await context.auth.ensureSession();
+
+    // If not authenticated, redirect to login with return URL
+    if (!user) {
       throw redirect({
         to: "/login",
         search: {
