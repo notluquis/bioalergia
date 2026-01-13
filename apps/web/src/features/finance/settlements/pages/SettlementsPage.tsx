@@ -1,8 +1,8 @@
+import { useDebouncedValue } from "@tanstack/react-pacer";
 import { useQuery } from "@tanstack/react-query";
 import { PaginationState, Updater } from "@tanstack/react-table";
 import { Search } from "lucide-react";
 import { ChangeEvent, useState } from "react";
-import { useDebounce } from "use-debounce";
 
 import { DataTable } from "@/components/data-table/DataTable";
 import Input from "@/components/ui/Input";
@@ -22,7 +22,7 @@ export default function SettlementsPage() {
   const [page, setPage] = useState(0); // 0-indexed for TanStack
   const [pageSize, setPageSize] = useState(50);
   const [searchInput, setSearchInput] = useState("");
-  const [debouncedSearch] = useDebounce(searchInput, 500);
+  const [debouncedSearch] = useDebouncedValue(searchInput, { wait: 500 });
 
   const { data, isLoading } = useQuery({
     queryKey: ["settlement-transactions", page, pageSize, debouncedSearch],

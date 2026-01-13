@@ -1,6 +1,6 @@
+import { useDebouncedValue } from "@tanstack/react-pacer";
 import { Outlet, useRouterState } from "@tanstack/react-router";
 import React from "react";
-import { useDebounce } from "use-debounce";
 
 import { PerformanceIndicator } from "./components/features/PerformanceIndicator";
 import { UpdateNotification } from "./components/features/UpdateNotification";
@@ -23,7 +23,7 @@ export default function App() {
   // Detect if mobile/tablet (md breakpoint)
   // Optimized 2025: Use standard matchMedia listener instead of resize event to avoid layout thrashing
   const [isMobile, setIsMobile] = React.useState(!globalThis.matchMedia("(min-width: 768px)").matches);
-  const [debouncedIsMobile] = useDebounce(isMobile, 150);
+  const [debouncedIsMobile] = useDebouncedValue(isMobile, { wait: 150 });
 
   React.useEffect(() => {
     const mql = globalThis.matchMedia("(min-width: 768px)");
