@@ -18,7 +18,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import React, { CSSProperties, useRef, useState } from "react";
 
 import { DataTablePagination } from "./DataTablePagination";
-import { DataTableToolbar } from "./DataTableToolbar";
+import { DataTableFilterOption, DataTableToolbar } from "./DataTableToolbar";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -43,6 +43,10 @@ interface DataTableProps<TData, TValue> {
    * @default true
    */
   enableToolbar?: boolean;
+  /**
+   * Faceted filters for specific columns
+   */
+  filters?: DataTableFilterOption[];
 }
 
 const getCommonPinningStyles = <TData,>(column: Column<TData>): CSSProperties => {
@@ -75,6 +79,7 @@ export function DataTable<TData, TValue>({
   enableVirtualization = false,
   estimatedRowHeight = 48,
   enableToolbar = true,
+  filters = [],
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
@@ -261,7 +266,7 @@ export function DataTable<TData, TValue>({
 
   return (
     <div className="space-y-4">
-      {enableToolbar && <DataTableToolbar table={table} />}
+      {enableToolbar && <DataTableToolbar table={table} filters={filters} />}
       <div className="border-base-300/50 bg-base-100 relative overflow-hidden rounded-2xl border shadow-sm">
         <div
           ref={tableContainerRef}
