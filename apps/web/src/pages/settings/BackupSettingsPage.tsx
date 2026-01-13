@@ -545,8 +545,8 @@ function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () =>
     staleTime: 30_000,
   });
 
-  const restoreMutation = useMutation({
-    mutationFn: (tables?: string[]) => triggerRestore(backup.id, tables),
+  const restoreMutation = useMutation<{ job: RestoreJob }, Error, string[] | void>({
+    mutationFn: (tables) => triggerRestore(backup.id, tables ?? undefined),
     onSuccess: () => {
       success("Restauración iniciada");
       queryClient.invalidateQueries({ queryKey: ["backups"] });
