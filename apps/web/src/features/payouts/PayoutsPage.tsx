@@ -1,10 +1,8 @@
-import { Download } from "lucide-react";
-
+import { DataTable } from "@/components/data-table/DataTable";
 import Alert from "@/components/ui/Alert";
-import Button from "@/components/ui/Button";
 import { useAuth } from "@/context/AuthContext";
 
-import { PayoutsTable } from "./components/PayoutsTable";
+import { columns } from "./components/columns";
 import { usePayouts } from "./hooks/usePayouts";
 
 export default function PayoutsPage() {
@@ -27,18 +25,12 @@ export default function PayoutsPage() {
           <h1 className="text-base-content text-2xl font-bold">Retiros de Fondos</h1>
           <p className="text-base-content/70 text-sm">Historial de transferencias a cuenta bancaria (Payouts)</p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => globalThis.print()}>
-            <Download className="mr-2 h-4 w-4" />
-            Exportar / Imprimir
-          </Button>
-        </div>
       </div>
 
       {isError ? (
         <Alert variant="error">Ocurrió un error al cargar los retiros. Por favor, intenta nuevamente.</Alert>
       ) : (
-        <PayoutsTable payouts={payouts} isLoading={isLoading} />
+        <DataTable columns={columns} data={payouts} isLoading={isLoading} enableVirtualization />
       )}
     </div>
   );
