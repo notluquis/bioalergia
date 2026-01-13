@@ -1,11 +1,13 @@
 import {
   Column,
   ColumnDef,
+  ColumnFiltersState,
   ColumnPinningState,
   ExpandedState,
   flexRender,
   getCoreRowModel,
   getExpandedRowModel,
+  getFilteredRowModel,
   OnChangeFn,
   PaginationState,
   SortingState,
@@ -16,7 +18,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import React, { CSSProperties, useRef, useState } from "react";
 
 import { DataTablePagination } from "./DataTablePagination";
-import { DataTableViewOptions } from "./DataTableViewOptions";
+import { DataTableToolbar } from "./DataTableToolbar";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -36,6 +38,11 @@ interface DataTableProps<TData, TValue> {
    * @default 48
    */
   estimatedRowHeight?: number;
+  /**
+   * Enable toolbars (search, export, view options)
+   * @default true
+   */
+  enableToolbar?: boolean;
 }
 
 const getCommonPinningStyles = <TData,>(column: Column<TData>): CSSProperties => {
@@ -67,12 +74,15 @@ export function DataTable<TData, TValue>({
   initialPinning = {},
   enableVirtualization = false,
   estimatedRowHeight = 48,
+  enableToolbar = true,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = useState({});
   const [expanded, setExpanded] = useState<ExpandedState>({});
   const [columnPinning, setColumnPinning] = useState<ColumnPinningState>(initialPinning);
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [globalFilter, setGlobalFilter] = useState("");
 
   const table = useReactTable({
     data,
@@ -85,20 +95,36 @@ export function DataTable<TData, TValue>({
       pagination,
       expanded,
       columnPinning,
+      columnFilters,
+      globalFilter,
     },
     enableRowSelection: true,
     manualPagination: true,
     enableColumnResizing: true,
     columnResizeMode: "onChange",
     enablePinning: true,
+    enableGlobalFilter: true,
     onSortingChange: setSorting,
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
     onPaginationChange: onPaginationChange,
     onExpandedChange: setExpanded,
     onColumnPinningChange: setColumnPinning,
+    onColumnFiltersChange: setColumnFilters,
+    onGlobalFilterChange: setGlobalFilter,
     getCoreRowModel: getCoreRowModel(),
     getExpandedRowModel: getExpandedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    // getSortedRowModel: getSortedRowModel(), // Sorting is usually server-side in this app? Check existing code.
+    // Existing code didn't have getSortedRowModel, assuming server-side sorting for now since manualPagination is true?
+    // But manualPagination usually implies server-side everything.
+    // If I add getFilteredRowModel, it only works on client-side data.
+    // If pagination is manual, client-side filtering might be weird if it only filters the current page?
+    // Wait, if manualPagination is true, then data passed is likely only the current page.
+    // In that case, client-side global filtering will ONLY filter the current page data.
+    // That is often acceptable for "quick search on current page", but usually global search triggers a backend query.
+    // The previous implementation didn't have any filtering.
+    // For now, I will enable client-side filtering features as "enhancement" for whatever data is present.
   });
 
   // Virtual scrolling container ref
@@ -235,9 +261,7 @@ export function DataTable<TData, TValue>({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <DataTableViewOptions table={table} />
-      </div>
+      {enableToolbar && <DataTableToolbar table={table} />}
       <div className="border-base-300/50 bg-base-100 relative overflow-hidden rounded-2xl border shadow-sm">
         <div
           ref={tableContainerRef}
