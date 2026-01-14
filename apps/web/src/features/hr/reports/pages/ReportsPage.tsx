@@ -6,6 +6,7 @@ import isoWeek from "dayjs/plugin/isoWeek";
 import { BarChart2, BarChart3, Calendar, Check, Clock, Filter, List, Search, TrendingUp, X } from "lucide-react";
 import { lazy, Suspense, useEffect, useState } from "react";
 
+import { DataTable } from "@/components/data-table/DataTable";
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
@@ -18,8 +19,9 @@ import { LOADING_SPINNER_SM, PAGE_CONTAINER } from "@/lib/styles";
 import { cn } from "@/lib/utils";
 
 import { fetchGlobalTimesheetRange } from "../api";
+import { getHRReportsColumns, HRReportsTableMeta } from "../components/HRReportsColumns";
 import type { EmployeeWorkData, ReportGranularity } from "../types";
-import { calculateStats, minutesToTime, prepareComparisonData } from "../utils";
+import { calculateStats, prepareComparisonData } from "../utils";
 
 // Lazy-load chart components (Recharts ~400KB)
 const TemporalChart = lazy(() => import("../components/ReportCharts").then((m) => ({ default: m.TemporalChart })));
@@ -235,6 +237,15 @@ export default function ReportsPage() {
   })();
 
   const stats = calculateStats(reportData, periodCount);
+
+  const columns = getHRReportsColumns();
+
+  const meta: HRReportsTableMeta = {
+    totals: {
+      totalDays: reportData.reduce((acc, e) => acc + e.totalDays, 0),
+      totalHours: stats?.totalHours ?? 0,
+    },
+  };
 
   if (!canView) {
     return <Alert variant="error">No tienes permisos para ver reportería.</Alert>;
@@ -570,44 +581,14 @@ export default function ReportsPage() {
                     Detalle Numérico
                   </h3>
                   <div className="grow overflow-x-auto">
-                    <table className="table-sm table">
-                      <thead>
-                        <tr className="border-base-200 text-base-content/60 border-b">
-                          <th>Empleado</th>
-                          <th className="text-right">Días</th>
-                          <th className="text-right">Diario</th>
-                          <th className="text-right">Horas</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {reportData.map((emp) => (
-                          <tr key={emp.employeeId} className="hover:bg-base-50/50 border-0 transition-colors">
-                            <td className="font-medium">
-                              <div className="flex items-center gap-2">
-                                <div className="bg-primary/20 h-6 w-1 rounded-full"></div>
-                                <div>
-                                  <div className="font-bold">{emp.fullName}</div>
-                                  <div className="text-[10px] tracking-widest uppercase opacity-50">{emp.role}</div>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="text-right font-medium">{emp.totalDays}</td>
-                            <td className="text-right font-mono">{minutesToTime(emp.avgDailyMinutes)}</td>
-                            <td className="text-right font-mono text-base">
-                              {Number.parseFloat((emp.totalMinutes / 60).toFixed(1))}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                      <tfoot className="border-base-200 border-t-2 border-double">
-                        <tr className="text-base-content font-bold">
-                          <td>Total</td>
-                          <td className="text-right">{reportData.reduce((acc, e) => acc + e.totalDays, 0)}</td>
-                          <td className="text-right">-</td>
-                          <td className="text-right">{stats?.totalHours}</td>
-                        </tr>
-                      </tfoot>
-                    </table>
+                    <DataTable
+                      data={reportData}
+                      columns={columns}
+                      meta={meta}
+                      enableToolbar={false}
+                      enableVirtualization={false}
+                      noDataMessage="No hay datos para mostrar."
+                    />
                   </div>
                 </div>
               </div>

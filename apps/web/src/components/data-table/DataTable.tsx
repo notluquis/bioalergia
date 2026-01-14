@@ -29,6 +29,8 @@ interface DataTableProps<TData, TValue> {
   pageCount?: number;
   pagination?: PaginationState;
   onPaginationChange?: OnChangeFn<PaginationState>;
+  columnVisibility?: VisibilityState;
+  onColumnVisibilityChange?: OnChangeFn<VisibilityState>;
   rowSelection?: RowSelectionState;
   onRowSelectionChange?: OnChangeFn<RowSelectionState>;
   isLoading?: boolean;
@@ -102,14 +104,19 @@ export function DataTable<TData, TValue>({
   onRowClick,
   rowSelection: controlledRowSelection,
   onRowSelectionChange: controlledOnRowSelectionChange,
+  columnVisibility: controlledColumnVisibility,
+  onColumnVisibilityChange: controlledOnColumnVisibilityChange,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [internalColumnVisibility, setInternalColumnVisibility] = useState<VisibilityState>({});
   const [internalRowSelection, setInternalRowSelection] = useState({});
   const [expanded, setExpanded] = useState<ExpandedState>({});
 
   const rowSelection = controlledRowSelection ?? internalRowSelection;
   const onRowSelectionChange = controlledOnRowSelectionChange ?? setInternalRowSelection;
+  const columnVisibility = controlledColumnVisibility ?? internalColumnVisibility;
+  const onColumnVisibilityChange = controlledOnColumnVisibilityChange ?? setInternalColumnVisibility;
+
   const [columnPinning, setColumnPinning] = useState<ColumnPinningState>(initialPinning);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
@@ -141,7 +148,7 @@ export function DataTable<TData, TValue>({
     enablePinning: true,
     enableGlobalFilter: true,
     onSortingChange: setSorting,
-    onColumnVisibilityChange: setColumnVisibility,
+    onColumnVisibilityChange: onColumnVisibilityChange,
     onRowSelectionChange,
     onPaginationChange: onPaginationChange ?? setPagination,
     onExpandedChange: setExpanded,

@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { DataTable } from "@/components/data-table/DataTable";
 import Alert from "@/components/ui/Alert";
@@ -50,13 +50,10 @@ export default function AssociatedAccounts({
   const [isAddAccountModalOpen, setIsAddAccountModalOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { success: toastSuccess, error: toastError } = useToast();
-  const fallbackRange = useMemo<DateRange>(
-    () => ({
-      from: dayjs().startOf("year").format("YYYY-MM-DD"),
-      to: today(),
-    }),
-    []
-  );
+  const fallbackRange: DateRange = {
+    from: dayjs().startOf("year").format("YYYY-MM-DD"),
+    to: today(),
+  };
 
   // Suggestions Query
   const [debouncedQuery, setDebouncedQuery] = useState("");
@@ -150,27 +147,24 @@ export default function AssociatedAccounts({
 
   const { mutateAsync: updateAccount } = updateAccountMutation;
 
-  const handleGroupConceptChange = useCallback(
-    async (group: AccountGroup, concept: string) => {
-      const trimmed = concept.trim();
-      const nextConcept = trimmed || null;
-      setError(null);
+  const handleGroupConceptChange = async (group: AccountGroup, concept: string) => {
+    const trimmed = concept.trim();
+    const nextConcept = trimmed || null;
+    setError(null);
 
-      try {
-        await Promise.all(
-          group.accounts.map((account) =>
-            updateAccount({
-              id: account.id,
-              payload: { concept: nextConcept },
-            })
-          )
-        );
-      } catch {
-        // Error handled by mutation onError
-      }
-    },
-    [updateAccount]
-  );
+    try {
+      await Promise.all(
+        group.accounts.map((account) =>
+          updateAccount({
+            id: account.id,
+            payload: { concept: nextConcept },
+          })
+        )
+      );
+    } catch {
+      // Error handled by mutation onError
+    }
+  };
 
   function handleSuggestionClick(suggestion: CounterpartAccountSuggestion) {
     setAccountForm({
@@ -229,7 +223,7 @@ export default function AssociatedAccounts({
     attachRutMutation.mutate({ id: selectedId, rut });
   }
 
-  const accountGrouping = useMemo(() => {
+  const accountGrouping = (() => {
     const groups = new Map<string, AccountGroup>();
     const identifierToKey = new Map<string, string>();
 
@@ -262,12 +256,12 @@ export default function AssociatedAccounts({
       .toSorted((a, b) => a.label.localeCompare(b.label, "es", { sensitivity: "base" }));
 
     return { accountGroups, identifierToKey };
-  }, [detail?.accounts]);
+  })();
 
   const accountGroups = accountGrouping.accountGroups;
   const identifierToGroupKey = accountGrouping.identifierToKey;
 
-  const summaryByGroup = useMemo(() => {
+  const summaryByGroup = (() => {
     const map = new Map<string, { total: number; count: number }>();
     summary?.byAccount.forEach((row) => {
       const key = identifierToGroupKey.get(row.account_identifier) ?? row.account_identifier;
@@ -277,7 +271,7 @@ export default function AssociatedAccounts({
       map.set(key, entry);
     });
     return map;
-  }, [summary, identifierToGroupKey]);
+  })();
 
   const updateAccountForm =
     <K extends keyof AccountForm>(key: K) =>
@@ -358,24 +352,19 @@ export default function AssociatedAccounts({
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
-  const handleQuickView = useCallback((group: AccountGroup) => {
+  const handleQuickView = (group: AccountGroup) => {
     setQuickViewGroup(group);
-  }, []);
+  };
 
-  const quickStats = useMemo(() => {
-    const rows = quickViewRows ?? [];
-    return {
-      count: rows.length,
-      total: rows.reduce((sum, row) => sum + (row.transactionAmount ?? 0), 0),
-    };
-  }, [quickViewRows]);
+  const rows = quickViewRows ?? [];
+  const quickStats = {
+    count: rows.length,
+    total: rows.reduce((sum, row) => sum + (row.transactionAmount ?? 0), 0),
+  };
 
-  const accountGroupColumns = useMemo(
-    () => getAccountGroupColumns(summaryByGroup, handleGroupConceptChange, handleQuickView),
-    [summaryByGroup, handleGroupConceptChange, handleQuickView]
-  );
+  const accountGroupColumns = getAccountGroupColumns(summaryByGroup, handleGroupConceptChange, handleQuickView);
 
-  const quickViewColumns = useMemo(() => getQuickViewColumns(), []);
+  const quickViewColumns = getQuickViewColumns();
 
   const renderQuickViewContent = () => {
     if (quickViewLoading) {
