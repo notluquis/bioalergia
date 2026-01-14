@@ -1,5 +1,3 @@
-import { useMemo } from "react";
-
 import { DataTable } from "@/components/data-table/DataTable";
 
 import type { TimesheetSummaryRow } from "../types";
@@ -18,12 +16,12 @@ export default function TimesheetSummaryTable({
   selectedEmployeeId,
   onSelectEmployee,
 }: TimesheetSummaryTableProps) {
-  const columns = useMemo(() => getTimesheetSummaryColumns(), []);
+  const columns = getTimesheetSummaryColumns();
 
-  const rowSelection = useMemo(() => {
+  const rowSelection = (() => {
     if (!selectedEmployeeId) return {};
     return { [selectedEmployeeId]: true };
-  }, [selectedEmployeeId]);
+  })();
 
   return (
     <div className="border-primary/15 bg-base-100 overflow-hidden rounded-2xl border shadow-sm">

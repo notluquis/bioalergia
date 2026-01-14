@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import { DataTable } from "@/components/data-table/DataTable";
 import Button from "@/components/ui/Button";
@@ -50,35 +50,32 @@ export default function TimesheetDetailTable({
   const [commentPreview, setCommentPreview] = useState<{ date: string; text: string } | null>(null);
   const [notWorkedDays, setNotWorkedDays] = useState<Set<string>>(new Set());
 
-  const columns = useMemo(() => getTimesheetDetailColumns(), []);
+  const columns = getTimesheetDetailColumns();
 
-  const meta: TimesheetTableMeta = useMemo(
-    () => ({
-      canEdit,
-      initialRows,
-      notWorkedDays,
-      onRowChange,
-      onSalidaBlur,
-      onResetRow,
-      onRemoveEntry,
-      openOvertimeEditors,
-      onOpenOvertime: (date) =>
-        setOpenOvertimeEditors((prev) => {
-          const next = new Set(prev);
-          next.add(date);
-          return next;
-        }),
-      onCloseOvertime: (date) =>
-        setOpenOvertimeEditors((prev) => {
-          const next = new Set(prev);
-          next.delete(date);
-          return next;
-        }),
-      setNotWorkedDays,
-      setCommentPreview,
-    }),
-    [canEdit, initialRows, notWorkedDays, onRowChange, onSalidaBlur, onResetRow, onRemoveEntry, openOvertimeEditors]
-  );
+  const meta: TimesheetTableMeta = {
+    canEdit,
+    initialRows,
+    notWorkedDays,
+    onRowChange,
+    onSalidaBlur,
+    onResetRow,
+    onRemoveEntry,
+    openOvertimeEditors,
+    onOpenOvertime: (date) =>
+      setOpenOvertimeEditors((prev) => {
+        const next = new Set(prev);
+        next.add(date);
+        return next;
+      }),
+    onCloseOvertime: (date) =>
+      setOpenOvertimeEditors((prev) => {
+        const next = new Set(prev);
+        next.delete(date);
+        return next;
+      }),
+    setNotWorkedDays,
+    setCommentPreview,
+  };
 
   return (
     <div className="bg-base-100 space-y-4 p-6">

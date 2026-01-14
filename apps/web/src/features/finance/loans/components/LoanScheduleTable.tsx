@@ -1,7 +1,5 @@
 // Imports cleaned up
 
-import { useMemo } from "react";
-
 import { DataTable } from "@/components/data-table/DataTable";
 
 import type { LoanSchedule } from "../types";
@@ -20,15 +18,12 @@ export default function LoanScheduleTable({
   onUnlinkPayment,
   canManage,
 }: LoanScheduleTableProps) {
-  const actions = useMemo(
-    () => ({
-      onRegisterPayment,
-      onUnlinkPayment,
-    }),
-    [onRegisterPayment, onUnlinkPayment]
-  );
+  const actions = {
+    onRegisterPayment,
+    onUnlinkPayment,
+  };
 
-  const columns = useMemo(() => getColumns(actions, canManage), [actions, canManage]);
+  const columns = getColumns(actions, canManage);
 
   return (
     <div className="border-base-300 bg-base-100 overflow-hidden rounded-2xl border shadow-sm">
