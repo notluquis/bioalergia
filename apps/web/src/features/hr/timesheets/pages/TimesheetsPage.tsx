@@ -7,7 +7,7 @@ import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
-import { fetchEmployees } from "@/features/hr/employees/api";
+import { employeeKeys } from "@/features/hr/employees/queries";
 import {
   bulkUpsertTimesheets,
   deleteTimesheet,
@@ -66,8 +66,7 @@ export default function TimesheetsPage() {
 
   // 1. Employees
   const { data: employees = [] } = useQuery({
-    queryKey: ["employees"],
-    queryFn: () => fetchEmployees(false),
+    ...employeeKeys.list({ includeInactive: false }),
     staleTime: 5 * 60 * 1000,
   });
 

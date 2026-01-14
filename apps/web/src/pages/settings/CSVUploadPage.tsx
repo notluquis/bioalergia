@@ -1,14 +1,15 @@
 import { useMutation } from "@tanstack/react-query";
+import type { ColumnDef } from "@tanstack/react-table";
 import { AlertCircle, ArrowRight, CheckCircle, FileUp, Loader2, Lock, Upload } from "lucide-react";
 import Papa from "papaparse";
 import { useState } from "react";
 
+import { DataTable } from "@/components/data-table/DataTable";
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import FileInput from "@/components/ui/FileInput";
 import Input from "@/components/ui/Input";
-import { Table, TableBody, TableHeader } from "@/components/ui/Table";
 import { useAuth } from "@/context/AuthContext";
 import { type CsvImportPayload, importCsvData, previewCsvImport } from "@/features/data-import/api";
 import { PAGE_CONTAINER } from "@/lib/styles";
@@ -170,6 +171,8 @@ const PERMISSION_MAP: Record<string, { action: string; subject: string }> = {
   inventory_items: { action: "create", subject: "InventoryItem" },
   employee_timesheets: { action: "create", subject: "Timesheet" },
 };
+
+type FieldDefinition = { name: string; type: string; required: boolean };
 
 export default function CSVUploadPage() {
   const { can } = useAuth();
@@ -353,6 +356,65 @@ export default function CSVUploadPage() {
     return requiredFields.every((field) => columnMapping[field.name] && columnMapping[field.name] !== "");
   })();
 
+  const columns: ColumnDef<FieldDefinition>[] = [
+    {
+      accessorKey: "name",
+      header: "Campo BD",
+      cell: ({ row }) => (
+        <div className="flex items-center gap-1.5 font-medium">
+          {row.original.name}
+          {row.original.required && (
+            <span className="text-error text-xs" title="Requerido">
+              *
+            </span>
+          )}
+        </div>
+      ),
+    },
+    {
+      accessorKey: "type",
+      header: "Tipo",
+      cell: ({ row }) => <span className="badge badge-xs badge-ghost font-mono">{row.original.type}</span>,
+    },
+    {
+      id: "mapping",
+      header: "Columna CSV",
+      cell: ({ row }) => (
+        <Input
+          as="select"
+          size="sm"
+          className={cn(
+            "w-full max-w-xs transition-colors",
+            row.original.required && !columnMapping[row.original.name]
+              ? "border-error focus:border-error text-error"
+              : ""
+          )}
+          value={columnMapping[row.original.name] || ""}
+          onChange={(e) => handleColumnMapChange(row.original.name, e.target.value)}
+        >
+          <option value="">-- Ignorar / Sin mapear --</option>
+          {csvHeaders.map((header) => (
+            <option key={`${row.original.name}-${header}`} value={header}>
+              {header}
+            </option>
+          ))}
+        </Input>
+      ),
+    },
+    {
+      id: "preview",
+      header: "Ejemplo (Fila 1)",
+      cell: ({ row }) => {
+        const mappedColumn = columnMapping[row.original.name];
+        return (
+          <span className="text-base-content/60 max-w-37.5 truncate font-mono text-xs">
+            {(mappedColumn && csvData[0]?.[mappedColumn]) || "-"}
+          </span>
+        );
+      },
+    },
+  ];
+
   return (
     <div className={PAGE_CONTAINER}>
       {/* Access Denied State */}
@@ -472,66 +534,9 @@ export default function CSVUploadPage() {
                   <span className="text-xs opacity-70">Detectadas {csvData.length} filas.</span>
                 </CardDescription>
               </CardHeader>
-              <CardContent className="p-0">
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader
-                      columns={[
-                        { key: "dbField", label: "Campo BD", width: "25%" },
-                        { key: "type", label: "Tipo", width: "15%" },
-                        { key: "csvColumn", label: "Columna CSV", width: "35%" },
-                        { key: "preview", label: "Ejemplo (Fila 1)", width: "25%" },
-                      ]}
-                    />
-                    <TableBody columnsCount={4}>
-                      {currentTable.fields.map((field) => (
-                        <tr key={field.name} className="hover:bg-base-200/30">
-                          <td className="pl-6 font-medium">
-                            <div className="flex items-center gap-1.5">
-                              {field.name}
-                              {field.required && (
-                                <span className="text-error text-xs" title="Requerido">
-                                  *
-                                </span>
-                              )}
-                            </div>
-                          </td>
-                          <td>
-                            <span className="badge badge-xs badge-ghost font-mono">{field.type}</span>
-                          </td>
-                          <td>
-                            <Input
-                              as="select"
-                              size="sm"
-                              className={cn(
-                                "w-full max-w-xs transition-colors",
-                                field.required && !columnMapping[field.name]
-                                  ? "border-error focus:border-error text-error"
-                                  : ""
-                              )}
-                              value={columnMapping[field.name] || ""}
-                              onChange={(e) => handleColumnMapChange(field.name, e.target.value)}
-                            >
-                              <option value="">-- Ignorar / Sin mapear --</option>
-                              {csvHeaders.map((header) => (
-                                <option key={`${field.name}-${header}`} value={header}>
-                                  {header}
-                                </option>
-                              ))}
-                            </Input>
-                          </td>
-                          <td className="text-base-content/60 max-w-37.5 truncate font-mono text-xs">
-                            {(() => {
-                              const mappedColumn = columnMapping[field.name];
-                              return (mappedColumn && csvData[0]?.[mappedColumn]) || "-";
-                            })()}
-                          </td>
-                        </tr>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
+              <div className="border-t">
+                <DataTable columns={columns} data={currentTable.fields} />
+              </div>
             </Card>
           )}
 

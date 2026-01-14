@@ -1,26 +1,17 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, ChevronDown, ChevronRight, Eye, Pencil, Plus, RotateCw, Trash2 } from "lucide-react";
-import { Fragment, useState } from "react";
+import { Plus, RotateCw } from "lucide-react";
+import { useState } from "react";
 
 import { Card, CardContent, CardHeader } from "@/components/ui/Card";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/DropdownMenu";
-import { SmoothCollapse } from "@/components/ui/SmoothCollapse";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import { fetchPermissions, fetchRoles, syncPermissions, updateRolePermissions } from "@/features/roles/api";
+import { DeleteRoleModal } from "@/features/roles/components/DeleteRoleModal";
+import { PermissionsMatrixTable } from "@/features/roles/components/PermissionsMatrixTable";
+import { RoleFormModal } from "@/features/roles/components/RoleFormModal";
 import { getNavSections, type NavItem, type NavSectionData } from "@/lib/nav-generator";
 import { cn } from "@/lib/utils";
 import { Permission, Role } from "@/types/roles";
-
-import { BulkToggleCell } from "./components/BulkToggleCell";
-import { DeleteRoleModal } from "./components/DeleteRoleModal";
-import { RoleFormModal } from "./components/RoleFormModal";
 
 // --- Page Component ---
 
@@ -32,24 +23,7 @@ export default function RolesSettingsPage() {
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
   const [viewModeRole, setViewModeRole] = useState<string>("all");
-
-  const toggleSection = (title: string) => {
-    setOpenSections((prev) => ({
-      ...prev,
-      [title]: !prev[title],
-    }));
-  };
-
-  const [openItems, setOpenItems] = useState<Record<string, boolean>>({});
-
-  const toggleItem = (key: string) => {
-    setOpenItems((prev) => ({
-      ...prev,
-      [key]: !prev[key],
-    }));
-  };
 
   // Queries
   const rolesQuery = useQuery({
@@ -172,8 +146,6 @@ export default function RolesSettingsPage() {
   // Pre-process navigation sections with permission data
   const sectionsWithPermissions = processNavSections(getNavSections(), allPermissions || [], usedPermissionIds);
 
-  const displayRoles = viewModeRole === "all" ? roles : roles.filter((r) => r.id.toString() === viewModeRole);
-
   return (
     <div className="space-y-6">
       <Card>
@@ -217,212 +189,18 @@ export default function RolesSettingsPage() {
           </div>
         </CardHeader>
         <CardContent className="overflow-hidden p-0">
-          <div className="border-base-300 w-full overflow-x-auto border-t">
-            {/* Dynamic Grid Layout */}
-            <div className="min-w-full">
-              {/* Note: using displayRoles for rendering */}
-              <table className="table w-auto table-fixed border-collapse">
-                {/* ... Header logic using displayRoles ... */}
-                <thead>
-                  <tr>
-                    <th className="bg-base-100 border-base-300 sticky left-0 z-20 w-[320px] max-w-[320px] min-w-[320px] border-r px-6 text-left">
-                      Permiso / acción
-                    </th>
-                    {displayRoles.map((role) => (
-                      <th key={role.id} className="group relative w-35 max-w-35 min-w-35 text-center align-top">
-                        <div className="flex flex-col items-center gap-1">
-                          <span className="line-clamp-2 text-base leading-tight font-bold" title={role.name}>
-                            {role.name}
-                          </span>
-                          <span className="line-clamp-2 text-xs font-normal opacity-70" title={role.description || ""}>
-                            {role.description || "Sin descripción"}
-                          </span>
-
-                          {/* Role Actions - Radix DropdownMenu for proper click-outside */}
-                          <div className="mt-2 flex justify-center">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger className="btn btn-ghost btn-xs h-6 w-full gap-1 font-normal opacity-50 hover:opacity-100">
-                                Opciones
-                                <ChevronDown className="h-3 w-3" />
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" sideOffset={4}>
-                                <DropdownMenuItem onClick={() => impersonate(role)}>
-                                  <Eye className="h-4 w-4" />
-                                  Previsualizar
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleEditRole(role)}>
-                                  <Pencil className="h-4 w-4" />
-                                  Editar
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                  onClick={() => handleDeleteRole(role)}
-                                  className="text-error focus:text-error"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                  Eliminar
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
-                        </div>
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {sectionsWithPermissions.map((section) => (
-                    <Fragment key={section.title}>
-                      {/* Section Title & Bulk Toggle */}
-                      <tr
-                        className="bg-base-200/50 hover:bg-base-200/70 border-base-300 cursor-pointer border-b transition-colors"
-                        onClick={() => toggleSection(section.title)}
-                      >
-                        <td className="bg-base-200 border-base-300 sticky left-0 z-10 w-[320px] max-w-[320px] min-w-[320px] border-r py-3 pl-4 text-xs font-bold tracking-widest uppercase">
-                          <div className="flex items-center gap-2">
-                            {openSections[section.title] ? (
-                              <ChevronDown className="h-4 w-4" />
-                            ) : (
-                              <ChevronRight className="h-4 w-4" />
-                            )}
-                            {section.title}
-                          </div>
-                        </td>
-                        {displayRoles.map((role) => (
-                          <BulkToggleCell
-                            key={role.id}
-                            role={role}
-                            permissionIds={section.permissionIds}
-                            isUpdating={isUpdatingPermissions && updatingVariables?.roleId === role.id}
-                            onToggle={handleBulkToggle}
-                            variant="section"
-                          />
-                        ))}
-                      </tr>
-
-                      {/* Collapsible Content Row */}
-                      <tr>
-                        <td colSpan={displayRoles.length + 1} className="border-0 p-0">
-                          <SmoothCollapse isOpen={!!openSections[section.title]}>
-                            <table className="w-full table-fixed border-collapse">
-                              <tbody>
-                                {section.items.map((item) => {
-                                  const itemKey = `${section.title}-${item.label}`;
-                                  const isOpen = !!openItems[itemKey];
-
-                                  // For pages that aggregate multiple permissions (typical)
-                                  const hasMultiple = item.relatedPermissions.length > 1;
-
-                                  // If it has multiple permissions, we treat it as a collapsible group
-                                  if (hasMultiple) {
-                                    return (
-                                      <Fragment key={item.label}>
-                                        {/* Page Header (Collapsible Trigger) */}
-                                        <tr
-                                          className="bg-base-100/50 hover:bg-base-200/20 border-base-100 cursor-pointer border-b transition-colors"
-                                          onClick={() => toggleItem(itemKey)}
-                                        >
-                                          <td className="bg-base-100 border-base-300 w-[320px] max-w-[320px] min-w-[320px] border-r py-3 pl-8 text-sm font-semibold">
-                                            <div className="flex items-center gap-2">
-                                              <div className="text-base-content/40 flex h-4 w-4 items-center justify-center">
-                                                {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                                              </div>
-                                              <item.icon className="h-4 w-4 opacity-70" />
-                                              {item.label}
-                                            </div>
-                                          </td>
-                                          {displayRoles.map((role) => (
-                                            <BulkToggleCell
-                                              key={role.id}
-                                              role={role}
-                                              permissionIds={item.permissionIds}
-                                              isUpdating={
-                                                isUpdatingPermissions && updatingVariables?.roleId === role.id
-                                              }
-                                              onToggle={handleBulkToggle}
-                                              variant="page"
-                                              className="w-35 max-w-35 min-w-35 py-3"
-                                            />
-                                          ))}
-                                        </tr>
-
-                                        {/* Individual Permissions (Collapsible) */}
-                                        <tr>
-                                          <td colSpan={displayRoles.length + 1} className="border-0 p-0">
-                                            <SmoothCollapse isOpen={isOpen}>
-                                              <table className="w-full table-fixed border-collapse">
-                                                <tbody>
-                                                  {item.relatedPermissions.map((perm) => (
-                                                    <PermissionRow
-                                                      key={perm.id}
-                                                      perm={perm}
-                                                      displayRoles={displayRoles}
-                                                      onToggle={handlePermissionToggle}
-                                                    />
-                                                  ))}
-                                                </tbody>
-                                              </table>
-                                            </SmoothCollapse>
-                                          </td>
-                                        </tr>
-                                      </Fragment>
-                                    );
-                                  }
-
-                                  // Single permission item (Rare case in this app, usually it's pages)
-                                  // Render as simple row without collapse
-                                  const perm = item.relatedPermissions[0];
-                                  if (!perm) return null; // Should not happen due to filter
-
-                                  const actionMap: Record<string, string> = {
-                                    read: "Ver",
-                                    create: "Crear",
-                                    update: "Editar",
-                                    delete: "Eliminar",
-                                  };
-                                  const actionLabel = actionMap[perm.action] || perm.action;
-                                  const displayLabel = `${item.label} (${actionLabel})`;
-
-                                  return (
-                                    <tr
-                                      key={perm.id}
-                                      className="hover:bg-base-200/50 border-base-100 border-b transition-colors last:border-0"
-                                    >
-                                      <td className="bg-base-100 border-base-300 w-[320px] max-w-[320px] min-w-[320px] border-r py-3 pl-8">
-                                        <div className="flex flex-col">
-                                          <span className="flex items-center gap-2 text-sm font-medium">
-                                            <item.icon className="h-4 w-4 opacity-70" />
-                                            {displayLabel}
-                                          </span>
-                                          <span className="text-base-content/60 pl-6 font-mono text-[10px]">
-                                            {perm.action} • {perm.subject}
-                                          </span>
-                                        </div>
-                                      </td>
-                                      {displayRoles.map((role) => (
-                                        <PermissionCell
-                                          key={role.id}
-                                          role={role}
-                                          permissionId={perm.id}
-                                          isUpdating={false}
-                                          onToggle={handlePermissionToggle}
-                                          className="w-35 max-w-35 min-w-35"
-                                        />
-                                      ))}
-                                    </tr>
-                                  );
-                                })}
-                              </tbody>
-                            </table>
-                          </SmoothCollapse>
-                        </td>
-                      </tr>
-                    </Fragment>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <PermissionsMatrixTable
+            roles={roles}
+            sections={sectionsWithPermissions}
+            viewModeRole={viewModeRole}
+            isUpdatingPermissions={isUpdatingPermissions}
+            updatingRoleId={updatingVariables?.roleId}
+            onPermissionToggle={handlePermissionToggle}
+            onBulkToggle={handleBulkToggle}
+            onEditRole={handleEditRole}
+            onDeleteRole={handleDeleteRole}
+            onImpersonate={impersonate}
+          />
         </CardContent>
       </Card>
 
@@ -442,82 +220,6 @@ export default function RolesSettingsPage() {
   );
 }
 
-function PermissionCell({
-  role,
-  permissionId,
-  isUpdating,
-  onToggle,
-  className,
-}: {
-  role: Role;
-  permissionId: number;
-  isUpdating: boolean;
-  onToggle: (r: Role, i: number) => void;
-  className?: string;
-}) {
-  const hasAccess = role.permissions.some((rp) => rp.permissionId === permissionId);
-
-  return (
-    <td className={`p-0 text-center align-middle ${className || ""}`}>
-      <button
-        onClick={() => onToggle(role, permissionId)}
-        disabled={isUpdating}
-        className="group mx-auto flex h-8 w-8 items-center justify-center transition-colors"
-      >
-        {/* Solid badge style for better visibility */}
-        {hasAccess ? (
-          <div className="bg-primary hover:bg-primary-focus flex h-5 w-5 items-center justify-center rounded-md shadow-sm transition-transform active:scale-95">
-            <Check size={12} className="text-primary-content" />
-          </div>
-        ) : (
-          <div className="border-base-300 bg-base-100 group-hover:border-primary/50 group-hover:bg-primary/5 h-5 w-5 rounded-md border-2 transition-colors" />
-        )}
-      </button>
-    </td>
-  );
-}
-
-function PermissionRow({
-  perm,
-  displayRoles,
-  onToggle,
-}: {
-  perm: Permission;
-  displayRoles: Role[];
-  onToggle: (role: Role, id: number) => void;
-}) {
-  const actionMap: Record<string, string> = {
-    read: "Ver",
-    create: "Crear",
-    update: "Editar",
-    delete: "Eliminar",
-  };
-  const actionLabel = actionMap[perm.action] || perm.action;
-
-  return (
-    <tr className="hover:bg-base-200/50 border-base-100 border-b transition-colors last:border-0">
-      <td className="bg-base-100 border-base-300 w-[320px] max-w-[320px] min-w-[320px] border-r py-2 pl-16 text-sm">
-        <div className="flex flex-col">
-          <span className="flex items-center gap-2 font-medium">{actionLabel}</span>
-          <span className="text-base-content/60 font-mono text-[10px]">
-            {perm.action} • {perm.subject}
-          </span>
-        </div>
-      </td>
-      {displayRoles.map((role) => (
-        <PermissionCell
-          key={role.id}
-          role={role}
-          permissionId={perm.id}
-          isUpdating={false}
-          onToggle={onToggle}
-          className="w-35 max-w-35 min-w-35"
-        />
-      ))}
-    </tr>
-  );
-}
-
 // Helper: Optimistic Update Logic
 function optimisticUpdateRole(oldRoles: Role[] | undefined, roleId: number, permissionIds: number[]): Role[] {
   if (!oldRoles) return [];
@@ -534,6 +236,7 @@ function optimisticUpdateRole(oldRoles: Role[] | undefined, roleId: number, perm
 }
 
 // Helper: Navigation Processing Logic
+// Updated return type to match PermissionsMatrixTable requirements implicitly
 function processNavSections(
   navSections: NavSectionData[],
   allPermissions: Permission[],
@@ -557,7 +260,8 @@ function processNavSections(
           if (uniquePermissions.length === 0) return null;
 
           return {
-            ...item,
+            label: item.label,
+            icon: item.icon,
             relatedPermissions: uniquePermissions,
             permissionIds: uniquePermissions.map((p) => p.id),
           };
@@ -567,7 +271,7 @@ function processNavSections(
       const sectionPermissionIds = itemsWithPermissions.flatMap((item) => item.permissionIds);
 
       return {
-        ...section,
+        title: section.title,
         items: itemsWithPermissions,
         permissionIds: sectionPermissionIds,
       };

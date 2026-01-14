@@ -48,3 +48,8 @@ export async function unlinkServicePayment(scheduleId: number): Promise<{ status
     {}
   );
 }
+
+export function extractErrorMessage(error: unknown): string | null {
+  if (!error) return null;
+  return error instanceof Error ? error.message : String(error);
+}

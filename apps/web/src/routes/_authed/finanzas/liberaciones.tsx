@@ -3,7 +3,7 @@ import { lazy, Suspense } from "react";
 
 import PageLoader from "@/components/ui/PageLoader";
 
-const ReleasesPage = lazy(() => import("@/features/finance/releases/pages/ReleasesPage"));
+const ReleasesPage = lazy(() => import("@/features/finance/mercadopago/pages/ReleaseTransactionsPage"));
 
 export const Route = createFileRoute("/_authed/finanzas/liberaciones")({
   beforeLoad: ({ context }) => {

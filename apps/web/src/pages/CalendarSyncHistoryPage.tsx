@@ -1,10 +1,11 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import { Info } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
+import { DataTable } from "@/components/data-table/DataTable";
 import Button from "@/components/ui/Button";
-import { Card, CardContent, CardFooter } from "@/components/ui/Card";
-import { Table } from "@/components/ui/Table";
+import { Card, CardContent } from "@/components/ui/Card";
 import { SyncDetailModal } from "@/features/calendar/components/SyncDetailModal";
 import { SyncProgressPanel } from "@/features/calendar/components/SyncProgressPanel";
 import { useCalendarEvents } from "@/features/calendar/hooks/useCalendarEvents";
@@ -25,9 +26,7 @@ export default function CalendarSyncHistoryPage() {
     refetchSyncLogs: refetchLogs,
     isLoadingSyncLogs,
   } = useCalendarEvents();
-  const [page, setPage] = useState(0);
   const [selectedLog, setSelectedLog] = useState<CalendarSyncLog | null>(null);
-  const pageSize = 5;
   const loading = isLoadingSyncLogs;
 
   const hasRunningSyncInHistory = logs.some((log) => {
@@ -37,32 +36,86 @@ export default function CalendarSyncHistoryPage() {
     return started.isValid() && Date.now() - started.valueOf() < 5 * 60 * 1000;
   });
   const isSyncing = syncing || hasRunningSyncFromOtherSource || hasRunningSyncInHistory;
-  const totalPages = Math.max(1, Math.ceil(logs.length / pageSize));
-
-  useEffect(() => {
-    if (page >= totalPages) {
-      setPage(totalPages - 1);
-    }
-  }, [page, totalPages]);
-
-  // React Compiler auto-memoizes array slicing
-  const visibleLogs = logs.slice(page * pageSize, page * pageSize + pageSize);
 
   const handleRefresh = () => {
     refetchLogs().catch(() => {
       /* handled */
     });
-    setPage(0);
   };
 
-  const tableColumns = [
-    { key: "started", label: "Inicio" },
-    { key: "status", label: "Estado" },
-    { key: "inserted", label: "Insertadas" },
-    { key: "updated", label: "Actualizadas" },
-    { key: "source", label: "Origen" },
-    { key: "duration", label: "Duración" },
-    { key: "actions", label: "" },
+  const columns: ColumnDef<CalendarSyncLog>[] = [
+    {
+      accessorKey: "startedAt",
+      header: "Inicio",
+      cell: ({ row }) => (
+        <span className="text-base-content font-medium">
+          {dayjs(row.original.startedAt).format("DD MMM YYYY HH:mm")}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "status",
+      header: "Estado",
+      cell: ({ row }) => {
+        const log = row.original;
+        const statusColors = {
+          SUCCESS: "text-success",
+          RUNNING: "text-warning",
+          ERROR: "text-error",
+        };
+        const statusClass = statusColors[log.status as keyof typeof statusColors] || "text-error";
+        const statusText = (() => {
+          if (log.status === "SUCCESS") return "Éxito";
+          if (log.status === "RUNNING") return "En curso...";
+          return "Error";
+        })();
+        return <span className={cn("font-semibold", statusClass)}>{statusText}</span>;
+      },
+    },
+    {
+      accessorKey: "inserted",
+      header: "Insertadas",
+      cell: ({ row }) => numberFormatter.format(row.original.inserted),
+    },
+    {
+      accessorKey: "updated",
+      header: "Actualizadas",
+      cell: ({ row }) => numberFormatter.format(row.original.updated),
+    },
+    {
+      id: "source",
+      header: "Origen",
+      cell: ({ row }) => row.original.triggerLabel ?? row.original.triggerSource,
+    },
+    {
+      id: "duration",
+      header: "Duración",
+      cell: ({ row }) => {
+        const log = row.original;
+        const finished = log.finishedAt ? dayjs(log.finishedAt) : null;
+        if (finished?.isValid()) return `${finished.diff(dayjs(log.startedAt), "second")}s`;
+        if (log.status === "RUNNING") return "En curso...";
+        return "-";
+      },
+    },
+    {
+      id: "actions",
+      header: "",
+      cell: ({ row }) => (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={(e) => {
+            e.stopPropagation();
+            setSelectedLog(row.original);
+          }}
+          className="text-primary hover:text-primary/80"
+          aria-label="Ver detalle"
+        >
+          <Info size={16} />
+        </Button>
+      ),
+    },
   ];
 
   return (
@@ -78,91 +131,13 @@ export default function CalendarSyncHistoryPage() {
 
       <Card>
         <CardContent className="p-0">
-          <Table columns={tableColumns} variant="minimal" className="border-0 shadow-none">
-            <Table.Body loading={loading} columnsCount={7}>
-              {logs.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="text-base-content/50 px-4 py-12 text-center">
-                    No hay ejecuciones registradas.
-                  </td>
-                </tr>
-              ) : (
-                visibleLogs.map((log) => {
-                  const started = dayjs(log.startedAt).format("DD MMM YYYY HH:mm");
-                  const finished = log.finishedAt ? dayjs(log.finishedAt) : null;
-                  const duration = (() => {
-                    if (finished?.isValid()) return `${finished.diff(dayjs(log.startedAt), "second")}s`;
-                    if (log.status === "RUNNING") return "En curso...";
-                    return "-";
-                  })();
-                  const sourceLabel = log.triggerLabel ?? log.triggerSource;
-
-                  const statusColors = {
-                    SUCCESS: "text-success",
-                    RUNNING: "text-warning",
-                    ERROR: "text-error",
-                  };
-                  const statusClass = statusColors[log.status as keyof typeof statusColors] || "text-error";
-                  const statusText = (() => {
-                    if (log.status === "SUCCESS") return "Éxito";
-                    if (log.status === "RUNNING") return "En curso...";
-                    return "Error";
-                  })();
-
-                  return (
-                    <tr key={log.id} className="group hover:bg-base-200/50 transition-colors">
-                      <td className="text-base-content font-medium">{started}</td>
-                      <td className={cn("font-semibold", statusClass)}>{statusText}</td>
-                      <td>{numberFormatter.format(log.inserted)}</td>
-                      <td>{numberFormatter.format(log.updated)}</td>
-                      <td>{sourceLabel}</td>
-                      <td>{duration}</td>
-                      <td>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedLog(log);
-                          }}
-                          className="text-primary hover:text-primary/80"
-                          aria-label="Ver detalle"
-                        >
-                          <Info size={16} />
-                        </Button>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </Table.Body>
-          </Table>
+          <DataTable
+            columns={columns}
+            data={logs}
+            isLoading={loading}
+            noDataMessage="No hay ejecuciones registradas."
+          />
         </CardContent>
-        {logs.length > 0 && (
-          <CardFooter className="border-base-200 bg-base-50/50 flex items-center justify-between border-t px-6 py-3">
-            <span className="text-base-content/60 text-xs">
-              Página {page + 1} de {totalPages}
-            </span>
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                variant="ghost"
-                disabled={page === 0}
-                onClick={() => setPage((prev) => Math.max(0, prev - 1))}
-              >
-                Anterior
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                disabled={page + 1 >= totalPages}
-                onClick={() => setPage((prev) => Math.min(totalPages - 1, prev + 1))}
-              >
-                Siguiente
-              </Button>
-            </div>
-          </CardFooter>
-        )}
       </Card>
 
       {logs.some((log) => log.errorMessage) && (

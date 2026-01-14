@@ -1,15 +1,11 @@
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 
 import { formatRut } from "@/lib/rut";
 
-import { fetchParticipantInsight, fetchParticipantLeaderboard } from "../api";
-import type {
-  LeaderboardDisplayRow,
-  ParticipantCounterpartRow,
-  ParticipantMonthlyRow,
-  ParticipantSummaryRow,
-} from "../types";
+import { type LeaderboardParams, participantQueries } from "../queries";
+import type { LeaderboardDisplayRow } from "../types";
 
 const MAX_MONTHS = 12;
 
@@ -45,30 +41,55 @@ function resolveRange(quickValue: string, fromValue: string, toValue: string): R
 }
 
 export function useParticipantInsightsData() {
+  // Filters
   const [participantId, setParticipantId] = useState("");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [quickMonth, setQuickMonth] = useState("current");
-  const [monthly, setMonthly] = useState<ParticipantMonthlyRow[]>([]);
-  const [counterparts, setCounterparts] = useState<ParticipantCounterpartRow[]>([]);
-  const [visible, setVisible] = useState(false);
-  const [detailLoading, setDetailLoading] = useState(false);
-  const [detailError, setDetailError] = useState<string | null>(null);
-
-  const [leaderboard, setLeaderboard] = useState<ParticipantSummaryRow[]>([]);
   const [leaderboardLimit, setLeaderboardLimit] = useState(10);
   const [leaderboardGrouping, setLeaderboardGrouping] = useState<"account" | "rut">("account");
-  const [leaderboardLoading, setLeaderboardLoading] = useState(false);
-  const [leaderboardError, setLeaderboardError] = useState<string | null>(null);
   const [selectedRange, setSelectedRange] = useState<RangeParams>(() => resolveRange("current", "", ""));
+
+  // Derived
   const activeParticipantId = (participantId || "").trim();
 
+  // Queries
+  const leaderboardParams: LeaderboardParams = {
+    ...selectedRange,
+    limit: leaderboardLimit,
+    mode: "outgoing",
+  };
+
+  // 1. Leaderboard (Suspense-enabled)
+  const { data: leaderboardData } = useSuspenseQuery(participantQueries.leaderboard(leaderboardParams));
+  const leaderboard = leaderboardData.participants || [];
+
+  // 2. Details (Click-to-fetch, keeps useQuery)
+  const {
+    data: detailData,
+    isLoading: detailLoading,
+    error: detailErrorObj,
+  } = useQuery(
+    participantQueries.detail({
+      participantId: activeParticipantId,
+      ...selectedRange,
+    })
+  );
+
+  const monthly = detailData?.monthly || [];
+  const counterparts = detailData?.counterparts || [];
+  const detailError = detailErrorObj instanceof Error ? detailErrorObj.message : null;
+  const visible = !!detailData && !detailLoading && !detailError;
+
+  // Transformations (Memoization via React 19 Compiler, logic moved inline or simplifed)
+
+  // Account Grouping
   const accountRows: LeaderboardDisplayRow[] = leaderboard.map((row) => {
     const selectKey = row.participant || row.bankAccountNumber || row.withdrawId || row.identificationNumber || "";
     const displayName = row.bankAccountHolder || row.displayName || row.participant || "(sin información)";
     const rutValue =
       row.identificationNumber && typeof row.identificationNumber === "string"
-        ? formatRut(row.identificationNumber)
+        ? formatRut(String(row.identificationNumber))
         : "";
     const rut = rutValue || "-";
     const account = row.bankAccountNumber || row.withdrawId || row.participant || "-";
@@ -83,7 +104,8 @@ export function useParticipantInsightsData() {
     };
   });
 
-  const rutRows = useMemo<LeaderboardDisplayRow[]>(() => {
+  // RUT Grouping
+  const rutRows = (() => {
     const map = new Map<
       string,
       {
@@ -95,6 +117,7 @@ export function useParticipantInsightsData() {
         selectKey: string;
       }
     >();
+
     accountRows.forEach((row) => {
       const key = row.rut === "-" ? row.displayName : row.rut;
       if (!map.has(key)) {
@@ -120,6 +143,7 @@ export function useParticipantInsightsData() {
         entry.selectKey = row.selectKey;
       }
     });
+
     return [...map.entries()]
       .map(([key, entry]) => ({
         key,
@@ -134,10 +158,11 @@ export function useParticipantInsightsData() {
         if (b.outgoingAmount !== a.outgoingAmount) return b.outgoingAmount - a.outgoingAmount;
         return b.outgoingCount - a.outgoingCount;
       });
-  }, [accountRows]);
+  })();
 
   const displayedLeaderboard: LeaderboardDisplayRow[] = leaderboardGrouping === "account" ? accountRows : rutRows;
 
+  // Options
   const quickMonthOptions = (() => {
     const options = [{ value: "current", label: "Mes actual" }];
     for (let i = 1; i < MAX_MONTHS; i += 1) {
@@ -148,93 +173,21 @@ export function useParticipantInsightsData() {
     return options;
   })();
 
-  const loadParticipant = async (participant: string, range: RangeParams) => {
-    const trimmed = (participant || "").trim();
-    if (!trimmed) {
-      return;
-    }
-
-    setDetailLoading(true);
-    setDetailError(null);
-
-    try {
-      const data = await fetchParticipantInsight(trimmed, range);
-      setMonthly(data.monthly);
-      setCounterparts(data.counterparts);
-      setVisible(true);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "No se pudo obtener la información";
-      setDetailError(message);
-      setMonthly([]);
-      setCounterparts([]);
-      setVisible(false);
-    } finally {
-      setDetailLoading(false);
-    }
-  };
-
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  // Handlers
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-
     const rangeParams = resolveRange(quickMonth, from, to);
     setSelectedRange(rangeParams);
-
-    const trimmedId = activeParticipantId;
-
-    if (!trimmedId) {
-      setDetailError(null);
-      setMonthly([]);
-      setCounterparts([]);
-      setVisible(false);
-      return;
-    }
-
-    await loadParticipant(trimmedId, rangeParams);
+    // Query auto-refetches due to key change
   };
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadLeaderboard() {
-      setLeaderboardLoading(true);
-      setLeaderboardError(null);
-
-      try {
-        const data = await fetchParticipantLeaderboard({
-          ...selectedRange,
-          limit: leaderboardLimit,
-          mode: "outgoing",
-        });
-
-        if (!cancelled) {
-          setLeaderboard(data.participants || []);
-        }
-      } catch (error) {
-        if (!cancelled) {
-          const message = error instanceof Error ? error.message : "No se pudo obtener el ranking de participantes";
-          setLeaderboardError(message);
-          setLeaderboard([]);
-        }
-      } finally {
-        if (!cancelled) {
-          setLeaderboardLoading(false);
-        }
-      }
-    }
-
-    loadLeaderboard();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [selectedRange, leaderboardLimit]);
-
-  const handleSelectParticipant = async (participant: string) => {
+  const handleSelectParticipant = (participant: string) => {
     setParticipantId(participant);
-    await loadParticipant(participant, selectedRange);
+    // Query auto-refetches when id changes
   };
 
   return {
+    // Filters & State
     participantId,
     setParticipantId,
     from,
@@ -243,25 +196,26 @@ export function useParticipantInsightsData() {
     setTo,
     quickMonth,
     setQuickMonth,
+    leaderboardLimit,
+    setLeaderboardLimit,
+    leaderboardGrouping,
+    setLeaderboardGrouping,
+    quickMonthOptions,
+
+    // Data (Leaderboard)
+    leaderboard,
+    displayedLeaderboard,
+    leaderboardLoading: false, // Suspense handles initial, mutation handles updates? No, query handles all.
+    leaderboardError: null, // ErrorBoundary handles this
+
+    // Data (Details)
     monthly,
     counterparts,
     visible,
     detailLoading,
     detailError,
-    leaderboard,
-    leaderboardLimit,
-    setLeaderboardLimit,
-    leaderboardGrouping,
-    setLeaderboardGrouping,
-    leaderboardLoading,
-    leaderboardError,
-    selectedRange,
-    activeParticipantId,
-    accountRows,
-    rutRows,
-    displayedLeaderboard,
-    quickMonthOptions,
-    loadParticipant,
+
+    // Handlers
     handleSubmit,
     handleSelectParticipant,
   };
