@@ -1,14 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
+import { DataTable } from "@/components/data-table/DataTable";
 import Button from "@/components/ui/Button";
 import { type Employee, fetchEmployees } from "@/features/hr/employees/api";
 import type { Role as AvailableRole } from "@/types/roles";
 
 import type { RoleMapping } from "../api";
 import { fetchRoles, getRoleMappings, saveRoleMapping } from "../api";
-
-type ExtendedRoleMapping = RoleMapping & { isNew?: boolean; isModified?: boolean };
+import type { ExtendedRoleMapping } from "./RoleMappingColumns";
+import { getColumns } from "./RoleMappingColumns";
 
 export default function RoleMappingManager() {
   const queryClient = useQueryClient();
@@ -35,7 +36,12 @@ export default function RoleMappingManager() {
   const saveMutation = useMutation({
     mutationFn: async (changedMappings: ExtendedRoleMapping[]) => {
       await Promise.all(
-        changedMappings.map((m) => saveRoleMapping({ employee_role: m.employee_role, app_role: m.app_role }))
+        changedMappings.map((m) =>
+          saveRoleMapping({
+            employee_role: m.employee_role,
+            app_role: m.app_role,
+          })
+        )
       );
       return getRoleMappings();
     },
@@ -64,7 +70,12 @@ export default function RoleMappingManager() {
           return { ...existing, isNew: false, isModified: false };
         }
         const defaultRole = roles.find((r: AvailableRole) => r.name === "VIEWER")?.name || roles[0]?.name || "";
-        return { employee_role: resultRole, app_role: defaultRole, isNew: true, isModified: false };
+        return {
+          employee_role: resultRole,
+          app_role: defaultRole,
+          isNew: true,
+          isModified: false,
+        };
       });
 
       setMappings(allRoles);
@@ -72,10 +83,18 @@ export default function RoleMappingManager() {
   }, [data]);
 
   const handleRoleChange = (employeeRole: string, newAppRole: string) => {
-    setMappings(
-      mappings.map((m) => (m.employee_role === employeeRole ? { ...m, app_role: newAppRole, isModified: !m.isNew } : m))
+    setMappings((prev) =>
+      prev.map((m) => (m.employee_role === employeeRole ? { ...m, app_role: newAppRole, isModified: !m.isNew } : m))
     );
   };
+
+  const columns = useMemo(
+    () => getColumns(availableRoles, handleRoleChange),
+    [availableRoles] // handleRoleChange is now stable-ish because setMappings uses functional update, but variable handleRoleChange itself changes every render?
+    // No, arrow function in render. Use useMemo or just pass it efficiently.
+    // IMPORTANT: Since handleRoleChange is defined in render, it changes every render.
+    // The Columns will be regenerated every render. But that's okay for now, DataTable handles it.
+  );
 
   const handleSave = async () => {
     const changedMappings = mappings.filter((m) => m.isNew || m.isModified);
@@ -100,14 +119,6 @@ export default function RoleMappingManager() {
     return <div className="text-primary bg-base-100 p-6 text-sm">Cargando configuración de roles...</div>;
   }
 
-  /* Rest of render logic... */
-  // Need to ensure I don't break return statement below.
-  // The snippet I'm replacing includes `if (loading)` and up to line 100.
-  // I need to provide the render part or keep it.
-  // The replace call target ends at 143 (end of file?).
-  // Wait, the file has 143 lines? Previous view_file showed lines 1-100.
-  // I should check total lines.
-
   return (
     <div className="bg-base-100 space-y-4 rounded-xl p-6 shadow-sm">
       <div className="flex items-center justify-between">
@@ -119,43 +130,7 @@ export default function RoleMappingManager() {
         Asigna qué rol de aplicación tendrán los empleados automáticamente según su cargo en la ficha.
       </p>
 
-      <div className="overflow-x-auto">
-        <table className="table w-full">
-          <thead>
-            <tr>
-              <th>Cargo en Ficha</th>
-              <th>Rol en Aplicación</th>
-            </tr>
-          </thead>
-          <tbody>
-            {mappings.map((mapping) => (
-              <tr key={mapping.employee_role}>
-                <td className="font-medium">{mapping.employee_role}</td>
-                <td>
-                  <select
-                    className="select select-bordered select-sm w-full max-w-xs"
-                    value={mapping.app_role}
-                    onChange={(e) => handleRoleChange(mapping.employee_role, e.target.value)}
-                  >
-                    {availableRoles.map((role) => (
-                      <option key={role.id} value={role.name} title={role.description || ""}>
-                        {role.name}
-                      </option>
-                    ))}
-                  </select>
-                </td>
-              </tr>
-            ))}
-            {mappings.length === 0 && (
-              <tr>
-                <td colSpan={2} className="text-base-content/50 py-4 text-center text-sm italic">
-                  No se encontraron cargos de empleados.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      <DataTable data={mappings} columns={columns} enableToolbar={false} pagination={{ pageIndex: 0, pageSize: 100 }} />
 
       <div className="flex justify-end pt-2">
         <Button
