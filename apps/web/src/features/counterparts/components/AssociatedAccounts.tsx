@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import type { ChangeEvent, FocusEvent } from "react";
-import { Fragment, useEffect, useMemo, useState } from "react";
+import type { ChangeEvent } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { DataTable } from "@/components/data-table/DataTable";
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
@@ -26,6 +27,7 @@ import {
   buildAccountTransactionFilter,
   DateRange,
 } from "./AssociatedAccounts.helpers";
+import { getAccountGroupColumns, getQuickViewColumns } from "./AssociatedAccountsColumns";
 
 interface AssociatedAccountsProps {
   selectedId: number | null;
@@ -72,8 +74,6 @@ export default function AssociatedAccounts({
     staleTime: 1000 * 60,
   });
 
-  // Sync query result to local state if needed, or just use `suggestions` directly in render.
-  // The original code set `accountSuggestions` state. We can use `suggestions` directly.
   const accountSuggestions = suggestions;
 
   const queryClient = useQueryClient();
@@ -82,8 +82,12 @@ export default function AssociatedAccounts({
     mutationFn: (payload: { id: number; data: Parameters<typeof addCounterpartAccount>[1] }) =>
       addCounterpartAccount(payload.id, payload.data),
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["counterpart-detail", variables.id] });
-      queryClient.invalidateQueries({ queryKey: ["counterpart-summary", variables.id] });
+      queryClient.invalidateQueries({
+        queryKey: ["counterpart-detail", variables.id],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["counterpart-summary", variables.id],
+      });
       setAccountForm(ACCOUNT_FORM_DEFAULT);
       setSuggestionQuery("");
       setIsAddAccountModalOpen(false);
@@ -129,8 +133,12 @@ export default function AssociatedAccounts({
       updateCounterpartAccount(id, payload),
     onSuccess: () => {
       if (selectedId) {
-        queryClient.invalidateQueries({ queryKey: ["counterpart-detail", selectedId] });
-        queryClient.invalidateQueries({ queryKey: ["counterpart-summary", selectedId] });
+        queryClient.invalidateQueries({
+          queryKey: ["counterpart-detail", selectedId],
+        });
+        queryClient.invalidateQueries({
+          queryKey: ["counterpart-summary", selectedId],
+        });
       }
       toastSuccess("Concepto actualizado");
     },
@@ -140,25 +148,29 @@ export default function AssociatedAccounts({
     },
   });
 
-  async function handleGroupConceptChange(group: AccountGroup, concept: string) {
-    const trimmed = concept.trim();
-    const nextConcept = trimmed || null;
-    setError(null);
+  const { mutateAsync: updateAccount } = updateAccountMutation;
 
-    // Using Promise.all for multiple accounts, but wrapping in a single verify/toast flow
-    try {
-      await Promise.all(
-        group.accounts.map((account) =>
-          updateAccountMutation.mutateAsync({ id: account.id, payload: { concept: nextConcept } })
-        )
-      );
-      // Invalidation is handled by onSuccess, but since we do multiple, it might trigger multiple times.
-      // Ideally we'd have a bulk update API. For now, debounce invalidation or accept it.
-      // Actually updates are fast.
-    } catch {
-      // Error handled by mutation onError, but we catch here for Promise.all
-    }
-  }
+  const handleGroupConceptChange = useCallback(
+    async (group: AccountGroup, concept: string) => {
+      const trimmed = concept.trim();
+      const nextConcept = trimmed || null;
+      setError(null);
+
+      try {
+        await Promise.all(
+          group.accounts.map((account) =>
+            updateAccount({
+              id: account.id,
+              payload: { concept: nextConcept },
+            })
+          )
+        );
+      } catch {
+        // Error handled by mutation onError
+      }
+    },
+    [updateAccount]
+  );
 
   function handleSuggestionClick(suggestion: CounterpartAccountSuggestion) {
     setAccountForm({
@@ -184,113 +196,15 @@ export default function AssociatedAccounts({
     setSuggestionQuery(suggestion.accountIdentifier);
   }
 
-  const renderQuickViewContent = () => {
-    if (quickViewLoading) {
-      return (
-        <div className="text-base-content/70 flex items-center gap-2 text-xs">
-          <span className={LOADING_SPINNER_XS} />
-          Cargando movimientos…
-        </div>
-      );
-    }
-    if (quickViewError) {
-      return (
-        <Alert variant="error" className="text-xs">
-          {quickViewError instanceof Error ? quickViewError.message : "Error al cargar movimientos"}
-        </Alert>
-      );
-    }
-    if (quickViewRows.length === 0) {
-      return <p className="text-base-content/60 text-xs">Sin movimientos dentro del rango seleccionado.</p>;
-    }
-    return (
-      <div className="overflow-x-auto">
-        <table className="text-base-content min-w-full text-xs">
-          <thead className="bg-base-100/60 text-primary">
-            <tr>
-              <th className="px-3 py-2 text-left text-xs font-semibold tracking-wide uppercase">Fecha</th>
-              <th className="px-3 py-2 text-left text-xs font-semibold tracking-wide uppercase">Descripción</th>
-              <th className="px-3 py-2 text-left text-xs font-semibold tracking-wide uppercase">Origen</th>
-              <th className="px-3 py-2 text-left text-xs font-semibold tracking-wide uppercase">Destino</th>
-              <th className="px-3 py-2 text-right text-xs font-semibold tracking-wide uppercase">Monto</th>
-            </tr>
-          </thead>
-          <tbody>
-            {quickViewRows.map((movement) => (
-              <tr key={movement.id} className="border-base-200 border-t">
-                <td className="text-base-content px-3 py-2">
-                  {dayjs(movement.transactionDate).format("DD MMM YYYY HH:mm")}
-                </td>
-                <td className="text-base-content px-3 py-2">{movement.description ?? "-"}</td>
-                <td className="text-base-content px-3 py-2">{movement.externalReference ?? "-"}</td>
-                <td className="text-base-content px-3 py-2">{movement.transactionType ?? "-"}</td>
-                <td className="text-base-content px-3 py-2 text-right">
-                  {movement.transactionAmount == null ? "-" : fmtCLP(movement.transactionAmount)}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    );
-  };
-
-  const renderSuggestions = () => {
-    if (suggestionsLoading) {
-      return <span className="text-base-content/60 text-xs">Buscando sugerencias...</span>;
-    }
-    if (accountSuggestions.length === 0) {
-      return <span className="text-base-content/60 text-xs">No hay sugerencias para este identificador.</span>;
-    }
-    return (
-      <div className="border-base-300 bg-base-100 max-h-48 overflow-y-auto rounded-xl border">
-        {accountSuggestions.map((suggestion) => (
-          <div
-            key={suggestion.accountIdentifier}
-            className="border-base-300 flex flex-col gap-1 border-b px-3 py-2 text-xs last:border-b-0"
-          >
-            <span className="text-base-content font-semibold">{suggestion.accountIdentifier}</span>
-            <span className="text-base-content/90">{suggestion.holder ?? "(sin titular)"}</span>
-            {suggestion.bankAccountNumber && (
-              <span className="text-base-content/90 text-xs">Cuenta {suggestion.bankAccountNumber}</span>
-            )}
-            {suggestion.rut && <span className="text-base-content/90 text-xs">RUT {formatRut(suggestion.rut)}</span>}
-            <span className="text-base-content/90 text-xs">
-              {suggestion.movements} mov. · {fmtCLP(suggestion.totalAmount)}
-            </span>
-            <div className="flex flex-wrap gap-2 pt-1">
-              <Button size="xs" variant="primary" onClick={() => handleSuggestionClick(suggestion)}>
-                Autrellenar
-              </Button>
-              {selectedId && suggestion.rut && (
-                <Button
-                  variant="secondary"
-                  size="xs"
-                  onClick={() => handleAttachRut(suggestion.rut)}
-                  disabled={attachRutMutation.isPending}
-                >
-                  {attachRutMutation.isPending ? "Vinculando..." : "Vincular por RUT"}
-                </Button>
-              )}
-              {!selectedId && (
-                <Button size="xs" variant="secondary" onClick={() => handleSuggestionCreate(suggestion)}>
-                  Copiar datos
-                </Button>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  };
-
   const attachRutMutation = useMutation({
     mutationFn: ({ id, rut }: { id: number; rut: string }) => attachCounterpartRut(id, rut),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["counterpart-detail", variables.id] });
-      queryClient.invalidateQueries({ queryKey: ["counterpart-summary", variables.id] });
-      // Account suggestions depend on global or other state? They are just a search.
-      // But we might want to clear them.
+      queryClient.invalidateQueries({
+        queryKey: ["counterpart-detail", variables.id],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["counterpart-summary", variables.id],
+      });
       setSuggestionQuery("");
       toastSuccess("RUT vinculado correctamente");
     },
@@ -380,8 +294,6 @@ export default function AssociatedAccounts({
 
   // --- Data Fetching with React Query ---
 
-  // Helper to fetch transactions for a specific filter
-  // Helper to fetch transactions for a specific filter
   const fetchTransactionsForFilter = async (filter: AccountTransactionFilter, range: DateRange) => {
     if (!filter.sourceId && !filter.bankAccountNumber) return [];
 
@@ -406,17 +318,7 @@ export default function AssociatedAccounts({
     return payload.data;
   };
 
-  // We need to fetch transactions for the *active* quick view group.
-  // Instead of managing state manually, we can just use useQuery!
-  // However, we have a complex logic where we might need to fetch fallback range if main range is empty.
-  // For simplicity and robustness, let's just fetch the requested range. The fallback logic
-  // in the original code seems to be "if no rows in range, try current year".
-  // Note: Implementing that specific fallback logic in pure React Query is tricky without nested queries or effects.
-  // But let's stick to the React Query "way": simple declarative fetching.
-
   const activeRange = summaryRange;
-  // Note: Original code had separate ranges per group in state.
-  // But simplify: use summaryRange for the query, matching the UI inputs.
 
   const {
     data: quickViewRows = [],
@@ -439,7 +341,6 @@ export default function AssociatedAccounts({
       const results = await Promise.all(uniqueFilters.map((filter) => fetchTransactionsForFilter(filter, activeRange)));
       const merged = results.flat();
 
-      // Deduplicate
       const dedup = new Map<number, Transaction>();
       merged.forEach((movement) => {
         if (!dedup.has(movement.id)) {
@@ -447,17 +348,9 @@ export default function AssociatedAccounts({
         }
       });
 
-      // Sort
       const sorted = [...dedup.values()].toSorted(
         (a, b) => dayjs(b.transactionDate).valueOf() - dayjs(a.transactionDate).valueOf()
       );
-
-      // Fallback logic: if empty and range is not fallback, try fallback?
-      // Implementing that inside queryFn is cleaner than effects.
-      // But only if we really want that behavior. The UI has inputs for range.
-      // If user sets a range and gets 0, maybe they want 0.
-      // The original "fallback" seemed to be an auto-expand feature.
-      // Let's implement basic fetching first. If list is empty, it's empty.
 
       return sorted;
     },
@@ -465,9 +358,9 @@ export default function AssociatedAccounts({
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
-  const handleQuickView = (group: AccountGroup) => {
+  const handleQuickView = useCallback((group: AccountGroup) => {
     setQuickViewGroup(group);
-  };
+  }, []);
 
   const quickStats = useMemo(() => {
     const rows = quickViewRows ?? [];
@@ -476,6 +369,93 @@ export default function AssociatedAccounts({
       total: rows.reduce((sum, row) => sum + (row.transactionAmount ?? 0), 0),
     };
   }, [quickViewRows]);
+
+  const accountGroupColumns = useMemo(
+    () => getAccountGroupColumns(summaryByGroup, handleGroupConceptChange, handleQuickView),
+    [summaryByGroup, handleGroupConceptChange, handleQuickView]
+  );
+
+  const quickViewColumns = useMemo(() => getQuickViewColumns(), []);
+
+  const renderQuickViewContent = () => {
+    if (quickViewLoading) {
+      return (
+        <div className="text-base-content/70 flex items-center gap-2 text-xs">
+          <span className={LOADING_SPINNER_XS} />
+          Cargando movimientos…
+        </div>
+      );
+    }
+    if (quickViewError) {
+      return (
+        <Alert variant="error" className="text-xs">
+          {quickViewError instanceof Error ? quickViewError.message : "Error al cargar movimientos"}
+        </Alert>
+      );
+    }
+
+    return (
+      <div className="border-base-200 overflow-hidden rounded-lg border">
+        <DataTable
+          data={quickViewRows}
+          columns={quickViewColumns}
+          enableToolbar={false}
+          enableVirtualization={false}
+          pagination={{ pageIndex: 0, pageSize: 50 }}
+          noDataMessage="Sin movimientos dentro del rango seleccionado."
+        />
+      </div>
+    );
+  };
+
+  const renderSuggestions = () => {
+    if (suggestionsLoading) {
+      return <span className="text-base-content/60 text-xs">Buscando sugerencias...</span>;
+    }
+    if (accountSuggestions.length === 0) {
+      return <span className="text-base-content/60 text-xs">No hay sugerencias para este identificador.</span>;
+    }
+    return (
+      <div className="border-base-300 bg-base-100 max-h-48 overflow-y-auto rounded-xl border">
+        {accountSuggestions.map((suggestion) => (
+          <div
+            key={suggestion.accountIdentifier}
+            className="border-base-300 flex flex-col gap-1 border-b px-3 py-2 text-xs last:border-b-0"
+          >
+            <span className="text-base-content font-semibold">{suggestion.accountIdentifier}</span>
+            <span className="text-base-content/90">{suggestion.holder ?? "(sin titular)"}</span>
+            {suggestion.bankAccountNumber && (
+              <span className="text-base-content/90 text-xs">Cuenta {suggestion.bankAccountNumber}</span>
+            )}
+            {suggestion.rut && <span className="text-base-content/90 text-xs">RUT {formatRut(suggestion.rut)}</span>}
+            <span className="text-base-content/90 text-xs">
+              {suggestion.movements} mov. · {fmtCLP(suggestion.totalAmount)}
+            </span>
+            <div className="flex flex-wrap gap-2 pt-1">
+              <Button size="xs" variant="primary" onClick={() => handleSuggestionClick(suggestion)}>
+                Autrellenar
+              </Button>
+              {selectedId && suggestion.rut && (
+                <Button
+                  variant="secondary"
+                  size="xs"
+                  onClick={() => handleAttachRut(suggestion.rut)}
+                  disabled={attachRutMutation.isPending}
+                >
+                  {attachRutMutation.isPending ? "Vinculando..." : "Vincular por RUT"}
+                </Button>
+              )}
+              {!selectedId && (
+                <Button size="xs" variant="secondary" onClick={() => handleSuggestionCreate(suggestion)}>
+                  Copiar datos
+                </Button>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
 
   return (
     <section className="surface-recessed relative space-y-5 p-6">
@@ -491,79 +471,18 @@ export default function AssociatedAccounts({
         </Button>
       </header>
       {error && <Alert variant="error">{error}</Alert>}
-      <div className="overflow-x-auto">
-        <table className="text-base-content min-w-full text-sm">
-          <thead className="bg-base-100/60 text-primary">
-            <tr>
-              <th className="px-3 py-2 text-left text-xs font-semibold tracking-wide uppercase">Cuenta</th>
-              <th className="px-3 py-2 text-left text-xs font-semibold tracking-wide uppercase">Banco</th>
-              <th className="px-3 py-2 text-left text-xs font-semibold tracking-wide uppercase">Titular</th>
-              <th className="px-3 py-2 text-left text-xs font-semibold tracking-wide uppercase">Concepto</th>
-              <th className="px-3 py-2 text-left text-xs font-semibold tracking-wide uppercase">Movimientos</th>
-            </tr>
-          </thead>
-          <tbody>
-            {accountGroups.map((group) => {
-              const summaryInfo = summaryByGroup.get(group.key);
-              return (
-                <Fragment key={group.key}>
-                  <tr className="border-base-300 bg-base-200 even:bg-base-300 border-b last:border-none">
-                    <td className="text-base-content px-3 py-3">
-                      <div className="text-base-content font-mono text-xs">{group.label}</div>
-                      {summaryInfo && summaryInfo.count > 0 && (
-                        <span className="bg-primary/15 text-primary mt-1 inline-flex rounded-full px-2 py-0.5 text-xs font-semibold tracking-wide uppercase">
-                          Cuenta reconocida
-                        </span>
-                      )}
-                      {group.accounts.length > 1 && (
-                        <div className="text-base-content/90 text-xs">
-                          {group.accounts.length} identificadores vinculados
-                        </div>
-                      )}
-                    </td>
-                    <td className="text-base-content px-3 py-3">{group.bankName ?? "-"}</td>
-                    <td className="text-base-content px-3 py-3">{group.holder ?? "-"}</td>
-                    <td className="px-3 py-3">
-                      {summaryInfo && summaryInfo.count > 0 ? (
-                        <Input
-                          type="text"
-                          defaultValue={group.concept}
-                          onBlur={(event: FocusEvent<HTMLInputElement>) =>
-                            handleGroupConceptChange(group, event.target.value)
-                          }
-                          className="w-full"
-                          placeholder="Concepto (ej. Compra de vacunas)"
-                        />
-                      ) : (
-                        <span className="text-base-content/60 text-xs italic">Sin movimientos</span>
-                      )}
-                    </td>
-                    <td className="text-base-content px-3 py-3">
-                      <div className="flex flex-col gap-2 text-xs">
-                        <Button variant="secondary" onClick={() => handleQuickView(group)} className="self-start">
-                          Ver movimientos
-                        </Button>
-                        <div className="text-base-content/60 text-xs">
-                          {summaryInfo
-                            ? `${summaryInfo.count} mov. · ${fmtCLP(summaryInfo.total)}`
-                            : "Sin movimientos en el rango"}
-                        </div>
-                      </div>
-                    </td>
-                  </tr>
-                </Fragment>
-              );
-            })}
-            {accountGroups.length === 0 && (
-              <tr>
-                <td colSpan={5} className="text-base-content/60 px-3 py-4 text-center text-xs">
-                  Sin cuentas asociadas.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+
+      <div className="border-base-200 bg-base-100 overflow-hidden rounded-lg border">
+        <DataTable
+          data={accountGroups}
+          columns={accountGroupColumns}
+          enableToolbar={false}
+          enableVirtualization={false}
+          pagination={{ pageIndex: 0, pageSize: 50 }}
+          noDataMessage="Sin cuentas asociadas."
+        />
       </div>
+
       <div className="space-y-4">
         {quickViewGroup ? (
           <div className="space-y-4">
@@ -603,7 +522,12 @@ export default function AssociatedAccounts({
               <Button
                 size="xs"
                 variant="ghost"
-                onClick={() => onSummaryRangeChange({ from: fallbackRange.from, to: fallbackRange.to })}
+                onClick={() =>
+                  onSummaryRangeChange({
+                    from: fallbackRange.from,
+                    to: fallbackRange.to,
+                  })
+                }
               >
                 Año en curso
               </Button>
