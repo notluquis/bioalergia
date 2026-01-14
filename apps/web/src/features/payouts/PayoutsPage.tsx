@@ -8,7 +8,7 @@ import { usePayouts } from "./hooks/usePayouts";
 export default function PayoutsPage() {
   const { can } = useAuth();
   const canView = can("read", "ReleaseTransaction"); // Assuming same permission as logic
-  const { payouts, isLoading, isError } = usePayouts();
+  const { payouts } = usePayouts();
 
   if (!canView) {
     return (
@@ -27,11 +27,7 @@ export default function PayoutsPage() {
         </div>
       </div>
 
-      {isError ? (
-        <Alert variant="error">Ocurrió un error al cargar los retiros. Por favor, intenta nuevamente.</Alert>
-      ) : (
-        <DataTable columns={columns} data={payouts} isLoading={isLoading} enableVirtualization />
-      )}
+      <DataTable columns={columns} data={payouts} enableVirtualization noDataMessage="No hay retiros registrados." />
     </div>
   );
 }

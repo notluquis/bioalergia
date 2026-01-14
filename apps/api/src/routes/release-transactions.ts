@@ -23,6 +23,7 @@ app.get("/", async (c) => {
     to: z.string().optional(),
     paymentMethod: z.string().optional(),
     search: z.string().optional(),
+    descriptions: z.string().optional(),
   });
 
   const parsed = querySchema.safeParse(query);
@@ -31,7 +32,8 @@ app.get("/", async (c) => {
     return c.json({ status: "error", message: "Invalid params" }, 400);
   }
 
-  const { page, pageSize, from, to, paymentMethod, search } = parsed.data;
+  const { page, pageSize, from, to, paymentMethod, search, descriptions } =
+    parsed.data;
   const offset = (page - 1) * pageSize;
 
   // Build where clause
@@ -47,6 +49,11 @@ app.get("/", async (c) => {
 
   if (paymentMethod) {
     where.paymentMethod = paymentMethod;
+  }
+
+  if (descriptions) {
+    const list = descriptions.split(",").map((d) => d.trim());
+    where.description = { in: list };
   }
 
   if (search) {
@@ -101,7 +108,7 @@ app.get("/:id", async (c) => {
   if (!transaction) {
     return c.json(
       { status: "error", message: "Transacción no encontrada" },
-      404
+      404,
     );
   }
 

@@ -11,6 +11,13 @@ export const Route = createFileRoute("/_authed/operations/supplies")({
       throw redirect({ to: "/" });
     }
   },
+  loader: async ({ context: { queryClient } }) => {
+    const { supplyQueries } = await import("@/features/supplies/queries");
+    await Promise.all([
+      queryClient.ensureQueryData(supplyQueries.requests()),
+      queryClient.ensureQueryData(supplyQueries.common()),
+    ]);
+  },
   component: () => (
     <Suspense fallback={<PageLoader />}>
       <SuppliesPage />
