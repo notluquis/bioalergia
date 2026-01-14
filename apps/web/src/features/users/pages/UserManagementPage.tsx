@@ -5,63 +5,27 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
-import {
-  Fingerprint,
-  Key,
-  Lock,
-  MoreVertical,
-  Search,
-  Shield,
-  ShieldCheck,
-  Trash2,
-  UserCog,
-  UserPlus,
-} from "lucide-react";
-import { useState } from "react";
+import { Key, Shield, UserCog, UserPlus } from "lucide-react";
+import { useMemo, useState } from "react";
 
+import { DataTable } from "@/components/data-table/DataTable";
 import Button from "@/components/ui/Button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/DropdownMenu";
-import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import { deleteUserPasskey, resetUserPassword, toggleUserMfa } from "@/features/users/api";
+import { getColumns } from "@/features/users/components/columns";
 import type { User } from "@/features/users/types";
-import { getPersonFullName, getPersonInitials } from "@/lib/person";
-import { BADGE_SM, PAGE_CONTAINER } from "@/lib/styles";
-import { cn } from "@/lib/utils";
+import { getPersonFullName } from "@/lib/person";
+import { PAGE_CONTAINER } from "@/lib/styles";
 
 dayjs.extend(relativeTime);
 dayjs.locale("es");
-
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case "ACTIVE": {
-      return "badge-success";
-    }
-    case "PENDING_SETUP": {
-      return "badge-warning";
-    }
-    case "SUSPENDED": {
-      return "badge-error";
-    }
-    default: {
-      return "badge-ghost";
-    }
-  }
-};
 
 export default function UserManagementPage() {
   useAuth(); // Keep context mounted
   const { success, error } = useToast();
   const queryClient = useQueryClient();
-  const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("ALL");
 
   const [editingUser, setEditingUser] = useState<User | null>(null);
@@ -76,29 +40,33 @@ export default function UserManagementPage() {
   // Filter out test/debug emails client-side (ZenStack where has limited support)
   // Transform ZenStack data to frontend User type
   type ZenStackUser = NonNullable<typeof usersData>[number];
-  const users: User[] = (usersData ?? [])
-    .filter((u: ZenStackUser) => !u.email?.includes("test") && !u.email?.includes("debug"))
-    .map((u: ZenStackUser) => {
-      const raw = u as Record<string, unknown>;
-      const passkeys = (raw.passkeys as unknown[] | undefined) ?? [];
-      const roles = (raw.roles as Array<{ role?: { name?: string } }> | undefined) ?? [];
-      const personData = raw.person as { names?: string; fatherName?: string | null; rut?: string } | undefined;
-      return {
-        id: u.id,
-        email: u.email,
-        role: roles[0]?.role?.name ?? "",
-        mfaEnabled: u.mfaEnabled ?? false,
-        passkeysCount: passkeys.length,
-        hasPasskey: passkeys.length > 0,
-        status: u.status as User["status"],
-        createdAt: (raw.createdAt as Date)?.toISOString() ?? new Date().toISOString(),
-        person: {
-          names: personData?.names ?? "",
-          fatherName: personData?.fatherName ?? null,
-          rut: personData?.rut ?? "",
-        },
-      };
-    });
+
+  // Memoize users data
+  const users: User[] = useMemo(() => {
+    return (usersData ?? [])
+      .filter((u: ZenStackUser) => !u.email?.includes("test") && !u.email?.includes("debug"))
+      .map((u: ZenStackUser) => {
+        const raw = u as Record<string, unknown>;
+        const passkeys = (raw.passkeys as unknown[] | undefined) ?? [];
+        const roles = (raw.roles as Array<{ role?: { name?: string } }> | undefined) ?? [];
+        const personData = raw.person as { names?: string; fatherName?: string | null; rut?: string } | undefined;
+        return {
+          id: u.id,
+          email: u.email,
+          role: roles[0]?.role?.name ?? "",
+          mfaEnabled: u.mfaEnabled ?? false,
+          passkeysCount: passkeys.length,
+          hasPasskey: passkeys.length > 0,
+          status: u.status as User["status"],
+          createdAt: (raw.createdAt as Date)?.toISOString() ?? new Date().toISOString(),
+          person: {
+            names: personData?.names ?? "",
+            fatherName: personData?.fatherName ?? null,
+            rut: personData?.rut ?? "",
+          },
+        };
+      });
+  }, [usersData]);
 
   // ZenStack hooks for roles (for filter dropdown)
   const { data: rolesData } = useFindManyRole({
@@ -106,22 +74,86 @@ export default function UserManagementPage() {
   });
   const roles = rolesData ?? [];
 
-  // ZenStack mutations
-  // ZenStack mutations
+  // Mutations
   const updateUserMutation = useUpdateUser();
   const deleteUserMutation = useDeleteUser();
 
-  const handleEditRoleClick = (user: User) => {
-    setEditingUser(user);
-    setSelectedRole(user.role);
-  };
+  // Actions Handlers
+  const actions = useMemo(
+    () => ({
+      onEditRole: (user: User) => {
+        setEditingUser(user);
+        setSelectedRole(user.role);
+      },
+      onToggleMfa: async (id: number, current: boolean) => {
+        const action = current ? "desactivar" : "activar";
+        if (confirm(`¿Estás seguro de ${action} MFA para este usuario?`)) {
+          try {
+            await toggleUserMfa(id, !current);
+            queryClient.invalidateQueries({ queryKey: ["user"] });
+            success("Estado MFA actualizado correctamente");
+          } catch (error_) {
+            error(error_ instanceof Error ? error_.message : "Error desconocido");
+          }
+        }
+      },
+      onResetPassword: async (id: number) => {
+        if (confirm("¿Restablecer contraseña? Esto generará una clave temporal.")) {
+          try {
+            const tempPassword = await resetUserPassword(id);
+            success("Contraseña restablecida");
+            queryClient.invalidateQueries({ queryKey: ["user"] });
+            alert(`Contraseña temporal: ${tempPassword}`);
+          } catch (error_) {
+            error(error_ instanceof Error ? error_.message : "Error al restablecer");
+          }
+        }
+      },
+      onDeletePasskey: async (id: number) => {
+        if (confirm("¿Eliminar Passkey?")) {
+          try {
+            await deleteUserPasskey(id);
+            success("Passkey eliminado");
+            queryClient.invalidateQueries({ queryKey: ["user"] });
+          } catch {
+            error("Error al eliminar Passkey");
+          }
+        }
+      },
+      onToggleStatus: async (id: number, currentStatus: string) => {
+        const newStatus = currentStatus === "SUSPENDED" ? "ACTIVE" : "SUSPENDED";
+        const action = newStatus === "ACTIVE" ? "reactivar" : "suspender";
+        if (confirm(`¿${action} usuario?`)) {
+          try {
+            await updateUserMutation.mutateAsync({
+              where: { id },
+              data: { status: newStatus },
+            });
+            success(`Usuario ${newStatus === "ACTIVE" ? "reactivado" : "suspendido"}`);
+          } catch (error_) {
+            error(error_ instanceof Error ? error_.message : "Error al actualizar estado");
+          }
+        }
+      },
+      onDeleteUser: async (id: number) => {
+        if (confirm("¿Eliminar usuario permanentemente?")) {
+          try {
+            await deleteUserMutation.mutateAsync({ where: { id } });
+            success("Usuario eliminado");
+          } catch (error_) {
+            error(error_ instanceof Error ? error_.message : "Error al eliminar");
+          }
+        }
+      },
+    }),
+    [deleteUserMutation, error, queryClient, success, updateUserMutation]
+  );
+
+  const columns = useMemo(() => getColumns(actions), [actions]);
 
   const handleSaveRole = async () => {
     if (!editingUser) return;
     try {
-      // Note: User model doesn't have a single 'role' field.
-      // It uses UserRoleAssignment for role management.
-      // For now, show a message - this requires a proper role assignment API.
       error("La actualización de roles requiere implementación de UserRoleAssignment");
       setEditingUser(null);
     } catch (error_) {
@@ -129,88 +161,11 @@ export default function UserManagementPage() {
     }
   };
 
-  const handleDeletePasskey = async (userId: number) => {
-    if (confirm("¿Estás seguro de eliminar el Passkey de este usuario?")) {
-      try {
-        await deleteUserPasskey(userId);
-        success("Passkey eliminado");
-        queryClient.invalidateQueries({ queryKey: ["user"] });
-      } catch {
-        error("Error al eliminar Passkey");
-      }
-    }
-  };
-
-  const handleResetPassword = async (userId: number) => {
-    if (confirm("¿Restablecer contraseña? Esto generará una clave temporal y requerirá configuración nueva.")) {
-      try {
-        const tempPassword = await resetUserPassword(userId);
-        success(`Contraseña restablecida. Temporal: ${tempPassword}`);
-        queryClient.invalidateQueries({ queryKey: ["user"] });
-        alert(`Contraseña temporal: ${tempPassword}\n\nPor favor compártela con el usuario de forma segura.`);
-      } catch (error_) {
-        error(error_ instanceof Error ? error_.message : "Error al restablecer contraseña");
-      }
-    }
-  };
-
-  const handleDeleteUser = async (userId: number) => {
-    if (
-      confirm("¿Estás seguro de eliminar este usuario? Esta acción no se puede deshacer y borrará sus roles y accesos.")
-    ) {
-      try {
-        await deleteUserMutation.mutateAsync({
-          where: { id: userId },
-        });
-        success("Usuario eliminado correctamente");
-      } catch (error_) {
-        error(error_ instanceof Error ? error_.message : "Error al eliminar usuario");
-      }
-    }
-  };
-
-  const handleToggleStatus = async (userId: number, currentStatus: string) => {
-    const newStatus = currentStatus === "SUSPENDED" ? "ACTIVE" : "SUSPENDED";
-    const action = newStatus === "ACTIVE" ? "reactivar" : "suspender";
-    if (confirm(`¿Estás seguro de ${action} a este usuario?`)) {
-      try {
-        await updateUserMutation.mutateAsync({
-          where: { id: userId },
-          data: { status: newStatus },
-        });
-        success(`Usuario ${newStatus === "ACTIVE" ? "reactivado" : "suspendido"}`);
-      } catch (error_) {
-        error(error_ instanceof Error ? error_.message : "Error al actualizar estado");
-      }
-    }
-  };
-
-  const handleToggleMfa = async (userId: number, currentMfa: boolean) => {
-    const action = currentMfa ? "desactivar" : "activar";
-    if (confirm(`¿Estás seguro de ${action} MFA para este usuario?`)) {
-      try {
-        await toggleUserMfa(userId, !currentMfa);
-        queryClient.invalidateQueries({ queryKey: ["user"] });
-        success("Estado MFA actualizado correctamente");
-      } catch (error_) {
-        error(error_ instanceof Error ? error_.message : "Error desconocido");
-      }
-    }
-  };
-
-  const filteredUsers = users?.filter((user) => {
-    const matchesSearch =
-      user.email.toLowerCase().includes(search.toLowerCase()) ||
-      (user.person?.names?.toLowerCase() ?? "").includes(search.toLowerCase()) ||
-      (user.person?.rut ?? "").includes(search);
-
-    const matchesRole =
-      roleFilter === "ALL" ||
-      user.role === roleFilter ||
-      (user.role || "").toUpperCase() === (roleFilter || "").toUpperCase();
-
-    return matchesSearch && matchesRole;
-  });
+  // Filter users based on role filter (client side)
+  const filteredUsers = useMemo(() => {
+    if (roleFilter === "ALL") return users;
+    return users.filter((u) => u.role === roleFilter || (u.role || "").toUpperCase() === roleFilter.toUpperCase());
+  }, [users, roleFilter]);
 
   return (
     <div className={PAGE_CONTAINER}>
@@ -263,189 +218,34 @@ export default function UserManagementPage() {
 
       {/* User Management Table */}
       <div className="surface-elevated rounded-2xl p-4">
-        <div className="mb-4 flex flex-col gap-4 sm:flex-row">
-          <div className="relative flex-1">
-            <Search className="text-base-content/40 absolute top-1/2 left-3 size-4 -translate-y-1/2" />
-            <Input
-              placeholder="Buscar por nombre, email o RUT..."
-              className="pl-10"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+        <div className="mb-4 flex flex-col items-end justify-between gap-4 sm:flex-row">
+          {/* Custom Role Filter */}
+          <div className="w-full sm:w-48">
+            <label className="label py-0 pb-1" htmlFor="role-filter">
+              <span className="label-text-alt">Filtrar por rol</span>
+            </label>
+            <select
+              id="role-filter"
+              className="select select-bordered w-full"
+              value={roleFilter}
+              onChange={(e) => setRoleFilter(e.target.value)}
+            >
+              <option value="ALL">Todos los roles</option>
+              {roles?.map((role: { name: string }) => (
+                <option key={role.name} value={role.name}>
+                  {role.name}
+                </option>
+              ))}
+            </select>
           </div>
-          <select
-            className="select select-bordered w-full sm:w-48"
-            value={roleFilter}
-            onChange={(e) => setRoleFilter(e.target.value)}
-          >
-            <option value="ALL">Todos los roles</option>
-            {roles?.map((role: { name: string }) => (
-              <option key={role.name} value={role.name}>
-                {role.name}
-              </option>
-            ))}
-          </select>
+
           <Link to="/settings/users/add" className="btn btn-primary gap-2">
             <UserPlus size={20} />
             Agregar usuario
           </Link>
         </div>
 
-        <div className="min-h-96 overflow-x-auto pb-32">
-          <table className="table w-full">
-            <thead>
-              <tr>
-                <th>Usuario</th>
-                <th>Rol</th>
-                <th>Estado</th>
-                <th className="w-16 text-center">MFA</th>
-                <th className="w-16 text-center">Passkey</th>
-                <th>Creado</th>
-                <th className="w-10"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {(() => {
-                if (isLoading) {
-                  return (
-                    <tr>
-                      <td colSpan={7} className="text-base-content/60 py-8 text-center">
-                        Cargando usuarios...
-                      </td>
-                    </tr>
-                  );
-                }
-
-                if (!filteredUsers || filteredUsers.length === 0) {
-                  return (
-                    <tr>
-                      <td colSpan={7} className="text-base-content/60 py-8 text-center">
-                        No se encontraron usuarios
-                      </td>
-                    </tr>
-                  );
-                }
-
-                return (
-                  <>
-                    {filteredUsers.map((user) => (
-                      <tr key={user.id} className="hover:bg-base-200/50">
-                        <td className="whitespace-nowrap">
-                          <div className="flex items-center gap-3">
-                            <div className="avatar placeholder">
-                              <div className="bg-neutral text-neutral-content flex h-10 w-10 items-center justify-center rounded-full">
-                                <span className="text-xs font-bold">{getPersonInitials(user.person)}</span>
-                              </div>
-                            </div>
-                            <div>
-                              <div className="font-bold">{getPersonFullName(user.person)}</div>
-                              <div className="text-xs opacity-50">{user.email}</div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="whitespace-nowrap">
-                          <span className="badge badge-ghost badge-sm font-medium whitespace-nowrap">{user.role}</span>
-                        </td>
-                        <td className="whitespace-nowrap">
-                          <div className={cn(BADGE_SM, "w-fit gap-2 whitespace-nowrap", getStatusColor(user.status))}>
-                            {user.status === "ACTIVE" && <div className="size-1.5 rounded-full bg-current" />}
-                            {user.status}
-                          </div>
-                        </td>
-                        {/* MFA Icon Only */}
-                        <td className="text-center align-middle">
-                          <div className="flex justify-center">
-                            {user.mfaEnabled ? (
-                              <div className="tooltip" data-tip="MFA activado">
-                                <ShieldCheck className="text-success size-5" />
-                              </div>
-                            ) : (
-                              <div className="tooltip" data-tip="MFA inactivo">
-                                <ShieldCheck className="text-base-content/20 size-5" />
-                              </div>
-                            )}
-                          </div>
-                        </td>
-                        {/* Passkey Icon Only */}
-                        <td className="text-center align-middle">
-                          <div className="flex justify-center">
-                            {user.hasPasskey ? (
-                              <div className="tooltip" data-tip="Passkey configurado">
-                                <Fingerprint size={5} className="text-success size-5" />
-                              </div>
-                            ) : (
-                              <div className="tooltip" data-tip="Sin passkey">
-                                <Fingerprint className="text-base-content/20 size-5" />
-                              </div>
-                            )}
-                          </div>
-                        </td>
-                        <td className="text-base-content/70 text-sm">{dayjs(user.createdAt).format("DD MMM YYYY")}</td>
-                        <td>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <button type="button" className="btn btn-ghost btn-xs">
-                                <MoreVertical size={16} />
-                              </button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-56">
-                              <DropdownMenuItem onClick={() => handleEditRoleClick(user)}>
-                                <UserCog className="mr-2 h-4 w-4" />
-                                Editar rol
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleToggleMfa(user.id, user.mfaEnabled)}>
-                                <ShieldCheck className="mr-2 h-4 w-4" />
-                                {user.mfaEnabled ? "Desactivar" : "Activar"} MFA
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleResetPassword(user.id)}>
-                                <Key className="mr-2 h-4 w-4" />
-                                Restablecer contraseña
-                              </DropdownMenuItem>
-                              {user.hasPasskey && (
-                                <DropdownMenuItem
-                                  onClick={() => handleDeletePasskey(user.id)}
-                                  className="text-warning focus:text-warning"
-                                >
-                                  <Trash2 className="mr-2 h-4 w-4" />
-                                  Eliminar passkey
-                                </DropdownMenuItem>
-                              )}
-                              {user.status === "SUSPENDED" ? (
-                                <DropdownMenuItem
-                                  onClick={() => handleToggleStatus(user.id, user.status)}
-                                  className="text-success focus:text-success"
-                                >
-                                  <Shield className="mr-2 h-4 w-4" />
-                                  Reactivar acceso
-                                </DropdownMenuItem>
-                              ) : (
-                                <DropdownMenuItem
-                                  onClick={() => handleToggleStatus(user.id, user.status)}
-                                  className="text-warning focus:text-warning"
-                                >
-                                  <Lock className="mr-2 h-4 w-4" />
-                                  Suspender acceso
-                                </DropdownMenuItem>
-                              )}
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                onClick={() => handleDeleteUser(user.id)}
-                                className="text-error focus:text-error"
-                              >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Eliminar usuario
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </td>
-                      </tr>
-                    ))}
-                  </>
-                );
-              })()}
-            </tbody>
-          </table>
-        </div>
+        <DataTable columns={columns} data={filteredUsers} isLoading={isLoading} enableToolbar={true} />
       </div>
 
       <Modal
