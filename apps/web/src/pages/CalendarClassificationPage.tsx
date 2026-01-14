@@ -3,7 +3,7 @@ import "dayjs/locale/es";
 import * as Toast from "@radix-ui/react-toast";
 import * as Tooltip from "@radix-ui/react-tooltip";
 import { useForm, useStore } from "@tanstack/react-form";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { useEffect, useState } from "react";
 
@@ -12,14 +12,13 @@ import Button from "@/components/ui/Button";
 import { StatCard } from "@/components/ui/StatCard";
 import {
   classifyCalendarEvent,
-  fetchClassificationOptions,
-  fetchUnclassifiedCalendarEvents,
   type MissingFieldFilters,
   reclassifyAllCalendarEvents,
   reclassifyCalendarEvents,
 } from "@/features/calendar/api";
 import { ClassificationRow } from "@/features/calendar/components/ClassificationRow";
 import { ClassificationTotals } from "@/features/calendar/components/ClassificationTotals";
+import { calendarQueries } from "@/features/calendar/queries";
 import { type ClassificationEntry, type FormValues } from "@/features/calendar/schemas";
 import type { CalendarUnclassifiedEvent } from "@/features/calendar/types";
 import {
@@ -46,20 +45,13 @@ function CalendarClassificationPage() {
 
   const {
     data,
-    isLoading: loading,
     error: queryError,
     refetch,
-  } = useQuery({
-    queryKey: ["calendar-unclassified", page, PAGE_SIZE, filters],
-    queryFn: () => fetchUnclassifiedCalendarEvents(PAGE_SIZE, page * PAGE_SIZE, filters),
-  });
+    isFetching: loading,
+  } = useSuspenseQuery(calendarQueries.unclassified(page, PAGE_SIZE, filters));
 
   // Fetch classification options from backend (single source of truth)
-  const { data: optionsData } = useQuery({
-    queryKey: ["classification-options"],
-    queryFn: fetchClassificationOptions,
-    staleTime: 1000 * 60 * 60, // Cache for 1 hour - options rarely change
-  });
+  const { data: optionsData } = useSuspenseQuery(calendarQueries.options());
 
   const categoryChoices = optionsData?.categories ?? [];
   const treatmentStageChoices = optionsData?.treatmentStages ?? [];
