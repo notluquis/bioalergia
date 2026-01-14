@@ -46,15 +46,15 @@ interface DataTableProps<TData, TValue> {
   /**
    * Faceted filters for specific columns
    */
-  /**
-   * Faceted filters for specific columns
-   */
   filters?: DataTableFilterOption[];
   /**
    * Metadata to pass to table instance (useful for actions)
    */
-
   meta?: any;
+  /**
+   * Custom message when no data is available
+   */
+  noDataMessage?: string;
 }
 
 const getCommonPinningStyles = <TData,>(column: Column<TData>): CSSProperties => {
@@ -89,6 +89,7 @@ export function DataTable<TData, TValue>({
   enableToolbar = true,
   filters = [],
   meta,
+  noDataMessage = "No hay resultados.",
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
@@ -166,7 +167,7 @@ export function DataTable<TData, TValue>({
       return (
         <tr>
           <td colSpan={columns.length} className="text-base-content/60 h-24 text-center italic">
-            No hay resultados.
+            {noDataMessage}
           </td>
         </tr>
       );
