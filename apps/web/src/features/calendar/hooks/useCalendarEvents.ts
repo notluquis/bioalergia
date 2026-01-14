@@ -8,6 +8,7 @@ import { useToast } from "@/context/ToastContext";
 import { calendarFilterStore, updateFilters } from "@/store/calendarFilters";
 
 import { fetchCalendarDaily, fetchCalendarSummary, fetchCalendarSyncLogs, syncCalendarEvents } from "../api";
+import { calendarSyncQueries } from "../queries";
 import type { CalendarDaily, CalendarFilters, CalendarSummary, CalendarSyncLog, CalendarSyncStep } from "../types";
 
 type SyncProgressStatus = "pending" | "in_progress" | "completed" | "error";
@@ -21,7 +22,7 @@ const SYNC_STEPS_TEMPLATE: Array<{ id: CalendarSyncStep["id"]; label: string }> 
   { id: "snapshot", label: "Guardando snapshot" },
 ];
 const STALE_SYNC_WINDOW_MS = 15 * 60 * 1000; // keep in sync with backend stale lock
-export const CALENDAR_SYNC_LOGS_QUERY_KEY = ["calendar", "sync-logs", "full"] as const;
+// Deleted CALENDAR_SYNC_LOGS_QUERY_KEY
 
 const hasFreshRunningSync = (logs: CalendarSyncLog[] | undefined) => {
   if (!logs?.length) return false;
@@ -169,12 +170,10 @@ export function useCalendarEvents() {
     data: syncLogsData = [],
     isLoading: isLoadingSyncLogs,
     refetch: refetchSyncLogs,
-  } = useQuery<CalendarSyncLog[], Error>({
-    queryKey: CALENDAR_SYNC_LOGS_QUERY_KEY,
-    queryFn: () => fetchCalendarSyncLogs(50),
+  } = useQuery({
+    ...calendarSyncQueries.logs(50),
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
-    staleTime: 30_000,
     retry: false,
     refetchInterval: (query) => resolveRefetchInterval(query.state.data),
     placeholderData: [],

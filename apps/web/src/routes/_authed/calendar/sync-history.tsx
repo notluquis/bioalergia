@@ -2,6 +2,7 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
 
 import PageLoader from "@/components/ui/PageLoader";
+import { calendarSyncQueries } from "@/features/calendar/queries";
 
 const CalendarSyncHistoryPage = lazy(() => import("@/pages/CalendarSyncHistoryPage"));
 
@@ -11,6 +12,7 @@ export const Route = createFileRoute("/_authed/calendar/sync-history")({
       throw redirect({ to: "/" });
     }
   },
+  loader: ({ context }) => context.queryClient.ensureQueryData(calendarSyncQueries.logs(50)),
   component: () => (
     <Suspense fallback={<PageLoader />}>
       <CalendarSyncHistoryPage />

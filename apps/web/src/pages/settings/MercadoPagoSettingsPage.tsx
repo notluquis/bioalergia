@@ -1,8 +1,9 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import { CheckCircle2, Clock, Download, FileText, Loader2, Plus, RefreshCw, Settings } from "lucide-react";
+import { CheckCircle2, Clock, FileText, Loader2, Plus, Settings } from "lucide-react";
 import { useState } from "react";
 
+import { DataTable } from "@/components/data-table/DataTable";
 import GenerateReportModal from "@/components/mercadopago/GenerateReportModal";
 import Button from "@/components/ui/Button";
 import {
@@ -15,8 +16,8 @@ import {
 } from "@/components/ui/DropdownMenu";
 import Modal from "@/components/ui/Modal";
 import StatCard from "@/components/ui/StatCard";
-import { Table } from "@/components/ui/Table";
 import { useToast } from "@/context/ToastContext";
+import { getMpReportColumns } from "@/features/finance/mercadopago/components/MpReportColumns";
 import { PAGE_CONTAINER } from "@/lib/styles";
 import { cn } from "@/lib/utils";
 import { ImportStats, MpReportType, MPService } from "@/services/mercadopago";
@@ -109,6 +110,14 @@ export default function MercadoPagoSettingsPage() {
       processMutation.mutate(fileName);
     }
   };
+
+  const columns = getMpReportColumns(
+    handleDownload,
+    handleProcess,
+    downloadMutation.isPending,
+    processMutation.isPending,
+    processingFile
+  );
 
   return (
     <div className={cn(PAGE_CONTAINER, "space-y-6")}>
@@ -283,105 +292,13 @@ export default function MercadoPagoSettingsPage() {
               </DropdownMenu>
             </div>
 
-            <Table
-              columns={ALL_TABLE_COLUMNS.filter((col) => visibleColumns.has(col.key)).map((col) =>
-                col.key === "actions" ? { ...col, align: "right" } : col
-              )}
-              variant="default"
-            >
-              <Table.Body
-                loading={reportsQuery.isLoading}
-                columnsCount={visibleColumns.size}
-                emptyMessage="No se encontraron reportes generados."
-              >
-                {reportsQuery.data?.map((report) => (
-                  <tr key={report.id} className="hover:bg-base-200/50 group transition-colors">
-                    {visibleColumns.has("id") && (
-                      <td className="text-base-content/60 font-mono text-xs">#{report.id}</td>
-                    )}
-                    {visibleColumns.has("date") && (
-                      <td className="text-sm whitespace-nowrap">
-                        {dayjs(report.date_created || report.begin_date).format("DD/MM/YY HH:mm")}
-                      </td>
-                    )}
-                    {visibleColumns.has("begin_date") && (
-                      <td className="text-base-content/70 text-sm whitespace-nowrap">
-                        {report.begin_date ? dayjs(report.begin_date).format("DD/MM/YYYY") : "-"}
-                      </td>
-                    )}
-                    {visibleColumns.has("end_date") && (
-                      <td className="text-base-content/70 text-sm whitespace-nowrap">
-                        {report.end_date ? dayjs(report.end_date).format("DD/MM/YYYY") : "-"}
-                      </td>
-                    )}
-                    {visibleColumns.has("file") && (
-                      <td className="text-base-content/70 max-w-40 truncate font-mono text-xs" title={report.file_name}>
-                        {report.file_name || <span className="opacity-50">-</span>}
-                      </td>
-                    )}
-                    {visibleColumns.has("source") && (
-                      <td>
-                        <span
-                          className={cn(
-                            "badge badge-sm font-medium",
-                            report.created_from === "schedule" ? "badge-outline opacity-80" : "badge-ghost"
-                          )}
-                        >
-                          {report.created_from === "schedule" ? "Automático" : "Manual"}
-                        </span>
-                      </td>
-                    )}
-                    {visibleColumns.has("status") && (
-                      <td>
-                        {report.status === "pending" ? (
-                          <span className="text-warning bg-warning/10 inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium">
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                            Generando...
-                          </span>
-                        ) : (
-                          <span className="text-success bg-success/10 inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium">
-                            <span className="bg-success h-1.5 w-1.5 rounded-full"></span>
-                            Disponible
-                          </span>
-                        )}
-                      </td>
-                    )}
-                    {visibleColumns.has("actions") && (
-                      <td className="text-right">
-                        <div className="inline-flex gap-1">
-                          <Button
-                            variant="ghost"
-                            className="h-9 w-9 p-0 sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100"
-                            onClick={(e) => report.file_name && handleDownload(e, report.file_name)}
-                            disabled={downloadMutation.isPending || report.status === "pending" || !report.file_name}
-                            title={report.status === "pending" ? "Reporte aún generándose" : "Descargar"}
-                          >
-                            {downloadMutation.isPending ? (
-                              <Loader2 className="h-5 w-5 animate-spin" />
-                            ) : (
-                              <Download className="h-5 w-5" />
-                            )}
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            className="h-9 w-9 p-0 sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100"
-                            onClick={(e) => report.file_name && handleProcess(e, report.file_name)}
-                            disabled={processMutation.isPending || report.status === "pending" || !report.file_name}
-                            title={report.status === "pending" ? "Reporte aún generándose" : "Sincronizar a BD"}
-                          >
-                            {processMutation.isPending && processingFile && processingFile === report.file_name ? (
-                              <Loader2 className="text-primary h-5 w-5 animate-spin" />
-                            ) : (
-                              <RefreshCw className="h-5 w-5" />
-                            )}
-                          </Button>
-                        </div>
-                      </td>
-                    )}
-                  </tr>
-                ))}
-              </Table.Body>
-            </Table>
+            <DataTable
+              columns={columns}
+              data={reportsQuery.data || []}
+              isLoading={isLoading}
+              noDataMessage="No se encontraron reportes generados."
+              columnVisibility={Object.fromEntries([...visibleColumns].map((key) => [key, true]))}
+            />
           </div>
         </>
       )}

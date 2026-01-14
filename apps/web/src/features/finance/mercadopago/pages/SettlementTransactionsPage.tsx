@@ -1,14 +1,16 @@
 import { useFindManySettlementTransaction } from "@finanzas/db/hooks";
-import type { SettlementTransaction } from "@finanzas/db/models";
 import dayjs from "dayjs";
 import { useState } from "react";
 
+import { DataTable } from "@/components/data-table/DataTable";
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
+import { Card, CardContent } from "@/components/ui/Card";
 import Input from "@/components/ui/Input";
-import { Table, TableBody } from "@/components/ui/Table";
 import { useAuth } from "@/context/AuthContext";
 import { today } from "@/lib/dates";
+
+import { getSettlementColumns } from "../components/SettlementColumns";
 
 const DEFAULT_PAGE_SIZE = 50;
 
@@ -24,7 +26,7 @@ export default function SettlementTransactionsPage() {
   const { can } = useAuth();
   const canView = can("read", "SettlementTransaction");
 
-  // Query Data - using correct field name 'transactionDate' from schema
+  // Query Data
   const { data: rows, isLoading } = useFindManySettlementTransaction({
     where: {
       transactionDate: {
@@ -41,16 +43,7 @@ export default function SettlementTransactionsPage() {
     setDraftFilters((prev) => ({ ...prev, ...update }));
   };
 
-  const columns = [
-    { key: "transactionDate", label: "Fecha" },
-    { key: "transactionType", label: "Tipo" },
-    { key: "transactionAmount", label: "Monto Transacción", align: "right" as const },
-    { key: "settlementNetAmount", label: "Monto Neto", align: "right" as const },
-    { key: "realAmount", label: "Monto Real", align: "right" as const },
-    { key: "couponAmount", label: "Cupón", align: "right" as const },
-    { key: "taxesAmount", label: "Impuestos", align: "right" as const },
-    { key: "installments", label: "Cuotas", align: "right" as const },
-  ];
+  const columns = getSettlementColumns();
 
   return (
     <section className="mx-auto w-full max-w-none space-y-4 p-4">
@@ -94,27 +87,21 @@ export default function SettlementTransactionsPage() {
       </div>
 
       {canView ? (
-        <Table columns={columns}>
-          <TableBody loading={isLoading} columnsCount={columns.length}>
-            {rows?.map((row: SettlementTransaction) => (
-              <tr key={row.id}>
-                <td className="px-4 py-2">{dayjs(row.transactionDate).format("DD/MM/YYYY")}</td>
-                <td className="px-4 py-2">{row.transactionType}</td>
-                <td className="px-4 py-2 text-right">{row.transactionAmount?.toString()}</td>
-                <td className="px-4 py-2 text-right">{row.settlementNetAmount?.toString()}</td>
-                <td className="px-4 py-2 text-right">{row.realAmount?.toString()}</td>
-                <td className="px-4 py-2 text-right">{row.couponAmount?.toString()}</td>
-                <td className="px-4 py-2 text-right">{row.taxesAmount?.toString()}</td>
-                <td className="px-4 py-2 text-right">{row.installments?.toString()}</td>
-              </tr>
-            ))}
-          </TableBody>
-        </Table>
+        <Card>
+          <CardContent className="p-0">
+            <DataTable
+              columns={columns}
+              data={rows || []}
+              isLoading={isLoading}
+              noDataMessage="No se encontraron conciliaciones en el rango seleccionado."
+            />
+          </CardContent>
+        </Card>
       ) : (
         <Alert variant="error">No tienes permisos para ver conciliaciones.</Alert>
       )}
 
-      {/* Simple Pagination Control */}
+      {/* Manual Pagination (To be replaced by standardized one in future, but keeping consistency with existing logic for now) */}
       <div className="flex justify-end gap-2">
         <Button
           disabled={page === 1 || isLoading}

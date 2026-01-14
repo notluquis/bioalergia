@@ -1,14 +1,16 @@
 import { useFindManyReleaseTransaction } from "@finanzas/db/hooks";
-import type { ReleaseTransaction } from "@finanzas/db/models";
 import dayjs from "dayjs";
 import { useState } from "react";
 
+import { DataTable } from "@/components/data-table/DataTable";
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
+import { Card, CardContent } from "@/components/ui/Card";
 import Input from "@/components/ui/Input";
-import { Table, TableBody } from "@/components/ui/Table";
 import { useAuth } from "@/context/AuthContext";
 import { today } from "@/lib/dates";
+
+import { getReleaseColumns } from "../components/ReleaseColumns";
 
 const DEFAULT_PAGE_SIZE = 50;
 
@@ -42,16 +44,7 @@ export default function ReleaseTransactionsPage() {
     setDraftFilters((prev) => ({ ...prev, ...update }));
   };
 
-  const columns = [
-    { key: "date", label: "Fecha" },
-    { key: "sourceId", label: "ID Origen" },
-    { key: "externalReference", label: "Ref. Externa" },
-    { key: "netCreditAmount", label: "Crédito Neto", align: "right" as const },
-    { key: "netDebitAmount", label: "Débito Neto", align: "right" as const },
-    { key: "grossAmount", label: "Monto Bruto", align: "right" as const },
-    { key: "mpFeeAmount", label: "Comisión MP", align: "right" as const },
-    { key: "financingFeeAmount", label: "Comisión Financiera", align: "right" as const },
-  ];
+  const columns = getReleaseColumns();
 
   return (
     <section className="mx-auto w-full max-w-none space-y-4 p-4">
@@ -95,27 +88,21 @@ export default function ReleaseTransactionsPage() {
       </div>
 
       {canView ? (
-        <Table columns={columns}>
-          <TableBody loading={isLoading} columnsCount={columns.length}>
-            {rows?.map((row: ReleaseTransaction) => (
-              <tr key={row.id}>
-                <td className="px-4 py-2">{dayjs(row.date).format("DD/MM/YYYY")}</td>
-                <td className="px-4 py-2">{row.sourceId}</td>
-                <td className="px-4 py-2">{row.externalReference}</td>
-                <td className="px-4 py-2 text-right">{row.netCreditAmount?.toString()}</td>
-                <td className="px-4 py-2 text-right">{row.netDebitAmount?.toString()}</td>
-                <td className="px-4 py-2 text-right">{row.grossAmount?.toString()}</td>
-                <td className="px-4 py-2 text-right">{row.mpFeeAmount?.toString()}</td>
-                <td className="px-4 py-2 text-right">{row.financingFeeAmount?.toString()}</td>
-              </tr>
-            ))}
-          </TableBody>
-        </Table>
+        <Card>
+          <CardContent className="p-0">
+            <DataTable
+              columns={columns}
+              data={rows || []}
+              isLoading={isLoading}
+              noDataMessage="No se encontraron liberaciones de fondos."
+            />
+          </CardContent>
+        </Card>
       ) : (
         <Alert variant="error">No tienes permisos para ver liberaciones.</Alert>
       )}
 
-      {/* Simple Pagination Control */}
+      {/* Manual Pagination (To be replaced by standardized one in future) */}
       <div className="flex justify-end gap-2">
         <Button
           disabled={page === 1 || isLoading}
