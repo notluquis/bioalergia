@@ -10,12 +10,15 @@ import {
   getFilteredRowModel,
   OnChangeFn,
   PaginationState,
+  RowSelectionState,
   SortingState,
   useReactTable,
   VisibilityState,
 } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import React, { CSSProperties, useRef, useState } from "react";
+
+import { cn } from "@/lib/utils";
 
 import { DataTablePagination } from "./DataTablePagination";
 import { DataTableFilterOption, DataTableToolbar } from "./DataTableToolbar";
@@ -26,6 +29,8 @@ interface DataTableProps<TData, TValue> {
   pageCount?: number;
   pagination?: PaginationState;
   onPaginationChange?: OnChangeFn<PaginationState>;
+  rowSelection?: RowSelectionState;
+  onRowSelectionChange?: OnChangeFn<RowSelectionState>;
   isLoading?: boolean;
   initialPinning?: ColumnPinningState;
   /**
@@ -55,6 +60,10 @@ interface DataTableProps<TData, TValue> {
    * Custom message when no data is available
    */
   noDataMessage?: string;
+  /**
+   * Optional handler for row clicks
+   */
+  onRowClick?: (row: TData) => void;
 }
 
 const getCommonPinningStyles = <TData,>(column: Column<TData>): CSSProperties => {
@@ -90,14 +99,25 @@ export function DataTable<TData, TValue>({
   filters = [],
   meta,
   noDataMessage = "No hay resultados.",
+  onRowClick,
+  rowSelection: controlledRowSelection,
+  onRowSelectionChange: controlledOnRowSelectionChange,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
-  const [rowSelection, setRowSelection] = useState({});
+  const [internalRowSelection, setInternalRowSelection] = useState({});
   const [expanded, setExpanded] = useState<ExpandedState>({});
+
+  const rowSelection = controlledRowSelection ?? internalRowSelection;
+  const onRowSelectionChange = controlledOnRowSelectionChange ?? setInternalRowSelection;
   const [columnPinning, setColumnPinning] = useState<ColumnPinningState>(initialPinning);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
+
+  const [internalPagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: 10,
+  });
 
   const table = useReactTable({
     data,
@@ -107,11 +127,11 @@ export function DataTable<TData, TValue>({
       sorting,
       columnVisibility,
       rowSelection,
-      pagination,
-      expanded,
-      columnPinning,
       columnFilters,
+      columnPinning,
       globalFilter,
+      pagination: pagination ?? internalPagination,
+      expanded,
     },
     meta,
     enableRowSelection: true,
@@ -122,8 +142,8 @@ export function DataTable<TData, TValue>({
     enableGlobalFilter: true,
     onSortingChange: setSorting,
     onColumnVisibilityChange: setColumnVisibility,
-    onRowSelectionChange: setRowSelection,
-    onPaginationChange: onPaginationChange,
+    onRowSelectionChange,
+    onPaginationChange: onPaginationChange ?? setPagination,
     onExpandedChange: setExpanded,
     onColumnPinningChange: setColumnPinning,
     onColumnFiltersChange: setColumnFilters,
@@ -131,6 +151,7 @@ export function DataTable<TData, TValue>({
     getCoreRowModel: getCoreRowModel(),
     getExpandedRowModel: getExpandedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    getRowId: (row: any) => row.id?.toString() ?? row.employeeId?.toString() ?? row._id?.toString(),
   });
 
   // Virtual scrolling container ref
@@ -233,7 +254,11 @@ export function DataTable<TData, TValue>({
           <React.Fragment key={row.id}>
             <tr
               data-state={row.getIsSelected() && "selected"}
-              className="hover:bg-base-100/50 border-base-200/50 border-b transition-colors last:border-0"
+              onClick={() => onRowClick?.(row.original)}
+              className={cn(
+                "hover:bg-base-100/50 data-[state=selected]:bg-primary/10 border-base-200/50 border-b transition-colors last:border-0",
+                onRowClick && "cursor-pointer"
+              )}
             >
               {row.getVisibleCells().map((cell) => (
                 <td
@@ -324,6 +349,26 @@ export function DataTable<TData, TValue>({
             >
               {renderRows()}
             </tbody>
+            {table.getFooterGroups().length > 0 && (
+              <tfoot className="bg-base-200/50 font-medium">
+                {table.getFooterGroups().map((footerGroup) => (
+                  <tr key={footerGroup.id}>
+                    {footerGroup.headers.map((header) => (
+                      <td
+                        key={header.id}
+                        className="text-base-content px-4 py-3 align-middle"
+                        style={{
+                          ...getCommonPinningStyles(header.column),
+                          width: header.getSize(),
+                        }}
+                      >
+                        {header.isPlaceholder ? null : flexRender(header.column.columnDef.footer, header.getContext())}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tfoot>
+            )}
           </table>
         </div>
       </div>
