@@ -29,6 +29,13 @@ export const Route = createFileRoute("/_authed")({
         },
       });
     }
+
+    // Force onboarding if status is pending
+    if (user.status === "PENDING_SETUP" && !location.pathname.startsWith("/onboarding")) {
+      throw redirect({
+        to: "/onboarding",
+      });
+    }
   },
   component: AuthedLayout,
 });
