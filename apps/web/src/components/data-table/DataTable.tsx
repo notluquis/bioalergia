@@ -130,16 +130,6 @@ export function DataTable<TData, TValue>({
     getCoreRowModel: getCoreRowModel(),
     getExpandedRowModel: getExpandedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
-    // getSortedRowModel: getSortedRowModel(), // Sorting is usually server-side in this app? Check existing code.
-    // Existing code didn't have getSortedRowModel, assuming server-side sorting for now since manualPagination is true?
-    // But manualPagination usually implies server-side everything.
-    // If I add getFilteredRowModel, it only works on client-side data.
-    // If pagination is manual, client-side filtering might be weird if it only filters the current page?
-    // Wait, if manualPagination is true, then data passed is likely only the current page.
-    // In that case, client-side global filtering will ONLY filter the current page data.
-    // That is often acceptable for "quick search on current page", but usually global search triggers a backend query.
-    // The previous implementation didn't have any filtering.
-    // For now, I will enable client-side filtering features as "enhancement" for whatever data is present.
   });
 
   // Virtual scrolling container ref

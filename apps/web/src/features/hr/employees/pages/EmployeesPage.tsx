@@ -1,5 +1,6 @@
 import { useUpdateEmployee } from "@finanzas/db/hooks";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import type { PaginationState } from "@tanstack/react-table";
 import { ChevronUp, Plus } from "lucide-react";
 import type { ChangeEvent } from "react";
 import { useState } from "react";
@@ -14,6 +15,7 @@ import EmployeeForm from "@/features/hr/employees/components/EmployeeForm";
 import { employeeKeys } from "@/features/hr/employees/queries";
 import type { Employee } from "@/features/hr/employees/types";
 import { PAGE_CONTAINER, TITLE_LG } from "@/lib/styles";
+// ... existing imports
 
 export default function EmployeesPage() {
   const { can } = useAuth();
@@ -24,36 +26,38 @@ export default function EmployeesPage() {
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [showForm, setShowForm] = useState(false);
 
+  // Pagination State
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: 10,
+  });
+
   // Query for employees
-  const { data: employees } = useSuspenseQuery(employeeKeys.list({ includeInactive }));
+  const { data: employees = [] } = useSuspenseQuery(employeeKeys.list({ includeInactive }));
 
   const loading = false; // Suspense handles loading
 
-  // Mutation for deactivating (Soft Delete)
-  // We use useUpdate instead of manual fetch.
-  // Assuming "deactivate" means setting status to INACTIVE.
+  // Client-side pagination logic
+  const pageCount = Math.ceil(employees.length / pagination.pageSize);
+  const paginatedEmployees = employees.slice(
+    pagination.pageIndex * pagination.pageSize,
+    (pagination.pageIndex + 1) * pagination.pageSize
+  );
+
+  // ... rest of mutation logic ...
   const updateStatusMutation = useUpdateEmployee();
-
-  // Clean up legacy mutations if they exist, but for now we map new logic:
-
   const error = (() => {
     if (updateStatusMutation.error instanceof Error) return updateStatusMutation.error.message;
     return null;
   })();
-
   const isMutating = updateStatusMutation.isPending;
 
   function handleDeactivate(id: number) {
     if (!canEdit) return;
     updateStatusMutation.mutate(
+      { where: { id }, data: { status: "INACTIVE" } },
       {
-        where: { id },
-        data: { status: "INACTIVE" },
-      },
-      {
-        onSuccess: () => {
-          queryClient.invalidateQueries({ queryKey: employeeKeys.all });
-        },
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: employeeKeys.all }),
       }
     );
   }
@@ -61,14 +65,9 @@ export default function EmployeesPage() {
   function handleActivate(id: number) {
     if (!canEdit) return;
     updateStatusMutation.mutate(
+      { where: { id }, data: { status: "ACTIVE" } },
       {
-        where: { id },
-        data: { status: "ACTIVE" },
-      },
-      {
-        onSuccess: () => {
-          queryClient.invalidateQueries({ queryKey: employeeKeys.all });
-        },
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: employeeKeys.all }),
       }
     );
   }
@@ -84,13 +83,13 @@ export default function EmployeesPage() {
   }
 
   function handleSaveSuccess() {
-    // Invalidate ZenStack's Employee query cache (uses "Employee" not "employee")
     queryClient.invalidateQueries({ queryKey: employeeKeys.all });
     handleCancel();
   }
 
   return (
     <section className={PAGE_CONTAINER}>
+      {/* ... keeping the header part ... */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <h1 className={TITLE_LG}>Equipo y tarifas</h1>
         <div className="flex items-center gap-3">
@@ -147,7 +146,10 @@ export default function EmployeesPage() {
       <div className="border-base-300 bg-base-100 rounded-2xl border p-6 shadow-sm">
         <DataTable
           columns={columns}
-          data={employees}
+          data={paginatedEmployees}
+          pageCount={pageCount}
+          pagination={pagination}
+          onPaginationChange={setPagination}
           isLoading={loading || isMutating}
           enableVirtualization
           filters={[
