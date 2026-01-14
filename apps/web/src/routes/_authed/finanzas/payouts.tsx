@@ -15,6 +15,10 @@ export const Route = createFileRoute("/_authed/finanzas/payouts")({
       throw redirect({ to: "/" });
     }
   },
+  loader: async ({ context: { queryClient } }) => {
+    const { payoutKeys } = await import("@/features/payouts/queries");
+    await queryClient.ensureQueryData(payoutKeys.list());
+  },
   component: () => (
     <Suspense fallback={<PageLoader />}>
       <PayoutsPage />

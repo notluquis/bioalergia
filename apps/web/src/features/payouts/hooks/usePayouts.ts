@@ -1,21 +1,15 @@
-import { useFindManyReleaseTransaction } from "@finanzas/db/hooks";
-import type { ReleaseTransaction } from "@finanzas/db/models";
+import { useSuspenseQuery } from "@tanstack/react-query";
+
+import { payoutKeys } from "../queries";
 
 export function usePayouts() {
-  const query = useFindManyReleaseTransaction({
-    where: {
-      OR: [{ description: "payout" }, { description: "payout_cash" }],
-    },
-    orderBy: {
-      date: "desc",
-    },
-  });
+  const { data } = useSuspenseQuery(payoutKeys.list());
 
   return {
-    payouts: (query.data ?? []) as ReleaseTransaction[],
-    isLoading: query.isLoading,
-    isError: query.isError,
-    error: query.error,
-    refetch: query.refetch,
+    payouts: data.data,
+    total: data.total,
+    page: data.page,
+    totalPages: data.totalPages,
+    refresh: async () => {}, // Handled by standard query invalidation if needed
   };
 }
