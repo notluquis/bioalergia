@@ -1,4 +1,4 @@
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
 import { useEffect, useState } from "react";
@@ -7,15 +7,14 @@ import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import { useAuth } from "@/context/AuthContext";
-import { fetchBalances } from "@/features/finance/balances/api";
 import { BalanceSummary } from "@/features/finance/balances/components/BalanceSummary";
 import { DailyBalancesPanel } from "@/features/finance/balances/components/DailyBalancesPanel";
 import { useDailyBalanceManagement } from "@/features/finance/balances/hooks/useDailyBalanceManagement";
 import { useQuickDateRange } from "@/features/finance/balances/hooks/useQuickDateRange";
-import type { BalanceDraft, BalancesApiResponse } from "@/features/finance/balances/types";
+import { balanceKeys } from "@/features/finance/balances/queries";
+import type { BalanceDraft } from "@/features/finance/balances/types";
 import { deriveInitialBalance, formatBalanceInput } from "@/features/finance/balances/utils";
 import { today } from "@/lib/dates";
-import { logger } from "@/lib/logger";
 
 export default function DailyBalances() {
   const { can } = useAuth();
@@ -30,21 +29,10 @@ export default function DailyBalances() {
     return match ? match.value : "custom";
   })();
 
-  const balancesQuery = useQuery<BalancesApiResponse, Error>({
-    queryKey: ["daily-balances", from, to],
-    queryFn: async () => {
-      logger.info("[balances] fetch:start", { from, to });
-      const payload = await fetchBalances(from, to);
-      logger.info("[balances] fetch:success", { days: payload.days.length });
-      return payload;
-    },
-    placeholderData: keepPreviousData,
-  });
+  const { data: report, refetch, isFetching } = useSuspenseQuery(balanceKeys.range(from, to));
 
-  const { data, isFetching, isLoading, error: balancesQueryError, refetch } = balancesQuery;
-  const report = data ?? null;
-  const isInitialLoading = isLoading && !report;
-  const balancesError = balancesQueryError instanceof Error ? balancesQueryError.message : null;
+  const balancesError = null; // Suspense handles errors
+  const isInitialLoading = false; // Suspense handles loading
 
   const reloadBalances = async () => {
     await refetch();

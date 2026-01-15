@@ -1,10 +1,10 @@
-import { useQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
 import { fmtCLP, formatDate } from "@/lib/format";
 
-import { fetchAllergyOverview } from "../api";
+import { inventoryKeys } from "../queries";
 import type { AllergyInventoryOverview } from "../types";
 
 function ProviderCard({ provider }: { provider: AllergyInventoryOverview["providers"][number] }) {
@@ -48,18 +48,9 @@ function ItemCard({ item }: { item: AllergyInventoryOverview }) {
 }
 
 function AllergyInventoryView() {
-  const {
-    data = [],
-    isLoading: loading,
-    error: queryError,
-    refetch,
-    isFetching,
-  } = useQuery({
-    queryKey: ["allergy-inventory-overview"],
-    queryFn: fetchAllergyOverview,
-  });
+  const { data = [], isLoading: loading, refetch, isFetching } = useSuspenseQuery(inventoryKeys.allergyOverview());
 
-  const error = queryError instanceof Error ? queryError.message : null;
+  const error = null;
 
   const grouped = (() => {
     const map = new Map<

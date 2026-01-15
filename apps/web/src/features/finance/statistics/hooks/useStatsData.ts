@@ -2,15 +2,15 @@
  * Statistics Data Hook
  */
 
-import { useQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { useState } from "react";
 
 import { useAuth } from "@/context/AuthContext";
-import { fetchBalances } from "@/features/finance/balances/api";
+import { balanceKeys } from "@/features/finance/balances/queries";
 import type { BalancesApiResponse } from "@/features/finance/balances/types";
 
-import { fetchStats, fetchTopParticipants } from "../api";
+import { statsKeys } from "../queries";
 import type { StatsResponse, TopParticipantData } from "../types";
 
 interface UseStatsDataResult {
@@ -38,28 +38,13 @@ export function useStatsData(): UseStatsDataResult {
   const canView = can("read", "Transaction");
 
   // Stats query
-  const statsQuery = useQuery<StatsResponse, Error>({
-    queryKey: ["finance-stats", { from, to }],
-    queryFn: () => fetchStats(from, to),
-    enabled: canView && Boolean(from && to),
-    staleTime: 2 * 60 * 1000,
-  });
+  const statsQuery = useSuspenseQuery(statsKeys.main(from, to));
 
   // Balances query
-  const balancesQuery = useQuery<BalancesApiResponse, Error>({
-    queryKey: ["balances-report", { from, to }],
-    queryFn: () => fetchBalances(from, to),
-    enabled: canView && Boolean(from && to),
-    staleTime: 2 * 60 * 1000,
-  });
+  const balancesQuery = useSuspenseQuery(balanceKeys.range(from, to));
 
   // Top participants query
-  const participantsQuery = useQuery<TopParticipantData[], Error>({
-    queryKey: ["top-participants", { from, to }],
-    queryFn: () => fetchTopParticipants(from, to, 10),
-    enabled: canView && Boolean(from && to),
-    staleTime: 2 * 60 * 1000,
-  });
+  const participantsQuery = useSuspenseQuery(statsKeys.participants(from, to));
 
   const refetch = async () => {
     if (!canView) return;
