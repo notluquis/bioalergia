@@ -2,7 +2,7 @@ import "dayjs/locale/es";
 
 import * as Toast from "@radix-ui/react-toast";
 import * as Tooltip from "@radix-ui/react-tooltip";
-import { useForm, useStore } from "@tanstack/react-form";
+import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { useEffect, useState } from "react";
@@ -67,9 +67,6 @@ function CalendarClassificationPage() {
   const form = useForm({
     defaultValues: { entries: [] } as FormValues,
   });
-
-  // Subscribe to entries for rendering
-  const entries = useStore(form.store, (state) => state.values.entries);
 
   // Sync form with data when events change
   useEffect(() => {
@@ -461,9 +458,7 @@ function CalendarClassificationPage() {
           {/* Events List */}
           {events.length > 0 && (
             <div className="space-y-3">
-              {entries.map((_, index) => {
-                const event = events[index];
-                if (!event) return null;
+              {events.map((event, index) => {
                 const key = eventKey(event);
 
                 return (
