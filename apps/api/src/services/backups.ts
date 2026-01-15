@@ -105,17 +105,31 @@ export async function createBackup(
   });
 
   const tables: string[] = [];
-  const backupData: Record<string, unknown[]> = {};
+  const tableStats: Record<string, { count: number; hash: string }> = {};
 
   // Scope variables for cleanup in catch block
   let success = false;
+  let writeStream: ReturnType<typeof createWriteStream> | undefined;
 
   try {
-    // Perform backup WITHOUT transaction (ZenStack v3 transaction context doesn't expose model delegates)
-    // Use direct db access instead
     const allModels = getAllModelNames();
     const totalModels = allModels.length;
-    const tableStats: Record<string, { count: number; hash: string }> = {};
+
+    // Open Write Stream
+    writeStream = createWriteStream(jsonPath, { encoding: "utf8" });
+
+    // Write Header
+    const header = JSON.stringify({
+      version: "1.0",
+      createdAt: new Date().toISOString(),
+      engine: "ZenStack/Kysely",
+      tables: allModels, // We'll list all inspected models
+    });
+
+    // We manually slice the JSON to insert "data" key
+    // Header: {"version":"1.0",...,"tables":[...]}
+    // Target: {"version":"1.0",...,"tables":[...], "data": { ... }}
+    writeStream.write(header.slice(0, -1) + ',"data":{');
 
     for (let i = 0; i < totalModels; i++) {
       const modelName = allModels[i];
@@ -129,54 +143,88 @@ export async function createBackup(
         message: `Exporting ${modelName}...`,
       });
 
+      // Write Model Key
+      if (i > 0) writeStream.write(",");
+      writeStream.write(`"${modelName}":`);
+
       try {
         const dbRecord = db as Record<string, any>;
         const modelDelegate = dbRecord[camelModelName];
 
         if (modelDelegate && typeof modelDelegate.findMany === "function") {
-          const data = await modelDelegate.findMany();
-          if (Array.isArray(data) && data.length > 0) {
-            backupData[modelName] = data;
-            tables.push(modelName);
+          const modelHash = createHash("sha256");
+          let modelCount = 0;
+          let hasWrittenRow = false;
 
-            // Compute granular stats
-            const jsonString = JSON.stringify(data, (_, value) =>
-              typeof value === "bigint" ? value.toString() : value,
-            );
+          writeStream.write("[");
+
+          // PAGINATION LOOP
+          const BATCH_SIZE = 1000;
+          let skip = 0;
+
+          while (true) {
+            const batch: any[] = await modelDelegate.findMany({
+              take: BATCH_SIZE,
+              skip: skip,
+            });
+
+            if (!Array.isArray(batch) || batch.length === 0) break;
+
+            for (const row of batch) {
+              const jsonRow = JSON.stringify(row, (_, value) =>
+                typeof value === "bigint" ? value.toString() : value,
+              );
+
+              if (hasWrittenRow) writeStream.write(",");
+              writeStream.write(jsonRow);
+
+              modelHash.update(jsonRow);
+              modelCount++;
+              hasWrittenRow = true;
+            }
+
+            skip += batch.length;
+            if (batch.length < BATCH_SIZE) break;
+
+            // Optional: Give event loop a breather
+            await new Promise((resolve) => setTimeout(resolve, 0));
+          }
+
+          writeStream.write("]");
+
+          if (modelCount > 0) {
+            tables.push(modelName);
             tableStats[modelName] = {
-              count: data.length,
-              hash: createHash("sha256").update(jsonString).digest("hex"),
+              count: modelCount,
+              hash: modelHash.digest("hex"),
             };
+          } else {
+            // Empty table, hash of empty string or null?
+            // Original logic only added stats if length > 0.
+            // But we wrote [] so it exists in JSON.
           }
         } else {
+          writeStream.write("[]"); // Empty array for missing delegate
           console.warn(
             `⚠️ Model delegate not found for ${modelName} (tried ${camelModelName})`,
           );
         }
       } catch (error) {
+        writeStream.write("[]"); // Fail safe
         console.warn(`⚠️ Skipping ${modelName}: ${error}`);
       }
     }
 
-    onProgress?.({
-      step: "compressing",
-      progress: 65,
-      message: "Writing JSON...",
+    // Close JSON
+    writeStream.write("}}");
+    writeStream.end();
+
+    // Wait for stream to finish
+    await new Promise<void>((resolve, reject) => {
+      if (!writeStream) return resolve();
+      writeStream.on("finish", resolve);
+      writeStream.on("error", reject);
     });
-
-    const jsonContent = JSON.stringify(
-      {
-        version: "1.0",
-        createdAt: new Date().toISOString(),
-        engine: "ZenStack/Kysely",
-        tables,
-        data: backupData,
-      },
-      (_, value) => (typeof value === "bigint" ? value.toString() : value),
-      0,
-    );
-
-    writeFileSync(jsonPath, jsonContent, "utf-8");
 
     const jsonStats = statSync(jsonPath);
     console.log(
@@ -192,14 +240,14 @@ export async function createBackup(
     try {
       console.log(`[Backup] Starting compression pipeline for ${jsonPath}`);
       const readStream = createReadStream(jsonPath);
-      const writeStream = createWriteStream(filepath);
+      const outputWriteStream = createWriteStream(filepath);
       const gzip = createGzip({ level: 6 });
 
       await new Promise<void>((resolve, reject) => {
         const timeout = setTimeout(() => {
           readStream.destroy();
           gzip.destroy();
-          writeStream.destroy();
+          outputWriteStream.destroy();
           reject(new Error("Compression timed out after 60 seconds"));
         }, 60000); // 60s timeout
 
@@ -214,7 +262,7 @@ export async function createBackup(
           }
         });
 
-        pipeline(readStream, gzip, writeStream)
+        pipeline(readStream, gzip, outputWriteStream)
           .then(() => {
             clearTimeout(timeout);
             resolve();
@@ -259,6 +307,7 @@ export async function createBackup(
   } catch (error) {
     // Cleanup
     try {
+      if (writeStream && !writeStream.closed) writeStream.destroy();
       if (statSync(filepath)) unlinkSync(filepath);
     } catch {}
     try {

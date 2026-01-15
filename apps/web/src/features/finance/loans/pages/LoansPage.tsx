@@ -1,6 +1,6 @@
-import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import type { ChangeEvent } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
@@ -8,7 +8,7 @@ import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
 import { useAuth } from "@/context/AuthContext";
 import { createLoan, regenerateSchedules, registerLoanPayment, unlinkLoanPayment } from "@/features/finance/loans/api";
-import LoanDetail from "@/features/finance/loans/components/LoanDetail";
+import LoanDetailSection from "@/features/finance/loans/components/LoanDetailSection";
 import LoanForm from "@/features/finance/loans/components/LoanForm";
 import LoanList from "@/features/finance/loans/components/LoanList";
 import { loanKeys } from "@/features/finance/loans/queries";
@@ -56,9 +56,6 @@ export default function LoansPage() {
     }
   }, [loans, selectedId]);
 
-  // Fetch Detail (Standard Query for detail selection)
-  const { data: detail } = useQuery(loanKeys.detail(selectedId ?? ""));
-
   // REST API mutations
   const createMutation = useMutation({
     mutationFn: createLoan,
@@ -72,7 +69,9 @@ export default function LoansPage() {
       registerLoanPayment(scheduleId, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: loanKeys.all });
-      queryClient.invalidateQueries({ queryKey: loanKeys.detail(selectedId ?? "").queryKey });
+      if (selectedId) {
+        queryClient.invalidateQueries({ queryKey: loanKeys.detail(selectedId).queryKey });
+      }
     },
   });
 
@@ -80,7 +79,9 @@ export default function LoansPage() {
     mutationFn: unlinkLoanPayment,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: loanKeys.all });
-      queryClient.invalidateQueries({ queryKey: loanKeys.detail(selectedId ?? "").queryKey });
+      if (selectedId) {
+        queryClient.invalidateQueries({ queryKey: loanKeys.detail(selectedId).queryKey });
+      }
     },
   });
 
@@ -149,10 +150,6 @@ export default function LoansPage() {
     }
   };
 
-  const selectedLoan = detail?.loan ?? null;
-  const schedules = detail?.schedules ?? [];
-  const summary = detail?.summary ?? null;
-
   if (!canView) {
     return (
       <section className={PAGE_CONTAINER}>
@@ -177,16 +174,28 @@ export default function LoansPage() {
           />
         </div>
         <div className="border-base-300 bg-base-100 min-h-[70vh] rounded-2xl border p-6 shadow-sm">
-          <LoanDetail
-            loan={selectedLoan}
-            schedules={schedules}
-            summary={summary}
-            loading={false}
-            canManage={canManage}
-            onRegenerate={handleRegenerate}
-            onRegisterPayment={openPaymentModal}
-            onUnlinkPayment={handleUnlink}
-          />
+          {!selectedId && (
+            <div className="flex h-full items-center justify-center text-center">
+              <p className="text-base-content/60 text-sm">Selecciona un préstamo para ver los detalles</p>
+            </div>
+          )}
+          {selectedId && (
+            <Suspense
+              fallback={
+                <div className="flex h-full items-center justify-center">
+                  <div className="bg-base-200 h-10 w-10 animate-spin rounded-full border-4 border-t-transparent opacity-50" />
+                </div>
+              }
+            >
+              <LoanDetailSection
+                loanId={selectedId}
+                canManage={canManage}
+                onRegenerate={handleRegenerate}
+                onRegisterPayment={openPaymentModal}
+                onUnlinkPayment={handleUnlink}
+              />
+            </Suspense>
+          )}
         </div>
       </div>
 

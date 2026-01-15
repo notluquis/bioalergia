@@ -1,6 +1,6 @@
 import "dayjs/locale/es";
 
-import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import {
@@ -20,7 +20,7 @@ import {
   RotateCcw,
   Upload,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 
 import AuditChangesPanel from "@/components/backup/AuditChangesPanel";
 import GoogleDriveConnect from "@/components/backup/GoogleDriveConnect";
@@ -440,22 +440,7 @@ function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () =>
   const { success, error: showError } = useToast();
   const queryClient = useQueryClient();
   const [isExpanded, setIsExpanded] = useState(false);
-  const [selectedTables, setSelectedTables] = useState<string[]>([]);
-  // Removed showAllTables from here as it moved to child
-
   const canRestore = can("update", "Backup");
-
-  const tablesQuery = useQuery({
-    ...backupKeys.tables(backup.id),
-    enabled: isExpanded,
-  });
-
-  // Fetch tables that have changes AFTER this backup was created
-  const tablesWithChangesQuery = useQuery({
-    ...backupKeys.tablesWithChanges(backup.createdTime),
-    enabled: isExpanded,
-    staleTime: 30_000,
-  });
 
   const restoreMutation = useMutation<{ job: RestoreJob }, Error, string[] | void>({
     mutationFn: (tables) => triggerRestore(backup.id, tables ?? undefined),
@@ -466,62 +451,6 @@ function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () =>
     },
     onError: (e) => showError(e.message),
   });
-
-  const tablesWithChanges = new Set(tablesWithChangesQuery.data || []);
-  const toggleTable = (table: string) =>
-    setSelectedTables((prev) => (prev.includes(table) ? prev.filter((t) => t !== table) : [...prev, table]));
-
-  const renderTablesContent = () => {
-    if (tablesQuery.isLoading) {
-      return (
-        <div className="flex items-center gap-2 py-4">
-          <Loader2 className="size-4 animate-spin" />
-          <span className="text-sm">Cargando tablas...</span>
-        </div>
-      );
-    }
-
-    if (tablesQuery.error) {
-      return <p className="text-error text-sm">Error al cargar tablas</p>;
-    }
-
-    return (
-      <>
-        <div className="mb-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <h4 className="text-sm font-medium">Tablas con cambios recientes</h4>
-          </div>
-        </div>
-
-        <div className="mb-3">
-          {tablesQuery.data?.length === 0 && (
-            <p className="text-base-content/60 text-sm">No hay tablas en este backup.</p>
-          )}
-
-          <TableSelectionList
-            tables={tablesQuery.data || []}
-            selectedTables={selectedTables}
-            toggleTable={toggleTable}
-            tablesWithChanges={tablesWithChanges}
-          />
-        </div>
-
-        {selectedTables.length > 0 && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => restoreMutation.mutate(selectedTables)}
-            disabled={!canRestore || restoreMutation.isPending}
-            isLoading={restoreMutation.isPending}
-            title={canRestore ? undefined : "Requiere permiso para restaurar"}
-          >
-            {!restoreMutation.isPending && (canRestore ? <Play className="size-4" /> : <Lock className="size-4" />)}
-            Restaurar {selectedTables.length} tabla{selectedTables.length > 1 ? "s" : ""}
-          </Button>
-        )}
-      </>
-    );
-  };
 
   return (
     <div>
@@ -586,9 +515,90 @@ function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () =>
             <span className="text-base-content/60 self-center text-sm">o selecciona tablas específicas abajo</span>
           </div>
 
-          <div className="bg-base-200/50 rounded-lg p-4">{renderTablesContent()}</div>
+          <div className="bg-base-200/50 rounded-lg p-4">
+            <Suspense
+              fallback={
+                <div className="flex items-center gap-2 py-4">
+                  <Loader2 className="size-4 animate-spin" />
+                  <span className="text-sm">Cargando tablas...</span>
+                </div>
+              }
+            >
+              <BackupTablesList
+                backupId={backup.id}
+                createdTime={backup.createdTime}
+                onRestore={restoreMutation.mutate}
+                canRestore={canRestore}
+                isRestoring={restoreMutation.isPending}
+              />
+            </Suspense>
+          </div>
         </div>
       )}
     </div>
+  );
+}
+
+function BackupTablesList({
+  backupId,
+  createdTime,
+  onRestore,
+  canRestore,
+  isRestoring,
+}: {
+  backupId: string;
+  createdTime: string;
+  onRestore: (tables: string[]) => void;
+  canRestore: boolean;
+  isRestoring: boolean;
+}) {
+  const [selectedTables, setSelectedTables] = useState<string[]>([]);
+  // Fetch tables using suspense
+  const { data: tables } = useSuspenseQuery(backupKeys.tables(backupId));
+
+  // Fetch tables that have changes AFTER this backup was created
+  const { data: tablesWithChangesList } = useSuspenseQuery({
+    ...backupKeys.tablesWithChanges(createdTime),
+    staleTime: 30_000,
+  });
+
+  const tablesWithChanges = new Set(tablesWithChangesList || []);
+
+  const toggleTable = (table: string) =>
+    setSelectedTables((prev) => (prev.includes(table) ? prev.filter((t) => t !== table) : [...prev, table]));
+
+  return (
+    <>
+      <div className="mb-3 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <h4 className="text-sm font-medium">Tablas con cambios recientes</h4>
+        </div>
+      </div>
+
+      <div className="mb-3">
+        {tables.length === 0 && <p className="text-base-content/60 text-sm">No hay tablas en este backup.</p>}
+
+        <TableSelectionList
+          tables={tables}
+          selectedTables={selectedTables}
+          toggleTable={toggleTable}
+          tablesWithChanges={tablesWithChanges}
+        />
+      </div>
+
+      {selectedTables.length > 0 && (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onRestore(selectedTables)}
+          disabled={!canRestore || isRestoring}
+          isLoading={isRestoring}
+          title={canRestore ? undefined : "Requiere permiso para restaurar"}
+        >
+          {!isRestoring && (canRestore ? <Play className="size-4" /> : <Lock className="size-4" />)}
+          Restaurar {selectedTables.length} tabla{selectedTables.length > 1 ? "s" : ""}
+        </Button>
+      )}
+    </>
   );
 }
