@@ -176,7 +176,7 @@ export default function Sidebar({ isOpen, isMobile, onClose }: SidebarProps) {
       <Backdrop isVisible={isMobile && isOpen} onClose={onClose} zIndex={40} />
 
       {/* Lint disabled: This is a pure UI hover zone for expanding sidebar, not semantically interactive */}
-      { }
+      {}
       <div
         role="presentation"
         // Tab index -1 ensures it's not in tab order

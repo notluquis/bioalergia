@@ -1,4 +1,4 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 import { z } from "zod";
 
 import LoginPage from "@/features/auth/pages/LoginPage";
@@ -9,12 +9,15 @@ const loginSearchSchema = z.object({
 });
 
 // Login route - public only (redirects authenticated users away)
+
+const routeApi = getRouteApi("/login");
+
 export const Route = createFileRoute("/login")({
   validateSearch: loginSearchSchema,
   beforeLoad: async ({ context }) => {
     // If already authenticated, redirect to home or intended destination
     if (context.auth.user) {
-      throw redirect({ to: "/" });
+      throw routeApi.redirect({ to: "/" });
     }
   },
   component: LoginPageWrapper,
