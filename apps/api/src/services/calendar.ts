@@ -206,14 +206,35 @@ export async function listUnclassifiedCalendarEvents(
   // Build where clause based on filter mode
   let whereClause: any = {};
 
+  // Optimize: Exclude ignored events at DB level to prevent empty pages
+  // This mirrors IGNORE_PATTERNS from parsers.ts roughly
+  const ignoreConditions = [
+    { summary: { contains: "feriado", mode: "insensitive" } },
+    { summary: { contains: "vacaciones", mode: "insensitive" } },
+    { summary: { startsWith: "recordar", mode: "insensitive" } }, // Starts with Recordar
+    { summary: { startsWith: "reunión", mode: "insensitive" } },
+    { summary: { startsWith: "reunion", mode: "insensitive" } },
+    { summary: { contains: "publicidad", mode: "insensitive" } },
+    { summary: { equals: "reservado", mode: "insensitive" } },
+    { summary: { equals: "elecciones", mode: "insensitive" } },
+  ];
+
   if (conditions.length > 0) {
     if (filterMode === "AND") {
-      // AND mode: event must match ALL conditions
-      whereClause = { AND: conditions };
+      whereClause = {
+        AND: [...conditions, { NOT: ignoreConditions }],
+      };
     } else {
-      // OR mode (default): event matches ANY condition
-      whereClause = { OR: conditions };
+      // OR mode: match ANY condition, BUT MUST NOT be ignored
+      whereClause = {
+        AND: [{ OR: conditions }, { NOT: ignoreConditions }],
+      };
     }
+  } else {
+    // No specific filters, just standard view
+    whereClause = {
+      NOT: ignoreConditions,
+    };
   }
 
   // ALWAYS exclude events before September 2024 (2024-09-01)
