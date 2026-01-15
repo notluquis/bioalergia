@@ -1,5 +1,35 @@
+import { queryOptions } from "@tanstack/react-query";
+
+import { fetchEmployees } from "@/features/hr/employees/api";
 import { apiClient } from "@/lib/apiClient";
 import type { Permission, Role } from "@/types/roles";
+
+export const roleKeys = {
+  all: ["roles"] as const,
+  mappings: ["role-mappings-data"] as const,
+};
+
+export const roleQueries = {
+  mappings: () =>
+    queryOptions({
+      queryKey: roleKeys.mappings,
+      queryFn: async () => {
+        const [employees, dbMappings, roles] = await Promise.all([
+          fetchEmployees(true),
+          getRoleMappings(),
+          fetchRoles(),
+        ]);
+        return { employees, dbMappings, roles };
+      },
+      // Keep data fresh but allow staleness for better UX
+      staleTime: 30 * 1000,
+    }),
+  users: (roleId: number) =>
+    queryOptions({
+      queryKey: [...roleKeys.all, roleId, "users"] as const,
+      queryFn: () => fetchRoleUsers(roleId),
+    }),
+};
 
 // --- Role Mappings ---
 
