@@ -305,14 +305,15 @@ export function DataTable<TData, TValue>({
           ref={tableContainerRef}
           className="muted-scrollbar overflow-x-auto"
           style={{
-            maxWidth: "100vw",
+            maxWidth: "100%",
             ...(enableVirtualization ? { maxHeight: "70vh", overflowY: "auto" } : {}),
           }}
         >
           <table
             className="table w-full text-sm"
             style={{
-              width: table.getTotalSize(),
+              width: "100%",
+              minWidth: table.getTotalSize(),
             }}
           >
             <thead className="bg-base-200/50 sticky top-0 z-10">
