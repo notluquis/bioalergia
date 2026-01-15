@@ -12,21 +12,18 @@ import { today } from "@/lib/dates";
 
 import { getSettlementColumns } from "../components/SettlementColumns";
 
-const DEFAULT_PAGE_SIZE = 50;
-
 export default function SettlementTransactionsPage() {
   const [draftFilters, setDraftFilters] = useState({
     from: dayjs().startOf("month").format("YYYY-MM-DD"),
     to: today(),
   });
   const [appliedFilters, setAppliedFilters] = useState(draftFilters);
-  const [page, setPage] = useState(1);
-  const pageSize = DEFAULT_PAGE_SIZE;
 
   const { can } = useAuth();
   const canView = can("read", "Integration");
 
-  // Query Data
+  // Query Data - Load all data within date range
+  // DataTable handles pagination client-side automatically
   const { data: rows, isLoading } = useFindManySettlementTransaction({
     where: {
       transactionDate: {
@@ -34,8 +31,6 @@ export default function SettlementTransactionsPage() {
         lte: appliedFilters.to ? new Date(appliedFilters.to) : undefined,
       },
     },
-    take: pageSize,
-    skip: (page - 1) * pageSize,
     orderBy: { transactionDate: "desc" },
   });
 
@@ -73,14 +68,7 @@ export default function SettlementTransactionsPage() {
               className="input-sm"
             />
           </div>
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={() => {
-              setPage(1);
-              setAppliedFilters(draftFilters);
-            }}
-          >
+          <Button variant="primary" size="sm" onClick={() => setAppliedFilters(draftFilters)}>
             Filtrar
           </Button>
         </div>
@@ -100,27 +88,6 @@ export default function SettlementTransactionsPage() {
       ) : (
         <Alert variant="error">No tienes permisos para ver conciliaciones.</Alert>
       )}
-
-      {/* Manual Pagination (To be replaced by standardized one in future, but keeping consistency with existing logic for now) */}
-      <div className="flex justify-end gap-2">
-        <Button
-          disabled={page === 1 || isLoading}
-          variant="ghost"
-          size="sm"
-          onClick={() => setPage((p) => Math.max(1, p - 1))}
-        >
-          Anterior
-        </Button>
-        <span className="flex items-center text-sm">Página {page}</span>
-        <Button
-          disabled={!rows || rows.length < pageSize || isLoading}
-          variant="ghost"
-          size="sm"
-          onClick={() => setPage((p) => p + 1)}
-        >
-          Siguiente
-        </Button>
-      </div>
     </section>
   );
 }
