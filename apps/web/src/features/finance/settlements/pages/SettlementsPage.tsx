@@ -1,22 +1,14 @@
 import { useDebouncedValue } from "@tanstack/react-pacer";
-import { useQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { PaginationState, Updater } from "@tanstack/react-table";
 import { Search } from "lucide-react";
 import { ChangeEvent, useState } from "react";
 
 import { DataTable } from "@/components/data-table/DataTable";
 import Input from "@/components/ui/Input";
-import { apiClient } from "@/lib/apiClient";
+import { financeKeys } from "@/features/finance/queries";
 
 import { columns } from "../components/columns";
-import { ListResponse } from "../types";
-
-async function fetchSettlements(page: number, pageSize: number, search?: string): Promise<ListResponse> {
-  const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
-  if (search) params.set("search", search);
-
-  return apiClient.get<ListResponse>(`/api/settlement-transactions?${params.toString()}`);
-}
 
 export default function SettlementsPage() {
   const [page, setPage] = useState(0); // 0-indexed for TanStack
@@ -24,11 +16,7 @@ export default function SettlementsPage() {
   const [searchInput, setSearchInput] = useState("");
   const [debouncedSearch] = useDebouncedValue(searchInput, { wait: 500 });
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["settlement-transactions", page, pageSize, debouncedSearch],
-    queryFn: () => fetchSettlements(page + 1, pageSize, debouncedSearch), // API is 1-indexed
-    placeholderData: (prev) => prev,
-  });
+  const { data } = useSuspenseQuery(financeKeys.settlements(page + 1, pageSize, debouncedSearch));
 
   return (
     <div className="flex h-full flex-col space-y-4">
@@ -66,7 +54,6 @@ export default function SettlementsPage() {
           }
         }}
         initialPinning={{ left: ["expander", "sourceId"], right: [] }}
-        isLoading={isLoading}
       />
     </div>
   );
