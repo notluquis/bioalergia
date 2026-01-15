@@ -131,6 +131,7 @@ export async function syncPermissions() {
   const actions = ["create", "read", "update", "delete"];
 
   const created: string[] = [];
+  let skipped = 0;
 
   for (const subject of subjects) {
     for (const action of actions) {
@@ -148,9 +149,16 @@ export async function syncPermissions() {
           },
         });
         created.push(`${action}:${subject}`);
+      } else {
+        skipped++;
       }
     }
   }
 
-  return { synced: created.length, created };
+  return {
+    created: created.length,
+    skipped,
+    total: subjects.length * actions.length,
+    details: created,
+  };
 }
