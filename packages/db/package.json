@@ -43,17 +43,15 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-
     "@zenstackhq/orm": "3.2.1",
     "@zenstackhq/plugin-policy": "^3.2.1",
     "@zenstackhq/server": "^3.2.1",
     "kysely": "^0.28.9",
-    "pg": "^8.16.3"
+    "pg": "^8.17.1"
   },
   "devDependencies": {
-
-    "@tanstack/react-query": "^5.90.16",
-    "@types/node": "^25.0.8",
+    "@tanstack/react-query": "^5.90.17",
+    "@types/node": "^25.0.9",
     "@types/pg": "^8.16.0",
     "@types/react": "^19.2.8",
     "@zenstackhq/cli": "3.2.1",

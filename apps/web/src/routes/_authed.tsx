@@ -1,5 +1,5 @@
 import { useDebouncedValue } from "@tanstack/react-pacer";
-import { createFileRoute, Outlet, redirect, useRouterState } from "@tanstack/react-router";
+import { createFileRoute, getRouteApi, Outlet, useRouterState } from "@tanstack/react-router";
 import React from "react";
 
 import { PerformanceIndicator } from "@/components/features/PerformanceIndicator";
@@ -15,6 +15,8 @@ import { BUILD_TIMESTAMP } from "@/version";
 // This layout wraps all authenticated routes.
 // The `beforeLoad` check ensures the user is logged in before rendering any child routes.
 
+const routeApi = getRouteApi("/_authed");
+
 export const Route = createFileRoute("/_authed")({
   beforeLoad: async ({ context, location }) => {
     // Wait for session to load before making auth decision
@@ -22,7 +24,7 @@ export const Route = createFileRoute("/_authed")({
 
     // If not authenticated, redirect to login with return URL
     if (!user) {
-      throw redirect({
+      throw routeApi.redirect({
         to: "/login",
         search: {
           redirect: location.href,
@@ -32,7 +34,7 @@ export const Route = createFileRoute("/_authed")({
 
     // Force onboarding if status is pending
     if (user.status === "PENDING_SETUP" && !location.pathname.startsWith("/onboarding")) {
-      throw redirect({
+      throw routeApi.redirect({
         to: "/onboarding",
       });
     }

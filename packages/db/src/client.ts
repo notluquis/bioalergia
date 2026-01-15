@@ -7,9 +7,20 @@ import { PolicyPlugin } from "@zenstackhq/plugin-policy";
 import { Pool } from "pg";
 import { schema } from "./zenstack/schema.js";
 
+// Helper for safe environment access (Deno compatibility)
+const getEnv = (key: string): string | undefined => {
+  try {
+    return process.env[key];
+  } catch {
+    return undefined;
+  }
+};
+
 // Connection pool with UTF-8 encoding
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: getEnv("DATABASE_URL"),
+  // Fallback to postgres user if environment access fails (Deno safety)
+  user: "postgres",
   // Ensure UTF-8 encoding for all database operations
   connectionTimeoutMillis: 5000,
   idleTimeoutMillis: 30000,

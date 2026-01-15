@@ -1,4 +1,4 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
 
 import PageLoader from "@/components/ui/PageLoader";
@@ -6,10 +6,12 @@ import { calendarQueries } from "@/features/calendar/queries";
 
 const CalendarClassificationPage = lazy(() => import("@/pages/CalendarClassificationPage"));
 
+const routeApi = getRouteApi("/_authed/calendar/classify");
+
 export const Route = createFileRoute("/_authed/calendar/classify")({
   beforeLoad: ({ context }) => {
     if (!context.auth.can("update", "CalendarEvent")) {
-      throw redirect({ to: "/" });
+      throw routeApi.redirect({ to: "/" });
     }
   },
   loader: async ({ context }) => {
