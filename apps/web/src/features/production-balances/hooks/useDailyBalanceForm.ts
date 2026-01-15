@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { useCallback, useEffect, useRef } from "react";
 
@@ -6,11 +6,12 @@ import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 
 import { dailyBalanceApi, type ProductionBalanceApiItem } from "../api";
+import { productionBalanceKeys } from "../queries";
 import type { DailyBalanceFormData } from "../types";
 import { generateWeekData, useDailyBalanceStore } from "./useDailyBalanceStore";
 
 const AUTOSAVE_DELAY_MS = 2000;
-const QUERY_KEY = "production-balances";
+
 const DATE_FORMAT = "YYYY-MM-DD";
 
 // Helper to map API item to Form Data
@@ -63,15 +64,7 @@ export function useDailyBalanceForm() {
   const startOfWeek = dayjs(selectedDate).startOf("week").format(DATE_FORMAT);
   const endOfWeek = dayjs(selectedDate).endOf("week").format(DATE_FORMAT);
 
-  const weekQuery = useQuery({
-    queryKey: [QUERY_KEY, "week", startOfWeek, endOfWeek],
-    queryFn: async () => {
-      // Fetch the whole week
-      const response = await dailyBalanceApi.getBalances(startOfWeek, endOfWeek);
-      return response.items;
-    },
-    enabled: !!selectedDate,
-  });
+  const weekQuery = useSuspenseQuery(productionBalanceKeys.week(startOfWeek, endOfWeek));
 
   // Find item by balanceDate (formatted as YYYY-MM-DD or comparison)
   // ZenStack likely returns full ISO string "2024-01-01T00:00:00.000Z"
@@ -157,7 +150,7 @@ export function useDailyBalanceForm() {
       markSaved(response.item.id);
       success("Balance guardado");
       // Invalidate the week query so dots update
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEY] });
+      queryClient.invalidateQueries({ queryKey: productionBalanceKeys.all });
     },
     onError: (err) => {
       setIsSaving(false);
