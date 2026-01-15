@@ -130,27 +130,39 @@ export async function syncPermissions() {
 
   const actions = ["create", "read", "update", "delete"];
 
+  // Use a Set to ensure unique subjects and remove any potential duplicates
+  const uniqueSubjects = Array.from(new Set(subjects));
+
   const created: string[] = [];
   let skipped = 0;
+  const errors: string[] = [];
 
-  for (const subject of subjects) {
+  for (const subject of uniqueSubjects) {
     for (const action of actions) {
-      // Check if permission exists
-      const existing = await db.permission.findFirst({
-        where: { action, subject },
-      });
-
-      if (!existing) {
-        await db.permission.create({
-          data: {
-            action,
-            subject,
-            description: `Auto-generated ${action} for ${subject}`,
-          },
+      try {
+        // Check if permission exists
+        const existing = await db.permission.findFirst({
+          where: { action, subject },
         });
-        created.push(`${action}:${subject}`);
-      } else {
-        skipped++;
+
+        if (!existing) {
+          await db.permission.create({
+            data: {
+              action,
+              subject,
+              description: `Auto-generated ${action} for ${subject}`,
+            },
+          });
+          created.push(`${action}:${subject}`);
+        } else {
+          skipped++;
+        }
+      } catch (e: any) {
+        console.error(
+          `[syncPermissions] Failed to sync ${action}:${subject}:`,
+          e.message,
+        );
+        errors.push(`${action}:${subject} (${e.message})`);
       }
     }
   }
@@ -158,7 +170,8 @@ export async function syncPermissions() {
   return {
     created: created.length,
     skipped,
-    total: subjects.length * actions.length,
+    errors: errors.length > 0 ? errors : undefined,
+    total: uniqueSubjects.length * actions.length,
     details: created,
   };
 }
