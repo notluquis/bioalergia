@@ -130,7 +130,7 @@ export default function Sidebar({ isOpen, isMobile, onClose }: SidebarProps) {
             {/* Logo Container */}
             <div className={cn("relative flex items-center justify-center transition-all duration-300", "h-12 w-12")}>
               <img
-                src="/logo.png"
+                src="/logo_bimi.svg"
                 alt="Bioalergia"
                 className={cn("h-10 w-10 object-contain transition-all duration-300")}
                 fetchPriority="high"
