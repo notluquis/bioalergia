@@ -1,0 +1,47 @@
+import { queryOptions } from "@tanstack/react-query";
+
+import { fetchMonthlyExpenseDetail, fetchMonthlyExpenses,fetchMonthlyExpenseStats } from "./api";
+import type { ExpenseFilters } from "./hooks/useMonthlyExpenses";
+
+export const expenseKeys = {
+  all: ["monthly-expenses"] as const,
+  statsAll: ["monthly-expenses-stats"] as const,
+  list: (filters: ExpenseFilters) =>
+    queryOptions({
+      queryKey: ["monthly-expenses", filters.from, filters.to],
+      queryFn: async () => {
+        const response = await fetchMonthlyExpenses({
+          from: filters.from,
+          to: filters.to,
+        });
+        // We handle normalization in the hook or passing a select here.
+        // But for useSuspenseQuery, simple raw data return is better and select later,
+        // or normalize here. Code used map(normalizeExpense).
+        // Let's return raw and let hook handle it? Or normalize here.
+        // Hook logic: response.expenses.map((e) => normalizeExpense(e))
+        // Let's just return the response and select in the hook if needed,
+        // OR standard is to return the data the component expects.
+        // The API returns { expenses: ... }.
+        return response;
+      },
+    }),
+  stats: (filters: ExpenseFilters) =>
+    queryOptions({
+      queryKey: ["monthly-expenses-stats", filters.from, filters.to, filters.category],
+      queryFn: async () => {
+        const response = await fetchMonthlyExpenseStats({
+          from: filters.from,
+          to: filters.to,
+          groupBy: "month",
+          category: filters.category ?? undefined,
+        });
+        return response;
+      },
+    }),
+  detail: (id: string) =>
+    queryOptions({
+      queryKey: ["monthly-expense-detail", id],
+      queryFn: () => fetchMonthlyExpenseDetail(id),
+      enabled: !!id,
+    }),
+};

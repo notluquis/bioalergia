@@ -12,14 +12,13 @@ import {
   attachCounterpartRut,
   type CounterpartUpsertPayload,
   createCounterpart,
-  fetchCounterpart,
-  fetchCounterpartSummary,
   updateCounterpart,
 } from "@/features/counterparts/api";
 import AssociatedAccounts from "@/features/counterparts/components/AssociatedAccounts";
 import CounterpartForm from "@/features/counterparts/components/CounterpartForm";
 import CounterpartList from "@/features/counterparts/components/CounterpartList";
 import { SUMMARY_RANGE_MONTHS } from "@/features/counterparts/constants";
+import { counterpartKeys } from "@/features/counterparts/queries";
 import type { Counterpart, CounterpartCategory, CounterpartPersonType } from "@/features/counterparts/types";
 import { ServicesGrid, ServicesHero, ServicesSurface } from "@/features/services/components/ServicesShell";
 import { getPersonFullName } from "@/lib/person";
@@ -95,22 +94,10 @@ export default function CounterpartsPage() {
   });
 
   // Detail query for selected counterpart with accounts (using original API for complete data)
-  const {
-    data: detail,
-    isLoading: detailLoading,
-    error: detailError,
-  } = useQuery({
-    queryKey: ["counterpart-detail", selectedId],
-    queryFn: () => fetchCounterpart(selectedId!),
-    enabled: !!selectedId,
-  });
+  const { data: detail, isLoading: detailLoading, error: detailError } = useQuery(counterpartKeys.detail(selectedId!));
 
   // Summary query (kept as manual since it's a custom aggregation endpoint)
-  const { data: summary, error: summaryError } = useQuery({
-    queryKey: ["counterpart-summary", selectedId, summaryRange],
-    queryFn: () => fetchCounterpartSummary(selectedId!, summaryRange),
-    enabled: !!selectedId,
-  });
+  const { data: summary, error: summaryError } = useQuery(counterpartKeys.summary(selectedId!, summaryRange));
 
   // Derived error state (combine/prioritize)
   const displayError =

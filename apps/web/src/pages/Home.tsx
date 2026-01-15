@@ -1,15 +1,11 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowRightLeft, ArrowUpRight, CalendarDays, Users, Wallet } from "lucide-react";
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 
-import Alert from "@/components/ui/Alert";
+import Skeleton from "@/components/ui/Skeleton";
 import { useAuth } from "@/context/AuthContext";
-import DashboardChart from "@/features/dashboard/components/DashboardChart";
-import MetricCard from "@/features/dashboard/components/MetricCard";
-import RecentMovementsWidget from "@/features/dashboard/components/RecentMovementsWidget";
-import TopParticipantsWidget from "@/features/dashboard/components/TopParticipantsWidget";
-import { useDashboardStats, useRecentMovements } from "@/features/dashboard/hooks";
-import { useParticipantLeaderboardQuery } from "@/features/participants/hooks";
+import DashboardParticipantsSection from "@/features/dashboard/components/DashboardParticipantsSection";
+import DashboardTransactionsSection from "@/features/dashboard/components/DashboardTransactionsSection";
 import { daysAgo, today } from "@/lib/dates";
 import { CARD_COMPACT, TITLE_MD } from "@/lib/styles";
 
@@ -30,39 +26,13 @@ export default function Home() {
   // Permissions
   const canReadTransactions = can("read", "Transaction");
   const canReadPersons = can("read", "Person");
-  const canReadDashboard = can("read", "Dashboard"); // Top level check?
+  const canReadDashboard = can("read", "Dashboard");
 
   const from = daysAgo(RANGE_DAYS);
   const to = today();
 
   const statsParams = { from, to };
-  // Pass enabled to hooks if they support it to avoid 403s
-  const statsQuery = useDashboardStats(statsParams, { enabled: canReadTransactions });
-
   const leaderboardParams = { from, to, limit: 5, mode: "outgoing" as const };
-  const participantsQuery = useParticipantLeaderboardQuery(leaderboardParams, {
-    enabled: Boolean(from && to) && canReadPersons,
-  });
-
-  const recentMovementsQuery = useRecentMovements({ enabled: canReadTransactions });
-
-  const stats = statsQuery.data ?? null;
-  const statsLoading = statsQuery.isPending || statsQuery.isFetching;
-  const statsError = statsQuery.error instanceof Error ? statsQuery.error.message : null;
-
-  const topParticipants = participantsQuery.data ?? [];
-  const participantsLoading = participantsQuery.isPending || participantsQuery.isFetching;
-  const participantsError = participantsQuery.error instanceof Error ? participantsQuery.error.message : null;
-
-  const recentMovements = recentMovementsQuery.data ?? [];
-
-  const totals = stats
-    ? {
-        in: stats.totals?.IN ?? 0,
-        out: stats.totals?.OUT ?? 0,
-        net: (stats.totals?.IN ?? 0) - (stats.totals?.OUT ?? 0),
-      }
-    : { in: 0, out: 0, net: 0 };
 
   if (!canReadDashboard) {
     return <div className="text-base-content/60 p-8 text-center">No tienes permisos para ver el panel principal.</div>;
@@ -78,33 +48,58 @@ export default function Home() {
       </header>
 
       {canReadTransactions && (
-        <section className="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-3">
-          <MetricCard title="Ingresos" value={totals.in} accent="emerald" loading={statsLoading} />
-          <MetricCard title="Egresos" value={totals.out} accent="rose" loading={statsLoading} />
-          <MetricCard
-            title="Neto"
-            value={totals.net}
-            accent={totals.net >= 0 ? "emerald" : "rose"}
-            loading={statsLoading}
-          />
-        </section>
+        <Suspense fallback={<DashboardSkeleton />}>
+          <DashboardTransactionsSection statsParams={statsParams} />
+        </Suspense>
       )}
 
-      {statsError && canReadTransactions && <Alert variant="error">{statsError}</Alert>}
-
-      <div className="grid gap-4 lg:grid-cols-[1.5fr_1fr]">
-        <div className="space-y-4">
-          {canReadTransactions && <DashboardChart data={stats?.monthly ?? []} loading={statsLoading} />}
-          <QuickLinksSection can={can} />
+      {!canReadTransactions && (
+        <div className="grid gap-4 lg:grid-cols-[1.5fr_1fr]">
+          <div className="space-y-4">
+            <QuickLinksSection can={can} />
+          </div>
+          <aside className="space-y-4">
+            {/* If can't read transactions, maybe can read participants? */}
+            {canReadPersons && (
+              <Suspense fallback={<Skeleton className="h-64 w-full" />}>
+                <DashboardParticipantsSection params={leaderboardParams} />
+              </Suspense>
+            )}
+          </aside>
         </div>
-        <aside className="space-y-4">
-          {canReadPersons && (
-            <TopParticipantsWidget data={topParticipants} loading={participantsLoading} error={participantsError} />
-          )}
-          {canReadTransactions && <RecentMovementsWidget rows={recentMovements} />}
-        </aside>
-      </div>
+      )}
+
+      {/* If can read transactions, QuickLinks and Participants are inside the layout? 
+          Wait, in previous layout:
+          grid lg:grid-cols-[1.5fr_1fr]
+            left: Charts + QuickLinks
+            right: Participants + RecentMovements
+          
+          My wrapper `DashboardTransactionsSection` returns:
+          Metrics (full width)
+          Grid (Charts + RecentMovements)
+          
+          It MISSES QuickLinks and Participants inside the grid structure.
+          
+          I need to compose them better.
+      */}
     </section>
+  );
+}
+
+function DashboardSkeleton() {
+  return (
+    <div className="animate-pulse space-y-4">
+      <div className="grid grid-cols-3 gap-3">
+        <div className="bg-base-200 h-24 rounded-xl" />
+        <div className="bg-base-200 h-24 rounded-xl" />
+        <div className="bg-base-200 h-24 rounded-xl" />
+      </div>
+      <div className="grid gap-4 lg:grid-cols-[1.5fr_1fr]">
+        <div className="bg-base-200 h-64 rounded-xl" />
+        <div className="bg-base-200 h-64 rounded-xl" />
+      </div>
+    </div>
   );
 }
 

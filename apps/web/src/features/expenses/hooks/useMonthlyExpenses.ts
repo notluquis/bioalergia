@@ -1,17 +1,16 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { type ChangeEvent, useRef, useState } from "react";
 
 import { useAuth } from "@/context/AuthContext";
 
 import {
   createMonthlyExpense,
-  fetchMonthlyExpenseDetail,
-  fetchMonthlyExpenses,
-  fetchMonthlyExpenseStats,
   linkMonthlyExpenseTransaction,
   unlinkMonthlyExpenseTransaction,
   updateMonthlyExpense,
 } from "../api";
+// Update payload matches Create payload for PUT operations
+import { expenseKeys } from "../queries";
 import type {
   CreateMonthlyExpensePayload,
   LinkMonthlyExpenseTransactionPayload,
@@ -25,11 +24,7 @@ export type ExpenseFilters = {
   category?: string | null;
 };
 
-// Update payload matches Create payload for PUT operations
 type UpdateMonthlyExpensePayload = CreateMonthlyExpensePayload;
-
-const MONTHLY_EXPENSES_QUERY_KEY = "monthly-expenses";
-const MONTHLY_EXPENSES_STATS_QUERY_KEY = "monthly-expenses-stats";
 
 export function useMonthlyExpenses() {
   const { can } = useAuth();
@@ -53,37 +48,17 @@ export function useMonthlyExpenses() {
 
   // 1. Fetch List
   const {
-    data: expensesData,
+    data: expensesResponse,
     isLoading: loadingList,
     error: listError,
-  } = useQuery({
-    queryKey: [MONTHLY_EXPENSES_QUERY_KEY, filters.from, filters.to],
-    queryFn: async () => {
-      const response = await fetchMonthlyExpenses({
-        from: filters.from,
-        to: filters.to,
-      });
-      return response.expenses.map((e) => normalizeExpense(e));
-    },
-    enabled: canView,
-  });
+  } = useSuspenseQuery(expenseKeys.list(filters));
 
-  const expenses = expensesData ?? [];
+  const expenses = expensesResponse?.expenses?.map((e) => normalizeExpense(e)) ?? [];
 
   // 2. Fetch Stats
-  const { data: statsData, isLoading: statsLoading } = useQuery({
-    queryKey: [MONTHLY_EXPENSES_STATS_QUERY_KEY, filters.from, filters.to, filters.category],
-    queryFn: async () => {
-      const response = await fetchMonthlyExpenseStats({
-        from: filters.from,
-        to: filters.to,
-        groupBy: "month",
-        category: filters.category ?? undefined,
-      });
-      return response.stats;
-    },
-    enabled: canView,
-  });
+  const { data: statsResponse, isLoading: statsLoading } = useSuspenseQuery(expenseKeys.stats(filters));
+
+  const statsData = statsResponse?.stats;
 
   const stats = statsData ?? {
     totalAmount: 0,
@@ -93,24 +68,17 @@ export function useMonthlyExpenses() {
   };
 
   // 3. Fetch Detail
-  const { data: detail, isLoading: loadingDetail } = useQuery({
-    queryKey: ["monthly-expense-detail", selectedId],
-    queryFn: async () => {
-      if (!selectedId) return null;
-      const response = await fetchMonthlyExpenseDetail(selectedId);
-      return normalizeExpenseDetail(response.expense);
-    },
-    enabled: !!selectedId && canView,
-    staleTime: 0,
-  });
+  const { data: detailResponse, isLoading: loadingDetail } = useQuery(expenseKeys.detail(selectedId ?? ""));
+
+  const detail = detailResponse ? normalizeExpenseDetail(detailResponse.expense) : null;
 
   // Mutations
   const createMutation = useMutation({
     mutationFn: createMonthlyExpense,
     onSuccess: (response) => {
       const normalized = normalizeExpenseDetail(response.expense);
-      queryClient.invalidateQueries({ queryKey: [MONTHLY_EXPENSES_QUERY_KEY] });
-      queryClient.invalidateQueries({ queryKey: [MONTHLY_EXPENSES_STATS_QUERY_KEY] });
+      queryClient.invalidateQueries({ queryKey: expenseKeys.all });
+      queryClient.invalidateQueries({ queryKey: expenseKeys.statsAll });
       setSelectedId(normalized.publicId);
       setCreateOpen(false);
     },
@@ -124,12 +92,12 @@ export function useMonthlyExpenses() {
       return updateMonthlyExpense(id, payload);
     },
     onSuccess: (response) => {
-      queryClient.invalidateQueries({ queryKey: [MONTHLY_EXPENSES_QUERY_KEY] });
-      queryClient.invalidateQueries({ queryKey: [MONTHLY_EXPENSES_STATS_QUERY_KEY] });
-      queryClient.setQueryData(
-        ["monthly-expense-detail", response.expense.publicId],
-        normalizeExpenseDetail(response.expense)
-      );
+      queryClient.invalidateQueries({ queryKey: expenseKeys.all });
+      queryClient.invalidateQueries({ queryKey: expenseKeys.statsAll });
+      queryClient.setQueryData(expenseKeys.detail(response.expense.publicId).queryKey, {
+        status: "ok",
+        expense: response.expense,
+      });
     },
     onError: (err) => {
       setCreateError(err instanceof Error ? err.message : "No se pudo actualizar el gasto");
@@ -141,12 +109,12 @@ export function useMonthlyExpenses() {
       return linkMonthlyExpenseTransaction(id, payload);
     },
     onSuccess: (response) => {
-      queryClient.invalidateQueries({ queryKey: [MONTHLY_EXPENSES_QUERY_KEY] });
-      queryClient.invalidateQueries({ queryKey: [MONTHLY_EXPENSES_STATS_QUERY_KEY] });
-      queryClient.setQueryData(
-        ["monthly-expense-detail", response.expense.publicId],
-        normalizeExpenseDetail(response.expense)
-      );
+      queryClient.invalidateQueries({ queryKey: expenseKeys.all });
+      queryClient.invalidateQueries({ queryKey: expenseKeys.statsAll });
+      queryClient.setQueryData(expenseKeys.detail(response.expense.publicId).queryKey, {
+        status: "ok",
+        expense: response.expense,
+      });
       setLinkModalOpen(false);
     },
     onError: (err) => {
@@ -159,12 +127,12 @@ export function useMonthlyExpenses() {
       return unlinkMonthlyExpenseTransaction(id, transactionId);
     },
     onSuccess: (response) => {
-      queryClient.invalidateQueries({ queryKey: [MONTHLY_EXPENSES_QUERY_KEY] });
-      queryClient.invalidateQueries({ queryKey: [MONTHLY_EXPENSES_STATS_QUERY_KEY] });
-      queryClient.setQueryData(
-        ["monthly-expense-detail", response.expense.publicId],
-        normalizeExpenseDetail(response.expense)
-      );
+      queryClient.invalidateQueries({ queryKey: expenseKeys.all });
+      queryClient.invalidateQueries({ queryKey: expenseKeys.statsAll });
+      queryClient.setQueryData(expenseKeys.detail(response.expense.publicId).queryKey, {
+        status: "ok",
+        expense: response.expense,
+      });
     },
     onError: (err) => {
       setLinkError(err instanceof Error ? err.message : "Error al desvincular");
