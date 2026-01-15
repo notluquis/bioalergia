@@ -12,6 +12,8 @@ export const Route = createFileRoute("/_authed/finanzas/counterparts")({
       throw routeApi.redirect({ to: "/" });
     }
   },
+  // Note: Skipping loader because this page uses ZenStack useFindManyCounterpart hook
+  // which has its own caching mechanism via TanStack Query
   component: () => (
     <Suspense fallback={<PageLoader />}>
       <Counterparts />

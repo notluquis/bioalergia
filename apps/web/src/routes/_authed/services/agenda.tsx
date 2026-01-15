@@ -2,6 +2,7 @@ import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
 
 import PageLoader from "@/components/ui/PageLoader";
+import { serviceQueries } from "@/features/services/queries";
 
 const AgendaPage = lazy(() => import("@/features/services/pages/AgendaPage"));
 
@@ -11,6 +12,9 @@ export const Route = createFileRoute("/_authed/services/agenda")({
       const routeApi = getRouteApi("/_authed/services/agenda");
       throw routeApi.redirect({ to: "/" });
     }
+  },
+  loader: async ({ context }) => {
+    await context.queryClient.ensureQueryData(serviceQueries.list());
   },
   component: () => (
     <Suspense fallback={<PageLoader />}>
