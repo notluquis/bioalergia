@@ -1,4 +1,4 @@
-import { Link, useLocation, useRouterState } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { LogOut, User } from "lucide-react";
 import React from "react";
 
@@ -24,104 +24,61 @@ interface SidebarProps {
 }
 
 // Sub-component for individual Nav Items to keep main component clean
-function SidebarItem({
-  item,
-  isCollapsed,
-  isMobile,
-  pendingPath,
-  locationPath,
-  onNavigate,
-}: {
-  item: NavItem;
-  isCollapsed: boolean;
-  isMobile: boolean;
-  pendingPath: string | null;
-  locationPath: string;
-  onNavigate: () => void;
-}) {
-  const routerStatus = useRouterState({ select: (s) => s.status });
-  const isPending = pendingPath === item.to || (routerStatus === "pending" && pendingPath === item.to);
-
-  // Check if this link is currently active
-  const isActive = locationPath === item.to || locationPath.startsWith(`${item.to}/`);
-  const finalActive = isActive || isPending;
-
-  const getLinkClasses = () => {
-    const base =
-      "group relative flex items-center rounded-xl transition-all duration-200 ease-in-out outline-none select-none";
-    let sizing = "w-full justify-start px-3 py-2.5";
-
-    if (isMobile) {
-      sizing = "w-full justify-start px-4 py-3";
-    } else if (isCollapsed) {
-      sizing = "mx-auto h-9 w-9 justify-center p-0";
-    }
-
-    const coloring = finalActive
-      ? "bg-primary/10 text-primary font-semibold"
-      : "text-base-content/60 hover:text-base-content hover:bg-base-content/5";
-
-    return cn(base, sizing, coloring);
-  };
-
-  const linkClassName = getLinkClasses();
-
+function SidebarItem({ item, isMobile, onNavigate }: { item: NavItem; isMobile: boolean; onNavigate: () => void }) {
   return (
-    <Tooltip delayDuration={300}>
-      <TooltipTrigger asChild>
-        <Link
-          to={item.to as "/"}
-          onClick={() => {
-            if (locationPath !== item.to) onNavigate();
-          }}
-          className={linkClassName}
-        >
-          {/* Active Indicator (Vertical Bar for Expanded/Mobile) */}
-          {finalActive && (!isCollapsed || isMobile) && (
-            <span className="bg-primary absolute top-1/2 left-0 h-5 w-1 -translate-y-1/2 rounded-r-full" />
-          )}
-
-          {/* Icon Container */}
-          <div
-            className={cn(
-              "relative flex items-center justify-center transition-colors duration-200",
-              getIconMargin(isMobile, isCollapsed)
-            )}
-          >
-            <item.icon
+    <Link
+      to={item.to as "/"}
+      activeOptions={{ exact: item.to === "/" }}
+      onClick={() => onNavigate()}
+      className="group outline-none select-none"
+    >
+      {({ isActive }) => (
+        <Tooltip delayDuration={0}>
+          <TooltipTrigger asChild>
+            <div
               className={cn(
-                "h-5 w-5 transition-transform duration-200",
-                finalActive ? "scale-105" : "group-hover:scale-105"
+                "relative flex items-center rounded-xl transition-all duration-200 ease-in-out",
+                isMobile ? "w-full justify-start px-4 py-3" : "mx-auto h-12 w-12 justify-center p-0",
+                isActive
+                  ? "bg-primary/10 text-primary font-semibold"
+                  : "text-base-content/60 hover:text-base-content hover:bg-base-content/5"
               )}
-              strokeWidth={finalActive ? 2.5 : 2}
-            />
+            >
+              {/* Active Indicator */}
+              {isActive && (
+                <span
+                  className={cn(
+                    "bg-primary absolute rounded-full transition-all duration-300",
+                    isMobile ? "top-1/2 left-0 h-6 w-1 -translate-y-1/2" : "top-2 -right-0.5 h-8 w-1"
+                  )}
+                />
+              )}
 
-            {/* Active Dot for Collapsed State (replaces bar when collapsed) */}
-            {!isMobile && isCollapsed && finalActive && (
-              <span className="bg-primary absolute top-0 -right-1 h-2 w-2 rounded-full shadow-sm ring-2 ring-white dark:ring-black" />
-            )}
-          </div>
+              {/* Icon */}
+              <item.icon
+                className={cn(
+                  "h-6 w-6 transition-transform duration-200",
+                  isActive ? "scale-110" : "group-hover:scale-110"
+                )}
+                strokeWidth={isActive ? 2.5 : 2}
+              />
 
-          {/* Label */}
-          <span
-            className={cn("bg-transparent text-sm whitespace-nowrap", !isMobile && isCollapsed ? "hidden" : "block")}
-          >
-            {item.label}
-          </span>
-        </Link>
-      </TooltipTrigger>
-      {/* Tooltip only on Desktop Collapsed - force close when expanded */}
-      {!isMobile && (
-        <TooltipContent
-          side="right"
-          sideOffset={10}
-          hidden={!isCollapsed}
-          className="bg-base-300 border-base-200 text-base-content z-100 px-3 py-1.5 font-semibold shadow-xl"
-        >
-          {item.label}
-        </TooltipContent>
+              {/* Label (Mobile only, hidden on Slim Desktop) */}
+              {isMobile && <span className="ml-4 text-sm font-medium">{item.label}</span>}
+            </div>
+          </TooltipTrigger>
+          {!isMobile && (
+            <TooltipContent
+              side="right"
+              sideOffset={12}
+              className="bg-base-300 border-base-200 text-base-content z-100 px-3 py-1.5 text-xs font-bold shadow-xl"
+            >
+              {item.label}
+            </TooltipContent>
+          )}
+        </Tooltip>
       )}
-    </Tooltip>
+    </Link>
   );
 }
 
@@ -133,28 +90,8 @@ function getIconMargin(isMobile: boolean, isCollapsed: boolean) {
 export default function Sidebar({ isOpen, isMobile, onClose }: SidebarProps) {
   const { user, logout } = useAuth();
   const { can } = useCan();
-  const location = useLocation();
-  const [pendingPath, setPendingPath] = React.useState<string | null>(null);
-
-  // Desktop Hover Collapse State
-  // Default to collapsed (true)
-  const [isCollapsed, setIsCollapsed] = React.useState(true);
-  const [isHovered, setIsHovered] = React.useState(false);
-
-  // Debounced expansion to avoid flickering
-  React.useEffect(() => {
-    const timeoutMs = isHovered ? 150 : 300;
-    const timer = setTimeout(() => setIsCollapsed(!isHovered), timeoutMs);
-    return () => clearTimeout(timer);
-  }, [isHovered]);
-
-  // Clear pending path on route change
-  React.useEffect(() => {
-    setPendingPath(null);
-  }, [location.pathname]);
 
   const handleNavigate = (path: string) => {
-    setPendingPath(path);
     if (isMobile && onClose) onClose();
   };
 
@@ -169,26 +106,16 @@ export default function Sidebar({ isOpen, isMobile, onClose }: SidebarProps) {
 
   const displayName = user?.name || user?.email?.split("@")[0] || "Usuario";
 
-  // Sidebar Classes
-
   return (
     <TooltipProvider delayDuration={0}>
       <Backdrop isVisible={isMobile && isOpen} onClose={onClose} zIndex={40} />
 
-      {/* Lint disabled: This is a pure UI hover zone for expanding sidebar, not semantically interactive */}
-      {}
       <div
-        role="presentation"
-        // Tab index -1 ensures it's not in tab order
-        tabIndex={-1}
-        onMouseEnter={() => !isMobile && setIsHovered(true)}
-        onMouseLeave={() => !isMobile && setIsHovered(false)}
         className={cn(
-          "z-50 h-full transform-gpu transition-[width] duration-300 ease-in-out will-change-[width]",
+          "z-50 h-full transition-[width] duration-300 ease-in-out",
           isMobile
             ? "safe-area-left fixed inset-y-0 left-0 w-64 rounded-r-3xl border-r shadow-2xl"
-            : "bg-base-100 border-base-200 relative rounded-2xl border shadow-xl",
-          !isMobile && (isCollapsed ? "w-16" : "w-64"),
+            : "bg-base-100 border-base-200 relative w-20 rounded-2xl border shadow-xl",
           isMobile && (isOpen ? "translate-x-0" : "-translate-x-full")
         )}
       >
@@ -196,55 +123,41 @@ export default function Sidebar({ isOpen, isMobile, onClose }: SidebarProps) {
           {/* Header / Logo */}
           <div
             className={cn(
-              "flex h-16 shrink-0 items-center transition-all duration-300",
-              !isMobile && isCollapsed ? "justify-center px-0" : "gap-3 px-5"
+              "flex h-20 shrink-0 items-center justify-center transition-all duration-300",
+              isMobile ? "px-5" : "px-0"
             )}
           >
             {/* Logo Container */}
-            <div
-              className={cn(
-                "relative flex items-center transition-all duration-300",
-                !isMobile && isCollapsed ? "h-10 w-10 justify-center" : "h-12 w-full justify-center"
-              )}
-            >
+            <div className={cn("relative flex items-center justify-center transition-all duration-300", "h-12 w-12")}>
               <img
                 src="/logo.png"
                 alt="Bioalergia"
-                className={cn(
-                  "object-contain transition-all duration-300",
-                  !isMobile && isCollapsed ? "h-8 w-8" : "h-10 w-auto"
-                )}
+                className={cn("h-10 w-10 object-contain transition-all duration-300")}
                 fetchPriority="high"
               />
             </div>
           </div>
 
-          {/* Navigation Content - Native scrollbar behavior */}
-          <div className="flex-1 space-y-4 overflow-x-hidden overflow-y-auto px-2 py-2">
+          {/* Navigation Content */}
+          <div className="flex-1 space-y-4 overflow-x-hidden overflow-y-auto px-2 py-4">
             {visibleSections.map((section) => (
-              <div key={section.title} className="space-y-1">
-                {/* Section Title */}
-                <div
-                  className={cn(
-                    "flex items-center px-4 pb-1 transition-all duration-300",
-                    !isMobile && isCollapsed ? "h-0 overflow-hidden opacity-0" : "h-auto opacity-100"
-                  )}
-                >
-                  <h3 className="text-base-content/50 text-[10px] font-bold tracking-[0.2em] uppercase">
-                    {section.title}
-                  </h3>
-                </div>
+              <div key={section.title} className="space-y-2">
+                {/* Section Title (Only visible on mobile) */}
+                {isMobile && (
+                  <div className="flex items-center px-4 pb-1">
+                    <h3 className="text-base-content/50 text-[10px] font-bold tracking-[0.2em] uppercase">
+                      {section.title}
+                    </h3>
+                  </div>
+                )}
 
                 {/* Section Items */}
-                <div className="space-y-0.5">
+                <div className="space-y-1">
                   {section.items.map((item) => (
                     <SidebarItem
                       key={item.to}
                       item={item}
-                      isCollapsed={!isMobile && isCollapsed}
                       isMobile={isMobile}
-                      pendingPath={pendingPath}
-                      locationPath={location.pathname}
                       onNavigate={() => handleNavigate(item.to)}
                     />
                   ))}
@@ -253,19 +166,19 @@ export default function Sidebar({ isOpen, isMobile, onClose }: SidebarProps) {
             ))}
           </div>
 
-          {/* User Footer - Pinned to bottom, with dropdown menu */}
+          {/* User Footer */}
           <div
             className={cn(
-              "border-base-200/50 bg-base-100/30 mt-auto shrink-0 border-t px-3 pt-3 pb-6 transition-all duration-300",
-              !isMobile && isCollapsed ? "items-center justify-center px-2 pt-3 pb-6" : ""
+              "border-base-200/50 bg-base-100/30 mt-auto shrink-0 border-t pt-4 pb-8 transition-all duration-300",
+              isMobile ? "px-3" : "flex flex-col items-center justify-center px-0"
             )}
           >
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
                   className={cn(
-                    "hover:bg-base-200/50 group flex w-full cursor-pointer items-center gap-3 rounded-2xl p-2 transition-all outline-none",
-                    !isMobile && isCollapsed ? "justify-center p-0 hover:bg-transparent" : "px-3 py-2"
+                    "hover:bg-base-200/50 group flex cursor-pointer items-center transition-all outline-none",
+                    isMobile ? "w-full gap-3 rounded-2xl px-3 py-2" : "h-12 w-12 justify-center rounded-xl p-0"
                   )}
                 >
                   <div className="bg-base-200 border-base-300 h-10 w-10 shrink-0 overflow-hidden rounded-full border">
@@ -274,17 +187,14 @@ export default function Sidebar({ isOpen, isMobile, onClose }: SidebarProps) {
                     </div>
                   </div>
 
-                  <div
-                    className={cn(
-                      "flex min-w-0 flex-1 flex-col gap-0.5 text-left transition-all duration-300",
-                      !isMobile && isCollapsed ? "hidden" : "block"
-                    )}
-                  >
-                    <span className="text-base-content group-hover:text-primary truncate text-sm font-semibold transition-colors">
-                      {displayName}
-                    </span>
-                    <span className="text-base-content/50 truncate text-xs">{user?.email}</span>
-                  </div>
+                  {isMobile && (
+                    <div className="flex min-w-0 flex-1 flex-col gap-0.5 text-left transition-all duration-300">
+                      <span className="text-base-content group-hover:text-primary truncate font-semibold transition-colors">
+                        {displayName}
+                      </span>
+                      <span className="text-base-content/50 truncate text-xs">{user?.email}</span>
+                    </div>
+                  )}
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent side="top" align="start" className="w-56">
