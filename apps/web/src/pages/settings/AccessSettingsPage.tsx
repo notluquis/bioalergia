@@ -1,12 +1,13 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Key, Lock, Shield, ShieldCheck, UserCog } from "lucide-react";
 
 import { DataTable } from "@/components/data-table/DataTable";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
-import { fetchUsers, toggleUserMfa } from "@/features/users/api";
+import { toggleUserMfa } from "@/features/users/api";
 import { getUserAccessColumns } from "@/features/users/components/UserAccessColumns";
+import { userKeys } from "@/features/users/queries";
 
 export default function AccessSettingsPage() {
   const { success, error: toastError } = useToast();
@@ -14,11 +15,7 @@ export default function AccessSettingsPage() {
   const queryClient = useQueryClient();
   const isAdmin = can("update", "User");
 
-  const { data: users = [], isLoading: isLoadingUsers } = useQuery({
-    queryKey: ["users", "admin-list"],
-    queryFn: fetchUsers,
-    enabled: isAdmin,
-  });
+  const { data: users } = useSuspenseQuery(userKeys.adminList());
 
   const toggleMfaMutation = useMutation({
     mutationFn: ({ userId, enabled }: { userId: number; enabled: boolean }) => toggleUserMfa(userId, enabled),
@@ -110,12 +107,7 @@ export default function AccessSettingsPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <DataTable
-            columns={columns}
-            data={users}
-            isLoading={isLoadingUsers}
-            noDataMessage="No se encontraron usuarios."
-          />
+          <DataTable columns={columns} data={users} noDataMessage="No se encontraron usuarios." />
 
           {/* Security Recommendations */}
           {users && (

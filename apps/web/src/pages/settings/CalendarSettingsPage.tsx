@@ -1,10 +1,10 @@
-import { useQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { AlertCircle, Calendar, CheckCircle2, RefreshCw } from "lucide-react";
 
 import Button from "@/components/ui/Button";
-import { fetchCalendars } from "@/features/calendar/api";
 import { SyncProgressPanel } from "@/features/calendar/components/SyncProgressPanel";
 import { useCalendarEvents } from "@/features/calendar/hooks/useCalendarEvents";
+import { calendarQueries } from "@/features/calendar/queries";
 import type { CalendarData } from "@/features/calendar/types";
 import { cn } from "@/lib/utils";
 
@@ -13,10 +13,7 @@ export default function CalendarSettingsPage() {
     useCalendarEvents();
 
   // Fetch calendars
-  const { data: calendars = [], isLoading: calendarsLoading } = useQuery({
-    queryKey: ["calendars"],
-    queryFn: fetchCalendars,
-  });
+  const { data: calendars } = useSuspenseQuery(calendarQueries.list());
 
   const lastSync = syncLogs?.[0];
   const getSyncStatus = () => {
@@ -59,19 +56,15 @@ export default function CalendarSettingsPage() {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-base-content/80 font-medium">Calendarios conectados</h3>
-            {!calendarsLoading && (
-              <span className="text-base-content/50 text-xs">{calendars.length || 0} calendario(s)</span>
-            )}
           </div>
+          {renderCalendarsList(calendars)}
 
-          {renderCalendarsList(calendarsLoading, calendars)}
-        </div>
-
-        <div className="flex justify-end pt-4">
-          <Button onClick={syncNow} disabled={isSyncing} className="gap-2">
-            <RefreshCw size={16} className={cn(isSyncing && "animate-spin")} />
-            {isSyncing ? "Sincronizando..." : "Sincronizar ahora"}
-          </Button>
+          <div className="flex justify-end pt-4">
+            <Button onClick={syncNow} disabled={isSyncing} className="gap-2">
+              <RefreshCw size={16} className={cn(isSyncing && "animate-spin")} />
+              {isSyncing ? "Sincronizando..." : "Sincronizar ahora"}
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -123,15 +116,7 @@ function renderSyncBadge(status: "SUCCESS" | "ERROR" | "RUNNING" | undefined) {
   );
 }
 
-function renderCalendarsList(loading: boolean, calendars: CalendarData[]) {
-  if (loading) {
-    return (
-      <div className="flex justify-center p-8">
-        <RefreshCw size={24} className="text-base-content/30 animate-spin" />
-      </div>
-    );
-  }
-
+function renderCalendarsList(calendars: CalendarData[]) {
   if (calendars.length === 0) {
     return (
       <div className="text-base-content/50 p-8 text-center">

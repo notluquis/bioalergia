@@ -1,6 +1,6 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import { CheckCircle2, Clock, FileText, Loader2, Plus, Settings } from "lucide-react";
+import { CheckCircle2, Clock, FileText, Plus, Settings } from "lucide-react";
 import { useState } from "react";
 
 import { DataTable } from "@/components/data-table/DataTable";
@@ -18,9 +18,10 @@ import Modal from "@/components/ui/Modal";
 import StatCard from "@/components/ui/StatCard";
 import { useToast } from "@/context/ToastContext";
 import { getMpReportColumns } from "@/features/finance/mercadopago/components/MpReportColumns";
+import { mercadoPagoKeys } from "@/features/finance/mercadopago/queries";
 import { PAGE_CONTAINER } from "@/lib/styles";
 import { cn } from "@/lib/utils";
-import { ImportStats, MpReportType, MPService } from "@/services/mercadopago";
+import { type ImportStats, type MpReportType, MPService } from "@/services/mercadopago";
 
 const ALL_TABLE_COLUMNS = [
   { key: "id", label: "ID" },
@@ -53,10 +54,7 @@ export default function MercadoPagoSettingsPage() {
   };
 
   // Queries
-  const reportsQuery = useQuery({
-    queryKey: ["mp-reports", activeTab],
-    queryFn: () => MPService.listReports(activeTab),
-  });
+  const { data: reports } = useSuspenseQuery(mercadoPagoKeys.lists(activeTab));
 
   // Mutations
 
@@ -80,8 +78,6 @@ export default function MercadoPagoSettingsPage() {
     e.preventDefault();
     downloadMutation.mutate(fileName);
   };
-
-  const isLoading = reportsQuery.isLoading;
 
   const [processingFile, setProcessingFile] = useState<string | null>(null);
 
@@ -214,94 +210,81 @@ export default function MercadoPagoSettingsPage() {
         )}
       </Modal>
 
-      {isLoading ? (
-        <div className="flex h-64 items-center justify-center rounded-xl border border-dashed">
-          <Loader2 className="text-primary h-8 w-8 animate-spin" />
-        </div>
-      ) : (
-        <>
-          {/* Overview Cards */}
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            {/* Last Report Card */}
-            <article className="bg-base-100 border-base-300 rounded-2xl border p-6 shadow-sm">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-base-content/60 flex items-center gap-1.5 text-xs font-semibold tracking-wide uppercase">
-                    Último Reporte
-                  </p>
-                  <h3 className="mt-2 line-clamp-1 text-lg font-semibold">
-                    {(() => {
-                      const lastReport = reportsQuery.data?.[0];
-                      if (!lastReport) return "N/A";
-                      const date = lastReport.date_created || lastReport.begin_date;
-                      return date ? dayjs(date).format("D MMM, HH:mm") : "N/A";
-                    })()}
-                  </h3>
-                </div>
-                <div className="bg-primary/10 text-primary rounded-lg p-2">
-                  <Clock className="h-5 w-5" />
-                </div>
-              </div>
-              <p
-                className="text-base-content/50 border-base-300/50 mt-4 truncate border-t pt-4 text-xs"
-                title={reportsQuery.data?.[0]?.file_name}
-              >
-                {reportsQuery.data?.[0]?.file_name || "Sin reportes recientes"}
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        {/* Last Report Card */}
+        <article className="bg-base-100 border-base-300 rounded-2xl border p-6 shadow-sm">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-base-content/60 flex items-center gap-1.5 text-xs font-semibold tracking-wide uppercase">
+                Último Reporte
               </p>
-            </article>
-
-            {/* Total Reports Card */}
-            <StatCard
-              title="Total Reportes"
-              value={reportsQuery.data?.length || 0}
-              icon={FileText}
-              tone="default"
-              subtitle={`Tipo: ${activeTab === "release" ? "Liberación" : "Conciliación"}`}
-              className="h-full"
-            />
-          </div>
-
-          {/* Reports List */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between px-1">
-              <div className="flex items-center gap-2">
-                <FileText className="text-primary h-4 w-4" />
-                <h3 className="text-lg font-semibold">Historial de Reportes</h3>
-              </div>
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-8">
-                    <Settings className="mr-2 h-3.5 w-3.5" />
-                    Columnas
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-45">
-                  <DropdownMenuLabel>Columnas Visibles</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  {ALL_TABLE_COLUMNS.filter((c) => c.key !== "actions").map((column) => (
-                    <DropdownMenuCheckboxItem
-                      key={column.key}
-                      checked={visibleColumns.has(column.key)}
-                      onCheckedChange={() => toggleColumn(column.key)}
-                    >
-                      {column.label}
-                    </DropdownMenuCheckboxItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <h3 className="mt-2 line-clamp-1 text-lg font-semibold">
+                {(() => {
+                  const lastReport = reports?.[0];
+                  if (!lastReport) return "N/A";
+                  const date = lastReport.date_created || lastReport.begin_date;
+                  return date ? dayjs(date).format("D MMM, HH:mm") : "N/A";
+                })()}
+              </h3>
             </div>
-
-            <DataTable
-              columns={columns}
-              data={reportsQuery.data || []}
-              isLoading={isLoading}
-              noDataMessage="No se encontraron reportes generados."
-              columnVisibility={Object.fromEntries([...visibleColumns].map((key) => [key, true]))}
-            />
+            <div className="bg-primary/10 text-primary rounded-lg p-2">
+              <Clock className="h-5 w-5" />
+            </div>
           </div>
-        </>
-      )}
+          <p className="text-base-content/50 border-base-300/50 mt-4 truncate border-t pt-4 text-xs">
+            {reports?.[0]?.file_name || "Sin reportes recientes"}
+          </p>
+        </article>
+
+        {/* Total Reports Card */}
+        <StatCard
+          title="Total Reportes"
+          value={reports?.length || 0}
+          icon={FileText}
+          tone="default"
+          subtitle={`Tipo: ${activeTab === "release" ? "Liberación" : "Conciliación"}`}
+          className="h-full"
+        />
+      </div>
+
+      {/* Reports List */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between px-1">
+          <div className="flex items-center gap-2">
+            <FileText className="text-primary h-4 w-4" />
+            <h3 className="text-lg font-semibold">Historial de Reportes</h3>
+          </div>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8">
+                <Settings className="mr-2 h-3.5 w-3.5" />
+                Columnas
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-45">
+              <DropdownMenuLabel>Columnas Visibles</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {ALL_TABLE_COLUMNS.filter((c) => c.key !== "actions").map((column) => (
+                <DropdownMenuCheckboxItem
+                  key={column.key}
+                  checked={visibleColumns.has(column.key)}
+                  onCheckedChange={() => toggleColumn(column.key)}
+                >
+                  {column.label}
+                </DropdownMenuCheckboxItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        <DataTable
+          columns={columns}
+          data={reports || []}
+          noDataMessage="No se encontraron reportes generados."
+          columnVisibility={Object.fromEntries([...visibleColumns].map((key) => [key, true]))}
+        />
+      </div>
 
       {/* Modals */}
       <GenerateReportModal

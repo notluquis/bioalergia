@@ -1,7 +1,8 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authed/hr/")({
   beforeLoad: () => {
-    throw redirect({ to: "/hr/employees" });
+    const routeApi = getRouteApi("/_authed/hr/");
+    throw routeApi.redirect({ to: "/hr/employees" });
   },
 });

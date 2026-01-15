@@ -44,10 +44,10 @@ export function BulkToggleCell({
     );
   };
 
-  if (permissionIds.length === 0) return <td className={className} />;
+  if (permissionIds.length === 0) return <div className={className} />;
 
   return (
-    <td className={`p-0 text-center align-middle ${className || ""}`}>
+    <div className={`flex items-center justify-center p-0 text-center ${className || ""}`}>
       <button
         onClick={() => onToggle(role, permissionIds)}
         disabled={isUpdating}
@@ -56,6 +56,6 @@ export function BulkToggleCell({
       >
         {renderIcon()}
       </button>
-    </td>
+    </div>
   );
 }

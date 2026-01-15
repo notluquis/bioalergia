@@ -1,6 +1,6 @@
 import "dayjs/locale/es";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import {
@@ -27,87 +27,15 @@ import GoogleDriveConnect from "@/components/backup/GoogleDriveConnect";
 import Button from "@/components/ui/Button";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
-import { apiClient } from "@/lib/apiClient";
+import { triggerBackup, triggerRestore } from "@/features/backup/api";
+import { backupKeys } from "@/features/backup/queries";
+import type { BackupFile, BackupJob, RestoreJob } from "@/features/backup/types";
 import { formatFileSize } from "@/lib/format";
 import { PAGE_CONTAINER } from "@/lib/styles";
 import { cn } from "@/lib/utils";
 
 dayjs.extend(relativeTime);
 dayjs.locale("es");
-
-// ==================== TYPES ====================
-
-interface BackupFile {
-  id: string;
-  name: string;
-  createdTime: string;
-  size: string;
-  webViewLink?: string;
-}
-
-interface BackupJob {
-  id: string;
-  status: "pending" | "running" | "completed" | "failed";
-  type: "full" | "scheduled";
-  startedAt: string;
-  completedAt?: string;
-  progress: number;
-  currentStep: string;
-  result?: {
-    filename: string;
-    sizeBytes: number;
-    durationMs: number;
-    driveFileId: string;
-    tables: string[];
-  };
-  error?: string;
-}
-
-interface RestoreJob {
-  id: string;
-  status: "pending" | "running" | "completed" | "failed";
-  backupFileId: string;
-  tables?: string[];
-  startedAt: string;
-  completedAt?: string;
-  progress: number;
-  currentStep: string;
-  error?: string;
-}
-
-// ==================== API ====================
-
-const fetchBackups = async (): Promise<BackupFile[]> => {
-  const data = await apiClient.get<{ backups: BackupFile[] }>("/api/backups");
-  return data.backups;
-};
-
-const fetchTables = async (fileId: string): Promise<string[]> => {
-  const data = await apiClient.get<{ tables: string[] }>(`/api/backups/${fileId}/tables`);
-  return data.tables;
-};
-
-const fetchTablesWithChanges = async (since?: string): Promise<string[]> => {
-  const url = since
-    ? `/api/audit/tables-with-changes?since=${encodeURIComponent(since)}`
-    : "/api/audit/tables-with-changes";
-  try {
-    const data = await apiClient.get<{ tables: string[] }>(url);
-    return data.tables;
-  } catch {
-    return [];
-  }
-};
-
-const triggerBackup = async (): Promise<{ job: BackupJob }> => {
-  const job = await apiClient.post<BackupJob>("/api/backups", {});
-  return { job };
-};
-
-const triggerRestore = async (fileId: string, tables?: string[]): Promise<{ job: RestoreJob }> => {
-  const job = await apiClient.post<RestoreJob>(`/api/backups/${fileId}/restore`, { tables });
-  return { job };
-};
 
 // ==================== MAIN COMPONENT ====================
 
@@ -174,7 +102,7 @@ export default function BackupSettingsPage() {
   }, [queryClient]);
 
   // Queries
-  const backupsQuery = useQuery({ queryKey: ["backups"], queryFn: fetchBackups, refetchInterval: 30_000 });
+  const { data: backups } = useSuspenseQuery({ ...backupKeys.lists(), refetchInterval: 30_000 });
 
   // Mutations
   const backupMutation = useMutation({
@@ -187,7 +115,6 @@ export default function BackupSettingsPage() {
   const currentBackup = liveJobs.backup;
   const currentRestore = liveJobs.restore;
   const isRunning = currentBackup?.status === "running" || currentRestore?.status === "running";
-  const backups = backupsQuery.data || [];
 
   // Separate full backups from audit exports
   const fullBackups = backups.filter((b) => !b.name.startsWith("audit_"));
@@ -199,18 +126,6 @@ export default function BackupSettingsPage() {
   }, 0);
 
   const renderBackupListContent = () => {
-    if (backupsQuery.isLoading) {
-      return (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="text-primary size-6 animate-spin" />
-        </div>
-      );
-    }
-
-    if (backupsQuery.error) {
-      return <div className="text-error py-12 text-center">Error al cargar backups</div>;
-    }
-
     if (fullBackups.length === 0) {
       return <div className="text-base-content/60 py-12 text-center">No hay backups disponibles</div>;
     }
@@ -297,11 +212,10 @@ export default function BackupSettingsPage() {
                 variant="outline"
                 size="sm"
                 onClick={() => queryClient.invalidateQueries({ queryKey: ["backups"] })}
-                disabled={backupsQuery.isFetching}
                 title="Actualizar lista"
                 className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full p-0"
               >
-                <RefreshCw className={cn("size-5", backupsQuery.isFetching && "animate-spin")} />
+                <RefreshCw className={cn("size-5")} />
               </Button>
               <Button
                 variant="primary"
@@ -532,15 +446,13 @@ function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () =>
   const canRestore = can("update", "Backup");
 
   const tablesQuery = useQuery({
-    queryKey: ["backup-tables", backup.id],
-    queryFn: () => fetchTables(backup.id),
+    ...backupKeys.tables(backup.id),
     enabled: isExpanded,
   });
 
   // Fetch tables that have changes AFTER this backup was created
   const tablesWithChangesQuery = useQuery({
-    queryKey: ["tables-with-changes", backup.createdTime],
-    queryFn: () => fetchTablesWithChanges(backup.createdTime),
+    ...backupKeys.tablesWithChanges(backup.createdTime),
     enabled: isExpanded,
     staleTime: 30_000,
   });

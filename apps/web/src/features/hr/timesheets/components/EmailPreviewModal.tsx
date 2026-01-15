@@ -123,33 +123,32 @@ export default function EmailPreviewModal({
               </div>
             </div>
 
-            {/* Tabla resumen */}
-            <table className="mb-4 w-full border-collapse text-sm">
-              <thead>
-                <tr className="bg-base-200">
-                  <th className="text-base-content/70 px-3 py-2 text-left text-xs font-semibold uppercase">Concepto</th>
-                  <th className="text-base-content/70 px-3 py-2 text-right text-xs font-semibold uppercase">Detalle</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr className="border-base-300 border-b">
-                  <td className="text-base-content px-3 py-3">Horas totales</td>
-                  <td className="text-base-content px-3 py-3 text-right font-mono">{totalHoursFormatted}</td>
-                </tr>
-                <tr className="border-base-300 border-b">
-                  <td className="text-base-content px-3 py-3">Monto Bruto</td>
-                  <td className="text-base-content px-3 py-3 text-right font-mono">{fmtCLP(summary.subtotal)}</td>
-                </tr>
-                <tr className="border-base-300 border-b">
-                  <td className="text-base-content px-3 py-3">Retención ({retentionPercent})</td>
-                  <td className="text-base-content px-3 py-3 text-right font-mono">-{fmtCLP(summary.retention)}</td>
-                </tr>
-                <tr className="bg-blue-700">
-                  <td className="px-3 py-3 font-bold text-white">Total Líquido</td>
-                  <td className="px-3 py-3 text-right font-mono font-bold text-white">{fmtCLP(summary.net)}</td>
-                </tr>
-              </tbody>
-            </table>
+            {/* Tabla resumen (Grid Layout) */}
+            <div className="mb-4 w-full text-sm">
+              <div className="bg-base-200 grid grid-cols-[1fr_auto] gap-x-3 px-3 py-2 text-xs font-semibold uppercase">
+                <div className="text-base-content/70">Concepto</div>
+                <div className="text-base-content/70 text-right">Detalle</div>
+              </div>
+
+              <div className="divide-base-300 border-base-300 divide-y border-x border-b">
+                <div className="grid grid-cols-[1fr_auto] gap-x-3 px-3 py-3">
+                  <div className="text-base-content">Horas totales</div>
+                  <div className="text-base-content text-right font-mono">{totalHoursFormatted}</div>
+                </div>
+                <div className="grid grid-cols-[1fr_auto] gap-x-3 px-3 py-3">
+                  <div className="text-base-content">Monto Bruto</div>
+                  <div className="text-base-content text-right font-mono">{fmtCLP(summary.subtotal)}</div>
+                </div>
+                <div className="grid grid-cols-[1fr_auto] gap-x-3 px-3 py-3">
+                  <div className="text-base-content">Retención ({retentionPercent})</div>
+                  <div className="text-base-content text-right font-mono">-{fmtCLP(summary.retention)}</div>
+                </div>
+                <div className="grid grid-cols-[1fr_auto] gap-x-3 bg-blue-700 px-3 py-3">
+                  <div className="font-bold text-white">Total Líquido</div>
+                  <div className="text-right font-mono font-bold text-white">{fmtCLP(summary.net)}</div>
+                </div>
+              </div>
+            </div>
 
             {/* Fecha de pago */}
             <div className="rounded-lg border border-amber-500 bg-amber-100 p-3 text-center text-sm">

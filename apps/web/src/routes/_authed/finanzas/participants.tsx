@@ -1,4 +1,4 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { lazy, Suspense } from "react";
 
@@ -10,7 +10,8 @@ const ParticipantInsights = lazy(() => import("@/pages/ParticipantInsights"));
 export const Route = createFileRoute("/_authed/finanzas/participants")({
   beforeLoad: ({ context }) => {
     if (!context.auth.can("read", "Person")) {
-      throw redirect({ to: "/" });
+      const routeApi = getRouteApi("/_authed/finanzas/participants");
+      throw routeApi.redirect({ to: "/" });
     }
   },
   loader: async ({ context }) => {

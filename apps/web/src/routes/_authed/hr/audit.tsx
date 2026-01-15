@@ -1,4 +1,4 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
 
 import PageLoader from "@/components/ui/PageLoader";
@@ -8,7 +8,8 @@ const TimesheetAuditPage = lazy(() => import("@/features/hr/timesheets-audit/pag
 export const Route = createFileRoute("/_authed/hr/audit")({
   beforeLoad: ({ context }) => {
     if (!context.auth.can("read", "TimesheetAudit")) {
-      throw redirect({ to: "/" });
+      const routeApi = getRouteApi("/_authed/hr/audit");
+      throw routeApi.redirect({ to: "/" });
     }
   },
   component: () => (

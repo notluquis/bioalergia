@@ -1,7 +1,8 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authed/operations/")({
   beforeLoad: () => {
-    throw redirect({ to: "/operations/inventory" });
+    const routeApi = getRouteApi("/_authed/operations/");
+    throw routeApi.redirect({ to: "/operations/inventory" });
   },
 });

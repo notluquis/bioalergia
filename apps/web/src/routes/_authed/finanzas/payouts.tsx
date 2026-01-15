@@ -1,4 +1,4 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
 
 import PageLoader from "@/components/ui/PageLoader";
@@ -12,7 +12,8 @@ export const Route = createFileRoute("/_authed/finanzas/payouts")({
     if (!context.auth.can("read", "ReleaseTransaction")) {
       // Fallback or just let the component handle the error message if we want to be less strict here,
       // but standard is to redirect.
-      throw redirect({ to: "/" });
+      const routeApi = getRouteApi("/_authed/finanzas/payouts");
+      throw routeApi.redirect({ to: "/" });
     }
   },
   loader: async ({ context: { queryClient } }) => {

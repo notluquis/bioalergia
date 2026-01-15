@@ -1,4 +1,4 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
 
 import PageLoader from "@/components/ui/PageLoader";
@@ -8,7 +8,8 @@ const AddUserPage = lazy(() => import("@/pages/admin/AddUserPage"));
 export const Route = createFileRoute("/_authed/settings/users/add")({
   beforeLoad: ({ context }) => {
     if (!context.auth.can("create", "User")) {
-      throw redirect({ to: "/" });
+      const routeApi = getRouteApi("/_authed/settings/users/add");
+      throw routeApi.redirect({ to: "/" });
     }
   },
   component: () => (
