@@ -4,6 +4,7 @@
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  schemas  = ["public", "personal"]
 }
 
 // Enable access control attributes (@@allow, @@deny)
@@ -1114,4 +1115,59 @@ enum UserStatus {
   PENDING_SETUP
   ACTIVE
   SUSPENDED
+}
+
+// ============================================================
+// PERSONAL FINANCE SCHEMA
+// ============================================================
+
+model PersonalCredit {
+    id                Int                         @id @default(autoincrement())
+    bankName          String                      @map("bank_name") // BCI, Falabella, Itaú
+    creditNumber      String                      @unique @map("credit_number") // Identifier
+    description       String?  // "Crédito de Consumo", "Hipotecario"
+  
+    // Financial Details
+    totalAmount       Decimal                     @map("total_amount") @db.Decimal(15, 2)
+    currency          String                      @default("CLP") // CLP, UF
+    interestRate      Decimal?                    @map("interest_rate") @db.Decimal(5, 2) // Monthly/Yearly rate
+    startDate         DateTime                    @map("start_date") @db.Date
+  
+    // Status
+    totalInstallments Int                         @map("total_installments")
+    status            String                      @default("ACTIVE") // ACTIVE, PAID, REFINANCED
+
+    createdAt         DateTime                    @default(now()) @map("created_at")
+    updatedAt         DateTime                    @default(now()) @updatedAt @map("updated_at")
+
+    installments      PersonalCreditInstallment[]
+
+    @@schema("personal")
+    @@map("credits")
+}
+
+model PersonalCreditInstallment {
+    id                Int            @id @default(autoincrement())
+    creditId          Int            @map("credit_id")
+
+    installmentNumber Int            @map("installment_number") // 1/48
+    dueDate           DateTime       @map("due_date") @db.Date
+  
+    // Amounts
+    amount            Decimal        @db.Decimal(15, 2) // Total Quota Amount
+    capitalAmount     Decimal?       @map("capital_amount") @db.Decimal(15, 2) // Amortization
+    interestAmount    Decimal?       @map("interest_amount") @db.Decimal(15, 2)
+    otherCharges      Decimal?       @map("other_charges") @db.Decimal(15, 2) // Insurance, etc.
+  
+    // Status
+    status            String         @default("PENDING") // PENDING, PAID
+    paidAt            DateTime?      @map("paid_at")
+    paidAmount        Decimal?       @map("paid_amount") @db.Decimal(15, 2)
+
+    credit            PersonalCredit @relation(fields: [creditId], references: [id], onDelete: Cascade)
+
+    @@schema("personal")
+    @@index([creditId])
+    @@unique([creditId, installmentNumber])
+    @@map("credit_installments")
 }
