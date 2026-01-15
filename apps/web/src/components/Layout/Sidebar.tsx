@@ -1,6 +1,5 @@
 import { Link } from "@tanstack/react-router";
 import { LogOut, User } from "lucide-react";
-import React from "react";
 
 import Backdrop from "@/components/ui/Backdrop";
 import {
@@ -82,16 +81,11 @@ function SidebarItem({ item, isMobile, onNavigate }: { item: NavItem; isMobile: 
   );
 }
 
-function getIconMargin(isMobile: boolean, isCollapsed: boolean) {
-  if (isMobile) return "mr-4";
-  return isCollapsed ? "mr-0" : "mr-3";
-}
-
 export default function Sidebar({ isOpen, isMobile, onClose }: SidebarProps) {
   const { user, logout } = useAuth();
   const { can } = useCan();
 
-  const handleNavigate = (path: string) => {
+  const handleNavigate = () => {
     if (isMobile && onClose) onClose();
   };
 
@@ -139,9 +133,14 @@ export default function Sidebar({ isOpen, isMobile, onClose }: SidebarProps) {
           </div>
 
           {/* Navigation Content */}
-          <div className="flex-1 space-y-4 overflow-x-hidden overflow-y-auto px-2 py-4">
-            {visibleSections.map((section) => (
-              <div key={section.title} className="space-y-2">
+          <div className="flex-1 space-y-6 overflow-x-hidden overflow-y-auto px-2 py-6">
+            {visibleSections.map((section, index) => (
+              <div key={section.title} className="space-y-4">
+                {/* Section Separator (Desktop) */}
+                {index > 0 && !isMobile && (
+                  <div className="border-base-content/10 mx-auto w-10 border-t pb-2" aria-hidden="true" />
+                )}
+
                 {/* Section Title (Only visible on mobile) */}
                 {isMobile && (
                   <div className="flex items-center px-4 pb-1">
@@ -152,14 +151,9 @@ export default function Sidebar({ isOpen, isMobile, onClose }: SidebarProps) {
                 )}
 
                 {/* Section Items */}
-                <div className="space-y-1">
+                <div className="space-y-2">
                   {section.items.map((item) => (
-                    <SidebarItem
-                      key={item.to}
-                      item={item}
-                      isMobile={isMobile}
-                      onNavigate={() => handleNavigate(item.to)}
-                    />
+                    <SidebarItem key={item.to} item={item} isMobile={isMobile} onNavigate={() => handleNavigate()} />
                   ))}
                 </div>
               </div>
