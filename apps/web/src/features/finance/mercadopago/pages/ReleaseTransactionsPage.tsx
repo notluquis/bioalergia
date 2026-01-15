@@ -25,7 +25,7 @@ export default function ReleaseTransactionsPage() {
   const pageSize = DEFAULT_PAGE_SIZE;
 
   const { can } = useAuth();
-  const canView = can("read", "ReleaseTransaction");
+  const canView = can("read", "Integration");
 
   // Query Data
   const { data: rows, isLoading } = useFindManyReleaseTransaction({
