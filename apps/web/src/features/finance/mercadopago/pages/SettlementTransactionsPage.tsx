@@ -24,7 +24,7 @@ export default function SettlementTransactionsPage() {
   const pageSize = DEFAULT_PAGE_SIZE;
 
   const { can } = useAuth();
-  const canView = can("read", "SettlementTransaction");
+  const canView = can("read", "Integration");
 
   // Query Data
   const { data: rows, isLoading } = useFindManySettlementTransaction({
