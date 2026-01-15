@@ -13,7 +13,7 @@ import { userRoutes } from "./routes/users";
 import { mercadopagoRoutes } from "./routes/mercadopago";
 import backupRoutes from "./routes/backups";
 import notificationRoutes from "./routes/notifications";
-import auditRoutes from "./routes/audit";
+
 import { csvUploadRoutes } from "./routes/csv-upload";
 import { calendarRoutes } from "./routes/calendar";
 import { shareTargetRoutes } from "./routes/share-target";
@@ -39,7 +39,7 @@ import { readFile } from "fs/promises";
 import { join } from "path";
 import { integrationRoutes } from "./routes/integrations";
 import { doctoraliaRoutes } from "./routes/doctoralia";
-import { AuditLoggingPlugin } from "./lib/audit-plugin";
+
 import { startGoogleCalendarScheduler } from "./lib/google/google-calendar-scheduler";
 import { setupAllWatchChannels } from "./lib/google/google-calendar-watch";
 
@@ -117,7 +117,6 @@ app.route("/api/mercadopago", mercadopagoRoutes);
 app.route("/api/backups", backupRoutes);
 
 // Audit routes (incremental changes)
-app.route("/api/audit", auditRoutes);
 
 // Notification routes (push subscriptions)
 app.route("/api/notifications", notificationRoutes);
@@ -172,7 +171,7 @@ const zenStackHandler = createHonoHandler({
 
       // Inject Audit Plugin
       // This ensures every write operation via the content-aware client is logged
-      return policyClient.$use(AuditLoggingPlugin(user?.id, ip));
+      return policyClient;
     }
 
     // Anonymous: policies will deny access via @@deny('all', auth() == null)

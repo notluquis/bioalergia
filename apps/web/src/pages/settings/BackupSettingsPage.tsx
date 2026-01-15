@@ -22,7 +22,6 @@ import {
 } from "lucide-react";
 import { Suspense, useEffect, useState } from "react";
 
-import AuditChangesPanel from "@/components/backup/AuditChangesPanel";
 import GoogleDriveConnect from "@/components/backup/GoogleDriveConnect";
 import Button from "@/components/ui/Button";
 import { useAuth } from "@/context/AuthContext";
@@ -287,9 +286,6 @@ export default function BackupSettingsPage() {
           )}
         </div>
       </div>
-
-      {/* Audit Changes Panel */}
-      <AuditChangesPanel />
     </div>
   );
 }

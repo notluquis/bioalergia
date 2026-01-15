@@ -65,7 +65,7 @@ function getAllModelNames(): string[] {
     "Service",
     "Loan",
     "LoanSchedule",
-    "AuditLog",
+
     "Setting",
     "PushSubscription",
     "Calendar",

@@ -78,7 +78,7 @@ model User {
   createdAt               DateTime                 @default(now()) @map("created_at")
   updatedAt               DateTime                 @default(now()) @updatedAt @map("updated_at")
   mfaEnforced             Boolean                  @default(true) @map("mfa_enforced")
-  auditLogs               AuditLog[]
+
   dailyProductionBalances DailyProductionBalance[]
   pushSubscriptions       PushSubscription[]
   supplyRequests          SupplyRequest[]
@@ -574,26 +574,7 @@ model LoanSchedule {
   @@map("loan_schedules")
 }
 
-model AuditLog {
-  id        BigInt   @id @default(autoincrement())
-  userId    Int?     @map("user_id")
-  action    String
-  entity    String
-  entityId  String?  @map("entity_id")
-  details   Json?
-  ipAddress String?  @map("ip_address")
-  createdAt DateTime @default(now()) @map("created_at")
-  user      User?    @relation(fields: [userId], references: [id])
 
-  // Access policies - audit logs readable by authenticated users
-  @@deny('all', auth() == null)
-  @@allow('read', auth() != null)
-  @@allow('create', true) // System can create
-
-  @@index([userId])
-  @@index([entity, entityId])
-  @@map("audit_logs")
-}
 
 model Setting {
   key       String   @id
@@ -1122,52 +1103,52 @@ enum UserStatus {
 // ============================================================
 
 model PersonalCredit {
-    id                Int                         @id @default(autoincrement())
-    bankName          String                      @map("bank_name") // BCI, Falabella, Itaú
-    creditNumber      String                      @unique @map("credit_number") // Identifier
-    description       String?  // "Crédito de Consumo", "Hipotecario"
+  id                Int                         @id @default(autoincrement())
+  bankName          String                      @map("bank_name") // BCI, Falabella, Itaú
+  creditNumber      String                      @unique @map("credit_number") // Identifier
+  description       String?  // "Crédito de Consumo", "Hipotecario"
   
-    // Financial Details
-    totalAmount       Decimal                     @map("total_amount") @db.Decimal(15, 2)
-    currency          String                      @default("CLP") // CLP, UF
-    interestRate      Decimal?                    @map("interest_rate") @db.Decimal(5, 2) // Monthly/Yearly rate
-    startDate         DateTime                    @map("start_date") @db.Date
+  // Financial Details
+  totalAmount       Decimal                     @map("total_amount") @db.Decimal(15, 2)
+  currency          String                      @default("CLP") // CLP, UF
+  interestRate      Decimal?                    @map("interest_rate") @db.Decimal(5, 2) // Monthly/Yearly rate
+  startDate         DateTime                    @map("start_date") @db.Date
   
-    // Status
-    totalInstallments Int                         @map("total_installments")
-    status            String                      @default("ACTIVE") // ACTIVE, PAID, REFINANCED
+  // Status
+  totalInstallments Int                         @map("total_installments")
+  status            String                      @default("ACTIVE") // ACTIVE, PAID, REFINANCED
 
-    createdAt         DateTime                    @default(now()) @map("created_at")
-    updatedAt         DateTime                    @default(now()) @updatedAt @map("updated_at")
+  createdAt         DateTime                    @default(now()) @map("created_at")
+  updatedAt         DateTime                    @default(now()) @updatedAt @map("updated_at")
 
-    installments      PersonalCreditInstallment[]
+  installments      PersonalCreditInstallment[]
 
-    @@schema("personal")
-    @@map("credits")
+  @@schema("personal")
+  @@map("credits")
 }
 
 model PersonalCreditInstallment {
-    id                Int            @id @default(autoincrement())
-    creditId          Int            @map("credit_id")
+  id                Int            @id @default(autoincrement())
+  creditId          Int            @map("credit_id")
 
-    installmentNumber Int            @map("installment_number") // 1/48
-    dueDate           DateTime       @map("due_date") @db.Date
+  installmentNumber Int            @map("installment_number") // 1/48
+  dueDate           DateTime       @map("due_date") @db.Date
   
-    // Amounts
-    amount            Decimal        @db.Decimal(15, 2) // Total Quota Amount
-    capitalAmount     Decimal?       @map("capital_amount") @db.Decimal(15, 2) // Amortization
-    interestAmount    Decimal?       @map("interest_amount") @db.Decimal(15, 2)
-    otherCharges      Decimal?       @map("other_charges") @db.Decimal(15, 2) // Insurance, etc.
+  // Amounts
+  amount            Decimal        @db.Decimal(15, 2) // Total Quota Amount
+  capitalAmount     Decimal?       @map("capital_amount") @db.Decimal(15, 2) // Amortization
+  interestAmount    Decimal?       @map("interest_amount") @db.Decimal(15, 2)
+  otherCharges      Decimal?       @map("other_charges") @db.Decimal(15, 2) // Insurance, etc.
   
-    // Status
-    status            String         @default("PENDING") // PENDING, PAID
-    paidAt            DateTime?      @map("paid_at")
-    paidAmount        Decimal?       @map("paid_amount") @db.Decimal(15, 2)
+  // Status
+  status            String         @default("PENDING") // PENDING, PAID
+  paidAt            DateTime?      @map("paid_at")
+  paidAmount        Decimal?       @map("paid_amount") @db.Decimal(15, 2)
 
-    credit            PersonalCredit @relation(fields: [creditId], references: [id], onDelete: Cascade)
+  credit            PersonalCredit @relation(fields: [creditId], references: [id], onDelete: Cascade)
 
-    @@schema("personal")
-    @@index([creditId])
-    @@unique([creditId, installmentNumber])
-    @@map("credit_installments")
+  @@schema("personal")
+  @@index([creditId])
+  @@unique([creditId, installmentNumber])
+  @@map("credit_installments")
 }
