@@ -47,15 +47,17 @@ app.post("/", async (c) => {
   if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
 
   const canCreate = await hasPermission(user.id, "create", "Role");
-  if (!canCreate) return reply(c, { status: "error", message: "Forbidden" }, 403);
+  if (!canCreate)
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
 
   const body = await c.req.json();
   const parsed = roleCreateSchema.safeParse(body);
 
   if (!parsed.success) {
-    return reply(c, 
+    return reply(
+      c,
       { status: "error", message: "Invalid data", issues: parsed.error.issues },
-      400
+      400,
     );
   }
 
@@ -72,18 +74,21 @@ app.put("/:id", async (c) => {
   if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
 
   const canUpdate = await hasPermission(user.id, "update", "Role");
-  if (!canUpdate) return reply(c, { status: "error", message: "Forbidden" }, 403);
+  if (!canUpdate)
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
 
   const id = Number(c.req.param("id"));
-  if (isNaN(id)) return reply(c, { status: "error", message: "Invalid ID" }, 400);
+  if (isNaN(id))
+    return reply(c, { status: "error", message: "Invalid ID" }, 400);
 
   const body = await c.req.json();
   const parsed = roleUpdateSchema.safeParse(body);
 
   if (!parsed.success) {
-    return reply(c, 
+    return reply(
+      c,
       { status: "error", message: "Invalid data", issues: parsed.error.issues },
-      400
+      400,
     );
   }
 
@@ -100,10 +105,12 @@ app.delete("/:id", async (c) => {
   if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
 
   const canDelete = await hasPermission(user.id, "delete", "Role");
-  if (!canDelete) return reply(c, { status: "error", message: "Forbidden" }, 403);
+  if (!canDelete)
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
 
   const id = Number(c.req.param("id"));
-  if (isNaN(id)) return reply(c, { status: "error", message: "Invalid ID" }, 400);
+  if (isNaN(id))
+    return reply(c, { status: "error", message: "Invalid ID" }, 400);
 
   await deleteRole(id);
   return reply(c, { status: "ok" });
@@ -115,16 +122,18 @@ app.post("/:id/permissions", async (c) => {
 
   // Updating a role's permissions is arguably 'update Role'
   const canUpdate = await hasPermission(user.id, "update", "Role");
-  if (!canUpdate) return reply(c, { status: "error", message: "Forbidden" }, 403);
+  if (!canUpdate)
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
 
   const id = Number(c.req.param("id"));
   const body = await c.req.json();
   const parsed = roleAssignPermissionsSchema.safeParse(body);
 
   if (!parsed.success) {
-    return reply(c, 
+    return reply(
+      c,
       { status: "error", message: "Invalid data", issues: parsed.error.issues },
-      400
+      400,
     );
   }
 
@@ -145,6 +154,7 @@ app.post("/permissions/sync", async (c) => {
     const result = await syncPermissions();
     return reply(c, { status: "ok", ...result });
   } catch (e: any) {
+    console.error("[syncPermissions] Error details:", e);
     return reply(c, { status: "error", message: e.message }, 500);
   }
 });
