@@ -51,7 +51,7 @@ export default function Button({
   };
 
   // Apple-like specific overrides
-  const appleEffects = "active:scale-[0.97] hover:-translate-y-[1px]";
+  const appleEffects = "active:scale-[0.98] active:translate-y-0 hover:-translate-y-[1px]";
 
   return (
     <Component
