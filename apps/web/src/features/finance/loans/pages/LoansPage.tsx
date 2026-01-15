@@ -7,14 +7,7 @@ import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
 import { useAuth } from "@/context/AuthContext";
-import {
-  createLoan,
-  fetchLoanDetail,
-  fetchLoans,
-  regenerateSchedules,
-  registerLoanPayment,
-  unlinkLoanPayment,
-} from "@/features/finance/loans/api";
+import { createLoan, regenerateSchedules, registerLoanPayment, unlinkLoanPayment } from "@/features/finance/loans/api";
 import LoanDetail from "@/features/finance/loans/components/LoanDetail";
 import LoanForm from "@/features/finance/loans/components/LoanForm";
 import LoanList from "@/features/finance/loans/components/LoanList";
@@ -48,10 +41,7 @@ export default function LoansPage() {
   const [paymentError, setPaymentError] = useState<string | null>(null);
 
   // Suspense Query (data is preloaded by Router)
-  const { data: loansResponse } = useSuspenseQuery({
-    queryKey: loanKeys.all,
-    queryFn: fetchLoans,
-  });
+  const { data: loansResponse } = useSuspenseQuery(loanKeys.lists());
 
   const loans = useMemo(() => loansResponse?.loans ?? [], [loansResponse?.loans]);
 
@@ -67,14 +57,7 @@ export default function LoansPage() {
   }, [loans, selectedId]);
 
   // Fetch Detail (Standard Query for detail selection)
-  const { data: detail, isLoading: loadingDetail } = useQuery({
-    queryKey: loanKeys.detail(selectedId ?? ""),
-    queryFn: async () => {
-      if (!selectedId) return null;
-      return fetchLoanDetail(selectedId);
-    },
-    enabled: !!selectedId && canView,
-  });
+  const { data: detail } = useQuery(loanKeys.detail(selectedId ?? ""));
 
   // REST API mutations
   const createMutation = useMutation({
@@ -89,7 +72,7 @@ export default function LoansPage() {
       registerLoanPayment(scheduleId, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: loanKeys.all });
-      queryClient.invalidateQueries({ queryKey: loanKeys.detail(selectedId ?? "") });
+      queryClient.invalidateQueries({ queryKey: loanKeys.detail(selectedId ?? "").queryKey });
     },
   });
 
@@ -97,7 +80,7 @@ export default function LoansPage() {
     mutationFn: unlinkLoanPayment,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: loanKeys.all });
-      queryClient.invalidateQueries({ queryKey: loanKeys.detail(selectedId ?? "") });
+      queryClient.invalidateQueries({ queryKey: loanKeys.detail(selectedId ?? "").queryKey });
     },
   });
 
@@ -116,7 +99,7 @@ export default function LoansPage() {
     try {
       await regenerateSchedules(selectedId, overrides);
       queryClient.invalidateQueries({ queryKey: loanKeys.all });
-      queryClient.invalidateQueries({ queryKey: loanKeys.detail(selectedId) });
+      queryClient.invalidateQueries({ queryKey: loanKeys.detail(selectedId).queryKey });
     } catch (error) {
       console.error("Regenerate failed:", error);
     }
@@ -198,7 +181,7 @@ export default function LoansPage() {
             loan={selectedLoan}
             schedules={schedules}
             summary={summary}
-            loading={loadingDetail}
+            loading={false}
             canManage={canManage}
             onRegenerate={handleRegenerate}
             onRegisterPayment={openPaymentModal}
