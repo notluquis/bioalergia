@@ -1,5 +1,7 @@
 import { apiClient } from "@/lib/apiClient";
 
+import type { ListResponse as ReleaseListResponse } from "./releases/types";
+import type { ListResponse as SettlementListResponse } from "./settlements/types";
 import type { Transaction } from "./types";
 
 export type FetchTransactionsParams = {
@@ -52,4 +54,18 @@ export async function fetchTransactions({ filters, page, pageSize }: FetchTransa
 
   const res = await apiClient.get<TransactionsResponse>(`/api/transactions?${params.toString()}`);
   return res;
+}
+
+export async function fetchReleaseTransactions(page: number, pageSize: number, search?: string) {
+  const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
+  if (search) params.set("search", search);
+
+  return apiClient.get<ReleaseListResponse>(`/api/release-transactions?${params.toString()}`);
+}
+
+export async function fetchSettlementTransactions(page: number, pageSize: number, search?: string) {
+  const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
+  if (search) params.set("search", search);
+
+  return apiClient.get<SettlementListResponse>(`/api/settlement-transactions?${params.toString()}`);
 }
