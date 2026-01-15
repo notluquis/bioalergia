@@ -90,7 +90,7 @@ const getCommonPinningStyles = <TData,>(column: Column<TData>): CSSProperties =>
 export function DataTable<TData, TValue>({
   columns,
   data,
-  pageCount = -1,
+  pageCount,
   pagination,
   onPaginationChange,
   isLoading,
@@ -142,7 +142,7 @@ export function DataTable<TData, TValue>({
     },
     meta,
     enableRowSelection: true,
-    manualPagination: pageCount !== -1,
+    manualPagination: pageCount !== undefined,
     enableColumnResizing: true,
     columnResizeMode: "onChange",
     enablePinning: true,

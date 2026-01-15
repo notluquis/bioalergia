@@ -65,9 +65,9 @@ export function DataTableToolbar<TData>({
       return rowData;
     });
 
-    // Generate CSV
+    // Generate CSV with BOM for correct encoding in Excel/Spanish locales
     const csv = Papa.unparse(rows);
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const blob = new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
