@@ -142,7 +142,7 @@ export function DataTable<TData, TValue>({
     },
     meta,
     enableRowSelection: true,
-    manualPagination: true,
+    manualPagination: pageCount !== -1,
     enableColumnResizing: true,
     columnResizeMode: "onChange",
     enablePinning: true,
