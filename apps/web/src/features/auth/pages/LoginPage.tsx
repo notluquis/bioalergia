@@ -29,6 +29,7 @@ export default function LoginPage() {
   const [tempUserId, setTempUserId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [isSuccess, setIsSuccess] = useState(false);
 
   const fallbackLogo = "/logo_sin_eslogan.png";
   const logoSrc = settings.logoUrl?.trim() || fallbackLogo;
@@ -50,8 +51,13 @@ export default function LoginPage() {
         return;
       }
 
-      logger.info("[login-page] redirecting after successful login", { user: email, to: from });
-      navigate({ to: from as "/", replace: true });
+      logger.info("[login-page] login success, showing transition", { user: email });
+      setIsSuccess(true);
+      // Small delay for harmonic transition
+      setTimeout(() => {
+        logger.info("[login-page] redirecting", { to: from });
+        navigate({ to: from as "/", replace: true });
+      }, 800);
     } catch (error) {
       const message = error instanceof Error ? error.message : "No se pudo iniciar sesión";
       setFormError(message);
@@ -68,8 +74,12 @@ export default function LoginPage() {
     setFormError(null);
     try {
       await loginWithMfa(tempUserId, mfaCode);
-      logger.info("[login-page] redirecting after successful mfa login", { userId: tempUserId, to: from });
-      navigate({ to: from as "/", replace: true });
+      logger.info("[login-page] mfa success, showing transition", { userId: tempUserId });
+      setIsSuccess(true);
+      setTimeout(() => {
+        logger.info("[login-page] redirecting", { to: from });
+        navigate({ to: from as "/", replace: true });
+      }, 800);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Código incorrecto";
       setFormError(message);
@@ -89,8 +99,12 @@ export default function LoginPage() {
       await loginWithPasskey(authResp, options.challenge);
     },
     onSuccess: () => {
-      logger.info("[login-page] redirecting after successful passkey login", { to: from });
-      navigate({ to: from as "/", replace: true });
+      logger.info("[login-page] passkey success, showing transition");
+      setIsSuccess(true);
+      setTimeout(() => {
+        logger.info("[login-page] redirecting", { to: from });
+        navigate({ to: from as "/", replace: true });
+      }, 800);
     },
     onError: (err) => {
       console.error(err);
@@ -137,34 +151,36 @@ export default function LoginPage() {
         </div>
 
         {/* Content */}
-        {step === "passkey" && (
-          <div className="space-y-3">
-            <Button
-              type="button"
-              className="h-14 w-full gap-2 text-base"
-              onClick={handlePasskeyLogin}
-              disabled={passkeyLoginMutation.isPending}
-            >
-              <Fingerprint className="size-5" />
-              {passkeyLoginMutation.isPending ? "Verificando..." : "Ingresar con biometría"}
-            </Button>
+        {isSuccess
+          ? null
+          : step === "passkey" && (
+              <div className="space-y-3">
+                <Button
+                  type="button"
+                  className="h-14 w-full gap-2 text-base"
+                  onClick={handlePasskeyLogin}
+                  disabled={passkeyLoginMutation.isPending}
+                >
+                  <Fingerprint className="size-5" />
+                  {passkeyLoginMutation.isPending ? "Verificando..." : "Ingresar con biometría"}
+                </Button>
 
-            <button
-              type="button"
-              onClick={() => {
-                setStep("credentials");
-                setFormError(null);
-              }}
-              disabled={passkeyLoginMutation.isPending}
-              className="border-base-300 hover:bg-base-200 flex h-12 w-full items-center justify-center gap-2 rounded-lg border transition-colors disabled:opacity-50"
-            >
-              <Mail className="size-4" />
-              <span className="text-sm font-medium">Usar correo y contraseña</span>
-            </button>
-          </div>
-        )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStep("credentials");
+                    setFormError(null);
+                  }}
+                  disabled={passkeyLoginMutation.isPending}
+                  className="border-base-300 hover:bg-base-200 flex h-12 w-full items-center justify-center gap-2 rounded-lg border transition-colors disabled:opacity-50"
+                >
+                  <Mail className="size-4" />
+                  <span className="text-sm font-medium">Usar correo y contraseña</span>
+                </button>
+              </div>
+            )}
 
-        {step === "credentials" && (
+        {step === "credentials" && !isSuccess && (
           <form onSubmit={handleCredentialsSubmit} className="space-y-4">
             <Input
               label="Correo electrónico"
@@ -211,7 +227,7 @@ export default function LoginPage() {
           </form>
         )}
 
-        {step === "mfa" && (
+        {step === "mfa" && !isSuccess && (
           <form onSubmit={handleMfaSubmit} className="space-y-4">
             <Input
               label="Código de seguridad"
@@ -249,6 +265,21 @@ export default function LoginPage() {
               </Button>
             </div>
           </form>
+        )}
+
+        {/* Success Transition */}
+        {isSuccess && (
+          <div className="animate-in fade-in zoom-in flex flex-col items-center justify-center gap-4 py-8 duration-500">
+            <div className="bg-success/20 text-success flex size-16 scale-110 items-center justify-center rounded-full transition-transform duration-700">
+              <svg className="size-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <div className="text-center">
+              <h2 className="text-base-content font-semibold">¡Bienvenido de nuevo!</h2>
+              <p className="text-base-content/60 text-sm">Preparando tu sesión...</p>
+            </div>
+          </div>
         )}
 
         {/* Error */}

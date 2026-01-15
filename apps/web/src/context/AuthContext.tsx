@@ -139,7 +139,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     if (payload.status === "ok" && payload.user) {
-      queryClient.invalidateQueries({ queryKey: ["auth", "session"] });
+      await queryClient.refetchQueries({ queryKey: ["auth", "session"] });
       logger.info("[auth] login:success", payload.user);
       return { status: "ok", user: payload.user };
     }
@@ -158,7 +158,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error(payload.message || "Código MFA inválido");
     }
 
-    queryClient.invalidateQueries({ queryKey: ["auth", "session"] });
+    await queryClient.refetchQueries({ queryKey: ["auth", "session"] });
     logger.info("[auth] mfa:success", payload.user);
   };
 
@@ -173,7 +173,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error(payload.message || "Error validando Passkey");
     }
 
-    queryClient.invalidateQueries({ queryKey: ["auth", "session"] });
+    await queryClient.refetchQueries({ queryKey: ["auth", "session"] });
     logger.info("[auth] passkey:success", payload.user);
   };
 
