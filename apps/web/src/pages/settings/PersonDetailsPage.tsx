@@ -1,38 +1,16 @@
-import { useQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { ArrowLeft, Briefcase, Building, Calendar, Mail, MapPin, Phone, User } from "lucide-react";
 
-import PageLoader from "@/components/ui/PageLoader";
-import { fetchPerson } from "@/features/people/api";
+import { personKeys } from "@/features/people/queries";
 import { getPersonFullName, getPersonInitials } from "@/lib/person";
 
 export default function PersonDetailsPage() {
   const { id } = useParams({ from: "/_authed/settings/people/$id" });
   const navigate = useNavigate();
 
-  const {
-    data: response,
-    isLoading,
-    error,
-  } = useQuery({
-    queryKey: ["person", id],
-    queryFn: () => fetchPerson(id!),
-    enabled: !!id,
-  });
-
-  const person = response;
-
-  if (isLoading) return <PageLoader />;
-  if (error || !person)
-    return (
-      <div className="p-6 text-center">
-        <p className="text-error">Error al cargar los detalles de la persona.</p>
-        <button className="btn btn-ghost mt-4" onClick={() => navigate({ to: "/settings/people" })}>
-          <ArrowLeft className="mr-2" /> Volver
-        </button>
-      </div>
-    );
+  const { data: person } = useSuspenseQuery(personKeys.detail(id));
 
   return (
     <div className="space-y-6">

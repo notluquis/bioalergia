@@ -1,4 +1,4 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
 
 import PageLoader from "@/components/ui/PageLoader";
@@ -8,7 +8,8 @@ const EditServicePage = lazy(() => import("@/features/services/pages/EditService
 export const Route = createFileRoute("/_authed/services/$id/edit")({
   beforeLoad: ({ context }) => {
     if (!context.auth.can("update", "Service")) {
-      throw redirect({ to: "/" });
+      const routeApi = getRouteApi("/_authed/services/$id/edit");
+      throw routeApi.redirect({ to: "/" });
     }
   },
   component: () => (

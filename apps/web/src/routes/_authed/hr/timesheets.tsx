@@ -1,4 +1,4 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
 
 import PageLoader from "@/components/ui/PageLoader";
@@ -10,7 +10,8 @@ const TimesheetsPage = lazy(() => import("@/features/hr/timesheets/pages/Timeshe
 export const Route = createFileRoute("/_authed/hr/timesheets")({
   beforeLoad: ({ context }) => {
     if (!context.auth.can("read", "TimesheetList")) {
-      throw redirect({ to: "/" });
+      const routeApi = getRouteApi("/_authed/hr/timesheets");
+      throw routeApi.redirect({ to: "/" });
     }
   },
   loader: async ({ context }) => {

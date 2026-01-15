@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Box, ChevronDown, ChevronRight, Edit2, Loader2, Package, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 
@@ -6,12 +6,8 @@ import Button from "@/components/ui/Button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import Input from "@/components/ui/Input";
 import { useToast } from "@/context/ToastContext";
-import {
-  createInventoryCategory,
-  deleteInventoryCategory,
-  getInventoryCategories,
-  getInventoryItems,
-} from "@/features/inventory/api";
+import { createInventoryCategory, deleteInventoryCategory } from "@/features/inventory/api";
+import { inventoryKeys } from "@/features/inventory/queries";
 import type { InventoryItem } from "@/features/inventory/types";
 
 const getStockStatusColor = (stock: number) => {
@@ -28,18 +24,12 @@ export default function InventorySettingsPage() {
   const queryClient = useQueryClient();
 
   // Fetch Categories
-  const { data: categories = [], isLoading: isLoadingCategories } = useQuery({
-    queryKey: ["inventory-categories"],
-    queryFn: getInventoryCategories,
-  });
+  const { data: categories } = useSuspenseQuery(inventoryKeys.categories());
 
   // Fetch Items
-  const { data: items = [], isLoading: isLoadingItems } = useQuery({
-    queryKey: ["inventory-items"],
-    queryFn: getInventoryItems,
-  });
+  const { data: items } = useSuspenseQuery(inventoryKeys.items());
 
-  const isLoading = isLoadingCategories || isLoadingItems;
+  const isLoading = false;
 
   // Group items by category
   const itemsByCategory = items.reduce(

@@ -1,14 +1,15 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Plus, RotateCw } from "lucide-react";
 import { useState } from "react";
 
 import { Card, CardContent, CardHeader } from "@/components/ui/Card";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
-import { fetchPermissions, fetchRoles, syncPermissions, updateRolePermissions } from "@/features/roles/api";
+import { syncPermissions, updateRolePermissions } from "@/features/roles/api";
 import { DeleteRoleModal } from "@/features/roles/components/DeleteRoleModal";
 import { PermissionsMatrixTable } from "@/features/roles/components/PermissionsMatrixTable";
 import { RoleFormModal } from "@/features/roles/components/RoleFormModal";
+import { roleKeys } from "@/features/roles/queries";
 import { getNavSections, type NavItem, type NavSectionData } from "@/lib/nav-generator";
 import { cn } from "@/lib/utils";
 import { Permission, Role } from "@/types/roles";
@@ -26,15 +27,9 @@ export default function RolesSettingsPage() {
   const [viewModeRole, setViewModeRole] = useState<string>("all");
 
   // Queries
-  const rolesQuery = useQuery({
-    queryKey: ["roles"],
-    queryFn: fetchRoles,
-  });
+  const { data: roles } = useSuspenseQuery(roleKeys.lists());
 
-  const permissionsQuery = useQuery({
-    queryKey: ["permissions"],
-    queryFn: fetchPermissions,
-  });
+  const { data: allPermissions } = useSuspenseQuery(roleKeys.permissions());
 
   // Mutations
   const syncMutation = useMutation({
@@ -93,11 +88,6 @@ export default function RolesSettingsPage() {
     setIsDeleteModalOpen(true);
   };
 
-  // Derived state
-  const roles = rolesQuery.data || [];
-  const allPermissions = permissionsQuery.data || [];
-  const isLoading = rolesQuery.isLoading || permissionsQuery.isLoading;
-
   const handlePermissionToggle = (role: Role, permissionId: number) => {
     const currentPermissionIds = role.permissions.map((p) => p.permissionId);
     const hasPermission = currentPermissionIds.includes(permissionId);
@@ -128,15 +118,6 @@ export default function RolesSettingsPage() {
 
     updatePermissions({ roleId: role.id, permissionIds: newPermissionIds });
   };
-
-  if (isLoading) {
-    // Standard loading state - could be replaced with a localized skeleton if preferred
-    return (
-      <div className="flex h-64 items-center justify-center">
-        <span className="loading loading-spinner loading-lg text-primary"></span>
-      </div>
-    );
-  }
 
   // --- Grouping Logic ---
 

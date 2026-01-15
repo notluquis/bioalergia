@@ -56,4 +56,9 @@ export const calendarQueries = {
       queryFn: fetchClassificationOptions,
       staleTime: 1000 * 60 * 60, // 1 hour
     }),
+  list: () =>
+    queryOptions({
+      queryKey: ["calendars"], // Using legacy key to match existing or I should align keys
+      queryFn: () => import("./api").then((m) => m.fetchCalendars()),
+    }),
 };
