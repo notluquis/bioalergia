@@ -207,12 +207,15 @@ function HeatmapMonthComponent({ month, statsByDate, maxValue }: HeatmapMonthPro
         <div className="bg-base-100/30 border-base-200/50 border-t px-4 py-2 text-[10px]">
           <div className="text-base-content/60 flex flex-wrap items-center justify-between gap-2">
             <span className="font-semibold">Σ {monthTotals.events} eventos</span>
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-x-3 gap-y-1">
               <span>
                 Esperado: <span className="font-medium">{fmtCLP(monthTotals.expected)}</span>
               </span>
               <span>
                 Pagado: <span className="font-medium">{fmtCLP(monthTotals.paid)}</span>
+              </span>
+              <span>
+                Restante: <span className="font-medium">{fmtCLP(monthTotals.expected - monthTotals.paid)}</span>
               </span>
             </div>
           </div>
