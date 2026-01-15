@@ -58,33 +58,39 @@ export class ChunkErrorBoundary extends Component<Props, State> {
   render(): React.JSX.Element {
     if (this.state.hasError) {
       return (
-        <div className="bg-base-200 flex min-h-screen items-center justify-center p-4">
-          <div className="card bg-base-100 w-full max-w-md shadow-xl">
-            <div className="card-body text-center">
-              <div className="mb-4 flex justify-center">
-                <div className="bg-error/10 relative flex h-16 w-16 items-center justify-center rounded-full">
-                  <svg className="text-error h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 8v4m0 4v.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                </div>
-              </div>
-              <h2 className="card-title text-error justify-center">Actualización Disponible</h2>
-              <p className="text-base-content/70 mt-2 text-sm">
-                Se ha publicado una nueva versión. Para continuar, necesitamos recargar la página.
+        <div className="bg-base-100/50 fixed inset-0 z-9999 flex items-center justify-center p-6 backdrop-blur-md">
+          <div className="bg-base-100 border-base-200 w-full max-w-sm overflow-hidden rounded-[2.5rem] border p-8 text-center shadow-2xl">
+            <div className="bg-primary/10 text-primary ring-primary/5 mx-auto mb-6 flex h-24 w-24 animate-pulse items-center justify-center rounded-full ring-8">
+              <svg
+                className="h-12 w-12"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"
+                />
+              </svg>
+            </div>
+
+            <div className="space-y-3">
+              <h1 className="text-base-content text-2xl font-bold tracking-tight">Acción Requerida</h1>
+              <p className="text-base-content/60 px-4 text-sm leading-relaxed">
+                Se detectó una nueva versión de Bioalergia. Necesitamos recargar la aplicación para activarla.
               </p>
-              <p className="text-base-content/50 mt-4 text-xs break-all">
-                {this.state.error?.message || "Error desconocido"}
-              </p>
-              <div className="card-actions mt-6 justify-center">
-                <button onClick={this.handleReset} className="btn btn-primary btn-sm">
-                  Recargar Página
-                </button>
-              </div>
+            </div>
+
+            <div className="mt-8">
+              <button
+                onClick={this.handleReset}
+                className="btn btn-primary btn-lg ring-primary/20 w-full rounded-2xl shadow-lg ring"
+              >
+                Actualizar Ahora
+              </button>
             </div>
           </div>
         </div>
