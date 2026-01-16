@@ -2,11 +2,11 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { CreditCard, TrendingDown } from "lucide-react";
 
-import { personalQueries } from "@/features/personal-finance/queries";
+import { personalFinanceQueries } from "@/features/personal-finance/queries";
 import { formatCurrency } from "@/lib/format";
 
 export function DashboardPersonalLiabilities() {
-  const { data: credits } = useSuspenseQuery(personalQueries.list());
+  const { data: credits } = useSuspenseQuery(personalFinanceQueries.list());
 
   // Calculate totals
   const activeCredits = credits.filter((c) => (c.remainingAmount ?? 0) > 0);
