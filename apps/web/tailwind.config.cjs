@@ -33,20 +33,21 @@ module.exports = {
       {
         /* Branded light theme: bioalergia — with Apple-like neutral aesthetics */
         bioalergia: {
-          primary: "#0e64b7" /* Brand blue, kept from original */,
-          "primary-content": "#ffffff",
-          secondary: "#f1a722",
-          "secondary-content": "#102542",
-          accent: "#0ea5a4",
-          neutral: "#f5f5f5" /* True neutral, not white-biased */,
-          "base-100": "#ffffff" /* Pure white background */,
-          "base-200": "#f5f5f5" /* Light gray */,
-          "base-300": "#e5e5e5" /* Medium gray */,
-          "base-content": "#1f2937" /* Gray-800 for proper text/icon contrast on light bg */,
-          info: "#3abff8",
-          success: "#16a34a", /* Darker green (emerald-600) for text accessibility on light bg */
-          warning: "#d97706", /* Darker amber (amber-600) for text accessibility */
-          error: "#dc2626",   /* Darker red (red-600) for text accessibility */
+          /* P3 Gamut (OKLCH) - 2026 Standard */
+          primary: "oklch(52% 0.16 257)" /* Deep Brand Blue */,
+          "primary-content": "oklch(100% 0 0)",
+          secondary: "oklch(78% 0.16 70)" /* Vibrant Gold */,
+          "secondary-content": "oklch(20% 0.05 260)",
+          accent: "oklch(70% 0.15 180)" /* Teal */,
+          neutral: "oklch(96% 0.01 0)" /* Neutral Gray */,
+          "base-100": "oklch(100% 0 0)" /* White */,
+          "base-200": "oklch(97% 0 0)",
+          "base-300": "oklch(92% 0 0)",
+          "base-content": "oklch(20% 0.04 260)",
+          info: "oklch(70% 0.14 240)",
+          success: "oklch(65% 0.18 145)",
+          warning: "oklch(75% 0.16 55)",
+          error: "oklch(60% 0.18 25)",
           /* brand tokens (available as CSS variables via data-theme) */
           "--brand-primary": "#0e64b7",
           "--brand-secondary": "#f1a722",
@@ -64,19 +65,20 @@ module.exports = {
       {
         /* Branded dark theme: bioalergia-dark — with Apple-like neutral aesthetics */
         "bioalergia-dark": {
-          primary: "#7fb6ff",
-          "primary-content": "#ffffff",
-          secondary: "#ffc782",
-          "secondary-content": "#ffffff",
-          accent: "#0ea5a4",
-          neutral: "#262626" /* True neutral gray */,
-          "base-100": "#000000" /* Pure black background */,
-          "base-200": "#0A0A0A" /* Deepest off-black (OLED Optimized) */,
-          "base-300": "#171717" /* Dark gray */,
-          info: "#60a5fa",
-          success: "#34d399",
-          warning: "#fbbd23",
-          error: "#fb7185",
+          /* P3 Gamut (OKLCH) - Dark Mode */
+          primary: "oklch(70% 0.14 255)" /* Lighter Blue */,
+          "primary-content": "oklch(100% 0 0)",
+          secondary: "oklch(82% 0.14 75)" /* Lighter Gold */,
+          "secondary-content": "oklch(100% 0 0)",
+          accent: "oklch(70% 0.15 180)",
+          neutral: "oklch(26% 0 0)" /* Dark Gray */,
+          "base-100": "oklch(0% 0 0)" /* Pure Black */,
+          "base-200": "oklch(12% 0 0)" /* Deep Gray */,
+          "base-300": "oklch(18% 0 0)",
+          info: "oklch(70% 0.14 240)",
+          success: "oklch(75% 0.16 150)",
+          warning: "oklch(80% 0.16 85)",
+          error: "oklch(70% 0.18 20)",
           /* brand tokens */
           "--brand-primary": "#7fb6ff",
           "--brand-secondary": "#ffc782",
