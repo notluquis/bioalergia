@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 
 import { apiClient } from "@/lib/apiClient";
@@ -30,7 +30,7 @@ export function useJobProgress(jobId: string | null, options: UseJobProgressOpti
   const queryClient = useQueryClient();
   const [hasNotified, setHasNotified] = useState(false);
 
-  const query = useQuery({
+  const query = useSuspenseQuery({
     queryKey: ["job-status", jobId],
     queryFn: async () => {
       if (!jobId) return null;
@@ -40,7 +40,6 @@ export function useJobProgress(jobId: string | null, options: UseJobProgressOpti
       }
       return response.job;
     },
-    enabled: !!jobId,
     // eslint-disable-next-line sonarjs/function-return-type
     refetchInterval: (query) => {
       const data = query.state.data;

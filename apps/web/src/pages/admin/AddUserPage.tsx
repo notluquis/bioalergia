@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { Shield, UserPlus, Users } from "lucide-react";
 import { useState } from "react";
@@ -33,14 +33,13 @@ export default function AddUserPage() {
   });
 
   // Fetch available roles
-  const { data: rolesData } = useQuery({
+  const { data: availableRoles } = useSuspenseQuery({
     queryKey: ["available-roles"],
     queryFn: fetchRoles,
   });
-  const availableRoles = rolesData ?? [];
 
   // Fetch people without users
-  const { data: peopleData } = useQuery({
+  const { data: peopleData } = useSuspenseQuery({
     queryKey: ["people"],
     queryFn: fetchPeople,
   });

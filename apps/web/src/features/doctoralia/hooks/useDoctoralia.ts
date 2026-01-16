@@ -4,7 +4,7 @@
  * TanStack Query hooks for Doctoralia data fetching.
  */
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 
 import {
   bookDoctoraliaSlot,
@@ -35,7 +35,7 @@ export const doctoraliaKeys = {
 // ============================================================
 
 export function useDoctoraliaStatus() {
-  return useQuery({
+  return useSuspenseQuery({
     queryKey: doctoraliaKeys.status(),
     queryFn: fetchDoctoraliaStatus,
     staleTime: 5 * 60 * 1000, // 5 minutes
@@ -47,7 +47,7 @@ export function useDoctoraliaStatus() {
 // ============================================================
 
 export function useDoctoraliaFacilities() {
-  return useQuery({
+  return useSuspenseQuery({
     queryKey: doctoraliaKeys.facilities(),
     queryFn: fetchDoctoraliaFacilities,
     staleTime: 5 * 60 * 1000,
@@ -59,10 +59,12 @@ export function useDoctoraliaFacilities() {
 // ============================================================
 
 export function useDoctoraliaDoctors(facilityId: number | undefined) {
-  return useQuery({
-    queryKey: doctoraliaKeys.doctors(facilityId!),
-    queryFn: () => fetchDoctoraliaDoctors(facilityId!),
-    enabled: !!facilityId,
+  return useSuspenseQuery({
+    queryKey: doctoraliaKeys.doctors(facilityId ?? 0),
+    queryFn: async () => {
+      if (!facilityId) return [];
+      return fetchDoctoraliaDoctors(facilityId);
+    },
     staleTime: 5 * 60 * 1000,
   });
 }
@@ -72,10 +74,12 @@ export function useDoctoraliaDoctors(facilityId: number | undefined) {
 // ============================================================
 
 export function useDoctoraliaSlots(query: DoctoraliaSlotQuery | null) {
-  return useQuery({
-    queryKey: doctoraliaKeys.slots(query!),
-    queryFn: () => fetchDoctoraliaSlots(query!),
-    enabled: !!query,
+  return useSuspenseQuery({
+    queryKey: doctoraliaKeys.slots(query ?? { facilityId: "0", doctorId: "0", addressId: "0", start: "", end: "" }),
+    queryFn: async () => {
+      if (!query) return [];
+      return fetchDoctoraliaSlots(query);
+    },
     staleTime: 60 * 1000, // 1 minute (slots change frequently)
   });
 }
@@ -85,10 +89,12 @@ export function useDoctoraliaSlots(query: DoctoraliaSlotQuery | null) {
 // ============================================================
 
 export function useDoctoraliaBookings(query: DoctoraliaSlotQuery | null) {
-  return useQuery({
-    queryKey: doctoraliaKeys.bookings(query!),
-    queryFn: () => fetchDoctoraliaBookings(query!),
-    enabled: !!query,
+  return useSuspenseQuery({
+    queryKey: doctoraliaKeys.bookings(query ?? { facilityId: "0", doctorId: "0", addressId: "0", start: "", end: "" }),
+    queryFn: async () => {
+      if (!query) return [];
+      return fetchDoctoraliaBookings(query);
+    },
     staleTime: 30 * 1000, // 30 seconds
   });
 }
@@ -149,7 +155,7 @@ export function useCancelBooking() {
 // ============================================================
 
 export function useDoctoraliaSyncLogs() {
-  return useQuery({
+  return useSuspenseQuery({
     queryKey: doctoraliaKeys.syncLogs(),
     queryFn: fetchDoctoraliaSyncLogs,
     staleTime: 30 * 1000,

@@ -1,11 +1,11 @@
-import { useQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { useStore } from "@tanstack/react-store";
 import { useEffect } from "react";
 
 import { useAuth } from "@/context/AuthContext";
 import { logger } from "@/lib/logger";
 
-import { extractErrorMessage, fetchServiceDetail } from "../api";
+import { fetchServiceDetail } from "../api";
 import { serviceKeys } from "../queries";
 import { servicesActions, servicesStore } from "../store";
 import type { ServiceDetailResponse, ServiceListResponse } from "../types";
@@ -22,14 +22,10 @@ export function useServiceDetails(services: ServiceListResponse["services"]) {
   const serviceIds = services.map((s) => s.public_id).join(",");
 
   // Fetch All Details (Aggregated)
-  const {
-    data: allDetailsData,
-    isLoading: aggregatedLoading,
-    error: aggregatedErrorObj,
-  } = useQuery({
-    queryKey: [...serviceKeys.detailsAggregated(serviceIds), services.length],
+  const { data: allDetails } = useSuspenseQuery({
+    queryKey: [...serviceKeys.detailsAggregated(serviceIds), services.length, canView],
     queryFn: async () => {
-      if (services.length === 0) return {};
+      if (services.length === 0 || !canView) return {};
       const results = await Promise.allSettled(services.map((service) => fetchServiceDetail(service.public_id)));
 
       const detailsMap: Record<string, ServiceDetailResponse> = {};
@@ -50,11 +46,9 @@ export function useServiceDetails(services: ServiceListResponse["services"]) {
       }
       return detailsMap;
     },
-    enabled: services.length > 0 && canView,
     staleTime: 5 * 60 * 1000,
   });
 
-  const allDetails = allDetailsData ?? {};
   const detail = selectedId && allDetails[selectedId] ? allDetails[selectedId] : null;
 
   // Sync selectedId (if needed, though store usually drives this)
@@ -71,8 +65,8 @@ export function useServiceDetails(services: ServiceListResponse["services"]) {
     selectedService: detail?.service ?? null,
     schedules: detail?.schedules ?? [],
     unifiedAgendaItems,
-    aggregatedLoading,
-    aggregatedError: extractErrorMessage(aggregatedErrorObj),
+    aggregatedLoading: false, // Suspense guarantees data is ready
+    aggregatedError: null, // Errors are handled by Suspense boundary or internally logged
 
     // Selection / Modal State
     selectedId,
