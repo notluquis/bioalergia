@@ -54,16 +54,15 @@ export default function OnboardingWizard() {
 
   // Form State
   const [profile, setProfile] = useState<ProfileData>(() => ({
-    names: "",
-    fatherName: "",
-    motherName: "",
-    rut: "",
-    phone: "",
-    address: "",
-    bankName: "",
-    bankAccountType: "",
-    bankAccountNumber: "",
-    ...profileData,
+    names: profileData.names || "",
+    fatherName: profileData.fatherName || "",
+    motherName: profileData.motherName || "",
+    rut: profileData.rut || "",
+    phone: profileData.phone || "",
+    address: profileData.address || "",
+    bankName: profileData.bankName || "",
+    bankAccountType: profileData.bankAccountType || "",
+    bankAccountNumber: profileData.bankAccountNumber || "",
   }));
 
   const [mfaCode, setMfaCode] = useState("");
