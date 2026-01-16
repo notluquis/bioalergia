@@ -53,6 +53,7 @@ import { Route as AuthedHrEmployeesRouteImport } from "./routes/_authed/hr/emplo
 import { Route as AuthedHrAuditRouteImport } from "./routes/_authed/hr/audit"
 import { Route as AuthedFinanzasStatisticsRouteImport } from "./routes/_authed/finanzas/statistics"
 import { Route as AuthedFinanzasProductionBalancesRouteImport } from "./routes/_authed/finanzas/production-balances"
+import { Route as AuthedFinanzasPersonalCreditsRouteImport } from "./routes/_authed/finanzas/personal-credits"
 import { Route as AuthedFinanzasPayoutsRouteImport } from "./routes/_authed/finanzas/payouts"
 import { Route as AuthedFinanzasParticipantsRouteImport } from "./routes/_authed/finanzas/participants"
 import { Route as AuthedFinanzasLoansRouteImport } from "./routes/_authed/finanzas/loans"
@@ -67,6 +68,7 @@ import { Route as AuthedCalendarClassifyRouteImport } from "./routes/_authed/cal
 import { Route as AuthedSettingsUsersAddRouteImport } from "./routes/_authed/settings/users.add"
 import { Route as AuthedSettingsPeopleIdRouteImport } from "./routes/_authed/settings/people.$id"
 import { Route as AuthedServicesIdEditRouteImport } from "./routes/_authed/services/$id.edit"
+import { Route as AuthedFinanzasPersonalCreditsCreditIdRouteImport } from "./routes/_authed/finanzas/personal-credits.$creditId"
 
 const LoginRoute = LoginRouteImport.update({
   id: "/login",
@@ -264,6 +266,12 @@ const AuthedFinanzasProductionBalancesRoute =
     path: "/production-balances",
     getParentRoute: () => AuthedFinanzasRoute,
   } as any)
+const AuthedFinanzasPersonalCreditsRoute =
+  AuthedFinanzasPersonalCreditsRouteImport.update({
+    id: "/personal-credits",
+    path: "/personal-credits",
+    getParentRoute: () => AuthedFinanzasRoute,
+  } as any)
 const AuthedFinanzasPayoutsRoute = AuthedFinanzasPayoutsRouteImport.update({
   id: "/payouts",
   path: "/payouts",
@@ -339,6 +347,12 @@ const AuthedServicesIdEditRoute = AuthedServicesIdEditRouteImport.update({
   path: "/$id/edit",
   getParentRoute: () => AuthedServicesRoute,
 } as any)
+const AuthedFinanzasPersonalCreditsCreditIdRoute =
+  AuthedFinanzasPersonalCreditsCreditIdRouteImport.update({
+    id: "/$creditId",
+    path: "/$creditId",
+    getParentRoute: () => AuthedFinanzasPersonalCreditsRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   "/login": typeof LoginRoute
@@ -362,6 +376,7 @@ export interface FileRoutesByFullPath {
   "/finanzas/loans": typeof AuthedFinanzasLoansRoute
   "/finanzas/participants": typeof AuthedFinanzasParticipantsRoute
   "/finanzas/payouts": typeof AuthedFinanzasPayoutsRoute
+  "/finanzas/personal-credits": typeof AuthedFinanzasPersonalCreditsRouteWithChildren
   "/finanzas/production-balances": typeof AuthedFinanzasProductionBalancesRoute
   "/finanzas/statistics": typeof AuthedFinanzasStatisticsRoute
   "/hr/audit": typeof AuthedHrAuditRoute
@@ -389,6 +404,7 @@ export interface FileRoutesByFullPath {
   "/operations/": typeof AuthedOperationsIndexRoute
   "/services/": typeof AuthedServicesIndexRoute
   "/settings/": typeof AuthedSettingsIndexRoute
+  "/finanzas/personal-credits/$creditId": typeof AuthedFinanzasPersonalCreditsCreditIdRoute
   "/services/$id/edit": typeof AuthedServicesIdEditRoute
   "/settings/people/$id": typeof AuthedSettingsPeopleIdRoute
   "/settings/users/add": typeof AuthedSettingsUsersAddRoute
@@ -409,6 +425,7 @@ export interface FileRoutesByTo {
   "/finanzas/loans": typeof AuthedFinanzasLoansRoute
   "/finanzas/participants": typeof AuthedFinanzasParticipantsRoute
   "/finanzas/payouts": typeof AuthedFinanzasPayoutsRoute
+  "/finanzas/personal-credits": typeof AuthedFinanzasPersonalCreditsRouteWithChildren
   "/finanzas/production-balances": typeof AuthedFinanzasProductionBalancesRoute
   "/finanzas/statistics": typeof AuthedFinanzasStatisticsRoute
   "/hr/audit": typeof AuthedHrAuditRoute
@@ -436,6 +453,7 @@ export interface FileRoutesByTo {
   "/operations": typeof AuthedOperationsIndexRoute
   "/services": typeof AuthedServicesIndexRoute
   "/settings": typeof AuthedSettingsIndexRoute
+  "/finanzas/personal-credits/$creditId": typeof AuthedFinanzasPersonalCreditsCreditIdRoute
   "/services/$id/edit": typeof AuthedServicesIdEditRoute
   "/settings/people/$id": typeof AuthedSettingsPeopleIdRoute
   "/settings/users/add": typeof AuthedSettingsUsersAddRoute
@@ -464,6 +482,7 @@ export interface FileRoutesById {
   "/_authed/finanzas/loans": typeof AuthedFinanzasLoansRoute
   "/_authed/finanzas/participants": typeof AuthedFinanzasParticipantsRoute
   "/_authed/finanzas/payouts": typeof AuthedFinanzasPayoutsRoute
+  "/_authed/finanzas/personal-credits": typeof AuthedFinanzasPersonalCreditsRouteWithChildren
   "/_authed/finanzas/production-balances": typeof AuthedFinanzasProductionBalancesRoute
   "/_authed/finanzas/statistics": typeof AuthedFinanzasStatisticsRoute
   "/_authed/hr/audit": typeof AuthedHrAuditRoute
@@ -491,6 +510,7 @@ export interface FileRoutesById {
   "/_authed/operations/": typeof AuthedOperationsIndexRoute
   "/_authed/services/": typeof AuthedServicesIndexRoute
   "/_authed/settings/": typeof AuthedSettingsIndexRoute
+  "/_authed/finanzas/personal-credits/$creditId": typeof AuthedFinanzasPersonalCreditsCreditIdRoute
   "/_authed/services/$id/edit": typeof AuthedServicesIdEditRoute
   "/_authed/settings/people/$id": typeof AuthedSettingsPeopleIdRoute
   "/_authed/settings/users/add": typeof AuthedSettingsUsersAddRoute
@@ -519,6 +539,7 @@ export interface FileRouteTypes {
     | "/finanzas/loans"
     | "/finanzas/participants"
     | "/finanzas/payouts"
+    | "/finanzas/personal-credits"
     | "/finanzas/production-balances"
     | "/finanzas/statistics"
     | "/hr/audit"
@@ -546,6 +567,7 @@ export interface FileRouteTypes {
     | "/operations/"
     | "/services/"
     | "/settings/"
+    | "/finanzas/personal-credits/$creditId"
     | "/services/$id/edit"
     | "/settings/people/$id"
     | "/settings/users/add"
@@ -566,6 +588,7 @@ export interface FileRouteTypes {
     | "/finanzas/loans"
     | "/finanzas/participants"
     | "/finanzas/payouts"
+    | "/finanzas/personal-credits"
     | "/finanzas/production-balances"
     | "/finanzas/statistics"
     | "/hr/audit"
@@ -593,6 +616,7 @@ export interface FileRouteTypes {
     | "/operations"
     | "/services"
     | "/settings"
+    | "/finanzas/personal-credits/$creditId"
     | "/services/$id/edit"
     | "/settings/people/$id"
     | "/settings/users/add"
@@ -620,6 +644,7 @@ export interface FileRouteTypes {
     | "/_authed/finanzas/loans"
     | "/_authed/finanzas/participants"
     | "/_authed/finanzas/payouts"
+    | "/_authed/finanzas/personal-credits"
     | "/_authed/finanzas/production-balances"
     | "/_authed/finanzas/statistics"
     | "/_authed/hr/audit"
@@ -647,6 +672,7 @@ export interface FileRouteTypes {
     | "/_authed/operations/"
     | "/_authed/services/"
     | "/_authed/settings/"
+    | "/_authed/finanzas/personal-credits/$creditId"
     | "/_authed/services/$id/edit"
     | "/_authed/settings/people/$id"
     | "/_authed/settings/users/add"
@@ -925,6 +951,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof AuthedFinanzasProductionBalancesRouteImport
       parentRoute: typeof AuthedFinanzasRoute
     }
+    "/_authed/finanzas/personal-credits": {
+      id: "/_authed/finanzas/personal-credits"
+      path: "/personal-credits"
+      fullPath: "/finanzas/personal-credits"
+      preLoaderRoute: typeof AuthedFinanzasPersonalCreditsRouteImport
+      parentRoute: typeof AuthedFinanzasRoute
+    }
     "/_authed/finanzas/payouts": {
       id: "/_authed/finanzas/payouts"
       path: "/payouts"
@@ -1023,6 +1056,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof AuthedServicesIdEditRouteImport
       parentRoute: typeof AuthedServicesRoute
     }
+    "/_authed/finanzas/personal-credits/$creditId": {
+      id: "/_authed/finanzas/personal-credits/$creditId"
+      path: "/$creditId"
+      fullPath: "/finanzas/personal-credits/$creditId"
+      preLoaderRoute: typeof AuthedFinanzasPersonalCreditsCreditIdRouteImport
+      parentRoute: typeof AuthedFinanzasPersonalCreditsRoute
+    }
   }
 }
 
@@ -1048,6 +1088,21 @@ const AuthedCalendarRouteWithChildren = AuthedCalendarRoute._addFileChildren(
   AuthedCalendarRouteChildren,
 )
 
+interface AuthedFinanzasPersonalCreditsRouteChildren {
+  AuthedFinanzasPersonalCreditsCreditIdRoute: typeof AuthedFinanzasPersonalCreditsCreditIdRoute
+}
+
+const AuthedFinanzasPersonalCreditsRouteChildren: AuthedFinanzasPersonalCreditsRouteChildren =
+  {
+    AuthedFinanzasPersonalCreditsCreditIdRoute:
+      AuthedFinanzasPersonalCreditsCreditIdRoute,
+  }
+
+const AuthedFinanzasPersonalCreditsRouteWithChildren =
+  AuthedFinanzasPersonalCreditsRoute._addFileChildren(
+    AuthedFinanzasPersonalCreditsRouteChildren,
+  )
+
 interface AuthedFinanzasRouteChildren {
   AuthedFinanzasConciliacionesRoute: typeof AuthedFinanzasConciliacionesRoute
   AuthedFinanzasCounterpartsRoute: typeof AuthedFinanzasCounterpartsRoute
@@ -1055,6 +1110,7 @@ interface AuthedFinanzasRouteChildren {
   AuthedFinanzasLoansRoute: typeof AuthedFinanzasLoansRoute
   AuthedFinanzasParticipantsRoute: typeof AuthedFinanzasParticipantsRoute
   AuthedFinanzasPayoutsRoute: typeof AuthedFinanzasPayoutsRoute
+  AuthedFinanzasPersonalCreditsRoute: typeof AuthedFinanzasPersonalCreditsRouteWithChildren
   AuthedFinanzasProductionBalancesRoute: typeof AuthedFinanzasProductionBalancesRoute
   AuthedFinanzasStatisticsRoute: typeof AuthedFinanzasStatisticsRoute
   AuthedFinanzasIndexRoute: typeof AuthedFinanzasIndexRoute
@@ -1067,6 +1123,8 @@ const AuthedFinanzasRouteChildren: AuthedFinanzasRouteChildren = {
   AuthedFinanzasLoansRoute: AuthedFinanzasLoansRoute,
   AuthedFinanzasParticipantsRoute: AuthedFinanzasParticipantsRoute,
   AuthedFinanzasPayoutsRoute: AuthedFinanzasPayoutsRoute,
+  AuthedFinanzasPersonalCreditsRoute:
+    AuthedFinanzasPersonalCreditsRouteWithChildren,
   AuthedFinanzasProductionBalancesRoute: AuthedFinanzasProductionBalancesRoute,
   AuthedFinanzasStatisticsRoute: AuthedFinanzasStatisticsRoute,
   AuthedFinanzasIndexRoute: AuthedFinanzasIndexRoute,

@@ -39,6 +39,7 @@ import { readFile } from "fs/promises";
 import { join } from "path";
 import { integrationRoutes } from "./routes/integrations";
 import { doctoraliaRoutes } from "./routes/doctoralia";
+import { personalFinanceRoutes } from "./routes/personal-finance";
 
 import { startGoogleCalendarScheduler } from "./lib/google/google-calendar-scheduler";
 import { setupAllWatchChannels } from "./lib/google/google-calendar-watch";
@@ -150,6 +151,7 @@ app.route("/api/timesheets", timesheetRoutes);
 app.route("/api/people", peopleRoutes);
 app.route("/api/expenses", expenseRoutes);
 app.route("/api/integrations", integrationRoutes);
+app.route("/api/personal-finance", personalFinanceRoutes);
 
 // Doctoralia integration routes
 app.route("/api/doctoralia", doctoraliaRoutes);
