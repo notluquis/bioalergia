@@ -1,6 +1,13 @@
 import "dayjs/locale/es";
 
-import { useDeleteUser, useFindManyRole, useFindManyUser, useUpdateUser } from "@finanzas/db/hooks";
+import {
+  useCreateUserRoleAssignment,
+  useDeleteManyUserRoleAssignment,
+  useDeleteUser,
+  useFindManyRole,
+  useFindManyUser,
+  useUpdateUser,
+} from "@finanzas/db/hooks";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import dayjs from "dayjs";
@@ -77,6 +84,8 @@ export default function UserManagementPage() {
   // Mutations
   const updateUserMutation = useUpdateUser();
   const deleteUserMutation = useDeleteUser();
+  const createRoleAssignment = useCreateUserRoleAssignment();
+  const deleteRoleAssignments = useDeleteManyUserRoleAssignment();
 
   // Actions Handlers
   const actions = useMemo(
@@ -152,9 +161,30 @@ export default function UserManagementPage() {
   const columns = useMemo(() => getColumns(actions), [actions]);
 
   const handleSaveRole = async () => {
-    if (!editingUser) return;
+    if (!editingUser || !selectedRole) return;
+
+    const selectedRoleObj = roles.find((r) => r.name === selectedRole);
+    if (!selectedRoleObj) {
+      error("Rol no encontrado");
+      return;
+    }
+
     try {
-      error("La actualización de roles requiere implementación de UserRoleAssignment");
+      // First, remove all existing role assignments for the user
+      await deleteRoleAssignments.mutateAsync({
+        where: { userId: editingUser.id },
+      });
+
+      // Then, create the new role assignment
+      await createRoleAssignment.mutateAsync({
+        data: {
+          userId: editingUser.id,
+          roleId: selectedRoleObj.id,
+        },
+      });
+
+      queryClient.invalidateQueries({ queryKey: ["user"] });
+      success("Rol actualizado correctamente");
       setEditingUser(null);
     } catch (error_) {
       error(error_ instanceof Error ? error_.message : "Error al actualizar rol");

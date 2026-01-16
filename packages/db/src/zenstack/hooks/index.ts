@@ -45,6 +45,21 @@ export function useFindManyRole(
   return role.useFindMany(...args);
 }
 
+// UserRoleAssignment (for role management)
+export function useCreateUserRoleAssignment(
+  ...args: Parameters<Hooks["userRoleAssignment"]["useCreate"]>
+) {
+  const { userRoleAssignment } = useClientQueries(schema);
+  return userRoleAssignment.useCreate(...args);
+}
+
+export function useDeleteManyUserRoleAssignment(
+  ...args: Parameters<Hooks["userRoleAssignment"]["useDeleteMany"]>
+) {
+  const { userRoleAssignment } = useClientQueries(schema);
+  return userRoleAssignment.useDeleteMany(...args);
+}
+
 // Finance
 export function useFindManyTransaction(
   ...args: Parameters<Hooks["transaction"]["useFindMany"]>
