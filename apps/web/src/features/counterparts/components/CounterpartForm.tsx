@@ -1,4 +1,3 @@
-/* eslint-disable sonarjs/deprecation */
 import { useForm, useStore } from "@tanstack/react-form";
 import { Link } from "@tanstack/react-router";
 import { useEffect } from "react";
@@ -34,7 +33,7 @@ const counterpartFormSchema = z.object({
     "OCCASIONAL",
   ] as const),
 
-  email: z.string().email().optional().or(z.literal("")),
+  email: z.email().optional().or(z.literal("")),
   notes: z.string(),
 });
 
