@@ -40,10 +40,13 @@ export function CreateCreditForm() {
       totalAmount: 0,
       startDate: new Date(),
     } as CreateCreditInput,
-    validators: {
-      onChange: createCreditSchema,
-    },
     onSubmit: async ({ value }) => {
+      // Validate with Zod schema before submitting
+      const result = createCreditSchema.safeParse(value);
+      if (!result.success) {
+        toast.error(result.error.issues[0]?.message || "Error de validación");
+        return;
+      }
       mutation.mutate(value);
     },
   });
