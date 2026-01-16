@@ -10,6 +10,7 @@
 import "./index.css";
 import "./i18n";
 
+import { HeroUIProvider } from "@heroui/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRouter, RouterProvider } from "@tanstack/react-router";
 import { QuerySettingsProvider } from "@zenstackhq/tanstack-query/react";
@@ -142,22 +143,24 @@ ReactDOM.createRoot(document.querySelector("#root")!).render(
   <React.StrictMode>
     <GlobalError>
       <ChunkErrorBoundary>
-        <QueryClientProvider client={queryClient}>
-          <QuerySettingsProvider value={{ endpoint: `${import.meta.env.VITE_API_URL || ""}/api/model` }}>
-            <AuthProvider>
-              <SettingsProvider>
-                <ToastProvider>
-                  <AbilityProvider>
-                    <InnerApp />
-                    <React.Suspense fallback={null}>
-                      <ReactQueryDevtools initialIsOpen={false} />
-                    </React.Suspense>
-                  </AbilityProvider>
-                </ToastProvider>
-              </SettingsProvider>
-            </AuthProvider>
-          </QuerySettingsProvider>
-        </QueryClientProvider>
+        <HeroUIProvider>
+          <QueryClientProvider client={queryClient}>
+            <QuerySettingsProvider value={{ endpoint: `${import.meta.env.VITE_API_URL || ""}/api/model` }}>
+              <AuthProvider>
+                <SettingsProvider>
+                  <ToastProvider>
+                    <AbilityProvider>
+                      <InnerApp />
+                      <React.Suspense fallback={null}>
+                        <ReactQueryDevtools initialIsOpen={false} />
+                      </React.Suspense>
+                    </AbilityProvider>
+                  </ToastProvider>
+                </SettingsProvider>
+              </AuthProvider>
+            </QuerySettingsProvider>
+          </QueryClientProvider>
+        </HeroUIProvider>
       </ChunkErrorBoundary>
     </GlobalError>
   </React.StrictMode>
