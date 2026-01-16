@@ -18,7 +18,7 @@ export function DashboardPersonalLiabilities() {
 
   const upcomingPayments = [...activeCredits]
     .filter((c) => c.nextPaymentDate && new Date(c.nextPaymentDate) >= new Date())
-    .sort((a, b) => new Date(a.nextPaymentDate!).getTime() - new Date(b.nextPaymentDate!).getTime());
+    .toSorted((a, b) => new Date(a.nextPaymentDate!).getTime() - new Date(b.nextPaymentDate!).getTime());
 
   const nextPayment = upcomingPayments[0];
 

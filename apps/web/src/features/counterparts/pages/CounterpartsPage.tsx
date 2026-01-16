@@ -90,11 +90,6 @@ export default function CounterpartsPage() {
     };
   });
 
-  // const { data: detail, isLoading: detailLoading, error: detailError } = useQuery(counterpartKeys.detail(selectedId!));
-
-  // Summary query (kept as manual since it's a custom aggregation endpoint)
-  // const { data: summary, error: summaryError } = useQuery(counterpartKeys.summary(selectedId!, summaryRange));
-
   // Derived error state (combine/prioritize)
   const displayError = error || (listError instanceof Error ? listError.message : null);
 
@@ -121,8 +116,6 @@ export default function CounterpartsPage() {
   async function handleSaveCounterpart(payload: CounterpartUpsertPayload) {
     setError(null);
     const normalizedRut = normalizeRut(payload.rut ?? null);
-    // const previousRut = normalizeRut(detail?.counterpart?.rut ?? null);
-    const previousRut = null; // Cannot access detail directly here easily, simplified for now or need queryCache check
 
     try {
       if (!payload.name) throw new Error("El nombre es obligatorio");
@@ -144,7 +137,7 @@ export default function CounterpartsPage() {
       setIsFormModalOpen(false);
 
       // Handle RUT attachment auto-logic
-      if (savedId && normalizedRut && (isNew || normalizedRut !== previousRut)) {
+      if (savedId && normalizedRut && isNew) {
         try {
           await attachCounterpartRut(savedId, normalizedRut);
           queryClient.invalidateQueries({ queryKey: ["counterpart"] });
