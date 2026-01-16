@@ -81,7 +81,17 @@ app.use("*", async (c, next) => {
 app.use(
   "/api/*",
   cors({
-    origin: process.env.CORS_ORIGIN || "http://localhost:5173",
+    origin: (origin, callback) => {
+      // Allow requests from same origin (Railway static hosting) or explicit env var
+      if (!origin || origin === process.env.CORS_ORIGIN) {
+        callback(null, true);
+      } else if (!process.env.CORS_ORIGIN && origin.includes("localhost")) {
+        // Dev fallback
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
   }),
 );

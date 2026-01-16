@@ -11,7 +11,7 @@ import Button from "../ui/Button";
 import Input from "../ui/Input";
 
 const FALLBACK_LOGO_PATH = "/logo192.png";
-const FALLBACK_FAVICON_PATH = "/logo_bimi.svg";
+const FALLBACK_FAVICON_PATH = "/icons/icon-192.png";
 const determineAssetMode = (value: string | undefined | null): "url" | "upload" => {
   const trimmed = (value || "").trim();
   if (!trimmed) return "upload";
