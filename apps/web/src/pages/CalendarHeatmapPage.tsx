@@ -1,13 +1,12 @@
 import "dayjs/locale/es";
 
-import { useQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import clsx from "clsx";
 import dayjs, { type Dayjs } from "dayjs";
 import { ChevronDown, Filter } from "lucide-react";
 import { type ChangeEvent, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import Input from "@/components/ui/Input";
@@ -57,11 +56,7 @@ function CalendarHeatmapPage() {
   // React Compiler auto-stabilizes helper functions
   const tc = (key: string, options?: Record<string, unknown>) => t(`calendar.${key}`, options);
 
-  const {
-    data: summary,
-    isLoading: loading,
-    error: queryError,
-  } = useQuery({
+  const { data: summary } = useSuspenseQuery({
     queryKey: ["calendar-heatmap", appliedFilters],
     queryFn: () => {
       const apiFilters: CalendarFilters = {
@@ -70,13 +65,8 @@ function CalendarHeatmapPage() {
       };
       return fetchCalendarSummary(apiFilters);
     },
-    // Keep previous data while fetching new filter to avoid flicker
-    placeholderData: (prev) => prev,
     staleTime: 5 * 60 * 1000, // 5 minutes cache
   });
-
-  const error = queryError instanceof Error ? queryError.message : String(queryError || "");
-  const initializing = loading && !summary;
 
   // NOTE: We no longer sync server filters back to UI to avoid overwriting user changes.
   // The user's `filters` state is the source of truth for the form.
@@ -171,7 +161,8 @@ function CalendarHeatmapPage() {
     setAppliedFilters(defaults);
   };
 
-  const busy = loading || initializing;
+  // With Suspense, we are "busy" only if a transition is happening, but here we just suspend.
+  const busy = false;
   const rangeStartLabel = heatmapMonths[0]?.format("MMM YYYY") ?? "—";
   const rangeEndLabel = heatmapMonths.at(-1)?.format("MMM YYYY") ?? "—";
 
@@ -262,7 +253,7 @@ function CalendarHeatmapPage() {
                   {tc("resetFilters")}
                 </Button>
                 <Button type="submit" disabled={busy}>
-                  {loading ? tc("loading") : tc("applyFilters")}
+                  {tc("applyFilters")}
                 </Button>
               </div>
             </form>
@@ -270,45 +261,35 @@ function CalendarHeatmapPage() {
         </div>
       </Card>
 
-      {error && <Alert variant="error">{error}</Alert>}
-
-      {initializing && !summary && <p className="text-base-content/60 text-sm">{tc("loading")}</p>}
-
-      {!initializing && !summary && <Alert variant="warning">No se encontraron datos para mostrar.</Alert>}
-
-      {!initializing && summary && (
-        <section className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-base-content/60 text-sm font-semibold tracking-wide uppercase">
-              {tc("heatmapSection")}
-            </h2>
-            <span className="text-base-content/60 text-xs">
-              {tc("heatmapRange", {
-                start: rangeStartLabel,
-                end: rangeEndLabel,
-              })}
-            </span>
-          </div>
-
-          <div className="grid items-start gap-4 lg:grid-cols-3">
-            {heatmapMonths.map((month) => (
-              <HeatmapMonth
-                key={month.format("YYYY-MM")}
-                month={month}
-                statsByDate={statsByDate}
-                maxValue={heatmapMaxValue}
-              />
-            ))}
-          </div>
-          <p className="text-base-content/60 text-xs">
-            {tc("heatmapTotals", {
-              events: numberFormatter.format(summary.totals.events),
-              expected: currencyFormatter.format(summary.totals.amountExpected),
-              paid: currencyFormatter.format(summary.totals.amountPaid),
+      <section className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-base-content/60 text-sm font-semibold tracking-wide uppercase">{tc("heatmapSection")}</h2>
+          <span className="text-base-content/60 text-xs">
+            {tc("heatmapRange", {
+              start: rangeStartLabel,
+              end: rangeEndLabel,
             })}
-          </p>
-        </section>
-      )}
+          </span>
+        </div>
+
+        <div className="grid items-start gap-4 lg:grid-cols-3">
+          {heatmapMonths.map((month) => (
+            <HeatmapMonth
+              key={month.format("YYYY-MM")}
+              month={month}
+              statsByDate={statsByDate}
+              maxValue={heatmapMaxValue}
+            />
+          ))}
+        </div>
+        <p className="text-base-content/60 text-xs">
+          {tc("heatmapTotals", {
+            events: numberFormatter.format(summary.totals.events),
+            expected: currencyFormatter.format(summary.totals.amountExpected),
+            paid: currencyFormatter.format(summary.totals.amountPaid),
+          })}
+        </p>
+      </section>
     </section>
   );
 }

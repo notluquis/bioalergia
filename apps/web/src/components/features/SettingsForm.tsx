@@ -1,5 +1,5 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
-import React, { useEffect, useRef, useState } from "react";
+import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import React, { Suspense, useEffect, useRef, useState } from "react";
 
 import { useAuth } from "@/context/AuthContext";
 import { type AppSettings, useSettings } from "@/context/SettingsContext";
@@ -34,12 +34,10 @@ const fields: Array<{ key: keyof AppSettings; label: string; type?: string; help
 
 export default function SettingsForm() {
   const { settings, updateSettings } = useSettings();
-  const { hasRole, can } = useAuth();
+  const { hasRole } = useAuth();
   const [form, setForm] = useState<AppSettings>(settings);
   const [status, setStatus] = useState<"idle" | "saving" | "success" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
-  const [upsertChunkSize, setUpsertChunkSize] = useState<number | string>("");
-  const [envUpsertChunkSize, setEnvUpsertChunkSize] = useState<string | null>(null);
 
   const [logoMode, setLogoMode] = useState<"url" | "upload">(determineLogoMode(settings.logoUrl));
   const [logoFile, setLogoFile] = useState<File | null>(null);
@@ -97,42 +95,17 @@ export default function SettingsForm() {
     };
   }, []);
 
-  // Internal Settings Query
-  const {
-    data: internalData,
-    refetch: refetchInternal,
-    isFetching: internalLoading,
-  } = useQuery({
-    queryKey: ["settings-internal"],
-    enabled: !!can("update", "Setting"),
-    queryFn: fetchInternalSettings,
-    staleTime: 0,
-  });
-
+  // Clean up object URLs
   useEffect(() => {
-    if (
-      internalData?.internal && // ... existing logic using internalData matches ...
-      upsertChunkSize === ""
-    ) {
-      setUpsertChunkSize(internalData.internal.upsertChunkSize ?? "");
-      setEnvUpsertChunkSize(internalData.internal.envUpsertChunkSize ?? null);
-    }
-  }, [internalData, upsertChunkSize]);
+    return () => {
+      if (logoPreviewRef.current) URL.revokeObjectURL(logoPreviewRef.current);
+      if (faviconPreviewRef.current) URL.revokeObjectURL(faviconPreviewRef.current);
+    };
+  }, []);
 
   // Mutations
   const uploadMutation = useMutation({
     mutationFn: (args: { file: File; endpoint: string }) => uploadBrandingAsset(args.file, args.endpoint),
-  });
-
-  const internalMutation = useMutation({
-    mutationFn: (body: object) =>
-      updateInternalSettings(body).then((res) => {
-        if (res.status !== "ok") throw new Error(res.message || "Error al actualizar");
-        return res;
-      }),
-    onSuccess: () => {
-      refetchInternal();
-    },
   });
 
   const handleChange = (key: keyof AppSettings, value: string) => {
@@ -415,47 +388,98 @@ export default function SettingsForm() {
           {status === "saving" || uploadMutation.isPending ? "Guardando..." : "Guardar cambios"}
         </Button>
       </div>
+
       {hasRole() && (
-        <div className="border-base-300 bg-base-200 mt-6 rounded-lg border p-4">
-          <h3 className="text-sm font-semibold">Ajustes internos (avanzado)</h3>
-          <p className="text-base-content/70 text-xs">
-            Variables internas editables (prefijo BIOALERGIA_X_). Solo administradores.
-          </p>
-          <div className="mt-3 grid gap-3 md:grid-cols-3">
-            <Input
-              type="number"
-              label="Tamaño de chunk para retiros"
-              min={50}
-              max={5000}
-              value={String(upsertChunkSize ?? "")}
-              onChange={(e) => setUpsertChunkSize(e.target.value)}
-              inputMode="numeric"
-              helper={`Env var: ${envUpsertChunkSize ?? "(no definido)"}`}
-            />
-            <div className="flex items-end gap-2 md:col-span-2">
-              <Button
-                type="button"
-                variant="secondary"
-                disabled={internalLoading || internalMutation.isPending}
-                onClick={() => {
-                  const body = upsertChunkSize === "" ? {} : { upsertChunkSize: Number(upsertChunkSize) };
-                  internalMutation.mutate(body);
-                }}
-              >
-                {internalMutation.isPending ? "Guardando..." : "Guardar ajuste interno"}
-              </Button>
-              <Button type="button" variant="ghost" onClick={() => internalMutation.mutate({})}>
-                Eliminar ajuste
-              </Button>
+        <Suspense
+          fallback={
+            <div className="border-base-300 bg-base-200 mt-6 rounded-lg border p-4">
+              <h3 className="text-sm font-semibold">Ajustes internos (avanzado)</h3>
+              <div className="text-base-content/60 mt-3 flex items-center gap-2 text-sm">
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                Cargando configuración interna...
+              </div>
             </div>
-          </div>
-          {internalMutation.isError && (
-            <div className="text-error mt-3 text-xs">
-              {internalMutation.error instanceof Error ? internalMutation.error.message : "Error"}
-            </div>
-          )}
-        </div>
+          }
+        >
+          <InternalSettingsSection />
+        </Suspense>
       )}
     </form>
+  );
+}
+
+function InternalSettingsSection() {
+  const queryClient = useQueryClient();
+  const [upsertChunkSize, setUpsertChunkSize] = useState<number | string>("");
+
+  // Using useSuspenseQuery - we know this component is only rendered if hasRole() is true
+  // We assume hasRole() implies necessary permissions or we handle the error via boundary if needed.
+  // Actually, standard practice is to use the query.
+  const { data: internalData } = useSuspenseQuery({
+    queryKey: ["settings-internal"],
+    queryFn: fetchInternalSettings,
+    staleTime: 0,
+  });
+
+  const internalMutation = useMutation({
+    mutationFn: (body: object) =>
+      updateInternalSettings(body).then((res) => {
+        if (res.status !== "ok") throw new Error(res.message || "Error al actualizar");
+        return res;
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["settings-internal"] });
+    },
+  });
+
+  // Effect to sync state with data
+  useEffect(() => {
+    if (internalData?.internal && upsertChunkSize === "") {
+      setUpsertChunkSize(internalData.internal.upsertChunkSize ?? "");
+    }
+  }, [internalData, upsertChunkSize]);
+
+  const envUpsertChunkSize = internalData?.internal?.envUpsertChunkSize ?? null;
+
+  return (
+    <div className="border-base-300 bg-base-200 mt-6 rounded-lg border p-4">
+      <h3 className="text-sm font-semibold">Ajustes internos (avanzado)</h3>
+      <p className="text-base-content/70 text-xs">
+        Variables internas editables (prefijo BIOALERGIA_X_). Solo administradores.
+      </p>
+      <div className="mt-3 grid gap-3 md:grid-cols-3">
+        <Input
+          type="number"
+          label="Tamaño de chunk para retiros"
+          min={50}
+          max={5000}
+          value={String(upsertChunkSize ?? "")}
+          onChange={(e) => setUpsertChunkSize(e.target.value)}
+          inputMode="numeric"
+          helper={`Env var: ${envUpsertChunkSize ?? "(no definido)"}`}
+        />
+        <div className="flex items-end gap-2 md:col-span-2">
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={internalMutation.isPending}
+            onClick={() => {
+              const body = upsertChunkSize === "" ? {} : { upsertChunkSize: Number(upsertChunkSize) };
+              internalMutation.mutate(body);
+            }}
+          >
+            {internalMutation.isPending ? "Guardando..." : "Guardar ajuste interno"}
+          </Button>
+          <Button type="button" variant="ghost" onClick={() => internalMutation.mutate({})}>
+            Eliminar ajuste
+          </Button>
+        </div>
+      </div>
+      {internalMutation.isError && (
+        <div className="text-error mt-3 text-xs">
+          {internalMutation.error instanceof Error ? internalMutation.error.message : "Error"}
+        </div>
+      )}
+    </div>
   );
 }

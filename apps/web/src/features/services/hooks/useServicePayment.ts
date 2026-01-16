@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useStore } from "@tanstack/react-store";
 import dayjs from "dayjs";
 
@@ -18,11 +18,7 @@ export function useServicePayment() {
   const paymentForm = useStore(servicesStore, (state) => state.paymentForm);
 
   // Suggested Transactions
-  const {
-    data: suggestedTransactions = [],
-    isFetching: suggestedLoading,
-    error: suggestedErrorObj,
-  } = useQuery({
+  const { data: suggestedTransactions } = useSuspenseQuery({
     // eslint-disable-next-line @tanstack/query/exhaustive-deps
     queryKey: ["payment-suggestions", paymentSchedule?.id, paymentSchedule?.expected_amount, paymentSchedule?.due_date],
     queryFn: async () => {
@@ -60,7 +56,6 @@ export function useServicePayment() {
         )
         .slice(0, 8);
     },
-    enabled: !!paymentSchedule,
   });
 
   // Pay Mutation
@@ -111,8 +106,6 @@ export function useServicePayment() {
 
     // Suggestions
     suggestedTransactions,
-    suggestedLoading,
-    suggestedError: extractErrorMessage(suggestedErrorObj),
     applySuggestedTransaction,
 
     // Mutation

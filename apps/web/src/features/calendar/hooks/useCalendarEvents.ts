@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { skipToken, useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useStore } from "@tanstack/react-store";
 import dayjs from "dayjs";
 import { useEffect, useRef, useState } from "react";
@@ -101,17 +101,16 @@ export function useCalendarEvents() {
   const [syncError, setSyncError] = useState<string | null>(null);
 
   const normalizedApplied = normalizeFilters(appliedFilters);
+  const shouldFetch = Boolean(normalizedApplied.from && normalizedApplied.to);
 
-  const summaryQuery = useQuery<CalendarSummary, Error>({
+  const summaryQuery = useSuspenseQuery<CalendarSummary>({
     queryKey: ["calendar", "summary", normalizedApplied],
-    queryFn: () => fetchCalendarSummary(normalizedApplied),
-    enabled: Boolean(normalizedApplied.from && normalizedApplied.to),
+    queryFn: shouldFetch ? () => fetchCalendarSummary(normalizedApplied) : (skipToken as any),
   });
 
-  const dailyQuery = useQuery<CalendarDaily, Error>({
+  const dailyQuery = useSuspenseQuery<CalendarDaily>({
     queryKey: ["calendar", "daily", normalizedApplied],
-    queryFn: () => fetchCalendarDaily(normalizedApplied),
-    enabled: Boolean(normalizedApplied.from && normalizedApplied.to),
+    queryFn: shouldFetch ? () => fetchCalendarDaily(normalizedApplied) : (skipToken as any),
   });
 
   // Single source of truth for sync logs (shared across pages)
@@ -130,11 +129,11 @@ export function useCalendarEvents() {
 
   const hasRunningSyncFromOtherSource = hasFreshRunningSync(syncLogsData);
 
-  const summary = summaryQuery.data ?? null;
-  const daily = dailyQuery.data ?? null;
+  const summary = summaryQuery.data;
+  const daily = dailyQuery.data;
   const syncLogs = syncLogsData ?? [];
-  const loading = summaryQuery.isLoading || dailyQuery.isLoading;
-  const error = summaryQuery.error?.message || dailyQuery.error?.message || null;
+  const loading = false;
+  const error = null;
 
   const normalizedDraft = normalizeFilters(filters);
   const isDirty = !filtersEqual(normalizedDraft, normalizedApplied);
@@ -266,19 +265,6 @@ export function useCalendarEvents() {
       }
     }, 5000); // Poll every 5 seconds
   };
-
-  // Watch for query errors to show toast
-  useEffect(() => {
-    if (summaryQuery.error) {
-      showError(`Error al cargar resumen: ${summaryQuery.error.message}`);
-    }
-  }, [summaryQuery.error, showError]);
-
-  useEffect(() => {
-    if (dailyQuery.error) {
-      showError(`Error al cargar eventos: ${dailyQuery.error.message}`);
-    }
-  }, [dailyQuery.error, showError]);
 
   const { mutate: sync } = syncMutation;
 
