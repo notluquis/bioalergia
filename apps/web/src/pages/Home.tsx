@@ -5,6 +5,7 @@ import { Suspense, useEffect } from "react";
 import Skeleton from "@/components/ui/Skeleton";
 import { useAuth } from "@/context/AuthContext";
 import DashboardParticipantsSection from "@/features/dashboard/components/DashboardParticipantsSection";
+import { DashboardPersonalLiabilities } from "@/features/dashboard/components/DashboardPersonalLiabilities";
 import DashboardTransactionsSection from "@/features/dashboard/components/DashboardTransactionsSection";
 import { daysAgo, today } from "@/lib/dates";
 import { CARD_COMPACT, TITLE_MD } from "@/lib/styles";
@@ -56,6 +57,7 @@ export default function Home() {
       {!canReadTransactions && (
         <div className="grid gap-4 lg:grid-cols-[1.5fr_1fr]">
           <div className="space-y-4">
+            <DashboardPersonalLiabilities />
             <QuickLinksSection can={can} />
           </div>
           <aside className="space-y-4">
