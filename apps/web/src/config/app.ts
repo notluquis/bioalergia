@@ -19,8 +19,8 @@ export const APP_CONFIG = {
 
     // Build Defaults
     primaryCurrency: "CLP",
-    supportEmail: "soporte@bioalergia.cl",
-    pageTitle: "Bioalergia Suite",
+    supportEmail: "contacto@bioalergia.cl",
+    pageTitle: "Bioalergia",
 
     // Calendar Defaults
     calendarTimeZone: "America/Santiago",
