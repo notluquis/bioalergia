@@ -24,7 +24,7 @@ importers:
     dependencies:
       '@finanzas/db':
         specifier: workspace:*
-        version: file:packages/db(hono@4.11.4)
+        version: link:../../packages/db
       '@googleapis/calendar':
         specifier: ^14.2.0
         version: 14.2.0
@@ -145,7 +145,7 @@ importers:
         version: 5.0.0(@casl/ability@6.7.5)(react@19.2.3)
       '@finanzas/db':
         specifier: workspace:*
-        version: file:packages/db(hono@4.11.4)
+        version: link:../../packages/db
       '@fullcalendar/core':
         specifier: ^6.1.20
         version: 6.1.20
@@ -411,6 +411,9 @@ importers:
       '@zenstackhq/server':
         specifier: ^3.2.1
         version: 3.2.1(hono@4.11.4)(pg@8.17.1)(zod@4.3.5)
+      hono:
+        specifier: ^4.11.4
+        version: 4.11.4
       kysely:
         specifier: ^0.28.9
         version: 0.28.9
@@ -1578,9 +1581,6 @@ packages:
     peerDependenciesMeta:
       '@exodus/crypto':
         optional: true
-
-  '@finanzas/db@file:packages/db':
-    resolution: {directory: packages/db, type: directory}
 
   '@floating-ui/core@1.7.3':
     resolution: {integrity: sha512-sGnvb5dmrJaKEZ+LDIpguvdX3bDlEllmv4/ClQ9awcmCZrlx5jQyyMWFM5kBI+EyNOCDDiKk8il0zeuX3Zlg/w==}
@@ -7736,27 +7736,6 @@ snapshots:
 
   '@exodus/bytes@1.8.0': {}
 
-  '@finanzas/db@file:packages/db(hono@4.11.4)':
-    dependencies:
-      '@zenstackhq/orm': 3.2.1(pg@8.17.1)(zod@3.25.76)
-      '@zenstackhq/plugin-policy': 3.2.1(kysely@0.28.9)(pg@8.17.1)(zod@3.25.76)
-      '@zenstackhq/server': 3.2.1(hono@4.11.4)(pg@8.17.1)(zod@3.25.76)
-      kysely: 0.28.9
-      pg: 8.17.1
-      zod: 3.25.76
-    transitivePeerDependencies:
-      - '@sveltejs/kit'
-      - better-sqlite3
-      - elysia
-      - express
-      - fastify
-      - fastify-plugin
-      - hono
-      - next
-      - nuxt
-      - pg-native
-      - sql.js
-
   '@floating-ui/core@1.7.3':
     dependencies:
       '@floating-ui/utils': 0.2.10
@@ -9138,26 +9117,6 @@ snapshots:
       ts-pattern: 5.9.0
       vscode-languageserver: 9.0.1
 
-  '@zenstackhq/orm@3.2.1(pg@8.17.1)(zod@3.25.76)':
-    dependencies:
-      '@paralleldrive/cuid2': 2.3.1
-      '@zenstackhq/common-helpers': 3.2.1
-      '@zenstackhq/schema': 3.2.1
-      cuid: 3.0.0
-      decimal.js: 10.6.0
-      json-stable-stringify: 1.3.0
-      kysely: 0.28.9
-      nanoid: 5.1.6
-      postgres-array: 3.0.4
-      toposort: 2.0.2
-      ts-pattern: 5.9.0
-      ulid: 3.0.2
-      uuid: 11.1.0
-      zod: 3.25.76
-      zod-validation-error: 4.0.2(zod@3.25.76)
-    optionalDependencies:
-      pg: 8.17.1
-
   '@zenstackhq/orm@3.2.1(pg@8.17.1)(zod@4.3.5)':
     dependencies:
       '@paralleldrive/cuid2': 2.3.1
@@ -9177,18 +9136,6 @@ snapshots:
       zod-validation-error: 4.0.2(zod@4.3.5)
     optionalDependencies:
       pg: 8.17.1
-
-  '@zenstackhq/plugin-policy@3.2.1(kysely@0.28.9)(pg@8.17.1)(zod@3.25.76)':
-    dependencies:
-      '@zenstackhq/common-helpers': 3.2.1
-      '@zenstackhq/orm': 3.2.1(pg@8.17.1)(zod@3.25.76)
-      kysely: 0.28.9
-      ts-pattern: 5.9.0
-    transitivePeerDependencies:
-      - better-sqlite3
-      - pg
-      - sql.js
-      - zod
 
   '@zenstackhq/plugin-policy@3.2.1(kysely@0.28.9)(pg@8.17.1)(zod@4.3.5)':
     dependencies:
@@ -9213,24 +9160,6 @@ snapshots:
       langium: 3.5.0
       ts-pattern: 5.9.0
       typescript: 5.9.3
-
-  '@zenstackhq/server@3.2.1(hono@4.11.4)(pg@8.17.1)(zod@3.25.76)':
-    dependencies:
-      '@zenstackhq/common-helpers': 3.2.1
-      '@zenstackhq/orm': 3.2.1(pg@8.17.1)(zod@3.25.76)
-      decimal.js: 10.6.0
-      superjson: 2.2.6
-      ts-japi: 1.12.1
-      ts-pattern: 5.9.0
-      url-pattern: 1.0.3
-      zod: 3.25.76
-      zod-validation-error: 4.0.2(zod@3.25.76)
-    optionalDependencies:
-      hono: 4.11.4
-    transitivePeerDependencies:
-      - better-sqlite3
-      - pg
-      - sql.js
 
   '@zenstackhq/server@3.2.1(hono@4.11.4)(pg@8.17.1)(zod@4.3.5)':
     dependencies:
@@ -13089,10 +13018,6 @@ snapshots:
   yocto-queue@0.1.0: {}
 
   yoctocolors@2.1.2: {}
-
-  zod-validation-error@4.0.2(zod@3.25.76):
-    dependencies:
-      zod: 3.25.76
 
   zod-validation-error@4.0.2(zod@4.3.5):
     dependencies:

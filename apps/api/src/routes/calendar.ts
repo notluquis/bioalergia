@@ -41,7 +41,7 @@ function ensureArray(value: string | string[] | undefined): string[] {
 
 // Helper to normalize search
 function normalizeSearch(
-  value: string | string[] | undefined
+  value: string | string[] | undefined,
 ): string | undefined {
   if (!value) return undefined;
   if (Array.isArray(value)) return value[0]?.trim() || undefined;
@@ -50,7 +50,7 @@ function normalizeSearch(
 
 // Helper to normalize date
 function normalizeDate(
-  value: string | string[] | undefined
+  value: string | string[] | undefined,
 ): string | undefined {
   if (!value) return undefined;
   const val = Array.isArray(value) ? value[0] : value;
@@ -64,7 +64,7 @@ function coercePositiveInteger(value: unknown): number | undefined {
 }
 
 async function buildFilters(
-  query: Record<string, string | string[] | undefined>
+  query: Record<string, string | string[] | undefined>,
 ) {
   const settings = await loadSettings();
   const configStart =
@@ -144,12 +144,12 @@ calendarRoutes.get("/events/summary", requireAuth, async (c: Context) => {
   const canReadSchedule = await hasPermission(
     user.id,
     "read",
-    "CalendarSchedule"
+    "CalendarSchedule",
   );
   const canReadHeatmap = await hasPermission(
     user.id,
     "read",
-    "CalendarHeatmap"
+    "CalendarHeatmap",
   );
   const canReadEvents = await hasPermission(user.id, "read", "CalendarEvent"); // Legacy/Broad
 
@@ -209,7 +209,7 @@ calendarRoutes.post("/events/sync", requireAuth, async (c: Context) => {
   const canManageEvents = await hasPermission(
     user.id,
     "update",
-    "CalendarEvent"
+    "CalendarEvent",
   );
 
   if (!canSync && !canManageEvents) {
@@ -261,7 +261,7 @@ calendarRoutes.post("/events/sync", requireAuth, async (c: Context) => {
       message: "Sincronización iniciada en segundo plano",
       logId,
     },
-    202
+    202,
   );
 });
 
@@ -277,7 +277,7 @@ calendarRoutes.get("/events/sync/logs", requireAuth, async (c: Context) => {
   const canReadSettings = await hasPermission(
     user.id,
     "update",
-    "CalendarSetting"
+    "CalendarSetting",
   ); // Settings page shows logs
 
   if (!canReadLogs && !canReadSettings) {
@@ -319,7 +319,7 @@ calendarRoutes.get("/classification-options", async (c: Context) => {
   const canReadSchedule = await hasPermission(
     user.id,
     "read",
-    "CalendarSchedule"
+    "CalendarSchedule",
   );
   const canReadDaily = await hasPermission(user.id, "read", "CalendarDaily");
   const canReadEvents = await hasPermission(user.id, "read", "CalendarEvent");
@@ -346,7 +346,7 @@ calendarRoutes.get("/events/unclassified", requireAuth, async (c: Context) => {
   const canUpdateEvents = await hasPermission(
     user.id,
     "update",
-    "CalendarEvent"
+    "CalendarEvent",
   );
 
   if (!canUpdateEvents) {
@@ -358,7 +358,7 @@ calendarRoutes.get("/events/unclassified", requireAuth, async (c: Context) => {
   const limitRaw = limitParam
     ? Number.parseInt(
         String(Array.isArray(limitParam) ? limitParam[0] : limitParam),
-        10
+        10,
       )
     : 50;
   const limit = Number.isFinite(limitRaw)
@@ -369,7 +369,7 @@ calendarRoutes.get("/events/unclassified", requireAuth, async (c: Context) => {
   const offsetRaw = offsetParam
     ? Number.parseInt(
         String(Array.isArray(offsetParam) ? offsetParam[0] : offsetParam),
-        10
+        10,
       )
     : 0;
   const offset = Number.isFinite(offsetRaw) ? Math.max(offsetRaw, 0) : 0;
@@ -393,11 +393,11 @@ calendarRoutes.get("/events/unclassified", requireAuth, async (c: Context) => {
   const { events: rows, totalCount } = await listUnclassifiedCalendarEvents(
     limit,
     offset,
-    hasFilters ? filters : undefined
+    hasFilters ? filters : undefined,
   );
 
   const filteredRows = rows.filter(
-    (row: UnclassifiedEvent) => !isIgnoredEvent(row.summary)
+    (row: UnclassifiedEvent) => !isIgnoredEvent(row.summary),
   );
 
   return reply(c, {
@@ -451,7 +451,7 @@ calendarRoutes.post("/events/classify", requireAuth, async (c) => {
         error: "Payload inválido",
         details: parsed.error.flatten(),
       },
-      400
+      400,
     );
   }
 
@@ -482,12 +482,12 @@ calendarRoutes.get("/calendars", async (c) => {
   const canReadSchedule = await hasPermission(
     user.id,
     "read",
-    "CalendarSchedule"
+    "CalendarSchedule",
   );
   const canReadSettings = await hasPermission(
     user.id,
     "update",
-    "CalendarSetting"
+    "CalendarSetting",
   );
   const canReadEvents = await hasPermission(user.id, "read", "CalendarEvent");
 
@@ -537,7 +537,7 @@ calendarRoutes.get("/calendars/:calendarId/events", requireAuth, async (c) => {
   const canReadSchedule = await hasPermission(
     user.id,
     "read",
-    "CalendarSchedule"
+    "CalendarSchedule",
   );
   const canReadDaily = await hasPermission(user.id, "read", "CalendarDaily");
   const canReadEvents = await hasPermission(user.id, "read", "CalendarEvent");
@@ -569,7 +569,7 @@ calendarRoutes.get("/calendars/:calendarId/events", requireAuth, async (c) => {
     return reply(
       c,
       { status: "error", message: "Missing start or end date" },
-      400
+      400,
     );
   }
 
@@ -580,7 +580,7 @@ calendarRoutes.get("/calendars/:calendarId/events", requireAuth, async (c) => {
     return reply(
       c,
       { status: "error", message: "Invalid start or end date" },
-      400
+      400,
     );
   }
 
@@ -645,7 +645,7 @@ let lastWebhookChannelId: string | null = null;
 function executeWebhookSync(channelId: string) {
   webhookSyncTimer = null;
   console.log(
-    `[webhook] 🚀 Executing debounced sync: ${channelId.slice(0, 8)}...`
+    `[webhook] 🚀 Executing debounced sync: ${channelId.slice(0, 8)}...`,
   );
 
   createCalendarSyncLogEntry({
@@ -682,7 +682,7 @@ function executeWebhookSync(channelId: string) {
             },
           });
           console.log(
-            `[webhook] ✅ Sync completed: ${channelId.slice(0, 8)}...`
+            `[webhook] ✅ Sync completed: ${channelId.slice(0, 8)}...`,
           );
         })
         .catch(async (err) => {
@@ -692,14 +692,14 @@ function executeWebhookSync(channelId: string) {
           });
           console.error(
             `[webhook] ❌ Sync failed: ${channelId.slice(0, 8)}...`,
-            err.message
+            err.message,
           );
         });
     })
     .catch((err) => {
       if (err.message === "Sincronización ya en curso") {
         console.log(
-          `[webhook] ℹ️ Sync skipped (already in progress): ${channelId.slice(0, 8)}...`
+          `[webhook] ℹ️ Sync skipped (already in progress): ${channelId.slice(0, 8)}...`,
         );
       } else {
         console.error(`[webhook] ❌ Failed to create log entry:`, err.message);
@@ -726,7 +726,7 @@ calendarRoutes.post("/webhook", async (c) => {
 
   if (resourceState === "exists") {
     console.log(
-      `[webhook] 📥 Change #${messageNumber || "?"}: channel=${channelId.slice(0, 8)}... (debouncing ${WEBHOOK_DEBOUNCE_MS}ms)`
+      `[webhook] 📥 Change #${messageNumber || "?"}: channel=${channelId.slice(0, 8)}... (debouncing ${WEBHOOK_DEBOUNCE_MS}ms)`,
     );
 
     if (webhookSyncTimer) {
@@ -865,7 +865,7 @@ calendarRoutes.post("/events/reclassify", requireAuth, async (c) => {
           updateJobProgress(
             jobId,
             i + 1,
-            `Analizando ${i + 1}/${events.length} eventos...`
+            `Analizando ${i + 1}/${events.length} eventos...`,
           );
         }
       }
@@ -879,14 +879,14 @@ calendarRoutes.post("/events/reclassify", requireAuth, async (c) => {
             db.event.update({
               where: { id: u.id },
               data: u.data,
-            })
-          )
+            }),
+          ),
         );
         processed += batch.length;
         updateJobProgress(
           jobId,
           events.length,
-          `Guardando ${processed}/${updates.length} actualizaciones...`
+          `Guardando ${processed}/${updates.length} actualizaciones...`,
         );
       }
 
@@ -980,7 +980,7 @@ calendarRoutes.post("/events/reclassify-all", requireAuth, async (c) => {
           updateJobProgress(
             jobId,
             i + 1,
-            `Analizando ${i + 1}/${events.length} eventos...`
+            `Analizando ${i + 1}/${events.length} eventos...`,
           );
         }
       }
@@ -991,8 +991,8 @@ calendarRoutes.post("/events/reclassify-all", requireAuth, async (c) => {
         const batch = updates.slice(i, i + BATCH_SIZE);
         await db.$transaction(
           batch.map((u) =>
-            db.event.update({ where: { id: u.id }, data: u.data })
-          )
+            db.event.update({ where: { id: u.id }, data: u.data }),
+          ),
         );
         processed += batch.length;
 
@@ -1000,7 +1000,7 @@ calendarRoutes.post("/events/reclassify-all", requireAuth, async (c) => {
           updateJobProgress(
             jobId,
             events.length,
-            `Guardando ${processed}/${updates.length} actualizaciones...`
+            `Guardando ${processed}/${updates.length} actualizaciones...`,
           );
         }
       }
@@ -1028,7 +1028,7 @@ calendarRoutes.get("/events/job/:jobId", requireAuth, async (c) => {
     return reply(
       c,
       { status: "error", message: "Job not found or expired" },
-      404
+      404,
     );
   }
 

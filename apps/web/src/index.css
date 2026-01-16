@@ -641,6 +641,19 @@ button.btn-xs {
   animation:
     210ms cubic-bezier(0, 0, 0.2, 1) 90ms both fade-in,
     300ms cubic-bezier(0.4, 0, 0.2, 1) both slide-from-right;
+  /* 120Hz Optimization: Hint browser to promote layer */
+  will-change: transform, opacity;
+}
+
+/* 120Hz ProMotion Optimization for Interactive Elements */
+button,
+a.btn,
+.card,
+input,
+select,
+textarea {
+  /* Prevent layout thrashing on hover */
+  transform: translateZ(0);
 }
 
 /* View transition keyframes - fade-in/fade-out are reused from animations section above */

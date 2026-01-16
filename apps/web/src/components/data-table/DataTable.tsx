@@ -176,8 +176,7 @@ export function DataTable<TData, TValue>({
   const virtualRows = virtualizer.getVirtualItems();
 
   // Render rows - either virtual or normal
-  // eslint-disable-next-line sonarjs/function-return-type -- Render function with multiple valid JSX return paths
-  const renderRows = (): React.ReactNode => {
+  const renderRows = (): React.JSX.Element => {
     if (isLoading) {
       return (
         <tr>
