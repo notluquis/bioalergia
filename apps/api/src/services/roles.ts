@@ -1,4 +1,4 @@
-import { db } from "@finanzas/db";
+import { db, schema } from "@finanzas/db";
 
 export async function listRoles() {
   return await db.role.findMany({
@@ -85,36 +85,22 @@ export async function listPermissions() {
  * Sync permissions by ensuring standard CRUD permissions exist for major subjects
  */
 export async function syncPermissions() {
-  const subjects = [
-    "User",
-    "Transaction",
-    "Setting",
-    "Role",
-    "Permission",
-    "Person",
-    "Counterpart",
-    "Loan",
-    "Service",
-    "InventoryItem",
-    "ProductionBalance",
-    "CalendarEvent",
-    "Employee",
-    "Timesheet",
+  // 1. Auto-discover model names from ZenStack schema
+  const modelSubjects = Object.keys(schema.models);
+
+  // 2. Define virtual/logical subjects that don't map directly to models
+  const virtualSubjects = [
     "Report",
-    "SupplyRequest",
     "Dashboard",
     "Backup",
     "BulkData",
-    // New dedicated subjects for specific pages
-    "DailyBalance",
+    "Integration",
     "CalendarSetting",
     "InventorySetting",
-    "Integration",
-    // Granular permissions
     "CalendarSchedule",
     "CalendarDaily",
     "CalendarHeatmap",
-    "CalendarSyncLog",
+    // Page-specific virtual subjects
     "TransactionList",
     "TransactionStats",
     "TransactionCSV",
@@ -123,10 +109,10 @@ export async function syncPermissions() {
     "ServiceTemplate",
     "TimesheetList",
     "TimesheetAudit",
-    // Missing permissions found in audit
-    "SyncLog",
-    "ReleaseTransaction",
   ];
+
+  // 3. Combine and merge
+  const subjects = [...modelSubjects, ...virtualSubjects];
 
   const actions = ["create", "read", "update", "delete"];
 

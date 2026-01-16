@@ -26,7 +26,6 @@ export type DailyBalance = $ModelResult<$Schema, "DailyBalance">;
 export type Service = $ModelResult<$Schema, "Service">;
 export type Loan = $ModelResult<$Schema, "Loan">;
 export type LoanSchedule = $ModelResult<$Schema, "LoanSchedule">;
-export type AuditLog = $ModelResult<$Schema, "AuditLog">;
 export type Setting = $ModelResult<$Schema, "Setting">;
 export type PushSubscription = $ModelResult<$Schema, "PushSubscription">;
 export type Calendar = $ModelResult<$Schema, "Calendar">;

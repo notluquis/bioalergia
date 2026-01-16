@@ -188,12 +188,6 @@ export class SchemaType implements SchemaDef {
                     attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(true) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("mfa_enforced") }] }],
                     default: true
                 },
-                auditLogs: {
-                    name: "auditLogs",
-                    type: "AuditLog",
-                    array: true,
-                    relation: { opposite: "user" }
-                },
                 dailyProductionBalances: {
                     name: "dailyProductionBalances",
                     type: "DailyProductionBalance",
@@ -2291,77 +2285,6 @@ export class SchemaType implements SchemaDef {
             idFields: ["id"],
             uniqueFields: {
                 id: { type: "Int" }
-            }
-        },
-        AuditLog: {
-            name: "AuditLog",
-            fields: {
-                id: {
-                    name: "id",
-                    type: "BigInt",
-                    id: true,
-                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }],
-                    default: ExpressionUtils.call("autoincrement")
-                },
-                userId: {
-                    name: "userId",
-                    type: "Int",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("user_id") }] }],
-                    foreignKeyFor: [
-                        "user"
-                    ]
-                },
-                action: {
-                    name: "action",
-                    type: "String"
-                },
-                entity: {
-                    name: "entity",
-                    type: "String"
-                },
-                entityId: {
-                    name: "entityId",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("entity_id") }] }]
-                },
-                details: {
-                    name: "details",
-                    type: "Json",
-                    optional: true
-                },
-                ipAddress: {
-                    name: "ipAddress",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("ip_address") }] }]
-                },
-                createdAt: {
-                    name: "createdAt",
-                    type: "DateTime",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                user: {
-                    name: "user",
-                    type: "User",
-                    optional: true,
-                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array([ExpressionUtils.field("userId")]) }, { name: "references", value: ExpressionUtils.array([ExpressionUtils.field("id")]) }] }],
-                    relation: { opposite: "auditLogs", fields: ["userId"], references: ["id"] }
-                }
-            },
-            attributes: [
-                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "!=", ExpressionUtils._null()) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array([ExpressionUtils.field("userId")]) }] },
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array([ExpressionUtils.field("entity"), ExpressionUtils.field("entityId")]) }] },
-                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("audit_logs") }] }
-            ],
-            idFields: ["id"],
-            uniqueFields: {
-                id: { type: "BigInt" }
             }
         },
         Setting: {
