@@ -47,7 +47,8 @@
     "@zenstackhq/plugin-policy": "^3.2.1",
     "@zenstackhq/server": "^3.2.1",
     "kysely": "^0.28.9",
-    "pg": "^8.17.1"
+    "pg": "^8.17.1",
+    "zod": "^4.3.5"
   },
   "devDependencies": {
     "@tanstack/react-query": "^5.90.17",
