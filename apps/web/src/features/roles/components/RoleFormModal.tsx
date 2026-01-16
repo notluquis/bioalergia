@@ -38,11 +38,10 @@ export function RoleFormModal({ role, isOpen, onClose }: RoleFormModalProps) {
               </div>
             }
           >
-            <RoleEditForm role={role} onClose={onClose} />
+            <RoleEditForm roleEntity={role} onClose={onClose} />
           </Suspense>
         ) : (
-          // eslint-disable-next-line jsx-a11y/aria-role -- 'role' here is a prop name, not an ARIA attribute
-          <RoleBaseForm role={null} userData={[]} onClose={onClose} />
+          <RoleBaseForm roleEntity={null} userData={[]} onClose={onClose} />
         )}
       </div>
 
@@ -54,19 +53,19 @@ export function RoleFormModal({ role, isOpen, onClose }: RoleFormModalProps) {
   );
 }
 
-function RoleEditForm({ role, onClose }: { role: Role; onClose: () => void }) {
-  const { data: users } = useSuspenseQuery(roleQueries.users(role.id));
+function RoleEditForm({ roleEntity, onClose }: { roleEntity: Role; onClose: () => void }) {
+  const { data: users } = useSuspenseQuery(roleQueries.users(roleEntity.id));
 
-  return <RoleBaseForm role={role} userData={users} onClose={onClose} />;
+  return <RoleBaseForm roleEntity={roleEntity} userData={users} onClose={onClose} />;
 }
 
 interface RoleBaseFormProps {
-  role: Role | null;
+  roleEntity: Role | null;
   userData: RoleUser[];
   onClose: () => void;
 }
 
-function RoleBaseForm({ role, userData, onClose }: RoleBaseFormProps) {
+function RoleBaseForm({ roleEntity, userData, onClose }: RoleBaseFormProps) {
   const toast = useToast();
   const queryClient = useQueryClient();
 
@@ -76,10 +75,10 @@ function RoleBaseForm({ role, userData, onClose }: RoleBaseFormProps) {
         name: data.name,
         description: data.description || "",
       };
-      await (role ? updateRole(role.id, payload) : createRole(payload));
+      await (roleEntity ? updateRole(roleEntity.id, payload) : createRole(payload));
     },
     onSuccess: () => {
-      toast.success("Los cambios se han guardado correctamente.", role ? "Rol actualizado" : "Rol creado");
+      toast.success("Los cambios se han guardado correctamente.", roleEntity ? "Rol actualizado" : "Rol creado");
       queryClient.invalidateQueries({ queryKey: roleKeys.all });
       onClose();
     },
@@ -98,8 +97,8 @@ function RoleBaseForm({ role, userData, onClose }: RoleBaseFormProps) {
 
   const form = useForm({
     defaultValues: {
-      name: role?.name ?? "",
-      description: role?.description ?? "",
+      name: roleEntity?.name ?? "",
+      description: roleEntity?.description ?? "",
     } as RoleFormData,
     validators: {
       onChange: formSchema,
@@ -176,7 +175,7 @@ function RoleBaseForm({ role, userData, onClose }: RoleBaseFormProps) {
       </form.Field>
 
       {/* Show affected users even if empty list, to confirm zero users */}
-      {role && (
+      {roleEntity && (
         <div className="bg-base-200 rounded-lg p-3 text-sm">
           <div className="mb-2 flex items-center gap-2 font-medium opacity-70">
             <UserIcon className="h-4 w-4" />
@@ -196,7 +195,7 @@ function RoleBaseForm({ role, userData, onClose }: RoleBaseFormProps) {
         </button>
         <button className="btn btn-primary" type="submit" disabled={mutation.isPending}>
           {mutation.isPending && <span className="loading loading-spinner"></span>}
-          {role ? "Guardar Cambios" : "Crear Rol"}
+          {roleEntity ? "Guardar Cambios" : "Crear Rol"}
         </button>
       </div>
     </form>
