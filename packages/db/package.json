@@ -49,6 +49,7 @@
     "hono": "^4.11.4",
     "kysely": "^0.28.9",
     "pg": "^8.17.1",
+    "pg-types": "^4.1.0",
     "zod": "^4.3.5"
   },
   "devDependencies": {
