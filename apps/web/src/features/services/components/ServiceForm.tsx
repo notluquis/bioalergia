@@ -5,6 +5,7 @@ import Button from "@/components/ui/Button";
 import { today } from "@/lib/dates";
 
 import { fetchCounterpart, fetchCounterparts } from "../../counterparts/api";
+import type { CounterpartAccount } from "../../counterparts/types";
 import type { CreateServicePayload } from "../types";
 import {
   BasicInfoSection,
@@ -99,7 +100,7 @@ export function ServiceForm({ onSubmit, onCancel, initialValues, submitLabel }: 
     queryFn: fetchCounterparts,
   });
 
-  const { data: accounts = [] } = useSuspenseQuery({
+  const { data: accounts = [] } = useSuspenseQuery<CounterpartAccount[]>({
     queryKey: ["counterpart-accounts", form.counterpartId],
     queryFn: form.counterpartId
       ? async () => {

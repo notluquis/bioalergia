@@ -25,7 +25,7 @@ export default function TimesheetsPage() {
   useAuth();
 
   // --- State ---
-  const { months, monthsWithData, loading: loadingMonths } = useMonths();
+  const { months, monthsWithData } = useMonths();
   // Init month synchronously to previous month
   const [month, setMonth] = useState<string>(() => dayjs().subtract(1, "month").format("YYYY-MM"));
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<number | null>(null);
@@ -102,7 +102,6 @@ export default function TimesheetsPage() {
               onChange={(event: ChangeEvent<HTMLSelectElement>) => {
                 setMonth(event.target.value);
               }}
-              disabled={loadingMonths}
               className="bg-base-100"
             >
               {groupedMonths.map((group) => (

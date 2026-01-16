@@ -1,4 +1,4 @@
-import { skipToken, useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { skipToken, useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { type ChangeEvent, useRef, useState } from "react";
 
 import { useAuth } from "@/context/AuthContext";
@@ -67,8 +67,8 @@ export function useMonthlyExpenses() {
     statusBreakdown: {},
   };
 
-  // 3. Fetch Detail
-  const { data: detailResponse } = useSuspenseQuery({
+  // 3. Fetch Detail (use useQuery with skipToken for conditional fetching)
+  const { data: detailResponse } = useQuery({
     ...expenseKeys.detail(selectedId ?? ""),
     queryFn: selectedId ? expenseKeys.detail(selectedId).queryFn : skipToken,
   });

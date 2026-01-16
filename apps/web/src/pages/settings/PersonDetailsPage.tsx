@@ -1,4 +1,4 @@
-import { skipToken, useSuspenseQuery } from "@tanstack/react-query";
+import { skipToken, useQuery } from "@tanstack/react-query";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { ArrowLeft, Briefcase, Building, Calendar, Mail, MapPin, Phone, User } from "lucide-react";
@@ -10,7 +10,29 @@ export default function PersonDetailsPage() {
   const { id } = useParams({ from: "/_authed/settings/people/$id" });
   const navigate = useNavigate();
 
-  const { data: person } = useSuspenseQuery(id ? personKeys.detail(id) : skipToken);
+  const { data: person, isLoading } = useQuery(
+    id ? personKeys.detail(id) : { queryKey: ["person-skip"], queryFn: skipToken }
+  );
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <span className="loading loading-spinner loading-lg" />
+      </div>
+    );
+  }
+
+  if (!person) {
+    return (
+      <div className="space-y-6">
+        <button className="btn btn-ghost btn-sm gap-2" onClick={() => navigate({ to: "/settings/people" })}>
+          <ArrowLeft size={16} />
+          Volver
+        </button>
+        <div className="alert alert-warning">No se encontró la persona.</div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
