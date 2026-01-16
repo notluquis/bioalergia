@@ -1152,3 +1152,4 @@ model PersonalCreditInstallment {
   @@unique([creditId, installmentNumber])
   @@map("credit_installments")
 }
+
