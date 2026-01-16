@@ -4,6 +4,12 @@
 /* === HeroUI v3 Styles (Golden Standard 2026) === */
 @import "@heroui/styles";
 
+/* Reset to native browser sizing - prevents HeroUI from forcing larger fonts */
+html {
+  font-size: 16px; /* Browser default */
+  -webkit-text-size-adjust: 100%;
+}
+
 /* Preline runtime removed: project no longer imports Preline styles or runtime helpers */
 
 /* Plugins */

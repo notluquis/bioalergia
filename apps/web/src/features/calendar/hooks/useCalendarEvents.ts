@@ -1,4 +1,4 @@
-import { skipToken, useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { skipToken, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useStore } from "@tanstack/react-store";
 import dayjs from "dayjs";
 import { useEffect, useRef, useState } from "react";
@@ -103,14 +103,14 @@ export function useCalendarEvents() {
   const normalizedApplied = normalizeFilters(appliedFilters);
   const shouldFetch = Boolean(normalizedApplied.from && normalizedApplied.to);
 
-  const summaryQuery = useSuspenseQuery<CalendarSummary>({
+  const summaryQuery = useQuery<CalendarSummary>({
     queryKey: ["calendar", "summary", normalizedApplied],
-    queryFn: shouldFetch ? () => fetchCalendarSummary(normalizedApplied) : (skipToken as any),
+    queryFn: shouldFetch ? () => fetchCalendarSummary(normalizedApplied) : skipToken,
   });
 
-  const dailyQuery = useSuspenseQuery<CalendarDaily>({
+  const dailyQuery = useQuery<CalendarDaily>({
     queryKey: ["calendar", "daily", normalizedApplied],
-    queryFn: shouldFetch ? () => fetchCalendarDaily(normalizedApplied) : (skipToken as any),
+    queryFn: shouldFetch ? () => fetchCalendarDaily(normalizedApplied) : skipToken,
   });
 
   // Single source of truth for sync logs (shared across pages)
