@@ -3,7 +3,8 @@ module.exports = {
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
-    // Keep content paths focused on project source; removed flowbite node_modules paths
+    // HeroUI content paths
+    "./node_modules/@heroui/theme/dist/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
     extend: {},
@@ -11,6 +12,8 @@ module.exports = {
   plugins: [
     // daisyUI plugin (provides UI components via Tailwind utility classes)
     require("daisyui"),
+    // HeroUI plugin (modern React component library)
+    require("@heroui/react").heroui(),
   ],
   daisyui: {
     logs: false,
