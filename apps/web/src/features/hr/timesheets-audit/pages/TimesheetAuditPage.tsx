@@ -20,6 +20,7 @@ import { useMonths } from "@/features/hr/timesheets/hooks/useMonths";
 import { type AuditDateRange, useTimesheetAudit } from "@/features/hr/timesheets-audit/hooks/useTimesheetAudit";
 import { detectAllOverlaps } from "@/features/hr/timesheets-audit/utils/overlapDetection";
 import { endOfMonth, monthsAgoEnd, monthsAgoStart, startOfMonth } from "@/lib/dates";
+import { INPUT_SEARCH_SM } from "@/lib/styles";
 import { cn } from "@/lib/utils";
 
 const TimesheetAuditCalendar = lazy(() => import("@/features/hr/timesheets-audit/components/TimesheetAuditCalendar"));

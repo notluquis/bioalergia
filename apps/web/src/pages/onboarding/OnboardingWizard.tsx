@@ -70,6 +70,10 @@ export default function OnboardingWizard() {
   const [mfaSecret, setMfaSecret] = useState<{ secret: string; qrCodeUrl: string } | null>(null);
   const [mfaEnabled, setMfaEnabled] = useState(false);
 
+  // Password state
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
   // Mutations
   const mfaSetupMutation = useMutation({
     mutationFn: () =>

@@ -603,10 +603,10 @@ html[data-theme="bioalergia-dark"] .layout-shell {
 
 /* === PREMIUM BADGES (Harmony Rule) === */
 .badge-soft-success {
-  @apply bg-success/15 text-success border-transparent;
+  @apply bg-success-soft text-success border-transparent;
 }
 .badge-soft-warning {
-  @apply bg-warning/15 text-warning-content border-transparent;
+  @apply bg-warning-soft text-warning-content border-transparent;
 }
 .badge-soft-error {
   @apply bg-error/15 text-error border-transparent;

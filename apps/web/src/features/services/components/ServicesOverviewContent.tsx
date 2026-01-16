@@ -13,7 +13,7 @@ import ServicesFilterPanel from "@/features/services/components/ServicesFilterPa
 import ServicesUnifiedAgenda from "@/features/services/components/ServicesUnifiedAgenda";
 import { useServicesOverview } from "@/features/services/hooks/useServicesOverview";
 import { currencyFormatter, numberFormatter } from "@/lib/format";
-import { CARD_COMPACT, LOADING_SPINNER_MD, LOADING_SPINNER_XS, TITLE_MD } from "@/lib/styles";
+import { CARD_COMPACT, LOADING_SPINNER_MD, TITLE_MD } from "@/lib/styles";
 
 export default function ServicesOverviewContent() {
   const overview = useServicesOverview();
@@ -43,10 +43,6 @@ export default function ServicesOverviewContent() {
     handlePaymentFieldChange,
     paymentError,
     processingPayment,
-    suggestedTransactions,
-    suggestedLoading,
-    suggestedError,
-    applySuggestedTransaction,
     filters,
     handleCreateService,
     handleRegenerate,
@@ -216,54 +212,6 @@ export default function ServicesOverviewContent() {
       >
         {paymentSchedule && (
           <form onSubmit={handlePaymentSubmit} className="space-y-4">
-            <div className="border-base-300/60 bg-base-200/60 text-base-content/70 rounded-2xl border p-3 text-xs">
-              <p className="text-base-content font-semibold">Sugerencias por monto</p>
-              {suggestedLoading && (
-                <div className="mt-2 flex items-center gap-2">
-                  <span className={LOADING_SPINNER_XS} aria-hidden="true" />
-                  <span>
-                    Buscando movimientos cercanos a {currencyFormatter.format(paymentSchedule.expected_amount)}...
-                  </span>
-                </div>
-              )}
-              {suggestedError && <p className="text-error mt-2">{suggestedError}</p>}
-              {!suggestedLoading && !suggestedError && suggestedTransactions.length === 0 && (
-                <p className="mt-2">
-                  No encontramos movimientos con ese monto en un rango cercano. Usa ID o ajusta manualmente.
-                </p>
-              )}
-              {!suggestedLoading && suggestedTransactions.length > 0 && (
-                <ul className="mt-2 space-y-2">
-                  {suggestedTransactions.map((tx) => (
-                    <li
-                      key={tx.id}
-                      className="border-base-300 bg-base-100/80 hover:border-primary/40 rounded-xl border p-3 shadow-sm transition"
-                    >
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div>
-                          <p className="text-base-content text-sm font-semibold">
-                            {currencyFormatter.format(tx.transactionAmount ?? 0)}
-                          </p>
-                          <p className="text-base-content/50 text-xs">
-                            {dayjs(tx.transactionDate).format("DD MMM YYYY")} · ID #{tx.id}
-                          </p>
-                          {tx.description && <p className="text-base-content/60 text-xs">{tx.description}</p>}
-                        </div>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => applySuggestedTransaction(tx)}
-                        >
-                          Usar
-                        </Button>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-
             <Input
               label="ID transacción"
               type="number"
