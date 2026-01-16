@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { ArrowRight, Check, CreditCard, Fingerprint, Key, Loader2, Shield, Smartphone, User } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -45,8 +45,15 @@ export default function OnboardingWizard() {
     }
   }, [user, navigate]);
 
+  // Queries
+  const { data: profileData } = useSuspenseQuery({
+    queryKey: ["user-profile"],
+    queryFn: fetchUserProfile,
+    refetchOnWindowFocus: false,
+  });
+
   // Form State
-  const [profile, setProfile] = useState<ProfileData>({
+  const [profile, setProfile] = useState<ProfileData>(() => ({
     names: "",
     fatherName: "",
     motherName: "",
@@ -56,28 +63,12 @@ export default function OnboardingWizard() {
     bankName: "",
     bankAccountType: "",
     bankAccountNumber: "",
-  });
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+    ...profileData,
+  }));
 
-  // MFA State
-  const [mfaSecret, setMfaSecret] = useState<{ secret: string; qrCodeUrl: string } | null>(null);
   const [mfaCode, setMfaCode] = useState("");
+  const [mfaSecret, setMfaSecret] = useState<{ secret: string; qrCodeUrl: string } | null>(null);
   const [mfaEnabled, setMfaEnabled] = useState(false);
-
-  // Queries
-  const { isLoading: profileLoading } = useQuery({
-    queryKey: ["user-profile"],
-    queryFn: async () => {
-      const data = await fetchUserProfile();
-      setProfile((prev) => ({
-        ...prev,
-        ...data,
-      }));
-      return data;
-    },
-    refetchOnWindowFocus: false,
-  });
 
   // Mutations
   const mfaSetupMutation = useMutation({
@@ -154,7 +145,6 @@ export default function OnboardingWizard() {
   });
 
   const loading =
-    profileLoading ||
     mfaSetupMutation.isPending ||
     mfaVerifyMutation.isPending ||
     passkeyRegisterMutation.isPending ||

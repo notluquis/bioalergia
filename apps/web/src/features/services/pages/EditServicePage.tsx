@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useParams } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { useMemo, useState } from "react";
@@ -12,7 +12,6 @@ import ServiceScheduleTable from "@/features/services/components/ServiceSchedule
 import { ServicesHero, ServicesSurface } from "@/features/services/components/ServicesShell";
 import type { CreateServicePayload, ServiceDetailResponse } from "@/features/services/types";
 import { fmtCLP } from "@/lib/format";
-import { LOADING_SPINNER_MD } from "@/lib/styles";
 
 function mapServiceToForm(service: ServiceDetailResponse["service"]): Partial<CreateServicePayload> {
   return {
@@ -50,17 +49,13 @@ export default function ServiceEditPage() {
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
   // Keep fetchServiceDetail as it provides aggregated data with schedules
-  const {
-    data: detail,
-    isLoading: loading,
-    error: fetchError,
-  } = useQuery({
+  // Keep fetchServiceDetail as it provides aggregated data with schedules
+  const { data: detail } = useSuspenseQuery({
     queryKey: ["service-detail", id],
     queryFn: () => {
       if (!id) throw new Error("ID de servicio no proporcionado");
       return fetchServiceDetail(id);
     },
-    enabled: !!id,
   });
 
   // Use REST API mutation for service updates (ZenStack has strict Decimal type requirements)
@@ -82,20 +77,13 @@ export default function ServiceEditPage() {
     }
   };
 
-  const error = (() => {
-    if (fetchError instanceof Error) return fetchError.message;
-    if (fetchError) return String(fetchError);
-    return null;
-  })();
   const updateError = (() => {
     if (updateMutation.error instanceof Error) return updateMutation.error.message;
     if (updateMutation.error) return String(updateMutation.error);
     return null;
   })();
 
-  const displayError = error || updateError;
-
-  const initialValues = detail ? mapServiceToForm(detail.service) : undefined;
+  const displayError = updateError;
 
   const handleSubmit = async (payload: CreateServicePayload) => {
     setSaveMessage(null);
@@ -161,39 +149,7 @@ export default function ServiceEditPage() {
     return items;
   }, [detail]);
 
-  if (!id) {
-    return <Alert variant="error">Identificador de servicio no válido.</Alert>;
-  }
-
-  const isInitialLoading = loading && !detail;
-
-  if (isInitialLoading) {
-    return (
-      <section className="space-y-6">
-        <ServicesHero
-          title="Editar servicio"
-          description="Cargando información del servicio seleccionado."
-          breadcrumbs={[{ label: "Servicios", to: "/services" }, { label: "Editar" }]}
-          actions={
-            <Button variant="ghost" onClick={() => globalThis.history.back()}>
-              Volver
-            </Button>
-          }
-        />
-
-        <ServicesSurface className="flex min-h-65 items-center justify-center">
-          <div className="text-base-content/70 flex items-center gap-3 text-sm">
-            <span className={LOADING_SPINNER_MD} aria-hidden="true" />
-            <span>Preparando datos del servicio...</span>
-          </div>
-        </ServicesSurface>
-      </section>
-    );
-  }
-
-  if (displayError && !detail) {
-    return <Alert variant="error">{displayError}</Alert>;
-  }
+  const initialValues = detail ? mapServiceToForm(detail.service) : undefined;
 
   const service = detail?.service ?? null;
   const schedules = detail?.schedules ?? [];

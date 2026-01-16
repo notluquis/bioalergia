@@ -5,7 +5,7 @@
 
 import "dayjs/locale/es";
 
-import { useQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
 import { Check, ChevronDown, ChevronUp, Search, Users, X } from "lucide-react";
@@ -20,7 +20,6 @@ import { useMonths } from "@/features/hr/timesheets/hooks/useMonths";
 import { type AuditDateRange, useTimesheetAudit } from "@/features/hr/timesheets-audit/hooks/useTimesheetAudit";
 import { detectAllOverlaps } from "@/features/hr/timesheets-audit/utils/overlapDetection";
 import { endOfMonth, monthsAgoEnd, monthsAgoStart, startOfMonth } from "@/lib/dates";
-import { INPUT_SEARCH_SM, LOADING_SPINNER_SM } from "@/lib/styles";
 import { cn } from "@/lib/utils";
 
 const TimesheetAuditCalendar = lazy(() => import("@/features/hr/timesheets-audit/components/TimesheetAuditCalendar"));
@@ -127,9 +126,9 @@ export default function TimesheetAuditPage() {
   useAuth();
 
   // Data state
-  const { months, loading: loadingMonths } = useMonths();
+  const { months } = useMonths();
 
-  const { data: employees = [], isLoading: loadingEmployees } = useQuery({
+  const { data: employees = [] } = useSuspenseQuery({
     queryKey: ["employees", "active-only"], // We might want to be specific if we change the fetch param later
     queryFn: () => fetchEmployees(false),
     staleTime: 1000 * 60 * 5, // 5 minutes
@@ -199,11 +198,7 @@ export default function TimesheetAuditPage() {
   const focusDate = effectiveRanges[0]?.start ?? null;
 
   // Fetch audit data
-  const {
-    entries,
-    loading: loadingEntries,
-    error: errorEntries,
-  } = useTimesheetAudit({
+  const { entries } = useTimesheetAudit({
     ranges: effectiveRanges,
     employeeIds: selectedEmployeeIds,
   });
@@ -312,7 +307,6 @@ export default function TimesheetAuditPage() {
                       setSelectedWeekKeys([]);
                     }}
                     className="select select-bordered select-sm max-w-xs flex-1"
-                    disabled={loadingMonths}
                   >
                     {months.map((month) => (
                       <option key={month} value={month}>
@@ -434,13 +428,6 @@ export default function TimesheetAuditPage() {
                   {/* Employee List */}
                   <ul className="max-h-64 overflow-y-auto p-2">
                     {(() => {
-                      if (loadingEmployees) {
-                        return (
-                          <li className="flex justify-center p-4">
-                            <span className={LOADING_SPINNER_SM} />
-                          </li>
-                        );
-                      }
                       if (filteredEmployees.length === 0) {
                         return (
                           <li className="text-base-content/50 p-4 text-center text-sm">No se encontraron empleados</li>
@@ -523,9 +510,6 @@ export default function TimesheetAuditPage() {
         </div>
       )}
 
-      {/* Errors */}
-      {errorEntries && <Alert variant="error">{errorEntries}</Alert>}
-
       {/* Empty States */}
       {(() => {
         if (selectedEmployeeIds.length === 0) {
@@ -541,7 +525,7 @@ export default function TimesheetAuditPage() {
             </div>
           );
         }
-        if (!loadingEntries && entries.length === 0) {
+        if (entries.length === 0) {
           return (
             <Alert variant="warning">
               No hay registros para el periodo seleccionado. Prueba con otro rango de fechas.
@@ -564,7 +548,7 @@ export default function TimesheetAuditPage() {
           >
             <TimesheetAuditCalendar
               entries={entries}
-              loading={loadingEntries}
+              loading={false}
               selectedEmployeeIds={selectedEmployeeIds}
               focusDate={focusDate}
               visibleDateRanges={effectiveRanges}

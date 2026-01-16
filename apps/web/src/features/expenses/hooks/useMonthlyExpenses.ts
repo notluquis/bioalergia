@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { skipToken, useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { type ChangeEvent, useRef, useState } from "react";
 
 import { useAuth } from "@/context/AuthContext";
@@ -68,7 +68,10 @@ export function useMonthlyExpenses() {
   };
 
   // 3. Fetch Detail
-  const { data: detailResponse, isLoading: loadingDetail } = useQuery(expenseKeys.detail(selectedId ?? ""));
+  const { data: detailResponse } = useSuspenseQuery({
+    ...expenseKeys.detail(selectedId ?? ""),
+    queryFn: selectedId ? expenseKeys.detail(selectedId).queryFn : skipToken,
+  });
 
   const detail = detailResponse ? normalizeExpenseDetail(detailResponse.expense) : null;
 
@@ -193,7 +196,7 @@ export function useMonthlyExpenses() {
     selectedId,
     setSelectedId,
     loadingList,
-    loadingDetail,
+    // loadingDetail removed (Suspense)
     createOpen,
     setCreateOpen,
     createError,

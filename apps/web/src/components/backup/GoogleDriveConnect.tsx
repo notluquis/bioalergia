@@ -1,6 +1,6 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Key, Loader2, LogOut, ShieldCheck } from "lucide-react";
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 
 import Button from "@/components/ui/Button";
 import { useToast } from "@/context/ToastContext";
@@ -28,7 +28,21 @@ const ERROR_MESSAGES: Record<string, string> = {
   access_denied: "Acceso denegado. El usuario canceló la autorización.",
 };
 
-export default function GoogleDriveConnect() {
+export default function GoogleDriveConnectWrapper() {
+  return (
+    <Suspense
+      fallback={
+        <div className="bg-base-200/50 flex items-center justify-center rounded-xl p-8">
+          <Loader2 className="text-primary size-6 animate-spin" />
+        </div>
+      }
+    >
+      <GoogleDriveConnect />
+    </Suspense>
+  );
+}
+
+function GoogleDriveConnect() {
   const { success, error: showError } = useToast();
   const queryClient = useQueryClient();
 
@@ -59,7 +73,7 @@ export default function GoogleDriveConnect() {
   }, [success, showError, queryClient]);
 
   // Status Query
-  const statusQuery = useQuery({
+  const { data: status } = useSuspenseQuery({
     queryKey: ["google-status"],
     queryFn: async () => {
       return apiClient.get<GoogleStatus>("/api/integrations/google/status");
@@ -91,23 +105,15 @@ export default function GoogleDriveConnect() {
     onError: (e) => showError(e.message),
   });
 
-  const isConfigured = statusQuery.data?.configured;
-  const isEnv = statusQuery.data?.source === "env";
-
-  if (statusQuery.isLoading) {
-    return (
-      <div className="bg-base-200/50 flex items-center justify-center rounded-xl p-8">
-        <Loader2 className="text-primary size-6 animate-spin" />
-      </div>
-    );
-  }
+  const isConfigured = status?.configured;
+  const isEnv = status?.source === "env";
 
   // Helper function to get icon styling based on status
   const getIconClassName = (): string => {
-    if (isConfigured && statusQuery.data?.valid) {
+    if (isConfigured && status?.valid) {
       return "bg-success/10 text-success";
     }
-    if (isConfigured && !statusQuery.data?.valid) {
+    if (isConfigured && !status?.valid) {
       return "bg-warning/10 text-warning";
     }
     return "bg-base-content/5 text-base-content/40";
@@ -115,8 +121,8 @@ export default function GoogleDriveConnect() {
 
   // Helper function to get status message
   const getStatusMessage = (): React.JSX.Element => {
-    const isValid = statusQuery.data?.valid;
-    const errorMsg = statusQuery.data?.error;
+    const isValid = status?.valid;
+    const errorMsg = status?.error;
     const sourceText = isEnv ? "Configuración estática ENV" : "Gestionado por Servidor";
 
     if (!isConfigured) {
@@ -144,7 +150,7 @@ export default function GoogleDriveConnect() {
         <div className="flex gap-2">
           {isConfigured ? (
             <>
-              {!statusQuery.data?.valid && (
+              {!status?.valid && (
                 <Button
                   variant="primary"
                   onClick={() => connectMutation.mutate()}

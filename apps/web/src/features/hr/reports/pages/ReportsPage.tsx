@@ -1,6 +1,6 @@
 import "dayjs/locale/es";
 
-import { useQuery } from "@tanstack/react-query";
+import { skipToken, useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
 import { BarChart2, BarChart3, Calendar, Check, Clock, Filter, List, Search, TrendingUp, X } from "lucide-react";
@@ -142,7 +142,7 @@ export default function ReportsPage() {
     else if (viewMode === "all") setGranularity("month");
   }, [viewMode]);
 
-  const { data: employees = [] } = useQuery({
+  const { data: employees = [] } = useSuspenseQuery({
     queryKey: ["employees-list"],
     queryFn: () => fetchEmployees(false),
     staleTime: 5 * 60 * 1000,
@@ -180,24 +180,19 @@ export default function ReportsPage() {
     return { start, end };
   })();
 
-  const {
-    data: reportData = [],
-    isLoading: loading,
-    error: reportErrorObj,
-  } = useQuery({
+  const { data: reportData = [] } = useSuspenseQuery<EmployeeWorkData[]>({
     queryKey: ["reports-data", dateParams, selectedEmployeeIds, timestamp, employees],
-    queryFn: async () => {
-      if (!dateParams) return [];
-      const entries = await fetchGlobalTimesheetRange(dateParams.start, dateParams.end);
-      return processRawEntries(entries as unknown as RawTimesheetEntry[], selectedEmployeeIds, employees);
-    },
-    enabled: isReportEnabled && selectedEmployeeIds.length > 0 && !!dateParams,
+    queryFn:
+      isReportEnabled && selectedEmployeeIds.length > 0 && dateParams
+        ? async () => {
+            const entries = await fetchGlobalTimesheetRange(dateParams.start, dateParams.end);
+            return processRawEntries(entries as unknown as RawTimesheetEntry[], selectedEmployeeIds, employees);
+          }
+        : (skipToken as any),
   });
 
-  const error = (() => {
-    if (!reportErrorObj) return null;
-    return reportErrorObj instanceof Error ? reportErrorObj.message : String(reportErrorObj);
-  })();
+  const loading = false; // Suspense handles loading
+  const error = null; // Suspense handles errors
 
   const handleGenerateReport = () => {
     setIsReportEnabled(true);
@@ -242,7 +237,7 @@ export default function ReportsPage() {
 
   const meta: HRReportsTableMeta = {
     totals: {
-      totalDays: reportData.reduce((acc, e) => acc + e.totalDays, 0),
+      totalDays: reportData.reduce((acc: number, e: EmployeeWorkData) => acc + e.totalDays, 0),
       totalHours: stats?.totalHours ?? 0,
     },
   };
