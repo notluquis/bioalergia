@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { skipToken, useSuspenseQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 
 import Button from "@/components/ui/Button";
@@ -94,29 +94,22 @@ export function ServiceForm({ onSubmit, onCancel, initialValues, submitLabel }: 
     }
   }, [lateFeeMode]);
 
-  const {
-    data: counterparts = [],
-    isLoading: counterpartsLoading,
-    error: counterpartsQueryError,
-  } = useQuery({
+  const { data: counterparts = [] } = useSuspenseQuery({
     queryKey: ["counterparts"],
     queryFn: fetchCounterparts,
   });
 
-  const { data: accounts = [], isLoading: accountsLoading } = useQuery({
+  const { data: accounts = [] } = useSuspenseQuery({
     queryKey: ["counterpart-accounts", form.counterpartId],
-    queryFn: async () => {
-      if (!form.counterpartId) return [];
-      const detail = await fetchCounterpart(form.counterpartId);
-      return detail.accounts;
-    },
-    enabled: !!form.counterpartId,
+    queryFn: form.counterpartId
+      ? async () => {
+          const detail = await fetchCounterpart(form.counterpartId!);
+          return detail.accounts;
+        }
+      : (skipToken as any),
   });
 
-  const counterpartsError = (() => {
-    if (!counterpartsQueryError) return null;
-    return counterpartsQueryError instanceof Error ? counterpartsQueryError.message : "Error al cargar contrapartes";
-  })();
+  const counterpartsError = null; // Suspense handles errors
 
   // Sync error handling roughly to previous (though React Query handles this better naturally)
 
@@ -261,8 +254,8 @@ export function ServiceForm({ onSubmit, onCancel, initialValues, submitLabel }: 
         accountReference={form.accountReference}
         counterparts={counterparts}
         accounts={accounts}
-        counterpartsLoading={counterpartsLoading}
-        accountsLoading={accountsLoading}
+        counterpartsLoading={false}
+        accountsLoading={false}
         counterpartsError={counterpartsError}
         onCounterpartSelect={handleCounterpartSelect}
         onChange={handleChange}

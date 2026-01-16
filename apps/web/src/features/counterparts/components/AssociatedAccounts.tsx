@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { skipToken, useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
 import { useEffect, useState } from "react";
@@ -13,8 +13,6 @@ import { fetchTransactions } from "@/features/finance/api";
 import type { Transaction } from "@/features/finance/types";
 import { today } from "@/lib/dates";
 import { fmtCLP } from "@/lib/format";
-import { formatRut } from "@/lib/rut";
-import { LOADING_SPINNER_XS } from "@/lib/styles";
 
 import { addCounterpartAccount, attachCounterpartRut, fetchAccountSuggestions, updateCounterpartAccount } from "../api";
 import type { Counterpart, CounterpartAccount, CounterpartAccountSuggestion, CounterpartSummary } from "../types";
@@ -64,14 +62,14 @@ export default function AssociatedAccounts({
     return () => clearTimeout(handler);
   }, [suggestionQuery]);
 
-  const { data: suggestions = [], isFetching: suggestionsLoading } = useQuery({
+  const { data: suggestions = [] } = useSuspenseQuery({
     queryKey: ["account-suggestions", debouncedQuery],
-    queryFn: () => fetchAccountSuggestions(debouncedQuery),
-    enabled: !!debouncedQuery.trim(),
+    queryFn: debouncedQuery.trim() ? () => fetchAccountSuggestions(debouncedQuery) : (skipToken as any),
     staleTime: 1000 * 60,
   });
 
-  const accountSuggestions = suggestions;
+  const accountSuggestions = suggestions as CounterpartAccountSuggestion[];
+  // Suspense handles loading, no need for manual loading state
 
   const queryClient = useQueryClient();
 
@@ -314,41 +312,38 @@ export default function AssociatedAccounts({
 
   const activeRange = summaryRange;
 
-  const {
-    data: quickViewRows = [],
-    isFetching: quickViewLoading,
-    error: quickViewError,
-  } = useQuery({
+  const { data: quickViewRows = [] } = useSuspenseQuery({
     queryKey: ["associated-accounts-transactions", quickViewGroup, activeRange.from, activeRange.to],
-    queryFn: async () => {
-      if (!quickViewGroup) return [];
+    queryFn: quickViewGroup
+      ? async () => {
+          const filters = quickViewGroup.accounts.map((account) => buildAccountTransactionFilter(account));
+          const normalized: Record<string, AccountTransactionFilter> = {};
+          filters.forEach((filter) => {
+            if (filter.sourceId || filter.bankAccountNumber) {
+              normalized[accountFilterKey(filter)] = filter;
+            }
+          });
+          const uniqueFilters = Object.values(normalized);
 
-      const filters = quickViewGroup.accounts.map((account) => buildAccountTransactionFilter(account));
-      const normalized: Record<string, AccountTransactionFilter> = {};
-      filters.forEach((filter) => {
-        if (filter.sourceId || filter.bankAccountNumber) {
-          normalized[accountFilterKey(filter)] = filter;
+          const results = await Promise.all(
+            uniqueFilters.map((filter) => fetchTransactionsForFilter(filter, activeRange))
+          );
+          const merged = results.flat();
+
+          const dedup = new Map<number, Transaction>();
+          merged.forEach((movement) => {
+            if (!dedup.has(movement.id)) {
+              dedup.set(movement.id, movement);
+            }
+          });
+
+          const sorted = [...dedup.values()].toSorted(
+            (a, b) => dayjs(b.transactionDate).valueOf() - dayjs(a.transactionDate).valueOf()
+          );
+
+          return sorted;
         }
-      });
-      const uniqueFilters = Object.values(normalized);
-
-      const results = await Promise.all(uniqueFilters.map((filter) => fetchTransactionsForFilter(filter, activeRange)));
-      const merged = results.flat();
-
-      const dedup = new Map<number, Transaction>();
-      merged.forEach((movement) => {
-        if (!dedup.has(movement.id)) {
-          dedup.set(movement.id, movement);
-        }
-      });
-
-      const sorted = [...dedup.values()].toSorted(
-        (a, b) => dayjs(b.transactionDate).valueOf() - dayjs(a.transactionDate).valueOf()
-      );
-
-      return sorted;
-    },
-    enabled: !!quickViewGroup,
+      : (skipToken as any),
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
@@ -356,10 +351,10 @@ export default function AssociatedAccounts({
     setQuickViewGroup(group);
   };
 
-  const rows = quickViewRows ?? [];
+  const rows = (quickViewRows as Transaction[]) ?? [];
   const quickStats = {
     count: rows.length,
-    total: rows.reduce((sum, row) => sum + (row.transactionAmount ?? 0), 0),
+    total: rows.reduce((sum: number, row: Transaction) => sum + (row.transactionAmount ?? 0), 0),
   };
 
   const accountGroupColumns = getAccountGroupColumns(summaryByGroup, handleGroupConceptChange, handleQuickView);
@@ -367,26 +362,10 @@ export default function AssociatedAccounts({
   const quickViewColumns = getQuickViewColumns();
 
   const renderQuickViewContent = () => {
-    if (quickViewLoading) {
-      return (
-        <div className="text-base-content/70 flex items-center gap-2 text-xs">
-          <span className={LOADING_SPINNER_XS} />
-          Cargando movimientos…
-        </div>
-      );
-    }
-    if (quickViewError) {
-      return (
-        <Alert variant="error" className="text-xs">
-          {quickViewError instanceof Error ? quickViewError.message : "Error al cargar movimientos"}
-        </Alert>
-      );
-    }
-
     return (
       <div className="border-base-200 overflow-hidden rounded-lg border">
         <DataTable
-          data={quickViewRows}
+          data={rows}
           columns={quickViewColumns}
           enableToolbar={false}
           enableVirtualization={false}
@@ -398,9 +377,6 @@ export default function AssociatedAccounts({
   };
 
   const renderSuggestions = () => {
-    if (suggestionsLoading) {
-      return <span className="text-base-content/60 text-xs">Buscando sugerencias...</span>;
-    }
     if (accountSuggestions.length === 0) {
       return <span className="text-base-content/60 text-xs">No hay sugerencias para este identificador.</span>;
     }
