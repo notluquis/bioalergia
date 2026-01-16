@@ -13,6 +13,7 @@ import { fetchTransactions } from "@/features/finance/api";
 import type { Transaction } from "@/features/finance/types";
 import { today } from "@/lib/dates";
 import { fmtCLP } from "@/lib/format";
+import { formatRut } from "@/lib/rut";
 
 import { addCounterpartAccount, attachCounterpartRut, fetchAccountSuggestions, updateCounterpartAccount } from "../api";
 import type { Counterpart, CounterpartAccount, CounterpartAccountSuggestion, CounterpartSummary } from "../types";

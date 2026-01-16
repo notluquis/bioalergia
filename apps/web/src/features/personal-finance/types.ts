@@ -8,7 +8,7 @@ export const createCreditSchema = z.object({
   totalAmount: z.number().positive("El monto debe ser positivo"),
   currency: z.enum(["CLP", "UF", "USD"]).default("CLP"),
   interestRate: z.number().optional(),
-  startDate: z.date({ required_error: "La fecha de inicio es requerida" }),
+  startDate: z.date({ message: "La fecha de inicio es requerida" }),
   totalInstallments: z.number().int().positive("Debe tener al menos 1 cuota"),
   installments: z
     .array(
@@ -47,6 +47,12 @@ export interface PersonalCredit {
   createdAt: string;
   updatedAt: string;
   installments?: PersonalCreditInstallment[];
+
+  // Calculated/extended fields
+  remainingAmount?: number;
+  nextPaymentDate?: string | null;
+  nextPaymentAmount?: number | null;
+  institution?: string | null;
 }
 
 export interface PersonalCreditInstallment {

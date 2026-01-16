@@ -26,7 +26,7 @@ const installmentColumns = (currency: string, creditId: number): ColumnDef<Perso
   },
   {
     accessorKey: "amount",
-    header: ({ column }) => <div className="text-right">Monto</div>,
+    header: ({ column: _column }) => <div className="text-right">Monto</div>,
     cell: ({ row }) => <div className="text-right">{formatCurrency(Number(row.original.amount), currency)}</div>,
   },
   {
@@ -40,7 +40,7 @@ const installmentColumns = (currency: string, creditId: number): ColumnDef<Perso
   },
   {
     id: "actions",
-    header: ({ column }) => <div className="text-right">Acción</div>,
+    header: ({ column: _column }) => <div className="text-right">Acción</div>,
     cell: ({ row }) => (
       <div className="flex justify-end">
         {row.original.status !== "PAID" && <PayInstallmentModal creditId={creditId} installment={row.original} />}
