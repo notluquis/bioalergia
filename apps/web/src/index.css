@@ -1,6 +1,9 @@
 /* Use Tailwind's legacy import form used by this project's PostCSS pipeline */
 @import "tailwindcss";
 
+/* === HeroUI v3 Styles (Golden Standard 2026) === */
+@import "@heroui/styles";
+
 /* Preline runtime removed: project no longer imports Preline styles or runtime helpers */
 
 /* Plugins */
@@ -16,9 +19,93 @@
 
 /* NOTE: daisyUI theme is defined in `tailwind.config.cjs` to avoid import resolution issues
    (we map daisyUI semantic colors to our CSS variables there). */
+
+/* === HeroUI v3 Theme Tokens (OKLCH Native) === */
+/* Light Theme */
+:root,
+[data-theme="light"],
+[data-theme="bioalergia"] {
+  /* HeroUI Primary - Brand Blue */
+  --primary: oklch(52% 0.16 257);
+  --primary-foreground: oklch(100% 0 0);
+
+  /* HeroUI Secondary - Vibrant Gold */
+  --secondary: oklch(78% 0.16 70);
+  --secondary-foreground: oklch(20% 0.05 260);
+
+  /* HeroUI Success */
+  --success: oklch(65% 0.18 145);
+  --success-foreground: oklch(100% 0 0);
+
+  /* HeroUI Warning */
+  --warning: oklch(75% 0.16 55);
+  --warning-foreground: oklch(20% 0.05 260);
+
+  /* HeroUI Danger */
+  --danger: oklch(60% 0.18 25);
+  --danger-foreground: oklch(100% 0 0);
+
+  /* HeroUI Info */
+  --info: oklch(70% 0.14 240);
+  --info-foreground: oklch(100% 0 0);
+
+  /* HeroUI Background/Foreground */
+  --background: oklch(100% 0 0);
+  --foreground: oklch(20% 0.04 260);
+}
+
+/* Dark Theme */
+.dark,
+[data-theme="dark"],
+[data-theme="bioalergia-dark"] {
+  /* HeroUI Primary - Lighter for dark mode */
+  --primary: oklch(70% 0.14 255);
+  --primary-foreground: oklch(0% 0 0);
+
+  /* HeroUI Secondary */
+  --secondary: oklch(82% 0.14 75);
+  --secondary-foreground: oklch(0% 0 0);
+
+  /* HeroUI Success */
+  --success: oklch(75% 0.16 150);
+  --success-foreground: oklch(0% 0 0);
+
+  /* HeroUI Warning */
+  --warning: oklch(80% 0.16 85);
+  --warning-foreground: oklch(0% 0 0);
+
+  /* HeroUI Danger */
+  --danger: oklch(70% 0.18 20);
+  --danger-foreground: oklch(100% 0 0);
+
+  /* HeroUI Info */
+  --info: oklch(70% 0.12 210);
+  --info-foreground: oklch(0% 0 0);
+
+  /* HeroUI Background/Foreground */
+  --background: oklch(0% 0 0);
+  --foreground: oklch(92% 0 0);
+}
+
 @theme {
   --radius-xl: 1rem;
   --radius-2xl: 1.25rem;
+
+  /* Expose HeroUI colors to Tailwind */
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-danger: var(--danger);
+  --color-danger-foreground: var(--danger-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
 }
 
 @keyframes nav-progress {
