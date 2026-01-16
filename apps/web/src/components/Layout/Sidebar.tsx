@@ -56,7 +56,7 @@ function SidebarItem({ item, isMobile, onNavigate }: { item: NavItem; isMobile: 
               {/* Icon */}
               <item.icon
                 className={cn(
-                  "h-6 w-6 transform-gpu transition-transform duration-200 backface-hidden",
+                  "h-6 w-6 transform-gpu transition-transform duration-200 will-change-transform",
                   isActive ? "scale-110" : "group-hover:scale-110"
                 )}
                 strokeWidth={isActive ? 2.5 : 2}
