@@ -1,7 +1,6 @@
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
 import Button from "@/components/ui/Button";
@@ -21,18 +20,6 @@ export function PayInstallmentModal({ creditId, installment }: PayInstallmentMod
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<PayInstallmentInput>({
-    resolver: zodResolver(payInstallmentSchema),
-    defaultValues: {
-      amount: Number(installment.amount),
-      paymentDate: new Date(),
-    },
-  });
-
   const mutation = useMutation({
     mutationFn: (data: PayInstallmentInput) =>
       personalFinanceApi.payInstallment(creditId, installment.installmentNumber, data),
@@ -47,9 +34,18 @@ export function PayInstallmentModal({ creditId, installment }: PayInstallmentMod
     },
   });
 
-  const onSubmit = (data: PayInstallmentInput) => {
-    mutation.mutate(data);
-  };
+  const form = useForm({
+    defaultValues: {
+      amount: Number(installment.amount),
+      paymentDate: new Date(),
+    } as PayInstallmentInput,
+    validators: {
+      onChange: payInstallmentSchema,
+    },
+    onSubmit: async ({ value }) => {
+      mutation.mutate(value);
+    },
+  });
 
   return (
     <>
@@ -67,20 +63,49 @@ export function PayInstallmentModal({ creditId, installment }: PayInstallmentMod
           Registrar pago de la cuota vencida el {new Date(installment.dueDate).toLocaleDateString()}.
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <Input
-            type="number"
-            label="Monto Pagado"
-            error={errors.amount?.message}
-            {...register("amount", { valueAsNumber: true })}
-          />
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            form.handleSubmit();
+          }}
+          className="space-y-4"
+        >
+          <form.Field name="amount">
+            {(field) => (
+              <div>
+                <Input
+                  type="number"
+                  label="Monto Pagado"
+                  required
+                  value={field.state.value}
+                  onChange={(e) => field.handleChange(Number.parseFloat(e.target.value))}
+                  onBlur={field.handleBlur}
+                />
+                {field.state.meta.errors.length > 0 && (
+                  <p className="text-error mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
+                )}
+              </div>
+            )}
+          </form.Field>
 
-          <Input
-            type="date"
-            label="Fecha de Pago"
-            error={errors.paymentDate?.message}
-            {...register("paymentDate", { valueAsDate: true })}
-          />
+          <form.Field name="paymentDate">
+            {(field) => (
+              <div>
+                <Input
+                  type="date"
+                  label="Fecha de Pago"
+                  required
+                  value={field.state.value ? field.state.value.toISOString().split("T")[0] : ""}
+                  onChange={(e) => field.handleChange(new Date(e.target.value))}
+                  onBlur={field.handleBlur}
+                />
+                {field.state.meta.errors.length > 0 && (
+                  <p className="text-error mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
+                )}
+              </div>
+            )}
+          </form.Field>
 
           <div className="mt-6 flex justify-end gap-3">
             <Button variant="ghost" onClick={() => setOpen(false)} disabled={mutation.isPending}>

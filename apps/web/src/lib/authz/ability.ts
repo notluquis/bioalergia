@@ -1,14 +1,14 @@
-// src/lib/authz/ability.ts
-/* eslint-disable sonarjs/deprecation */
-import { Ability, AbilityBuilder, MongoAbility, RawRuleOf } from "@casl/ability";
+import { AbilityBuilder, createMongoAbility, MongoAbility, RawRuleOf } from "@casl/ability";
 
-export const ability = new Ability();
+export type AppAbility = MongoAbility;
 
-export function updateAbility(rules: RawRuleOf<MongoAbility>[]) {
-  const { can, rules: newRules } = new AbilityBuilder(Ability);
+export const ability = createMongoAbility();
+
+export function updateAbility(rules: RawRuleOf<AppAbility>[]) {
+  const { can, rules: newRules } = new AbilityBuilder(createMongoAbility);
   if (rules) {
     rules.forEach((rule) => {
-      can(rule.action, rule.subject, rule.conditions);
+      can(rule.action, rule.subject as string, rule.conditions);
     });
   }
   ability.update(newRules);

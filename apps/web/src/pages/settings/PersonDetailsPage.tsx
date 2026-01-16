@@ -1,4 +1,4 @@
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { skipToken, useSuspenseQuery } from "@tanstack/react-query";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { ArrowLeft, Briefcase, Building, Calendar, Mail, MapPin, Phone, User } from "lucide-react";
@@ -10,7 +10,7 @@ export default function PersonDetailsPage() {
   const { id } = useParams({ from: "/_authed/settings/people/$id" });
   const navigate = useNavigate();
 
-  const { data: person } = useSuspenseQuery(personKeys.detail(id));
+  const { data: person } = useSuspenseQuery(id ? personKeys.detail(id) : skipToken);
 
   return (
     <div className="space-y-6">

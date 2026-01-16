@@ -7,7 +7,6 @@ export const personKeys = {
   detail: (id: string | undefined) =>
     queryOptions({
       queryKey: ["person", id],
-      queryFn: () => (id ? fetchPerson(id) : Promise.reject(new Error("ID required"))),
-      enabled: !!id,
+      queryFn: () => fetchPerson(id!),
     }),
 };
