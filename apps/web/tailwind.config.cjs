@@ -1,19 +1,12 @@
 module.exports = {
   darkMode: "class",
-  content: [
-    "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
-    // HeroUI content paths
-    "./node_modules/@heroui/theme/dist/**/*.{js,ts,jsx,tsx}",
-  ],
+  content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
     extend: {},
   },
   plugins: [
     // daisyUI plugin (provides UI components via Tailwind utility classes)
     require("daisyui"),
-    // HeroUI plugin (modern React component library)
-    require("@heroui/react").heroui(),
   ],
   daisyui: {
     logs: false,
