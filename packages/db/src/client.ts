@@ -4,8 +4,14 @@
 import { ZenStackClient } from "@zenstackhq/orm";
 import { PostgresDialect } from "@zenstackhq/orm/dialects/postgres";
 import { PolicyPlugin } from "@zenstackhq/plugin-policy";
-import { Pool } from "pg";
+import { Pool, types } from "pg";
 import { schema } from "./zenstack/schema.js";
+
+// Configure pg driver to parse numeric/decimal as JavaScript number natively
+// This is the ZenStack/Kysely recommended approach for Decimal handling
+// OIDs: 1700 = NUMERIC, 20 = BIGINT
+types.setTypeParser(1700, (val) => parseFloat(val)); // NUMERIC → number
+types.setTypeParser(20, (val) => parseInt(val, 10)); // BIGINT → number
 
 // Helper for safe environment access (Deno compatibility)
 const getEnv = (key: string): string | undefined => {

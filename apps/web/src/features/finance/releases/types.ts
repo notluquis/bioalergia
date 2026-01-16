@@ -1,5 +1,8 @@
 import type { JsonId } from "../types";
 
+// Prisma/ZenStack serializes Decimal as string in JSON
+type DecimalValue = number | string | null;
+
 export interface ReleaseTransaction {
   id: number;
   sourceId: string;
@@ -7,18 +10,18 @@ export interface ReleaseTransaction {
   externalReference: string | null;
   recordType: string | null;
   description: string | null;
-  netCreditAmount: number | null;
-  netDebitAmount: number | null;
-  grossAmount: number | null;
-  sellerAmount: number | null;
-  mpFeeAmount: number | null;
-  financingFeeAmount: number | null;
-  shippingFeeAmount: number | null;
-  taxesAmount: number | null;
-  couponAmount: number | null;
-  effectiveCouponAmount: number | null;
-  balanceAmount: number | null;
-  taxAmountTelco: number | null;
+  netCreditAmount: DecimalValue;
+  netDebitAmount: DecimalValue;
+  grossAmount: DecimalValue;
+  sellerAmount: DecimalValue;
+  mpFeeAmount: DecimalValue;
+  financingFeeAmount: DecimalValue;
+  shippingFeeAmount: DecimalValue;
+  taxesAmount: DecimalValue;
+  couponAmount: DecimalValue;
+  effectiveCouponAmount: DecimalValue;
+  balanceAmount: DecimalValue;
+  taxAmountTelco: DecimalValue;
   installments: number | null;
   paymentMethod: string | null;
   paymentMethodType: string | null;
