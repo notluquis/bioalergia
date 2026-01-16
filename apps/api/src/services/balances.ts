@@ -87,7 +87,6 @@ export async function getBalancesReport(
     const expectedBalance = runningBalance + netChange;
 
     const record = balanceMap.get(dateStr);
-    // @ts-ignore - ZenStack types vs Date object
     const recordedBalance = record ? Number(record.amount) : null;
     const difference =
       recordedBalance !== null ? recordedBalance - expectedBalance : null;
