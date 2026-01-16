@@ -1,4 +1,3 @@
-import { Button as HeroButton } from "@heroui/react";
 import React from "react";
 
 import { cn } from "@/lib/utils";
@@ -11,28 +10,33 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   isLoading?: boolean;
 }
 
-// Map legacy variants to HeroUI v3 variants
-type HeroVariant = "primary" | "secondary" | "ghost" | "danger" | "tertiary";
+// Map legacy variants to Tailwind classes (keeping DaisyUI-compatible styling)
+const variantClasses: Record<NonNullable<ButtonProps["variant"]>, string> = {
+  primary: "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm",
+  secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+  ghost: "hover:bg-base-content/10 bg-transparent",
+  link: "text-primary underline-offset-4 hover:underline bg-transparent",
+  outline: "border border-base-content/20 bg-transparent hover:bg-base-content/5",
+  error: "bg-error text-error-content hover:bg-error/90",
+  success: "bg-success text-success-content hover:bg-success/90",
+};
 
-const variantMap: Record<NonNullable<ButtonProps["variant"]>, HeroVariant> = {
-  primary: "primary",
-  secondary: "secondary",
-  ghost: "ghost",
-  link: "ghost",
-  outline: "tertiary",
-  error: "danger",
-  success: "primary",
+const sizeClasses: Record<NonNullable<ButtonProps["size"]>, string> = {
+  xs: "h-7 px-2 text-xs rounded-md",
+  sm: "h-8 px-3 text-sm rounded-lg",
+  md: "h-10 px-4 text-sm rounded-xl",
+  lg: "h-12 px-6 text-base rounded-2xl",
 };
 
 /**
- * Button component using HeroUI v3.
- * Maintains backward compatibility with existing prop API.
+ * Button component - Native HTML button with consistent styling.
+ * Reverted from HeroUI to avoid onPress/onClick incompatibility issues.
  */
 export default function Button({
   variant = "primary",
   size = "md",
   className,
-  as: _as, // Capture but don't use directly on HeroButton
+  as,
   href,
   children,
   isLoading,
@@ -41,58 +45,38 @@ export default function Button({
   onClick,
   ...props
 }: ButtonProps) {
-  // Map size (HeroUI doesn't have xs, use sm)
-  const heroSize = size === "xs" ? "sm" : size;
-  const heroVariant = variantMap[variant];
-
-  // Extra classes for specific variants
-  const extraClasses = cn(
-    variant === "link" && "underline underline-offset-4",
-    variant === "success" && "bg-success text-success-content hover:bg-success/90",
+  const baseClasses = cn(
+    "inline-flex items-center justify-center gap-2 font-medium transition-all duration-200",
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2",
+    "disabled:pointer-events-none disabled:opacity-50",
+    "active:scale-[0.98]",
+    variantClasses[variant],
+    sizeClasses[size],
     className
   );
 
-  // For links, render as anchor with button styling
+  // Handle polymorphic rendering with href
   if (href) {
+    const Component = as || "a";
     return (
-      <a
+      <Component
         href={href}
-        className={cn(
-          "inline-flex items-center justify-center gap-2 rounded-md font-medium transition-colors",
-          "focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none",
-          heroVariant === "primary" && "bg-primary text-primary-foreground hover:bg-primary/90",
-          heroVariant === "secondary" && "bg-secondary text-secondary-foreground hover:bg-secondary/90",
-          heroVariant === "ghost" && "hover:bg-accent hover:text-accent-foreground",
-          heroVariant === "tertiary" &&
-            "border-input bg-background hover:bg-accent hover:text-accent-foreground border",
-          heroVariant === "danger" && "bg-error text-error-foreground hover:bg-error/90",
-          heroSize === "sm" && "h-8 px-3 text-sm",
-          heroSize === "md" && "h-10 px-4 text-sm",
-          heroSize === "lg" && "h-12 px-6 text-base",
-          (disabled || isLoading) && "pointer-events-none opacity-50",
-          extraClasses
-        )}
+        className={cn(baseClasses, (disabled || isLoading) && "pointer-events-none opacity-50")}
         aria-disabled={disabled || isLoading}
         {...(props as React.AnchorHTMLAttributes<HTMLAnchorElement>)}
       >
         {isLoading && <span className="loading loading-spinner loading-sm" />}
         {children}
-      </a>
+      </Component>
     );
   }
 
-  // For regular buttons, use HeroUI Button
+  // For regular buttons, use native button
+  const Component = as || "button";
   return (
-    <HeroButton
-      variant={heroVariant}
-      size={heroSize}
-      isPending={isLoading}
-      isDisabled={disabled || isLoading}
-      type={type}
-      onPress={onClick as unknown as () => void}
-      className={extraClasses}
-    >
+    <Component type={type} className={baseClasses} disabled={disabled || isLoading} onClick={onClick} {...props}>
+      {isLoading && <span className="loading loading-spinner loading-sm" />}
       {children}
-    </HeroButton>
+    </Component>
   );
 }
