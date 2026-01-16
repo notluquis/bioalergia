@@ -91,7 +91,7 @@ export const columns: ColumnDef<ReleaseTransaction>[] = [
     minSize: 120,
     cell: ({ row }) => {
       const val = row.original.netCreditAmount;
-      if (val && val > 0) {
+      if (val && Number(val) > 0) {
         return (
           <div className="text-success flex items-center justify-end gap-1">
             <ArrowDownToLine className="h-3 w-3" />
@@ -108,7 +108,7 @@ export const columns: ColumnDef<ReleaseTransaction>[] = [
     minSize: 120,
     cell: ({ row }) => {
       const val = row.original.netDebitAmount;
-      if (val && val > 0) {
+      if (val && Number(val) > 0) {
         return (
           <div className="text-error flex items-center justify-end gap-1">
             <ArrowUpFromLine className="h-3 w-3" />
