@@ -6,7 +6,14 @@ export function formatAmount(amount: number | string | null | undefined, currenc
   if (amount === null || amount === undefined) return "-";
 
   // Convert string (from Decimal serialization) to number
-  const numericAmount = typeof amount === "string" ? Number.parseFloat(amount) : amount;
+  // If it's an object (like Decimal), convert to string first
+  let numericAmount: number;
+  if (typeof amount === "number") {
+    numericAmount = amount;
+  } else {
+    const strAmount = String(amount);
+    numericAmount = Number.parseFloat(strAmount);
+  }
 
   if (Number.isNaN(numericAmount)) return "-";
 
