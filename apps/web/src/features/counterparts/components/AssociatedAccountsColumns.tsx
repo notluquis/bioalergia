@@ -1,4 +1,4 @@
-import { ColumnDef } from "@tanstack/react-table";
+import { createColumnHelper } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import { FocusEvent } from "react";
 
@@ -11,13 +11,14 @@ import { AccountGroup } from "./AssociatedAccounts.helpers";
 
 // --- Main Table: Account Groups ---
 
+const accountGroupHelper = createColumnHelper<AccountGroup>();
+
 export const getAccountGroupColumns = (
   summaryByGroup: Map<string, { total: number; count: number }>,
   onConceptChange: (group: AccountGroup, concept: string) => void,
   onQuickView: (group: AccountGroup) => void
-): ColumnDef<AccountGroup>[] => [
-  {
-    accessorKey: "label",
+) => [
+  accountGroupHelper.accessor("label", {
     header: "Cuenta",
     cell: ({ row }) => {
       const group = row.original;
@@ -36,19 +37,16 @@ export const getAccountGroupColumns = (
         </div>
       );
     },
-  },
-  {
-    accessorKey: "bankName",
+  }),
+  accountGroupHelper.accessor("bankName", {
     header: "Banco",
     cell: ({ getValue }) => getValue() || "-",
-  },
-  {
-    accessorKey: "holder",
+  }),
+  accountGroupHelper.accessor("holder", {
     header: "Titular",
     cell: ({ getValue }) => getValue() || "-",
-  },
-  {
-    accessorKey: "concept",
+  }),
+  accountGroupHelper.accessor("concept", {
     header: "Concepto",
     cell: ({ row }) => {
       const group = row.original;
@@ -68,8 +66,8 @@ export const getAccountGroupColumns = (
         />
       );
     },
-  },
-  {
+  }),
+  accountGroupHelper.display({
     id: "actions",
     header: "Movimientos",
     cell: ({ row }) => {
@@ -86,35 +84,32 @@ export const getAccountGroupColumns = (
         </div>
       );
     },
-  },
+  }),
 ];
 
 // --- Detail Table: Quick View Transactions ---
 
-export const getQuickViewColumns = (): ColumnDef<Transaction>[] => [
-  {
-    accessorKey: "transactionDate",
+const quickViewHelper = createColumnHelper<Transaction>();
+
+export const getQuickViewColumns = () => [
+  quickViewHelper.accessor("transactionDate", {
     header: "Fecha",
-    cell: ({ getValue }) => dayjs(getValue() as string).format("DD MMM YYYY HH:mm"),
-  },
-  {
-    accessorKey: "description",
+    cell: ({ getValue }) => dayjs(getValue()).format("DD MMM YYYY HH:mm"),
+  }),
+  quickViewHelper.accessor("description", {
     header: "Descripción",
     cell: ({ getValue }) => getValue() || "-",
-  },
-  {
-    accessorKey: "externalReference",
+  }),
+  quickViewHelper.accessor("externalReference", {
     header: "Origen",
     cell: ({ getValue }) => getValue() || "-",
-  },
-  {
-    accessorKey: "transactionType",
+  }),
+  quickViewHelper.accessor("transactionType", {
     header: "Destino",
     cell: ({ getValue }) => getValue() || "-",
-  },
-  {
-    accessorKey: "transactionAmount",
+  }),
+  quickViewHelper.accessor("transactionAmount", {
     header: () => <div className="text-right">Monto</div>,
     cell: ({ getValue }) => <div className="text-right">{getValue() == null ? "-" : fmtCLP(getValue() as number)}</div>,
-  },
+  }),
 ];

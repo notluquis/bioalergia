@@ -1,27 +1,36 @@
-export type CurrencyValue = number | string | object | null | undefined;
+import { Decimal } from "decimal.js";
+
+export type CurrencyValue = number | string | object | null | undefined | Decimal;
+
+/**
+ * Safely convert any value to a Decimal instance.
+ * Returns Decimal(0) for null/undefined/invalid inputs.
+ */
+export function toDecimal(value: CurrencyValue): Decimal {
+  if (value === null || value === undefined) return new Decimal(0);
+  if (value instanceof Decimal) return value;
+
+  try {
+    // Handle specific object cases if necessary, or rely on string conversion
+    // decimal.js handles numbers and numeric strings well.
+    return new Decimal(String(value));
+  } catch {
+    return new Decimal(0);
+  }
+}
 
 /**
  * Round currency to whole numbers (CLP has no decimals)
+ * Uses Decimal.js for precise rounding (ROUND_HALF_UP default)
  */
 export function roundCurrency(value: CurrencyValue): number {
-  if (value === null || value === undefined) return 0;
-  const num = typeof value === "number" ? value : Number.parseFloat(String(value));
-  if (Number.isNaN(num)) return 0;
-  return Math.round(num);
+  return toDecimal(value).round().toNumber();
 }
 
 export function addCurrency(a: CurrencyValue, b: CurrencyValue): number {
-  if (a === null || a === undefined) a = 0;
-  if (b === null || b === undefined) b = 0;
-  const valA = typeof a === "number" ? a : Number.parseFloat(String(a));
-  const valB = typeof b === "number" ? b : Number.parseFloat(String(b));
-  return roundCurrency(valA + valB);
+  return toDecimal(a).plus(toDecimal(b)).round().toNumber();
 }
 
 export function subtractCurrency(a: CurrencyValue, b: CurrencyValue): number {
-  if (a === null || a === undefined) a = 0;
-  if (b === null || b === undefined) b = 0;
-  const valA = typeof a === "number" ? a : Number.parseFloat(String(a));
-  const valB = typeof b === "number" ? b : Number.parseFloat(String(b));
-  return roundCurrency(valA - valB);
+  return toDecimal(a).minus(toDecimal(b)).round().toNumber();
 }
