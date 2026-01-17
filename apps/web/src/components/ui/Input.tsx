@@ -28,8 +28,9 @@ export default function Input(props: Props) {
   const { label, helper, error, className, containerClassName, as = "input", type, size = "md", ...rest } = props;
   const [isPasswordVisible, setIsPasswordVisible] = React.useState(false);
 
-  // Generate unique IDs for aria-describedby
-  const inputId = rest.id || React.useId();
+  // Generate unique IDs for aria-describedby (must be called unconditionally)
+  const generatedId = React.useId();
+  const inputId = rest.id || generatedId;
   const helperId = `${inputId}-helper`;
   const errorId = `${inputId}-error`;
 
