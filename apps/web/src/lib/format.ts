@@ -1,11 +1,20 @@
+import { Decimal } from "decimal.js";
+
 // === CURRENCY FORMATTING ===
 
-export const fmtCLP = (n?: number | string | null) => {
+export const fmtCLP = (n?: number | string | Decimal | null) => {
   // Handle null/undefined
   if (n == null) return "$0";
 
-  // Convert string to number
-  const num = typeof n === "string" ? Number(n) : n;
+  // Convert string or Decimal to number
+  let num: number;
+  if (typeof n === "object" && Decimal.isDecimal(n)) {
+    num = n.toNumber();
+  } else if (typeof n === "string") {
+    num = Number(n);
+  } else {
+    num = n as number;
+  }
 
   // Handle NaN or non-finite numbers
   if (!Number.isFinite(num)) return "$0";
@@ -93,10 +102,17 @@ export const currencyFormatter = new Intl.NumberFormat("es-CL", {
 });
 
 /** Safe wrapper for currency formatting that handles null/undefined/invalid values */
-export function formatCurrency(value?: number | string | null): string {
+export function formatCurrency(value?: number | string | Decimal | null): string {
   if (value == null) return "$0";
 
-  const num = typeof value === "string" ? Number(value) : value;
+  let num: number;
+  if (typeof value === "object" && Decimal.isDecimal(value)) {
+    num = value.toNumber();
+  } else if (typeof value === "string") {
+    num = Number(value);
+  } else {
+    num = value as number;
+  }
 
   if (!Number.isFinite(num)) return "$0";
 
