@@ -1,16 +1,24 @@
-import React from "react";
+/**
+ * Button Component - Native HTML with HeroUI-inspired styling
+ *
+ * Using native HTML button for full API compatibility (title, aria-label, onClick, etc.)
+ * Styled to match HeroUI/DaisyUI design system.
+ */
+import type React from "react";
+import { forwardRef } from "react";
 
 import { cn } from "@/lib/utils";
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "primary" | "secondary" | "ghost" | "link" | "outline" | "error" | "success";
-  size?: "sm" | "md" | "lg" | "xs";
+  variant?: "primary" | "secondary" | "ghost" | "link" | "outline" | "error" | "success" | "tertiary" | "danger";
+  size?: "xs" | "sm" | "md" | "lg";
   as?: React.ElementType;
   href?: string;
   isLoading?: boolean;
+  fullWidth?: boolean;
 }
 
-// Map legacy variants to Tailwind classes (keeping DaisyUI-compatible styling)
+// Map variants to Tailwind classes
 const variantClasses: Record<NonNullable<ButtonProps["variant"]>, string> = {
   primary: "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm",
   secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
@@ -18,7 +26,9 @@ const variantClasses: Record<NonNullable<ButtonProps["variant"]>, string> = {
   link: "text-primary underline-offset-4 hover:underline bg-transparent",
   outline: "border border-base-content/20 bg-transparent hover:bg-base-content/5",
   error: "bg-error text-error-content hover:bg-error/90",
+  danger: "bg-error text-error-content hover:bg-error/90",
   success: "bg-success text-success-content hover:bg-success/90",
+  tertiary: "text-primary hover:bg-primary/10 bg-transparent",
 };
 
 const sizeClasses: Record<NonNullable<ButtonProps["size"]>, string> = {
@@ -30,53 +40,70 @@ const sizeClasses: Record<NonNullable<ButtonProps["size"]>, string> = {
 
 /**
  * Button component - Native HTML button with consistent styling.
- * Reverted from HeroUI to avoid onPress/onClick incompatibility issues.
  */
-export default function Button({
-  variant = "primary",
-  size = "md",
-  className,
-  as,
-  href,
-  children,
-  isLoading,
-  disabled,
-  type = "button",
-  onClick,
-  ...props
-}: ButtonProps) {
-  const baseClasses = cn(
-    "inline-flex items-center justify-center gap-2 font-medium transition-all duration-200",
-    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2",
-    "disabled:pointer-events-none disabled:opacity-50",
-    "active:scale-[0.98]",
-    variantClasses[variant],
-    sizeClasses[size],
-    className
-  );
+const Button = forwardRef<HTMLButtonElement, ButtonProps>(
+  (
+    {
+      variant = "primary",
+      size = "md",
+      className,
+      as,
+      href,
+      children,
+      isLoading,
+      disabled,
+      fullWidth,
+      type = "button",
+      onClick,
+      ...props
+    },
+    ref
+  ) => {
+    const baseClasses = cn(
+      "inline-flex items-center justify-center gap-2 font-medium transition-all duration-200",
+      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2",
+      "disabled:pointer-events-none disabled:opacity-50",
+      "active:scale-[0.98]",
+      variantClasses[variant],
+      sizeClasses[size],
+      fullWidth && "w-full",
+      className
+    );
 
-  // Handle polymorphic rendering with href
-  if (href) {
-    const Component = as || "a";
+    // Handle polymorphic rendering with href
+    if (href) {
+      const Component = as || "a";
+      return (
+        <Component
+          href={href}
+          className={cn(baseClasses, (disabled || isLoading) && "pointer-events-none opacity-50")}
+          aria-disabled={disabled || isLoading}
+          {...(props as React.AnchorHTMLAttributes<HTMLAnchorElement>)}
+        >
+          {isLoading && <span className="loading loading-spinner loading-sm" />}
+          {children}
+        </Component>
+      );
+    }
+
+    // For regular buttons, use native button
+    const Component = as || "button";
     return (
       <Component
-        href={href}
-        className={cn(baseClasses, (disabled || isLoading) && "pointer-events-none opacity-50")}
-        aria-disabled={disabled || isLoading}
-        {...(props as React.AnchorHTMLAttributes<HTMLAnchorElement>)}
+        ref={ref}
+        type={type}
+        className={baseClasses}
+        disabled={disabled || isLoading}
+        onClick={onClick}
+        {...props}
       >
         {isLoading && <span className="loading loading-spinner loading-sm" />}
         {children}
       </Component>
     );
   }
+);
 
-  // For regular buttons, use native button
-  const Component = as || "button";
-  return (
-    <Component type={type} className={baseClasses} disabled={disabled || isLoading} onClick={onClick} {...props}>
-      {isLoading && <span className="loading loading-spinner loading-sm" />}
-      {children}
-    </Component>
-  );
-}
+Button.displayName = "Button";
+
+export default Button;

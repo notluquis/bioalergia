@@ -1,4 +1,9 @@
-import React from "react";
+/**
+ * Checkbox Component - Native HTML with HeroUI-inspired styling
+ *
+ * Using native HTML checkbox for full API compatibility.
+ */
+import type React from "react";
 
 import { cn } from "@/lib/utils";
 
