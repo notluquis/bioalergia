@@ -28,6 +28,11 @@ export default function Input(props: Props) {
   const { label, helper, error, className, containerClassName, as = "input", type, size = "md", ...rest } = props;
   const [isPasswordVisible, setIsPasswordVisible] = React.useState(false);
 
+  // Generate unique IDs for aria-describedby
+  const inputId = rest.id || React.useId();
+  const helperId = `${inputId}-helper`;
+  const errorId = `${inputId}-error`;
+
   const isPassword = type === "password";
   let inputType = type;
   if (isPassword) {
@@ -80,19 +85,39 @@ export default function Input(props: Props) {
   const labelTextClasses = "label-text text-xs font-semibold uppercase tracking-wider text-base-content/70 ml-1";
   const helperClasses = cn("label-text-alt mt-1.5 ml-1 text-xs text-base-content/70", error && "text-error");
 
+  // Accessibility: aria-describedby for helper/error, aria-invalid for errors
+  const ariaDescribedBy =
+    [error ? errorId : null, helper && !error ? helperId : null].filter(Boolean).join(" ") || undefined;
+  const ariaProps = {
+    id: inputId,
+    "aria-describedby": ariaDescribedBy,
+    "aria-invalid": error ? true : undefined,
+  };
+
   let control: React.ReactNode;
 
   if (as === "textarea") {
-    control = <textarea className={textareaClasses} {...(rest as React.TextareaHTMLAttributes<HTMLTextAreaElement>)} />;
+    control = (
+      <textarea
+        className={textareaClasses}
+        {...ariaProps}
+        {...(rest as React.TextareaHTMLAttributes<HTMLTextAreaElement>)}
+      />
+    );
   } else if (as === "select") {
     control = (
-      <select className={selectClasses} {...(rest as React.SelectHTMLAttributes<HTMLSelectElement>)}>
+      <select className={selectClasses} {...ariaProps} {...(rest as React.SelectHTMLAttributes<HTMLSelectElement>)}>
         {props.children}
       </select>
     );
   } else {
     control = (
-      <input type={inputType} className={inputClasses} {...(rest as React.InputHTMLAttributes<HTMLInputElement>)} />
+      <input
+        type={inputType}
+        className={inputClasses}
+        {...ariaProps}
+        {...(rest as React.InputHTMLAttributes<HTMLInputElement>)}
+      />
     );
   }
 
@@ -105,6 +130,7 @@ export default function Input(props: Props) {
         onClick={() => setIsPasswordVisible(!isPasswordVisible)}
         className="text-base-content/60 hover:text-base-content hover:bg-base-200/50 rounded-full p-1 transition-colors focus:outline-none"
         tabIndex={-1}
+        aria-label={isPasswordVisible ? "Ocultar contraseña" : "Mostrar contraseña"}
       >
         {isPasswordVisible ? <EyeOff size={18} /> : <Eye size={18} />}
       </button>
@@ -113,7 +139,7 @@ export default function Input(props: Props) {
   return (
     <div className={cn("form-control w-full", containerClassName)}>
       {label && (
-        <label className={labelClasses}>
+        <label htmlFor={inputId} className={labelClasses}>
           <span className={labelTextClasses}>{label}</span>
         </label>
       )}
@@ -129,7 +155,9 @@ export default function Input(props: Props) {
 
       {(helper || error) && (
         <div className="label pt-0 pb-0">
-          <span className={helperClasses}>{error || helper}</span>
+          <span id={error ? errorId : helperId} className={helperClasses}>
+            {error || helper}
+          </span>
         </div>
       )}
     </div>

@@ -33,6 +33,7 @@
     "turbo": "^2.7.4"
   },
   "dependencies": {
+    "isomorphic-dompurify": "^2.35.0",
     "superjson": "^2.2.6"
   }
 }
