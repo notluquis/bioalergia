@@ -30,7 +30,7 @@
   },
   "devDependencies": {
     "@zenstackhq/tanstack-query": "^3.2.1",
-    "turbo": "^2.7.4"
+    "turbo": "^2.7.5"
   },
   "dependencies": {
     "isomorphic-dompurify": "^2.35.0",
