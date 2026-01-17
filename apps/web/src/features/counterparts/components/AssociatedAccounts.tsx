@@ -1,4 +1,4 @@
-import { skipToken, useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
 import { useEffect, useState } from "react";
@@ -63,9 +63,10 @@ export default function AssociatedAccounts({
     return () => clearTimeout(handler);
   }, [suggestionQuery]);
 
-  const { data: suggestions = [] } = useSuspenseQuery({
+  const { data: suggestions = [] } = useQuery({
     queryKey: ["account-suggestions", debouncedQuery],
-    queryFn: debouncedQuery.trim() ? () => fetchAccountSuggestions(debouncedQuery) : (skipToken as any),
+    queryFn: () => fetchAccountSuggestions(debouncedQuery),
+    enabled: !!debouncedQuery.trim(),
     staleTime: 1000 * 60,
   });
 
@@ -313,38 +314,37 @@ export default function AssociatedAccounts({
 
   const activeRange = summaryRange;
 
-  const { data: quickViewRows = [] } = useSuspenseQuery({
+  const { data: quickViewRows = [] } = useQuery({
     queryKey: ["associated-accounts-transactions", quickViewGroup, activeRange.from, activeRange.to],
-    queryFn: quickViewGroup
-      ? async () => {
-          const filters = quickViewGroup.accounts.map((account) => buildAccountTransactionFilter(account));
-          const normalized: Record<string, AccountTransactionFilter> = {};
-          filters.forEach((filter) => {
-            if (filter.sourceId || filter.bankAccountNumber) {
-              normalized[accountFilterKey(filter)] = filter;
-            }
-          });
-          const uniqueFilters = Object.values(normalized);
-
-          const results = await Promise.all(
-            uniqueFilters.map((filter) => fetchTransactionsForFilter(filter, activeRange))
-          );
-          const merged = results.flat();
-
-          const dedup = new Map<number, Transaction>();
-          merged.forEach((movement) => {
-            if (!dedup.has(movement.id)) {
-              dedup.set(movement.id, movement);
-            }
-          });
-
-          const sorted = [...dedup.values()].toSorted(
-            (a, b) => dayjs(b.transactionDate).valueOf() - dayjs(a.transactionDate).valueOf()
-          );
-
-          return sorted;
+    queryFn: async () => {
+      // safe to assert quickViewGroup is present due to enabled
+      const accounts = quickViewGroup!.accounts;
+      const filters = accounts.map((account) => buildAccountTransactionFilter(account));
+      const normalized: Record<string, AccountTransactionFilter> = {};
+      filters.forEach((filter) => {
+        if (filter.sourceId || filter.bankAccountNumber) {
+          normalized[accountFilterKey(filter)] = filter;
         }
-      : (skipToken as any),
+      });
+      const uniqueFilters = Object.values(normalized);
+
+      const results = await Promise.all(uniqueFilters.map((filter) => fetchTransactionsForFilter(filter, activeRange)));
+      const merged = results.flat();
+
+      const dedup = new Map<number, Transaction>();
+      merged.forEach((movement) => {
+        if (!dedup.has(movement.id)) {
+          dedup.set(movement.id, movement);
+        }
+      });
+
+      const sorted = [...dedup.values()].toSorted(
+        (a, b) => dayjs(b.transactionDate).valueOf() - dayjs(a.transactionDate).valueOf()
+      );
+
+      return sorted;
+    },
+    enabled: !!quickViewGroup,
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 

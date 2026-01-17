@@ -1,4 +1,4 @@
-import { skipToken, useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 
 import Button from "@/components/ui/Button";
@@ -95,19 +95,19 @@ export function ServiceForm({ onSubmit, onCancel, initialValues, submitLabel }: 
     }
   }, [lateFeeMode]);
 
-  const { data: counterparts = [] } = useSuspenseQuery({
+  const { data: counterparts = [] } = useQuery({
     queryKey: ["counterparts"],
     queryFn: fetchCounterparts,
   });
 
-  const { data: accounts = [] } = useSuspenseQuery<CounterpartAccount[]>({
+  const { data: accounts = [] } = useQuery<CounterpartAccount[]>({
     queryKey: ["counterpart-accounts", form.counterpartId],
-    queryFn: form.counterpartId
-      ? async () => {
-          const detail = await fetchCounterpart(form.counterpartId!);
-          return detail.accounts;
-        }
-      : (skipToken as any),
+    queryFn: async () => {
+      // safe assurance due to enabled check
+      const detail = await fetchCounterpart(form.counterpartId!);
+      return detail.accounts;
+    },
+    enabled: !!form.counterpartId,
   });
 
   const counterpartsError = null; // Suspense handles errors

@@ -1,4 +1,4 @@
-import { skipToken, useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 
 import { queryKeys } from "@/lib/queryKeys";
 
@@ -15,9 +15,10 @@ const RECENT_MOVEMENTS_PARAMS = { page: 1, pageSize: 5, includeAmounts: true };
 export function useDashboardStats(params: StatsParams, options?: { enabled?: boolean }) {
   const shouldFetch = Boolean(params.from && params.to) && (options?.enabled ?? true);
 
-  return useSuspenseQuery<StatsResponse>({
+  return useQuery<StatsResponse>({
     queryKey: queryKeys.dashboard.stats(params),
-    queryFn: shouldFetch ? () => fetchStats(params.from, params.to) : (skipToken as any),
+    queryFn: () => fetchStats(params.from, params.to),
+    enabled: shouldFetch,
     staleTime: 2 * 60 * 1000,
   });
 }
@@ -25,9 +26,10 @@ export function useDashboardStats(params: StatsParams, options?: { enabled?: boo
 export function useRecentMovements(options?: { enabled?: boolean }) {
   const shouldFetch = options?.enabled ?? true;
 
-  return useSuspenseQuery<Transaction[]>({
+  return useQuery<Transaction[]>({
     queryKey: queryKeys.dashboard.recentMovements(RECENT_MOVEMENTS_PARAMS),
-    queryFn: shouldFetch ? fetchRecentMovements : (skipToken as any),
+    queryFn: fetchRecentMovements,
+    enabled: shouldFetch,
     staleTime: 60 * 1000,
     gcTime: 5 * 60 * 1000,
   });
