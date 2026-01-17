@@ -1,4 +1,4 @@
-import { roundCurrency } from "~/shared/currency";
+import { roundCurrency, subtractCurrency } from "~/shared/currency";
 
 import type { BalancesApiResponse } from "./types";
 
@@ -30,10 +30,10 @@ export function deriveInitialBalance(report: BalancesApiResponse): number | null
 
   for (const day of report.days) {
     if (day.recordedBalance != null) {
-      return roundCurrency(day.recordedBalance - day.netChange);
+      return subtractCurrency(day.recordedBalance, day.netChange);
     }
     if (day.expectedBalance != null) {
-      return roundCurrency(day.expectedBalance - day.netChange);
+      return subtractCurrency(day.expectedBalance, day.netChange);
     }
   }
 
