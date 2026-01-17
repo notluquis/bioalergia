@@ -1,10 +1,37 @@
 /**
- * Static Hook Wrappers for ZenStack Models.
+ * Static Hook Wrappers for ZenStack Models
+ * =========================================
  *
- * These wrappers encapsulate the "dynamic" nature of useClientQueries
- * (which returns an object of hooks) into static, exported functions.
- * This satisfies strict linting rules like react-compiler and react-hooks/rules-of-hooks
- * which expect hooks to be static imports, not object properties.
+ * WHY STATIC WRAPPERS ARE NEEDED:
+ *
+ * ZenStack's TanStack Query plugin generates hooks dynamically via `useClientQueries(schema)`.
+ * This returns an object where each model has hooks as properties:
+ *
+ *   const { user, role } = useClientQueries(schema);
+ *   user.useFindMany(...);  // ❌ ESLint: react-hooks/rules-of-hooks violation
+ *
+ * The ESLint rule `react-hooks/rules-of-hooks` requires hooks to have STATIC names that
+ * can be identified at compile time. Accessing hooks as object properties (user.useFindMany)
+ * is considered dynamic and violates this rule.
+ *
+ * Additionally, React Compiler (React 19+) performs strict static analysis of hooks.
+ * Dynamic hook access patterns can cause compilation errors or suboptimal optimization.
+ *
+ * SOLUTION - Static Wrappers:
+ *
+ * We create static wrapper functions that internally call the dynamic hooks:
+ *
+ *   export function useFindManyUser(...args) {
+ *     const { user } = useClientQueries(schema);
+ *     return user.useFindMany(...args);  // ✅ Static export, dynamic internal
+ *   }
+ *
+ * REFERENCES:
+ * - React Rules of Hooks: https://react.dev/reference/rules/rules-of-hooks
+ * - React Compiler: https://react.dev/reference/react/use#rules
+ * - ESLint react-hooks plugin: https://www.npmjs.com/package/eslint-plugin-react-hooks
+ *
+ * @module @finanzas/db/hooks
  */
 import {
   useClientQueries,
@@ -12,7 +39,7 @@ import {
 } from "@zenstackhq/tanstack-query/react";
 import { schema, type SchemaType } from "../schema-lite.js";
 
-// Create a typed helper type for extracting hook parameters
+// Type helper for extracting hook parameters
 type Hooks = ClientHooks<SchemaType>;
 
 // User & Auth
