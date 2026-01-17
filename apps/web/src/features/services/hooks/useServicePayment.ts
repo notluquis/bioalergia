@@ -18,13 +18,16 @@ export function useServicePayment() {
   const paymentForm = useStore(servicesStore, (state) => state.paymentForm);
 
   // Suggested Transactions
+  const scheduleId = paymentSchedule?.id;
+  const expectedAmount = paymentSchedule?.expected_amount;
+  const dueDateStr = paymentSchedule?.due_date;
+
   const { data: suggestedTransactions } = useSuspenseQuery({
-    // eslint-disable-next-line @tanstack/query/exhaustive-deps
-    queryKey: ["payment-suggestions", paymentSchedule?.id, paymentSchedule?.expected_amount, paymentSchedule?.due_date],
+    queryKey: ["payment-suggestions", scheduleId, expectedAmount, dueDateStr],
     queryFn: async () => {
-      if (!paymentSchedule) return [];
-      const tolerance = Math.max(100, Math.round(paymentSchedule.expected_amount * 0.01));
-      const dueDate = paymentSchedule.due_date ? dayjs(paymentSchedule.due_date) : dayjs();
+      if (!scheduleId || expectedAmount == null) return [];
+      const tolerance = Math.max(100, Math.round(expectedAmount * 0.01));
+      const dueDate = dueDateStr ? dayjs(dueDateStr) : dayjs();
       const from = dueDate.clone().subtract(45, "day").format("YYYY-MM-DD");
       const to = dueDate.clone().add(45, "day").format("YYYY-MM-DD");
 
@@ -52,7 +55,7 @@ export function useServicePayment() {
         .filter(
           (tx) =>
             typeof tx.transactionAmount === "number" &&
-            Math.abs((tx.transactionAmount ?? 0) - paymentSchedule.expected_amount) <= tolerance
+            Math.abs((tx.transactionAmount ?? 0) - expectedAmount) <= tolerance
         )
         .slice(0, 8);
     },
