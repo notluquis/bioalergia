@@ -40,12 +40,12 @@ export function useJobProgress(jobId: string | null, options: UseJobProgressOpti
       }
       return response.job;
     },
-    // eslint-disable-next-line sonarjs/function-return-type
+
     refetchInterval: (query) => {
       const data = query.state.data;
       // Stop polling when job is done
       if (!data || data.status === "completed" || data.status === "failed") {
-        return false;
+        return;
       }
       return pollInterval;
     },

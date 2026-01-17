@@ -39,9 +39,8 @@ const markEntryAsError = (entry: SyncProgressEntry): SyncProgressEntry => ({
   status: "error",
 });
 
-// eslint-disable-next-line sonarjs/function-return-type
-const resolveRefetchInterval = (logs: CalendarSyncLog[] | undefined): number | false => {
-  return hasFreshRunningSync(logs) ? 5000 : false;
+const resolveRefetchInterval = (logs: CalendarSyncLog[] | undefined): number | undefined => {
+  return hasFreshRunningSync(logs) ? 5000 : undefined;
 };
 
 const markAllAsError = (entries: SyncProgressEntry[]) => entries.map((e) => markEntryAsError(e));

@@ -25,8 +25,7 @@ describe("RUT Utilities", () => {
     it("should return null for empty input", () => {
       expect(normalizeRut("")).toBeNull();
       expect(normalizeRut(null)).toBeNull();
-      // eslint-disable-next-line unicorn/no-useless-undefined
-      expect(normalizeRut(undefined)).toBeNull();
+      expect(normalizeRut()).toBeNull();
     });
 
     it("should return null for invalid characters", () => {

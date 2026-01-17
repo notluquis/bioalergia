@@ -132,6 +132,166 @@ function getLogoDimensions(logoDataUrl: string | null): Promise<{ w: number; h: 
   });
 }
 
+// === NEW EXTRACTED HELPERS ===
+
+function timeToMinutes(t?: string): number | null {
+  if (!t || !/^\d{1,2}:\d{2}$/.test(t)) return null;
+  const parts = t.split(":").map(Number);
+  const [h, m] = parts;
+  if (h === undefined || m === undefined) return null;
+  if (h < 0 || h > 23 || m < 0 || m >= 60) return null;
+  return h * 60 + m;
+}
+
+function computeWorked(entrada?: string, salida?: string): string {
+  const s = timeToMinutes(entrada);
+  const e = timeToMinutes(salida);
+  if (s == null || e == null) return "";
+  let diff = e - s;
+  if (diff < 0) diff += 24 * 60;
+  const hh = String(Math.floor(diff / 60))
+    .toString()
+    .padStart(2, "0");
+  const mm = String(diff % 60).padStart(2, "0");
+  return `${hh}:${mm}`;
+}
+
+interface SummaryTableProps {
+  doc: import("jspdf").default;
+  autoTable: AutoTableFactory["default"];
+  summary: TimesheetSummaryRow | null;
+  infoStartY: number;
+  pageWidth: number;
+  margin: number;
+}
+
+function drawSummaryTable({ doc, autoTable, summary, infoStartY, pageWidth, margin }: SummaryTableProps) {
+  const summaryHead = [["Concepto", "Valor"]];
+  const hasOvertime = summary && (summary.overtimeMinutes > 0 || (summary.extraAmount || 0) > 0);
+
+  const summaryBody: string[][] = [];
+  if (summary) {
+    const retentionPercent = formatRetentionPercent(summary.retentionRate || 0);
+
+    summaryBody.push(
+      ["Horas trabajadas", summary.hoursFormatted || "0:00"],
+      ...(hasOvertime ? [["Horas extras", summary.overtimeFormatted || "0:00"]] : []),
+      ["Tarifa por hora", fmtCLP(summary.hourlyRate || 0)],
+      ["Subtotal", fmtCLP(summary.subtotal || 0)],
+      [`Retención (${retentionPercent})`, `-${fmtCLP(summary.retention || 0)}`],
+      ["Total Líquido", fmtCLP(summary.net || 0)]
+    );
+  }
+
+  const summaryColumnStyles: Record<string, { halign: "left" | "center" | "right" }> = {
+    0: { halign: "left" },
+    1: { halign: "right" },
+  };
+
+  autoTable(doc, {
+    head: summaryHead,
+    body: summaryBody,
+    startY: infoStartY + 20,
+    theme: "grid",
+    styles: { fontSize: 9, cellPadding: 2, overflow: "linebreak" },
+    headStyles: { fillColor: [14, 100, 183], textColor: [255, 255, 255], fontStyle: "bold" },
+    tableWidth: pageWidth - margin * 2,
+    margin: { left: margin, right: margin },
+    columnStyles: summaryColumnStyles,
+  });
+}
+
+interface DetailTableProps {
+  doc: import("jspdf").default;
+  autoTable: AutoTableFactory["default"];
+  bulkRows: BulkRow[];
+  selectedCols: TimesheetColumnKey[];
+  defaultCols: readonly TimesheetColumnKey[];
+  labels: Record<TimesheetColumnKey, string>;
+  pageWidth: number;
+  margin: number;
+  startY: number;
+}
+
+function drawDetailTable({
+  doc,
+  autoTable,
+  bulkRows,
+  selectedCols,
+  defaultCols,
+  labels,
+  pageWidth,
+  margin,
+  startY,
+}: DetailTableProps) {
+  const hasAnyOvertime = bulkRows.some((row) => row.overtime && row.overtime !== "0:00" && row.overtime !== "00:00");
+  const baseColKeys: TimesheetColumnKey[] = selectedCols.length > 0 ? selectedCols : [...defaultCols];
+  const colKeys: TimesheetColumnKey[] = hasAnyOvertime ? baseColKeys : baseColKeys.filter((k) => k !== "overtime");
+
+  const workedRows = bulkRows.filter((row) => row.entrada || row.salida);
+
+  const body = workedRows.map((row) =>
+    colKeys.map((key): string => {
+      switch (key) {
+        case "date": {
+          return dayjs(row.date).isValid() ? dayjs(row.date).format("DD-MM-YYYY") : row.date;
+        }
+        case "entrada": {
+          return row.entrada || "-";
+        }
+        case "salida": {
+          return row.salida || "-";
+        }
+        case "worked": {
+          return computeWorked(row.entrada, row.salida) || "-";
+        }
+        case "overtime": {
+          return row.overtime || "-";
+        }
+        default: {
+          return assertUnreachable(key);
+        }
+      }
+    })
+  );
+
+  if (body.length === 0) {
+    doc.setFontSize(11);
+    doc.text("Sin registros para este periodo.", margin, startY);
+    return;
+  }
+
+  autoTable(doc, {
+    head: [colKeys.map((k) => labels[k] ?? k.toUpperCase())],
+    body,
+    startY,
+    theme: "grid",
+    tableWidth: pageWidth - margin * 2,
+    margin: { left: margin, right: margin },
+    styles: { fontSize: 8, cellPadding: 1, overflow: "linebreak" },
+    headStyles: { fontSize: 9, fillColor: [241, 167, 34], textColor: [255, 255, 255], fontStyle: "bold" },
+    columnStyles: {
+      0: { halign: "center" },
+      1: { halign: "center" },
+      2: { halign: "center" },
+      3: { halign: "center" },
+      4: { halign: "center" },
+    },
+    willDrawCell: (data: CellHookData) => {
+      if (data.section === "body") {
+        const rowIndex = data.row.index;
+        const rawDate = workedRows[rowIndex]?.date;
+        const isSunday = rawDate && dayjs(rawDate).day() === 0;
+        if (isSunday) {
+          data.cell.styles.fillColor = [245, 245, 245];
+        }
+      }
+    },
+  });
+}
+
+// === MAIN COMPONENT ===
+
 export default function TimesheetExportPDF({
   logoUrl,
   employee,
@@ -169,7 +329,6 @@ export default function TimesheetExportPDF({
     getPageSize?: () => JsPdfPageSize;
   };
 
-  // eslint-disable-next-line sonarjs/cognitive-complexity
   async function handleExport(preview = true) {
     try {
       const libs = await loadPdfLibs();
@@ -245,152 +404,29 @@ export default function TimesheetExportPDF({
       doc.text(`Total líquido: ${fmtCLP(net)}`, margin, infoStartY + 14);
       doc.setFont("helvetica", "normal");
 
-      // Tabla de RESUMEN - formato vertical simple
-      const summaryHead = [["Concepto", "Valor"]];
-      const hasOvertime = summary && (summary.overtimeMinutes > 0 || (summary.extraAmount || 0) > 0);
+      // Tabla de RESUMEN
+      drawSummaryTable({ doc, autoTable, summary, infoStartY, pageWidth, margin });
 
-      const summaryBody: string[][] = [];
-      if (summary) {
-        // Use retention rate from backend summary (already calculated with correct year)
-        const retentionPercent = formatRetentionPercent(summary.retentionRate || 0);
-
-        summaryBody.push(
-          ["Horas trabajadas", summary.hoursFormatted || "0:00"],
-          ...(hasOvertime ? [["Horas extras", summary.overtimeFormatted || "0:00"]] : []),
-          ["Tarifa por hora", fmtCLP(summary.hourlyRate || 0)],
-          ["Subtotal", fmtCLP(summary.subtotal || 0)],
-          [`Retención (${retentionPercent})`, `-${fmtCLP(summary.retention || 0)}`],
-          ["Total Líquido", fmtCLP(summary.net || 0)]
-        );
-      }
-
-      const summaryColumnStyles: Record<string, { halign: "left" | "center" | "right" }> = {
-        0: { halign: "left" },
-        1: { halign: "right" },
-      };
-
-      autoTable(doc, {
-        head: summaryHead,
-        body: summaryBody,
-        startY: infoStartY + 20,
-        theme: "grid",
-        styles: { fontSize: 9, cellPadding: 2, overflow: "linebreak" },
-        headStyles: { fillColor: [14, 100, 183], textColor: [255, 255, 255], fontStyle: "bold" },
-        tableWidth: pageWidth - margin * 2,
-        margin: { left: margin, right: margin },
-        columnStyles: summaryColumnStyles,
-      });
-
-      // Definición de columnas y etiquetas para DETALLE
-      // Si no hay overtime en ningún registro, ocultar esa columna
-      const hasAnyOvertime = bulkRows.some(
-        (row) => row.overtime && row.overtime !== "0:00" && row.overtime !== "00:00"
-      );
-      // Filtrar columna worked también si no está seleccionada
-      const baseColKeys: TimesheetColumnKey[] = selectedCols.length > 0 ? selectedCols : [...defaultCols];
-      // Ocultar columna overtime si no hay horas extras en ningún día
-      const colKeys: TimesheetColumnKey[] = hasAnyOvertime ? baseColKeys : baseColKeys.filter((k) => k !== "overtime");
-
-      const labels: Record<TimesheetColumnKey, string> = {
-        date: "Fecha",
-        entrada: "Entrada",
-        salida: "Salida",
-        worked: "Trabajadas",
-        overtime: "Extras",
-      };
-
-      function timeToMinutes(t?: string): number | null {
-        if (!t || !/^\d{1,2}:\d{2}$/.test(t)) return null;
-        const parts = t.split(":").map(Number);
-
-        const [h, m] = parts;
-
-        if (h === undefined || m === undefined) return null;
-        if (h < 0 || h > 23 || m < 0 || m >= 60) return null;
-        return h * 60 + m;
-      }
-      function computeWorked(entrada?: string, salida?: string): string {
-        const s = timeToMinutes(entrada);
-        const e = timeToMinutes(salida);
-        if (s == null || e == null) return "";
-        let diff = e - s;
-        if (diff < 0) diff += 24 * 60;
-        const hh = String(Math.floor(diff / 60))
-          .toString()
-          .padStart(2, "0");
-        const mm = String(diff % 60).padStart(2, "0");
-        return `${hh}:${mm}`;
-      }
-
-      // Filtrar solo días con entrada o salida registrada
-      const workedRows = bulkRows.filter((row) => row.entrada || row.salida);
-
-      const body = workedRows.map((row) =>
-        colKeys.map((key): string => {
-          switch (key) {
-            case "date": {
-              return dayjs(row.date).isValid() ? dayjs(row.date).format("DD-MM-YYYY") : row.date;
-            }
-            case "entrada": {
-              return row.entrada || "-";
-            }
-            case "salida": {
-              return row.salida || "-";
-            }
-            case "worked": {
-              return computeWorked(row.entrada, row.salida) || "-";
-            }
-            case "overtime": {
-              return row.overtime || "-";
-            }
-            default: {
-              return assertUnreachable(key);
-            }
-          }
-        })
-      );
-
-      // Tabla de DETALLE en la misma página, después del resumen
+      // Tabla de DETALLE
       const lastTableReference = doc as unknown as { lastAutoTable?: { finalY: number } };
       const lastAutoTable = lastTableReference.lastAutoTable;
       const nextY = lastAutoTable ? lastAutoTable.finalY + 8 : infoStartY + 30;
-      if (body.length === 0) {
-        doc.setFontSize(11);
-        doc.text("Sin registros para este periodo.", margin, nextY);
-      } else {
-        autoTable(doc, {
-          head: [colKeys.map((k) => labels[k] ?? k.toUpperCase())],
-          body,
-          startY: nextY,
-          theme: "grid",
-          tableWidth: pageWidth - margin * 2,
-          margin: { left: margin, right: margin },
-          styles: { fontSize: 8, cellPadding: 1, overflow: "linebreak" },
-          headStyles: { fontSize: 9, fillColor: [241, 167, 34], textColor: [255, 255, 255], fontStyle: "bold" },
-          columnStyles: {
-            0: { halign: "center" }, // Fecha
-            1: { halign: "center" }, // Entrada
-            2: { halign: "center" }, // Salida
-            3: { halign: "center" }, // Trabajadas
-            4: { halign: "center" }, // Extras
-          },
-          willDrawCell: (data: CellHookData) => {
-            if (data.section === "body") {
-              const rowIndex = data.row.index;
-              const rawDate = workedRows[rowIndex]?.date;
-              const isSunday = rawDate && dayjs(rawDate).day() === 0;
-              if (isSunday) {
-                data.cell.styles.fillColor = [245, 245, 245];
-              }
-            }
-          },
-        });
-      }
+
+      drawDetailTable({
+        doc,
+        autoTable,
+        bulkRows,
+        selectedCols,
+        defaultCols,
+        labels: COLUMN_LABELS,
+        pageWidth,
+        margin,
+        startY: nextY,
+      });
 
       // Guardar / previsualizar
       const safeName = (employee.full_name || "Trabajador").replaceAll(/[^a-zA-Z0-9_\- ]/g, "");
       if (preview) {
-        // Generate PDF as data URL (works better with Safari)
         const pdfDataUri = doc.output("dataurlstring");
         const previewWindow = window.open("", "_blank", "noopener,noreferrer");
         if (previewWindow) {
@@ -407,6 +443,7 @@ export default function TimesheetExportPDF({
       alert("No se pudo generar el PDF. Revisa la consola para más detalles.");
     }
   }
+
   return (
     <div className="flex items-center gap-2">
       <div className="relative inline-block">
