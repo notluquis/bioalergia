@@ -40,39 +40,35 @@ export default function UserManagementPage() {
 
   // ZenStack hooks for users
   const { data: usersData, isLoading } = useFindManyUser({
-    include: { person: true },
+    include: { person: true, roles: { include: { role: true } }, passkeys: true },
     orderBy: { createdAt: "desc" },
   });
 
-  // Filter out test/debug emails client-side (ZenStack where has limited support)
-  // Transform ZenStack data to frontend User type
-  type ZenStackUser = NonNullable<typeof usersData>[number];
+  // Use TypeScript inference for raw ZenStack data type
+  type RawUser = NonNullable<typeof usersData>[number];
 
-  // Memoize users data
+  // Transform to frontend User view model (with computed properties)
   const users: User[] = useMemo(() => {
-    return (usersData ?? [])
-      .filter((u: ZenStackUser) => !u.email?.includes("test") && !u.email?.includes("debug"))
-      .map((u: ZenStackUser) => {
-        const raw = u as Record<string, unknown>;
-        const passkeys = (raw.passkeys as unknown[] | undefined) ?? [];
-        const roles = (raw.roles as Array<{ role?: { name?: string } }> | undefined) ?? [];
-        const personData = raw.person as { names?: string; fatherName?: string | null; rut?: string } | undefined;
-        return {
+    if (!usersData) return [];
+    return usersData
+      .filter((u) => !u.email?.includes("test") && !u.email?.includes("debug"))
+      .map(
+        (u: RawUser): User => ({
           id: u.id,
           email: u.email,
-          role: roles[0]?.role?.name ?? "",
+          role: (u as { roles?: Array<{ role?: { name?: string } }> }).roles?.[0]?.role?.name ?? "",
           mfaEnabled: u.mfaEnabled ?? false,
-          passkeysCount: passkeys.length,
-          hasPasskey: passkeys.length > 0,
+          passkeysCount: ((u as { passkeys?: unknown[] }).passkeys ?? []).length,
+          hasPasskey: ((u as { passkeys?: unknown[] }).passkeys ?? []).length > 0,
           status: u.status as User["status"],
-          createdAt: (raw.createdAt as Date)?.toISOString() ?? new Date().toISOString(),
+          createdAt: u.createdAt?.toISOString() ?? new Date().toISOString(),
           person: {
-            names: personData?.names ?? "",
-            fatherName: personData?.fatherName ?? null,
-            rut: personData?.rut ?? "",
+            names: (u as { person?: { names?: string } }).person?.names ?? "",
+            fatherName: (u as { person?: { fatherName?: string | null } }).person?.fatherName ?? null,
+            rut: (u as { person?: { rut?: string } }).person?.rut ?? "",
           },
-        };
-      });
+        })
+      );
   }, [usersData]);
 
   // ZenStack hooks for roles (for filter dropdown)
