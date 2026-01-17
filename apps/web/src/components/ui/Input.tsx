@@ -3,6 +3,29 @@ import React from "react";
 
 import { cn } from "@/lib/utils";
 
+// Constants extracted outside component to reduce complexity
+const SIZE_CLASSES = {
+  xs: "input-xs h-6 text-xs",
+  sm: "input-sm h-8 text-sm",
+  md: "h-10 text-sm",
+  lg: "input-lg h-12 text-base",
+} as const;
+
+const SELECT_SIZE_CLASSES = {
+  xs: "select-xs h-6 text-xs",
+  sm: "select-sm h-8 text-sm",
+  md: "h-10 text-sm",
+  lg: "select-lg h-12 text-base",
+} as const;
+
+const BASE_CLASSES =
+  "w-full transition-all duration-200 ease-apple placeholder:text-base-content/60 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary";
+
+const LABEL_CLASSES = "label pt-0 pb-2";
+const LABEL_TEXT_CLASSES = "label-text text-xs font-semibold uppercase tracking-wider text-base-content/70 ml-1";
+
+type InputSize = "xs" | "sm" | "md" | "lg";
+
 type InputBaseProps = {
   label?: string;
   helper?: string;
@@ -10,7 +33,7 @@ type InputBaseProps = {
   containerClassName?: string;
   rightElement?: React.ReactNode;
   type?: string;
-  size?: "xs" | "sm" | "md" | "lg";
+  size?: InputSize;
 };
 
 type InputProps = InputBaseProps &
@@ -21,82 +44,67 @@ type InputProps = InputBaseProps &
 type TextareaProps = InputBaseProps & React.TextareaHTMLAttributes<HTMLTextAreaElement>;
 type SelectProps = InputBaseProps & Omit<React.SelectHTMLAttributes<HTMLSelectElement>, "size">;
 
-// Discriminated union for props
 type Props = ({ as?: "input" } & InputProps) | ({ as: "textarea" } & TextareaProps) | ({ as: "select" } & SelectProps);
+
+// Helper to get error classes for any input type
+const getErrorClasses = (inputType: "input" | "textarea" | "select") =>
+  `${inputType}-error focus:ring-error/20 focus:border-error`;
 
 export default function Input(props: Props) {
   const { label, helper, error, className, containerClassName, as = "input", type, size = "md", ...rest } = props;
   const [isPasswordVisible, setIsPasswordVisible] = React.useState(false);
 
-  // Generate unique IDs for aria-describedby (must be called unconditionally)
   const generatedId = React.useId();
   const inputId = rest.id || generatedId;
   const helperId = `${inputId}-helper`;
   const errorId = `${inputId}-error`;
 
   const isPassword = type === "password";
-  let inputType = type;
-  if (isPassword) {
-    inputType = isPasswordVisible ? "text" : "password";
-  }
-
-  const sizeClasses = {
-    xs: "input-xs h-6 text-xs",
-    sm: "input-sm h-8 text-sm",
-    md: "h-10 text-sm", // Default compact
-    lg: "input-lg h-12 text-base",
-  };
-
-  const selectSizeClasses = {
-    xs: "select-xs h-6 text-xs",
-    sm: "select-sm h-8 text-sm",
-    md: "h-10 text-sm",
-    lg: "select-lg h-12 text-base",
-  };
-
-  const baseClasses =
-    "w-full transition-all duration-200 ease-apple placeholder:text-base-content/60 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary";
+  const inputType = isPassword && isPasswordVisible ? "text" : type;
 
   const inputClasses = cn(
     "input input-bordered bg-base-100/50 hover:bg-base-100 focus:bg-base-100",
-    sizeClasses[size],
-    error && "input-error focus:ring-error/20 focus:border-error",
-    (isPassword || props.rightElement) && "pr-14", // Extra padding for toggle + Safari autofill icon
-    baseClasses,
+    SIZE_CLASSES[size],
+    error && getErrorClasses("input"),
+    (isPassword || props.rightElement) && "pr-14",
+    BASE_CLASSES,
     className
   );
 
   const textareaClasses = cn(
     "textarea textarea-bordered bg-base-100/50 hover:bg-base-100 focus:bg-base-100 min-h-25 py-2",
     size === "xs" || size === "sm" ? "text-xs" : "text-sm",
-    error && "textarea-error focus:ring-error/20 focus:border-error",
-    baseClasses,
+    error && getErrorClasses("textarea"),
+    BASE_CLASSES,
     className
   );
 
   const selectClasses = cn(
     "select select-bordered bg-base-100/50 hover:bg-base-100 focus:bg-base-100",
-    selectSizeClasses[size],
-    error && "select-error focus:ring-error/20 focus:border-error",
-    baseClasses,
+    SELECT_SIZE_CLASSES[size],
+    error && getErrorClasses("select"),
+    BASE_CLASSES,
     className
   );
 
-  const labelClasses = "label pt-0 pb-2"; // Increased bottom padding
-  const labelTextClasses = "label-text text-xs font-semibold uppercase tracking-wider text-base-content/70 ml-1";
   const helperClasses = cn("label-text-alt mt-1.5 ml-1 text-xs text-base-content/70", error && "text-error");
 
-  // Accessibility: aria-describedby for helper/error, aria-invalid for errors
-  const ariaDescribedBy =
-    [error ? errorId : null, helper && !error ? helperId : null].filter(Boolean).join(" ") || undefined;
+  // Compute aria-describedby without nested ternary
+  let describedById: string | undefined;
+  if (error) {
+    describedById = errorId;
+  } else if (helper) {
+    describedById = helperId;
+  }
+
   const ariaProps = {
     id: inputId,
-    "aria-describedby": ariaDescribedBy,
+    "aria-describedby": describedById,
     "aria-invalid": error ? true : undefined,
   };
 
+  // Render control based on type using if-else
   let control: React.ReactNode;
-
   if (as === "textarea") {
     control = (
       <textarea
@@ -122,13 +130,12 @@ export default function Input(props: Props) {
     );
   }
 
-  // Handle right element (either prop or auto-password toggle)
   const rightContent =
-    props.rightElement ||
+    props.rightElement ??
     (isPassword && (
       <button
         type="button"
-        onClick={() => setIsPasswordVisible(!isPasswordVisible)}
+        onClick={() => setIsPasswordVisible((v) => !v)}
         className="text-base-content/60 hover:text-base-content hover:bg-base-200/50 rounded-full p-1 transition-colors focus:outline-none"
         tabIndex={-1}
         aria-label={isPasswordVisible ? "Ocultar contraseña" : "Mostrar contraseña"}
@@ -137,26 +144,28 @@ export default function Input(props: Props) {
       </button>
     ));
 
+  const controlWithRight = rightContent ? (
+    <div className="relative flex items-center">
+      {control}
+      <div className="absolute right-10 flex items-center justify-center">{rightContent}</div>
+    </div>
+  ) : (
+    control
+  );
+
   return (
     <div className={cn("form-control w-full", containerClassName)}>
       {label && (
-        <label htmlFor={inputId} className={labelClasses}>
-          <span className={labelTextClasses}>{label}</span>
+        <label htmlFor={inputId} className={LABEL_CLASSES}>
+          <span className={LABEL_TEXT_CLASSES}>{label}</span>
         </label>
       )}
 
-      {rightContent ? (
-        <div className="relative flex items-center">
-          {control}
-          <div className="absolute right-10 flex items-center justify-center">{rightContent}</div>
-        </div>
-      ) : (
-        control
-      )}
+      {controlWithRight}
 
       {(helper || error) && (
         <div className="label pt-0 pb-0">
-          <span id={error ? errorId : helperId} className={helperClasses}>
+          <span id={describedById} className={helperClasses}>
             {error || helper}
           </span>
         </div>
