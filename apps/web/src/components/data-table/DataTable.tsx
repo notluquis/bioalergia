@@ -66,6 +66,10 @@ interface DataTableProps<TData, TValue> {
    * Optional handler for row clicks
    */
   onRowClick?: (row: TData) => void;
+  /**
+   * Optional component to render when row is expanded
+   */
+  renderSubComponent?: (props: { row: import("@tanstack/react-table").Row<TData> }) => React.ReactNode;
 }
 
 const getCommonPinningStyles = <TData,>(column: Column<TData>): CSSProperties => {
@@ -106,6 +110,7 @@ export function DataTable<TData, TValue>({
   onRowSelectionChange: controlledOnRowSelectionChange,
   columnVisibility: controlledColumnVisibility,
   onColumnVisibilityChange: controlledOnColumnVisibilityChange,
+  renderSubComponent,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [internalColumnVisibility, setInternalColumnVisibility] = useState<VisibilityState>({});
@@ -235,15 +240,9 @@ export function DataTable<TData, TValue>({
                     </td>
                   ))}
                 </tr>
-                {row.getIsExpanded() && (
+                {row.getIsExpanded() && renderSubComponent && (
                   <tr>
-                    <td colSpan={row.getVisibleCells().length}>
-                      <div className="bg-base-200/30 p-4">
-                        <pre className="custom-scrollbar bg-base-100 max-h-60 overflow-auto rounded border p-2 text-xs">
-                          {JSON.stringify(row.original, null, 2)}
-                        </pre>
-                      </div>
-                    </td>
+                    <td colSpan={row.getVisibleCells().length}>{renderSubComponent({ row })}</td>
                   </tr>
                 )}
               </React.Fragment>
@@ -279,15 +278,9 @@ export function DataTable<TData, TValue>({
                 </td>
               ))}
             </tr>
-            {row.getIsExpanded() && (
+            {row.getIsExpanded() && renderSubComponent && (
               <tr>
-                <td colSpan={row.getVisibleCells().length}>
-                  <div className="bg-base-200/30 p-4">
-                    <pre className="custom-scrollbar bg-base-100 max-h-60 overflow-auto rounded border p-2 text-xs">
-                      {JSON.stringify(row.original, null, 2)}
-                    </pre>
-                  </div>
-                </td>
+                <td colSpan={row.getVisibleCells().length}>{renderSubComponent({ row })}</td>
               </tr>
             )}
           </React.Fragment>

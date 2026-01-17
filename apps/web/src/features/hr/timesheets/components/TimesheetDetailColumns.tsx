@@ -1,4 +1,4 @@
-import type { ColumnDef } from "@tanstack/react-table";
+import { createColumnHelper } from "@tanstack/react-table";
 import dayjs from "dayjs";
 
 import Button from "@/components/ui/Button";
@@ -227,50 +227,48 @@ const ActionsCell = ({ row, index, meta }: { row: BulkRow; index: number; meta: 
   );
 };
 
-export const getTimesheetDetailColumns = (): ColumnDef<BulkRow>[] => [
-  {
-    accessorKey: "date",
+const columnHelper = createColumnHelper<BulkRow>();
+
+export const getTimesheetDetailColumns = () => [
+  columnHelper.accessor("date", {
     header: "Fecha",
     cell: ({ row, table }) => <DateCell row={row.original} meta={table.options.meta as TimesheetTableMeta} />,
-  },
-  {
-    accessorKey: "entrada",
+  }),
+  columnHelper.accessor("entrada", {
     header: "Entrada",
     cell: ({ row, table }) => (
       <InputCell row={row.original} index={row.index} field="entrada" meta={table.options.meta as TimesheetTableMeta} />
     ),
-  },
-  {
-    accessorKey: "salida",
+  }),
+  columnHelper.accessor("salida", {
     header: "Salida",
     cell: ({ row, table }) => (
       <InputCell row={row.original} index={row.index} field="salida" meta={table.options.meta as TimesheetTableMeta} />
     ),
-  },
-  {
+  }),
+  columnHelper.display({
     id: "trabajadas",
     header: "Trabajadas",
     cell: ({ row, table }) => <WorkedCell row={row.original} meta={table.options.meta as TimesheetTableMeta} />,
-  },
-  {
-    accessorKey: "overtime",
+  }),
+  columnHelper.accessor("overtime", {
     header: "Extras",
     cell: ({ row, table }) => (
       <OvertimeCell row={row.original} index={row.index} meta={table.options.meta as TimesheetTableMeta} />
     ),
-  },
-  {
+  }),
+  columnHelper.display({
     id: "status",
     header: "Estado",
     cell: ({ row, table }) => (
       <StatusCell row={row.original} index={row.index} meta={table.options.meta as TimesheetTableMeta} />
     ),
-  },
-  {
+  }),
+  columnHelper.display({
     id: "actions",
     header: "Acciones",
     cell: ({ row, table }) => (
       <ActionsCell row={row.original} index={row.index} meta={table.options.meta as TimesheetTableMeta} />
     ),
-  },
+  }),
 ];
