@@ -1,10 +1,14 @@
+/**
+ * Modal Component - Native implementation
+ *
+ * Using native portal + dialog for full API compatibility.
+ */
 import { X } from "lucide-react";
 import React, { useEffect } from "react";
 import { createPortal } from "react-dom";
 
 import { cn } from "@/lib/utils";
 
-import Backdrop from "./Backdrop";
 import Button from "./Button";
 
 interface ModalProps {
@@ -40,7 +44,15 @@ export default function Modal({ isOpen, onClose, title, children, className, box
 
   return createPortal(
     <div className={cn("modal modal-open flex items-center justify-center", className)}>
-      <Backdrop isVisible={isOpen} onClose={onClose} className="z-0" zIndex={0} />
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
+        onKeyDown={(e) => e.key === "Escape" && onClose()}
+        role="button"
+        tabIndex={0}
+        aria-label="Cerrar modal"
+      />
 
       <div
         role="dialog"

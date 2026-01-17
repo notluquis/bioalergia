@@ -1,3 +1,8 @@
+/**
+ * Skeleton Component - Native HTML with animation
+ *
+ * Simple loading placeholder with shimmer animation.
+ */
 import type { HTMLAttributes } from "react";
 
 import { cn } from "@/lib/utils";

@@ -1,3 +1,8 @@
+/**
+ * Tooltip Component - Radix UI based
+ *
+ * Keeping Radix UI for full feature compatibility (delayDuration, asChild, etc.)
+ */
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 import * as React from "react";
 

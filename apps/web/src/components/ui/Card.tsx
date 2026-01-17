@@ -1,3 +1,8 @@
+/**
+ * Card Component - Native HTML with consistent styling
+ *
+ * Composition-based Card component.
+ */
 import React, { forwardRef } from "react";
 
 import { cn } from "@/lib/utils";
