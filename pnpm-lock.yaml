@@ -148,7 +148,7 @@ importers:
         version: 5.0.0(@casl/ability@6.7.5)(react@19.2.3)
       '@finanzas/db':
         specifier: workspace:*
-        version: link:../../packages/db
+        version: file:packages/db
       '@fullcalendar/core':
         specifier: ^6.1.20
         version: 6.1.20
@@ -227,12 +227,12 @@ importers:
       decimal.js:
         specifier: ^10.6.0
         version: 10.6.0
+      dompurify:
+        specifier: ^3.3.1
+        version: 3.3.1
       i18next:
         specifier: ^25.7.4
         version: 25.7.4(typescript@5.9.3)
-      isomorphic-dompurify:
-        specifier: ^2.35.0
-        version: 2.35.0
       jspdf:
         specifier: ^4.0.0
         version: 4.0.0
@@ -1599,6 +1599,9 @@ packages:
     peerDependenciesMeta:
       '@exodus/crypto':
         optional: true
+
+  '@finanzas/db@file:packages/db':
+    resolution: {directory: packages/db, type: directory}
 
   '@floating-ui/core@1.7.3':
     resolution: {integrity: sha512-sGnvb5dmrJaKEZ+LDIpguvdX3bDlEllmv4/ClQ9awcmCZrlx5jQyyMWFM5kBI+EyNOCDDiKk8il0zeuX3Zlg/w==}
@@ -8501,6 +8504,28 @@ snapshots:
       levn: 0.4.1
 
   '@exodus/bytes@1.8.0': {}
+
+  '@finanzas/db@file:packages/db':
+    dependencies:
+      '@zenstackhq/orm': 3.2.1(pg@8.17.1)(zod@4.3.5)
+      '@zenstackhq/plugin-policy': 3.2.1(kysely@0.28.9)(pg@8.17.1)(zod@4.3.5)
+      '@zenstackhq/server': 3.2.1(hono@4.11.4)(pg@8.17.1)(zod@4.3.5)
+      hono: 4.11.4
+      kysely: 0.28.9
+      pg: 8.17.1
+      pg-types: 4.1.0
+      zod: 4.3.5
+    transitivePeerDependencies:
+      - '@sveltejs/kit'
+      - better-sqlite3
+      - elysia
+      - express
+      - fastify
+      - fastify-plugin
+      - next
+      - nuxt
+      - pg-native
+      - sql.js
 
   '@floating-ui/core@1.7.3':
     dependencies:
