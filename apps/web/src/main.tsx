@@ -23,33 +23,37 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import { SettingsProvider } from "./context/SettingsContext";
 import { ToastProvider } from "./context/ToastContext";
 import { AbilityProvider } from "./lib/authz/AbilityProvider";
+import { createLogger } from "./lib/logger";
 import { initPerformanceMonitoring } from "./lib/performance";
 // Import the generated route tree
 import { routeTree } from "./routeTree.gen";
 
+// Create namespaced logger for chunk errors
+const log = createLogger("ChunkRecovery");
+
 async function handleChunkLoadError() {
-  console.warn("Chunk load error detected, clearing caches and reloading...");
+  log.warn("Chunk load error detected, clearing caches and reloading...");
 
   try {
     // Unregister all service workers
     if ("serviceWorker" in navigator) {
       const registrations = await navigator.serviceWorker.getRegistrations();
       await Promise.all(registrations.map((r) => r.unregister()));
-      console.log("Service workers unregistered");
+      log.info("Service workers unregistered");
     }
 
     // Clear all caches
     if ("caches" in globalThis) {
       const cacheNames = await caches.keys();
       await Promise.all(cacheNames.map((name) => caches.delete(name)));
-      console.log("All caches cleared:", cacheNames);
+      log.info("All caches cleared:", cacheNames);
     }
   } catch (error) {
-    console.error("Error during cache cleanup:", error);
+    log.error("Error during cache cleanup:", error);
   }
 
   // No forcing reload automatically. Use Error Boundary or Toast.
-  console.debug("Preventing automatic reload for chunk error (manual reload required)");
+  log.debug("Preventing automatic reload for chunk error (manual reload required)");
 }
 
 // Global error handler for chunk load failures (runs before React mounts)
