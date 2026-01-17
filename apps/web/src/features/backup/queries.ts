@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 
-import { fetchBackups, fetchTables, fetchTablesWithChanges } from "./api";
+import { fetchBackups, fetchTables } from "./api";
 
 export const backupKeys = {
   all: ["backups"] as const,
@@ -13,10 +13,5 @@ export const backupKeys = {
     queryOptions({
       queryKey: ["backup-tables", fileId],
       queryFn: () => fetchTables(fileId),
-    }),
-  tablesWithChanges: (since?: string) =>
-    queryOptions({
-      queryKey: ["tables-with-changes", since],
-      queryFn: () => fetchTablesWithChanges(since),
     }),
 };

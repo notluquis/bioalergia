@@ -35,7 +35,7 @@ app.get("/", async (c) => {
         status: "error",
         message: "Forbidden - missing 'read Backup' permission",
       },
-      403
+      403,
     );
   }
 
@@ -82,7 +82,7 @@ app.post("/", async (c) => {
         status: "error",
         message: "Forbidden - missing 'create Backup' permission",
       },
-      403
+      403,
     );
   }
 
@@ -97,7 +97,7 @@ app.post("/", async (c) => {
         message:
           error instanceof Error ? error.message : "Error starting backup",
       },
-      500
+      500,
     );
   }
 });
@@ -126,7 +126,7 @@ app.get("/:fileId/tables", async (c) => {
         message:
           error instanceof Error ? error.message : "Error al obtener tablas",
       },
-      500
+      500,
     );
   }
 });
@@ -172,7 +172,7 @@ app.post("/:fileId/restore", async (c) => {
         status: "error",
         message: "Forbidden - missing 'update Backup' permission",
       },
-      403
+      403,
     );
   }
 
@@ -200,7 +200,7 @@ app.post("/:fileId/restore", async (c) => {
         message:
           error instanceof Error ? error.message : "Error starting restore",
       },
-      500
+      500,
     );
   }
 });

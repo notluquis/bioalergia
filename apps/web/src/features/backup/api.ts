@@ -12,18 +12,6 @@ export const fetchTables = async (fileId: string): Promise<string[]> => {
   return data.tables;
 };
 
-export const fetchTablesWithChanges = async (since?: string): Promise<string[]> => {
-  const url = since
-    ? `/api/audit/tables-with-changes?since=${encodeURIComponent(since)}`
-    : "/api/audit/tables-with-changes";
-  try {
-    const data = await apiClient.get<{ tables: string[] }>(url);
-    return data.tables;
-  } catch {
-    return [];
-  }
-};
-
 export const triggerBackup = async (): Promise<{ job: BackupJob }> => {
   const job = await apiClient.post<BackupJob>("/api/backups", {});
   return { job };

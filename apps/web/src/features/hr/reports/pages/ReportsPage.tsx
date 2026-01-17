@@ -1,6 +1,6 @@
 import "dayjs/locale/es";
 
-import { skipToken, useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
 import { BarChart2, BarChart3, Calendar, Check, Clock, Filter, List, Search, TrendingUp, X } from "lucide-react";
@@ -180,19 +180,20 @@ export default function ReportsPage() {
     return { start, end };
   })();
 
-  const { data: reportData = [] } = useSuspenseQuery<EmployeeWorkData[]>({
-    queryKey: ["reports-data", dateParams, selectedEmployeeIds, timestamp, employees],
-    queryFn:
-      isReportEnabled && selectedEmployeeIds.length > 0 && dateParams
-        ? async () => {
-            const entries = await fetchGlobalTimesheetRange(dateParams.start, dateParams.end);
-            return processRawEntries(entries as unknown as RawTimesheetEntry[], selectedEmployeeIds, employees);
-          }
-        : (skipToken as any),
-  });
+  const isQueryEnabled = isReportEnabled && selectedEmployeeIds.length > 0 && dateParams !== null;
 
-  const loading = false; // Suspense handles loading
-  const error = null; // Suspense handles errors
+  const {
+    data: reportData = [],
+    isLoading: loading,
+    error,
+  } = useQuery<EmployeeWorkData[]>({
+    queryKey: ["reports-data", dateParams, selectedEmployeeIds, timestamp, employees],
+    queryFn: async () => {
+      const entries = await fetchGlobalTimesheetRange(dateParams!.start, dateParams!.end);
+      return processRawEntries(entries as unknown as RawTimesheetEntry[], selectedEmployeeIds, employees);
+    },
+    enabled: isQueryEnabled,
+  });
 
   const handleGenerateReport = () => {
     setIsReportEnabled(true);
@@ -488,7 +489,7 @@ export default function ReportsPage() {
 
             {error && (
               <Alert variant="error" className="text-xs">
-                {error}
+                {error instanceof Error ? error.message : String(error)}
               </Alert>
             )}
           </div>

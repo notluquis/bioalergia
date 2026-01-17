@@ -1,7 +1,7 @@
 /**
  * Hook for managing timesheet audit state and data fetching
  */
-import { skipToken, useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 
 import { fetchMultiEmployeeTimesheets } from "../api";
@@ -29,15 +29,18 @@ export function useTimesheetAudit({ ranges, employeeIds }: UseTimesheetAuditOpti
 
   const shouldFetch = employeeIds.length > 0 && ranges.length > 0 && !!firstDay && !!lastDay;
 
-  const { data: entries = [] } = useSuspenseQuery({
+  const {
+    data: entries = [],
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["timesheet-audit", employeeIds, firstDay, lastDay, sortedRanges],
-    queryFn: shouldFetch
-      ? async () => {
-          const data = await fetchMultiEmployeeTimesheets(employeeIds, firstDay!, lastDay!);
-          return filterAuditEntries(data, sortedRanges);
-        }
-      : (skipToken as any),
+    queryFn: async () => {
+      const data = await fetchMultiEmployeeTimesheets(employeeIds, firstDay!, lastDay!);
+      return filterAuditEntries(data, sortedRanges);
+    },
+    enabled: shouldFetch,
   });
 
-  return { entries: entries as TimesheetEntryWithEmployee[] };
+  return { entries: entries as TimesheetEntryWithEmployee[], isLoading, error };
 }
