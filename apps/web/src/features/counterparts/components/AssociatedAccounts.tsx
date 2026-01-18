@@ -44,7 +44,7 @@ export default function AssociatedAccounts({
   selectedId,
   summary,
   summaryRange,
-}: AssociatedAccountsProps) {
+}: Readonly<AssociatedAccountsProps>) {
   const [accountForm, setAccountForm] = useState<AccountForm>(ACCOUNT_FORM_DEFAULT);
   const [suggestionQuery, setSuggestionQuery] = useState("");
   const [quickViewGroup, setQuickViewGroup] = useState<AccountGroup | null>(null);
@@ -232,7 +232,7 @@ export default function AssociatedAccounts({
     const identifierToKey = new Map<string, string>();
 
     for (const account of detail?.accounts ?? []) {
-      const label = account.metadata?.bankAccountNumber?.trim() || account.account_identifier;
+      const label = account.metadata?.bankAccountNumber?.trim() ?? account.account_identifier;
       identifierToKey.set(account.account_identifier, label);
       const existing = groups.get(label);
       if (existing) {
@@ -297,7 +297,7 @@ export default function AssociatedAccounts({
 
     const payload = await fetchTransactions({
       filters: {
-        bankAccountNumber: filter.bankAccountNumber || "",
+        bankAccountNumber: filter.bankAccountNumber ?? "",
         description: "",
         destination: "",
         direction: "OUT",
@@ -305,7 +305,7 @@ export default function AssociatedAccounts({
         from: range.from || "",
         includeAmounts: true,
         origin: "",
-        sourceId: filter.sourceId || "",
+        sourceId: filter.sourceId ?? "",
         status: "",
         to: range.to || "",
         transactionType: "",

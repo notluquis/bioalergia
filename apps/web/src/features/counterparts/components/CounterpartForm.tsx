@@ -68,8 +68,8 @@ export default function CounterpartForm({
     onSubmit: async ({ value }) => {
       const payload: CounterpartUpsertPayload = {
         category: value.category,
-        email: value.email || null,
-        employeeEmail: value.email || null,
+        email: value.email ?? null,
+        employeeEmail: value.email ?? null,
         name: value.name,
         notes: value.notes || null,
         personType: value.personType,
