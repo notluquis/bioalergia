@@ -612,14 +612,61 @@ export function parseCalendarMetadata(input: {
     }
   }
 
+  // Infer dosage from treatment stage if not explicitly found
+  let finalDosage = dosage;
+  if (isSubcut && finalDosage === null && finalTreatmentStage !== null) {
+    if (finalTreatmentStage === "Mantención") {
+      // Maintenance dose is always 0.5 ml
+      finalDosage = "0,5 ml";
+    } else if (finalTreatmentStage === "Inducción") {
+      // For induction, try to detect dose number (1st, 2nd, 3rd, etc.)
+      const text = `${summary} ${description}`;
+      const doseNumber = detectDoseNumber(text);
+      if (doseNumber !== null) {
+        // Dose progression: 1st=0.1ml, 2nd=0.2ml, 3rd=0.3ml, 4th=0.4ml, 5th=0.5ml
+        const doseValue = Math.min(doseNumber * 0.1, 0.5);
+        const formatter = new Intl.NumberFormat("es-CL", {
+          minimumFractionDigits: 1,
+          maximumFractionDigits: 1,
+        });
+        finalDosage = `${formatter.format(doseValue)} ml`;
+      }
+    }
+  }
+
   return {
     category,
     amountExpected: amounts.amountExpected,
     amountPaid: amounts.amountPaid,
     attended,
-    dosage: isSubcut ? dosage : null,
+    dosage: finalDosage,
     treatmentStage: finalTreatmentStage,
   };
+}
+
+/**
+ * Detect the dose number (1-5) from induction patterns.
+ * Returns null if no dose number is detected.
+ */
+function detectDoseNumber(text: string): number | null {
+  // 1st dose patterns
+  if (/\b1[º°]?(?:era|ra|er)?\s*dosis\b/i.test(text)) return 1;
+  if (/\bprim(?:er)?a?\s*dosis\b/i.test(text)) return 1;
+  if (/\bpr[im]+[er]*a\s*dosis\b/i.test(text)) return 1;
+
+  // 2nd-5th dose patterns (numeric)
+  const numericMatch = /\b([2-5])[º°]?(?:da|ra|ta|va|a)?\s*dosis\b/i.exec(text);
+  if (numericMatch) {
+    return Number.parseInt(numericMatch[1], 10);
+  }
+
+  // Text variants
+  if (/segunda\s*dosis\b/i.test(text)) return 2;
+  if (/tercera\s*dosis\b/i.test(text)) return 3;
+  if (/cuarta\s*dosis\b/i.test(text)) return 4;
+  if (/quinta\s*dosis\b/i.test(text)) return 5;
+
+  return null;
 }
 
 /**
