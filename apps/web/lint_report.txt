@@ -1,0 +1,1414 @@
+
+> @finanzas/web@0.1.0 lint /Users/notluquis/finanzas-app/apps/web
+> eslint . --report-unused-disable-directives --max-warnings 0 --format stylish
+
+
+/Users/notluquis/finanzas-app/apps/web/.eslintrc.js
+  1:11  error  'module' is already defined as a built-in global variable  no-redeclare
+
+/Users/notluquis/finanzas-app/apps/web/shared/currency.ts
+  32:31  error  'value' may use Object's default stringification format ('[object Object]') when stringified  @typescript-eslint/no-base-to-string
+
+/Users/notluquis/finanzas-app/apps/web/shared/format.ts
+  21:54  warning  Generic Object Injection Sink  security/detect-object-injection
+
+/Users/notluquis/finanzas-app/apps/web/src/components/Layout/CalendarLayout.tsx
+  1:1  error  The folder "Layout" does not match the "KEBAB_CASE" pattern  check-file/folder-naming-convention
+
+/Users/notluquis/finanzas-app/apps/web/src/components/Layout/CollapsibleNavSection.tsx
+  1:1  error  The folder "Layout" does not match the "KEBAB_CASE" pattern  check-file/folder-naming-convention
+
+/Users/notluquis/finanzas-app/apps/web/src/components/Layout/Header.tsx
+  1:1  error  The folder "Layout" does not match the "KEBAB_CASE" pattern  check-file/folder-naming-convention
+
+/Users/notluquis/finanzas-app/apps/web/src/components/Layout/MobileNav.tsx
+  1:1  error  The folder "Layout" does not match the "KEBAB_CASE" pattern  check-file/folder-naming-convention
+
+/Users/notluquis/finanzas-app/apps/web/src/components/Layout/SettingsLayout.tsx
+  1:1  error  The folder "Layout" does not match the "KEBAB_CASE" pattern  check-file/folder-naming-convention
+
+/Users/notluquis/finanzas-app/apps/web/src/components/Layout/Sidebar.tsx
+  1:1  error  The folder "Layout" does not match the "KEBAB_CASE" pattern  check-file/folder-naming-convention
+
+/Users/notluquis/finanzas-app/apps/web/src/components/backup/GoogleDriveConnect.tsx
+  66:28  warning  Generic Object Injection Sink                                                                              security/detect-object-injection
+  66:50  error    Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+/Users/notluquis/finanzas-app/apps/web/src/components/data-table/DataTable.tsx
+   54:19  warning  Unexpected any. Specify a different type                                 @typescript-eslint/no-explicit-any
+  145:21  warning  Unexpected any. Specify a different type                                 @typescript-eslint/no-explicit-any
+  145:29  error    Unsafe return of a value of type `any`                                   @typescript-eslint/no-unsafe-return
+  145:29  error    Unsafe call of an `any` typed value                                      @typescript-eslint/no-unsafe-call
+  145:33  error    Unsafe member access .id on an `any` value                               @typescript-eslint/no-unsafe-member-access
+  145:51  error    Unsafe call of an `any` typed value                                      @typescript-eslint/no-unsafe-call
+  145:55  error    Unsafe member access .employeeId on an `any` value                       @typescript-eslint/no-unsafe-member-access
+  145:81  error    Unsafe call of an `any` typed value                                      @typescript-eslint/no-unsafe-call
+  145:85  error    Unsafe member access ._id on an `any` value                              @typescript-eslint/no-unsafe-member-access
+  147:5   error    Unsafe assignment of an `any` value                                      @typescript-eslint/no-unsafe-assignment
+  216:25  error    Forbidden non-null assertion                                             @typescript-eslint/no-non-null-assertion
+  245:86  error    Unsafe assignment of type `Row<any>` to a variable of type `Row<TData>`  @typescript-eslint/no-unsafe-assignment
+  266:43  error    Unsafe argument of type `any` assigned to a parameter of type `TData`    @typescript-eslint/no-unsafe-argument
+  283:82  error    Unsafe assignment of type `Row<any>` to a variable of type `Row<TData>`  @typescript-eslint/no-unsafe-assignment
+
+/Users/notluquis/finanzas-app/apps/web/src/components/features/SettingsForm.tsx
+   16:26  error    Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  210:24  warning  Generic Object Injection Sink                                                                              security/detect-object-injection
+  243:30  warning  Generic Object Injection Sink                                                                              security/detect-object-injection
+  443:62  error    Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+/Users/notluquis/finanzas-app/apps/web/src/components/ui/Alert.tsx
+  19:31  error    Mark the props of the component as read-only  sonarjs/prefer-read-only-props
+  28:55  warning  Function Call Object Injection Sink           security/detect-object-injection
+
+/Users/notluquis/finanzas-app/apps/web/src/components/ui/Backdrop.tsx
+  15:34  error  Mark the props of the component as read-only  sonarjs/prefer-read-only-props
+
+/Users/notluquis/finanzas-app/apps/web/src/components/ui/Badge.tsx
+  37:16  error    Mark the props of the component as read-only                                                                                    sonarjs/prefer-read-only-props
+  38:21  warning  Variable Assigned to Object Injection Sink                                                                                      security/detect-object-injection
+  39:20  warning  Variable Assigned to Object Injection Sink                                                                                      security/detect-object-injection
+  51:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/Users/notluquis/finanzas-app/apps/web/src/components/ui/Button.tsx
+  67:7   warning  Function Call Object Injection Sink                                                                        security/detect-object-injection
+  68:7   warning  Function Call Object Injection Sink                                                                        security/detect-object-injection
+  75:28  error    Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  78:35  error    Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  79:48  error    Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  90:26  error    Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  94:28  error    Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+/Users/notluquis/finanzas-app/apps/web/src/components/ui/Checkbox.tsx
+  14:34  error  Mark the props of the component as read-only  sonarjs/prefer-read-only-props
+
+/Users/notluquis/finanzas-app/apps/web/src/components/ui/FileInput.tsx
+  9:35  error  Mark the props of the component as read-only  sonarjs/prefer-read-only-props
+
+/Users/notluquis/finanzas-app/apps/web/src/components/ui/GlobalError.tsx
+  163:11  error  DEV is not listed as a dependency in turbo.json  turbo/no-undeclared-env-vars
+
+/Users/notluquis/finanzas-app/apps/web/src/components/ui/Input.tsx
+   53:25  error    Refactor this function to reduce its Cognitive Complexity from 19 to the 15 allowed                        sonarjs/cognitive-complexity
+   58:27  error    Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+   67:5   warning  Function Call Object Injection Sink                                                                        security/detect-object-injection
+   84:5   warning  Function Call Object Injection Sink                                                                        security/detect-object-injection
+  168:16  error    Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  171:20  error    Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+/Users/notluquis/finanzas-app/apps/web/src/components/ui/Modal.tsx
+  54:49  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+
+/Users/notluquis/finanzas-app/apps/web/src/components/ui/MoneyInput.tsx
+  18:28  error  Mark the props of the component as read-only  sonarjs/prefer-read-only-props
+
+/Users/notluquis/finanzas-app/apps/web/src/components/ui/Skeleton.tsx
+  10:34  error  Mark the props of the component as read-only  sonarjs/prefer-read-only-props
+
+/Users/notluquis/finanzas-app/apps/web/src/components/ui/SmoothCollapse.tsx
+  11:32  error  Mark the props of the component as read-only  sonarjs/prefer-read-only-props
+
+/Users/notluquis/finanzas-app/apps/web/src/components/ui/StatCard.tsx
+  57:26  error    Mark the props of the component as read-only  sonarjs/prefer-read-only-props
+  67:17  warning  Variable Assigned to Object Injection Sink    security/detect-object-injection
+  80:32  warning  Function Call Object Injection Sink           security/detect-object-injection
+
+/Users/notluquis/finanzas-app/apps/web/src/components/ui/Table.tsx
+   52:41  error    Mark the props of the component as read-only  sonarjs/prefer-read-only-props
+   62:31  warning  Function Call Object Injection Sink           security/detect-object-injection
+   83:20  error    Mark the props of the component as read-only  sonarjs/prefer-read-only-props
+  118:40  error    Mark the props of the component as read-only  sonarjs/prefer-read-only-props
+
+/Users/notluquis/finanzas-app/apps/web/src/components/ui/TimeInput.tsx
+  14:35  error  Mark the props of the component as read-only                                                               sonarjs/prefer-read-only-props
+  38:32  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  61:50  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  62:52  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  86:42  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  93:45  error  Invalid operand for a '+' operation. Operands must each be a number or string. Got `string | undefined`    @typescript-eslint/restrict-plus-operands
+
+/Users/notluquis/finanzas-app/apps/web/src/context/AuthContext.tsx
+   40:14  warning  Fast refresh only works when a file only exports components. Move your React context(s) to a separate file                      react-refresh/only-export-components
+   52:30  error    Mark the props of the component as read-only                                                                                    sonarjs/prefer-read-only-props
+   67:46  error    Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator                       @typescript-eslint/prefer-nullish-coalescing
+   69:48  error    Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator                       @typescript-eslint/prefer-nullish-coalescing
+   70:58  error    Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator                       @typescript-eslint/prefer-nullish-coalescing
+  116:52  error    Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator                       @typescript-eslint/prefer-nullish-coalescing
+  159:39  error    Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator                       @typescript-eslint/prefer-nullish-coalescing
+  174:39  error    Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator                       @typescript-eslint/prefer-nullish-coalescing
+  245:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/Users/notluquis/finanzas-app/apps/web/src/context/SettingsContext.tsx
+   33:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+   47:14  warning  Fast refresh only works when a file only exports components. Move your React context(s) to a separate file                      react-refresh/only-export-components
+   49:34  error    Mark the props of the component as read-only                                                                                    sonarjs/prefer-read-only-props
+  111:39  error    Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator                       @typescript-eslint/prefer-nullish-coalescing
+  147:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/Users/notluquis/finanzas-app/apps/web/src/context/ToastContext.tsx
+  26:31  error    Mark the props of the component as read-only                                                                                    sonarjs/prefer-read-only-props
+  68:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/Users/notluquis/finanzas-app/apps/web/src/features/auth/pages/LoginPage.tsx
+  47:17  error  Unnecessary optional chain on a non-nullish value  @typescript-eslint/no-unnecessary-condition
+
+/Users/notluquis/finanzas-app/apps/web/src/features/calendar/components/CalendarFilterPanel.tsx
+  47:37  error  Mark the props of the component as read-only  sonarjs/prefer-read-only-props
+
+/Users/notluquis/finanzas-app/apps/web/src/features/calendar/components/CalendarSkeleton.tsx
+  5:34  error  Mark the props of the component as read-only  sonarjs/prefer-read-only-props
+
+/Users/notluquis/finanzas-app/apps/web/src/features/calendar/components/ClassificationRow.tsx
+   17:9   warning  Unexpected any. Specify a different type                                                            @typescript-eslint/no-explicit-any
+   25:35  error    Mark the props of the component as read-only                                                        sonarjs/prefer-read-only-props
+   40:5   error    Unsafe argument of type `any` assigned to a parameter of type `Store<unknown, any>`                 @typescript-eslint/no-unsafe-argument
+   40:10  error    Unsafe member access .store on an `any` value                                                       @typescript-eslint/no-unsafe-member-access
+   41:13  warning  Unexpected any. Specify a different type                                                            @typescript-eslint/no-explicit-any
+   41:21  warning  Generic Object Injection Sink                                                                       security/detect-object-injection
+  164:28  error    Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+
+/Users/notluquis/finanzas-app/apps/web/src/features/calendar/components/ClassificationTotals.tsx
+  11:9   warning  Unexpected any. Specify a different type                                             @typescript-eslint/no-explicit-any
+  14:38  error    Mark the props of the component as read-only                                         sonarjs/prefer-read-only-props
+  17:35  error    Unsafe argument of type `any` assigned to a parameter of type `Store<unknown, any>`  @typescript-eslint/no-unsafe-argument
+  17:40  error    Unsafe member access .store on an `any` value                                        @typescript-eslint/no-unsafe-member-access
+  17:55  warning  Unexpected any. Specify a different type                                             @typescript-eslint/no-explicit-any
+  19:32  error    Unnecessary optional chain on a non-nullish value                                    @typescript-eslint/no-unnecessary-condition
+  20:22  error    `Array#reduce()` is not allowed. Prefer other types of loop for readability          unicorn/no-array-reduce
+  22:25  warning  Variable Assigned to Object Injection Sink                                           security/detect-object-injection
+  24:50  error    Unnecessary optional chain on a non-nullish value                                    @typescript-eslint/no-unnecessary-condition
+  25:46  error    Unnecessary optional chain on a non-nullish value                                    @typescript-eslint/no-unnecessary-condition
+
+/Users/notluquis/finanzas-app/apps/web/src/features/calendar/components/DailyEventCard.tsx
+  13:32  error  Mark the props of the component as read-only                                                               sonarjs/prefer-read-only-props
+  51:34  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+/Users/notluquis/finanzas-app/apps/web/src/features/calendar/components/DailyStatsCards.tsx
+  12:33  error  Mark the props of the component as read-only  sonarjs/prefer-read-only-props
+
+/Users/notluquis/finanzas-app/apps/web/src/features/calendar/components/DayNavigation.tsx
+  15:31  error  Mark the props of the component as read-only  sonarjs/prefer-read-only-props
+
+/Users/notluquis/finanzas-app/apps/web/src/features/calendar/components/FormattedEventDescription.tsx
+  10:43  error    Mark the props of the component as read-only      sonarjs/prefer-read-only-props
+  26:21  warning  Found non-literal argument to RegExp Constructor  security/detect-non-literal-regexp
+
+/Users/notluquis/finanzas-app/apps/web/src/features/calendar/components/HeatmapMonth.tsx
+  64:32  error  Mark the props of the component as read-only                                                               sonarjs/prefer-read-only-props
+  90:48  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+/Users/notluquis/finanzas-app/apps/web/src/features/calendar/components/MultiSelectFilter.tsx
+  15:35  error  Mark the props of the component as read-only  sonarjs/prefer-read-only-props
+
+/Users/notluquis/finanzas-app/apps/web/src/features/calendar/components/ScheduleCalendar.tsx
+  16:34  error  Mark the props of the component as read-only                                                               sonarjs/prefer-read-only-props
+  21:40  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+/Users/notluquis/finanzas-app/apps/web/src/features/calendar/components/SyncDetailModal.tsx
+   15:33  error  Mark the props of the component as read-only  sonarjs/prefer-read-only-props
+  120:18  error  Mark the props of the component as read-only  sonarjs/prefer-read-only-props
+
+/Users/notluquis/finanzas-app/apps/web/src/features/calendar/components/SyncProgressPanel.tsx
+  41:35  error    Mark the props of the component as read-only                                                        sonarjs/prefer-read-only-props
+  87:50  error    Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+  89:21  warning  Generic Object Injection Sink                                                                       security/detect-object-injection
+
+/Users/notluquis/finanzas-app/apps/web/src/features/calendar/components/WeekGrid.tsx
+   76:5   warning  Generic Object Injection Sink                                                                              security/detect-object-injection
+   82:22  warning  Generic Object Injection Sink                                                                              security/detect-object-injection
+   83:7   warning  Generic Object Injection Sink                                                                              security/detect-object-injection
+   95:26  error    Mark the props of the component as read-only                                                               sonarjs/prefer-read-only-props
+  108:38  error    Refactor this function to reduce its Cognitive Complexity from 24 to the 15 allowed                        sonarjs/cognitive-complexity
+  240:58  error    Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  270:53  error    Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  275:53  error    Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  341:10  error    Refactor this function to reduce its Cognitive Complexity from 18 to the 15 allowed                        sonarjs/cognitive-complexity
+  422:9   warning  Generic Object Injection Sink                                                                              security/detect-object-injection
+  456:23  error    Mark the props of the component as read-only                                                               sonarjs/prefer-read-only-props
+
+/Users/notluquis/finanzas-app/apps/web/src/features/calendar/hooks/useCalendarEvents.ts
+    1:1   error  The filename "useCalendarEvents.ts" does not match the "KEBAB_CASE" pattern                                check-file/filename-naming-convention
+  134:20  error  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined         @typescript-eslint/no-unnecessary-condition
+  246:47  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+/Users/notluquis/finanzas-app/apps/web/src/features/calendar/types.ts
+  107:20  error  'unknown' overrides all other types in this union type  @typescript-eslint/no-redundant-type-constituents
+
+/Users/notluquis/finanzas-app/apps/web/src/features/calendar/utils/classification.ts
+  31:43  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  35:20  error  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined         @typescript-eslint/no-unnecessary-condition
+  35:20  error  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined         @typescript-eslint/no-unnecessary-condition
+
+/Users/notluquis/finanzas-app/apps/web/src/features/calendar/utils/filters.ts
+  10:21  warning  Generic Object Injection Sink                                                                              security/detect-object-injection
+  42:56  error    Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+/Users/notluquis/finanzas-app/apps/web/src/features/counterparts/components/AssociatedAccounts.helpers.ts
+   1:1   error  The filename "AssociatedAccounts.helpers.ts" does not match the "KEBAB_CASE" pattern                       check-file/filename-naming-convention
+  46:73  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+/Users/notluquis/finanzas-app/apps/web/src/features/counterparts/components/AssociatedAccounts.tsx
+   41:44  error  Mark the props of the component as read-only                                                                  sonarjs/prefer-read-only-props
+  103:3   error  Async function 'handleAddAccount' has no 'await' expression                                                   @typescript-eslint/require-await
+  215:3   error  Async function 'handleAttachRut' has no 'await' expression                                                    @typescript-eslint/require-await
+  230:31  error  Refactor this function to reduce its Cognitive Complexity from 16 to the 15 allowed                           sonarjs/cognitive-complexity
+  235:65  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator     @typescript-eslint/prefer-nullish-coalescing
+  258:18  error  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined            @typescript-eslint/no-unnecessary-condition
+  270:23  error  Unsafe usage of optional chaining. If it short-circuits with 'undefined' the evaluation will throw TypeError  no-unsafe-optional-chaining
+  281:6   error  Type parameter K is used only once in the function signature                                                  @typescript-eslint/no-unnecessary-type-parameters
+  300:53  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator     @typescript-eslint/prefer-nullish-coalescing
+  308:35  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator     @typescript-eslint/prefer-nullish-coalescing
+  325:24  error  Forbidden non-null assertion                                                                                  @typescript-eslint/no-non-null-assertion
+  359:16  error  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined            @typescript-eslint/no-unnecessary-condition
+
+/Users/notluquis/finanzas-app/apps/web/src/features/counterparts/components/AssociatedAccountsColumns.tsx
+   42:40  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+   46:40  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  109:40  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  113:40  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+/Users/notluquis/finanzas-app/apps/web/src/features/counterparts/components/CounterpartDetailSection.tsx
+  12:25  warning  Unexpected any. Specify a different type                                                            @typescript-eslint/no-explicit-any
+  17:50  error    Mark the props of the component as read-only                                                        sonarjs/prefer-read-only-props
+  27:7   error    Unnecessary conditional, value is always falsy                                                      @typescript-eslint/no-unnecessary-condition
+  54:55  error    Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+
+/Users/notluquis/finanzas-app/apps/web/src/features/counterparts/components/CounterpartForm.tsx
+   52:41  error  Mark the props of the component as read-only                                                                                     sonarjs/prefer-read-only-props
+   65:28  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator                        @typescript-eslint/prefer-nullish-coalescing
+   66:36  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator                        @typescript-eslint/prefer-nullish-coalescing
+  138:59  error  Using `join()` for field.state.meta.errors may use Object's default stringification format ('[object Object]') when stringified  @typescript-eslint/no-base-to-string
+  159:59  error  Using `join()` for field.state.meta.errors may use Object's default stringification format ('[object Object]') when stringified  @typescript-eslint/no-base-to-string
+  181:59  error  Using `join()` for field.state.meta.errors may use Object's default stringification format ('[object Object]') when stringified  @typescript-eslint/no-base-to-string
+  206:59  error  Using `join()` for field.state.meta.errors may use Object's default stringification format ('[object Object]') when stringified  @typescript-eslint/no-base-to-string
+  232:59  error  Using `join()` for field.state.meta.errors may use Object's default stringification format ('[object Object]') when stringified  @typescript-eslint/no-base-to-string
+  254:61  error  Using `join()` for field.state.meta.errors may use Object's default stringification format ('[object Object]') when stringified  @typescript-eslint/no-base-to-string
+
+/Users/notluquis/finanzas-app/apps/web/src/features/counterparts/components/CounterpartList.tsx
+  22:42  error  `Array#reduce()` is not allowed. Prefer other types of loop for readability  unicorn/no-array-reduce
+  27:41  error  Mark the props of the component as read-only                                 sonarjs/prefer-read-only-props
+
+/Users/notluquis/finanzas-app/apps/web/src/features/counterparts/constants.ts
+  33:49  error  `Array#reduce()` is not allowed. Prefer other types of loop for readability  unicorn/no-array-reduce
+
+/Users/notluquis/finanzas-app/apps/web/src/features/counterparts/pages/CounterpartsPage.tsx
+  95:30  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+/Users/notluquis/finanzas-app/apps/web/src/features/counterparts/queries.ts
+  27:7  error  Async method 'queryFn' has no 'await' expression  @typescript-eslint/require-await
+
+/Users/notluquis/finanzas-app/apps/web/src/features/dashboard/components/DashboardChart.tsx
+  5:40  error  Mark the props of the component as read-only  sonarjs/prefer-read-only-props
+
+/Users/notluquis/finanzas-app/apps/web/src/features/dashboard/components/DashboardParticipantsSection.tsx
+  16:54  error  Mark the props of the component as read-only     sonarjs/prefer-read-only-props
+  18:27  error  Unnecessary conditional, value is always truthy  @typescript-eslint/no-unnecessary-condition
+
+/Users/notluquis/finanzas-app/apps/web/src/features/dashboard/components/DashboardPersonalLiabilities.tsx
+  21:34  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  21:75  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+
+/Users/notluquis/finanzas-app/apps/web/src/features/dashboard/components/DashboardTransactionsSection.tsx
+  12:54  error  Mark the props of the component as read-only                                                        sonarjs/prefer-read-only-props
+  16:18  error  Unnecessary conditional, value is always truthy                                                     @typescript-eslint/no-unnecessary-condition
+  34:33  error  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+
+/Users/notluquis/finanzas-app/apps/web/src/features/dashboard/components/MetricCard.tsx
+  48:36  error    Mark the props of the component as read-only  sonarjs/prefer-read-only-props
+  59:17  warning  Variable Assigned to Object Injection Sink    security/detect-object-injection
+
+/Users/notluquis/finanzas-app/apps/web/src/features/dashboard/components/RecentMovementsWidget.tsx
+  8:47  error  Mark the props of the component as read-only  sonarjs/prefer-read-only-props
+
+/Users/notluquis/finanzas-app/apps/web/src/features/dashboard/components/ShortcutCard.tsx
+   5:38  error  Mark the props of the component as read-only  sonarjs/prefer-read-only-props
+  29:25  error  Mark the props of the component as read-only  sonarjs/prefer-read-only-props
+
+/Users/notluquis/finanzas-app/apps/web/src/features/dashboard/components/TopParticipantsWidget.tsx
+   8:47  error  Mark the props of the component as read-only                                                               sonarjs/prefer-read-only-props
+  33:56  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  39:52  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  39:71  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+/Users/notluquis/finanzas-app/apps/web/src/features/doctoralia/api.ts
+   42:7  error  Unnecessary conditional, comparison is always false, since `"ok" !== "ok"` is false              @typescript-eslint/no-unnecessary-condition
+   79:7  error  Unnecessary conditional, comparison is always false, since `"ok" !== "ok"` is false              @typescript-eslint/no-unnecessary-condition
+   96:7  error  Unnecessary conditional, comparison is always false, since `"ok" !== "ok"` is false              @typescript-eslint/no-unnecessary-condition
+  110:7  error  Unnecessary conditional, comparison is always false, since `"ok" !== "ok"` is false              @typescript-eslint/no-unnecessary-condition
+  124:7  error  Unnecessary conditional, comparison is always false, since `"ok" !== "ok"` is false              @typescript-eslint/no-unnecessary-condition
+  137:7  error  Unnecessary conditional, comparison is always false, since `"ok" !== "ok"` is false              @typescript-eslint/no-unnecessary-condition
+  154:7  error  Unnecessary conditional, comparison is always false, since `"ok" !== "ok"` is false              @typescript-eslint/no-unnecessary-condition
+  168:7  error  Unnecessary conditional, comparison is always false, since `"accepted" !== "accepted"` is false  @typescript-eslint/no-unnecessary-condition
+
+/Users/notluquis/finanzas-app/apps/web/src/features/doctoralia/hooks/useDoctoralia.ts
+  7:1  error  The filename "useDoctoralia.ts" does not match the "KEBAB_CASE" pattern  check-file/filename-naming-convention
+
+/Users/notluquis/finanzas-app/apps/web/src/features/doctoralia/types.ts
+  153:18  error  An interface declaring no members is equivalent to its supertype  @typescript-eslint/no-empty-object-type
+
+/Users/notluquis/finanzas-app/apps/web/src/features/expenses/components/MonthlyExpenseDetail.tsx
+   17:46  error  Mark the props of the component as read-only                                                               sonarjs/prefer-read-only-props
+   39:31  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  110:21  error  Mark the props of the component as read-only                                                               sonarjs/prefer-read-only-props
+
+/Users/notluquis/finanzas-app/apps/web/src/features/expenses/components/MonthlyExpenseList.tsx
+  14:44  error  Mark the props of the component as read-only  sonarjs/prefer-read-only-props
+
+/Users/notluquis/finanzas-app/apps/web/src/features/expenses/components/MonthlyExpenseStats.tsx
+  10:45  error  Mark the props of the component as read-only  sonarjs/prefer-read-only-props
+
+/Users/notluquis/finanzas-app/apps/web/src/features/expenses/hooks/useMonthlyExpenses.ts
+  1:1  error  The filename "useMonthlyExpenses.ts" does not match the "KEBAB_CASE" pattern  check-file/filename-naming-convention
+
+/Users/notluquis/finanzas-app/apps/web/src/features/finance/balances/components/BalanceSummary.tsx
+   15:32  error  Mark the props of the component as read-only  sonarjs/prefer-read-only-props
+  124:26  error  Mark the props of the component as read-only  sonarjs/prefer-read-only-props
+
+/Users/notluquis/finanzas-app/apps/web/src/features/finance/balances/components/DailyBalancesColumns.tsx
+  25:7   warning  Fast refresh only works when a file only exports components. Move your component(s) to a separate file  react-refresh/only-export-components
+  25:82  warning  Unexpected any. Specify a different type                                                                @typescript-eslint/no-explicit-any
+  26:22  error    Unsafe member access .options on an `any` value                                                         @typescript-eslint/no-unsafe-member-access
+  45:7   warning  Fast refresh only works when a file only exports components. Move your component(s) to a separate file  react-refresh/only-export-components
+  45:71  warning  Unexpected any. Specify a different type                                                                @typescript-eslint/no-explicit-any
+  46:22  error    Unsafe member access .options on an `any` value                                                         @typescript-eslint/no-unsafe-member-access
+  65:7   warning  Fast refresh only works when a file only exports components. Move your component(s) to a separate file  react-refresh/only-export-components
+  65:74  warning  Unexpected any. Specify a different type                                                                @typescript-eslint/no-explicit-any
+  66:22  error    Unsafe member access .options on an `any` value                                                         @typescript-eslint/no-unsafe-member-access
+
+/Users/notluquis/finanzas-app/apps/web/src/features/finance/balances/hooks/useDailyBalanceManagement.ts
+   1:1   error    The filename "useDailyBalanceManagement.ts" does not match the "KEBAB_CASE" pattern  check-file/filename-naming-convention
+  27:24  warning  Generic Object Injection Sink                                                        security/detect-object-injection
+  40:19  warning  Variable Assigned to Object Injection Sink                                           security/detect-object-injection
+
+/Users/notluquis/finanzas-app/apps/web/src/features/finance/balances/hooks/useQuickDateRange.ts
+  1:1  error  The filename "useQuickDateRange.ts" does not match the "KEBAB_CASE" pattern  check-file/filename-naming-convention
+
+/Users/notluquis/finanzas-app/apps/web/src/features/finance/balances/pages/DailyBalancesPage.tsx
+  47:9   error  Unnecessary conditional, value is always falsy   @typescript-eslint/no-unnecessary-condition
+  61:26  error  Unnecessary conditional, value is always truthy  @typescript-eslint/no-unnecessary-condition
+
+/Users/notluquis/finanzas-app/apps/web/src/features/finance/loans/components/LoanDetail.tsx
+  30:28  error  Mark the props of the component as read-only  sonarjs/prefer-read-only-props
+
+/Users/notluquis/finanzas-app/apps/web/src/features/finance/loans/components/LoanDetailSection.tsx
+  16:43  error  Mark the props of the component as read-only  sonarjs/prefer-read-only-props
+
+/Users/notluquis/finanzas-app/apps/web/src/features/finance/loans/components/LoanForm.tsx
+   86:57  error  Using `join()` for field.state.meta.errors may use Object's default stringification format ('[object Object]') when stringified  @typescript-eslint/no-base-to-string
+  105:57  error  Using `join()` for field.state.meta.errors may use Object's default stringification format ('[object Object]') when stringified  @typescript-eslint/no-base-to-string
+  127:57  error  Using `join()` for field.state.meta.errors may use Object's default stringification format ('[object Object]') when stringified  @typescript-eslint/no-base-to-string
+  149:57  error  Using `join()` for field.state.meta.errors may use Object's default stringification format ('[object Object]') when stringified  @typescript-eslint/no-base-to-string
+  171:57  error  Using `join()` for field.state.meta.errors may use Object's default stringification format ('[object Object]') when stringified  @typescript-eslint/no-base-to-string
+  193:57  error  Using `join()` for field.state.meta.errors may use Object's default stringification format ('[object Object]') when stringified  @typescript-eslint/no-base-to-string
+  216:57  error  Using `join()` for field.state.meta.errors may use Object's default stringification format ('[object Object]') when stringified  @typescript-eslint/no-base-to-string
+  238:57  error  Using `join()` for field.state.meta.errors may use Object's default stringification format ('[object Object]') when stringified  @typescript-eslint/no-base-to-string
+  258:57  error  Using `join()` for field.state.meta.errors may use Object's default stringification format ('[object Object]') when stringified  @typescript-eslint/no-base-to-string
+  275:57  error  Using `join()` for field.state.meta.errors may use Object's default stringification format ('[object Object]') when stringified  @typescript-eslint/no-base-to-string
+  296:55  error  Using `join()` for field.state.meta.errors may use Object's default stringification format ('[object Object]') when stringified  @typescript-eslint/no-base-to-string
+
+/Users/notluquis/finanzas-app/apps/web/src/features/finance/loans/components/LoanList.tsx
+  15:26  error  Mark the props of the component as read-only  sonarjs/prefer-read-only-props
+
+/Users/notluquis/finanzas-app/apps/web/src/features/finance/loans/components/LoanScheduleTable.tsx
+  16:43  error  Mark the props of the component as read-only  sonarjs/prefer-read-only-props
+
+/Users/notluquis/finanzas-app/apps/web/src/features/finance/loans/types.ts
+  4:14  error  Replace this union type with a type alias  sonarjs/use-type-alias
+
+/Users/notluquis/finanzas-app/apps/web/src/features/finance/mercadopago/components/MpReportColumns.tsx
+   23:43  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator           @typescript-eslint/prefer-nullish-coalescing
+   25:46  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator           @typescript-eslint/prefer-nullish-coalescing
+   53:33  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator           @typescript-eslint/prefer-nullish-coalescing
+   96:49  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+  105:49  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+
+/Users/notluquis/finanzas-app/apps/web/src/features/finance/mercadopago/pages/ReleaseTransactionsPage.tsx
+  94:26  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+/Users/notluquis/finanzas-app/apps/web/src/features/finance/mercadopago/pages/SettlementTransactionsPage.tsx
+  92:26  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+/Users/notluquis/finanzas-app/apps/web/src/features/finance/releases/components/columns.tsx
+    1:1   error  The filename "columns.tsx" does not match the "PASCAL_CASE" pattern                                        check-file/filename-naming-convention
+   78:81  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  146:89  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  152:92  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  176:88  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+/Users/notluquis/finanzas-app/apps/web/src/features/finance/releases/pages/ReleasesPage.tsx
+  40:15  error  Unnecessary conditional, value is always truthy    @typescript-eslint/no-unnecessary-condition
+  40:19  error  Unnecessary optional chain on a non-nullish value  @typescript-eslint/no-unnecessary-condition
+  52:24  error  Unnecessary optional chain on a non-nullish value  @typescript-eslint/no-unnecessary-condition
+
+/Users/notluquis/finanzas-app/apps/web/src/features/finance/settlements/components/columns.tsx
+    1:1   error  The filename "columns.tsx" does not match the "PASCAL_CASE" pattern                                        check-file/filename-naming-convention
+  119:81  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  149:92  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  155:89  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  182:88  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+/Users/notluquis/finanzas-app/apps/web/src/features/finance/settlements/pages/SettlementsPage.tsx
+  40:15  error  Unnecessary conditional, value is always truthy    @typescript-eslint/no-unnecessary-condition
+  40:19  error  Unnecessary optional chain on a non-nullish value  @typescript-eslint/no-unnecessary-condition
+  52:24  error  Unnecessary optional chain on a non-nullish value  @typescript-eslint/no-unnecessary-condition
+
+/Users/notluquis/finanzas-app/apps/web/src/features/finance/statistics/api.ts
+  26:10  error  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+
+/Users/notluquis/finanzas-app/apps/web/src/features/finance/statistics/components/MonthlyFlowChart.tsx
+  18:42  error  Mark the props of the component as read-only    sonarjs/prefer-read-only-props
+  19:7   error  Unnecessary conditional, value is always falsy  @typescript-eslint/no-unnecessary-condition
+
+/Users/notluquis/finanzas-app/apps/web/src/features/finance/statistics/components/MonthlyFlowChartInner.tsx
+  23:47  error  Mark the props of the component as read-only  sonarjs/prefer-read-only-props
+
+/Users/notluquis/finanzas-app/apps/web/src/features/finance/statistics/components/MovementTypeList.tsx
+  16:42  error  Mark the props of the component as read-only                                                               sonarjs/prefer-read-only-props
+  17:7   error  Unnecessary conditional, value is always falsy                                                             @typescript-eslint/no-unnecessary-condition
+  41:59  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+/Users/notluquis/finanzas-app/apps/web/src/features/finance/statistics/components/TopParticipantsPieChart.tsx
+  23:49  error  Mark the props of the component as read-only  sonarjs/prefer-read-only-props
+
+/Users/notluquis/finanzas-app/apps/web/src/features/finance/statistics/components/TopParticipantsSection.tsx
+  21:48  error  Mark the props of the component as read-only  sonarjs/prefer-read-only-props
+
+/Users/notluquis/finanzas-app/apps/web/src/features/finance/statistics/hooks/useStatsData.ts
+   5:1   error  The filename "useStatsData.ts" does not match the "KEBAB_CASE" pattern                              check-file/filename-naming-convention
+  58:22  error  Unnecessary conditional, value is always falsy                                                      @typescript-eslint/no-unnecessary-condition
+  59:21  error  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+  60:11  error  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+  63:14  error  Unnecessary conditional, value is always falsy                                                      @typescript-eslint/no-unnecessary-condition
+  65:26  error  Unnecessary conditional, value is always falsy                                                      @typescript-eslint/no-unnecessary-condition
+  70:22  error  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+
+/Users/notluquis/finanzas-app/apps/web/src/features/finance/statistics/pages/FinanzasStatsPage.tsx
+  105:24  error  Unnecessary optional chain on a non-nullish value  @typescript-eslint/no-unnecessary-condition
+  106:26  error  Unnecessary optional chain on a non-nullish value  @typescript-eslint/no-unnecessary-condition
+  106:51  error  Unnecessary optional chain on a non-nullish value  @typescript-eslint/no-unnecessary-condition
+  107:25  error  Unnecessary optional chain on a non-nullish value  @typescript-eslint/no-unnecessary-condition
+
+/Users/notluquis/finanzas-app/apps/web/src/features/finance/utils.ts
+  14:23  error  Passing a string to String() does not change the type or value of the string                               @typescript-eslint/no-unnecessary-type-conversion
+  21:24  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+/Users/notluquis/finanzas-app/apps/web/src/features/hr/employees/components/EmployeeForm.tsx
+   23:38  error  Mark the props of the component as read-only                                                               sonarjs/prefer-read-only-props
+   75:22  error  Unnecessary conditional, the types have no overlap                                                         @typescript-eslint/no-unnecessary-condition
+   82:21  error  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined         @typescript-eslint/no-unnecessary-condition
+  242:27  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+/Users/notluquis/finanzas-app/apps/web/src/features/hr/employees/components/columns.tsx
+   1:1   error  The filename "columns.tsx" does not match the "PASCAL_CASE" pattern  check-file/filename-naming-convention
+  93:7   error  Unsafe return of a value of type `any`                               @typescript-eslint/no-unsafe-return
+  93:14  error  Unsafe call of an `any` typed value                                  @typescript-eslint/no-unsafe-call
+  93:20  error  Unsafe member access .includes on an `any` value                     @typescript-eslint/no-unsafe-member-access
+
+/Users/notluquis/finanzas-app/apps/web/src/features/hr/employees/pages/EmployeesPage.tsx
+  168:22  error  Unnecessary conditional, value is always falsy  @typescript-eslint/no-unnecessary-condition
+
+/Users/notluquis/finanzas-app/apps/web/src/features/hr/reports/api.ts
+  19:7   error  Unnecessary conditional, comparison is always false, since `"ok" !== "ok"` is false                        @typescript-eslint/no-unnecessary-condition
+  20:34  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  38:7   error  Unnecessary conditional, comparison is always false, since `"ok" !== "ok"` is false                        @typescript-eslint/no-unnecessary-condition
+  39:34  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  39:82  error  Invalid type "never" of template literal expression                                                        @typescript-eslint/restrict-template-expressions
+  58:7   error  Unnecessary conditional, comparison is always false, since `"ok" !== "ok"` is false                        @typescript-eslint/no-unnecessary-condition
+  59:34  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+/Users/notluquis/finanzas-app/apps/web/src/features/hr/reports/components/ReportCharts.tsx
+   48:35  error    Mark the props of the component as read-only                                                               sonarjs/prefer-read-only-props
+   89:31  error    Mark the props of the component as read-only                                                               sonarjs/prefer-read-only-props
+  106:20  warning  Generic Object Injection Sink                                                                              security/detect-object-injection
+  106:40  error    Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+/Users/notluquis/finanzas-app/apps/web/src/features/hr/reports/pages/ReportsPage.tsx
+   58:28  warning  Variable Assigned to Object Injection Sink  security/detect-object-injection
+  131:55  error    Forbidden non-null assertion                @typescript-eslint/no-non-null-assertion
+  131:74  error    Forbidden non-null assertion                @typescript-eslint/no-non-null-assertion
+  595:18  error    Forbidden non-null assertion                @typescript-eslint/no-non-null-assertion
+  602:26  warning  Generic Object Injection Sink               security/detect-object-injection
+  607:27  warning  Generic Object Injection Sink               security/detect-object-injection
+  612:28  warning  Generic Object Injection Sink               security/detect-object-injection
+
+/Users/notluquis/finanzas-app/apps/web/src/features/hr/reports/utils.ts
+   26:28   error    `Array#reduce()` is not allowed. Prefer other types of loop for readability                                unicorn/no-array-reduce
+   26:100  error    Forbidden non-null assertion                                                                               @typescript-eslint/no-non-null-assertion
+   27:28   error    `Array#reduce()` is not allowed. Prefer other types of loop for readability                                unicorn/no-array-reduce
+   27:100  error    Forbidden non-null assertion                                                                               @typescript-eslint/no-non-null-assertion
+   97:21   warning  Variable Assigned to Object Injection Sink                                                                 security/detect-object-injection
+  118:21   warning  Variable Assigned to Object Injection Sink                                                                 security/detect-object-injection
+  123:38   warning  Function Call Object Injection Sink                                                                        security/detect-object-injection
+  131:23   warning  Generic Object Injection Sink                                                                              security/detect-object-injection
+  131:23   warning  Generic Object Injection Sink                                                                              security/detect-object-injection
+  131:46   error    Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+/Users/notluquis/finanzas-app/apps/web/src/features/hr/reports/utils/chartColors.ts
+   4:1   error  The filename "chartColors.ts" does not match the "KEBAB_CASE" pattern  check-file/filename-naming-convention
+  17:36  error  Unnecessary conditional, value is always falsy                         @typescript-eslint/no-unnecessary-condition
+
+/Users/notluquis/finanzas-app/apps/web/src/features/hr/timesheets-audit/api.ts
+  32:10  error  Unnecessary conditional, value is always truthy  @typescript-eslint/no-unnecessary-condition
+
+/Users/notluquis/finanzas-app/apps/web/src/features/hr/timesheets-audit/components/EmployeeAuditSelector.tsx
+  21:47  error  Mark the props of the component as read-only  sonarjs/prefer-read-only-props
+
+/Users/notluquis/finanzas-app/apps/web/src/features/hr/timesheets-audit/components/TimesheetAuditCalendar.tsx
+   54:81  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  172:48  error  Mark the props of the component as read-only                                                               sonarjs/prefer-read-only-props
+
+/Users/notluquis/finanzas-app/apps/web/src/features/hr/timesheets-audit/hooks/useTimesheetAudit.ts
+   4:1   error  The filename "useTimesheetAudit.ts" does not match the "KEBAB_CASE" pattern  check-file/filename-naming-convention
+  35:68  error  Forbidden non-null assertion                                                 @typescript-eslint/no-non-null-assertion
+  35:79  error  Forbidden non-null assertion                                                 @typescript-eslint/no-non-null-assertion
+
+/Users/notluquis/finanzas-app/apps/web/src/features/hr/timesheets-audit/utils/overlapDetection.ts
+    6:1   error    The filename "overlapDetection.ts" does not match the "KEBAB_CASE" pattern                                 check-file/filename-naming-convention
+   61:16  warning  Variable Assigned to Object Injection Sink                                                                 security/detect-object-injection
+   65:18  warning  Variable Assigned to Object Injection Sink                                                                 security/detect-object-injection
+  101:16  warning  Variable Assigned to Object Injection Sink                                                                 security/detect-object-injection
+  105:18  warning  Variable Assigned to Object Injection Sink                                                                 security/detect-object-injection
+  177:26  error    Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  178:28  error    Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+/Users/notluquis/finanzas-app/apps/web/src/features/hr/timesheets/api.ts
+   20:34  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+   29:34  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+   47:34  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+   61:29  error  Unnecessary conditional, value is always truthy                                                            @typescript-eslint/no-unnecessary-condition
+   75:34  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  105:34  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  118:34  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  130:34  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+/Users/notluquis/finanzas-app/apps/web/src/features/hr/timesheets/components/EmailPreviewModal.tsx
+  25:43  error  Mark the props of the component as read-only                                                               sonarjs/prefer-read-only-props
+  61:47  error  Forbidden non-null assertion                                                                               @typescript-eslint/no-non-null-assertion
+  65:50  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  65:99  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+/Users/notluquis/finanzas-app/apps/web/src/features/hr/timesheets/components/TimesheetDetailColumns.tsx
+   27:7   warning  Fast refresh only works when a file only exports components. Move your component(s) to a separate file              react-refresh/only-export-components
+   41:10  warning  Generic Object Injection Sink                                                                                       security/detect-object-injection
+   47:7   warning  Fast refresh only works when a file only exports components. Move your component(s) to a separate file              react-refresh/only-export-components
+   67:45  error    Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+   72:16  warning  Generic Object Injection Sink                                                                                       security/detect-object-injection
+   78:7   warning  Fast refresh only works when a file only exports components. Move your component(s) to a separate file              react-refresh/only-export-components
+   86:7   warning  Fast refresh only works when a file only exports components. Move your component(s) to a separate file              react-refresh/only-export-components
+   94:20  error    Unnecessary optional chain on a non-nullish value                                                                   @typescript-eslint/no-unnecessary-condition
+  131:7   warning  Fast refresh only works when a file only exports components. Move your component(s) to a separate file              react-refresh/only-export-components
+  132:19  warning  Variable Assigned to Object Injection Sink                                                                          security/detect-object-injection
+  151:41  error    Unnecessary optional chain on a non-nullish value                                                                   @typescript-eslint/no-unnecessary-condition
+  187:7   warning  Fast refresh only works when a file only exports components. Move your component(s) to a separate file              react-refresh/only-export-components
+  190:19  warning  Variable Assigned to Object Injection Sink                                                                          security/detect-object-injection
+
+/Users/notluquis/finanzas-app/apps/web/src/features/hr/timesheets/components/TimesheetDetailTable.tsx
+  32:46  error  Mark the props of the component as read-only  sonarjs/prefer-read-only-props
+
+/Users/notluquis/finanzas-app/apps/web/src/features/hr/timesheets/components/TimesheetEditor.tsx
+  147:62  error    Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  175:26  warning  Variable Assigned to Object Injection Sink                                                                 security/detect-object-injection
+  176:26  warning  Generic Object Injection Sink                                                                              security/detect-object-injection
+  184:26  warning  Variable Assigned to Object Injection Sink                                                                 security/detect-object-injection
+  185:23  warning  Generic Object Injection Sink                                                                              security/detect-object-injection
+  194:17  warning  Variable Assigned to Object Injection Sink                                                                 security/detect-object-injection
+  195:21  warning  Variable Assigned to Object Injection Sink                                                                 security/detect-object-injection
+  198:43  error    Unnecessary optional chain on a non-nullish value                                                          @typescript-eslint/no-unnecessary-condition
+  198:74  error    Unnecessary optional chain on a non-nullish value                                                          @typescript-eslint/no-unnecessary-condition
+  289:23  warning  Variable Assigned to Object Injection Sink                                                                 security/detect-object-injection
+  318:73  warning  Function Call Object Injection Sink                                                                        security/detect-object-injection
+  355:33  error    Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+/Users/notluquis/finanzas-app/apps/web/src/features/hr/timesheets/components/TimesheetExportPDF.tsx
+   65:44  error    Mark the props of the component as read-only                                                                    sonarjs/prefer-read-only-props
+   86:25  error    Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined              @typescript-eslint/no-unnecessary-condition
+  102:18  error    Refactor this function to reduce its Cognitive Complexity from 20 to the 15 allowed                             sonarjs/cognitive-complexity
+  117:7   error    Prefer using nullish coalescing operator (`??=`) instead of an assignment expression, as it is simpler to read  @typescript-eslint/prefer-nullish-coalescing
+  164:38  error    Unnecessary optional chain on a non-nullish value                                                               @typescript-eslint/no-unnecessary-condition
+  165:32  error    Unnecessary optional chain on a non-nullish value                                                               @typescript-eslint/no-unnecessary-condition
+  165:46  error    Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator       @typescript-eslint/prefer-nullish-coalescing
+  256:18  warning  Generic Object Injection Sink                                                                                   security/detect-object-injection
+  317:6   error    Calling a string's .toString() method does not change the type or value of the string                           @typescript-eslint/no-unnecessary-type-conversion
+  380:31  error    Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined              @typescript-eslint/no-unnecessary-condition
+  380:31  warning  Generic Object Injection Sink                                                                                   security/detect-object-injection
+  390:25  warning  Generic Object Injection Sink                                                                                   security/detect-object-injection
+  508:14  error    Returning an awaited promise is required in this context                                                        @typescript-eslint/return-await
+
+/Users/notluquis/finanzas-app/apps/web/src/features/hr/timesheets/components/TimesheetSummaryColumns.tsx
+  89:82  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+/Users/notluquis/finanzas-app/apps/web/src/features/hr/timesheets/components/TimesheetSummaryTable.tsx
+  14:47  error  Mark the props of the component as read-only  sonarjs/prefer-read-only-props
+
+/Users/notluquis/finanzas-app/apps/web/src/features/hr/timesheets/hooks/useMonths.ts
+   1:1   error  The filename "useMonths.ts" does not match the "KEBAB_CASE" pattern  check-file/filename-naming-convention
+  13:18  error  Unnecessary conditional, value is always truthy                      @typescript-eslint/no-unnecessary-condition
+  13:22  error  Unnecessary optional chain on a non-nullish value                    @typescript-eslint/no-unnecessary-condition
+  14:26  error  Unnecessary conditional, value is always truthy                      @typescript-eslint/no-unnecessary-condition
+  14:30  error  Unnecessary optional chain on a non-nullish value                    @typescript-eslint/no-unnecessary-condition
+
+/Users/notluquis/finanzas-app/apps/web/src/features/hr/timesheets/pages/TimesheetsPage.tsx
+   43:9   error  Unnecessary conditional, value is always falsy                                                             @typescript-eslint/no-unnecessary-condition
+   57:65  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  121:18  error  Unnecessary conditional, value is always truthy                                                            @typescript-eslint/no-unnecessary-condition
+
+/Users/notluquis/finanzas-app/apps/web/src/features/hr/timesheets/pdfUtils.ts
+    1:1   error  The filename "pdfUtils.ts" does not match the "KEBAB_CASE" pattern                                         check-file/filename-naming-convention
+   21:23  error  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined         @typescript-eslint/no-unnecessary-condition
+   52:43  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  101:12  error  Returning an awaited promise is required in this context                                                   @typescript-eslint/return-await
+  105:46  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+/Users/notluquis/finanzas-app/apps/web/src/features/hr/timesheets/utils.ts
+   13:50  error    Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  102:41  warning  Generic Object Injection Sink                                                                              security/detect-object-injection
+  102:56  warning  Generic Object Injection Sink                                                                              security/detect-object-injection
+
+/Users/notluquis/finanzas-app/apps/web/src/features/inventory/api.ts
+  35:10  error  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+
+/Users/notluquis/finanzas-app/apps/web/src/features/inventory/components/AdjustStockForm.tsx
+  15:41  error  Mark the props of the component as read-only  sonarjs/prefer-read-only-props
+
+/Users/notluquis/finanzas-app/apps/web/src/features/inventory/components/AllergyInventoryView.tsx
+   29:13  error  Unsafe assignment of an `any` value              @typescript-eslint/no-unsafe-assignment
+   30:7   error  Unsafe call of an `any` typed value              @typescript-eslint/no-unsafe-call
+   30:21  error  Unsafe member access .push on an `any` value     @typescript-eslint/no-unsafe-member-access
+   52:8   error  Unnecessary conditional, value is always falsy   @typescript-eslint/no-unnecessary-condition
+   53:8   error  Unnecessary conditional, value is always falsy   @typescript-eslint/no-unnecessary-condition
+   54:8   error  Unnecessary conditional, value is always truthy  @typescript-eslint/no-unnecessary-condition
+   84:19  error  Mark the props of the component as read-only     sonarjs/prefer-read-only-props
+  103:23  error  Mark the props of the component as read-only     sonarjs/prefer-read-only-props
+
+/Users/notluquis/finanzas-app/apps/web/src/features/inventory/components/InventoryCategoryManager.tsx
+  22:23  error    Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+  22:41  warning  Unexpected any. Specify a different type                                                            @typescript-eslint/no-explicit-any
+
+/Users/notluquis/finanzas-app/apps/web/src/features/inventory/components/InventoryItemForm.tsx
+  16:43  error  Mark the props of the component as read-only                                                        sonarjs/prefer-read-only-props
+  69:16  error  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+  79:16  error  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+
+/Users/notluquis/finanzas-app/apps/web/src/features/inventory/components/columns.tsx
+  1:1  error  The filename "columns.tsx" does not match the "PASCAL_CASE" pattern  check-file/filename-naming-convention
+
+/Users/notluquis/finanzas-app/apps/web/src/features/operations/supplies/pages/SuppliesPage.tsx
+  17:83  error  Unexpected empty arrow function  @typescript-eslint/no-empty-function
+
+/Users/notluquis/finanzas-app/apps/web/src/features/participants/api.ts
+  14:7   error  Unnecessary conditional, comparison is always false, since `"ok" !== "ok"` is false                        @typescript-eslint/no-unnecessary-condition
+  15:34  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  31:7   error  Unnecessary conditional, comparison is always false, since `"ok" !== "ok"` is false                        @typescript-eslint/no-unnecessary-condition
+  32:34  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+/Users/notluquis/finanzas-app/apps/web/src/features/participants/components/ParticipantColumns.tsx
+   45:79  error  Unnecessary optional chain on a non-nullish value                                                                   @typescript-eslint/no-unnecessary-condition
+   51:44  error  Returning a void expression from an arrow function shorthand is forbidden. Please add braces to the arrow function  @typescript-eslint/no-confusing-void-expression
+   91:61  error  Passing a string to String() does not change the type or value of the string                                        @typescript-eslint/no-unnecessary-type-conversion
+   95:67  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator           @typescript-eslint/prefer-nullish-coalescing
+  131:28  error  Passing a string to String() does not change the type or value of the string                                        @typescript-eslint/no-unnecessary-type-conversion
+
+/Users/notluquis/finanzas-app/apps/web/src/features/participants/hooks/useParticipantInsightsData.ts
+    1:1    error  The filename "useParticipantInsightsData.ts" does not match the "KEBAB_CASE" pattern                       check-file/filename-naming-convention
+   40:23   error  Unnecessary conditional, value is always truthy                                                            @typescript-eslint/no-unnecessary-condition
+   54:39   error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+   55:49   error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+   57:35   error  Unnecessary conditional, value is always truthy                                                            @typescript-eslint/no-unnecessary-condition
+   63:64   error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+   63:82   error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+   63:110  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+   64:47   error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+   67:21   error  Passing a string to String() does not change the type or value of the string                               @typescript-eslint/no-unnecessary-type-conversion
+   70:43   error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+   70:61   error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+   83:23   error  Refactor this function to reduce its Cognitive Complexity from 17 to the 15 allowed                        sonarjs/cognitive-complexity
+  108:21   error  Forbidden non-null assertion                                                                               @typescript-eslint/no-non-null-assertion
+
+/Users/notluquis/finanzas-app/apps/web/src/features/payouts/components/columns.tsx
+   1:1    error  The filename "columns.tsx" does not match the "PASCAL_CASE" pattern                                        check-file/filename-naming-convention
+  21:96   error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  79:102  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+/Users/notluquis/finanzas-app/apps/web/src/features/payouts/hooks/usePayouts.ts
+   1:1   error  The filename "usePayouts.ts" does not match the "KEBAB_CASE" pattern  check-file/filename-naming-convention
+  11:26  error  Unexpected empty async method 'refresh'                               @typescript-eslint/no-empty-function
+
+/Users/notluquis/finanzas-app/apps/web/src/features/people/queries.ts
+  9:34  error  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+
+/Users/notluquis/finanzas-app/apps/web/src/features/personal-finance/api.ts
+  35:5   error    Unsafe return of a value of type `Promise<any>`  @typescript-eslint/no-unsafe-return
+  35:27  warning  Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+
+/Users/notluquis/finanzas-app/apps/web/src/features/personal-finance/components/CreateCreditForm.tsx
+  201:28  error  Unnecessary conditional, value is always truthy  @typescript-eslint/no-unnecessary-condition
+
+/Users/notluquis/finanzas-app/apps/web/src/features/personal-finance/components/PayInstallmentModal.tsx
+   39:15  error  Passing a number to Number() does not change the type or value of the number                                                     @typescript-eslint/no-unnecessary-type-conversion
+   96:59  error  Using `join()` for field.state.meta.errors may use Object's default stringification format ('[object Object]') when stringified  @typescript-eslint/no-base-to-string
+  113:26  error  Unnecessary conditional, value is always truthy                                                                                  @typescript-eslint/no-unnecessary-condition
+  116:59  error  Using `join()` for field.state.meta.errors may use Object's default stringification format ('[object Object]') when stringified  @typescript-eslint/no-base-to-string
+
+/Users/notluquis/finanzas-app/apps/web/src/features/personal-finance/pages/PersonalCreditDetailsPage.tsx
+   29:68  error  Passing a number to Number() does not change the type or value of the number                               @typescript-eslint/no-unnecessary-type-conversion
+   52:43  error  Mark the props of the component as read-only                                                               sonarjs/prefer-read-only-props
+   55:7   error  Unnecessary conditional, value is always falsy                                                             @typescript-eslint/no-unnecessary-condition
+   69:51  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+   80:65  error  Passing a number to Number() does not change the type or value of the number                               @typescript-eslint/no-unnecessary-type-conversion
+  103:39  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+/Users/notluquis/finanzas-app/apps/web/src/features/personal-finance/pages/PersonalCreditsPage.tsx
+  26:39  error  Passing a number to Number() does not change the type or value of the number                               @typescript-eslint/no-unnecessary-type-conversion
+  33:89  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+/Users/notluquis/finanzas-app/apps/web/src/features/production-balances/DailyBalancePage.tsx
+  79:12  error  Unnecessary conditional, value is always falsy  @typescript-eslint/no-unnecessary-condition
+
+/Users/notluquis/finanzas-app/apps/web/src/features/production-balances/components/CierrePanel.tsx
+   21:29  error    Mark the props of the component as read-only  sonarjs/prefer-read-only-props
+   56:75  warning  Function Call Object Injection Sink           security/detect-object-injection
+   57:12  warning  Generic Object Injection Sink                 security/detect-object-injection
+  116:21  error    Mark the props of the component as read-only  sonarjs/prefer-read-only-props
+
+/Users/notluquis/finanzas-app/apps/web/src/features/production-balances/components/EntryForm.tsx
+  21:27  error  Mark the props of the component as read-only  sonarjs/prefer-read-only-props
+
+/Users/notluquis/finanzas-app/apps/web/src/features/production-balances/components/MoneySection.tsx
+  15:30  error  Mark the props of the component as read-only  sonarjs/prefer-read-only-props
+
+/Users/notluquis/finanzas-app/apps/web/src/features/production-balances/components/TopBar.tsx
+  24:24  error    Mark the props of the component as read-only  sonarjs/prefer-read-only-props
+  71:79  warning  Function Call Object Injection Sink           security/detect-object-injection
+  72:14  warning  Generic Object Injection Sink                 security/detect-object-injection
+
+/Users/notluquis/finanzas-app/apps/web/src/features/production-balances/components/WeekStrip.tsx
+  22:27  error  Mark the props of the component as read-only  sonarjs/prefer-read-only-props
+  95:24  error  Mark the props of the component as read-only  sonarjs/prefer-read-only-props
+
+/Users/notluquis/finanzas-app/apps/web/src/features/production-balances/hooks/useDailyBalanceForm.ts
+    1:1    error    The filename "useDailyBalanceForm.ts" does not match the "KEBAB_CASE" pattern                              check-file/filename-naming-convention
+   55:100  error    Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+   65:37   error    Unnecessary conditional, value is always truthy                                                            @typescript-eslint/no-unnecessary-condition
+   74:9    error    Unnecessary conditional, value is always truthy                                                            @typescript-eslint/no-unnecessary-condition
+   88:11   warning  Generic Object Injection Sink                                                                              security/detect-object-injection
+  240:28   error    Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+/Users/notluquis/finanzas-app/apps/web/src/features/production-balances/hooks/useDailyBalanceStore.ts
+   1:1   error    The filename "useDailyBalanceStore.ts" does not match the "KEBAB_CASE" pattern  check-file/filename-naming-convention
+  70:19  warning  Generic Object Injection Sink                                                   security/detect-object-injection
+
+/Users/notluquis/finanzas-app/apps/web/src/features/production-balances/utils.ts
+  75:10  error    Forbidden non-null assertion   @typescript-eslint/no-non-null-assertion
+  75:10  warning  Generic Object Injection Sink  security/detect-object-injection
+
+/Users/notluquis/finanzas-app/apps/web/src/features/reports/hooks/useReportUpload.ts
+  1:1  error  The filename "useReportUpload.ts" does not match the "KEBAB_CASE" pattern  check-file/filename-naming-convention
+
+/Users/notluquis/finanzas-app/apps/web/src/features/roles/components/BulkToggleCell.tsx
+   5:32  error  Mark the props of the component as read-only                                                               sonarjs/prefer-read-only-props
+  50:83  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+/Users/notluquis/finanzas-app/apps/web/src/features/roles/components/DeleteRoleModal.tsx
+  16:33  error  Mark the props of the component as read-only  sonarjs/prefer-read-only-props
+  61:25  error  Mark the props of the component as read-only  sonarjs/prefer-read-only-props
+
+/Users/notluquis/finanzas-app/apps/web/src/features/roles/components/PermissionsMatrixTable.tsx
+   43:40   error    Mark the props of the component as read-only                                                               sonarjs/prefer-read-only-props
+   61:17   warning  Generic Object Injection Sink                                                                              security/detect-object-injection
+   68:15   warning  Generic Object Injection Sink                                                                              security/detect-object-injection
+   92:101  error    Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+   93:35   error    Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  178:36   warning  Generic Object Injection Sink                                                                              security/detect-object-injection
+  240:62   error    Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  276:25   error    Mark the props of the component as read-only                                                               sonarjs/prefer-read-only-props
+  292:67   error    Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  312:24   error    Mark the props of the component as read-only                                                               sonarjs/prefer-read-only-props
+  331:46   error    Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+/Users/notluquis/finanzas-app/apps/web/src/features/roles/components/RoleFormModal.tsx
+   31:31  error  Mark the props of the component as read-only                                                                                     sonarjs/prefer-read-only-props
+   62:23  error  Mark the props of the component as read-only                                                                                     sonarjs/prefer-read-only-props
+   69:39  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator                        @typescript-eslint/prefer-nullish-coalescing
+   97:5   error  Async method 'onSubmit' has no 'await' expression                                                                                @typescript-eslint/require-await
+  148:58  error  Using `join()` for field.state.meta.errors may use Object's default stringification format ('[object Object]') when stringified  @typescript-eslint/no-base-to-string
+  203:23  error  Mark the props of the component as read-only                                                                                     sonarjs/prefer-read-only-props
+
+/Users/notluquis/finanzas-app/apps/web/src/features/roles/components/RoleMappingColumns.tsx
+  34:59  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+/Users/notluquis/finanzas-app/apps/web/src/features/roles/components/RoleMappingManager.tsx
+  64:87   error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  64:105  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  84:31   error  Async arrow function 'handleSave' has no 'await' expression                                                @typescript-eslint/require-await
+  85:60   error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+/Users/notluquis/finanzas-app/apps/web/src/features/services/api.ts
+  18:58  error  'error' will use Object's default stringification format ('[object Object]') when stringified  @typescript-eslint/no-base-to-string
+
+/Users/notluquis/finanzas-app/apps/web/src/features/services/components/ServiceDetail.tsx
+   35:31  error  Mark the props of the component as read-only                                                               sonarjs/prefer-read-only-props
+  181:29  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  235:15  error  Passing a number to Number() does not change the type or value of the number                               @typescript-eslint/no-unnecessary-type-conversion
+  235:22  error  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined         @typescript-eslint/no-unnecessary-condition
+
+/Users/notluquis/finanzas-app/apps/web/src/features/services/components/ServiceForm.tsx
+   59:29  error  Mark the props of the component as read-only                                  sonarjs/prefer-read-only-props
+  108:45  error  Forbidden non-null assertion                                                  @typescript-eslint/no-non-null-assertion
+  195:24  error  Passing a number to Number() does not change the type or value of the number  @typescript-eslint/no-unnecessary-type-conversion
+  209:18  error  Passing a number to Number() does not change the type or value of the number  @typescript-eslint/no-unnecessary-type-conversion
+
+/Users/notluquis/finanzas-app/apps/web/src/features/services/components/ServiceForm/BasicInfoSection.tsx
+   1:1   error  The folder "ServiceForm" does not match the "KEBAB_CASE" pattern  check-file/folder-naming-convention
+  16:34  error  Mark the props of the component as read-only                      sonarjs/prefer-read-only-props
+
+/Users/notluquis/finanzas-app/apps/web/src/features/services/components/ServiceForm/CounterpartSection.tsx
+   1:1   error  The folder "ServiceForm" does not match the "KEBAB_CASE" pattern  check-file/folder-naming-convention
+  22:36  error  Mark the props of the component as read-only                      sonarjs/prefer-read-only-props
+
+/Users/notluquis/finanzas-app/apps/web/src/features/services/components/ServiceForm/EmissionSection.tsx
+   1:1   error  The folder "ServiceForm" does not match the "KEBAB_CASE" pattern  check-file/folder-naming-convention
+  23:33  error  Mark the props of the component as read-only                      sonarjs/prefer-read-only-props
+
+/Users/notluquis/finanzas-app/apps/web/src/features/services/components/ServiceForm/FinancialSection.tsx
+   1:1   error  The folder "ServiceForm" does not match the "KEBAB_CASE" pattern  check-file/folder-naming-convention
+  28:34  error  Mark the props of the component as read-only                      sonarjs/prefer-read-only-props
+
+/Users/notluquis/finanzas-app/apps/web/src/features/services/components/ServiceForm/SchedulingSection.tsx
+   1:1   error  The folder "ServiceForm" does not match the "KEBAB_CASE" pattern  check-file/folder-naming-convention
+  30:35  error  Mark the props of the component as read-only                      sonarjs/prefer-read-only-props
+
+/Users/notluquis/finanzas-app/apps/web/src/features/services/components/ServiceForm/ServiceClassificationSection.tsx
+   1:1   error  The folder "ServiceForm" does not match the "KEBAB_CASE" pattern  check-file/folder-naming-convention
+  47:46  error  Mark the props of the component as read-only                      sonarjs/prefer-read-only-props
+
+/Users/notluquis/finanzas-app/apps/web/src/features/services/components/ServiceForm/index.ts
+  1:1  error  The folder "ServiceForm" does not match the "KEBAB_CASE" pattern  check-file/folder-naming-convention
+
+/Users/notluquis/finanzas-app/apps/web/src/features/services/components/ServiceList.tsx
+  16:29  error  Mark the props of the component as read-only  sonarjs/prefer-read-only-props
+
+/Users/notluquis/finanzas-app/apps/web/src/features/services/components/ServiceScheduleAccordion.tsx
+   43:35  error    Mark the props of the component as read-only                                 sonarjs/prefer-read-only-props
+   87:7   error    Forbidden non-null assertion                                                 @typescript-eslint/no-non-null-assertion
+   95:19  error    `Array#reduce()` is not allowed. Prefer other types of loop for readability  unicorn/no-array-reduce
+  113:47  warning  Generic Object Injection Sink                                                security/detect-object-injection
+
+/Users/notluquis/finanzas-app/apps/web/src/features/services/components/ServiceScheduleTable.tsx
+  16:38  error  Mark the props of the component as read-only  sonarjs/prefer-read-only-props
+
+/Users/notluquis/finanzas-app/apps/web/src/features/services/components/ServiceTemplateGallery.tsx
+   20:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  100:48  error    Mark the props of the component as read-only                                                                                    sonarjs/prefer-read-only-props
+
+/Users/notluquis/finanzas-app/apps/web/src/features/services/components/ServicesAgendaContent.tsx
+  22:37  error  `Array#reduce()` is not allowed. Prefer other types of loop for readability  unicorn/no-array-reduce
+
+/Users/notluquis/finanzas-app/apps/web/src/features/services/components/ServicesFilterPanel.tsx
+   28:45  error    Mark the props of the component as read-only  sonarjs/prefer-read-only-props
+  113:18  warning  Generic Object Injection Sink                 security/detect-object-injection
+
+/Users/notluquis/finanzas-app/apps/web/src/features/services/components/ServicesShell.tsx
+  16:30  error  Mark the props of the component as read-only  sonarjs/prefer-read-only-props
+  22:30  error  Mark the props of the component as read-only  sonarjs/prefer-read-only-props
+  55:33  error  Mark the props of the component as read-only  sonarjs/prefer-read-only-props
+
+/Users/notluquis/finanzas-app/apps/web/src/features/services/components/ServicesUnifiedAgenda.tsx
+   51:47  error    Mark the props of the component as read-only                                 sonarjs/prefer-read-only-props
+   74:21  error    Forbidden non-null assertion                                                 @typescript-eslint/no-non-null-assertion
+  107:19  error    `Array#reduce()` is not allowed. Prefer other types of loop for readability  unicorn/no-array-reduce
+  114:47  warning  Generic Object Injection Sink                                                security/detect-object-injection
+
+/Users/notluquis/finanzas-app/apps/web/src/features/services/hooks/useServiceDetails.ts
+   1:1   error    The filename "useServiceDetails.ts" does not match the "KEBAB_CASE" pattern  check-file/filename-naming-convention
+  38:29  warning  Generic Object Injection Sink                                                security/detect-object-injection
+  40:57  error    Unsafe assignment of an `any` value                                          @typescript-eslint/no-unsafe-assignment
+  53:32  warning  Generic Object Injection Sink                                                security/detect-object-injection
+  53:57  warning  Generic Object Injection Sink                                                security/detect-object-injection
+  79:30  warning  Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+  80:46  error    Unsafe assignment of an `any` value                                          @typescript-eslint/no-unsafe-assignment
+
+/Users/notluquis/finanzas-app/apps/web/src/features/services/hooks/useServiceMutations.ts
+  1:1  error  The filename "useServiceMutations.ts" does not match the "KEBAB_CASE" pattern  check-file/filename-naming-convention
+
+/Users/notluquis/finanzas-app/apps/web/src/features/services/hooks/useServicePayment.ts
+  1:1  error  The filename "useServicePayment.ts" does not match the "KEBAB_CASE" pattern  check-file/filename-naming-convention
+
+/Users/notluquis/finanzas-app/apps/web/src/features/services/hooks/useServicesList.ts
+   1:1   error  The filename "useServicesList.ts" does not match the "KEBAB_CASE" pattern                           check-file/filename-naming-convention
+  21:20  error  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+  21:24  error  Unnecessary optional chain on a non-nullish value                                                   @typescript-eslint/no-unnecessary-condition
+  31:12  error  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+  43:29  error  `Array#reduce()` is not allowed. Prefer other types of loop for readability                         unicorn/no-array-reduce
+
+/Users/notluquis/finanzas-app/apps/web/src/features/services/hooks/useServicesOverview.tsx
+   1:1   error    The filename "useServicesOverview.tsx" does not match the "PASCAL_CASE" pattern                                                 check-file/filename-naming-convention
+  10:34  error    Mark the props of the component as read-only                                                                                    sonarjs/prefer-read-only-props
+  14:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  34:47  warning  Unexpected any. Specify a different type                                                                                        @typescript-eslint/no-explicit-any
+  35:35  error    Unsafe argument of type `any` assigned to a parameter of type `CreateServicePayload`                                            @typescript-eslint/no-unsafe-argument
+  38:46  warning  Unexpected any. Specify a different type                                                                                        @typescript-eslint/no-explicit-any
+  40:74  error    Unsafe argument of type `any` assigned to a parameter of type `RegenerateServicePayload`                                        @typescript-eslint/no-unsafe-argument
+
+/Users/notluquis/finanzas-app/apps/web/src/features/services/pages/EditServicePage.tsx
+   53:9   error  Unnecessary conditional, value is always falsy   @typescript-eslint/no-unnecessary-condition
+  121:25  error  Unnecessary conditional, value is always truthy  @typescript-eslint/no-unnecessary-condition
+  140:22  error  Unnecessary conditional, value is always truthy  @typescript-eslint/no-unnecessary-condition
+  192:42  error  Unexpected empty arrow function                  @typescript-eslint/no-empty-function
+  193:40  error  Unexpected empty arrow function                  @typescript-eslint/no-empty-function
+  199:42  error  Unexpected empty arrow function                  @typescript-eslint/no-empty-function
+  200:40  error  Unexpected empty arrow function                  @typescript-eslint/no-empty-function
+
+/Users/notluquis/finanzas-app/apps/web/src/features/settings/api.ts
+  37:34  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+/Users/notluquis/finanzas-app/apps/web/src/features/supplies/components/SupplyRequestForm.tsx
+   29:43  error    Mark the props of the component as read-only                                                                                                                        sonarjs/prefer-read-only-props
+   33:45  error    void is only valid as a return type or generic type argument                                                                                                        @typescript-eslint/no-invalid-void-type
+   36:7   error    Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+   53:30  error    Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator                                                           @typescript-eslint/prefer-nullish-coalescing
+   73:45  error    `Array#reduce()` is not allowed. Prefer other types of loop for readability                                                                                         unicorn/no-array-reduce
+   79:32  error    Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator                                                           @typescript-eslint/prefer-nullish-coalescing
+   80:24  error    Forbidden non-null assertion                                                                                                                                        @typescript-eslint/no-non-null-assertion
+   81:5   error    Prefer using nullish coalescing operator (`??=`) instead of an assignment expression, as it is simpler to read                                                      @typescript-eslint/prefer-nullish-coalescing
+   81:10  warning  Generic Object Injection Sink                                                                                                                                       security/detect-object-injection
+   82:7   warning  Generic Object Injection Sink                                                                                                                                       security/detect-object-injection
+   85:7   warning  Generic Object Injection Sink                                                                                                                                       security/detect-object-injection
+   91:56  warning  Generic Object Injection Sink                                                                                                                                       security/detect-object-injection
+   93:40  warning  Generic Object Injection Sink                                                                                                                                       security/detect-object-injection
+   93:40  warning  Generic Object Injection Sink                                                                                                                                       security/detect-object-injection
+  102:11  error    Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+  129:57  error    Using `join()` for field.state.meta.errors may use Object's default stringification format ('[object Object]') when stringified                                     @typescript-eslint/no-base-to-string
+  151:57  error    Using `join()` for field.state.meta.errors may use Object's default stringification format ('[object Object]') when stringified                                     @typescript-eslint/no-base-to-string
+  179:57  error    Using `join()` for field.state.meta.errors may use Object's default stringification format ('[object Object]') when stringified                                     @typescript-eslint/no-base-to-string
+  206:57  error    Using `join()` for field.state.meta.errors may use Object's default stringification format ('[object Object]') when stringified                                     @typescript-eslint/no-base-to-string
+  227:57  error    Using `join()` for field.state.meta.errors may use Object's default stringification format ('[object Object]') when stringified                                     @typescript-eslint/no-base-to-string
+
+/Users/notluquis/finanzas-app/apps/web/src/features/supplies/components/SupplyRequestsColumns.tsx
+  45:40  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+/Users/notluquis/finanzas-app/apps/web/src/features/supplies/components/SupplyRequestsTable.tsx
+  13:45  error  Mark the props of the component as read-only  sonarjs/prefer-read-only-props
+
+/Users/notluquis/finanzas-app/apps/web/src/features/supplies/hooks/useSupplyManagement.ts
+   1:1   error    The filename "useSupplyManagement.ts" does not match the "KEBAB_CASE" pattern                                                                                       check-file/filename-naming-convention
+  29:65  error    `Array#reduce()` is not allowed. Prefer other types of loop for readability                                                                                         unicorn/no-array-reduce
+  31:5   error    Prefer using nullish coalescing operator (`??=`) instead of an assignment expression, as it is simpler to read                                                      @typescript-eslint/prefer-nullish-coalescing
+  34:32  error    Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator                                                           @typescript-eslint/prefer-nullish-coalescing
+  35:10  warning  Generic Object Injection Sink                                                                                                                                       security/detect-object-injection
+  35:10  error    Forbidden non-null assertion                                                                                                                                        @typescript-eslint/no-non-null-assertion
+  36:7   warning  Generic Object Injection Sink                                                                                                                                       security/detect-object-injection
+  36:7   error    Forbidden non-null assertion                                                                                                                                        @typescript-eslint/no-non-null-assertion
+  39:7   error    Forbidden non-null assertion                                                                                                                                        @typescript-eslint/no-non-null-assertion
+  39:7   warning  Generic Object Injection Sink                                                                                                                                       security/detect-object-injection
+  39:7   error    Forbidden non-null assertion                                                                                                                                        @typescript-eslint/no-non-null-assertion
+  54:7   error    Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+
+/Users/notluquis/finanzas-app/apps/web/src/features/users/api.ts
+  45:33  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+/Users/notluquis/finanzas-app/apps/web/src/features/users/components/UserAccessCells.tsx
+   9:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  16:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/Users/notluquis/finanzas-app/apps/web/src/features/users/components/columns.tsx
+   1:1    error  The filename "columns.tsx" does not match the "PASCAL_CASE" pattern     check-file/filename-naming-convention
+  63:13   error  Unsafe assignment of an `any` value                                     @typescript-eslint/no-unsafe-assignment
+  63:22   error  Unsafe call of an `any` typed value                                     @typescript-eslint/no-unsafe-call
+  63:28   error  Unsafe member access .toLowerCase on an `any` value                     @typescript-eslint/no-unsafe-member-access
+  64:48   error  Unsafe argument of type `any` assigned to a parameter of type `string`  @typescript-eslint/no-unsafe-argument
+  64:113  error  Unsafe argument of type `any` assigned to a parameter of type `string`  @typescript-eslint/no-unsafe-argument
+
+/Users/notluquis/finanzas-app/apps/web/src/features/users/pages/PersonManagementPage.tsx
+  19:13  error  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+  19:20  error  Unnecessary optional chain on a non-nullish value                                                   @typescript-eslint/no-unnecessary-condition
+  19:78  error  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+
+/Users/notluquis/finanzas-app/apps/web/src/features/users/pages/UserManagementPage.tsx
+   55:30  error  Unnecessary optional chain on a non-nullish value                                                                                                                   @typescript-eslint/no-unnecessary-condition
+   55:60  error  Unnecessary optional chain on a non-nullish value                                                                                                                   @typescript-eslint/no-unnecessary-condition
+   58:22  error  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined                                                                  @typescript-eslint/no-unnecessary-condition
+   58:33  error  Unnecessary optional chain on a non-nullish value                                                                                                                   @typescript-eslint/no-unnecessary-condition
+   62:23  error  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined                                                                  @typescript-eslint/no-unnecessary-condition
+   95:13  error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+  120:13  error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+  132:13  error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+  183:7   error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+  200:8   error  Unnecessary conditional, value is always truthy                                                                                                                     @typescript-eslint/no-unnecessary-condition
+  263:21  error  Unnecessary optional chain on a non-nullish value                                                                                                                   @typescript-eslint/no-unnecessary-condition
+  308:21  error  Unnecessary optional chain on a non-nullish value                                                                                                                   @typescript-eslint/no-unnecessary-condition
+
+/Users/notluquis/finanzas-app/apps/web/src/hooks/useAppBadge.ts
+  1:1  error  The filename "useAppBadge.ts" does not match the "KEBAB_CASE" pattern  check-file/filename-naming-convention
+
+/Users/notluquis/finanzas-app/apps/web/src/hooks/useAsyncState.ts
+  1:1  error  The filename "useAsyncState.ts" does not match the "KEBAB_CASE" pattern  check-file/filename-naming-convention
+
+/Users/notluquis/finanzas-app/apps/web/src/hooks/useCan.ts
+  1:1  error  The filename "useCan.ts" does not match the "KEBAB_CASE" pattern  check-file/filename-naming-convention
+
+/Users/notluquis/finanzas-app/apps/web/src/hooks/useColumnVisibility.ts
+   1:1   error    The filename "useColumnVisibility.ts" does not match the "KEBAB_CASE" pattern  check-file/filename-naming-convention
+  12:27  error    `Array#reduce()` is not allowed. Prefer other types of loop for readability    unicorn/no-array-reduce
+  13:7   warning  Generic Object Injection Sink                                                  security/detect-object-injection
+  21:18  warning  Generic Object Injection Sink                                                  security/detect-object-injection
+  43:9   warning  Generic Object Injection Sink                                                  security/detect-object-injection
+  53:9   warning  Generic Object Injection Sink                                                  security/detect-object-injection
+  60:12  warning  Generic Object Injection Sink                                                  security/detect-object-injection
+
+/Users/notluquis/finanzas-app/apps/web/src/hooks/useDisclosure.ts
+  1:1  error  The filename "useDisclosure.ts" does not match the "KEBAB_CASE" pattern  check-file/filename-naming-convention
+
+/Users/notluquis/finanzas-app/apps/web/src/hooks/useFileUpload.ts
+   1:1  error  The filename "useFileUpload.ts" does not match the "KEBAB_CASE" pattern                                                                                             check-file/filename-naming-convention
+  44:9  error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+
+/Users/notluquis/finanzas-app/apps/web/src/hooks/useJobProgress.ts
+   1:1  error  The filename "useJobProgress.ts" does not match the "KEBAB_CASE" pattern                                                                                            check-file/filename-naming-convention
+  63:7  error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+
+/Users/notluquis/finanzas-app/apps/web/src/hooks/usePagination.test.ts
+  1:1  error  The filename "usePagination.test.ts" does not match the "KEBAB_CASE" pattern  check-file/filename-naming-convention
+
+/Users/notluquis/finanzas-app/apps/web/src/hooks/usePagination.ts
+  1:1  error  The filename "usePagination.ts" does not match the "KEBAB_CASE" pattern  check-file/filename-naming-convention
+
+/Users/notluquis/finanzas-app/apps/web/src/hooks/usePerformanceMode.ts
+  1:1  error  The filename "usePerformanceMode.ts" does not match the "KEBAB_CASE" pattern  check-file/filename-naming-convention
+
+/Users/notluquis/finanzas-app/apps/web/src/hooks/usePushNotifications.ts
+    1:1   error    The filename "usePushNotifications.ts" does not match the "KEBAB_CASE" pattern                                                                                      check-file/filename-naming-convention
+   12:7   error    Unsafe assignment of an `any` value                                                                                                                                 @typescript-eslint/no-unsafe-assignment
+   23:7   error    Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+   82:53  error    Unsafe argument of type `any` assigned to a parameter of type `string`                                                                                              @typescript-eslint/no-unsafe-argument
+  118:41  error    Async arrow function 'sendTestNotification' has no 'await' expression                                                                                               @typescript-eslint/require-await
+  140:7   warning  Generic Object Injection Sink                                                                                                                                       security/detect-object-injection
+
+/Users/notluquis/finanzas-app/apps/web/src/hooks/useSorting.test.ts
+  1:1  error  The filename "useSorting.test.ts" does not match the "KEBAB_CASE" pattern  check-file/filename-naming-convention
+
+/Users/notluquis/finanzas-app/apps/web/src/hooks/useSorting.ts
+   1:1   error  The filename "useSorting.ts" does not match the "KEBAB_CASE" pattern                   check-file/filename-naming-convention
+  30:20  error  Unnecessary conditional, comparison is always true, since `"desc" === "desc"` is true  @typescript-eslint/no-unnecessary-condition
+
+/Users/notluquis/finanzas-app/apps/web/src/hooks/useTable.ts
+  1:1  error  The filename "useTable.ts" does not match the "KEBAB_CASE" pattern  check-file/filename-naming-convention
+
+/Users/notluquis/finanzas-app/apps/web/src/hooks/useWakeLock.ts
+   1:1  error  The filename "useWakeLock.ts" does not match the "KEBAB_CASE" pattern                                                                                               check-file/filename-naming-convention
+  39:5  error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+  44:9  error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+
+/Users/notluquis/finanzas-app/apps/web/src/i18n.ts
+  18:4   error  Prefer top-level await over using a promise chain            unicorn/prefer-top-level-await
+  18:11  error  Prefer the safe `: unknown` for a `catch` callback variable  @typescript-eslint/use-unknown-in-catch-callback-variable
+
+/Users/notluquis/finanzas-app/apps/web/src/lib/apiClient.ts
+    1:1   error  The filename "apiClient.ts" does not match the "KEBAB_CASE" pattern                                        check-file/filename-naming-convention
+   40:31  error  'rawValue' will use Object's default stringification format ('[object Object]') when stringified           @typescript-eslint/no-base-to-string
+   61:9   error  Unsafe assignment of an `any` value                                                                        @typescript-eslint/no-unsafe-assignment
+   82:11  error  Unsafe assignment of an `any` value                                                                        @typescript-eslint/no-unsafe-assignment
+   84:36  error  Unsafe argument of type `any` assigned to a parameter of type `SuperJSONResult`                            @typescript-eslint/no-unsafe-argument
+   86:5   error  Unsafe return of a value of type `any`                                                                     @typescript-eslint/no-unsafe-return
+  111:82  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+/Users/notluquis/finanzas-app/apps/web/src/lib/authz/AbilityProvider.tsx
+   9:14  warning  Fast refresh only works when a file only exports components. Move your React context(s) to a separate file                      react-refresh/only-export-components
+  16:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/Users/notluquis/finanzas-app/apps/web/src/lib/authz/ability.ts
+  9:7  error  Unnecessary conditional, value is always truthy  @typescript-eslint/no-unnecessary-condition
+
+/Users/notluquis/finanzas-app/apps/web/src/lib/format.ts
+  38:20  error  'v' will use Object's default stringification format ('[object Object]') when stringified  @typescript-eslint/no-base-to-string
+  52:7   error  Unnecessary conditional, value is always falsy                                             @typescript-eslint/no-unnecessary-condition
+  74:7   error  Unnecessary conditional, value is always falsy                                             @typescript-eslint/no-unnecessary-condition
+
+/Users/notluquis/finanzas-app/apps/web/src/lib/logger.ts
+  9:15  error  Passing a boolean to Boolean() does not change the type or value of the boolean  @typescript-eslint/no-unnecessary-type-conversion
+  9:23  error  DEV is not listed as a dependency in turbo.json                                  turbo/no-undeclared-env-vars
+  9:38  error  Unnecessary optional chain on a non-nullish value                                @typescript-eslint/no-unnecessary-condition
+
+/Users/notluquis/finanzas-app/apps/web/src/lib/nav-generator.ts
+  180:3  error  Prefer using nullish coalescing operator (`??=`) instead of an assignment expression, as it is simpler to read  @typescript-eslint/prefer-nullish-coalescing
+
+/Users/notluquis/finanzas-app/apps/web/src/lib/person.ts
+  91:25  error  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+  91:47  error  Unnecessary optional chain on a non-nullish value                                                   @typescript-eslint/no-unnecessary-condition
+
+/Users/notluquis/finanzas-app/apps/web/src/lib/queryKeys.ts
+  1:1  error  The filename "queryKeys.ts" does not match the "KEBAB_CASE" pattern  check-file/filename-naming-convention
+
+/Users/notluquis/finanzas-app/apps/web/src/main.tsx
+    8:1    error    The filename "main.tsx" does not match the "PASCAL_CASE" pattern                                                                                                    check-file/filename-naming-convention
+   63:5    error    Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+   68:9    error    Unsafe assignment of an `any` value                                                                                                                                 @typescript-eslint/no-unsafe-assignment
+   68:33   error    Unsafe member access .message on an `any` value                                                                                                                     @typescript-eslint/no-unsafe-member-access
+   69:106  error    Unsafe argument of type `any` assigned to a parameter of type `string`                                                                                              @typescript-eslint/no-unsafe-argument
+   71:5    error    Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+  100:11   error    Forbidden non-null assertion                                                                                                                                        @typescript-eslint/no-non-null-assertion
+  121:10   warning  Fast refresh only works when a file has exports. Move your component(s) to a separate file                                                                          react-refresh/only-export-components
+  129:3    error    NODE_ENV is not listed as a dependency in turbo.json                                                                                                                turbo/no-undeclared-env-vars
+  145:21   error    Forbidden non-null assertion                                                                                                                                        @typescript-eslint/no-non-null-assertion
+
+/Users/notluquis/finanzas-app/apps/web/src/pages/AccountSettingsPage.tsx
+  252:58  error  Unnecessary optional chain on a non-nullish value  @typescript-eslint/no-unnecessary-condition
+
+/Users/notluquis/finanzas-app/apps/web/src/pages/CalendarClassificationPage.tsx
+   57:27  error  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined                                                                  @typescript-eslint/no-unnecessary-condition
+   57:38  error  Unnecessary optional chain on a non-nullish value                                                                                                                   @typescript-eslint/no-unnecessary-condition
+   58:33  error  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined                                                                  @typescript-eslint/no-unnecessary-condition
+   58:44  error  Unnecessary optional chain on a non-nullish value                                                                                                                   @typescript-eslint/no-unnecessary-condition
+   60:18  error  Unnecessary conditional, value is always truthy                                                                                                                     @typescript-eslint/no-unnecessary-condition
+   60:22  error  Unnecessary optional chain on a non-nullish value                                                                                                                   @typescript-eslint/no-unnecessary-condition
+   61:26  error  Unnecessary optional chain on a non-nullish value                                                                                                                   @typescript-eslint/no-unnecessary-condition
+  102:7   error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+  164:9   error  Unnecessary conditional, value is always falsy                                                                                                                      @typescript-eslint/no-unnecessary-condition
+  173:78  error  Async arrow function 'handleSave' has no 'await' expression                                                                                                         @typescript-eslint/require-await
+  177:9   error  Unnecessary conditional, value is always truthy                                                                                                                     @typescript-eslint/no-unnecessary-condition
+
+/Users/notluquis/finanzas-app/apps/web/src/pages/CalendarDailyPage.tsx
+  114:8  error  Unnecessary conditional, value is always falsy  @typescript-eslint/no-unnecessary-condition
+
+/Users/notluquis/finanzas-app/apps/web/src/pages/CalendarHeatmapPage.tsx
+   43:52  warning  Generic Object Injection Sink                                                                                 security/detect-object-injection
+   75:53  error    Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined            @typescript-eslint/no-unnecessary-condition
+   75:60  error    Unnecessary optional chain on a non-nullish value                                                             @typescript-eslint/no-unnecessary-condition
+   84:25  error    Unsafe usage of optional chaining. If it short-circuits with 'undefined' the evaluation will throw TypeError  no-unsafe-optional-chaining
+   84:32  error    Unnecessary optional chain on a non-nullish value                                                             @typescript-eslint/no-unnecessary-condition
+   86:19  error    Passing a string to String() does not change the type or value of the string                                  @typescript-eslint/no-unnecessary-type-conversion
+   88:25  error    Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined            @typescript-eslint/no-unnecessary-condition
+   89:21  error    Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined            @typescript-eslint/no-unnecessary-condition
+   94:14  error    Unnecessary optional chain on a non-nullish value                                                             @typescript-eslint/no-unnecessary-condition
+   98:31  error    Unnecessary optional chain on a non-nullish value                                                             @typescript-eslint/no-unnecessary-condition
+   99:29  error    Unnecessary optional chain on a non-nullish value                                                             @typescript-eslint/no-unnecessary-condition
+  121:14  error    Unnecessary optional chain on a non-nullish value                                                             @typescript-eslint/no-unnecessary-condition
+  121:37  error    Unnecessary optional chain on a non-nullish value                                                             @typescript-eslint/no-unnecessary-condition
+  131:9   error    Unnecessary conditional, value is always falsy                                                                @typescript-eslint/no-unnecessary-condition
+  135:24  error    Passing a string to String() does not change the type or value of the string                                  @typescript-eslint/no-unnecessary-type-conversion
+  146:14  warning  Generic Object Injection Sink                                                                                 security/detect-object-injection
+  146:42  warning  Generic Object Injection Sink                                                                                 security/detect-object-injection
+  146:91  warning  Generic Object Injection Sink                                                                                 security/detect-object-injection
+  246:29  error    Unnecessary conditional, value is always falsy                                                                @typescript-eslint/no-unnecessary-condition
+
+/Users/notluquis/finanzas-app/apps/web/src/pages/CalendarSchedulePage.tsx
+  164:8  error  Unnecessary conditional, value is always falsy  @typescript-eslint/no-unnecessary-condition
+
+/Users/notluquis/finanzas-app/apps/web/src/pages/Home.tsx
+   24:5   error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+  151:28  error  Mark the props of the component as read-only                                                                                                                        sonarjs/prefer-read-only-props
+
+/Users/notluquis/finanzas-app/apps/web/src/pages/ParticipantInsights.tsx
+  145:10  error  Unnecessary conditional, value is always falsy  @typescript-eslint/no-unnecessary-condition
+
+/Users/notluquis/finanzas-app/apps/web/src/pages/admin/AddUserPage.tsx
+  50:5   error  Unnecessary conditional, value is always truthy                                                                                                                     @typescript-eslint/no-unnecessary-condition
+  50:15  error  Unnecessary optional chain on a non-nullish value                                                                                                                   @typescript-eslint/no-unnecessary-condition
+  65:7   error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+  66:7   error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+  68:7   error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+
+/Users/notluquis/finanzas-app/apps/web/src/pages/admin/SyncHistoryPage.tsx
+  26:27  error    `Array#reduce()` is not allowed. Prefer other types of loop for readability                                     unicorn/no-array-reduce
+  28:5   error    Prefer using nullish coalescing operator (`??=`) instead of an assignment expression, as it is simpler to read  @typescript-eslint/prefer-nullish-coalescing
+  28:10  warning  Generic Object Injection Sink                                                                                   security/detect-object-injection
+  28:23  warning  Generic Object Injection Sink                                                                                   security/detect-object-injection
+  29:5   warning  Generic Object Injection Sink                                                                                   security/detect-object-injection
+  49:26  warning  Variable Assigned to Object Injection Sink                                                                      security/detect-object-injection
+
+/Users/notluquis/finanzas-app/apps/web/src/pages/onboarding/OnboardingWizard.tsx
+  132:23  warning  Found non-literal argument to RegExp Constructor  security/detect-non-literal-regexp
+  136:23  warning  Found non-literal argument to RegExp Constructor  security/detect-non-literal-regexp
+  187:5   warning  Potential timing attack, left side: true          security/detect-possible-timing-attacks
+
+/Users/notluquis/finanzas-app/apps/web/src/pages/settings/AccessSettingsPage.tsx
+   26:7   error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+   52:8   error  Unnecessary conditional, value is always truthy                                                                                                                     @typescript-eslint/no-unnecessary-condition
+  112:12  error  Unnecessary conditional, value is always truthy                                                                                                                     @typescript-eslint/no-unnecessary-condition
+
+/Users/notluquis/finanzas-app/apps/web/src/pages/settings/BackupSettingsPage.tsx
+   62:33  error    Unsafe argument of type `any` assigned to a parameter of type `string`                              @typescript-eslint/no-unsafe-argument
+  133:29  error    `Array#reduce()` is not allowed. Prefer other types of loop for readability                         unicorn/no-array-reduce
+  134:21  error    Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+  308:20  error    Mark the props of the component as read-only                                                        sonarjs/prefer-read-only-props
+  315:78  error    void is not valid as a constituent in a union type                                                  @typescript-eslint/no-invalid-void-type
+  316:55  error    Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+  420:27  error    Mark the props of the component as read-only                                                        sonarjs/prefer-read-only-props
+  497:19  error    Mark the props of the component as read-only                                                        sonarjs/prefer-read-only-props
+  518:46  warning  Function Call Object Injection Sink                                                                 security/detect-object-injection
+
+/Users/notluquis/finanzas-app/apps/web/src/pages/settings/CSVUploadPage.tsx
+  331:26  warning  Generic Object Injection Sink  security/detect-object-injection
+  332:11  warning  Generic Object Injection Sink  security/detect-object-injection
+  332:34  warning  Generic Object Injection Sink  security/detect-object-injection
+  415:31  warning  Generic Object Injection Sink  security/detect-object-injection
+
+/Users/notluquis/finanzas-app/apps/web/src/pages/settings/CalendarSettingsPage.tsx
+  19:28  error  Unnecessary optional chain on a non-nullish value  @typescript-eslint/no-unnecessary-condition
+
+/Users/notluquis/finanzas-app/apps/web/src/pages/settings/InventorySettingsPage.tsx
+   46:33  error    `Array#reduce()` is not allowed. Prefer other types of loop for readability                                                                                         unicorn/no-array-reduce
+   48:5   error    Prefer using nullish coalescing operator (`??=`) instead of an assignment expression, as it is simpler to read                                                      @typescript-eslint/prefer-nullish-coalescing
+   48:10  warning  Generic Object Injection Sink                                                                                                                                       security/detect-object-injection
+   48:22  warning  Generic Object Injection Sink                                                                                                                                       security/detect-object-injection
+   49:5   warning  Generic Object Injection Sink                                                                                                                                       security/detect-object-injection
+   60:7   error    Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+   74:7   error    Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+  172:24  error    Mark the props of the component as read-only                                                                                                                        sonarjs/prefer-read-only-props
+
+/Users/notluquis/finanzas-app/apps/web/src/pages/settings/MercadoPagoSettingsPage.tsx
+  310:17  error  Unnecessary conditional, value is always truthy  @typescript-eslint/no-unnecessary-condition
+
+/Users/notluquis/finanzas-app/apps/web/src/pages/settings/RolesSettingsPage.tsx
+   48:7   error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+   73:7   error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+   98:5   error  'newPermissionIds' is never reassigned. Use 'const' instead                                                                                                         prefer-const
+  130:72  error  Unnecessary conditional, value is always truthy                                                                                                                     @typescript-eslint/no-unnecessary-condition
+
+/Users/notluquis/finanzas-app/apps/web/src/routes/__root.tsx
+  9:3  error  NODE_ENV is not listed as a dependency in turbo.json  turbo/no-undeclared-env-vars
+
+/Users/notluquis/finanzas-app/apps/web/src/routes/_authed.tsx
+  27:13  error  Expected an error object to be thrown              @typescript-eslint/only-throw-error
+  37:13  error  Expected an error object to be thrown              @typescript-eslint/only-throw-error
+  95:17  error  Unnecessary optional chain on a non-nullish value  @typescript-eslint/no-unnecessary-condition
+  98:15  error  Unnecessary optional chain on a non-nullish value  @typescript-eslint/no-unnecessary-condition
+
+/Users/notluquis/finanzas-app/apps/web/src/routes/_authed/calendar/classify.tsx
+  14:13  error  Expected an error object to be thrown  @typescript-eslint/only-throw-error
+
+/Users/notluquis/finanzas-app/apps/web/src/routes/_authed/calendar/daily.tsx
+  15:13  error  Expected an error object to be thrown  @typescript-eslint/only-throw-error
+
+/Users/notluquis/finanzas-app/apps/web/src/routes/_authed/calendar/heatmap.tsx
+  12:13  error  Expected an error object to be thrown  @typescript-eslint/only-throw-error
+
+/Users/notluquis/finanzas-app/apps/web/src/routes/_authed/calendar/index.tsx
+  7:11  error  Expected an error object to be thrown  @typescript-eslint/only-throw-error
+
+/Users/notluquis/finanzas-app/apps/web/src/routes/_authed/calendar/schedule.tsx
+  15:13  error  Expected an error object to be thrown  @typescript-eslint/only-throw-error
+
+/Users/notluquis/finanzas-app/apps/web/src/routes/_authed/calendar/sync-history.tsx
+  13:13  error  Expected an error object to be thrown  @typescript-eslint/only-throw-error
+
+/Users/notluquis/finanzas-app/apps/web/src/routes/_authed/finanzas/conciliaciones.tsx
+  12:13  error  Expected an error object to be thrown  @typescript-eslint/only-throw-error
+
+/Users/notluquis/finanzas-app/apps/web/src/routes/_authed/finanzas/counterparts.tsx
+  12:13  error  Expected an error object to be thrown  @typescript-eslint/only-throw-error
+
+/Users/notluquis/finanzas-app/apps/web/src/routes/_authed/finanzas/index.tsx
+  6:11  error  Expected an error object to be thrown  @typescript-eslint/only-throw-error
+
+/Users/notluquis/finanzas-app/apps/web/src/routes/_authed/finanzas/liberaciones.tsx
+  12:13  error  Expected an error object to be thrown  @typescript-eslint/only-throw-error
+
+/Users/notluquis/finanzas-app/apps/web/src/routes/_authed/finanzas/loans.tsx
+  14:13  error  Expected an error object to be thrown  @typescript-eslint/only-throw-error
+
+/Users/notluquis/finanzas-app/apps/web/src/routes/_authed/finanzas/participants.tsx
+  14:13  error  Expected an error object to be thrown  @typescript-eslint/only-throw-error
+
+/Users/notluquis/finanzas-app/apps/web/src/routes/_authed/finanzas/payouts.tsx
+  16:13  error  Expected an error object to be thrown  @typescript-eslint/only-throw-error
+
+/Users/notluquis/finanzas-app/apps/web/src/routes/_authed/finanzas/production-balances.tsx
+  12:13  error  Expected an error object to be thrown  @typescript-eslint/only-throw-error
+
+/Users/notluquis/finanzas-app/apps/web/src/routes/_authed/finanzas/statistics.tsx
+  12:13  error  Expected an error object to be thrown  @typescript-eslint/only-throw-error
+
+/Users/notluquis/finanzas-app/apps/web/src/routes/_authed/hr/audit.tsx
+  12:13  error  Expected an error object to be thrown  @typescript-eslint/only-throw-error
+
+/Users/notluquis/finanzas-app/apps/web/src/routes/_authed/hr/employees.tsx
+  13:13  error  Expected an error object to be thrown  @typescript-eslint/only-throw-error
+
+/Users/notluquis/finanzas-app/apps/web/src/routes/_authed/hr/index.tsx
+  6:11  error  Expected an error object to be thrown  @typescript-eslint/only-throw-error
+
+/Users/notluquis/finanzas-app/apps/web/src/routes/_authed/hr/reports.tsx
+  12:13  error  Expected an error object to be thrown  @typescript-eslint/only-throw-error
+
+/Users/notluquis/finanzas-app/apps/web/src/routes/_authed/hr/timesheets.tsx
+  14:13  error  Expected an error object to be thrown  @typescript-eslint/only-throw-error
+
+/Users/notluquis/finanzas-app/apps/web/src/routes/_authed/operations/index.tsx
+  6:11  error  Expected an error object to be thrown  @typescript-eslint/only-throw-error
+
+/Users/notluquis/finanzas-app/apps/web/src/routes/_authed/operations/inventory.tsx
+  13:13  error  Expected an error object to be thrown  @typescript-eslint/only-throw-error
+
+/Users/notluquis/finanzas-app/apps/web/src/routes/_authed/operations/supplies.tsx
+  12:13  error  Expected an error object to be thrown  @typescript-eslint/only-throw-error
+
+/Users/notluquis/finanzas-app/apps/web/src/routes/_authed/services/$id.edit.tsx
+  12:13  error  Expected an error object to be thrown  @typescript-eslint/only-throw-error
+
+/Users/notluquis/finanzas-app/apps/web/src/routes/_authed/services/agenda.tsx
+  13:13  error  Expected an error object to be thrown  @typescript-eslint/only-throw-error
+
+/Users/notluquis/finanzas-app/apps/web/src/routes/_authed/services/create.tsx
+  12:13  error  Expected an error object to be thrown  @typescript-eslint/only-throw-error
+
+/Users/notluquis/finanzas-app/apps/web/src/routes/_authed/services/index.tsx
+  13:13  error  Expected an error object to be thrown  @typescript-eslint/only-throw-error
+
+/Users/notluquis/finanzas-app/apps/web/src/routes/_authed/services/templates.tsx
+  12:13  error  Expected an error object to be thrown  @typescript-eslint/only-throw-error
+
+/Users/notluquis/finanzas-app/apps/web/src/routes/_authed/settings/access.tsx
+  12:13  error  Expected an error object to be thrown  @typescript-eslint/only-throw-error
+
+/Users/notluquis/finanzas-app/apps/web/src/routes/_authed/settings/backups.tsx
+  12:13  error  Expected an error object to be thrown  @typescript-eslint/only-throw-error
+
+/Users/notluquis/finanzas-app/apps/web/src/routes/_authed/settings/calendar.tsx
+  12:13  error  Expected an error object to be thrown  @typescript-eslint/only-throw-error
+
+/Users/notluquis/finanzas-app/apps/web/src/routes/_authed/settings/csv-upload.tsx
+  12:13  error  Expected an error object to be thrown  @typescript-eslint/only-throw-error
+
+/Users/notluquis/finanzas-app/apps/web/src/routes/_authed/settings/index.tsx
+  6:11  error  Expected an error object to be thrown  @typescript-eslint/only-throw-error
+
+/Users/notluquis/finanzas-app/apps/web/src/routes/_authed/settings/inventario.tsx
+  12:13  error  Expected an error object to be thrown  @typescript-eslint/only-throw-error
+
+/Users/notluquis/finanzas-app/apps/web/src/routes/_authed/settings/mercadopago.tsx
+  12:13  error  Expected an error object to be thrown  @typescript-eslint/only-throw-error
+
+/Users/notluquis/finanzas-app/apps/web/src/routes/_authed/settings/people.$id.tsx
+  12:13  error  Expected an error object to be thrown  @typescript-eslint/only-throw-error
+
+/Users/notluquis/finanzas-app/apps/web/src/routes/_authed/settings/people.tsx
+  12:13  error  Expected an error object to be thrown  @typescript-eslint/only-throw-error
+
+/Users/notluquis/finanzas-app/apps/web/src/routes/_authed/settings/roles.tsx
+  12:13  error  Expected an error object to be thrown  @typescript-eslint/only-throw-error
+
+/Users/notluquis/finanzas-app/apps/web/src/routes/_authed/settings/sync-history.tsx
+  12:13  error  Expected an error object to be thrown  @typescript-eslint/only-throw-error
+
+/Users/notluquis/finanzas-app/apps/web/src/routes/_authed/settings/users.add.tsx
+  12:13  error  Expected an error object to be thrown  @typescript-eslint/only-throw-error
+
+/Users/notluquis/finanzas-app/apps/web/src/routes/_authed/settings/users.tsx
+  12:13  error  Expected an error object to be thrown  @typescript-eslint/only-throw-error
+
+/Users/notluquis/finanzas-app/apps/web/src/routes/login.tsx
+  18:3   error  Async method 'beforeLoad' has no 'await' expression  @typescript-eslint/require-await
+  21:13  error  Expected an error object to be thrown                @typescript-eslint/only-throw-error
+
+/Users/notluquis/finanzas-app/apps/web/src/services/mercadopago.ts
+  101:24  error  Invalid operand for a '+' operation. Operands must each be a number or string. Got `string | undefined`  @typescript-eslint/restrict-plus-operands
+  102:22  error  Invalid operand for a '+' operation. Operands must each be a number or string. Got `string | undefined`  @typescript-eslint/restrict-plus-operands
+
+/Users/notluquis/finanzas-app/apps/web/tailwind.config.cjs
+  91:5   error  Unsafe call of an `any` typed value                              @typescript-eslint/no-unsafe-call
+  92:5   error  Unsafe call of an `any` typed value                              @typescript-eslint/no-unsafe-call
+  92:5   error  Unsafe call of an `any` typed value                              @typescript-eslint/no-unsafe-call
+  92:34  error  Unsafe member access .addDynamicIconSelectors on an `any` value  @typescript-eslint/no-unsafe-member-access
+
+✖ 844 problems (699 errors, 145 warnings)
+
+ ELIFECYCLE  Command failed with exit code 1.

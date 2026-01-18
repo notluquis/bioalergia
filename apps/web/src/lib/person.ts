@@ -39,11 +39,11 @@ export function formatPersonDisplay(person?: null | PersonNameData): string {
 export function getPersonFullName(person?: null | PersonNameData): string {
   if (!person) return "";
 
-  const names = person.names?.trim() || "";
+  const names = person.names?.trim() ?? "";
   if (!names) return "";
 
-  const fatherName = person.fatherName?.trim() || "";
-  const motherName = person.motherName?.trim() || "";
+  const fatherName = person.fatherName?.trim() ?? "";
+  const motherName = person.motherName?.trim() ?? "";
 
   // If both surnames are already in names, just return names (avoids "Pulgar Escobar Pulgar Escobar")
   const namesLower = names.toLowerCase();
@@ -88,6 +88,6 @@ export function getPersonInitials(person?: null | PersonNameData): string {
   }
 
   // If no father name, use second char of first name
-  const secondInitial = person.names.charAt(1)?.toUpperCase() || "";
+  const secondInitial = person.names.charAt(1)?.toUpperCase() ?? "";
   return secondInitial ? `${firstInitial}${secondInitial}` : firstInitial;
 }

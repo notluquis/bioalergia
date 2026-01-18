@@ -35,7 +35,7 @@ export default function AccountSettingsPage() {
   const setupMfaMutation = useMutation({
     mutationFn: () =>
       setupMfa().then((res) => {
-        if (res.status !== "ok") throw new Error(res.message || "Error al iniciar configuración MFA");
+        if (res.status !== "ok") throw new Error(res.message ?? "Error al iniciar configuración MFA");
         return res;
       }),
     onError: (err) => {
@@ -50,7 +50,7 @@ export default function AccountSettingsPage() {
   const enableMfaMutation = useMutation({
     mutationFn: (token: string) =>
       enableMfa({ token, userId: user?.id }).then((res) => {
-        if (res.status !== "ok") throw new Error(res.message || "Código incorrecto");
+        if (res.status !== "ok") throw new Error(res.message ?? "Código incorrecto");
         return res;
       }),
     onError: (err) => {
@@ -96,7 +96,7 @@ export default function AccountSettingsPage() {
       const attResp = await startRegistration({ optionsJSON: options });
 
       const verifyData = await verifyPasskeyRegistration({ body: attResp, challenge: options.challenge });
-      if (verifyData.status !== "ok") throw new Error(verifyData.message || "Error al verificar passkey");
+      if (verifyData.status !== "ok") throw new Error(verifyData.message ?? "Error al verificar passkey");
 
       return verifyData;
     },
@@ -113,7 +113,7 @@ export default function AccountSettingsPage() {
   const deletePasskeyMutation = useMutation({
     mutationFn: () =>
       removePasskey().then((res) => {
-        if (res.status !== "ok") throw new Error(res.message || "Error al eliminar passkey");
+        if (res.status !== "ok") throw new Error(res.message ?? "Error al eliminar passkey");
         return res;
       }),
     onError: (err) => {

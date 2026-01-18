@@ -270,11 +270,11 @@ export default function CSVUploadPage() {
   const handleParseComplete = (results: Papa.ParseResult<Record<string, string>>) => {
     if (results.errors.length > 0) {
       setParseStatus("error");
-      setErrorMessage(`Error al parsear CSV: ${results.errors[0]?.message || "Error desconocido"}`);
+      setErrorMessage(`Error al parsear CSV: ${results.errors[0]?.message ?? "Error desconocido"}`);
       return;
     }
 
-    const headers = results.meta.fields || [];
+    const headers = results.meta.fields ?? [];
     setCsvHeaders(headers);
     setCsvData(results.data);
 
@@ -394,7 +394,7 @@ export default function CSVUploadPage() {
             handleColumnMapChange(row.original.name, e.target.value);
           }}
           size="sm"
-          value={columnMapping[row.original.name] || ""}
+          value={columnMapping[row.original.name] ?? ""}
         >
           <option value="">-- Ignorar / Sin mapear --</option>
           {csvHeaders.map((header) => (
@@ -412,7 +412,7 @@ export default function CSVUploadPage() {
         const mappedColumn = columnMapping[row.original.name];
         return (
           <span className="text-base-content/60 max-w-37.5 truncate font-mono text-xs">
-            {(mappedColumn && csvData[0]?.[mappedColumn]) || "-"}
+            {(mappedColumn && csvData[0]?.[mappedColumn]) ?? "-"}
           </span>
         );
       },
@@ -518,8 +518,8 @@ export default function CSVUploadPage() {
                       <span className="font-medium">Importación completada</span>
                       {previewData && (
                         <span className="text-xs opacity-90">
-                          {previewData.inserted || 0} insertados · {previewData.updated || 0} actualizados ·{" "}
-                          {previewData.skipped || 0} omitidos
+                          {previewData.inserted ?? 0} insertados · {previewData.updated ?? 0} actualizados ·{" "}
+                          {previewData.skipped ?? 0} omitidos
                         </span>
                       )}
                     </div>
@@ -554,15 +554,15 @@ export default function CSVUploadPage() {
                 <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
                   <div className="bg-base-100 border-base-200 rounded-lg border p-3 shadow-sm">
                     <div className="mb-1 text-xs tracking-wider uppercase opacity-70">Insertar</div>
-                    <div className="text-success text-2xl font-bold">{previewData.toInsert || 0}</div>
+                    <div className="text-success text-2xl font-bold">{previewData.toInsert ?? 0}</div>
                   </div>
                   <div className="bg-base-100 border-base-200 rounded-lg border p-3 shadow-sm">
                     <div className="mb-1 text-xs tracking-wider uppercase opacity-70">Actualizar</div>
-                    <div className="text-info text-2xl font-bold">{previewData.toUpdate || 0}</div>
+                    <div className="text-info text-2xl font-bold">{previewData.toUpdate ?? 0}</div>
                   </div>
                   <div className="bg-base-100 border-base-200 rounded-lg border p-3 shadow-sm">
                     <div className="mb-1 text-xs tracking-wider uppercase opacity-70">Omitir</div>
-                    <div className="text-warning text-2xl font-bold">{previewData.toSkip || 0}</div>
+                    <div className="text-warning text-2xl font-bold">{previewData.toSkip ?? 0}</div>
                   </div>
                 </div>
 

@@ -59,12 +59,16 @@ export default function BackupSettingsPage() {
 
     const handleMessage = (event: MessageEvent) => {
       try {
-        const data = JSON.parse(event.data);
+        const data = JSON.parse(event.data) as {
+          job: BackupJob | RestoreJob;
+          jobs: { backup: BackupJob | null; restore: null | RestoreJob };
+          type: "backup" | "init" | "restore";
+        };
         switch (data.type) {
           case "backup": {
-            setLiveJobs((prev) => ({ ...prev, backup: data.job }));
+            setLiveJobs((prev) => ({ ...prev, backup: data.job as BackupJob }));
             if (data.job.status === "completed" || data.job.status === "failed") {
-              queryClient.invalidateQueries({ queryKey: ["backups"] });
+              void queryClient.invalidateQueries({ queryKey: ["backups"] });
             }
 
             break;
@@ -75,9 +79,9 @@ export default function BackupSettingsPage() {
             break;
           }
           case "restore": {
-            setLiveJobs((prev) => ({ ...prev, restore: data.job }));
+            setLiveJobs((prev) => ({ ...prev, restore: data.job as RestoreJob }));
             if (data.job.status === "completed" || data.job.status === "failed") {
-              queryClient.invalidateQueries({ queryKey: ["backups"] });
+              void queryClient.invalidateQueries({ queryKey: ["backups"] });
             }
 
             break;
@@ -142,7 +146,7 @@ export default function BackupSettingsPage() {
           <BackupRow
             backup={backup}
             key={backup.id}
-            onSuccess={() => queryClient.invalidateQueries({ queryKey: ["backups"] })}
+            onSuccess={() => void queryClient.invalidateQueries({ queryKey: ["backups"] })}
           />
         ))}
       </>
@@ -162,13 +166,13 @@ export default function BackupSettingsPage() {
               </span>
             </div>
             <span className="text-base-content/60 font-mono text-sm">
-              {currentBackup?.currentStep || currentRestore?.currentStep}
+              {currentBackup?.currentStep ?? currentRestore?.currentStep}
             </span>
           </div>
           <div className="bg-base-300 h-2 overflow-hidden rounded-full">
             <div
               className="bg-primary h-full transition-all duration-300"
-              style={{ width: `${currentBackup?.progress || currentRestore?.progress || 0}%` }}
+              style={{ width: `${currentBackup?.progress ?? currentRestore?.progress ?? 0}%` }}
             />
           </div>
         </div>
@@ -216,7 +220,7 @@ export default function BackupSettingsPage() {
             <div className="flex items-center gap-2">
               <Button
                 className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full p-0"
-                onClick={() => queryClient.invalidateQueries({ queryKey: ["backups"] })}
+                onClick={() => void queryClient.invalidateQueries({ queryKey: ["backups"] })}
                 size="sm"
                 title="Actualizar lista"
                 variant="outline"
@@ -315,7 +319,7 @@ function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () =>
     },
     onSuccess: () => {
       success("Restauración iniciada");
-      queryClient.invalidateQueries({ queryKey: ["backups"] });
+      void queryClient.invalidateQueries({ queryKey: ["backups"] });
       onSuccess();
     },
   });

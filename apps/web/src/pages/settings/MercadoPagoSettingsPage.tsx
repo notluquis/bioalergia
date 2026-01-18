@@ -244,9 +244,9 @@ export default function MercadoPagoSettingsPage() {
               </p>
               <h3 className="mt-2 line-clamp-1 text-lg font-semibold">
                 {(() => {
-                  const lastReport = reports?.[0];
+                  const lastReport = reports[0];
                   if (!lastReport) return "N/A";
-                  const date = lastReport.date_created || lastReport.begin_date;
+                  const date = lastReport.date_created ?? lastReport.begin_date;
                   return date ? dayjs(date).format("D MMM, HH:mm") : "N/A";
                 })()}
               </h3>
@@ -256,7 +256,7 @@ export default function MercadoPagoSettingsPage() {
             </div>
           </div>
           <p className="text-base-content/50 border-base-300/50 mt-4 truncate border-t pt-4 text-xs">
-            {reports?.[0]?.file_name || "Sin reportes recientes"}
+            {reports[0]?.file_name ?? "Sin reportes recientes"}
           </p>
         </article>
 
@@ -267,7 +267,7 @@ export default function MercadoPagoSettingsPage() {
           subtitle={`Tipo: ${activeTab === "release" ? "Liberación" : "Conciliación"}`}
           title="Total Reportes"
           tone="default"
-          value={reports?.length || 0}
+          value={reports.length}
         />
       </div>
 

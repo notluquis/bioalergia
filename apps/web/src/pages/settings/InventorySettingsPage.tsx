@@ -57,7 +57,7 @@ export default function InventorySettingsPage() {
       toastError("Error al crear categoría");
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["inventory-categories"] });
+      void queryClient.invalidateQueries({ queryKey: ["inventory-categories"] });
       success("Categoría creada");
       setNewCategoryName("");
       setIsCreating(false);
@@ -71,7 +71,7 @@ export default function InventorySettingsPage() {
       toastError(err instanceof Error ? err.message : "Error al eliminar categoría");
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["inventory-categories"] });
+      void queryClient.invalidateQueries({ queryKey: ["inventory-categories"] });
       success("Categoría eliminada");
     },
   });
