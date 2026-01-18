@@ -51,7 +51,7 @@ interface DataTableProps<TData, TValue> {
   /**
    * Metadata to pass to table instance (useful for actions)
    */
-  readonly meta?: any;
+  readonly meta?: Record<string, unknown>;
   /**
    * Custom message when no data is available
    */
@@ -142,7 +142,16 @@ export function DataTable<TData, TValue>({
     getCoreRowModel: getCoreRowModel(),
     getExpandedRowModel: getExpandedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
-    getRowId: (row: any) => row.id?.toString() ?? row.employeeId?.toString() ?? row._id?.toString(),
+    getRowId: (originalRow: TData) => {
+      const row = originalRow as Record<string, unknown>;
+      type RowIdValue = number | string | undefined;
+      return (
+        (row.id as RowIdValue)?.toString() ??
+        (row.employeeId as RowIdValue)?.toString() ??
+        (row._id as RowIdValue)?.toString() ??
+        ""
+      );
+    },
     manualPagination: pageCount !== undefined,
     meta,
     onColumnFiltersChange: setColumnFilters,
@@ -213,7 +222,8 @@ export function DataTable<TData, TValue>({
       return (
         <>
           {validVirtualRows.map((virtualRow) => {
-            const row = rows[virtualRow.index]!;
+            const row = rows[virtualRow.index];
+            if (!row) return null;
 
             return (
               <React.Fragment key={row.id}>

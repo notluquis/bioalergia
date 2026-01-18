@@ -7,7 +7,7 @@ interface FormattedEventDescriptionProps {
   text: string;
 }
 
-export function FormattedEventDescription({ className, text }: FormattedEventDescriptionProps) {
+export function FormattedEventDescription({ className, text }: Readonly<FormattedEventDescriptionProps>) {
   const htmlContent = (() => {
     let html = text;
 
@@ -23,6 +23,7 @@ export function FormattedEventDescription({ className, text }: FormattedEventDes
       "Fono",
     ];
 
+    // eslint-disable-next-line security/detect-non-literal-regexp
     const pattern = new RegExp(`(${keysToBold.join("|")}):`, "gi");
     html = html.replaceAll(pattern, '<span class="font-bold text-base-content/80">$1:</span>');
 

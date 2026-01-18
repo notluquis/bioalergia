@@ -18,5 +18,6 @@ export function formatFileSize(bytes: number): string {
     unitIndex++;
   }
 
+  // eslint-disable-next-line security/detect-object-injection
   return `${size.toFixed(unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
 }

@@ -11,7 +11,14 @@ interface TimeInputProps {
   value: string;
 }
 
-export default function TimeInput({ className, disabled, onBlur, onChange, placeholder, value }: TimeInputProps) {
+export default function TimeInput({
+  className,
+  disabled,
+  onBlur,
+  onChange,
+  placeholder,
+  value,
+}: Readonly<TimeInputProps>) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleBlur = () => {
@@ -35,7 +42,7 @@ export default function TimeInput({ className, disabled, onBlur, onChange, place
       onChange={(e) => {
         onChange(e.target.value);
       }}
-      placeholder={placeholder || "HH:MM"}
+      placeholder={placeholder ?? "HH:MM"}
       ref={inputRef}
       type="text"
       value={value}
@@ -58,8 +65,8 @@ function normalizeTimeValue(value: string): string {
   // Ya está en formato completo HH:MM
   if (/^\d{1,2}:\d{2}$/.test(cleaned)) {
     const [h, m] = cleaned.split(":");
-    const hours = Math.min(23, Number.parseInt(h || "0", 10));
-    const minutes = Math.min(59, Number.parseInt(m || "0", 10));
+    const hours = Math.min(23, Number.parseInt(h ?? "0", 10));
+    const minutes = Math.min(59, Number.parseInt(m ?? "0", 10));
     return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
   }
 
@@ -83,14 +90,14 @@ function normalizeTimeValue(value: string): string {
   if (digits.length === 3) {
     // "930" -> "09:30" o "153" -> "15:30"
     // Intentamos HMM primero (1 dígito hora, 2 dígitos minutos)
-    const h1 = Number.parseInt(digits[0] || "0", 10);
+    const h1 = Number.parseInt(digits[0] ?? "0", 10);
     const m1 = Number.parseInt(digits.slice(1), 10);
     if (h1 <= 9 && m1 <= 59) {
       return `0${h1}:${m1.toString().padStart(2, "0")}`;
     }
     // Fallback: HHM (2 dígitos hora, 1 dígito minutos)
     const h2 = Math.min(23, Number.parseInt(digits.slice(0, 2), 10));
-    const m2 = Math.min(59, Number.parseInt(digits[2] + "0", 10));
+    const m2 = Math.min(59, Number.parseInt((digits[2] ?? "0") + "0", 10));
     return `${h2.toString().padStart(2, "0")}:${m2.toString().padStart(2, "0")}`;
   }
 

@@ -47,7 +47,7 @@ export function SyncProgressPanel({
   syncError,
   syncing,
   syncProgress,
-}: SyncProgressPanelProps) {
+}: Readonly<SyncProgressPanelProps>) {
   const hasProgress = syncProgress.length > 0;
   if (!syncing && !syncError && !hasProgress) {
     return null;
@@ -84,9 +84,10 @@ export function SyncProgressPanel({
 
   const formatDetails = (details: Record<string, unknown>) => {
     const parts: string[] = [];
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- details can be null/undefined
     for (const [key, rawValue] of Object.entries(details ?? {})) {
       if (rawValue == null) continue;
-      const label = detailLabels[key] ?? key;
+      const label = detailLabels[key] ?? key; // eslint-disable-line security/detect-object-injection
       if (typeof rawValue === "number" && Number.isFinite(rawValue)) {
         parts.push(`${label}: ${numberFormatter.format(rawValue)}`);
       } else if (typeof rawValue === "boolean") {

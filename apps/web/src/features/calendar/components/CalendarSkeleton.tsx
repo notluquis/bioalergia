@@ -2,7 +2,7 @@ interface CalendarSkeletonProps {
   days?: number;
 }
 
-export function CalendarSkeleton({ days = 3 }: CalendarSkeletonProps) {
+export function CalendarSkeleton({ days = 3 }: Readonly<CalendarSkeletonProps>) {
   return (
     <div className="space-y-5">
       {Array.from({ length: days }).map((_, i) => (

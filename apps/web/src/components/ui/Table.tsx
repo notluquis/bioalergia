@@ -58,7 +58,8 @@ export function Table<T extends string>({
   sortState,
   variant = "default",
   ...props
-}: TableProps<T>) {
+}: Readonly<TableProps<T>>) {
+  // eslint-disable-next-line security/detect-object-injection
   const containerClasses = cn(TABLE_VARIANTS[variant], className);
   const tableClass = cn("table w-full text-sm", variant === "glass" && "table-zebra");
 
@@ -86,7 +87,7 @@ function TableBody({
   emptyMessage = "No hay datos para mostrar",
   loading,
   loadingMessage = "Cargando...",
-}: TableBodyProps): React.JSX.Element {
+}: Readonly<TableBodyProps>): React.JSX.Element {
   const content = (() => {
     if (loading) {
       return (
@@ -115,7 +116,7 @@ function TableBody({
   return <tbody>{content}</tbody>;
 }
 
-function TableHeader<T extends string>({ columns, onSort, sortState, visibleColumns }: TableHeaderProps<T>) {
+function TableHeader<T extends string>({ columns, onSort, sortState, visibleColumns }: Readonly<TableHeaderProps<T>>) {
   const getSortIcon = (column: T) => {
     if (sortState?.column !== column) return null;
     return sortState.direction === "asc" ? (

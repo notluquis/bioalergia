@@ -64,7 +64,9 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2",
       "disabled:pointer-events-none disabled:opacity-50",
       "active:scale-[0.98]",
+      // eslint-disable-next-line security/detect-object-injection
       variantClasses[variant],
+      // eslint-disable-next-line security/detect-object-injection
       sizeClasses[size],
       fullWidth && "w-full",
       className
@@ -72,10 +74,12 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
 
     // Handle polymorphic rendering with href
     if (href) {
-      const Component = as || "a";
+      const Component = as ?? "a";
       return (
         <Component
+          // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
           aria-disabled={disabled || isLoading}
+          // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
           className={cn(baseClasses, (disabled || isLoading) && "pointer-events-none opacity-50")}
           href={href}
           {...(props as React.AnchorHTMLAttributes<HTMLAnchorElement>)}
@@ -87,10 +91,11 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     }
 
     // For regular buttons, use native button
-    const Component = as || "button";
+    const Component = as ?? "button";
     return (
       <Component
         className={baseClasses}
+        // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
         disabled={disabled || isLoading}
         onClick={onClick}
         ref={ref}

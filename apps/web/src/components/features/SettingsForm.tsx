@@ -13,7 +13,7 @@ import Input from "../ui/Input";
 const FALLBACK_LOGO_PATH = "/logo192.png";
 const FALLBACK_FAVICON_PATH = "/icons/icon-192.png";
 const determineAssetMode = (value: null | string | undefined): "upload" | "url" => {
-  const trimmed = (value || "").trim();
+  const trimmed = (value ?? "").trim();
   if (!trimmed) return "upload";
   return trimmed.startsWith("http") || trimmed.startsWith("/") ? "url" : "upload";
 };
@@ -207,6 +207,7 @@ export default function SettingsForm() {
                   handleChange(key, event.target.value);
                 }}
                 type="color"
+                // eslint-disable-next-line security/detect-object-injection
                 value={form[key]}
               />
             ) : (
@@ -240,6 +241,7 @@ export default function SettingsForm() {
                       }}
                       placeholder={label}
                       type={isEmail ? "email" : "text"}
+                      // eslint-disable-next-line security/detect-object-injection
                       value={form[key]}
                     />
                   );
@@ -440,7 +442,7 @@ function InternalSettingsSection() {
   const internalMutation = useMutation({
     mutationFn: (body: object) =>
       updateInternalSettings(body).then((res) => {
-        if (res.status !== "ok") throw new Error(res.message || "Error al actualizar");
+        if (res.status !== "ok") throw new Error(res.message ?? "Error al actualizar");
         return res;
       }),
     onSuccess: () => {

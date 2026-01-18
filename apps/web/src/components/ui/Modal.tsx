@@ -51,7 +51,9 @@ export default function Modal({ boxClassName, children, className, isOpen, onClo
         aria-label="Cerrar modal"
         className="fixed inset-0 bg-black/50 backdrop-blur-sm"
         onClick={onClose}
-        onKeyDown={(e) => e.key === "Escape" && onClose()}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") onClose();
+        }}
         role="button"
         tabIndex={0}
       />

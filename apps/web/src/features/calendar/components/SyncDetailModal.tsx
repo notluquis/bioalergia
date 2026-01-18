@@ -12,7 +12,7 @@ interface SyncDetailModalProps {
   onClose: () => void;
 }
 
-export function SyncDetailModal({ isOpen, log, onClose }: SyncDetailModalProps) {
+export function SyncDetailModal({ isOpen, log, onClose }: Readonly<SyncDetailModalProps>) {
   if (!log) return null;
 
   const hasChanges =
@@ -117,7 +117,7 @@ export function SyncDetailModal({ isOpen, log, onClose }: SyncDetailModalProps) 
   );
 }
 
-function StatBox({ color, label, value }: { color?: string; label: string; value: number }) {
+function StatBox({ color, label, value }: Readonly<{ color?: string; label: string; value: number }>) {
   return (
     <div className="bg-base-100 border-base-200 flex flex-col items-center justify-center rounded-xl border p-3 text-center shadow-sm">
       <span className="text-base-content/60 mb-1 text-xs font-medium tracking-wider uppercase">{label}</span>

@@ -9,7 +9,12 @@ interface DailyStatsCardsProps {
   eventsCount: number;
 }
 
-export function DailyStatsCards({ amountExpected, amountPaid, className, eventsCount }: DailyStatsCardsProps) {
+export function DailyStatsCards({
+  amountExpected,
+  amountPaid,
+  className,
+  eventsCount,
+}: Readonly<DailyStatsCardsProps>) {
   return (
     <div className={cn("grid gap-4 sm:grid-cols-3", className)}>
       <StatCard

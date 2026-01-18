@@ -37,6 +37,7 @@ export interface AuthUser {
 
 export type LoginResult = { status: "mfa_required"; userId: number } | { status: "ok"; user: AuthUser };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // ... (existing imports)
@@ -49,7 +50,7 @@ export interface AuthSessionData {
 
 // ... (existing AuthContextType definition)
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   const queryClient = useQueryClient();
 
   const sessionQuery = useQuery({
@@ -64,10 +65,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }>("/api/auth/me/session");
 
         if (payload.status === "ok" && payload.user) {
-          updateAbility(payload.abilityRules || []);
+          updateAbility(payload.abilityRules ?? []);
           return {
-            abilityRules: payload.abilityRules || [],
-            permissionVersion: payload.permissionVersion || 0,
+            abilityRules: payload.abilityRules ?? [],
+            permissionVersion: payload.permissionVersion ?? 0,
             user: payload.user,
           };
         }
@@ -113,7 +114,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }));
       updateAbility(rules);
     } else if (sessionQuery.data) {
-      updateAbility(sessionQuery.data.abilityRules || []);
+      updateAbility(sessionQuery.data.abilityRules ?? []);
     } else {
       updateAbility([]);
     }
@@ -156,7 +157,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     if (payload.status !== "ok" || !payload.user) {
-      throw new Error(payload.message || "Código MFA inválido");
+      throw new Error(payload.message ?? "Código MFA inválido");
     }
 
     await queryClient.refetchQueries({ queryKey: ["auth", "session"] });
@@ -171,7 +172,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
 
     if (payload.status !== "ok" || !payload.user) {
-      throw new Error(payload.message || "Error validando Passkey");
+      throw new Error(payload.message ?? "Error validando Passkey");
     }
 
     await queryClient.refetchQueries({ queryKey: ["auth", "session"] });
@@ -242,6 +243,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return <AuthContext value={value}>{children}</AuthContext>;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
   const ctx = useContext(AuthContext);
   if (!ctx) {

@@ -50,22 +50,28 @@ type TextareaProps = InputBaseProps & React.TextareaHTMLAttributes<HTMLTextAreaE
 const getErrorClasses = (inputType: "input" | "select" | "textarea") =>
   `${inputType}-error focus:ring-error/20 focus:border-error`;
 
+// Helper to determine aria-describedby
+const getDescribedById = (error?: string, helper?: string, inputId?: string) => {
+  if (error) return `${inputId}-error`;
+  return helper ? `${inputId}-helper` : undefined;
+};
+
 export default function Input(props: Props) {
   const { as = "input", className, containerClassName, error, helper, label, size = "md", type, ...rest } = props;
   const [isPasswordVisible, setIsPasswordVisible] = React.useState(false);
 
   const generatedId = React.useId();
-  const inputId = rest.id || generatedId;
-  const helperId = `${inputId}-helper`;
-  const errorId = `${inputId}-error`;
+  const inputId = rest.id ?? generatedId;
 
   const isPassword = type === "password";
   const inputType = isPassword && isPasswordVisible ? "text" : type;
 
   const inputClasses = cn(
     "input input-bordered bg-base-100/50 hover:bg-base-100 focus:bg-base-100",
+    // eslint-disable-next-line security/detect-object-injection
     SIZE_CLASSES[size],
     error && getErrorClasses("input"),
+
     (isPassword || props.rightElement) && "pr-14",
     BASE_CLASSES,
     className
@@ -81,6 +87,7 @@ export default function Input(props: Props) {
 
   const selectClasses = cn(
     "select select-bordered bg-base-100/50 hover:bg-base-100 focus:bg-base-100",
+    // eslint-disable-next-line security/detect-object-injection
     SELECT_SIZE_CLASSES[size],
     error && getErrorClasses("select"),
     BASE_CLASSES,
@@ -89,38 +96,32 @@ export default function Input(props: Props) {
 
   const helperClasses = cn("label-text-alt mt-1.5 ml-1 text-xs text-base-content/70", error && "text-error");
 
-  // Compute aria-describedby without nested ternary
-  let describedById: string | undefined;
-  if (error) {
-    describedById = errorId;
-  } else if (helper) {
-    describedById = helperId;
-  }
-
+  const describedById = getDescribedById(error, helper, inputId);
   const ariaProps = {
     "aria-describedby": describedById,
     "aria-invalid": error ? true : undefined,
     id: inputId,
   };
 
-  // Render control based on type using if-else
-  let control: React.ReactNode;
-  if (as === "textarea") {
-    control = (
-      <textarea
-        className={textareaClasses}
-        {...ariaProps}
-        {...(rest as React.TextareaHTMLAttributes<HTMLTextAreaElement>)}
-      />
-    );
-  } else if (as === "select") {
-    control = (
-      <select className={selectClasses} {...ariaProps} {...(rest as React.SelectHTMLAttributes<HTMLSelectElement>)}>
-        {props.children}
-      </select>
-    );
-  } else {
-    control = (
+  // Render control helper
+  const renderControl = () => {
+    if (as === "textarea") {
+      return (
+        <textarea
+          className={textareaClasses}
+          {...ariaProps}
+          {...(rest as React.TextareaHTMLAttributes<HTMLTextAreaElement>)}
+        />
+      );
+    }
+    if (as === "select") {
+      return (
+        <select className={selectClasses} {...ariaProps} {...(rest as React.SelectHTMLAttributes<HTMLSelectElement>)}>
+          {props.children}
+        </select>
+      );
+    }
+    return (
       <input
         className={inputClasses}
         type={inputType}
@@ -128,7 +129,9 @@ export default function Input(props: Props) {
         {...(rest as React.InputHTMLAttributes<HTMLInputElement>)}
       />
     );
-  }
+  };
+
+  const control = renderControl();
 
   const rightContent =
     props.rightElement ??
@@ -165,9 +168,11 @@ export default function Input(props: Props) {
 
       {controlWithRight}
 
+      {/* eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing */}
       {(helper || error) && (
         <div className="label pt-0 pb-0">
           <span className={helperClasses} id={describedById}>
+            {/* eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing */}
             {error || helper}
           </span>
         </div>

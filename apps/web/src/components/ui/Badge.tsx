@@ -34,8 +34,10 @@ const sizeMap: Record<BadgeSize, "lg" | "md" | "sm"> = {
   xs: "sm",
 };
 
-function Badge({ children, className, size = "default", variant = "default" }: BadgeProps) {
+function Badge({ children, className, size = "default", variant = "default" }: Readonly<BadgeProps>) {
+  // eslint-disable-next-line security/detect-object-injection
   const chipProps = variantMap[variant];
+  // eslint-disable-next-line security/detect-object-injection
   const chipSize = sizeMap[size];
 
   return (
@@ -48,4 +50,5 @@ function Badge({ children, className, size = "default", variant = "default" }: B
 // Keep badgeVariants export for compatibility (even though it's not used with HeroUI)
 const badgeVariants = () => "";
 
+// eslint-disable-next-line react-refresh/only-export-components
 export { Badge, badgeVariants };

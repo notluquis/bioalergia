@@ -29,7 +29,7 @@ export function toDecimal(value: CurrencyValue): Decimal {
   try {
     // Handle specific object cases if necessary, or rely on string conversion
     // decimal.js handles numbers and numeric strings well.
-    return new Decimal(String(value));
+    return new Decimal(String(value as number | string));
   } catch {
     return new Decimal(0);
   }
