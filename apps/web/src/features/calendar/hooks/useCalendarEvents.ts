@@ -131,7 +131,7 @@ export function useCalendarEvents() {
 
   const summary = summaryQuery.data;
   const daily = dailyQuery.data;
-  const syncLogs = syncLogsData ?? [];
+  const syncLogs = syncLogsData;
   const loading = false;
   const error = null;
 
@@ -243,7 +243,7 @@ export function useCalendarEvents() {
           });
         } else if (currentLog.status === "ERROR") {
           clearInterval(pollInterval);
-          const msg = currentLog.errorMessage || "Error desconocido durante la sincronización";
+          const msg = currentLog.errorMessage ?? "Error desconocido durante la sincronización";
           setSyncError(msg);
           showError(msg);
 

@@ -237,7 +237,7 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: WeekGridP
 
             {/* Events */}
             <div className="week-grid__events">
-              {calculateEventLayout(eventsByDay[day.key] || []).map((event) => {
+              {calculateEventLayout(eventsByDay[day.key] ?? []).map((event) => {
                 const position = getEventPosition(event, startHour, endHour);
                 if (!position) return null;
 
@@ -267,12 +267,12 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: WeekGridP
                 const timeStr = start ? start.format("HH:mm") : "";
                 const endTimeStr = end ? end.format("HH:mm") : "";
                 const amountStr = event.amountExpected == null ? "" : currencyFormatter.format(event.amountExpected);
-                const tooltipLines = [event.summary || "(Sin título)", `${timeStr} - ${endTimeStr}`, amountStr].filter(
+                const tooltipLines = [event.summary ?? "(Sin título)", `${timeStr} - ${endTimeStr}`, amountStr].filter(
                   Boolean
                 );
 
                 // Title - prioritize this over time for readability
-                const title = event.summary?.trim() || "(Sin título)";
+                const title = event.summary?.trim() ?? "(Sin título)";
 
                 // Calculate width and left based on column layout
                 const padding = 3; // pixels on each side

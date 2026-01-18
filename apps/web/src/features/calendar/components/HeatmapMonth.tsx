@@ -87,7 +87,7 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: HeatmapMonthPro
       .map((_, i) => {
         const date = startOfMonth.add(i, "day");
         const isoDate = date.format("YYYY-MM-DD");
-        const stats = statsByDate.get(isoDate) || { amountExpected: 0, amountPaid: 0, total: 0 };
+        const stats = statsByDate.get(isoDate) ?? { amountExpected: 0, amountPaid: 0, total: 0 };
 
         return {
           date: date,
