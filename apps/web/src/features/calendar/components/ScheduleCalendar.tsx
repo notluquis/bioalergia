@@ -18,7 +18,7 @@ export function ScheduleCalendar({ events, loading = false, weekStart }: Schedul
   const detailPanelRef = useRef<HTMLDivElement>(null);
 
   // Default to current week's Monday - React Compiler auto-memoizes
-  const effectiveWeekStart = weekStart || dayjs().startOf("week").add(1, "day").format("YYYY-MM-DD");
+  const effectiveWeekStart = weekStart ?? dayjs().startOf("week").add(1, "day").format("YYYY-MM-DD");
 
   // Auto-scroll to detail panel when event is selected
   useEffect(() => {
