@@ -4,16 +4,6 @@ import type { CalendarFilters } from "../types";
 
 export const unique = (values: string[]) => [...new Set(values)].toSorted((a, b) => a.localeCompare(b));
 
-export function normalizeFilters(filters: CalendarFilters): CalendarFilters {
-  return {
-    ...filters,
-    calendarIds: unique(filters.calendarIds ?? []),
-    eventTypes: unique(filters.eventTypes ?? []),
-    categories: unique(filters.categories),
-    search: (filters.search ?? "").trim(),
-  };
-}
-
 export function arraysEqual(a: string[], b: string[]) {
   if (a.length !== b.length) return false;
   for (const [i, element] of a.entries()) {
@@ -34,10 +24,20 @@ export function filtersEqual(a: CalendarFilters, b: CalendarFilters) {
   );
 }
 
+export function normalizeFilters(filters: CalendarFilters): CalendarFilters {
+  return {
+    ...filters,
+    calendarIds: unique(filters.calendarIds ?? []),
+    categories: unique(filters.categories),
+    eventTypes: unique(filters.eventTypes ?? []),
+    search: (filters.search ?? "").trim(),
+  };
+}
+
 export const computeDefaultFilters = (settings: {
-  calendarSyncStart?: string;
-  calendarSyncLookaheadDays?: string;
   calendarDailyMaxDays?: string;
+  calendarSyncLookaheadDays?: string;
+  calendarSyncStart?: string;
 }): CalendarFilters => {
   const syncStart = settings.calendarSyncStart?.trim() || "2000-01-01";
   const lookaheadRaw = Number(settings.calendarSyncLookaheadDays ?? "365");
@@ -54,12 +54,12 @@ export const computeDefaultFilters = (settings: {
   const spanDays = Math.max(1, toCandidate.diff(from, "day") + 1);
   const maxDays = Math.min(Math.max(spanDays, configuredMax), 365);
   return {
-    from: from.format("YYYY-MM-DD"),
-    to: toCandidate.format("YYYY-MM-DD"),
     calendarIds: [],
-    eventTypes: [],
     categories: [],
-    search: "",
+    eventTypes: [],
+    from: from.format("YYYY-MM-DD"),
     maxDays,
+    search: "",
+    to: toCandidate.format("YYYY-MM-DD"),
   };
 };

@@ -25,10 +25,10 @@ export const Route = createFileRoute("/_authed")({
     // If not authenticated, redirect to login with return URL
     if (!user) {
       throw routeApi.redirect({
-        to: "/login",
         search: {
           redirect: location.href,
         },
+        to: "/login",
       });
     }
 
@@ -58,11 +58,15 @@ function AuthedLayout() {
 
   React.useEffect(() => {
     const mql = globalThis.matchMedia("(min-width: 768px)");
-    const onChange = (e: MediaQueryListEvent) => setIsMobile(!e.matches);
+    const onChange = (e: MediaQueryListEvent) => {
+      setIsMobile(!e.matches);
+    };
 
     setIsMobile(!mql.matches);
     mql.addEventListener("change", onChange);
-    return () => mql.removeEventListener("change", onChange);
+    return () => {
+      mql.removeEventListener("change", onChange);
+    };
   }, []);
 
   React.useEffect(() => {
@@ -73,8 +77,12 @@ function AuthedLayout() {
     }
   }, [debouncedIsMobile]);
 
-  const toggleSidebar = () => setSidebarOpen((open) => !open);
-  const closeSidebar = () => setSidebarOpen(false);
+  const toggleSidebar = () => {
+    setSidebarOpen((open) => !open);
+  };
+  const closeSidebar = () => {
+    setSidebarOpen(false);
+  };
 
   const buildLabel = React.useMemo(() => {
     if (!BUILD_TIMESTAMP) return "Desconocido";
@@ -115,8 +123,8 @@ function AuthedLayout() {
         <div className="bg-warning text-warning-content sticky top-0 z-100 flex h-10 w-full items-center justify-center gap-4 px-4 text-xs font-bold shadow-md">
           <span>VISTA PREVIA: {impersonatedRole.name}</span>
           <button
-            onClick={stopImpersonating}
             className="btn btn-neutral btn-xs border-none bg-black/20 text-current hover:bg-black/30"
+            onClick={stopImpersonating}
           >
             Salir
           </button>
@@ -131,19 +139,19 @@ function AuthedLayout() {
       <div className="layout-shell text-base-content relative mx-auto flex h-dvh w-full gap-0 overflow-hidden p-0 transition-all duration-300 md:gap-4 md:p-4">
         {/* Hamburger button: accessible, compact, always visible on mobile */}
         <button
-          type="button"
+          aria-controls="app-sidebar"
+          aria-expanded={sidebarOpen}
+          aria-label={sidebarOpen ? "Cerrar menú principal" : "Abrir menú principal"}
+          aria-pressed={sidebarOpen}
           className="border-base-300/70 bg-base-100/85 text-base-content focus-visible:ring-primary/60 fixed top-[calc(env(safe-area-inset-top)+0.5rem)] left-4 z-40 inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm font-semibold shadow-lg backdrop-blur-md transition-all duration-200 focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:outline-none md:hidden"
           onClick={toggleSidebar}
-          aria-label={sidebarOpen ? "Cerrar menú principal" : "Abrir menú principal"}
-          aria-expanded={sidebarOpen}
-          aria-controls="app-sidebar"
-          aria-pressed={sidebarOpen}
+          type="button"
         >
           <span
+            aria-hidden="true"
             className={`relative flex h-5 w-5 flex-col items-center justify-center gap-1.25 rounded-full transition-colors ${
               sidebarOpen ? "text-primary" : "text-base-content"
             }`}
-            aria-hidden="true"
           >
             <span
               className={`block h-0.5 w-4 rounded-full bg-current transition-all duration-200 ${
@@ -162,15 +170,15 @@ function AuthedLayout() {
         {/* Overlay for mobile/tablet when sidebar is open */}
         {isMobile && sidebarOpen && (
           <div
-            className="bg-base-content/30 fixed inset-0 z-30 backdrop-blur-[1px] transition-opacity duration-300"
-            role="presentation"
             aria-hidden="true"
+            className="bg-base-content/30 fixed inset-0 z-30 backdrop-blur-[1px] transition-opacity duration-300"
             onClick={closeSidebar}
+            role="presentation"
           />
         )}
 
         {/* Sidebar */}
-        <Sidebar isOpen={sidebarOpen} isMobile={isMobile} onClose={closeSidebar} />
+        <Sidebar isMobile={isMobile} isOpen={sidebarOpen} onClose={closeSidebar} />
 
         {/* Main content */}
         <div className="layout-container flex min-w-0 flex-1 flex-col gap-3 pb-[calc(110px+env(safe-area-inset-bottom))] md:pb-0">
@@ -195,7 +203,7 @@ function AuthedLayout() {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <div className="text-base-content/70 flex cursor-help items-center gap-2 text-xs">
-                      <span className="bg-success/70 inline-flex h-2 w-2 rounded-full" aria-label="Sistema operativo" />
+                      <span aria-label="Sistema operativo" className="bg-success/70 inline-flex h-2 w-2 rounded-full" />
                     </div>
                   </TooltipTrigger>
                   <TooltipContent>

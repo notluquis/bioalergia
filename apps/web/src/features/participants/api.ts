@@ -6,7 +6,7 @@ export async function fetchParticipantInsight(
   participantId: string,
   params?: { from?: string; to?: string }
 ): Promise<ParticipantInsightResponse> {
-  const data = await apiClient.get<ParticipantInsightResponse & { status: string; message?: string }>(
+  const data = await apiClient.get<ParticipantInsightResponse & { message?: string; status: string }>(
     `/api/transactions/participants/${encodeURIComponent(participantId)}`,
     { query: params }
   );
@@ -19,11 +19,11 @@ export async function fetchParticipantInsight(
 
 export async function fetchParticipantLeaderboard(params?: {
   from?: string;
-  to?: string;
   limit?: number;
   mode?: "combined" | "incoming" | "outgoing";
+  to?: string;
 }): Promise<ParticipantLeaderboardResponse> {
-  const data = await apiClient.get<ParticipantLeaderboardResponse & { status: string; message?: string }>(
+  const data = await apiClient.get<ParticipantLeaderboardResponse & { message?: string; status: string }>(
     "/api/transactions/participants",
     { query: params }
   );

@@ -7,19 +7,11 @@ import { currencyFormatter } from "@/lib/format";
 import { type ClassificationEntry, type FormValues } from "../schemas";
 
 interface ClassificationTotalsProps {
-  form: any;
   events: CalendarUnclassifiedEvent[];
+  form: any;
 }
 
-function parseAmountInput(value: string | null | undefined): number | null {
-  if (!value) return null;
-  const normalized = value.replaceAll(/\D/g, "");
-  if (normalized.length === 0) return null;
-  const parsed = Number.parseInt(normalized, 10);
-  return Number.isNaN(parsed) ? null : parsed;
-}
-
-export function ClassificationTotals({ form, events }: ClassificationTotalsProps) {
+export function ClassificationTotals({ events, form }: ClassificationTotalsProps) {
   // Subscribe to entries values via TanStack Form's useStore
 
   const watchedEntries = useStore(form.store, (state: any) => (state as { values: FormValues }).values.entries);
@@ -42,8 +34,16 @@ export function ClassificationTotals({ form, events }: ClassificationTotalsProps
 
   return (
     <>
-      <StatCard title="Esperado" value={currencyFormatter.format(totals.expected)} tone="warning" />
-      <StatCard title="Pagado" value={currencyFormatter.format(totals.paid)} tone="primary" />
+      <StatCard title="Esperado" tone="warning" value={currencyFormatter.format(totals.expected)} />
+      <StatCard title="Pagado" tone="primary" value={currencyFormatter.format(totals.paid)} />
     </>
   );
+}
+
+function parseAmountInput(value: null | string | undefined): null | number {
+  if (!value) return null;
+  const normalized = value.replaceAll(/\D/g, "");
+  if (normalized.length === 0) return null;
+  const parsed = Number.parseInt(normalized, 10);
+  return Number.isNaN(parsed) ? null : parsed;
 }

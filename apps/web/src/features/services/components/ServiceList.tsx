@@ -5,21 +5,21 @@ import Button from "@/components/ui/Button";
 import type { ServiceFrequency, ServiceSummary, ServiceType } from "../types";
 
 interface ServiceListProps {
-  services: ServiceSummary[];
-  selectedId: string | null;
-  onSelect: (publicId: string) => void;
-  onCreateRequest: () => void;
   canManage: boolean;
   loading?: boolean;
+  onCreateRequest: () => void;
+  onSelect: (publicId: string) => void;
+  selectedId: null | string;
+  services: ServiceSummary[];
 }
 
 export function ServiceList({
-  services,
-  selectedId,
-  onSelect,
-  onCreateRequest,
   canManage,
   loading = false,
+  onCreateRequest,
+  onSelect,
+  selectedId,
+  services,
 }: ServiceListProps) {
   const skeletons = Array.from({ length: 5 }, (_, index) => index);
 
@@ -31,7 +31,7 @@ export function ServiceList({
           <p className="text-base-content/60 text-xs">Suscripciones y gastos recurrentes.</p>
         </div>
         {canManage && (
-          <Button type="button" variant="primary" size="sm" onClick={onCreateRequest}>
+          <Button onClick={onCreateRequest} size="sm" type="button" variant="primary">
             Nuevo servicio
           </Button>
         )}
@@ -40,7 +40,7 @@ export function ServiceList({
         {loading &&
           services.length === 0 &&
           skeletons.map((value) => (
-            <div key={value} className="border-base-300/60 bg-base-200/60 rounded-2xl border p-4 shadow-sm">
+            <div className="border-base-300/60 bg-base-200/60 rounded-2xl border p-4 shadow-sm" key={value}>
               <div className="skeleton-line mb-3 w-3/4" />
               <div className="text-base-content/50 flex gap-2 text-xs">
                 <span className="skeleton-line w-20" />
@@ -58,37 +58,39 @@ export function ServiceList({
           })();
 
           const frequencyLabels: Record<ServiceFrequency, string> = {
-            WEEKLY: "Semanal",
+            ANNUAL: "Anual",
+            BIMONTHLY: "Bimensual",
             BIWEEKLY: "Quincenal",
             MONTHLY: "Mensual",
-            BIMONTHLY: "Bimensual",
+            ONCE: "Única vez",
             QUARTERLY: "Trimestral",
             SEMIANNUAL: "Semestral",
-            ANNUAL: "Anual",
-            ONCE: "Única vez",
+            WEEKLY: "Semanal",
           };
 
           const typeLabels: Record<ServiceType, string> = {
             BUSINESS: "Operación",
-            SUPPLIER: "Proveedor",
-            UTILITY: "Servicios básicos",
             LEASE: "Arriendo",
-            SOFTWARE: "Software",
-            TAX: "Impuestos",
-            PERSONAL: "Personal",
             OTHER: "Otro",
+            PERSONAL: "Personal",
+            SOFTWARE: "Software",
+            SUPPLIER: "Proveedor",
+            TAX: "Impuestos",
+            UTILITY: "Servicios básicos",
           };
 
           return (
             <button
-              type="button"
-              key={service.public_id}
-              onClick={() => onSelect(service.public_id)}
               className={`w-full cursor-pointer rounded-2xl border px-4 py-3 text-left transition-all ${
                 isActive
                   ? "border-base-300 bg-primary/20 text-primary"
                   : "bg-base-100/45 text-base-content hover:border-base-300 hover:bg-base-100/65 border-transparent"
               }`}
+              key={service.public_id}
+              onClick={() => {
+                onSelect(service.public_id);
+              }}
+              type="button"
             >
               <div className="flex items-center justify-between gap-3">
                 <div>
@@ -97,7 +99,7 @@ export function ServiceList({
                     <p className="text-base-content/50 text-xs tracking-wide uppercase">{service.detail}</p>
                   )}
                 </div>
-                <span className={`h-2.5 w-2.5 rounded-full ${indicatorColor} shadow-inner`} aria-hidden="true" />
+                <span aria-hidden="true" className={`h-2.5 w-2.5 rounded-full ${indicatorColor} shadow-inner`} />
               </div>
               <div className="mt-2 flex flex-wrap items-center gap-4 text-xs">
                 <span className="text-base-content font-semibold">

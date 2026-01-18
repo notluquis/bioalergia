@@ -1,5 +1,3 @@
-import "dayjs/locale/es";
-
 import { useSuspenseQuery } from "@tanstack/react-query";
 import clsx from "clsx";
 import dayjs, { type Dayjs } from "dayjs";
@@ -18,21 +16,23 @@ import { type CalendarFilters } from "@/features/calendar/types";
 import { currencyFormatter, numberFormatter } from "@/lib/format";
 import { PAGE_CONTAINER } from "@/lib/styles";
 
+import "dayjs/locale/es";
+
 dayjs.locale("es");
 
-type HeatmapFilters = {
+interface HeatmapFilters {
+  categories: string[];
   from: string;
   to: string;
-  categories: string[];
-};
+}
 
 const createInitialFilters = (): HeatmapFilters => {
   const start = dayjs().startOf("month").subtract(1, "month");
   const end = dayjs().endOf("month").add(1, "month");
   return {
+    categories: [],
     from: start.format("YYYY-MM-DD"),
     to: end.format("YYYY-MM-DD"),
-    categories: [],
   };
 };
 
@@ -41,10 +41,6 @@ function arraysEqual(a: string[], b: string[]): boolean {
   const sortedA = a.toSorted((x, y) => x.localeCompare(y));
   const sortedB = b.toSorted((x, y) => x.localeCompare(y));
   return sortedA.every((value, index) => value === sortedB[index]);
-}
-
-function filtersEqual(a: HeatmapFilters, b: HeatmapFilters): boolean {
-  return a.from === b.from && a.to === b.to && arraysEqual(a.categories, b.categories);
 }
 
 function CalendarHeatmapPage() {
@@ -57,7 +53,6 @@ function CalendarHeatmapPage() {
   const tc = (key: string, options?: Record<string, unknown>) => t(`calendar.${key}`, options);
 
   const { data: summary } = useSuspenseQuery({
-    queryKey: ["calendar-heatmap", appliedFilters],
     queryFn: () => {
       const apiFilters: CalendarFilters = {
         ...appliedFilters,
@@ -65,6 +60,7 @@ function CalendarHeatmapPage() {
       };
       return fetchCalendarSummary(apiFilters);
     },
+    queryKey: ["calendar-heatmap", appliedFilters],
     staleTime: 5 * 60 * 1000, // 5 minutes cache
   });
 
@@ -79,21 +75,21 @@ function CalendarHeatmapPage() {
   const availableCategories: MultiSelectOption[] = (summary?.available.categories ?? []).map((entry) => {
     const value = entry.category ?? NULL_CATEGORY_VALUE;
     const label = entry.category ?? "Sin clasificación";
-    return { value, label: `${label} · ${numberFormatter.format(entry.total)}` };
+    return { label: `${label} · ${numberFormatter.format(entry.total)}`, value };
   });
 
   // KEEP useMemo: Heavy Map operation iterating over all events
   const statsByDate = useMemo(() => {
-    const map = new Map<string, { total: number; amountExpected: number; amountPaid: number }>();
-    summary?.aggregates.byDate.forEach((entry) => {
+    const map = new Map<string, { amountExpected: number; amountPaid: number; total: number }>();
+    for (const entry of summary?.aggregates.byDate) {
       // Server now returns dates as "YYYY-MM-DD" strings via TO_CHAR in SQL
       const key = String(entry.date).slice(0, 10);
       map.set(key, {
-        total: entry.total,
         amountExpected: entry.amountExpected ?? 0,
         amountPaid: entry.amountPaid ?? 0,
+        total: entry.total,
       });
-    });
+    }
     return map;
   }, [summary?.aggregates.byDate]);
 
@@ -134,13 +130,13 @@ function CalendarHeatmapPage() {
   const heatmapMaxValue = useMemo(() => {
     if (!summary) return 0;
     let max = 0;
-    summary.aggregates.byDate.forEach((entry) => {
+    for (const entry of summary.aggregates.byDate) {
       // Server now returns "YYYY-MM-DD" strings, extract month portion
       const monthKey = String(entry.date).slice(0, 7);
       if (heatmapMonthKeys.has(monthKey)) {
         max = Math.max(max, entry.total);
       }
-    });
+    }
     return max;
   }, [summary, heatmapMonthKeys]);
 
@@ -173,9 +169,11 @@ function CalendarHeatmapPage() {
       {/* Collapsible Filter Toolbar */}
       <Card className="overflow-hidden transition-all duration-300">
         <button
-          type="button"
-          onClick={() => setShowAdvanced((prev) => !prev)}
           className="hover:bg-base-200/50 flex w-full items-center justify-between px-6 py-4 text-left transition-colors"
+          onClick={() => {
+            setShowAdvanced((prev) => !prev);
+          }}
+          type="button"
         >
           <div className="flex items-center gap-4">
             <div className="bg-primary/10 text-primary flex h-10 w-10 items-center justify-center rounded-full">
@@ -218,41 +216,43 @@ function CalendarHeatmapPage() {
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 <Input
                   label={tc("filters.from")}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                    setFilters((prev) => ({ ...prev, from: event.target.value }));
+                  }}
                   type="date"
                   value={filters.from}
-                  onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                    setFilters((prev) => ({ ...prev, from: event.target.value }))
-                  }
                 />
                 <Input
                   label={tc("filters.to")}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                    setFilters((prev) => ({ ...prev, to: event.target.value }));
+                  }}
                   type="date"
                   value={filters.to}
-                  onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                    setFilters((prev) => ({ ...prev, to: event.target.value }))
-                  }
                 />
                 <MultiSelectFilter
                   label={tc("filters.categories")}
+                  onToggle={(value) => {
+                    handleToggle("categories", value);
+                  }}
                   options={availableCategories}
-                  selected={filters.categories}
-                  onToggle={(value) => handleToggle("categories", value)}
                   placeholder={tc("filters.allCategories")}
+                  selected={filters.categories}
                 />
               </div>
 
               <div className="flex flex-wrap items-center justify-end gap-2">
                 <Button
-                  type="button"
-                  variant="ghost"
+                  disabled={busy || !isDirty}
                   onClick={() => {
                     handleReset();
                   }}
-                  disabled={busy || !isDirty}
+                  type="button"
+                  variant="ghost"
                 >
                   {tc("resetFilters")}
                 </Button>
-                <Button type="submit" disabled={busy}>
+                <Button disabled={busy} type="submit">
                   {tc("applyFilters")}
                 </Button>
               </div>
@@ -266,8 +266,8 @@ function CalendarHeatmapPage() {
           <h2 className="text-base-content/60 text-sm font-semibold tracking-wide uppercase">{tc("heatmapSection")}</h2>
           <span className="text-base-content/60 text-xs">
             {tc("heatmapRange", {
-              start: rangeStartLabel,
               end: rangeEndLabel,
+              start: rangeStartLabel,
             })}
           </span>
         </div>
@@ -276,9 +276,9 @@ function CalendarHeatmapPage() {
           {heatmapMonths.map((month) => (
             <HeatmapMonth
               key={month.format("YYYY-MM")}
+              maxValue={heatmapMaxValue}
               month={month}
               statsByDate={statsByDate}
-              maxValue={heatmapMaxValue}
             />
           ))}
         </div>
@@ -292,6 +292,10 @@ function CalendarHeatmapPage() {
       </section>
     </section>
   );
+}
+
+function filtersEqual(a: HeatmapFilters, b: HeatmapFilters): boolean {
+  return a.from === b.from && a.to === b.to && arraysEqual(a.categories, b.categories);
 }
 
 export default CalendarHeatmapPage;

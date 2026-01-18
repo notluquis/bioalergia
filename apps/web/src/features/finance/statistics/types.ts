@@ -3,28 +3,28 @@
  */
 
 export interface MonthlyFlowData {
-  month: string;
   in: number;
-  out: number;
+  month: string;
   net: number;
+  out: number;
 }
 
 export interface MovementTypeData {
-  description: string | null;
-  direction: "IN" | "OUT" | "NEUTRO";
+  description: null | string;
+  direction: "IN" | "NEUTRO" | "OUT";
   total: number;
 }
 
 export interface StatsResponse {
-  status: "ok";
-  monthly: MonthlyFlowData[];
-  totals: Record<string, number>;
   byType: MovementTypeData[];
+  monthly: MonthlyFlowData[];
+  status: "ok";
+  totals: Record<string, number>;
 }
 
 export interface TopParticipantData {
+  count: number;
   personId: number;
   personName: string;
   total: number;
-  count: number;
 }

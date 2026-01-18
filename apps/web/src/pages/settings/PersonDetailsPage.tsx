@@ -11,7 +11,7 @@ export default function PersonDetailsPage() {
   const navigate = useNavigate();
 
   const { data: person, isLoading } = useQuery(
-    id ? personKeys.detail(id) : { queryKey: ["person-skip"], queryFn: skipToken }
+    id ? personKeys.detail(id) : { queryFn: skipToken, queryKey: ["person-skip"] }
   );
 
   if (isLoading) {

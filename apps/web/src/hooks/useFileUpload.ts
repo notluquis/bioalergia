@@ -4,31 +4,29 @@ import { useState } from "react";
 import { uploadFiles, type UploadResult } from "@/lib/apiClient";
 import { logger } from "@/lib/logger";
 
-interface FileValidator {
-  (file: File): Promise<{ missing: string[]; headersCount: number }>;
-}
+type FileValidator = (file: File) => Promise<{ headersCount: number; missing: string[] }>;
 
 interface UseFileUploadOptions {
-  endpoint: string;
-  logContext: string;
-  validator?: FileValidator;
-  multiple?: boolean;
   confirmOnValidationWarning?: boolean;
+  endpoint: string;
   invalidateKeys?: QueryKey[];
+  logContext: string;
+  multiple?: boolean;
   onUploadSuccess?: (results: UploadResult[]) => void;
+  validator?: FileValidator;
 }
 
 export function useFileUpload({
-  endpoint,
-  logContext,
-  validator,
-  multiple = true,
   confirmOnValidationWarning = true,
+  endpoint,
   invalidateKeys = [],
+  logContext,
+  multiple = true,
   onUploadSuccess,
+  validator,
 }: UseFileUploadOptions) {
   const [files, setFiles] = useState<File[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<null | string>(null);
   const [results, setResults] = useState<UploadResult[]>([]);
   const queryClient = useQueryClient();
 
@@ -36,16 +34,16 @@ export function useFileUpload({
     mutationFn: async (selectedFiles) => {
       return uploadFiles(selectedFiles, endpoint, logContext);
     },
+    onError: (err) => {
+      setError(err.message || "Error al subir archivos");
+    },
     onSuccess: (uploadResults) => {
       setResults(uploadResults);
       setError(null);
-      invalidateKeys.forEach((key) => {
+      for (const key of invalidateKeys) {
         queryClient.invalidateQueries({ queryKey: key });
-      });
+      }
       onUploadSuccess?.(uploadResults);
-    },
-    onError: (err) => {
-      setError(err.message || "Error al subir archivos");
     },
   });
 
@@ -95,7 +93,7 @@ export function useFileUpload({
       if (problematic.length > 0 && confirmOnValidationWarning) {
         const message = problematic
           .map(
-            ({ file, missing, headersCount }) =>
+            ({ file, headersCount, missing }) =>
               `${file.name}: faltan ${missing.join(", ")} · columnas detectadas: ${headersCount}`
           )
           .join("\n");
@@ -132,13 +130,13 @@ export function useFileUpload({
   };
 
   return {
-    files,
-    setFiles,
-    loading: uploadMutation.isPending,
     error,
-    results,
-    handleUpload,
+    files,
     handleFileChange,
+    handleUpload,
+    loading: uploadMutation.isPending,
     reset,
+    results,
+    setFiles,
   };
 }

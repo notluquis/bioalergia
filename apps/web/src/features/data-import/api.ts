@@ -1,25 +1,25 @@
 import { apiClient } from "@/lib/apiClient";
 
-export interface CsvPreviewResponse {
-  toInsert: number;
-  toUpdate: number;
-  toSkip: number;
-  inserted?: number;
-  updated?: number;
-  skipped?: number;
-  errors?: string[];
-  [key: string]: unknown;
-}
-
 export interface CsvImportPayload {
+  data: Record<string, number | string>[];
   table: string;
-  data: Record<string, string | number>[];
 }
 
-export async function previewCsvImport(payload: CsvImportPayload) {
-  return apiClient.post<CsvPreviewResponse>("/api/csv-upload/preview", payload);
+export interface CsvPreviewResponse {
+  [key: string]: unknown;
+  errors?: string[];
+  inserted?: number;
+  skipped?: number;
+  toInsert: number;
+  toSkip: number;
+  toUpdate: number;
+  updated?: number;
 }
 
 export async function importCsvData(payload: CsvImportPayload) {
   return apiClient.post<CsvPreviewResponse>("/api/csv-upload/import", payload);
+}
+
+export async function previewCsvImport(payload: CsvImportPayload) {
+  return apiClient.post<CsvPreviewResponse>("/api/csv-upload/preview", payload);
 }

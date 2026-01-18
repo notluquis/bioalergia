@@ -1,14 +1,14 @@
 export const CASHBACK_KEYWORDS = ["cashback", "meli+", "melidolar", "meli dolar", "melidólar", "meli-dolar"];
 
-export type CashbackCandidate = {
+export interface CashbackCandidate {
+  description?: null | string;
+  destination?: null | string;
   direction: string;
-  description?: string | null;
-  origin?: string | null;
-  destination?: string | null;
-};
+  origin?: null | string;
+}
 
 export function isCashbackCandidate(candidate: CashbackCandidate): boolean {
-  if (candidate?.direction.toUpperCase() !== "IN") {
+  if (candidate.direction.toUpperCase() !== "IN") {
     return false;
   }
 

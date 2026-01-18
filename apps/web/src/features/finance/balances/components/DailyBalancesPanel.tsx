@@ -5,26 +5,27 @@ import Alert from "@/components/ui/Alert";
 import { fmtCLP } from "@/lib/format";
 
 import type { BalanceDraft, BalancesApiResponse } from "../types";
+
 import { columns } from "./DailyBalancesColumns";
 
-type Props = {
-  report: BalancesApiResponse | null;
+interface Props {
   drafts: Record<string, BalanceDraft>;
+  error: null | string;
+  loading: boolean;
   onDraftChange: (date: string, patch: Partial<BalanceDraft>) => void;
   onSave: (date: string) => void;
+  report: BalancesApiResponse | null;
   saving: Record<string, boolean>;
-  loading: boolean;
-  error: string | null;
-};
+}
 
 export const DailyBalancesPanel = function DailyBalancesPanel({
-  report,
   drafts,
+  error,
+  loading,
   onDraftChange,
   onSave,
+  report,
   saving,
-  loading,
-  error,
 }: Props) {
   return (
     <section className="card bg-base-100 shadow-sm">
@@ -40,7 +41,7 @@ export const DailyBalancesPanel = function DailyBalancesPanel({
         </div>
 
         {error && (
-          <Alert variant="error" className="text-xs">
+          <Alert className="text-xs" variant="error">
             {error}
           </Alert>
         )}
@@ -56,8 +57,8 @@ export const DailyBalancesPanel = function DailyBalancesPanel({
         <div className="space-y-2">
           {Array.from({ length: 6 }).map((_, idx) => (
             <div
-              key={`skeleton-balance-${idx}`}
               className="border-base-300 bg-base-200/60 flex flex-wrap items-center gap-3 rounded-2xl border px-4 py-3"
+              key={`skeleton-balance-${idx}`}
             >
               <span className="skeleton-line w-24" />
               <span className="skeleton-line w-16" />
@@ -83,18 +84,18 @@ export const DailyBalancesPanel = function DailyBalancesPanel({
     return (
       <div className="-mx-6 overflow-hidden">
         <DataTable
-          data={report.days}
           columns={columns}
-          meta={{
-            drafts,
-            saving,
-            onDraftChange,
-            onSave,
-          }}
+          data={report.days}
           enableToolbar={false}
           enableVirtualization={false} // Important for inputs
-          pagination={undefined} // Show all days in range (usually 7-30)
+          meta={{
+            drafts,
+            onDraftChange,
+            onSave,
+            saving,
+          }}
           pageCount={-1}
+          pagination={undefined} // Show all days in range (usually 7-30)
         />
       </div>
     );

@@ -5,14 +5,14 @@ import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 interface DayNavigationProps {
-  selectedDate: string;
-  onSelect: (date: string) => void;
   className?: string;
+  onSelect: (date: string) => void;
   /** Optional slot for content to render on the right side of the header */
   rightSlot?: ReactNode;
+  selectedDate: string;
 }
 
-export function DayNavigation({ selectedDate, onSelect, className, rightSlot }: DayNavigationProps) {
+export function DayNavigation({ className, onSelect, rightSlot, selectedDate }: DayNavigationProps) {
   const current = dayjs(selectedDate);
   const today = dayjs();
 
@@ -21,9 +21,15 @@ export function DayNavigation({ selectedDate, onSelect, className, rightSlot }: 
     return current.add(i - 4, "day");
   });
 
-  const handlePrev = () => onSelect(current.subtract(1, "day").format("YYYY-MM-DD"));
-  const handleNext = () => onSelect(current.add(1, "day").format("YYYY-MM-DD"));
-  const handleToday = () => onSelect(today.format("YYYY-MM-DD"));
+  const handlePrev = () => {
+    onSelect(current.subtract(1, "day").format("YYYY-MM-DD"));
+  };
+  const handleNext = () => {
+    onSelect(current.add(1, "day").format("YYYY-MM-DD"));
+  };
+  const handleToday = () => {
+    onSelect(today.format("YYYY-MM-DD"));
+  };
 
   return (
     <div className={cn("flex flex-col gap-3", className)}>
@@ -35,24 +41,24 @@ export function DayNavigation({ selectedDate, onSelect, className, rightSlot }: 
           {rightSlot}
           <div className="bg-base-200 flex gap-0.5 rounded-lg p-1">
             <button
-              onClick={handlePrev}
-              className="hover:bg-base-100 text-base-content/70 hover:text-primary rounded-md p-1.5 transition-colors"
               aria-label="Día anterior"
+              className="hover:bg-base-100 text-base-content/70 hover:text-primary rounded-md p-1.5 transition-colors"
+              onClick={handlePrev}
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
 
             <button
-              onClick={handleToday}
               className="hover:bg-base-100 rounded-md px-2 py-1 text-xs font-semibold uppercase transition-colors"
+              onClick={handleToday}
             >
               Hoy
             </button>
 
             <button
-              onClick={handleNext}
-              className="hover:bg-base-100 text-base-content/70 hover:text-primary rounded-md p-1.5 transition-colors"
               aria-label="Día siguiente"
+              className="hover:bg-base-100 text-base-content/70 hover:text-primary rounded-md p-1.5 transition-colors"
+              onClick={handleNext}
             >
               <ChevronRight className="h-4 w-4" />
             </button>
@@ -69,8 +75,6 @@ export function DayNavigation({ selectedDate, onSelect, className, rightSlot }: 
 
             return (
               <button
-                key={date.toString()}
-                onClick={() => onSelect(date.format("YYYY-MM-DD"))}
                 className={cn(
                   "relative mx-0.5 flex min-w-14 flex-1 flex-col items-center justify-center gap-1 rounded-lg px-1 py-2 transition-all duration-200",
                   isSelected
@@ -78,6 +82,10 @@ export function DayNavigation({ selectedDate, onSelect, className, rightSlot }: 
                     : "hover:bg-base-200/50 text-base-content/60",
                   isToday && !isSelected && "bg-base-200 text-base-content font-medium"
                 )}
+                key={date.toString()}
+                onClick={() => {
+                  onSelect(date.format("YYYY-MM-DD"));
+                }}
               >
                 {isToday && !isSelected && (
                   <span className="bg-primary absolute top-1 right-1 h-1.5 w-1.5 rounded-full" />

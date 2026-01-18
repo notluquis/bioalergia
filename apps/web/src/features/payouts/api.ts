@@ -3,20 +3,20 @@ import type { ReleaseTransaction } from "@finanzas/db/models";
 import { apiClient } from "@/lib/apiClient";
 
 interface FetchReleaseTransactionsParams {
+  descriptions?: string[];
+  from?: string;
   page?: number;
   pageSize?: number;
-  from?: string;
-  to?: string;
-  descriptions?: string[];
   search?: string;
+  to?: string;
 }
 
 interface FetchReleaseTransactionsResponse {
-  status: "ok";
   data: ReleaseTransaction[];
-  total: number;
   page: number;
   pageSize: number;
+  status: "ok";
+  total: number;
   totalPages: number;
 }
 

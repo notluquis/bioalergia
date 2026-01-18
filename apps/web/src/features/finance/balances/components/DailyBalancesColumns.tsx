@@ -6,16 +6,17 @@ import Input from "@/components/ui/Input";
 import { fmtCLP } from "@/lib/format";
 
 import type { BalanceDraft, DailyBalanceDay } from "../types";
+
 import { formatBalanceInput } from "../utils";
 
 export interface BalanceTableMeta {
   drafts: Record<string, BalanceDraft>;
-  saving: Record<string, boolean>;
   onDraftChange: (date: string, patch: Partial<BalanceDraft>) => void;
   onSave: (date: string) => void;
+  saving: Record<string, boolean>;
 }
 
-const formatDifference = (diff: number | null) => {
+const formatDifference = (diff: null | number) => {
   if (diff == null) return "—";
   return diff >= 0 ? fmtCLP(diff) : `-${fmtCLP(Math.abs(diff))}`;
 };
@@ -24,16 +25,18 @@ const formatDifference = (diff: number | null) => {
 const RecordedBalanceCell = ({ row, table }: { row: Row<DailyBalanceDay>; table: any }) => {
   const meta = table.options.meta as BalanceTableMeta;
   const day = row.original;
-  const draft = meta.drafts[day.date] ?? { value: "", note: "" };
+  const draft = meta.drafts[day.date] ?? { note: "", value: "" };
 
   return (
     <Input
+      className="input-xs w-28"
+      inputMode="decimal"
+      onChange={(event) => {
+        meta.onDraftChange(day.date, { value: event.target.value });
+      }}
+      placeholder="0"
       type="text"
       value={draft.value}
-      onChange={(event) => meta.onDraftChange(day.date, { value: event.target.value })}
-      className="input-xs w-28"
-      placeholder="0"
-      inputMode="decimal"
     />
   );
 };
@@ -42,16 +45,18 @@ const RecordedBalanceCell = ({ row, table }: { row: Row<DailyBalanceDay>; table:
 const NoteCell = ({ row, table }: { row: Row<DailyBalanceDay>; table: any }) => {
   const meta = table.options.meta as BalanceTableMeta;
   const day = row.original;
-  const draft = meta.drafts[day.date] ?? { value: "", note: "" };
+  const draft = meta.drafts[day.date] ?? { note: "", value: "" };
 
   return (
     <Input
       as="textarea"
+      className="textarea-xs w-32 text-xs"
+      onChange={(event) => {
+        meta.onDraftChange(day.date, { note: event.target.value });
+      }}
+      placeholder="Nota"
       rows={1}
       value={draft.note}
-      onChange={(event) => meta.onDraftChange(day.date, { note: event.target.value })}
-      className="textarea-xs w-32 text-xs"
-      placeholder="Nota"
     />
   );
 };
@@ -60,7 +65,7 @@ const NoteCell = ({ row, table }: { row: Row<DailyBalanceDay>; table: any }) => 
 const ActionsCell = ({ row, table }: { row: Row<DailyBalanceDay>; table: any }) => {
   const meta = table.options.meta as BalanceTableMeta;
   const day = row.original;
-  const draft = meta.drafts[day.date] ?? { value: "", note: "" };
+  const draft = meta.drafts[day.date] ?? { note: "", value: "" };
   const defaultValue = day.recordedBalance == null ? "" : formatBalanceInput(day.recordedBalance);
   const defaultNote = day.note ?? "";
   const isSaving = Boolean(meta.saving[day.date]);
@@ -69,7 +74,14 @@ const ActionsCell = ({ row, table }: { row: Row<DailyBalanceDay>; table: any }) 
   const canSave = isDirty && hasValue && !isSaving;
 
   return (
-    <Button type="button" size="xs" onClick={() => meta.onSave(day.date)} disabled={!canSave}>
+    <Button
+      disabled={!canSave}
+      onClick={() => {
+        meta.onSave(day.date);
+      }}
+      size="xs"
+      type="button"
+    >
       {isSaving ? "..." : "💾"}
     </Button>
   );
@@ -78,27 +90,26 @@ const ActionsCell = ({ row, table }: { row: Row<DailyBalanceDay>; table: any }) 
 export const columns: ColumnDef<DailyBalanceDay>[] = [
   {
     accessorKey: "date",
-    header: "Fecha",
     cell: ({ row }) => (
       <div className="flex flex-col gap-0.5">
         <span>{dayjs(row.original.date).format("DD/MM/YY")}</span>
         {row.original.hasCashback && <span className="badge badge-warning badge-xs">CB</span>}
       </div>
     ),
+    header: "Fecha",
   },
   {
     accessorKey: "totalIn",
-    header: () => <div className="text-right">Ingresos</div>,
     cell: ({ row }) => <div className="text-success text-right text-xs">{fmtCLP(Math.abs(row.original.totalIn))}</div>,
+    header: () => <div className="text-right">Ingresos</div>,
   },
   {
     accessorKey: "totalOut",
-    header: () => <div className="text-right">Egresos</div>,
     cell: ({ row }) => <div className="text-error text-right text-xs">-{fmtCLP(Math.abs(row.original.totalOut))}</div>,
+    header: () => <div className="text-right">Egresos</div>,
   },
   {
     accessorKey: "netChange",
-    header: () => <div className="text-right">Neto</div>,
     cell: ({ row }) => {
       const val = row.original.netChange;
       return (
@@ -107,24 +118,24 @@ export const columns: ColumnDef<DailyBalanceDay>[] = [
         </div>
       );
     },
+    header: () => <div className="text-right">Neto</div>,
   },
   {
     accessorKey: "expectedBalance",
-    header: () => <div className="text-right">Esperado</div>,
     cell: ({ row }) => (
       <div className="text-right text-xs">
         {row.original.expectedBalance == null ? "—" : fmtCLP(row.original.expectedBalance)}
       </div>
     ),
+    header: () => <div className="text-right">Esperado</div>,
   },
   {
-    id: "recordedBalance",
-    header: "Registrado",
     cell: RecordedBalanceCell,
+    header: "Registrado",
+    id: "recordedBalance",
   },
   {
     accessorKey: "difference",
-    header: () => <div className="text-right">Dif.</div>,
     cell: ({ row }) => {
       const mismatch = row.original.difference != null && Math.abs(row.original.difference) > 1;
       return (
@@ -133,15 +144,16 @@ export const columns: ColumnDef<DailyBalanceDay>[] = [
         </div>
       );
     },
+    header: () => <div className="text-right">Dif.</div>,
   },
   {
-    id: "note",
-    header: "Nota",
     cell: NoteCell,
+    header: "Nota",
+    id: "note",
   },
   {
-    id: "actions",
-    header: "",
     cell: ActionsCell,
+    header: "",
+    id: "actions",
   },
 ];

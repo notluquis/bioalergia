@@ -5,6 +5,8 @@ import { ChevronUp, Plus } from "lucide-react";
 import type { ChangeEvent } from "react";
 import { useState } from "react";
 
+import type { Employee } from "@/features/hr/employees/types";
+
 import { DataTable } from "@/components/data-table/DataTable";
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
@@ -13,7 +15,6 @@ import { useAuth } from "@/context/AuthContext";
 import { columns } from "@/features/hr/employees/components/columns";
 import EmployeeForm from "@/features/hr/employees/components/EmployeeForm";
 import { employeeKeys } from "@/features/hr/employees/queries";
-import type { Employee } from "@/features/hr/employees/types";
 import { PAGE_CONTAINER, TITLE_LG } from "@/lib/styles";
 // ... existing imports
 
@@ -33,7 +34,7 @@ export default function EmployeesPage() {
   });
 
   // Query for employees
-  const { data: employees = [] } = useSuspenseQuery(employeeKeys.list({ includeInactive }));
+  const { data: employees } = useSuspenseQuery(employeeKeys.list({ includeInactive }));
 
   const loading = false; // Suspense handles loading
 
@@ -55,9 +56,11 @@ export default function EmployeesPage() {
   function handleDeactivate(id: number) {
     if (!canEdit) return;
     updateStatusMutation.mutate(
-      { where: { id }, data: { status: "INACTIVE" } },
+      { data: { status: "INACTIVE" }, where: { id } },
       {
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: employeeKeys.all }),
+        onSuccess: () => {
+          void queryClient.invalidateQueries({ queryKey: employeeKeys.all });
+        },
       }
     );
   }
@@ -65,9 +68,11 @@ export default function EmployeesPage() {
   function handleActivate(id: number) {
     if (!canEdit) return;
     updateStatusMutation.mutate(
-      { where: { id }, data: { status: "ACTIVE" } },
+      { data: { status: "ACTIVE" }, where: { id } },
       {
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: employeeKeys.all }),
+        onSuccess: () => {
+          void queryClient.invalidateQueries({ queryKey: employeeKeys.all });
+        },
       }
     );
   }
@@ -83,7 +88,7 @@ export default function EmployeesPage() {
   }
 
   function handleSaveSuccess() {
-    queryClient.invalidateQueries({ queryKey: employeeKeys.all });
+    void queryClient.invalidateQueries({ queryKey: employeeKeys.all });
     handleCancel();
   }
 
@@ -95,13 +100,13 @@ export default function EmployeesPage() {
         <div className="flex items-center gap-3">
           <Checkbox
             checked={includeInactive}
-            onChange={(event: ChangeEvent<HTMLInputElement>) => setIncludeInactive(event.target.checked)}
             label="Ver inactivos"
+            onChange={(event: ChangeEvent<HTMLInputElement>) => {
+              setIncludeInactive(event.target.checked);
+            }}
           />
           {canEdit && (
             <Button
-              variant={showForm ? "outline" : "primary"}
-              size="md"
               onClick={() => {
                 if (showForm) {
                   handleCancel();
@@ -109,6 +114,8 @@ export default function EmployeesPage() {
                   setShowForm(true);
                 }
               }}
+              size="md"
+              variant={showForm ? "outline" : "primary"}
             >
               {showForm ? (
                 <>
@@ -134,12 +141,12 @@ export default function EmployeesPage() {
             <h2 className="text-primary text-lg font-semibold">
               {editingEmployee ? "Editar empleado" : "Agregar nuevo empleado"}
             </h2>
-            <Button variant="ghost" size="sm" onClick={handleCancel}>
+            <Button onClick={handleCancel} size="sm" variant="ghost">
               <ChevronUp className="h-4 w-4" />
               Cerrar
             </Button>
           </div>
-          <EmployeeForm employee={editingEmployee} onSave={handleSaveSuccess} onCancel={handleCancel} />
+          <EmployeeForm employee={editingEmployee} onCancel={handleCancel} onSave={handleSaveSuccess} />
         </div>
       )}
 
@@ -147,27 +154,27 @@ export default function EmployeesPage() {
         <DataTable
           columns={columns}
           data={paginatedEmployees}
-          pageCount={pageCount}
-          pagination={pagination}
-          onPaginationChange={setPagination}
-          isLoading={loading || isMutating}
           enableVirtualization
           filters={[
             {
               columnId: "status",
-              title: "Estado",
               options: [
                 { label: "Activo", value: "ACTIVE" },
                 { label: "Inactivo", value: "INACTIVE" },
               ],
+              title: "Estado",
             },
           ]}
+          isLoading={loading || isMutating}
           meta={{
-            onEdit: handleEdit,
-            onDeactivate: handleDeactivate,
-            onActivate: handleActivate,
             canEdit,
+            onActivate: handleActivate,
+            onDeactivate: handleDeactivate,
+            onEdit: handleEdit,
           }}
+          onPaginationChange={setPagination}
+          pageCount={pageCount}
+          pagination={pagination}
         />
       </div>
     </section>

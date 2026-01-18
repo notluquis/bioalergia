@@ -6,32 +6,32 @@
 import { MpReportType } from "../../shared/mercadopago";
 import { apiClient } from "../lib/apiClient";
 
-export interface MPReport {
-  id: number;
-  begin_date: string;
-  end_date: string;
-  created_from: "manual" | "schedule";
-  date_created?: string;
-  status?: string;
-  file_name?: string;
-}
-
 /**
  * Statistics returned after processing a report
  */
 export interface ImportStats {
-  totalRows: number;
-  validRows: number;
-  skippedRows: number;
-  insertedRows: number;
   duplicateRows: number;
   errors: string[];
+  insertedRows: number;
+  skippedRows: number;
+  totalRows: number;
+  validRows: number;
+}
+
+export interface MPReport {
+  begin_date: string;
+  created_from: "manual" | "schedule";
+  date_created?: string;
+  end_date: string;
+  file_name?: string;
+  id: number;
+  status?: string;
 }
 
 interface ProcessReportResponse {
-  status: string;
   message: string;
   stats: ImportStats;
+  status: string;
 }
 
 function getBaseUrl(type: MpReportType = "release") {
@@ -39,27 +39,9 @@ function getBaseUrl(type: MpReportType = "release") {
 }
 
 export const MPService = {
-  listReports: async (type: MpReportType = "release"): Promise<MPReport[]> => {
-    const baseUrl = getBaseUrl(type);
-    return apiClient.get<MPReport[]>(`${baseUrl}/reports`);
-  },
-
   createReport: async (beginDate: string, endDate: string, type: MpReportType = "release"): Promise<MPReport> => {
     const baseUrl = getBaseUrl(type);
     return apiClient.post<MPReport>(`${baseUrl}/reports`, { begin_date: beginDate, end_date: endDate });
-  },
-
-  downloadReport: async (fileName: string, type: MpReportType = "release"): Promise<Blob> => {
-    const baseUrl = getBaseUrl(type);
-    return apiClient.get<Blob>(`${baseUrl}/reports/download/${encodeURIComponent(fileName)}`, { responseType: "blob" });
-  },
-
-  processReport: async (fileName: string, type: MpReportType): Promise<ImportStats> => {
-    const data = await apiClient.post<ProcessReportResponse>("/api/mercadopago/process-report", {
-      fileName,
-      reportType: type,
-    });
-    return data.stats;
   },
 
   /**
@@ -124,6 +106,24 @@ export const MPService = {
     }
 
     return reports;
+  },
+
+  downloadReport: async (fileName: string, type: MpReportType = "release"): Promise<Blob> => {
+    const baseUrl = getBaseUrl(type);
+    return apiClient.get<Blob>(`${baseUrl}/reports/download/${encodeURIComponent(fileName)}`, { responseType: "blob" });
+  },
+
+  listReports: async (type: MpReportType = "release"): Promise<MPReport[]> => {
+    const baseUrl = getBaseUrl(type);
+    return apiClient.get<MPReport[]>(`${baseUrl}/reports`);
+  },
+
+  processReport: async (fileName: string, type: MpReportType): Promise<ImportStats> => {
+    const data = await apiClient.post<ProcessReportResponse>("/api/mercadopago/process-report", {
+      fileName,
+      reportType: type,
+    });
+    return data.stats;
   },
 };
 

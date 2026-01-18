@@ -16,36 +16,36 @@ import { PersonalCreditInstallment } from "../types";
 const installmentColumns = (currency: string, creditId: number): ColumnDef<PersonalCreditInstallment>[] => [
   {
     accessorKey: "installmentNumber",
-    header: "#",
     cell: ({ row }) => <span className="font-medium">{row.original.installmentNumber}</span>,
+    header: "#",
   },
   {
     accessorKey: "dueDate",
-    header: "Vencimiento",
     cell: ({ row }) => new Date(row.original.dueDate).toLocaleDateString(),
+    header: "Vencimiento",
   },
   {
     accessorKey: "amount",
-    header: ({ column: _column }) => <div className="text-right">Monto</div>,
     cell: ({ row }) => <div className="text-right">{formatCurrency(Number(row.original.amount), currency)}</div>,
+    header: ({ column: _column }) => <div className="text-right">Monto</div>,
   },
   {
     accessorKey: "status",
-    header: "Estado",
     cell: ({ row }) => (
       <div className="flex justify-center">
         <Badge variant={row.original.status === "PAID" ? "success" : "outline"}>{row.original.status}</Badge>
       </div>
     ),
+    header: "Estado",
   },
   {
-    id: "actions",
-    header: ({ column: _column }) => <div className="text-right">Acción</div>,
     cell: ({ row }) => (
       <div className="flex justify-end">
         {row.original.status !== "PAID" && <PayInstallmentModal creditId={creditId} installment={row.original} />}
       </div>
     ),
+    header: ({ column: _column }) => <div className="text-right">Acción</div>,
+    id: "actions",
   },
 ];
 
@@ -60,8 +60,8 @@ export function PersonalCreditDetailsPage({ creditId }: { creditId: number }) {
     <div className="space-y-6">
       <div className="flex items-center gap-4">
         <Link
-          to="/finanzas/personal-credits"
           className="btn btn-ghost btn-sm no-animation ease-apple size-8 p-0 transition-all duration-200 hover:-translate-y-px active:translate-y-0 active:scale-[0.98]"
+          to="/finanzas/personal-credits"
         >
           <ArrowLeftIcon className="size-4" />
         </Link>
@@ -102,8 +102,8 @@ export function PersonalCreditDetailsPage({ creditId }: { creditId: number }) {
             columns={columns}
             data={credit.installments || []}
             enableToolbar={false}
-            pageCount={-1}
             enableVirtualization={false}
+            pageCount={-1}
           />
         </CardContent>
       </Card>
@@ -112,7 +112,7 @@ export function PersonalCreditDetailsPage({ creditId }: { creditId: number }) {
 }
 
 export default function PersonalCreditDetailsPageWrapper() {
-  const params = useParams({ from: "/_authed/finanzas/personal-credits/$creditId" }) as { creditId: string };
+  const params = useParams({ from: "/_authed/finanzas/personal-credits/$creditId" });
 
   return (
     <Suspense fallback={<div>Cargando detalle...</div>}>

@@ -1,27 +1,28 @@
 import { queryOptions } from "@tanstack/react-query";
 
-import { apiClient } from "@/lib/apiClient";
 import type { Counterpart, Person } from "@/types/schema";
+
+import { apiClient } from "@/lib/apiClient";
 
 export interface CounterpartWithExtras extends Counterpart {
   institution?: { name: string };
 }
 
-export interface PersonWithExtras extends Person {
-  gender?: string;
-  birthDate?: string;
-  hasUser?: boolean;
-  hasEmployee?: boolean;
-  counterpart?: CounterpartWithExtras | null;
-}
-
 export interface PeopleListResponse {
-  status: string;
   people: PersonWithExtras[];
+  status: string;
 }
 
 export interface PersonDetailResponse {
   person: PersonWithExtras;
+}
+
+export interface PersonWithExtras extends Person {
+  birthDate?: string;
+  counterpart?: CounterpartWithExtras | null;
+  gender?: string;
+  hasEmployee?: boolean;
+  hasUser?: boolean;
 }
 
 export async function fetchPeople(): Promise<PersonWithExtras[]> {
@@ -40,10 +41,10 @@ export async function fetchPerson(id: number | string): Promise<PersonWithExtras
 
 export const peopleKeys = {
   all: ["people"] as const,
-  lists: () => [...peopleKeys.all, "list"] as const,
-  list: () => [...peopleKeys.lists()] as const,
-  details: () => [...peopleKeys.all, "detail"] as const,
   detail: (id: number | string) => [...peopleKeys.details(), id] as const,
+  details: () => [...peopleKeys.all, "detail"] as const,
+  list: () => [...peopleKeys.lists()] as const,
+  lists: () => [...peopleKeys.all, "list"] as const,
 };
 
 // ============================================================================
@@ -51,16 +52,16 @@ export const peopleKeys = {
 // ============================================================================
 
 export const peopleQueries = {
-  list: () =>
-    queryOptions({
-      queryKey: peopleKeys.list(),
-      queryFn: fetchPeople,
-      staleTime: 5 * 60 * 1000, // 5 minutes
-    }),
   detail: (id: number | string) =>
     queryOptions({
-      queryKey: peopleKeys.detail(id),
       queryFn: () => fetchPerson(id),
+      queryKey: peopleKeys.detail(id),
       staleTime: 5 * 60 * 1000,
+    }),
+  list: () =>
+    queryOptions({
+      queryFn: fetchPeople,
+      queryKey: peopleKeys.list(),
+      staleTime: 5 * 60 * 1000, // 5 minutes
     }),
 };

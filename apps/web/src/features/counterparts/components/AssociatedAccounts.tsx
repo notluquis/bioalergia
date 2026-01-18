@@ -3,6 +3,8 @@ import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
 import { useEffect, useState } from "react";
 
+import type { Transaction } from "@/features/finance/types";
+
 import { DataTable } from "@/components/data-table/DataTable";
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
@@ -10,13 +12,13 @@ import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
 import { useToast } from "@/context/ToastContext";
 import { fetchTransactions } from "@/features/finance/api";
-import type { Transaction } from "@/features/finance/types";
 import { today } from "@/lib/dates";
 import { fmtCLP } from "@/lib/format";
 import { formatRut } from "@/lib/rut";
 
-import { addCounterpartAccount, attachCounterpartRut, fetchAccountSuggestions, updateCounterpartAccount } from "../api";
 import type { Counterpart, CounterpartAccount, CounterpartAccountSuggestion, CounterpartSummary } from "../types";
+
+import { addCounterpartAccount, attachCounterpartRut, fetchAccountSuggestions, updateCounterpartAccount } from "../api";
 import {
   ACCOUNT_FORM_DEFAULT,
   accountFilterKey,
@@ -29,26 +31,26 @@ import {
 import { getAccountGroupColumns, getQuickViewColumns } from "./AssociatedAccountsColumns";
 
 interface AssociatedAccountsProps {
-  selectedId: number | null;
-  detail: { counterpart: Counterpart; accounts: CounterpartAccount[] } | null;
+  detail: null | { accounts: CounterpartAccount[]; counterpart: Counterpart };
+  onSummaryRangeChange: (update: Partial<DateRange>) => void;
+  selectedId: null | number;
   summary: CounterpartSummary | null;
   summaryRange: { from: string; to: string };
-  onSummaryRangeChange: (update: Partial<DateRange>) => void;
 }
 
 export default function AssociatedAccounts({
-  selectedId,
   detail,
+  onSummaryRangeChange,
+  selectedId,
   summary,
   summaryRange,
-  onSummaryRangeChange,
 }: AssociatedAccountsProps) {
   const [accountForm, setAccountForm] = useState<AccountForm>(ACCOUNT_FORM_DEFAULT);
   const [suggestionQuery, setSuggestionQuery] = useState("");
   const [quickViewGroup, setQuickViewGroup] = useState<AccountGroup | null>(null);
   const [isAddAccountModalOpen, setIsAddAccountModalOpen] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const { success: toastSuccess, error: toastError } = useToast();
+  const [error, setError] = useState<null | string>(null);
+  const { error: toastError, success: toastSuccess } = useToast();
   const fallbackRange: DateRange = {
     from: dayjs().startOf("year").format("YYYY-MM-DD"),
     to: today(),
@@ -60,39 +62,41 @@ export default function AssociatedAccounts({
     const handler = setTimeout(() => {
       setDebouncedQuery(suggestionQuery);
     }, 300);
-    return () => clearTimeout(handler);
+    return () => {
+      clearTimeout(handler);
+    };
   }, [suggestionQuery]);
 
   const { data: suggestions = [] } = useQuery({
-    queryKey: ["account-suggestions", debouncedQuery],
-    queryFn: () => fetchAccountSuggestions(debouncedQuery),
     enabled: !!debouncedQuery.trim(),
+    queryFn: () => fetchAccountSuggestions(debouncedQuery),
+    queryKey: ["account-suggestions", debouncedQuery],
     staleTime: 1000 * 60,
   });
 
-  const accountSuggestions = suggestions as CounterpartAccountSuggestion[];
+  const accountSuggestions = suggestions;
   // Suspense handles loading, no need for manual loading state
 
   const queryClient = useQueryClient();
 
   const addAccountMutation = useMutation({
-    mutationFn: (payload: { id: number; data: Parameters<typeof addCounterpartAccount>[1] }) =>
+    mutationFn: (payload: { data: Parameters<typeof addCounterpartAccount>[1]; id: number }) =>
       addCounterpartAccount(payload.id, payload.data),
+    onError: (err: Error) => {
+      setError(err.message);
+      toastError(err.message);
+    },
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: ["counterpart-detail", variables.id],
       });
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: ["counterpart-summary", variables.id],
       });
       setAccountForm(ACCOUNT_FORM_DEFAULT);
       setSuggestionQuery("");
       setIsAddAccountModalOpen(false);
       toastSuccess("Cuenta asociada agregada");
-    },
-    onError: (err: Error) => {
-      setError(err.message);
-      toastError(err.message);
     },
   });
 
@@ -110,38 +114,38 @@ export default function AssociatedAccounts({
     setError(null);
 
     addAccountMutation.mutate({
-      id: selectedId,
       data: {
         accountIdentifier: accountForm.accountIdentifier.trim(),
-        bankName: accountForm.bankName.trim() || null,
         accountType: accountForm.accountType.trim() || null,
-        holder: accountForm.holder.trim() || null,
+        bankName: accountForm.bankName.trim() || null,
         concept: accountForm.concept.trim() || null,
+        holder: accountForm.holder.trim() || null,
         metadata: {
           bankAccountNumber: accountForm.bankAccountNumber.trim() || null,
           withdrawId: accountForm.accountIdentifier.trim(),
         },
       },
+      id: selectedId,
     });
   }
 
   const updateAccountMutation = useMutation({
     mutationFn: ({ id, payload }: { id: number; payload: Parameters<typeof updateCounterpartAccount>[1] }) =>
       updateCounterpartAccount(id, payload),
+    onError: (err: Error) => {
+      setError(err.message);
+      toastError(err.message);
+    },
     onSuccess: () => {
       if (selectedId) {
-        queryClient.invalidateQueries({
+        void queryClient.invalidateQueries({
           queryKey: ["counterpart-detail", selectedId],
         });
-        queryClient.invalidateQueries({
+        void queryClient.invalidateQueries({
           queryKey: ["counterpart-summary", selectedId],
         });
       }
       toastSuccess("Concepto actualizado");
-    },
-    onError: (err: Error) => {
-      setError(err.message);
-      toastError(err.message);
     },
   });
 
@@ -169,11 +173,11 @@ export default function AssociatedAccounts({
   function handleSuggestionClick(suggestion: CounterpartAccountSuggestion) {
     setAccountForm({
       accountIdentifier: suggestion.accountIdentifier,
-      bankName: suggestion.bankName ?? "",
       accountType: suggestion.accountType ?? "",
-      holder: suggestion.holder ?? "",
-      concept: suggestion.assignedCounterpartId ? "" : (suggestion.holder ?? ""),
       bankAccountNumber: suggestion.bankAccountNumber ?? "",
+      bankName: suggestion.bankName ?? "",
+      concept: suggestion.assignedCounterpartId ? "" : (suggestion.holder ?? ""),
+      holder: suggestion.holder ?? "",
     });
     setSuggestionQuery(suggestion.accountIdentifier);
   }
@@ -181,34 +185,34 @@ export default function AssociatedAccounts({
   function handleSuggestionCreate(suggestion: CounterpartAccountSuggestion) {
     setAccountForm({
       accountIdentifier: suggestion.accountIdentifier,
-      bankName: suggestion.bankName ?? "",
       accountType: suggestion.accountType ?? "",
-      holder: suggestion.holder ?? "",
-      concept: "",
       bankAccountNumber: suggestion.bankAccountNumber ?? "",
+      bankName: suggestion.bankName ?? "",
+      concept: "",
+      holder: suggestion.holder ?? "",
     });
     setSuggestionQuery(suggestion.accountIdentifier);
   }
 
   const attachRutMutation = useMutation({
     mutationFn: ({ id, rut }: { id: number; rut: string }) => attachCounterpartRut(id, rut),
+    onError: (error: Error) => {
+      setError(error.message);
+      toastError(error.message);
+    },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: ["counterpart-detail", variables.id],
       });
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: ["counterpart-summary", variables.id],
       });
       setSuggestionQuery("");
       toastSuccess("RUT vinculado correctamente");
     },
-    onError: (error: Error) => {
-      setError(error.message);
-      toastError(error.message);
-    },
   });
 
-  async function handleAttachRut(rut: string | null | undefined) {
+  async function handleAttachRut(rut: null | string | undefined) {
     if (!selectedId) {
       setError("Selecciona una contraparte para vincular");
       toastError("Selecciona una contraparte antes de vincular un RUT");
@@ -227,7 +231,7 @@ export default function AssociatedAccounts({
     const groups = new Map<string, AccountGroup>();
     const identifierToKey = new Map<string, string>();
 
-    (detail?.accounts ?? []).forEach((account) => {
+    for (const account of detail?.accounts ?? []) {
       const label = account.metadata?.bankAccountNumber?.trim() || account.account_identifier;
       identifierToKey.set(account.account_identifier, label);
       const existing = groups.get(label);
@@ -238,15 +242,15 @@ export default function AssociatedAccounts({
         if (!existing.concept && account.concept) existing.concept = account.concept;
       } else {
         groups.set(label, {
+          accounts: [account],
+          bankName: account.bank_name ?? null,
+          concept: account.concept ?? "",
+          holder: account.holder ?? null,
           key: label,
           label,
-          bankName: account.bank_name ?? null,
-          holder: account.holder ?? null,
-          concept: account.concept ?? "",
-          accounts: [account],
         });
       }
-    });
+    }
 
     const accountGroups = [...groups.values()]
       .map((group) => ({
@@ -262,14 +266,14 @@ export default function AssociatedAccounts({
   const identifierToGroupKey = accountGrouping.identifierToKey;
 
   const summaryByGroup = (() => {
-    const map = new Map<string, { total: number; count: number }>();
-    summary?.byAccount.forEach((row) => {
+    const map = new Map<string, { count: number; total: number }>();
+    for (const row of summary?.byAccount) {
       const key = identifierToGroupKey.get(row.account_identifier) ?? row.account_identifier;
-      const entry = map.get(key) ?? { total: 0, count: 0 };
+      const entry = map.get(key) ?? { count: 0, total: 0 };
       entry.total += row.total;
       entry.count += row.count;
       map.set(key, entry);
-    });
+    }
     return map;
   })();
 
@@ -294,17 +298,17 @@ export default function AssociatedAccounts({
     const payload = await fetchTransactions({
       filters: {
         bankAccountNumber: filter.bankAccountNumber || "",
-        direction: "OUT",
-        includeAmounts: true,
-        from: range.from || "",
-        to: range.to || "",
         description: "",
-        origin: "",
         destination: "",
-        sourceId: filter.sourceId || "",
+        direction: "OUT",
         externalReference: "",
-        transactionType: "",
+        from: range.from || "",
+        includeAmounts: true,
+        origin: "",
+        sourceId: filter.sourceId || "",
         status: "",
+        to: range.to || "",
+        transactionType: "",
       },
       page: 1,
       pageSize: 200,
@@ -315,28 +319,28 @@ export default function AssociatedAccounts({
   const activeRange = summaryRange;
 
   const { data: quickViewRows = [] } = useQuery({
-    queryKey: ["associated-accounts-transactions", quickViewGroup, activeRange.from, activeRange.to],
+    enabled: !!quickViewGroup,
     queryFn: async () => {
       // safe to assert quickViewGroup is present due to enabled
       const accounts = quickViewGroup!.accounts;
       const filters = accounts.map((account) => buildAccountTransactionFilter(account));
       const normalized: Record<string, AccountTransactionFilter> = {};
-      filters.forEach((filter) => {
+      for (const filter of filters) {
         if (filter.sourceId || filter.bankAccountNumber) {
           normalized[accountFilterKey(filter)] = filter;
         }
-      });
+      }
       const uniqueFilters = Object.values(normalized);
 
       const results = await Promise.all(uniqueFilters.map((filter) => fetchTransactionsForFilter(filter, activeRange)));
       const merged = results.flat();
 
       const dedup = new Map<number, Transaction>();
-      merged.forEach((movement) => {
+      for (const movement of merged) {
         if (!dedup.has(movement.id)) {
           dedup.set(movement.id, movement);
         }
-      });
+      }
 
       const sorted = [...dedup.values()].toSorted(
         (a, b) => dayjs(b.transactionDate).valueOf() - dayjs(a.transactionDate).valueOf()
@@ -344,7 +348,7 @@ export default function AssociatedAccounts({
 
       return sorted;
     },
-    enabled: !!quickViewGroup,
+    queryKey: ["associated-accounts-transactions", quickViewGroup, activeRange.from, activeRange.to],
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
@@ -352,7 +356,7 @@ export default function AssociatedAccounts({
     setQuickViewGroup(group);
   };
 
-  const rows = (quickViewRows as Transaction[]) ?? [];
+  const rows = quickViewRows ?? [];
   const quickStats = {
     count: rows.length,
     total: rows.reduce((sum: number, row: Transaction) => sum + (row.transactionAmount ?? 0), 0),
@@ -366,12 +370,12 @@ export default function AssociatedAccounts({
     return (
       <div className="border-base-200 overflow-hidden rounded-lg border">
         <DataTable
-          data={rows}
           columns={quickViewColumns}
+          data={rows}
           enableToolbar={false}
           enableVirtualization={false}
-          pagination={{ pageIndex: 0, pageSize: 50 }}
           noDataMessage="Sin movimientos dentro del rango seleccionado."
+          pagination={{ pageIndex: 0, pageSize: 50 }}
         />
       </div>
     );
@@ -385,8 +389,8 @@ export default function AssociatedAccounts({
       <div className="border-base-300 bg-base-100 max-h-48 overflow-y-auto rounded-xl border">
         {accountSuggestions.map((suggestion) => (
           <div
-            key={suggestion.accountIdentifier}
             className="border-base-300 flex flex-col gap-1 border-b px-3 py-2 text-xs last:border-b-0"
+            key={suggestion.accountIdentifier}
           >
             <span className="text-base-content font-semibold">{suggestion.accountIdentifier}</span>
             <span className="text-base-content/90">{suggestion.holder ?? "(sin titular)"}</span>
@@ -398,21 +402,33 @@ export default function AssociatedAccounts({
               {suggestion.movements} mov. · {fmtCLP(suggestion.totalAmount)}
             </span>
             <div className="flex flex-wrap gap-2 pt-1">
-              <Button size="xs" variant="primary" onClick={() => handleSuggestionClick(suggestion)}>
+              <Button
+                onClick={() => {
+                  handleSuggestionClick(suggestion);
+                }}
+                size="xs"
+                variant="primary"
+              >
                 Autrellenar
               </Button>
               {selectedId && suggestion.rut && (
                 <Button
-                  variant="secondary"
-                  size="xs"
-                  onClick={() => handleAttachRut(suggestion.rut)}
                   disabled={attachRutMutation.isPending}
+                  onClick={() => handleAttachRut(suggestion.rut)}
+                  size="xs"
+                  variant="secondary"
                 >
                   {attachRutMutation.isPending ? "Vinculando..." : "Vincular por RUT"}
                 </Button>
               )}
               {!selectedId && (
-                <Button size="xs" variant="secondary" onClick={() => handleSuggestionCreate(suggestion)}>
+                <Button
+                  onClick={() => {
+                    handleSuggestionCreate(suggestion);
+                  }}
+                  size="xs"
+                  variant="secondary"
+                >
                   Copiar datos
                 </Button>
               )}
@@ -432,7 +448,13 @@ export default function AssociatedAccounts({
             Identificadores detectados en los movimientos y asignados a esta contraparte.
           </p>
         </div>
-        <Button size="sm" variant="secondary" onClick={() => setIsAddAccountModalOpen(true)}>
+        <Button
+          onClick={() => {
+            setIsAddAccountModalOpen(true);
+          }}
+          size="sm"
+          variant="secondary"
+        >
           + Agregar cuenta
         </Button>
       </header>
@@ -440,12 +462,12 @@ export default function AssociatedAccounts({
 
       <div className="border-base-200 bg-base-100 overflow-hidden rounded-lg border">
         <DataTable
-          data={accountGroups}
           columns={accountGroupColumns}
+          data={accountGroups}
           enableToolbar={false}
           enableVirtualization={false}
-          pagination={{ pageIndex: 0, pageSize: 50 }}
           noDataMessage="Sin cuentas asociadas."
+          pagination={{ pageIndex: 0, pageSize: 50 }}
         />
       </div>
 
@@ -472,28 +494,32 @@ export default function AssociatedAccounts({
             </div>
             <div className="text-base-content/70 flex flex-wrap items-end gap-3 text-xs">
               <Input
+                className="w-36"
                 label="Desde"
+                onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                  onSummaryRangeChange({ from: event.target.value });
+                }}
                 type="date"
                 value={summaryRange.from}
-                onChange={(event: ChangeEvent<HTMLInputElement>) => onSummaryRangeChange({ from: event.target.value })}
-                className="w-36"
               />
               <Input
+                className="w-36"
                 label="Hasta"
+                onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                  onSummaryRangeChange({ to: event.target.value });
+                }}
                 type="date"
                 value={summaryRange.to}
-                onChange={(event: ChangeEvent<HTMLInputElement>) => onSummaryRangeChange({ to: event.target.value })}
-                className="w-36"
               />
               <Button
-                size="xs"
-                variant="ghost"
-                onClick={() =>
+                onClick={() => {
                   onSummaryRangeChange({
                     from: fallbackRange.from,
                     to: fallbackRange.to,
-                  })
-                }
+                  });
+                }}
+                size="xs"
+                variant="ghost"
               >
                 Año en curso
               </Button>
@@ -507,58 +533,69 @@ export default function AssociatedAccounts({
         )}
       </div>
 
-      <Modal isOpen={isAddAccountModalOpen} onClose={() => setIsAddAccountModalOpen(false)} title="Agregar cuenta">
+      <Modal
+        isOpen={isAddAccountModalOpen}
+        onClose={() => {
+          setIsAddAccountModalOpen(false);
+        }}
+        title="Agregar cuenta"
+      >
         <div className="space-y-4 text-sm">
           <Input
             label="Identificador / Cuenta"
-            type="text"
-            value={accountForm.accountIdentifier}
             onChange={handleAccountIdentifierChange}
             placeholder="Ej. 124282432930"
+            type="text"
+            value={accountForm.accountIdentifier}
           />
           {renderSuggestions()}
           <div className="grid gap-3 md:grid-cols-2">
             <Input
               label="Banco"
-              type="text"
-              value={accountForm.bankName}
               onChange={updateAccountForm("bankName")}
               placeholder="Banco"
+              type="text"
+              value={accountForm.bankName}
             />
             <Input
               label="Número de cuenta"
-              type="text"
-              value={accountForm.bankAccountNumber}
               onChange={updateAccountForm("bankAccountNumber")}
               placeholder="Ej. 00123456789"
+              type="text"
+              value={accountForm.bankAccountNumber}
             />
             <Input
               label="Titular"
-              type="text"
-              value={accountForm.holder}
               onChange={updateAccountForm("holder")}
               placeholder="Titular de la cuenta"
+              type="text"
+              value={accountForm.holder}
             />
             <Input
               label="Concepto"
-              type="text"
-              value={accountForm.concept}
               onChange={updateAccountForm("concept")}
               placeholder="Ej. Pago proveedor"
+              type="text"
+              value={accountForm.concept}
             />
             <Input
               label="Tipo de cuenta"
-              type="text"
-              value={accountForm.accountType}
               onChange={updateAccountForm("accountType")}
               placeholder="Cuenta corriente"
+              type="text"
+              value={accountForm.accountType}
             />
           </div>
           <div className="flex justify-end gap-2">
-            <Button variant="ghost" onClick={() => setIsAddAccountModalOpen(false)}>
+            <Button
+              onClick={() => {
+                setIsAddAccountModalOpen(false);
+              }}
+              variant="ghost"
+            >
               Cancelar
             </Button>
-            <Button onClick={() => void handleAddAccount()} disabled={addAccountMutation.isPending}>
+            <Button disabled={addAccountMutation.isPending} onClick={() => void handleAddAccount()}>
               {addAccountMutation.isPending ? "Guardando..." : "Agregar cuenta"}
             </Button>
           </div>

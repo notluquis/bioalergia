@@ -10,8 +10,8 @@ export async function fetchBalances(from: string, to: string): Promise<BalancesA
 
 export async function saveBalance(date: string, balance: number, note?: string): Promise<void> {
   await apiClient.post("/api/balances", {
-    date,
     balance,
+    date,
     note: note?.trim() ? note.trim() : undefined,
   });
 }

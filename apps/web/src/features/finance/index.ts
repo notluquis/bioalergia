@@ -3,13 +3,13 @@
  * Re-exports all submodules for clean imports
  */
 
-// Shared types and constants
-export * from "./constants";
-export * from "./types";
-
 // Submodules
 export * as balances from "./balances";
+// Shared types and constants
+export * from "./constants";
+
 export * as loans from "./loans";
+export * from "./types";
 // The export for TransactionsPage is implicitly removed by not re-exporting the transactions submodule.
 // If TransactionsPage was a direct export, it would be removed here.
 // Assuming TransactionsPage is part of the 'transactions' submodule,

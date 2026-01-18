@@ -4,45 +4,45 @@
  */
 
 /** Standard API response status */
-export type ApiStatus = "ok" | "error";
-
-/** ID type for JSON responses (can be string, number or bigint) */
-export type JsonId = string | number | bigint;
+export type ApiStatus = "error" | "ok";
 
 /** Date range for queries */
-export type DateRange = {
+export interface DateRange {
   from: string;
   to: string;
-};
+}
 
-/** Direction of money flow */
-export type MoneyDirection = "IN" | "OUT" | "NEUTRO";
+/** Entity type for borrowers */
+export type EntityType = "COMPANY" | "PERSON";
 
-/** Common loan/schedule status */
-export type PaymentStatus = "PENDING" | "PARTIAL" | "PAID" | "OVERDUE" | "SKIPPED";
+/** Interest calculation type */
+export type InterestType = "COMPOUND" | "SIMPLE";
+
+/** ID type for JSON responses (can be string, number or bigint) */
+export type JsonId = bigint | number | string;
 
 /** Loan status */
 export type LoanStatus = "ACTIVE" | "COMPLETED" | "DEFAULTED";
 
+/** Direction of money flow */
+export type MoneyDirection = "IN" | "NEUTRO" | "OUT";
+
 /** Payment frequency */
-export type PaymentFrequency = "WEEKLY" | "BIWEEKLY" | "MONTHLY";
+export type PaymentFrequency = "BIWEEKLY" | "MONTHLY" | "WEEKLY";
 
-/** Interest calculation type */
-export type InterestType = "SIMPLE" | "COMPOUND";
-
-/** Entity type for borrowers */
-export type EntityType = "PERSON" | "COMPANY";
+/** Common loan/schedule status */
+export type PaymentStatus = "OVERDUE" | "PAID" | "PARTIAL" | "PENDING" | "SKIPPED";
 
 /** Transaction movement from DB (mapped) */
-export type Transaction = {
+export interface Transaction {
+  description: null | string;
+  externalReference: null | string;
   id: number;
+  paymentMethod: null | string;
+  settlementNetAmount: null | number;
+  sourceId: null | string;
+  status: null | string;
+  transactionAmount: null | number;
   transactionDate: string;
-  description: string | null;
   transactionType: string;
-  transactionAmount: number | null;
-  status: string | null;
-  externalReference: string | null;
-  sourceId: string | null;
-  paymentMethod: string | null;
-  settlementNetAmount: number | null;
-};
+}

@@ -3,28 +3,29 @@ import dayjs from "dayjs";
 import { Info } from "lucide-react";
 import { useState } from "react";
 
+import type { CalendarSyncLog } from "@/features/calendar/types";
+
 import { DataTable } from "@/components/data-table/DataTable";
 import Button from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
 import { SyncDetailModal } from "@/features/calendar/components/SyncDetailModal";
 import { SyncProgressPanel } from "@/features/calendar/components/SyncProgressPanel";
 import { useCalendarEvents } from "@/features/calendar/hooks/useCalendarEvents";
-import type { CalendarSyncLog } from "@/features/calendar/types";
 import { numberFormatter } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 export default function CalendarSyncHistoryPage() {
   const {
-    syncing,
-    syncError,
-    syncProgress,
-    syncDurationMs,
-    syncNow,
     hasRunningSyncFromOtherSource,
-    lastSyncInfo,
-    syncLogs: logs,
-    refetchSyncLogs: refetchLogs,
     isLoadingSyncLogs,
+    lastSyncInfo,
+    refetchSyncLogs: refetchLogs,
+    syncDurationMs,
+    syncError,
+    syncing,
+    syncLogs: logs,
+    syncNow,
+    syncProgress,
   } = useCalendarEvents();
   const [selectedLog, setSelectedLog] = useState<CalendarSyncLog | null>(null);
   const loading = isLoadingSyncLogs;
@@ -46,24 +47,23 @@ export default function CalendarSyncHistoryPage() {
   const columns: ColumnDef<CalendarSyncLog>[] = [
     {
       accessorKey: "startedAt",
-      header: "Inicio",
       cell: ({ row }) => (
         <span className="text-base-content font-medium">
           {dayjs(row.original.startedAt).format("DD MMM YYYY HH:mm")}
         </span>
       ),
+      header: "Inicio",
     },
     {
       accessorKey: "status",
-      header: "Estado",
       cell: ({ row }) => {
         const log = row.original;
         const statusColors = {
-          SUCCESS: "text-success",
-          RUNNING: "text-warning",
           ERROR: "text-error",
+          RUNNING: "text-warning",
+          SUCCESS: "text-success",
         };
-        const statusClass = statusColors[log.status as keyof typeof statusColors] || "text-error";
+        const statusClass = statusColors[log.status] || "text-error";
         const statusText = (() => {
           if (log.status === "SUCCESS") return "Éxito";
           if (log.status === "RUNNING") return "En curso...";
@@ -71,25 +71,24 @@ export default function CalendarSyncHistoryPage() {
         })();
         return <span className={cn("font-semibold", statusClass)}>{statusText}</span>;
       },
+      header: "Estado",
     },
     {
       accessorKey: "inserted",
-      header: "Insertadas",
       cell: ({ row }) => numberFormatter.format(row.original.inserted),
+      header: "Insertadas",
     },
     {
       accessorKey: "updated",
-      header: "Actualizadas",
       cell: ({ row }) => numberFormatter.format(row.original.updated),
+      header: "Actualizadas",
     },
     {
-      id: "source",
-      header: "Origen",
       cell: ({ row }) => row.original.triggerLabel ?? row.original.triggerSource,
+      header: "Origen",
+      id: "source",
     },
     {
-      id: "duration",
-      header: "Duración",
       cell: ({ row }) => {
         const log = row.original;
         const finished = log.finishedAt ? dayjs(log.finishedAt) : null;
@@ -97,34 +96,36 @@ export default function CalendarSyncHistoryPage() {
         if (log.status === "RUNNING") return "En curso...";
         return "-";
       },
+      header: "Duración",
+      id: "duration",
     },
     {
-      id: "actions",
-      header: "",
       cell: ({ row }) => (
         <Button
-          variant="ghost"
-          size="sm"
+          aria-label="Ver detalle"
+          className="text-primary hover:text-primary/80"
           onClick={(e) => {
             e.stopPropagation();
             setSelectedLog(row.original);
           }}
-          className="text-primary hover:text-primary/80"
-          aria-label="Ver detalle"
+          size="sm"
+          variant="ghost"
         >
           <Info size={16} />
         </Button>
       ),
+      header: "",
+      id: "actions",
     },
   ];
 
   return (
     <section className="space-y-6">
       <div className="flex items-center justify-end gap-2">
-        <Button variant="ghost" size="sm" onClick={handleRefresh} disabled={loading || isSyncing}>
+        <Button disabled={loading || isSyncing} onClick={handleRefresh} size="sm" variant="ghost">
           {loading ? "Actualizando..." : "Actualizar"}
         </Button>
-        <Button size="sm" onClick={syncNow} disabled={isSyncing || loading}>
+        <Button disabled={isSyncing || loading} onClick={syncNow} size="sm">
           {isSyncing ? "Sincronizando..." : "Sincronizar ahora"}
         </Button>
       </div>
@@ -148,7 +149,7 @@ export default function CalendarSyncHistoryPage() {
                 .filter((log) => log.errorMessage)
                 .slice(0, 5)
                 .map((log) => (
-                  <li key={`err-${log.id}`} className="text-error flex gap-2">
+                  <li className="text-error flex gap-2" key={`err-${log.id}`}>
                     <span className="font-mono whitespace-nowrap opacity-70">
                       {dayjs(log.startedAt).format("DD/MM HH:mm")}
                     </span>
@@ -161,15 +162,21 @@ export default function CalendarSyncHistoryPage() {
       )}
 
       <SyncProgressPanel
-        syncing={syncing}
-        syncError={syncError}
-        syncProgress={syncProgress}
-        syncDurationMs={syncDurationMs}
         lastSyncInfo={lastSyncInfo ?? undefined}
         showLastSyncInfo
+        syncDurationMs={syncDurationMs}
+        syncError={syncError}
+        syncing={syncing}
+        syncProgress={syncProgress}
       />
 
-      <SyncDetailModal isOpen={selectedLog !== null} onClose={() => setSelectedLog(null)} log={selectedLog} />
+      <SyncDetailModal
+        isOpen={selectedLog !== null}
+        log={selectedLog}
+        onClose={() => {
+          setSelectedLog(null);
+        }}
+      />
     </section>
   );
 }

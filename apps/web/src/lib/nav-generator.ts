@@ -36,16 +36,16 @@ import { type NavSection, ROUTE_DATA, type RouteData, SECTION_ORDER } from "../.
 // ============================================================================
 
 export interface NavItem {
-  to: string;
-  label: string;
-  icon: ComponentType<{ className?: string; strokeWidth?: number }>;
-  requiredPermission?: { action: string; subject: string };
   exact?: boolean;
+  icon: ComponentType<{ className?: string; strokeWidth?: number }>;
+  label: string;
+  requiredPermission?: { action: string; subject: string };
+  to: string;
 }
 
 export interface NavSectionData {
-  title: string;
   items: NavItem[];
+  title: string;
 }
 
 // ============================================================================
@@ -53,26 +53,26 @@ export interface NavSectionData {
 // ============================================================================
 
 const ICON_MAP: Record<string, ComponentType<{ className?: string; strokeWidth?: number }>> = {
-  LayoutDashboard,
-  PiggyBank,
-  Users2,
-  Briefcase,
-  CalendarDays,
   Box,
-  FileSpreadsheet,
-  ClipboardCheck,
-  Users,
+  Briefcase,
   Calendar,
-  Settings2,
-  ListChecks,
-  Upload,
-  PackagePlus,
+  CalendarDays,
+  ClipboardCheck,
   Clock,
-  UserCog,
-  Database,
-  Home,
   CreditCard,
+  Database,
+  FileSpreadsheet,
   History,
+  Home,
+  LayoutDashboard,
+  ListChecks,
+  PackagePlus,
+  PiggyBank,
+  Settings2,
+  Upload,
+  UserCog,
+  Users,
+  Users2,
 };
 
 // ============================================================================
@@ -81,45 +81,8 @@ const ICON_MAP: Record<string, ComponentType<{ className?: string; strokeWidth?:
 
 interface ExtractedNavItem extends Omit<NavItem, "icon"> {
   iconKey: string;
-  section: NavSection;
   order: number;
-}
-
-/**
- * Recursively extracts navigation items from route data
- */
-function extractNavItems(routes: RouteData[], parentPath = ""): ExtractedNavItem[] {
-  const items: ExtractedNavItem[] = [];
-
-  for (const route of routes) {
-    // Build full path
-    let fullPath = `/${route.path}`;
-    if (route.index) {
-      fullPath = parentPath;
-    } else if (parentPath) {
-      fullPath = `${parentPath}/${route.path}`;
-    }
-
-    // If this route has nav config, add it
-    if (route.nav) {
-      items.push({
-        to: fullPath,
-        label: route.nav.label,
-        iconKey: route.nav.iconKey,
-        section: route.nav.section,
-        order: route.nav.order,
-        requiredPermission: route.permission,
-        exact: route.exact,
-      });
-    }
-
-    // Recursively process children
-    if (route.children) {
-      items.push(...extractNavItems(route.children, fullPath));
-    }
-  }
-
-  return items;
+  section: NavSection;
 }
 
 /**
@@ -151,21 +114,58 @@ export function generateNavSections(): NavSectionData[] {
       .toSorted((a, b) => a.order - b.order)
       .map(
         (item): NavItem => ({
-          to: item.to,
-          label: item.label,
-          icon: ICON_MAP[item.iconKey] ?? Box,
-          requiredPermission: item.requiredPermission,
           exact: item.exact,
+          icon: ICON_MAP[item.iconKey] ?? Box,
+          label: item.label,
+          requiredPermission: item.requiredPermission,
+          to: item.to,
         })
       );
 
     sections.push({
-      title: sectionName,
       items: sortedItems,
+      title: sectionName,
     });
   }
 
   return sections;
+}
+
+/**
+ * Recursively extracts navigation items from route data
+ */
+function extractNavItems(routes: RouteData[], parentPath = ""): ExtractedNavItem[] {
+  const items: ExtractedNavItem[] = [];
+
+  for (const route of routes) {
+    // Build full path
+    let fullPath = `/${route.path}`;
+    if (route.index) {
+      fullPath = parentPath;
+    } else if (parentPath) {
+      fullPath = `${parentPath}/${route.path}`;
+    }
+
+    // If this route has nav config, add it
+    if (route.nav) {
+      items.push({
+        exact: route.exact,
+        iconKey: route.nav.iconKey,
+        label: route.nav.label,
+        order: route.nav.order,
+        requiredPermission: route.permission,
+        section: route.nav.section,
+        to: fullPath,
+      });
+    }
+
+    // Recursively process children
+    if (route.children) {
+      items.push(...extractNavItems(route.children, fullPath));
+    }
+  }
+
+  return items;
 }
 
 /**

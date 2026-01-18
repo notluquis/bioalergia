@@ -1,38 +1,45 @@
 import type { CounterpartAccount } from "../types";
 
-export type AccountForm = {
+export interface AccountForm {
   accountIdentifier: string;
-  bankName: string;
   accountType: string;
-  holder: string;
-  concept: string;
   bankAccountNumber: string;
-};
+  bankName: string;
+  concept: string;
+  holder: string;
+}
 
 export const ACCOUNT_FORM_DEFAULT: AccountForm = {
   accountIdentifier: "",
-  bankName: "",
   accountType: "",
-  holder: "",
-  concept: "",
   bankAccountNumber: "",
+  bankName: "",
+  concept: "",
+  holder: "",
 };
 
-export type DateRange = { from: string; to: string };
-
-export type AccountGroup = {
+export interface AccountGroup {
+  accounts: CounterpartAccount[];
+  bankName: null | string;
+  concept: string;
+  holder: null | string;
   key: string;
   label: string;
-  bankName: string | null;
-  holder: string | null;
-  concept: string;
-  accounts: CounterpartAccount[];
-};
+}
 
-export type AccountTransactionFilter = {
-  sourceId?: string;
+export interface AccountTransactionFilter {
   bankAccountNumber?: string;
-};
+  sourceId?: string;
+}
+
+export interface DateRange {
+  from: string;
+  to: string;
+}
+
+export function accountFilterKey(filter: AccountTransactionFilter) {
+  return `${filter.sourceId ?? ""}|${filter.bankAccountNumber ?? ""}`;
+}
 
 export function buildAccountTransactionFilter(account: CounterpartAccount): AccountTransactionFilter {
   const withdrawId = account.metadata?.withdrawId?.trim();
@@ -45,8 +52,4 @@ export function buildAccountTransactionFilter(account: CounterpartAccount): Acco
     filter.bankAccountNumber = bankAccountNumber;
   }
   return filter;
-}
-
-export function accountFilterKey(filter: AccountTransactionFilter) {
-  return `${filter.sourceId ?? ""}|${filter.bankAccountNumber ?? ""}`;
 }

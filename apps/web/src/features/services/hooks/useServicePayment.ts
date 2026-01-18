@@ -2,13 +2,15 @@ import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-q
 import { useStore } from "@tanstack/react-store";
 import dayjs from "dayjs";
 
-import { fetchTransactions } from "@/features/finance/api";
 import type { Transaction } from "@/features/finance/types";
+
+import { fetchTransactions } from "@/features/finance/api";
+
+import type { ServicePaymentPayload } from "../types";
 
 import { extractErrorMessage, registerServicePayment } from "../api";
 import { serviceKeys } from "../queries";
 import { servicesActions, servicesStore } from "../store";
-import type { ServicePaymentPayload } from "../types";
 
 export function useServicePayment() {
   const queryClient = useQueryClient();
@@ -23,7 +25,6 @@ export function useServicePayment() {
   const dueDateStr = paymentSchedule?.due_date;
 
   const { data: suggestedTransactions } = useSuspenseQuery({
-    queryKey: ["payment-suggestions", scheduleId, expectedAmount, dueDateStr],
     queryFn: async () => {
       if (!scheduleId || expectedAmount == null) return [];
       const tolerance = Math.max(100, Math.round(expectedAmount * 0.01));
@@ -33,19 +34,19 @@ export function useServicePayment() {
 
       const payload = await fetchTransactions({
         filters: {
-          from,
-          to,
+          bankAccountNumber: "",
           // Empty filters to get broad range
           description: "",
-          origin: "",
           destination: "",
-          sourceId: "",
-          bankAccountNumber: "",
           direction: "OUT",
-          includeAmounts: true,
           externalReference: "",
-          transactionType: "",
+          from,
+          includeAmounts: true,
+          origin: "",
+          sourceId: "",
           status: "",
+          to,
+          transactionType: "",
         },
         page: 1,
         pageSize: 50,
@@ -54,21 +55,21 @@ export function useServicePayment() {
       return payload.data
         .filter(
           (tx) =>
-            typeof tx.transactionAmount === "number" &&
-            Math.abs((tx.transactionAmount ?? 0) - expectedAmount) <= tolerance
+            typeof tx.transactionAmount === "number" && Math.abs(tx.transactionAmount - expectedAmount) <= tolerance
         )
         .slice(0, 8);
     },
+    queryKey: ["payment-suggestions", scheduleId, expectedAmount, dueDateStr],
   });
 
   // Pay Mutation
   const paymentMutation = useMutation({
-    mutationFn: async (payload: { scheduleId: number; body: ServicePaymentPayload }) => {
+    mutationFn: async (payload: { body: ServicePaymentPayload; scheduleId: number }) => {
       return registerServicePayment(payload.scheduleId, payload.body);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: serviceKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: serviceKeys.details() });
+      void queryClient.invalidateQueries({ queryKey: serviceKeys.lists() });
+      void queryClient.invalidateQueries({ queryKey: serviceKeys.details() });
       servicesActions.closePaymentModal();
     },
   });
@@ -81,43 +82,44 @@ export function useServicePayment() {
     if (!Number.isFinite(transactionId) || transactionId <= 0) return;
 
     await paymentMutation.mutateAsync({
-      scheduleId: paymentSchedule.id,
       body: {
-        transactionId,
+        note: paymentForm.note || undefined,
         paidAmount: Number(paymentForm.paidAmount),
         paidDate: paymentForm.paidDate,
-        note: paymentForm.note || undefined,
+        transactionId,
       },
+      scheduleId: paymentSchedule.id,
     });
   };
 
   const applySuggestedTransaction = (tx: Transaction) => {
     if (!tx.transactionAmount) return;
     servicesActions.updatePaymentForm({
-      transactionId: String(tx.id),
       paidAmount: String(tx.transactionAmount),
       paidDate: tx.transactionDate ? dayjs(tx.transactionDate).format("YYYY-MM-DD") : paymentForm.paidDate,
+      transactionId: String(tx.id),
     });
   };
 
   return {
-    // State
-    paymentSchedule,
-    paymentForm,
-    handlePaymentFieldChange: (key: keyof typeof paymentForm, value: string) =>
-      servicesActions.updatePaymentForm({ [key]: value }),
-
-    // Suggestions
-    suggestedTransactions,
     applySuggestedTransaction,
+    closePaymentModal: servicesActions.closePaymentModal,
+    handlePaymentFieldChange: (key: keyof typeof paymentForm, value: string) => {
+      servicesActions.updatePaymentForm({ [key]: value });
+    },
 
     // Mutation
     handlePaymentSubmit,
-    paymentPending: paymentMutation.isPending,
-    paymentError: extractErrorMessage(paymentMutation.error),
-
     // Modal Control
     openPaymentModal: servicesActions.openPaymentModal,
-    closePaymentModal: servicesActions.closePaymentModal,
+
+    paymentError: extractErrorMessage(paymentMutation.error),
+    paymentForm,
+    paymentPending: paymentMutation.isPending,
+
+    // State
+    paymentSchedule,
+    // Suggestions
+    suggestedTransactions,
   };
 }

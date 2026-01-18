@@ -1,24 +1,24 @@
-export type DailyBalanceDay = {
+export interface BalanceDraft {
+  note: string;
+  value: string;
+}
+
+export interface BalancesApiResponse {
+  days: DailyBalanceDay[];
+  from: string;
+  previous: null | { balance: number; date: string; note: null | string };
+  status: "ok";
+  to: string;
+}
+
+export interface DailyBalanceDay {
   date: string;
+  difference: null | number;
+  expectedBalance: null | number;
+  hasCashback: boolean;
+  netChange: number;
+  note: null | string;
+  recordedBalance: null | number;
   totalIn: number;
   totalOut: number;
-  netChange: number;
-  expectedBalance: number | null;
-  recordedBalance: number | null;
-  difference: number | null;
-  note: string | null;
-  hasCashback: boolean;
-};
-
-export type BalancesApiResponse = {
-  status: "ok";
-  from: string;
-  to: string;
-  previous: { date: string; balance: number; note: string | null } | null;
-  days: DailyBalanceDay[];
-};
-
-export type BalanceDraft = {
-  value: string;
-  note: string;
-};
+}

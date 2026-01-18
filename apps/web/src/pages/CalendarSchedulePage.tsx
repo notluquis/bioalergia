@@ -1,5 +1,3 @@
-import "dayjs/locale/es";
-
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
@@ -15,6 +13,8 @@ import { useCalendarEvents } from "@/features/calendar/hooks/useCalendarEvents";
 import { numberFormatter } from "@/lib/format";
 import { PAGE_CONTAINER } from "@/lib/styles";
 
+import "dayjs/locale/es";
+
 dayjs.extend(isoWeek);
 dayjs.extend(isSameOrBefore);
 dayjs.extend(isSameOrAfter);
@@ -27,18 +27,18 @@ function CalendarSchedulePage() {
   const [showFilters, setShowFilters] = useState(false);
 
   const {
-    filters,
     appliedFilters,
-    daily,
-    summary,
-    loading,
-    error,
-    isDirty,
-    availableEventTypes,
-    availableCategories,
-    updateFilters,
     applyFilters,
+    availableCategories,
+    availableEventTypes,
+    daily,
+    error,
+    filters,
+    isDirty,
+    loading,
     resetFilters,
+    summary,
+    updateFilters,
   } = useCalendarEvents();
 
   const allEvents = daily?.days.flatMap((day) => day.events) ?? [];
@@ -100,25 +100,25 @@ function CalendarSchedulePage() {
           <div className="flex items-center gap-2">
             <div className="bg-base-200 flex items-center gap-0.5 rounded-lg p-1">
               <button
-                type="button"
-                onClick={goToPreviousWeek}
-                className="hover:bg-base-100 text-base-content/70 hover:text-primary rounded-md p-1.5 transition-colors"
                 aria-label="Semana anterior"
+                className="hover:bg-base-100 text-base-content/70 hover:text-primary rounded-md p-1.5 transition-colors"
+                onClick={goToPreviousWeek}
+                type="button"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
               <button
-                type="button"
-                onClick={goToThisWeek}
                 className="hover:bg-base-100 rounded-md px-2 py-1 text-xs font-medium uppercase transition-colors"
+                onClick={goToThisWeek}
+                type="button"
               >
                 Hoy
               </button>
               <button
-                type="button"
-                onClick={goToNextWeek}
-                className="hover:bg-base-100 text-base-content/70 hover:text-primary rounded-md p-1.5 transition-colors"
                 aria-label="Semana siguiente"
+                className="hover:bg-base-100 text-base-content/70 hover:text-primary rounded-md p-1.5 transition-colors"
+                onClick={goToNextWeek}
+                type="button"
               >
                 <ChevronRight className="h-4 w-4" />
               </button>
@@ -132,10 +132,12 @@ function CalendarSchedulePage() {
               <span className="text-base-content/50 text-xs">{numberFormatter.format(allEvents.length)} eventos</span>
             )}
             <Button
-              variant={showFilters ? "secondary" : "ghost"}
-              size="sm"
-              onClick={() => setShowFilters(!showFilters)}
               className="gap-1.5"
+              onClick={() => {
+                setShowFilters(!showFilters);
+              }}
+              size="sm"
+              variant={showFilters ? "secondary" : "ghost"}
             >
               <Filter className="h-4 w-4" />
               <span className="hidden sm:inline">{showFilters ? "Cerrar" : "Filtros"}</span>
@@ -146,21 +148,21 @@ function CalendarSchedulePage() {
         {/* Collapsible Filters */}
         {showFilters && (
           <CalendarFilterPanel
-            filters={filters}
-            availableEventTypes={availableEventTypes}
             availableCategories={availableCategories}
-            showSearch
-            onFilterChange={updateFilters}
-            onApply={applyFilters}
-            onReset={resetFilters}
-            loading={loading}
+            availableEventTypes={availableEventTypes}
+            filters={filters}
             isDirty={isDirty}
+            loading={loading}
+            onApply={applyFilters}
+            onFilterChange={updateFilters}
+            onReset={resetFilters}
+            showSearch
           />
         )}
       </header>
 
       {error && (
-        <Alert variant="error" className="mt-3">
+        <Alert className="mt-3" variant="error">
           {error}
         </Alert>
       )}

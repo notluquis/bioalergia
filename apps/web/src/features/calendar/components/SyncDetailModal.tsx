@@ -1,17 +1,18 @@
 import { AlertTriangle, CheckCircle, XCircle } from "lucide-react";
 
-import Modal from "@/components/ui/Modal";
 import type { CalendarSyncLog } from "@/features/calendar/types";
+
+import Modal from "@/components/ui/Modal";
 import { numberFormatter } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 interface SyncDetailModalProps {
   isOpen: boolean;
-  onClose: () => void;
   log: CalendarSyncLog | null;
+  onClose: () => void;
 }
 
-export function SyncDetailModal({ isOpen, onClose, log }: SyncDetailModalProps) {
+export function SyncDetailModal({ isOpen, log, onClose }: SyncDetailModalProps) {
   if (!log) return null;
 
   const hasChanges =
@@ -56,10 +57,10 @@ export function SyncDetailModal({ isOpen, onClose, log }: SyncDetailModalProps) 
 
         {/* Stats Grid */}
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <StatBox label="Insertadas" value={log.inserted} color="text-success" />
-          <StatBox label="Actualizadas" value={log.updated} color="text-info" />
-          <StatBox label="Omitidas" value={log.skipped} color="text-base-content/60" />
-          <StatBox label="Excluidas" value={log.excluded} color="text-warning" />
+          <StatBox color="text-success" label="Insertadas" value={log.inserted} />
+          <StatBox color="text-info" label="Actualizadas" value={log.updated} />
+          <StatBox color="text-base-content/60" label="Omitidas" value={log.skipped} />
+          <StatBox color="text-warning" label="Excluidas" value={log.excluded} />
         </div>
 
         {/* Change Details */}
@@ -116,7 +117,7 @@ export function SyncDetailModal({ isOpen, onClose, log }: SyncDetailModalProps) 
   );
 }
 
-function StatBox({ label, value, color }: { label: string; value: number; color?: string }) {
+function StatBox({ color, label, value }: { color?: string; label: string; value: number }) {
   return (
     <div className="bg-base-100 border-base-200 flex flex-col items-center justify-center rounded-xl border p-3 text-center shadow-sm">
       <span className="text-base-content/60 mb-1 text-xs font-medium tracking-wider uppercase">{label}</span>

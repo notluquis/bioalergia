@@ -1,14 +1,14 @@
-export type Role = {
-  id: number;
-  name: string;
-  description: string | null;
-  isSystem: boolean;
-  permissions: { permissionId: number; permission: Permission }[];
-};
-
-export type Permission = {
-  id: number;
+export interface Permission {
   action: string;
+  description: null | string;
+  id: number;
   subject: string;
-  description: string | null;
-};
+}
+
+export interface Role {
+  description: null | string;
+  id: number;
+  isSystem: boolean;
+  name: string;
+  permissions: { permission: Permission; permissionId: number }[];
+}

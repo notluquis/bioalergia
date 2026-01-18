@@ -7,10 +7,10 @@ import { fmtCLP } from "@/lib/format";
 export const getReleaseColumns = (): ColumnDef<ReleaseTransaction>[] => [
   {
     accessorKey: "date",
-    header: "Fecha",
     cell: ({ row }) => (
       <span className="text-base-content font-medium">{dayjs(row.getValue("date")).format("DD/MM/YYYY")}</span>
     ),
+    header: "Fecha",
   },
   {
     accessorKey: "sourceId",
@@ -22,27 +22,27 @@ export const getReleaseColumns = (): ColumnDef<ReleaseTransaction>[] => [
   },
   {
     accessorKey: "netCreditAmount",
-    header: "Crédito Neto",
     cell: ({ row }) => <span className="text-success">{fmtCLP(row.getValue("netCreditAmount"))}</span>,
+    header: "Crédito Neto",
   },
   {
     accessorKey: "netDebitAmount",
-    header: "Débito Neto",
     cell: ({ row }) => <span className="text-error">{fmtCLP(row.getValue("netDebitAmount"))}</span>,
+    header: "Débito Neto",
   },
   {
     accessorKey: "grossAmount",
-    header: "Monto Bruto",
     cell: ({ row }) => fmtCLP(row.getValue("grossAmount")),
+    header: "Monto Bruto",
   },
   {
     accessorKey: "mpFeeAmount",
-    header: "Comisión MP",
     cell: ({ row }) => fmtCLP(row.getValue("mpFeeAmount")),
+    header: "Comisión MP",
   },
   {
     accessorKey: "financingFeeAmount",
-    header: "Comisión Financiera",
     cell: ({ row }) => fmtCLP(row.getValue("financingFeeAmount")),
+    header: "Comisión Financiera",
   },
 ];

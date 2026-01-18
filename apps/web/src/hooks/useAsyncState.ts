@@ -25,9 +25,11 @@ import { useState } from "react";
 export function useAsyncState<T>(initialData?: T) {
   const [data, setData] = useState<T | undefined>(initialData);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<null | string>(null);
 
-  const clearError = () => setError(null);
+  const clearError = () => {
+    setError(null);
+  };
 
   const reset = () => {
     setData(initialData);
@@ -36,13 +38,13 @@ export function useAsyncState<T>(initialData?: T) {
   };
 
   return {
-    data,
-    loading,
-    error,
-    setData,
-    setLoading,
-    setError,
     clearError,
+    data,
+    error,
+    loading,
     reset,
+    setData,
+    setError,
+    setLoading,
   };
 }

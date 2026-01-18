@@ -9,29 +9,24 @@ import { ReleaseTransaction } from "../types";
 const moneyColumn = (
   accessorKey: keyof ReleaseTransaction,
   header: string,
-  align: "right" | "center" = "right",
+  align: "center" | "right" = "right",
   isNegative = false
 ): ColumnDef<ReleaseTransaction> => ({
   accessorKey,
-  header,
-  minSize: 100,
   cell: ({ row }) => {
-    const amount = row.getValue(accessorKey) as number | null;
+    const amount = row.getValue(accessorKey);
     const currency = row.original.currency;
     if (!amount) return <div className={`text-${align}`}>-</div>;
     let className = `text-${align}`;
     if (isNegative) className += " text-error";
     return <div className={className}>{formatAmount(amount, currency)}</div>;
   },
+  header,
+  minSize: 100,
 });
 
 export const columns: ColumnDef<ReleaseTransaction>[] = [
   {
-    id: "expander",
-    header: () => null,
-    size: 40,
-    enableResizing: false,
-    enablePinning: true,
     cell: ({ row }) => {
       return row.getCanExpand() ? (
         <button
@@ -45,50 +40,53 @@ export const columns: ColumnDef<ReleaseTransaction>[] = [
         </button>
       ) : null;
     },
+    enablePinning: true,
+    enableResizing: false,
+    header: () => null,
+    id: "expander",
+    size: 40,
   },
   {
     accessorKey: "sourceId",
-    header: "ID Origen",
-    enablePinning: true,
-    minSize: 180,
     cell: ({ row }) => (
       <span className="block max-w-37.5 truncate font-medium" title={row.original.sourceId}>
         {" "}
         {row.original.sourceId}
       </span>
     ),
+    enablePinning: true,
+    header: "ID Origen",
+    minSize: 180,
   },
   {
     accessorKey: "date",
+    cell: ({ row }) => dayjs(row.getValue("date")).format("DD/MM/YY HH:mm"),
     header: "Fecha",
     minSize: 120,
-    cell: ({ row }) => dayjs(row.getValue("date")).format("DD/MM/YY HH:mm"),
   },
   {
     accessorKey: "recordType",
-    header: "Tipo",
-    minSize: 150,
     cell: ({ row }) => (
       <span className="badge badge-outline badge-sm whitespace-nowrap">{row.original.recordType}</span>
     ),
+    header: "Tipo",
+    minSize: 150,
   },
   {
     accessorKey: "description",
-    header: "Descripción",
-    minSize: 200,
     cell: ({ row }) => (
       <span className="block max-w-50 truncate" title={row.original.description || ""}>
         {" "}
         {row.original.description}
       </span>
     ),
+    header: "Descripción",
+    minSize: 200,
   },
   { accessorKey: "paymentMethod", header: "Método", minSize: 100 },
   { accessorKey: "paymentMethodType", header: "Tipo Método", minSize: 120 },
   {
     accessorKey: "netCreditAmount",
-    header: "Crédito",
-    minSize: 120,
     cell: ({ row }) => {
       const val = row.original.netCreditAmount;
       if (val && Number(val) > 0) {
@@ -101,11 +99,11 @@ export const columns: ColumnDef<ReleaseTransaction>[] = [
       }
       return <div className="text-right">-</div>;
     },
+    header: "Crédito",
+    minSize: 120,
   },
   {
     accessorKey: "netDebitAmount",
-    header: "Débito",
-    minSize: 120,
     cell: ({ row }) => {
       const val = row.original.netDebitAmount;
       if (val && Number(val) > 0) {
@@ -118,6 +116,8 @@ export const columns: ColumnDef<ReleaseTransaction>[] = [
       }
       return <div className="text-right">-</div>;
     },
+    header: "Débito",
+    minSize: 120,
   },
   moneyColumn("grossAmount", "Bruto"),
   moneyColumn("sellerAmount", "Vendedor"),
@@ -129,29 +129,29 @@ export const columns: ColumnDef<ReleaseTransaction>[] = [
   moneyColumn("balanceAmount", "Balance"),
   {
     accessorKey: "installments",
+    cell: ({ row }) => <div className="text-center">{row.original.installments}</div>,
     header: "Cuotas",
     size: 80,
-    cell: ({ row }) => <div className="text-center">{row.original.installments}</div>,
   },
   { accessorKey: "posName", header: "POS", minSize: 150 },
   { accessorKey: "storeName", header: "Tienda", minSize: 150 },
   {
     accessorKey: "externalReference",
+    cell: ({ row }) => <span className="font-mono text-xs">{row.original.externalReference}</span>,
     header: "Ref. Externa",
     minSize: 150,
-    cell: ({ row }) => <span className="font-mono text-xs">{row.original.externalReference}</span>,
   },
   {
     accessorKey: "orderId",
+    cell: ({ row }) => <span className="font-mono text-xs">{String(row.original.orderId || "-")}</span>,
     header: "ID Orden",
     minSize: 120,
-    cell: ({ row }) => <span className="font-mono text-xs">{String(row.original.orderId || "-")}</span>,
   },
   {
     accessorKey: "shippingId",
+    cell: ({ row }) => <span className="font-mono text-xs">{String(row.original.shippingId || "-")}</span>,
     header: "ID Envío",
     minSize: 120,
-    cell: ({ row }) => <span className="font-mono text-xs">{String(row.original.shippingId || "-")}</span>,
   },
 
   // New columns
@@ -159,10 +159,10 @@ export const columns: ColumnDef<ReleaseTransaction>[] = [
   moneyColumn("taxAmountTelco", "Imp. Telco", "right", true),
   {
     accessorKey: "transactionApprovalDate",
-    header: "Fecha Aprob.",
-    minSize: 120,
     cell: ({ row }) =>
       row.original.transactionApprovalDate ? dayjs(row.original.transactionApprovalDate).format("DD/MM/YY HH:mm") : "-",
+    header: "Fecha Aprob.",
+    minSize: 120,
   },
   { accessorKey: "transactionIntentId", header: "Intent ID", minSize: 150 },
   { accessorKey: "posId", header: "ID POS", minSize: 120 },
@@ -173,9 +173,9 @@ export const columns: ColumnDef<ReleaseTransaction>[] = [
   { accessorKey: "shippingOrderId", header: "ID Orden Envío", minSize: 150 },
   {
     accessorKey: "packId",
+    cell: ({ row }) => <span className="font-mono text-xs">{String(row.original.packId || "-")}</span>,
     header: "ID Paquete",
     minSize: 120,
-    cell: ({ row }) => <span className="font-mono text-xs">{String(row.original.packId || "-")}</span>,
   },
   { accessorKey: "poiId", header: "POI ID", minSize: 120 },
   { accessorKey: "itemId", header: "Item ID", minSize: 120 },

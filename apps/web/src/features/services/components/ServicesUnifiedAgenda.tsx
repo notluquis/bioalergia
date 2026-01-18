@@ -8,26 +8,26 @@ import { LOADING_SPINNER_XS } from "@/lib/styles";
 
 import type { ServiceSchedule, ServiceSummary } from "../types";
 
-type ServicesUnifiedAgendaProps = {
-  items: Array<{ service: ServiceSummary; schedule: ServiceSchedule }>;
-  loading?: boolean;
-  error?: string | null;
-  canManage: boolean;
-  onRegisterPayment: (serviceId: string, schedule: ServiceSchedule) => void;
-  onUnlinkPayment: (serviceId: string, schedule: ServiceSchedule) => void;
-};
-
-type AgendaGroup = {
+interface AgendaGroup {
   dateKey: string;
+  entries: { schedule: ServiceSchedule; service: ServiceSummary }[];
   label: string;
   total: number;
-  entries: Array<{ service: ServiceSummary; schedule: ServiceSchedule }>;
-};
+}
+
+interface ServicesUnifiedAgendaProps {
+  canManage: boolean;
+  error?: null | string;
+  items: { schedule: ServiceSchedule; service: ServiceSummary }[];
+  loading?: boolean;
+  onRegisterPayment: (serviceId: string, schedule: ServiceSchedule) => void;
+  onUnlinkPayment: (serviceId: string, schedule: ServiceSchedule) => void;
+}
 
 const dateFormatter = new Intl.DateTimeFormat("es-CL", {
-  weekday: "long",
   day: "numeric",
   month: "short",
+  weekday: "long",
 });
 
 function computeLabel(dueDate: dayjs.Dayjs) {
@@ -42,17 +42,17 @@ function computeLabel(dueDate: dayjs.Dayjs) {
 }
 
 const statusClasses: Record<ServiceSchedule["status"], string> = {
-  PENDING: "bg-warning/20 text-warning",
-  PARTIAL: "bg-warning/20 text-warning",
   PAID: "bg-success/20 text-success",
+  PARTIAL: "bg-warning/20 text-warning",
+  PENDING: "bg-warning/20 text-warning",
   SKIPPED: "bg-base-200 text-base-content/60",
 };
 
 export default function ServicesUnifiedAgenda({
+  canManage,
+  error,
   items,
   loading,
-  error,
-  canManage,
   onRegisterPayment,
   onUnlinkPayment,
 }: ServicesUnifiedAgendaProps) {
@@ -60,21 +60,21 @@ export default function ServicesUnifiedAgenda({
   const groups = (() => {
     if (items.length === 0) return [];
     const map = new Map<string, AgendaGroup>();
-    items.forEach(({ service, schedule }) => {
+    for (const { schedule, service } of items) {
       const dueDate = dayjs(schedule.due_date).startOf("day");
       const key = dueDate.format("YYYY-MM-DD");
       if (!map.has(key)) {
         map.set(key, {
           dateKey: key,
+          entries: [],
           label: computeLabel(dueDate),
           total: 0,
-          entries: [],
         });
       }
       const group = map.get(key)!;
       group.total += schedule.expected_amount;
-      group.entries.push({ service, schedule });
-    });
+      group.entries.push({ schedule, service });
+    }
     return [...map.values()].toSorted((a, b) => (a.dateKey > b.dateKey ? 1 : -1));
   })();
 
@@ -83,7 +83,7 @@ export default function ServicesUnifiedAgenda({
     let daySum = 0;
     let weekSum = 0;
     let monthSum = 0;
-    items.forEach(({ schedule }) => {
+    for (const { schedule } of items) {
       const dueDate = dayjs(schedule.due_date).startOf("day");
       if (dueDate.isSame(today, "day")) {
         daySum += schedule.expected_amount;
@@ -94,11 +94,11 @@ export default function ServicesUnifiedAgenda({
       if (dueDate.isSame(today, "month")) {
         monthSum += schedule.expected_amount;
       }
-    });
+    }
     return {
       day: daySum,
-      week: weekSum,
       month: monthSum,
+      week: weekSum,
     };
   })();
 
@@ -141,7 +141,7 @@ export default function ServicesUnifiedAgenda({
           </div>
           {loading && (
             <div className="text-base-content/40 flex items-center gap-2 text-xs">
-              <span className={LOADING_SPINNER_XS} aria-hidden="true" />
+              <span aria-hidden="true" className={LOADING_SPINNER_XS} />
               <span>Actualizando agenda…</span>
             </div>
           )}
@@ -153,7 +153,7 @@ export default function ServicesUnifiedAgenda({
         {loading && groups.length === 0 && (
           <div className="space-y-2">
             {skeletons.map((value) => (
-              <div key={value} className="border-base-300/60 bg-base-200/60 rounded-2xl border p-4 shadow-inner">
+              <div className="border-base-300/60 bg-base-200/60 rounded-2xl border p-4 shadow-inner" key={value}>
                 <div className="flex items-center justify-between">
                   <span className="skeleton-line w-24" />
                   <span className="skeleton-line w-16" />
@@ -170,12 +170,14 @@ export default function ServicesUnifiedAgenda({
           {groups.map((group) => {
             const isExpanded = expanded[group.dateKey] ?? false;
             return (
-              <article key={group.dateKey} className="surface-muted hover:border-primary/35 transition hover:shadow-lg">
+              <article className="surface-muted hover:border-primary/35 transition hover:shadow-lg" key={group.dateKey}>
                 <Button
+                  className="flex w-full items-center justify-between gap-4 px-4 py-3 text-left"
+                  onClick={() => {
+                    toggle(group.dateKey);
+                  }}
                   type="button"
                   variant="secondary"
-                  className="flex w-full items-center justify-between gap-4 px-4 py-3 text-left"
-                  onClick={() => toggle(group.dateKey)}
                 >
                   <div>
                     <p className="text-base-content text-sm font-semibold capitalize">{group.label}</p>
@@ -198,14 +200,14 @@ export default function ServicesUnifiedAgenda({
                 </Button>
                 {isExpanded && (
                   <div className="border-base-300/70 space-y-2 border-t px-4 py-3">
-                    {group.entries.map(({ service, schedule }) => {
+                    {group.entries.map(({ schedule, service }) => {
                       const dueDate = dayjs(schedule.due_date);
                       const diffDays = dueDate.startOf("day").diff(dayjs().startOf("day"), "day");
                       const isOverdue = schedule.status === "PENDING" && diffDays < 0;
                       return (
                         <div
-                          key={`${service.public_id}-${schedule.id}`}
                           className="surface-recessed hover:border-primary/40 p-3 transition"
+                          key={`${service.public_id}-${schedule.id}`}
                         >
                           <div className="flex flex-wrap items-center justify-between gap-3">
                             <div>
@@ -227,15 +229,22 @@ export default function ServicesUnifiedAgenda({
                           {canManage && (
                             <div className="mt-3 flex flex-wrap items-center gap-3">
                               {(schedule.status === "PENDING" || schedule.status === "PARTIAL") && (
-                                <Button size="sm" onClick={() => onRegisterPayment(service.public_id, schedule)}>
+                                <Button
+                                  onClick={() => {
+                                    onRegisterPayment(service.public_id, schedule);
+                                  }}
+                                  size="sm"
+                                >
                                   Registrar pago
                                 </Button>
                               )}
                               {schedule.transaction_id && schedule.status === "PAID" && (
                                 <Button
+                                  onClick={() => {
+                                    onUnlinkPayment(service.public_id, schedule);
+                                  }}
                                   size="sm"
                                   variant="secondary"
-                                  onClick={() => onUnlinkPayment(service.public_id, schedule)}
                                 >
                                   Desvincular pago
                                 </Button>

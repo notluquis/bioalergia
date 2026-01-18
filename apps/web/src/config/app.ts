@@ -1,34 +1,34 @@
 export const APP_CONFIG = {
-  name: "Bioalergia",
   companyLegalName: "Bioalergia SpA",
-  version: "1.0.0",
-
   // Default System Settings
   defaults: {
-    tagline: "Suite de administración",
-    primaryColor: "oklch(var(--p))",
-    secondaryColor: "oklch(var(--s))",
-    logoUrl: "",
-    faviconUrl: "/logo_bimi.svg",
+    calendarDailyMaxDays: "31",
+    calendarExcludeSummaries: "No Disponible",
+    calendarSyncLookaheadDays: "365",
+    calendarSyncStart: "2000-01-01",
+    // Calendar Defaults
+    calendarTimeZone: "America/Santiago",
 
+    cpanelUrl: "",
+    dbConsoleUrl: "",
     // Database Defaults
     dbDisplayHost: "localhost",
     dbDisplayName: "finanzas",
-    dbConsoleUrl: "",
-    cpanelUrl: "",
 
-    // Build Defaults
-    primaryCurrency: "CLP",
-    supportEmail: "contacto@bioalergia.cl",
+    faviconUrl: "/logo_bimi.svg",
+    logoUrl: "",
     pageTitle: "Bioalergia",
 
-    // Calendar Defaults
-    calendarTimeZone: "America/Santiago",
-    calendarSyncStart: "2000-01-01",
-    calendarSyncLookaheadDays: "365",
-    calendarExcludeSummaries: "No Disponible",
-    calendarDailyMaxDays: "31",
+    primaryColor: "oklch(var(--p))",
+    // Build Defaults
+    primaryCurrency: "CLP",
+    secondaryColor: "oklch(var(--s))",
+    supportEmail: "contacto@bioalergia.cl",
+    tagline: "Suite de administración",
   },
+  name: "Bioalergia",
+
+  version: "1.0.0",
 } as const;
 
 export type AppConfig = typeof APP_CONFIG;

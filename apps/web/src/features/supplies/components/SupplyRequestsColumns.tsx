@@ -4,6 +4,7 @@ import type { ChangeEvent } from "react";
 import Input from "@/components/ui/Input";
 
 import type { SupplyRequest } from "../types";
+
 import { translateStatus } from "../utils";
 
 interface SupplyRequestsTableMeta {
@@ -14,8 +15,8 @@ interface SupplyRequestsTableMeta {
 export const getSupplyRequestsColumns = (): ColumnDef<SupplyRequest>[] => [
   {
     accessorKey: "id",
-    header: "ID",
     cell: ({ getValue }) => <span className="text-base-content font-medium">{getValue() as number}</span>,
+    header: "ID",
   },
   {
     accessorKey: "supply_name",
@@ -26,8 +27,6 @@ export const getSupplyRequestsColumns = (): ColumnDef<SupplyRequest>[] => [
     header: "Cantidad",
   },
   {
-    id: "brand_model",
-    header: "Marca/modelo",
     cell: ({ row }) => {
       const { brand, model } = row.original;
       return (
@@ -38,41 +37,41 @@ export const getSupplyRequestsColumns = (): ColumnDef<SupplyRequest>[] => [
         </span>
       );
     },
+    header: "Marca/modelo",
+    id: "brand_model",
   },
   {
     accessorKey: "notes",
-    header: "Notas",
     cell: ({ getValue }) => getValue() || "-",
+    header: "Notas",
   },
   {
     accessorKey: "user_email",
-    header: "Solicitado por",
     cell: ({ getValue, table }) => {
       const meta = table.options.meta as SupplyRequestsTableMeta;
       return meta.isAdmin ? (getValue() as string) : null;
     },
+    header: "Solicitado por",
   },
   {
     accessorKey: "status",
-    header: "Estado",
     cell: ({ getValue }) => translateStatus(getValue() as SupplyRequest["status"]),
+    header: "Estado",
   },
   {
     accessorKey: "admin_notes",
-    header: "Notas del admin",
     cell: ({ getValue, table }) => {
       const meta = table.options.meta as SupplyRequestsTableMeta;
       return meta.isAdmin ? (getValue() as string) || "-" : null;
     },
+    header: "Notas del admin",
   },
   {
     accessorKey: "created_at",
-    header: "Fecha solicitud",
     cell: ({ getValue }) => new Date(getValue() as string).toLocaleString(),
+    header: "Fecha solicitud",
   },
   {
-    id: "actions",
-    header: "Acciones",
     cell: ({ row, table }) => {
       const meta = table.options.meta as SupplyRequestsTableMeta;
       if (!meta.isAdmin) return null;
@@ -80,11 +79,11 @@ export const getSupplyRequestsColumns = (): ColumnDef<SupplyRequest>[] => [
       return (
         <Input
           as="select"
-          value={row.original.status}
-          onChange={(event: ChangeEvent<HTMLSelectElement>) =>
-            meta.onStatusChange(row.original.id, event.target.value as SupplyRequest["status"])
-          }
           className="bg-base-100 border-base-300 mt-1 block w-full rounded-md py-2 pr-10 pl-3 text-base focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none sm:text-sm"
+          onChange={(event: ChangeEvent<HTMLSelectElement>) => {
+            meta.onStatusChange(row.original.id, event.target.value as SupplyRequest["status"]);
+          }}
+          value={row.original.status}
         >
           <option value="pending">Pendiente</option>
           <option value="ordered">Pedido</option>
@@ -94,5 +93,7 @@ export const getSupplyRequestsColumns = (): ColumnDef<SupplyRequest>[] => [
         </Input>
       );
     },
+    header: "Acciones",
+    id: "actions",
   },
 ];

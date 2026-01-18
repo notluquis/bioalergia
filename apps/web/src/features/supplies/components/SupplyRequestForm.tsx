@@ -7,27 +7,28 @@ import Input from "@/components/ui/Input";
 import { useToast } from "@/context/ToastContext";
 import { queryKeys } from "@/lib/queryKeys";
 
-import { createSupplyRequest, type SupplyRequestPayload } from "../api";
 import type { CommonSupply, StructuredSupplies } from "../types";
 
+import { createSupplyRequest, type SupplyRequestPayload } from "../api";
+
 const supplyRequestSchema = z.object({
-  selectedSupply: z.string().min(1, "Seleccione un insumo"),
+  notes: z.string().optional(),
+  quantity: z.number().int().min(1, "La cantidad debe ser mayor a 0"),
   selectedBrand: z.string().optional(),
   selectedModel: z.string().optional(),
-  quantity: z.number().int().min(1, "La cantidad debe ser mayor a 0"),
-  notes: z.string().optional(),
+  selectedSupply: z.string().min(1, "Seleccione un insumo"),
 });
-
-type SupplyRequestFormValues = z.infer<typeof supplyRequestSchema>;
 
 interface SupplyRequestFormProps {
   commonSupplies: CommonSupply[];
   onSuccess: () => void;
 }
 
+type SupplyRequestFormValues = z.infer<typeof supplyRequestSchema>;
+
 export default function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyRequestFormProps) {
   const queryClient = useQueryClient();
-  const { success: toastSuccess, error: toastError } = useToast();
+  const { error: toastError, success: toastSuccess } = useToast();
 
   const createRequestMutation = useMutation<void, Error, SupplyRequestPayload>({
     mutationFn: createSupplyRequest,
@@ -38,23 +39,20 @@ export default function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyR
 
   const form = useForm({
     defaultValues: {
-      selectedSupply: "",
+      notes: "",
+      quantity: 1,
       selectedBrand: "",
       selectedModel: "",
-      quantity: 1,
-      notes: "",
+      selectedSupply: "",
     } as SupplyRequestFormValues,
-    validators: {
-      onChange: supplyRequestSchema,
-    },
     onSubmit: async ({ value }) => {
       try {
         await createRequestMutation.mutateAsync({
-          supplyName: value.selectedSupply,
-          quantity: value.quantity,
           brand: value.selectedBrand === "N/A" || !value.selectedBrand ? undefined : value.selectedBrand,
           model: value.selectedModel === "N/A" || !value.selectedModel ? undefined : value.selectedModel,
           notes: value.notes || undefined,
+          quantity: value.quantity,
+          supplyName: value.selectedSupply,
         });
         toastSuccess("Solicitud de insumo enviada");
         form.reset();
@@ -63,6 +61,9 @@ export default function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyR
         const message = error instanceof Error ? error.message : "Error al enviar la solicitud";
         toastError(message);
       }
+    },
+    validators: {
+      onChange: supplyRequestSchema,
     },
   });
 
@@ -81,7 +82,7 @@ export default function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyR
       brandGroup[brand] = [];
     }
     if (supply.model) {
-      brandGroup[brand]!.push(supply.model);
+      brandGroup[brand].push(supply.model);
     }
     return acc;
   }, {});
@@ -95,27 +96,27 @@ export default function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyR
     <div className="card bg-base-100 mb-8 p-6 shadow-lg">
       <h2 className="mb-4 text-xl font-semibold">Solicitar nuevo insumo</h2>
       <form
+        className="grid grid-cols-1 gap-4 md:grid-cols-2"
         onSubmit={(e) => {
           e.preventDefault();
           form.handleSubmit();
         }}
-        className="grid grid-cols-1 gap-4 md:grid-cols-2"
       >
         <form.Field name="selectedSupply">
           {(field) => (
             <div>
               <Input
-                label="Nombre del insumo"
                 as="select"
-                value={field.state.value}
+                label="Nombre del insumo"
+                onBlur={field.handleBlur}
                 onChange={(e) => {
                   field.handleChange(e.target.value);
                   // Reset dependent fields
                   form.setFieldValue("selectedBrand", "");
                   form.setFieldValue("selectedModel", "");
                 }}
-                onBlur={field.handleBlur}
                 required
+                value={field.state.value}
               >
                 <option value="">Seleccione un insumo</option>
                 {supplyNames.map((name) => (
@@ -135,14 +136,16 @@ export default function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyR
           {(field) => (
             <div>
               <Input
-                label="Cantidad"
-                type="number"
-                min="1"
-                required
                 inputMode="numeric"
-                value={field.state.value}
-                onChange={(e) => field.handleChange(Number.parseInt(e.target.value, 10) || 1)}
+                label="Cantidad"
+                min="1"
                 onBlur={field.handleBlur}
+                onChange={(e) => {
+                  field.handleChange(Number.parseInt(e.target.value, 10) || 1);
+                }}
+                required
+                type="number"
+                value={field.state.value}
               />
               {field.state.meta.errors.length > 0 && (
                 <p className="text-error mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
@@ -155,15 +158,15 @@ export default function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyR
           {(field) => (
             <div>
               <Input
-                label="Marca"
                 as="select"
-                value={field.state.value ?? ""}
+                disabled={!selectedSupply}
+                label="Marca"
+                onBlur={field.handleBlur}
                 onChange={(e) => {
                   field.handleChange(e.target.value);
                   form.setFieldValue("selectedModel", "");
                 }}
-                onBlur={field.handleBlur}
-                disabled={!selectedSupply}
+                value={field.state.value ?? ""}
               >
                 <option value="">Seleccione una marca</option>
                 {availableBrands.map((brand) => (
@@ -183,12 +186,14 @@ export default function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyR
           {(field) => (
             <div>
               <Input
-                label="Modelo"
                 as="select"
-                value={field.state.value ?? ""}
-                onChange={(e) => field.handleChange(e.target.value)}
-                onBlur={field.handleBlur}
                 disabled={!selectedBrand || availableModels.length === 0}
+                label="Modelo"
+                onBlur={field.handleBlur}
+                onChange={(e) => {
+                  field.handleChange(e.target.value);
+                }}
+                value={field.state.value ?? ""}
               >
                 <option value="">Seleccione un modelo</option>
                 {availableModels.map((model) => (
@@ -208,13 +213,15 @@ export default function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyR
           {(field) => (
             <div className="md:col-span-2">
               <Input
-                label="Notas (opcional)"
                 as="textarea"
-                rows={3}
                 enterKeyHint="done"
-                value={field.state.value ?? ""}
-                onChange={(e) => field.handleChange(e.target.value)}
+                label="Notas (opcional)"
                 onBlur={field.handleBlur}
+                onChange={(e) => {
+                  field.handleChange(e.target.value);
+                }}
+                rows={3}
+                value={field.state.value ?? ""}
               />
               {field.state.meta.errors.length > 0 && (
                 <p className="text-error mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
@@ -224,7 +231,7 @@ export default function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyR
         </form.Field>
 
         <div className="flex justify-end md:col-span-2">
-          <Button type="submit" disabled={form.state.isSubmitting}>
+          <Button disabled={form.state.isSubmitting} type="submit">
             {form.state.isSubmitting ? "Enviando..." : "Enviar solicitud"}
           </Button>
         </div>

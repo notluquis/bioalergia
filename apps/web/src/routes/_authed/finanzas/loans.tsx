@@ -14,15 +14,15 @@ export const Route = createFileRoute("/_authed/finanzas/loans")({
       throw routeApi.redirect({ to: "/" });
     }
   },
-  loader: async ({ context: { queryClient } }) => {
-    await queryClient.ensureQueryData({
-      queryKey: loanKeys.all,
-      queryFn: fetchLoans,
-    });
-  },
   component: () => (
     <Suspense fallback={<PageLoader />}>
       <LoansPage />
     </Suspense>
   ),
+  loader: async ({ context: { queryClient } }) => {
+    await queryClient.ensureQueryData({
+      queryFn: fetchLoans,
+      queryKey: loanKeys.all,
+    });
+  },
 });

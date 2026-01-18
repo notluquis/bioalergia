@@ -14,61 +14,61 @@ import { NULL_CATEGORY_VALUE, NULL_EVENT_TYPE_VALUE } from "../constants";
 import { CalendarFilters } from "../types";
 import { MultiSelectFilter, type MultiSelectOption } from "./MultiSelectFilter";
 
-/** Filter state used by the filter panel - subset of CalendarFilters */
-export type FilterPanelState = Pick<CalendarFilters, "from" | "to" | "eventTypes" | "categories" | "search">;
-
 export interface CalendarFilterPanelProps {
+  /** Available categories for dropdown */
+  availableCategories?: { category: null | string; total: number }[];
+  /** Available event types for dropdown */
+  availableEventTypes?: { eventType: null | string; total: number }[];
   /** Current filter state */
   filters: FilterPanelState;
-  /** Available event types for dropdown */
-  availableEventTypes?: Array<{ eventType: string | null; total: number }>;
-  /** Available categories for dropdown */
-  availableCategories?: Array<{ category: string | null; total: number }>;
+  /** Whether filters have been modified */
+  isDirty?: boolean;
+  /** Loading state */
+  loading?: boolean;
+  /** Callback when filters should be applied */
+  onApply: () => void;
+  /** Callback when a filter value changes - compatible with useCalendarEvents updateFilters */
+  onFilterChange: <K extends keyof FilterPanelState>(key: K, value: CalendarFilters[K]) => void;
+  /** Callback when filters should be reset */
+  onReset: () => void;
   /** Show date range inputs */
   showDateRange?: boolean;
   /** Show search input */
   showSearch?: boolean;
-  /** Callback when a filter value changes - compatible with useCalendarEvents updateFilters */
-  onFilterChange: <K extends keyof FilterPanelState>(key: K, value: CalendarFilters[K]) => void;
-  /** Callback when filters should be applied */
-  onApply: () => void;
-  /** Callback when filters should be reset */
-  onReset: () => void;
-  /** Loading state */
-  loading?: boolean;
-  /** Whether filters have been modified */
-  isDirty?: boolean;
 }
+
+/** Filter state used by the filter panel - subset of CalendarFilters */
+export type FilterPanelState = Pick<CalendarFilters, "categories" | "eventTypes" | "from" | "search" | "to">;
 
 /**
  * Shared filter panel for calendar pages
  * Reduces code duplication across CalendarDailyPage, CalendarSchedulePage, CalendarHeatmapPage
  */
 export function CalendarFilterPanel({
-  filters,
-  availableEventTypes = [],
   availableCategories = [],
+  availableEventTypes = [],
+  filters,
+  isDirty = true,
+  loading = false,
+  onApply,
+  onFilterChange,
+  onReset,
   showDateRange = false,
   showSearch = false,
-  onFilterChange,
-  onApply,
-  onReset,
-  loading = false,
-  isDirty = true,
 }: CalendarFilterPanelProps) {
   // ... (keep logic)
   // Build event type options for MultiSelect
   const eventTypeOptions: MultiSelectOption[] = availableEventTypes.map((entry) => {
     const value = entry.eventType ?? NULL_EVENT_TYPE_VALUE;
     const label = entry.eventType ?? "Sin tipo";
-    return { value, label: `${label} · ${numberFormatter.format(entry.total)}` };
+    return { label: `${label} · ${numberFormatter.format(entry.total)}`, value };
   });
 
   // Build category options for MultiSelect
   const categoryOptions: MultiSelectOption[] = availableCategories.map((entry) => {
     const value = entry.category ?? NULL_CATEGORY_VALUE;
     const label = entry.category ?? "Sin clasificación";
-    return { value, label: `${label} · ${numberFormatter.format(entry.total)}` };
+    return { label: `${label} · ${numberFormatter.format(entry.total)}`, value };
   });
 
   const toggleEventType = (value: string) => {
@@ -102,17 +102,21 @@ export function CalendarFilterPanel({
             <div className="min-w-28 flex-1">
               <Input
                 label="Desde"
+                onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                  onFilterChange("from", e.target.value);
+                }}
                 type="date"
                 value={filters.from}
-                onChange={(e: ChangeEvent<HTMLInputElement>) => onFilterChange("from", e.target.value)}
               />
             </div>
             <div className="min-w-28 flex-1">
               <Input
                 label="Hasta"
+                onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                  onFilterChange("to", e.target.value);
+                }}
                 type="date"
                 value={filters.to}
-                onChange={(e: ChangeEvent<HTMLInputElement>) => onFilterChange("to", e.target.value)}
               />
             </div>
           </>
@@ -123,10 +127,10 @@ export function CalendarFilterPanel({
           <div className="min-w-35 flex-1">
             <MultiSelectFilter
               label="Tipos de evento"
-              options={eventTypeOptions}
-              selected={filters.eventTypes ?? []}
               onToggle={toggleEventType}
+              options={eventTypeOptions}
               placeholder="Todos"
+              selected={filters.eventTypes ?? []}
             />
           </div>
         )}
@@ -136,10 +140,10 @@ export function CalendarFilterPanel({
           <div className="min-w-35 flex-1">
             <MultiSelectFilter
               label="Clasificación"
-              options={categoryOptions}
-              selected={filters.categories}
               onToggle={toggleCategory}
+              options={categoryOptions}
               placeholder="Todas"
+              selected={filters.categories}
             />
           </div>
         )}
@@ -148,21 +152,23 @@ export function CalendarFilterPanel({
         {showSearch && (
           <div className="min-w-40 flex-1">
             <Input
+              enterKeyHint="search"
               label="Buscar"
+              onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                onFilterChange("search", e.target.value);
+              }}
               placeholder="Paciente, tratamiento..."
               value={filters.search ?? ""}
-              onChange={(e: ChangeEvent<HTMLInputElement>) => onFilterChange("search", e.target.value)}
-              enterKeyHint="search"
             />
           </div>
         )}
 
         {/* Action Buttons */}
         <div className="flex gap-2">
-          <Button type="button" variant="ghost" size="sm" disabled={loading || !isDirty} onClick={onReset}>
+          <Button disabled={loading || !isDirty} onClick={onReset} size="sm" type="button" variant="ghost">
             Limpiar
           </Button>
-          <Button type="submit" size="sm" disabled={loading}>
+          <Button disabled={loading} size="sm" type="submit">
             {loading ? "..." : "Aplicar"}
           </Button>
         </div>

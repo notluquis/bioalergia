@@ -23,21 +23,21 @@ export default function DailyBalancePage() {
   const canView = can("read", "DailyBalance");
 
   const {
-    selectedDate,
+    finalize,
     formData,
+    goToNextWeek,
+    goToPrevWeek,
+    goToToday,
     isLoading,
     isSaving,
     lastSaved,
-    summary,
-    status,
-    weekData,
-    updateField,
     save,
-    finalize,
     selectDate,
-    goToPrevWeek,
-    goToNextWeek,
-    goToToday,
+    selectedDate,
+    status,
+    summary,
+    updateField,
+    weekData,
   } = useDailyBalanceForm();
 
   if (!canView) {
@@ -52,24 +52,24 @@ export default function DailyBalancePage() {
     <div className="flex h-full flex-col">
       {/* Sticky TopBar */}
       <TopBar
-        date={selectedDate}
-        status={status}
-        isSaving={isSaving}
-        onSave={save}
-        onFinalize={finalize}
         canFinalize={summary.cuadra && summary.totalMetodos > 0}
-        onPrevWeek={goToPrevWeek}
+        date={selectedDate}
+        isSaving={isSaving}
+        onFinalize={finalize}
         onNextWeek={goToNextWeek}
+        onPrevWeek={goToPrevWeek}
+        onSave={save}
+        status={status}
       />
 
       {/* Week Navigation */}
       <WeekStrip
         currentDate={selectedDate}
-        weekData={weekData}
-        onSelectDate={selectDate}
-        onPrevWeek={goToPrevWeek}
-        onNextWeek={goToNextWeek}
         onGoToToday={goToToday}
+        onNextWeek={goToNextWeek}
+        onPrevWeek={goToPrevWeek}
+        onSelectDate={selectDate}
+        weekData={weekData}
       />
 
       {/* Main Content: 2-column layout */}
@@ -81,19 +81,19 @@ export default function DailyBalancePage() {
               <span className="loading loading-spinner loading-lg" />
             </div>
           ) : (
-            <EntryForm values={formData} onChange={updateField} disabled={isSaving} />
+            <EntryForm disabled={isSaving} onChange={updateField} values={formData} />
           )}
         </div>
 
         {/* CierrePanel - sticky sidebar */}
         <div className="lg:col-span-4">
           <CierrePanel
-            summary={summary}
-            status={status}
-            lastSaved={lastSaved}
             isSaving={isSaving}
-            onSaveDraft={save}
+            lastSaved={lastSaved}
             onFinalize={finalize}
+            onSaveDraft={save}
+            status={status}
+            summary={summary}
           />
         </div>
       </div>

@@ -5,11 +5,6 @@
  * The old React Router v7 routes have been migrated to file-based routing in src/routes/.
  */
 
-// Aggressive recovery from chunk load errors
-// Clears all caches, unregisters service workers, then reloads
-import "./index.css";
-import "./i18n";
-
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRouter, RouterProvider } from "@tanstack/react-router";
 import { QuerySettingsProvider } from "@zenstackhq/tanstack-query/react";
@@ -27,6 +22,11 @@ import { createLogger } from "./lib/logger";
 import { initPerformanceMonitoring } from "./lib/performance";
 // Import the generated route tree
 import { routeTree } from "./routeTree.gen";
+
+// Aggressive recovery from chunk load errors
+// Clears all caches, unregisters service workers, then reloads
+import "./index.css";
+import "./i18n";
 
 // Create namespaced logger for chunk errors
 const log = createLogger("ChunkRecovery");
@@ -78,13 +78,13 @@ globalThis.addEventListener("unhandledrejection", (event) => {
 
 const queryClient = new QueryClient({
   defaultOptions: {
-    queries: {
-      retry: false,
-      refetchOnWindowFocus: false,
-      staleTime: 60_000,
-    },
     mutations: {
       retry: false,
+    },
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: false,
+      staleTime: 60_000,
     },
   },
 });
@@ -95,16 +95,16 @@ const queryClient = new QueryClient({
 
 // Create the router instance with context
 const router = createRouter({
-  routeTree,
   context: {
-    queryClient,
     // Auth will be injected at runtime via InnerApp
     auth: undefined!,
+    queryClient,
   },
-  defaultPreload: "intent",
   defaultPendingComponent: PageLoader,
+  defaultPreload: "intent",
   // Integrate with React Query for cache invalidation on navigation
   defaultPreloadStaleTime: 0,
+  routeTree,
 });
 
 // Register router for type safety
@@ -121,7 +121,7 @@ declare module "@tanstack/react-router" {
 function InnerApp() {
   const auth = useAuth();
 
-  return <RouterProvider router={router} context={{ auth }} />;
+  return <RouterProvider context={{ auth }} router={router} />;
 }
 
 // Lazy load devtools for development only

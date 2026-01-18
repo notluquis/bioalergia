@@ -1,8 +1,9 @@
 import { createColumnHelper } from "@tanstack/react-table";
 import { Key, Lock, Shield, ShieldCheck } from "lucide-react";
 
-import Button from "@/components/ui/Button";
 import type { User } from "@/features/users/types";
+
+import Button from "@/components/ui/Button";
 import { BADGE_SM } from "@/lib/styles";
 
 // --- Helpers ---
@@ -15,14 +16,14 @@ const getSecurityScore = (user: User) => {
 };
 
 const getSecurityBadge = (score: number) => {
-  if (score === 100) return { label: "Óptima", color: "badge-success", icon: Shield };
-  if (score >= 50) return { label: "Buena", color: "badge-warning", icon: ShieldCheck };
-  return { label: "Básica", color: "badge-error", icon: Lock };
+  if (score === 100) return { color: "badge-success", icon: Shield, label: "Óptima" };
+  if (score >= 50) return { color: "badge-warning", icon: ShieldCheck, label: "Buena" };
+  return { color: "badge-error", icon: Lock, label: "Básica" };
 };
 
 // --- Cell Components ---
 
-const UserCell = ({ email }: { email: string | null }) => {
+const UserCell = ({ email }: { email: null | string }) => {
   const safeEmail = email || "";
   const initials = safeEmail.split("@")[0]?.slice(0, 2)?.toUpperCase() || "??";
 
@@ -85,40 +86,42 @@ const columnHelper = createColumnHelper<User>();
 
 export const getUserAccessColumns = (onToggleMfa: (userId: number, enabled: boolean) => void, isPending: boolean) => [
   columnHelper.accessor("email", {
-    header: "Usuario",
     cell: ({ getValue }) => <UserCell email={getValue()} />,
+    header: "Usuario",
   }),
   columnHelper.accessor("role", {
-    header: "Rol",
     cell: ({ getValue }) => <span className={`${BADGE_SM} badge-ghost`}>{getValue()}</span>,
+    header: "Rol",
   }),
   columnHelper.display({
-    id: "security",
-    header: () => <div className="text-center">Seguridad</div>,
     cell: ({ row }) => <SecurityCell user={row.original} />,
+    header: () => <div className="text-center">Seguridad</div>,
+    id: "security",
   }),
   columnHelper.accessor("mfaEnabled", {
-    header: () => <div className="text-center">MFA</div>,
     cell: ({ getValue }) => <MfaStatusCell active={getValue()} />,
+    header: () => <div className="text-center">MFA</div>,
   }),
   columnHelper.accessor("hasPasskey", {
-    header: () => <div className="text-center">Passkey</div>,
     cell: ({ getValue }) => <PasskeyStatusCell hasPasskey={getValue()} />,
+    header: () => <div className="text-center">Passkey</div>,
   }),
   columnHelper.display({
-    id: "actions",
-    header: () => <div className="text-right">Acciones</div>,
     cell: ({ row }) => (
       <div className="text-right">
         <Button
+          disabled={isPending}
+          onClick={() => {
+            onToggleMfa(row.original.id, !row.original.mfaEnabled);
+          }}
           size="sm"
           variant={row.original.mfaEnabled ? "ghost" : "primary"}
-          onClick={() => onToggleMfa(row.original.id, !row.original.mfaEnabled)}
-          disabled={isPending}
         >
           {row.original.mfaEnabled ? "Desactivar MFA" : "Activar MFA"}
         </Button>
       </div>
     ),
+    header: () => <div className="text-right">Acciones</div>,
+    id: "actions",
   }),
 ];

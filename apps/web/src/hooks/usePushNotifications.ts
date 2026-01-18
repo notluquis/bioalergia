@@ -11,27 +11,9 @@ import {
 
 const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY;
 
-function urlBase64ToUint8Array(base64String: string) {
-  try {
-    const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-    const base64 = (base64String + padding).replaceAll("-", "+").replaceAll("_", "/");
-
-    const rawData = globalThis.atob(base64);
-    const outputArray = new Uint8Array(rawData.length);
-
-    for (let i = 0; i < rawData.length; ++i) {
-      outputArray[i] = rawData.codePointAt(i) ?? 0;
-    }
-    return outputArray;
-  } catch (error) {
-    console.error("Error decoding VAPID key:", error);
-    return new Uint8Array(0);
-  }
-}
-
 export function usePushNotifications() {
   const [isSubscribed, setIsSubscribed] = useState(false);
-  const { success: toastSuccess, error: toastError } = useToast();
+  const { error: toastError, success: toastSuccess } = useToast();
   const [permission, setPermission] = useState<NotificationPermission>("default");
   const { user } = useAuth();
 
@@ -58,14 +40,14 @@ export function usePushNotifications() {
         userId: user.id,
       });
     },
+    onError: (error) => {
+      console.error("Error subscribing to push:", error);
+      toastError("Error al activar notificaciones. Verifica los permisos del navegador.");
+    },
     onSuccess: () => {
       setIsSubscribed(true);
       setPermission("granted");
       toastSuccess("¡Notificaciones activadas!");
-    },
-    onError: (error) => {
-      console.error("Error subscribing to push:", error);
-      toastError("Error al activar notificaciones. Verifica los permisos del navegador.");
     },
   });
 
@@ -73,11 +55,11 @@ export function usePushNotifications() {
     mutationFn: async (endpoint: string) => {
       await unsubscribeFromNotifications({ endpoint });
     },
-    onSuccess: () => {
-      setIsSubscribed(false);
-    },
     onError: (error) => {
       console.error("Error unsubscribing", error);
+    },
+    onSuccess: () => {
+      setIsSubscribed(false);
     },
   });
 
@@ -97,8 +79,8 @@ export function usePushNotifications() {
     try {
       const registration = await navigator.serviceWorker.ready;
       const subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+        userVisibleOnly: true,
       });
 
       subscribeMutation.mutate(subscription);
@@ -139,9 +121,27 @@ export function usePushNotifications() {
 
   return {
     isSubscribed,
-    permission,
-    toggleSubscription,
-    sendTestNotification,
     loading: subscribeMutation.isPending || unsubscribeMutation.isPending || sendTestMutation.isPending,
+    permission,
+    sendTestNotification,
+    toggleSubscription,
   };
+}
+
+function urlBase64ToUint8Array(base64String: string) {
+  try {
+    const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding).replaceAll("-", "+").replaceAll("_", "/");
+
+    const rawData = globalThis.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+
+    for (let i = 0; i < rawData.length; ++i) {
+      outputArray[i] = rawData.codePointAt(i) ?? 0;
+    }
+    return outputArray;
+  } catch (error) {
+    console.error("Error decoding VAPID key:", error);
+    return new Uint8Array(0);
+  }
 }

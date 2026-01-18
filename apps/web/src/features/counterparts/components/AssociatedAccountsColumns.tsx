@@ -14,12 +14,11 @@ import { AccountGroup } from "./AssociatedAccounts.helpers";
 const accountGroupHelper = createColumnHelper<AccountGroup>();
 
 export const getAccountGroupColumns = (
-  summaryByGroup: Map<string, { total: number; count: number }>,
+  summaryByGroup: Map<string, { count: number; total: number }>,
   onConceptChange: (group: AccountGroup, concept: string) => void,
   onQuickView: (group: AccountGroup) => void
 ) => [
   accountGroupHelper.accessor("label", {
-    header: "Cuenta",
     cell: ({ row }) => {
       const group = row.original;
       const summaryInfo = summaryByGroup.get(group.key);
@@ -37,17 +36,17 @@ export const getAccountGroupColumns = (
         </div>
       );
     },
+    header: "Cuenta",
   }),
   accountGroupHelper.accessor("bankName", {
-    header: "Banco",
     cell: ({ getValue }) => getValue() || "-",
+    header: "Banco",
   }),
   accountGroupHelper.accessor("holder", {
-    header: "Titular",
     cell: ({ getValue }) => getValue() || "-",
+    header: "Titular",
   }),
   accountGroupHelper.accessor("concept", {
-    header: "Concepto",
     cell: ({ row }) => {
       const group = row.original;
       const summaryInfo = summaryByGroup.get(group.key);
@@ -58,24 +57,32 @@ export const getAccountGroupColumns = (
 
       return (
         <Input
-          type="text"
-          defaultValue={group.concept}
-          onBlur={(event: FocusEvent<HTMLInputElement>) => onConceptChange(group, event.target.value)}
           className="w-full"
+          defaultValue={group.concept}
+          onBlur={(event: FocusEvent<HTMLInputElement>) => {
+            onConceptChange(group, event.target.value);
+          }}
           placeholder="Concepto (ej. Compra de vacunas)"
+          type="text"
         />
       );
     },
+    header: "Concepto",
   }),
   accountGroupHelper.display({
-    id: "actions",
-    header: "Movimientos",
     cell: ({ row }) => {
       const group = row.original;
       const summaryInfo = summaryByGroup.get(group.key);
       return (
         <div className="flex flex-col gap-2 text-xs">
-          <Button variant="secondary" onClick={() => onQuickView(group)} className="self-start" size="xs">
+          <Button
+            className="self-start"
+            onClick={() => {
+              onQuickView(group);
+            }}
+            size="xs"
+            variant="secondary"
+          >
             Ver movimientos
           </Button>
           <div className="text-base-content/60 text-xs">
@@ -84,6 +91,8 @@ export const getAccountGroupColumns = (
         </div>
       );
     },
+    header: "Movimientos",
+    id: "actions",
   }),
 ];
 
@@ -93,23 +102,23 @@ const quickViewHelper = createColumnHelper<Transaction>();
 
 export const getQuickViewColumns = () => [
   quickViewHelper.accessor("transactionDate", {
-    header: "Fecha",
     cell: ({ getValue }) => dayjs(getValue()).format("DD MMM YYYY HH:mm"),
+    header: "Fecha",
   }),
   quickViewHelper.accessor("description", {
-    header: "Descripción",
     cell: ({ getValue }) => getValue() || "-",
+    header: "Descripción",
   }),
   quickViewHelper.accessor("externalReference", {
-    header: "Origen",
     cell: ({ getValue }) => getValue() || "-",
+    header: "Origen",
   }),
   quickViewHelper.accessor("transactionType", {
-    header: "Destino",
     cell: ({ getValue }) => getValue() || "-",
+    header: "Destino",
   }),
   quickViewHelper.accessor("transactionAmount", {
+    cell: ({ getValue }) => <div className="text-right">{getValue() == null ? "-" : fmtCLP(getValue())}</div>,
     header: () => <div className="text-right">Monto</div>,
-    cell: ({ getValue }) => <div className="text-right">{getValue() == null ? "-" : fmtCLP(getValue() as number)}</div>,
   }),
 ];

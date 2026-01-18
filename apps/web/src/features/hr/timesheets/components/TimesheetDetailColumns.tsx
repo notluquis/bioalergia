@@ -6,24 +6,25 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import TimeInput from "@/components/ui/TimeInput";
 
 import type { BulkRow } from "../types";
+
 import { calculateWorkedMinutes, computeStatus, formatDateLabel, isRowDirty, minutesToDuration } from "../utils";
 
 export interface TimesheetTableMeta {
   canEdit: boolean;
   initialRows: BulkRow[];
   notWorkedDays: Set<string>;
+  onCloseOvertime: (date: string) => void;
+  onOpenOvertime: (date: string) => void;
+  onRemoveEntry: (row: BulkRow) => void;
+  onResetRow: (index: number) => void;
   onRowChange: (index: number, field: keyof Omit<BulkRow, "date" | "entryId">, value: string) => void;
   onSalidaBlur: (index: number) => void;
-  onResetRow: (index: number) => void;
-  onRemoveEntry: (row: BulkRow) => void;
-  onOpenOvertime: (date: string) => void;
-  onCloseOvertime: (date: string) => void;
   openOvertimeEditors: Set<string>;
+  setCommentPreview: (data: null | { date: string; text: string }) => void;
   setNotWorkedDays: (cb: (prev: Set<string>) => Set<string>) => void;
-  setCommentPreview: (data: { date: string; text: string } | null) => void;
 }
 
-const DateCell = ({ row, meta }: { row: BulkRow; meta: TimesheetTableMeta }) => {
+const DateCell = ({ meta, row }: { meta: TimesheetTableMeta; row: BulkRow }) => {
   const dayIdx = dayjs(row.date).day();
   const labels = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
   const isSun = dayIdx === 0;
@@ -44,15 +45,15 @@ const DateCell = ({ row, meta }: { row: BulkRow; meta: TimesheetTableMeta }) => 
 };
 
 const InputCell = ({
-  row,
+  field,
   index,
   meta,
-  field,
+  row,
 }: {
-  row: BulkRow;
+  field: "entrada" | "salida";
   index: number;
   meta: TimesheetTableMeta;
-  field: "entrada" | "salida";
+  row: BulkRow;
 }) => {
   const isSunday = dayjs(row.date).day() === 0;
   const canEditRow = meta.canEdit && !isSunday;
@@ -61,18 +62,20 @@ const InputCell = ({
   return (
     <div className={isMarkedNotWorked ? "pointer-events-none opacity-60" : ""}>
       <TimeInput
-        value={row[field]}
-        onChange={(value) => meta.onRowChange(index, field, value)}
-        onBlur={() => field === "salida" && meta.onSalidaBlur(index)}
-        placeholder="HH:MM"
         className="w-28"
         disabled={!canEditRow}
+        onBlur={() => field === "salida" && meta.onSalidaBlur(index)}
+        onChange={(value) => {
+          meta.onRowChange(index, field, value);
+        }}
+        placeholder="HH:MM"
+        value={row[field]}
       />
     </div>
   );
 };
 
-const WorkedCell = ({ row, meta }: { row: BulkRow; meta: TimesheetTableMeta }) => {
+const WorkedCell = ({ meta, row }: { meta: TimesheetTableMeta; row: BulkRow }) => {
   const mins = calculateWorkedMinutes(row.entrada, row.salida);
   const duration = minutesToDuration(mins);
   const isMarkedNotWorked = meta.notWorkedDays.has(row.date);
@@ -80,7 +83,7 @@ const WorkedCell = ({ row, meta }: { row: BulkRow; meta: TimesheetTableMeta }) =
   return <div className={`text-base-content tabular-nums ${isMarkedNotWorked ? "opacity-60" : ""}`}>{duration}</div>;
 };
 
-const OvertimeCell = ({ row, index, meta }: { row: BulkRow; index: number; meta: TimesheetTableMeta }) => {
+const OvertimeCell = ({ index, meta, row }: { index: number; meta: TimesheetTableMeta; row: BulkRow }) => {
   const isSunday = dayjs(row.date).day() === 0;
   const canEditRow = meta.canEdit && !isSunday;
   const isMarkedNotWorked = meta.notWorkedDays.has(row.date);
@@ -92,13 +95,15 @@ const OvertimeCell = ({ row, index, meta }: { row: BulkRow; index: number; meta:
     if (canEditRow) {
       return (
         <Button
-          type="button"
-          size="sm"
-          variant="secondary"
-          className="border-base-300 bg-base-200 text-primary hover:bg-base-200 inline-flex h-8 w-8 items-center justify-center rounded-full border shadow"
           aria-label="Agregar horas extra"
+          className="border-base-300 bg-base-200 text-primary hover:bg-base-200 inline-flex h-8 w-8 items-center justify-center rounded-full border shadow"
+          onClick={() => {
+            meta.onOpenOvertime(row.date);
+          }}
+          size="sm"
           title="Agregar horas extra"
-          onClick={() => meta.onOpenOvertime(row.date)}
+          type="button"
+          variant="secondary"
         >
           +
         </Button>
@@ -109,7 +114,8 @@ const OvertimeCell = ({ row, index, meta }: { row: BulkRow; index: number; meta:
 
   return (
     <TimeInput
-      value={row.overtime}
+      className="w-28"
+      disabled={!canEditRow}
       onChange={(value) => {
         meta.onRowChange(index, "overtime", value);
         if (!value.trim()) {
@@ -117,13 +123,12 @@ const OvertimeCell = ({ row, index, meta }: { row: BulkRow; index: number; meta:
         }
       }}
       placeholder="HH:MM"
-      className="w-28"
-      disabled={!canEditRow}
+      value={row.overtime}
     />
   );
 };
 
-const StatusCell = ({ row, index, meta }: { row: BulkRow; index: number; meta: TimesheetTableMeta }) => {
+const StatusCell = ({ index, meta, row }: { index: number; meta: TimesheetTableMeta; row: BulkRow }) => {
   const initial = meta.initialRows[index];
   const dirty = isRowDirty(row, initial);
   const status = computeStatus(row, dirty);
@@ -167,7 +172,7 @@ const StatusCell = ({ row, index, meta }: { row: BulkRow; index: number; meta: T
           <span className={`cursor-help font-bold ${bangColor}`}>!</span>
           <div className="bg-neutral text-neutral-content invisible absolute bottom-full left-1/2 z-50 mb-2 max-w-xs -translate-x-1/2 rounded-lg px-3 py-2 text-xs font-normal tracking-normal whitespace-nowrap normal-case shadow-lg group-hover:visible">
             {tooltipParts.map((part, i) => (
-              <span key={i} className="block">
+              <span className="block" key={i}>
                 {part}
               </span>
             ))}
@@ -179,7 +184,7 @@ const StatusCell = ({ row, index, meta }: { row: BulkRow; index: number; meta: T
   );
 };
 
-const ActionsCell = ({ row, index, meta }: { row: BulkRow; index: number; meta: TimesheetTableMeta }) => {
+const ActionsCell = ({ index, meta, row }: { index: number; meta: TimesheetTableMeta; row: BulkRow }) => {
   const isSunday = dayjs(row.date).day() === 0;
   const canEditRow = meta.canEdit && !isSunday;
   const initial = meta.initialRows[index];
@@ -191,18 +196,28 @@ const ActionsCell = ({ row, index, meta }: { row: BulkRow; index: number; meta: 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="secondary" size="sm" className="h-8 w-8 p-0">
+        <Button className="h-8 w-8 p-0" size="sm" variant="secondary">
           ⋯
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuItem
-          onClick={() => meta.setCommentPreview({ date: row.date, text: row.comment || "(Sin comentario)" })}
+          onClick={() => {
+            meta.setCommentPreview({ date: row.date, text: row.comment || "(Sin comentario)" });
+          }}
         >
           Ver comentario
         </DropdownMenuItem>
 
-        {dirty && <DropdownMenuItem onClick={() => meta.onResetRow(index)}>Deshacer cambios</DropdownMenuItem>}
+        {dirty && (
+          <DropdownMenuItem
+            onClick={() => {
+              meta.onResetRow(index);
+            }}
+          >
+            Deshacer cambios
+          </DropdownMenuItem>
+        )}
 
         <DropdownMenuItem
           onClick={() => {
@@ -218,7 +233,12 @@ const ActionsCell = ({ row, index, meta }: { row: BulkRow; index: number; meta: 
         </DropdownMenuItem>
 
         {row.entryId && (
-          <DropdownMenuItem className="text-error focus:text-error" onClick={() => meta.onRemoveEntry(row)}>
+          <DropdownMenuItem
+            className="text-error focus:text-error"
+            onClick={() => {
+              meta.onRemoveEntry(row);
+            }}
+          >
             Eliminar registro
           </DropdownMenuItem>
         )}
@@ -231,44 +251,44 @@ const columnHelper = createColumnHelper<BulkRow>();
 
 export const getTimesheetDetailColumns = () => [
   columnHelper.accessor("date", {
+    cell: ({ row, table }) => <DateCell meta={table.options.meta as TimesheetTableMeta} row={row.original} />,
     header: "Fecha",
-    cell: ({ row, table }) => <DateCell row={row.original} meta={table.options.meta as TimesheetTableMeta} />,
   }),
   columnHelper.accessor("entrada", {
-    header: "Entrada",
     cell: ({ row, table }) => (
-      <InputCell row={row.original} index={row.index} field="entrada" meta={table.options.meta as TimesheetTableMeta} />
+      <InputCell field="entrada" index={row.index} meta={table.options.meta as TimesheetTableMeta} row={row.original} />
     ),
+    header: "Entrada",
   }),
   columnHelper.accessor("salida", {
-    header: "Salida",
     cell: ({ row, table }) => (
-      <InputCell row={row.original} index={row.index} field="salida" meta={table.options.meta as TimesheetTableMeta} />
+      <InputCell field="salida" index={row.index} meta={table.options.meta as TimesheetTableMeta} row={row.original} />
     ),
+    header: "Salida",
   }),
   columnHelper.display({
-    id: "trabajadas",
+    cell: ({ row, table }) => <WorkedCell meta={table.options.meta as TimesheetTableMeta} row={row.original} />,
     header: "Trabajadas",
-    cell: ({ row, table }) => <WorkedCell row={row.original} meta={table.options.meta as TimesheetTableMeta} />,
+    id: "trabajadas",
   }),
   columnHelper.accessor("overtime", {
+    cell: ({ row, table }) => (
+      <OvertimeCell index={row.index} meta={table.options.meta as TimesheetTableMeta} row={row.original} />
+    ),
     header: "Extras",
-    cell: ({ row, table }) => (
-      <OvertimeCell row={row.original} index={row.index} meta={table.options.meta as TimesheetTableMeta} />
-    ),
   }),
   columnHelper.display({
-    id: "status",
+    cell: ({ row, table }) => (
+      <StatusCell index={row.index} meta={table.options.meta as TimesheetTableMeta} row={row.original} />
+    ),
     header: "Estado",
-    cell: ({ row, table }) => (
-      <StatusCell row={row.original} index={row.index} meta={table.options.meta as TimesheetTableMeta} />
-    ),
+    id: "status",
   }),
   columnHelper.display({
-    id: "actions",
-    header: "Acciones",
     cell: ({ row, table }) => (
-      <ActionsCell row={row.original} index={row.index} meta={table.options.meta as TimesheetTableMeta} />
+      <ActionsCell index={row.index} meta={table.options.meta as TimesheetTableMeta} row={row.original} />
     ),
+    header: "Acciones",
+    id: "actions",
   }),
 ];

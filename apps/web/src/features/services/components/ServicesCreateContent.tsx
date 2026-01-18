@@ -8,7 +8,7 @@ import { SERVICE_TEMPLATES } from "@/features/services/components/ServiceTemplat
 import { useServicesOverview } from "@/features/services/hooks/useServicesOverview";
 
 export default function ServicesCreateContent() {
-  const { canManage, applyTemplate, createError, selectedTemplate, handleCreateService } = useServicesOverview();
+  const { applyTemplate, canManage, createError, handleCreateService, selectedTemplate } = useServicesOverview();
 
   if (!canManage) {
     return <Alert variant="error">Solo administradores pueden crear servicios.</Alert>;
@@ -17,14 +17,14 @@ export default function ServicesCreateContent() {
   return (
     <section className="space-y-8">
       <ServicesHero
-        title="Crear servicio"
-        description="Usa una plantilla o completa el formulario manualmente para incorporar nuevos servicios recurrentes."
-        breadcrumbs={[{ label: "Servicios", to: "/services" }, { label: "Crear" }]}
         actions={
           <Link to="/services">
             <Button variant="ghost">Volver al panel</Button>
           </Link>
         }
+        breadcrumbs={[{ label: "Servicios", to: "/services" }, { label: "Crear" }]}
+        description="Usa una plantilla o completa el formulario manualmente para incorporar nuevos servicios recurrentes."
+        title="Crear servicio"
       />
 
       <ServicesSurface>
@@ -37,7 +37,7 @@ export default function ServicesCreateContent() {
               </p>
             </div>
             <Link to="/services/templates">
-              <Button variant="ghost" size="sm">
+              <Button size="sm" variant="ghost">
                 Ver todas
               </Button>
             </Link>
@@ -45,10 +45,12 @@ export default function ServicesCreateContent() {
           <div className="flex flex-wrap gap-2">
             {SERVICE_TEMPLATES.map((template) => (
               <button
-                key={template.id}
-                type="button"
-                onClick={() => applyTemplate(template)}
                 className="border-base-300 bg-base-200 text-base-content hover:border-primary/40 hover:bg-primary/10 hover:text-primary rounded-full border px-3 py-1 text-xs font-semibold transition"
+                key={template.id}
+                onClick={() => {
+                  applyTemplate(template);
+                }}
+                type="button"
               >
                 {template.name}
               </button>
@@ -61,13 +63,13 @@ export default function ServicesCreateContent() {
         <div className="space-y-4">
           <p className="text-base-content text-sm font-semibold">Formulario de creación</p>
           <ServiceForm
-            onSubmit={async (payload) => {
-              await handleCreateService(payload);
-            }}
+            initialValues={selectedTemplate?.payload}
             onCancel={() => {
               /* handled en overview modal, noop aquí */
             }}
-            initialValues={selectedTemplate?.payload}
+            onSubmit={async (payload) => {
+              await handleCreateService(payload);
+            }}
             submitLabel="Crear servicio"
           />
           {createError && <p className="text-sm text-rose-600">{createError}</p>}

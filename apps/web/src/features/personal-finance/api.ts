@@ -3,9 +3,21 @@ import { apiClient } from "@/lib/apiClient";
 import type { CreateCreditInput, PayInstallmentInput, PersonalCredit } from "./types";
 
 export const personalFinanceApi = {
-  // List
-  listCredits: async () => {
-    return apiClient.get<PersonalCredit[]>("/api/personal-finance/credits");
+  // Create
+  createCredit: async (data: CreateCreditInput) => {
+    return apiClient.post<PersonalCredit>("/api/personal-finance/credits", {
+      ...data,
+      installments: data.installments?.map((i) => ({
+        ...i,
+        dueDate: i.dueDate.toISOString(),
+      })),
+      startDate: data.startDate.toISOString(),
+    });
+  },
+
+  // Delete
+  deleteCredit: async (id: number) => {
+    return apiClient.delete<{ success: boolean }>(`/api/personal-finance/credits/${id}`);
   },
 
   // Get Detail
@@ -13,16 +25,9 @@ export const personalFinanceApi = {
     return apiClient.get<PersonalCredit>(`/api/personal-finance/credits/${id}`);
   },
 
-  // Create
-  createCredit: async (data: CreateCreditInput) => {
-    return apiClient.post<PersonalCredit>("/api/personal-finance/credits", {
-      ...data,
-      startDate: data.startDate.toISOString(),
-      installments: data.installments?.map((i) => ({
-        ...i,
-        dueDate: i.dueDate.toISOString(),
-      })),
-    });
+  // List
+  listCredits: async () => {
+    return apiClient.get<PersonalCredit[]>("/api/personal-finance/credits");
   },
 
   // Pay Installment
@@ -31,10 +36,5 @@ export const personalFinanceApi = {
       ...data,
       paymentDate: data.paymentDate.toISOString(),
     });
-  },
-
-  // Delete
-  deleteCredit: async (id: number) => {
-    return apiClient.delete<{ success: boolean }>(`/api/personal-finance/credits/${id}`);
   },
 };

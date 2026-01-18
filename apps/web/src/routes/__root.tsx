@@ -16,8 +16,8 @@ const TanStackRouterDevtools =
 
 // Router Context - shared across all routes
 export interface RouterContext {
-  queryClient: QueryClient;
   auth: AuthContextType;
+  queryClient: QueryClient;
 }
 
 export const Route = createRootRouteWithContext<RouterContext>()({

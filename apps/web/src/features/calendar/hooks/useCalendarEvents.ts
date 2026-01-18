@@ -7,16 +7,17 @@ import { useSettings } from "@/context/SettingsContext";
 import { useToast } from "@/context/ToastContext";
 import { calendarFilterStore, updateFilters } from "@/store/calendarFilters";
 
+import type { CalendarDaily, CalendarFilters, CalendarSummary, CalendarSyncLog, CalendarSyncStep } from "../types";
+
 import { fetchCalendarDaily, fetchCalendarSummary, fetchCalendarSyncLogs, syncCalendarEvents } from "../api";
 import { calendarSyncQueries } from "../queries";
-import type { CalendarDaily, CalendarFilters, CalendarSummary, CalendarSyncLog, CalendarSyncStep } from "../types";
 import { computeDefaultFilters, filtersEqual, normalizeFilters } from "../utils/filters";
-
-type SyncProgressStatus = "pending" | "in_progress" | "completed" | "error";
 
 type SyncProgressEntry = CalendarSyncStep & { status: SyncProgressStatus };
 
-const SYNC_STEPS_TEMPLATE: Array<{ id: CalendarSyncStep["id"]; label: string }> = [
+type SyncProgressStatus = "completed" | "error" | "in_progress" | "pending";
+
+const SYNC_STEPS_TEMPLATE: { id: CalendarSyncStep["id"]; label: string }[] = [
   { id: "fetch", label: "Consultando Google Calendar" },
   { id: "upsert", label: "Actualizando base de datos" },
   { id: "exclude", label: "Eliminando eventos excluidos" },
@@ -53,9 +54,9 @@ export function useCalendarEvents() {
 
   const computeDefaults = () =>
     computeDefaultFilters({
-      calendarSyncStart: settings.calendarSyncStart,
-      calendarSyncLookaheadDays: settings.calendarSyncLookaheadDays,
       calendarDailyMaxDays: settings.calendarDailyMaxDays,
+      calendarSyncLookaheadDays: settings.calendarSyncLookaheadDays,
+      calendarSyncStart: settings.calendarSyncStart,
     });
 
   // We only want to compute this once on mount, basically
@@ -67,13 +68,13 @@ export function useCalendarEvents() {
   });
   // Don't initialize with initialDefaults - let useEffect handle it
   const [appliedFilters, setAppliedFilters] = useState<CalendarFilters>(() => ({
-    from: "",
-    to: "",
     calendarIds: [],
-    eventTypes: [],
     categories: [],
-    search: "",
+    eventTypes: [],
+    from: "",
     maxDays: 28,
+    search: "",
+    to: "",
   }));
   const hasAppliedInitialFilters = useRef(false);
 
@@ -87,29 +88,29 @@ export function useCalendarEvents() {
     }
   }, [initialDefaults]);
   const [syncProgress, setSyncProgress] = useState<SyncProgressEntry[]>([]);
-  const [syncDurationMs, setSyncDurationMs] = useState<number | null>(null);
+  const [syncDurationMs, setSyncDurationMs] = useState<null | number>(null);
   const [syncing, setSyncing] = useState(false);
-  const [lastSyncInfo, setLastSyncInfo] = useState<{
+  const [lastSyncInfo, setLastSyncInfo] = useState<null | {
+    excluded: number;
     fetchedAt: string;
     inserted: number;
-    updated: number;
-    skipped: number;
-    excluded: number;
     logId?: number;
-  } | null>(null);
-  const [syncError, setSyncError] = useState<string | null>(null);
+    skipped: number;
+    updated: number;
+  }>(null);
+  const [syncError, setSyncError] = useState<null | string>(null);
 
   const normalizedApplied = normalizeFilters(appliedFilters);
   const shouldFetch = Boolean(normalizedApplied.from && normalizedApplied.to);
 
   const summaryQuery = useQuery<CalendarSummary>({
-    queryKey: ["calendar", "summary", normalizedApplied],
     queryFn: shouldFetch ? () => fetchCalendarSummary(normalizedApplied) : skipToken,
+    queryKey: ["calendar", "summary", normalizedApplied],
   });
 
   const dailyQuery = useQuery<CalendarDaily>({
-    queryKey: ["calendar", "daily", normalizedApplied],
     queryFn: shouldFetch ? () => fetchCalendarDaily(normalizedApplied) : skipToken,
+    queryKey: ["calendar", "daily", normalizedApplied],
   });
 
   // Single source of truth for sync logs (shared across pages)
@@ -119,11 +120,11 @@ export function useCalendarEvents() {
     refetch: refetchSyncLogs,
   } = useQuery({
     ...calendarSyncQueries.logs(50),
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
-    retry: false,
-    refetchInterval: (query) => resolveRefetchInterval(query.state.data),
     placeholderData: [],
+    refetchInterval: (query) => resolveRefetchInterval(query.state.data),
+    refetchOnReconnect: false,
+    refetchOnWindowFocus: false,
+    retry: false,
   });
 
   const hasRunningSyncFromOtherSource = hasFreshRunningSync(syncLogsData);
@@ -178,9 +179,6 @@ export function useCalendarEvents() {
         }))
       );
     },
-    onSuccess: (result) => {
-      startPolling(result.logId);
-    },
     onError: (err: unknown) => {
       const message = err instanceof Error ? err.message : "No se pudo iniciar la sincronización";
       setSyncError(message);
@@ -192,6 +190,9 @@ export function useCalendarEvents() {
         }))
       );
       setSyncing(false);
+    },
+    onSuccess: (result) => {
+      startPolling(result.logId);
     },
   });
 
@@ -221,20 +222,20 @@ export function useCalendarEvents() {
           );
           setSyncProgress(
             SYNC_STEPS_TEMPLATE.map((step) => ({
+              details: {},
+              durationMs: 0,
               id: step.id,
               label: step.label,
-              durationMs: 0,
-              details: {},
               status: "completed" as SyncProgressStatus,
             }))
           );
           setLastSyncInfo({
+            excluded: currentLog.excluded,
             fetchedAt: currentLog.fetchedAt ?? new Date().toISOString(),
             inserted: currentLog.inserted,
-            updated: currentLog.updated,
-            skipped: currentLog.skipped,
-            excluded: currentLog.excluded,
             logId: currentLog.id,
+            skipped: currentLog.skipped,
+            updated: currentLog.updated,
           });
           setSyncing(false);
           queryClient.invalidateQueries({ queryKey: ["calendar"] }).catch(() => {
@@ -272,28 +273,28 @@ export function useCalendarEvents() {
   };
 
   return {
-    filters,
     appliedFilters,
-    summary,
-    daily,
-    loading,
-    error,
-    isDirty,
-    updateFilters: handleUpdateFilters,
     applyFilters,
-    resetFilters: handleResetFilters,
     availableCalendars,
-    availableEventTypes,
     availableCategories,
-    syncing,
-    syncError,
-    lastSyncInfo,
-    syncProgress,
-    syncDurationMs,
-    syncNow,
-    syncLogs,
-    refetchSyncLogs,
-    isLoadingSyncLogs,
+    availableEventTypes,
+    daily,
+    error,
+    filters,
     hasRunningSyncFromOtherSource,
+    isDirty,
+    isLoadingSyncLogs,
+    lastSyncInfo,
+    loading,
+    refetchSyncLogs,
+    resetFilters: handleResetFilters,
+    summary,
+    syncDurationMs,
+    syncError,
+    syncing,
+    syncLogs,
+    syncNow,
+    syncProgress,
+    updateFilters: handleUpdateFilters,
   };
 }

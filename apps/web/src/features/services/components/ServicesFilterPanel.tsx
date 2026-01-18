@@ -5,32 +5,32 @@ import Input from "@/components/ui/Input";
 
 import type { ServiceSummary, ServiceType } from "../types";
 
-export type ServicesFilterState = {
+export interface ServicesFilterState {
   search: string;
   statuses: Set<ServiceSummary["status"]>;
   types: Set<ServiceType>;
-};
+}
 
-type ServicesFilterPanelProps = {
-  services: ServiceSummary[];
+interface ServicesFilterPanelProps {
   filters: ServicesFilterState;
   onChange: (next: ServicesFilterState) => void;
-};
+  services: ServiceSummary[];
+}
 
 const STATUS_LABELS: Record<ServiceSummary["status"], string> = {
   ACTIVE: "Activo",
-  INACTIVE: "Sin pendientes",
   ARCHIVED: "Archivado",
+  INACTIVE: "Sin pendientes",
 };
 
-const STATUS_ORDER: Array<ServiceSummary["status"]> = ["ACTIVE", "INACTIVE", "ARCHIVED"];
+const STATUS_ORDER: ServiceSummary["status"][] = ["ACTIVE", "INACTIVE", "ARCHIVED"];
 
-export default function ServicesFilterPanel({ services, filters, onChange }: ServicesFilterPanelProps) {
+export default function ServicesFilterPanel({ filters, onChange, services }: ServicesFilterPanelProps) {
   const typeOptions = (() => {
     const counts = new Map<ServiceType, number>();
-    services.forEach((service) => {
+    for (const service of services) {
       counts.set(service.service_type, (counts.get(service.service_type) ?? 0) + 1);
-    });
+    }
     return [...counts.entries()].toSorted((a, b) => b[1] - a[1]);
   })();
 
@@ -70,11 +70,11 @@ export default function ServicesFilterPanel({ services, filters, onChange }: Ser
           <p className="text-base-content/50 text-xs">Filtra por estado, tipo o busca por nombre/detalle.</p>
         </div>
         <Button
+          className="text-primary text-xs font-semibold tracking-wide uppercase hover:underline"
+          onClick={resetFilters}
+          size="sm"
           type="button"
           variant="secondary"
-          size="sm"
-          onClick={resetFilters}
-          className="text-primary text-xs font-semibold tracking-wide uppercase hover:underline"
         >
           Limpiar filtros
         </Button>
@@ -84,9 +84,11 @@ export default function ServicesFilterPanel({ services, filters, onChange }: Ser
         <div className="md:col-span-1">
           <Input
             label="Buscar"
+            onChange={(event: ChangeEvent<HTMLInputElement>) => {
+              handleSearchChange(event.target.value);
+            }}
             placeholder="Nombre, detalle, contraparte..."
             value={filters.search}
-            onChange={(event: ChangeEvent<HTMLInputElement>) => handleSearchChange(event.target.value)}
           />
         </div>
 
@@ -95,16 +97,18 @@ export default function ServicesFilterPanel({ services, filters, onChange }: Ser
           <div className="mt-2 flex flex-wrap gap-2">
             {STATUS_ORDER.map((status) => (
               <Button
-                key={status}
-                type="button"
-                variant="secondary"
-                size="sm"
-                onClick={() => handleStatusToggle(status)}
                 className={`rounded-full border px-3 py-1 text-xs font-semibold transition-all ${
                   filters.statuses.size === 0 || filters.statuses.has(status)
                     ? "border-primary/40 bg-primary/10 text-primary"
                     : "border-base-300 bg-base-200 text-base-content/60 hover:border-primary/35 hover:text-primary"
                 }`}
+                key={status}
+                onClick={() => {
+                  handleStatusToggle(status);
+                }}
+                size="sm"
+                type="button"
+                variant="secondary"
               >
                 {STATUS_LABELS[status]}
               </Button>
@@ -119,16 +123,18 @@ export default function ServicesFilterPanel({ services, filters, onChange }: Ser
               const isActive = filters.types.size === 0 || filters.types.has(type);
               return (
                 <Button
-                  key={type}
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => handleTypeToggle(type)}
                   className={`rounded-full border px-3 py-1 text-xs font-semibold transition-all ${
                     isActive
                       ? "border-secondary/40 bg-secondary/10 text-secondary"
                       : "border-base-300 bg-base-200 text-base-content/60 hover:border-secondary/35 hover:text-secondary"
                   }`}
+                  key={type}
+                  onClick={() => {
+                    handleTypeToggle(type);
+                  }}
+                  size="sm"
+                  type="button"
+                  variant="secondary"
                 >
                   {type.toLowerCase()} ({count})
                 </Button>

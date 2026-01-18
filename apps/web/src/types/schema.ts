@@ -1,96 +1,96 @@
-export type PersonType = "NATURAL" | "JURIDICAL";
-export type CounterpartCategory =
-  | "SUPPLIER"
-  | "PATIENT"
-  | "EMPLOYEE"
-  | "PARTNER"
-  | "RELATED"
-  | "OTHER"
-  | "CLIENT"
-  | "LENDER"
-  | "OCCASIONAL";
-export type EmployeeStatus = "ACTIVE" | "INACTIVE" | "TERMINATED";
-export type EmployeeSalaryType = "HOURLY" | "FIXED";
-export type TransactionDirection = "IN" | "OUT" | "NEUTRO";
-export type ServiceType = "BUSINESS" | "PERSONAL" | "SUPPLIER" | "TAX" | "UTILITY" | "LEASE" | "SOFTWARE" | "OTHER";
-export type ServiceFrequency =
-  | "WEEKLY"
-  | "BIWEEKLY"
-  | "MONTHLY"
-  | "BIMONTHLY"
-  | "QUARTERLY"
-  | "SEMIANNUAL"
-  | "ANNUAL"
-  | "ONCE";
-export type ServiceStatus = "ACTIVE" | "INACTIVE" | "ARCHIVED";
-export type LoanStatus = "ACTIVE" | "COMPLETED" | "DEFAULTED";
-export type LoanScheduleStatus = "PENDING" | "PARTIAL" | "PAID" | "OVERDUE";
-export type UserStatus = "PENDING_SETUP" | "ACTIVE" | "SUSPENDED";
-
-export interface Person {
-  id: number;
-  rut: string;
-  names: string;
-  fatherName?: string | null;
-  motherName?: string | null;
-  email?: string | null;
-  phone?: string | null;
-  address?: string | null;
-  personType: PersonType;
+export interface Counterpart {
+  accounts?: CounterpartAccount[];
+  category: CounterpartCategory;
   createdAt: string;
-  updatedAt: string;
-  // Relations
-  user?: User | null;
-  employee?: Employee | null;
-  counterpart?: Counterpart | null;
-}
-
-export interface User {
   id: number;
-  personId: number;
-  email: string;
-  role: string;
-  status: UserStatus;
-  mfaEnabled: boolean;
-  createdAt: string;
-  updatedAt: string;
+  notes?: null | string;
   person?: Person;
+  personId: number;
+  updatedAt: string;
 }
-
-export interface Employee {
+export interface CounterpartAccount {
+  accountNumber: string;
+  accountType?: null | string;
+  bankName?: null | string;
+  counterpartId: number;
   id: number;
+}
+export type CounterpartCategory =
+  | "CLIENT"
+  | "EMPLOYEE"
+  | "LENDER"
+  | "OCCASIONAL"
+  | "OTHER"
+  | "PARTNER"
+  | "PATIENT"
+  | "RELATED"
+  | "SUPPLIER";
+export interface Employee {
+  bankAccountNumber?: null | string;
+  bankAccountType?: null | string;
+  bankName?: null | string;
+  baseSalary: number;
+  createdAt: string;
+  department?: null | string;
+  endDate?: null | string;
+  hourlyRate?: null | number;
+  id: number;
+  person?: Person;
   personId: number;
   position: string;
-  department?: string | null;
-  startDate: string;
-  endDate?: string | null;
-  status: EmployeeStatus;
   salaryType: EmployeeSalaryType;
-  baseSalary: number;
-  hourlyRate?: number | null;
-  bankName?: string | null;
-  bankAccountType?: string | null;
-  bankAccountNumber?: string | null;
-  createdAt: string;
+  startDate: string;
+  status: EmployeeStatus;
   updatedAt: string;
-  person?: Person;
 }
-
-export interface Counterpart {
+export type EmployeeSalaryType = "FIXED" | "HOURLY";
+export type EmployeeStatus = "ACTIVE" | "INACTIVE" | "TERMINATED";
+export type LoanScheduleStatus = "OVERDUE" | "PAID" | "PARTIAL" | "PENDING";
+export type LoanStatus = "ACTIVE" | "COMPLETED" | "DEFAULTED";
+export interface Person {
+  address?: null | string;
+  counterpart?: Counterpart | null;
+  createdAt: string;
+  email?: null | string;
+  employee?: Employee | null;
+  fatherName?: null | string;
   id: number;
+  motherName?: null | string;
+  names: string;
+  personType: PersonType;
+  phone?: null | string;
+  rut: string;
+  updatedAt: string;
+  // Relations
+  user?: null | User;
+}
+export type PersonType = "JURIDICAL" | "NATURAL";
+export type ServiceFrequency =
+  | "ANNUAL"
+  | "BIMONTHLY"
+  | "BIWEEKLY"
+  | "MONTHLY"
+  | "ONCE"
+  | "QUARTERLY"
+  | "SEMIANNUAL"
+  | "WEEKLY";
+
+export type ServiceStatus = "ACTIVE" | "ARCHIVED" | "INACTIVE";
+
+export type ServiceType = "BUSINESS" | "LEASE" | "OTHER" | "PERSONAL" | "SOFTWARE" | "SUPPLIER" | "TAX" | "UTILITY";
+
+export type TransactionDirection = "IN" | "NEUTRO" | "OUT";
+
+export interface User {
+  createdAt: string;
+  email: string;
+  id: number;
+  mfaEnabled: boolean;
+  person?: Person;
   personId: number;
-  category: CounterpartCategory;
-  notes?: string | null;
-  createdAt: string;
+  role: string;
+  status: UserStatus;
   updatedAt: string;
-  person?: Person;
-  accounts?: CounterpartAccount[];
 }
 
-export interface CounterpartAccount {
-  id: number;
-  counterpartId: number;
-  bankName?: string | null;
-  accountType?: string | null;
-  accountNumber: string;
-}
+export type UserStatus = "ACTIVE" | "PENDING_SETUP" | "SUSPENDED";

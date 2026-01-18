@@ -4,6 +4,25 @@ import { z } from "zod";
 
 import { logger } from "./logger";
 
+interface ErrorData {
+  details?: unknown;
+  error?: string;
+  issues?: unknown;
+  message?: string;
+}
+
+export class ApiError extends Error {
+  details?: unknown;
+  status: number;
+
+  constructor(message: string, status: number, details?: unknown) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.details = details;
+  }
+}
+
 // Helper for building query strings with custom array handling (preserved for safety)
 function buildUrlWithQuery(url: string, query?: Record<string, unknown>) {
   if (!query) return url;
@@ -25,25 +44,6 @@ function buildUrlWithQuery(url: string, query?: Record<string, unknown>) {
   if (!queryString) return url;
 
   return url.includes("?") ? `${url}&${queryString}` : `${url}?${queryString}`;
-}
-
-export class ApiError extends Error {
-  status: number;
-  details?: unknown;
-
-  constructor(message: string, status: number, details?: unknown) {
-    super(message);
-    this.name = "ApiError";
-    this.status = status;
-    this.details = details;
-  }
-}
-
-interface ErrorData {
-  message?: string;
-  error?: string;
-  details?: unknown;
-  issues?: unknown;
 }
 
 // Custom hook to transform Ky errors into ApiError
@@ -90,25 +90,25 @@ const superJsonParser = (text: string) => {
 };
 
 const kyInstance = ky.create({
-  timeout: 30_000,
   credentials: "include", // CRITICAL: Send cookies with every request
+  parseJson: superJsonParser,
   retry: {
     limit: 2,
     methods: ["get", "put", "head", "delete", "options", "trace"],
     statusCodes: [408, 413, 429, 500, 502, 503, 504],
   },
-  parseJson: superJsonParser,
+  timeout: 30_000,
 });
 
 interface RequestOptions extends Omit<RequestInit, "body"> {
   body?: object;
   query?: Record<string, unknown>;
+  responseType?: "blob" | "json" | "text";
   retry?: number;
-  responseType?: "json" | "text" | "blob";
 }
 
 async function request<T>(method: string, url: string, options?: RequestOptions): Promise<T> {
-  const { body, query, retry, responseType = "json", ...fetchOptions } = options || {};
+  const { body, query, responseType = "json", retry, ...fetchOptions } = options || {};
 
   const finalUrl = buildUrlWithQuery(url, query);
 
@@ -150,31 +150,31 @@ async function request<T>(method: string, url: string, options?: RequestOptions)
 }
 
 export const apiClient = {
+  delete: <T>(url: string, options?: RequestOptions) => request<T>("DELETE", url, options),
   get: <T>(url: string, options?: RequestOptions) => request<T>("GET", url, options),
   post: <T>(url: string, body: object, options?: RequestOptions) => request<T>("POST", url, { ...options, body }),
   put: <T>(url: string, body: object, options?: RequestOptions) => request<T>("PUT", url, { ...options, body }),
-  delete: <T>(url: string, options?: RequestOptions) => request<T>("DELETE", url, options),
 };
 
 // Upload Files - simplified with Ky
 const UploadSummarySchema = z.object({
-  status: z.string(),
   inserted: z.number(),
-  updated: z.number().optional(),
   skipped: z.number().optional(),
+  status: z.string(),
   total: z.number(),
+  updated: z.number().optional(),
 });
 
 const ApiResponseSchema = UploadSummarySchema.extend({
   message: z.string().optional(),
 });
 
-export type UploadSummary = z.infer<typeof UploadSummarySchema>;
-export type UploadResult = {
+export interface UploadResult {
+  error?: string;
   file: string;
   summary?: UploadSummary;
-  error?: string;
-};
+}
+export type UploadSummary = z.infer<typeof UploadSummarySchema>;
 
 export async function uploadFiles(files: File[], endpoint: string, logContext: string): Promise<UploadResult[]> {
   const aggregated: UploadResult[] = [];
@@ -202,7 +202,7 @@ export async function uploadFiles(files: File[], endpoint: string, logContext: s
       aggregated.push({ file: file.name, summary: payload });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Error inesperado al subir";
-      aggregated.push({ file: file.name, error: message });
+      aggregated.push({ error: message, file: file.name });
       logger.error(`${logContext} archivo falló`, { file: file.name, message });
     }
   }

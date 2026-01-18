@@ -2,20 +2,21 @@ import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-q
 
 import { useToast } from "@/context/ToastContext";
 
-import { updateSupplyRequestStatus } from "../api";
-import { supplyKeys, supplyQueries } from "../queries";
 import type { CommonSupply, StructuredSupplies, SupplyRequest } from "../types";
 
+import { updateSupplyRequestStatus } from "../api";
+import { supplyKeys, supplyQueries } from "../queries";
+
 interface UseSupplyManagementResult {
-  requests: SupplyRequest[];
   commonSupplies: CommonSupply[];
-  structuredSupplies: StructuredSupplies;
   handleStatusChange: (requestId: number, newStatus: SupplyRequest["status"]) => Promise<void>;
   refresh: () => Promise<void>;
+  requests: SupplyRequest[];
+  structuredSupplies: StructuredSupplies;
 }
 
 export function useSupplyManagement(): UseSupplyManagementResult {
-  const { success: toastSuccess, error: toastError } = useToast();
+  const { error: toastError, success: toastSuccess } = useToast();
   const queryClient = useQueryClient();
 
   // 1. Fetch Requests (Suspense-enabled for Loaders)
@@ -45,13 +46,13 @@ export function useSupplyManagement(): UseSupplyManagementResult {
     mutationFn: async ({ id, status }: { id: number; status: SupplyRequest["status"] }) => {
       return updateSupplyRequestStatus(id, status);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: supplyKeys.requests() });
-      toastSuccess("Estado de solicitud actualizado");
-    },
     onError: (err) => {
       const message = err instanceof Error ? err.message : "Error al actualizar el estado";
       toastError(message);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: supplyKeys.requests() });
+      toastSuccess("Estado de solicitud actualizado");
     },
   });
 
@@ -67,10 +68,10 @@ export function useSupplyManagement(): UseSupplyManagementResult {
   };
 
   return {
-    requests,
     commonSupplies,
-    structuredSupplies,
     handleStatusChange,
     refresh,
+    requests,
+    structuredSupplies,
   };
 }

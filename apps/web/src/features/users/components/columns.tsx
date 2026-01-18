@@ -33,16 +33,15 @@ const getStatusColor = (s: string) => {
 };
 
 export const getColumns = (actions: {
-  onEditRole: (user: User) => void;
-  onToggleMfa: (id: number, current: boolean) => void;
-  onResetPassword: (id: number) => void;
   onDeletePasskey: (id: number) => void;
-  onToggleStatus: (id: number, status: string) => void;
   onDeleteUser: (id: number) => void;
+  onEditRole: (user: User) => void;
+  onResetPassword: (id: number) => void;
+  onToggleMfa: (id: number, current: boolean) => void;
+  onToggleStatus: (id: number, status: string) => void;
 }): ColumnDef<User>[] => [
   {
     accessorKey: "user",
-    header: "Usuario",
     cell: ({ row }) => {
       const user = row.original;
       return (
@@ -64,17 +63,17 @@ export const getColumns = (actions: {
       const search = value.toLowerCase();
       return user.email.toLowerCase().includes(search) || getPersonFullName(user.person).toLowerCase().includes(search);
     },
+    header: "Usuario",
   },
   {
     accessorKey: "role",
-    header: "Rol",
     cell: ({ row }) => (
       <span className="badge badge-ghost badge-sm font-medium whitespace-nowrap">{row.original.role}</span>
     ),
+    header: "Rol",
   },
   {
     accessorKey: "status",
-    header: "Estado",
     cell: ({ row }) => {
       const status = row.original.status;
       return (
@@ -84,10 +83,10 @@ export const getColumns = (actions: {
         </div>
       );
     },
+    header: "Estado",
   },
   {
     accessorKey: "mfaEnabled",
-    header: () => <div className="text-center">MFA</div>,
     cell: ({ row }) => (
       <div className="flex justify-center">
         {row.original.mfaEnabled ? (
@@ -101,11 +100,11 @@ export const getColumns = (actions: {
         )}
       </div>
     ),
+    header: () => <div className="text-center">MFA</div>,
     size: 60,
   },
   {
     accessorKey: "hasPasskey",
-    header: () => <div className="text-center">Passkey</div>,
     cell: ({ row }) => (
       <div className="flex justify-center">
         {row.original.hasPasskey ? (
@@ -119,43 +118,57 @@ export const getColumns = (actions: {
         )}
       </div>
     ),
+    header: () => <div className="text-center">Passkey</div>,
     size: 60,
   },
   {
     accessorKey: "createdAt",
-    header: "Creado",
     cell: ({ row }) => (
       <span className="text-base-content/70 text-sm">{dayjs(row.original.createdAt).format("DD MMM YYYY")}</span>
     ),
+    header: "Creado",
   },
   {
-    id: "actions",
     cell: ({ row }) => {
       const user = row.original;
       return (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button type="button" className="btn btn-ghost btn-xs">
+            <button className="btn btn-ghost btn-xs" type="button">
               <MoreVertical size={16} />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuItem onClick={() => actions.onEditRole(user)}>
+            <DropdownMenuItem
+              onClick={() => {
+                actions.onEditRole(user);
+              }}
+            >
               <UserCog className="mr-2 h-4 w-4" />
               Editar rol
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => actions.onToggleMfa(user.id, user.mfaEnabled)}>
+            <DropdownMenuItem
+              onClick={() => {
+                actions.onToggleMfa(user.id, user.mfaEnabled);
+              }}
+            >
               <ShieldCheck className="mr-2 h-4 w-4" />
               {user.mfaEnabled ? "Desactivar" : "Activar"} MFA
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => actions.onResetPassword(user.id)}>
+            <DropdownMenuItem
+              onClick={() => {
+                actions.onResetPassword(user.id);
+              }}
+            >
               <Key className="mr-2 h-4 w-4" />
               Restablecer contraseña
             </DropdownMenuItem>
             {user.hasPasskey && (
               <DropdownMenuItem
-                onClick={() => actions.onDeletePasskey(user.id)}
                 className="text-warning focus:text-warning"
+                onClick={() => {
+                  actions.onDeletePasskey(user.id);
+                }}
               >
                 <Trash2 className="mr-2 h-4 w-4" />
                 Eliminar passkey
@@ -163,23 +176,32 @@ export const getColumns = (actions: {
             )}
             {user.status === "SUSPENDED" ? (
               <DropdownMenuItem
-                onClick={() => actions.onToggleStatus(user.id, user.status)}
                 className="text-success focus:text-success"
+                onClick={() => {
+                  actions.onToggleStatus(user.id, user.status);
+                }}
               >
                 <Shield className="mr-2 h-4 w-4" />
                 Reactivar acceso
               </DropdownMenuItem>
             ) : (
               <DropdownMenuItem
-                onClick={() => actions.onToggleStatus(user.id, user.status)}
                 className="text-warning focus:text-warning"
+                onClick={() => {
+                  actions.onToggleStatus(user.id, user.status);
+                }}
               >
                 <Lock className="mr-2 h-4 w-4" />
                 Suspender acceso
               </DropdownMenuItem>
             )}
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => actions.onDeleteUser(user.id)} className="text-error focus:text-error">
+            <DropdownMenuItem
+              className="text-error focus:text-error"
+              onClick={() => {
+                actions.onDeleteUser(user.id);
+              }}
+            >
               <Trash2 className="mr-2 h-4 w-4" />
               Eliminar usuario
             </DropdownMenuItem>
@@ -187,6 +209,7 @@ export const getColumns = (actions: {
         </DropdownMenu>
       );
     },
+    id: "actions",
     size: 50,
   },
 ];

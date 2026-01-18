@@ -6,27 +6,29 @@ import { SmoothCollapse } from "@/components/ui/SmoothCollapse";
 import { cn } from "@/lib/utils";
 
 interface CollapsibleNavSectionProps {
-  title: string;
-  children: React.ReactNode;
-  className?: string;
+  readonly children: React.ReactNode;
+  readonly className?: string;
+  readonly title: string;
 }
 
-export default function CollapsibleNavSection({ title, children, className }: CollapsibleNavSectionProps) {
+export default function CollapsibleNavSection({ children, className, title }: CollapsibleNavSectionProps) {
   const [isOpen, setIsOpen] = useState(true);
 
   return (
     <div className={cn("space-y-2", className)}>
       <div className="border-base-300 bg-base-100 rounded-xl border shadow-inner">
         <Button
+          className="text-base-content/70 flex w-full items-center justify-between gap-2 px-3 py-2 text-xs font-semibold tracking-wide uppercase"
+          onClick={() => {
+            setIsOpen(!isOpen);
+          }}
           type="button"
           variant="secondary"
-          className="text-base-content/70 flex w-full items-center justify-between gap-2 px-3 py-2 text-xs font-semibold tracking-wide uppercase"
-          onClick={() => setIsOpen(!isOpen)}
         >
           <span className="font-semibold">{title}</span>
           <ChevronDown
-            size={16}
             className={cn("transform transition-transform duration-300", !isOpen && "-rotate-90")}
+            size={16}
           />
         </Button>
         <SmoothCollapse isOpen={isOpen}>

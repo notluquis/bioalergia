@@ -3,22 +3,22 @@ import { BarChart3, Briefcase, Home, type LucideIcon, Users } from "lucide-react
 import React from "react";
 
 interface NavItem {
-  path: string;
   icon: LucideIcon;
   label: string;
+  path: string;
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { path: "/", icon: Home, label: "Inicio" },
-  { path: "/employees", icon: Users, label: "Personal" },
-  { path: "/services", icon: Briefcase, label: "Servicios" },
-  { path: "/hr/reports", icon: BarChart3, label: "Reportes" },
+  { icon: Home, label: "Inicio", path: "/" },
+  { icon: Users, label: "Personal", path: "/employees" },
+  { icon: Briefcase, label: "Servicios", path: "/services" },
+  { icon: BarChart3, label: "Reportes", path: "/hr/reports" },
 ];
 
 export function BottomNav() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
-  const [pendingPath, setPendingPath] = React.useState<string | null>(null);
+  const [pendingPath, setPendingPath] = React.useState<null | string>(null);
 
   React.useEffect(() => {
     setPendingPath(null);
@@ -32,22 +32,22 @@ export function BottomNav() {
   return (
     <nav className="fixed bottom-6 left-1/2 z-50 w-[min(100%-2rem,400px)] -translate-x-1/2 md:hidden">
       <div className="bg-base-100/80 border-base-200 flex items-center justify-between gap-1 rounded-4xl border p-2 shadow-2xl backdrop-blur-xl">
-        {NAV_ITEMS.map(({ path, icon: Icon, label }) => {
+        {NAV_ITEMS.map(({ icon: Icon, label, path }) => {
           const active = isActive(path);
           return (
             <button
-              key={path}
-              type="button"
-              onClick={() => {
-                setPendingPath(path);
-                navigate({ to: path });
-              }}
               className={`relative flex flex-1 flex-col items-center justify-center gap-1 rounded-3xl px-1 py-3 text-[10px] font-medium transition-all duration-300 ${
                 active ? "text-primary" : "text-base-content/50 hover:text-base-content/80"
               }`}
+              key={path}
+              onClick={() => {
+                setPendingPath(path);
+                void navigate({ to: path });
+              }}
+              type="button"
             >
               {/* Active Background Pill */}
-              {active && <div className="bg-primary/10 absolute inset-0 rounded-3xl" aria-hidden="true" />}
+              {active && <div aria-hidden="true" className="bg-primary/10 absolute inset-0 rounded-3xl" />}
 
               <span className="relative z-10 flex flex-col items-center gap-1">
                 <Icon

@@ -4,8 +4,6 @@
  * Optimized for production with proper type safety and performance
  */
 
-import "./TimesheetAuditCalendar.css";
-
 import type { CalendarApi } from "@fullcalendar/core";
 import esLocale from "@fullcalendar/core/locales/es";
 import dayGridPlugin from "@fullcalendar/daygrid";
@@ -16,36 +14,30 @@ import { useEffect, useRef } from "react";
 import { LOADING_SPINNER_MD } from "@/lib/styles";
 
 import type { CalendarEventData, TimesheetEntryWithEmployee } from "../types";
+
 import { calculateDurationHours, formatDuration, getOverlappingEmployeesForDate } from "../utils/overlapDetection";
+
+import "./TimesheetAuditCalendar.css";
 
 interface TimesheetAuditCalendarProps {
   entries: TimesheetEntryWithEmployee[];
+  focusDate?: null | string;
   loading?: boolean;
   selectedEmployeeIds: number[];
-  focusDate?: string | null;
-  visibleDateRanges?: Array<{ start: string; end: string }> | null;
+  visibleDateRanges?: null | { end: string; start: string }[];
 }
 
 const SECONDS_IN_DAY = 24 * 60 * 60 - 1; // 23:59:59
 const SLOT_BUFFER_SECONDS = 60 * 30;
 
-function normalizeTimeComponent(time: string | null | undefined) {
-  if (!time) return null;
-  const trimmed = time.trim();
-  if (!trimmed) return null;
-  if (/^\d{2}:\d{2}$/.test(trimmed)) {
-    return `${trimmed}:00`;
-  }
-  if (/^\d{2}:\d{2}:\d{2}$/.test(trimmed)) {
-    return trimmed;
-  }
-  // fallback: attempt to slice first 8 chars (HH:mm:ss)
-  return trimmed.slice(0, 8);
-}
-
-function buildDateTime(date: string, time: string | null) {
+function buildDateTime(date: string, time: null | string) {
   if (!time) return null;
   return `${date}T${time}`;
+}
+
+function clampSeconds(value: number) {
+  if (!Number.isFinite(value)) return 0;
+  return Math.min(SECONDS_IN_DAY, Math.max(0, Math.floor(value)));
 }
 
 /**
@@ -63,38 +55,68 @@ function convertToCalendarEvents(
       const hasOverlap = overlappingOnDate.has(entry.employee_id);
 
       return {
-        id: `${entry.id}`,
-        employeeId: entry.employee_id,
+        duration_hours: duration,
         employee_name: entry.employee_name,
         employee_role: entry.employee_role,
-        work_date: entry.work_date,
-        start_time: entry.start_time,
+        employeeId: entry.employee_id,
         end_time: entry.end_time,
-        duration_hours: duration,
         has_overlap: hasOverlap,
+        id: `${entry.id}`,
+        start_time: entry.start_time,
+        work_date: entry.work_date,
       };
     });
+}
+
+function normalizeTimeComponent(time: null | string | undefined) {
+  if (!time) return null;
+  const trimmed = time.trim();
+  if (!trimmed) return null;
+  if (/^\d{2}:\d{2}$/.test(trimmed)) {
+    return `${trimmed}:00`;
+  }
+  if (/^\d{2}:\d{2}:\d{2}$/.test(trimmed)) {
+    return trimmed;
+  }
+  // fallback: attempt to slice first 8 chars (HH:mm:ss)
+  return trimmed.slice(0, 8);
+}
+
+function secondsToTime(value: number) {
+  const clamped = clampSeconds(value);
+  const hours = Math.floor(clamped / 3600);
+  const minutes = Math.floor((clamped % 3600) / 60);
+  const seconds = clamped % 60;
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
+
+function timeStringToSeconds(value: string) {
+  const [hoursRaw = "0", minutesRaw = "0", secondsRaw = "0"] = value.split(":");
+  const hours = Number.parseInt(hoursRaw, 10) || 0;
+  const minutes = Number.parseInt(minutesRaw, 10) || 0;
+  const seconds = Number.parseInt(secondsRaw, 10) || 0;
+  return hours * 3600 + minutes * 60 + seconds;
 }
 
 /**
  * Convert to FullCalendar event format
  */
-function toFullCalendarEvents(calendarEvents: CalendarEventData[]): Array<{
-  id: string;
-  title: string;
-  start: string;
-  end: string;
+function toFullCalendarEvents(calendarEvents: CalendarEventData[]): {
   allDay: boolean;
-  extendedProps: {
-    employee_name: string;
-    duration_hours: number;
-    has_overlap: boolean;
-    employee_role: string | null;
-  };
   backgroundColor?: string;
   borderColor?: string;
   classNames: string[];
-}> {
+  end: string;
+  extendedProps: {
+    duration_hours: number;
+    employee_name: string;
+    employee_role: null | string;
+    has_overlap: boolean;
+  };
+  id: string;
+  start: string;
+  title: string;
+}[] {
   return calendarEvents
     .map((event) => {
       const normalizedStart = normalizeTimeComponent(event.start_time);
@@ -106,56 +128,35 @@ function toFullCalendarEvents(calendarEvents: CalendarEventData[]): Array<{
       }
 
       return {
-        id: event.id,
-        title: event.employee_name,
-        start: startIso,
-        end: endIso,
         allDay: false,
-        extendedProps: {
-          employee_name: event.employee_name,
-          duration_hours: event.duration_hours,
-          has_overlap: event.has_overlap,
-          employee_role: event.employee_role,
-        },
         backgroundColor: event.has_overlap ? "var(--color-error)" : "var(--color-accent)",
         borderColor: event.has_overlap ? "var(--color-error)" : "var(--color-accent)",
         classNames: ["timesheet-audit-event", event.has_overlap ? "has-overlap" : ""].filter(Boolean),
+        end: endIso,
+        extendedProps: {
+          duration_hours: event.duration_hours,
+          employee_name: event.employee_name,
+          employee_role: event.employee_role,
+          has_overlap: event.has_overlap,
+        },
+        id: event.id,
+        start: startIso,
+        title: event.employee_name,
       };
     })
     .filter((value): value is NonNullable<typeof value> => value != null);
 }
 
-function timeStringToSeconds(value: string) {
-  const [hoursRaw = "0", minutesRaw = "0", secondsRaw = "0"] = value.split(":");
-  const hours = Number.parseInt(hoursRaw, 10) || 0;
-  const minutes = Number.parseInt(minutesRaw, 10) || 0;
-  const seconds = Number.parseInt(secondsRaw, 10) || 0;
-  return hours * 3600 + minutes * 60 + seconds;
-}
-
-function clampSeconds(value: number) {
-  if (!Number.isFinite(value)) return 0;
-  return Math.min(SECONDS_IN_DAY, Math.max(0, Math.floor(value)));
-}
-
-function secondsToTime(value: number) {
-  const clamped = clampSeconds(value);
-  const hours = Math.floor(clamped / 3600);
-  const minutes = Math.floor((clamped % 3600) / 60);
-  const seconds = clamped % 60;
-  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-}
-
 const handleEventDidMount = (info: {
+  el: HTMLElement;
   event: {
     extendedProps: {
-      employee_name: string;
       duration_hours: number;
+      employee_name: string;
+      employee_role: null | string;
       has_overlap: boolean;
-      employee_role: string | null;
     };
   };
-  el: HTMLElement;
 }) => {
   const props = info.event.extendedProps;
   const roleLabel = props.employee_role ? ` · ${props.employee_role}` : "";
@@ -170,8 +171,8 @@ const handleEventDidMount = (info: {
 
 export default function TimesheetAuditCalendar({
   entries,
-  loading = false,
   focusDate,
+  loading = false,
   visibleDateRanges,
 }: TimesheetAuditCalendarProps) {
   const calendarApiRef = useRef<CalendarApi | null>(null);
@@ -223,8 +224,8 @@ export default function TimesheetAuditCalendar({
   const timeBounds = (() => {
     if (rangeFilteredEntries.length === 0) {
       return {
-        slotMinTime: "06:00:00",
         slotMaxTime: "20:00:00",
+        slotMinTime: "06:00:00",
       };
     }
 
@@ -251,8 +252,8 @@ export default function TimesheetAuditCalendar({
     }
 
     return {
-      slotMinTime: secondsToTime(minSeconds),
       slotMaxTime: secondsToTime(maxSeconds),
+      slotMinTime: secondsToTime(minSeconds),
     };
   })();
 
@@ -265,48 +266,48 @@ export default function TimesheetAuditCalendar({
           </div>
         )}
         <FullCalendar
+          contentHeight="auto"
+          dayMaxEvents={false}
+          editable={false}
+          eventDidMount={handleEventDidMount}
+          eventDisplay="block"
+          events={fullCalendarEvents}
+          eventTimeFormat={{
+            hour: "2-digit",
+            hour12: false,
+            meridiem: false,
+            minute: "2-digit",
+          }}
+          headerToolbar={{
+            center: "title",
+            left: "prev,next today",
+            right: "dayGridMonth,timeGridWeek,timeGridDay",
+          }}
+          height="auto"
+          hiddenDays={[0]}
+          initialDate={focusDate ?? undefined}
+          initialView="timeGridWeek"
+          locale={esLocale}
+          locales={[esLocale]}
+          nowIndicator
+          plugins={[dayGridPlugin, timeGridPlugin]}
           ref={(instance: unknown) => {
             calendarApiRef.current =
               instance && typeof (instance as { getApi?: unknown }).getApi === "function"
                 ? (instance as { getApi: () => CalendarApi }).getApi()
                 : null;
           }}
-          plugins={[dayGridPlugin, timeGridPlugin]}
-          initialView="timeGridWeek"
-          initialDate={focusDate ?? undefined}
-          headerToolbar={{
-            left: "prev,next today",
-            center: "title",
-            right: "dayGridMonth,timeGridWeek,timeGridDay",
-          }}
-          height="auto"
-          contentHeight="auto"
-          events={fullCalendarEvents}
-          locales={[esLocale]}
-          locale={esLocale}
-          eventTimeFormat={{
-            hour: "2-digit",
-            minute: "2-digit",
-            meridiem: false,
-            hour12: false,
-          }}
+          selectable={false}
+          slotDuration="00:30:00"
           slotLabelFormat={{
             hour: "2-digit",
-            minute: "2-digit",
-            meridiem: false,
             hour12: false,
+            meridiem: false,
+            minute: "2-digit",
           }}
-          slotMinTime={timeBounds.slotMinTime}
-          slotMaxTime={timeBounds.slotMaxTime}
-          hiddenDays={[0]}
-          slotDuration="00:30:00"
           slotLabelInterval="00:30:00"
-          eventDidMount={handleEventDidMount}
-          nowIndicator
-          editable={false}
-          selectable={false}
-          dayMaxEvents={false}
-          eventDisplay="block"
+          slotMaxTime={timeBounds.slotMaxTime}
+          slotMinTime={timeBounds.slotMinTime}
         />
       </div>
 

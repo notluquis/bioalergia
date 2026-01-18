@@ -1,8 +1,8 @@
 import { apiClient } from "@/lib/apiClient";
 
 export interface InternalSettings {
-  upsertChunkSize?: number | string;
   envUpsertChunkSize?: string;
+  upsertChunkSize?: number | string;
 }
 
 export interface InternalSettingsResponse {
@@ -10,9 +10,9 @@ export interface InternalSettingsResponse {
 }
 
 export interface UploadResponse {
+  message?: string;
   status: string;
   url?: string;
-  message?: string;
 }
 
 export async function fetchInternalSettings() {
@@ -21,7 +21,7 @@ export async function fetchInternalSettings() {
 }
 
 export async function updateInternalSettings(data: object) {
-  return apiClient.put<{ status: string; message?: string }>("/api/settings/internal", data);
+  return apiClient.put<{ message?: string; status: string }>("/api/settings/internal", data);
 }
 
 export async function uploadBrandingAsset(file: File, endpoint: string): Promise<string> {

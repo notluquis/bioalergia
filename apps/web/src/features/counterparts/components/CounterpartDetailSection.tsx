@@ -7,19 +7,19 @@ import { counterpartKeys } from "@/features/counterparts/queries";
 import { ServicesSurface } from "@/features/services/components/ServicesShell";
 
 interface CounterpartDetailSectionProps {
-  counterpartId: number;
-  summaryRange: { from: string; to: string };
-  onSummaryRangeChange: (update: Partial<{ from: string; to: string }>) => void;
   canUpdate: boolean;
+  counterpartId: number;
   onEdit: (counterpart: any) => void;
+  onSummaryRangeChange: (update: Partial<{ from: string; to: string }>) => void;
+  summaryRange: { from: string; to: string };
 }
 
 export default function CounterpartDetailSection({
-  counterpartId,
-  summaryRange,
-  onSummaryRangeChange,
   canUpdate,
+  counterpartId,
   onEdit,
+  onSummaryRangeChange,
+  summaryRange,
 }: CounterpartDetailSectionProps) {
   const { data: detail } = useSuspenseQuery(counterpartKeys.detail(counterpartId));
   const { data: summary } = useSuspenseQuery(counterpartKeys.summary(counterpartId, summaryRange));
@@ -36,11 +36,13 @@ export default function CounterpartDetailSection({
             {detail.counterpart.rut && <p className="text-base-content/70 text-xs">RUT {detail.counterpart.rut}</p>}
           </div>
           <Button
-            size="sm"
-            variant="ghost"
             disabled={!canUpdate}
-            onClick={() => onEdit(detail.counterpart)}
+            onClick={() => {
+              onEdit(detail.counterpart);
+            }}
+            size="sm"
             title={canUpdate ? undefined : "No tienes permisos para editar"}
+            variant="ghost"
           >
             {!canUpdate && <Lock className="mr-2 h-3 w-3" />}
             Editar contraparte
@@ -65,11 +67,11 @@ export default function CounterpartDetailSection({
       </ServicesSurface>
 
       <AssociatedAccounts
-        selectedId={counterpartId}
         detail={detail}
+        onSummaryRangeChange={onSummaryRangeChange}
+        selectedId={counterpartId}
         summary={summary}
         summaryRange={summaryRange}
-        onSummaryRangeChange={onSummaryRangeChange}
       />
     </div>
   );

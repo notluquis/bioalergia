@@ -3,8 +3,6 @@
  * A more ergonomic, user-friendly interface for auditing employee schedules
  */
 
-import "dayjs/locale/es";
-
 import { useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
@@ -16,12 +14,14 @@ import Backdrop from "@/components/ui/Backdrop";
 import { SmoothCollapse } from "@/components/ui/SmoothCollapse";
 import { useAuth } from "@/context/AuthContext";
 import { fetchEmployees } from "@/features/hr/employees/api";
-import { useMonths } from "@/features/hr/timesheets/hooks/useMonths";
 import { type AuditDateRange, useTimesheetAudit } from "@/features/hr/timesheets-audit/hooks/useTimesheetAudit";
 import { detectAllOverlaps } from "@/features/hr/timesheets-audit/utils/overlapDetection";
+import { useMonths } from "@/features/hr/timesheets/hooks/useMonths";
 import { endOfMonth, monthsAgoEnd, monthsAgoStart, startOfMonth } from "@/lib/dates";
 import { INPUT_SEARCH_SM } from "@/lib/styles";
 import { cn } from "@/lib/utils";
+
+import "dayjs/locale/es";
 
 const TimesheetAuditCalendar = lazy(() => import("@/features/hr/timesheets-audit/components/TimesheetAuditCalendar"));
 
@@ -30,16 +30,16 @@ dayjs.locale("es");
 
 const DATE_ISO_FORMAT = "YYYY-MM-DD";
 
-type WeekDefinition = {
+type QuickRange = "custom" | "last-month" | "last-week" | "this-month" | "this-week" | "two-months-ago";
+
+interface WeekDefinition {
+  end: string;
   key: string;
+  label: string;
   month: string;
   number: number;
-  label: string;
   start: string;
-  end: string;
-};
-
-type QuickRange = "this-week" | "last-week" | "this-month" | "last-month" | "two-months-ago" | "custom";
+}
 
 const QUICK_RANGES: { id: QuickRange; label: string }[] = [
   { id: "this-week", label: "Esta semana" },
@@ -52,86 +52,15 @@ const QUICK_RANGES: { id: QuickRange; label: string }[] = [
 
 const MAX_EMPLOYEES = 5;
 
-function buildWeeksForMonth(month: string): WeekDefinition[] {
-  const baseDate = dayjs(`${month}-01`);
-  const monthStart = baseDate.startOf("month");
-  const monthEnd = baseDate.endOf("month");
-
-  const weeks: WeekDefinition[] = [];
-  const seen = new Set<number>();
-  let cursor = monthStart.startOf("isoWeek");
-
-  while (cursor.isBefore(monthEnd) || cursor.isSame(monthEnd, "day")) {
-    const weekNumber = cursor.isoWeek();
-    if (!seen.has(weekNumber)) {
-      const weekStart = cursor.startOf("isoWeek");
-      const weekEnd = cursor.endOf("isoWeek");
-      const clampedStart = weekStart.isBefore(monthStart) ? monthStart : weekStart;
-      const clampedEnd = weekEnd.isAfter(monthEnd) ? monthEnd : weekEnd;
-      weeks.push({
-        key: `${month}:${weekNumber}`,
-        month,
-        number: weekNumber,
-        label: `S${weekNumber} (${clampedStart.format("D")} - ${clampedEnd.format("D MMM")})`,
-        start: clampedStart.format(DATE_ISO_FORMAT),
-        end: clampedEnd.format(DATE_ISO_FORMAT),
-      });
-      seen.add(weekNumber);
-    }
-    cursor = cursor.add(1, "week");
-  }
-
-  return weeks;
-}
-
-function getQuickRangeValues(range: QuickRange): { start: string; end: string } | null {
-  const today = dayjs();
-  switch (range) {
-    case "this-week": {
-      return {
-        start: today.startOf("isoWeek").format(DATE_ISO_FORMAT),
-        end: today.endOf("isoWeek").format(DATE_ISO_FORMAT),
-      };
-    }
-    case "last-week": {
-      return {
-        start: today.subtract(1, "week").startOf("isoWeek").format(DATE_ISO_FORMAT),
-        end: today.subtract(1, "week").endOf("isoWeek").format(DATE_ISO_FORMAT),
-      };
-    }
-    case "this-month": {
-      return {
-        start: startOfMonth(),
-        end: endOfMonth(),
-      };
-    }
-    case "last-month": {
-      return {
-        start: monthsAgoStart(1),
-        end: monthsAgoEnd(1),
-      };
-    }
-    case "two-months-ago": {
-      return {
-        start: monthsAgoStart(2),
-        end: monthsAgoEnd(2),
-      };
-    }
-    default: {
-      return null;
-    }
-  }
-}
-
 export default function TimesheetAuditPage() {
   useAuth();
 
   // Data state
   const { months } = useMonths();
 
-  const { data: employees = [] } = useSuspenseQuery({
-    queryKey: ["employees", "active-only"], // We might want to be specific if we change the fetch param later
+  const { data: employees } = useSuspenseQuery({
     queryFn: () => fetchEmployees(false),
+    queryKey: ["employees", "active-only"], // We might want to be specific if we change the fetch param later
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
@@ -191,7 +120,7 @@ export default function TimesheetAuditPage() {
     return selectedWeekKeys
       .map((key) => {
         const week = weeksForMonth.find((w) => w.key === key);
-        return week ? { start: week.start, end: week.end } : null;
+        return week ? { end: week.end, start: week.start } : null;
       })
       .filter((r): r is AuditDateRange => r !== null);
   })();
@@ -200,8 +129,8 @@ export default function TimesheetAuditPage() {
 
   // Fetch audit data
   const { entries } = useTimesheetAudit({
-    ranges: effectiveRanges,
     employeeIds: selectedEmployeeIds,
+    ranges: effectiveRanges,
   });
 
   // Calculate overlaps
@@ -274,10 +203,12 @@ export default function TimesheetAuditPage() {
         <div className="flex flex-wrap gap-2">
           {QUICK_RANGES.map((range) => (
             <button
-              key={range.id}
-              type="button"
               className={`btn btn-sm ${quickRange === range.id ? "btn-primary" : "btn-ghost"}`}
-              onClick={() => handleQuickRangeChange(range.id)}
+              key={range.id}
+              onClick={() => {
+                handleQuickRangeChange(range.id);
+              }}
+              type="button"
             >
               {range.label}
             </button>
@@ -288,26 +219,28 @@ export default function TimesheetAuditPage() {
         {quickRange === "custom" && (
           <div className="bg-base-200/50 mt-4 rounded-xl">
             <button
-              type="button"
               className="flex w-full cursor-pointer items-center justify-between px-4 py-3 text-left font-medium select-none"
-              onClick={() => setCustomWeeksOpen(!customWeeksOpen)}
+              onClick={() => {
+                setCustomWeeksOpen(!customWeeksOpen);
+              }}
+              type="button"
             >
               <span>Personalizar semanas específicas</span>
               <ChevronDown
-                size={16}
                 className={cn("transform transition-transform duration-300", customWeeksOpen && "rotate-180")}
+                size={16}
               />
             </button>
             <SmoothCollapse isOpen={customWeeksOpen}>
               <div className="space-y-4 px-4 pt-0 pb-4">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
                   <select
-                    value={selectedMonth}
+                    className="select select-bordered select-sm max-w-xs flex-1"
                     onChange={(e) => {
                       setSelectedMonth(e.target.value);
                       setSelectedWeekKeys([]);
                     }}
-                    className="select select-bordered select-sm max-w-xs flex-1"
+                    value={selectedMonth}
                   >
                     {months.map((month) => (
                       <option key={month} value={month}>
@@ -317,9 +250,9 @@ export default function TimesheetAuditPage() {
                   </select>
                   {weeksForMonth.length > 0 && (
                     <button
-                      type="button"
-                      onClick={handleSelectAllWeeks}
                       className="link link-primary text-sm whitespace-nowrap"
+                      onClick={handleSelectAllWeeks}
+                      type="button"
                     >
                       {selectedWeekKeys.length === weeksForMonth.length ? "Deseleccionar todas" : "Seleccionar todas"}
                     </button>
@@ -332,14 +265,16 @@ export default function TimesheetAuditPage() {
                     const isActive = selectedWeekKeys.includes(week.key);
                     return (
                       <button
-                        key={week.key}
-                        type="button"
-                        onClick={() => handleWeekToggle(week.key)}
                         className={`rounded-lg border p-3 text-left transition-all ${
                           isActive
                             ? "border-primary bg-primary/10 text-primary"
                             : "border-base-300 bg-base-100 text-base-content hover:border-primary/50"
                         }`}
+                        key={week.key}
+                        onClick={() => {
+                          handleWeekToggle(week.key);
+                        }}
+                        type="button"
                       >
                         <div className="text-sm font-medium">{week.label}</div>
                       </button>
@@ -373,13 +308,15 @@ export default function TimesheetAuditPage() {
               const emp = activeEmployees.find((e) => e.id === id);
               if (!emp) return null;
               return (
-                <div key={id} className="badge badge-primary gap-2 px-3 py-2">
+                <div className="badge badge-primary gap-2 px-3 py-2" key={id}>
                   <span>{emp.full_name}</span>
                   <button
-                    type="button"
-                    onClick={() => handleRemoveEmployee(id)}
-                    className="btn btn-ghost btn-xs h-5 w-5 p-0"
                     aria-label={`Quitar ${emp.full_name}`}
+                    className="btn btn-ghost btn-xs h-5 w-5 p-0"
+                    onClick={() => {
+                      handleRemoveEmployee(id);
+                    }}
+                    type="button"
                   >
                     <X className="h-3 w-3" />
                   </button>
@@ -387,7 +324,7 @@ export default function TimesheetAuditPage() {
               );
             })}
             {selectedEmployeeIds.length > 0 && (
-              <button type="button" onClick={handleClearEmployees} className="link link-error text-sm">
+              <button className="link link-error text-sm" onClick={handleClearEmployees} type="button">
                 Limpiar todos
               </button>
             )}
@@ -398,9 +335,11 @@ export default function TimesheetAuditPage() {
         {!isMaxEmployees && (
           <div className="relative">
             <button
-              type="button"
               className="btn btn-outline btn-sm w-full justify-start gap-2"
-              onClick={() => setShowEmployeeDropdown(!showEmployeeDropdown)}
+              onClick={() => {
+                setShowEmployeeDropdown(!showEmployeeDropdown);
+              }}
+              type="button"
             >
               <span>+ Agregar empleado</span>
               {showEmployeeDropdown ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
@@ -409,7 +348,12 @@ export default function TimesheetAuditPage() {
             {showEmployeeDropdown && (
               <>
                 {/* Backdrop to close dropdown */}
-                <Backdrop isVisible={true} onClose={() => setShowEmployeeDropdown(false)} />
+                <Backdrop
+                  isVisible={true}
+                  onClose={() => {
+                    setShowEmployeeDropdown(false);
+                  }}
+                />
                 {/* Dropdown Content */}
                 <div className="border-base-300 bg-base-100 absolute top-full right-0 left-0 z-50 mt-2 rounded-xl border shadow-xl">
                   {/* Search */}
@@ -417,11 +361,13 @@ export default function TimesheetAuditPage() {
                     <label className={INPUT_SEARCH_SM}>
                       <Search className="text-base-content/50 h-4 w-4" />
                       <input
-                        type="text"
-                        placeholder="Buscar empleado..."
-                        value={employeeSearch}
-                        onChange={(e) => setEmployeeSearch(e.target.value)}
                         className="grow bg-transparent outline-none"
+                        onChange={(e) => {
+                          setEmployeeSearch(e.target.value);
+                        }}
+                        placeholder="Buscar empleado..."
+                        type="text"
+                        value={employeeSearch}
                       />
                     </label>
                   </div>
@@ -441,16 +387,16 @@ export default function TimesheetAuditPage() {
                             return (
                               <li key={emp.id}>
                                 <button
-                                  type="button"
+                                  className={`flex w-full items-center justify-between rounded-lg p-2 transition-all ${
+                                    isSelected ? "bg-primary/20 text-primary" : "hover:bg-base-200"
+                                  }`}
                                   onClick={() => {
                                     handleEmployeeToggle(emp.id);
                                     if (!isSelected && selectedEmployeeIds.length + 1 >= MAX_EMPLOYEES) {
                                       setShowEmployeeDropdown(false);
                                     }
                                   }}
-                                  className={`flex w-full items-center justify-between rounded-lg p-2 transition-all ${
-                                    isSelected ? "bg-primary/20 text-primary" : "hover:bg-base-200"
-                                  }`}
+                                  type="button"
                                 >
                                   <span className="truncate">{emp.full_name}</span>
                                   {isSelected && <Check className="h-4 w-4 shrink-0" />}
@@ -549,9 +495,9 @@ export default function TimesheetAuditPage() {
           >
             <TimesheetAuditCalendar
               entries={entries}
+              focusDate={focusDate}
               loading={false}
               selectedEmployeeIds={selectedEmployeeIds}
-              focusDate={focusDate}
               visibleDateRanges={effectiveRanges}
             />
           </Suspense>
@@ -562,14 +508,16 @@ export default function TimesheetAuditPage() {
       {canShowCalendar && entries.length > 0 && (
         <div className="border-base-300 bg-base-100 rounded-2xl border shadow-sm">
           <button
-            type="button"
             className="flex w-full cursor-pointer items-center justify-between px-4 py-3 text-left font-medium select-none"
-            onClick={() => setLegendOpen(!legendOpen)}
+            onClick={() => {
+              setLegendOpen(!legendOpen);
+            }}
+            type="button"
           >
             <span>📋 Guía de interpretación</span>
             <ChevronDown
-              size={16}
               className={cn("transform transition-transform duration-300", legendOpen && "rotate-180")}
+              size={16}
             />
           </button>
           <SmoothCollapse isOpen={legendOpen}>
@@ -610,4 +558,75 @@ export default function TimesheetAuditPage() {
       )}
     </section>
   );
+}
+
+function buildWeeksForMonth(month: string): WeekDefinition[] {
+  const baseDate = dayjs(`${month}-01`);
+  const monthStart = baseDate.startOf("month");
+  const monthEnd = baseDate.endOf("month");
+
+  const weeks: WeekDefinition[] = [];
+  const seen = new Set<number>();
+  let cursor = monthStart.startOf("isoWeek");
+
+  while (cursor.isBefore(monthEnd) || cursor.isSame(monthEnd, "day")) {
+    const weekNumber = cursor.isoWeek();
+    if (!seen.has(weekNumber)) {
+      const weekStart = cursor.startOf("isoWeek");
+      const weekEnd = cursor.endOf("isoWeek");
+      const clampedStart = weekStart.isBefore(monthStart) ? monthStart : weekStart;
+      const clampedEnd = weekEnd.isAfter(monthEnd) ? monthEnd : weekEnd;
+      weeks.push({
+        end: clampedEnd.format(DATE_ISO_FORMAT),
+        key: `${month}:${weekNumber}`,
+        label: `S${weekNumber} (${clampedStart.format("D")} - ${clampedEnd.format("D MMM")})`,
+        month,
+        number: weekNumber,
+        start: clampedStart.format(DATE_ISO_FORMAT),
+      });
+      seen.add(weekNumber);
+    }
+    cursor = cursor.add(1, "week");
+  }
+
+  return weeks;
+}
+
+function getQuickRangeValues(range: QuickRange): null | { end: string; start: string } {
+  const today = dayjs();
+  switch (range) {
+    case "last-month": {
+      return {
+        end: monthsAgoEnd(1),
+        start: monthsAgoStart(1),
+      };
+    }
+    case "last-week": {
+      return {
+        end: today.subtract(1, "week").endOf("isoWeek").format(DATE_ISO_FORMAT),
+        start: today.subtract(1, "week").startOf("isoWeek").format(DATE_ISO_FORMAT),
+      };
+    }
+    case "this-month": {
+      return {
+        end: endOfMonth(),
+        start: startOfMonth(),
+      };
+    }
+    case "this-week": {
+      return {
+        end: today.endOf("isoWeek").format(DATE_ISO_FORMAT),
+        start: today.startOf("isoWeek").format(DATE_ISO_FORMAT),
+      };
+    }
+    case "two-months-ago": {
+      return {
+        end: monthsAgoEnd(2),
+        start: monthsAgoStart(2),
+      };
+    }
+    default: {
+      return null;
+    }
+  }
 }

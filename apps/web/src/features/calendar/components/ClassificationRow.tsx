@@ -11,46 +11,25 @@ import { type FormValues } from "../schemas";
 import { FormattedEventDescription } from "./FormattedEventDescription";
 
 interface ClassificationRowProps {
-  index: number;
+  categoryChoices: readonly string[];
   event: CalendarUnclassifiedEvent;
 
   form: any;
+  index: number;
   isSaving: boolean;
-  onSave: (event: CalendarUnclassifiedEvent, index: number) => void;
   onReset: (index: number, event: CalendarUnclassifiedEvent) => void;
-  categoryChoices: readonly string[];
+  onSave: (event: CalendarUnclassifiedEvent, index: number) => void;
   treatmentStageChoices: readonly string[];
 }
 
-// Helper to format date
-function formatEventDate(event: CalendarUnclassifiedEvent) {
-  if (event.startDateTime) {
-    const start = dayjs(event.startDateTime);
-    if (event.endDateTime) {
-      const end = dayjs(event.endDateTime);
-      return `${start.format("DD MMM YYYY HH:mm")} – ${end.format("HH:mm")}`;
-    }
-    return start.format("DD MMM YYYY HH:mm");
-  }
-  if (event.startDate) {
-    const start = dayjs(event.startDate);
-    if (event.endDate && event.endDate !== event.startDate) {
-      const end = dayjs(event.endDate);
-      return `${start.format("DD MMM YYYY")} – ${end.format("DD MMM YYYY")}`;
-    }
-    return start.format("DD MMM YYYY");
-  }
-  return "Sin fecha";
-}
-
 export function ClassificationRow({
-  index,
+  categoryChoices,
   event,
   form,
+  index,
   isSaving,
-  onSave,
   onReset,
-  categoryChoices,
+  onSave,
   treatmentStageChoices,
 }: ClassificationRowProps) {
   const description = event.description?.trim();
@@ -94,12 +73,14 @@ export function ClassificationRow({
 
         <div className="text-base-content grid gap-4 text-xs md:grid-cols-6">
           <form.Field name={`entries[${index}].category`}>
-            {(field: { state: { value: string | null }; handleChange: (v: string) => void }) => (
+            {(field: { handleChange: (v: string) => void; state: { value: null | string } }) => (
               <Input
-                label="Clasificación"
                 as="select"
+                label="Clasificación"
+                onChange={(e) => {
+                  field.handleChange(e.target.value);
+                }}
                 value={field.state.value ?? ""}
-                onChange={(e) => field.handleChange(e.target.value)}
               >
                 <option value="">Sin clasificación</option>
                 {categoryChoices.map((option: string) => (
@@ -112,37 +93,43 @@ export function ClassificationRow({
           </form.Field>
 
           <form.Field name={`entries[${index}].amountExpected`}>
-            {(field: { state: { value: string | null }; handleChange: (v: string) => void }) => (
+            {(field: { handleChange: (v: string) => void; state: { value: null | string } }) => (
               <Input
                 label="Monto esperado"
-                type="text"
+                onChange={(e) => {
+                  field.handleChange(e.target.value);
+                }}
                 placeholder="50000"
+                type="text"
                 value={field.state.value ?? ""}
-                onChange={(e) => field.handleChange(e.target.value)}
               />
             )}
           </form.Field>
 
           <form.Field name={`entries[${index}].amountPaid`}>
-            {(field: { state: { value: string | null }; handleChange: (v: string) => void }) => (
+            {(field: { handleChange: (v: string) => void; state: { value: null | string } }) => (
               <Input
                 label="Monto pagado"
-                type="text"
+                onChange={(e) => {
+                  field.handleChange(e.target.value);
+                }}
                 placeholder="50000"
+                type="text"
                 value={field.state.value ?? ""}
-                onChange={(e) => field.handleChange(e.target.value)}
               />
             )}
           </form.Field>
 
           {isSubcutaneous && (
             <form.Field name={`entries[${index}].dosage`}>
-              {(field: { state: { value: string | null }; handleChange: (v: string) => void }) => (
+              {(field: { handleChange: (v: string) => void; state: { value: null | string } }) => (
                 <Input
                   label="Dosis"
+                  onChange={(e) => {
+                    field.handleChange(e.target.value);
+                  }}
                   placeholder="0.3 ml"
                   value={field.state.value ?? ""}
-                  onChange={(e) => field.handleChange(e.target.value)}
                 />
               )}
             </form.Field>
@@ -150,12 +137,14 @@ export function ClassificationRow({
 
           {isSubcutaneous && (
             <form.Field name={`entries[${index}].treatmentStage`}>
-              {(field: { state: { value: string | null }; handleChange: (v: string) => void }) => (
+              {(field: { handleChange: (v: string) => void; state: { value: null | string } }) => (
                 <Input
-                  label="Etapa tratamiento"
                   as="select"
+                  label="Etapa tratamiento"
+                  onChange={(e) => {
+                    field.handleChange(e.target.value);
+                  }}
                   value={field.state.value ?? ""}
-                  onChange={(e) => field.handleChange(e.target.value)}
                 >
                   <option value="">Sin etapa</option>
                   {treatmentStageChoices.map((option: string) => (
@@ -169,12 +158,14 @@ export function ClassificationRow({
           )}
 
           <form.Field name={`entries[${index}].attended`}>
-            {(field: { state: { value: boolean }; handleChange: (v: boolean) => void }) => (
+            {(field: { handleChange: (v: boolean) => void; state: { value: boolean } }) => (
               <div className="flex items-end">
                 <Checkbox
-                  label="Asistió / llegó"
                   checked={field.state.value ?? false}
-                  onChange={(e) => field.handleChange(e.target.checked)}
+                  label="Asistió / llegó"
+                  onChange={(e) => {
+                    field.handleChange(e.target.checked);
+                  }}
                 />
               </div>
             )}
@@ -182,14 +173,48 @@ export function ClassificationRow({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <Button type="button" onClick={() => onSave(event, index)} disabled={isSaving}>
+          <Button
+            disabled={isSaving}
+            onClick={() => {
+              onSave(event, index);
+            }}
+            type="button"
+          >
             {isSaving ? "Guardando..." : "Guardar y continuar"}
           </Button>
-          <Button type="button" variant="secondary" onClick={() => onReset(index, event)} disabled={isSaving}>
+          <Button
+            disabled={isSaving}
+            onClick={() => {
+              onReset(index, event);
+            }}
+            type="button"
+            variant="secondary"
+          >
             Limpiar cambios
           </Button>
         </div>
       </CardContent>
     </Card>
   );
+}
+
+// Helper to format date
+function formatEventDate(event: CalendarUnclassifiedEvent) {
+  if (event.startDateTime) {
+    const start = dayjs(event.startDateTime);
+    if (event.endDateTime) {
+      const end = dayjs(event.endDateTime);
+      return `${start.format("DD MMM YYYY HH:mm")} – ${end.format("HH:mm")}`;
+    }
+    return start.format("DD MMM YYYY HH:mm");
+  }
+  if (event.startDate) {
+    const start = dayjs(event.startDate);
+    if (event.endDate && event.endDate !== event.startDate) {
+      const end = dayjs(event.endDate);
+      return `${start.format("DD MMM YYYY")} – ${end.format("DD MMM YYYY")}`;
+    }
+    return start.format("DD MMM YYYY");
+  }
+  return "Sin fecha";
 }

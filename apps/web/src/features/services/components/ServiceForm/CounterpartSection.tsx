@@ -7,29 +7,29 @@ import type { Counterpart, CounterpartAccount } from "../../../counterparts/type
 import type { ServiceFormState } from "../ServiceForm";
 
 interface CounterpartSectionProps {
-  counterpartId?: number | null;
-  counterpartAccountId?: number | null;
-  accountReference?: string | null;
-  counterparts: Counterpart[];
+  accountReference?: null | string;
   accounts: CounterpartAccount[];
-  counterpartsLoading: boolean;
   accountsLoading: boolean;
-  counterpartsError: string | null;
-  onCounterpartSelect: (value: string) => void;
+  counterpartAccountId?: null | number;
+  counterpartId?: null | number;
+  counterparts: Counterpart[];
+  counterpartsError: null | string;
+  counterpartsLoading: boolean;
   onChange: <K extends keyof ServiceFormState>(key: K, value: ServiceFormState[K]) => void;
+  onCounterpartSelect: (value: string) => void;
 }
 
 export function CounterpartSection({
-  counterpartId,
-  counterpartAccountId,
   accountReference,
-  counterparts,
   accounts,
-  counterpartsLoading,
   accountsLoading,
+  counterpartAccountId,
+  counterpartId,
+  counterparts,
   counterpartsError,
-  onCounterpartSelect,
+  counterpartsLoading,
   onChange,
+  onCounterpartSelect,
 }: CounterpartSectionProps) {
   let accountsHelper: string | undefined;
   if (counterpartsError) {
@@ -43,12 +43,14 @@ export function CounterpartSection({
   return (
     <section className={GRID_2_COL_MD}>
       <Input
-        label="Empresa / contraparte"
         as="select"
-        value={counterpartId ? String(counterpartId) : ""}
-        onChange={(event: ChangeEvent<HTMLSelectElement>) => onCounterpartSelect(event.target.value)}
         disabled={counterpartsLoading}
         helper={counterpartsError ?? (counterpartsLoading ? "Cargando contrapartes..." : undefined)}
+        label="Empresa / contraparte"
+        onChange={(event: ChangeEvent<HTMLSelectElement>) => {
+          onCounterpartSelect(event.target.value);
+        }}
+        value={counterpartId ? String(counterpartId) : ""}
       >
         <option value="">Sin contraparte</option>
         {counterparts.map((counterpart) => (
@@ -58,14 +60,14 @@ export function CounterpartSection({
         ))}
       </Input>
       <Input
-        label="Cuenta asociada"
         as="select"
-        value={counterpartAccountId ? String(counterpartAccountId) : ""}
-        onChange={(event: ChangeEvent<HTMLSelectElement>) =>
-          onChange("counterpartAccountId", event.target.value ? Number(event.target.value) : null)
-        }
         disabled={!counterpartId || accountsLoading}
         helper={accountsHelper}
+        label="Cuenta asociada"
+        onChange={(event: ChangeEvent<HTMLSelectElement>) => {
+          onChange("counterpartAccountId", event.target.value ? Number(event.target.value) : null);
+        }}
+        value={counterpartAccountId ? String(counterpartAccountId) : ""}
       >
         <option value="">Sin cuenta específica</option>
         {accounts.map((account) => (
@@ -76,10 +78,12 @@ export function CounterpartSection({
         ))}
       </Input>
       <Input
-        label="Referencia de cuenta"
-        value={accountReference ?? ""}
-        onChange={(event: ChangeEvent<HTMLInputElement>) => onChange("accountReference", event.target.value)}
         helper="Usa este campo si necesitas un alias o número distinto a las cuentas registradas"
+        label="Referencia de cuenta"
+        onChange={(event: ChangeEvent<HTMLInputElement>) => {
+          onChange("accountReference", event.target.value);
+        }}
+        value={accountReference ?? ""}
       />
     </section>
   );

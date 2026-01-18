@@ -9,51 +9,28 @@ import type {
   CounterpartSummary,
 } from "./types";
 
-export type CounterpartUpsertPayload = {
-  rut?: string | null;
-  name: string;
-  personType: CounterpartPersonType;
+export interface CounterpartUpsertPayload {
   category: CounterpartCategory;
-  email?: string | null;
-  employeeEmail?: string | null;
-  notes?: string | null;
-};
-
-export async function fetchCounterparts() {
-  const data = await apiClient.get<{ counterparts: Counterpart[] }>("/api/counterparts");
-  return data.counterparts;
-}
-
-export async function fetchCounterpart(id: number) {
-  return await apiClient.get<{ counterpart: Counterpart; accounts: CounterpartAccount[] }>(`/api/counterparts/${id}`);
-}
-
-export async function createCounterpart(payload: CounterpartUpsertPayload) {
-  return await apiClient.post<{ counterpart: Counterpart; accounts: CounterpartAccount[] }>(
-    "/api/counterparts",
-    payload
-  );
-}
-
-export async function updateCounterpart(id: number, payload: Partial<CounterpartUpsertPayload>) {
-  return await apiClient.put<{ counterpart: Counterpart; accounts: CounterpartAccount[] }>(
-    `/api/counterparts/${id}`,
-    payload
-  );
+  email?: null | string;
+  employeeEmail?: null | string;
+  name: string;
+  notes?: null | string;
+  personType: CounterpartPersonType;
+  rut?: null | string;
 }
 
 export async function addCounterpartAccount(
   counterpartId: number,
   payload: {
     accountIdentifier: string;
-    bankName?: string | null;
-    accountType?: string | null;
-    holder?: string | null;
-    concept?: string | null;
-    metadata?: {
-      bankAccountNumber?: string | null;
-      withdrawId?: string | null;
-    } | null;
+    accountType?: null | string;
+    bankName?: null | string;
+    concept?: null | string;
+    holder?: null | string;
+    metadata?: null | {
+      bankAccountNumber?: null | string;
+      withdrawId?: null | string;
+    };
   }
 ) {
   const data = await apiClient.post<{ accounts: CounterpartAccount[] }>(
@@ -63,16 +40,19 @@ export async function addCounterpartAccount(
   return data.accounts;
 }
 
-export async function updateCounterpartAccount(
-  accountId: number,
-  payload: Partial<{
-    bankName: string | null;
-    accountType: string | null;
-    holder: string | null;
-    concept: string | null;
-  }>
-) {
-  await apiClient.put(`/api/counterparts/accounts/${accountId}`, payload);
+export async function attachCounterpartRut(counterpartId: number, rut: string) {
+  const data = await apiClient.post<{ accounts: CounterpartAccount[] }>(
+    `/api/counterparts/${counterpartId}/attach-rut`,
+    { rut }
+  );
+  return data.accounts;
+}
+
+export async function createCounterpart(payload: CounterpartUpsertPayload) {
+  return await apiClient.post<{ accounts: CounterpartAccount[]; counterpart: Counterpart }>(
+    "/api/counterparts",
+    payload
+  );
 }
 
 export async function fetchAccountSuggestions(query: string, limit = 10) {
@@ -83,6 +63,15 @@ export async function fetchAccountSuggestions(query: string, limit = 10) {
     `/api/counterparts/suggestions?${params.toString()}`
   );
   return data.suggestions;
+}
+
+export async function fetchCounterpart(id: number) {
+  return await apiClient.get<{ accounts: CounterpartAccount[]; counterpart: Counterpart }>(`/api/counterparts/${id}`);
+}
+
+export async function fetchCounterparts() {
+  const data = await apiClient.get<{ counterparts: Counterpart[] }>("/api/counterparts");
+  return data.counterparts;
 }
 
 export async function fetchCounterpartSummary(counterpartId: number, params?: { from?: string; to?: string }) {
@@ -96,10 +85,21 @@ export async function fetchCounterpartSummary(counterpartId: number, params?: { 
   return data.summary;
 }
 
-export async function attachCounterpartRut(counterpartId: number, rut: string) {
-  const data = await apiClient.post<{ accounts: CounterpartAccount[] }>(
-    `/api/counterparts/${counterpartId}/attach-rut`,
-    { rut }
+export async function updateCounterpart(id: number, payload: Partial<CounterpartUpsertPayload>) {
+  return await apiClient.put<{ accounts: CounterpartAccount[]; counterpart: Counterpart }>(
+    `/api/counterparts/${id}`,
+    payload
   );
-  return data.accounts;
+}
+
+export async function updateCounterpartAccount(
+  accountId: number,
+  payload: Partial<{
+    accountType: null | string;
+    bankName: null | string;
+    concept: null | string;
+    holder: null | string;
+  }>
+) {
+  await apiClient.put(`/api/counterparts/accounts/${accountId}`, payload);
 }

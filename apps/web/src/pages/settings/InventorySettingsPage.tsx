@@ -2,13 +2,14 @@ import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-q
 import { Box, ChevronDown, ChevronRight, Edit2, Loader2, Package, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 
+import type { InventoryItem } from "@/features/inventory/types";
+
 import Button from "@/components/ui/Button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import Input from "@/components/ui/Input";
 import { useToast } from "@/context/ToastContext";
 import { createInventoryCategory, deleteInventoryCategory } from "@/features/inventory/api";
 import { inventoryKeys } from "@/features/inventory/queries";
-import type { InventoryItem } from "@/features/inventory/types";
 
 const getStockStatusColor = (stock: number) => {
   if (stock <= 0) return "text-error";
@@ -16,11 +17,21 @@ const getStockStatusColor = (stock: number) => {
   return "text-success";
 };
 
+interface InventoryListProps {
+  categories: { id: number; name: string }[];
+  expandedCategories: Set<number>;
+  isLoading: boolean;
+  itemsByCategory: Record<number, InventoryItem[]>;
+  onDeleteCategory: (id: number) => void;
+  toggleCategory: (id: number) => void;
+  uncategorizedItems: InventoryItem[];
+}
+
 export default function InventorySettingsPage() {
   const [isCreating, setIsCreating] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [expandedCategories, setExpandedCategories] = useState<Set<number>>(new Set());
-  const { success, error: toastError } = useToast();
+  const { error: toastError, success } = useToast();
   const queryClient = useQueryClient();
 
   // Fetch Categories
@@ -32,36 +43,37 @@ export default function InventorySettingsPage() {
   const isLoading = false;
 
   // Group items by category
-  const itemsByCategory = items.reduce(
-    (acc, item) => {
-      const catId = item.category_id ?? 0; // 0 for uncategorized
-      if (!acc[catId]) acc[catId] = [];
-      acc[catId].push(item);
-      return acc;
-    },
-    {} as Record<number, InventoryItem[]>
-  );
+  const itemsByCategory = items.reduce<Record<number, InventoryItem[]>>((acc, item) => {
+    const catId = item.category_id ?? 0; // 0 for uncategorized
+    if (!acc[catId]) acc[catId] = [];
+    acc[catId].push(item);
+    return acc;
+  }, {});
 
   // Create Category Mutation
   const createMutation = useMutation({
     mutationFn: (name: string) => createInventoryCategory(name),
+    onError: () => {
+      toastError("Error al crear categoría");
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["inventory-categories"] });
       success("Categoría creada");
       setNewCategoryName("");
       setIsCreating(false);
     },
-    onError: () => toastError("Error al crear categoría"),
   });
 
   // Delete Category Mutation
   const deleteMutation = useMutation({
     mutationFn: (id: number) => deleteInventoryCategory(id),
+    onError: (err) => {
+      toastError(err instanceof Error ? err.message : "Error al eliminar categoría");
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["inventory-categories"] });
       success("Categoría eliminada");
     },
-    onError: (err) => toastError(err instanceof Error ? err.message : "Error al eliminar categoría"),
   });
 
   const handleCreate = (e: React.FormEvent) => {
@@ -92,7 +104,12 @@ export default function InventorySettingsPage() {
             <CardTitle>Parámetros de inventario</CardTitle>
             <CardDescription>Gestiona las categorías y productos del inventario.</CardDescription>
           </div>
-          <Button onClick={() => setIsCreating(true)} className="gap-2">
+          <Button
+            className="gap-2"
+            onClick={() => {
+              setIsCreating(true);
+            }}
+          >
             <Plus size={16} />
             Nueva Categoría
           </Button>
@@ -100,28 +117,32 @@ export default function InventorySettingsPage() {
         <CardContent className="p-0">
           {isCreating && (
             <div className="bg-base-200/30 animate-in fade-in slide-in-from-top-2 border-b p-4">
-              <form onSubmit={handleCreate} className="flex items-end gap-3">
+              <form className="flex items-end gap-3" onSubmit={handleCreate}>
                 <div className="flex-1">
                   <label className="label py-1" htmlFor="category-name">
                     <span className="label-text text-xs">Nombre de la categoría</span>
                   </label>
                   <Input
                     id="category-name"
-                    value={newCategoryName}
-                    onChange={(e) => setNewCategoryName(e.target.value)}
+                    onChange={(e) => {
+                      setNewCategoryName(e.target.value);
+                    }}
                     placeholder="Ej: Antibióticos"
+                    value={newCategoryName}
                   />
                 </div>
                 <div className="flex gap-2">
                   <Button
+                    disabled={createMutation.isPending}
+                    onClick={() => {
+                      setIsCreating(false);
+                    }}
                     type="button"
                     variant="ghost"
-                    onClick={() => setIsCreating(false)}
-                    disabled={createMutation.isPending}
                   >
                     Cancelar
                   </Button>
-                  <Button type="submit" disabled={createMutation.isPending || !newCategoryName.trim()}>
+                  <Button disabled={createMutation.isPending || !newCategoryName.trim()} type="submit">
                     {createMutation.isPending ? <Loader2 className="animate-spin" /> : "Guardar"}
                   </Button>
                 </div>
@@ -130,17 +151,17 @@ export default function InventorySettingsPage() {
           )}
 
           <InventoryList
-            isLoading={isLoading}
             categories={categories}
-            itemsByCategory={itemsByCategory}
-            uncategorizedItems={uncategorizedItems}
             expandedCategories={expandedCategories}
-            toggleCategory={toggleCategory}
+            isLoading={isLoading}
+            itemsByCategory={itemsByCategory}
             onDeleteCategory={(id) => {
               if (confirm("¿Estás seguro de eliminar esta categoría?")) {
                 deleteMutation.mutate(id);
               }
             }}
+            toggleCategory={toggleCategory}
+            uncategorizedItems={uncategorizedItems}
           />
         </CardContent>
       </Card>
@@ -148,24 +169,14 @@ export default function InventorySettingsPage() {
   );
 }
 
-interface InventoryListProps {
-  isLoading: boolean;
-  categories: { id: number; name: string }[];
-  itemsByCategory: Record<number, InventoryItem[]>;
-  uncategorizedItems: InventoryItem[];
-  expandedCategories: Set<number>;
-  toggleCategory: (id: number) => void;
-  onDeleteCategory: (id: number) => void;
-}
-
 function InventoryList({
-  isLoading,
   categories,
-  itemsByCategory,
-  uncategorizedItems,
   expandedCategories,
-  toggleCategory,
+  isLoading,
+  itemsByCategory,
   onDeleteCategory,
+  toggleCategory,
+  uncategorizedItems,
 }: InventoryListProps) {
   if (isLoading) {
     return (
@@ -190,13 +201,15 @@ function InventoryList({
             {/* Category Row */}
             <div className="hover:bg-base-200/50 group flex items-center gap-3 p-4 transition-colors">
               <button
-                type="button"
                 className="flex flex-1 items-center gap-3 text-left focus:outline-none"
-                onClick={() => toggleCategory(category.id)}
+                onClick={() => {
+                  toggleCategory(category.id);
+                }}
+                type="button"
               >
                 <span
-                  className="text-base-content/50 flex h-6 w-6 items-center justify-center transition-transform"
                   aria-label={isExpanded ? "Colapsar" : "Expandir"}
+                  className="text-base-content/50 flex h-6 w-6 items-center justify-center transition-transform"
                 >
                   {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
                 </span>
@@ -209,14 +222,16 @@ function InventoryList({
                 <span className="badge badge-ghost badge-sm">{catItems.length} items</span>
               </button>
               <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                <Button size="sm" variant="ghost" className="btn-square btn-xs">
+                <Button className="btn-square btn-xs" size="sm" variant="ghost">
                   <Edit2 size={14} />
                 </Button>
                 <Button
+                  className="btn-square btn-xs text-error hover:bg-error/10"
+                  onClick={() => {
+                    onDeleteCategory(category.id);
+                  }}
                   size="sm"
                   variant="ghost"
-                  className="btn-square btn-xs text-error hover:bg-error/10"
-                  onClick={() => onDeleteCategory(category.id)}
                 >
                   <Trash2 size={14} />
                 </Button>
@@ -228,8 +243,8 @@ function InventoryList({
               <div className="bg-base-200/30 border-base-200 border-t">
                 {catItems.map((item) => (
                   <div
-                    key={item.id}
                     className="hover:bg-base-200/50 border-base-200/50 flex items-center gap-3 border-b py-3 pr-4 pl-14 last:border-b-0"
+                    key={item.id}
                   >
                     <div className="bg-base-300/50 text-base-content/40 flex h-6 w-6 items-center justify-center rounded">
                       <Box size={12} />
@@ -260,13 +275,15 @@ function InventoryList({
         <div>
           <div className="hover:bg-base-200/50 group flex items-center gap-3 p-4 transition-colors">
             <button
-              type="button"
               className="flex flex-1 items-center gap-3 text-left focus:outline-none"
-              onClick={() => toggleCategory(0)}
+              onClick={() => {
+                toggleCategory(0);
+              }}
+              type="button"
             >
               <span
-                className="text-base-content/50 flex h-6 w-6 items-center justify-center"
                 aria-label={expandedCategories.has(0) ? "Colapsar" : "Expandir"}
+                className="text-base-content/50 flex h-6 w-6 items-center justify-center"
               >
                 {expandedCategories.has(0) ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
               </span>
@@ -284,8 +301,8 @@ function InventoryList({
             <div className="bg-base-200/30 border-base-200 border-t">
               {uncategorizedItems.map((item) => (
                 <div
-                  key={item.id}
                   className="hover:bg-base-200/50 border-base-200/50 flex items-center gap-3 border-b py-3 pr-4 pl-14 last:border-b-0"
+                  key={item.id}
                 >
                   <div className="bg-base-300/50 text-base-content/40 flex h-6 w-6 items-center justify-center rounded">
                     <Box size={12} />

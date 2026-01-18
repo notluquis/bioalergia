@@ -4,14 +4,14 @@ import { useEffect, useState } from "react";
 import { apiClient } from "@/lib/apiClient";
 
 export interface JobState {
+  error: null | string;
   id: string;
-  type: string;
-  status: "pending" | "running" | "completed" | "failed";
-  progress: number;
-  total: number;
   message: string;
+  progress: number;
   result: unknown;
-  error: string | null;
+  status: "completed" | "failed" | "pending" | "running";
+  total: number;
+  type: string;
 }
 
 interface UseJobProgressOptions {
@@ -25,21 +25,21 @@ interface UseJobProgressOptions {
  * Hook to track background job progress via polling.
  * Automatically stops polling when job completes or fails.
  */
-export function useJobProgress(jobId: string | null, options: UseJobProgressOptions = {}) {
+export function useJobProgress(jobId: null | string, options: UseJobProgressOptions = {}) {
   const { onComplete, onError, pollInterval = 500 } = options;
   const queryClient = useQueryClient();
   const [hasNotified, setHasNotified] = useState(false);
 
   const query = useSuspenseQuery({
-    queryKey: ["job-status", jobId],
     queryFn: async () => {
       if (!jobId) return null;
-      const response = await apiClient.get<{ status: string; job: JobState }>(`/api/calendar/events/job/${jobId}`);
+      const response = await apiClient.get<{ job: JobState; status: string }>(`/api/calendar/events/job/${jobId}`);
       if (response.status !== "ok") {
         throw new Error("Failed to fetch job status");
       }
       return response.job;
     },
+    queryKey: ["job-status", jobId],
 
     refetchInterval: (query) => {
       const data = query.state.data;
@@ -77,10 +77,10 @@ export function useJobProgress(jobId: string | null, options: UseJobProgressOpti
   };
 
   return {
-    job: query.data,
-    isPolling: query.isFetching && query.data?.status === "running",
     isComplete: query.data?.status === "completed",
     isFailed: query.data?.status === "failed",
+    isPolling: query.isFetching && query.data?.status === "running",
+    job: query.data,
     progress: query.data ? Math.round((query.data.progress / query.data.total) * 100) : 0,
     reset,
   };

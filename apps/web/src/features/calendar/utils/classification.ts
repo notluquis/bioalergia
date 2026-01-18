@@ -1,35 +1,24 @@
 import { z } from "zod";
 
-import { classificationSchema } from "@/features/calendar/schemas";
 import type { CalendarUnclassifiedEvent } from "@/features/calendar/types";
 
-export type ParsedPayload = {
-  category: string | null;
-  amountExpected: number | null;
-  amountPaid: number | null;
+import { classificationSchema } from "@/features/calendar/schemas";
+
+export interface ParsedPayload {
+  amountExpected: null | number;
+  amountPaid: null | number;
   attended: boolean | null;
-  dosage: string | null;
-  treatmentStage: string | null;
-};
-
-export function eventKey(event: Pick<CalendarUnclassifiedEvent, "calendarId" | "eventId">) {
-  return `${event.calendarId}:::${event.eventId}`;
-}
-
-export function parseAmountInput(value: string | null | undefined): number | null {
-  if (!value) return null;
-  const normalized = value.replaceAll(/\D/g, "");
-  if (normalized.length === 0) return null;
-  const parsed = Number.parseInt(normalized, 10);
-  return Number.isNaN(parsed) ? null : parsed;
+  category: null | string;
+  dosage: null | string;
+  treatmentStage: null | string;
 }
 
 export function buildDefaultEntry(event: CalendarUnclassifiedEvent) {
   return {
-    category: event.category ?? "",
     amountExpected: event.amountExpected == null ? "" : String(event.amountExpected),
     amountPaid: event.amountPaid == null ? "" : String(event.amountPaid),
     attended: event.attended ?? false,
+    category: event.category ?? "",
     dosage: event.dosage ?? "",
     treatmentStage: event.treatmentStage ?? "",
   };
@@ -49,11 +38,23 @@ export function buildPayload(
     resolvedCategory === "Tratamiento subcutáneo" && entry.treatmentStage?.trim() ? entry.treatmentStage.trim() : null;
 
   return {
-    category: resolvedCategory,
     amountExpected,
     amountPaid,
     attended,
+    category: resolvedCategory,
     dosage,
     treatmentStage,
   };
+}
+
+export function eventKey(event: Pick<CalendarUnclassifiedEvent, "calendarId" | "eventId">) {
+  return `${event.calendarId}:::${event.eventId}`;
+}
+
+export function parseAmountInput(value: null | string | undefined): null | number {
+  if (!value) return null;
+  const normalized = value.replaceAll(/\D/g, "");
+  if (normalized.length === 0) return null;
+  const parsed = Number.parseInt(normalized, 10);
+  return Number.isNaN(parsed) ? null : parsed;
 }

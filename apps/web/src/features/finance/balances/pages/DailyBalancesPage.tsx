@@ -3,6 +3,8 @@ import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
 import { useEffect, useState } from "react";
 
+import type { BalanceDraft } from "@/features/finance/balances/types";
+
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
@@ -12,7 +14,6 @@ import { DailyBalancesPanel } from "@/features/finance/balances/components/Daily
 import { useDailyBalanceManagement } from "@/features/finance/balances/hooks/useDailyBalanceManagement";
 import { useQuickDateRange } from "@/features/finance/balances/hooks/useQuickDateRange";
 import { balanceKeys } from "@/features/finance/balances/queries";
-import type { BalanceDraft } from "@/features/finance/balances/types";
 import { deriveInitialBalance, formatBalanceInput } from "@/features/finance/balances/utils";
 import { today } from "@/lib/dates";
 
@@ -29,7 +30,7 @@ export default function DailyBalances() {
     return match ? match.value : "custom";
   })();
 
-  const { data: report, refetch, isFetching } = useSuspenseQuery(balanceKeys.range(from, to));
+  const { data: report, isFetching, refetch } = useSuspenseQuery(balanceKeys.range(from, to));
 
   const balancesError = null; // Suspense handles errors
   const isInitialLoading = false; // Suspense handles loading
@@ -38,7 +39,7 @@ export default function DailyBalances() {
     await refetch();
   };
 
-  const { drafts, saving, error, handleDraftChange, handleSave, setDrafts } = useDailyBalanceManagement({
+  const { drafts, error, handleDraftChange, handleSave, saving, setDrafts } = useDailyBalanceManagement({
     loadBalances: reloadBalances,
   });
 
@@ -50,8 +51,8 @@ export default function DailyBalances() {
     const nextDrafts: Record<string, BalanceDraft> = {};
     for (const day of report.days) {
       nextDrafts[day.date] = {
-        value: day.recordedBalance == null ? "" : formatBalanceInput(day.recordedBalance),
         note: day.note ?? "",
+        value: day.recordedBalance == null ? "" : formatBalanceInput(day.recordedBalance),
       };
     }
     setDrafts(nextDrafts);
@@ -78,23 +79,27 @@ export default function DailyBalances() {
             <div className="card-body">
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                 <Input
+                  className="input-sm"
                   label="Desde"
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                    setFrom(event.target.value);
+                  }}
                   type="date"
                   value={from}
-                  onChange={(event: ChangeEvent<HTMLInputElement>) => setFrom(event.target.value)}
-                  className="input-sm"
                 />
                 <Input
+                  className="input-sm"
                   label="Hasta"
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                    setTo(event.target.value);
+                  }}
                   type="date"
                   value={to}
-                  onChange={(event: ChangeEvent<HTMLInputElement>) => setTo(event.target.value)}
-                  className="input-sm"
                 />
                 <Input
-                  label="Mes rápido"
                   as="select"
-                  value={quickRange}
+                  className="select-sm"
+                  label="Mes rápido"
                   onChange={(event: ChangeEvent<HTMLSelectElement>) => {
                     const value = event.target.value;
                     if (value === "custom") return;
@@ -103,7 +108,7 @@ export default function DailyBalances() {
                     setFrom(match.from);
                     setTo(match.to);
                   }}
-                  className="select-sm"
+                  value={quickRange}
                 >
                   <option value="custom">Personalizado</option>
                   {quickMonths.map((month) => (
@@ -113,7 +118,7 @@ export default function DailyBalances() {
                   ))}
                 </Input>
                 <div className="flex items-end">
-                  <Button onClick={() => refetch()} disabled={isFetching} size="sm" className="w-full">
+                  <Button className="w-full" disabled={isFetching} onClick={() => refetch()} size="sm">
                     {isFetching ? "..." : "Actualizar"}
                   </Button>
                 </div>
@@ -121,16 +126,16 @@ export default function DailyBalances() {
             </div>
           </div>
 
-          <BalanceSummary report={report} loading={isFetching} error={balancesError} />
+          <BalanceSummary error={balancesError} loading={isFetching} report={report} />
 
           <DailyBalancesPanel
-            report={report}
             drafts={drafts}
+            error={error}
+            loading={isInitialLoading}
             onDraftChange={handleDraftChange}
             onSave={handleSave}
+            report={report}
             saving={saving}
-            loading={isInitialLoading}
-            error={error}
           />
         </>
       ) : (

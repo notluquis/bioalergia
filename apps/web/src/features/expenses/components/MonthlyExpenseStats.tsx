@@ -3,11 +3,11 @@ import { currencyFormatter } from "@/lib/format";
 import type { MonthlyExpenseStatsRow } from "../types";
 
 interface MonthlyExpenseStatsProps {
-  stats: MonthlyExpenseStatsRow[];
   loading: boolean;
+  stats: MonthlyExpenseStatsRow[];
 }
 
-export default function MonthlyExpenseStats({ stats, loading }: MonthlyExpenseStatsProps) {
+export default function MonthlyExpenseStats({ loading, stats }: MonthlyExpenseStatsProps) {
   if (loading) {
     return <p className="text-base-content/50 text-xs">Calculando estadísticas…</p>;
   }
@@ -19,7 +19,7 @@ export default function MonthlyExpenseStats({ stats, loading }: MonthlyExpenseSt
   return (
     <div className="muted-scrollbar text-base-content/60 max-h-64 space-y-2 overflow-y-auto pr-1 text-xs">
       {stats.map((row) => (
-        <article key={row.period} className="border-base-300 bg-base-200 rounded-xl border p-3 shadow-sm">
+        <article className="border-base-300 bg-base-200 rounded-xl border p-3 shadow-sm" key={row.period}>
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <p className="text-base-content text-sm font-semibold">{row.period}</p>

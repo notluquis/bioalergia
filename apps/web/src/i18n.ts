@@ -7,13 +7,13 @@ import es from "./locales/es/translation.json";
 i18n
   .use(initReactI18next)
   .init({
-    resources: {
-      es: { translation: es },
-      en: { translation: en },
-    },
-    lng: "es",
     fallbackLng: "es",
     interpolation: { escapeValue: false },
+    lng: "es",
+    resources: {
+      en: { translation: en },
+      es: { translation: es },
+    },
   })
   .catch((error) => {
     console.error("[i18n] init error", error);

@@ -16,7 +16,15 @@ export function minutesToDuration(minutes: number): string {
   return `${sign}${String(h)}:${String(m).padStart(2, "0")}`;
 }
 
-export function parseTimeToMinutes(value: string): number | null {
+export function minutesToTime(minutes: null | number): null | string {
+  if (minutes == null || !Number.isFinite(minutes)) return null;
+  const total = Math.round(minutes);
+  const h = Math.floor(total / 60) % 24;
+  const m = total % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
+export function parseTimeToMinutes(value: string): null | number {
   if (!value) return null;
   const [hoursStr, minutesStr] = value.split(":");
   if (hoursStr == null || minutesStr == null) return null;
@@ -24,12 +32,4 @@ export function parseTimeToMinutes(value: string): number | null {
   const minutes = Number(minutesStr);
   if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null;
   return hours * 60 + minutes;
-}
-
-export function minutesToTime(minutes: number | null): string | null {
-  if (minutes == null || !Number.isFinite(minutes)) return null;
-  const total = Math.round(minutes);
-  const h = Math.floor(total / 60) % 24;
-  const m = total % 60;
-  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 }

@@ -3,34 +3,34 @@ import { currencyFormatter, numberFormatter } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 interface DailyStatsCardsProps {
-  eventsCount: number;
   amountExpected: number;
   amountPaid: number;
   className?: string;
+  eventsCount: number;
 }
 
-export function DailyStatsCards({ eventsCount, amountExpected, amountPaid, className }: DailyStatsCardsProps) {
+export function DailyStatsCards({ amountExpected, amountPaid, className, eventsCount }: DailyStatsCardsProps) {
   return (
     <div className={cn("grid gap-4 sm:grid-cols-3", className)}>
       <StatCard
+        className="transition-transform hover:scale-[1.02]"
         title="Eventos"
-        value={numberFormatter.format(eventsCount)}
         tone="primary"
-        className="transition-transform hover:scale-[1.02]"
+        value={numberFormatter.format(eventsCount)}
       />
 
       <StatCard
+        className="transition-transform hover:scale-[1.02]"
         title="Esperado"
-        value={currencyFormatter.format(amountExpected)}
         tone="warning"
-        className="transition-transform hover:scale-[1.02]"
+        value={currencyFormatter.format(amountExpected)}
       />
 
       <StatCard
-        title="Pagado"
-        value={currencyFormatter.format(amountPaid)}
-        tone="success"
         className="transition-transform hover:scale-[1.02]"
+        title="Pagado"
+        tone="success"
+        value={currencyFormatter.format(amountPaid)}
       />
     </div>
   );

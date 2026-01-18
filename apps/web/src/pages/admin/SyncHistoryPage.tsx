@@ -7,12 +7,12 @@ import { useState } from "react";
 import Button from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 
-type ChangeDetail = {
-  eventId?: string;
-  summary?: string;
+interface ChangeDetail {
   action?: string;
+  eventId?: string;
   fields?: string[];
-};
+  summary?: string;
+}
 
 const ChangeDetailsViewer = ({ data }: { data: unknown }) => {
   if (!data) return null;
@@ -23,22 +23,19 @@ const ChangeDetailsViewer = ({ data }: { data: unknown }) => {
   }
 
   // Group by action
-  const grouped = details.reduce(
-    (acc, item) => {
-      const action = item.action || "unknown";
-      if (!acc[action]) acc[action] = [];
-      acc[action].push(item);
-      return acc;
-    },
-    {} as Record<string, ChangeDetail[]>
-  );
+  const grouped = details.reduce<Record<string, ChangeDetail[]>>((acc, item) => {
+    const action = item.action || "unknown";
+    if (!acc[action]) acc[action] = [];
+    acc[action].push(item);
+    return acc;
+  }, {});
 
-  const actionLabels: Record<string, { label: string; color: string }> = {
-    created: { label: "Insertados", color: "text-success" },
-    updated: { label: "Modificados", color: "text-info" },
-    deleted: { label: "Eliminados", color: "text-error" },
-    skipped: { label: "Omitidos", color: "text-warning" },
-    unknown: { label: "Otros", color: "text-base-content/70" },
+  const actionLabels: Record<string, { color: string; label: string }> = {
+    created: { color: "text-success", label: "Insertados" },
+    deleted: { color: "text-error", label: "Eliminados" },
+    skipped: { color: "text-warning", label: "Omitidos" },
+    unknown: { color: "text-base-content/70", label: "Otros" },
+    updated: { color: "text-info", label: "Modificados" },
   };
 
   return (
@@ -49,7 +46,7 @@ const ChangeDetailsViewer = ({ data }: { data: unknown }) => {
       </summary>
       <div className="border-base-200 space-y-3 border-t p-3">
         {Object.entries(grouped).map(([action, items]) => {
-          const lookup = actionLabels[action as keyof typeof actionLabels];
+          const lookup = actionLabels[action];
           const label = lookup?.label ?? "Otros";
           const color = lookup?.color ?? "text-base-content/70";
           return (
@@ -59,7 +56,7 @@ const ChangeDetailsViewer = ({ data }: { data: unknown }) => {
               </h5>
               <div className="bg-base-200/50 max-h-40 space-y-1 overflow-y-auto rounded-lg p-2">
                 {items.slice(0, 50).map((item, idx) => (
-                  <div key={idx} className="border-base-300 flex items-start gap-2 border-b pb-1 text-xs last:border-0">
+                  <div className="border-base-300 flex items-start gap-2 border-b pb-1 text-xs last:border-0" key={idx}>
                     <span className="text-base-content/70 flex-1 truncate" title={item.summary}>
                       {item.summary || item.eventId || "Sin título"}
                     </span>
@@ -124,7 +121,7 @@ export default function SyncHistoryPage() {
       {/* Card Header */}
       <div className="border-base-200 flex items-center justify-between border-b px-4 py-3">
         <span className="text-base-content/70 text-sm font-medium">{syncLogs?.length ?? 0} sincronizaciones</span>
-        <Button variant="ghost" size="sm" onClick={() => refetch()} disabled={isLoading}>
+        <Button disabled={isLoading} onClick={() => refetch()} size="sm" variant="ghost">
           <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
         </Button>
       </div>
@@ -154,12 +151,14 @@ export default function SyncHistoryPage() {
               const duration = log.finishedAt ? dayjs(log.finishedAt).diff(dayjs(log.startedAt), "s") : null;
 
               return (
-                <div key={log.id.toString()} className="bg-base-100">
+                <div className="bg-base-100" key={log.id.toString()}>
                   {/* Row Header */}
                   <button
-                    type="button"
-                    onClick={() => toggleExpanded(log.id)}
                     className="hover:bg-base-200/50 flex w-full items-center gap-4 px-4 py-3 text-left transition-colors"
+                    onClick={() => {
+                      toggleExpanded(log.id);
+                    }}
+                    type="button"
                   >
                     {/* Expand Icon */}
                     <span className="text-base-content/40">

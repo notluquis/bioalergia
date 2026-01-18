@@ -5,10 +5,10 @@ import Button from "@/components/ui/Button";
 import { Employee } from "@/features/hr/employees/types";
 
 export interface EmployeeTableMeta {
-  onEdit: (employee: Employee) => void;
-  onDeactivate: (id: number) => void;
-  onActivate: (id: number) => void;
   canEdit: boolean;
+  onActivate: (id: number) => void;
+  onDeactivate: (id: number) => void;
+  onEdit: (employee: Employee) => void;
 }
 
 // Helper to safely extract retention rate
@@ -24,27 +24,25 @@ function getEmployeeRetentionRate(employee: Employee): number {
 export const columns: ColumnDef<Employee>[] = [
   {
     accessorKey: "full_name",
-    header: "Nombre",
     cell: ({ row }) => <span className="text-base-content font-medium">{row.original.full_name}</span>,
+    header: "Nombre",
   },
   {
     accessorKey: "position",
-    header: "Cargo",
     cell: ({ row }) => <span className="text-base-content">{row.original.position}</span>,
+    header: "Cargo",
   },
   {
     accessorKey: "person.email",
-    header: "Correo",
     cell: ({ row }) => <span className="text-base-content/60">{row.original.person?.email ?? "—"}</span>,
+    header: "Correo",
   },
   {
     accessorKey: "person.rut",
-    header: "RUT",
     cell: ({ row }) => <span className="text-base-content">{row.original.person?.rut ?? "—"}</span>,
+    header: "RUT",
   },
   {
-    id: "bank",
-    header: "Banco / Cuenta",
     cell: ({ row }) => {
       const e = row.original;
       if (!e.bankName) return <span className="text-base-content/60">—</span>;
@@ -56,10 +54,10 @@ export const columns: ColumnDef<Employee>[] = [
         </span>
       );
     },
+    header: "Banco / Cuenta",
+    id: "bank",
   },
   {
-    id: "retentionRate",
-    header: "Retención",
     accessorFn: (row) => getEmployeeRetentionRate(row),
     cell: ({ row }) => {
       const rate = row.getValue<number>("retentionRate") * 100;
@@ -77,10 +75,11 @@ export const columns: ColumnDef<Employee>[] = [
         </div>
       );
     },
+    header: "Retención",
+    id: "retentionRate",
   },
   {
     accessorKey: "status",
-    header: "Estado",
     cell: ({ row }) => (
       <span
         className={`rounded-full px-2 py-0.5 text-xs font-medium ${
@@ -93,10 +92,9 @@ export const columns: ColumnDef<Employee>[] = [
     filterFn: (row, id, value) => {
       return value.includes(row.getValue(id));
     },
+    header: "Estado",
   },
   {
-    id: "actions",
-    header: () => <div className="text-right">Acciones</div>,
     cell: ({ row, table }) => {
       const meta = table.options.meta as EmployeeTableMeta;
       const { canEdit, onActivate, onDeactivate, onEdit } = meta;
@@ -106,20 +104,40 @@ export const columns: ColumnDef<Employee>[] = [
 
       return (
         <div className="flex justify-end gap-2 px-4 py-3 whitespace-nowrap">
-          <Button variant="primary" size="sm" onClick={() => onEdit(employee)}>
+          <Button
+            onClick={() => {
+              onEdit(employee);
+            }}
+            size="sm"
+            variant="primary"
+          >
             Editar
           </Button>
           {employee.status === "ACTIVE" ? (
-            <Button variant="outline" size="sm" onClick={() => onDeactivate(employee.id)}>
+            <Button
+              onClick={() => {
+                onDeactivate(employee.id);
+              }}
+              size="sm"
+              variant="outline"
+            >
               Desactivar
             </Button>
           ) : (
-            <Button variant="success" size="sm" onClick={() => onActivate(employee.id)}>
+            <Button
+              onClick={() => {
+                onActivate(employee.id);
+              }}
+              size="sm"
+              variant="success"
+            >
               Activar
             </Button>
           )}
         </div>
       );
     },
+    header: () => <div className="text-right">Acciones</div>,
+    id: "actions",
   },
 ];

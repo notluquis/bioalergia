@@ -4,38 +4,16 @@ import { fmtCLP } from "@/lib/format";
 
 import type { BalancesApiResponse } from "../types";
 
-export type BalanceSummaryProps = {
-  report: BalancesApiResponse | undefined | null;
+export interface BalanceSummaryProps {
+  error: null | string;
   loading: boolean;
-  error: string | null;
-};
+  report: BalancesApiResponse | null | undefined;
+}
 
 type MismatchDay = NonNullable<BalancesApiResponse>["days"][number];
 
-function useBalanceReportSummary(report: BalancesApiResponse | undefined | null) {
-  if (!report) {
-    return {
-      mismatchDays: [],
-      hasRecordedBalances: false,
-      lastRecorded: null,
-      lastExpected: null,
-    };
-  }
-
-  const mismatchDays = report.days.filter((day) => day.difference != null && Math.abs(day.difference) > 1);
-  const hasRecordedBalances = report.days.some((day) => day.recordedBalance != null);
-  const lastRecorded = [...report.days].toReversed().find((day) => day.recordedBalance != null) ?? null;
-  const lastExpected = [...report.days].toReversed().find((day) => day.expectedBalance != null) ?? null;
-
-  return { mismatchDays, hasRecordedBalances, lastRecorded, lastExpected };
-}
-
-function formatSignedCLP(value: number) {
-  return value >= 0 ? fmtCLP(value) : `-${fmtCLP(Math.abs(value))}`;
-}
-
-export function BalanceSummary({ report, loading, error }: BalanceSummaryProps) {
-  const { mismatchDays, hasRecordedBalances, lastRecorded, lastExpected } = useBalanceReportSummary(report);
+export function BalanceSummary({ error, loading, report }: BalanceSummaryProps) {
+  const { hasRecordedBalances, lastExpected, lastRecorded, mismatchDays } = useBalanceReportSummary(report);
 
   if (loading) {
     return (
@@ -110,7 +88,7 @@ export function BalanceSummary({ report, loading, error }: BalanceSummaryProps) 
           {lastRecorded && (
             <div className="rounded-2xl border border-emerald-200/80 bg-emerald-50/80 px-4 py-3 text-emerald-700">
               Último saldo registrado ({dayjs(lastRecorded.date).format("DD-MM-YYYY")} 23:59)
-              <span className="ml-2 font-semibold text-emerald-800">{fmtCLP(lastRecorded.recordedBalance!)}</span>
+              <span className="ml-2 font-semibold text-emerald-800">{fmtCLP(lastRecorded.recordedBalance)}</span>
               {lastRecorded.difference != null && Math.abs(lastRecorded.difference) > 1 && (
                 <span className="ml-2 font-semibold text-rose-600">
                   Dif: {formatSignedCLP(lastRecorded.difference)}
@@ -122,7 +100,7 @@ export function BalanceSummary({ report, loading, error }: BalanceSummaryProps) 
           {!lastRecorded && lastExpected && (
             <div className="border-base-300 bg-base-200 text-base-content rounded-2xl border px-4 py-3">
               Saldo esperado del último día ({dayjs(lastExpected.date).format("DD-MM-YYYY")}):
-              <span className="text-base-content ml-2 font-semibold">{fmtCLP(lastExpected.expectedBalance!)}</span>
+              <span className="text-base-content ml-2 font-semibold">{fmtCLP(lastExpected.expectedBalance)}</span>
             </div>
           )}
 
@@ -139,6 +117,10 @@ export function BalanceSummary({ report, loading, error }: BalanceSummaryProps) 
   );
 }
 
+function formatSignedCLP(value: number) {
+  return value >= 0 ? fmtCLP(value) : `-${fmtCLP(Math.abs(value))}`;
+}
+
 function MismatchSummary({ mismatchDays }: { mismatchDays: MismatchDay[] }) {
   return (
     <div className="space-y-2 rounded-2xl border border-rose-200/70 bg-rose-50/60 px-4 py-3">
@@ -148,7 +130,7 @@ function MismatchSummary({ mismatchDays }: { mismatchDays: MismatchDay[] }) {
       </p>
       <ul className="text-base-content space-y-1">
         {mismatchDays.slice(0, 5).map((day) => (
-          <li key={day.date} className="flex flex-wrap items-center gap-2">
+          <li className="flex flex-wrap items-center gap-2" key={day.date}>
             <span className="text-base-content font-medium">{dayjs(day.date).format("DD-MM-YYYY")}</span>
             <span>Diferencia:</span>
             <span className="font-semibold text-rose-600">{formatSignedCLP(day.difference ?? 0)}</span>
@@ -164,4 +146,22 @@ function MismatchSummary({ mismatchDays }: { mismatchDays: MismatchDay[] }) {
       </ul>
     </div>
   );
+}
+
+function useBalanceReportSummary(report: BalancesApiResponse | null | undefined) {
+  if (!report) {
+    return {
+      hasRecordedBalances: false,
+      lastExpected: null,
+      lastRecorded: null,
+      mismatchDays: [],
+    };
+  }
+
+  const mismatchDays = report.days.filter((day) => day.difference != null && Math.abs(day.difference) > 1);
+  const hasRecordedBalances = report.days.some((day) => day.recordedBalance != null);
+  const lastRecorded = [...report.days].toReversed().find((day) => day.recordedBalance != null) ?? null;
+  const lastExpected = [...report.days].toReversed().find((day) => day.expectedBalance != null) ?? null;
+
+  return { hasRecordedBalances, lastExpected, lastRecorded, mismatchDays };
 }

@@ -3,96 +3,96 @@ import { today } from "@/lib/dates";
 
 import type { CreateServicePayload } from "../types";
 
-export type ServiceTemplate = {
+export interface ServiceTemplate {
+  category?: string;
+  description: string;
   id: string;
   name: string;
-  description: string;
-  category?: string;
   payload: Partial<CreateServicePayload>;
-};
+}
 
-type ServiceTemplateGalleryProps = {
+interface ServiceTemplateGalleryProps {
   onApply: (template: ServiceTemplate) => void;
-};
+}
 
 const TODAY = today();
 
 export const SERVICE_TEMPLATES: ServiceTemplate[] = [
   {
+    category: "Utilidades",
+    description: "Ideal para cuentas de luz, agua, internet y telefonía",
     id: "utilities",
     name: "Servicios básicos",
-    description: "Ideal para cuentas de luz, agua, internet y telefonía",
-    category: "Utilidades",
     payload: {
-      serviceType: "UTILITY",
+      defaultAmount: 0,
+      dueDay: 15,
+      emissionDay: 1,
+      emissionMode: "FIXED_DAY",
       frequency: "MONTHLY",
+      monthsToGenerate: 12,
       obligationType: "SERVICE",
       ownership: "COMPANY",
-      defaultAmount: 0,
-      emissionMode: "FIXED_DAY",
-      emissionDay: 1,
-      dueDay: 15,
+      serviceType: "UTILITY",
       startDate: TODAY,
-      monthsToGenerate: 12,
     },
   },
   {
+    category: "Software",
+    description: "Suscripciones mensuales de software o herramientas en la nube",
     id: "software_subscription",
     name: "Suscripción SaaS",
-    description: "Suscripciones mensuales de software o herramientas en la nube",
-    category: "Software",
     payload: {
-      serviceType: "SOFTWARE",
-      frequency: "MONTHLY",
-      obligationType: "SERVICE",
-      ownership: "COMPANY",
       defaultAmount: 0,
-      emissionMode: "SPECIFIC_DATE",
-      emissionExactDate: TODAY,
       dueDay: null,
-      startDate: TODAY,
+      emissionExactDate: TODAY,
+      emissionMode: "SPECIFIC_DATE",
+      frequency: "MONTHLY",
       monthsToGenerate: 12,
       notes: "Renovación automática; revisar vencimiento de tarjeta asociada",
+      obligationType: "SERVICE",
+      ownership: "COMPANY",
+      serviceType: "SOFTWARE",
+      startDate: TODAY,
     },
   },
   {
+    category: "Financiamiento",
+    description: "Cuotas fijas para préstamos bancarios o renegociaciones",
     id: "loan_quota",
     name: "Cuota de préstamo",
-    description: "Cuotas fijas para préstamos bancarios o renegociaciones",
-    category: "Financiamiento",
     payload: {
-      serviceType: "OTHER",
-      obligationType: "DEBT",
-      ownership: "COMPANY",
-      frequency: "MONTHLY",
       defaultAmount: 0,
-      emissionMode: "FIXED_DAY",
-      emissionDay: 5,
       dueDay: 10,
-      startDate: TODAY,
-      monthsToGenerate: 24,
+      emissionDay: 5,
+      emissionMode: "FIXED_DAY",
+      frequency: "MONTHLY",
+      lateFeeGraceDays: 3,
       lateFeeMode: "FIXED",
       lateFeeValue: 10_000,
-      lateFeeGraceDays: 3,
+      monthsToGenerate: 24,
+      obligationType: "DEBT",
+      ownership: "COMPANY",
+      serviceType: "OTHER",
+      startDate: TODAY,
     },
   },
   {
+    category: "Personal",
+    description: "Remuneraciones mensuales para colaboradores",
     id: "employee_salary",
     name: "Pago de sueldo",
-    description: "Remuneraciones mensuales para colaboradores",
-    category: "Personal",
     payload: {
-      serviceType: "PERSONAL",
-      ownership: "COMPANY",
-      obligationType: "SERVICE",
-      frequency: "MONTHLY",
       defaultAmount: 0,
-      emissionMode: "FIXED_DAY",
-      emissionDay: 25,
       dueDay: null,
-      startDate: TODAY,
+      emissionDay: 25,
+      emissionMode: "FIXED_DAY",
+      frequency: "MONTHLY",
       monthsToGenerate: 12,
       notes: "Considerar descuentos de AFP/Salud cuando corresponda",
+      obligationType: "SERVICE",
+      ownership: "COMPANY",
+      serviceType: "PERSONAL",
+      startDate: TODAY,
     },
   },
 ];
@@ -109,8 +109,8 @@ export default function ServiceTemplateGallery({ onApply }: ServiceTemplateGalle
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         {SERVICE_TEMPLATES.map((template) => (
           <article
-            key={template.id}
             className="border-base-300 bg-base-200 hover:border-primary/45 flex h-full flex-col justify-between rounded-2xl border p-4 shadow-sm transition hover:shadow-md"
+            key={template.id}
           >
             <div className="space-y-2">
               <p className="text-base-content text-sm font-semibold">{template.name}</p>
@@ -121,7 +121,12 @@ export default function ServiceTemplateGallery({ onApply }: ServiceTemplateGalle
                 </span>
               )}
             </div>
-            <Button size="sm" onClick={() => onApply(template)}>
+            <Button
+              onClick={() => {
+                onApply(template);
+              }}
+              size="sm"
+            >
               Usar plantilla
             </Button>
           </article>

@@ -15,6 +15,11 @@ export const Route = createFileRoute("/_authed/calendar/schedule")({
       throw routeApi.redirect({ to: "/" });
     }
   },
+  component: () => (
+    <Suspense fallback={<PageLoader />}>
+      <CalendarSchedulePage />
+    </Suspense>
+  ),
   loader: async ({ context }) => {
     const defaults = computeDefaultFilters({});
     await Promise.all([
@@ -22,9 +27,4 @@ export const Route = createFileRoute("/_authed/calendar/schedule")({
       context.queryClient.ensureQueryData(calendarQueries.daily(defaults)),
     ]);
   },
-  component: () => (
-    <Suspense fallback={<PageLoader />}>
-      <CalendarSchedulePage />
-    </Suspense>
-  ),
 });

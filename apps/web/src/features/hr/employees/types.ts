@@ -9,21 +9,21 @@ export type Employee = DbEmployee & {
 // Re-exporting for compatibility if needed, but ideally we switch to DbEmployee
 // For now, let's align the types
 
-export type EmployeePayload = {
+export interface EmployeePayload {
+  bank_account_number?: null | string;
+  bank_account_type?: null | string;
+  bank_name?: null | string;
+  email?: null | string;
+  fixed_salary?: null | number;
   full_name: string;
-  role: string;
-  email?: string | null;
-  rut?: string | null;
-  bank_name?: string | null;
-  bank_account_type?: string | null;
-  bank_account_number?: string | null;
-  salary_type: EmployeeSalaryType;
   hourly_rate?: number;
-  fixed_salary?: number | null;
-  overtime_rate?: number | null;
+  metadata?: null | Record<string, unknown>;
+  overtime_rate?: null | number;
   retention_rate: number;
-  metadata?: Record<string, unknown> | null;
-};
+  role: string;
+  rut?: null | string;
+  salary_type: EmployeeSalaryType;
+}
 
 export type EmployeeUpdatePayload = Partial<EmployeePayload> & {
   status?: EmployeeStatus;

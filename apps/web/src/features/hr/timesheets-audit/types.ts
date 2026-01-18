@@ -2,34 +2,34 @@
  * Types for timesheet audit calendar feature
  */
 
-export interface TimesheetEntryWithEmployee {
-  id: number;
-  employee_id: number;
+export interface CalendarEventData {
+  duration_hours: number;
   employee_name: string;
-  employee_role: string | null;
+  employee_role: null | string;
+  employeeId: number;
+  end_time: string;
+  has_overlap: boolean;
+  id: string;
+  start_time: string;
   work_date: string;
-  start_time: string; // HH:MM format
-  end_time: string; // HH:MM format
-  worked_minutes: number;
-  overtime_minutes: number;
-  comment: string | null;
 }
 
 export interface OverlapInfo {
-  work_date: string;
   employee_count: number;
   employee_ids: number[];
   total_overlapping_pairs: number;
+  work_date: string;
 }
 
-export interface CalendarEventData {
-  id: string;
-  employeeId: number;
+export interface TimesheetEntryWithEmployee {
+  comment: null | string;
+  employee_id: number;
   employee_name: string;
-  employee_role: string | null;
+  employee_role: null | string;
+  end_time: string; // HH:MM format
+  id: number;
+  overtime_minutes: number;
+  start_time: string; // HH:MM format
   work_date: string;
-  start_time: string;
-  end_time: string;
-  duration_hours: number;
-  has_overlap: boolean;
+  worked_minutes: number;
 }

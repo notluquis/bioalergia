@@ -1,89 +1,89 @@
-export type LoanSummary = {
-  id: number;
-  public_id: string;
+export interface CreateLoanPayload {
+  borrowerName: string;
+  borrowerType: "COMPANY" | "PERSON";
+  frequency: "BIWEEKLY" | "MONTHLY" | "WEEKLY";
+  generateSchedule?: boolean;
+  interestRate: number;
+  interestType: "COMPOUND" | "SIMPLE";
+  notes?: null | string;
+  principalAmount: number;
+  startDate: string;
   title: string;
-  borrower_name: string;
-  borrower_type: "PERSON" | "COMPANY";
-  principal_amount: number;
-  interest_rate: number;
-  interest_type: "SIMPLE" | "COMPOUND";
-  frequency: "WEEKLY" | "BIWEEKLY" | "MONTHLY";
-  total_installments: number;
-  start_date: string;
-  status: "ACTIVE" | "COMPLETED" | "DEFAULTED";
-  notes: string | null;
-  created_at: string;
-  updated_at: string;
-  total_expected: number;
-  total_paid: number;
-  remaining_amount: number;
-  paid_installments: number;
-  pending_installments: number;
-};
+  totalInstallments: number;
+}
 
-export type LoanSchedule = {
-  id: number;
-  loan_id: number;
-  installment_number: number;
-  due_date: string;
-  expected_amount: number;
-  expected_principal: number;
-  expected_interest: number;
-  status: "PENDING" | "PARTIAL" | "PAID" | "OVERDUE";
-  transaction_id: number | null;
-  paid_amount: number | null;
-  paid_date: string | null;
-  created_at: string;
-  updated_at: string;
-  transaction?: {
-    id: number;
-    description: string | null;
-    timestamp: string;
-    amount: number | null;
-  } | null;
-};
-
-export type LoanDetailResponse = {
-  status: "ok" | "error";
+export interface LoanDetailResponse {
   loan: LoanSummary;
   schedules: LoanSchedule[];
+  status: "error" | "ok";
   summary: {
-    total_expected: number;
-    total_paid: number;
-    remaining_amount: number;
     paid_installments: number;
     pending_installments: number;
+    remaining_amount: number;
+    total_expected: number;
+    total_paid: number;
   };
-};
+}
 
-export type LoanListResponse = {
-  status: "ok" | "error";
+export interface LoanListResponse {
   loans: LoanSummary[];
-};
+  status: "error" | "ok";
+}
 
-export type CreateLoanPayload = {
-  title: string;
-  borrowerName: string;
-  borrowerType: "PERSON" | "COMPANY";
-  principalAmount: number;
-  interestRate: number;
-  interestType: "SIMPLE" | "COMPOUND";
-  frequency: "WEEKLY" | "BIWEEKLY" | "MONTHLY";
-  totalInstallments: number;
-  startDate: string;
-  notes?: string | null;
-  generateSchedule?: boolean;
-};
-
-export type RegenerateSchedulePayload = {
-  totalInstallments?: number;
-  startDate?: string;
-  interestRate?: number;
-  frequency?: "WEEKLY" | "BIWEEKLY" | "MONTHLY";
-};
-
-export type LoanPaymentPayload = {
-  transactionId: number;
+export interface LoanPaymentPayload {
   paidAmount: number;
   paidDate: string;
-};
+  transactionId: number;
+}
+
+export interface LoanSchedule {
+  created_at: string;
+  due_date: string;
+  expected_amount: number;
+  expected_interest: number;
+  expected_principal: number;
+  id: number;
+  installment_number: number;
+  loan_id: number;
+  paid_amount: null | number;
+  paid_date: null | string;
+  status: "OVERDUE" | "PAID" | "PARTIAL" | "PENDING";
+  transaction?: null | {
+    amount: null | number;
+    description: null | string;
+    id: number;
+    timestamp: string;
+  };
+  transaction_id: null | number;
+  updated_at: string;
+}
+
+export interface LoanSummary {
+  borrower_name: string;
+  borrower_type: "COMPANY" | "PERSON";
+  created_at: string;
+  frequency: "BIWEEKLY" | "MONTHLY" | "WEEKLY";
+  id: number;
+  interest_rate: number;
+  interest_type: "COMPOUND" | "SIMPLE";
+  notes: null | string;
+  paid_installments: number;
+  pending_installments: number;
+  principal_amount: number;
+  public_id: string;
+  remaining_amount: number;
+  start_date: string;
+  status: "ACTIVE" | "COMPLETED" | "DEFAULTED";
+  title: string;
+  total_expected: number;
+  total_installments: number;
+  total_paid: number;
+  updated_at: string;
+}
+
+export interface RegenerateSchedulePayload {
+  frequency?: "BIWEEKLY" | "MONTHLY" | "WEEKLY";
+  interestRate?: number;
+  startDate?: string;
+  totalInstallments?: number;
+}

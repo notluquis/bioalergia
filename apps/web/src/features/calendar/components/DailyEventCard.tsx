@@ -10,41 +10,6 @@ interface DailyEventCardProps {
   event: CalendarEventDetail;
 }
 
-/**
- * Get category-based indicator color (matches WeekGrid CSS)
- */
-function getCategoryIndicatorColor(category: string | null | undefined): string {
-  switch (category) {
-    case "Tratamiento subcutáneo": {
-      return "bg-blue-400";
-    }
-    case "Test y exámenes": {
-      return "bg-emerald-400";
-    }
-    case "Inyección": {
-      return "bg-amber-400";
-    }
-    default: {
-      return "bg-gray-300";
-    }
-  }
-}
-
-/**
- * Format duration for display
- */
-function formatDuration(minutes: number): string {
-  if (minutes < 60) {
-    return `${minutes} min`;
-  }
-  const hours = Math.floor(minutes / 60);
-  const remainingMinutes = minutes % 60;
-  if (remainingMinutes === 0) {
-    return `${hours}h`;
-  }
-  return `${hours}h ${remainingMinutes}m`;
-}
-
 export function DailyEventCard({ event }: DailyEventCardProps) {
   const isSubcutaneous = event.category === "Tratamiento subcutáneo";
 
@@ -109,7 +74,7 @@ export function DailyEventCard({ event }: DailyEventCardProps) {
         </div>
 
         {/* Description */}
-        {event.description && <FormattedEventDescription text={event.description} className="mt-1" />}
+        {event.description && <FormattedEventDescription className="mt-1" text={event.description} />}
       </div>
 
       {/* Right Column - Category Badges */}
@@ -132,4 +97,39 @@ export function DailyEventCard({ event }: DailyEventCardProps) {
       </div>
     </article>
   );
+}
+
+/**
+ * Format duration for display
+ */
+function formatDuration(minutes: number): string {
+  if (minutes < 60) {
+    return `${minutes} min`;
+  }
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  if (remainingMinutes === 0) {
+    return `${hours}h`;
+  }
+  return `${hours}h ${remainingMinutes}m`;
+}
+
+/**
+ * Get category-based indicator color (matches WeekGrid CSS)
+ */
+function getCategoryIndicatorColor(category: null | string | undefined): string {
+  switch (category) {
+    case "Inyección": {
+      return "bg-amber-400";
+    }
+    case "Test y exámenes": {
+      return "bg-emerald-400";
+    }
+    case "Tratamiento subcutáneo": {
+      return "bg-blue-400";
+    }
+    default: {
+      return "bg-gray-300";
+    }
+  }
 }

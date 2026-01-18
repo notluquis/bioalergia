@@ -8,12 +8,12 @@ import type { DayCell, WeekData } from "../types";
 
 interface WeekStripProps {
   currentDate: string;
-  weekData: WeekData | null;
-  onSelectDate: (date: string) => void;
-  onPrevWeek: () => void;
-  onNextWeek: () => void;
-  onGoToToday: () => void;
   isCollapsed?: boolean;
+  onGoToToday: () => void;
+  onNextWeek: () => void;
+  onPrevWeek: () => void;
+  onSelectDate: (date: string) => void;
+  weekData: null | WeekData;
 }
 
 /**
@@ -21,12 +21,12 @@ interface WeekStripProps {
  */
 export function WeekStrip({
   currentDate,
-  weekData,
-  onSelectDate,
-  onPrevWeek,
-  onNextWeek,
-  onGoToToday,
   isCollapsed = false,
+  onGoToToday,
+  onNextWeek,
+  onPrevWeek,
+  onSelectDate,
+  weekData,
 }: WeekStripProps) {
   const today = useMemo(() => {
     const d = new Date();
@@ -38,10 +38,10 @@ export function WeekStrip({
       <div className="bg-base-200/30 border-base-content/5 mb-4 flex items-center justify-between rounded-2xl border px-4 py-2">
         <span className="text-base-content/60 text-sm">{weekData?.weekLabel ?? "Cargando..."}</span>
         <div className="flex items-center gap-2">
-          <button type="button" onClick={onPrevWeek} className="btn btn-ghost btn-xs btn-square">
+          <button className="btn btn-ghost btn-xs btn-square" onClick={onPrevWeek} type="button">
             <ChevronLeft className="size-4" />
           </button>
-          <button type="button" onClick={onNextWeek} className="btn btn-ghost btn-xs btn-square">
+          <button className="btn btn-ghost btn-xs btn-square" onClick={onNextWeek} type="button">
             <ChevronRight className="size-4" />
           </button>
         </div>
@@ -54,17 +54,17 @@ export function WeekStrip({
       {/* Week header */}
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <button type="button" onClick={onPrevWeek} className="btn btn-ghost btn-xs btn-square">
+          <button className="btn btn-ghost btn-xs btn-square" onClick={onPrevWeek} type="button">
             <ChevronLeft className="size-4" />
           </button>
           <span className="text-base-content/80 text-sm font-medium">SEM {weekData?.weekLabel ?? "..."}</span>
-          <button type="button" onClick={onNextWeek} className="btn btn-ghost btn-xs btn-square">
+          <button className="btn btn-ghost btn-xs btn-square" onClick={onNextWeek} type="button">
             <ChevronRight className="size-4" />
           </button>
         </div>
 
         <div className="flex items-center gap-2">
-          <button type="button" onClick={onGoToToday} className="btn btn-outline btn-xs">
+          <button className="btn btn-outline btn-xs" onClick={onGoToToday} type="button">
             Hoy
           </button>
         </div>
@@ -74,16 +74,18 @@ export function WeekStrip({
       <div className="grid grid-cols-7 gap-2">
         {weekData?.days.map((day) => (
           <DayCellButton
-            key={day.date}
             day={day}
             isSelected={day.date === currentDate}
             isToday={day.date === today}
-            onClick={() => onSelectDate(day.date)}
+            key={day.date}
+            onClick={() => {
+              onSelectDate(day.date);
+            }}
           />
         )) ??
           // Skeleton
           Array.from({ length: 7 }).map((_, i) => (
-            <div key={`skeleton-${i}`} className="bg-base-300/30 h-16 animate-pulse rounded-xl" />
+            <div className="bg-base-300/30 h-16 animate-pulse rounded-xl" key={`skeleton-${i}`} />
           ))}
       </div>
     </div>
@@ -102,22 +104,22 @@ function DayCellButton({
   onClick: () => void;
 }) {
   const statusColors = {
-    empty: "bg-base-content/20",
-    draft: "bg-warning",
     balanced: "bg-success",
+    draft: "bg-warning",
+    empty: "bg-base-content/20",
     unbalanced: "bg-error",
   };
 
   return (
     <button
-      type="button"
-      onClick={onClick}
       className={cn(
         "relative flex flex-col items-center justify-center rounded-xl p-2 transition-all",
         "hover:bg-base-content/5 focus:ring-primary/20 focus:ring-2 focus:outline-none",
         isSelected && "bg-base-content/10 ring-primary ring-2",
         isToday && !isSelected && "ring-primary/30 ring-1"
       )}
+      onClick={onClick}
+      type="button"
     >
       {/* Status dot */}
       <div className={cn("absolute top-2 right-2 size-2 rounded-full", statusColors[day.status])} />

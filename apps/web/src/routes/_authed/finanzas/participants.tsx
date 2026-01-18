@@ -14,6 +14,11 @@ export const Route = createFileRoute("/_authed/finanzas/participants")({
       throw routeApi.redirect({ to: "/" });
     }
   },
+  component: () => (
+    <Suspense fallback={<PageLoader />}>
+      <ParticipantInsights />
+    </Suspense>
+  ),
   loader: async ({ context }) => {
     // Default params matching the hook defaults
     const now = dayjs();
@@ -30,9 +35,4 @@ export const Route = createFileRoute("/_authed/finanzas/participants")({
       })
     );
   },
-  component: () => (
-    <Suspense fallback={<PageLoader />}>
-      <ParticipantInsights />
-    </Suspense>
-  ),
 });

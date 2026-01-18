@@ -2,6 +2,13 @@ import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-q
 import type { ChangeEvent } from "react";
 import { Suspense, useEffect, useMemo, useState } from "react";
 
+import type {
+  CreateLoanPayload,
+  LoanPaymentPayload,
+  LoanSchedule,
+  RegenerateSchedulePayload,
+} from "@/features/finance/loans/types";
+
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
@@ -12,12 +19,6 @@ import LoanDetailSection from "@/features/finance/loans/components/LoanDetailSec
 import LoanForm from "@/features/finance/loans/components/LoanForm";
 import LoanList from "@/features/finance/loans/components/LoanList";
 import { loanKeys } from "@/features/finance/loans/queries";
-import type {
-  CreateLoanPayload,
-  LoanPaymentPayload,
-  LoanSchedule,
-  RegenerateSchedulePayload,
-} from "@/features/finance/loans/types";
 import { today } from "@/lib/dates";
 import { PAGE_CONTAINER } from "@/lib/styles";
 
@@ -27,23 +28,23 @@ export default function LoansPage() {
   const canManage = can("update", "Loan");
   const canView = can("read", "Loan");
 
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<null | string>(null);
 
   const [createOpen, setCreateOpen] = useState(false);
-  const [createError, setCreateError] = useState<string | null>(null);
+  const [createError, setCreateError] = useState<null | string>(null);
 
   const [paymentSchedule, setPaymentSchedule] = useState<LoanSchedule | null>(null);
   const [paymentForm, setPaymentForm] = useState({
-    transactionId: "",
     paidAmount: "",
     paidDate: today(),
+    transactionId: "",
   });
-  const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [paymentError, setPaymentError] = useState<null | string>(null);
 
   // Suspense Query (data is preloaded by Router)
   const { data: loansResponse } = useSuspenseQuery(loanKeys.lists());
 
-  const loans = useMemo(() => loansResponse?.loans ?? [], [loansResponse?.loans]);
+  const loans = useMemo(() => loansResponse.loans, [loansResponse.loans]);
 
   // Auto-selection
   useEffect(() => {
@@ -60,17 +61,17 @@ export default function LoansPage() {
   const createMutation = useMutation({
     mutationFn: createLoan,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: loanKeys.all });
+      void queryClient.invalidateQueries({ queryKey: loanKeys.all });
     },
   });
 
   const registerPaymentMutation = useMutation({
-    mutationFn: ({ scheduleId, payload }: { scheduleId: number; payload: LoanPaymentPayload }) =>
+    mutationFn: ({ payload, scheduleId }: { payload: LoanPaymentPayload; scheduleId: number }) =>
       registerLoanPayment(scheduleId, payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: loanKeys.all });
+      void queryClient.invalidateQueries({ queryKey: loanKeys.all });
       if (selectedId) {
-        queryClient.invalidateQueries({ queryKey: loanKeys.detail(selectedId).queryKey });
+        void queryClient.invalidateQueries({ queryKey: loanKeys.detail(selectedId).queryKey });
       }
     },
   });
@@ -78,9 +79,9 @@ export default function LoansPage() {
   const unlinkPaymentMutation = useMutation({
     mutationFn: unlinkLoanPayment,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: loanKeys.all });
+      void queryClient.invalidateQueries({ queryKey: loanKeys.all });
       if (selectedId) {
-        queryClient.invalidateQueries({ queryKey: loanKeys.detail(selectedId).queryKey });
+        void queryClient.invalidateQueries({ queryKey: loanKeys.detail(selectedId).queryKey });
       }
     },
   });
@@ -99,8 +100,8 @@ export default function LoansPage() {
     if (!selectedId) return;
     try {
       await regenerateSchedules(selectedId, overrides);
-      queryClient.invalidateQueries({ queryKey: loanKeys.all });
-      queryClient.invalidateQueries({ queryKey: loanKeys.detail(selectedId).queryKey });
+      void queryClient.invalidateQueries({ queryKey: loanKeys.all });
+      void queryClient.invalidateQueries({ queryKey: loanKeys.detail(selectedId).queryKey });
     } catch (error) {
       console.error("Regenerate failed:", error);
     }
@@ -109,9 +110,9 @@ export default function LoansPage() {
   const openPaymentModal = (schedule: LoanSchedule) => {
     setPaymentSchedule(schedule);
     setPaymentForm({
-      transactionId: schedule.transaction_id ? String(schedule.transaction_id) : "",
       paidAmount: schedule.paid_amount == null ? String(schedule.expected_amount) : String(schedule.paid_amount),
       paidDate: schedule.paid_date ?? today(),
+      transactionId: schedule.transaction_id ? String(schedule.transaction_id) : "",
     });
     setPaymentError(null);
   };
@@ -129,12 +130,12 @@ export default function LoansPage() {
 
     try {
       await registerPaymentMutation.mutateAsync({
-        scheduleId: paymentSchedule.id,
         payload: {
-          transactionId,
           paidAmount,
           paidDate: paymentForm.paidDate,
+          transactionId,
         },
+        scheduleId: paymentSchedule.id,
       });
       setPaymentSchedule(null);
     } catch (error) {
@@ -163,14 +164,14 @@ export default function LoansPage() {
       <div className="grid gap-4 lg:grid-cols-[300px,1fr]">
         <div className="border-base-300 bg-base-100 min-h-[70vh] rounded-2xl border p-6 shadow-sm">
           <LoanList
+            canManage={canManage}
             loans={loans}
-            selectedId={selectedId}
-            onSelect={setSelectedId}
             onCreateRequest={() => {
               setCreateOpen(true);
               setCreateError(null);
             }}
-            canManage={canManage}
+            onSelect={setSelectedId}
+            selectedId={selectedId}
           />
         </div>
         <div className="border-base-300 bg-base-100 min-h-[70vh] rounded-2xl border p-6 shadow-sm">
@@ -188,8 +189,8 @@ export default function LoansPage() {
               }
             >
               <LoanDetailSection
-                loanId={selectedId}
                 canManage={canManage}
+                loanId={selectedId}
                 onRegenerate={handleRegenerate}
                 onRegisterPayment={openPaymentModal}
                 onUnlinkPayment={handleUnlink}
@@ -199,60 +200,76 @@ export default function LoansPage() {
         </div>
       </div>
 
-      <Modal isOpen={createOpen} onClose={() => setCreateOpen(false)} title="Nuevo préstamo">
+      <Modal
+        isOpen={createOpen}
+        onClose={() => {
+          setCreateOpen(false);
+        }}
+        title="Nuevo préstamo"
+      >
         <LoanForm
+          onCancel={() => {
+            setCreateOpen(false);
+          }}
           onSubmit={async (payload) => {
             await handleCreateLoan(payload);
           }}
-          onCancel={() => setCreateOpen(false)}
         />
         {createError && <p className="mt-4 rounded-lg bg-rose-100 px-4 py-2 text-sm text-rose-700">{createError}</p>}
       </Modal>
 
       <Modal
         isOpen={Boolean(paymentSchedule)}
-        onClose={() => setPaymentSchedule(null)}
+        onClose={() => {
+          setPaymentSchedule(null);
+        }}
         title={paymentSchedule ? `Registrar pago cuota #${paymentSchedule.installment_number}` : "Registrar pago"}
       >
         {paymentSchedule && (
-          <form onSubmit={handlePaymentSubmit} className="space-y-4">
+          <form className="space-y-4" onSubmit={handlePaymentSubmit}>
             <Input
+              inputMode="numeric"
               label="ID transacción"
+              onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                setPaymentForm((prev) => ({ ...prev, transactionId: event.target.value }));
+              }}
+              required
               type="number"
               value={paymentForm.transactionId}
-              onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                setPaymentForm((prev) => ({ ...prev, transactionId: event.target.value }))
-              }
-              required
-              inputMode="numeric"
             />
             <Input
+              inputMode="decimal"
               label="Monto pagado"
+              min={0}
+              onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                setPaymentForm((prev) => ({ ...prev, paidAmount: event.target.value }));
+              }}
+              required
+              step="0.01"
               type="number"
               value={paymentForm.paidAmount}
-              onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                setPaymentForm((prev) => ({ ...prev, paidAmount: event.target.value }))
-              }
-              min={0}
-              step="0.01"
-              required
-              inputMode="decimal"
             />
             <Input
               label="Fecha de pago"
+              onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                setPaymentForm((prev) => ({ ...prev, paidDate: event.target.value }));
+              }}
+              required
               type="date"
               value={paymentForm.paidDate}
-              onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                setPaymentForm((prev) => ({ ...prev, paidDate: event.target.value }))
-              }
-              required
             />
             {paymentError && <p className="rounded-lg bg-rose-100 px-4 py-2 text-sm text-rose-700">{paymentError}</p>}
             <div className="flex justify-end gap-3">
-              <Button type="button" variant="secondary" onClick={() => setPaymentSchedule(null)}>
+              <Button
+                onClick={() => {
+                  setPaymentSchedule(null);
+                }}
+                type="button"
+                variant="secondary"
+              >
                 Cancelar
               </Button>
-              <Button type="submit" disabled={registerPaymentMutation.isPending}>
+              <Button disabled={registerPaymentMutation.isPending} type="submit">
                 {registerPaymentMutation.isPending ? "Guardando..." : "Guardar pago"}
               </Button>
             </div>

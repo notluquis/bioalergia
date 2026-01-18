@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 
 export function useWakeLock() {
   const [isLocked, setIsLocked] = useState(false);
-  const wakeLockRef = useRef<WakeLockSentinel | null>(null);
+  const wakeLockRef = useRef<null | WakeLockSentinel>(null);
 
   useEffect(() => {
     // Function to request wake lock

@@ -3,6 +3,13 @@ import { type ChangeEvent, useRef, useState } from "react";
 
 import { useAuth } from "@/context/AuthContext";
 
+import type {
+  CreateMonthlyExpensePayload,
+  LinkMonthlyExpenseTransactionPayload,
+  MonthlyExpense,
+  MonthlyExpenseDetail,
+} from "../types";
+
 import {
   createMonthlyExpense,
   linkMonthlyExpenseTransaction,
@@ -11,18 +18,12 @@ import {
 } from "../api";
 // Update payload matches Create payload for PUT operations
 import { expenseKeys } from "../queries";
-import type {
-  CreateMonthlyExpensePayload,
-  LinkMonthlyExpenseTransactionPayload,
-  MonthlyExpense,
-  MonthlyExpenseDetail,
-} from "../types";
 
-export type ExpenseFilters = {
+export interface ExpenseFilters {
+  category?: null | string;
   from?: string;
   to?: string;
-  category?: string | null;
-};
+}
 
 type UpdateMonthlyExpensePayload = CreateMonthlyExpensePayload;
 
@@ -32,40 +33,31 @@ export function useMonthlyExpenses() {
   const canManage = can("update", "Expense");
   const canView = can("read", "Expense");
 
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<null | string>(null);
 
   const [createOpen, setCreateOpen] = useState(false);
-  const [createError, setCreateError] = useState<string | null>(null);
+  const [createError, setCreateError] = useState<null | string>(null);
 
   const [filters, setFilters] = useState<ExpenseFilters>({});
 
-  const [linkError, setLinkError] = useState<string | null>(null);
-  const [linkForm, setLinkForm] = useState({ transactionId: "", amount: "" });
+  const [linkError, setLinkError] = useState<null | string>(null);
+  const [linkForm, setLinkForm] = useState({ amount: "", transactionId: "" });
   const [linkModalOpen, setLinkModalOpen] = useState(false);
 
-  const selectedIdRef = useRef<string | null>(null);
+  const selectedIdRef = useRef<null | string>(null);
   selectedIdRef.current = selectedId;
 
   // 1. Fetch List
-  const {
-    data: expensesResponse,
-    isLoading: loadingList,
-    error: listError,
-  } = useSuspenseQuery(expenseKeys.list(filters));
+  const { data: expensesResponse, isLoading: loadingList } = useSuspenseQuery(expenseKeys.list(filters));
 
-  const expenses = expensesResponse?.expenses?.map((e) => normalizeExpense(e)) ?? [];
+  const expenses = expensesResponse.expenses.map((e) => normalizeExpense(e));
 
   // 2. Fetch Stats
   const { data: statsResponse, isLoading: statsLoading } = useSuspenseQuery(expenseKeys.stats(filters));
 
-  const statsData = statsResponse?.stats;
+  const statsData = statsResponse.stats;
 
-  const stats = statsData ?? {
-    totalAmount: 0,
-    count: 0,
-    categoryBreakdown: {},
-    statusBreakdown: {},
-  };
+  const stats = statsData;
 
   // 3. Fetch Detail (use useQuery with skipToken for conditional fetching)
   const { data: detailResponse } = useQuery({
@@ -78,15 +70,15 @@ export function useMonthlyExpenses() {
   // Mutations
   const createMutation = useMutation({
     mutationFn: createMonthlyExpense,
-    onSuccess: (response) => {
-      const normalized = normalizeExpenseDetail(response.expense);
-      queryClient.invalidateQueries({ queryKey: expenseKeys.all });
-      queryClient.invalidateQueries({ queryKey: expenseKeys.statsAll });
-      setSelectedId(normalized.publicId);
-      setCreateOpen(false);
-    },
     onError: (err) => {
       setCreateError(err instanceof Error ? err.message : "No se pudo crear el gasto");
+    },
+    onSuccess: (response) => {
+      const normalized = normalizeExpenseDetail(response.expense);
+      void queryClient.invalidateQueries({ queryKey: expenseKeys.all });
+      void queryClient.invalidateQueries({ queryKey: expenseKeys.statsAll });
+      setSelectedId(normalized.publicId);
+      setCreateOpen(false);
     },
   });
 
@@ -94,16 +86,16 @@ export function useMonthlyExpenses() {
     mutationFn: async ({ id, payload }: { id: string; payload: UpdateMonthlyExpensePayload }) => {
       return updateMonthlyExpense(id, payload);
     },
-    onSuccess: (response) => {
-      queryClient.invalidateQueries({ queryKey: expenseKeys.all });
-      queryClient.invalidateQueries({ queryKey: expenseKeys.statsAll });
-      queryClient.setQueryData(expenseKeys.detail(response.expense.publicId).queryKey, {
-        status: "ok",
-        expense: response.expense,
-      });
-    },
     onError: (err) => {
       setCreateError(err instanceof Error ? err.message : "No se pudo actualizar el gasto");
+    },
+    onSuccess: (response) => {
+      void queryClient.invalidateQueries({ queryKey: expenseKeys.all });
+      void queryClient.invalidateQueries({ queryKey: expenseKeys.statsAll });
+      queryClient.setQueryData(expenseKeys.detail(response.expense.publicId).queryKey, {
+        expense: response.expense,
+        status: "ok",
+      });
     },
   });
 
@@ -111,17 +103,17 @@ export function useMonthlyExpenses() {
     mutationFn: async ({ id, payload }: { id: string; payload: LinkMonthlyExpenseTransactionPayload }) => {
       return linkMonthlyExpenseTransaction(id, payload);
     },
-    onSuccess: (response) => {
-      queryClient.invalidateQueries({ queryKey: expenseKeys.all });
-      queryClient.invalidateQueries({ queryKey: expenseKeys.statsAll });
-      queryClient.setQueryData(expenseKeys.detail(response.expense.publicId).queryKey, {
-        status: "ok",
-        expense: response.expense,
-      });
-      setLinkModalOpen(false);
-    },
     onError: (err) => {
       setLinkError(err instanceof Error ? err.message : "Error al vincular");
+    },
+    onSuccess: (response) => {
+      void queryClient.invalidateQueries({ queryKey: expenseKeys.all });
+      void queryClient.invalidateQueries({ queryKey: expenseKeys.statsAll });
+      queryClient.setQueryData(expenseKeys.detail(response.expense.publicId).queryKey, {
+        expense: response.expense,
+        status: "ok",
+      });
+      setLinkModalOpen(false);
     },
   });
 
@@ -129,16 +121,16 @@ export function useMonthlyExpenses() {
     mutationFn: async ({ id, transactionId }: { id: string; transactionId: number }) => {
       return unlinkMonthlyExpenseTransaction(id, transactionId);
     },
-    onSuccess: (response) => {
-      queryClient.invalidateQueries({ queryKey: expenseKeys.all });
-      queryClient.invalidateQueries({ queryKey: expenseKeys.statsAll });
-      queryClient.setQueryData(expenseKeys.detail(response.expense.publicId).queryKey, {
-        status: "ok",
-        expense: response.expense,
-      });
-    },
     onError: (err) => {
       setLinkError(err instanceof Error ? err.message : "Error al desvincular");
+    },
+    onSuccess: (response) => {
+      void queryClient.invalidateQueries({ queryKey: expenseKeys.all });
+      void queryClient.invalidateQueries({ queryKey: expenseKeys.statsAll });
+      queryClient.setQueryData(expenseKeys.detail(response.expense.publicId).queryKey, {
+        expense: response.expense,
+        status: "ok",
+      });
     },
   });
 
@@ -154,7 +146,7 @@ export function useMonthlyExpenses() {
   };
 
   const openLinkModal = () => {
-    setLinkForm({ transactionId: "", amount: "" });
+    setLinkForm({ amount: "", transactionId: "" });
     setLinkError(null);
     setLinkModalOpen(true);
   };
@@ -163,15 +155,15 @@ export function useMonthlyExpenses() {
     setLinkModalOpen(false);
   };
 
-  const handleLinkFieldChange = (field: "transactionId" | "amount", event: ChangeEvent<HTMLInputElement>) => {
+  const handleLinkFieldChange = (field: "amount" | "transactionId", event: ChangeEvent<HTMLInputElement>) => {
     setLinkForm((prev) => ({ ...prev, [field]: event.target.value }));
   };
 
   const handleLinkSubmit = async (publicId: string) => {
     setLinkError(null);
     const payload: LinkMonthlyExpenseTransactionPayload = {
-      transactionId: Number(linkForm.transactionId),
       amount: linkForm.amount ? Number(linkForm.amount) : undefined,
+      transactionId: Number(linkForm.transactionId),
     };
     await linkMutation.mutateAsync({ id: publicId, payload });
   };
@@ -182,47 +174,51 @@ export function useMonthlyExpenses() {
   };
 
   const error = (() => {
-    if (listError instanceof Error) return listError.message;
-    return listError ? String(listError) : null;
+    // listError is handled by Suspense
+    return null;
   })();
 
   return {
     canManage,
     canView,
-    expenses,
-    stats,
-    statsLoading,
-    selectedExpense: detail ?? null,
-    selectedId,
-    setSelectedId,
-    loadingList,
+    closeCreateModal: () => {
+      setCreateOpen(false);
+    },
+    closeLinkModal,
+    createError,
     // loadingDetail removed (Suspense)
     createOpen,
-    setCreateOpen,
-    createError,
-    handleCreate,
-    handleUpdate,
+    error,
+    expenses,
     filters,
-    setFilters,
-    linkModalOpen,
-    openLinkModal,
-    closeLinkModal,
-    linking: linkMutation.isPending,
-    linkError,
-    linkForm,
+    handleCreate,
     handleLinkFieldChange,
     handleLinkSubmit,
     handleUnlinkSubmit,
-    openCreateModal: () => setCreateOpen(true),
-    closeCreateModal: () => setCreateOpen(false),
-    error,
+    handleUpdate,
+    linkError,
+    linkForm,
+    linking: linkMutation.isPending,
+    linkModalOpen,
+    loadingList,
+    openCreateModal: () => {
+      setCreateOpen(true);
+    },
+    openLinkModal,
+    selectedExpense: detail ?? null,
+    selectedId,
+    setCreateOpen,
+    setFilters,
+    setSelectedId,
+    stats,
+    statsLoading,
   };
 }
 
 function normalizeExpense(expense: MonthlyExpense): MonthlyExpense {
   return {
     ...expense,
-    tags: expense.tags ?? [],
+    tags: expense.tags,
   };
 }
 

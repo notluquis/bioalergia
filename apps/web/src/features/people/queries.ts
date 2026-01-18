@@ -6,7 +6,7 @@ export const personKeys = {
   all: ["people"] as const,
   detail: (id: string | undefined) =>
     queryOptions({
-      queryKey: ["person", id],
       queryFn: () => fetchPerson(id!),
+      queryKey: ["person", id],
     }),
 };

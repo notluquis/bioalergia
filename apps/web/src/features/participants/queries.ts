@@ -2,37 +2,37 @@ import { queryOptions } from "@tanstack/react-query";
 
 import { fetchParticipantInsight, fetchParticipantLeaderboard } from "./api";
 
-export type LeaderboardParams = {
+export interface LeaderboardParams {
   from?: string;
-  to?: string;
   limit?: number;
   mode?: "combined" | "incoming" | "outgoing";
-};
-
-export type ParticipantDetailParams = {
-  participantId: string;
-  from?: string;
   to?: string;
-};
+}
+
+export interface ParticipantDetailParams {
+  from?: string;
+  participantId: string;
+  to?: string;
+}
 
 export const participantKeys = {
   all: ["participants"] as const,
-  leaderboard: (params: LeaderboardParams) => ["participants", "leaderboard", params] as const,
   detail: (params: ParticipantDetailParams) => ["participants", "detail", params] as const,
+  leaderboard: (params: LeaderboardParams) => ["participants", "leaderboard", params] as const,
 };
 
 export const participantQueries = {
-  leaderboard: (params: LeaderboardParams) =>
-    queryOptions({
-      queryKey: participantKeys.leaderboard(params),
-      queryFn: () => fetchParticipantLeaderboard(params),
-      staleTime: 5 * 60 * 1000,
-    }),
   detail: (params: ParticipantDetailParams) =>
     queryOptions({
-      queryKey: participantKeys.detail(params),
-      queryFn: () => fetchParticipantInsight(params.participantId, { from: params.from, to: params.to }),
       enabled: Boolean(params.participantId),
+      queryFn: () => fetchParticipantInsight(params.participantId, { from: params.from, to: params.to }),
+      queryKey: participantKeys.detail(params),
+      staleTime: 5 * 60 * 1000,
+    }),
+  leaderboard: (params: LeaderboardParams) =>
+    queryOptions({
+      queryFn: () => fetchParticipantLeaderboard(params),
+      queryKey: participantKeys.leaderboard(params),
       staleTime: 5 * 60 * 1000,
     }),
 };

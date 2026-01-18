@@ -14,13 +14,13 @@ const routeApi = getRouteApi("/login");
 
 export const Route = createFileRoute("/login")({
   validateSearch: loginSearchSchema,
+  component: LoginPageWrapper,
   beforeLoad: async ({ context }) => {
     // If already authenticated, redirect to home or intended destination
     if (context.auth.user) {
       throw routeApi.redirect({ to: "/" });
     }
   },
-  component: LoginPageWrapper,
 });
 
 // Wrapper to connect TanStack Router with the existing LoginPage

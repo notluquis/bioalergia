@@ -12,14 +12,6 @@ import { useMonths } from "@/features/hr/timesheets/hooks/useMonths";
 import { useWakeLock } from "@/hooks/useWakeLock";
 import { PAGE_CONTAINER, TITLE_LG } from "@/lib/styles";
 
-// Utility to ensure month is always YYYY-MM
-function formatMonthString(m: string): string {
-  if (/^\d{4}-\d{2}$/.test(m)) return m;
-  const d = dayjs(m, ["YYYY-MM", "YYYY/MM", "MM/YYYY", "YYYY-MM-DD", "DD/MM/YYYY"]);
-  if (d.isValid()) return d.format("YYYY-MM");
-  return dayjs().format("YYYY-MM");
-}
-
 export default function TimesheetsPage() {
   useWakeLock();
   useAuth();
@@ -28,12 +20,12 @@ export default function TimesheetsPage() {
   const { months, monthsWithData } = useMonths();
   // Init month synchronously to previous month
   const [month, setMonth] = useState<string>(() => dayjs().subtract(1, "month").format("YYYY-MM"));
-  const [selectedEmployeeId, setSelectedEmployeeId] = useState<number | null>(null);
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<null | number>(null);
 
   // --- Queries ---
 
   // 1. Employees
-  const { data: employees = [] } = useSuspenseQuery({
+  const { data: employees } = useSuspenseQuery({
     ...employeeKeys.list({ includeInactive: false }),
     staleTime: 5 * 60 * 1000,
   });
@@ -43,8 +35,8 @@ export default function TimesheetsPage() {
 
   // 2. Summary (Depends on Month + potentially SelectedEmployee)
   const { data: summaryData } = useSuspenseQuery({
-    queryKey: ["timesheet-summary", month, selectedEmployeeId],
     queryFn: () => fetchTimesheetSummary(formatMonthString(month), selectedEmployeeId),
+    queryKey: ["timesheet-summary", month, selectedEmployeeId],
   });
 
   const employeeSummaryRow = (() => {
@@ -64,8 +56,8 @@ export default function TimesheetsPage() {
   function groupedMonthsMemo() {
     const years = [...new Set(months.map((m) => m.split("-")[0] || ""))];
     return years.map((year) => ({
-      year,
       months: months.filter((m) => m.startsWith(year)),
+      year,
     }));
   }
 
@@ -76,15 +68,15 @@ export default function TimesheetsPage() {
         <div className="flex flex-col gap-3 sm:flex-row">
           <div className="min-w-52">
             <Input
-              label="Trabajador"
               as="select"
-              value={selectedEmployeeId ?? ""}
+              className="bg-base-100"
+              disabled={activeEmployees.length === 0}
+              label="Trabajador"
               onChange={(event: ChangeEvent<HTMLSelectElement>) => {
                 const value = event.target.value;
                 setSelectedEmployeeId(value ? Number(value) : null);
               }}
-              disabled={activeEmployees.length === 0}
-              className="bg-base-100"
+              value={selectedEmployeeId ?? ""}
             >
               <option value="">Seleccionar...</option>
               {activeEmployees.map((emp) => (
@@ -96,13 +88,13 @@ export default function TimesheetsPage() {
           </div>
           <div className="min-w-44">
             <Input
-              label="Periodo"
               as="select"
-              value={month}
+              className="bg-base-100"
+              label="Periodo"
               onChange={(event: ChangeEvent<HTMLSelectElement>) => {
                 setMonth(event.target.value);
               }}
-              className="bg-base-100"
+              value={month}
             >
               {groupedMonths.map((group) => (
                 <optgroup key={group.year} label={group.year}>
@@ -123,24 +115,32 @@ export default function TimesheetsPage() {
       </div>
 
       <TimesheetSummaryTable
-        summary={summaryData ? { employees: summaryData.employees, totals: summaryData.totals } : null}
         loading={false}
-        selectedEmployeeId={selectedEmployeeId}
         onSelectEmployee={setSelectedEmployeeId}
+        selectedEmployeeId={selectedEmployeeId}
+        summary={summaryData ? { employees: summaryData.employees, totals: summaryData.totals } : null}
       />
 
       {selectedEmployee && month && (
         <Suspense fallback={<div className="p-4 text-center">Cargando detalles...</div>}>
           <TimesheetEditor
+            activeEmployees={activeEmployees}
             employeeId={selectedEmployee.id}
             month={month}
-            selectedEmployee={selectedEmployee}
-            activeEmployees={activeEmployees}
             monthLabel={monthLabel}
+            selectedEmployee={selectedEmployee}
             summaryRow={employeeSummaryRow}
           />
         </Suspense>
       )}
     </section>
   );
+}
+
+// Utility to ensure month is always YYYY-MM
+function formatMonthString(m: string): string {
+  if (/^\d{4}-\d{2}$/.test(m)) return m;
+  const d = dayjs(m, ["YYYY-MM", "YYYY/MM", "MM/YYYY", "YYYY-MM-DD", "DD/MM/YYYY"]);
+  if (d.isValid()) return d.format("YYYY-MM");
+  return dayjs().format("YYYY-MM");
 }

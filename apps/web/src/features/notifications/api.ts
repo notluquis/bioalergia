@@ -1,5 +1,9 @@
 import { apiClient } from "@/lib/apiClient";
 
+export interface SendTestPayload {
+  userId: number;
+}
+
 export interface SubscribePayload {
   subscription: PushSubscription;
   userId: number;
@@ -9,8 +13,8 @@ export interface UnsubscribePayload {
   endpoint: string;
 }
 
-export interface SendTestPayload {
-  userId: number;
+export async function sendTestNotification(payload: SendTestPayload) {
+  return apiClient.post("/api/notifications/send-test", payload);
 }
 
 export async function subscribeToNotifications(payload: SubscribePayload) {
@@ -19,8 +23,4 @@ export async function subscribeToNotifications(payload: SubscribePayload) {
 
 export async function unsubscribeFromNotifications(payload: UnsubscribePayload) {
   return apiClient.post("/api/notifications/unsubscribe", payload);
-}
-
-export async function sendTestNotification(payload: SendTestPayload) {
-  return apiClient.post("/api/notifications/send-test", payload);
 }

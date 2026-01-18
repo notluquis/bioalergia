@@ -2,51 +2,51 @@ import type { LucideIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
-type StatCardTone = "default" | "primary" | "success" | "error" | "warning";
-type StatCardSize = "sm" | "md" | "lg";
-
 interface StatCardProps {
-  /** Title/label shown above the value */
-  title: string;
-  /** Main value to display */
-  value: string | number;
-  /** Optional helper/subtitle text below the value */
-  subtitle?: string;
-  /** Optional icon to show beside the title */
-  icon?: LucideIcon;
-  /** Color tone for the value */
-  tone?: StatCardTone;
-  /** Size variant */
-  size?: StatCardSize;
   /** Additional CSS classes */
   className?: string;
+  /** Optional icon to show beside the title */
+  icon?: LucideIcon;
+  /** Size variant */
+  size?: StatCardSize;
+  /** Optional helper/subtitle text below the value */
+  subtitle?: string;
   /** Optional suffix for the value (e.g., "hrs", "%") */
   suffix?: string;
+  /** Title/label shown above the value */
+  title: string;
+  /** Color tone for the value */
+  tone?: StatCardTone;
+  /** Main value to display */
+  value: number | string;
 }
+type StatCardSize = "lg" | "md" | "sm";
+
+type StatCardTone = "default" | "error" | "primary" | "success" | "warning";
 
 const toneClasses: Record<StatCardTone, string> = {
   default: "text-base-content",
+  error: "text-error",
   primary: "text-primary",
   success: "text-success",
-  error: "text-error",
   warning: "text-warning",
 };
 
-const sizeClasses: Record<StatCardSize, { container: string; value: string; title: string }> = {
-  sm: {
-    container: "p-3",
-    value: "text-lg font-semibold",
-    title: "text-[10px]",
+const sizeClasses: Record<StatCardSize, { container: string; title: string; value: string }> = {
+  lg: {
+    container: "p-6",
+    title: "text-sm",
+    value: "text-3xl font-bold",
   },
   md: {
     container: "p-4",
-    value: "text-2xl font-semibold",
     title: "text-xs",
+    value: "text-2xl font-semibold",
   },
-  lg: {
-    container: "p-6",
-    value: "text-3xl font-bold",
-    title: "text-sm",
+  sm: {
+    container: "p-3",
+    title: "text-[10px]",
+    value: "text-lg font-semibold",
   },
 };
 
@@ -55,14 +55,14 @@ const sizeClasses: Record<StatCardSize, { container: string; value: string; titl
  * Replaces: StatCard (reports), StatCard (stats), ServicesStatCard, StatMini (inline)
  */
 export function StatCard({
-  title,
-  value,
-  subtitle,
-  icon: Icon,
-  tone = "default",
-  size = "md",
   className,
+  icon: Icon,
+  size = "md",
+  subtitle,
   suffix,
+  title,
+  tone = "default",
+  value,
 }: StatCardProps) {
   const sizes = sizeClasses[size];
 

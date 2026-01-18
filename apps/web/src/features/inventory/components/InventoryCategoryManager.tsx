@@ -13,8 +13,8 @@ export default function InventoryCategoryManager() {
   // ZenStack hooks for categories
   const {
     data: categoriesData,
-    isLoading: loading,
     error: queryError,
+    isLoading: loading,
   } = useFindManyInventoryCategory({
     orderBy: { name: "asc" },
   });
@@ -52,26 +52,28 @@ export default function InventoryCategoryManager() {
         </p>
       </div>
 
-      <form onSubmit={handleAddCategory} className="flex flex-col gap-3 sm:flex-row sm:items-end">
+      <form className="flex flex-col gap-3 sm:flex-row sm:items-end" onSubmit={handleAddCategory}>
         <label className="flex-1" htmlFor="new-category-name">
           <span className="text-base-content/60 text-xs font-semibold tracking-wide uppercase">Nueva Categoría</span>
           <Input
-            id="new-category-name"
-            type="text"
-            value={newCategoryName}
-            onChange={(e) => setNewCategoryName(e.target.value)}
-            placeholder="Ej: Insumos Médicos"
             className="w-full"
             disabled={createMutation.isPending}
             enterKeyHint="done"
+            id="new-category-name"
+            onChange={(e) => {
+              setNewCategoryName(e.target.value);
+            }}
+            placeholder="Ej: Insumos Médicos"
+            type="text"
+            value={newCategoryName}
           />
         </label>
         <Button
+          className="inline-flex items-center gap-2"
+          disabled={createMutation.isPending || !newCategoryName.trim()}
+          size="sm"
           type="submit"
           variant="primary"
-          size="sm"
-          disabled={createMutation.isPending || !newCategoryName.trim()}
-          className="inline-flex items-center gap-2"
         >
           <PlusCircle size={16} />
           {createMutation.isPending ? "Agregando..." : "Agregar"}
@@ -88,8 +90,8 @@ export default function InventoryCategoryManager() {
         <ul className="space-y-2">
           {categories.map((cat: InventoryCategory) => (
             <li
-              key={cat.id}
               className="border-base-300 bg-base-200 text-base-content rounded-xl border px-3 py-2 text-sm font-medium shadow-sm"
+              key={cat.id}
             >
               {cat.name}
             </li>

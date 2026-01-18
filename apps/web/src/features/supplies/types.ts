@@ -1,26 +1,22 @@
-export interface SupplyRequest {
-  id: number;
-  supply_name: string;
-  quantity: number;
+export interface CommonSupply {
   brand?: string;
+  description?: string;
+  id: number;
+  model?: string;
+  name: string;
+}
+
+export type StructuredSupplies = Record<string, Record<string, string[]>>;
+
+export interface SupplyRequest {
+  admin_notes?: string;
+  brand?: string;
+  created_at: string;
+  id: number;
   model?: string;
   notes?: string;
-  status: "pending" | "ordered" | "in_transit" | "delivered" | "rejected";
-  admin_notes?: string;
-  created_at: string;
+  quantity: number;
+  status: "delivered" | "in_transit" | "ordered" | "pending" | "rejected";
+  supply_name: string;
   user_email?: string; // Only for admin view
-}
-
-export interface CommonSupply {
-  id: number;
-  name: string;
-  brand?: string;
-  model?: string;
-  description?: string;
-}
-
-export interface StructuredSupplies {
-  [name: string]: {
-    [brand: string]: string[];
-  };
 }

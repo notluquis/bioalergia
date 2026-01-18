@@ -10,18 +10,18 @@ import { cn } from "@/lib/utils";
 import Button from "./Button";
 
 interface AlertProps {
-  variant?: "error" | "success" | "warning" | "info";
   children: React.ReactNode;
   className?: string;
   onClose?: () => void;
+  variant?: "error" | "info" | "success" | "warning";
 }
 
-export default function Alert({ variant = "error", children, className = "", onClose }: AlertProps) {
+export default function Alert({ children, className = "", onClose, variant = "error" }: AlertProps) {
   const variantMap = {
     error: "alert-error text-white",
+    info: "alert-info text-white",
     success: "alert-success text-white",
     warning: "alert-warning text-black",
-    info: "alert-info text-white",
   };
 
   return (
@@ -30,11 +30,11 @@ export default function Alert({ variant = "error", children, className = "", onC
       {onClose && (
         <div className="flex-none">
           <Button
-            variant="ghost"
-            size="sm"
             aria-label="Cerrar"
-            onClick={onClose}
             className="btn-circle btn-xs border-none bg-white/20 text-current hover:bg-white/30"
+            onClick={onClose}
+            size="sm"
+            variant="ghost"
           >
             ✕
           </Button>

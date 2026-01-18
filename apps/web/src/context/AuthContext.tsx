@@ -2,49 +2,50 @@ import { MongoAbility, RawRuleOf } from "@casl/ability";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useState } from "react";
 
+import type { Role } from "@/types/roles";
+
 import { apiClient, ApiError } from "@/lib/apiClient";
 import { ability, updateAbility } from "@/lib/authz/ability";
 import { logger } from "@/lib/logger";
-import type { Role } from "@/types/roles";
 
-export type AuthUser = {
-  id: number;
-  email: string;
-  roles: string[];
-  name: string | null;
-  mfaEnabled?: boolean;
-  status: string;
-  hasPasskey?: boolean;
-  mfaEnforced?: boolean;
-};
-
-export type LoginResult = { status: "ok"; user: AuthUser } | { status: "mfa_required"; userId: number };
-
-export type AuthContextType = {
-  user: AuthUser | null;
-  initializing: boolean;
+export interface AuthContextType {
+  can: (action: string, subject: string, field?: string) => boolean;
   ensureSession: () => Promise<AuthUser | null>;
+  hasRole: (...roles: string[]) => boolean;
+  impersonate: (role: Role) => void;
+  impersonatedRole: null | Role;
+  initializing: boolean;
   login: (email: string, password: string) => Promise<LoginResult>;
   loginWithMfa: (userId: number, token: string) => Promise<void>;
   loginWithPasskey: (authResponse: unknown, challenge: string) => Promise<void>;
   logout: () => Promise<void>;
-  hasRole: (...roles: string[]) => boolean;
-  can: (action: string, subject: string, field?: string) => boolean;
   refreshSession: () => Promise<void>;
-  impersonate: (role: Role) => void;
   stopImpersonating: () => void;
-  impersonatedRole: Role | null;
-};
+  user: AuthUser | null;
+}
+
+export interface AuthUser {
+  email: string;
+  hasPasskey?: boolean;
+  id: number;
+  mfaEnabled?: boolean;
+  mfaEnforced?: boolean;
+  name: null | string;
+  roles: string[];
+  status: string;
+}
+
+export type LoginResult = { status: "mfa_required"; userId: number } | { status: "ok"; user: AuthUser };
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // ... (existing imports)
 
-export type AuthSessionData = {
+export interface AuthSessionData {
+  abilityRules: null | RawRuleOf<MongoAbility>[];
+  permissionVersion: null | number;
   user: AuthUser | null;
-  abilityRules: RawRuleOf<MongoAbility>[] | null;
-  permissionVersion: number | null;
-};
+}
 
 // ... (existing AuthContextType definition)
 
@@ -52,22 +53,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
 
   const sessionQuery = useQuery({
-    queryKey: ["auth", "session"],
+    gcTime: 10 * 60 * 1000, // 10 min cache
     queryFn: async (): Promise<AuthSessionData | null> => {
       try {
         const payload = await apiClient.get<{
-          status: string;
-          user?: AuthUser;
           abilityRules?: RawRuleOf<MongoAbility>[];
           permissionVersion?: number;
+          status: string;
+          user?: AuthUser;
         }>("/api/auth/me/session");
 
         if (payload.status === "ok" && payload.user) {
           updateAbility(payload.abilityRules || []);
           return {
-            user: payload.user,
             abilityRules: payload.abilityRules || [],
             permissionVersion: payload.permissionVersion || 0,
+            user: payload.user,
           };
         }
 
@@ -83,13 +84,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw error;
       }
     },
-    staleTime: 5 * 60 * 1000, // 5 min before refetch
-    gcTime: 10 * 60 * 1000, // 10 min cache
+    queryKey: ["auth", "session"],
     retry: 2, // Retry twice on network errors
     retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 8000), // Exponential backoff: 1s, 2s, 4s (max 8s)
+    staleTime: 5 * 60 * 1000, // 5 min before refetch
   });
 
-  const [impersonatedRole, setImpersonatedRole] = useState<Role | null>(null);
+  const [impersonatedRole, setImpersonatedRole] = useState<null | Role>(null);
 
   const realUser = sessionQuery.data?.user ?? null;
   const initializing = sessionQuery.isPending;
@@ -128,7 +129,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string): Promise<LoginResult> => {
     logger.info("[auth] login:start", { email });
-    const payload = await apiClient.post<{ status: string; user?: AuthUser; userId: number; message?: string }>(
+    const payload = await apiClient.post<{ message?: string; status: string; user?: AuthUser; userId: number }>(
       "/api/auth/login",
       { email, password }
     );
@@ -149,9 +150,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loginWithMfa = async (userId: number, token: string) => {
     logger.info("[auth] mfa:start", { userId });
-    const payload = await apiClient.post<{ status: string; user?: AuthUser; message?: string }>("/api/auth/login/mfa", {
-      userId,
+    const payload = await apiClient.post<{ message?: string; status: string; user?: AuthUser }>("/api/auth/login/mfa", {
       token,
+      userId,
     });
 
     if (payload.status !== "ok" || !payload.user) {
@@ -164,7 +165,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loginWithPasskey = async (authResponse: unknown, challenge: string) => {
     logger.info("[auth] passkey:start");
-    const payload = await apiClient.post<{ status: string; user?: AuthUser; message?: string }>(
+    const payload = await apiClient.post<{ message?: string; status: string; user?: AuthUser }>(
       "/api/auth/passkey/login/verify",
       { body: authResponse, challenge }
     );
@@ -223,19 +224,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []); // ability is imported from lib/authz/ability, stable instance
 
   const value: AuthContextType = {
-    user: effectiveUser,
-    initializing,
+    can,
     ensureSession,
+    hasRole,
+    impersonate,
+    impersonatedRole,
+    initializing,
     login,
     loginWithMfa,
     loginWithPasskey,
     logout,
-    hasRole,
     refreshSession,
-    can,
-    impersonate,
     stopImpersonating,
-    impersonatedRole,
+    user: effectiveUser,
   };
 
   return <AuthContext value={value}>{children}</AuthContext>;

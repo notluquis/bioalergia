@@ -3,8 +3,6 @@
  * Dashboard de estadísticas financieras con KPIs, gráficas y análisis temporal
  */
 
-import "dayjs/locale/es";
-
 import dayjs from "dayjs";
 import { ArrowDown, ArrowUp, BarChart3, Calendar, TrendingUp } from "lucide-react";
 import { useState } from "react";
@@ -22,6 +20,8 @@ import MovementTypeList from "../components/MovementTypeList";
 import TopParticipantsSection from "../components/TopParticipantsSection";
 import { useStatsData } from "../hooks/useStatsData";
 
+import "dayjs/locale/es";
+
 const DATE_FORMAT = "YYYY-MM-DD";
 
 dayjs.locale("es");
@@ -29,54 +29,54 @@ dayjs.locale("es");
 // Quick date ranges
 const QUICK_MONTHS = [
   {
-    label: "Este mes",
-    value: "current",
     from: dayjs().startOf("month").format(DATE_FORMAT),
+    label: "Este mes",
     to: dayjs().endOf("month").format(DATE_FORMAT),
+    value: "current",
   },
   {
-    label: "Mes pasado",
-    value: "previous",
     from: dayjs().subtract(1, "month").startOf("month").format(DATE_FORMAT),
+    label: "Mes pasado",
     to: dayjs().subtract(1, "month").endOf("month").format(DATE_FORMAT),
+    value: "previous",
   },
   {
-    label: "Últimos 3 meses",
-    value: "3months",
     from: dayjs().subtract(3, "month").startOf("month").format(DATE_FORMAT),
+    label: "Últimos 3 meses",
     to: dayjs().endOf("month").format(DATE_FORMAT),
+    value: "3months",
   },
   {
-    label: "Últimos 6 meses",
-    value: "6months",
     from: dayjs().subtract(6, "month").startOf("month").format(DATE_FORMAT),
+    label: "Últimos 6 meses",
     to: dayjs().endOf("month").format(DATE_FORMAT),
+    value: "6months",
   },
   {
-    label: "Este año",
-    value: "year",
     from: dayjs().startOf("year").format(DATE_FORMAT),
+    label: "Este año",
     to: dayjs().endOf("year").format(DATE_FORMAT),
+    value: "year",
   },
 ];
 
 export default function FinanzasStatsPage() {
   const { can } = useAuth();
   const {
-    from,
-    setFrom,
-    to,
-    setTo,
-    loading,
-    error,
-    data,
-    balancesReport,
-    balancesLoading,
     balancesError,
-    topParticipants,
-    participantsLoading,
+    balancesLoading,
+    balancesReport,
+    data,
+    error,
+    from,
+    loading,
     participantsError,
+    participantsLoading,
     refetch,
+    setFrom,
+    setTo,
+    to,
+    topParticipants,
   } = useStatsData();
 
   const [quickRange, setQuickRange] = useState("3months");
@@ -96,17 +96,17 @@ export default function FinanzasStatsPage() {
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
-    refetch();
+    void refetch();
   };
 
   // Calculate totals
   const totals = data
     ? {
         in: data.totals?.IN ?? 0,
-        out: data.totals?.OUT ?? 0,
         net: (data.totals?.IN ?? 0) - (data.totals?.OUT ?? 0),
+        out: data.totals?.OUT ?? 0,
       }
-    : { in: 0, out: 0, net: 0 };
+    : { in: 0, net: 0, out: 0 };
 
   if (!canView) {
     return (
@@ -120,50 +120,52 @@ export default function FinanzasStatsPage() {
     <section className={PAGE_CONTAINER}>
       {/* Date Range Filters */}
       <form
-        onSubmit={handleSubmit}
         className="bg-base-100 border-base-200 grid gap-4 rounded-2xl border p-6 shadow-sm sm:grid-cols-5"
+        onSubmit={handleSubmit}
       >
         <div className="form-control">
-          <label htmlFor="from-date" className="label text-xs font-medium">
+          <label className="label text-xs font-medium" htmlFor="from-date">
             Desde
           </label>
           <Input
+            className="input-sm"
             id="from-date"
-            type="date"
-            value={from}
             onChange={(e) => {
               setFrom(e.target.value);
               setQuickRange("custom");
             }}
-            className="input-sm"
+            type="date"
+            value={from}
           />
         </div>
 
         <div className="form-control">
-          <label htmlFor="to-date" className="label text-xs font-medium">
+          <label className="label text-xs font-medium" htmlFor="to-date">
             Hasta
           </label>
           <Input
+            className="input-sm"
             id="to-date"
-            type="date"
-            value={to}
             onChange={(e) => {
               setTo(e.target.value);
               setQuickRange("custom");
             }}
-            className="input-sm"
+            type="date"
+            value={to}
           />
         </div>
 
         <div className="form-control">
-          <label htmlFor="quick-range" className="label text-xs font-medium">
+          <label className="label text-xs font-medium" htmlFor="quick-range">
             Intervalo rápido
           </label>
           <select
-            id="quick-range"
             className="select select-bordered select-sm"
+            id="quick-range"
+            onChange={(e) => {
+              handleQuickRangeChange(e.target.value);
+            }}
             value={quickRange}
-            onChange={(e) => handleQuickRangeChange(e.target.value)}
           >
             <option value="custom">Personalizado</option>
             {QUICK_MONTHS.map((month) => (
@@ -175,7 +177,7 @@ export default function FinanzasStatsPage() {
         </div>
 
         <div className="flex items-end gap-2 sm:col-span-2">
-          <Button type="submit" variant="primary" size="sm" disabled={loading} className="w-full">
+          <Button className="w-full" disabled={loading} size="sm" type="submit" variant="primary">
             {loading ? (
               <>
                 <span className="loading loading-spinner loading-xs" />
@@ -200,25 +202,25 @@ export default function FinanzasStatsPage() {
           {/* KPI Cards */}
           <section className="grid gap-4 sm:grid-cols-3">
             <StatCard
+              className="text-success"
+              icon={ArrowUp}
+              subtitle="Total periodo"
               title="INGRESOS"
               value={totals.in}
-              icon={ArrowUp}
-              className="text-success"
-              subtitle="Total periodo"
             />
             <StatCard
+              className="text-error"
+              icon={ArrowDown}
+              subtitle="Total periodo"
               title="EGRESOS"
               value={totals.out}
-              icon={ArrowDown}
-              className="text-error"
-              subtitle="Total periodo"
             />
             <StatCard
+              className={totals.net >= 0 ? "text-success" : "text-error"}
+              icon={BarChart3}
+              subtitle="Ingresos - Egresos"
               title="RESULTADO"
               value={totals.net}
-              icon={BarChart3}
-              className={totals.net >= 0 ? "text-success" : "text-error"}
-              subtitle="Ingresos - Egresos"
             />
           </section>
 
@@ -226,7 +228,7 @@ export default function FinanzasStatsPage() {
           <MonthlyFlowChart data={data.monthly} />
 
           {/* Daily Balances Summary */}
-          {balancesReport && <BalanceSummary report={balancesReport} loading={balancesLoading} error={balancesError} />}
+          {balancesReport && <BalanceSummary error={balancesError} loading={balancesLoading} report={balancesReport} />}
 
           {/* Two Column Grid: Movement Types + Top Participants */}
           <div className="grid gap-6 lg:grid-cols-2">
@@ -271,7 +273,7 @@ export default function FinanzasStatsPage() {
           </div>
 
           {/* Top Participants Section */}
-          <TopParticipantsSection data={topParticipants} loading={participantsLoading} error={participantsError} />
+          <TopParticipantsSection data={topParticipants} error={participantsError} loading={participantsLoading} />
         </div>
       )}
 

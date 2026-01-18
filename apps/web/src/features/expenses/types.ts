@@ -1,52 +1,52 @@
-export type MonthlyExpenseSource = "MANUAL" | "TRANSACTION" | "SERVICE";
-
-export type MonthlyExpense = {
-  publicId: string;
-  name: string;
-  category: string | null;
+export interface CreateMonthlyExpensePayload {
   amountExpected: number;
+  category?: null | string;
   expenseDate: string;
-  notes: string | null;
-  source: MonthlyExpenseSource;
-  serviceId: number | null;
-  tags: string[];
-  status: "OPEN" | "CLOSED";
+  name: string;
+  notes?: null | string;
+  serviceId?: null | number;
+  source?: MonthlyExpenseSource;
+  status?: "CLOSED" | "OPEN";
+  tags?: string[];
+}
+
+export interface LinkMonthlyExpenseTransactionPayload {
+  amount?: number;
+  transactionId: number;
+}
+
+export interface MonthlyExpense {
   amountApplied: number;
-  transactionCount: number;
+  amountExpected: number;
+  category: null | string;
   createdAt: string;
+  expenseDate: string;
+  name: string;
+  notes: null | string;
+  publicId: string;
+  serviceId: null | number;
+  source: MonthlyExpenseSource;
+  status: "CLOSED" | "OPEN";
+  tags: string[];
+  transactionCount: number;
   updatedAt: string;
-};
+}
 
 export type MonthlyExpenseDetail = MonthlyExpense & {
-  transactions: Array<{
-    transactionId: number;
+  transactions: {
     amount: number;
-    timestamp: string;
-    description: string | null;
+    description: null | string;
     direction: string;
-  }>;
+    timestamp: string;
+    transactionId: number;
+  }[];
 };
 
-export type CreateMonthlyExpensePayload = {
-  name: string;
-  category?: string | null;
-  amountExpected: number;
-  expenseDate: string;
-  notes?: string | null;
-  source?: MonthlyExpenseSource;
-  serviceId?: number | null;
-  tags?: string[];
-  status?: "OPEN" | "CLOSED";
-};
+export type MonthlyExpenseSource = "MANUAL" | "SERVICE" | "TRANSACTION";
 
-export type MonthlyExpenseStatsRow = {
-  period: string;
-  totalExpected: number;
-  totalApplied: number;
+export interface MonthlyExpenseStatsRow {
   expenseCount: number;
-};
-
-export type LinkMonthlyExpenseTransactionPayload = {
-  transactionId: number;
-  amount?: number;
-};
+  period: string;
+  totalApplied: number;
+  totalExpected: number;
+}

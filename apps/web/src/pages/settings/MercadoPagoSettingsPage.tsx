@@ -35,11 +35,11 @@ const ALL_TABLE_COLUMNS = [
 ];
 
 export default function MercadoPagoSettingsPage() {
-  const { success: showSuccess, error: showError } = useToast();
+  const { error: showError, success: showSuccess } = useToast();
   const [activeTab, setActiveTab] = useState<MpReportType>("release");
   const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false);
   const [visibleColumns, setVisibleColumns] = useState<Set<string>>(
-    new Set(["date", "begin_date", "end_date", "file", "status", "actions"])
+    new Set(["actions", "begin_date", "date", "end_date", "file", "status"])
   );
   const [lastImportStats, setLastImportStats] = useState<ImportStats | null>(null);
 
@@ -60,6 +60,9 @@ export default function MercadoPagoSettingsPage() {
 
   const downloadMutation = useMutation({
     mutationFn: (fileName: string) => MPService.downloadReport(fileName, activeTab),
+    onError: (e: Error) => {
+      showError(`Error al descargar: ${e.message}`);
+    },
     onSuccess: (blob, fileName) => {
       const url = globalThis.URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -71,7 +74,6 @@ export default function MercadoPagoSettingsPage() {
       a.remove();
       showSuccess(`Descargando ${fileName}`);
     },
-    onError: (e: Error) => showError(`Error al descargar: ${e.message}`),
   });
 
   const handleDownload = (e: React.MouseEvent, fileName: string) => {
@@ -79,17 +81,17 @@ export default function MercadoPagoSettingsPage() {
     downloadMutation.mutate(fileName);
   };
 
-  const [processingFile, setProcessingFile] = useState<string | null>(null);
+  const [processingFile, setProcessingFile] = useState<null | string>(null);
 
   const processMutation = useMutation({
     mutationFn: (fileName: string) => MPService.processReport(fileName, activeTab),
+    onError: (e: Error) => {
+      showError(`Error al procesar: ${e.message}`);
+      setProcessingFile(null);
+    },
     onSuccess: (stats) => {
       setLastImportStats(stats);
       showSuccess(`Reporte procesado: ${stats.insertedRows} insertados, ${stats.duplicateRows} duplicados`);
-      setProcessingFile(null);
-    },
-    onError: (e: Error) => {
-      showError(`Error al procesar: ${e.message}`);
       setProcessingFile(null);
     },
   });
@@ -120,39 +122,56 @@ export default function MercadoPagoSettingsPage() {
       {/* Header: Tabs + Actions */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         {/* Tabs */}
-        <div role="tablist" className="tabs tabs-boxed bg-base-200/50 w-full p-1 sm:w-auto">
+        <div className="tabs tabs-boxed bg-base-200/50 w-full p-1 sm:w-auto" role="tablist">
           <button
-            role="tab"
             className={cn(
               "tab h-9 flex-1 px-3 text-sm sm:flex-none sm:px-4",
               activeTab === "release" && "tab-active bg-base-100 text-base-content font-medium shadow-sm transition-all"
             )}
-            onClick={() => setActiveTab("release")}
+            onClick={() => {
+              setActiveTab("release");
+            }}
+            role="tab"
           >
             Liberación
           </button>
           <button
-            role="tab"
             className={cn(
               "tab h-9 flex-1 px-3 text-sm sm:flex-none sm:px-4",
               activeTab === "settlement" &&
                 "tab-active bg-base-100 text-base-content font-medium shadow-sm transition-all"
             )}
-            onClick={() => setActiveTab("settlement")}
+            onClick={() => {
+              setActiveTab("settlement");
+            }}
+            role="tab"
           >
             Conciliación
           </button>
         </div>
 
         {/* Action Button */}
-        <Button variant="primary" size="sm" onClick={() => setIsGenerateModalOpen(true)} className="w-full sm:w-auto">
+        <Button
+          className="w-full sm:w-auto"
+          onClick={() => {
+            setIsGenerateModalOpen(true);
+          }}
+          size="sm"
+          variant="primary"
+        >
           <Plus className="mr-2 h-4 w-4" />
           Generar Reporte
         </Button>
       </div>
 
       {/* Import Stats Modal */}
-      <Modal isOpen={!!lastImportStats} onClose={() => setLastImportStats(null)} title="Reporte Procesado">
+      <Modal
+        isOpen={!!lastImportStats}
+        onClose={() => {
+          setLastImportStats(null);
+        }}
+        title="Reporte Procesado"
+      >
         {lastImportStats && (
           <div className="space-y-4">
             <div className="text-success flex items-center gap-2">
@@ -202,7 +221,12 @@ export default function MercadoPagoSettingsPage() {
             )}
 
             <div className="flex justify-end">
-              <Button variant="primary" onClick={() => setLastImportStats(null)}>
+              <Button
+                onClick={() => {
+                  setLastImportStats(null);
+                }}
+                variant="primary"
+              >
                 Cerrar
               </Button>
             </div>
@@ -238,12 +262,12 @@ export default function MercadoPagoSettingsPage() {
 
         {/* Total Reports Card */}
         <StatCard
-          title="Total Reportes"
-          value={reports?.length || 0}
-          icon={FileText}
-          tone="default"
-          subtitle={`Tipo: ${activeTab === "release" ? "Liberación" : "Conciliación"}`}
           className="h-full"
+          icon={FileText}
+          subtitle={`Tipo: ${activeTab === "release" ? "Liberación" : "Conciliación"}`}
+          title="Total Reportes"
+          tone="default"
+          value={reports?.length || 0}
         />
       </div>
 
@@ -257,7 +281,7 @@ export default function MercadoPagoSettingsPage() {
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-8">
+              <Button className="h-8" size="sm" variant="outline">
                 <Settings className="mr-2 h-3.5 w-3.5" />
                 Columnas
               </Button>
@@ -267,9 +291,11 @@ export default function MercadoPagoSettingsPage() {
               <DropdownMenuSeparator />
               {ALL_TABLE_COLUMNS.filter((c) => c.key !== "actions").map((column) => (
                 <DropdownMenuCheckboxItem
-                  key={column.key}
                   checked={visibleColumns.has(column.key)}
-                  onCheckedChange={() => toggleColumn(column.key)}
+                  key={column.key}
+                  onCheckedChange={() => {
+                    toggleColumn(column.key);
+                  }}
                 >
                   {column.label}
                 </DropdownMenuCheckboxItem>
@@ -280,16 +306,18 @@ export default function MercadoPagoSettingsPage() {
 
         <DataTable
           columns={columns}
+          columnVisibility={Object.fromEntries([...visibleColumns].map((key) => [key, true]))}
           data={reports || []}
           noDataMessage="No se encontraron reportes generados."
-          columnVisibility={Object.fromEntries([...visibleColumns].map((key) => [key, true]))}
         />
       </div>
 
       {/* Modals */}
       <GenerateReportModal
+        onClose={() => {
+          setIsGenerateModalOpen(false);
+        }}
         open={isGenerateModalOpen}
-        onClose={() => setIsGenerateModalOpen(false)}
         reportType={activeTab}
       />
     </div>

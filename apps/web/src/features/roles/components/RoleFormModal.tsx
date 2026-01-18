@@ -10,23 +10,29 @@ import { roleKeys, roleQueries } from "@/features/roles/api";
 import { Role } from "@/types/roles";
 
 interface RoleFormModalProps {
-  role?: Role | null; // If present, Edit mode. If null, Create mode.
   isOpen: boolean;
   onClose: () => void;
+  role?: null | Role; // If present, Edit mode. If null, Create mode.
 }
 
 const formSchema = z.object({
-  name: z.string().min(1, "El nombre es obligatorio").max(50, "El nombre no puede exceder los 50 caracteres"),
   description: z.string().max(255, "La descripción no puede exceder los 255 caracteres").optional(),
+  name: z.string().min(1, "El nombre es obligatorio").max(50, "El nombre no puede exceder los 50 caracteres"),
 });
+
+interface RoleBaseFormProps {
+  onClose: () => void;
+  roleEntity: null | Role;
+  userData: RoleUser[];
+}
 
 type RoleFormData = z.infer<typeof formSchema>;
 
-export function RoleFormModal({ role, isOpen, onClose }: RoleFormModalProps) {
+export function RoleFormModal({ isOpen, onClose, role }: RoleFormModalProps) {
   if (!isOpen) return null;
 
   return (
-    <dialog open className="modal modal-bottom sm:modal-middle">
+    <dialog className="modal modal-bottom sm:modal-middle" open>
       <div className="modal-box">
         <h3 className="text-lg font-bold">{role ? "Editar Rol" : "Nuevo Rol"}</h3>
 
@@ -38,73 +44,61 @@ export function RoleFormModal({ role, isOpen, onClose }: RoleFormModalProps) {
               </div>
             }
           >
-            <RoleEditForm roleEntity={role} onClose={onClose} />
+            <RoleEditForm onClose={onClose} roleEntity={role} />
           </Suspense>
         ) : (
-          <RoleBaseForm roleEntity={null} userData={[]} onClose={onClose} />
+          <RoleBaseForm onClose={onClose} roleEntity={null} userData={[]} />
         )}
       </div>
 
       {/* Backdrop to close */}
-      <form method="dialog" className="modal-backdrop">
+      <form className="modal-backdrop" method="dialog">
         <button onClick={onClose}>close</button>
       </form>
     </dialog>
   );
 }
 
-function RoleEditForm({ roleEntity, onClose }: { roleEntity: Role; onClose: () => void }) {
-  const { data: users } = useSuspenseQuery(roleQueries.users(roleEntity.id));
-
-  return <RoleBaseForm roleEntity={roleEntity} userData={users} onClose={onClose} />;
-}
-
-interface RoleBaseFormProps {
-  roleEntity: Role | null;
-  userData: RoleUser[];
-  onClose: () => void;
-}
-
-function RoleBaseForm({ roleEntity, userData, onClose }: RoleBaseFormProps) {
+function RoleBaseForm({ onClose, roleEntity, userData }: RoleBaseFormProps) {
   const toast = useToast();
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
     mutationFn: async (data: RoleFormData) => {
       const payload = {
-        name: data.name,
         description: data.description || "",
+        name: data.name,
       };
       await (roleEntity ? updateRole(roleEntity.id, payload) : createRole(payload));
-    },
-    onSuccess: () => {
-      toast.success("Los cambios se han guardado correctamente.", roleEntity ? "Rol actualizado" : "Rol creado");
-      queryClient.invalidateQueries({ queryKey: roleKeys.all });
-      onClose();
     },
     onError: (err: Error) => {
       let message = err.message || "Ocurrió un error al guardar el rol.";
       const errorWithDetails = err as Error & { details?: unknown };
       if ("details" in errorWithDetails && Array.isArray(errorWithDetails.details)) {
         const issues = errorWithDetails.details
-          .map((i: { path: (string | number)[]; message: string }) => `${i.path.join(".")}: ${i.message}`)
+          .map((i: { message: string; path: (number | string)[] }) => `${i.path.join(".")}: ${i.message}`)
           .join("\n");
         message = `Datos inválidos:\n${issues}`;
       }
       toast.error(message, "Error");
     },
+    onSuccess: () => {
+      toast.success("Los cambios se han guardado correctamente.", roleEntity ? "Rol actualizado" : "Rol creado");
+      void queryClient.invalidateQueries({ queryKey: roleKeys.all });
+      onClose();
+    },
   });
 
   const form = useForm({
     defaultValues: {
-      name: roleEntity?.name ?? "",
       description: roleEntity?.description ?? "",
+      name: roleEntity?.name ?? "",
     } as RoleFormData,
-    validators: {
-      onChange: formSchema,
-    },
     onSubmit: async ({ value }) => {
       mutation.mutate(value);
+    },
+    validators: {
+      onChange: formSchema,
     },
   });
 
@@ -113,7 +107,7 @@ function RoleBaseForm({ roleEntity, userData, onClose }: RoleBaseFormProps) {
       return (
         <div className="max-h-32 space-y-1 overflow-y-auto">
           {userData.map((u) => (
-            <div key={u.id} className="hover:bg-base-100 flex items-center justify-between rounded p-1 text-xs">
+            <div className="hover:bg-base-100 flex items-center justify-between rounded p-1 text-xs" key={u.id}>
               <span>{u.person ? `${u.person.names} ${u.person.fatherName}` : "Sin nombre"}</span>
               <span className="opacity-50">{u.email}</span>
             </div>
@@ -127,11 +121,11 @@ function RoleBaseForm({ roleEntity, userData, onClose }: RoleBaseFormProps) {
 
   return (
     <form
+      className="space-y-4 py-4"
       onSubmit={(e) => {
         e.preventDefault();
-        form.handleSubmit();
+        void form.handleSubmit();
       }}
-      className="space-y-4 py-4"
     >
       <form.Field name="name">
         {(field) => (
@@ -140,13 +134,15 @@ function RoleBaseForm({ roleEntity, userData, onClose }: RoleBaseFormProps) {
               <span className="label-text">Nombre del Rol</span>
             </label>
             <input
-              id="role-name"
-              type="text"
-              placeholder="Ej. Supervisor de Finanzas"
               className={`input input-bordered w-full ${field.state.meta.errors.length > 0 ? "input-error" : ""}`}
-              value={field.state.value}
-              onChange={(e) => field.handleChange(e.target.value)}
+              id="role-name"
               onBlur={field.handleBlur}
+              onChange={(e) => {
+                field.handleChange(e.target.value);
+              }}
+              placeholder="Ej. Supervisor de Finanzas"
+              type="text"
+              value={field.state.value}
             />
             {field.state.meta.errors.length > 0 && (
               <span className="text-error mt-1 text-xs">{field.state.meta.errors.join(", ")}</span>
@@ -162,13 +158,15 @@ function RoleBaseForm({ roleEntity, userData, onClose }: RoleBaseFormProps) {
               <span className="label-text">Descripción</span>
             </label>
             <input
-              id="role-description"
-              type="text"
-              placeholder="Descripción breve de las responsabilidades"
               className="input input-bordered w-full"
-              value={field.state.value ?? ""}
-              onChange={(e) => field.handleChange(e.target.value)}
+              id="role-description"
               onBlur={field.handleBlur}
+              onChange={(e) => {
+                field.handleChange(e.target.value);
+              }}
+              placeholder="Descripción breve de las responsabilidades"
+              type="text"
+              value={field.state.value ?? ""}
             />
           </div>
         )}
@@ -190,14 +188,20 @@ function RoleBaseForm({ roleEntity, userData, onClose }: RoleBaseFormProps) {
       )}
 
       <div className="modal-action">
-        <button className="btn" type="button" onClick={onClose}>
+        <button className="btn" onClick={onClose} type="button">
           Cancelar
         </button>
-        <button className="btn btn-primary" type="submit" disabled={mutation.isPending}>
+        <button className="btn btn-primary" disabled={mutation.isPending} type="submit">
           {mutation.isPending && <span className="loading loading-spinner"></span>}
           {roleEntity ? "Guardar Cambios" : "Crear Rol"}
         </button>
       </div>
     </form>
   );
+}
+
+function RoleEditForm({ onClose, roleEntity }: { onClose: () => void; roleEntity: Role }) {
+  const { data: users } = useSuspenseQuery(roleQueries.users(roleEntity.id));
+
+  return <RoleBaseForm onClose={onClose} roleEntity={roleEntity} userData={users} />;
 }

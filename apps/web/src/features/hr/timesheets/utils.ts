@@ -12,12 +12,12 @@ export function buildBulkRows(month: string, entries: TimesheetEntry[]): BulkRow
     const entry = entryMap.get(date);
     const extraMinutes = entry?.overtime_minutes || 0;
     rows.push({
+      comment: entry?.comment ?? "",
       date,
       entrada: entry?.start_time ?? "",
-      salida: entry?.end_time ?? "",
-      overtime: extraMinutes ? minutesToDuration(extraMinutes) : "",
-      comment: entry?.comment ?? "",
       entryId: entry?.id ?? null,
+      overtime: extraMinutes ? minutesToDuration(extraMinutes) : "",
+      salida: entry?.end_time ?? "",
     });
   }
   return rows;
@@ -27,35 +27,12 @@ export function hasRowData(row: BulkRow): boolean {
   return Boolean(row.entrada.trim() || row.salida.trim() || row.overtime.trim() || row.comment.trim());
 }
 
-const editableFields: Array<keyof Pick<BulkRow, "entrada" | "salida" | "overtime" | "comment">> = [
+const editableFields: (keyof Pick<BulkRow, "comment" | "entrada" | "overtime" | "salida">)[] = [
   "entrada",
   "salida",
   "overtime",
   "comment",
 ];
-
-export function isRowDirty(row: BulkRow, initial?: BulkRow): boolean {
-  if (!initial) return hasRowData(row);
-  return editableFields.some((field) => row[field] !== initial[field]);
-}
-
-export function computeStatus(row: BulkRow, dirty: boolean): string {
-  if (row.entryId && !dirty) return "Registrado";
-  if (row.entryId && dirty) return "Sin guardar";
-  if (!row.entryId && hasRowData(row)) return "Sin guardar";
-  return "No trabajado";
-}
-
-export function parseDuration(value: string): number | null {
-  const trimmed = value.trim();
-  if (!trimmed) return 0;
-  if (!/^\d{1,2}:\d{2}$/.test(trimmed)) return null;
-  const parts = trimmed.split(":").map(Number);
-  const [hours, minutes] = parts;
-  if (hours === undefined || minutes === undefined) return null;
-  if (minutes >= 60) return null;
-  return hours * 60 + minutes;
-}
 
 export function calculateWorkedMinutes(startTime: string, endTime: string): number {
   if (!startTime || !endTime || startTime === "00:00" || endTime === "00:00") return 0;
@@ -75,23 +52,21 @@ export function calculateWorkedMinutes(startTime: string, endTime: string): numb
   return totalMinutes;
 }
 
-function timeToMinutes(time: string): number | null {
-  if (!/^\d{1,2}:\d{2}$/.test(time)) return null;
-  const parts = time.split(":").map(Number);
-  const [hours, minutes] = parts;
-  if (hours === undefined || minutes === undefined) return null;
-  if (hours < 0 || hours > 23 || minutes < 0 || minutes >= 60) return null;
-  return hours * 60 + minutes;
+export function computeExtraAmount(extraMinutes: number, hourlyRate: number): number {
+  if (!hourlyRate || extraMinutes <= 0) return 0;
+  return Math.round((extraMinutes / 60) * hourlyRate * 100) / 100;
+}
+
+export function computeStatus(row: BulkRow, dirty: boolean): string {
+  if (row.entryId && !dirty) return "Registrado";
+  if (row.entryId && dirty) return "Sin guardar";
+  if (!row.entryId && hasRowData(row)) return "Sin guardar";
+  return "No trabajado";
 }
 
 export function formatDateLabel(value: string): string {
   const date = dayjs(value);
   return date.isValid() ? date.format("DD-MM-YYYY") : value || "—";
-}
-
-export function computeExtraAmount(extraMinutes: number, hourlyRate: number): number {
-  if (!hourlyRate || extraMinutes <= 0) return 0;
-  return Math.round((extraMinutes / 60) * hourlyRate * 100) / 100;
 }
 
 export function formatExtraHours(row: TimesheetSummaryRow): string {
@@ -122,6 +97,11 @@ export function formatTotalExtraHours(rows: TimesheetSummaryRow[]): string {
   return minutesToDuration(totalMinutes);
 }
 
+export function isRowDirty(row: BulkRow, initial?: BulkRow): boolean {
+  if (!initial) return hasRowData(row);
+  return editableFields.some((field) => row[field] !== initial[field]);
+}
+
 export function minutesToDuration(totalMinutes: number): string {
   if (totalMinutes < 0) {
     return "-" + minutesToDuration(-totalMinutes);
@@ -129,4 +109,24 @@ export function minutesToDuration(totalMinutes: number): string {
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
   return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+}
+
+export function parseDuration(value: string): null | number {
+  const trimmed = value.trim();
+  if (!trimmed) return 0;
+  if (!/^\d{1,2}:\d{2}$/.test(trimmed)) return null;
+  const parts = trimmed.split(":").map(Number);
+  const [hours, minutes] = parts;
+  if (hours === undefined || minutes === undefined) return null;
+  if (minutes >= 60) return null;
+  return hours * 60 + minutes;
+}
+
+function timeToMinutes(time: string): null | number {
+  if (!/^\d{1,2}:\d{2}$/.test(time)) return null;
+  const parts = time.split(":").map(Number);
+  const [hours, minutes] = parts;
+  if (hours === undefined || minutes === undefined) return null;
+  if (hours < 0 || hours > 23 || minutes < 0 || minutes >= 60) return null;
+  return hours * 60 + minutes;
 }

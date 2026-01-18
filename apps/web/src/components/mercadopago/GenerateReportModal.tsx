@@ -23,32 +23,32 @@ const schema = z
 type FormData = z.infer<typeof schema>;
 
 interface Props {
-  open: boolean;
-  onClose: () => void;
-  reportType: MpReportType;
+  readonly onClose: () => void;
+  readonly open: boolean;
+  readonly reportType: MpReportType;
 }
 
-export default function GenerateReportModal({ open, onClose, reportType }: Props) {
+export default function GenerateReportModal({ onClose, open, reportType }: Props) {
   const queryClient = useQueryClient();
-  const { success: showSuccess, error: showError } = useToast();
-  const [progress, setProgress] = useState<{ current: number; total: number } | null>(null);
+  const { error: showError, success: showSuccess } = useToast();
+  const [progress, setProgress] = useState<null | { current: number; total: number }>(null);
 
   const mutation = useMutation({
     mutationFn: (data: FormData) =>
-      MPService.createReportBulk(data.begin_date, data.end_date, reportType, (current, total) =>
-        setProgress({ current, total })
-      ),
-    onSuccess: (reports) => {
-      const count = reports.length;
-      showSuccess(count === 1 ? "Solicitud de reporte enviada" : `${count} reportes solicitados exitosamente`);
-      queryClient.invalidateQueries({ queryKey: ["mp-reports", reportType] });
-      form.reset();
-      setProgress(null);
-      onClose();
-    },
+      MPService.createReportBulk(data.begin_date, data.end_date, reportType, (current, total) => {
+        setProgress({ current, total });
+      }),
     onError: (e: Error) => {
       showError(`Error: ${e.message}`);
       setProgress(null);
+    },
+    onSuccess: (reports) => {
+      const count = reports.length;
+      showSuccess(count === 1 ? "Solicitud de reporte enviada" : `${count} reportes solicitados exitosamente`);
+      void queryClient.invalidateQueries({ queryKey: ["mp-reports", reportType] });
+      form.reset();
+      setProgress(null);
+      onClose();
     },
   });
 
@@ -57,26 +57,26 @@ export default function GenerateReportModal({ open, onClose, reportType }: Props
       begin_date: "",
       end_date: "",
     } as FormData,
+    onSubmit: async ({ value }) => {
+      await mutation.mutateAsync(value);
+    },
     validators: {
       onChange: schema,
-    },
-    onSubmit: async ({ value }) => {
-      mutation.mutate(value);
     },
   });
 
   return (
     <Modal
-      title={`Generar Reporte: ${reportType === "release" ? "Liberación" : "Conciliación"}`}
       isOpen={open}
       onClose={onClose}
+      title={`Generar Reporte: ${reportType === "release" ? "Liberación" : "Conciliación"}`}
     >
       <form
+        className="space-y-4"
         onSubmit={(e) => {
           e.preventDefault();
-          form.handleSubmit();
+          void form.handleSubmit();
         }}
-        className="space-y-4"
       >
         <p className="text-base-content/70 text-sm">
           Selecciona el rango de fechas para generar el reporte de{" "}
@@ -87,12 +87,14 @@ export default function GenerateReportModal({ open, onClose, reportType }: Props
         <form.Field name="begin_date">
           {(field) => (
             <Input
-              label="Fecha Inicio"
-              type="date"
               error={field.state.meta.errors[0]?.message}
-              value={field.state.value}
-              onChange={(e) => field.handleChange(e.target.value)}
+              label="Fecha Inicio"
               onBlur={field.handleBlur}
+              onChange={(e) => {
+                field.handleChange(e.target.value);
+              }}
+              type="date"
+              value={field.state.value}
             />
           )}
         </form.Field>
@@ -100,21 +102,23 @@ export default function GenerateReportModal({ open, onClose, reportType }: Props
         <form.Field name="end_date">
           {(field) => (
             <Input
-              label="Fecha Fin"
-              type="date"
               error={field.state.meta.errors[0]?.message}
-              value={field.state.value}
-              onChange={(e) => field.handleChange(e.target.value)}
+              label="Fecha Fin"
               onBlur={field.handleBlur}
+              onChange={(e) => {
+                field.handleChange(e.target.value);
+              }}
+              type="date"
+              value={field.state.value}
             />
           )}
         </form.Field>
 
         <div className="mt-6 flex justify-end gap-3">
-          <Button type="button" variant="ghost" onClick={onClose} disabled={mutation.isPending}>
+          <Button disabled={mutation.isPending} onClick={onClose} type="button" variant="ghost">
             Cancelar
           </Button>
-          <Button type="submit" variant="primary" disabled={mutation.isPending}>
+          <Button disabled={mutation.isPending} type="submit" variant="primary">
             {mutation.isPending ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

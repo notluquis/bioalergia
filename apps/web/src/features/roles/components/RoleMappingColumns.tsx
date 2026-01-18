@@ -5,8 +5,8 @@ import type { Role as AvailableRole } from "@/types/roles";
 import type { RoleMapping } from "../api";
 
 export type ExtendedRoleMapping = RoleMapping & {
-  isNew?: boolean;
   isModified?: boolean;
+  isNew?: boolean;
 };
 
 export const getColumns = (
@@ -15,27 +15,29 @@ export const getColumns = (
 ): ColumnDef<ExtendedRoleMapping>[] => [
   {
     accessorKey: "employee_role",
-    header: "Cargo en Ficha",
     cell: ({ row }) => <span className="font-medium">{row.original.employee_role}</span>,
+    header: "Cargo en Ficha",
   },
   {
     accessorKey: "app_role",
-    header: "Rol en Aplicación",
     cell: ({ row }) => {
       const mapping = row.original;
       return (
         <select
           className="select select-bordered select-sm w-full max-w-xs"
+          onChange={(e) => {
+            onRoleChange(mapping.employee_role, e.target.value);
+          }}
           value={mapping.app_role}
-          onChange={(e) => onRoleChange(mapping.employee_role, e.target.value)}
         >
           {availableRoles.map((role) => (
-            <option key={role.id} value={role.name} title={role.description || ""}>
+            <option key={role.id} title={role.description || ""} value={role.name}>
               {role.name}
             </option>
           ))}
         </select>
       );
     },
+    header: "Rol en Aplicación",
   },
 ];

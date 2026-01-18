@@ -1,25 +1,25 @@
 import { createContext, type ReactNode, useContext, useState } from "react";
 
-type ToastVariant = "success" | "error" | "info";
-
-export type ToastOptions = {
+export interface ToastOptions {
+  duration?: number;
   message: string;
   title?: string;
   variant?: ToastVariant;
-  duration?: number;
-};
+}
 
-type ToastRecord = {
+interface ToastContextValue {
+  showToast: (options: ToastOptions) => void;
+}
+
+interface ToastRecord {
+  expiresAt: number;
   id: number;
   message: string;
   title?: string;
   variant: ToastVariant;
-  expiresAt: number;
-};
+}
 
-type ToastContextValue = {
-  showToast: (options: ToastOptions) => void;
-};
+type ToastVariant = "error" | "info" | "success";
 
 const ToastContext = createContext<ToastContextValue | undefined>(undefined);
 
@@ -30,13 +30,15 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     setToasts((current) => current.filter((t) => t.id !== id));
   };
 
-  const showToast = ({ message, title, variant = "info", duration = 4000 }: ToastOptions) => {
+  const showToast = ({ duration = 4000, message, title, variant = "info" }: ToastOptions) => {
     const id = Date.now();
     const expiresAt = Date.now() + duration;
 
-    setToasts((current) => [...current, { id, message, title, variant, expiresAt }]);
+    setToasts((current) => [...current, { expiresAt, id, message, title, variant }]);
 
-    globalThis.setTimeout(() => removeToast(id), duration);
+    globalThis.setTimeout(() => {
+      removeToast(id);
+    }, duration);
   };
 
   const value: ToastContextValue = { showToast };
@@ -47,12 +49,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       <div className="pointer-events-none fixed inset-x-0 bottom-4 z-9999 flex flex-col items-center gap-3 px-4 sm:items-end sm:px-6">
         {toasts.map((toast) => (
           <div
-            key={toast.id}
             className={`surface-elevated pointer-events-auto w-full max-w-sm border-l-4 px-4 py-3 text-sm shadow-xl select-text sm:w-80 ${(() => {
               if (toast.variant === "success") return "border-success/70 text-success";
               if (toast.variant === "error") return "border-error/70 text-error";
               return "border-primary/50 text-base-content";
             })()}`}
+            key={toast.id}
           >
             {toast.title && <p className="text-base-content font-semibold">{toast.title}</p>}
             <p className="text-base-content/80 cursor-text text-sm">{toast.message}</p>
@@ -84,9 +86,9 @@ export function useToast() {
   };
 
   return {
-    showToast,
-    success,
     error,
     info,
+    showToast,
+    success,
   };
 }

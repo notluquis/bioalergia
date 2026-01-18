@@ -4,8 +4,8 @@ export type PerformanceMode = "high" | "low";
 
 interface PerformanceInfo {
   mode: PerformanceMode;
-  score: number;
   reason: string;
+  score: number;
 }
 
 export function usePerformanceMode(): PerformanceInfo {
@@ -43,7 +43,7 @@ function detectPerformanceMode(): PerformanceInfo {
 
   // Check connection
   if ("connection" in navigator) {
-    const conn = (navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } }).connection;
+    const conn = (navigator as Navigator & { connection?: { effectiveType?: string; saveData?: boolean } }).connection;
     if (conn?.saveData) {
       score -= 20;
       reasons.push("Modo ahorro datos");
@@ -58,5 +58,5 @@ function detectPerformanceMode(): PerformanceInfo {
   const mode: PerformanceMode = score >= 70 ? "high" : "low";
   const reason = reasons.length > 0 ? reasons.join(", ") : "Hardware potente";
 
-  return { mode, score, reason };
+  return { mode, reason, score };
 }

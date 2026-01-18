@@ -12,7 +12,7 @@ import Input from "../ui/Input";
 
 const FALLBACK_LOGO_PATH = "/logo192.png";
 const FALLBACK_FAVICON_PATH = "/icons/icon-192.png";
-const determineAssetMode = (value: string | undefined | null): "url" | "upload" => {
+const determineAssetMode = (value: null | string | undefined): "upload" | "url" => {
   const trimmed = (value || "").trim();
   if (!trimmed) return "upload";
   return trimmed.startsWith("http") || trimmed.startsWith("/") ? "url" : "upload";
@@ -20,34 +20,34 @@ const determineAssetMode = (value: string | undefined | null): "url" | "upload" 
 const determineLogoMode = determineAssetMode;
 const determineFaviconMode = determineAssetMode;
 
-const fields: Array<{ key: keyof AppSettings; label: string; type?: string; helper?: string }> = [
+const fields: { helper?: string; key: keyof AppSettings; label: string; type?: string }[] = [
   { key: "orgName", label: "Nombre de la organización" },
-  { key: "tagline", label: "Eslogan", helper: "Texto corto que se muestra en el panel" },
-  { key: "pageTitle", label: "Título de la página", helper: "Texto que se mostrará en la pestaña del navegador" },
+  { helper: "Texto corto que se muestra en el panel", key: "tagline", label: "Eslogan" },
+  { helper: "Texto que se mostrará en la pestaña del navegador", key: "pageTitle", label: "Título de la página" },
   { key: "primaryColor", label: "Color primario", type: "color" },
   { key: "secondaryColor", label: "Color secundario", type: "color" },
   { key: "supportEmail", label: "Correo de soporte" },
   { key: "orgPhone", label: "Teléfono de contacto" },
   { key: "orgAddress", label: "Dirección" },
-  { key: "primaryCurrency", label: "Moneda principal", helper: "Ejemplo: CLP, USD" },
+  { helper: "Ejemplo: CLP, USD", key: "primaryCurrency", label: "Moneda principal" },
 ];
 
 export default function SettingsForm() {
   const { settings, updateSettings } = useSettings();
   const { hasRole } = useAuth();
   const [form, setForm] = useState<AppSettings>(settings);
-  const [status, setStatus] = useState<"idle" | "saving" | "success" | "error">("idle");
-  const [error, setError] = useState<string | null>(null);
+  const [status, setStatus] = useState<"error" | "idle" | "saving" | "success">("idle");
+  const [error, setError] = useState<null | string>(null);
 
-  const [logoMode, setLogoMode] = useState<"url" | "upload">(determineLogoMode(settings.logoUrl));
+  const [logoMode, setLogoMode] = useState<"upload" | "url">(determineLogoMode(settings.logoUrl));
   const [logoFile, setLogoFile] = useState<File | null>(null);
-  const [logoPreview, setLogoPreview] = useState<string | null>(null);
-  const logoPreviewRef = useRef<string | null>(null);
+  const [logoPreview, setLogoPreview] = useState<null | string>(null);
+  const logoPreviewRef = useRef<null | string>(null);
 
-  const [faviconMode, setFaviconMode] = useState<"url" | "upload">(determineFaviconMode(settings.faviconUrl));
+  const [faviconMode, setFaviconMode] = useState<"upload" | "url">(determineFaviconMode(settings.faviconUrl));
   const [faviconFile, setFaviconFile] = useState<File | null>(null);
-  const [faviconPreview, setFaviconPreview] = useState<string | null>(null);
-  const faviconPreviewRef = useRef<string | null>(null);
+  const [faviconPreview, setFaviconPreview] = useState<null | string>(null);
+  const faviconPreviewRef = useRef<null | string>(null);
 
   const logoInputRef = useRef<HTMLInputElement | null>(null);
   const faviconInputRef = useRef<HTMLInputElement | null>(null);
@@ -105,7 +105,7 @@ export default function SettingsForm() {
 
   // Mutations
   const uploadMutation = useMutation({
-    mutationFn: (args: { file: File; endpoint: string }) => uploadBrandingAsset(args.file, args.endpoint),
+    mutationFn: (args: { endpoint: string; file: File }) => uploadBrandingAsset(args.file, args.endpoint),
   });
 
   const handleChange = (key: keyof AppSettings, value: string) => {
@@ -114,7 +114,7 @@ export default function SettingsForm() {
     setError(null);
   };
 
-  const handleLogoModeChange = (mode: "url" | "upload") => {
+  const handleLogoModeChange = (mode: "upload" | "url") => {
     setLogoMode(mode);
     setStatus("idle");
     setError(null);
@@ -133,7 +133,7 @@ export default function SettingsForm() {
     setError(null);
   };
 
-  const handleFaviconModeChange = (mode: "url" | "upload") => {
+  const handleFaviconModeChange = (mode: "upload" | "url") => {
     setFaviconMode(mode);
     setStatus("idle");
     setError(null);
@@ -161,17 +161,17 @@ export default function SettingsForm() {
     setError(null);
 
     try {
-      let payload = { ...form };
+      const payload = { ...form };
 
       if (logoMode === "upload") {
         if (!logoFile) throw new Error("Selecciona un archivo de logo antes de guardar");
-        const url = await uploadMutation.mutateAsync({ file: logoFile, endpoint: "/api/settings/logo/upload" });
+        const url = await uploadMutation.mutateAsync({ endpoint: "/api/settings/logo/upload", file: logoFile });
         payload.logoUrl = url;
       }
 
       if (faviconMode === "upload") {
         if (!faviconFile) throw new Error("Selecciona un archivo de favicon antes de guardar");
-        const url = await uploadMutation.mutateAsync({ file: faviconFile, endpoint: "/api/settings/favicon/upload" });
+        const url = await uploadMutation.mutateAsync({ endpoint: "/api/settings/favicon/upload", file: faviconFile });
         payload.faviconUrl = url;
       }
 
@@ -189,23 +189,25 @@ export default function SettingsForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="bg-base-100 space-y-6 p-6">
+    <form className="bg-base-100 space-y-6 p-6" onSubmit={handleSubmit}>
       <div className="space-y-1">
         <h2 className="text-primary text-lg font-semibold drop-shadow-sm">Configuración General</h2>
         <p className="text-base-content/70 text-sm">Personaliza la identidad visual y la información de contacto.</p>
       </div>
       <div className={GRID_2_COL_MD}>
-        {fields.map(({ key, label, type, helper }) => (
-          <label key={key} className="text-base-content flex flex-col gap-2 text-sm">
+        {fields.map(({ helper, key, label, type }) => (
+          <label className="text-base-content flex flex-col gap-2 text-sm" key={key}>
             <span className="text-base-content/80 text-xs font-semibold tracking-wide uppercase">{label}</span>
             {type === "color" ? (
               <Input
-                type="color"
-                label={label}
-                helper={helper}
-                value={form[key]}
-                onChange={(event) => handleChange(key, event.target.value)}
                 className="h-12 w-20 cursor-pointer px-0"
+                helper={helper}
+                label={label}
+                onChange={(event) => {
+                  handleChange(key, event.target.value);
+                }}
+                type="color"
+                value={form[key]}
               />
             ) : (
               <>
@@ -228,15 +230,17 @@ export default function SettingsForm() {
 
                   return (
                     <Input
-                      id={key}
-                      label={label}
-                      helper={helper}
-                      value={form[key]}
-                      onChange={(event) => handleChange(key, event.target.value)}
-                      type={isEmail ? "email" : "text"}
-                      inputMode={inputMode}
                       autoComplete={autoComplete}
+                      helper={helper}
+                      id={key}
+                      inputMode={inputMode}
+                      label={label}
+                      onChange={(event) => {
+                        handleChange(key, event.target.value);
+                      }}
                       placeholder={label}
+                      type={isEmail ? "email" : "text"}
+                      value={form[key]}
                     />
                   );
                 })()}
@@ -251,18 +255,22 @@ export default function SettingsForm() {
             </span>
             <div className="btn-group">
               <Button
-                type="button"
+                onClick={() => {
+                  handleLogoModeChange("url");
+                }}
                 size="sm"
+                type="button"
                 variant={logoMode === "url" ? "primary" : "secondary"}
-                onClick={() => handleLogoModeChange("url")}
               >
                 Usar URL
               </Button>
               <Button
-                type="button"
+                onClick={() => {
+                  handleLogoModeChange("upload");
+                }}
                 size="sm"
+                type="button"
                 variant={logoMode === "upload" ? "primary" : "secondary"}
-                onClick={() => handleLogoModeChange("upload")}
               >
                 Subir archivo
               </Button>
@@ -271,30 +279,32 @@ export default function SettingsForm() {
           {logoMode === "url" ? (
             <div className="flex flex-col gap-2">
               <Input
-                label="URL del logo"
-                value={form.logoUrl}
-                onChange={(event) => handleChange("logoUrl", event.target.value)}
-                placeholder="https://..."
                 helper="Puedes usar una URL pública (https://) o una ruta interna generada tras subir un archivo (ej: /uploads/branding/logo.png)."
+                label="URL del logo"
+                onChange={(event) => {
+                  handleChange("logoUrl", event.target.value);
+                }}
+                placeholder="https://..."
+                value={form.logoUrl}
               />
             </div>
           ) : (
             <div className="text-base-content space-y-3 text-sm">
               <div>
                 <input
-                  ref={logoInputRef}
-                  type="file"
                   accept="image/png,image/jpeg,image/webp,image/svg+xml,image/gif"
                   className="hidden"
                   onChange={handleLogoFileChange}
+                  ref={logoInputRef}
+                  type="file"
                 />
-                <Button type="button" size="sm" variant="secondary" onClick={() => logoInputRef.current?.click()}>
+                <Button onClick={() => logoInputRef.current?.click()} size="sm" type="button" variant="secondary">
                   Seleccionar archivo
                 </Button>
               </div>
               <div className="flex flex-wrap items-center gap-4">
                 <div className="border-base-300 bg-base-100 flex h-20 w-20 items-center justify-center overflow-hidden rounded-xl border p-2">
-                  <img src={displayedLogo} alt="Vista previa del logo" className="brand-logo--settings" />
+                  <img alt="Vista previa del logo" className="brand-logo--settings" src={displayedLogo} />
                 </div>
                 <div className="text-base-content/70 text-xs">
                   <p>{logoPreview ? "Vista previa sin guardar" : "Logo actual"}</p>
@@ -315,18 +325,22 @@ export default function SettingsForm() {
             </span>
             <div className="btn-group">
               <Button
-                type="button"
+                onClick={() => {
+                  handleFaviconModeChange("url");
+                }}
                 size="sm"
+                type="button"
                 variant={faviconMode === "url" ? "primary" : "secondary"}
-                onClick={() => handleFaviconModeChange("url")}
               >
                 Usar URL
               </Button>
               <Button
-                type="button"
+                onClick={() => {
+                  handleFaviconModeChange("upload");
+                }}
                 size="sm"
+                type="button"
                 variant={faviconMode === "upload" ? "primary" : "secondary"}
-                onClick={() => handleFaviconModeChange("upload")}
               >
                 Subir archivo
               </Button>
@@ -335,30 +349,32 @@ export default function SettingsForm() {
           {faviconMode === "url" ? (
             <div className="flex flex-col gap-2">
               <Input
-                label="URL del favicon"
-                value={form.faviconUrl}
-                onChange={(event) => handleChange("faviconUrl", event.target.value)}
-                placeholder="https://..."
                 helper="Puedes usar una URL pública (https://) o una ruta interna generada tras subir un archivo (ej: /uploads/branding/favicon.png)."
+                label="URL del favicon"
+                onChange={(event) => {
+                  handleChange("faviconUrl", event.target.value);
+                }}
+                placeholder="https://..."
+                value={form.faviconUrl}
               />
             </div>
           ) : (
             <div className="text-base-content space-y-3 text-sm">
               <div>
                 <input
-                  ref={faviconInputRef}
-                  type="file"
                   accept="image/png,image/jpeg,image/webp,image/svg+xml,image/gif,image/x-icon,image/vnd.microsoft.icon"
                   className="hidden"
                   onChange={handleFaviconFileChange}
+                  ref={faviconInputRef}
+                  type="file"
                 />
-                <Button type="button" size="sm" variant="secondary" onClick={() => faviconInputRef.current?.click()}>
+                <Button onClick={() => faviconInputRef.current?.click()} size="sm" type="button" variant="secondary">
                   Seleccionar archivo
                 </Button>
               </div>
               <div className="flex flex-wrap items-center gap-4">
                 <div className="border-base-300 bg-base-100 flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl border p-2">
-                  <img src={displayedFavicon} alt="Vista previa del favicon" className="h-full w-full object-contain" />
+                  <img alt="Vista previa del favicon" className="h-full w-full object-contain" src={displayedFavicon} />
                 </div>
                 <div className="text-base-content/70 text-xs">
                   <p>{faviconPreview ? "Vista previa sin guardar" : "Favicon actual"}</p>
@@ -384,7 +400,7 @@ export default function SettingsForm() {
         </div>
       )}
       <div className="flex justify-end">
-        <Button type="submit" disabled={uploadMutation.isPending || status === "saving"}>
+        <Button disabled={uploadMutation.isPending || status === "saving"} type="submit">
           {status === "saving" || uploadMutation.isPending ? "Guardando..." : "Guardar cambios"}
         </Button>
       </div>
@@ -416,8 +432,8 @@ function InternalSettingsSection() {
   // We assume hasRole() implies necessary permissions or we handle the error via boundary if needed.
   // Actually, standard practice is to use the query.
   const { data: internalData } = useSuspenseQuery({
-    queryKey: ["settings-internal"],
     queryFn: fetchInternalSettings,
+    queryKey: ["settings-internal"],
     staleTime: 0,
   });
 
@@ -428,18 +444,18 @@ function InternalSettingsSection() {
         return res;
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["settings-internal"] });
+      void queryClient.invalidateQueries({ queryKey: ["settings-internal"] });
     },
   });
 
   // Effect to sync state with data
   useEffect(() => {
-    if (internalData?.internal && upsertChunkSize === "") {
+    if (upsertChunkSize === "") {
       setUpsertChunkSize(internalData.internal.upsertChunkSize ?? "");
     }
   }, [internalData, upsertChunkSize]);
 
-  const envUpsertChunkSize = internalData?.internal?.envUpsertChunkSize ?? null;
+  const envUpsertChunkSize = internalData.internal.envUpsertChunkSize ?? null;
 
   return (
     <div className="border-base-300 bg-base-200 mt-6 rounded-lg border p-4">
@@ -449,28 +465,36 @@ function InternalSettingsSection() {
       </p>
       <div className="mt-3 grid gap-3 md:grid-cols-3">
         <Input
-          type="number"
-          label="Tamaño de chunk para retiros"
-          min={50}
-          max={5000}
-          value={String(upsertChunkSize ?? "")}
-          onChange={(e) => setUpsertChunkSize(e.target.value)}
-          inputMode="numeric"
           helper={`Env var: ${envUpsertChunkSize ?? "(no definido)"}`}
+          inputMode="numeric"
+          label="Tamaño de chunk para retiros"
+          max={5000}
+          min={50}
+          onChange={(e) => {
+            setUpsertChunkSize(e.target.value);
+          }}
+          type="number"
+          value={String(upsertChunkSize)}
         />
         <div className="flex items-end gap-2 md:col-span-2">
           <Button
-            type="button"
-            variant="secondary"
             disabled={internalMutation.isPending}
             onClick={() => {
               const body = upsertChunkSize === "" ? {} : { upsertChunkSize: Number(upsertChunkSize) };
               internalMutation.mutate(body);
             }}
+            type="button"
+            variant="secondary"
           >
             {internalMutation.isPending ? "Guardando..." : "Guardar ajuste interno"}
           </Button>
-          <Button type="button" variant="ghost" onClick={() => internalMutation.mutate({})}>
+          <Button
+            onClick={() => {
+              internalMutation.mutate({});
+            }}
+            type="button"
+            variant="ghost"
+          >
             Eliminar ajuste
           </Button>
         </div>

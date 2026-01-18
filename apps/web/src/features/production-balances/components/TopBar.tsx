@@ -4,31 +4,32 @@ import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
 import type { DayStatus } from "../types";
+
 import { formatDateFull } from "../utils";
 
 interface TopBarProps {
-  date: string;
-  status: DayStatus;
-  isSaving: boolean;
-  onSave: () => void;
-  onFinalize: () => void;
   canFinalize: boolean;
-  onPrevWeek: () => void;
+  date: string;
+  isSaving: boolean;
+  onFinalize: () => void;
   onNextWeek: () => void;
+  onPrevWeek: () => void;
+  onSave: () => void;
+  status: DayStatus;
 }
 
 /**
  * Sticky top bar with date, status, and action buttons
  */
 export function TopBar({
-  date,
-  status,
-  isSaving,
-  onSave,
-  onFinalize,
   canFinalize,
-  onPrevWeek,
+  date,
+  isSaving,
+  onFinalize,
   onNextWeek,
+  onPrevWeek,
+  onSave,
+  status,
 }: TopBarProps) {
   const [showShortcut, setShowShortcut] = useState(false);
 
@@ -41,20 +42,22 @@ export function TopBar({
       }
     };
     globalThis.addEventListener("keydown", handleKeyDown);
-    return () => globalThis.removeEventListener("keydown", handleKeyDown);
+    return () => {
+      globalThis.removeEventListener("keydown", handleKeyDown);
+    };
   }, [onSave]);
 
   const statusLabels: Record<DayStatus, string> = {
-    empty: "Vacío",
-    draft: "Borrador",
     balanced: "Cuadra",
+    draft: "Borrador",
+    empty: "Vacío",
     unbalanced: "Pendiente",
   };
 
   const statusColors: Record<DayStatus, string> = {
-    empty: "bg-base-content/10 text-base-content/60",
-    draft: "bg-warning/20 text-warning",
     balanced: "bg-success/20 text-success",
+    draft: "bg-warning/20 text-warning",
+    empty: "bg-base-content/10 text-base-content/60",
     unbalanced: "bg-amber-500/20 text-amber-400",
   };
 
@@ -75,12 +78,16 @@ export function TopBar({
       <div className="flex items-center gap-3">
         {/* Save button with shortcut hint */}
         <button
-          type="button"
-          onClick={onSave}
-          disabled={isSaving}
-          onMouseEnter={() => setShowShortcut(true)}
-          onMouseLeave={() => setShowShortcut(false)}
           className={cn("btn btn-ghost btn-sm gap-2 rounded-xl", isSaving && "loading")}
+          disabled={isSaving}
+          onClick={onSave}
+          onMouseEnter={() => {
+            setShowShortcut(true);
+          }}
+          onMouseLeave={() => {
+            setShowShortcut(false);
+          }}
+          type="button"
         >
           {!isSaving && <Save className="size-4" />}
           <span className="hidden sm:inline">Guardar</span>
@@ -91,32 +98,32 @@ export function TopBar({
 
         {/* Finalizar button */}
         <button
-          type="button"
-          onClick={onFinalize}
-          disabled={!canFinalize || isSaving}
           className={cn("btn rounded-xl px-6", canFinalize ? "btn-success" : "btn-disabled")}
+          disabled={!canFinalize || isSaving}
+          onClick={onFinalize}
+          type="button"
         >
           Finalizar
         </button>
 
         {/* More options dropdown */}
         <div className="dropdown dropdown-end">
-          <button type="button" className="btn btn-ghost btn-sm btn-square rounded-xl">
+          <button className="btn btn-ghost btn-sm btn-square rounded-xl" type="button">
             <ChevronDown className="size-4" />
           </button>
           <ul className="dropdown-content bg-base-200 border-base-content/10 menu z-10 w-52 rounded-xl border p-2 shadow-lg">
             <li>
-              <button type="button" className="text-sm" onClick={onPrevWeek}>
+              <button className="text-sm" onClick={onPrevWeek} type="button">
                 Ver anterior semana
               </button>
             </li>
             <li>
-              <button type="button" className="text-sm" onClick={onNextWeek}>
+              <button className="text-sm" onClick={onNextWeek} type="button">
                 Ver siguiente semana
               </button>
             </li>
             <li>
-              <button type="button" className="text-sm">
+              <button className="text-sm" type="button">
                 Exportar día
               </button>
             </li>

@@ -3,6 +3,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { Suspense, useState } from "react";
 
+import type { Counterpart, CounterpartCategory, CounterpartPersonType } from "@/features/counterparts/types";
+
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import Skeleton from "@/components/ui/Skeleton";
@@ -18,7 +20,6 @@ import CounterpartForm from "@/features/counterparts/components/CounterpartForm"
 import CounterpartList from "@/features/counterparts/components/CounterpartList";
 import { SUMMARY_RANGE_MONTHS } from "@/features/counterparts/constants";
 import { counterpartKeys } from "@/features/counterparts/queries";
-import type { Counterpart, CounterpartCategory, CounterpartPersonType } from "@/features/counterparts/types";
 import { ServicesGrid, ServicesHero, ServicesSurface } from "@/features/services/components/ServicesShell";
 import { getPersonFullName } from "@/lib/person";
 import { normalizeRut } from "@/lib/rut";
@@ -28,19 +29,19 @@ import CounterpartDetailSection from "../components/CounterpartDetailSection";
 export default function CounterpartsPage() {
   const { can } = useAuth();
   const queryClient = useQueryClient();
-  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [selectedId, setSelectedId] = useState<null | number>(null);
 
   const canCreate = can("create", "Counterpart");
   const canUpdate = can("update", "Counterpart");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<null | string>(null);
 
   const [summaryRange, setSummaryRange] = useState<{ from: string; to: string }>(() => ({
     from: dayjs().subtract(SUMMARY_RANGE_MONTHS, "month").startOf("month").format("YYYY-MM-DD"),
     to: dayjs().endOf("month").format("YYYY-MM-DD"),
   }));
-  const { success: toastSuccess, error: toastError, info: toastInfo } = useToast();
-  const [personTypeFilter, setPersonTypeFilter] = useState<CounterpartPersonType | "ALL">("ALL");
-  const [categoryFilter, setCategoryFilter] = useState<CounterpartCategory | "ALL">("ALL");
+  const { error: toastError, info: toastInfo, success: toastSuccess } = useToast();
+  const [personTypeFilter, setPersonTypeFilter] = useState<"ALL" | CounterpartPersonType>("ALL");
+  const [categoryFilter, setCategoryFilter] = useState<"ALL" | CounterpartCategory>("ALL");
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [formCounterpart, setFormCounterpart] = useState<Counterpart | null>(null);
 
@@ -65,27 +66,27 @@ export default function CounterpartsPage() {
     const person = (
       row as {
         person?: {
-          rut?: string;
+          email?: null | string;
+          fatherName?: null | string;
+          motherName?: null | string;
           names?: string;
-          fatherName?: string | null;
-          motherName?: string | null;
-          email?: string | null;
           personType?: string;
+          rut?: string;
         };
       }
     ).person;
     return {
-      id: row.id,
-      rut: person?.rut ?? null,
-      name: person
-        ? getPersonFullName(person as { names: string; fatherName?: string | null; motherName?: string | null })
-        : "Sin nombre",
-      personType: (person?.personType ?? "NATURAL") as Counterpart["personType"],
       category: row.category as Counterpart["category"],
-      employeeId: null,
-      email: person?.email ?? null,
-      notes: row.notes ?? null,
       created_at: (row as { createdAt?: Date }).createdAt?.toISOString() ?? new Date().toISOString(),
+      email: person?.email ?? null,
+      employeeId: null,
+      id: row.id,
+      name: person
+        ? getPersonFullName(person as { fatherName?: null | string; motherName?: null | string; names: string })
+        : "Sin nombre",
+      notes: row.notes ?? null,
+      personType: (person?.personType ?? "NATURAL") as Counterpart["personType"],
+      rut: person?.rut ?? null,
       updated_at: (row as { updatedAt?: Date }).updatedAt?.toISOString() ?? new Date().toISOString(),
     };
   });
@@ -97,7 +98,7 @@ export default function CounterpartsPage() {
   const createMutation = useMutation({
     mutationFn: createCounterpart,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["Counterpart"] });
+      void queryClient.invalidateQueries({ queryKey: ["Counterpart"] });
     },
   });
 
@@ -105,10 +106,10 @@ export default function CounterpartsPage() {
     mutationFn: ({ id, payload }: { id: number; payload: Partial<CounterpartUpsertPayload> }) =>
       updateCounterpart(id, payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["Counterpart"] });
+      void queryClient.invalidateQueries({ queryKey: ["Counterpart"] });
       // Detail invalidation handled by key factory invalidation if needed, or exact key match
       if (selectedId) {
-        queryClient.invalidateQueries({ queryKey: counterpartKeys.detail(selectedId).queryKey });
+        void queryClient.invalidateQueries({ queryKey: counterpartKeys.detail(selectedId).queryKey });
       }
     },
   });
@@ -128,7 +129,7 @@ export default function CounterpartsPage() {
         toastSuccess("Contraparte actualizada correctamente");
       } else {
         const result = await createMutation.mutateAsync(payload);
-        savedId = result?.counterpart?.id ?? null;
+        savedId = result.counterpart.id;
         isNew = true;
         toastSuccess("Contraparte creada correctamente");
       }
@@ -140,7 +141,7 @@ export default function CounterpartsPage() {
       if (savedId && normalizedRut && isNew) {
         try {
           await attachCounterpartRut(savedId, normalizedRut);
-          queryClient.invalidateQueries({ queryKey: ["counterpart"] });
+          void queryClient.invalidateQueries({ queryKey: ["counterpart"] });
           toastInfo("Cuentas detectadas vinculadas automáticamente");
         } catch (attachError) {
           console.warn("Auto-attach failed", attachError);
@@ -153,7 +154,7 @@ export default function CounterpartsPage() {
     }
   }
 
-  const handleSelectCounterpart = (id: number | null) => {
+  const handleSelectCounterpart = (id: null | number) => {
     setSelectedId(id);
   };
 
@@ -161,12 +162,12 @@ export default function CounterpartsPage() {
     setSummaryRange((prev) => ({ ...prev, ...update }));
   };
 
-  const PERSON_FILTERS: Array<{ label: string; value: CounterpartPersonType | "ALL" }> = [
+  const PERSON_FILTERS: { label: string; value: "ALL" | CounterpartPersonType }[] = [
     { label: "Todas las personas", value: "ALL" },
     { label: "Persona natural", value: "NATURAL" },
     { label: "Empresa", value: "JURIDICAL" },
   ];
-  const CATEGORY_FILTERS: Array<{ label: string; value: CounterpartCategory | "ALL" }> = [
+  const CATEGORY_FILTERS: { label: string; value: "ALL" | CounterpartCategory }[] = [
     { label: "Todos los tipos", value: "ALL" },
     { label: "Proveedores", value: "SUPPLIER" },
     { label: "Prestamistas", value: "LENDER" },
@@ -197,9 +198,19 @@ export default function CounterpartsPage() {
   return (
     <section className="space-y-8">
       <ServicesHero
-        title="Contrapartes"
+        actions={
+          canCreate ? (
+            <Button
+              onClick={() => {
+                openFormModal(null);
+              }}
+            >
+              + Nueva contraparte
+            </Button>
+          ) : null
+        }
         description="Gestiona proveedores, prestamistas y clientes con sus cuentas asociadas y movimientos históricos."
-        actions={canCreate ? <Button onClick={() => openFormModal(null)}>+ Nueva contraparte</Button> : null}
+        title="Contrapartes"
       />
       <ServicesSurface>
         <div className="space-y-4">
@@ -209,12 +220,12 @@ export default function CounterpartsPage() {
               <p className="text-base-content/70 text-sm">Acota la lista por tipo de persona y clasificación.</p>
             </div>
             <Button
-              variant="ghost"
-              size="sm"
               onClick={() => {
                 setPersonTypeFilter("ALL");
                 setCategoryFilter("ALL");
               }}
+              size="sm"
+              variant="ghost"
             >
               Reset filtros
             </Button>
@@ -226,9 +237,11 @@ export default function CounterpartsPage() {
                 {PERSON_FILTERS.map((filter) => (
                   <Button
                     key={filter.value}
+                    onClick={() => {
+                      setPersonTypeFilter(filter.value);
+                    }}
                     size="sm"
                     variant={personTypeFilter === filter.value ? "primary" : "ghost"}
-                    onClick={() => setPersonTypeFilter(filter.value)}
                   >
                     {filter.label}
                   </Button>
@@ -241,9 +254,11 @@ export default function CounterpartsPage() {
                 {CATEGORY_FILTERS.map((filter) => (
                   <Button
                     key={filter.value}
+                    onClick={() => {
+                      setCategoryFilter(filter.value);
+                    }}
                     size="sm"
                     variant={categoryFilter === filter.value ? "primary" : "ghost"}
-                    onClick={() => setCategoryFilter(filter.value)}
                   >
                     {filter.label}
                   </Button>
@@ -257,10 +272,10 @@ export default function CounterpartsPage() {
       <ServicesGrid>
         <ServicesSurface className="h-full">
           <CounterpartList
-            counterparts={visibleCounterparts}
-            selectedId={selectedId}
-            onSelectCounterpart={handleSelectCounterpart}
             className="max-h-[calc(100vh-220px)]"
+            counterparts={visibleCounterparts}
+            onSelectCounterpart={handleSelectCounterpart}
+            selectedId={selectedId}
           />
         </ServicesSurface>
 
@@ -286,11 +301,11 @@ export default function CounterpartsPage() {
               }
             >
               <CounterpartDetailSection
-                counterpartId={selectedId}
-                summaryRange={summaryRange}
-                onSummaryRangeChange={handleSummaryRangeChange}
                 canUpdate={canUpdate}
+                counterpartId={selectedId}
                 onEdit={openFormModal}
+                onSummaryRangeChange={handleSummaryRangeChange}
+                summaryRange={summaryRange}
               />
             </Suspense>
           )}
@@ -303,8 +318,8 @@ export default function CounterpartsPage() {
       >
         <CounterpartForm
           counterpart={formCounterpart}
-          onSave={handleSaveCounterpart}
           error={error ?? displayError}
+          onSave={handleSaveCounterpart}
           saving={createMutation.isPending || updateMutation.isPending}
         />
       </Modal>

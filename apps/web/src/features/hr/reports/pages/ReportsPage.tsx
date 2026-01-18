@@ -1,10 +1,10 @@
-import "dayjs/locale/es";
-
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
 import { BarChart2, BarChart3, Calendar, Check, Clock, Filter, List, Search, TrendingUp, X } from "lucide-react";
 import { lazy, Suspense, useEffect, useState } from "react";
+
+import type { Employee } from "@/features/hr/employees/types";
 
 import { DataTable } from "@/components/data-table/DataTable";
 import Alert from "@/components/ui/Alert";
@@ -13,15 +13,17 @@ import Input from "@/components/ui/Input";
 import StatCard from "@/components/ui/StatCard";
 import { useAuth } from "@/context/AuthContext";
 import { fetchEmployees } from "@/features/hr/employees/api";
-import type { Employee } from "@/features/hr/employees/types";
 import { useMonths } from "@/features/hr/timesheets/hooks/useMonths";
 import { LOADING_SPINNER_SM, PAGE_CONTAINER } from "@/lib/styles";
 import { cn } from "@/lib/utils";
 
+import type { EmployeeWorkData, ReportGranularity } from "../types";
+
 import { fetchGlobalTimesheetRange } from "../api";
 import { getHRReportsColumns, HRReportsTableMeta } from "../components/HRReportsColumns";
-import type { EmployeeWorkData, ReportGranularity } from "../types";
 import { calculateStats, prepareComparisonData } from "../utils";
+
+import "dayjs/locale/es";
 
 // Lazy-load chart components (Recharts ~400KB)
 const TemporalChart = lazy(() => import("../components/ReportCharts").then((m) => ({ default: m.TemporalChart })));
@@ -34,78 +36,15 @@ dayjs.locale("es");
 
 const DATE_FORMAT = "YYYY-MM-DD";
 
-type ViewMode = "month" | "range" | "all";
-
 // --- Helper Functions in Scope ---
 interface RawTimesheetEntry {
   employee_id: number;
+  overtime_minutes: number;
   work_date: string;
   worked_minutes: number;
-  overtime_minutes: number;
 }
 
-function processRawEntries(
-  entries: RawTimesheetEntry[],
-  employeeIds: number[],
-  employees: Employee[]
-): EmployeeWorkData[] {
-  const map = new Map<number, EmployeeWorkData>();
-
-  // Init map
-  employeeIds.forEach((id) => {
-    const emp = employees.find((e) => e.id === id);
-    if (emp) {
-      map.set(id, {
-        employeeId: id,
-        fullName: emp.full_name,
-        role: emp.position,
-        totalMinutes: 0,
-        totalOvertimeMinutes: 0,
-        totalDays: 0,
-        avgDailyMinutes: 0,
-        overtimePercentage: 0,
-        dailyBreakdown: {},
-        weeklyBreakdown: {},
-        monthlyBreakdown: {},
-      });
-    }
-  });
-
-  entries.forEach((entry) => {
-    if (!map.has(entry.employee_id)) return;
-    const data = map.get(entry.employee_id)!;
-
-    data.totalMinutes += entry.worked_minutes;
-    data.totalOvertimeMinutes += entry.overtime_minutes;
-
-    // Daily
-    const dateKey = entry.work_date;
-    const currentDaily = data.dailyBreakdown[dateKey] ?? 0;
-    Object.assign(data.dailyBreakdown, { [dateKey]: currentDaily + entry.worked_minutes });
-
-    // Weekly
-    const weekKey = dayjs(entry.work_date).startOf("isoWeek").format(DATE_FORMAT);
-    const currentWeekly = data.weeklyBreakdown[weekKey] ?? 0;
-    Object.assign(data.weeklyBreakdown, { [weekKey]: currentWeekly + entry.worked_minutes });
-
-    // Monthly
-    const monthKey = dayjs(entry.work_date).format("YYYY-MM");
-    const currentMonthly = data.monthlyBreakdown[monthKey] ?? 0;
-    Object.assign(data.monthlyBreakdown, { [monthKey]: currentMonthly + entry.worked_minutes });
-  });
-
-  // Stats
-  for (const data of map.values()) {
-    const uniqueDays = Object.keys(data.dailyBreakdown).length;
-    data.totalDays = uniqueDays;
-    data.avgDailyMinutes = uniqueDays > 0 ? Math.round(data.totalMinutes / uniqueDays) : 0;
-    data.overtimePercentage =
-      data.totalMinutes > 0 ? Number.parseFloat(((data.totalOvertimeMinutes / data.totalMinutes) * 100).toFixed(1)) : 0;
-  }
-
-  return [...map.values()];
-}
-// ---------------------------------
+type ViewMode = "all" | "month" | "range";
 
 export default function ReportsPage() {
   const { can } = useAuth();
@@ -116,7 +55,7 @@ export default function ReportsPage() {
   const [startDate, setStartDate] = useState<string>(() => dayjs().startOf("month").format(DATE_FORMAT));
   const [endDate, setEndDate] = useState<string>(() => dayjs().endOf("month").format(DATE_FORMAT));
   const [granularity, setGranularity] = useState<ReportGranularity>("month");
-  const granularityLabel = { month: "mes", week: "sem", day: "día" }[granularity];
+  const granularityLabel = { day: "día", month: "mes", week: "sem" }[granularity];
 
   // We need to manage "trigger" state manually or rely on effective params
   const [isReportEnabled, setIsReportEnabled] = useState(false);
@@ -142,9 +81,9 @@ export default function ReportsPage() {
     else if (viewMode === "all") setGranularity("month");
   }, [viewMode]);
 
-  const { data: employees = [] } = useSuspenseQuery({
-    queryKey: ["employees-list"],
+  const { data: employees } = useSuspenseQuery({
     queryFn: () => fetchEmployees(false),
+    queryKey: ["employees-list"],
     staleTime: 5 * 60 * 1000,
   });
 
@@ -177,22 +116,22 @@ export default function ReportsPage() {
         end = dayjs().format(DATE_FORMAT);
       }
     }
-    return { start, end };
+    return { end, start };
   })();
 
   const isQueryEnabled = isReportEnabled && selectedEmployeeIds.length > 0 && dateParams !== null;
 
   const {
     data: reportData = [],
-    isLoading: loading,
     error,
+    isLoading: loading,
   } = useQuery<EmployeeWorkData[]>({
-    queryKey: ["reports-data", dateParams, selectedEmployeeIds, timestamp, employees],
+    enabled: isQueryEnabled,
     queryFn: async () => {
       const entries = await fetchGlobalTimesheetRange(dateParams!.start, dateParams!.end);
       return processRawEntries(entries as unknown as RawTimesheetEntry[], selectedEmployeeIds, employees);
     },
-    enabled: isQueryEnabled,
+    queryKey: ["reports-data", dateParams, selectedEmployeeIds, timestamp, employees],
   });
 
   const handleGenerateReport = () => {
@@ -260,37 +199,43 @@ export default function ReportsPage() {
             </div>
 
             {/* View Mode Tabs */}
-            <div role="tablist" className="tabs tabs-boxed bg-base-200/50 p-1">
+            <div className="tabs tabs-boxed bg-base-200/50 p-1" role="tablist">
               <button
-                type="button"
-                role="tab"
                 className={cn(
                   "tab transition-all duration-200",
                   viewMode === "month" && "tab-active bg-base-100 shadow-sm"
                 )}
-                onClick={() => setViewMode("month")}
+                onClick={() => {
+                  setViewMode("month");
+                }}
+                role="tab"
+                type="button"
               >
                 Mensual
               </button>
               <button
-                type="button"
-                role="tab"
                 className={cn(
                   "tab transition-all duration-200",
                   viewMode === "range" && "tab-active bg-base-100 shadow-sm"
                 )}
-                onClick={() => setViewMode("range")}
+                onClick={() => {
+                  setViewMode("range");
+                }}
+                role="tab"
+                type="button"
               >
                 Rango
               </button>
               <button
-                type="button"
-                role="tab"
                 className={cn(
                   "tab transition-all duration-200",
                   viewMode === "all" && "tab-active bg-base-100 shadow-sm"
                 )}
-                onClick={() => setViewMode("all")}
+                onClick={() => {
+                  setViewMode("all");
+                }}
+                role="tab"
+                type="button"
               >
                 Todo
               </button>
@@ -304,10 +249,12 @@ export default function ReportsPage() {
                     Seleccionar Mes
                   </label>
                   <select
-                    id="month-select"
-                    value={selectedMonth}
-                    onChange={(e) => setSelectedMonth(e.target.value)}
                     className="select select-bordered w-full"
+                    id="month-select"
+                    onChange={(e) => {
+                      setSelectedMonth(e.target.value);
+                    }}
+                    value={selectedMonth}
                   >
                     {months.map((month) => (
                       <option key={month} value={month}>
@@ -325,11 +272,13 @@ export default function ReportsPage() {
                       Desde
                     </label>
                     <Input
+                      className="w-full"
                       id="start-date"
+                      onChange={(e) => {
+                        setStartDate(e.target.value);
+                      }}
                       type="date"
                       value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
-                      className="w-full"
                     />
                   </div>
                   <div className="form-control">
@@ -337,11 +286,13 @@ export default function ReportsPage() {
                       Hasta
                     </label>
                     <Input
+                      className="w-full"
                       id="end-date"
+                      onChange={(e) => {
+                        setEndDate(e.target.value);
+                      }}
                       type="date"
                       value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
-                      className="w-full"
                     />
                   </div>
                 </div>
@@ -359,10 +310,12 @@ export default function ReportsPage() {
                   Agrupación temporal
                 </label>
                 <select
-                  id="granularity-select"
-                  value={granularity}
-                  onChange={(e) => setGranularity(e.target.value as ReportGranularity)}
                   className="select select-bordered w-full"
+                  id="granularity-select"
+                  onChange={(e) => {
+                    setGranularity(e.target.value as ReportGranularity);
+                  }}
+                  value={granularity}
                 >
                   <option value="day">Diaria</option>
                   <option value="week">Semanal</option>
@@ -377,7 +330,7 @@ export default function ReportsPage() {
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <label className="text-sm font-medium">Empleados ({selectedEmployeeIds.length})</label>
-                <button onClick={handleSelectAll} className="link link-primary text-xs no-underline hover:underline">
+                <button className="link link-primary text-xs no-underline hover:underline" onClick={handleSelectAll}>
                   {selectedEmployeeIds.length === filteredEmployees.length ? "Ninguno" : "Todos"}
                 </button>
               </div>
@@ -389,9 +342,14 @@ export default function ReportsPage() {
                     const emp = activeEmployees.find((e) => e.id === id);
                     if (!emp) return null;
                     return (
-                      <div key={id} className="badge badge-primary badge-sm gap-1 py-3 text-xs">
+                      <div className="badge badge-primary badge-sm gap-1 py-3 text-xs" key={id}>
                         <span className="max-w-25 truncate">{emp.person?.names.split(" ")[0] ?? emp.full_name}</span>
-                        <button onClick={() => handleEmployeeToggle(id)} className="hover:text-white/80">
+                        <button
+                          className="hover:text-white/80"
+                          onClick={() => {
+                            handleEmployeeToggle(id);
+                          }}
+                        >
                           <X className="h-3 w-3" />
                         </button>
                       </div>
@@ -408,9 +366,11 @@ export default function ReportsPage() {
               {/* Add Dropdown */}
               <div className="relative">
                 <button
-                  type="button"
                   className="btn btn-outline btn-sm w-full justify-between font-normal"
-                  onClick={() => setShowEmployeeDropdown(!showEmployeeDropdown)}
+                  onClick={() => {
+                    setShowEmployeeDropdown(!showEmployeeDropdown);
+                  }}
+                  type="button"
                 >
                   <span>Seleccionar empleados...</span>
                   <Search className="h-3.5 w-3.5 opacity-50" />
@@ -419,25 +379,29 @@ export default function ReportsPage() {
                 {showEmployeeDropdown && (
                   <>
                     <div
-                      role="button"
-                      tabIndex={-1}
                       aria-label="Cerrar búsqueda"
                       className="fixed inset-0 z-40"
-                      onClick={() => setShowEmployeeDropdown(false)}
+                      onClick={() => {
+                        setShowEmployeeDropdown(false);
+                      }}
                       onKeyDown={(e) => {
                         if (e.key === "Escape") setShowEmployeeDropdown(false);
                       }}
+                      role="button"
+                      tabIndex={-1}
                     />
                     <div className="bg-base-100 border-base-200 absolute top-full right-0 left-0 z-50 mt-2 flex max-h-80 flex-col overflow-hidden rounded-xl border shadow-xl">
                       <div className="border-base-200 bg-base-50 border-b p-2">
                         <label className="input input-sm input-bordered flex items-center gap-2 bg-white">
                           <Search className="h-4 w-4 opacity-50" />
                           <input
-                            type="text"
                             className="grow"
+                            onChange={(e) => {
+                              setEmployeeSearch(e.target.value);
+                            }}
                             placeholder="Buscar..."
+                            type="text"
                             value={employeeSearch}
-                            onChange={(e) => setEmployeeSearch(e.target.value)}
                           />
                         </label>
                       </div>
@@ -446,15 +410,17 @@ export default function ReportsPage() {
                           const isSelected = selectedEmployeeIds.includes(emp.id);
                           return (
                             <button
-                              type="button"
-                              key={emp.id}
-                              onClick={() => handleEmployeeToggle(emp.id)}
                               className={cn(
                                 "flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition-colors",
                                 isSelected
                                   ? "bg-primary/10 text-primary font-medium"
                                   : "hover:bg-base-200 text-base-content"
                               )}
+                              key={emp.id}
+                              onClick={() => {
+                                handleEmployeeToggle(emp.id);
+                              }}
+                              type="button"
                             >
                               <span className="truncate">{emp.full_name}</span>
                               {isSelected && <Check className="ml-2 h-4 w-4" />}
@@ -472,10 +438,10 @@ export default function ReportsPage() {
             </div>
 
             <Button
-              variant="primary"
               className="shadow-primary/20 mt-4 w-full shadow-md"
-              onClick={handleGenerateReport}
               disabled={selectedEmployeeIds.length === 0 || loading}
+              onClick={handleGenerateReport}
+              variant="primary"
             >
               {loading ? (
                 <>
@@ -488,7 +454,7 @@ export default function ReportsPage() {
             </Button>
 
             {error && (
-              <Alert variant="error" className="text-xs">
+              <Alert className="text-xs" variant="error">
                 {error instanceof Error ? error.message : String(error)}
               </Alert>
             )}
@@ -512,32 +478,32 @@ export default function ReportsPage() {
             <>
               {/* KPI Grid */}
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                <StatCard title="TOTAL HORAS" value={stats?.totalHours ?? 0} icon={Clock} className="text-primary" />
+                <StatCard className="text-primary" icon={Clock} title="TOTAL HORAS" value={stats?.totalHours ?? 0} />
                 <StatCard
+                  className="text-secondary"
+                  icon={BarChart3}
+                  subtitle={`Por ${granularityLabel}`}
                   title="PROMEDIO"
                   value={stats?.averageHours ?? 0}
-                  icon={BarChart3}
-                  className="text-secondary"
-                  subtitle={`Por ${granularityLabel}`}
                 />
                 <StatCard
+                  className="text-accent"
+                  icon={Calendar}
+                  subtitle="Total asistencias"
                   title="DÍAS TRAB."
                   value={reportData.reduce((acc, e) => acc + e.totalDays, 0)}
-                  icon={Calendar}
-                  className="text-accent"
-                  subtitle="Total asistencias"
                 />
                 <StatCard
+                  className="text-success"
+                  icon={TrendingUp}
+                  subtitle="Horas/día asis."
+                  suffix="h"
                   title="PROM. DIARIO"
                   value={(() => {
                     if (reportData.length === 0) return 0;
                     const avg = reportData.reduce((acc, e) => acc + e.avgDailyMinutes, 0) / reportData.length / 60;
                     return Number.parseFloat(avg.toFixed(1));
                   })()}
-                  suffix="h"
-                  icon={TrendingUp}
-                  className="text-success"
-                  subtitle="Horas/día asis."
                 />
               </div>
 
@@ -549,7 +515,7 @@ export default function ReportsPage() {
                   </div>
                 }
               >
-                <TemporalChart chartData={chartData} reportData={reportData} granularity={granularity} />
+                <TemporalChart chartData={chartData} granularity={granularity} reportData={reportData} />
               </Suspense>
 
               {/* Secondary Details Grid */}
@@ -578,11 +544,11 @@ export default function ReportsPage() {
                   </h3>
                   <div className="grow overflow-x-auto">
                     <DataTable
-                      data={reportData}
                       columns={columns}
-                      meta={meta}
+                      data={reportData}
                       enableToolbar={false}
                       enableVirtualization={false}
+                      meta={meta}
                       noDataMessage="No hay datos para mostrar."
                     />
                   </div>
@@ -594,4 +560,67 @@ export default function ReportsPage() {
       </div>
     </section>
   );
+}
+// ---------------------------------
+
+function processRawEntries(
+  entries: RawTimesheetEntry[],
+  employeeIds: number[],
+  employees: Employee[]
+): EmployeeWorkData[] {
+  const map = new Map<number, EmployeeWorkData>();
+
+  // Init map
+  for (const id of employeeIds) {
+    const emp = employees.find((e) => e.id === id);
+    if (emp) {
+      map.set(id, {
+        avgDailyMinutes: 0,
+        dailyBreakdown: {},
+        employeeId: id,
+        fullName: emp.full_name,
+        monthlyBreakdown: {},
+        overtimePercentage: 0,
+        role: emp.position,
+        totalDays: 0,
+        totalMinutes: 0,
+        totalOvertimeMinutes: 0,
+        weeklyBreakdown: {},
+      });
+    }
+  }
+
+  for (const entry of entries) {
+    if (!map.has(entry.employee_id)) continue;
+    const data = map.get(entry.employee_id)!;
+
+    data.totalMinutes += entry.worked_minutes;
+    data.totalOvertimeMinutes += entry.overtime_minutes;
+
+    // Daily
+    const dateKey = entry.work_date;
+    const currentDaily = data.dailyBreakdown[dateKey] ?? 0;
+    Object.assign(data.dailyBreakdown, { [dateKey]: currentDaily + entry.worked_minutes });
+
+    // Weekly
+    const weekKey = dayjs(entry.work_date).startOf("isoWeek").format(DATE_FORMAT);
+    const currentWeekly = data.weeklyBreakdown[weekKey] ?? 0;
+    Object.assign(data.weeklyBreakdown, { [weekKey]: currentWeekly + entry.worked_minutes });
+
+    // Monthly
+    const monthKey = dayjs(entry.work_date).format("YYYY-MM");
+    const currentMonthly = data.monthlyBreakdown[monthKey] ?? 0;
+    Object.assign(data.monthlyBreakdown, { [monthKey]: currentMonthly + entry.worked_minutes });
+  }
+
+  // Stats
+  for (const data of map.values()) {
+    const uniqueDays = Object.keys(data.dailyBreakdown).length;
+    data.totalDays = uniqueDays;
+    data.avgDailyMinutes = uniqueDays > 0 ? Math.round(data.totalMinutes / uniqueDays) : 0;
+    data.overtimePercentage =
+      data.totalMinutes > 0 ? Number.parseFloat(((data.totalOvertimeMinutes / data.totalMinutes) * 100).toFixed(1)) : 0;
+  }
+
+  return [...map.values()];
 }

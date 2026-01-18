@@ -6,28 +6,30 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { useState } from "react";
 
-import { useAuth } from "@/context/AuthContext";
-import { balanceKeys } from "@/features/finance/balances/queries";
 import type { BalancesApiResponse } from "@/features/finance/balances/types";
 
-import { statsKeys } from "../queries";
+import { useAuth } from "@/context/AuthContext";
+import { balanceKeys } from "@/features/finance/balances/queries";
+
 import type { StatsResponse, TopParticipantData } from "../types";
 
+import { statsKeys } from "../queries";
+
 interface UseStatsDataResult {
-  from: string;
-  setFrom: (value: string) => void;
-  to: string;
-  setTo: (value: string) => void;
-  loading: boolean;
-  error: string | null;
-  data: StatsResponse | null;
-  balancesReport: BalancesApiResponse | null;
+  balancesError: null | string;
   balancesLoading: boolean;
-  balancesError: string | null;
-  topParticipants: TopParticipantData[];
+  balancesReport: BalancesApiResponse | null;
+  data: null | StatsResponse;
+  error: null | string;
+  from: string;
+  loading: boolean;
+  participantsError: null | string;
   participantsLoading: boolean;
-  participantsError: string | null;
   refetch: () => Promise<void>;
+  setFrom: (value: string) => void;
+  setTo: (value: string) => void;
+  to: string;
+  topParticipants: TopParticipantData[];
 }
 
 export function useStatsData(): UseStatsDataResult {
@@ -52,19 +54,19 @@ export function useStatsData(): UseStatsDataResult {
   };
 
   return {
-    from,
-    setFrom,
-    to,
-    setTo,
-    loading: statsQuery.isPending || statsQuery.isFetching,
-    error: statsQuery.error?.message ?? null,
-    data: statsQuery.data ?? null,
-    balancesReport: balancesQuery.data ?? null,
-    balancesLoading: balancesQuery.isPending || balancesQuery.isFetching,
     balancesError: balancesQuery.error?.message ?? null,
-    topParticipants: participantsQuery.data ?? [],
-    participantsLoading: participantsQuery.isPending || participantsQuery.isFetching,
+    balancesLoading: balancesQuery.isPending || balancesQuery.isFetching,
+    balancesReport: balancesQuery.data ?? null,
+    data: statsQuery.data ?? null,
+    error: statsQuery.error?.message ?? null,
+    from,
+    loading: statsQuery.isPending || statsQuery.isFetching,
     participantsError: participantsQuery.error?.message ?? null,
+    participantsLoading: participantsQuery.isPending || participantsQuery.isFetching,
     refetch,
+    setFrom,
+    setTo,
+    to,
+    topParticipants: participantsQuery.data ?? [],
   };
 }

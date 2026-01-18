@@ -14,15 +14,15 @@ export const Route = createFileRoute("/_authed/calendar/classify")({
       throw routeApi.redirect({ to: "/" });
     }
   },
+  component: () => (
+    <Suspense fallback={<PageLoader />}>
+      <CalendarClassificationPage />
+    </Suspense>
+  ),
   loader: async ({ context }) => {
     await Promise.all([
       context.queryClient.ensureQueryData(calendarQueries.unclassified(0, 50, {})),
       context.queryClient.ensureQueryData(calendarQueries.options()),
     ]);
   },
-  component: () => (
-    <Suspense fallback={<PageLoader />}>
-      <CalendarClassificationPage />
-    </Suspense>
-  ),
 });

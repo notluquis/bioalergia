@@ -12,6 +12,11 @@ export const Route = createFileRoute("/_authed/hr/reports")({
       throw routeApi.redirect({ to: "/" });
     }
   },
+  component: () => (
+    <Suspense fallback={<PageLoader />}>
+      <ReportsPage />
+    </Suspense>
+  ),
   loader: async ({ context: { queryClient } }) => {
     const { employeeKeys } = await import("@/features/hr/employees/queries");
     const { timesheetQueries } = await import("@/features/hr/timesheets/queries");
@@ -21,9 +26,4 @@ export const Route = createFileRoute("/_authed/hr/reports")({
       queryClient.ensureQueryData(timesheetQueries.months()),
     ]);
   },
-  component: () => (
-    <Suspense fallback={<PageLoader />}>
-      <ReportsPage />
-    </Suspense>
-  ),
 });

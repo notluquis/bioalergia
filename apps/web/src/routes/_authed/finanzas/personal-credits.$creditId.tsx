@@ -11,15 +11,15 @@ export const Route = createFileRoute("/_authed/finanzas/personal-credits/$credit
     // Permission check
     return;
   },
+  component: () => (
+    <Suspense fallback={<PageLoader />}>
+      <PersonalCreditDetailsPage />
+    </Suspense>
+  ),
   loader: async ({ context: { queryClient }, params }) => {
     const creditId = Number(params.creditId);
     if (!Number.isNaN(creditId)) {
       await queryClient.ensureQueryData(personalFinanceQueries.detail(creditId));
     }
   },
-  component: () => (
-    <Suspense fallback={<PageLoader />}>
-      <PersonalCreditDetailsPage />
-    </Suspense>
-  ),
 });

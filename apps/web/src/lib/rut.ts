@@ -1,14 +1,4 @@
-export function normalizeRut(value?: string | null): string | null {
-  if (!value) return null;
-  const cleaned = value.toUpperCase().replaceAll(/[^0-9K]/g, "");
-  if (!cleaned) return null;
-  const body = cleaned.slice(0, -1);
-  const dv = cleaned.slice(-1);
-  if (!body || !/^\d+$/.test(body)) return null;
-  return `${Number.parseInt(body, 10)}-${dv}`;
-}
-
-export function formatRut(value?: string | null): string {
+export function formatRut(value?: null | string): string {
   if (!value || typeof value !== "string") return "";
 
   const normalized = normalizeRut(value);
@@ -19,7 +9,17 @@ export function formatRut(value?: string | null): string {
   return `${formattedBody}-${dv}`;
 }
 
-export function validateRut(value?: string | null): boolean {
+export function normalizeRut(value?: null | string): null | string {
+  if (!value) return null;
+  const cleaned = value.toUpperCase().replaceAll(/[^0-9K]/g, "");
+  if (!cleaned) return null;
+  const body = cleaned.slice(0, -1);
+  const dv = cleaned.slice(-1);
+  if (!body || !/^\d+$/.test(body)) return null;
+  return `${Number.parseInt(body, 10)}-${dv}`;
+}
+
+export function validateRut(value?: null | string): boolean {
   const normalized = normalizeRut(value);
   if (!normalized) return false;
   const [body, dv] = normalized.split("-");

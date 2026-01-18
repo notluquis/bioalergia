@@ -29,7 +29,7 @@ export function DashboardPersonalLiabilities() {
       <div className="card-body">
         <div className="flex items-center justify-between">
           <h3 className="text-base-content text-sm font-semibold">Pasivos Personales</h3>
-          <Link to="/finanzas/loans" className="text-primary text-xs hover:underline">
+          <Link className="text-primary text-xs hover:underline" to="/finanzas/loans">
             Ver todos
           </Link>
         </div>

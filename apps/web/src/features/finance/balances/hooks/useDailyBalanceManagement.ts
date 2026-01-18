@@ -4,8 +4,9 @@ import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import { logger } from "@/lib/logger";
 
-import { saveBalance } from "../api";
 import type { BalanceDraft } from "../types";
+
+import { saveBalance } from "../api";
 import { parseBalanceInput } from "../utils";
 
 interface UseDailyBalanceManagementProps {
@@ -19,16 +20,16 @@ export function useDailyBalanceManagement({ loadBalances }: UseDailyBalanceManag
 
   const [drafts, setDrafts] = useState<Record<string, BalanceDraft>>({});
   const [saving, setSaving] = useState<Record<string, boolean>>({});
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<null | string>(null);
 
   const handleDraftChange = (date: string, patch: Partial<BalanceDraft>) => {
     setDrafts((prev) => {
-      const previous = prev[date] ?? { value: "", note: "" };
+      const previous = prev[date] ?? { note: "", value: "" };
       return {
         ...prev,
         [date]: {
-          value: patch.value ?? previous.value,
           note: patch.note ?? previous.note,
+          value: patch.value ?? previous.value,
         },
       };
     });
@@ -50,7 +51,7 @@ export function useDailyBalanceManagement({ loadBalances }: UseDailyBalanceManag
     try {
       await saveBalance(date, parsedValue, draft.note);
       await loadBalances();
-      logger.info("[balances] save:success", { date, balance: parsedValue });
+      logger.info("[balances] save:success", { balance: parsedValue, date });
     } catch (error_) {
       const message = error_ instanceof Error ? error_.message : "No se pudo guardar el saldo diario";
       setError(message);
@@ -61,5 +62,5 @@ export function useDailyBalanceManagement({ loadBalances }: UseDailyBalanceManag
     }
   };
 
-  return { drafts, saving, error, handleDraftChange, handleSave, setError, setDrafts };
+  return { drafts, error, handleDraftChange, handleSave, saving, setDrafts, setError };
 }

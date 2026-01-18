@@ -18,47 +18,48 @@ import type {
   ServiceSummary,
   ServiceType,
 } from "../types";
+
 import ServiceScheduleAccordion from "./ServiceScheduleAccordion";
 import ServiceScheduleTable from "./ServiceScheduleTable";
 
 interface ServiceDetailProps {
-  service: ServiceSummary | null;
-  schedules: ServiceSchedule[];
-  loading: boolean;
   canManage: boolean;
+  loading: boolean;
   onRegenerate: (overrides: RegenerateServicePayload) => Promise<void>;
   onRegisterPayment: (schedule: ServiceSchedule) => void;
   onUnlinkPayment: (schedule: ServiceSchedule) => void;
+  schedules: ServiceSchedule[];
+  service: null | ServiceSummary;
 }
 
 export function ServiceDetail({
-  service,
-  schedules,
-  loading,
   canManage,
+  loading,
   onRegenerate,
   onRegisterPayment,
   onUnlinkPayment,
+  schedules,
+  service,
 }: ServiceDetailProps) {
   const [regenerateOpen, setRegenerateOpen] = useState(false);
   const [regenerateForm, setRegenerateForm] = useState<RegenerateServicePayload>({});
   const [regenerating, setRegenerating] = useState(false);
-  const [regenerateError, setRegenerateError] = useState<string | null>(null);
+  const [regenerateError, setRegenerateError] = useState<null | string>(null);
   const navigate = useNavigate();
 
   const statusBadge = (() => {
-    if (!service) return { label: "", className: "" };
+    if (!service) return { className: "", label: "" };
     switch (service.status) {
-      case "INACTIVE": {
-        return { label: "Sin pendientes", className: "bg-emerald-100 text-emerald-700" };
-      }
       case "ARCHIVED": {
-        return { label: "Archivado", className: "bg-base-200 text-base-content" };
+        return { className: "bg-base-200 text-base-content", label: "Archivado" };
+      }
+      case "INACTIVE": {
+        return { className: "bg-emerald-100 text-emerald-700", label: "Sin pendientes" };
       }
       default: {
         return service.overdue_count > 0
-          ? { label: "Vencidos", className: "bg-rose-100 text-rose-700" }
-          : { label: "Activo", className: "bg-amber-100 text-amber-700" };
+          ? { className: "bg-rose-100 text-rose-700", label: "Vencidos" }
+          : { className: "bg-amber-100 text-amber-700", label: "Activo" };
       }
     }
   })();
@@ -66,14 +67,14 @@ export function ServiceDetail({
   const frequencyLabel = (() => {
     if (!service) return "";
     const labels: Record<ServiceFrequency, string> = {
-      WEEKLY: "Semanal",
+      ANNUAL: "Anual",
+      BIMONTHLY: "Bimensual",
       BIWEEKLY: "Quincenal",
       MONTHLY: "Mensual",
-      BIMONTHLY: "Bimensual",
+      ONCE: "Única vez",
       QUARTERLY: "Trimestral",
       SEMIANNUAL: "Semestral",
-      ANNUAL: "Anual",
-      ONCE: "Única vez",
+      WEEKLY: "Semanal",
     };
     return labels[service.frequency];
   })();
@@ -82,13 +83,13 @@ export function ServiceDetail({
     if (!service) return "";
     const labels: Record<ServiceType, string> = {
       BUSINESS: "Operación general",
-      SUPPLIER: "Proveedor",
-      UTILITY: "Servicios básicos",
       LEASE: "Arriendo / leasing",
-      SOFTWARE: "Software / suscripciones",
-      TAX: "Impuestos / contribuciones",
-      PERSONAL: "Personal",
       OTHER: "Otro",
+      PERSONAL: "Personal",
+      SOFTWARE: "Software / suscripciones",
+      SUPPLIER: "Proveedor",
+      TAX: "Impuestos / contribuciones",
+      UTILITY: "Servicios básicos",
     };
     return labels[service.service_type];
   })();
@@ -97,8 +98,8 @@ export function ServiceDetail({
     if (!service) return "";
     const labels: Record<ServiceOwnership, string> = {
       COMPANY: "Empresa",
-      OWNER: "Personal del dueño",
       MIXED: "Compartido",
+      OWNER: "Personal del dueño",
       THIRD_PARTY: "Terceros",
     };
     return labels[service.ownership];
@@ -107,10 +108,10 @@ export function ServiceDetail({
   const obligationLabel = (() => {
     if (!service) return "";
     const labels: Record<ServiceObligationType, string> = {
-      SERVICE: "Servicio / gasto",
       DEBT: "Deuda",
       LOAN: "Préstamo",
       OTHER: "Otro",
+      SERVICE: "Servicio / gasto",
     };
     return labels[service.obligation_type];
   })();
@@ -118,8 +119,8 @@ export function ServiceDetail({
   const recurrenceLabel = (() => {
     if (!service) return "";
     const labels: Record<ServiceRecurrenceType, string> = {
-      RECURRING: "Recurrente",
       ONE_OFF: "Puntual",
+      RECURRING: "Recurrente",
     };
     return labels[service.recurrence_type];
   })();
@@ -132,8 +133,8 @@ export function ServiceDetail({
   const lateFeeLabel = (() => {
     if (!service) return "Sin recargo";
     const labels: Record<ServiceLateFeeMode, string> = {
-      NONE: "Sin recargo",
       FIXED: service.late_fee_value ? `$${service.late_fee_value.toLocaleString("es-CL")}` : "Monto fijo",
+      NONE: "Sin recargo",
       PERCENTAGE: service.late_fee_value == null ? "% del monto" : `${service.late_fee_value}%`,
     };
     return labels[service.late_fee_mode];
@@ -193,15 +194,21 @@ export function ServiceDetail({
             {statusBadge.label}
           </span>
           {canManage && (
-            <Button type="button" variant="secondary" onClick={() => setRegenerateOpen(true)}>
+            <Button
+              onClick={() => {
+                setRegenerateOpen(true);
+              }}
+              type="button"
+              variant="secondary"
+            >
               Regenerar cronograma
             </Button>
           )}
           {canManage && (
             <Button
+              onClick={() => navigate({ to: `/services/${service.public_id}/edit` })}
               type="button"
               variant="secondary"
-              onClick={() => navigate({ to: `/services/${service.public_id}/edit` })}
             >
               Editar servicio
             </Button>
@@ -280,18 +287,18 @@ export function ServiceDetail({
       </section>
 
       <ServiceScheduleAccordion
-        service={service}
-        schedules={schedules}
         canManage={canManage}
         onRegisterPayment={onRegisterPayment}
         onUnlinkPayment={onUnlinkPayment}
+        schedules={schedules}
+        service={service}
       />
 
       <ServiceScheduleTable
-        schedules={schedules}
         canManage={canManage}
         onRegisterPayment={onRegisterPayment}
         onUnlinkPayment={onUnlinkPayment}
+        schedules={schedules}
       />
 
       {service.notes && (
@@ -301,59 +308,65 @@ export function ServiceDetail({
         </div>
       )}
 
-      <Modal isOpen={regenerateOpen} onClose={() => setRegenerateOpen(false)} title="Regenerar cronograma">
-        <form onSubmit={handleRegenerate} className="space-y-4">
+      <Modal
+        isOpen={regenerateOpen}
+        onClose={() => {
+          setRegenerateOpen(false);
+        }}
+        title="Regenerar cronograma"
+      >
+        <form className="space-y-4" onSubmit={handleRegenerate}>
           <Input
             label="Meses a generar"
+            max={60}
+            min={1}
+            onChange={(event: ChangeEvent<HTMLInputElement>) => {
+              setRegenerateForm((prev) => ({ ...prev, months: Number(event.target.value) }));
+            }}
             type="number"
             value={regenerateForm.months ?? service.next_generation_months}
-            onChange={(event: ChangeEvent<HTMLInputElement>) =>
-              setRegenerateForm((prev) => ({ ...prev, months: Number(event.target.value) }))
-            }
-            min={1}
-            max={60}
           />
           <Input
             label="Nueva fecha de inicio"
+            onChange={(event: ChangeEvent<HTMLInputElement>) => {
+              setRegenerateForm((prev) => ({ ...prev, startDate: event.target.value }));
+            }}
             type="date"
             value={regenerateForm.startDate ?? service.start_date}
-            onChange={(event: ChangeEvent<HTMLInputElement>) =>
-              setRegenerateForm((prev) => ({ ...prev, startDate: event.target.value }))
-            }
           />
           <Input
             label="Monto base"
+            min={0}
+            onChange={(event: ChangeEvent<HTMLInputElement>) => {
+              setRegenerateForm((prev) => ({ ...prev, defaultAmount: Number(event.target.value) }));
+            }}
+            step="0.01"
             type="number"
             value={regenerateForm.defaultAmount ?? service.default_amount}
-            onChange={(event: ChangeEvent<HTMLInputElement>) =>
-              setRegenerateForm((prev) => ({ ...prev, defaultAmount: Number(event.target.value) }))
-            }
-            min={0}
-            step="0.01"
           />
           <Input
             label="Día de vencimiento"
-            type="number"
-            value={regenerateForm.dueDay ?? service.due_day ?? ""}
-            onChange={(event: ChangeEvent<HTMLInputElement>) =>
+            max={31}
+            min={1}
+            onChange={(event: ChangeEvent<HTMLInputElement>) => {
               setRegenerateForm((prev) => ({
                 ...prev,
                 dueDay: event.target.value ? Number(event.target.value) : null,
-              }))
-            }
-            min={1}
-            max={31}
+              }));
+            }}
+            type="number"
+            value={regenerateForm.dueDay ?? service.due_day ?? ""}
           />
           <Input
-            label="Frecuencia"
             as="select"
-            value={regenerateForm.frequency ?? service.frequency}
-            onChange={(event: ChangeEvent<HTMLSelectElement>) =>
+            label="Frecuencia"
+            onChange={(event: ChangeEvent<HTMLSelectElement>) => {
               setRegenerateForm((prev) => ({
                 ...prev,
                 frequency: event.target.value as RegenerateServicePayload["frequency"],
-              }))
-            }
+              }));
+            }}
+            value={regenerateForm.frequency ?? service.frequency}
           >
             <option value="WEEKLY">Semanal</option>
             <option value="BIWEEKLY">Quincenal</option>
@@ -366,28 +379,35 @@ export function ServiceDetail({
           </Input>
           {service.emission_mode === "FIXED_DAY" && (
             <Input
+              helper="Aplica a servicios con día fijo de emisión"
               label="Día de emisión"
-              type="number"
-              value={regenerateForm.emissionDay ?? service.emission_day ?? ""}
-              onChange={(event: ChangeEvent<HTMLInputElement>) =>
+              max={31}
+              min={1}
+              onChange={(event: ChangeEvent<HTMLInputElement>) => {
                 setRegenerateForm((prev) => ({
                   ...prev,
                   emissionDay: event.target.value ? Number(event.target.value) : null,
-                }))
-              }
-              min={1}
-              max={31}
-              helper="Aplica a servicios con día fijo de emisión"
+                }));
+              }}
+              type="number"
+              value={regenerateForm.emissionDay ?? service.emission_day ?? ""}
             />
           )}
           {regenerateError && (
             <p className="rounded-lg bg-rose-100 px-4 py-2 text-sm text-rose-700">{regenerateError}</p>
           )}
           <div className="flex justify-end gap-3">
-            <Button type="button" variant="secondary" onClick={() => setRegenerateOpen(false)} disabled={regenerating}>
+            <Button
+              disabled={regenerating}
+              onClick={() => {
+                setRegenerateOpen(false);
+              }}
+              type="button"
+              variant="secondary"
+            >
               Cancelar
             </Button>
-            <Button type="submit" disabled={regenerating}>
+            <Button disabled={regenerating} type="submit">
               {regenerating ? "Actualizando..." : "Regenerar"}
             </Button>
           </div>

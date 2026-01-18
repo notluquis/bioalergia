@@ -21,7 +21,7 @@ export default function RolesSettingsPage() {
   const queryClient = useQueryClient();
   const toast = useToast();
   const [isSyncing, setIsSyncing] = useState(false);
-  const [selectedRole, setSelectedRole] = useState<Role | null>(null);
+  const [selectedRole, setSelectedRole] = useState<null | Role>(null);
   const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [viewModeRole, setViewModeRole] = useState<string>("all");
@@ -37,19 +37,21 @@ export default function RolesSettingsPage() {
       setIsSyncing(true);
       await syncPermissions();
     },
+    onError: () => {
+      toast.error("Error al sincronizar permisos");
+    },
+    onSettled: () => {
+      setIsSyncing(false);
+    },
     onSuccess: () => {
       toast.success("Permisos sincronizados con el sistema");
       queryClient.invalidateQueries({ queryKey: ["permissions"] });
     },
-    onError: () => {
-      toast.error("Error al sincronizar permisos");
-    },
-    onSettled: () => setIsSyncing(false),
   });
 
   const {
-    mutate: updatePermissions,
     isPending: isUpdatingPermissions,
+    mutate: updatePermissions,
     variables: updatingVariables,
   } = useMutation({
     mutationFn: updateRolePermissions,
@@ -97,7 +99,7 @@ export default function RolesSettingsPage() {
       ? currentPermissionIds.filter((id) => id !== permissionId)
       : [...currentPermissionIds, permissionId];
 
-    updatePermissions({ roleId: role.id, permissionIds: newPermissionIds });
+    updatePermissions({ permissionIds: newPermissionIds, roleId: role.id });
   };
 
   const handleBulkToggle = (role: Role, permissionIdsToToggle: number[]) => {
@@ -116,7 +118,7 @@ export default function RolesSettingsPage() {
       newPermissionIds = [...currentPermissionIds, ...missingIds];
     }
 
-    updatePermissions({ roleId: role.id, permissionIds: newPermissionIds });
+    updatePermissions({ permissionIds: newPermissionIds, roleId: role.id });
   };
 
   // --- Grouping Logic ---
@@ -140,8 +142,10 @@ export default function RolesSettingsPage() {
             <div className="hidden sm:block">
               <select
                 className="select select-bordered select-sm w-full max-w-50"
+                onChange={(e) => {
+                  setViewModeRole(e.target.value);
+                }}
                 value={viewModeRole}
-                onChange={(e) => setViewModeRole(e.target.value)}
               >
                 <option value="all">Ver todos los roles</option>
                 {roles.map((r) => (
@@ -155,8 +159,10 @@ export default function RolesSettingsPage() {
             <div className="ml-2 flex items-center gap-2 border-l pl-2">
               <button
                 className="btn btn-ghost btn-sm btn-square"
-                onClick={() => syncMutation.mutate()}
                 disabled={isSyncing}
+                onClick={() => {
+                  syncMutation.mutate();
+                }}
                 title="Sincronizar permisos"
               >
                 <RotateCw className={cn("h-4 w-4", isSyncing && "animate-spin")} />
@@ -171,30 +177,38 @@ export default function RolesSettingsPage() {
         </CardHeader>
         <CardContent className="overflow-hidden p-0">
           <PermissionsMatrixTable
+            isUpdatingPermissions={isUpdatingPermissions}
+            onBulkToggle={handleBulkToggle}
+            onDeleteRole={handleDeleteRole}
+            onEditRole={handleEditRole}
+            onImpersonate={impersonate}
+            onPermissionToggle={handlePermissionToggle}
             roles={roles}
             sections={sectionsWithPermissions}
-            viewModeRole={viewModeRole}
-            isUpdatingPermissions={isUpdatingPermissions}
             updatingRoleId={updatingVariables?.roleId}
-            onPermissionToggle={handlePermissionToggle}
-            onBulkToggle={handleBulkToggle}
-            onEditRole={handleEditRole}
-            onDeleteRole={handleDeleteRole}
-            onImpersonate={impersonate}
+            viewModeRole={viewModeRole}
           />
         </CardContent>
       </Card>
 
       {isRoleModalOpen && (
-        <RoleFormModal isOpen={isRoleModalOpen} onClose={() => setIsRoleModalOpen(false)} role={selectedRole} />
+        <RoleFormModal
+          isOpen={isRoleModalOpen}
+          onClose={() => {
+            setIsRoleModalOpen(false);
+          }}
+          role={selectedRole}
+        />
       )}
 
       {isDeleteModalOpen && selectedRole && (
         <DeleteRoleModal
-          isOpen={isDeleteModalOpen}
-          onClose={() => setIsDeleteModalOpen(false)}
-          role={selectedRole}
           allRoles={roles}
+          isOpen={isDeleteModalOpen}
+          onClose={() => {
+            setIsDeleteModalOpen(false);
+          }}
+          role={selectedRole}
         />
       )}
     </div>
@@ -207,8 +221,8 @@ function optimisticUpdateRole(oldRoles: Role[] | undefined, roleId: number, perm
   return oldRoles.map((role) => {
     if (role.id === roleId) {
       const newPermissions = permissionIds.map((id) => ({
+        permission: { action: "", description: "", id, subject: "" }, // Placeholder
         permissionId: id,
-        permission: { id, action: "", subject: "", description: "" }, // Placeholder
       }));
       return { ...role, permissions: newPermissions };
     }
@@ -236,15 +250,15 @@ function processNavSections(
           }
 
           const uniquePermissions = [...new Map(perms.map((p) => [p.id, p])).values()];
-          uniquePermissions.forEach((p) => usedPermissionIds.add(p.id));
+          for (const p of uniquePermissions) usedPermissionIds.add(p.id);
 
           if (uniquePermissions.length === 0) return null;
 
           return {
-            label: item.label,
             icon: item.icon,
-            relatedPermissions: uniquePermissions,
+            label: item.label,
             permissionIds: uniquePermissions.map((p) => p.id),
+            relatedPermissions: uniquePermissions,
           };
         })
         .filter((item): item is NonNullable<typeof item> => item !== null);
@@ -252,9 +266,9 @@ function processNavSections(
       const sectionPermissionIds = itemsWithPermissions.flatMap((item) => item.permissionIds);
 
       return {
-        title: section.title,
         items: itemsWithPermissions,
         permissionIds: sectionPermissionIds,
+        title: section.title,
       };
     })
     .filter((section) => section.items.length > 0);

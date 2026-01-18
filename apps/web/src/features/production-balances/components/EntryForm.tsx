@@ -5,9 +5,9 @@ import { MoneyInput } from "@/components/ui/MoneyInput";
 import type { DailyBalanceFormData } from "../types";
 
 interface EntryFormProps {
-  values: DailyBalanceFormData;
-  onChange: <K extends keyof DailyBalanceFormData>(field: K, value: DailyBalanceFormData[K]) => void;
   disabled?: boolean;
+  onChange: <K extends keyof DailyBalanceFormData>(field: K, value: DailyBalanceFormData[K]) => void;
+  values: DailyBalanceFormData;
 }
 
 /**
@@ -18,7 +18,7 @@ interface EntryFormProps {
 const toStr = (n: number) => (n === 0 ? "" : String(n));
 const toNum = (s: string) => (s === "" ? 0 : Number(s));
 
-export function EntryForm({ values, onChange, disabled = false }: EntryFormProps) {
+export function EntryForm({ disabled = false, onChange, values }: EntryFormProps) {
   return (
     <div className="space-y-4">
       {/* Ingresos por método */}
@@ -29,25 +29,31 @@ export function EntryForm({ values, onChange, disabled = false }: EntryFormProps
         </div>
         <div className="grid gap-3 sm:grid-cols-3">
           <MoneyInput
+            disabled={disabled}
             icon={<span className="text-xs">💳</span>}
             label="Tarjetas"
+            onChange={(v) => {
+              onChange("tarjeta", toNum(v));
+            }}
             value={toStr(values.tarjeta)}
-            onChange={(v) => onChange("tarjeta", toNum(v))}
-            disabled={disabled}
           />
           <MoneyInput
+            disabled={disabled}
             icon={<span className="text-xs">📲</span>}
             label="Transferencia"
+            onChange={(v) => {
+              onChange("transferencia", toNum(v));
+            }}
             value={toStr(values.transferencia)}
-            onChange={(v) => onChange("transferencia", toNum(v))}
-            disabled={disabled}
           />
           <MoneyInput
+            disabled={disabled}
             icon={<span className="text-xs">💵</span>}
             label="Efectivo"
+            onChange={(v) => {
+              onChange("efectivo", toNum(v));
+            }}
             value={toStr(values.efectivo)}
-            onChange={(v) => onChange("efectivo", toNum(v))}
-            disabled={disabled}
           />
         </div>
       </section>
@@ -60,23 +66,27 @@ export function EntryForm({ values, onChange, disabled = false }: EntryFormProps
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
           <MoneyInput
-            label="Gastos del día"
-            value={toStr(values.gastos)}
-            onChange={(v) => onChange("gastos", toNum(v))}
             disabled={disabled}
+            label="Gastos del día"
+            onChange={(v) => {
+              onChange("gastos", toNum(v));
+            }}
+            value={toStr(values.gastos)}
           />
           <div className="form-control">
             <label className="label py-1" htmlFor="input-nota">
               <span className="label-text text-xs font-medium sm:text-sm">Nota (opcional)</span>
             </label>
             <textarea
-              id="input-nota"
-              value={values.nota}
-              onChange={(e) => onChange("nota", e.target.value)}
+              className="textarea textarea-bordered textarea-sm w-full resize-none"
               disabled={disabled}
+              id="input-nota"
+              onChange={(e) => {
+                onChange("nota", e.target.value);
+              }}
               placeholder="Detalles o comentarios..."
               rows={2}
-              className="textarea textarea-bordered textarea-sm w-full resize-none"
+              value={values.nota}
             />
           </div>
         </div>
@@ -87,46 +97,60 @@ export function EntryForm({ values, onChange, disabled = false }: EntryFormProps
         <h3 className="mb-4 text-base font-semibold">Desglose por servicio</h3>
         <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-4">
           <MoneyInput
+            disabled={disabled}
             label="Consultas"
+            onChange={(v) => {
+              onChange("consultas", toNum(v));
+            }}
             value={toStr(values.consultas)}
-            onChange={(v) => onChange("consultas", toNum(v))}
-            disabled={disabled}
           />
           <MoneyInput
+            disabled={disabled}
             label="Controles"
+            onChange={(v) => {
+              onChange("controles", toNum(v));
+            }}
             value={toStr(values.controles)}
-            onChange={(v) => onChange("controles", toNum(v))}
-            disabled={disabled}
           />
           <MoneyInput
+            disabled={disabled}
             label="Tests"
+            onChange={(v) => {
+              onChange("tests", toNum(v));
+            }}
             value={toStr(values.tests)}
-            onChange={(v) => onChange("tests", toNum(v))}
-            disabled={disabled}
           />
           <MoneyInput
+            disabled={disabled}
             label="Vacunas"
+            onChange={(v) => {
+              onChange("vacunas", toNum(v));
+            }}
             value={toStr(values.vacunas)}
-            onChange={(v) => onChange("vacunas", toNum(v))}
-            disabled={disabled}
           />
           <MoneyInput
+            disabled={disabled}
             label="Licencias"
+            onChange={(v) => {
+              onChange("licencias", toNum(v));
+            }}
             value={toStr(values.licencias)}
-            onChange={(v) => onChange("licencias", toNum(v))}
-            disabled={disabled}
           />
           <MoneyInput
+            disabled={disabled}
             label="Roxair"
+            onChange={(v) => {
+              onChange("roxair", toNum(v));
+            }}
             value={toStr(values.roxair)}
-            onChange={(v) => onChange("roxair", toNum(v))}
-            disabled={disabled}
           />
           <MoneyInput
-            label="Otros"
-            value={toStr(values.otros)}
-            onChange={(v) => onChange("otros", toNum(v))}
             disabled={disabled}
+            label="Otros"
+            onChange={(v) => {
+              onChange("otros", toNum(v));
+            }}
+            value={toStr(values.otros)}
           />
         </div>
       </section>

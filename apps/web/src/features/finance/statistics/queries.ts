@@ -6,12 +6,12 @@ export const statsKeys = {
   all: ["finance-stats"] as const,
   main: (from: string, to: string) =>
     queryOptions({
-      queryKey: ["finance-stats", { from, to }],
       queryFn: () => fetchStats(from, to),
+      queryKey: ["finance-stats", { from, to }],
     }),
   participants: (from: string, to: string) =>
     queryOptions({
-      queryKey: ["top-participants", { from, to }],
       queryFn: () => fetchTopParticipants(from, to, 10),
+      queryKey: ["top-participants", { from, to }],
     }),
 };

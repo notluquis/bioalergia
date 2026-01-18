@@ -6,7 +6,7 @@ export function CalendarSkeleton({ days = 3 }: CalendarSkeletonProps) {
   return (
     <div className="space-y-5">
       {Array.from({ length: days }).map((_, i) => (
-        <div key={i} className="animate-pulse space-y-2">
+        <div className="animate-pulse space-y-2" key={i}>
           {/* Day Header Skeleton */}
           <div className="bg-base-300 h-4 w-24 rounded"></div>
 

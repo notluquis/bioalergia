@@ -14,15 +14,15 @@ export const Route = createFileRoute("/_authed/hr/timesheets")({
       throw routeApi.redirect({ to: "/" });
     }
   },
+  component: () => (
+    <Suspense fallback={<PageLoader />}>
+      <TimesheetsPage />
+    </Suspense>
+  ),
   loader: async ({ context }) => {
     await Promise.all([
       context.queryClient.ensureQueryData(timesheetQueries.months()),
       context.queryClient.ensureQueryData(employeeKeys.list({ includeInactive: false })),
     ]);
   },
-  component: () => (
-    <Suspense fallback={<PageLoader />}>
-      <TimesheetsPage />
-    </Suspense>
-  ),
 });

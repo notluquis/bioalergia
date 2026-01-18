@@ -7,19 +7,19 @@ import { deleteRole, reassignRoleUsers, roleKeys, roleQueries } from "@/features
 import { Role } from "@/types/roles";
 
 interface DeleteRoleModalProps {
+  allRoles: Role[];
   isOpen: boolean;
   onClose: () => void;
   role: Role;
-  allRoles: Role[];
 }
 
-export function DeleteRoleModal({ isOpen, onClose, role, allRoles }: DeleteRoleModalProps) {
+export function DeleteRoleModal({ allRoles, isOpen, onClose, role }: DeleteRoleModalProps) {
   if (!isOpen) return null;
 
   const isSystemRole = role.isSystem;
 
   return (
-    <dialog open className="modal modal-bottom sm:modal-middle">
+    <dialog className="modal modal-bottom sm:modal-middle" open>
       <div className="modal-box">
         <h3 className="text-error flex items-center gap-2 text-lg font-bold">
           <Trash2 className="h-5 w-5" />
@@ -47,18 +47,18 @@ export function DeleteRoleModal({ isOpen, onClose, role, allRoles }: DeleteRoleM
               </div>
             }
           >
-            <DeleteRoleForm role={role} allRoles={allRoles} onClose={onClose} />
+            <DeleteRoleForm allRoles={allRoles} onClose={onClose} role={role} />
           </Suspense>
         )}
       </div>
-      <form method="dialog" className="modal-backdrop">
+      <form className="modal-backdrop" method="dialog">
         <button onClick={onClose}>close</button>
       </form>
     </dialog>
   );
 }
 
-function DeleteRoleForm({ role, allRoles, onClose }: Omit<DeleteRoleModalProps, "isOpen">) {
+function DeleteRoleForm({ allRoles, onClose, role }: Omit<DeleteRoleModalProps, "isOpen">) {
   const [targetRoleId, setTargetRoleId] = useState<string>("");
   const toast = useToast();
   const queryClient = useQueryClient();
@@ -77,21 +77,21 @@ function DeleteRoleForm({ role, allRoles, onClose }: Omit<DeleteRoleModalProps, 
       }
       await deleteRole(role.id);
     },
-    onSuccess: () => {
-      toast.success("El rol ha sido eliminado correctamente", "Rol eliminado");
-      queryClient.invalidateQueries({ queryKey: roleKeys.all });
-      onClose();
-    },
     onError: (err: Error) => {
       let message = err.message || "No se pudo eliminar el rol";
       const errorWithDetails = err as Error & { details?: unknown };
       if ("details" in errorWithDetails && Array.isArray(errorWithDetails.details)) {
         const issues = errorWithDetails.details
-          .map((i: { path: (string | number)[]; message: string }) => `${i.path.join(".")}: ${i.message}`)
+          .map((i: { message: string; path: (number | string)[] }) => `${i.path.join(".")}: ${i.message}`)
           .join("\n");
         message = `Error:\n${issues}`;
       }
       toast.error(message, "Error");
+    },
+    onSuccess: () => {
+      toast.success("El rol ha sido eliminado correctamente", "Rol eliminado");
+      void queryClient.invalidateQueries({ queryKey: roleKeys.all });
+      onClose();
     },
   });
 
@@ -113,7 +113,7 @@ function DeleteRoleForm({ role, allRoles, onClose }: Omit<DeleteRoleModalProps, 
 
             <ul className="bg-base-100 max-h-32 space-y-1 overflow-y-auto rounded p-2 text-xs">
               {users.map((u) => (
-                <li key={u.id} className="flex justify-between">
+                <li className="flex justify-between" key={u.id}>
                   <span>{u.person ? `${u.person.names} ${u.person.fatherName}` : u.email}</span>
                   <span className="opacity-50">{u.email}</span>
                 </li>
@@ -128,10 +128,12 @@ function DeleteRoleForm({ role, allRoles, onClose }: Omit<DeleteRoleModalProps, 
                 </span>
               </label>
               <select
-                id="target-role-select"
                 className="select select-bordered w-full"
+                id="target-role-select"
+                onChange={(e) => {
+                  setTargetRoleId(e.target.value);
+                }}
                 value={targetRoleId}
-                onChange={(e) => setTargetRoleId(e.target.value)}
               >
                 <option value="">Selecciona un rol...</option>
                 {availableRoles.map((r) => (
@@ -153,8 +155,10 @@ function DeleteRoleForm({ role, allRoles, onClose }: Omit<DeleteRoleModalProps, 
         </button>
         <button
           className="btn btn-error"
-          onClick={() => deleteMutation.mutate()}
           disabled={deleteMutation.isPending || (hasUsers && !targetRoleId)}
+          onClick={() => {
+            deleteMutation.mutate();
+          }}
         >
           {deleteMutation.isPending ? <span className="loading loading-spinner" /> : "Eliminar"}
         </button>

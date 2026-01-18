@@ -6,36 +6,34 @@ import Button from "@/components/ui/Button";
 import { InventoryItem } from "../types";
 
 export interface InventoryTableMeta {
+  canAdjust: boolean;
+  canUpdate: boolean;
   openAdjustStockModal: (item: InventoryItem) => void;
   openEditModal: (item: InventoryItem) => void;
-  canUpdate: boolean;
-  canAdjust: boolean;
 }
 
 export const columns: ColumnDef<InventoryItem>[] = [
   {
     accessorKey: "name",
-    header: "Nombre",
     cell: ({ row }) => <span className="text-base-content font-medium">{row.original.name}</span>,
+    header: "Nombre",
   },
   {
     accessorKey: "category_name",
-    header: "Categoría",
     cell: ({ row }) => <span className="text-base-content">{row.original.category_name ?? "Sin categoría"}</span>,
+    header: "Categoría",
   },
   {
     accessorKey: "description",
-    header: "Descripción",
     cell: ({ row }) => <span className="text-base-content/60">{row.original.description ?? "—"}</span>,
+    header: "Descripción",
   },
   {
     accessorKey: "current_stock",
-    header: "Stock actual",
     cell: ({ row }) => <span className="text-base-content">{row.original.current_stock}</span>,
+    header: "Stock actual",
   },
   {
-    id: "actions",
-    header: () => <div className="text-right">Acciones</div>,
     cell: ({ row, table }) => {
       const meta = table.options.meta as InventoryTableMeta;
       const { canAdjust, canUpdate, openAdjustStockModal, openEditModal } = meta;
@@ -44,27 +42,33 @@ export const columns: ColumnDef<InventoryItem>[] = [
       return (
         <div className="flex justify-end gap-3 px-4 py-3 text-right text-xs font-semibold tracking-wide uppercase">
           <Button
-            variant="secondary"
-            onClick={() => openAdjustStockModal(item)}
             disabled={!canAdjust}
-            title={canAdjust ? undefined : "Sin permiso"}
+            onClick={() => {
+              openAdjustStockModal(item);
+            }}
             size="sm"
+            title={canAdjust ? undefined : "Sin permiso"}
+            variant="secondary"
           >
-            {!canAdjust && <Lock size={12} className="mr-1" />}
+            {!canAdjust && <Lock className="mr-1" size={12} />}
             Ajustar stock
           </Button>
           <Button
-            variant="secondary"
-            onClick={() => openEditModal(item)}
             disabled={!canUpdate}
-            title={canUpdate ? undefined : "Sin permiso"}
+            onClick={() => {
+              openEditModal(item);
+            }}
             size="sm"
+            title={canUpdate ? undefined : "Sin permiso"}
+            variant="secondary"
           >
-            {!canUpdate && <Lock size={12} className="mr-1" />}
+            {!canUpdate && <Lock className="mr-1" size={12} />}
             Editar
           </Button>
         </div>
       );
     },
+    header: () => <div className="text-right">Acciones</div>,
+    id: "actions",
   },
 ];

@@ -3,12 +3,44 @@ import { useRef } from "react";
 import { cn } from "@/lib/utils";
 
 interface TimeInputProps {
-  value: string;
-  onChange: (value: string) => void;
-  onBlur?: () => void;
-  placeholder?: string;
   className?: string;
   disabled?: boolean;
+  onBlur?: () => void;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  value: string;
+}
+
+export default function TimeInput({ className, disabled, onBlur, onChange, placeholder, value }: TimeInputProps) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleBlur = () => {
+    // Al salir del campo, normalizar el valor (ej: "9" -> "09:00", "930" -> "09:30")
+    const normalized = normalizeTimeValue(value);
+    if (normalized && normalized !== value) {
+      onChange(normalized);
+    }
+    onBlur?.();
+  };
+
+  // Use a simple input with pattern matching instead of IMask for more flexibility
+  // This allows typing "9" and converting it to "09:00" on blur
+  return (
+    <input
+      className={cn("input input-bordered input-sm w-full text-center font-mono", className)}
+      disabled={disabled}
+      inputMode="numeric"
+      maxLength={5}
+      onBlur={handleBlur}
+      onChange={(e) => {
+        onChange(e.target.value);
+      }}
+      placeholder={placeholder || "HH:MM"}
+      ref={inputRef}
+      type="text"
+      value={value}
+    />
+  );
 }
 
 /**
@@ -70,34 +102,4 @@ function normalizeTimeValue(value: string): string {
   }
 
   return "";
-}
-
-export default function TimeInput({ value, onChange, onBlur, placeholder, className, disabled }: TimeInputProps) {
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const handleBlur = () => {
-    // Al salir del campo, normalizar el valor (ej: "9" -> "09:00", "930" -> "09:30")
-    const normalized = normalizeTimeValue(value);
-    if (normalized && normalized !== value) {
-      onChange(normalized);
-    }
-    onBlur?.();
-  };
-
-  // Use a simple input with pattern matching instead of IMask for more flexibility
-  // This allows typing "9" and converting it to "09:00" on blur
-  return (
-    <input
-      ref={inputRef}
-      type="text"
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      onBlur={handleBlur}
-      placeholder={placeholder || "HH:MM"}
-      className={cn("input input-bordered input-sm w-full text-center font-mono", className)}
-      disabled={disabled}
-      inputMode="numeric"
-      maxLength={5}
-    />
-  );
 }

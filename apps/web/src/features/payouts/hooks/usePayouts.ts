@@ -6,10 +6,10 @@ export function usePayouts() {
   const { data } = useSuspenseQuery(payoutKeys.list());
 
   return {
-    payouts: data.data,
-    total: data.total,
     page: data.page,
-    totalPages: data.totalPages,
+    payouts: data.data,
     refresh: async () => {}, // Handled by standard query invalidation if needed
+    total: data.total,
+    totalPages: data.totalPages,
   };
 }

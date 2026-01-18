@@ -12,8 +12,8 @@ import { personalFinanceKeys } from "../queries";
 import { type PayInstallmentInput, payInstallmentSchema, type PersonalCreditInstallment } from "../types";
 
 interface PayInstallmentModalProps {
-  creditId: number;
-  installment: PersonalCreditInstallment;
+  readonly creditId: number;
+  readonly installment: PersonalCreditInstallment;
 }
 
 export function PayInstallmentModal({ creditId, installment }: PayInstallmentModalProps) {
@@ -23,14 +23,14 @@ export function PayInstallmentModal({ creditId, installment }: PayInstallmentMod
   const mutation = useMutation({
     mutationFn: (data: PayInstallmentInput) =>
       personalFinanceApi.payInstallment(creditId, installment.installmentNumber, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: personalFinanceKeys.credit(creditId) });
-      toast.success("Cuota pagada exitosamente");
-      setOpen(false);
-    },
     onError: (error) => {
       toast.error("Error al pagar cuota");
       console.error(error);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: personalFinanceKeys.credit(creditId) });
+      toast.success("Cuota pagada exitosamente");
+      setOpen(false);
     },
   });
 
@@ -39,48 +39,58 @@ export function PayInstallmentModal({ creditId, installment }: PayInstallmentMod
       amount: Number(installment.amount),
       paymentDate: new Date(),
     } as PayInstallmentInput,
+    onSubmit: ({ value }) => {
+      mutation.mutate(value);
+    },
     validators: {
       onChange: payInstallmentSchema,
-    },
-    onSubmit: async ({ value }) => {
-      mutation.mutate(value);
     },
   });
 
   return (
     <>
-      <Button size="sm" variant="outline" onClick={() => setOpen(true)}>
+      <Button
+        onClick={() => {
+          setOpen(true);
+        }}
+        size="sm"
+        variant="outline"
+      >
         Pagar
       </Button>
 
       <Modal
-        isOpen={open}
-        onClose={() => setOpen(false)}
-        title={`Pagar Cuota #${installment.installmentNumber}`}
         className="max-w-md"
+        isOpen={open}
+        onClose={() => {
+          setOpen(false);
+        }}
+        title={`Pagar Cuota #${installment.installmentNumber}`}
       >
         <div className="mb-4 text-sm text-gray-500">
           Registrar pago de la cuota vencida el {new Date(installment.dueDate).toLocaleDateString()}.
         </div>
 
         <form
+          className="space-y-4"
           onSubmit={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            form.handleSubmit();
+            void form.handleSubmit();
           }}
-          className="space-y-4"
         >
           <form.Field name="amount">
             {(field) => (
               <div>
                 <Input
-                  type="number"
                   label="Monto Pagado"
-                  required
-                  value={field.state.value}
-                  onChange={(e) => field.handleChange(Number.parseFloat(e.target.value))}
                   onBlur={field.handleBlur}
+                  onChange={(e) => {
+                    field.handleChange(Number.parseFloat(e.target.value));
+                  }}
+                  required
+                  type="number"
+                  value={field.state.value}
                 />
                 {field.state.meta.errors.length > 0 && (
                   <p className="text-error mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
@@ -93,12 +103,14 @@ export function PayInstallmentModal({ creditId, installment }: PayInstallmentMod
             {(field) => (
               <div>
                 <Input
-                  type="date"
                   label="Fecha de Pago"
-                  required
-                  value={field.state.value ? field.state.value.toISOString().split("T")[0] : ""}
-                  onChange={(e) => field.handleChange(new Date(e.target.value))}
                   onBlur={field.handleBlur}
+                  onChange={(e) => {
+                    field.handleChange(new Date(e.target.value));
+                  }}
+                  required
+                  type="date"
+                  value={field.state.value ? field.state.value.toISOString().split("T")[0] : ""}
                 />
                 {field.state.meta.errors.length > 0 && (
                   <p className="text-error mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
@@ -108,10 +120,16 @@ export function PayInstallmentModal({ creditId, installment }: PayInstallmentMod
           </form.Field>
 
           <div className="mt-6 flex justify-end gap-3">
-            <Button variant="ghost" onClick={() => setOpen(false)} disabled={mutation.isPending}>
+            <Button
+              disabled={mutation.isPending}
+              onClick={() => {
+                setOpen(false);
+              }}
+              variant="ghost"
+            >
               Cancelar
             </Button>
-            <Button type="submit" isLoading={mutation.isPending}>
+            <Button isLoading={mutation.isPending} type="submit">
               {mutation.isPending ? "Pagando..." : "Confirmar Pago"}
             </Button>
           </div>

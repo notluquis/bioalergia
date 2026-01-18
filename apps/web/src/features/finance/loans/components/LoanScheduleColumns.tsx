@@ -23,12 +23,11 @@ export const getColumns = (
 ): ColumnDef<LoanSchedule>[] => [
   {
     accessorKey: "installment_number",
-    header: "#",
     cell: ({ row }) => <span className="text-base-content/70 font-medium">{row.original.installment_number}</span>,
+    header: "#",
   },
   {
     accessorKey: "due_date",
-    header: "Vencimiento",
     cell: ({ row }) => {
       const schedule = row.original;
       const isLate = isScheduleLate(schedule);
@@ -38,35 +37,35 @@ export const getColumns = (
         </span>
       );
     },
+    header: "Vencimiento",
   },
   {
     accessorKey: "expected_principal",
-    header: () => <div className="text-right">Capital</div>,
     cell: ({ row }) => (
       <div className="text-right font-mono text-xs opacity-70">
         {currencyFormatter.format(row.original.expected_principal)}
       </div>
     ),
+    header: () => <div className="text-right">Capital</div>,
   },
   {
     accessorKey: "expected_interest",
-    header: () => <div className="text-right">Interés</div>,
     cell: ({ row }) => (
       <div className="text-right font-mono text-xs opacity-70">
         {currencyFormatter.format(row.original.expected_interest)}
       </div>
     ),
+    header: () => <div className="text-right">Interés</div>,
   },
   {
     accessorKey: "expected_amount",
-    header: () => <div className="text-right">Cuota</div>,
     cell: ({ row }) => (
       <div className="text-right font-bold">{currencyFormatter.format(row.original.expected_amount)}</div>
     ),
+    header: () => <div className="text-right">Cuota</div>,
   },
   {
     accessorKey: "status",
-    header: () => <div className="text-center">Estado</div>,
     cell: ({ row }) => {
       const schedule = row.original;
       const isLate = isScheduleLate(schedule);
@@ -91,10 +90,10 @@ export const getColumns = (
         </div>
       );
     },
+    header: () => <div className="text-center">Estado</div>,
   },
   {
     accessorKey: "paid_amount",
-    header: () => <div className="text-right">Pagado</div>,
     cell: ({ row }) => {
       const schedule = row.original;
       if (!schedule.paid_amount) {
@@ -109,31 +108,34 @@ export const getColumns = (
         </div>
       );
     },
+    header: () => <div className="text-right">Pagado</div>,
   },
   ...(canManage
     ? [
         {
-          id: "actions",
-          header: () => <div className="text-right">Acciones</div>,
           cell: ({ row }) => {
             const schedule = row.original;
             return (
               <div className="flex justify-end">
                 {schedule.status === "PAID" || schedule.status === "PARTIAL" ? (
                   <Button
-                    variant="ghost"
+                    onClick={() => {
+                      actions.onUnlinkPayment(schedule);
+                    }}
                     size="xs"
-                    onClick={() => actions.onUnlinkPayment(schedule)}
                     title="Desvincular pago"
+                    variant="ghost"
                   >
                     Desvincular
                   </Button>
                 ) : (
                   <Button
-                    variant="primary"
-                    size="xs"
-                    onClick={() => actions.onRegisterPayment(schedule)}
                     disabled={schedule.loan_id === 0}
+                    onClick={() => {
+                      actions.onRegisterPayment(schedule);
+                    }}
+                    size="xs"
+                    variant="primary"
                   >
                     Pagar
                   </Button>
@@ -141,6 +143,8 @@ export const getColumns = (
               </div>
             );
           },
+          header: () => <div className="text-right">Acciones</div>,
+          id: "actions",
         } as ColumnDef<LoanSchedule>,
       ]
     : []),

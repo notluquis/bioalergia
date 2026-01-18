@@ -4,18 +4,18 @@ import { numberFormatter } from "@/lib/format";
 import { INPUT_CURRENCY_SM } from "@/lib/styles";
 
 interface MoneyInputProps {
+  disabled?: boolean;
+  hint?: string;
   icon?: ReactNode;
   label: string;
-  value: string;
   onChange: (next: string) => void;
-  hint?: string;
-  disabled?: boolean;
+  value: string;
 }
 
 /**
  * Reusable currency input component for financial forms
  */
-export function MoneyInput({ icon, label, value, onChange, hint, disabled }: MoneyInputProps) {
+export function MoneyInput({ disabled, hint, icon, label, onChange, value }: MoneyInputProps) {
   return (
     <div className="form-control">
       <label className="label py-1">
@@ -27,16 +27,16 @@ export function MoneyInput({ icon, label, value, onChange, hint, disabled }: Mon
       <label className={INPUT_CURRENCY_SM}>
         <span className="text-base-content/60 text-xs sm:text-sm">$</span>
         <input
-          type="text"
+          className="text-base-content placeholder:text-base-content/40 grow bg-transparent text-xs sm:text-sm md:text-base"
+          disabled={disabled}
           inputMode="numeric"
-          value={value ? numberFormatter.format(Number(value)) : ""}
           onChange={(e) => {
             const raw = e.target.value.replaceAll(/[^0-9-]/g, "");
             onChange(raw);
           }}
-          className="text-base-content placeholder:text-base-content/40 grow bg-transparent text-xs sm:text-sm md:text-base"
           placeholder="0"
-          disabled={disabled}
+          type="text"
+          value={value ? numberFormatter.format(Number(value)) : ""}
         />
       </label>
       {hint && <span className="text-base-content/60 mt-1 text-xs">{hint}</span>}
