@@ -4,9 +4,9 @@ import React from "react";
 
 import { PerformanceIndicator } from "@/components/features/PerformanceIndicator";
 import { UpdateNotification } from "@/components/features/UpdateNotification";
-import Header from "@/components/Layout/Header";
-import { BottomNav } from "@/components/Layout/MobileNav";
-import Sidebar from "@/components/Layout/Sidebar";
+import Header from "@/components/layouts/Header";
+import { BottomNav } from "@/components/layouts/MobileNav";
+import Sidebar from "@/components/layouts/Sidebar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/Tooltip";
 import { useAuth } from "@/context/AuthContext";
 import { useSettings } from "@/context/SettingsContext";
@@ -24,6 +24,7 @@ export const Route = createFileRoute("/_authed")({
 
     // If not authenticated, redirect to login with return URL
     if (!user) {
+      // eslint-disable-next-line @typescript-eslint/only-throw-error
       throw routeApi.redirect({
         search: {
           redirect: location.href,
@@ -34,6 +35,7 @@ export const Route = createFileRoute("/_authed")({
 
     // Force onboarding if status is pending
     if (user.status === "PENDING_SETUP" && !location.pathname.startsWith("/onboarding")) {
+      // eslint-disable-next-line @typescript-eslint/only-throw-error
       throw routeApi.redirect({
         to: "/onboarding",
       });
@@ -92,10 +94,10 @@ function AuthedLayout() {
   }, []);
 
   React.useEffect(() => {
-    if (settings?.pageTitle) {
+    if (settings.pageTitle) {
       document.title = settings.pageTitle;
     }
-  }, [settings?.pageTitle]);
+  }, [settings.pageTitle]);
 
   // Handle PWA File Launch (macOS/Windows "Open With")
   React.useEffect(() => {

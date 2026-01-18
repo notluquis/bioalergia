@@ -63,7 +63,8 @@ export function StatCard({
   title,
   tone = "default",
   value,
-}: StatCardProps) {
+}: Readonly<StatCardProps>) {
+  // eslint-disable-next-line security/detect-object-injection
   const sizes = sizeClasses[size];
 
   return (
@@ -77,6 +78,7 @@ export function StatCard({
         {Icon && <Icon className="h-4 w-4" />}
         {title}
       </p>
+      {/* eslint-disable-next-line security/detect-object-injection */}
       <p className={cn("mt-2", toneClasses[tone], sizes.value)}>
         {value}
         {suffix && <span className="text-base-content/50 ml-1 text-sm font-normal">{suffix}</span>}

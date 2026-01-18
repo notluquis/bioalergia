@@ -55,7 +55,7 @@ export function CalendarFilterPanel({
   onReset,
   showDateRange = false,
   showSearch = false,
-}: CalendarFilterPanelProps) {
+}: Readonly<CalendarFilterPanelProps>) {
   // ... (keep logic)
   // Build event type options for MultiSelect
   const eventTypeOptions: MultiSelectOption[] = availableEventTypes.map((entry) => {

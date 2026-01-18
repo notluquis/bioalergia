@@ -12,7 +12,7 @@ interface BackdropProps {
   zIndex?: number;
 }
 
-export default function Backdrop({ className, isVisible, onClose, zIndex = 40 }: BackdropProps) {
+export default function Backdrop({ className, isVisible, onClose, zIndex = 40 }: Readonly<BackdropProps>) {
   if (!isVisible) return null;
 
   return (

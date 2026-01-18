@@ -14,6 +14,7 @@ interface ClassificationRowProps {
   categoryChoices: readonly string[];
   event: CalendarUnclassifiedEvent;
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   form: any;
   index: number;
   isSaving: boolean;
@@ -31,15 +32,17 @@ export function ClassificationRow({
   onReset,
   onSave,
   treatmentStageChoices,
-}: ClassificationRowProps) {
+}: Readonly<ClassificationRowProps>) {
   const description = event.description?.trim();
 
   // Subscribe to category for conditional fields
 
+  /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument, security/detect-object-injection */
   const category = useStore(
     form.store,
     (state: any) => (state as { values: FormValues }).values.entries[index]?.category ?? ""
   );
+  /* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument, security/detect-object-injection */
   const isSubcutaneous = category === "Tratamiento subcutáneo";
 
   return (
@@ -161,7 +164,7 @@ export function ClassificationRow({
             {(field: { handleChange: (v: boolean) => void; state: { value: boolean } }) => (
               <div className="flex items-end">
                 <Checkbox
-                  checked={field.state.value ?? false}
+                  checked={field.state.value}
                   label="Asistió / llegó"
                   onChange={(e) => {
                     field.handleChange(e.target.checked);

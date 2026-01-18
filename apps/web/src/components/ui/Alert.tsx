@@ -16,7 +16,7 @@ interface AlertProps {
   variant?: "error" | "info" | "success" | "warning";
 }
 
-export default function Alert({ children, className = "", onClose, variant = "error" }: AlertProps) {
+export default function Alert({ children, className = "", onClose, variant = "error" }: Readonly<AlertProps>) {
   const variantMap = {
     error: "alert-error text-white",
     info: "alert-info text-white",
@@ -25,6 +25,7 @@ export default function Alert({ children, className = "", onClose, variant = "er
   };
 
   return (
+    // eslint-disable-next-line security/detect-object-injection
     <div className={cn("alert rounded-2xl shadow-lg", variantMap[variant], className)} role="alert">
       <div className="flex flex-1 items-center gap-2">{children}</div>
       {onClose && (

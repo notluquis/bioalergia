@@ -30,6 +30,16 @@ export interface AppSettings {
   tagline: string;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
+export function applyBranding(next: AppSettings) {
+  const root = document.documentElement;
+  root.style.setProperty("--brand-primary", next.primaryColor);
+  root.style.setProperty("--brand-primary-rgb", colorToRgb(next.primaryColor));
+  root.style.setProperty("--brand-secondary", next.secondaryColor);
+  root.style.setProperty("--brand-secondary-rgb", colorToRgb(next.secondaryColor));
+}
+
+// eslint-disable-next-line react-refresh/only-export-components
 export const DEFAULT_SETTINGS: AppSettings = {
   orgAddress: "",
   orgName: APP_CONFIG.name,
@@ -44,9 +54,10 @@ export interface SettingsContextType {
   updateSettings: (next: AppSettings) => Promise<void>;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
-export function SettingsProvider({ children }: { children: ReactNode }) {
+export function SettingsProvider({ children }: Readonly<{ children: ReactNode }>) {
   const { hasRole, user } = useAuth();
   const queryClient = useQueryClient();
 
@@ -108,7 +119,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     );
     if (payload.status !== "ok" || !payload.settings) {
       logger.warn("[settings] update:error", { message: payload.message });
-      throw new Error(payload.message || "No se pudo actualizar la configuración");
+      throw new Error(payload.message ?? "No se pudo actualizar la configuración");
     }
     applyBranding(payload.settings);
     logger.info("[settings] update:success", payload.settings);
@@ -144,20 +155,13 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   return <SettingsContext value={value}>{children}</SettingsContext>;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useSettings() {
   const ctx = useContext(SettingsContext);
   if (!ctx) {
     throw new Error("useSettings debe usarse dentro de un SettingsProvider.");
   }
   return ctx;
-}
-
-function applyBranding(next: AppSettings) {
-  const root = document.documentElement;
-  root.style.setProperty("--brand-primary", next.primaryColor);
-  root.style.setProperty("--brand-primary-rgb", colorToRgb(next.primaryColor));
-  root.style.setProperty("--brand-secondary", next.secondaryColor);
-  root.style.setProperty("--brand-secondary-rgb", colorToRgb(next.secondaryColor));
 }
 
 const DEFAULT_RGB_BLACK = "0 0 0";

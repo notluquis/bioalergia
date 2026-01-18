@@ -12,7 +12,7 @@ interface DayNavigationProps {
   selectedDate: string;
 }
 
-export function DayNavigation({ className, onSelect, rightSlot, selectedDate }: DayNavigationProps) {
+export function DayNavigation({ className, onSelect, rightSlot, selectedDate }: Readonly<DayNavigationProps>) {
   const current = dayjs(selectedDate);
   const today = dayjs();
 

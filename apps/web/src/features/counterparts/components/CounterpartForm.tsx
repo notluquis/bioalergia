@@ -49,7 +49,13 @@ interface CounterpartFormProps {
 
 type CounterpartFormValues = z.infer<typeof counterpartFormSchema>;
 
-export default function CounterpartForm({ counterpart, error, loading = false, onSave, saving }: CounterpartFormProps) {
+export default function CounterpartForm({
+  counterpart,
+  error,
+  loading = false,
+  onSave,
+  saving,
+}: Readonly<CounterpartFormProps>) {
   const form = useForm({
     defaultValues: {
       category: "OTHER" as CounterpartCategory,

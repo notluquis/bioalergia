@@ -61,7 +61,7 @@ interface PaddingCell {
   type: "padding";
 }
 
-function HeatmapMonthComponent({ maxValue, month, statsByDate }: HeatmapMonthProps) {
+function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<HeatmapMonthProps>) {
   // KEEP useMemo: Heavy Array generation with multiple map/format operations
   const dates = useMemo(() => {
     const startOfMonth = month.startOf("month");

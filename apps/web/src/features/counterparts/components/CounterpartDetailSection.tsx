@@ -20,7 +20,7 @@ export default function CounterpartDetailSection({
   onEdit,
   onSummaryRangeChange,
   summaryRange,
-}: CounterpartDetailSectionProps) {
+}: Readonly<CounterpartDetailSectionProps>) {
   const { data: detail } = useSuspenseQuery(counterpartKeys.detail(counterpartId));
   const { data: summary } = useSuspenseQuery(counterpartKeys.summary(counterpartId, summaryRange));
 

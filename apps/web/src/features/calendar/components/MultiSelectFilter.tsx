@@ -18,13 +18,13 @@ export function MultiSelectFilter({
   options,
   placeholder,
   selected,
-}: {
+}: Readonly<{
   label: string;
   onToggle: (value: string) => void;
   options: MultiSelectOption[];
   placeholder: string;
   selected: string[];
-}) {
+}>) {
   // React Compiler auto-memoizes derived values
   const getDisplayText = () => {
     if (selected.length === 0) {

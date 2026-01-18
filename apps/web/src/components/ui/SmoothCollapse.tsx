@@ -8,7 +8,7 @@ interface SmoothCollapseProps {
   isOpen: boolean;
 }
 
-export function SmoothCollapse({ children, className, isOpen }: SmoothCollapseProps) {
+export function SmoothCollapse({ children, className, isOpen }: Readonly<SmoothCollapseProps>) {
   return (
     <div
       aria-hidden={!isOpen}

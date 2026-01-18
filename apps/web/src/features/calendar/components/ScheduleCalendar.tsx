@@ -13,7 +13,7 @@ export interface ScheduleCalendarProps {
   weekStart?: string; // YYYY-MM-DD of week start (Monday)
 }
 
-export function ScheduleCalendar({ events, loading = false, weekStart }: ScheduleCalendarProps) {
+export function ScheduleCalendar({ events, loading = false, weekStart }: Readonly<ScheduleCalendarProps>) {
   const [selectedEvent, setSelectedEvent] = useState<CalendarEventDetail | null>(null);
   const detailPanelRef = useRef<HTMLDivElement>(null);
 

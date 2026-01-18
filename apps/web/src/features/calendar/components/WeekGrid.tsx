@@ -73,14 +73,14 @@ function groupEventsByDay(events: CalendarEventDetail[], weekStart: dayjs.Dayjs)
   // Initialize 6 days (Mon-Sat)
   for (let i = 0; i < 6; i++) {
     const date = weekStart.add(i, "day").format("YYYY-MM-DD");
-    days[date] = [];
+    days[date] = []; // eslint-disable-line security/detect-object-injection
   }
 
   for (const event of events) {
     const eventDate = event.startDateTime ? dayjs(event.startDateTime).format("YYYY-MM-DD") : event.startDate;
 
     if (eventDate && days[eventDate]) {
-      days[eventDate].push(event);
+      days[eventDate].push(event); // eslint-disable-line security/detect-object-injection
     }
   }
 
@@ -92,7 +92,7 @@ function groupEventsByDay(events: CalendarEventDetail[], weekStart: dayjs.Dayjs)
 // Non-overlapping events get full width (1 column)
 const MAX_COLUMNS = 6;
 
-export function WeekGrid({ events, loading, onEventClick, weekStart }: WeekGridProps) {
+export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<WeekGridProps>) {
   // Parse weekStart and get Monday of that week using ISO week (Monday = 1)
   const monday = (() => {
     const parsed = dayjs(weekStart);
@@ -105,6 +105,7 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: WeekGridP
   })();
 
   // Calculate time bounds based based on events AND current time
+  // eslint-disable-next-line sonarjs/cognitive-complexity
   const { endHour, startHour } = (() => {
     // Filter events to only those in the displayed week (Mon-Sat)
     const weekEnd = monday.add(5, "day").endOf("day");
@@ -237,6 +238,7 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: WeekGridP
 
             {/* Events */}
             <div className="week-grid__events">
+              {}
               {calculateEventLayout(eventsByDay[day.key] ?? []).map((event) => {
                 const position = getEventPosition(event, startHour, endHour);
                 if (!position) return null;
@@ -338,6 +340,7 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: WeekGridP
   );
 }
 
+// eslint-disable-next-line sonarjs/cognitive-complexity
 function calculateEventLayout(events: CalendarEventDetail[]): EventWithLayout[] {
   if (events.length === 0) return [];
 
@@ -419,7 +422,7 @@ function calculateEventLayout(events: CalendarEventDetail[]): EventWithLayout[] 
         columnIndex = columns.length;
         columns.push(end);
       } else {
-        columns[columnIndex] = end;
+        columns[columnIndex] = end; // eslint-disable-line security/detect-object-injection
       }
 
       clusterEvents.push({ column: columnIndex, event });
@@ -453,7 +456,7 @@ function getCategoryClass(category: null | string | undefined): string {
 }
 
 // Current time indicator - Live Updating
-function NowIndicator({ endHour, startHour }: { endHour: number; startHour: number }) {
+function NowIndicator({ endHour, startHour }: Readonly<{ endHour: number; startHour: number }>) {
   const [now, setNow] = useState(dayjs());
 
   useEffect(() => {
