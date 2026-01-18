@@ -69,7 +69,7 @@ export default function PersonDetailsPage() {
                 </div>
                 <div>
                   <p className="text-base-content/50 text-xs">Email</p>
-                  <p className="font-medium">{person.email || "No registrado"}</p>
+                  <p className="font-medium">{person.email ?? "No registrado"}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
@@ -78,7 +78,7 @@ export default function PersonDetailsPage() {
                 </div>
                 <div>
                   <p className="text-base-content/50 text-xs">Teléfono</p>
-                  <p className="font-medium">{person.phone || "No registrado"}</p>
+                  <p className="font-medium">{person.phone ?? "No registrado"}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
@@ -87,7 +87,7 @@ export default function PersonDetailsPage() {
                 </div>
                 <div>
                   <p className="text-base-content/50 text-xs">Dirección</p>
-                  <p className="font-medium">{person.address || "No registrada"}</p>
+                  <p className="font-medium">{person.address ?? "No registrada"}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">

@@ -41,7 +41,7 @@ export default function OnboardingWizard() {
   // Security: Redirect if user already completed onboarding
   useEffect(() => {
     if (user && user.status !== "PENDING_SETUP") {
-      navigate({ replace: true, to: "/" });
+      void navigate({ replace: true, to: "/" });
     }
   }, [user, navigate]);
 
@@ -54,15 +54,15 @@ export default function OnboardingWizard() {
 
   // Form State
   const [profile, setProfile] = useState<ProfileData>(() => ({
-    address: profileData.address || "",
-    bankAccountNumber: profileData.bankAccountNumber || "",
-    bankAccountType: profileData.bankAccountType || "",
-    bankName: profileData.bankName || "",
-    fatherName: profileData.fatherName || "",
-    motherName: profileData.motherName || "",
-    names: profileData.names || "",
-    phone: profileData.phone || "",
-    rut: profileData.rut || "",
+    address: profileData.address ?? "",
+    bankAccountNumber: profileData.bankAccountNumber ?? "",
+    bankAccountType: profileData.bankAccountType ?? "",
+    bankName: profileData.bankName ?? "",
+    fatherName: profileData.fatherName,
+    motherName: profileData.motherName ?? "",
+    names: profileData.names,
+    phone: profileData.phone ?? "",
+    rut: profileData.rut,
   }));
 
   const [mfaCode, setMfaCode] = useState("");
@@ -77,7 +77,7 @@ export default function OnboardingWizard() {
   const mfaSetupMutation = useMutation({
     mutationFn: () =>
       setupMfa().then((res) => {
-        if (res.status !== "ok") throw new Error(res.message || "Error al iniciar configuración MFA");
+        if (res.status !== "ok") throw new Error(res.message ?? "Error al iniciar configuración MFA");
         return res;
       }),
     onError: () => {
@@ -91,7 +91,7 @@ export default function OnboardingWizard() {
   const mfaVerifyMutation = useMutation({
     mutationFn: (token: string) =>
       enableMfa({ secret: mfaSecret?.secret, token }).then((res) => {
-        if (res.status !== "ok") throw new Error(res.message || "Código incorrecto");
+        if (res.status !== "ok") throw new Error(res.message ?? "Código incorrecto");
         return res;
       }),
     onError: (err) => {
@@ -112,7 +112,7 @@ export default function OnboardingWizard() {
       const attResp = await startRegistration({ optionsJSON: options });
 
       const verifyData = await verifyPasskeyRegistration({ body: attResp, challenge: options.challenge });
-      if (verifyData.status !== "ok") throw new Error(verifyData.message || "Error al verificar passkey");
+      if (verifyData.status !== "ok") throw new Error(verifyData.message ?? "Error al verificar passkey");
     },
     onError: (err) => {
       console.error(err);
@@ -149,7 +149,7 @@ export default function OnboardingWizard() {
       setError("Error al finalizar la configuración. Inténtalo de nuevo.");
     },
     onSuccess: () => {
-      navigate({ to: "/" });
+      void navigate({ to: "/" });
     },
   });
 

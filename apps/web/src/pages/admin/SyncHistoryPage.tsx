@@ -24,7 +24,7 @@ const ChangeDetailsViewer = ({ data }: { data: unknown }) => {
 
   // Group by action
   const grouped = details.reduce<Record<string, ChangeDetail[]>>((acc, item) => {
-    const action = item.action || "unknown";
+    const action = item.action ?? "unknown";
     if (!acc[action]) acc[action] = [];
     acc[action].push(item);
     return acc;
@@ -58,7 +58,7 @@ const ChangeDetailsViewer = ({ data }: { data: unknown }) => {
                 {items.slice(0, 50).map((item, idx) => (
                   <div className="border-base-300 flex items-start gap-2 border-b pb-1 text-xs last:border-0" key={idx}>
                     <span className="text-base-content/70 flex-1 truncate" title={item.summary}>
-                      {item.summary || item.eventId || "Sin título"}
+                      {item.summary ?? item.eventId ?? "Sin título"}
                     </span>
                     {item.fields && item.fields.length > 0 && (
                       <span className="text-base-content/50 shrink-0 font-mono">[{item.fields.join(", ")}]</span>
@@ -188,13 +188,13 @@ export default function SyncHistoryPage() {
                     {/* Metrics */}
                     <div className="flex gap-2 text-xs">
                       <span className="bg-success/10 text-success rounded px-1.5 py-0.5" title="Insertados">
-                        +{log.inserted || 0}
+                        +{log.inserted ?? 0}
                       </span>
                       <span className="bg-info/10 text-info rounded px-1.5 py-0.5" title="Actualizados">
-                        ~{log.updated || 0}
+                        ~{log.updated ?? 0}
                       </span>
                       <span className="bg-warning/10 text-warning rounded px-1.5 py-0.5" title="Omitidos">
-                        -{log.skipped || 0}
+                        -{log.skipped ?? 0}
                       </span>
                     </div>
 
@@ -224,19 +224,19 @@ export default function SyncHistoryPage() {
                             </div>
                             <div>
                               <span className="text-base-content/60 block text-xs">Insertados</span>
-                              <span className="text-success text-lg font-bold">{log.inserted || 0}</span>
+                              <span className="text-success text-lg font-bold">{log.inserted ?? 0}</span>
                             </div>
                             <div>
                               <span className="text-base-content/60 block text-xs">Actualizados</span>
-                              <span className="text-info text-lg font-bold">{log.updated || 0}</span>
+                              <span className="text-info text-lg font-bold">{log.updated ?? 0}</span>
                             </div>
                             <div>
                               <span className="text-base-content/60 block text-xs">Omitidos</span>
-                              <span className="text-warning text-lg font-bold">{log.skipped || 0}</span>
+                              <span className="text-warning text-lg font-bold">{log.skipped ?? 0}</span>
                             </div>
                             <div>
                               <span className="text-base-content/60 block text-xs">Excluidos</span>
-                              <span className="text-base-content/70 text-lg font-bold">{log.excluded || 0}</span>
+                              <span className="text-base-content/70 text-lg font-bold">{log.excluded ?? 0}</span>
                             </div>
                           </div>
 

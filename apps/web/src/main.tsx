@@ -58,14 +58,14 @@ async function handleChunkLoadError() {
 
 // Global error handler for chunk load failures (runs before React mounts)
 globalThis.addEventListener("error", (event) => {
-  const message = event.message || "";
+  const message = event.message;
   if (/Loading chunk|Failed to fetch dynamically imported module|Importing a module script failed/i.test(message)) {
     handleChunkLoadError();
   }
 });
 
 globalThis.addEventListener("unhandledrejection", (event) => {
-  const message = event.reason?.message || String(event.reason) || "";
+  const message = event.reason?.message ?? String(event.reason);
   if (/Loading chunk|Failed to fetch dynamically imported module|Importing a module script failed/i.test(message)) {
     event.preventDefault();
     handleChunkLoadError();
@@ -147,7 +147,7 @@ ReactDOM.createRoot(document.querySelector("#root")!).render(
     <GlobalError>
       <ChunkErrorBoundary>
         <QueryClientProvider client={queryClient}>
-          <QuerySettingsProvider value={{ endpoint: `${import.meta.env.VITE_API_URL || ""}/api/model` }}>
+          <QuerySettingsProvider value={{ endpoint: `${import.meta.env.VITE_API_URL}/api/model` }}>
             <AuthProvider>
               <SettingsProvider>
                 <ToastProvider>

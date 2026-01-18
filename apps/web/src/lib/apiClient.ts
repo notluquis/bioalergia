@@ -65,8 +65,8 @@ async function handleKyError(error: HTTPError) {
       }
 
       if (errorData) {
-        serverMessage = errorData.message || errorData.error || serverMessage;
-        details = errorData.details || errorData.issues;
+        serverMessage = errorData.message ?? errorData.error ?? serverMessage;
+        details = errorData.details ?? errorData.issues;
       }
     }
   } catch {
@@ -195,7 +195,7 @@ export async function uploadFiles(files: File[], endpoint: string, logContext: s
       const payload = ApiResponseSchema.parse(json);
 
       if (payload.status === "error") {
-        throw new Error(payload.message || "Error status returned");
+        throw new Error(payload.message ?? "Error status returned");
       }
 
       logger.info(`${logContext} archivo procesado`, { file: file.name, ...payload });
