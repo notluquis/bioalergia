@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { FormattedEventDescription } from "./FormattedEventDescription";
 
 interface DailyEventCardProps {
-  event: CalendarEventDetail;
+  readonly event: CalendarEventDetail;
 }
 
 export function DailyEventCard({ event }: DailyEventCardProps) {
@@ -48,7 +48,7 @@ export function DailyEventCard({ event }: DailyEventCardProps) {
       <div className="min-w-0 space-y-1.5">
         {/* Title */}
         <h3 className="truncate text-sm leading-tight font-semibold sm:text-base">
-          {event.summary?.trim() || "(Sin título)"}
+          {event.summary?.trim() ?? "(Sin título)"}
         </h3>
 
         {/* Details Row: Amounts + Attendance */}

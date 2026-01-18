@@ -12,11 +12,11 @@ import type { MonthlyFlowData } from "../types";
 const MonthlyFlowChartInner = lazy(() => import("./MonthlyFlowChartInner.js"));
 
 interface MonthlyFlowChartProps {
-  data: MonthlyFlowData[];
+  readonly data: MonthlyFlowData[];
 }
 
 export default function MonthlyFlowChart({ data }: MonthlyFlowChartProps) {
-  if (!data || data.length === 0) {
+  if (data.length === 0) {
     return (
       <div className="bg-base-100 border-base-200 rounded-2xl border p-6 shadow-sm">
         <h2 className="mb-4 flex items-center gap-2 text-lg font-bold">

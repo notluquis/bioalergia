@@ -28,11 +28,11 @@ export function buildPayload(
   entry: z.infer<typeof classificationSchema>,
   event: CalendarUnclassifiedEvent
 ): ParsedPayload {
-  const category = entry.category?.trim() || null;
-  const resolvedCategory = category ?? event.category ?? null;
+  const category = entry.category?.trim() ?? null;
+  const resolvedCategory = category ?? event.category;
   const amountExpected = parseAmountInput(entry.amountExpected) ?? event.amountExpected ?? null;
   const amountPaid = parseAmountInput(entry.amountPaid) ?? event.amountPaid ?? null;
-  const attended = entry.attended ?? event.attended ?? null;
+  const attended = entry.attended;
   const dosage = entry.dosage?.trim() ? entry.dosage.trim() : null;
   const treatmentStage =
     resolvedCategory === "Tratamiento subcutáneo" && entry.treatmentStage?.trim() ? entry.treatmentStage.trim() : null;

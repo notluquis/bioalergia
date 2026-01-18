@@ -10,11 +10,11 @@ import { fmtCLP } from "@/lib/format";
 import type { MovementTypeData } from "../types";
 
 interface MovementTypeListProps {
-  data: MovementTypeData[];
+  readonly data: MovementTypeData[];
 }
 
 export default function MovementTypeList({ data }: MovementTypeListProps) {
-  if (!data || data.length === 0) {
+  if (data.length === 0) {
     return <div className="text-base-content/60 py-6 text-center text-sm">No hay movimientos para mostrar</div>;
   }
 
@@ -38,7 +38,7 @@ export default function MovementTypeList({ data }: MovementTypeListProps) {
               className="hover:bg-base-200/50 flex items-center justify-between rounded-lg border border-transparent p-2 transition-colors"
               key={index}
             >
-              <span className="text-sm">{item.description || "Sin categoría"}</span>
+              <span className="text-sm">{item.description ?? "Sin categoría"}</span>
               <span className={`font-mono text-sm font-semibold ${colorClass}`}>{fmtCLP(item.total)}</span>
             </div>
           ))}

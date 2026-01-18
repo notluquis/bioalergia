@@ -19,7 +19,7 @@ const moneyColumn = (
     if (!amount) return <div className={`text-${align}`}>-</div>;
     let className = `text-${align}`;
     if (isNegative) className += " text-error";
-    return <div className={className}>{formatAmount(amount, currency)}</div>;
+    return <div className={className}>{formatAmount(amount as number | string, currency)}</div>;
   },
   header,
   minSize: 100,
@@ -75,7 +75,7 @@ export const columns: ColumnDef<ReleaseTransaction>[] = [
   {
     accessorKey: "description",
     cell: ({ row }) => (
-      <span className="block max-w-50 truncate" title={row.original.description || ""}>
+      <span className="block max-w-50 truncate" title={row.original.description ?? ""}>
         {" "}
         {row.original.description}
       </span>
@@ -143,13 +143,13 @@ export const columns: ColumnDef<ReleaseTransaction>[] = [
   },
   {
     accessorKey: "orderId",
-    cell: ({ row }) => <span className="font-mono text-xs">{String(row.original.orderId || "-")}</span>,
+    cell: ({ row }) => <span className="font-mono text-xs">{row.original.orderId ?? "-"}</span>,
     header: "ID Orden",
     minSize: 120,
   },
   {
     accessorKey: "shippingId",
-    cell: ({ row }) => <span className="font-mono text-xs">{String(row.original.shippingId || "-")}</span>,
+    cell: ({ row }) => <span className="font-mono text-xs">{row.original.shippingId ?? "-"}</span>,
     header: "ID Envío",
     minSize: 120,
   },
@@ -173,7 +173,7 @@ export const columns: ColumnDef<ReleaseTransaction>[] = [
   { accessorKey: "shippingOrderId", header: "ID Orden Envío", minSize: 150 },
   {
     accessorKey: "packId",
-    cell: ({ row }) => <span className="font-mono text-xs">{String(row.original.packId || "-")}</span>,
+    cell: ({ row }) => <span className="font-mono text-xs">{row.original.packId ?? "-"}</span>,
     header: "ID Paquete",
     minSize: 120,
   },

@@ -5,11 +5,10 @@ import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
 import { ChevronLeft, ChevronRight, Filter } from "lucide-react";
 import { useEffect, useState } from "react";
 
-import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
 import { CalendarFilterPanel } from "@/features/calendar/components/CalendarFilterPanel";
 import ScheduleCalendar from "@/features/calendar/components/ScheduleCalendar";
-import { useCalendarEvents } from "@/features/calendar/hooks/useCalendarEvents";
+import { useCalendarEvents } from "@/features/calendar/hooks/use-calendar-events";
 import { numberFormatter } from "@/lib/format";
 import { PAGE_CONTAINER } from "@/lib/styles";
 
@@ -32,7 +31,6 @@ function CalendarSchedulePage() {
     availableCategories,
     availableEventTypes,
     daily,
-    error,
     filters,
     isDirty,
     loading,
@@ -160,12 +158,6 @@ function CalendarSchedulePage() {
           />
         )}
       </header>
-
-      {error && (
-        <Alert className="mt-3" variant="error">
-          {error}
-        </Alert>
-      )}
 
       {/* Calendar - Main Content */}
       <div className="mt-4">

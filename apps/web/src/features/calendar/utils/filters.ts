@@ -39,7 +39,7 @@ export const computeDefaultFilters = (settings: {
   calendarSyncLookaheadDays?: string;
   calendarSyncStart?: string;
 }): CalendarFilters => {
-  const syncStart = settings.calendarSyncStart?.trim() || "2000-01-01";
+  const syncStart = settings.calendarSyncStart?.trim() ?? "2000-01-01";
   const lookaheadRaw = Number(settings.calendarSyncLookaheadDays ?? "365");
   const lookahead = Number.isFinite(lookaheadRaw) && lookaheadRaw > 0 ? Math.min(Math.floor(lookaheadRaw), 1095) : 365;
   const defaultMax = Number(settings.calendarDailyMaxDays ?? "28");

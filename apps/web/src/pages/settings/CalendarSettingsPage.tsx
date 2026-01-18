@@ -5,7 +5,7 @@ import type { CalendarData } from "@/features/calendar/types";
 
 import Button from "@/components/ui/Button";
 import { SyncProgressPanel } from "@/features/calendar/components/SyncProgressPanel";
-import { useCalendarEvents } from "@/features/calendar/hooks/useCalendarEvents";
+import { useCalendarEvents } from "@/features/calendar/hooks/use-calendar-events";
 import { calendarQueries } from "@/features/calendar/queries";
 import { cn } from "@/lib/utils";
 
@@ -16,7 +16,7 @@ export default function CalendarSettingsPage() {
   // Fetch calendars
   const { data: calendars } = useSuspenseQuery(calendarQueries.list());
 
-  const lastSync = syncLogs?.[0];
+  const lastSync = syncLogs[0];
   const getSyncStatus = () => {
     const status = lastSync?.status;
     return status === "RUNNING" || status === "SUCCESS" || status === "ERROR" ? status : undefined;
