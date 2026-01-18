@@ -39,11 +39,11 @@ export const getAccountGroupColumns = (
     header: "Cuenta",
   }),
   accountGroupHelper.accessor("bankName", {
-    cell: ({ getValue }) => getValue() || "-",
+    cell: ({ getValue }) => getValue() ?? "-",
     header: "Banco",
   }),
   accountGroupHelper.accessor("holder", {
-    cell: ({ getValue }) => getValue() || "-",
+    cell: ({ getValue }) => getValue() ?? "-",
     header: "Titular",
   }),
   accountGroupHelper.accessor("concept", {
@@ -106,11 +106,11 @@ export const getQuickViewColumns = () => [
     header: "Fecha",
   }),
   quickViewHelper.accessor("description", {
-    cell: ({ getValue }) => getValue() || "-",
+    cell: ({ getValue }) => getValue() ?? "-",
     header: "Descripción",
   }),
   quickViewHelper.accessor("externalReference", {
-    cell: ({ getValue }) => getValue() || "-",
+    cell: ({ getValue }) => getValue() ?? "-",
     header: "Origen",
   }),
   quickViewHelper.accessor("transactionType", {
