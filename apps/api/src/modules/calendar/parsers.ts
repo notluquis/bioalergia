@@ -291,7 +291,7 @@ export function isIgnoredEvent(summary: string | null | undefined): boolean {
 
 /** Normalize event date to ISO string */
 export function normalizeEventDate(
-  value: string | null | undefined
+  value: string | null | undefined,
 ): string | null {
   if (!value) return null;
   try {
@@ -386,6 +386,19 @@ function extractAmounts(summary: string, description: string) {
     }
   }
 
+  // 3.1. Unclosed parenthesis pattern: "(30mil:" or "(50mil." (missing closing paren)
+  if (amountExpected == null) {
+    const unclosedParenPattern = /\((\d+)mil[:\s.]/gi;
+    let unclosedMatch: RegExpExecArray | null;
+    while ((unclosedMatch = unclosedParenPattern.exec(text)) !== null) {
+      const amount = normalizeAmountRaw(unclosedMatch[1]);
+      if (amount != null) {
+        amountExpected = amount;
+        break;
+      }
+    }
+  }
+
   // 3.5. Keyword followed by amount (e.g. "clustoid 50", "cluxin 30")
   if (amountExpected == null) {
     // Note: this must match the robust SUBCUT_PATTERNS to catch typos like "clusitoid"
@@ -433,7 +446,7 @@ function extractAmounts(summary: string, description: string) {
 function refineAmounts(
   amounts: { amountExpected: number | null; amountPaid: number | null },
   summary: string,
-  description: string
+  description: string,
 ) {
   const text = `${summary} ${description}`;
   const isConfirmed = matchesAny(text, MONEY_CONFIRMED_PATTERNS);
@@ -494,7 +507,7 @@ function classifyCategory(summary: string, description: string): string | null {
 
 function detectAttendance(
   summary: string,
-  description: string
+  description: string,
 ): boolean | null {
   const text = `${summary} ${description}`;
   return matchesAny(text, ATTENDED_PATTERNS) ? true : null;
@@ -545,7 +558,7 @@ function extractDosage(summary: string, description: string): string | null {
 
 function detectTreatmentStage(
   summary: string,
-  description: string
+  description: string,
 ): string | null {
   const text = `${summary} ${description}`;
 
